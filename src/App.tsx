@@ -65,7 +65,8 @@ function panCamera(
   if (x > 0) {
     x = 0;
   }
-  const xlim = -1000 * 10 * camera.z + windowWidth;
+  const xlim = (-1000 * 10 + windowWidth) * camera.z;
+  console.log("x", x, "xlim", xlim);
   if (x < xlim) {
     x = xlim;
   }
@@ -73,7 +74,7 @@ function panCamera(
   if (y > 0) {
     y = 0;
   }
-  const ylim = -1000 * 10 * camera.z + windowHeight;
+  const ylim = (-1000 * 10 + windowHeight) * camera.z;
   if (y < ylim) {
     y = ylim;
   }
@@ -94,8 +95,8 @@ function zoomCamera(
 ): Camera {
   let zoom = camera.z - dz * camera.z;
 
-  if (zoom < 0.16) {
-    zoom = 0.16;
+  if (zoom < 0.2) {
+    zoom = 0.2;
   }
 
   if (zoom > 1) {
