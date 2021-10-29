@@ -1,5 +1,7 @@
 import * as React from "react";
 import "./styles.css";
+import useWindowDimensions from "./utils/useWindowDimensions.js";
+import colors from "./utils/colors.js";
 
 interface Point {
   x: number;
@@ -49,23 +51,31 @@ function getViewport(camera: Camera, box: Box): Box {
   };
 }
 
-function panCamera(camera: Camera, dx: number, dy: number): Camera {
+function panCamera(
+  camera: Camera,
+  dx: number,
+  dy: number,
+  windowWidth: number,
+  windowHeight: number
+): Camera {
   let x = camera.x - dx / camera.z;
   let y = camera.y - dy / camera.z;
 
   // Limit to view bounds
-  if (x < -11000) {
-    x = -11000;
+  if (x > 0) {
+    x = 0;
   }
-  if (x > 1000) {
-    x = 1000;
+  const xlim = -1000 * 10 * camera.z + windowWidth;
+  if (x < xlim) {
+    x = xlim;
   }
 
-  if (y < -16000) {
-    y = -16000;
+  if (y > 0) {
+    y = 0;
   }
-  if (y > 1000) {
-    y = 1000;
+  const ylim = -1000 * 10 * camera.z + windowHeight;
+  if (y < ylim) {
+    y = ylim;
   }
 
   return {
@@ -75,46 +85,67 @@ function panCamera(camera: Camera, dx: number, dy: number): Camera {
   };
 }
 
-function zoomCamera(camera: Camera, point: Point, dz: number): Camera {
+function zoomCamera(
+  camera: Camera,
+  point: Point,
+  dz: number,
+  windowWidth: number,
+  windowHeight: number
+): Camera {
   let zoom = camera.z - dz * camera.z;
 
-  if (zoom < 0.03) {
-    zoom = 0.03;
+  if (zoom < 0.16) {
+    zoom = 0.16;
+  }
+
+  if (zoom > 1) {
+    zoom = 1;
   }
 
   const p1 = screenToCanvas(point, camera);
   const p2 = screenToCanvas(point, { ...camera, z: zoom });
 
-  return {
-    x: camera.x + (p2.x - p1.x),
-    y: camera.y + (p2.y - p1.y),
-    z: zoom,
-  };
+  return panCamera(
+    {
+      x: camera.x + (p2.x - p1.x),
+      y: camera.y + (p2.y - p1.y),
+      z: zoom,
+    },
+    0,
+    0,
+    windowWidth,
+    windowHeight
+  );
 }
 
-function zoomIn(camera: Camera): Camera {
-  const i = Math.round(camera.z * 100) / 25;
-  const nextZoom = (i + 1) * 0.25;
-  const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-  return zoomCamera(camera, center, camera.z - nextZoom);
-}
+// function zoomIn(camera: Camera): Camera {
+//   const i = Math.round(camera.z * 100) / 25;
+//   const nextZoom = (i + 1) * 0.25;
+//   const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+//   return zoomCamera(camera, center, camera.z - nextZoom);
+// }
 
-function zoomOut(camera: Camera): Camera {
-  const i = Math.round(camera.z * 100) / 25;
-  const nextZoom = (i - 1) * 0.25;
-  const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-  return zoomCamera(camera, center, camera.z - nextZoom);
-}
+// function zoomOut(camera: Camera): Camera {
+//   const i = Math.round(camera.z * 100) / 25;
+//   const nextZoom = (i - 1) * 0.25;
+//   const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+//   return zoomCamera(camera, center, camera.z - nextZoom);
+// }
 
 export default function App() {
   const ref = React.useRef<HTMLCanvasElement>(null);
 
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  console.log("height", windowHeight, "width", windowWidth);
+
+  // set default camera position
   const [camera, setCamera] = React.useState({
     x: 0,
     y: 0,
-    z: 1,
+    z: 0.2,
   });
 
+  // handle pan and zoom in canvas
   React.useEffect(() => {
     function handleWheel(event: WheelEvent) {
       event.preventDefault();
@@ -123,10 +154,18 @@ export default function App() {
 
       if (ctrlKey) {
         setCamera((camera) =>
-          zoomCamera(camera, { x: clientX, y: clientY }, deltaY / 100)
+          zoomCamera(
+            camera,
+            { x: clientX, y: clientY },
+            deltaY / 100,
+            windowWidth,
+            windowHeight
+          )
         );
       } else {
-        setCamera((camera) => panCamera(camera, deltaX, deltaY));
+        setCamera((camera) =>
+          panCamera(camera, deltaX, deltaY, windowWidth, windowHeight)
+        );
       }
     }
 
@@ -158,12 +197,17 @@ export default function App() {
     const ctx = cvs.getContext("2d")!;
 
     ctx.resetTransform();
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.clearRect(0, 0, windowWidth, windowHeight);
     ctx.scale(camera.z, camera.z);
     ctx.translate(camera.x, camera.y);
 
+    ctx.fillStyle = colors.gridDots;
+    ctx.fillRect(800, 800, 500, 500);
+    ctx.fillRect(5000, 4000, 500, 500);
+
+    // draw grid
     for (let i = 0; i < 10000; i++) {
-      ctx.fillRect((i % 100) * 200, Math.floor(i / 100) * 200, 10, 10);
+      ctx.fillRect((i % 100) * 100, Math.floor(i / 100) * 100, 5, 5);
     }
   });
 
@@ -171,7 +215,7 @@ export default function App() {
     <div>
       <canvas ref={ref} />
       <div>
-        <button
+        {/* <button
           style={{ position: "relative", zIndex: 9999 }}
           onClick={() => setCamera(zoomIn)}
         >
@@ -182,7 +226,7 @@ export default function App() {
           onClick={() => setCamera(zoomOut)}
         >
           Zoom Out
-        </button>
+        </button> */}
         <div>{Math.floor(camera.z * 100)}%</div>
         <div>x: {Math.floor(viewport.minX)}</div>
         <div>y: {Math.floor(viewport.minY)}</div>
