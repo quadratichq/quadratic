@@ -3,6 +3,9 @@ import "./styles.css";
 import useWindowDimensions from "./utils/useWindowDimensions.js";
 import colors from "./utils/colors.js";
 
+import CanvasInput from "../src/components/CanvasInput";
+import EngineEngine from "../src/core/engine";
+
 interface Point {
   x: number;
   y: number;
@@ -21,6 +24,7 @@ function screenToCanvas(point: Point, camera: Camera): Point {
   };
 }
 
+// eslint-disable-next-line
 function canvasToScreen(point: Point, camera: Camera): Point {
   return {
     x: (point.x - camera.x) * camera.z,
@@ -139,6 +143,8 @@ export default function App() {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   console.log("height", windowHeight, "width", windowWidth);
 
+  let gridState = EngineEngine(10, 10);
+
   // set default camera position
   const [camera, setCamera] = React.useState({
     x: 0,
@@ -189,6 +195,7 @@ export default function App() {
 
   React.useEffect(() => {
     const cvs = ref.current!;
+    const ctx = cvs.getContext("2d")!;
     cvs.width = window.innerWidth;
     cvs.height = window.innerHeight;
   }, []);
@@ -210,6 +217,13 @@ export default function App() {
     for (let i = 0; i < 10000; i++) {
       ctx.fillRect((i % 100) * 100, Math.floor(i / 100) * 100, 5, 5);
     }
+
+    // draw canvas input
+    const input = new CanvasInput({
+      canvas: cvs,
+    });
+
+    console.log(gridState[0][0]);
   });
 
   return (
