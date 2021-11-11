@@ -1,5 +1,5 @@
 const colors = {
-  gridDots: "#000000",
+  gridLines: 0xcb8999,
 };
 
 export default colors;

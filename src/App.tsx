@@ -1,10 +1,12 @@
 import * as React from "react";
+
+import { Application } from "pixi.js";
+import { Viewport } from "pixi-viewport";
+
 import "./styles.css";
 import useWindowDimensions from "./utils/useWindowDimensions.js";
-import colors from "./utils/colors.js";
 
-import * as PIXI from "pixi.js";
-import { Viewport } from "pixi-viewport";
+import drawGrid from "./core/drawGrid";
 
 export default function App() {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -13,7 +15,10 @@ export default function App() {
   console.log("height", windowHeight, "width", windowWidth);
 
   React.useEffect(() => {
-    const app = new PIXI.Application({ resizeTo: window });
+    const app = new Application({
+      resizeTo: window,
+      backgroundColor: 0xffffff,
+    });
 
     ref.current!.appendChild(app.view);
 
@@ -39,11 +44,7 @@ export default function App() {
       .pinch()
       .wheel({ trackpadPinch: true, wheelZoom: false });
 
-    // add a red box
-    const sprite = viewport.addChild(new PIXI.Sprite(PIXI.Texture.WHITE));
-    sprite.tint = 0xff0000;
-    // sprite.width = sprite.height = 100;
-    sprite.position.set(100, 100);
+    drawGrid(viewport);
 
     return () => {
       // On unload completely destroy the application and all of it's children
