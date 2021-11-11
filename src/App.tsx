@@ -49,8 +49,15 @@ export default function App() {
     for (let i = 0; i < 25; i++) {
       let x = i % 5;
       let y = Math.floor(i / 5);
-      fillCell(viewport, { x: x, y: y }, `Cell (${x}, ${y})`);
+      fillCell(viewport, { x: x * 10, y: y * 50 }, `Cell (${x}, ${y})`);
     }
+
+    fillCell(viewport, { x: 1, y: 1 }, `Breed`);
+    fillCell(viewport, { x: 1, y: 2 }, `Dachshund`);
+    fillCell(viewport, { x: 2, y: 1 }, `Count`);
+    fillCell(viewport, { x: 2, y: 2 }, `2`);
+    fillCell(viewport, { x: 1, y: 3 }, `Rhodesian`);
+    fillCell(viewport, { x: 2, y: 3 }, `2`);
 
     // Select Active Cell
     // viewport.on("clicked", (x) => {
