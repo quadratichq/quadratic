@@ -8,6 +8,7 @@ import useWindowDimensions from "./utils/useWindowDimensions.js";
 
 import drawGrid from "./core/drawGrid";
 import fillCell from "./core/cells/fillCell";
+import { forEachLeadingCommentRange } from "typescript";
 
 export default function App() {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -38,16 +39,19 @@ export default function App() {
 
     // activate plugins
     viewport
-      .drag({
-        pressDrag: false, // whether click to drag is active
-      })
+      .drag({ pressDrag: false })
       .decelerate()
       .pinch()
       .wheel({ trackpadPinch: true, wheelZoom: false });
 
     drawGrid(viewport);
 
-    fillCell(viewport, { x: 1, y: 1 }, "Hello World.");
+    // Fill 25 Cells with their information
+    for (let i = 0; i < 25; i++) {
+      let x = i % 5;
+      let y = Math.floor(i / 5);
+      fillCell(viewport, { x: x, y: y }, `Cell (${x}, ${y})`);
+    }
 
     return () => {
       // On unload completely destroy the application and all of it's children

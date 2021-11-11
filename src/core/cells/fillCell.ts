@@ -1,12 +1,8 @@
-import { BitmapFont, BitmapText } from "pixi.js";
+import { BitmapFont, BitmapText, Graphics, Text } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 
 import CellReference from "../cells/types/cellReference";
-import {
-  CELL_WIDTH,
-  CELL_HEIGHT,
-  GRID_SIZE,
-} from "../../constants/gridConstants";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
 
 import colors from "../../utils/colors.js";
 
@@ -15,21 +11,27 @@ BitmapFont.from("CellFont", {
   fontSize: 18,
 });
 
-const fillCell = function (
-  viewport: Viewport,
-  cell: CellReference,
-  text: string
-) {
-  console.log("Filling Cell", cell, text);
+const fillCell = (viewport: Viewport, cell: CellReference, text: string) => {
+  // Calculate X and Y positions
+  const x_pos = cell.x * CELL_WIDTH;
+  const y_pos = cell.y * CELL_HEIGHT;
+  const margin = 2;
 
+  // render text
   let bitmapText = new BitmapText(text, {
     fontName: "CellFont",
     fontSize: 18,
     align: "right",
   });
-  bitmapText.position.set(cell.x * CELL_WIDTH, cell.y * CELL_HEIGHT);
+  bitmapText.position.set(x_pos + margin, y_pos);
+
+  // highlight cell
+  let cell_outline = new Graphics();
+  cell_outline.lineStyle(2, colors.cellColorUserText, 0.9, 0.5, true);
+  cell_outline.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
 
   viewport.addChild(bitmapText);
+  viewport.addChild(cell_outline);
 };
 
 export default fillCell;
