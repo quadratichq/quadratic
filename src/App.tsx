@@ -7,6 +7,7 @@ import "./styles.css";
 import useWindowDimensions from "./utils/useWindowDimensions.js";
 
 import drawGrid from "./core/drawGrid";
+import fillCell from "./core/cells/fillCell";
 
 export default function App() {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -45,6 +46,8 @@ export default function App() {
       .wheel({ trackpadPinch: true, wheelZoom: false });
 
     drawGrid(viewport);
+
+    fillCell(viewport, { x: 1, y: 1 }, "Hello World.");
 
     return () => {
       // On unload completely destroy the application and all of it's children

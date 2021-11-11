@@ -1,5 +1,6 @@
 import { Sprite, Texture, Graphics } from "pixi.js";
 import { Viewport } from "pixi-viewport";
+import { CELL_WIDTH, CELL_HEIGHT, GRID_SIZE } from "../constants/gridConstants";
 
 import colors from "../utils/colors.js";
 
@@ -21,23 +22,19 @@ const drawGrid = function (viewport: Viewport) {
   // Configure Line Style
   graphics.lineStyle(1, colors.gridLines, 0.2, 0.5, true);
 
-  const cell_width = 100;
-  const cell_height = 20;
-  const grid_size = 10000;
-
-  const xoffset = (-cell_width * grid_size) / 2;
-  const yoffset = (-cell_height * grid_size) / 2;
+  const xoffset = (-CELL_WIDTH * GRID_SIZE) / 2;
+  const yoffset = (-CELL_HEIGHT * GRID_SIZE) / 2;
 
   // Draw vertical lines
-  for (var i = 0; i < grid_size; i++) {
-    graphics.moveTo(xoffset + i * cell_width, yoffset);
-    graphics.lineTo(xoffset + i * cell_width, cell_height * grid_size);
+  for (var i = 0; i < GRID_SIZE; i++) {
+    graphics.moveTo(xoffset + i * CELL_WIDTH, yoffset);
+    graphics.lineTo(xoffset + i * CELL_WIDTH, CELL_HEIGHT * GRID_SIZE);
   }
 
-  // Draw vertical lines
-  for (var j = 0; j < grid_size; j++) {
-    graphics.moveTo(xoffset, yoffset + j * cell_height);
-    graphics.lineTo(cell_width * grid_size, yoffset + j * cell_height);
+  // Draw vertical LINES
+  for (var j = 0; j < GRID_SIZE; j++) {
+    graphics.moveTo(xoffset, yoffset + j * CELL_HEIGHT);
+    graphics.lineTo(CELL_WIDTH * GRID_SIZE, yoffset + j * CELL_HEIGHT);
   }
 
   viewport.addChild(graphics);
