@@ -1,4 +1,4 @@
-import { Sprite, Texture, Graphics } from "pixi.js";
+import { Graphics } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 import { CELL_WIDTH, CELL_HEIGHT, GRID_SIZE } from "../constants/gridConstants";
 

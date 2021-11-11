@@ -1,4 +1,4 @@
-import { BitmapFont, BitmapText, Graphics, Text } from "pixi.js";
+import { BitmapFont, BitmapText, Graphics } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 
 import CellReference from "../cells/types/cellReference";

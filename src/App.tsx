@@ -8,7 +8,6 @@ import useWindowDimensions from "./utils/useWindowDimensions.js";
 
 import drawGrid from "./core/drawGrid";
 import fillCell from "./core/cells/fillCell";
-import { forEachLeadingCommentRange } from "typescript";
 
 export default function App() {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -52,6 +51,11 @@ export default function App() {
       let y = Math.floor(i / 5);
       fillCell(viewport, { x: x, y: y }, `Cell (${x}, ${y})`);
     }
+
+    // Select Active Cell
+    // viewport.on("clicked", (x) => {
+    //   console.log(x);
+    // });
 
     return () => {
       // On unload completely destroy the application and all of it's children
