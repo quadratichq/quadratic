@@ -65,3 +65,12 @@ export default function App() {
 
   return <div ref={ref} />;
 }
+
+// Prevent window zooming on Chrome
+window.addEventListener(
+  "wheel",
+  (e) => {
+    e.preventDefault();
+  },
+  { passive: false }
+);
