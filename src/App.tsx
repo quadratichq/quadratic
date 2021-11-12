@@ -23,46 +23,50 @@ export default function App() {
 
     ref.current!.appendChild(app.view);
 
-    // create viewport
-    const viewport = new Viewport({
-      screenWidth: window.innerWidth,
-      screenHeight: window.innerHeight,
-      worldWidth: 1000,
-      worldHeight: 1000,
+    app.loader.add("OpenSans", "fonts/opensans/OpenSans.fnt").load(startup);
 
-      interaction: app.renderer.plugins.interaction, // the interaction module is important for wheel to work properly when renderer.view is placed or scaled
-    });
+    function startup() {
+      // create viewport
+      const viewport = new Viewport({
+        screenWidth: window.innerWidth,
+        screenHeight: window.innerHeight,
+        worldWidth: 1000,
+        worldHeight: 1000,
 
-    // add the viewport to the stage
-    app.stage.addChild(viewport);
+        interaction: app.renderer.plugins.interaction, // the interaction module is important for wheel to work properly when renderer.view is placed or scaled
+      });
 
-    // activate plugins
-    viewport
-      .drag({ pressDrag: false })
-      .decelerate()
-      .pinch()
-      .wheel({ trackpadPinch: true, wheelZoom: false });
+      // add the viewport to the stage
+      app.stage.addChild(viewport);
 
-    drawGrid(viewport);
+      // activate plugins
+      viewport
+        .drag({ pressDrag: false })
+        .decelerate()
+        .pinch()
+        .wheel({ trackpadPinch: true, wheelZoom: false });
 
-    // Fill 25 Cells with their information
-    for (let i = 0; i < 25; i++) {
-      let x = i % 5;
-      let y = Math.floor(i / 5);
-      fillCell(viewport, { x: x * 10, y: y * 50 }, `Cell (${x}, ${y})`);
+      drawGrid(viewport);
+
+      // Fill 25 Cells with their information
+      for (let i = 0; i < 100; i++) {
+        let x = i % 5;
+        let y = Math.floor(i / 5);
+        fillCell(viewport, { x: x, y: y }, `Cell (${x}, ${y})`);
+      }
+
+      // fillCell(viewport, { x: 1, y: 1 }, `Breed`);
+      // fillCell(viewport, { x: 1, y: 2 }, `Dachshund`);
+      // fillCell(viewport, { x: 2, y: 1 }, `Count`);
+      // fillCell(viewport, { x: 2, y: 2 }, `2`);
+      // fillCell(viewport, { x: 1, y: 3 }, `Rhodesian`);
+      // fillCell(viewport, { x: 2, y: 3 }, `2`);
+
+      // Select Active Cell
+      // viewport.on("clicked", (x) => {
+      //   console.log(x);
+      // });
     }
-
-    fillCell(viewport, { x: 1, y: 1 }, `Breed`);
-    fillCell(viewport, { x: 1, y: 2 }, `Dachshund`);
-    fillCell(viewport, { x: 2, y: 1 }, `Count`);
-    fillCell(viewport, { x: 2, y: 2 }, `2`);
-    fillCell(viewport, { x: 1, y: 3 }, `Rhodesian`);
-    fillCell(viewport, { x: 2, y: 3 }, `2`);
-
-    // Select Active Cell
-    // viewport.on("clicked", (x) => {
-    //   console.log(x);
-    // });
 
     return () => {
       // On unload completely destroy the application and all of it's children
