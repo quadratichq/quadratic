@@ -1,7 +1,8 @@
 import * as React from "react";
 
-import { Application } from "pixi.js";
+import { Application, Ticker } from "pixi.js";
 import { Viewport } from "pixi-viewport";
+import { Simple } from "pixi-cull";
 
 import "./styles.css";
 import useWindowDimensions from "./utils/useWindowDimensions.js";
@@ -49,7 +50,7 @@ export default function App() {
       drawGrid(viewport);
 
       // Fill 25 Cells with their information
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 10000; i++) {
         let x = i % 5;
         let y = Math.floor(i / 5);
         fillCell(viewport, { x: x, y: y }, `Cell (${x}, ${y})`);
@@ -66,6 +67,24 @@ export default function App() {
       // viewport.on("clicked", (x) => {
       //   console.log(x);
       // });
+
+      // FPS log
+      app.ticker.add(function (time) {
+        console.log(app.ticker.FPS);
+      });
+
+      // Culling
+      const cull = new Simple(); // new SpatialHash()
+      cull.addList(viewport.children);
+      cull.cull(viewport.getVisibleBounds());
+
+      // cull whenever the viewport moves
+      Ticker.shared.add(() => {
+        if (viewport.dirty) {
+          cull.cull(viewport.getVisibleBounds());
+          viewport.dirty = false;
+        }
+      });
     }
 
     return () => {
