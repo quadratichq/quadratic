@@ -1,253 +1,120 @@
 import * as React from "react";
+
+import { Application, Ticker } from "pixi.js";
+import { Viewport } from "pixi-viewport";
+import { Simple } from "pixi-cull";
+
 import "./styles.css";
 import useWindowDimensions from "./utils/useWindowDimensions.js";
-import colors from "./utils/colors.js";
 
-import CanvasInput from "../src/components/CanvasInput";
-import EngineEngine from "../src/core/engine";
-
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface Camera {
-  x: number;
-  y: number;
-  z: number;
-}
-
-function screenToCanvas(point: Point, camera: Camera): Point {
-  return {
-    x: point.x / camera.z - camera.x,
-    y: point.y / camera.z - camera.y,
-  };
-}
-
-// eslint-disable-next-line
-function canvasToScreen(point: Point, camera: Camera): Point {
-  return {
-    x: (point.x - camera.x) * camera.z,
-    y: (point.y - camera.y) * camera.z,
-  };
-}
-
-interface Box {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
-  width: number;
-  height: number;
-}
-
-function getViewport(camera: Camera, box: Box): Box {
-  const topLeft = screenToCanvas({ x: box.minX, y: box.minY }, camera);
-  const bottomRight = screenToCanvas({ x: box.maxX, y: box.maxY }, camera);
-
-  return {
-    minX: topLeft.x,
-    minY: topLeft.y,
-    maxX: bottomRight.x,
-    maxY: bottomRight.y,
-    height: bottomRight.x - topLeft.x,
-    width: bottomRight.y - topLeft.y,
-  };
-}
-
-function panCamera(
-  camera: Camera,
-  dx: number,
-  dy: number,
-  windowWidth: number,
-  windowHeight: number
-): Camera {
-  let x = camera.x - dx / camera.z;
-  let y = camera.y - dy / camera.z;
-
-  // Limit to view bounds
-  if (x > 0) {
-    x = 0;
-  }
-  const xlim = (-1000 * 10 + windowWidth) * camera.z;
-  console.log("x", x, "xlim", xlim);
-  if (x < xlim) {
-    x = xlim;
-  }
-
-  if (y > 0) {
-    y = 0;
-  }
-  const ylim = (-1000 * 10 + windowHeight) * camera.z;
-  if (y < ylim) {
-    y = ylim;
-  }
-
-  return {
-    x: x,
-    y: y,
-    z: camera.z,
-  };
-}
-
-function zoomCamera(
-  camera: Camera,
-  point: Point,
-  dz: number,
-  windowWidth: number,
-  windowHeight: number
-): Camera {
-  let zoom = camera.z - dz * camera.z;
-
-  if (zoom < 0.2) {
-    zoom = 0.2;
-  }
-
-  if (zoom > 1) {
-    zoom = 1;
-  }
-
-  const p1 = screenToCanvas(point, camera);
-  const p2 = screenToCanvas(point, { ...camera, z: zoom });
-
-  return panCamera(
-    {
-      x: camera.x + (p2.x - p1.x),
-      y: camera.y + (p2.y - p1.y),
-      z: zoom,
-    },
-    0,
-    0,
-    windowWidth,
-    windowHeight
-  );
-}
-
-// function zoomIn(camera: Camera): Camera {
-//   const i = Math.round(camera.z * 100) / 25;
-//   const nextZoom = (i + 1) * 0.25;
-//   const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-//   return zoomCamera(camera, center, camera.z - nextZoom);
-// }
-
-// function zoomOut(camera: Camera): Camera {
-//   const i = Math.round(camera.z * 100) / 25;
-//   const nextZoom = (i - 1) * 0.25;
-//   const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-//   return zoomCamera(camera, center, camera.z - nextZoom);
-// }
+import drawGrid from "./core/graphics/drawGrid";
+import fillCell from "./core/graphics/cells/fillCell";
+import highlightCell from "./core/graphics/cells/highlightCell";
+import { CELL_WIDTH, CELL_HEIGHT } from "./constants/gridConstants";
 
 export default function App() {
-  const ref = React.useRef<HTMLCanvasElement>(null);
+  const ref = React.useRef<HTMLDivElement>(null);
 
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   console.log("height", windowHeight, "width", windowWidth);
 
-  let gridState = EngineEngine(10, 10);
-
-  // set default camera position
-  const [camera, setCamera] = React.useState({
-    x: 0,
-    y: 0,
-    z: 0.2,
-  });
-
-  // handle pan and zoom in canvas
   React.useEffect(() => {
-    function handleWheel(event: WheelEvent) {
-      event.preventDefault();
-
-      const { clientX, clientY, deltaX, deltaY, ctrlKey } = event;
-
-      if (ctrlKey) {
-        setCamera((camera) =>
-          zoomCamera(
-            camera,
-            { x: clientX, y: clientY },
-            deltaY / 100,
-            windowWidth,
-            windowHeight
-          )
-        );
-      } else {
-        setCamera((camera) =>
-          panCamera(camera, deltaX, deltaY, windowWidth, windowHeight)
-        );
-      }
-    }
-
-    const elm = ref.current!;
-    elm.addEventListener("wheel", handleWheel, { passive: false });
-
-    return () => {
-      elm.removeEventListener("wheel", handleWheel);
-    };
-  }, [ref]);
-
-  const viewport = getViewport(camera, {
-    minX: 0,
-    minY: 0,
-    maxX: window.innerWidth,
-    maxY: window.innerHeight,
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
-
-  React.useEffect(() => {
-    const cvs = ref.current!;
-    const ctx = cvs.getContext("2d")!;
-    cvs.width = window.innerWidth;
-    cvs.height = window.innerHeight;
-  }, []);
-
-  React.useEffect(() => {
-    const cvs = ref.current!;
-    const ctx = cvs.getContext("2d")!;
-
-    ctx.resetTransform();
-    ctx.clearRect(0, 0, windowWidth, windowHeight);
-    ctx.scale(camera.z, camera.z);
-    ctx.translate(camera.x, camera.y);
-
-    ctx.fillStyle = colors.gridDots;
-    ctx.fillRect(800, 800, 500, 500);
-    ctx.fillRect(5000, 4000, 500, 500);
-
-    // draw grid
-    for (let i = 0; i < 10000; i++) {
-      ctx.fillRect((i % 100) * 100, Math.floor(i / 100) * 100, 5, 5);
-    }
-
-    // draw canvas input
-    const input = new CanvasInput({
-      canvas: cvs,
+    const app = new Application({
+      resizeTo: window,
+      resolution: window.devicePixelRatio,
+      backgroundColor: 0xffffff,
+      autoDensity: true,
     });
 
-    console.log(gridState[0][0]);
-  });
+    ref.current!.appendChild(app.view);
 
-  return (
-    <div>
-      <canvas ref={ref} />
-      <div>
-        {/* <button
-          style={{ position: "relative", zIndex: 9999 }}
-          onClick={() => setCamera(zoomIn)}
-        >
-          Zoom In
-        </button>
-        <button
-          style={{ position: "relative", zIndex: 9999 }}
-          onClick={() => setCamera(zoomOut)}
-        >
-          Zoom Out
-        </button> */}
-        <div>{Math.floor(camera.z * 100)}%</div>
-        <div>x: {Math.floor(viewport.minX)}</div>
-        <div>y: {Math.floor(viewport.minY)}</div>
-        <div>width: {Math.floor(viewport.width)}</div>
-        <div>height: {Math.floor(viewport.height)}</div>
-      </div>
-    </div>
-  );
+    app.loader.add("OpenSans", "fonts/opensans/OpenSans.fnt").load(startup);
+
+    function startup() {
+      // create viewport
+      const viewport = new Viewport({
+        screenWidth: window.innerWidth,
+        screenHeight: window.innerHeight,
+        worldWidth: 1000,
+        worldHeight: 1000,
+
+        interaction: app.renderer.plugins.interaction, // the interaction module is important for wheel to work properly when renderer.view is placed or scaled
+      });
+
+      // add the viewport to the stage
+      app.stage.addChild(viewport);
+
+      // activate plugins
+      viewport
+        .drag({ pressDrag: false })
+        .decelerate()
+        .pinch()
+        .wheel({ trackpadPinch: true, wheelZoom: false });
+
+      drawGrid(viewport);
+
+      // Fill 25 Cells with their information
+      // for (let i = 0; i < 10000; i++) {
+      //   let x = i % 50;
+      //   let y = Math.floor(i / 50);
+      //   fillCell(viewport, { x: x, y: y }, `Cell (${x}, ${y})`);
+      // }
+
+      fillCell(viewport, { x: 1, y: 1 }, `Breed`);
+      fillCell(viewport, { x: 1, y: 2 }, `Dachshund`);
+      fillCell(viewport, { x: 2, y: 1 }, `Count`);
+      fillCell(viewport, { x: 2, y: 2 }, `2`);
+      fillCell(viewport, { x: 1, y: 3 }, `Rhodesian`);
+      let cell = fillCell(viewport, { x: 2, y: 3 }, `2`);
+
+      // Select Active Cell
+      viewport.on("clicked", (event) => {
+        console.log(event);
+        console.log(event.world.x, event.world.y);
+        let cell_x = Math.floor(event.world.x / CELL_WIDTH);
+        let cell_y = Math.floor(event.world.y / CELL_HEIGHT);
+        console.log(cell_x);
+
+        highlightCell(viewport, { x: cell_x, y: cell_y }, "normal");
+      });
+
+      // FPS log
+      // app.ticker.add(function (time) {
+      //   console.log(app.ticker.FPS);
+      // });
+
+      // Culling
+      const cull = new Simple(); // new SpatialHash()
+      cull.addList(viewport.children);
+      cull.cull(viewport.getVisibleBounds()); // TODO: Recalculate on screen resize
+
+      // cull whenever the viewport moves
+      let count = 0;
+      Ticker.shared.add(() => {
+        cell.text = count.toString();
+        count += 1;
+
+        if (viewport.dirty) {
+          cull.cull(viewport.getVisibleBounds());
+          viewport.dirty = false;
+        }
+      });
+    }
+
+    return () => {
+      // On unload completely destroy the application and all of it's children
+      app.destroy(true, true);
+    };
+  }, []);
+
+  return <div ref={ref} />;
 }
+
+// Prevent window zooming on Chrome
+window.addEventListener(
+  "wheel",
+  (e) => {
+    e.preventDefault();
+  },
+  { passive: false }
+);
