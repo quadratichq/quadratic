@@ -1,10 +1,9 @@
-import { BitmapText, Graphics } from "pixi.js";
+import { BitmapText } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 
-import CellReference from "../cells/types/cellReference";
-import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-
-import colors from "../../utils/colors.js";
+import CellReference from "./types/cellReference";
+import highlightCell from "./highlightCell";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 
 const fillCell = (viewport: Viewport, cell: CellReference, text: string) => {
   // Calculate X and Y positions
@@ -23,12 +22,10 @@ const fillCell = (viewport: Viewport, cell: CellReference, text: string) => {
   bitmapText.position.set(x_pos + margin_left, y_pos + margin_top);
 
   // highlight cell
-  let cell_outline = new Graphics();
-  cell_outline.lineStyle(2, colors.cellColorUserText, 0.9, 0.5, true);
-  cell_outline.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
+  highlightCell(viewport, cell, "normal");
 
   viewport.addChild(bitmapText);
-  viewport.addChild(cell_outline);
+  return bitmapText;
 };
 
 export default fillCell;
