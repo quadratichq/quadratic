@@ -29,5 +29,14 @@ export default class Interaction {
 
     this.cursor_pixi.x = location.x * CELL_WIDTH;
     this.cursor_pixi.y = location.y * CELL_HEIGHT;
+
+    // ensure the cursor remains visible when moving past the edges of the screen
+    this.globals.viewport.ensureVisible(
+      this.cursor_pixi.x,
+      this.cursor_pixi.y,
+      this.cursor_pixi.width,
+      this.cursor_pixi.height,
+      false
+    );
   }
 }
