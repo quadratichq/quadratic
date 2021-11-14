@@ -32,8 +32,6 @@ export default class Interaction {
     this.globals.canvas.addEventListener("keydown", (event) => {
       // TODO: if cursor goes off screen, move the viewport
 
-      console.log(event);
-
       if (event.key === "ArrowUp") {
         this.cursor.moveCursor({
           x: this.cursor.location.x,

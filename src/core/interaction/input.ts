@@ -39,7 +39,6 @@ export default class GridInput {
     });
 
     input.on("keydown", (keycode: number) => {
-      console.log(keycode);
       // if enter is pressed
       if (keycode === 13) {
         // focus input one down
