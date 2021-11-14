@@ -32,7 +32,7 @@ const drawCell = (
   bitmap_text.position.set(x_pos + margin_left, y_pos + margin_top);
 
   // highlight cell
-  let cell_outline = highlightCell(viewport, cell, "normal");
+  let cell_outline = highlightCell(cell, "normal");
 
   // create Container
   let container = new Container();

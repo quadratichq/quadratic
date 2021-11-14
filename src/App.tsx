@@ -1,15 +1,14 @@
 import * as React from "react";
-
 import { Application, Ticker } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 import { Simple } from "pixi-cull";
 
 import "./styles.css";
 import useWindowDimensions from "./utils/useWindowDimensions.js";
-
 import drawGrid from "./core/graphics/drawGrid";
-
+import Interaction from "./core/interaction/interaction";
 import Grid from "./core/grid/Grid";
+import Globals from "./globals";
 
 export default function App() {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -22,6 +21,7 @@ export default function App() {
       resizeTo: window,
       resolution: window.devicePixelRatio,
       backgroundColor: 0xffffff,
+      antialias: true,
       autoDensity: true,
     });
 
@@ -56,26 +56,19 @@ export default function App() {
 
       grid.createOrUpdateCell({ x: 1, y: 0 }, "World");
 
-      // Fill 25 Cells with their information
-      for (let i = 0; i < 10000; i++) {
-        let x = i % 100;
-        let y = Math.floor(i / 100);
+      // Fill Cells dummy information
+      for (let i = 0; i < 100; i++) {
+        let x = i % 10;
+        let y = Math.floor(i / 10);
 
         grid.createOrUpdateCell({ x: x, y: y }, `Cell ${x} ${y}`);
       }
       grid.getCell({ x: 0, y: 0 });
-      console.log(grid.data);
 
-      // Select Active Cell
-      // viewport.on("clicked", (event) => {
-      //   console.log(event);
-      //   console.log(event.world.x, event.world.y);
-      //   let cell_x = Math.floor(event.world.x / CELL_WIDTH);
-      //   let cell_y = Math.floor(event.world.y / CELL_HEIGHT);
-      //   console.log(cell_x);
+      const globals = new Globals(viewport, app.view, grid);
 
-      //   highlightCell(viewport, { x: cell_x, y: cell_y }, "normal");
-      // });
+      let interaction = new Interaction(globals);
+      interaction.makeInteractive();
 
       // FPS log
       // app.ticker.add(function (time) {

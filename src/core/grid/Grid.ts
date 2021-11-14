@@ -18,6 +18,16 @@ export default class Grid {
     return this.data[location.x][location.y] || null;
   }
 
+  destroyCell(location: CellReference) {
+    if (this.data[location.x] !== undefined) {
+      let cell = this.data[location.x][location.y];
+      if (cell) {
+        cell.destroy();
+        delete this.data[location.x][location.y];
+      }
+    }
+  }
+
   createOrUpdateCell(location: CellReference, text: string) {
     let cell: Cell | null = this.getCell(location);
 
