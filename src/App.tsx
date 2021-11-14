@@ -76,7 +76,7 @@ export default function App() {
       // });
 
       // Culling
-      const cull = new Simple(); // new SpatialHash()
+      const cull = new Simple();
       cull.addList(viewport.children);
       cull.cull(viewport.getVisibleBounds()); // TODO: Recalculate on screen resize
 
