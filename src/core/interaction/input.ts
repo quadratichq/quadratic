@@ -38,9 +38,8 @@ export default class GridInput {
       }
     });
 
-    console.log(input._dom_input);
-
     input.on("keydown", (keycode: number) => {
+      console.log(keycode);
       // if enter is pressed
       if (keycode === 13) {
         // focus input one down
@@ -68,6 +67,25 @@ export default class GridInput {
         this.moveInputToCursor();
 
         // TODO: this moves focus to the URL bar, we need to prevent this
+      }
+
+      // upArrow
+      if (keycode === 38) {
+        cursor.moveCursor({
+          x: cursor.location.x,
+          y: cursor.location.y - 1,
+        });
+        // viewport.removeChild(input);
+        this.globals.canvas.focus();
+      }
+      // downArrow
+      if (keycode === 40) {
+        cursor.moveCursor({
+          x: cursor.location.x,
+          y: cursor.location.y + 1,
+        });
+        // viewport.removeChild(input);
+        this.globals.canvas.focus();
       }
     });
   }
