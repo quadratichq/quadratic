@@ -54,16 +54,37 @@ export default function App() {
 
       let grid = new Grid(viewport);
 
-      grid.createOrUpdateCell({ x: 1, y: 0 }, "World");
+      // Load data from server
+      fetch("http://localhost:8000/grid/cells/?x0=0&y0=0&x1=50&y1=50")
+        .then((res) => res.json())
+        .then(
+          (result) => {
+            console.log(result);
+            result.forEach((cell: any) => {
+              console.log(cell);
 
-      // Fill Cells dummy information
-      for (let i = 0; i < 100; i++) {
-        let x = i % 10;
-        let y = Math.floor(i / 10);
+              grid.createOrUpdateCell(
+                { x: parseInt(cell.x), y: parseInt(cell.y) },
+                cell.input_value
+              );
+            });
+          },
+          // Note: it's important to handle errors here
+          // instead of a catch() block so that we don't swallow
+          // exceptions from actual bugs in components.
+          (error) => {}
+        );
 
-        grid.createOrUpdateCell({ x: x, y: y }, `Cell ${x} ${y}`);
-      }
-      grid.getCell({ x: 0, y: 0 });
+      //
+
+      // // Fill Cells dummy information
+      // for (let i = 0; i < 100; i++) {
+      //   let x = i % 10;
+      //   let y = Math.floor(i / 10);
+
+      //   grid.createOrUpdateCell({ x: x, y: y }, `Cell ${x} ${y}`);
+      // }
+      // grid.getCell({ x: 0, y: 0 });
 
       const globals = new Globals(viewport, app.view, grid);
 
