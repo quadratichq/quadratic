@@ -9,6 +9,7 @@ import drawGrid from "./core/graphics/drawGrid";
 import Interaction from "./core/interaction/interaction";
 import Grid from "./core/grid/Grid";
 import Globals from "./globals";
+import { getCells } from "./core/api/APIClient";
 
 export default function App() {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -48,45 +49,16 @@ export default function App() {
         .drag({ pressDrag: false })
         .decelerate()
         .pinch()
-        .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 });
+        .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.4 });
 
       drawGrid(viewport);
 
       let grid = new Grid(viewport);
 
-      // Load data from server
-      fetch("http://localhost:8000/grid/cells/?x0=0&y0=0&x1=50&y1=50")
-        .then((res) => res.json())
-        .then(
-          (result) => {
-            console.log(result);
-            result.forEach((cell: any) => {
-              console.log(cell);
-
-              grid.createOrUpdateCell(
-                { x: parseInt(cell.x), y: parseInt(cell.y) },
-                cell.input_value
-              );
-            });
-          },
-          // Note: it's important to handle errors here
-          // instead of a catch() block so that we don't swallow
-          // exceptions from actual bugs in components.
-          (error) => {}
-        );
-
-      //
-
-      // // Fill Cells dummy information
-      // for (let i = 0; i < 100; i++) {
-      //   let x = i % 10;
-      //   let y = Math.floor(i / 10);
-
-      //   grid.createOrUpdateCell({ x: x, y: y }, `Cell ${x} ${y}`);
-      // }
-      // grid.getCell({ x: 0, y: 0 });
-
       const globals = new Globals(viewport, app.view, grid);
+
+      // Load data from server
+      getCells({ x: -100, y: -100 }, { x: 100, y: 100 }, globals);
 
       let interaction = new Interaction(globals);
       interaction.makeInteractive();

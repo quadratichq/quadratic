@@ -1,6 +1,7 @@
 import Cell from "./Cell";
 import CellReference from "../types/cellReference";
 import { Viewport } from "pixi-viewport";
+import { updateCells } from "../api/APIClient";
 
 export default class Grid {
   data: { [key: string]: { [key: string]: Cell } };
@@ -44,5 +45,14 @@ export default class Grid {
     } else {
       cell.update(text);
     }
+
+    updateCells([
+      {
+        x: location.x,
+        y: location.y,
+        input_type: "TEXT",
+        input_value: text,
+      },
+    ]);
   }
 }
