@@ -1,16 +1,14 @@
 import * as React from "react";
-
 import { Application, Ticker } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 import { Simple } from "pixi-cull";
 
 import "./styles.css";
 import useWindowDimensions from "./utils/useWindowDimensions.js";
-
 import drawGrid from "./core/graphics/drawGrid";
-import fillCell from "./core/graphics/cells/fillCell";
-import highlightCell from "./core/graphics/cells/highlightCell";
-import { CELL_WIDTH, CELL_HEIGHT } from "./constants/gridConstants";
+import Interaction from "./core/interaction/interaction";
+import Grid from "./core/grid/Grid";
+import Globals from "./globals";
 
 export default function App() {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -23,6 +21,7 @@ export default function App() {
       resizeTo: window,
       resolution: window.devicePixelRatio,
       backgroundColor: 0xffffff,
+      antialias: true,
       autoDensity: true,
     });
 
@@ -53,30 +52,23 @@ export default function App() {
 
       drawGrid(viewport);
 
-      // Fill 25 Cells with their information
-      // for (let i = 0; i < 10000; i++) {
-      //   let x = i % 50;
-      //   let y = Math.floor(i / 50);
-      //   fillCell(viewport, { x: x, y: y }, `Cell (${x}, ${y})`);
-      // }
+      let grid = new Grid(viewport);
 
-      fillCell(viewport, { x: 1, y: 1 }, `Breed`);
-      fillCell(viewport, { x: 1, y: 2 }, `Dachshund`);
-      fillCell(viewport, { x: 2, y: 1 }, `Count`);
-      fillCell(viewport, { x: 2, y: 2 }, `2`);
-      fillCell(viewport, { x: 1, y: 3 }, `Rhodesian`);
-      let cell = fillCell(viewport, { x: 2, y: 3 }, `2`);
+      grid.createOrUpdateCell({ x: 1, y: 0 }, "World");
 
-      // Select Active Cell
-      viewport.on("clicked", (event) => {
-        console.log(event);
-        console.log(event.world.x, event.world.y);
-        let cell_x = Math.floor(event.world.x / CELL_WIDTH);
-        let cell_y = Math.floor(event.world.y / CELL_HEIGHT);
-        console.log(cell_x);
+      // Fill Cells dummy information
+      for (let i = 0; i < 100; i++) {
+        let x = i % 10;
+        let y = Math.floor(i / 10);
 
-        highlightCell(viewport, { x: cell_x, y: cell_y }, "normal");
-      });
+        grid.createOrUpdateCell({ x: x, y: y }, `Cell ${x} ${y}`);
+      }
+      grid.getCell({ x: 0, y: 0 });
+
+      const globals = new Globals(viewport, app.view, grid);
+
+      let interaction = new Interaction(globals);
+      interaction.makeInteractive();
 
       // FPS log
       // app.ticker.add(function (time) {
@@ -84,16 +76,12 @@ export default function App() {
       // });
 
       // Culling
-      const cull = new Simple(); // new SpatialHash()
+      const cull = new Simple();
       cull.addList(viewport.children);
       cull.cull(viewport.getVisibleBounds()); // TODO: Recalculate on screen resize
 
       // cull whenever the viewport moves
-      let count = 0;
       Ticker.shared.add(() => {
-        cell.text = count.toString();
-        count += 1;
-
         if (viewport.dirty) {
           cull.cull(viewport.getVisibleBounds());
           viewport.dirty = false;
