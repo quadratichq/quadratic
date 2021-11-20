@@ -1,6 +1,7 @@
 import Cell from "./Cell";
 import CellReference from "../types/cellReference";
 import { Viewport } from "pixi-viewport";
+import { deleteCells } from "../api/APIClient";
 
 export default class Grid {
   data: { [key: string]: { [key: string]: Cell } };
@@ -22,6 +23,12 @@ export default class Grid {
     if (this.data[location.x] !== undefined) {
       let cell = this.data[location.x][location.y];
       if (cell) {
+        deleteCells([
+          {
+            x: location.x,
+            y: location.y,
+          },
+        ]);
         cell.destroy();
         delete this.data[location.x][location.y];
       }
