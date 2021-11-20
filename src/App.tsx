@@ -9,7 +9,7 @@ import drawGrid from "./core/graphics/drawGrid";
 import Interaction from "./core/interaction/interaction";
 import Grid from "./core/grid/Grid";
 import Globals from "./globals";
-import { getCells } from "./core/api/APIClient";
+import { loadCells } from "./core/api/Loader";
 
 export default function App() {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -58,7 +58,7 @@ export default function App() {
       const globals = new Globals(viewport, app.view, grid);
 
       // Load data from server
-      getCells({ x: -100, y: -100 }, { x: 100, y: 100 }, globals);
+      loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals);
 
       let interaction = new Interaction(globals);
       interaction.makeInteractive();

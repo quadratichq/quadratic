@@ -5,7 +5,7 @@ import Globals from "../../globals";
 import Cursor from "../interaction/cursor";
 
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-
+import { updateCells } from "../api/APIClient";
 export default class GridInput {
   globals: Globals;
   cursor: Cursor;
@@ -29,18 +29,13 @@ export default class GridInput {
     input.alpha = 0;
 
     input.on("input", (text: string) => {
-      this.globals.grid.createOrUpdateCell(
-        { x: input.last_x, y: input.last_y },
-        text
-      );
-      if (input.text === "") {
-        this.globals.grid.destroyCell({ x: input.last_x, y: input.last_y });
-      }
+      this.syncInputAndGrid();
     });
 
     input.on("keydown", (keycode: number) => {
       // if enter is pressed
       if (keycode === 13) {
+        this.saveCell();
         // focus input one down
         cursor.moveCursor({
           x: cursor.location.x,
@@ -51,6 +46,7 @@ export default class GridInput {
       }
       // esc
       if (keycode === 27) {
+        this.saveCell();
         // cleanup
         input.text = "";
         // this.globals.viewport.removeChild(input);
@@ -58,6 +54,7 @@ export default class GridInput {
       }
       // tab
       if (keycode === 9) {
+        this.saveCell();
         // focus input one to the right
         cursor.moveCursor({
           x: cursor.location.x + 1,
@@ -70,6 +67,7 @@ export default class GridInput {
 
       // upArrow
       if (keycode === 38) {
+        this.saveCell();
         cursor.moveCursor({
           x: cursor.location.x,
           y: cursor.location.y - 1,
@@ -79,6 +77,7 @@ export default class GridInput {
       }
       // downArrow
       if (keycode === 40) {
+        this.saveCell();
         cursor.moveCursor({
           x: cursor.location.x,
           y: cursor.location.y + 1,
@@ -87,6 +86,32 @@ export default class GridInput {
         this.globals.canvas.focus();
       }
     });
+  }
+
+  syncInputAndGrid() {
+    this.globals.grid.createOrUpdateCell(
+      { x: this.input.last_x, y: this.input.last_y },
+      this.input.text
+    );
+    if (this.input.text === "") {
+      this.globals.grid.destroyCell({
+        x: this.input.last_x,
+        y: this.input.last_y,
+      });
+    }
+  }
+
+  saveCell() {
+    // Triggered after editing a cell
+    // Calls API to update cell.
+    updateCells([
+      {
+        x: this.cursor.location.x,
+        y: this.cursor.location.y,
+        input_type: "TEXT",
+        input_value: this.input.text,
+      },
+    ]);
   }
 
   moveInputToCursor() {

@@ -85,7 +85,10 @@ export default class Interaction {
       // if key is a letter or enter start taking input
       if (isAlphaNumeric(event.key)) {
         this.input.moveInputToCursor();
+        // Start off input with first key pressed.
+        // Make sure grid updates visually with this key.
         this.input.input.text = event.key;
+        this.input.syncInputAndGrid();
         event.preventDefault();
       }
     });
