@@ -11,13 +11,14 @@ import Grid from "./core/grid/Grid";
 import Globals from "./globals";
 import { loadCells } from "./core/api/Loader";
 
+let viewport: Viewport;
+
 export default function App() {
   const ref = React.useRef<HTMLDivElement>(null);
-
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
-  console.log("height", windowHeight, "width", windowWidth);
 
   React.useEffect(() => {
+    // Create Pixi App
     const app = new Application({
       resizeTo: window,
       resolution: window.devicePixelRatio,
@@ -32,7 +33,7 @@ export default function App() {
 
     function startup() {
       // create viewport
-      const viewport = new Viewport({
+      viewport = new Viewport({
         screenWidth: window.innerWidth,
         screenHeight: window.innerHeight,
         worldWidth: 1000,
@@ -70,10 +71,7 @@ export default function App() {
 
       // Culling
       const cull = new Simple();
-      cull.addList(viewport.children);
-      cull.cull(viewport.getVisibleBounds()); // TODO: Recalculate on screen resize
-
-      // cull whenever the viewport moves
+      cull.addList(viewport.children); // TODO update on children change?
       Ticker.shared.add(() => {
         if (viewport.dirty) {
           cull.cull(viewport.getVisibleBounds());
@@ -87,6 +85,15 @@ export default function App() {
       app.destroy(true, true);
     };
   }, []);
+
+  React.useEffect(() => {
+    // tell viewport the new screen size,
+    // also updates Culling frame
+    if (viewport) {
+      viewport.screenWidth = windowWidth;
+      viewport.screenHeight = windowHeight;
+    }
+  }, [windowWidth, windowHeight]);
 
   return <div ref={ref} />;
 }
