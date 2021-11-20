@@ -1,9 +1,9 @@
 import { BitmapText, Container, Graphics } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 
-import highlightCell from "./highlightCell";
-import CellReference from "../../types/cellReference";
-import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
+import singleCellHighlight from "./primatives/singleCellHighlight";
+import CellReference from "../types/cellReference";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
 
 interface CellReturn {
   container: Container;
@@ -32,7 +32,7 @@ const drawCell = (
   bitmap_text.position.set(x_pos + margin_left, y_pos + margin_top);
 
   // highlight cell
-  let cell_outline = highlightCell(cell, "normal");
+  let cell_outline = singleCellHighlight(cell, "normal");
 
   // create Container
   let container = new Container();

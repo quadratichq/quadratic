@@ -2,7 +2,7 @@ import { BitmapText, Container, Graphics } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 import CellReference from "../types/cellReference";
 
-import drawCell from "../graphics/cells/drawCell";
+import drawCell from "../graphics/drawCell";
 
 export default class Cell {
   location: CellReference;
