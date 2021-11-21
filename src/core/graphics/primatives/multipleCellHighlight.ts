@@ -17,7 +17,7 @@ const multipleCellHighlight = (
 
   // highlight cells
   let cell_outline = new Graphics();
-  cell_outline.lineStyle(1, colors.cursorCell);
+  cell_outline.lineStyle(1, colors.cursorCell, 1, 0, true);
   cell_outline.beginFill(colors.cursorCell, 0.1);
   cell_outline.drawRect(x0_pos, y0_pos, x1_pos - x0_pos, y1_pos - y0_pos);
 

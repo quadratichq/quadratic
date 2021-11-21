@@ -1,5 +1,6 @@
 import Globals from "../../globals";
 import Cursor from "./cursor";
+import MultiCursor from "./multiCursor";
 import Input from "./input";
 
 import isAlphaNumeric from "./helpers/isAlphaNumeric";
@@ -8,6 +9,7 @@ import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
 export default class Interaction {
   globals: Globals;
   cursor: Cursor;
+  multiCursor: MultiCursor;
   input: Input;
 
   constructor(globals: Globals) {
@@ -15,6 +17,7 @@ export default class Interaction {
 
     // Create Cursor
     this.cursor = new Cursor(this.globals);
+    this.multiCursor = new MultiCursor(this.globals);
 
     // Create Input
     this.input = new Input(this.globals, this.cursor);
@@ -116,6 +119,28 @@ export default class Interaction {
 
       // move cursor cell
       this.cursor.moveCursor({ x: cell_x, y: cell_y });
+    });
+
+    this.globals.canvas.addEventListener("mousedown", (event) => {
+      console.log("mousedown", event);
+      const { x, y } = this.globals.viewport.toWorld(event.x, event.y);
+      let cell_x = Math.floor(x / CELL_WIDTH);
+      let cell_y = Math.floor(y / CELL_HEIGHT);
+      this.multiCursor.setOrigin({ x: cell_x, y: cell_y });
+      this.multiCursor.drawCursor();
+    });
+
+    this.globals.canvas.addEventListener("mousemove", (event) => {
+      const { x, y } = this.globals.viewport.toWorld(event.x, event.y);
+      let cell_x = Math.sign(x) * Math.ceil(Math.abs(x) / CELL_WIDTH);
+      let cell_y = Math.sign(y) * Math.ceil(Math.abs(y) / CELL_HEIGHT);
+      this.multiCursor.moveCursor({ x: cell_x, y: cell_y });
+      console.log({ x, y });
+    });
+
+    this.globals.canvas.addEventListener("mouseup", (event) => {
+      console.log("mouseup", event);
+      this.multiCursor.undrawCursor();
     });
   }
 }
