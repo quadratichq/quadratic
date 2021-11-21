@@ -50,7 +50,7 @@ export default function App() {
         .drag({ pressDrag: false })
         .decelerate()
         .pinch()
-        .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.4 });
+        .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2 });
 
       drawGrid(viewport);
 
@@ -88,7 +88,7 @@ export default function App() {
 
   React.useEffect(() => {
     // tell viewport the new screen size,
-    // also updates Culling frame
+    // also updates culling frame
     if (viewport) {
       viewport.screenWidth = windowWidth;
       viewport.screenHeight = windowHeight;
