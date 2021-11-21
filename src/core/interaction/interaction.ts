@@ -95,6 +95,9 @@ export default class Interaction {
 
     // Select Active Cell
     this.globals.viewport.on("clicked", (event) => {
+      // save previous cell
+      this.input.saveCell();
+
       // figure out which cell was clicked
       let cell_x = Math.floor(event.world.x / CELL_WIDTH);
       let cell_y = Math.floor(event.world.y / CELL_HEIGHT);

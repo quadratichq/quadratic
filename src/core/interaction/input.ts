@@ -5,7 +5,7 @@ import Globals from "../../globals";
 import Cursor from "../interaction/cursor";
 
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-import { updateCells } from "../api/APIClient";
+import { deleteCells, updateCells } from "../api/APIClient";
 export default class GridInput {
   globals: Globals;
   cursor: Cursor;
@@ -104,14 +104,23 @@ export default class GridInput {
   saveCell() {
     // Triggered after editing a cell
     // Calls API to update cell.
-    updateCells([
-      {
-        x: this.cursor.location.x,
-        y: this.cursor.location.y,
-        input_type: "TEXT",
-        input_value: this.input.text,
-      },
-    ]);
+    if (this.input.text === "") {
+      deleteCells([
+        {
+          x: this.cursor.location.x,
+          y: this.cursor.location.y,
+        },
+      ]);
+    } else {
+      updateCells([
+        {
+          x: this.cursor.location.x,
+          y: this.cursor.location.y,
+          input_type: "TEXT",
+          input_value: this.input.text,
+        },
+      ]);
+    }
   }
 
   moveInputToCursor() {
