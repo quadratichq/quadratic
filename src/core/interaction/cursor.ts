@@ -5,7 +5,7 @@ import CellReference from "../types/cellReference";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
 import singleCellHighlight from "../graphics/primatives/singleCellHighlight";
 
-export default class Interaction {
+export default class Cursor {
   globals: Globals;
   cursor_pixi: Graphics;
   location: CellReference;
