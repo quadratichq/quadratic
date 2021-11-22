@@ -4,7 +4,7 @@ import Input from "./input";
 
 import isAlphaNumeric from "./helpers/isAlphaNumeric";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-
+import { pasteFromClipboard } from "./clipboard";
 export default class Interaction {
   globals: Globals;
   cursor: Cursor;
@@ -31,6 +31,10 @@ export default class Interaction {
     // General keydown listener when user is interacting with The Grid
     this.globals.canvas.addEventListener("keydown", (event) => {
       // TODO: if cursor goes off screen, move the viewport
+
+      if (event.metaKey) {
+        return;
+      }
 
       if (event.key === "ArrowUp") {
         this.cursor.moveCursor({
@@ -116,6 +120,21 @@ export default class Interaction {
 
       // move cursor cell
       this.cursor.moveCursor({ x: cell_x, y: cell_y });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      // clipboard
+      console.log(event);
+      if (event.metaKey && event.code === "KeyV") {
+        console.log("mac + v detected ");
+        pasteFromClipboard(
+          {
+            x: this.cursor.location.x,
+            y: this.cursor.location.y,
+          },
+          this.globals.grid
+        );
+      }
     });
   }
 }
