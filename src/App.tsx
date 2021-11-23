@@ -50,7 +50,7 @@ export default function App() {
         .drag({ pressDrag: false })
         .decelerate()
         .pinch()
-        .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.4 });
+        .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2 });
 
       drawGrid(viewport);
 

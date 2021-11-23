@@ -5,7 +5,7 @@ import Input from "./input";
 
 import isAlphaNumeric from "./helpers/isAlphaNumeric";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-
+import { pasteFromClipboard } from "./clipboard";
 export default class Interaction {
   globals: Globals;
   cursor: Cursor;
@@ -33,7 +33,10 @@ export default class Interaction {
 
     // General keydown listener when user is interacting with The Grid
     this.globals.canvas.addEventListener("keydown", (event) => {
-      // TODO: if cursor goes off screen, move the viewport
+      // Prevent these commands if "command" key is being pressed
+      if (event.metaKey) {
+        return;
+      }
 
       if (event.key === "ArrowUp") {
         this.cursor.moveCursor({
@@ -141,6 +144,20 @@ export default class Interaction {
     this.globals.canvas.addEventListener("mouseup", (event) => {
       console.log("mouseup", event);
       this.multiCursor.undrawCursor();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      // Command + V
+      // TODO make commands work cross platform
+      if (event.metaKey && event.code === "KeyV") {
+        pasteFromClipboard(
+          {
+            x: this.cursor.location.x,
+            y: this.cursor.location.y,
+          },
+          this.globals.grid
+        );
+      }
     });
   }
 }
