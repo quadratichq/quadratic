@@ -122,10 +122,9 @@ export default class Interaction {
     });
 
     document.addEventListener("keydown", (event) => {
-      // clipboard
-      console.log(event);
+      // Command + V
+      // TODO make commands work cross platform
       if (event.metaKey && event.code === "KeyV") {
-        console.log("mac + v detected ");
         pasteFromClipboard(
           {
             x: this.cursor.location.x,
