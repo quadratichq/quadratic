@@ -101,27 +101,16 @@ export default class Interaction {
 
     // Select Active Cell
     this.globals.viewport.on("clicked", (event) => {
-      // double check visible text is what is saved
-      // save previous cell
-      this.input.input.text =
-        this.globals.grid.getCell({
-          x: this.cursor.location.x,
-          y: this.cursor.location.y,
-        })?.bitmap_text.text || "";
-      this.input.saveCell();
-
       // figure out which cell was clicked
       let cell_x = Math.floor(event.world.x / CELL_WIDTH);
       let cell_y = Math.floor(event.world.y / CELL_HEIGHT);
-      // set input text to visible text
-      this.input.input.text =
-        this.globals.grid.getCell({
-          x: cell_x,
-          y: cell_y,
-        })?.bitmap_text.text || "";
 
+      // save previous cell
+      this.input.syncInputAndGrid();
+      this.input.saveCell();
       // move cursor cell
       this.cursor.moveCursor({ x: cell_x, y: cell_y });
+      this.input.moveInputToCursor();
     });
 
     this.globals.canvas.addEventListener("mousedown", (event) => {
