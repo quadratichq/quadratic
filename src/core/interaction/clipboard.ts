@@ -19,6 +19,7 @@ export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
         // draw cell
         grid.createOrUpdateCell({ x: cell_x, y: cell_y }, str_cell);
 
+        // TODO: modify to use single APICall after loop.
         // update cell on API
         updateCells([
           {
