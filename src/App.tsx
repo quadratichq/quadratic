@@ -9,14 +9,16 @@ import drawGrid from "./core/graphics/drawGrid";
 import Interaction from "./core/interaction/interaction";
 import Grid from "./core/grid/Grid";
 import Globals from "./globals";
+import { loadCells } from "./core/api/Loader";
+
+let viewport: Viewport;
 
 export default function App() {
   const ref = React.useRef<HTMLDivElement>(null);
-
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
-  console.log("height", windowHeight, "width", windowWidth);
 
   React.useEffect(() => {
+    // Create Pixi App
     const app = new Application({
       resizeTo: window,
       resolution: window.devicePixelRatio,
@@ -31,7 +33,7 @@ export default function App() {
 
     function startup() {
       // create viewport
-      const viewport = new Viewport({
+      viewport = new Viewport({
         screenWidth: window.innerWidth,
         screenHeight: window.innerHeight,
         worldWidth: 1000,
@@ -48,24 +50,16 @@ export default function App() {
         .drag({ pressDrag: false })
         .decelerate()
         .pinch()
-        .wheel({ trackpadPinch: true, wheelZoom: false });
+        .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2 });
 
       drawGrid(viewport);
 
       let grid = new Grid(viewport);
 
-      grid.createOrUpdateCell({ x: 1, y: 0 }, "World");
-
-      // Fill Cells dummy information
-      for (let i = 0; i < 100; i++) {
-        let x = i % 10;
-        let y = Math.floor(i / 10);
-
-        grid.createOrUpdateCell({ x: x, y: y }, `Cell ${x} ${y}`);
-      }
-      grid.getCell({ x: 0, y: 0 });
-
       const globals = new Globals(viewport, app.view, grid);
+
+      // Load data from server
+      loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals);
 
       let interaction = new Interaction(globals);
       interaction.makeInteractive();
@@ -77,10 +71,7 @@ export default function App() {
 
       // Culling
       const cull = new Simple();
-      cull.addList(viewport.children);
-      cull.cull(viewport.getVisibleBounds()); // TODO: Recalculate on screen resize
-
-      // cull whenever the viewport moves
+      cull.addList(viewport.children); // TODO update on children change?
       Ticker.shared.add(() => {
         if (viewport.dirty) {
           cull.cull(viewport.getVisibleBounds());
@@ -94,6 +85,15 @@ export default function App() {
       app.destroy(true, true);
     };
   }, []);
+
+  React.useEffect(() => {
+    // tell viewport the new screen size,
+    // also updates culling frame
+    if (viewport) {
+      viewport.screenWidth = windowWidth;
+      viewport.screenHeight = windowHeight;
+    }
+  }, [windowWidth, windowHeight]);
 
   return <div ref={ref} />;
 }

@@ -4,7 +4,7 @@ import Input from "./input";
 
 import isAlphaNumeric from "./helpers/isAlphaNumeric";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-
+import { pasteFromClipboard } from "./clipboard";
 export default class Interaction {
   globals: Globals;
   cursor: Cursor;
@@ -30,7 +30,10 @@ export default class Interaction {
 
     // General keydown listener when user is interacting with The Grid
     this.globals.canvas.addEventListener("keydown", (event) => {
-      // TODO: if cursor goes off screen, move the viewport
+      // Prevent these commands if "command" key is being pressed
+      if (event.metaKey) {
+        return;
+      }
 
       if (event.key === "ArrowUp") {
         this.cursor.moveCursor({
@@ -85,19 +88,51 @@ export default class Interaction {
       // if key is a letter or enter start taking input
       if (isAlphaNumeric(event.key)) {
         this.input.moveInputToCursor();
+        // Start off input with first key pressed.
+        // Make sure grid updates visually with this key.
         this.input.input.text = event.key;
+        this.input.syncInputAndGrid();
         event.preventDefault();
       }
     });
 
     // Select Active Cell
     this.globals.viewport.on("clicked", (event) => {
+      // double check visible text is what is saved
+      // save previous cell
+      this.input.input.text =
+        this.globals.grid.getCell({
+          x: this.cursor.location.x,
+          y: this.cursor.location.y,
+        })?.bitmap_text.text || "";
+      this.input.saveCell();
+
       // figure out which cell was clicked
       let cell_x = Math.floor(event.world.x / CELL_WIDTH);
       let cell_y = Math.floor(event.world.y / CELL_HEIGHT);
+      // set input text to visible text
+      this.input.input.text =
+        this.globals.grid.getCell({
+          x: cell_x,
+          y: cell_y,
+        })?.bitmap_text.text || "";
 
       // move cursor cell
       this.cursor.moveCursor({ x: cell_x, y: cell_y });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      // Command + V
+      // TODO make commands work cross platform
+      if (event.metaKey && event.code === "KeyV") {
+        pasteFromClipboard(
+          {
+            x: this.cursor.location.x,
+            y: this.cursor.location.y,
+          },
+          this.globals.grid
+        );
+      }
     });
   }
 }

@@ -6,7 +6,7 @@ import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 
 import colors from "../../../utils/colors.js";
 
-const highlightCell = (cell: CellReference, type: string): Graphics => {
+const singleCellHighlight = (cell: CellReference, type: string): Graphics => {
   const x_pos = cell.x * CELL_WIDTH;
   const y_pos = cell.y * CELL_HEIGHT;
   // highlight cell
@@ -24,4 +24,4 @@ const highlightCell = (cell: CellReference, type: string): Graphics => {
   return cell_outline;
 };
 
-export default highlightCell;
+export default singleCellHighlight;

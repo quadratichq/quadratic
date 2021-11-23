@@ -2,17 +2,17 @@ import type { Graphics } from "pixi.js";
 import type Globals from "../../globals";
 
 import CellReference from "../types/cellReference";
-import highlightCell from "../../core/graphics/cells/highlightCell";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
+import singleCellHighlight from "../graphics/primatives/singleCellHighlight";
 
-export default class Interaction {
+export default class Cursor {
   globals: Globals;
   cursor_pixi: Graphics;
   location: CellReference;
 
   constructor(globals: Globals) {
     this.globals = globals;
-    this.cursor_pixi = highlightCell({ x: 0, y: 0 }, "cursor");
+    this.cursor_pixi = singleCellHighlight({ x: 0, y: 0 }, "cursor");
     this.location = { x: 0, y: 0 };
   }
 
