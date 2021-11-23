@@ -30,6 +30,7 @@ export default class Interaction {
 
     // General keydown listener when user is interacting with The Grid
     this.globals.canvas.addEventListener("keydown", (event) => {
+      // Prevent these commands if "command" key is being pressed
       if (event.metaKey) {
         return;
       }
