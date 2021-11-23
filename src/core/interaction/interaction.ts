@@ -30,8 +30,6 @@ export default class Interaction {
 
     // General keydown listener when user is interacting with The Grid
     this.globals.canvas.addEventListener("keydown", (event) => {
-      // TODO: if cursor goes off screen, move the viewport
-
       if (event.metaKey) {
         return;
       }
