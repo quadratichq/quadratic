@@ -29,6 +29,7 @@ export default class Cursor {
 
     this.cursor_pixi.x = location.x * CELL_WIDTH;
     this.cursor_pixi.y = location.y * CELL_HEIGHT;
+    this.cursor_pixi.visible = true;
 
     // ensure the cursor remains visible when moving past the edges of the screen
     this.globals.viewport.ensureVisible(

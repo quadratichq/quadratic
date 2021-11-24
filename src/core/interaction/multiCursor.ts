@@ -8,16 +8,21 @@ import multipleCellHighlight from "../graphics/primatives/multipleCellHighlight"
 export default class MultiCursor {
   globals: Globals;
   cursor_pixi: Graphics;
-  location: CellReference;
+  originLocation: CellReference;
+  terminalLocation: CellReference;
+  isInteractive: Boolean;
 
   constructor(globals: Globals) {
     this.globals = globals;
     this.cursor_pixi = multipleCellHighlight({ x: 0, y: 0 }, { x: 25, y: 25 });
-    this.location = { x: 0, y: 0 };
+    this.originLocation = { x: 0, y: 0 };
+    this.terminalLocation = { x: 0, y: 0 };
+    this.isInteractive = false;
   }
 
   drawCursor() {
     this.globals.viewport.addChild(this.cursor_pixi);
+    this.cursor_pixi.visible = true;
   }
 
   undrawCursor() {
@@ -27,21 +32,14 @@ export default class MultiCursor {
   setOrigin(location: CellReference) {
     this.cursor_pixi.x = location.x * CELL_WIDTH;
     this.cursor_pixi.y = location.y * CELL_HEIGHT;
+    this.originLocation = location;
+    this.cursor_pixi.width = 0;
+    this.cursor_pixi.height = 0;
   }
 
-  moveCursor(location: CellReference) {
-    this.location = location;
-
+  setTerminalCell(location: CellReference) {
+    this.terminalLocation = location;
     this.cursor_pixi.width = location.x * CELL_WIDTH - this.cursor_pixi.x;
     this.cursor_pixi.height = location.y * CELL_HEIGHT - this.cursor_pixi.y;
-
-    // ensure the cursor remains visible when moving past the edges of the screen
-    // this.globals.viewport.ensureVisible(
-    //   this.cursor_pixi.x,
-    //   this.cursor_pixi.y,
-    //   this.cursor_pixi.width,
-    //   this.cursor_pixi.height,
-    //   false
-    // );
   }
 }

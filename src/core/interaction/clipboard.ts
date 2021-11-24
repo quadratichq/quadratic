@@ -40,3 +40,36 @@ export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
     });
   });
 };
+
+export const copyToClipboard = (
+  cell0: CellReference,
+  cell1: CellReference,
+  grid: Grid
+) => {
+  // write selected cells to clipboard
+
+  const cWidth = Math.abs(cell1.x - cell0.x);
+  const cHeight = Math.abs(cell1.y - cell0.y);
+
+  let clipboardString = "";
+
+  for (let offset_y = 0; offset_y < cHeight; offset_y++) {
+    if (offset_y > 0) {
+      clipboardString += "\n";
+    }
+
+    for (let offset_x = 0; offset_x < cWidth; offset_x++) {
+      let cell_x = cell0.x + offset_x;
+      let cell_y = cell0.y + offset_y;
+
+      if (offset_x > 0) {
+        clipboardString += "\t";
+      }
+
+      clipboardString +=
+        grid.getCell({ x: cell_x, y: cell_y })?.bitmap_text.text || "";
+    }
+  }
+
+  navigator.clipboard.writeText(clipboardString);
+};
