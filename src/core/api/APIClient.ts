@@ -5,7 +5,7 @@ import APIDeleteCell from "./interfaces/APIDeleteCell";
 
 const axios = require("axios").default;
 
-export const getCells = async (
+export const apiGetCells = async (
   point0: CellReference,
   point1: CellReference
 ): Promise<APICell[] | null> => {
@@ -20,7 +20,7 @@ export const getCells = async (
   return null;
 };
 
-export const updateCells = async (
+export const apiUpdateCells = async (
   cells: APICell[]
 ): Promise<APICell[] | null> => {
   try {
@@ -32,7 +32,7 @@ export const updateCells = async (
   return null;
 };
 
-export const deleteCells = async (cells: APIDeleteCell[]): Promise<null> => {
+export const apiDeleteCells = async (cells: APIDeleteCell[]): Promise<null> => {
   try {
     const { data } = await axios.post(`${API_URL}/grid/cells/delete/`, cells);
     return data;

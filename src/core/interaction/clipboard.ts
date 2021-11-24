@@ -1,7 +1,8 @@
 import Grid from "../grid/Grid";
 import CellReference from "../types/cellReference";
-import { updateCells } from "../api/APIClient";
+import { apiDeleteCells, apiUpdateCells } from "../api/APIClient";
 import APICell from "../api/interfaces/APICell";
+import APIDeleteCell from "../api/interfaces/APIDeleteCell";
 
 export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
   // get contents from clipboard
@@ -11,6 +12,7 @@ export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
 
     // build api payload
     let api_cells_to_write: APICell[] = [];
+    let api_cells_to_delete: APIDeleteCell[] = [];
 
     let str_rows: string[] = text.split("\n");
 
@@ -20,16 +22,24 @@ export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
 
       // for each copied cell
       str_cells.forEach((str_cell) => {
-        // draw cell
-        grid.createOrUpdateCell({ x: cell_x, y: cell_y }, str_cell);
-
-        // update cell on API
-        api_cells_to_write.push({
-          x: cell_x,
-          y: cell_y,
-          input_type: "TEXT",
-          input_value: str_cell,
-        });
+        // update or clear cell
+        if (str_cell !== "") {
+          // draw updated cell
+          grid.createOrUpdateCell({ x: cell_x, y: cell_y }, str_cell);
+          // update cell on API
+          api_cells_to_write.push({
+            x: cell_x,
+            y: cell_y,
+            input_type: "TEXT",
+            input_value: str_cell,
+          });
+        } else {
+          grid.destroyCell({ x: cell_x, y: cell_y });
+          api_cells_to_delete.push({
+            x: cell_x,
+            y: cell_y,
+          });
+        }
 
         // move to next cell
         cell_x += 1;
@@ -39,8 +49,10 @@ export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
       cell_y += 1;
       cell_x = pasteToCell.x;
     });
-    // bulk update cells on api
-    updateCells(api_cells_to_write);
+
+    // bulk update and delete cells on api
+    apiUpdateCells(api_cells_to_write);
+    apiDeleteCells(api_cells_to_delete);
   });
 };
 
