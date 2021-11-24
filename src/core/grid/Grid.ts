@@ -35,6 +35,20 @@ export default class Grid {
     }
   }
 
+  destroyCells(cell0: CellReference, cell1: CellReference) {
+    const cWidth = Math.abs(cell1.x - cell0.x);
+    const cHeight = Math.abs(cell1.y - cell0.y);
+
+    for (let offset_y = 0; offset_y < cHeight; offset_y++) {
+      for (let offset_x = 0; offset_x < cWidth; offset_x++) {
+        let cell_x = cell0.x + offset_x;
+        let cell_y = cell0.y + offset_y;
+
+        this.destroyCell({ x: cell_x, y: cell_y });
+      }
+    }
+  }
+
   createOrUpdateCell(location: CellReference, text: string) {
     let cell: Cell | null = this.getCell(location);
 

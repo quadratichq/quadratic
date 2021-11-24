@@ -81,10 +81,16 @@ export default class Interaction {
       }
 
       if (event.key === "Backspace") {
-        this.globals.grid.destroyCell({
-          x: this.cursor.location.x,
-          y: this.cursor.location.y,
-        });
+        this.globals.grid.destroyCells(
+          {
+            x: this.multiCursor.originLocation.x,
+            y: this.multiCursor.originLocation.y,
+          },
+          {
+            x: this.multiCursor.terminalLocation.x,
+            y: this.multiCursor.terminalLocation.y,
+          }
+        );
         event.preventDefault();
       }
 
@@ -110,7 +116,7 @@ export default class Interaction {
       this.multiCursor.drawCursor();
       this.multiCursor.isInteractive = true;
 
-      // // save previous cell
+      // save previous cell
       this.input.moveInputToCursor();
       this.input.saveCell();
 
