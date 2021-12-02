@@ -10,6 +10,7 @@ import Interaction from "./core/interaction/interaction";
 import Grid from "./core/grid/Grid";
 import Globals from "./globals";
 import { loadCells } from "./core/api/Loader";
+import { CellTypeSelector } from "./core/interaction/menus/CellTypeSelector";
 
 let viewport: Viewport;
 
@@ -95,7 +96,12 @@ export default function App() {
     }
   }, [windowWidth, windowHeight]);
 
-  return <div ref={ref} />;
+  return (
+    <div>
+      <div ref={ref}></div>
+      <CellTypeSelector></CellTypeSelector>
+    </div>
+  );
 }
 
 // Prevent window zooming on Chrome
