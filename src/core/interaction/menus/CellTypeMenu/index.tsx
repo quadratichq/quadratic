@@ -12,7 +12,7 @@ import {
 
 import "./styles.css";
 
-export function CellTypeSelector() {
+export function CellTypeMenu() {
   return (
     <Card elevation={1} className="container">
       {/* <CardHeader title="Select Cell Type"></CardHeader> */}
