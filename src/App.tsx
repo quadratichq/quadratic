@@ -10,6 +10,7 @@ import Interaction from "./core/interaction/interaction";
 import Grid from "./core/grid/Grid";
 import Globals from "./globals";
 import { loadCells } from "./core/api/Loader";
+import { loadPython } from "./core/commands/python/loadPython";
 
 let viewport: Viewport;
 
@@ -59,7 +60,12 @@ export default function App() {
       const globals = new Globals(viewport, app.view, grid);
 
       // Load data from server
-      loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals);
+      loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals).then(
+        () => {
+          // Python
+          loadPython(grid.data);
+        }
+      );
 
       let interaction = new Interaction(globals);
       interaction.makeInteractive();
