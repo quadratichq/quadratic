@@ -9,30 +9,29 @@ import { apiUpdateCells } from "../api/APIClient";
 export default class GridInput {
   globals: Globals;
   cursor: Cursor;
-  input: any;
+  input: TextInput;
 
   constructor(globals: Globals, cursor: Cursor) {
     this.globals = globals;
     this.cursor = cursor;
     // @ts-ignore
-    let input = new TextInput({
+    this.input = new TextInput({
       input: {
         // fontFamily: "OpenSans",
         fontSize: "14px",
         padding: "12px",
       },
     });
+    this.globals.viewport.addChild(this.input);
 
-    this.input = input;
-    this.globals.viewport.addChild(input);
+    this.input.alpha = 0;
 
-    input.alpha = 0;
-
-    input.on("input", (text: string) => {
+    this.input.on("input", (text: string) => {
+      console.log("update input");
       this.setGridToInput();
     });
 
-    input.on("keydown", (keycode: number) => {
+    this.input.on("keydown", (keycode: number) => {
       // if enter is pressed
       if (keycode === 13) {
         this.saveCell();
@@ -48,7 +47,7 @@ export default class GridInput {
       if (keycode === 27) {
         this.saveCell();
         // cleanup
-        input.text = "";
+        this.input.text = "";
         // this.globals.viewport.removeChild(input);
         this.globals.canvas.focus();
       }
@@ -134,6 +133,7 @@ export default class GridInput {
     }
 
     // input.placeholder = "Type or press'/'";
+    this.input.visible = true;
     this.input.x = 0.38 + cell_x * CELL_WIDTH;
     this.input.y = 0.44 + cell_y * CELL_HEIGHT;
     this.input.width = 100;
