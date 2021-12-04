@@ -51,18 +51,6 @@ export default class GridInput {
         // this.globals.viewport.removeChild(input);
         this.globals.canvas.focus();
       }
-      // tab
-      if (keycode === 9) {
-        this.saveCell();
-        // focus input one to the right
-        cursor.moveCursor({
-          x: cursor.location.x + 1,
-          y: cursor.location.y,
-        });
-        this.moveInputToCursor();
-
-        // TODO: this moves focus to the URL bar, we need to prevent this
-      }
 
       // upArrow
       if (keycode === 38) {
