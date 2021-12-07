@@ -11,6 +11,7 @@ import Grid from "./core/grid/Grid";
 import Globals from "./globals";
 import { loadCells } from "./core/api/Loader";
 import { CellTypeMenu } from "./core/interaction/menus/CellTypeMenu";
+import { ZoomCulling } from "./core/graphics/zoomCulling";
 
 let viewport: Viewport;
 
@@ -51,13 +52,13 @@ export default function App() {
         .drag({ pressDrag: false })
         .decelerate()
         .pinch()
-        .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2 });
+        .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2.5 });
 
-      drawGrid(viewport);
+      let grid_ui = drawGrid(viewport);
 
       let grid = new Grid(viewport);
 
-      const globals = new Globals(viewport, app.view, grid);
+      const globals = new Globals(viewport, app.view, grid, grid_ui);
 
       // Load data from server
       loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals);
@@ -67,7 +68,9 @@ export default function App() {
 
       // FPS log
       // app.ticker.add(function (time) {
-      //   console.log(app.ticker.FPS);
+      //   if (app.ticker.FPS < 50) {
+      //     console.log(app.ticker.FPS);
+      //   }
       // });
 
       // Culling
@@ -76,7 +79,9 @@ export default function App() {
       Ticker.shared.add(() => {
         if (viewport.dirty) {
           cull.cull(viewport.getVisibleBounds());
-          viewport.dirty = false;
+
+          // Zoom culling
+          ZoomCulling(globals);
         }
       });
     }
