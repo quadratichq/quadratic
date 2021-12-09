@@ -88,7 +88,7 @@ export default function App() {
 
   React.useEffect(() => {
     // tell viewport the new screen size,
-    // also updates culling frame
+    // also updates Culling frame
     if (viewport) {
       viewport.screenWidth = windowWidth;
       viewport.screenHeight = windowHeight;

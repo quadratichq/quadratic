@@ -1,13 +1,15 @@
 import Globals from "../../globals";
 import Cursor from "./cursor";
+import MultiCursor from "./multiCursor";
 import Input from "./input";
 
 import isAlphaNumeric from "./helpers/isAlphaNumeric";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-import { pasteFromClipboard } from "./clipboard";
+import { copyToClipboard, pasteFromClipboard } from "./clipboard";
 export default class Interaction {
   globals: Globals;
   cursor: Cursor;
+  multiCursor: MultiCursor;
   input: Input;
 
   constructor(globals: Globals) {
@@ -15,6 +17,7 @@ export default class Interaction {
 
     // Create Cursor
     this.cursor = new Cursor(this.globals);
+    this.multiCursor = new MultiCursor(this.globals);
 
     // Create Input
     this.input = new Input(this.globals, this.cursor);
@@ -78,10 +81,16 @@ export default class Interaction {
       }
 
       if (event.key === "Backspace") {
-        this.globals.grid.destroyCell({
-          x: this.cursor.location.x,
-          y: this.cursor.location.y,
-        });
+        this.globals.grid.destroyCells(
+          {
+            x: this.multiCursor.originLocation.x,
+            y: this.multiCursor.originLocation.y,
+          },
+          {
+            x: this.multiCursor.terminalLocation.x,
+            y: this.multiCursor.terminalLocation.y,
+          }
+        );
         event.preventDefault();
       }
 
@@ -91,44 +100,75 @@ export default class Interaction {
         // Start off input with first key pressed.
         // Make sure grid updates visually with this key.
         this.input.input.text = event.key;
-        this.input.syncInputAndGrid();
+        this.input.setGridToInput();
         event.preventDefault();
       }
     });
 
-    // Select Active Cell
-    this.globals.viewport.on("clicked", (event) => {
-      // double check visible text is what is saved
+    this.globals.canvas.addEventListener("mousedown", (event) => {
+      const { x, y } = this.globals.viewport.toWorld(event.x, event.y);
+      let cell_x = Math.floor(x / CELL_WIDTH);
+      let cell_y = Math.floor(y / CELL_HEIGHT);
+
+      // set multiCell origin, draw it, make it interactive
+      this.multiCursor.setOrigin({ x: cell_x, y: cell_y });
+      this.multiCursor.setTerminalCell({ x: cell_x, y: cell_y });
+      this.multiCursor.drawCursor();
+      this.multiCursor.isInteractive = true;
+
       // save previous cell
-      this.input.input.text =
-        this.globals.grid.getCell({
-          x: this.cursor.location.x,
-          y: this.cursor.location.y,
-        })?.bitmap_text.text || "";
+      this.input.moveInputToCursor();
       this.input.saveCell();
 
-      // figure out which cell was clicked
-      let cell_x = Math.floor(event.world.x / CELL_WIDTH);
-      let cell_y = Math.floor(event.world.y / CELL_HEIGHT);
-      // set input text to visible text
-      this.input.input.text =
-        this.globals.grid.getCell({
-          x: cell_x,
-          y: cell_y,
-        })?.bitmap_text.text || "";
+      // move single cursor to origin cell
+      this.cursor.moveCursor({
+        x: this.multiCursor.originLocation.x,
+        y: this.multiCursor.originLocation.y,
+      });
+    });
 
-      // move cursor cell
-      this.cursor.moveCursor({ x: cell_x, y: cell_y });
+    this.globals.canvas.addEventListener("mousemove", (event) => {
+      if (this.multiCursor.isInteractive) {
+        // if mouse left click is down
+        if (event.buttons) {
+          const { x, y } = this.globals.viewport.toWorld(event.x, event.y);
+          let cell_x = Math.sign(x) * Math.ceil(Math.abs(x) / CELL_WIDTH);
+          let cell_y = Math.sign(y) * Math.ceil(Math.abs(y) / CELL_HEIGHT);
+          this.multiCursor.setTerminalCell({ x: cell_x, y: cell_y });
+        } else {
+          this.multiCursor.isInteractive = false;
+        }
+      }
+    });
+
+    this.globals.canvas.addEventListener("mouseup", (event) => {
+      this.multiCursor.isInteractive = false;
     });
 
     document.addEventListener("keydown", (event) => {
-      // Command + V
       // TODO make commands work cross platform
+
+      // Command + V
       if (event.metaKey && event.code === "KeyV") {
         pasteFromClipboard(
           {
             x: this.cursor.location.x,
             y: this.cursor.location.y,
+          },
+          this.globals.grid
+        );
+      }
+
+      // Command + C
+      if (event.metaKey && event.code === "KeyC") {
+        copyToClipboard(
+          {
+            x: this.multiCursor.originLocation.x,
+            y: this.multiCursor.originLocation.y,
+          },
+          {
+            x: this.multiCursor.terminalLocation.x,
+            y: this.multiCursor.terminalLocation.y,
           },
           this.globals.grid
         );
