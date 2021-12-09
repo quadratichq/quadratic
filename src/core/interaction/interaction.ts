@@ -142,8 +142,6 @@ export default class Interaction {
     });
 
     document.addEventListener("keydown", (event) => {
-      // TODO make commands work cross platform
-
       if (event.key === "Tab") {
         // save previous cell
         this.input.moveInputToCursor();
@@ -159,6 +157,7 @@ export default class Interaction {
         event.preventDefault();
       }
 
+      // TODO make commands work cross platform
       // Command + V
       if (event.metaKey && event.code === "KeyV") {
         pasteFromClipboard(

@@ -27,7 +27,6 @@ export default class GridInput {
     this.input.alpha = 0;
 
     this.input.on("input", (text: string) => {
-      console.log("update input");
       this.setGridToInput();
     });
 
