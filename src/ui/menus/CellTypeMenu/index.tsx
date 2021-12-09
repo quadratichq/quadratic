@@ -15,7 +15,6 @@ import "./styles.css";
 export function CellTypeMenu() {
   return (
     <Card elevation={1} className="container">
-      {/* <CardHeader title="Select Cell Type"></CardHeader> */}
       <CardContent>
         <List dense={true}>
           <ListItem>

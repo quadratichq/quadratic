@@ -10,12 +10,15 @@ import Interaction from "./core/interaction/interaction";
 import Grid from "./core/grid/Grid";
 import Globals from "./globals";
 import { loadCells } from "./core/api/Loader";
-import { CellTypeMenu } from "./core/interaction/menus/CellTypeMenu";
+import { TopBar } from "./ui/menus/TopBar";
+import { CellTypeMenu } from "./ui/menus/CellTypeMenu";
 import { ZoomCulling } from "./core/graphics/zoomCulling";
+import { QuadraticLoading } from "./ui/QuadtraticLoading";
 
 let viewport: Viewport;
 
 export default function App() {
+  const [isLoading, setIsLoading] = React.useState<Boolean>(true);
   const ref = React.useRef<HTMLDivElement>(null);
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 
@@ -52,7 +55,7 @@ export default function App() {
         .drag({ pressDrag: false })
         .decelerate()
         .pinch()
-        .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2.5 });
+        .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2.75 });
 
       let grid_ui = drawGrid(viewport);
 
@@ -84,6 +87,8 @@ export default function App() {
           ZoomCulling(globals);
         }
       });
+
+      setIsLoading(false);
     }
 
     return () => {
@@ -101,12 +106,26 @@ export default function App() {
     }
   }, [windowWidth, windowHeight]);
 
-  return (
-    <div>
-      <div ref={ref}></div>
-      <CellTypeMenu></CellTypeMenu>
-    </div>
-  );
+  if (isLoading) {
+    return (
+      <div
+        style={{ height: "100%", display: "flex", justifyContent: "center" }}
+      >
+        <div style={{ display: "none" }} ref={ref}></div>
+        <QuadraticLoading></QuadraticLoading>
+      </div>
+    );
+  } else {
+    return (
+      <div
+        style={{ height: "100%", display: "flex", justifyContent: "center" }}
+      >
+        <div ref={ref}></div>
+        <TopBar></TopBar>
+        <CellTypeMenu></CellTypeMenu>
+      </div>
+    );
+  }
 }
 
 // Prevent window zooming on Chrome
