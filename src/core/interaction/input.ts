@@ -114,7 +114,7 @@ export default class GridInput {
     // Move input
     const cell = this.globals.grid.getCell({ x: cell_x, y: cell_y });
     if (this.globals.grid.getCell({ x: cell_x, y: cell_y }) !== null) {
-      this.input.text = cell?.bitmap_text.text;
+      this.input.text = cell?.bitmap_text?.text || "";
     } else {
       this.input.text = "";
     }
