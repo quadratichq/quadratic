@@ -77,7 +77,12 @@ class CellTypeMenu extends Component<{}, CellTypeMenuState> {
   }
 
   open() {
-    this.setState({ visible: true, value: "", selected_value: "text" });
+    this.setState({
+      visible: true,
+      value: "",
+      selected_value: "text",
+      filtered_cell_type_list: CELL_TYPE_OPTIONS,
+    });
   }
 
   get_value() {
