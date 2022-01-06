@@ -22,11 +22,11 @@ export function ZoomCulling(globals: Globals) {
           const cell = grid.data[row][col];
           if (cell && cell.bitmap_text) {
             cell.bitmap_text.visible = true;
-            cell.bitmap_text.alpha = viewport.scale._x * 3;
+            cell.bitmap_text.alpha = viewport.scale._x * 3 - 0.3;
           }
         }
       }
-      grid_ui.alpha = viewport.scale._x * 3;
+      grid_ui.alpha = viewport.scale._x * 3 - 0.3;
       grid_ui.visible = true;
     } else {
       for (const row in grid.data) {
