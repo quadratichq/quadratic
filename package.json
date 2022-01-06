@@ -40,7 +40,9 @@
       "react-app",
       "react-app/jest"
     ]
+    
   },
+  "eslintIgnore": ["node_modules/*"],
   "browserslist": {
     "production": [
       ">0.2%",
