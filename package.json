@@ -33,7 +33,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "dev": "concurrently -k \"BROWSER=none npm start\" \"npm:electron\"",
-    "electron": "wait-on tcp:3000 && electron ."
+    "electron": "electron ."
   },
   "eslintConfig": {
     "extends": [
