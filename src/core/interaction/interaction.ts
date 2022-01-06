@@ -72,6 +72,11 @@ export default class Interaction {
         event.preventDefault();
       }
 
+      if (event.key === "/") {
+        this.globals.cell_type_menu_ref.current?.open();
+        event.preventDefault();
+      }
+
       if (event.key === "Backspace") {
         this.globals.grid.destroyCells(
           {

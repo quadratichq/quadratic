@@ -3,11 +3,11 @@ html,
   box-sizing: border-box;
 }
 
-input[type="text"] {
+/* input[type="text"] {
   font-size: 24px;
   letter-spacing: 1rem;
   font-weight: 500;
-}
+} */
 
 .canvas-wrapper {
   position: fixed;

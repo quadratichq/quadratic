@@ -33,12 +33,12 @@ export const TopBar = () => {
       position="static"
       style={{
         position: "absolute",
-        backgroundColor: "#F5F8FA",
+        backgroundColor: "#FFFFFF",
         color: "#212121",
       }}
       elevation={0}
     >
-      <Container maxWidth="xl">
+      <Container maxWidth={false}>
         <Toolbar variant="dense" style={{ minHeight: "35px" }} disableGutters>
           {/* <Typography
             variant="h6"

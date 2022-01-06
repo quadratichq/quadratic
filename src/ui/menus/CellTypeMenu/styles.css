@@ -1,6 +1,7 @@
 .container {
-  display: none;
   position: absolute;
-  top: 400px;
-  left: 600px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 360px;
 }

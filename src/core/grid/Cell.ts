@@ -11,14 +11,20 @@ export default class Cell {
   viewport: Viewport;
   cell_outline: Graphics;
 
-  constructor(location: CellReference, viewport: Viewport, text: string) {
+  constructor(
+    location: CellReference,
+    viewport: Viewport,
+    text: string,
+    computed: boolean
+  ) {
     this.location = location;
 
     // draw cell
     let { bitmap_text, container, cell_outline } = drawCell(
       viewport,
       location,
-      text
+      text,
+      computed
     );
     this.bitmap_text = bitmap_text;
     this.container = container;

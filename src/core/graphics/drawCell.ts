@@ -14,7 +14,8 @@ interface CellReturn {
 const drawCell = (
   viewport: Viewport,
   cell: CellReference,
-  text: string
+  text: string,
+  computed: boolean
 ): CellReturn => {
   // Calculate X and Y positions
   const x_pos = cell.x * CELL_WIDTH;
@@ -32,7 +33,12 @@ const drawCell = (
   bitmap_text.position.set(x_pos + margin_left, y_pos + margin_top);
 
   // highlight cell
-  let cell_outline = singleCellHighlight(cell, "normal");
+  let cell_outline;
+  if (computed) {
+    cell_outline = singleCellHighlight(cell, "computed");
+  } else {
+    cell_outline = singleCellHighlight(cell, "normal");
+  }
 
   // create Container
   let container = new Container();

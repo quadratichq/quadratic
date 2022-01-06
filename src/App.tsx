@@ -11,7 +11,7 @@ import Grid from "./core/grid/Grid";
 import Globals from "./globals";
 import { loadCells } from "./core/api/Loader";
 import { TopBar } from "./ui/menus/TopBar";
-import { CellTypeMenu } from "./ui/menus/CellTypeMenu";
+import CellTypeMenu from "./ui/menus/CellTypeMenu/";
 import { ZoomCulling } from "./core/graphics/zoomCulling";
 import { QuadraticLoading } from "./ui/QuadtraticLoading";
 
@@ -20,6 +20,7 @@ let viewport: Viewport;
 export default function App() {
   const [isLoading, setIsLoading] = React.useState<Boolean>(true);
   const ref = React.useRef<HTMLDivElement>(null);
+  const cell_type_menu_ref = React.useRef<CellTypeMenu>(null);
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 
   React.useEffect(() => {
@@ -61,7 +62,13 @@ export default function App() {
 
       let grid = new Grid(viewport);
 
-      const globals = new Globals(viewport, app.view, grid, grid_ui);
+      const globals = new Globals(
+        viewport,
+        app.view,
+        grid,
+        grid_ui,
+        cell_type_menu_ref
+      );
 
       // Load data from server
       loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals);
@@ -88,7 +95,9 @@ export default function App() {
         }
       });
 
-      setIsLoading(false);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 3500);
     }
 
     return () => {
@@ -122,7 +131,7 @@ export default function App() {
       >
         <div ref={ref}></div>
         <TopBar></TopBar>
-        <CellTypeMenu></CellTypeMenu>
+        <CellTypeMenu ref={cell_type_menu_ref}></CellTypeMenu>
       </div>
     );
   }
