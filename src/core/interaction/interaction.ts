@@ -73,7 +73,7 @@ export default class Interaction {
       }
 
       if (event.key === "/") {
-        this.globals.cell_type_menu_ref.current?.open();
+        // this.globals.cell_type_menu_ref.current?.open();
         event.preventDefault();
       }
 
