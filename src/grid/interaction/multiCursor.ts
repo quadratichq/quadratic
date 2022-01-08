@@ -1,5 +1,5 @@
 import type { Graphics } from "pixi.js";
-import type Globals from "../../globals";
+import type Globals from "../globals";
 
 import CellReference from "../types/cellReference";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";

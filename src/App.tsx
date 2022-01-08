@@ -4,21 +4,18 @@ import "./styles.css";
 
 import { QuadraticLoading } from "./ui/QuadtraticLoading";
 
-import QuadraticUI from "./ui/QuadraticUI";
-import QuadraticGrid from "./core/QuadraticGrid";
+import QuadraticApp from "./quadratic/QuadraticApp";
 
 export default function App() {
-  const [isLoading, setIsLoading] = React.useState<Boolean>(true);
+  const [isLoading, setIsLoading] = React.useState<boolean>(true);
 
   return (
     <div style={{ height: "100%", display: "flex", justifyContent: "center" }}>
-      {/* Provider of WebGL Canvas and Quadratic Grid */}
-      <QuadraticGrid
+      {/* Provider of QuadraticApp */}
+      <QuadraticApp
         isLoading={isLoading}
         setIsLoading={setIsLoading}
-      ></QuadraticGrid>
-      {/* Provider of All React UI Components */}
-      {!isLoading && <QuadraticUI></QuadraticUI>}
+      ></QuadraticApp>
       {/* Loading screen */}
       {isLoading && <QuadraticLoading></QuadraticLoading>}
     </div>

@@ -1,4 +1,4 @@
-import Globals from "../../globals";
+import Globals from "../globals";
 import Cursor from "./cursor";
 import MultiCursor from "./multiCursor";
 import Input from "./input";

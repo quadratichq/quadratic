@@ -1,4 +1,4 @@
-import Globals from "../../globals";
+import Globals from "../globals";
 
 export function ZoomCulling(globals: Globals) {
   const viewport = globals.viewport;

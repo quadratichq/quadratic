@@ -1,5 +1,5 @@
-import Globals from "../../globals";
-import { apiGetCells } from "../api/APIClient";
+import Globals from "../globals";
+import { apiGetCells } from "./APIClient";
 import CellReference from "../types/cellReference";
 
 export const loadCells = async (

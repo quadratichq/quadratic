@@ -3,19 +3,19 @@ import * as React from "react";
 import { Application, Ticker } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 import { Simple } from "pixi-cull";
-import { ZoomCulling } from "../core/graphics/zoomCulling";
+import { ZoomCulling } from "./graphics/zoomCulling";
 
 import useWindowDimensions from "../utils/useWindowDimensions.js";
-import drawGrid from "../core/graphics/drawGrid";
-import Interaction from "../core/interaction/interaction";
-import Grid from "../core/grid/Grid";
-import Globals from "../globals";
-import { loadCells } from "../core/api/Loader";
+import drawGrid from "./graphics/drawGrid";
+import Interaction from "./interaction/interaction";
+import Grid from "./grid/Grid";
+import Globals from "./globals";
+import { loadCells } from "./api/Loader";
 
 let viewport: Viewport;
 
 interface QuadraticGridProps {
-  isLoading: Boolean;
+  isLoading: boolean;
   setIsLoading: Function;
 }
 
