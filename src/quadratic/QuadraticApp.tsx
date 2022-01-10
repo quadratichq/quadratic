@@ -17,7 +17,7 @@ export default function QuadraticApp(props: QuadraticAppProps) {
     React.useState<boolean>(false);
 
   React.useEffect(() => {
-    setIsOpenCodeEditor(true);
+    setIsOpenCodeEditor(false);
   }, []);
 
   return (

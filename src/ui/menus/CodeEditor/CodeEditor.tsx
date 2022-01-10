@@ -32,7 +32,7 @@ export default function CodeEditor(props: CodeEditorProps) {
 
   return (
     <Drawer anchor="right" open={isOpen}>
-      <Box sx={{ flexGrow: 1, padding: "15px" }}>
+      {/* <Box sx={{ flexGrow: 1, padding: "15px" }}>
         <Grid container spacing={2} columns={16}>
           <Grid item xs={8}>
             <TextField
@@ -68,7 +68,7 @@ export default function CodeEditor(props: CodeEditorProps) {
           </Grid>
         </Grid>
       </Box>
-      <Divider></Divider>
+      <Divider></Divider> */}
       <AceEditor
         mode="python"
         theme="github"
