@@ -1,4 +1,4 @@
-import Globals from "../../globals";
+import Globals from "../globals";
 import Cursor from "./cursor";
 import MultiCursor from "./multiCursor";
 import Input from "./input";
@@ -72,11 +72,8 @@ export default class Interaction {
         event.preventDefault();
       }
 
-      if (event.key === "Tab") {
-        this.cursor.moveCursor({
-          x: this.cursor.location.x + 1,
-          y: this.cursor.location.y,
-        });
+      if (event.key === "/") {
+        // this.globals.cell_type_menu_ref.current?.open();
         event.preventDefault();
       }
 
@@ -91,6 +88,10 @@ export default class Interaction {
             y: this.multiCursor.terminalLocation.y,
           }
         );
+        this.globals.grid.destroyCell({
+          x: this.cursor.location.x,
+          y: this.cursor.location.y,
+        });
         event.preventDefault();
       }
 
@@ -146,8 +147,22 @@ export default class Interaction {
     });
 
     document.addEventListener("keydown", (event) => {
-      // TODO make commands work cross platform
+      if (event.key === "Tab") {
+        // save previous cell
+        this.input.moveInputToCursor();
+        this.input.saveCell();
 
+        this.globals.canvas.focus();
+
+        // move single cursor one right
+        this.cursor.moveCursor({
+          x: this.cursor.location.x + 1,
+          y: this.cursor.location.y,
+        });
+        event.preventDefault();
+      }
+
+      // TODO make commands work cross platform
       // Command + V
       if (event.metaKey && event.code === "KeyV") {
         pasteFromClipboard(

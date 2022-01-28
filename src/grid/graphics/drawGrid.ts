@@ -33,6 +33,7 @@ const drawGrid = function (viewport: Viewport) {
   }
 
   viewport.addChild(grid);
+  return grid;
 };
 
 export default drawGrid;

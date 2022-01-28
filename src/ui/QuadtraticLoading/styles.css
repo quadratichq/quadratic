@@ -1,0 +1,11 @@
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: "100%";
+}
+
+.loadingLogoGif {
+  width: 100px;
+  height: 100px;
+}

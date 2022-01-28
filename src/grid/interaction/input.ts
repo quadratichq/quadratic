@@ -1,38 +1,36 @@
 // @ts-ignore
 import TextInput from "pixi-text-input";
 
-import Globals from "../../globals";
-import Cursor from "../interaction/cursor";
+import Globals from "../globals";
+import Cursor from "./cursor";
 
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
 import { apiUpdateCells } from "../api/APIClient";
 export default class GridInput {
   globals: Globals;
   cursor: Cursor;
-  input: any;
+  input: TextInput;
 
   constructor(globals: Globals, cursor: Cursor) {
     this.globals = globals;
     this.cursor = cursor;
     // @ts-ignore
-    let input = new TextInput({
+    this.input = new TextInput({
       input: {
         // fontFamily: "OpenSans",
         fontSize: "14px",
         padding: "12px",
       },
     });
+    this.globals.viewport.addChild(this.input);
 
-    this.input = input;
-    this.globals.viewport.addChild(input);
+    this.input.alpha = 0;
 
-    input.alpha = 0;
-
-    input.on("input", (text: string) => {
+    this.input.on("input", (text: string) => {
       this.setGridToInput();
     });
 
-    input.on("keydown", (keycode: number) => {
+    this.input.on("keydown", (keycode: number) => {
       // if enter is pressed
       if (keycode === 13) {
         this.saveCell();
@@ -48,21 +46,9 @@ export default class GridInput {
       if (keycode === 27) {
         this.saveCell();
         // cleanup
-        input.text = "";
+        this.input.text = "";
         // this.globals.viewport.removeChild(input);
         this.globals.canvas.focus();
-      }
-      // tab
-      if (keycode === 9) {
-        this.saveCell();
-        // focus input one to the right
-        cursor.moveCursor({
-          x: cursor.location.x + 1,
-          y: cursor.location.y,
-        });
-        this.moveInputToCursor();
-
-        // TODO: this moves focus to the URL bar, we need to prevent this
       }
 
       // upArrow
@@ -128,12 +114,13 @@ export default class GridInput {
     // Move input
     const cell = this.globals.grid.getCell({ x: cell_x, y: cell_y });
     if (this.globals.grid.getCell({ x: cell_x, y: cell_y }) !== null) {
-      this.input.text = cell?.bitmap_text.text;
+      this.input.text = cell?.bitmap_text?.text || "";
     } else {
       this.input.text = "";
     }
 
     // input.placeholder = "Type or press'/'";
+    this.input.visible = true;
     this.input.x = 0.38 + cell_x * CELL_WIDTH;
     this.input.y = 0.44 + cell_y * CELL_HEIGHT;
     this.input.width = 100;

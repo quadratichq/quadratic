@@ -69,7 +69,8 @@ export default class Grid {
       this.data[location.x][location.y] = new Cell(
         { x: location.x, y: location.y },
         this.viewport,
-        text
+        text,
+        false // TODO: Detect if cell is computed.
       );
     } else {
       cell.update(text);

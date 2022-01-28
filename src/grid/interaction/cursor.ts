@@ -1,5 +1,5 @@
 import type { Graphics } from "pixi.js";
-import type Globals from "../../globals";
+import type Globals from "../globals";
 
 import CellReference from "../types/cellReference";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
@@ -27,6 +27,7 @@ export default class Cursor {
   moveCursor(location: CellReference) {
     this.location = location;
 
+    this.cursor_pixi.visible = true;
     this.cursor_pixi.x = location.x * CELL_WIDTH;
     this.cursor_pixi.y = location.y * CELL_HEIGHT;
     this.cursor_pixi.visible = true;

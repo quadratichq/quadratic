@@ -15,6 +15,8 @@ const singleCellHighlight = (cell: CellReference, type: string): Graphics => {
   // set type
   if (type === "cursor") {
     cell_outline.lineStyle(1.5, colors.cursorCell);
+  } else if (type === "computed") {
+    cell_outline.lineStyle(1, colors.independence, 0.9, 0.5, true);
   } else {
     cell_outline.lineStyle(1, colors.cellColorUserText, 0.9, 0.5, true);
   }
