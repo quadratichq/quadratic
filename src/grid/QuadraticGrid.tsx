@@ -1,5 +1,5 @@
 import useWindowDimensions from "../utils/useWindowDimensions.js";
-import { Stage } from "@inlet/react-pixi";
+import { Stage, Text } from "@inlet/react-pixi";
 import ViewportComponent from "./ViewPortComponent";
 
 export default function QuadraticGrid() {
@@ -16,11 +16,13 @@ export default function QuadraticGrid() {
         antialias: true,
         autoDensity: true,
       }}
-      // raf={false} // Disable rendering on each frame, instead render state change (next line)
+      // Disable rendering on each frame, instead render state change (next line)
+      // This causes the problem of never rerendering unless react triggers a rerender
+      // raf={false}
       // renderOnComponentChange={true}
     >
       <ViewportComponent screenWidth={windowWidth} screenHeight={windowHeight}>
-        {/* <Text text="hello world asdf" anchor={0.5} x={150} y={150}></Text> */}
+        <Text text="hello world" anchor={0.5} x={150} y={150}></Text>
       </ViewportComponent>
     </Stage>
   );
