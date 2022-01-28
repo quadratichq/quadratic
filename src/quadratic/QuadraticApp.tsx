@@ -9,8 +9,6 @@ interface QuadraticAppProps {
 }
 
 export default function QuadraticApp(props: QuadraticAppProps) {
-  const { isLoading, setIsLoading } = props;
-
   const [isOpenCellTypeMenu, setIsOpenCellTypeMenu] =
     React.useState<boolean>(false);
   const [isOpenCodeEditor, setIsOpenCodeEditor] =
@@ -23,19 +21,15 @@ export default function QuadraticApp(props: QuadraticAppProps) {
   return (
     <>
       {/* Provider of WebGL Canvas and Quadratic Grid */}
-      <QuadraticGrid
-        isLoading={isLoading}
-        setIsLoading={setIsLoading}
-      ></QuadraticGrid>
+      <QuadraticGrid></QuadraticGrid>
       {/* Provider of All React UI Components */}
-      {!isLoading && (
-        <QuadraticUI
-          isOpenCellTypeMenu={isOpenCellTypeMenu}
-          setIsOpenCellTypeMenu={setIsOpenCellTypeMenu}
-          isOpenCodeEditor={isOpenCodeEditor}
-          setIsOpenCodeEditor={setIsOpenCodeEditor}
-        ></QuadraticUI>
-      )}
+
+      <QuadraticUI
+        isOpenCellTypeMenu={isOpenCellTypeMenu}
+        setIsOpenCellTypeMenu={setIsOpenCellTypeMenu}
+        isOpenCodeEditor={isOpenCodeEditor}
+        setIsOpenCodeEditor={setIsOpenCodeEditor}
+      ></QuadraticUI>
     </>
   );
 }
