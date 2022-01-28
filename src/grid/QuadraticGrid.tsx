@@ -1,5 +1,5 @@
 import useWindowDimensions from "../utils/useWindowDimensions.js";
-import { Stage, Text } from "@inlet/react-pixi";
+import { Stage } from "@inlet/react-pixi";
 import ViewportComponent from "./ViewPortComponent";
 
 export default function QuadraticGrid() {
@@ -22,7 +22,9 @@ export default function QuadraticGrid() {
       // renderOnComponentChange={true}
     >
       <ViewportComponent screenWidth={windowWidth} screenHeight={windowHeight}>
-        <Text text="hello world" anchor={0.5} x={150} y={150}></Text>
+        {/* 
+        TODO: Can add children ReactPixi components for interactive elements such as the cursors 
+        <Text text="hello world" anchor={0.5} x={150} y={150}></Text> */}
       </ViewportComponent>
     </Stage>
   );
