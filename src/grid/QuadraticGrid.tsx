@@ -1,6 +1,6 @@
 import useWindowDimensions from "../utils/useWindowDimensions.js";
 import { Stage } from "@inlet/react-pixi";
-import ViewportComponent from "./ViewPortComponent";
+import ViewportComponent from "./ViewportComponent";
 
 export default function QuadraticGrid() {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
