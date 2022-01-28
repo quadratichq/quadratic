@@ -13,9 +13,9 @@ interface QuadraticUIProps {
 export default function QuadraticUI(props: QuadraticUIProps) {
   const {
     isOpenCellTypeMenu,
-    setIsOpenCellTypeMenu,
+    // setIsOpenCellTypeMenu,
     isOpenCodeEditor,
-    setIsOpenCodeEditor,
+    // setIsOpenCodeEditor,
   } = props;
 
   return (

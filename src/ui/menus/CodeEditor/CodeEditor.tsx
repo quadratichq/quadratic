@@ -1,15 +1,7 @@
 import React from "react";
 
 import AceEditor from "react-ace";
-import {
-  Drawer,
-  Box,
-  Grid,
-  TextField,
-  InputAdornment,
-  Divider,
-} from "@mui/material";
-import GridOn from "@mui/icons-material/GridOn";
+import { Drawer } from "@mui/material";
 
 import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/theme-github";
@@ -24,11 +16,11 @@ interface CodeEditorProps {
 export default function CodeEditor(props: CodeEditorProps) {
   const { isOpen } = props;
 
-  const [inputCells, setInputCells] =
-    React.useState<string>("(0, 0) -> (0, 10)");
-  const [outputCells, setOutputCells] = React.useState<string>("(10, 10)");
+  // const [inputCells, setInputCells] =
+  //   React.useState<string>("(0, 0) -> (0, 10)");
+  // const [outputCells, setOutputCells] = React.useState<string>("(10, 10)");
 
-  const [inputCode, setInputCode] = React.useState<string>("");
+  // const [inputCode, setInputCode] = React.useState<string>("");
 
   return (
     <Drawer anchor="right" open={isOpen}>
@@ -73,7 +65,7 @@ export default function CodeEditor(props: CodeEditorProps) {
         mode="python"
         theme="github"
         defaultValue={PYTHON_EXAMPLE_CODE}
-        onChange={(value) => setInputCode(value)}
+        // onChange={(value) => setInputCode(value)}
         name="UNIQUE_ID_OF_DIV"
         setOptions={{
           enableBasicAutocompletion: true,
