@@ -10,7 +10,7 @@ export default function App() {
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
 
   return (
-    <div style={{ height: "100%", display: "flex", justifyContent: "center" }}>
+    <>
       {/* Provider of QuadraticApp */}
       <QuadraticApp
         isLoading={isLoading}
@@ -18,6 +18,6 @@ export default function App() {
       ></QuadraticApp>
       {/* Loading screen */}
       {isLoading && <QuadraticLoading></QuadraticLoading>}
-    </div>
+    </>
   );
 }

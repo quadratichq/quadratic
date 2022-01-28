@@ -1,15 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 import AceEditor from "react-ace";
-import {
-  Drawer,
-  Box,
-  Grid,
-  TextField,
-  InputAdornment,
-  Divider,
-} from "@mui/material";
-import GridOn from "@mui/icons-material/GridOn";
+import { Drawer } from "@mui/material";
 
 import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/theme-github";
@@ -17,12 +10,8 @@ import "ace-builds/src-noconflict/ext-language_tools";
 
 import { PYTHON_EXAMPLE_CODE } from "./python_example";
 
-interface CodeEditorProps {
-  isOpen: boolean;
-}
-
-export default function CodeEditor(props: CodeEditorProps) {
-  const { isOpen } = props;
+export default function CodeEditor() {
+  let navigate = useNavigate();
 
   const [inputCells, setInputCells] =
     React.useState<string>("(0, 0) -> (0, 10)");
@@ -30,8 +19,13 @@ export default function CodeEditor(props: CodeEditorProps) {
 
   const [inputCode, setInputCode] = React.useState<string>("");
 
+  React.useEffect(() => {
+    console.log("hello asdf");
+    navigate("/cell-type-menu");
+  }, []);
+
   return (
-    <Drawer anchor="right" open={isOpen}>
+    <Drawer anchor="right" open={true}>
       {/* <Box sx={{ flexGrow: 1, padding: "15px" }}>
         <Grid container spacing={2} columns={16}>
           <Grid item xs={8}>

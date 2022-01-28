@@ -14,10 +14,6 @@ import TextField from "@mui/material/TextField";
 
 import "./styles.css";
 
-interface CellTypeMenuProps {
-  isOpen: boolean;
-}
-
 const CELL_TYPE_OPTIONS = [
   {
     key: 0,
@@ -61,10 +57,7 @@ const CELL_TYPE_OPTIONS = [
   },
 ];
 
-export default function CellTypeMenu(props: CellTypeMenuProps) {
-  const { isOpen } = props;
-
-  const [visible, setVisible] = React.useState<boolean>(isOpen);
+export default function CellTypeMenu() {
   const [value, setValue] = React.useState<string>("");
   const [selected_value, setSelectedValue] = React.useState<string | undefined>(
     "text"
@@ -84,10 +77,6 @@ export default function CellTypeMenu(props: CellTypeMenuProps) {
     setValue(value);
   };
 
-  if (!visible) {
-    return null;
-  }
-
   return (
     <Card elevation={1} className="container">
       <CardContent>
@@ -98,10 +87,10 @@ export default function CellTypeMenu(props: CellTypeMenuProps) {
           }}
           onKeyUp={(event) => {
             if (event.key === "Escape") {
-              setVisible(false);
+              // setVisible(false);
             }
             if (event.key === "Enter") {
-              setVisible(false);
+              // setVisible(false);
             }
           }}
           fullWidth
