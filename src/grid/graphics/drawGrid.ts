@@ -12,7 +12,7 @@ const drawGrid = function (viewport: Viewport) {
   // Create a master graphics object
   let grid = new Graphics();
   // Configure Line Style
-  grid.lineStyle(1, colors.gridLines, 0.5, 0.5, true);
+  grid.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
 
   const xoffset = (-CELL_WIDTH * GRID_SIZE) / 2;
   const yoffset = (-CELL_HEIGHT * GRID_SIZE) / 2;
