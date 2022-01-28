@@ -14,19 +14,13 @@ export default function QuadraticApp(props: QuadraticAppProps) {
   // One state, json serializable
   // Actions on state OpenNewCell() -> modifies attributes of state
   // Actions can be passed across users as well to keep users in sync
-
-  const { isLoading, setIsLoading } = props;
-
   return (
     <RecoilRoot>
       <BrowserRouter>
         {/* Provider of WebGL Canvas and Quadratic Grid */}
-        <QuadraticGrid
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-        ></QuadraticGrid>
+        <QuadraticGrid></QuadraticGrid>
         {/* Provider of All React UI Components */}
-        {!isLoading && <QuadraticUI></QuadraticUI>}
+        <QuadraticUI></QuadraticUI>
       </BrowserRouter>
     </RecoilRoot>
   );

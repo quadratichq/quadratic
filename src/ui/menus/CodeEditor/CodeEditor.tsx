@@ -13,11 +13,11 @@ import { PYTHON_EXAMPLE_CODE } from "./python_example";
 export default function CodeEditor() {
   let navigate = useNavigate();
 
-  const [inputCells, setInputCells] =
-    React.useState<string>("(0, 0) -> (0, 10)");
-  const [outputCells, setOutputCells] = React.useState<string>("(10, 10)");
+  // const [inputCells, setInputCells] =
+  //   React.useState<string>("(0, 0) -> (0, 10)");
+  // const [outputCells, setOutputCells] = React.useState<string>("(10, 10)");
 
-  const [inputCode, setInputCode] = React.useState<string>("");
+  // const [inputCode, setInputCode] = React.useState<string>("");
 
   React.useEffect(() => {
     console.log("hello asdf");
@@ -67,7 +67,7 @@ export default function CodeEditor() {
         mode="python"
         theme="github"
         defaultValue={PYTHON_EXAMPLE_CODE}
-        onChange={(value) => setInputCode(value)}
+        // onChange={(value) => setInputCode(value)}
         name="UNIQUE_ID_OF_DIV"
         setOptions={{
           enableBasicAutocompletion: true,
