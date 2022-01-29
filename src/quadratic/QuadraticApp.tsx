@@ -3,7 +3,7 @@ import React from "react";
 import QuadraticUI from "../ui/QuadraticUI";
 import QuadraticGrid from "../grid/QuadraticGrid";
 import { RecoilRoot } from "recoil";
-import { BrowserRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router-dom";
 
 interface QuadraticAppProps {
   isLoading: boolean;
@@ -16,12 +16,12 @@ export default function QuadraticApp(props: QuadraticAppProps) {
   // Actions can be passed across users as well to keep users in sync
   return (
     <RecoilRoot>
-      <BrowserRouter>
+      <MemoryRouter>
         {/* Provider of WebGL Canvas and Quadratic Grid */}
         <QuadraticGrid></QuadraticGrid>
         {/* Provider of All React UI Components */}
         <QuadraticUI></QuadraticUI>
-      </BrowserRouter>
+      </MemoryRouter>
     </RecoilRoot>
   );
 }

@@ -11,6 +11,7 @@ import {
   CardContent,
 } from "@mui/material";
 import TextField from "@mui/material/TextField";
+import { useNavigate } from "react-router-dom";
 
 import "./styles.css";
 
@@ -58,6 +59,7 @@ const CELL_TYPE_OPTIONS = [
 ];
 
 export default function CellTypeMenu() {
+  let navigate = useNavigate();
   const [value, setValue] = React.useState<string>("");
   const [selected_value, setSelectedValue] = React.useState<string | undefined>(
     "text"
@@ -87,10 +89,10 @@ export default function CellTypeMenu() {
           }}
           onKeyUp={(event) => {
             if (event.key === "Escape") {
-              // setVisible(false);
+              navigate(-1);
             }
             if (event.key === "Enter") {
-              // setVisible(false);
+              navigate("/code-editor");
             }
           }}
           fullWidth

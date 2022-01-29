@@ -19,13 +19,18 @@ export default function CodeEditor() {
 
   // const [inputCode, setInputCode] = React.useState<string>("");
 
-  React.useEffect(() => {
-    console.log("hello asdf");
-    navigate("/cell-type-menu");
-  }, []);
-
   return (
-    <Drawer anchor="right" open={true}>
+    <Drawer
+      anchor="right"
+      open={true}
+      onKeyDown={(event) => {
+        // TODO make commands work cross platform
+        // Command + Enter
+        if (event.metaKey && event.code === "Enter") {
+          navigate("/");
+        }
+      }}
+    >
       {/* <Box sx={{ flexGrow: 1, padding: "15px" }}>
         <Grid container spacing={2} columns={16}>
           <Grid item xs={8}>
@@ -74,6 +79,7 @@ export default function CodeEditor() {
           // enableLiveAutocompletion: true,
         }}
         style={{ height: "100%" }}
+        focus={true}
       />
     </Drawer>
   );
