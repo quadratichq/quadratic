@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 import AceEditor from "react-ace";
 import { Drawer } from "@mui/material";
@@ -9,12 +10,8 @@ import "ace-builds/src-noconflict/ext-language_tools";
 
 import { PYTHON_EXAMPLE_CODE } from "./python_example";
 
-interface CodeEditorProps {
-  isOpen: boolean;
-}
-
-export default function CodeEditor(props: CodeEditorProps) {
-  const { isOpen } = props;
+export default function CodeEditor() {
+  let navigate = useNavigate();
 
   // const [inputCells, setInputCells] =
   //   React.useState<string>("(0, 0) -> (0, 10)");
@@ -23,7 +20,17 @@ export default function CodeEditor(props: CodeEditorProps) {
   // const [inputCode, setInputCode] = React.useState<string>("");
 
   return (
-    <Drawer anchor="right" open={isOpen}>
+    <Drawer
+      anchor="right"
+      open={true}
+      onKeyDown={(event) => {
+        // TODO make commands work cross platform
+        // Command + Enter
+        if (event.metaKey && event.code === "Enter") {
+          navigate("/");
+        }
+      }}
+    >
       {/* <Box sx={{ flexGrow: 1, padding: "15px" }}>
         <Grid container spacing={2} columns={16}>
           <Grid item xs={8}>
@@ -72,6 +79,7 @@ export default function CodeEditor(props: CodeEditorProps) {
           // enableLiveAutocompletion: true,
         }}
         style={{ height: "100%" }}
+        focus={true}
       />
     </Drawer>
   );

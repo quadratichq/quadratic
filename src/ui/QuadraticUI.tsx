@@ -1,28 +1,18 @@
 import * as React from "react";
+import { Routes, Route } from "react-router-dom";
 import { TopBar } from "../ui/menus/TopBar";
 import CellTypeMenu from "../ui/menus/CellTypeMenu/";
 import CodeEditor from "../ui/menus/CodeEditor";
 
-interface QuadraticUIProps {
-  isOpenCellTypeMenu: boolean;
-  setIsOpenCellTypeMenu: Function;
-  isOpenCodeEditor: boolean;
-  setIsOpenCodeEditor: Function;
-}
-
-export default function QuadraticUI(props: QuadraticUIProps) {
-  const {
-    isOpenCellTypeMenu,
-    // setIsOpenCellTypeMenu,
-    isOpenCodeEditor,
-    // setIsOpenCodeEditor,
-  } = props;
-
+export default function QuadraticUI() {
   return (
     <>
       <TopBar></TopBar>
-      <CellTypeMenu isOpen={isOpenCellTypeMenu}></CellTypeMenu>
-      <CodeEditor isOpen={isOpenCodeEditor}></CodeEditor>
+      <Routes>
+        <Route path="/" element={<></>} />
+        <Route path="/cell-type-menu" element={<CellTypeMenu></CellTypeMenu>} />
+        <Route path="/code-editor" element={<CodeEditor></CodeEditor>} />
+      </Routes>
     </>
   );
 }
