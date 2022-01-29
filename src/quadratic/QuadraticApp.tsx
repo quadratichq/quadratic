@@ -11,9 +11,6 @@ interface QuadraticAppProps {
 }
 
 export default function QuadraticApp(props: QuadraticAppProps) {
-  // One state, json serializable
-  // Actions on state OpenNewCell() -> modifies attributes of state
-  // Actions can be passed across users as well to keep users in sync
   return (
     <RecoilRoot>
       <MemoryRouter>
