@@ -4,7 +4,7 @@ import CellReference from "../../types/cellReference";
 
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 
-import colors from "../../../utils/colors.js";
+import colors from "../../../constants/colors.js";
 
 const singleCellHighlight = (cell: CellReference, type: string): Graphics => {
   const x_pos = cell.x * CELL_WIDTH;
