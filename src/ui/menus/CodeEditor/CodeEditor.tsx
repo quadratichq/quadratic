@@ -7,7 +7,8 @@ import { PYTHON_EXAMPLE_CODE } from "./python_example";
 
 import Editor, { Monaco, loader } from "@monaco-editor/react";
 import monaco from "monaco-editor";
-import colors from "../../../constants/colors";
+import colors from "../../../theme/colors";
+import { QuadraticEditorTheme } from "../../../theme/quadraticEditorTheme";
 
 loader.config({ paths: { vs: "/monaco/vs" } });
 
@@ -29,7 +30,11 @@ export default function CodeEditor() {
         navigate("/");
       }
     );
+
+    monaco.editor.defineTheme("quadratic", QuadraticEditorTheme);
+    monaco.editor.setTheme("quadratic");
   }
+
   return (
     <div
       style={{
