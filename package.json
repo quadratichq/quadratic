@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@datastructures-js/graph": "^5.1.1",
     "@emotion/react": "^11.7.0",
     "@emotion/styled": "^11.6.0",
     "@inlet/react-pixi": "^6.6.5",
