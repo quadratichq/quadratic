@@ -6,7 +6,7 @@ import {
   GRID_SIZE,
 } from "../../constants/gridConstants";
 
-import colors from "../../utils/colors.js";
+import colors from "../../theme/colors.js";
 
 const drawGrid = function (viewport: Viewport) {
   // Create a master graphics object

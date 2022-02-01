@@ -5,6 +5,8 @@ const colors = {
   cursorCell: 0x6cd4ff,
   highlightYellow: 0xffc800,
   independence: 0x5d576b,
+  lightGray: "#f6f8fa",
+  mediumGray: "#cfd7de",
 };
 
 export default colors;
