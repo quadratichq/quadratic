@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 // import AceEditor from "react-ace";
 
@@ -14,6 +14,8 @@ loader.config({ paths: { vs: "/monaco/vs" } });
 
 export default function CodeEditor() {
   let navigate = useNavigate();
+  const { x, y, mode } = useParams();
+
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   function handleEditorDidMount(
@@ -49,10 +51,13 @@ export default function CodeEditor() {
         backgroundColor: "#ffffff",
       }}
     >
+      <span>
+        Cell {x} {y} {mode}
+      </span>
       <Editor
         height="100%"
         width="100%"
-        defaultLanguage="python"
+        defaultLanguage={mode}
         defaultValue={PYTHON_EXAMPLE_CODE}
         onMount={handleEditorDidMount}
         options={{
