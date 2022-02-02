@@ -18,10 +18,17 @@ export default class QuadraticDependencyGraph {
 
   export_to_json() {
     return {
-      verticies: this._dgraph._vertices,
+      //@ts-ignore
+      vertices: this._dgraph._vertices,
+      //@ts-ignore
       edges: this._dgraph._edges,
+      //@ts-ignore
       edgesCount: this._dgraph._edgesCount,
     };
+  }
+
+  load_from_json() {
+    return {};
   }
 
   add_dependency_to_graph(

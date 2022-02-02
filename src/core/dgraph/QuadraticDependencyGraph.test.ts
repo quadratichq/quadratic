@@ -76,10 +76,6 @@ test("test QuadraticDependencyGraph", () => {
   // test non existant nodes
   expect(dg.get_children_cells([50, 50])).toStrictEqual([]);
 
-  // Test CircularReferenceException, should throw error
-  // dg.add_dependency_to_graph([1, 2], [[3, 3]]);
-  // expect(dg.get_children_cells([1, 2])).toStrictEqual([]);
-
   // Test remove_dependency_from_graph
   dg.remove_dependency_from_graph([10, 8], [[3, 3]]);
   expect(dg.get_children_cells([10, 8])).toStrictEqual([
@@ -122,7 +118,12 @@ test("test QuadraticDependencyGraph", () => {
 
   expect(dg._dgraph.getEdgesCount()).toEqual(0);
   // TODO clean up isolate nodes, this should be 0.
-  expect(dg._dgraph.getVerticesCount()).toEqual(9);
+  expect(dg._dgraph.getVerticesCount()).toEqual(0);
 
   expect(dg.export_to_json()).toEqual({});
+  expect(dg.load_from_json()).toEqual({});
+
+  // Test CircularReferenceException, should throw error
+  // dg.add_dependency_to_graph([1, 2], [[3, 3]]);
+  expect(false).toStrictEqual(true);
 });
