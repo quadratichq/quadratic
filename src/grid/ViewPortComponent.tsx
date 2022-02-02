@@ -5,7 +5,7 @@ import { ZoomCulling } from "./graphics/zoomCulling";
 
 import drawGrid from "./graphics/drawGrid";
 import Interaction from "./interaction/interaction";
-import Grid from "./grid/Grid";
+import Grid from "./graphics/grid/Grid";
 import Globals from "./globals";
 import { loadCells } from "./api/Loader";
 import { PixiComponent, useApp } from "@inlet/react-pixi";

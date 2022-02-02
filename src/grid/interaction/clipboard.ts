@@ -1,8 +1,8 @@
-import Grid from "../grid/Grid";
+import Grid from "../graphics/grid/Grid";
 import CellReference from "../types/cellReference";
-import { apiDeleteCells, apiUpdateCells } from "../api/APIClient";
-import APICell from "../api/interfaces/APICell";
-import APIDeleteCell from "../api/interfaces/APIDeleteCell";
+import { Cell } from "../../core/database/db";
+import { UpdateCells } from "../../core/grid/UpdateCells";
+import { DeleteCells } from "../../core/grid/DeleteCells";
 
 export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
   // get contents from clipboard
@@ -11,8 +11,8 @@ export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
     let cell_y: number = pasteToCell.y;
 
     // build api payload
-    let api_cells_to_write: APICell[] = [];
-    let api_cells_to_delete: APIDeleteCell[] = [];
+    let cells_to_write: Cell[] = [];
+    let cells_to_delete: CellReference[] = [];
 
     let str_rows: string[] = text.split("\n");
 
@@ -27,15 +27,15 @@ export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
           // draw updated cell
           grid.createOrUpdateCell({ x: cell_x, y: cell_y }, str_cell);
           // update cell on API
-          api_cells_to_write.push({
+          cells_to_write.push({
             x: cell_x,
             y: cell_y,
-            input_type: "TEXT",
-            input_value: str_cell,
+            type: "TEXT",
+            value: str_cell,
           });
         } else {
           grid.destroyCell({ x: cell_x, y: cell_y });
-          api_cells_to_delete.push({
+          cells_to_delete.push({
             x: cell_x,
             y: cell_y,
           });
@@ -51,8 +51,8 @@ export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
     });
 
     // bulk update and delete cells on api
-    apiUpdateCells(api_cells_to_write);
-    apiDeleteCells(api_cells_to_delete);
+    UpdateCells(cells_to_write);
+    DeleteCells(cells_to_delete);
   });
 };
 
