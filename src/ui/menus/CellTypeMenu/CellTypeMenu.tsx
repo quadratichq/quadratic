@@ -11,7 +11,7 @@ import {
   CardContent,
 } from "@mui/material";
 import TextField from "@mui/material/TextField";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import "./styles.css";
 
@@ -60,6 +60,8 @@ const CELL_TYPE_OPTIONS = [
 
 export default function CellTypeMenu() {
   let navigate = useNavigate();
+  const { x, y } = useParams();
+
   const [value, setValue] = React.useState<string>("");
   const [selected_value, setSelectedValue] = React.useState<string | undefined>(
     "text"
@@ -79,6 +81,14 @@ export default function CellTypeMenu() {
     setValue(value);
   };
 
+  const close = () => {
+    navigate(-1);
+  };
+
+  const openEditor = (mode = null) => {
+    navigate(`/code-editor/${x}/${y}/${mode || selected_value}`);
+  };
+
   return (
     <Card elevation={1} className="container">
       <CardContent>
@@ -89,10 +99,10 @@ export default function CellTypeMenu() {
           }}
           onKeyUp={(event) => {
             if (event.key === "Escape") {
-              navigate(-1);
+              close();
             }
             if (event.key === "Enter") {
-              navigate("/code-editor");
+              openEditor();
             }
           }}
           fullWidth
@@ -110,6 +120,9 @@ export default function CellTypeMenu() {
                 selected={selected_value === e.slug}
                 disabled={e.disabled}
                 style={{ width: "100%" }}
+                onClick={() => {
+                  openEditor(e.slug);
+                }}
               >
                 <ListItemIcon>
                   <Typography>{e.short}</Typography>

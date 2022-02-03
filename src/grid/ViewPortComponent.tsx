@@ -5,6 +5,7 @@ import { ZoomCulling } from "./graphics/zoomCulling";
 
 import drawGrid from "./graphics/drawGrid";
 import Interaction from "./interaction/interaction";
+import Cursor from "./interaction/cursor";
 import Grid from "./graphics/grid/Grid";
 import Globals from "./globals";
 import { loadCells } from "./api/Loader";
@@ -14,6 +15,7 @@ export interface ViewportProps {
   screenWidth: number;
   screenHeight: number;
   children?: React.ReactNode;
+  cursorRef: React.MutableRefObject<Cursor | undefined>;
 }
 
 export interface PixiComponentViewportProps extends ViewportProps {
@@ -49,6 +51,7 @@ const PixiComponentViewport = PixiComponent("Viewport", {
 
       let interaction = new Interaction(globals);
       interaction.makeInteractive();
+      props.cursorRef.current = interaction.cursor;
 
       // FPS log
       // app.ticker.add(function (time) {
