@@ -5,7 +5,7 @@ import Globals from "../globals";
 import Cursor from "./cursor";
 
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-import { UpdateCells } from "../../core/grid/UpdateCells";
+import { UpdateCells } from "../../core/database/UpdateCells";
 export default class GridInput {
   globals: Globals;
   cursor: Cursor;

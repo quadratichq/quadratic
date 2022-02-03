@@ -1,8 +1,8 @@
 import Grid from "../graphics/grid/Grid";
 import CellReference from "../types/cellReference";
 import { Cell } from "../../core/database/db";
-import { UpdateCells } from "../../core/grid/UpdateCells";
-import { DeleteCells } from "../../core/grid/DeleteCells";
+import { UpdateCells } from "../../core/database/UpdateCells";
+import { DeleteCells } from "../../core/database/DeleteCells";
 
 export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
   // get contents from clipboard

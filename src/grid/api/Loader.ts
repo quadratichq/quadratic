@@ -1,5 +1,5 @@
 import Globals from "../globals";
-import { GetCells } from "../../core/grid/GetCells";
+import { GetCells } from "../../core/database/GetCells";
 import CellReference from "../types/cellReference";
 
 export const loadCells = async (

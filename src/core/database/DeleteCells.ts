@@ -1,4 +1,4 @@
-import { qdb } from "../database/db";
+import { qdb } from "./db";
 import CellReference from "../../grid/types/cellReference";
 
 export const DeleteCells = async (cells: CellReference[]) => {
