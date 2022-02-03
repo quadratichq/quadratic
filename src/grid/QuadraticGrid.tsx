@@ -1,10 +1,13 @@
+import { useRef } from "react";
 import useWindowDimensions from "../utils/useWindowDimensions.js";
+import Cursor from "./interaction/cursor";
 import { Stage } from "@inlet/react-pixi";
 import ViewportComponent from "./ViewportComponent";
 import { useNavigate } from "react-router-dom";
 
 export default function QuadraticGrid() {
   let navigate = useNavigate();
+  const cursorRef = useRef<Cursor>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 
   return (
@@ -22,7 +25,9 @@ export default function QuadraticGrid() {
         if (event.key === "/") {
           // this.globals.cell_type_menu_ref.current?.open();
           console.log("attempting to navigate");
-          navigate("/cell-type-menu");
+          navigate(
+            `/cell-type-menu/${cursorRef.current?.location.x}/${cursorRef.current?.location.y}`
+          );
           event.preventDefault();
         }
       }}
@@ -31,7 +36,11 @@ export default function QuadraticGrid() {
       // raf={false}
       // renderOnComponentChange={true}
     >
-      <ViewportComponent screenWidth={windowWidth} screenHeight={windowHeight}>
+      <ViewportComponent
+        screenWidth={windowWidth}
+        screenHeight={windowHeight}
+        cursorRef={cursorRef}
+      >
         {/* 
         TODO: Can add children ReactPixi components for interactive elements such as the cursors 
         <Text text="hello world" anchor={0.5} x={150} y={150}></Text> */}
