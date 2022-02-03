@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import Editor, { Monaco, loader, useMonaco } from "@monaco-editor/react";
+import Editor, { Monaco, loader } from "@monaco-editor/react";
 import monaco from "monaco-editor";
 import colors from "../../../theme/colors";
 import { QuadraticEditorTheme } from "../../../theme/quadraticEditorTheme";
-import { UpdateCells } from "../../../core/grid/UpdateCells";
+import { UpdateCells } from "../../../core/database/UpdateCells";
 
 import { PYTHON_EXAMPLE_CODE } from "./python_example";
 
@@ -40,6 +40,7 @@ export default function CodeEditor() {
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
       function () {
+        // saveAndClose()
         navigate("/");
       }
     );
