@@ -1,29 +1,40 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
-// import AceEditor from "react-ace";
-
-import { PYTHON_EXAMPLE_CODE } from "./python_example";
-
-import Editor, { Monaco, loader } from "@monaco-editor/react";
+import Editor, { Monaco, loader, useMonaco } from "@monaco-editor/react";
 import monaco from "monaco-editor";
 import colors from "../../../theme/colors";
 import { QuadraticEditorTheme } from "../../../theme/quadraticEditorTheme";
+import { UpdateCells } from "../../../core/grid/UpdateCells";
+
+import { PYTHON_EXAMPLE_CODE } from "./python_example";
 
 loader.config({ paths: { vs: "/monaco/vs" } });
 
 export default function CodeEditor() {
   let navigate = useNavigate();
   const { x, y, mode } = useParams();
+  const [editorContent, setEditorContent] = useState<string | undefined>(
+    PYTHON_EXAMPLE_CODE
+  );
 
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const saveAndClose = () => {
+    if (mode === "text") {
+      UpdateCells([
+        {
+          x: Number(x),
+          y: Number(y),
+          type: "TEXT",
+          value: editorContent || "",
+        },
+      ]);
+    }
+    navigate("/");
+  };
 
   function handleEditorDidMount(
     editor: monaco.editor.IStandaloneCodeEditor,
     monaco: Monaco
   ) {
-    editorRef.current = editor;
-
     editor.focus();
 
     editor.addCommand(
@@ -51,14 +62,14 @@ export default function CodeEditor() {
         backgroundColor: "#ffffff",
       }}
     >
-      <span>
-        Cell {x} {y} {mode}
-      </span>
       <Editor
         height="100%"
         width="100%"
         defaultLanguage={mode}
-        defaultValue={PYTHON_EXAMPLE_CODE}
+        value={editorContent}
+        onChange={(value) => {
+          setEditorContent(value);
+        }}
         onMount={handleEditorDidMount}
         options={{
           minimap: { enabled: false }, // Causes strange issue cutting off

@@ -110,9 +110,6 @@ export default function CellTypeMenu() {
           label="Select Cell Type"
           autoFocus
         />
-        <span>
-          Cell {x} {y}
-        </span>
         <List dense={true} style={{ height: 350, width: 300 }}>
           <ListItem></ListItem>
           <Divider variant="fullWidth" />

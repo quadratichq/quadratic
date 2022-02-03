@@ -4,11 +4,11 @@ export const PYTHON_EXAMPLE_CODE = `# Easily access the Grid
 # Easily pass a value for this cell back
 # returnResult(value)
 
-result = cell(0, 0)
-for row in cellArray((0, 0), (10, 10)):
+result = 0
+for row in cellArray((0, 0), (0, 6)):
     if cell in row:
         print(cell)
         result += cell
 
-returnResult(result)
+return result
 `;
