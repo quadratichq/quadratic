@@ -1,6 +1,6 @@
 import { Graphics } from "@pixi/graphics";
 import type { Viewport } from "pixi-viewport";
-import type Grid from "../grid/Grid";
+import type Grid from "../graphics/grid/Grid";
 
 export default class Globals {
   viewport: Viewport;

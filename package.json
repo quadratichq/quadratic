@@ -18,6 +18,8 @@
     "@types/react-dom": "^17.0.10",
     "ace-builds": "^1.4.13",
     "axios": "^0.24.0",
+    "dexie": "^3.2.0",
+    "dexie-react-hooks": "^1.1.1",
     "material-ui-nested-menu-item": "^1.0.2",
     "monaco-editor": "^0.31.1",
     "pixi-cull": "^2.1.0",

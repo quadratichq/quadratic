@@ -14,7 +14,6 @@ import ContentCopy from "@mui/icons-material/ContentCopy";
 import ContentPaste from "@mui/icons-material/ContentPaste";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import NestedMenuItem from "material-ui-nested-menu-item";
-import colors from "../../../theme/colors";
 
 export const TopBar = () => {
   const [anchorFileNav, setAnchorFileNav] = React.useState<null | HTMLElement>(

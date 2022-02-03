@@ -10,8 +10,14 @@ export default function QuadraticUI() {
       <TopBar></TopBar>
       <Routes>
         <Route path="/" element={<></>} />
-        <Route path="/cell-type-menu" element={<CellTypeMenu></CellTypeMenu>} />
-        <Route path="/code-editor" element={<CodeEditor></CodeEditor>} />
+        <Route
+          path="/cell-type-menu/:x/:y"
+          element={<CellTypeMenu></CellTypeMenu>}
+        />
+        <Route
+          path="/code-editor/:x/:y/:mode"
+          element={<CodeEditor></CodeEditor>}
+        />
       </Routes>
     </>
   );

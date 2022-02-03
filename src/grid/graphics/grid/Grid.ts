@@ -1,8 +1,7 @@
 import Cell from "./Cell";
-import CellReference from "../types/cellReference";
+import CellReference from "../../types/cellReference";
 import { Viewport } from "pixi-viewport";
-import { apiDeleteCells } from "../api/APIClient";
-import APIDeleteCell from "../api/interfaces/APIDeleteCell";
+import { DeleteCells } from "../../../core/database/DeleteCells";
 
 export default class Grid {
   data: { [key: string]: { [key: string]: Cell } };
@@ -23,7 +22,7 @@ export default class Grid {
   destroyCell(location: CellReference) {
     const cell = this.getCell({ x: location.x, y: location.y });
     if (cell) {
-      apiDeleteCells([
+      DeleteCells([
         {
           x: location.x,
           y: location.y,
@@ -38,7 +37,7 @@ export default class Grid {
     const cWidth = Math.abs(cell1.x - cell0.x);
     const cHeight = Math.abs(cell1.y - cell0.y);
 
-    const api_cells_to_delete: APIDeleteCell[] = [];
+    const api_cells_to_delete: any = [];
 
     for (let offset_y = 0; offset_y < cHeight; offset_y++) {
       for (let offset_x = 0; offset_x < cWidth; offset_x++) {
@@ -55,7 +54,7 @@ export default class Grid {
       }
     }
 
-    apiDeleteCells(api_cells_to_delete);
+    DeleteCells(api_cells_to_delete);
   }
 
   createOrUpdateCell(location: CellReference, text: string) {

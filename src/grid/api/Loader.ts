@@ -1,5 +1,5 @@
 import Globals from "../globals";
-import { apiGetCells } from "./APIClient";
+import { GetCells } from "../../core/database/GetCells";
 import CellReference from "../types/cellReference";
 
 export const loadCells = async (
@@ -7,12 +7,12 @@ export const loadCells = async (
   point1: CellReference,
   globals: Globals
 ) => {
-  const data = await apiGetCells(point0, point1);
+  const data = await GetCells();
   if (data !== null) {
     data.forEach((cell: any) => {
       globals.grid.createOrUpdateCell(
         { x: parseInt(cell.x), y: parseInt(cell.y) },
-        cell.input_value
+        cell.value
       );
     });
   }

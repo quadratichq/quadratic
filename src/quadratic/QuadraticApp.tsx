@@ -1,5 +1,3 @@
-import React from "react";
-
 import QuadraticUI from "../ui/QuadraticUI";
 import QuadraticGrid from "../grid/QuadraticGrid";
 import { RecoilRoot } from "recoil";
