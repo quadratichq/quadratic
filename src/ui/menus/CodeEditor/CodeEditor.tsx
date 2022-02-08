@@ -44,7 +44,6 @@ export default function CodeEditor() {
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
       function () {
         saveAndClose();
-        // navigate("/");
       }
     );
 

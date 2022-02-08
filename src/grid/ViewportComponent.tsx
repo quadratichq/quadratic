@@ -3,10 +3,10 @@ import { Viewport } from "pixi-viewport";
 import { Simple } from "pixi-cull";
 import { ZoomCulling } from "./graphics/zoomCulling";
 
-import drawGrid from "./graphics/drawGrid";
+import drawGridLines from "./graphics/drawGridLines";
 import Interaction from "./interaction/interaction";
 import Cursor from "./interaction/cursor";
-import Grid from "./graphics/grid/Grid";
+import Grid from "./graphics/grid/GridManager";
 import Globals from "./globals";
 import { loadCells } from "./api/Loader";
 import { PixiComponent, useApp } from "@inlet/react-pixi";
@@ -40,7 +40,7 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2.75 });
 
     function startup() {
-      let grid_ui = drawGrid(viewport);
+      let grid_ui = drawGridLines(viewport);
 
       let grid = new Grid(viewport);
 
