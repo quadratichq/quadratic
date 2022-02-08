@@ -1,7 +1,7 @@
 import Cell from "./Cell";
 import CellReference from "../types/cellReference";
 import { Viewport } from "pixi-viewport";
-import { DeleteCellsDB } from "../../core/database/DeleteCellsDB";
+import { DeleteCellsDB } from "../../gridDB/DeleteCellsDB";
 
 export default class GridManager {
   data: { [key: string]: { [key: string]: Cell } };

@@ -1,5 +1,5 @@
 import QuadraticUI from "../ui/QuadraticUI";
-import QuadraticGrid from "../grid/QuadraticGrid";
+import QuadraticGrid from "../core/gridGL/QuadraticGrid";
 import { RecoilRoot } from "recoil";
 import { MemoryRouter } from "react-router-dom";
 

@@ -4,7 +4,7 @@ import Editor, { Monaco, loader } from "@monaco-editor/react";
 import monaco from "monaco-editor";
 import colors from "../../../theme/colors";
 import { QuadraticEditorTheme } from "../../../theme/quadraticEditorTheme";
-import { UpdateCellsDB } from "../../../core/database/UpdateCellsDB";
+import { UpdateCellsDB } from "../../../core/gridDB/UpdateCellsDB";
 
 import { PYTHON_EXAMPLE_CODE } from "./python_example";
 

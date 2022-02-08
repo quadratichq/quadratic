@@ -4,7 +4,7 @@ import MultiCursor from "./multiCursor";
 import Input from "./input";
 
 import isAlphaNumeric from "./helpers/isAlphaNumeric";
-import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 import { copyToClipboard, pasteFromClipboard } from "./clipboard";
 export default class Interaction {
   globals: Globals;

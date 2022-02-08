@@ -2,9 +2,9 @@ import { Graphics } from "pixi.js";
 
 import CellReference from "../../types/cellReference";
 
-import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../../../constants/gridConstants";
 
-import colors from "../../../theme/colors.js";
+import colors from "../../../../theme/colors.js";
 
 const singleCellHighlight = (cell: CellReference, type: string): Graphics => {
   const x_pos = cell.x * CELL_WIDTH;

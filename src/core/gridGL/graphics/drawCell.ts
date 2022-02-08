@@ -3,7 +3,7 @@ import { Viewport } from "pixi-viewport";
 
 import singleCellHighlight from "./primatives/singleCellHighlight";
 import CellReference from "../types/cellReference";
-import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 
 interface CellReturn {
   container: Container;

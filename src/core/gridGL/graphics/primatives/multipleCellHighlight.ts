@@ -1,10 +1,10 @@
 import { Graphics } from "pixi.js";
 
-import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../../../constants/gridConstants";
 
 import CellReference from "../../types/cellReference";
 
-import colors from "../../../theme/colors.js";
+import colors from "../../../../theme/colors.js";
 
 const multipleCellHighlight = (
   cell0: CellReference,

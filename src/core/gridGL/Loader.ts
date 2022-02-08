@@ -1,6 +1,6 @@
-import Globals from "../globals";
-import { GetCellsDB } from "../../core/database/GetCellsDB";
-import CellReference from "../types/cellReference";
+import Globals from "./globals";
+import { GetCellsDB } from "../gridDB/GetCellsDB";
+import CellReference from "./types/cellReference";
 
 export const loadCells = async (
   point0: CellReference,

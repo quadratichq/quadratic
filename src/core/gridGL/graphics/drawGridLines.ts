@@ -4,9 +4,9 @@ import {
   CELL_WIDTH,
   CELL_HEIGHT,
   GRID_SIZE,
-} from "../../constants/gridConstants";
+} from "../../../constants/gridConstants";
 
-import colors from "../../theme/colors.js";
+import colors from "../../../theme/colors.js";
 
 const drawGridLines = function (viewport: Viewport) {
   // Create a master graphics object

@@ -8,7 +8,7 @@ import Interaction from "./interaction/interaction";
 import Cursor from "./interaction/cursor";
 import Grid from "./graphics/GridManager";
 import Globals from "./globals";
-import { loadCells } from "./api/Loader";
+import { loadCells } from "./Loader";
 import { PixiComponent, useApp } from "@inlet/react-pixi";
 
 export interface ViewportProps {

@@ -4,8 +4,8 @@ import TextInput from "pixi-text-input";
 import Globals from "../globals";
 import Cursor from "./cursor";
 
-import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-import { UpdateCellsDB } from "../../core/database/UpdateCellsDB";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
+import { UpdateCellsDB } from "../../gridDB/UpdateCellsDB";
 export default class GridInput {
   globals: Globals;
   cursor: Cursor;

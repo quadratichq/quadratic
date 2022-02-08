@@ -2,7 +2,7 @@ import type { Graphics } from "pixi.js";
 import type Globals from "../globals";
 
 import CellReference from "../types/cellReference";
-import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 import multipleCellHighlight from "../graphics/primatives/multipleCellHighlight";
 
 export default class MultiCursor {
