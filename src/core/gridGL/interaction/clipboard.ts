@@ -1,4 +1,4 @@
-import Grid from "../graphics/GridManager";
+import Grid from "../GridManager";
 import CellReference from "../types/cellReference";
 import { Cell } from "../../gridDB/db";
 import { UpdateCellsDB } from "../../gridDB/UpdateCellsDB";
