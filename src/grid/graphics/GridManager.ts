@@ -1,7 +1,7 @@
 import Cell from "./Cell";
-import CellReference from "../../types/cellReference";
+import CellReference from "../types/cellReference";
 import { Viewport } from "pixi-viewport";
-import { DeleteCells } from "../../../core/database/DeleteCells";
+import { DeleteCellsDB } from "../../core/database/DeleteCellsDB";
 
 export default class GridManager {
   data: { [key: string]: { [key: string]: Cell } };
@@ -22,7 +22,7 @@ export default class GridManager {
   destroyCell(location: CellReference) {
     const cell = this.getCell({ x: location.x, y: location.y });
     if (cell) {
-      DeleteCells([
+      DeleteCellsDB([
         {
           x: location.x,
           y: location.y,
@@ -54,7 +54,7 @@ export default class GridManager {
       }
     }
 
-    DeleteCells(api_cells_to_delete);
+    DeleteCellsDB(api_cells_to_delete);
   }
 
   createOrUpdateCell(location: CellReference, text: string) {

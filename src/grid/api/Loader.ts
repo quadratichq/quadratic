@@ -1,5 +1,5 @@
 import Globals from "../globals";
-import { GetCells } from "../../core/database/GetCells";
+import { GetCellsDB } from "../../core/database/GetCellsDB";
 import CellReference from "../types/cellReference";
 
 export const loadCells = async (
@@ -7,7 +7,7 @@ export const loadCells = async (
   point1: CellReference,
   globals: Globals
 ) => {
-  const data = await GetCells();
+  const data = await GetCellsDB();
   if (data !== null) {
     data.forEach((cell: any) => {
       globals.grid.createOrUpdateCell(

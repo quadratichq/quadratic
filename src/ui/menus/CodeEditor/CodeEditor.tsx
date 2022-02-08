@@ -4,7 +4,7 @@ import Editor, { Monaco, loader } from "@monaco-editor/react";
 import monaco from "monaco-editor";
 import colors from "../../../theme/colors";
 import { QuadraticEditorTheme } from "../../../theme/quadraticEditorTheme";
-import { UpdateCells } from "../../../core/database/UpdateCells";
+import { UpdateCellsDB } from "../../../core/database/UpdateCellsDB";
 
 import { PYTHON_EXAMPLE_CODE } from "./python_example";
 
@@ -20,7 +20,7 @@ export default function CodeEditor() {
 
   const saveAndClose = () => {
     if (mode === "text") {
-      UpdateCells([
+      UpdateCellsDB([
         {
           x: Number(x),
           y: Number(y),

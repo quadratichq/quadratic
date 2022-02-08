@@ -5,7 +5,7 @@ import Globals from "../globals";
 import Cursor from "./cursor";
 
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-import { UpdateCells } from "../../core/database/UpdateCells";
+import { UpdateCellsDB } from "../../core/database/UpdateCellsDB";
 export default class GridInput {
   globals: Globals;
   cursor: Cursor;
@@ -96,7 +96,7 @@ export default class GridInput {
         y: this.cursor.location.y,
       });
     } else {
-      UpdateCells([
+      UpdateCellsDB([
         {
           x: this.cursor.location.x,
           y: this.cursor.location.y,

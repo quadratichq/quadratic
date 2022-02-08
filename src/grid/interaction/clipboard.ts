@@ -1,8 +1,8 @@
-import Grid from "../graphics/grid/GridManager";
+import Grid from "../graphics/GridManager";
 import CellReference from "../types/cellReference";
 import { Cell } from "../../core/database/db";
-import { UpdateCells } from "../../core/database/UpdateCells";
-import { DeleteCells } from "../../core/database/DeleteCells";
+import { UpdateCellsDB } from "../../core/database/UpdateCellsDB";
+import { DeleteCellsDB } from "../../core/database/DeleteCellsDB";
 
 export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
   // get contents from clipboard
@@ -51,8 +51,8 @@ export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
     });
 
     // bulk update and delete cells on api
-    UpdateCells(cells_to_write);
-    DeleteCells(cells_to_delete);
+    UpdateCellsDB(cells_to_write);
+    DeleteCellsDB(cells_to_delete);
   });
 };
 
