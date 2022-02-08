@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Editor, { Monaco, loader } from "@monaco-editor/react";
 import monaco from "monaco-editor";
@@ -11,6 +11,7 @@ import { PYTHON_EXAMPLE_CODE } from "./python_example";
 loader.config({ paths: { vs: "/monaco/vs" } });
 
 export default function CodeEditor() {
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   let navigate = useNavigate();
   const { x, y, mode } = useParams();
   const [editorContent, setEditorContent] = useState<string | undefined>(
@@ -24,7 +25,7 @@ export default function CodeEditor() {
           x: Number(x),
           y: Number(y),
           type: "TEXT",
-          value: editorContent || "",
+          value: editorRef.current?.getValue() || "",
         },
       ]);
     }
@@ -35,13 +36,15 @@ export default function CodeEditor() {
     editor: monaco.editor.IStandaloneCodeEditor,
     monaco: Monaco
   ) {
+    editorRef.current = editor;
+
     editor.focus();
 
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
       function () {
-        // saveAndClose()
-        navigate("/");
+        saveAndClose();
+        // navigate("/");
       }
     );
 
@@ -53,6 +56,7 @@ export default function CodeEditor() {
     <div
       style={{
         position: "fixed",
+        // top: 35,
         right: 0,
         width: "30%",
         minWidth: "400px",
