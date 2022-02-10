@@ -6,9 +6,7 @@ import { ZoomCulling } from "./graphics/zoomCulling";
 import drawGridLines from "./graphics/drawGridLines";
 import Interaction from "./interaction/interaction";
 import Cursor from "./interaction/cursor";
-import Grid from "./GridManager";
 import Globals from "./globals";
-import { loadCells } from "./Loader";
 import { PixiComponent, useApp } from "@inlet/react-pixi";
 
 export interface ViewportProps {
@@ -20,6 +18,7 @@ export interface ViewportProps {
 
 export interface PixiComponentViewportProps extends ViewportProps {
   app: PIXI.Application;
+  setLoading?: Function;
 }
 
 const PixiComponentViewport = PixiComponent("Viewport", {
@@ -42,12 +41,10 @@ const PixiComponentViewport = PixiComponent("Viewport", {
     function startup() {
       let grid_ui = drawGridLines(viewport);
 
-      let grid = new Grid(viewport);
-
-      const globals = new Globals(viewport, props.app.view, grid, grid_ui);
+      const globals = new Globals(viewport, props.app.view, grid_ui);
 
       // Load data from server
-      loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals);
+      // loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals);
 
       let interaction = new Interaction(globals);
       interaction.makeInteractive();
@@ -83,6 +80,7 @@ const PixiComponentViewport = PixiComponent("Viewport", {
 
 const ViewportComponent = (props: ViewportProps) => {
   const app = useApp();
+
   return <PixiComponentViewport app={app} {...props} />;
 };
 

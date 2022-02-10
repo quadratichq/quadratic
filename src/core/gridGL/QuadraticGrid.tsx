@@ -4,11 +4,18 @@ import Cursor from "./interaction/cursor";
 import { Stage } from "@inlet/react-pixi";
 import ViewportComponent from "./ViewportComponent";
 import { useNavigate } from "react-router-dom";
+import { useLiveQuery } from "dexie-react-hooks";
+import { qdb } from "../gridDB/db";
+import CellPixiReact from "./graphics/CellPixiReact";
+import { useLoading } from "../../contexts/LoadingContext";
 
 export default function QuadraticGrid() {
   let navigate = useNavigate();
+  const { loading } = useLoading();
   const cursorRef = useRef<Cursor>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+
+  const cells = useLiveQuery(() => qdb.cells.toArray());
 
   return (
     <Stage
@@ -31,6 +38,7 @@ export default function QuadraticGrid() {
           event.preventDefault();
         }
       }}
+      style={{ display: loading ? "none" : "inline" }}
       // Disable rendering on each frame, instead render state change (next line)
       // This causes the problem of never rerendering unless react triggers a rerender
       // raf={false}
@@ -41,6 +49,15 @@ export default function QuadraticGrid() {
         screenHeight={windowHeight}
         cursorRef={cursorRef}
       >
+        {!loading &&
+          cells?.map((cell) => (
+            <CellPixiReact
+              key={`${cell.x}${cell.y}`}
+              x={cell.x}
+              y={cell.y}
+              text={cell.value}
+            ></CellPixiReact>
+          ))}
         {/* 
         TODO: Can add children ReactPixi components for interactive elements such as the cursors 
         <Text text="hello world" anchor={0.5} x={150} y={150}></Text> */}

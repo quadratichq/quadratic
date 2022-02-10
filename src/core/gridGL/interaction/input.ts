@@ -75,26 +75,26 @@ export default class GridInput {
   }
 
   setGridToInput() {
-    this.globals.grid.createOrUpdateCell(
-      { x: this.input.last_x, y: this.input.last_y },
-      this.input.text
-    );
-    if (this.input.text === "") {
-      this.globals.grid.destroyCell({
-        x: this.input.last_x,
-        y: this.input.last_y,
-      });
-    }
+    // this.globals.grid.createOrUpdateCell(
+    //   { x: this.input.last_x, y: this.input.last_y },
+    //   this.input.text
+    // );
+    // if (this.input.text === "") {
+    //   this.globals.grid.destroyCell({
+    //     x: this.input.last_x,
+    //     y: this.input.last_y,
+    //   });
+    // }
   }
 
   saveCell() {
     // Triggered after editing a cell
     // Calls API to update cell.
     if (this.input.text === "") {
-      this.globals.grid.destroyCell({
-        x: this.cursor.location.x,
-        y: this.cursor.location.y,
-      });
+      // this.globals.grid.destroyCell({
+      //   x: this.cursor.location.x,
+      //   y: this.cursor.location.y,
+      // });
     } else {
       UpdateCellsDB([
         {
@@ -112,12 +112,12 @@ export default class GridInput {
     let cell_y = this.cursor.location.y;
 
     // Move input
-    const cell = this.globals.grid.getCell({ x: cell_x, y: cell_y });
-    if (this.globals.grid.getCell({ x: cell_x, y: cell_y }) !== null) {
-      this.input.text = cell?.bitmap_text?.text || "";
-    } else {
-      this.input.text = "";
-    }
+    // const cell = this.globals.grid.getCell({ x: cell_x, y: cell_y });
+    // if (this.globals.grid.getCell({ x: cell_x, y: cell_y }) !== null) {
+    //   this.input.text = cell?.bitmap_text?.text || "";
+    // } else {
+    //   this.input.text = "";
+    // }
 
     // input.placeholder = "Type or press'/'";
     this.input.visible = true;
