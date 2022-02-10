@@ -1,5 +1,7 @@
 import { useCallback } from "react";
-import { Graphics, BitmapText, Container } from "@inlet/react-pixi";
+import { Graphics, Container } from "@inlet/react-pixi";
+
+import FastBitmapText from "./primatives/FastBitmapText";
 
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 import colors from "../../../theme/colors";
@@ -28,17 +30,11 @@ const CellPixiReact = (props: CellPixiReactProps) => {
 
   return (
     <Container>
-      <BitmapText
+      <FastBitmapText
         x={x_pos + margin_left}
         y={y_pos + margin_top}
-        style={{
-          fontName: "OpenSans",
-          fontSize: 14,
-          tint: 0x000000,
-          align: "right",
-        }}
         text={props.text}
-      ></BitmapText>
+      ></FastBitmapText>
       <Graphics draw={draw_outline}></Graphics>
     </Container>
   );

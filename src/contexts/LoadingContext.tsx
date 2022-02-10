@@ -23,11 +23,6 @@ export function LoadingProvider({ children }: LoadingProviderProps) {
   const [loading, setLoading] = useState(true);
   const value = { loading, setLoading };
 
-  // Super Hacky Way To Set Loading...
-  setTimeout(() => {
-    setLoading(false);
-  }, 4000);
-
   return (
     <LoadingContext.Provider value={value}>{children}</LoadingContext.Provider>
   );

@@ -113,8 +113,8 @@ export default class Interaction {
       this.multiCursor.isInteractive = true;
 
       // save previous cell
-      this.input.moveInputToCursor();
-      this.input.saveCell();
+      // this.input.moveInputToCursor();
+      // this.input.saveCell();
 
       // move single cursor to origin cell
       this.cursor.moveCursor({

@@ -63,10 +63,10 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       PIXI.Ticker.shared.add(() => {
         if (viewport.dirty) {
           cull.cull(viewport.getVisibleBounds());
-
-          // Zoom culling
-          ZoomCulling(globals);
         }
+
+        // Zoom culling
+        ZoomCulling(globals);
       });
     }
 
