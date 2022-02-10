@@ -1,14 +1,13 @@
 import QuadraticUI from "../ui/QuadraticUI";
-import QuadraticGrid from "../grid/QuadraticGrid";
+import QuadraticGrid from "../core/gridGL/QuadraticGrid";
 import { RecoilRoot } from "recoil";
 import { MemoryRouter } from "react-router-dom";
+import { useLoading } from "../contexts/LoadingContext";
+import { QuadraticLoading } from "../ui/QuadtraticLoading";
 
-interface QuadraticAppProps {
-  isLoading: boolean;
-  setIsLoading: Function;
-}
+export default function QuadraticApp() {
+  const { loading } = useLoading();
 
-export default function QuadraticApp(props: QuadraticAppProps) {
   return (
     <RecoilRoot>
       <MemoryRouter>
@@ -16,6 +15,8 @@ export default function QuadraticApp(props: QuadraticAppProps) {
         <QuadraticGrid></QuadraticGrid>
         {/* Provider of All React UI Components */}
         <QuadraticUI></QuadraticUI>
+        {/* Loading screen */}
+        {loading && <QuadraticLoading></QuadraticLoading>}
       </MemoryRouter>
     </RecoilRoot>
   );

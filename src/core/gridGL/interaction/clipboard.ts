@@ -1,10 +1,9 @@
-import Grid from "../graphics/grid/Grid";
 import CellReference from "../types/cellReference";
-import { Cell } from "../../core/database/db";
-import { UpdateCells } from "../../core/database/UpdateCells";
-import { DeleteCells } from "../../core/database/DeleteCells";
+import { Cell } from "../../gridDB/db";
+import { UpdateCellsDB } from "../../gridDB/UpdateCellsDB";
+import { DeleteCellsDB } from "../../gridDB/DeleteCellsDB";
 
-export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
+export const pasteFromClipboard = (pasteToCell: CellReference) => {
   // get contents from clipboard
   navigator.clipboard.readText().then((text) => {
     let cell_x: number = pasteToCell.x;
@@ -25,20 +24,20 @@ export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
         // update or clear cell
         if (str_cell !== "") {
           // draw updated cell
-          grid.createOrUpdateCell({ x: cell_x, y: cell_y }, str_cell);
-          // update cell on API
-          cells_to_write.push({
-            x: cell_x,
-            y: cell_y,
-            type: "TEXT",
-            value: str_cell,
-          });
+          // grid.createOrUpdateCell({ x: cell_x, y: cell_y }, str_cell);
+          // // update cell on API
+          // cells_to_write.push({
+          //   x: cell_x,
+          //   y: cell_y,
+          //   type: "TEXT",
+          //   value: str_cell,
+          // });
         } else {
-          grid.destroyCell({ x: cell_x, y: cell_y });
-          cells_to_delete.push({
-            x: cell_x,
-            y: cell_y,
-          });
+          // grid.destroyCell({ x: cell_x, y: cell_y });
+          // cells_to_delete.push({
+          //   x: cell_x,
+          //   y: cell_y,
+          // });
         }
 
         // move to next cell
@@ -51,16 +50,12 @@ export const pasteFromClipboard = (pasteToCell: CellReference, grid: Grid) => {
     });
 
     // bulk update and delete cells on api
-    UpdateCells(cells_to_write);
-    DeleteCells(cells_to_delete);
+    UpdateCellsDB(cells_to_write);
+    DeleteCellsDB(cells_to_delete);
   });
 };
 
-export const copyToClipboard = (
-  cell0: CellReference,
-  cell1: CellReference,
-  grid: Grid
-) => {
+export const copyToClipboard = (cell0: CellReference, cell1: CellReference) => {
   // write selected cells to clipboard
 
   const cWidth = Math.abs(cell1.x - cell0.x);
@@ -81,8 +76,7 @@ export const copyToClipboard = (
         clipboardString += "\t";
       }
 
-      clipboardString +=
-        grid.getCell({ x: cell_x, y: cell_y })?.bitmap_text.text || "";
+      clipboardString += "";
     }
   }
 

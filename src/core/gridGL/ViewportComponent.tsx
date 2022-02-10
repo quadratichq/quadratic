@@ -3,12 +3,10 @@ import { Viewport } from "pixi-viewport";
 import { Simple } from "pixi-cull";
 import { ZoomCulling } from "./graphics/zoomCulling";
 
-import drawGrid from "./graphics/drawGrid";
+import drawGridLines from "./graphics/drawGridLines";
 import Interaction from "./interaction/interaction";
 import Cursor from "./interaction/cursor";
-import Grid from "./graphics/grid/Grid";
 import Globals from "./globals";
-import { loadCells } from "./api/Loader";
 import { PixiComponent, useApp } from "@inlet/react-pixi";
 
 export interface ViewportProps {
@@ -20,6 +18,7 @@ export interface ViewportProps {
 
 export interface PixiComponentViewportProps extends ViewportProps {
   app: PIXI.Application;
+  setLoading?: Function;
 }
 
 const PixiComponentViewport = PixiComponent("Viewport", {
@@ -40,14 +39,12 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2.75 });
 
     function startup() {
-      let grid_ui = drawGrid(viewport);
+      let grid_ui = drawGridLines(viewport);
 
-      let grid = new Grid(viewport);
-
-      const globals = new Globals(viewport, props.app.view, grid, grid_ui);
+      const globals = new Globals(viewport, props.app.view, grid_ui);
 
       // Load data from server
-      loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals);
+      // loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals);
 
       let interaction = new Interaction(globals);
       interaction.makeInteractive();
@@ -66,10 +63,10 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       PIXI.Ticker.shared.add(() => {
         if (viewport.dirty) {
           cull.cull(viewport.getVisibleBounds());
-
-          // Zoom culling
-          ZoomCulling(globals);
         }
+
+        // Zoom culling
+        ZoomCulling(globals);
       });
     }
 
@@ -83,6 +80,7 @@ const PixiComponentViewport = PixiComponent("Viewport", {
 
 const ViewportComponent = (props: ViewportProps) => {
   const app = useApp();
+
   return <PixiComponentViewport app={app} {...props} />;
 };
 

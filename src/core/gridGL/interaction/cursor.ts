@@ -2,7 +2,7 @@ import type { Graphics } from "pixi.js";
 import type Globals from "../globals";
 
 import CellReference from "../types/cellReference";
-import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 import singleCellHighlight from "../graphics/primatives/singleCellHighlight";
 
 export default class Cursor {

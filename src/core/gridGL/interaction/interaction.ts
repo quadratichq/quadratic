@@ -4,8 +4,8 @@ import MultiCursor from "./multiCursor";
 import Input from "./input";
 
 import isAlphaNumeric from "./helpers/isAlphaNumeric";
-import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-import { copyToClipboard, pasteFromClipboard } from "./clipboard";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
+// import { copyToClipboard, pasteFromClipboard } from "./clipboard";
 export default class Interaction {
   globals: Globals;
   cursor: Cursor;
@@ -73,20 +73,20 @@ export default class Interaction {
       }
 
       if (event.key === "Backspace") {
-        this.globals.grid.destroyCells(
-          {
-            x: this.multiCursor.originLocation.x,
-            y: this.multiCursor.originLocation.y,
-          },
-          {
-            x: this.multiCursor.terminalLocation.x,
-            y: this.multiCursor.terminalLocation.y,
-          }
-        );
-        this.globals.grid.destroyCell({
-          x: this.cursor.location.x,
-          y: this.cursor.location.y,
-        });
+        // this.globals.grid.destroyCells(
+        //   {
+        //     x: this.multiCursor.originLocation.x,
+        //     y: this.multiCursor.originLocation.y,
+        //   },
+        //   {
+        //     x: this.multiCursor.terminalLocation.x,
+        //     y: this.multiCursor.terminalLocation.y,
+        //   }
+        // );
+        // this.globals.grid.destroyCell({
+        //   x: this.cursor.location.x,
+        //   y: this.cursor.location.y,
+        // });
         event.preventDefault();
       }
 
@@ -113,8 +113,8 @@ export default class Interaction {
       this.multiCursor.isInteractive = true;
 
       // save previous cell
-      this.input.moveInputToCursor();
-      this.input.saveCell();
+      // this.input.moveInputToCursor();
+      // this.input.saveCell();
 
       // move single cursor to origin cell
       this.cursor.moveCursor({
@@ -160,28 +160,28 @@ export default class Interaction {
       // TODO make commands work cross platform
       // Command + V
       if (event.metaKey && event.code === "KeyV") {
-        pasteFromClipboard(
-          {
-            x: this.cursor.location.x,
-            y: this.cursor.location.y,
-          },
-          this.globals.grid
-        );
+        // pasteFromClipboard(
+        //   {
+        //     x: this.cursor.location.x,
+        //     y: this.cursor.location.y,
+        //   },
+        //   this.globals.grid
+        // );
       }
 
       // Command + C
       if (event.metaKey && event.code === "KeyC") {
-        copyToClipboard(
-          {
-            x: this.multiCursor.originLocation.x,
-            y: this.multiCursor.originLocation.y,
-          },
-          {
-            x: this.multiCursor.terminalLocation.x,
-            y: this.multiCursor.terminalLocation.y,
-          },
-          this.globals.grid
-        );
+        // copyToClipboard(
+        //   {
+        //     x: this.multiCursor.originLocation.x,
+        //     y: this.multiCursor.originLocation.y,
+        //   },
+        //   {
+        //     x: this.multiCursor.terminalLocation.x,
+        //     y: this.multiCursor.terminalLocation.y,
+        //   },
+        //   this.globals.grid
+        // );
       }
     });
   }

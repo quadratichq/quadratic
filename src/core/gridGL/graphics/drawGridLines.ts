@@ -4,11 +4,11 @@ import {
   CELL_WIDTH,
   CELL_HEIGHT,
   GRID_SIZE,
-} from "../../constants/gridConstants";
+} from "../../../constants/gridConstants";
 
-import colors from "../../theme/colors.js";
+import colors from "../../../theme/colors.js";
 
-const drawGrid = function (viewport: Viewport) {
+const drawGridLines = function (viewport: Viewport) {
   // Create a master graphics object
   let grid = new Graphics();
   // Configure Line Style
@@ -36,4 +36,4 @@ const drawGrid = function (viewport: Viewport) {
   return grid;
 };
 
-export default drawGrid;
+export default drawGridLines;
