@@ -9,13 +9,22 @@ from io import StringIO
 from contextlib import redirect_stdout
 
 
-async def getCells(p0_x, p0_y, p1_x, p1_y):
-    return await GetCellsDB(p0_x, p0_y, p1_x, p1_y)
-
-
 async def run_python(code):
-    globals = {"GetCellsDB": GetCellsDB, "getCells": getCells}
-    locals = {}
+
+    cells_accessed = []
+
+    async def getCells(p0_x, p0_y, p1_x, p1_y):
+        for x in range(p0_x, p1_x):
+            for y in range(p0_y, p1_y):
+                cells_accessed.append([x, y])
+        return await GetCellsDB(p0_x, p0_y, p1_x, p1_y)
+
+    async def getCell(p_x, p_y):
+        cells_accessed.append([p_x, p_y])
+        return await GetCellsDB(p_x, p_y, p_x, p_y)
+
+    globals = {}
+    locals = {"getCells": getCells, "getCell": getCell}
 
     sout = StringIO()
     output_value = None
@@ -39,6 +48,7 @@ async def run_python(code):
         return str(
             {
                 "output_value": output_value or locals.get("result", ""),
+                "cells_accessed": cells_accessed,
                 "input_python_std_out": sout.getvalue(),
                 "input_python_evaluation_success": True,
                 "input_python_stack_trace": None,
@@ -48,6 +58,7 @@ async def run_python(code):
     return str(
         {
             "output_value": output_value,
+            "cells_accessed": cells_accessed,
             "input_python_std_out": sout.getvalue(),
             "input_python_evaluation_success": False,
             "input_python_stack_trace": "{} on line {}: {}".format(

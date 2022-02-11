@@ -9,7 +9,7 @@ export const GetCellsDB = async (
   // Return Cells as an Array
   return await qdb.cells
     .where("x")
-    .between(p0_x, p1_x)
+    .between(p0_x, p1_x, true, true)
     .and((cell) => {
       return cell.y >= p0_y && cell.y <= p1_y;
     })

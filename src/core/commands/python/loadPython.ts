@@ -1,7 +1,7 @@
 import { GetCellsDB } from "../../gridDB/GetCellsDB";
 
 //@ts-expect-error
-import quadratic_python_init_f from "./quadratic_python_init.py";
+import define_run_python from "./run_python.py";
 
 declare global {
   // <- [reference](https://stackoverflow.com/a/56458070/11542903)
@@ -24,6 +24,6 @@ export async function loadPython() {
 
   await window.pyodide.registerJsModule("GetCellsDB", GetCellsDB);
   await window.pyodide.loadPackage(["numpy", "pandas"]);
-  const python_code = await (await fetch(quadratic_python_init_f)).text();
+  const python_code = await (await fetch(define_run_python)).text();
   await window.pyodide.runPython(python_code);
 }
