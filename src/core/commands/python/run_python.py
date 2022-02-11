@@ -21,7 +21,12 @@ async def run_python(code):
 
     async def getCell(p_x, p_y):
         cells_accessed.append([p_x, p_y])
-        return await GetCellsDB(p_x, p_y, p_x, p_y)
+        result = await GetCellsDB(p_x, p_y, p_x, p_y)
+
+        if len(result):
+            return result[0]
+        else:
+            return None
 
     globals = {}
     locals = {"getCells": getCells, "getCell": getCell}
