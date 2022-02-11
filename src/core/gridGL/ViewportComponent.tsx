@@ -51,9 +51,9 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       props.cursorRef.current = interaction.cursor;
 
       // FPS log
-      // app.ticker.add(function (time) {
-      //   if (app.ticker.FPS < 50) {
-      //     console.log(app.ticker.FPS);
+      // props.app.ticker.add(function (time) {
+      //   if (props.app.ticker.FPS < 50) {
+      //     console.log(`Current Frame Rate: ${props.app.ticker.FPS}`);
       //   }
       // });
 
@@ -68,6 +68,8 @@ const PixiComponentViewport = PixiComponent("Viewport", {
         // Zoom culling
         ZoomCulling(globals);
       });
+
+      console.log("[QuadraticGL] environment ready");
     }
 
     props.app.loader

@@ -1,12 +1,25 @@
+import { useEffect } from "react";
 import QuadraticUI from "../ui/QuadraticUI";
 import QuadraticGrid from "../core/gridGL/QuadraticGrid";
 import { RecoilRoot } from "recoil";
 import { MemoryRouter } from "react-router-dom";
 import { useLoading } from "../contexts/LoadingContext";
 import { QuadraticLoading } from "../ui/QuadtraticLoading";
+import { loadPython } from "../core/commands/python/loadPython";
+import { runMain } from "module";
+import { runPython } from "../core/commands/python/runPython";
+import { AnyNaptrRecord } from "dns";
 
 export default function QuadraticApp() {
-  const { loading } = useLoading();
+  const { loading, setLoading } = useLoading();
+
+  useEffect(() => {
+    if (loading) {
+      loadPython().then(() => {
+        setLoading(false);
+      });
+    }
+  }, [setLoading]);
 
   return (
     <RecoilRoot>

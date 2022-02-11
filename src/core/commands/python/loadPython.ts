@@ -1,47 +1,29 @@
-import Cell from "../../../core/grid/Cell";
+import { GetCellsDB } from "../../gridDB/GetCellsDB";
+
+//@ts-expect-error
+import quadratic_python_init_f from "./quadratic_python_init.py";
 
 declare global {
   // <- [reference](https://stackoverflow.com/a/56458070/11542903)
   interface Window {
     pyodide: any;
-    languagePluginLoader: any;
+    loadPyodide: any;
   }
 }
 
-export async function loadPython(grid_data: {
-  [key: string]: { [key: string]: Cell };
-}) {
-  let grid: { [key: string]: { [key: string]: string } } = {};
-  for (const row in grid_data) {
-    for (const col in grid_data[row]) {
-      const cell = grid_data[row][col];
+export async function loadPython() {
+  window.pyodide = await window.loadPyodide({
+    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.19.0/full/",
+    stdout: (l: string) => {
+      console.log("[WASMPython]", l);
+    },
+    stderr: (e: string) => {
+      console.log("[WASMPython stdoerr]", e);
+    },
+  });
 
-      if (grid[row] === undefined) {
-        grid[row] = {};
-      }
-
-      grid[row][col] = cell.bitmap_text.text;
-    }
-  }
-  console.log(grid);
-
-  await window.languagePluginLoader;
-  await window.pyodide.registerJsModule("ns_grid", { grid });
-  //   await window.pyodide.loadPackage([]);
+  await window.pyodide.registerJsModule("GetCellsDB", GetCellsDB);
   await window.pyodide.loadPackage(["numpy", "pandas"]);
-  const output = await window.pyodide.runPython(`
-import pandas as pd
-import numpy as np
-from ns_grid import grid
-
-pgrid = grid.to_py()
-print(pgrid)
-
-grid_df = pd.DataFrame(
-  data=pgrid,
-  columns=[x for x in range(len(pgrid['0']))],
-)
-print(grid_df)
-      `);
-  // console.log(output);
+  const python_code = await (await fetch(quadratic_python_init_f)).text();
+  await window.pyodide.runPython(python_code);
 }

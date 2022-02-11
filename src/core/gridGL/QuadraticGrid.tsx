@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { GetCellsDB } from "../gridDB/GetCellsDB";
 import CellPixiReact from "./graphics/CellPixiReact";
-import CursorPixiReactProps from "./interaction/CursorPixiReact";
 import { useLoading } from "../../contexts/LoadingContext";
 
 export default function QuadraticGrid() {
@@ -49,7 +48,6 @@ export default function QuadraticGrid() {
         screenHeight={windowHeight}
         cursorRef={cursorRef}
       >
-        <CursorPixiReactProps x={0} y={0}></CursorPixiReactProps>
         {!loading &&
           cells?.map((cell) => (
             <CellPixiReact

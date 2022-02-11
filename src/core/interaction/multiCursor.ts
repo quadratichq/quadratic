@@ -1,9 +1,9 @@
 import type { Graphics } from "pixi.js";
-import type Globals from "../../globals";
+import type Globals from "../../core/gridGL/globals";
 
-import CellReference from "../types/cellReference";
+import CellReference from "../gridGL/types/cellReference";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
-import multipleCellHighlight from "../graphics/primatives/multipleCellHighlight";
+import multipleCellHighlight from "../gridGL/graphics/primatives/multipleCellHighlight";
 
 export default class MultiCursor {
   globals: Globals;

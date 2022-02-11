@@ -3,18 +3,11 @@ import Box from "@mui/material/Box";
 import LinearProgress from "@mui/material/LinearProgress";
 
 import "./styles.css";
-import { useLoading } from "../../contexts/LoadingContext";
 
 export function QuadraticLoading() {
-  const { setLoading } = useLoading();
   const [progress, setProgress] = useState<number>(0);
 
-  const loadingMS = 4000;
-
-  // Super Hacky Way To Set Loading...
-  setTimeout(() => {
-    setLoading(false);
-  }, loadingMS);
+  const loadingMS = 3000;
 
   useEffect(() => {
     const timer = setInterval(() => {
