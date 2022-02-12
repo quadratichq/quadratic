@@ -1,7 +1,7 @@
 import Globals from "../globals";
 import Cursor from "./cursor";
 import MultiCursor from "./multiCursor";
-import Input from "./input";
+import GridInput from "./input";
 
 import isAlphaNumeric from "./helpers/isAlphaNumeric";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
@@ -11,7 +11,7 @@ export default class Interaction {
   globals: Globals;
   cursor: Cursor;
   multiCursor: MultiCursor;
-  input: Input;
+  input: GridInput;
 
   constructor(globals: Globals) {
     this.globals = globals;
@@ -21,7 +21,7 @@ export default class Interaction {
     this.multiCursor = new MultiCursor(this.globals);
 
     // Create Input
-    this.input = new Input(this.globals, this.cursor);
+    this.input = new GridInput(this.globals, this.cursor);
   }
 
   makeInteractive() {
@@ -69,7 +69,12 @@ export default class Interaction {
       }
 
       if (event.key === "Enter") {
+        this.cursor.moveCursor({
+          x: this.cursor.location.x,
+          y: this.cursor.location.y + 1,
+        });
         this.input.moveInputToCursor();
+
         event.preventDefault();
       }
 
@@ -80,8 +85,8 @@ export default class Interaction {
             y: this.multiCursor.originLocation.y,
           },
           {
-            x: this.multiCursor.terminalLocation.x,
-            y: this.multiCursor.terminalLocation.y,
+            x: this.multiCursor.terminalLocation.x - 1,
+            y: this.multiCursor.terminalLocation.y - 1,
           }
         );
         event.preventDefault();
@@ -89,12 +94,14 @@ export default class Interaction {
 
       // if key is a letter or enter start taking input
       if (isAlphaNumeric(event.key)) {
-        this.input.moveInputToCursor();
-        // Start off input with first key pressed.
-        // Make sure grid updates visually with this key.
-        this.input.input.text = event.key;
-        this.input.setGridToInput();
-        event.preventDefault();
+        this.input.moveInputToCursor().then(() => {
+          // Start off input with first key pressed.
+          // Make sure grid updates visually with this key.
+          this.input.input.text = event.key;
+          this.input.setGridToInput();
+          this.input.input.focus();
+          event.preventDefault();
+        });
       }
     });
 
@@ -110,8 +117,11 @@ export default class Interaction {
       this.multiCursor.isInteractive = true;
 
       // save previous cell
-      // this.input.moveInputToCursor();
-      // this.input.saveCell();
+      if (this.input.input.text !== "") {
+        this.input.saveCell().then(() => {
+          this.input.moveInputToCursor();
+        });
+      }
 
       // move single cursor to origin cell
       this.cursor.moveCursor({

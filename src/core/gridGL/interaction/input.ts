@@ -6,6 +6,8 @@ import Cursor from "./cursor";
 
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 import { UpdateCellsDB } from "../../gridDB/UpdateCellsDB";
+import { DeleteCellsDB } from "../../gridDB/DeleteCellsDB";
+import { GetCellsDB } from "../../gridDB/GetCellsDB";
 export default class GridInput {
   globals: Globals;
   cursor: Cursor;
@@ -75,28 +77,36 @@ export default class GridInput {
   }
 
   setGridToInput() {
-    // this.globals.grid.createOrUpdateCell(
-    //   { x: this.input.last_x, y: this.input.last_y },
-    //   this.input.text
-    // );
-    // if (this.input.text === "") {
-    //   this.globals.grid.destroyCell({
-    //     x: this.input.last_x,
-    //     y: this.input.last_y,
-    //   });
-    // }
+    UpdateCellsDB([
+      {
+        x: this.input.last_x,
+        y: this.input.last_y,
+        type: "TEXT",
+        value: this.input.text,
+      },
+    ]);
+
+    if (this.input.text === "") {
+      DeleteCellsDB([
+        {
+          x: this.input.last_x,
+          y: this.input.last_y,
+        },
+      ]);
+    }
   }
 
-  saveCell() {
+  async saveCell() {
     // Triggered after editing a cell
-    // Calls API to update cell.
     if (this.input.text === "") {
-      // this.globals.grid.destroyCell({
-      //   x: this.cursor.location.x,
-      //   y: this.cursor.location.y,
-      // });
+      await DeleteCellsDB([
+        {
+          x: this.cursor.location.x,
+          y: this.cursor.location.y,
+        },
+      ]);
     } else {
-      UpdateCellsDB([
+      await UpdateCellsDB([
         {
           x: this.cursor.location.x,
           y: this.cursor.location.y,
@@ -107,19 +117,19 @@ export default class GridInput {
     }
   }
 
-  moveInputToCursor() {
+  async moveInputToCursor() {
     let cell_x = this.cursor.location.x;
     let cell_y = this.cursor.location.y;
 
     // Move input
-    // const cell = this.globals.grid.getCell({ x: cell_x, y: cell_y });
-    // if (this.globals.grid.getCell({ x: cell_x, y: cell_y }) !== null) {
-    //   this.input.text = cell?.bitmap_text?.text || "";
-    // } else {
-    //   this.input.text = "";
-    // }
+    const cells = await GetCellsDB(cell_x, cell_y, cell_x, cell_y);
+    if (cells.length) {
+      this.input.text = cells[0].value;
+    } else {
+      this.input.text = "";
+    }
 
-    // input.placeholder = "Type or press'/'";
+    // this.input.placeholder = "Type or press'/'";
     this.input.visible = true;
     this.input.x = 0.38 + cell_x * CELL_WIDTH;
     this.input.y = 0.44 + cell_y * CELL_HEIGHT;
@@ -127,6 +137,6 @@ export default class GridInput {
     this.input.height = 20;
     this.input.last_x = cell_x;
     this.input.last_y = cell_y;
-    this.input.focus();
+    // this.input.focus();
   }
 }
