@@ -1,7 +1,8 @@
-import CellReference from "../types/cellReference";
-import { Cell } from "../../gridDB/db";
-import { UpdateCellsDB } from "../../gridDB/UpdateCellsDB";
-import { DeleteCellsDB } from "../../gridDB/DeleteCellsDB";
+import CellReference from "../gridGL/types/cellReference";
+import { Cell } from "../gridDB/db";
+import { GetCellsDB } from "../gridDB/GetCellsDB";
+import { UpdateCellsDB } from "../gridDB/UpdateCellsDB";
+import { DeleteCellsDB } from "../gridDB/DeleteCellsDB";
 
 export const pasteFromClipboard = (pasteToCell: CellReference) => {
   // get contents from clipboard
@@ -23,21 +24,17 @@ export const pasteFromClipboard = (pasteToCell: CellReference) => {
       str_cells.forEach((str_cell) => {
         // update or clear cell
         if (str_cell !== "") {
-          // draw updated cell
-          // grid.createOrUpdateCell({ x: cell_x, y: cell_y }, str_cell);
-          // // update cell on API
-          // cells_to_write.push({
-          //   x: cell_x,
-          //   y: cell_y,
-          //   type: "TEXT",
-          //   value: str_cell,
-          // });
+          cells_to_write.push({
+            x: cell_x,
+            y: cell_y,
+            type: "TEXT",
+            value: str_cell,
+          });
         } else {
-          // grid.destroyCell({ x: cell_x, y: cell_y });
-          // cells_to_delete.push({
-          //   x: cell_x,
-          //   y: cell_y,
-          // });
+          cells_to_delete.push({
+            x: cell_x,
+            y: cell_y,
+          });
         }
 
         // move to next cell
@@ -55,7 +52,10 @@ export const pasteFromClipboard = (pasteToCell: CellReference) => {
   });
 };
 
-export const copyToClipboard = (cell0: CellReference, cell1: CellReference) => {
+export const copyToClipboard = async (
+  cell0: CellReference,
+  cell1: CellReference
+) => {
   // write selected cells to clipboard
 
   const cWidth = Math.abs(cell1.x - cell0.x);
@@ -76,7 +76,11 @@ export const copyToClipboard = (cell0: CellReference, cell1: CellReference) => {
         clipboardString += "\t";
       }
 
-      clipboardString += "";
+      const cell = await GetCellsDB(cell_x, cell_y, cell_x, cell_y);
+
+      if (cell.length > 0) {
+        clipboardString += cell[0].value || "";
+      }
     }
   }
 

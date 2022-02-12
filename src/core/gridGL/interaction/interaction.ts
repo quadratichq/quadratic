@@ -5,7 +5,8 @@ import Input from "./input";
 
 import isAlphaNumeric from "./helpers/isAlphaNumeric";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
-// import { copyToClipboard, pasteFromClipboard } from "./clipboard";
+import { deleteCellsRange } from "../../actions/deleteCellsRange";
+import { copyToClipboard, pasteFromClipboard } from "../../actions/clipboard";
 export default class Interaction {
   globals: Globals;
   cursor: Cursor;
@@ -73,20 +74,16 @@ export default class Interaction {
       }
 
       if (event.key === "Backspace") {
-        // this.globals.grid.destroyCells(
-        //   {
-        //     x: this.multiCursor.originLocation.x,
-        //     y: this.multiCursor.originLocation.y,
-        //   },
-        //   {
-        //     x: this.multiCursor.terminalLocation.x,
-        //     y: this.multiCursor.terminalLocation.y,
-        //   }
-        // );
-        // this.globals.grid.destroyCell({
-        //   x: this.cursor.location.x,
-        //   y: this.cursor.location.y,
-        // });
+        deleteCellsRange(
+          {
+            x: this.multiCursor.originLocation.x,
+            y: this.multiCursor.originLocation.y,
+          },
+          {
+            x: this.multiCursor.terminalLocation.x,
+            y: this.multiCursor.terminalLocation.y,
+          }
+        );
         event.preventDefault();
       }
 
@@ -160,28 +157,24 @@ export default class Interaction {
       // TODO make commands work cross platform
       // Command + V
       if (event.metaKey && event.code === "KeyV") {
-        // pasteFromClipboard(
-        //   {
-        //     x: this.cursor.location.x,
-        //     y: this.cursor.location.y,
-        //   },
-        //   this.globals.grid
-        // );
+        pasteFromClipboard({
+          x: this.cursor.location.x,
+          y: this.cursor.location.y,
+        });
       }
 
       // Command + C
       if (event.metaKey && event.code === "KeyC") {
-        // copyToClipboard(
-        //   {
-        //     x: this.multiCursor.originLocation.x,
-        //     y: this.multiCursor.originLocation.y,
-        //   },
-        //   {
-        //     x: this.multiCursor.terminalLocation.x,
-        //     y: this.multiCursor.terminalLocation.y,
-        //   },
-        //   this.globals.grid
-        // );
+        copyToClipboard(
+          {
+            x: this.multiCursor.originLocation.x,
+            y: this.multiCursor.originLocation.y,
+          },
+          {
+            x: this.multiCursor.terminalLocation.x,
+            y: this.multiCursor.terminalLocation.y,
+          }
+        );
       }
     });
   }

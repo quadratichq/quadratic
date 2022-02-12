@@ -55,6 +55,7 @@ export default function QuadraticGrid() {
               x={cell.x}
               y={cell.y}
               text={cell.value}
+              type={cell.type}
             ></CellPixiReact>
           ))}
         {/* 

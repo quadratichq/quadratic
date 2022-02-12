@@ -1,7 +1,7 @@
 Example working cell code
 
 ```python
-cells = await getCells(0, 0, 1, 3)
+cells = await getCells(0, 0, 0, 3)
 result = 1
 for cell in cells:
     print(cell.value)

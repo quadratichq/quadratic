@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Editor, { Monaco, loader } from "@monaco-editor/react";
 import monaco from "monaco-editor";
 import colors from "../../../theme/colors";
 import { QuadraticEditorTheme } from "../../../theme/quadraticEditorTheme";
 import { UpdateCellsDB } from "../../../core/gridDB/UpdateCellsDB";
+import { runPython } from "../../../core/computations/python/runPython";
 
 import { PYTHON_EXAMPLE_CODE } from "./python_example";
 
@@ -14,9 +15,13 @@ export default function CodeEditor() {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   let navigate = useNavigate();
   const { x, y, mode } = useParams();
-  const [editorContent, setEditorContent] = useState<string | undefined>(
-    PYTHON_EXAMPLE_CODE
-  );
+  const [editorContent, setEditorContent] = useState<string | undefined>("");
+
+  useEffect(() => {
+    if (mode === "python") {
+      setEditorContent(PYTHON_EXAMPLE_CODE);
+    }
+  }, [mode]);
 
   const saveAndClose = () => {
     if (mode === "text") {
@@ -28,6 +33,20 @@ export default function CodeEditor() {
           value: editorRef.current?.getValue() || "",
         },
       ]);
+    } else if (mode === "python") {
+      const code = editorRef.current?.getValue() || "";
+
+      runPython(code).then((result) => {
+        UpdateCellsDB([
+          {
+            x: Number(x),
+            y: Number(y),
+            type: "PYTHON",
+            value: result.output_value || "",
+            python_code: code,
+          },
+        ]);
+      });
     }
     navigate("/");
   };

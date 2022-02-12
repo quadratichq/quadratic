@@ -4,12 +4,14 @@ import { Graphics, Container } from "@inlet/react-pixi";
 import FastBitmapText from "./primatives/FastBitmapText";
 
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
+import { CellTypes } from "../../gridDB/db";
 import colors from "../../../theme/colors";
 
 interface CellPixiReactProps {
   x: number;
   y: number;
   text: string;
+  type: CellTypes;
 }
 
 const CellPixiReact = (props: CellPixiReactProps) => {
@@ -22,10 +24,16 @@ const CellPixiReact = (props: CellPixiReactProps) => {
   const draw_outline = useCallback(
     (g) => {
       g.clear();
-      g.lineStyle(1, colors.cellColorUserText, 0.75, 0.5, true);
+
+      if (props.type === "TEXT") {
+        g.lineStyle(1, colors.cellColorUserText, 0.75, 0.5, true);
+      } else if (props.type === "PYTHON") {
+        g.lineStyle(1, colors.cellColorUserPython, 0.75, 0.5, true);
+      }
+
       g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
     },
-    [x_pos, y_pos]
+    [x_pos, y_pos, props.type]
   );
 
   return (

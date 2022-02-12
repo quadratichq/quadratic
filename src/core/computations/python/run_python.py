@@ -50,27 +50,23 @@ async def run_python(code):
         line_number = traceback.extract_tb(tb)[-1][1]
     else:
         # Successfully Created a Result
-        return str(
-            {
-                "output_value": output_value or locals.get("result", ""),
-                "cells_accessed": cells_accessed,
-                "input_python_std_out": sout.getvalue(),
-                "input_python_evaluation_success": True,
-                "input_python_stack_trace": None,
-            }
-        )
-
-    return str(
-        {
-            "output_value": output_value,
+        return {
+            "output_value": output_value or locals.get("result", None),
             "cells_accessed": cells_accessed,
             "input_python_std_out": sout.getvalue(),
-            "input_python_evaluation_success": False,
-            "input_python_stack_trace": "{} on line {}: {}".format(
-                error_class, line_number, detail
-            ),
+            "input_python_evaluation_success": True,
+            "input_python_stack_trace": None,
         }
-    )
+
+    return {
+        "output_value": output_value,
+        "cells_accessed": cells_accessed,
+        "input_python_std_out": sout.getvalue(),
+        "input_python_evaluation_success": False,
+        "input_python_stack_trace": "{} on line {}: {}".format(
+            error_class, line_number, detail
+        ),
+    }
 
 
 print("environment ready")
