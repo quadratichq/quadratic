@@ -1,14 +1,11 @@
 export const PYTHON_EXAMPLE_CODE = `# Easily access the Grid
-# cell(x,y)
-# cellArray((x, y), (x, y))
-# Easily pass a value for this cell back
-# returnResult(value)
+# await getCells(x,y,x,y)
+# set return or last statement is used
 
 result = 0
-for row in cellArray((0, 0), (0, 6)):
-    if cell in row:
-        print(cell)
-        result += cell
+for cell in await getCells(0, 0, 0, 6):
+    print(cell.value)
+    result += int(cell.value)
 
-return result
+1/0
 `;

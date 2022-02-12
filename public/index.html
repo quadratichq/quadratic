@@ -67,7 +67,9 @@
     window.addEventListener(
       "wheel",
       (e) => {
-        e.preventDefault();
+        if (e.target.localName !== "textarea") {
+          e.preventDefault();
+        }
       },
       { passive: false }
     );

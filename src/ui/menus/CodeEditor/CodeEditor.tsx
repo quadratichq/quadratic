@@ -8,6 +8,7 @@ import { UpdateCellsDB } from "../../../core/gridDB/UpdateCellsDB";
 import { GetCellsDB } from "../../../core/gridDB/GetCellsDB";
 import { runPython } from "../../../core/computations/python/runPython";
 import { CellTypes } from "../../../core/gridDB/db";
+import TextField from "@mui/material/TextField";
 
 import { PYTHON_EXAMPLE_CODE } from "./python_example";
 
@@ -18,15 +19,20 @@ export default function CodeEditor() {
   let navigate = useNavigate();
   const { x, y, mode } = useParams();
   const [editorContent, setEditorContent] = useState<string | undefined>("");
+  const [stdoutContent, setStdoutContent] = useState<string>("");
 
   useEffect(() => {
     if (x !== undefined && y !== undefined) {
       GetCellsDB(Number(x), Number(y), Number(x), Number(y)).then((cells) => {
         if (cells.length) {
           if ((mode as CellTypes) === "PYTHON") {
-            setEditorContent(cells[0].python_code || PYTHON_EXAMPLE_CODE);
+            setEditorContent(cells[0].python_code);
           } else {
             setEditorContent(cells[0].value);
+          }
+        } else {
+          if ((mode as CellTypes) === "PYTHON") {
+            setEditorContent(PYTHON_EXAMPLE_CODE);
           }
         }
       });
@@ -43,22 +49,31 @@ export default function CodeEditor() {
           value: editorRef.current?.getValue() || "",
         },
       ]);
+      navigate("/");
     } else if ((mode as CellTypes) === "PYTHON") {
       const code = editorRef.current?.getValue() || "";
 
       runPython(code).then((result) => {
-        UpdateCellsDB([
-          {
-            x: Number(x),
-            y: Number(y),
-            type: "PYTHON",
-            value: result.output_value || "",
-            python_code: code,
-          },
-        ]);
+        if (result.input_python_evaluation_success) {
+          UpdateCellsDB([
+            {
+              x: Number(x),
+              y: Number(y),
+              type: "PYTHON",
+              value: result.output_value || "",
+              python_code: code,
+            },
+          ]);
+          navigate("/");
+        } else {
+          let stdout = [
+            result.input_python_std_out,
+            result.input_python_stack_trace,
+          ].join("\n");
+          setStdoutContent(stdout.trim());
+        }
       });
     }
-    navigate("/");
   };
 
   function handleEditorDidMount(
@@ -75,6 +90,10 @@ export default function CodeEditor() {
         saveAndClose();
       }
     );
+
+    editor.addCommand(monaco.KeyCode.Escape, () => {
+      navigate("/");
+    });
 
     monaco.editor.defineTheme("quadratic", QuadraticEditorTheme);
     monaco.editor.setTheme("quadratic");
@@ -96,9 +115,9 @@ export default function CodeEditor() {
       }}
     >
       <Editor
-        height="100%"
+        height="80%"
         width="100%"
-        defaultLanguage={mode}
+        defaultLanguage={mode === "PYTHON" ? "python" : "text"}
         value={editorContent}
         onChange={(value) => {
           setEditorContent(value);
@@ -115,6 +134,19 @@ export default function CodeEditor() {
           wordWrap: "on",
         }}
       />
+      {(mode as CellTypes) === "PYTHON" && (
+        <div style={{ margin: "15px" }}>
+          <TextField
+            disabled
+            id="outlined-multiline-static"
+            label="OUTPUT"
+            multiline
+            rows={4}
+            value={stdoutContent}
+            style={{ width: "100%" }}
+          />
+        </div>
+      )}
     </div>
   );
 }

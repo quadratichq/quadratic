@@ -71,7 +71,7 @@ export default function CellTypeMenu() {
 
   const update_filter = (value: string) => {
     const filtered_cell_type_list = CELL_TYPE_OPTIONS.filter((cell_type) => {
-      return cell_type.slug.includes(value.toLowerCase());
+      return cell_type.slug.includes(value.toUpperCase());
     });
 
     const selected_value = filtered_cell_type_list[0]?.slug;
