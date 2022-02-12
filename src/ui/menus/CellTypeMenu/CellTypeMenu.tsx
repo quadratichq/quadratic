@@ -20,7 +20,7 @@ const CELL_TYPE_OPTIONS = [
     key: 0,
     name: "Text",
     short: "Aa",
-    slug: "text",
+    slug: "TEXT",
     description: "Input any text or numerical data.",
     disabled: false,
   },
@@ -28,7 +28,7 @@ const CELL_TYPE_OPTIONS = [
     key: 10,
     name: "Formula",
     short: "=",
-    slug: "formula",
+    slug: "FORMULA",
     description: "Familiar Excel-like formulas.",
     disabled: true,
   },
@@ -36,7 +36,7 @@ const CELL_TYPE_OPTIONS = [
     key: 20,
     name: "Python",
     short: "Py",
-    slug: "python",
+    slug: "PYTHON",
     description: "Write Python to quickly compute with data.",
     disabled: false,
   },
@@ -44,7 +44,7 @@ const CELL_TYPE_OPTIONS = [
     key: 30,
     name: "JavaScript",
     short: "Js",
-    slug: "javascript",
+    slug: "JAVASCRIPT",
     description: "Write JavaScript to quickly compute with data.",
     disabled: true,
   },
@@ -52,7 +52,7 @@ const CELL_TYPE_OPTIONS = [
     key: 40,
     name: "SQL Query",
     short: "DB",
-    slug: "sql",
+    slug: "SQL",
     description: "Query your data using SQL.",
     disabled: true,
   },
@@ -64,7 +64,7 @@ export default function CellTypeMenu() {
 
   const [value, setValue] = React.useState<string>("");
   const [selected_value, setSelectedValue] = React.useState<string | undefined>(
-    "text"
+    "TEXT"
   );
   const [filtered_cell_type_list, setFilteredCellTypeList] =
     React.useState<any>(CELL_TYPE_OPTIONS);

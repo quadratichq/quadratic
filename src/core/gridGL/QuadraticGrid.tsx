@@ -29,11 +29,18 @@ export default function QuadraticGrid() {
       }}
       onKeyDown={(event) => {
         if (event.key === "/") {
-          // this.globals.cell_type_menu_ref.current?.open();
-          console.log("attempting to navigate");
-          navigate(
-            `/cell-type-menu/${cursorRef.current?.location.x}/${cursorRef.current?.location.y}`
-          );
+          const x = cursorRef.current?.location.x;
+          const y = cursorRef.current?.location.y;
+          GetCellsDB(x, y, x, y).then((cells) => {
+            if (cells.length) {
+              navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
+            } else {
+              navigate(
+                `/cell-type-menu/${cursorRef.current?.location.x}/${cursorRef.current?.location.y}`
+              );
+            }
+          });
+
           event.preventDefault();
         }
       }}

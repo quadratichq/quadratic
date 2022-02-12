@@ -5,7 +5,9 @@ import monaco from "monaco-editor";
 import colors from "../../../theme/colors";
 import { QuadraticEditorTheme } from "../../../theme/quadraticEditorTheme";
 import { UpdateCellsDB } from "../../../core/gridDB/UpdateCellsDB";
+import { GetCellsDB } from "../../../core/gridDB/GetCellsDB";
 import { runPython } from "../../../core/computations/python/runPython";
+import { CellTypes } from "../../../core/gridDB/db";
 
 import { PYTHON_EXAMPLE_CODE } from "./python_example";
 
@@ -18,13 +20,21 @@ export default function CodeEditor() {
   const [editorContent, setEditorContent] = useState<string | undefined>("");
 
   useEffect(() => {
-    if (mode === "python") {
-      setEditorContent(PYTHON_EXAMPLE_CODE);
+    if (x !== undefined && y !== undefined) {
+      GetCellsDB(Number(x), Number(y), Number(x), Number(y)).then((cells) => {
+        if (cells.length) {
+          if ((mode as CellTypes) === "PYTHON") {
+            setEditorContent(cells[0].python_code || PYTHON_EXAMPLE_CODE);
+          } else {
+            setEditorContent(cells[0].value);
+          }
+        }
+      });
     }
-  }, [mode]);
+  }, [x, y, mode]);
 
   const saveAndClose = () => {
-    if (mode === "text") {
+    if ((mode as CellTypes) === "TEXT") {
       UpdateCellsDB([
         {
           x: Number(x),
@@ -33,7 +43,7 @@ export default function CodeEditor() {
           value: editorRef.current?.getValue() || "",
         },
       ]);
-    } else if (mode === "python") {
+    } else if ((mode as CellTypes) === "PYTHON") {
       const code = editorRef.current?.getValue() || "";
 
       runPython(code).then((result) => {
