@@ -1,4 +1,4 @@
-import { DirectedGraph } from "@datastructures-js/graph";
+import { DirectedGraph } from "./primatives/directedGraph";
 
 const cell_to_string = (cell: [number, number]): string => {
   return `${cell[0]},${cell[1]}`;
@@ -40,6 +40,23 @@ export default class QuadraticDependencyGraph {
     for (const dcell of dependent_cells) {
       this._dgraph.addVertex(cell_to_string(dcell), undefined);
       this._dgraph.addEdge(cell_to_string(cell), cell_to_string(dcell));
+    }
+
+    // TODO detect circular reference
+  }
+
+  add_dependencies_to_graph(
+    input_cells: [number, number][],
+    dependent_cells: [number, number][]
+  ) {
+    // TODO: untested
+
+    for (const icell of input_cells) {
+      this._dgraph.addVertex(cell_to_string(icell), undefined);
+      for (const dcell of dependent_cells) {
+        this._dgraph.addVertex(cell_to_string(dcell), undefined);
+        this._dgraph.addEdge(cell_to_string(icell), cell_to_string(dcell));
+      }
     }
 
     // TODO detect circular reference
