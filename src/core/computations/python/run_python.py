@@ -4,9 +4,12 @@ import sys
 import traceback
 import pyodide
 import asyncio
+import micropip
 
 from io import StringIO
 from contextlib import redirect_stdout
+
+micropip.install("autopep8")
 
 
 async def run_python(code):
@@ -50,12 +53,17 @@ async def run_python(code):
         line_number = traceback.extract_tb(tb)[-1][1]
     else:
         # Successfully Created a Result
+        import autopep8
+
         return {
-            "output_value": output_value or locals.get("result", None),
+            "output_value": str(output_value or locals.get("result", None)),
             "cells_accessed": cells_accessed,
             "input_python_std_out": sout.getvalue(),
             "input_python_evaluation_success": True,
             "input_python_stack_trace": None,
+            "formatted_code": autopep8.fix_code(
+                code, options={"ignore": ["E402"]}
+            ),  # Ignore E402 : otherwise breaks imports
         }
 
     return {
@@ -66,6 +74,7 @@ async def run_python(code):
         "input_python_stack_trace": "{} on line {}: {}".format(
             error_class, line_number, detail
         ),
+        "formatted_code": code,
     }
 
 

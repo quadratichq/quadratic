@@ -44,7 +44,8 @@ export default function CodeEditor() {
     }
   }, [x, y, mode]);
 
-  const saveAndClose = () => {
+  const save = (close = true) => {
+    setStdoutContent("");
     if ((mode as CellTypes) === "TEXT") {
       UpdateCellsDB([
         {
@@ -54,11 +55,19 @@ export default function CodeEditor() {
           value: editorRef.current?.getValue() || "",
         },
       ]);
-      closeEditor();
+      if (close) closeEditor();
     } else if ((mode as CellTypes) === "PYTHON") {
       const code = editorRef.current?.getValue() || "";
 
       runPython(code).then((result) => {
+        let stdout = [
+          result.input_python_std_out,
+          result.input_python_stack_trace,
+        ].join("");
+        setStdoutContent(stdout.trim());
+
+        setEditorContent(result.formatted_code);
+
         if (result.input_python_evaluation_success) {
           UpdateCellsDB([
             {
@@ -69,13 +78,7 @@ export default function CodeEditor() {
               python_code: code,
             },
           ]);
-          closeEditor();
-        } else {
-          let stdout = [
-            result.input_python_std_out,
-            result.input_python_stack_trace,
-          ].join("");
-          setStdoutContent(stdout.trim());
+          if (close) closeEditor();
         }
       });
     }
@@ -92,9 +95,13 @@ export default function CodeEditor() {
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
       function () {
-        saveAndClose();
+        save(true);
       }
     );
+
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
+      save(false);
+    });
 
     editor.addCommand(monaco.KeyCode.Escape, () => {
       closeEditor();
