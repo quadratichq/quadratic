@@ -23,7 +23,7 @@ export async function loadPython() {
   });
 
   await window.pyodide.registerJsModule("GetCellsDB", GetCellsDB);
-  await window.pyodide.loadPackage(["numpy", "pandas"]);
+  await window.pyodide.loadPackage(["numpy", "pandas", "micropip"]);
   const python_code = await (await fetch(define_run_python)).text();
   await window.pyodide.runPython(python_code);
 }

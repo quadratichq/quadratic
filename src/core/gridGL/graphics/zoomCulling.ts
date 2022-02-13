@@ -12,7 +12,7 @@ export function ZoomCulling(globals: Globals) {
     //       cell.bitmap_text.visible = false;
     //     }
     //   }
-    grid_ui.visible = true;
+    grid_ui.visible = false;
   } else if (viewport.scale._x < 0.3) {
     // for (const row in grid.data) {
     //   for (const col in grid.data[row]) {
