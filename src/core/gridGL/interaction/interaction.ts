@@ -148,7 +148,7 @@ export default class Interaction {
       this.multiCursor.isInteractive = false;
     });
 
-    document.addEventListener("keydown", (event) => {
+    this.globals.canvas.addEventListener("keydown", (event) => {
       if (event.key === "Tab") {
         // save previous cell
         this.input.moveInputToCursor();

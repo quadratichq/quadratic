@@ -21,6 +21,11 @@ export default function CodeEditor() {
   const [editorContent, setEditorContent] = useState<string | undefined>("");
   const [stdoutContent, setStdoutContent] = useState<string>("");
 
+  const closeEditor = () => {
+    navigate("/");
+    document?.querySelector("canvas")?.focus();
+  };
+
   useEffect(() => {
     if (x !== undefined && y !== undefined) {
       GetCellsDB(Number(x), Number(y), Number(x), Number(y)).then((cells) => {
@@ -49,7 +54,7 @@ export default function CodeEditor() {
           value: editorRef.current?.getValue() || "",
         },
       ]);
-      navigate("/");
+      closeEditor();
     } else if ((mode as CellTypes) === "PYTHON") {
       const code = editorRef.current?.getValue() || "";
 
@@ -64,12 +69,12 @@ export default function CodeEditor() {
               python_code: code,
             },
           ]);
-          navigate("/");
+          closeEditor();
         } else {
           let stdout = [
             result.input_python_std_out,
             result.input_python_stack_trace,
-          ].join("\n");
+          ].join("");
           setStdoutContent(stdout.trim());
         }
       });
@@ -92,7 +97,7 @@ export default function CodeEditor() {
     );
 
     editor.addCommand(monaco.KeyCode.Escape, () => {
-      navigate("/");
+      closeEditor();
     });
 
     monaco.editor.defineTheme("quadratic", QuadraticEditorTheme);

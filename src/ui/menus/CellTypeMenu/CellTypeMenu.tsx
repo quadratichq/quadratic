@@ -82,7 +82,8 @@ export default function CellTypeMenu() {
   };
 
   const close = () => {
-    navigate(-1);
+    navigate("/");
+    document?.querySelector("canvas")?.focus();
   };
 
   const openEditor = (mode = null) => {
