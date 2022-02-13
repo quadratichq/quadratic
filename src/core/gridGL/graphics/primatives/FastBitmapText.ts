@@ -14,7 +14,7 @@ const FastBitmapText = PixiComponent("FastText", {
       fontSize: 14,
       tint: 0x000000,
       align: "left",
-      maxWidth: 100,
+      // maxWidth: 100,
     }),
   applyProps: (instance, oldProps, props) => {
     const { x, y, text } = props;
