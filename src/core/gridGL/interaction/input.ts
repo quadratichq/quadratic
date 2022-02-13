@@ -42,6 +42,7 @@ export default class GridInput {
           y: cursor.location.y + 1,
         });
         // viewport.removeChild(input);
+        this.input.text = "";
         this.globals.canvas.focus();
       }
       // esc
