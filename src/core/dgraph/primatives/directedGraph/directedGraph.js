@@ -17,6 +17,20 @@ export class DirectedGraph {
     this._edgesCount = 0;
   }
 
+  export() {
+    return {
+      vertices: this._vertices,
+      edges: this._edges,
+      edgesCount: this._edgesCount,
+    };
+  }
+
+  import(directedGraphImport) {
+    this._vertices = directedGraphImport.vertices;
+    this._edges = directedGraphImport.edges;
+    this._edgesCount = directedGraphImport.edgesCount;
+  }
+
   /**
    * Adds a vertex to the graph
    * @public

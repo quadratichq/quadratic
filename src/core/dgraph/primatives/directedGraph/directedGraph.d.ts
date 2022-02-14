@@ -1,4 +1,12 @@
+interface DirectedGraphExport {
+  vertices: Map;
+  edges: Map;
+  edgesCount: number;
+}
+
 export class DirectedGraph<T extends number | string, U = undefined> {
+  export(): DirectedGraphExport;
+  import(directedGraphImport: DirectedGraphExport): void;
   addVertex(key: T, value: U): DirectedGraph<T, U>;
   hasVertex(key: T): boolean;
   removeVertex(key: T): boolean;

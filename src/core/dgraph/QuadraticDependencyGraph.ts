@@ -9,6 +9,28 @@ const string_to_cell = (cell: string): [number, number] => {
   return [Number(result[0]), Number(result[1])];
 };
 
+function replacer(key: any, value: any) {
+  // From https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
+  if (value instanceof Map) {
+    return {
+      dataType: "Map",
+      value: Array.from(value.entries()), // or with spread: value: [...value]
+    };
+  } else {
+    return value;
+  }
+}
+
+function reviver(key: any, value: any) {
+  // From https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
+  if (typeof value === "object" && value !== null) {
+    if (value.dataType === "Map") {
+      return new Map(value.value);
+    }
+  }
+  return value;
+}
+
 export default class QuadraticDependencyGraph {
   _dgraph: DirectedGraph<string, undefined>;
 
@@ -17,18 +39,13 @@ export default class QuadraticDependencyGraph {
   }
 
   export_to_json() {
-    return {
-      //@ts-ignore
-      vertices: this._dgraph._vertices,
-      //@ts-ignore
-      edges: this._dgraph._edges,
-      //@ts-ignore
-      edgesCount: this._dgraph._edgesCount,
-    };
+    const egraph = this._dgraph.export();
+    return JSON.stringify(egraph, replacer);
   }
 
-  load_from_json() {
-    return {};
+  load_from_json(directedGraphImport: string) {
+    const igraph = JSON.parse(directedGraphImport, reviver);
+    this._dgraph.import(igraph);
   }
 
   add_dependency_to_graph(
