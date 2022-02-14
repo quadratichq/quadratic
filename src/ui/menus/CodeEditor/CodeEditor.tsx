@@ -1,10 +1,14 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Editor, { Monaco, loader } from "@monaco-editor/react";
 import monaco from "monaco-editor";
 import colors from "../../../theme/colors";
 import { QuadraticEditorTheme } from "../../../theme/quadraticEditorTheme";
-import { UpdateCells } from "../../../core/database/UpdateCells";
+import { UpdateCellsDB } from "../../../core/gridDB/UpdateCellsDB";
+import { GetCellsDB } from "../../../core/gridDB/GetCellsDB";
+import { runPython } from "../../../core/computations/python/runPython";
+import { CellTypes } from "../../../core/gridDB/db";
+import TextField from "@mui/material/TextField";
 
 import { PYTHON_EXAMPLE_CODE } from "./python_example";
 
@@ -14,13 +18,36 @@ export default function CodeEditor() {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   let navigate = useNavigate();
   const { x, y, mode } = useParams();
-  const [editorContent, setEditorContent] = useState<string | undefined>(
-    PYTHON_EXAMPLE_CODE
-  );
+  const [editorContent, setEditorContent] = useState<string | undefined>("");
+  const [stdoutContent, setStdoutContent] = useState<string>("");
 
-  const saveAndClose = () => {
-    if (mode === "text") {
-      UpdateCells([
+  const closeEditor = () => {
+    navigate("/");
+    document?.querySelector("canvas")?.focus();
+  };
+
+  useEffect(() => {
+    if (x !== undefined && y !== undefined) {
+      GetCellsDB(Number(x), Number(y), Number(x), Number(y)).then((cells) => {
+        if (cells.length) {
+          if ((mode as CellTypes) === "PYTHON") {
+            setEditorContent(cells[0].python_code);
+          } else {
+            setEditorContent(cells[0].value);
+          }
+        } else {
+          if ((mode as CellTypes) === "PYTHON") {
+            setEditorContent(PYTHON_EXAMPLE_CODE);
+          }
+        }
+      });
+    }
+  }, [x, y, mode]);
+
+  const save = (close = true) => {
+    setStdoutContent("");
+    if ((mode as CellTypes) === "TEXT") {
+      UpdateCellsDB([
         {
           x: Number(x),
           y: Number(y),
@@ -28,8 +55,33 @@ export default function CodeEditor() {
           value: editorRef.current?.getValue() || "",
         },
       ]);
+      if (close) closeEditor();
+    } else if ((mode as CellTypes) === "PYTHON") {
+      const code = editorRef.current?.getValue() || "";
+
+      runPython(code).then((result) => {
+        let stdout = [
+          result.input_python_std_out,
+          result.input_python_stack_trace,
+        ].join("");
+        setStdoutContent(stdout.trim());
+
+        setEditorContent(result.formatted_code);
+
+        if (result.input_python_evaluation_success) {
+          UpdateCellsDB([
+            {
+              x: Number(x),
+              y: Number(y),
+              type: "PYTHON",
+              value: result.output_value || "",
+              python_code: code,
+            },
+          ]);
+          if (close) closeEditor();
+        }
+      });
     }
-    navigate("/");
   };
 
   function handleEditorDidMount(
@@ -43,10 +95,17 @@ export default function CodeEditor() {
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
       function () {
-        saveAndClose();
-        // navigate("/");
+        save(true);
       }
     );
+
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
+      save(false);
+    });
+
+    editor.addCommand(monaco.KeyCode.Escape, () => {
+      closeEditor();
+    });
 
     monaco.editor.defineTheme("quadratic", QuadraticEditorTheme);
     monaco.editor.setTheme("quadratic");
@@ -68,9 +127,9 @@ export default function CodeEditor() {
       }}
     >
       <Editor
-        height="100%"
+        height="80%"
         width="100%"
-        defaultLanguage={mode}
+        defaultLanguage={mode === "PYTHON" ? "python" : "text"}
         value={editorContent}
         onChange={(value) => {
           setEditorContent(value);
@@ -87,6 +146,19 @@ export default function CodeEditor() {
           wordWrap: "on",
         }}
       />
+      {(mode as CellTypes) === "PYTHON" && (
+        <div style={{ margin: "15px" }}>
+          <TextField
+            disabled
+            id="outlined-multiline-static"
+            label="OUTPUT"
+            multiline
+            rows={4}
+            value={stdoutContent}
+            style={{ width: "100%" }}
+          />
+        </div>
+      )}
     </div>
   );
 }
