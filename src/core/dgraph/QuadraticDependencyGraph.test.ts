@@ -146,3 +146,28 @@ test("test QuadraticDependencyGraph", () => {
   // Test CircularReferenceException, should throw error
   // dg.add_dependency_to_graph([1, 2], [[3, 3]]);
 });
+
+test("QuadraticDependencyGraph.add_dependencies_to_graph", () => {
+  let dg = new QuadraticDependencyGraph();
+
+  dg.add_dependencies_to_graph(
+    [
+      [0, 0],
+      [0, 1],
+    ],
+    [
+      [1, 0],
+      [1, 1],
+    ]
+  );
+
+  expect(dg.get_children_cells([0, 0])).toStrictEqual([
+    [1, 0],
+    [1, 1],
+  ]);
+
+  expect(dg.get_children_cells([0, 1])).toStrictEqual([
+    [1, 0],
+    [1, 1],
+  ]);
+});
