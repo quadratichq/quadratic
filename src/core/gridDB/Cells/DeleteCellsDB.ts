@@ -1,5 +1,5 @@
-import { qdb } from "./db";
-import CellReference from "../gridGL/types/cellReference";
+import { qdb } from "../db";
+import CellReference from "../../gridGL/types/cellReference";
 
 export const DeleteCellsDB = async (cells: CellReference[]) => {
   let cellIDs = cells.map((cell) => {

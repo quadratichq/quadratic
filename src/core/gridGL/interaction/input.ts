@@ -5,9 +5,10 @@ import Globals from "../globals";
 import Cursor from "./cursor";
 
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
-import { UpdateCellsDB } from "../../gridDB/UpdateCellsDB";
-import { DeleteCellsDB } from "../../gridDB/DeleteCellsDB";
-import { GetCellsDB } from "../../gridDB/GetCellsDB";
+import { UpdateCellsDB } from "../../gridDB/Cells/UpdateCellsDB";
+import { DeleteCellsDB } from "../../gridDB/Cells/DeleteCellsDB";
+import { GetCellsDB } from "../../gridDB/Cells/GetCellsDB";
+import { updateCellAndGrid } from "../../actions/updateCellAndGrid";
 export default class GridInput {
   globals: Globals;
   cursor: Cursor;
@@ -107,14 +108,12 @@ export default class GridInput {
         },
       ]);
     } else {
-      await UpdateCellsDB([
-        {
-          x: this.cursor.location.x,
-          y: this.cursor.location.y,
-          type: "TEXT",
-          value: this.input.text,
-        },
-      ]);
+      await updateCellAndGrid({
+        x: this.cursor.location.x,
+        y: this.cursor.location.y,
+        type: "TEXT",
+        value: this.input.text,
+      });
     }
   }
 

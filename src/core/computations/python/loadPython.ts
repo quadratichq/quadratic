@@ -1,4 +1,4 @@
-import { GetCellsDB } from "../../gridDB/GetCellsDB";
+import { GetCellsDB } from "../../gridDB/Cells/GetCellsDB";
 
 //@ts-expect-error
 import define_run_python from "./run_python.py";

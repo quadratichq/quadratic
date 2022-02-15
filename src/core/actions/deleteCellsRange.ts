@@ -1,5 +1,5 @@
-import { GetCellsDB } from "../gridDB/GetCellsDB";
-import { DeleteCellsDB } from "../gridDB/DeleteCellsDB";
+import { GetCellsDB } from "../gridDB/Cells/GetCellsDB";
+import { DeleteCellsDB } from "../gridDB/Cells/DeleteCellsDB";
 import CellReference from "../gridGL/types/cellReference";
 
 export const deleteCellsRange = async (

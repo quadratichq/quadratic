@@ -13,19 +13,31 @@ export interface Cell {
   type: CellTypes;
   value: string;
 
+  dependent_cells?: [number, number][];
+
+  python_code?: string;
+  python_output?: string;
+
+  // not implemented yet
   formula_code?: string;
   js_code?: string;
-  python_code?: string;
   sql_code?: string;
+}
+
+export interface Grid {
+  id: number;
+  dgraph_json?: string;
 }
 
 export class QDexie extends Dexie {
   cells!: Table<Cell>;
+  qgrid!: Table<Grid>;
 
   constructor() {
     super("quadratic_grid1");
-    this.version(14).stores({
+    this.version(17).stores({
       cells: "[x+y]",
+      qgrid: "&id",
     });
   }
 }

@@ -5,7 +5,7 @@ import { Stage } from "@inlet/react-pixi";
 import ViewportComponent from "./ViewportComponent";
 import { useNavigate } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { GetCellsDB } from "../gridDB/GetCellsDB";
+import { GetCellsDB } from "../gridDB/Cells/GetCellsDB";
 import CellPixiReact from "./graphics/CellPixiReact";
 import { useLoading } from "../../contexts/LoadingContext";
 

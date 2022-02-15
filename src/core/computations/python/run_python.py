@@ -12,13 +12,19 @@ from contextlib import redirect_stdout
 micropip.install("autopep8")
 
 
+def attempt_fix_await(code):
+    code = code.replace("getCells", "await getCells")
+    code = code.replace("await await getCells", "await getCells")
+    return code
+
+
 async def run_python(code):
 
     cells_accessed = []
 
     async def getCells(p0_x, p0_y, p1_x, p1_y):
-        for x in range(p0_x, p1_x):
-            for y in range(p0_y, p1_y):
+        for x in range(p0_x, p1_x + 1):
+            for y in range(p0_y, p1_y + 1):
                 cells_accessed.append([x, y])
         return await GetCellsDB(p0_x, p0_y, p1_x, p1_y)
 
@@ -40,7 +46,9 @@ async def run_python(code):
     try:
         # Capture STDOut to sout
         with redirect_stdout(sout):
-            output_value = await pyodide.eval_code_async(code, globals, locals)
+            output_value = await pyodide.eval_code_async(
+                attempt_fix_await(code), globals, locals
+            )
 
     except SyntaxError as err:
         error_class = err.__class__.__name__

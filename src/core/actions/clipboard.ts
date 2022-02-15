@@ -1,8 +1,8 @@
 import CellReference from "../gridGL/types/cellReference";
 import { Cell } from "../gridDB/db";
-import { GetCellsDB } from "../gridDB/GetCellsDB";
-import { UpdateCellsDB } from "../gridDB/UpdateCellsDB";
-import { DeleteCellsDB } from "../gridDB/DeleteCellsDB";
+import { GetCellsDB } from "../gridDB/Cells/GetCellsDB";
+import { UpdateCellsDB } from "../gridDB/Cells/UpdateCellsDB";
+import { DeleteCellsDB } from "../gridDB/Cells/DeleteCellsDB";
 
 export const pasteFromClipboard = (pasteToCell: CellReference) => {
   // get contents from clipboard
