@@ -98,7 +98,7 @@ export default function CodeEditor() {
           position: "fixed",
           // top: 35,
           right: 0,
-          width: "30%",
+          width: "35%",
           minWidth: "400px",
           height: "100%",
           borderStyle: "solid",
