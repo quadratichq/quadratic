@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { TopBar } from "../ui/menus/TopBar";
 import CellTypeMenu from "../ui/menus/CellTypeMenu/";
 import CodeEditor from "../ui/menus/CodeEditor";
+import DebugTerminal from "./menus/DebugTerminal/DebugTerminal";
 
 export default function QuadraticUI() {
   return (
@@ -19,6 +20,7 @@ export default function QuadraticUI() {
           element={<CodeEditor></CodeEditor>}
         />
       </Routes>
+      <DebugTerminal />
     </>
   );
 }

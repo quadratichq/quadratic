@@ -6,6 +6,7 @@ import { UpdateDGraphDB } from "../gridDB/DGraph/UpdateDGraphDB";
 import { GetCellsDB } from "../gridDB/Cells/GetCellsDB";
 
 export const updateCellAndGrid = async (cell: Cell) => {
+  //save currently edited cell
   await UpdateCellsDB([cell]);
   let dgraph = await GetDGraphDB();
 
@@ -14,6 +15,7 @@ export const updateCellAndGrid = async (cell: Cell) => {
 
   // update cells, starting with the current cell
   while (cells_to_update.length > 0) {
+    console.log("cells_to_update", cells_to_update);
     // get next cell to update
     const ref_cell_to_update = cells_to_update.shift();
     if (ref_cell_to_update === undefined) break;
@@ -27,8 +29,16 @@ export const updateCellAndGrid = async (cell: Cell) => {
         ref_cell_to_update[1]
       )
     )[0];
+    console.log("updateCellAndGrid got cell", cell);
 
     if (cell === undefined) continue;
+
+    // remove old deps from graph
+    console.log("checking for old deps", cell);
+    if (cell.dependent_cells)
+      dgraph.remove_dependencies_from_graph(cell.dependent_cells, [
+        [cell.x, cell.y],
+      ]);
 
     if (cell.type === "PYTHON") {
       // run cell and format results
@@ -47,10 +57,18 @@ export const updateCellAndGrid = async (cell: Cell) => {
         cell.python_code = result.formatted_code;
       }
 
+      // add new cell deps to graph
+      if (result.cells_accessed.length) {
+        // add new deps to graph
+        dgraph.add_dependencies_to_graph(result.cells_accessed, [
+          [cell.x, cell.y],
+        ]);
+      }
+
       // if array output
-      console.log("result?.array_output", result);
-      let array_cells_to_output: Cell[] = [];
       if (result.array_output) {
+        console.log("result?.array_output", result);
+        let array_cells_to_output: Cell[] = [];
         if (result.array_output[0][0] !== undefined) {
           // 2d array
           console.log("2d");
@@ -71,15 +89,15 @@ export const updateCellAndGrid = async (cell: Cell) => {
         } else {
           // 1d array
           console.log("1d");
-          let x_offset = 0;
+          let y_offset = 0;
           for (const cell of result.array_output) {
             array_cells_to_output.push({
-              x: ref_cell_to_update[0] + x_offset,
-              y: ref_cell_to_update[1],
+              x: ref_cell_to_update[0],
+              y: ref_cell_to_update[1] + y_offset,
               type: "COMPUTED",
               value: cell.toString(),
             });
-            x_offset++;
+            y_offset++;
           }
         }
         // we can't override the og cell or we will lose our formula
@@ -87,35 +105,32 @@ export const updateCellAndGrid = async (cell: Cell) => {
         cell.value = would_override_og_cell?.value || "";
         array_cells_to_output.unshift(cell);
 
-        UpdateCellsDB(array_cells_to_output);
-
         // if any updated cells have other cells depending on them, add to list to update
         for (const array_cell of array_cells_to_output) {
           // add new cell deps to graph
-          // TODO remove old deps
-          if (result.cells_accessed.length) {
-            cell.dependent_cells = result.cells_accessed;
-            dgraph.add_dependencies_to_graph(result.cells_accessed, [
-              [array_cell.x, array_cell.y],
-            ]);
-          }
+          // if (result.cells_accessed.length) {
+          //   // array cells all depend on the cell creating them
+          //   cell.dependent_cells = [[cell.x, cell.y]];
+          // }
 
+          // add new dep to graph
+          // dgraph.add_dependency_to_graph(
+          //   [cell.x, cell.y],
+          //   [[array_cell.x, array_cell.y]]
+          // );
+
+          // add cells to list to update
           let deps = dgraph.get_children_cells([array_cell.x, array_cell.y]);
           cells_to_update.push(...deps);
         }
+
+        UpdateCellsDB(array_cells_to_output);
       } else {
         // not array output
-        // update current cell
-        UpdateCellsDB([cell]);
 
-        // add new cell deps to graph
-        // TODO remove old deps
-        if (result.cells_accessed.length) {
-          cell.dependent_cells = result.cells_accessed;
-          dgraph.add_dependencies_to_graph(result.cells_accessed, [
-            [cell.x, cell.y],
-          ]);
-        }
+        // update current cell
+        cell.dependent_cells = result.cells_accessed;
+        UpdateCellsDB([cell]);
 
         // if this cell updates other cells add them to the list to update
         let deps = dgraph.get_children_cells([cell.x, cell.y]);

@@ -8,6 +8,7 @@ import { QuadraticEditorTheme } from "../../../theme/quadraticEditorTheme";
 import { GetCellsDB } from "../../../core/gridDB/Cells/GetCellsDB";
 import { CellTypes } from "../../../core/gridDB/db";
 import TextField from "@mui/material/TextField";
+import { Cell } from "../../../core/gridDB/db";
 
 import { PYTHON_EXAMPLE_CODE } from "./python_example";
 import { updateCellAndGrid } from "../../../core/actions/updateCellAndGrid";
@@ -42,23 +43,37 @@ export default function CodeEditor() {
     }
   }, [cells, mode]);
 
+  // use exiting cell or create new cell
+  let cell: Cell | undefined;
+  if (cells !== undefined && cells[0] !== undefined) {
+    cell = cells[0];
+    console.log("existing cell", cell);
+  } else if (x !== undefined && y !== undefined) {
+    cell = {
+      x: Number(x),
+      y: Number(y),
+      type: mode as CellTypes,
+      value: "",
+    } as Cell;
+    console.log("new cell", cell);
+  }
+
   const save = (close = true) => {
     const editorContent = editorRef.current?.getValue() || "";
     if ((mode as CellTypes) === "TEXT") {
-      updateCellAndGrid({
-        x: Number(x),
-        y: Number(y),
-        type: "TEXT",
-        value: editorContent,
-      });
+      if (cell) {
+        cell.value = editorContent;
+
+        updateCellAndGrid(cell);
+      }
     } else if ((mode as CellTypes) === "PYTHON") {
-      updateCellAndGrid({
-        x: Number(x),
-        y: Number(y),
-        type: "PYTHON",
-        value: "",
-        python_code: editorContent,
-      });
+      if (cell) {
+        cell.type = "PYTHON";
+        cell.value = "";
+        cell.python_code = editorContent;
+
+        updateCellAndGrid(cell);
+      }
     }
 
     if (close) closeEditor();
@@ -135,7 +150,7 @@ export default function CodeEditor() {
               label="OUTPUT"
               multiline
               rows={7}
-              value={cells[0]?.python_output || ""}
+              value={cell?.python_output || ""}
               style={{ width: "100%" }}
             />
           </div>

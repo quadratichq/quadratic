@@ -31,6 +31,10 @@ export class DirectedGraph {
     this._edgesCount = directedGraphImport.edgesCount;
   }
 
+  get_all_edges() {
+    return this._edges;
+  }
+
   /**
    * Adds a vertex to the graph
    * @public
