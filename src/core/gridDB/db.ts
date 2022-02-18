@@ -5,7 +5,13 @@ export interface GridFile {
   dgraph: object;
 }
 
-export type CellTypes = "TEXT" | "FORMULA" | "JAVASCRIPT" | "PYTHON" | "SQL";
+export type CellTypes =
+  | "TEXT"
+  | "FORMULA"
+  | "JAVASCRIPT"
+  | "PYTHON"
+  | "SQL"
+  | "COMPUTED";
 
 export interface Cell {
   x: number;

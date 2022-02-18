@@ -4,5 +4,6 @@ export interface runPythonReturnType {
   input_python_stack_trace: string;
   input_python_std_out: string;
   output_value: string | null;
+  array_output: (string | number | boolean)[][];
   formatted_code: string;
 }

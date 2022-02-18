@@ -29,6 +29,8 @@ const CellPixiReact = (props: CellPixiReactProps) => {
         g.lineStyle(1, colors.cellColorUserText, 0.75, 0.5, true);
       } else if (props.type === "PYTHON") {
         g.lineStyle(1, colors.cellColorUserPython, 0.75, 0.5, true);
+      } else if (props.type === "COMPUTED") {
+        g.lineStyle(1, colors.independence, 0.75, 0.5, true);
       }
 
       g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
@@ -37,13 +39,13 @@ const CellPixiReact = (props: CellPixiReactProps) => {
   );
 
   return (
-    <Container>
+    <Container interactiveChildren={false}>
       <FastBitmapText
         x={x_pos + margin_left}
         y={y_pos + margin_top}
         text={props.text}
-      ></FastBitmapText>
-      <Graphics draw={draw_outline}></Graphics>
+      />
+      <Graphics draw={draw_outline} />
     </Container>
   );
 };

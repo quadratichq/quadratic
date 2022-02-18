@@ -6,6 +6,7 @@ import pyodide
 import asyncio
 import micropip
 
+
 from io import StringIO
 from contextlib import redirect_stdout
 
@@ -13,8 +14,8 @@ micropip.install("autopep8")
 
 
 def attempt_fix_await(code):
-    code = code.replace("getCells", "await getCells")
-    code = code.replace("await await getCells", "await getCells")
+    code = code.replace("getCell", "await getCell")
+    code = code.replace("await await getCell", "await getCell")
     return code
 
 
@@ -37,8 +38,14 @@ async def run_python(code):
         else:
             return None
 
+    async def c(p0_x, p0_y, p1_x=None, p1_y=None):
+        if p1_x is None:
+            return await getCell(p0_x, p0_y)
+        else:
+            return await getCells(p0_x, p0_y, p1_x, p1_y)
+
     globals = {}
-    locals = {"getCells": getCells, "getCell": getCell}
+    locals = {"getCells": getCells, "getCell": getCell, "c": c}
 
     sout = StringIO()
     output_value = None
@@ -63,8 +70,15 @@ async def run_python(code):
         # Successfully Created a Result
         import autopep8
 
+        output_value = output_value or locals.get("result", None)
+
+        array_output = None
+        if isinstance(output_value, list):
+            array_output = output_value
+
         return {
-            "output_value": str(output_value or locals.get("result", None)),
+            "output_value": str(output_value),
+            "array_output": array_output,
             "cells_accessed": cells_accessed,
             "input_python_std_out": sout.getvalue(),
             "input_python_evaluation_success": True,
@@ -76,6 +90,7 @@ async def run_python(code):
 
     return {
         "output_value": output_value,
+        "array_output": None,
         "cells_accessed": cells_accessed,
         "input_python_std_out": sout.getvalue(),
         "input_python_evaluation_success": False,
