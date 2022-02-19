@@ -15,15 +15,17 @@ export default function DebugTerminal() {
   const dgraph = useLiveQuery(() => GetDGraphDB());
   const cells = useLiveQuery(() => GetCellsDB());
 
-  const dgraph_json_str = dgraph?.export_to_json();
+  // const dgraph_json_str = dgraph?.export_to_json();
 
   let file_state: string;
+
+  const HUMAN_READABLE_DGRAPH = false;
+  let dgraph_str = dgraph?.human_readable_string();
+  if (!HUMAN_READABLE_DGRAPH)
+    dgraph_str = JSON.stringify(dgraph?.export_to_obj());
+
   try {
-    file_state = `${JSON.stringify(
-      JSON.parse(dgraph_json_str || ""),
-      null,
-      "\t"
-    )}\n${JSON.stringify(cells || "", null, "\t")}`;
+    file_state = `${dgraph_str}\n${JSON.stringify(cells || "", null, "\t")}`;
   } catch {
     file_state = "";
   }

@@ -47,7 +47,6 @@ export default function CodeEditor() {
   let cell: Cell | undefined;
   if (cells !== undefined && cells[0] !== undefined) {
     cell = cells[0];
-    console.log("existing cell", cell);
   } else if (x !== undefined && y !== undefined) {
     cell = {
       x: Number(x),
@@ -55,7 +54,6 @@ export default function CodeEditor() {
       type: mode as CellTypes,
       value: "",
     } as Cell;
-    console.log("new cell", cell);
   }
 
   const save = (close = true) => {

@@ -31,7 +31,7 @@ export class DirectedGraph {
     this._edgesCount = directedGraphImport.edgesCount;
   }
 
-  get_all_edges() {
+  getAllEdges() {
     return this._edges;
   }
 

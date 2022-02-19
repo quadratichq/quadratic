@@ -7,7 +7,7 @@ interface DirectedGraphExport {
 export class DirectedGraph<T extends number | string, U = undefined> {
   export(): DirectedGraphExport;
   import(directedGraphImport: DirectedGraphExport): void;
-  get_all_edges(): Map;
+  getAllEdges(): Map;
   addVertex(key: T, value: U): DirectedGraph<T, U>;
   hasVertex(key: T): boolean;
   removeVertex(key: T): boolean;

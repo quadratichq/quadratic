@@ -24,6 +24,8 @@ export interface Cell {
   python_code?: string;
   python_output?: string;
 
+  array_cells?: [number, number][]; // list of output array cells created by this cell
+
   // not implemented yet
   formula_code?: string;
   js_code?: string;
