@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Routes, Route } from "react-router-dom";
-import { TopBar } from "../ui/menus/TopBar";
+import TopBar from "../ui/menus/TopBar";
 import CellTypeMenu from "../ui/menus/CellTypeMenu/";
 import CodeEditor from "../ui/menus/CodeEditor";
 import DebugTerminal from "./menus/DebugTerminal/DebugTerminal";
