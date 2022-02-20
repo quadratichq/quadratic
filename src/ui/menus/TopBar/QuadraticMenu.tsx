@@ -13,6 +13,7 @@ import "@szhsin/react-menu/dist/index.css";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 
 import { SaveGridFile } from "../../../core/actions/gridFile/SaveGridFile";
+import { OpenGridFile } from "../../../core/actions/gridFile/OpenGridFile";
 
 const styles = {
   fileMenuIcon: {
@@ -39,7 +40,7 @@ export const QuadraticMenu = () => {
         <MenuItem onClick={() => SaveGridFile(true)}>
           <SaveOutlined style={styles.fileMenuIcon}></SaveOutlined> Save Grid
         </MenuItem>
-        <MenuItem>
+        <MenuItem onClick={() => OpenGridFile()}>
           <FileOpenOutlined style={styles.fileMenuIcon}></FileOpenOutlined> Open
           Grid
         </MenuItem>
