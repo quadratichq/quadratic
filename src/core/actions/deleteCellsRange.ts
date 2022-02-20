@@ -11,7 +11,7 @@ export const deleteCellsRange = async (
   const cells = await GetCellsDB(p0.x, p0.y, p1.x, p1.y);
   let dgraph = await GetDGraphDB();
 
-  // Remove cells from dgraph
+  // Remove cells from dgraph Vertices & Dest Edges
 
   await UpdateDGraphDB(dgraph);
   await DeleteCellsDB(cells);

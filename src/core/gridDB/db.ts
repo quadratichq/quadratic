@@ -1,10 +1,5 @@
 import Dexie, { Table } from "dexie";
 
-export interface GridFile {
-  id: number;
-  dgraph: object;
-}
-
 export type CellTypes =
   | "TEXT"
   | "FORMULA"

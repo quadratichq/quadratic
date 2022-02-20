@@ -7,9 +7,25 @@ import {
   MenuDivider,
   MenuHeader,
 } from "@szhsin/react-menu";
+import FileOpenOutlined from "@mui/icons-material/FileOpenOutlined";
+import SaveOutlined from "@mui/icons-material/SaveOutlined";
 import "@szhsin/react-menu/dist/index.css";
+import useLocalStorage from "../../../hooks/useLocalStorage";
+
+import { SaveGridFile } from "../../../core/actions/gridFile/SaveGridFile";
+
+const styles = {
+  fileMenuIcon: {
+    marginRight: "0.5rem",
+  },
+};
 
 export const QuadraticMenu = () => {
+  const [showDebugTerminal, setShowDebugTerminal] = useLocalStorage(
+    "showDebugTerminal",
+    false
+  );
+
   return (
     <Menu
       menuButton={
@@ -20,16 +36,29 @@ export const QuadraticMenu = () => {
       }
     >
       <SubMenu label="File">
-        <MenuItem>Save Grid</MenuItem>
-        <MenuItem>Open Grid</MenuItem>
+        <MenuItem onClick={() => SaveGridFile(true)}>
+          <SaveOutlined style={styles.fileMenuIcon}></SaveOutlined> Save Grid
+        </MenuItem>
+        <MenuItem>
+          <FileOpenOutlined style={styles.fileMenuIcon}></FileOpenOutlined> Open
+          Grid
+        </MenuItem>
       </SubMenu>
       <SubMenu label="View">
         <MenuHeader>Grid</MenuHeader>
-        <MenuItem>Show Axis</MenuItem>
+        <MenuItem type="checkbox">Show Axis</MenuItem>
         <MenuDivider />
         <MenuHeader>Debug</MenuHeader>
-        <MenuItem>Show DebugTerminal</MenuItem>
-        <MenuItem>Prove WebGL</MenuItem>
+        <MenuItem
+          type="checkbox"
+          checked={showDebugTerminal}
+          onClick={() => {
+            setShowDebugTerminal(!showDebugTerminal);
+          }}
+        >
+          Show DebugTerminal
+        </MenuItem>
+        <MenuItem type="checkbox">Prove WebGL</MenuItem>
       </SubMenu>
     </Menu>
   );

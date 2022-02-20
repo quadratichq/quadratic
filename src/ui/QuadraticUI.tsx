@@ -4,8 +4,11 @@ import TopBar from "../ui/menus/TopBar";
 import CellTypeMenu from "../ui/menus/CellTypeMenu/";
 import CodeEditor from "../ui/menus/CodeEditor";
 import DebugTerminal from "./menus/DebugTerminal/DebugTerminal";
+import useLocalStorage from "../hooks/useLocalStorage";
 
 export default function QuadraticUI() {
+  const [showDebugTerminal] = useLocalStorage("showDebugTerminal", false);
+
   return (
     <>
       <TopBar></TopBar>
@@ -20,7 +23,7 @@ export default function QuadraticUI() {
           element={<CodeEditor></CodeEditor>}
         />
       </Routes>
-      <DebugTerminal />
+      {showDebugTerminal && <DebugTerminal />}
     </>
   );
 }

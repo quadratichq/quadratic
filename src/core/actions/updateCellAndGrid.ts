@@ -4,8 +4,10 @@ import { runPython } from "../computations/python/runPython";
 import { GetDGraphDB } from "../gridDB/DGraph/GetDGraphDB";
 import { UpdateDGraphDB } from "../gridDB/DGraph/UpdateDGraphDB";
 import { GetCellsDB } from "../gridDB/Cells/GetCellsDB";
+import { DeleteCellsDB } from "../gridDB/Cells/DeleteCellsDB";
 
 export const updateCellAndGrid = async (cell: Cell) => {
+  console.log("updateCellAndGrid called", cell);
   //save currently edited cell
   await UpdateCellsDB([cell]);
   let dgraph = await GetDGraphDB();
@@ -15,7 +17,24 @@ export const updateCellAndGrid = async (cell: Cell) => {
 
   // update cells, starting with the current cell
   while (cells_to_update.length > 0) {
-    console.log("cells_to_update", cells_to_update);
+    console.log("cells_to_update", JSON.stringify(cells_to_update));
+
+    // dedupe cells_to_update
+    let seen = Array<string>();
+    for (let i = 0; i < cells_to_update.length; null) {
+      let string_id = cells_to_update[i].join(",");
+
+      if (seen.includes(string_id)) {
+        cells_to_update.splice(i, 1);
+      } else {
+        i++;
+      }
+
+      seen.push(string_id);
+    }
+
+    console.log("cells_to_update_no_dupes", JSON.stringify(cells_to_update));
+
     // get next cell to update
     const ref_cell_to_update = cells_to_update.shift();
     if (ref_cell_to_update === undefined) break;
@@ -29,16 +48,24 @@ export const updateCellAndGrid = async (cell: Cell) => {
         ref_cell_to_update[1]
       )
     )[0];
-    console.log("updateCellAndGrid got cell", cell);
 
     if (cell === undefined) continue;
 
     // remove old deps from graph
-    console.log("checking for old deps", cell);
     if (cell.dependent_cells)
       dgraph.remove_dependencies_from_graph(cell.dependent_cells, [
         [cell.x, cell.y],
       ]);
+
+    // clear old array cells created by this cell
+    if (cell.array_cells) {
+      const old_array_cells = cell.array_cells.map((cell) => {
+        return { x: cell[0], y: cell[1] };
+      });
+      // old_array_cells.unshift(); // remove this cell
+      console.log("deleting cells", JSON.stringify(old_array_cells));
+      await DeleteCellsDB(old_array_cells);
+    }
 
     if (cell.type === "PYTHON") {
       // run cell and format results
@@ -65,11 +92,19 @@ export const updateCellAndGrid = async (cell: Cell) => {
         ]);
       }
 
+      let array_cells_to_output: Cell[] = [];
+
       // if array output
       if (result.array_output) {
-        console.log("result?.array_output", result);
-        let array_cells_to_output: Cell[] = [];
-        if (result.array_output[0][0] !== undefined) {
+        console.log(
+          "result?.array_output",
+          JSON.stringify(result?.array_output)
+        );
+
+        if (
+          result.array_output[0][0] !== undefined &&
+          typeof result.array_output[0] !== "string"
+        ) {
           // 2d array
           console.log("2d");
           let x_offset = 0;
@@ -107,30 +142,29 @@ export const updateCellAndGrid = async (cell: Cell) => {
 
         // if any updated cells have other cells depending on them, add to list to update
         for (const array_cell of array_cells_to_output) {
-          // add new cell deps to graph
-          // if (result.cells_accessed.length) {
-          //   // array cells all depend on the cell creating them
-          //   cell.dependent_cells = [[cell.x, cell.y]];
-          // }
-
-          // add new dep to graph
-          // dgraph.add_dependency_to_graph(
-          //   [cell.x, cell.y],
-          //   [[array_cell.x, array_cell.y]]
-          // );
-
-          // add cells to list to update
+          // add array cells to list to update
           let deps = dgraph.get_children_cells([array_cell.x, array_cell.y]);
           cells_to_update.push(...deps);
         }
 
-        UpdateCellsDB(array_cells_to_output);
+        // keep track of array cells updated by this cell
+        cell.array_cells = array_cells_to_output.map((a_cell) => [
+          a_cell.x,
+          a_cell.y,
+        ]);
+
+        console.log("cell.array_cells", JSON.stringify(cell.array_cells));
+
+        await UpdateCellsDB([cell, ...array_cells_to_output]);
       } else {
         // not array output
 
+        // no array cells, because this was not an array return
+        cell.array_cells = [];
+
         // update current cell
         cell.dependent_cells = result.cells_accessed;
-        UpdateCellsDB([cell]);
+        await UpdateCellsDB([cell]);
 
         // if this cell updates other cells add them to the list to update
         let deps = dgraph.get_children_cells([cell.x, cell.y]);
