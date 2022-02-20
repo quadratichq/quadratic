@@ -10,7 +10,7 @@ import { Button } from "@mui/material";
 import QuadraticDependencyGraph from "../../../core/dgraph/QuadraticDependencyGraph";
 // import CellReference from "../../../core/gridGL/types/cellReference";
 
-export default function DebugTerminal() {
+export default function DebugMenu() {
   //   const [debugContent, setDebugContent] = useState<string>("");
   const dgraph = useLiveQuery(() => GetDGraphDB());
   const cells = useLiveQuery(() => GetCellsDB());
@@ -40,20 +40,11 @@ export default function DebugTerminal() {
         width: "65%",
         height: "400px",
         borderStyle: "solid",
-        borderWidth: "0 0 0 1px",
+        borderWidth: "1px",
         borderColor: colors.mediumGray,
         backgroundColor: "#ffffff",
       }}
     >
-      <TextField
-        disabled
-        id="outlined-multiline-static"
-        label="DEBUG"
-        multiline
-        rows={15}
-        value={file_state}
-        style={{ width: "100%" }}
-      />
       <Button
         onClick={() => {
           const qdg = new QuadraticDependencyGraph();
@@ -70,6 +61,15 @@ export default function DebugTerminal() {
       >
         Reset Grid
       </Button>
+      <TextField
+        disabled
+        id="outlined-multiline-static"
+        label="DEBUG"
+        multiline
+        rows={14}
+        value={file_state}
+        style={{ width: "100%" }}
+      />
     </div>
   );
 }

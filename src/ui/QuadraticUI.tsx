@@ -3,11 +3,11 @@ import { Routes, Route } from "react-router-dom";
 import TopBar from "../ui/menus/TopBar";
 import CellTypeMenu from "../ui/menus/CellTypeMenu/";
 import CodeEditor from "../ui/menus/CodeEditor";
-import DebugTerminal from "./menus/DebugTerminal/DebugTerminal";
+import DebugMenu from "./menus/DebugMenu/DebugMenu";
 import useLocalStorage from "../hooks/useLocalStorage";
 
 export default function QuadraticUI() {
-  const [showDebugTerminal] = useLocalStorage("showDebugTerminal", false);
+  const [showDebugMenu] = useLocalStorage("showDebugMenu", false);
 
   return (
     <>
@@ -23,7 +23,7 @@ export default function QuadraticUI() {
           element={<CodeEditor></CodeEditor>}
         />
       </Routes>
-      {showDebugTerminal && <DebugTerminal />}
+      {showDebugMenu && <DebugMenu />}
     </>
   );
 }

@@ -21,8 +21,8 @@ const styles = {
 };
 
 export const QuadraticMenu = () => {
-  const [showDebugTerminal, setShowDebugTerminal] = useLocalStorage(
-    "showDebugTerminal",
+  const [showDebugMenu, setShowDebugMenu] = useLocalStorage(
+    "showDebugMenu",
     false
   );
 
@@ -51,12 +51,12 @@ export const QuadraticMenu = () => {
         <MenuHeader>Debug</MenuHeader>
         <MenuItem
           type="checkbox"
-          checked={showDebugTerminal}
+          checked={showDebugMenu}
           onClick={() => {
-            setShowDebugTerminal(!showDebugTerminal);
+            setShowDebugMenu(!showDebugMenu);
           }}
         >
-          Show DebugTerminal
+          Show DebugMenu
         </MenuItem>
         <MenuItem type="checkbox">Prove WebGL</MenuItem>
       </SubMenu>
