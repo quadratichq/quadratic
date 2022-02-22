@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import useWindowDimensions from "../../hooks/useWindowDimensions.js";
+import useWindowDimensions from "../../hooks/useWindowDimensions";
 import Cursor from "./interaction/cursor";
 import { Stage } from "@inlet/react-pixi";
 import ViewportComponent from "./ViewportComponent";

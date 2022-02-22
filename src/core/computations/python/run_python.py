@@ -1,4 +1,3 @@
-from unicodedata import decimal
 import GetCellsDB
 
 import sys
