@@ -1,10 +1,5 @@
 import Dexie, { Table } from "dexie";
 
-export interface GridFile {
-  id: number;
-  dgraph: object;
-}
-
 export type CellTypes =
   | "TEXT"
   | "FORMULA"
@@ -23,6 +18,8 @@ export interface Cell {
 
   python_code?: string;
   python_output?: string;
+
+  array_cells?: [number, number][]; // list of output array cells created by this cell
 
   // not implemented yet
   formula_code?: string;

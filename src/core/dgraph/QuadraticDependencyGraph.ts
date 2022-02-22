@@ -39,8 +39,20 @@ export default class QuadraticDependencyGraph {
   }
 
   export_to_json() {
-    const egraph = this._dgraph.export();
-    return JSON.stringify(egraph, replacer);
+    return JSON.stringify(this.export_to_obj(), replacer);
+  }
+
+  export_to_obj() {
+    return this._dgraph.export();
+  }
+
+  human_readable_string() {
+    // used for debugging
+    let result = "DGraph: \n";
+    for (const [key, value] of this._dgraph.getAllEdges().entries()) {
+      result += `connection: ${key} updates ${[...value.keys()]}\n`;
+    }
+    return result;
   }
 
   load_from_json(directedGraphImport: string) {
@@ -67,6 +79,11 @@ export default class QuadraticDependencyGraph {
     dependent_cells: [number, number][]
   ) {
     // TODO: untested
+    // console.log(
+    //   "add_dependencies_to_graph",
+    //   input_cells,
+    //   JSON.stringify(dependent_cells)
+    // );
 
     for (const icell of input_cells) {
       this._dgraph.addVertex(cell_to_string(icell), undefined);
@@ -89,6 +106,19 @@ export default class QuadraticDependencyGraph {
 
     // TODO remove any orphans from the graph
   }
+
+  remove_dependencies_from_graph(
+    input_cells: [number, number][],
+    dependent_cells: [number, number][]
+  ) {
+    // console.log("remove_dependencies_from_graph", input_cells, JSON.stringify(dependent_cells));
+    for (const icell of input_cells) {
+      for (const dcell of dependent_cells) {
+        this._dgraph.removeEdge(cell_to_string(icell), cell_to_string(dcell));
+      }
+    }
+  }
+
   get_children_cells(cell: [number, number]) {
     let result = new Array<[number, number]>();
     this._dgraph.traverseBfs(cell_to_string(cell), (key, value) =>

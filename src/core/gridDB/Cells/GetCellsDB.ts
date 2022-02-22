@@ -14,4 +14,8 @@ export const GetCellsDB = async (
       return cell.y >= p0_y && cell.y <= p1_y;
     })
     .toArray();
+
+  // return await (
+  //   await qdb.cells.toArray()
+  // ).filter(({ x, y }) => p0_x <= x && x <= p1_x && p0_y <= y && y <= p1_y);
 };
