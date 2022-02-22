@@ -1,3 +1,4 @@
+from unicodedata import decimal
 import GetCellsDB
 
 import sys
@@ -5,36 +6,147 @@ import traceback
 import pyodide
 import asyncio
 import micropip
-
+import pandas as pd
+import operator
 
 from io import StringIO
 from contextlib import redirect_stdout
+from decimal import Decimal, DecimalException
 
 micropip.install("autopep8")
+
+# todo separate this file out into a Python Package
+# https://pyodide.org/en/stable/usage/loading-custom-python-code.html
 
 
 def attempt_fix_await(code):
     code = code.replace("getCell", "await getCell")
     code = code.replace("await await getCell", "await getCell")
+
+    code = code.replace("c(", "await c(")
+    code = code.replace("await await c(", "await c(")
     return code
+
+
+def strtobool(val):
+    """Convert a string representation of truth to true (1) or false (0).
+    True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
+    are 'n', 'no', 'f', 'false', 'off', and '0'.  Raises ValueError if
+    'val' is anything else.
+    """
+    val = val.lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    elif val in ("n", "no", "f", "false", "off", "0"):
+        return False
+    else:
+        raise ValueError("invalid truth value %r" % (val,))
+
+
+class Cell:
+    def __init__(self, object):
+        self.x = object.x
+        self.y = object.y
+        self.value = object.value
+
+    def __str__(self):
+        return str(self.value)
+
+    def __repr__(self):
+        return str(self.value)
+
+    def generic_overload(self, other, op):
+        if type(other) is Cell:
+            try:
+                return op(Decimal(self.value), Decimal(other.value))
+            except DecimalException:
+                return op(self.value, other.value)
+        else:
+            try:
+                return op(Decimal(self.value), Decimal(other))
+            except DecimalException:
+                return op(self.value, other)
+
+    def __add__(self, other):
+        return self.generic_overload(other, operator.add)
+
+    def __sub__(self, other):
+        return self.generic_overload(other, operator.sub)
+
+    def __mul__(self, other):
+        return self.generic_overload(other, operator.mul)
+
+    def __truediv__(self, other):
+        return self.generic_overload(other, operator.truediv)
+
+    def __mod__(self, other):
+        return self.generic_overload(other, operator.mod)
+
+    def __pow__(self, other):
+        return self.generic_overload(other, operator.pow)
+
+    def __eq__(self, other):
+        return self.generic_overload(other, operator.eq)
+
+    def __lt__(self, other):
+        return self.generic_overload(other, operator.lt)
+
+    def __le__(self, other):
+        return self.generic_overload(other, operator.le)
+
+    def __gt__(self, other):
+        return self.generic_overload(other, operator.gt)
+
+    def __ge__(self, other):
+        return self.generic_overload(other, operator.ge)
+
+    def __bool__(self):
+        return strtobool(self.value)
+
+
+class Table:
+    def __init__(self, cells):
+        self.p0 = None
+        self.p1 = None
+        self.has_headers = False
+
+    def to_df(self):
+        raise NotImplementedError()
+
+    def to_list(self):
+        raise NotImplementedError()
+
+    def to_2darray(self):
+        raise NotImplementedError()
+
+    # TODO define iterator
 
 
 async def run_python(code):
 
     cells_accessed = []
 
-    async def getCells(p0_x, p0_y, p1_x, p1_y):
-        for x in range(p0_x, p1_x + 1):
-            for y in range(p0_y, p1_y + 1):
+    async def getCells(p0, p1):
+        # mark cells this formula accesses
+        for x in range(p0[0], p1[0] + 1):
+            for y in range(p0[1], p1[1] + 1):
                 cells_accessed.append([x, y])
-        return await GetCellsDB(p0_x, p0_y, p1_x, p1_y)
+
+        cells = await GetCellsDB(p0[0], p0[1], p1[0], p1[1])
+
+        # TODO return as Table
+
+        return cells
+
+        raise Exception("Must select a return type.")
 
     async def getCell(p_x, p_y):
+        # mark cell this formula accesses
         cells_accessed.append([p_x, p_y])
         result = await GetCellsDB(p_x, p_y, p_x, p_y)
 
         if len(result):
-            return result[0]
+            return Cell(result[0])
         else:
             return None
 
@@ -70,7 +182,8 @@ async def run_python(code):
         # Successfully Created a Result
         import autopep8
 
-        output_value = output_value or locals.get("result", None)
+        if output_value is None:
+            output_value = locals.get("result", None)
 
         array_output = None
         if isinstance(output_value, list):
