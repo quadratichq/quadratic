@@ -6,8 +6,7 @@ import { UpdateDGraphDB } from "../gridDB/DGraph/UpdateDGraphDB";
 import { GetCellsDB } from "../gridDB/Cells/GetCellsDB";
 import { DeleteCellsDB } from "../gridDB/Cells/DeleteCellsDB";
 
-export const updateCellAndGrid = async (cell: Cell) => {
-  console.log("updateCellAndGrid called", cell);
+export const updateCellAndDCells = async (cell: Cell) => {
   //save currently edited cell
   await UpdateCellsDB([cell]);
   let dgraph = await GetDGraphDB();
@@ -17,8 +16,6 @@ export const updateCellAndGrid = async (cell: Cell) => {
 
   // update cells, starting with the current cell
   while (cells_to_update.length > 0) {
-    console.log("cells_to_update", JSON.stringify(cells_to_update));
-
     // dedupe cells_to_update
     let seen = Array<string>();
     for (let i = 0; i < cells_to_update.length; null) {
@@ -32,8 +29,6 @@ export const updateCellAndGrid = async (cell: Cell) => {
 
       seen.push(string_id);
     }
-
-    console.log("cells_to_update_no_dupes", JSON.stringify(cells_to_update));
 
     // get next cell to update
     const ref_cell_to_update = cells_to_update.shift();
@@ -63,7 +58,6 @@ export const updateCellAndGrid = async (cell: Cell) => {
         return { x: cell[0], y: cell[1] };
       });
       // old_array_cells.unshift(); // remove this cell
-      console.log("deleting cells", JSON.stringify(old_array_cells));
       await DeleteCellsDB(old_array_cells);
     }
 
@@ -96,17 +90,11 @@ export const updateCellAndGrid = async (cell: Cell) => {
 
       // if array output
       if (result.array_output) {
-        console.log(
-          "result?.array_output",
-          JSON.stringify(result?.array_output)
-        );
-
         if (
           result.array_output[0][0] !== undefined &&
           typeof result.array_output[0] !== "string"
         ) {
           // 2d array
-          console.log("2d");
           let x_offset = 0;
           for (const row of result.array_output) {
             let y_offset = 0;
@@ -123,7 +111,6 @@ export const updateCellAndGrid = async (cell: Cell) => {
           }
         } else {
           // 1d array
-          console.log("1d");
           let y_offset = 0;
           for (const cell of result.array_output) {
             array_cells_to_output.push({
@@ -153,8 +140,6 @@ export const updateCellAndGrid = async (cell: Cell) => {
           a_cell.y,
         ]);
 
-        console.log("cell.array_cells", JSON.stringify(cell.array_cells));
-
         await UpdateCellsDB([cell, ...array_cells_to_output]);
       } else {
         // not array output
@@ -165,12 +150,12 @@ export const updateCellAndGrid = async (cell: Cell) => {
         // update current cell
         cell.dependent_cells = result.cells_accessed;
         await UpdateCellsDB([cell]);
-
-        // if this cell updates other cells add them to the list to update
-        let deps = dgraph.get_children_cells([cell.x, cell.y]);
-        cells_to_update.push(...deps);
       }
     }
+
+    // if this cell updates other cells add them to the list to update
+    let deps = dgraph.get_children_cells([cell.x, cell.y]);
+    cells_to_update.push(...deps);
   }
 
   await UpdateDGraphDB(dgraph);

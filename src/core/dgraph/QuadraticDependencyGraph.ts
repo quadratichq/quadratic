@@ -79,11 +79,11 @@ export default class QuadraticDependencyGraph {
     dependent_cells: [number, number][]
   ) {
     // TODO: untested
-    console.log(
-      "add_dependencies_to_graph",
-      input_cells,
-      JSON.stringify(dependent_cells)
-    );
+    // console.log(
+    //   "add_dependencies_to_graph",
+    //   input_cells,
+    //   JSON.stringify(dependent_cells)
+    // );
 
     for (const icell of input_cells) {
       this._dgraph.addVertex(cell_to_string(icell), undefined);

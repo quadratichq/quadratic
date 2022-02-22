@@ -19,7 +19,7 @@ export default function DebugMenu() {
 
   let file_state: string;
 
-  const HUMAN_READABLE_DGRAPH = false;
+  const HUMAN_READABLE_DGRAPH = true;
   let dgraph_str = dgraph?.human_readable_string();
   if (!HUMAN_READABLE_DGRAPH)
     dgraph_str = JSON.stringify(dgraph?.export_to_obj());

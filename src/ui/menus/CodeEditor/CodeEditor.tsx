@@ -11,7 +11,7 @@ import TextField from "@mui/material/TextField";
 import { Cell } from "../../../core/gridDB/db";
 
 import { PYTHON_EXAMPLE_CODE } from "./python_example";
-import { updateCellAndGrid } from "../../../core/actions/updateCellAndGrid";
+import { updateCellAndDCells } from "../../../core/actions/updateCellAndDCells";
 
 loader.config({ paths: { vs: "/monaco/vs" } });
 
@@ -62,7 +62,7 @@ export default function CodeEditor() {
       if (cell) {
         cell.value = editorContent;
 
-        updateCellAndGrid(cell);
+        updateCellAndDCells(cell);
       }
     } else if ((mode as CellTypes) === "PYTHON") {
       if (cell) {
@@ -70,7 +70,7 @@ export default function CodeEditor() {
         cell.value = "";
         cell.python_code = editorContent;
 
-        updateCellAndGrid(cell);
+        updateCellAndDCells(cell);
       }
     }
 

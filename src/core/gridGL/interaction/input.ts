@@ -8,7 +8,7 @@ import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 import { UpdateCellsDB } from "../../gridDB/Cells/UpdateCellsDB";
 import { DeleteCellsDB } from "../../gridDB/Cells/DeleteCellsDB";
 import { GetCellsDB } from "../../gridDB/Cells/GetCellsDB";
-import { updateCellAndGrid } from "../../actions/updateCellAndGrid";
+import { updateCellAndDCells } from "../../actions/updateCellAndDCells";
 export default class GridInput {
   globals: Globals;
   cursor: Cursor;
@@ -108,7 +108,7 @@ export default class GridInput {
         },
       ]);
     } else {
-      await updateCellAndGrid({
+      await updateCellAndDCells({
         x: this.cursor.location.x,
         y: this.cursor.location.y,
         type: "TEXT",
