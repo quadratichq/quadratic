@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
 import Cursor from "./interaction/cursor";
+import type { Viewport } from "pixi-viewport";
 import { Stage } from "@inlet/react-pixi";
 import ViewportComponent from "./ViewportComponent";
 import { useNavigate } from "react-router-dom";
@@ -13,8 +14,26 @@ export default function QuadraticGrid() {
   let navigate = useNavigate();
   const { loading } = useLoading();
   const cursorRef = useRef<Cursor>();
+  const viewportRef = useRef<Viewport>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const cells = useLiveQuery(() => GetCellsDB());
+
+  const [renderText, setRenderText] = useState<boolean>(true);
+
+  const onMoving = (event: Viewport) => {
+    if ((event.lastViewport?.scaleX || 1) < 0.05) {
+      setRenderText(false);
+    } else {
+      setRenderText(true);
+    }
+  };
+
+  useEffect(() => {
+    if (viewportRef !== undefined) {
+      viewportRef.current?.removeAllListeners("moved-end");
+      viewportRef.current?.addListener("moved-end", onMoving);
+    }
+  }, [viewportRef]);
 
   return (
     <Stage
@@ -54,6 +73,7 @@ export default function QuadraticGrid() {
         screenWidth={windowWidth}
         screenHeight={windowHeight}
         cursorRef={cursorRef}
+        viewportRef={viewportRef}
       >
         {!loading &&
           cells?.map((cell) => (
@@ -63,6 +83,7 @@ export default function QuadraticGrid() {
               y={cell.y}
               text={cell.value}
               type={cell.type}
+              renderText={renderText}
             ></CellPixiReact>
           ))}
         {/* 

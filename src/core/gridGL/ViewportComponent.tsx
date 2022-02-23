@@ -14,6 +14,7 @@ export interface ViewportProps {
   screenHeight: number;
   children?: React.ReactNode;
   cursorRef: React.MutableRefObject<Cursor | undefined>;
+  viewportRef: React.MutableRefObject<Viewport | undefined>;
 }
 
 export interface PixiComponentViewportProps extends ViewportProps {
@@ -37,6 +38,8 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       .decelerate()
       .pinch()
       .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2.75 });
+
+    props.viewportRef.current = viewport;
 
     function startup() {
       let grid_ui = drawGridLines(viewport);
