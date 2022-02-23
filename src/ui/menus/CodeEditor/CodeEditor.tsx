@@ -10,7 +10,6 @@ import { CellTypes } from "../../../core/gridDB/db";
 import TextField from "@mui/material/TextField";
 import { Cell } from "../../../core/gridDB/db";
 
-import { PYTHON_EXAMPLE_CODE } from "./python_example";
 import { updateCellAndDCells } from "../../../core/actions/updateCellAndDCells";
 
 loader.config({ paths: { vs: "/monaco/vs" } });
@@ -35,10 +34,6 @@ export default function CodeEditor() {
         setEditorContent(cells[0].python_code);
       } else {
         setEditorContent(cells[0].value);
-      }
-    } else {
-      if ((mode as CellTypes) === "PYTHON") {
-        setEditorContent(PYTHON_EXAMPLE_CODE);
       }
     }
   }, [cells, mode]);
