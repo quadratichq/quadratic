@@ -171,7 +171,7 @@ async def run_python(code):
     async def c(p0_x, p0_y):
         return await getCell(p0_x, p0_y)
 
-    globals = {"getCells": getCells, "getCell": getCell, "c": c}
+    globals = {"getCells": getCells, "getCell": getCell, "c": c, "result": None}
 
     sout = StringIO()
     output_value = None
@@ -198,7 +198,7 @@ async def run_python(code):
 
         # get output_value (last statement) or use local "result"
         if output_value is None:
-            output_value = locals.get("result", None)
+            output_value = globals.get("result", None)
 
         # return array_output if output is an array
         array_output = None
