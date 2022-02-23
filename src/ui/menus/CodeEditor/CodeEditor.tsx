@@ -147,9 +147,18 @@ export default function CodeEditor() {
               id="outlined-multiline-static"
               label="OUTPUT"
               multiline
-              rows={7}
+              rows={11}
               value={cell?.python_output || ""}
-              style={{ width: "100%" }}
+              style={{
+                width: "100%",
+              }}
+              inputProps={{
+                style: {
+                  fontFamily: "monospace",
+                  fontSize: "medium",
+                  lineHeight: "normal",
+                },
+              }}
             />
           </div>
         )}

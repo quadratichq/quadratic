@@ -79,6 +79,7 @@ export default class GridInput {
   }
 
   setGridToInput() {
+    // syncs visually with board, only refreshes deps on enter
     UpdateCellsDB([
       {
         x: this.input.last_x,

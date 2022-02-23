@@ -67,9 +67,9 @@ export const updateCellAndDCells = async (cell: Cell) => {
       let consoleOut = [
         result.input_python_stack_trace,
         result.input_python_std_out,
-      ]
-        .join("")
-        .trim();
+      ].join("\n");
+
+      if (consoleOut[0] === "\n") consoleOut = consoleOut.substring(1);
 
       // collect output
       cell.python_output = consoleOut;
