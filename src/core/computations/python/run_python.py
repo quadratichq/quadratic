@@ -6,6 +6,7 @@ import pyodide
 import asyncio
 import micropip
 import pandas as pd
+import numpy as np
 import operator
 
 from io import StringIO
@@ -53,6 +54,10 @@ class Cell:
 
     def __repr__(self):
         return str(self.value)
+
+    def __float__(self):
+        self_only_num = "".join(_ for _ in str(self) if _ in "+-,.1234567890")
+        return float(self_only_num)
 
     def generic_overload(self, other, op):
         if type(other) is Cell:
@@ -125,19 +130,33 @@ async def run_python(code):
 
     cells_accessed = []
 
-    async def getCells(p0, p1):
-        # mark cells this formula accesses
+    async def getCells(p0, p1, first_row_header=False):
+        # mark cells as accessed by this cell
         for x in range(p0[0], p1[0] + 1):
             for y in range(p0[1], p1[1] + 1):
                 cells_accessed.append([x, y])
 
+        # Get Cells
         cells = await GetCellsDB(p0[0], p0[1], p1[0], p1[1])
 
-        # TODO return as Table
+        # Create empty df of the correct size
+        df = pd.DataFrame(
+            index=range(p1[1] - p0[1] + 1),
+            columns=range(p1[0] - p0[0] + 1),
+        )
 
-        return cells
+        # Fill DF
+        x_offset = p0[0]
+        y_offset = p0[1]
+        for cell in cells:
+            df.at[cell.y - y_offset, cell.x - x_offset] = cell.value
 
-        raise Exception("Must select a return type.")
+        # Move the first row to the header
+        if first_row_header:
+            df.rename(columns=df.iloc[0], inplace=True)
+            df.drop(df.index[0], inplace=True)
+
+        return df
 
     async def getCell(p_x, p_y):
         # mark cell this formula accesses
@@ -149,14 +168,10 @@ async def run_python(code):
         else:
             return None
 
-    async def c(p0_x, p0_y, p1_x=None, p1_y=None):
-        if p1_x is None:
-            return await getCell(p0_x, p0_y)
-        else:
-            return await getCells(p0_x, p0_y, p1_x, p1_y)
+    async def c(p0_x, p0_y):
+        return await getCell(p0_x, p0_y)
 
-    globals = {}
-    locals = {"getCells": getCells, "getCell": getCell, "c": c}
+    globals = {"getCells": getCells, "getCell": getCell, "c": c}
 
     sout = StringIO()
     output_value = None
@@ -165,7 +180,7 @@ async def run_python(code):
         # Capture STDOut to sout
         with redirect_stdout(sout):
             output_value = await pyodide.eval_code_async(
-                attempt_fix_await(code), globals, locals
+                attempt_fix_await(code), globals=globals
             )
 
     except SyntaxError as err:
@@ -181,12 +196,18 @@ async def run_python(code):
         # Successfully Created a Result
         import autopep8
 
+        # get output_value (last statement) or use local "result"
         if output_value is None:
             output_value = locals.get("result", None)
 
+        # return array_output if output is an array
         array_output = None
         if isinstance(output_value, list):
             array_output = output_value
+
+        # Convert DF to array_output
+        if isinstance(output_value, pd.DataFrame):
+            array_output = np.transpose(output_value.to_numpy()).tolist()
 
         return {
             "output_value": str(output_value),
