@@ -69,8 +69,8 @@ export default function QuadraticGrid() {
       style={{ display: loading ? "none" : "inline" }}
       // Disable rendering on each frame, instead render state change (next line)
       // This causes the problem of never rerendering unless react triggers a rerender
-      // raf={false}
-      // renderOnComponentChange={true}
+      raf={false}
+      renderOnComponentChange={true}
     >
       <ViewportComponent
         screenWidth={windowWidth}
@@ -86,7 +86,7 @@ export default function QuadraticGrid() {
               y={cell.y}
               text={cell.value}
               type={cell.type}
-              renderText={renderText}
+              renderText={true}
             ></CellPixiReact>
           ))}
         <AxesPixiReact visible={showGridAxes}></AxesPixiReact>

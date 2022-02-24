@@ -60,16 +60,29 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       //   }
       // });
 
-      // Culling
+      // Custom Render Loop
       const cull = new Simple();
-      cull.addList(viewport.children); // TODO update on children change?
+      const renderer = props.app.renderer;
+      cull.addList(viewport.children);
+      let frames_to_render = 1;
       PIXI.Ticker.shared.add(() => {
-        if (viewport.dirty) {
-          cull.cull(viewport.getVisibleBounds());
-        }
+        // always render 60 frames when viewport moves (is dirty)
+        if (viewport.dirty && frames_to_render === 0) frames_to_render = 60;
 
-        // Zoom culling
-        ZoomCulling(globals);
+        if (viewport.dirty || frames_to_render > 0) {
+          cull.cull(viewport.getVisibleBounds());
+
+          // Zoom culling
+          ZoomCulling(globals);
+
+          // render
+          renderer.render(props.app.stage);
+
+          viewport.dirty = false;
+          frames_to_render--;
+
+          console.log("render");
+        }
       });
 
       console.log("[QuadraticGL] environment ready");
