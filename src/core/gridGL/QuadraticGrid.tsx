@@ -4,11 +4,13 @@ import Cursor from "./interaction/cursor";
 import type { Viewport } from "pixi-viewport";
 import { Stage } from "@inlet/react-pixi";
 import ViewportComponent from "./ViewportComponent";
+import { GetCellsDB } from "../gridDB/Cells/GetCellsDB";
 import { useNavigate } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { GetCellsDB } from "../gridDB/Cells/GetCellsDB";
-import CellPixiReact from "./graphics/CellPixiReact";
 import { useLoading } from "../../contexts/LoadingContext";
+import useLocalStorage from "../../hooks/useLocalStorage";
+import CellPixiReact from "./graphics/CellPixiReact";
+import AxesPixiReact from "./graphics/AxesPixiReact";
 
 export default function QuadraticGrid() {
   let navigate = useNavigate();
@@ -17,6 +19,7 @@ export default function QuadraticGrid() {
   const viewportRef = useRef<Viewport>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const cells = useLiveQuery(() => GetCellsDB());
+  const [showGridAxes] = useLocalStorage("showGridAxes", false);
 
   const [renderText, setRenderText] = useState<boolean>(true);
 
@@ -86,9 +89,7 @@ export default function QuadraticGrid() {
               renderText={renderText}
             ></CellPixiReact>
           ))}
-        {/* 
-        TODO: Can add children ReactPixi components for interactive elements such as the cursors 
-        <Text text="hello world" anchor={0.5} x={150} y={150}></Text> */}
+        <AxesPixiReact visible={showGridAxes}></AxesPixiReact>
       </ViewportComponent>
     </Stage>
   );
