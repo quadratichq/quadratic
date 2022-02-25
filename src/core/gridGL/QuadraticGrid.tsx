@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
 import Cursor from "./interaction/cursor";
 import type { Viewport } from "pixi-viewport";
@@ -11,7 +11,6 @@ import { useLoading } from "../../contexts/LoadingContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
 import CellPixiReact from "./graphics/CellPixiReact";
 import AxesPixiReact from "./graphics/AxesPixiReact";
-import { Container } from "@inlet/react-pixi";
 
 export default function QuadraticGrid() {
   let navigate = useNavigate();
@@ -21,35 +20,6 @@ export default function QuadraticGrid() {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const cells = useLiveQuery(() => GetCellsDB());
   const [showGridAxes] = useLocalStorage("showGridAxes", false);
-
-  const [renderText, setRenderText] = useState<boolean>(true);
-
-  const [isMoving, setIsMoving] = useState<boolean>(false);
-
-  // const onMoving = (event: Viewport) => {
-  //   if ((event.lastViewport?.scaleX || 1) < 0.05) {
-  //     setRenderText(false);
-  //   } else {
-  //     setRenderText(true);
-  //   }
-  // };
-
-  // const movingStart = () => {
-  //   setIsMoving(true);
-  // };
-
-  // const movingStop = () => {
-  //   setIsMoving(false);
-  // };
-
-  // useEffect(() => {
-  //   if (viewportRef !== undefined) {
-  //     viewportRef.current?.removeAllListeners("moved-end");
-  //     viewportRef.current?.removeAllListeners("moved");
-  //     viewportRef.current?.addListener("moved-end", movingStop);
-  //     viewportRef.current?.addListener("moved", movingStart);
-  //   }
-  // }, [viewportRef]);
 
   return (
     <Stage

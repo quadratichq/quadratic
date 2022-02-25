@@ -8,7 +8,6 @@ import Interaction from "./interaction/interaction";
 import Cursor from "./interaction/cursor";
 import Globals from "./globals";
 import { PixiComponent, useApp } from "@inlet/react-pixi";
-import { width } from "@mui/system";
 
 export interface ViewportProps {
   screenWidth: number;
@@ -38,7 +37,7 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       .drag({ pressDrag: false })
       .decelerate()
       .pinch()
-      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2.5 });
+      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 });
 
     props.viewportRef.current = viewport;
 
@@ -47,61 +46,42 @@ const PixiComponentViewport = PixiComponent("Viewport", {
 
       const globals = new Globals(viewport, props.app.view, grid_ui);
 
-      // Load data from server
-      // loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals);
-
       let interaction = new Interaction(globals);
       interaction.makeInteractive();
       props.cursorRef.current = interaction.cursor;
 
-      // FPS log
-      // props.app.ticker.add(function (time) {
-      //   if (props.app.ticker.FPS < 50) {
-      //     console.log(`Current Frame Rate: ${props.app.ticker.FPS}`);
-      //   }
-      // });
-
-      // Custom Render Loop
-      const cull = new Simple();
-      const renderer = props.app.renderer;
-      cull.addList(viewport.children);
-      let frames_to_render = 1;
       let ticker = PIXI.Ticker.shared;
-      ticker.speed = 1;
+
+      // Quadratic Render Loop, render when dirty.
+      // Remember when anything changes on the stage to either set viewport.dirty = true
+      // Or use a react component that is a child of viewport (React Pixi will trigger a render)
       ticker.add(
         () => {
-          // Add more frames whenever dirty
-          if (viewport.dirty && frames_to_render < 60) frames_to_render = 60;
-
-          if (frames_to_render > 0) {
-            // if (viewport.dirty) {
-
+          if (viewport.dirty) {
             // render
-            renderer.render(props.app.stage);
-
+            props.app.renderer.render(props.app.stage);
             viewport.dirty = false;
-            frames_to_render--;
-
-            console.log("render");
           }
         },
         null,
-        PIXI.UPDATE_PRIORITY.HIGH
+        PIXI.UPDATE_PRIORITY.LOW // unsure why but this is recommended to be LOW https://pixijs.download/dev/docs/PIXI.html#UPDATE_PRIORITY
       );
 
+      // Quadratic Culling Loop, run when dirty.
+      const cull = new Simple();
+      cull.addList(viewport.children);
       ticker.add(
         () => {
-          if (frames_to_render > 0) {
-            // cull
-
+          if (viewport.dirty) {
+            // cull 2x to the visible viewport
+            // this reduces flickering when panning and zooming quickly
             const visibleBounds = viewport.getVisibleBounds();
             const visibleBoundsExtended = new PIXI.Rectangle(
-              visibleBounds.x - 1000,
-              visibleBounds.y - 1000,
-              visibleBounds.width + 2000,
-              visibleBounds.height + 2000
+              visibleBounds.x - visibleBounds.width / 2,
+              visibleBounds.y - visibleBounds.height / 2,
+              visibleBounds.width * 2,
+              visibleBounds.height * 2
             );
-
             cull.cull(visibleBoundsExtended);
 
             // Zoom culling
@@ -111,6 +91,11 @@ const PixiComponentViewport = PixiComponent("Viewport", {
         null,
         PIXI.UPDATE_PRIORITY.NORMAL
       );
+
+      // FPS log
+      // ticker.add((time) => {
+      //   console.log(`Current Frame Rate: ${props.app.ticker.FPS}`);
+      // });
 
       console.log("[QuadraticGL] environment ready");
     }
