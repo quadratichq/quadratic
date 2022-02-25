@@ -8,6 +8,7 @@ import Interaction from "./interaction/interaction";
 import Cursor from "./interaction/cursor";
 import Globals from "./globals";
 import { PixiComponent, useApp } from "@inlet/react-pixi";
+import { width } from "@mui/system";
 
 export interface ViewportProps {
   screenWidth: number;
@@ -37,7 +38,7 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       .drag({ pressDrag: false })
       .decelerate()
       .pinch()
-      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2.75 });
+      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2.5 });
 
     props.viewportRef.current = viewport;
 
@@ -65,25 +66,51 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       const renderer = props.app.renderer;
       cull.addList(viewport.children);
       let frames_to_render = 1;
-      PIXI.Ticker.shared.add(() => {
-        // always render 60 frames when viewport moves (is dirty)
-        if (viewport.dirty && frames_to_render === 0) frames_to_render = 60;
+      let ticker = PIXI.Ticker.shared;
+      ticker.speed = 1;
+      ticker.add(
+        () => {
+          // Add more frames whenever dirty
+          if (viewport.dirty && frames_to_render < 60) frames_to_render = 60;
 
-        if (viewport.dirty || frames_to_render > 0) {
-          cull.cull(viewport.getVisibleBounds());
+          if (frames_to_render > 0) {
+            // if (viewport.dirty) {
 
-          // Zoom culling
-          ZoomCulling(globals);
+            // render
+            renderer.render(props.app.stage);
 
-          // render
-          renderer.render(props.app.stage);
+            viewport.dirty = false;
+            frames_to_render--;
 
-          viewport.dirty = false;
-          frames_to_render--;
+            console.log("render");
+          }
+        },
+        null,
+        PIXI.UPDATE_PRIORITY.HIGH
+      );
 
-          console.log("render");
-        }
-      });
+      ticker.add(
+        () => {
+          if (frames_to_render > 0) {
+            // cull
+
+            const visibleBounds = viewport.getVisibleBounds();
+            const visibleBoundsExtended = new PIXI.Rectangle(
+              visibleBounds.x - 1000,
+              visibleBounds.y - 1000,
+              visibleBounds.width + 2000,
+              visibleBounds.height + 2000
+            );
+
+            cull.cull(visibleBoundsExtended);
+
+            // Zoom culling
+            ZoomCulling(globals);
+          }
+        },
+        null,
+        PIXI.UPDATE_PRIORITY.NORMAL
+      );
 
       console.log("[QuadraticGL] environment ready");
     }
