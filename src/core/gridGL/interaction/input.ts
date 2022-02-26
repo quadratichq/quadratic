@@ -76,6 +76,7 @@ export default class GridInput {
         this.globals.canvas.focus();
       }
     });
+    this.globals.viewport.dirty = true;
   }
 
   setGridToInput() {
@@ -139,5 +140,7 @@ export default class GridInput {
     this.input.last_x = cell_x;
     this.input.last_y = cell_y;
     // this.input.focus();
+
+    this.globals.viewport.dirty = true;
   }
 }

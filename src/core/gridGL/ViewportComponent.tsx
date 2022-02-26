@@ -14,6 +14,7 @@ export interface ViewportProps {
   screenHeight: number;
   children?: React.ReactNode;
   cursorRef: React.MutableRefObject<Cursor | undefined>;
+  viewportRef: React.MutableRefObject<Viewport | undefined>;
 }
 
 export interface PixiComponentViewportProps extends ViewportProps {
@@ -36,38 +37,65 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       .drag({ pressDrag: false })
       .decelerate()
       .pinch()
-      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 2.75 });
+      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 });
+
+    props.viewportRef.current = viewport;
 
     function startup() {
       let grid_ui = drawGridLines(viewport);
 
       const globals = new Globals(viewport, props.app.view, grid_ui);
 
-      // Load data from server
-      // loadCells({ x: -10000, y: -10000 }, { x: 10000, y: 10000 }, globals);
-
       let interaction = new Interaction(globals);
       interaction.makeInteractive();
       props.cursorRef.current = interaction.cursor;
 
-      // FPS log
-      // props.app.ticker.add(function (time) {
-      //   if (props.app.ticker.FPS < 50) {
-      //     console.log(`Current Frame Rate: ${props.app.ticker.FPS}`);
-      //   }
-      // });
+      let ticker = PIXI.Ticker.shared;
 
-      // Culling
+      // Quadratic Render Loop, render when dirty.
+      // Remember when anything changes on the stage to either set viewport.dirty = true
+      // Or use a react component that is a child of viewport (React Pixi will trigger a render)
+      ticker.add(
+        () => {
+          if (viewport.dirty) {
+            // render
+            props.app.renderer.render(props.app.stage);
+            viewport.dirty = false;
+          }
+        },
+        null,
+        PIXI.UPDATE_PRIORITY.LOW // unsure why but this is recommended to be LOW https://pixijs.download/dev/docs/PIXI.html#UPDATE_PRIORITY
+      );
+
+      // Quadratic Culling Loop, run when dirty.
       const cull = new Simple();
-      cull.addList(viewport.children); // TODO update on children change?
-      PIXI.Ticker.shared.add(() => {
-        if (viewport.dirty) {
-          cull.cull(viewport.getVisibleBounds());
-        }
+      cull.addList(viewport.children);
+      ticker.add(
+        () => {
+          if (viewport.dirty) {
+            // cull 2x to the visible viewport
+            // this reduces flickering when panning and zooming quickly
+            const visibleBounds = viewport.getVisibleBounds();
+            const visibleBoundsExtended = new PIXI.Rectangle(
+              visibleBounds.x - visibleBounds.width / 2,
+              visibleBounds.y - visibleBounds.height / 2,
+              visibleBounds.width * 2,
+              visibleBounds.height * 2
+            );
+            cull.cull(visibleBoundsExtended);
 
-        // Zoom culling
-        ZoomCulling(globals);
-      });
+            // Zoom culling
+            ZoomCulling(globals);
+          }
+        },
+        null,
+        PIXI.UPDATE_PRIORITY.NORMAL
+      );
+
+      // FPS log
+      // ticker.add((time) => {
+      //   console.log(`Current Frame Rate: ${props.app.ticker.FPS}`);
+      // });
 
       console.log("[QuadraticGL] environment ready");
     }

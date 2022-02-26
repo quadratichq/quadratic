@@ -30,6 +30,7 @@ export default class Cursor {
   drawCursor() {
     this.globals.viewport.addChild(this.cursor_pixi);
     this.globals.viewport.addChild(this.text_pixi);
+    this.globals.viewport.dirty = true;
   }
 
   undrawCursor() {
@@ -57,5 +58,7 @@ export default class Cursor {
       this.cursor_pixi.height,
       false
     );
+
+    this.globals.viewport.dirty = true;
   }
 }

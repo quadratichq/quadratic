@@ -103,6 +103,8 @@ export default class Interaction {
           event.preventDefault();
         });
       }
+
+      this.globals.viewport.dirty = true;
     });
 
     this.globals.canvas.addEventListener("mousedown", (event) => {
@@ -128,6 +130,8 @@ export default class Interaction {
         x: this.multiCursor.originLocation.x,
         y: this.multiCursor.originLocation.y,
       });
+
+      this.globals.viewport.dirty = true;
     });
 
     this.globals.canvas.addEventListener("mousemove", (event) => {
@@ -138,6 +142,7 @@ export default class Interaction {
           let cell_x = Math.sign(x) * Math.ceil(Math.abs(x) / CELL_WIDTH);
           let cell_y = Math.sign(y) * Math.ceil(Math.abs(y) / CELL_HEIGHT);
           this.multiCursor.setTerminalCell({ x: cell_x, y: cell_y });
+          this.globals.viewport.dirty = true;
         } else {
           this.multiCursor.isInteractive = false;
         }
@@ -186,6 +191,8 @@ export default class Interaction {
           }
         );
       }
+
+      this.globals.viewport.dirty = true;
     });
   }
 }

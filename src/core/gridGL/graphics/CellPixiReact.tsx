@@ -12,6 +12,7 @@ interface CellPixiReactProps {
   y: number;
   text: string;
   type: CellTypes;
+  renderText: boolean;
 }
 
 const CellPixiReact = (props: CellPixiReactProps) => {
@@ -44,6 +45,7 @@ const CellPixiReact = (props: CellPixiReactProps) => {
         x={x_pos + margin_left}
         y={y_pos + margin_top}
         text={props.text}
+        visible={props.renderText}
       />
       <Graphics draw={draw_outline} />
     </Container>

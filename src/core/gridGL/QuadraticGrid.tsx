@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
 import Cursor from "./interaction/cursor";
+import type { Viewport } from "pixi-viewport";
 import { Stage } from "@inlet/react-pixi";
 import ViewportComponent from "./ViewportComponent";
 import { GetCellsDB } from "../gridDB/Cells/GetCellsDB";
@@ -15,6 +16,7 @@ export default function QuadraticGrid() {
   let navigate = useNavigate();
   const { loading } = useLoading();
   const cursorRef = useRef<Cursor>();
+  const viewportRef = useRef<Viewport>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const cells = useLiveQuery(() => GetCellsDB());
   const [showGridAxes] = useLocalStorage("showGridAxes", false);
@@ -49,14 +51,14 @@ export default function QuadraticGrid() {
       }}
       style={{ display: loading ? "none" : "inline" }}
       // Disable rendering on each frame, instead render state change (next line)
-      // This causes the problem of never rerendering unless react triggers a rerender
-      // raf={false}
-      // renderOnComponentChange={true}
+      raf={false}
+      renderOnComponentChange={true}
     >
       <ViewportComponent
         screenWidth={windowWidth}
         screenHeight={windowHeight}
         cursorRef={cursorRef}
+        viewportRef={viewportRef}
       >
         {!loading &&
           cells?.map((cell) => (
@@ -66,6 +68,7 @@ export default function QuadraticGrid() {
               y={cell.y}
               text={cell.value}
               type={cell.type}
+              renderText={true}
             ></CellPixiReact>
           ))}
         <AxesPixiReact visible={showGridAxes}></AxesPixiReact>

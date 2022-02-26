@@ -5,6 +5,7 @@ interface FastBitmapTextProps {
   x: number;
   y: number;
   text: string;
+  visible: boolean;
 }
 
 const FastBitmapText = PixiComponent("FastText", {
@@ -17,15 +18,19 @@ const FastBitmapText = PixiComponent("FastText", {
       // maxWidth: 100,
     }),
   applyProps: (instance, oldProps, props) => {
-    const { x, y, text } = props;
+    const { x, y, text, visible } = props;
 
-    if (x !== oldProps.x || y !== oldProps.y) {
-      instance.x = x;
-      instance.y = y;
-    }
+    instance.visible = visible;
 
-    if (text !== oldProps.text) {
-      instance.text = text;
+    if (visible) {
+      if (x !== oldProps.x || y !== oldProps.y) {
+        instance.x = x;
+        instance.y = y;
+      }
+
+      if (text !== oldProps.text) {
+        instance.text = text;
+      }
     }
   },
 });

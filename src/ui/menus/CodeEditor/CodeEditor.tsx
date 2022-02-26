@@ -9,6 +9,7 @@ import { GetCellsDB } from "../../../core/gridDB/Cells/GetCellsDB";
 import { CellTypes } from "../../../core/gridDB/db";
 import TextField from "@mui/material/TextField";
 import { Cell } from "../../../core/gridDB/db";
+import "./CodeEditor.css";
 
 import { updateCellAndDCells } from "../../../core/actions/updateCellAndDCells";
 
@@ -127,6 +128,8 @@ export default function CodeEditor() {
           options={{
             minimap: { enabled: false }, // Causes strange issue cutting off
             overviewRulerLanes: 0,
+            hideCursorInOverviewRuler: true,
+            overviewRulerBorder: false,
             scrollbar: {
               // vertical: "hidden",
               horizontal: "hidden",
