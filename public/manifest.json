@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Quadratic",
+  "name": "Quadratic Data Grid",
   "icons": [
     {
       "src": "favicon.ico",
