@@ -10,7 +10,7 @@ Take your data and do something useful with it as quickly and as easily as possi
 
 # Info
 
-Quadratic is a WBGL + WASM React App that runs both in browser and in Electron.
+Quadratic is a WebGL + WASM React App that runs both in browser and in Electron.
 
 # Getting Started
 
