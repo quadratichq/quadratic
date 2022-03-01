@@ -13,7 +13,7 @@ declare global {
 
 export async function loadPython() {
   window.pyodide = await window.loadPyodide({
-    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.19.0/full/",
+    indexURL: `${process.env.PUBLIC_URL}/pyodide/`,
     stdout: (l: string) => {
       console.log("[WASMPython]", l);
     },
