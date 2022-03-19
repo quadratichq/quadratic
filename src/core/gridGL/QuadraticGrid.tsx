@@ -27,7 +27,8 @@ export default function QuadraticGrid() {
       width={windowWidth}
       options={{
         resizeTo: window,
-        resolution: window.devicePixelRatio,
+        resolution:
+          window.devicePixelRatio === 1.0 ? 2 : window.devicePixelRatio,
         backgroundColor: 0xffffff,
         antialias: true,
         autoDensity: true,
