@@ -41,6 +41,9 @@ const PixiComponentViewport = PixiComponent("Viewport", {
 
     props.viewportRef.current = viewport;
 
+    // set initial position
+    viewport.moveCorner(-50, -50);
+
     function startup() {
       let grid_ui = drawGridLines(viewport);
 
