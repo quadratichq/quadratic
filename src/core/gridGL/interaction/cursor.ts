@@ -25,6 +25,8 @@ export default class Cursor {
       align: "left",
       // maxWidth: 100,
     });
+
+    this.moveCursor({ x: 0, y: 0 });
   }
 
   drawCursor() {
