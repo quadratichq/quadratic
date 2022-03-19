@@ -26,10 +26,7 @@ export const QuadraticMenu = () => {
     "showDebugMenu",
     false
   );
-  const [showGridAxes, setShowGridAxes] = useLocalStorage(
-    "showGridAxes",
-    false
-  );
+  const [showGridAxes, setShowGridAxes] = useLocalStorage("showGridAxes", true);
 
   return (
     <Menu

@@ -19,7 +19,7 @@ export default function QuadraticGrid() {
   const viewportRef = useRef<Viewport>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const cells = useLiveQuery(() => GetCellsDB());
-  const [showGridAxes] = useLocalStorage("showGridAxes", false);
+  const [showGridAxes] = useLocalStorage("showGridAxes", true);
 
   return (
     <Stage

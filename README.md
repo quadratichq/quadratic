@@ -1,6 +1,6 @@
 ## Quadratic
 
-***The future spreadsheet.***
+**_The future spreadsheet._**
 
 Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to pull any data.
 
@@ -15,16 +15,27 @@ Quadratic is a WebGL + WASM React App that runs both in browser and in Electron.
 # Getting Started
 
 Install Dependencies
+
 ```bash
 npm install
 ```
 
 Run Electron
+
 ```bash
 npm run dev
 ```
 
 Run Web
+
 ```bash
 npm start
+```
+
+Deploying on Amplify
+
+Make sure to add all file types to "Rewrites and redirects"
+
+```
+</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json|wasm|data|fnt|tar|py)$)([^.]+$)/>
 ```
