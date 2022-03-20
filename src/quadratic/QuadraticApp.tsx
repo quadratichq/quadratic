@@ -24,7 +24,7 @@ export default function QuadraticApp() {
         {/* Provider of WebGL Canvas and Quadratic Grid */}
         <QuadraticGrid></QuadraticGrid>
         {/* Provider of All React UI Components */}
-        <QuadraticUI></QuadraticUI>
+        {!loading && <QuadraticUI></QuadraticUI>}
         {/* Loading screen */}
         {loading && <QuadraticLoading></QuadraticLoading>}
       </MemoryRouter>

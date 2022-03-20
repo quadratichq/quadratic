@@ -5,6 +5,7 @@ import CellTypeMenu from "../ui/menus/CellTypeMenu/";
 import CodeEditor from "../ui/menus/CodeEditor";
 import DebugMenu from "./menus/DebugMenu/DebugMenu";
 import useLocalStorage from "../hooks/useLocalStorage";
+import BottomBar from "./menus/BottomBar";
 
 export default function QuadraticUI() {
   const [showDebugMenu] = useLocalStorage("showDebugMenu", false);
@@ -24,6 +25,7 @@ export default function QuadraticUI() {
         />
       </Routes>
       {showDebugMenu && <DebugMenu />}
+      <BottomBar></BottomBar>
     </>
   );
 }

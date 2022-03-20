@@ -8,6 +8,12 @@ const colors = {
   independence: 0x5d576b,
   lightGray: "#f6f8fa",
   mediumGray: "#cfd7de",
+  darkGray: "#55606b",
+  quadraticPrimary: "#6CD4FF",
+  quadraticSecondary: "#8ECB89",
+  quadraticThird: "#CB8999",
+  quadraticForth: "#FFC800",
+  quadraticFifth: "#5D576B",
 };
 
 export default colors;
