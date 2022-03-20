@@ -8,6 +8,8 @@ import { FormatMenu } from "./SubMenus/FormatMenu";
 import colors from "../../../theme/colors";
 
 import { isElectron } from "../../../utils/isElectron";
+import { DataMenu } from "./SubMenus/DataMenu";
+import { NumberFormatMenu } from "./SubMenus/NumberFormatMenu";
 
 export const TopBar = () => {
   return (
@@ -36,7 +38,9 @@ export const TopBar = () => {
         }}
       >
         <QuadraticMenu></QuadraticMenu>
+        <DataMenu></DataMenu>
         <FormatMenu></FormatMenu>
+        <NumberFormatMenu></NumberFormatMenu>
       </Box>
 
       <Box
@@ -103,11 +107,10 @@ export const TopBar = () => {
           }}
           variant="outlined"
           size="small"
-          disabled
         >
           Share
         </Button>
-        <Button style={{ color: colors.darkGray }} disabled>
+        <Button style={{ color: colors.darkGray }}>
           <span>100%</span>
           <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
         </Button>

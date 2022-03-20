@@ -7,14 +7,22 @@ import {
   MenuDivider,
   MenuHeader,
 } from "@szhsin/react-menu";
-import FileOpenOutlined from "@mui/icons-material/FileOpenOutlined";
-import SaveOutlined from "@mui/icons-material/SaveOutlined";
+import {
+  MenuBookOutlined,
+  FileOpenOutlined,
+  SaveOutlined,
+  BugReportOutlined,
+} from "@mui/icons-material";
+
 import "@szhsin/react-menu/dist/index.css";
 import useLocalStorage from "../../../../hooks/useLocalStorage";
 import { Tooltip } from "@mui/material";
 
 import { SaveGridFile } from "../../../../core/actions/gridFile/SaveGridFile";
 import { OpenGridFile } from "../../../../core/actions/gridFile/OpenGridFile";
+
+import colors from "../../../../theme/colors";
+import { DOCUMENTATION_URL, BUG_REPORT_URL } from "../../../../constants/urls";
 
 const styles = {
   fileMenuIcon: {
@@ -33,13 +41,14 @@ export const QuadraticMenu = () => {
     <Menu
       menuButton={
         <Tooltip title="Main Menu" arrow>
-          <Button style={{ color: "black" }}>
+          <Button style={{ color: colors.darkGray }}>
             <img src="favicon.ico" height="22px" alt="Quadratic Icon" />
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
           </Button>
         </Tooltip>
       }
     >
+      <MenuHeader>Quadratic</MenuHeader>
       <SubMenu label="File">
         <MenuItem onClick={() => SaveGridFile(true)}>
           <SaveOutlined style={styles.fileMenuIcon}></SaveOutlined> Save Grid
@@ -68,6 +77,16 @@ export const QuadraticMenu = () => {
           }}
         >
           Show DebugMenu
+        </MenuItem>
+      </SubMenu>
+      <SubMenu label="Help">
+        <MenuItem onClick={() => window.open(DOCUMENTATION_URL, "_blank")}>
+          <MenuBookOutlined style={styles.fileMenuIcon}></MenuBookOutlined> Read
+          the docs
+        </MenuItem>
+        <MenuItem onClick={() => window.open(BUG_REPORT_URL, "_blank")}>
+          <BugReportOutlined style={styles.fileMenuIcon}></BugReportOutlined>{" "}
+          Report a problem
         </MenuItem>
       </SubMenu>
     </Menu>
