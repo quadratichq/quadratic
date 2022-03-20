@@ -12,7 +12,6 @@ export default function QuadraticUI() {
 
   return (
     <>
-      <TopBar></TopBar>
       <Routes>
         <Route path="/" element={<></>} />
         <Route
@@ -24,6 +23,7 @@ export default function QuadraticUI() {
           element={<CodeEditor></CodeEditor>}
         />
       </Routes>
+      <TopBar></TopBar>
       {showDebugMenu && <DebugMenu />}
       <BottomBar></BottomBar>
     </>
