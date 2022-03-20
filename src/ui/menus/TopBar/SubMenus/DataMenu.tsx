@@ -3,7 +3,6 @@ import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import { Menu, MenuItem, MenuHeader } from "@szhsin/react-menu";
 
 import {
-  AccountTreeOutlined,
   CloudDownloadOutlined,
   StorageOutlined,
   DataObjectOutlined,
