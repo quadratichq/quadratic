@@ -21,14 +21,9 @@ import { Tooltip } from "@mui/material";
 import { SaveGridFile } from "../../../../core/actions/gridFile/SaveGridFile";
 import { OpenGridFile } from "../../../../core/actions/gridFile/OpenGridFile";
 
+import { menuItemIconStyles } from "./menuStyles";
 import colors from "../../../../theme/colors";
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from "../../../../constants/urls";
-
-const styles = {
-  fileMenuIcon: {
-    marginRight: "0.5rem",
-  },
-};
 
 export const QuadraticMenu = () => {
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage(
@@ -51,10 +46,10 @@ export const QuadraticMenu = () => {
       <MenuHeader>Quadratic</MenuHeader>
       <SubMenu label="File">
         <MenuItem onClick={() => SaveGridFile(true)}>
-          <SaveOutlined style={styles.fileMenuIcon}></SaveOutlined> Save Grid
+          <SaveOutlined style={menuItemIconStyles}></SaveOutlined> Save Grid
         </MenuItem>
         <MenuItem onClick={() => OpenGridFile()}>
-          <FileOpenOutlined style={styles.fileMenuIcon}></FileOpenOutlined> Open
+          <FileOpenOutlined style={menuItemIconStyles}></FileOpenOutlined> Open
           Grid
         </MenuItem>
       </SubMenu>
@@ -81,11 +76,11 @@ export const QuadraticMenu = () => {
       </SubMenu>
       <SubMenu label="Help">
         <MenuItem onClick={() => window.open(DOCUMENTATION_URL, "_blank")}>
-          <MenuBookOutlined style={styles.fileMenuIcon}></MenuBookOutlined> Read
+          <MenuBookOutlined style={menuItemIconStyles}></MenuBookOutlined> Read
           the docs
         </MenuItem>
         <MenuItem onClick={() => window.open(BUG_REPORT_URL, "_blank")}>
-          <BugReportOutlined style={styles.fileMenuIcon}></BugReportOutlined>{" "}
+          <BugReportOutlined style={menuItemIconStyles}></BugReportOutlined>{" "}
           Report a problem
         </MenuItem>
       </SubMenu>

@@ -33,14 +33,9 @@ import { PaletteOutlined } from "@mui/icons-material";
 import "@szhsin/react-menu/dist/index.css";
 import { Tooltip } from "@mui/material";
 
-import colors from "../../../../theme/colors";
+import { menuItemIconStyles, topBarIconStyles } from "./menuStyles";
 
-const styles = {
-  fileMenuIcon: {
-    marginRight: "0.5rem",
-    color: colors.darkGray,
-  },
-};
+import colors from "../../../../theme/colors";
 
 export const FormatMenu = () => {
   return (
@@ -48,7 +43,7 @@ export const FormatMenu = () => {
       menuButton={
         <Tooltip title="Format" arrow>
           <Button style={{ color: colors.darkGray }}>
-            <PaletteOutlined></PaletteOutlined>
+            <PaletteOutlined style={topBarIconStyles}></PaletteOutlined>
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
           </Button>
         </Tooltip>
@@ -56,76 +51,76 @@ export const FormatMenu = () => {
     >
       <MenuHeader>Text</MenuHeader>
       <MenuItem>
-        <FormatBold style={styles.fileMenuIcon}></FormatBold> Bold
+        <FormatBold style={menuItemIconStyles}></FormatBold> Bold
       </MenuItem>
       <MenuItem>
-        <FormatItalic style={styles.fileMenuIcon}></FormatItalic> Italic
+        <FormatItalic style={menuItemIconStyles}></FormatItalic> Italic
       </MenuItem>
       <MenuItem>
-        <FormatColorText style={styles.fileMenuIcon}></FormatColorText> Color
+        <FormatColorText style={menuItemIconStyles}></FormatColorText> Color
       </MenuItem>
 
       <MenuDivider />
       <MenuItem>
-        <FormatAlignLeft style={styles.fileMenuIcon}></FormatAlignLeft> Left
+        <FormatAlignLeft style={menuItemIconStyles}></FormatAlignLeft> Left
       </MenuItem>
       <MenuItem>
-        <FormatAlignCenter style={styles.fileMenuIcon}></FormatAlignCenter>{" "}
+        <FormatAlignCenter style={menuItemIconStyles}></FormatAlignCenter>{" "}
         Center
       </MenuItem>
       <MenuItem>
-        <FormatAlignRight style={styles.fileMenuIcon}></FormatAlignRight> Right
+        <FormatAlignRight style={menuItemIconStyles}></FormatAlignRight> Right
       </MenuItem>
 
       <MenuDivider />
       <MenuHeader>Cell</MenuHeader>
       <MenuItem>
-        <FormatColorFill style={styles.fileMenuIcon}></FormatColorFill> Fill
+        <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill
         Color
       </MenuItem>
 
       <SubMenu
         label={
           <Fragment>
-            <BorderAll style={styles.fileMenuIcon}></BorderAll>
+            <BorderAll style={menuItemIconStyles}></BorderAll>
             <span>Border</span>
           </Fragment>
         }
       >
         <MenuItem>
-          <BorderColor style={styles.fileMenuIcon}></BorderColor> Color
+          <BorderColor style={menuItemIconStyles}></BorderColor> Color
         </MenuItem>
         <MenuItem>
-          <LineStyle style={styles.fileMenuIcon}></LineStyle>
+          <LineStyle style={menuItemIconStyles}></LineStyle>
           Line Style
         </MenuItem>
         <MenuItem>
-          <BorderAll style={styles.fileMenuIcon}></BorderAll> All
+          <BorderAll style={menuItemIconStyles}></BorderAll> All
         </MenuItem>
         <MenuItem>
-          <BorderOuter style={styles.fileMenuIcon}></BorderOuter> Outer
+          <BorderOuter style={menuItemIconStyles}></BorderOuter> Outer
         </MenuItem>
         <MenuItem>
-          <BorderTop style={styles.fileMenuIcon}></BorderTop> Top
+          <BorderTop style={menuItemIconStyles}></BorderTop> Top
         </MenuItem>
         <MenuItem>
-          <BorderLeft style={styles.fileMenuIcon}></BorderLeft> Left
+          <BorderLeft style={menuItemIconStyles}></BorderLeft> Left
         </MenuItem>
         <MenuItem>
-          <BorderRight style={styles.fileMenuIcon}></BorderRight> Right
+          <BorderRight style={menuItemIconStyles}></BorderRight> Right
         </MenuItem>
         <MenuItem>
-          <BorderBottom style={styles.fileMenuIcon}></BorderBottom> Bottom
+          <BorderBottom style={menuItemIconStyles}></BorderBottom> Bottom
         </MenuItem>
         <MenuItem>
-          <BorderInner style={styles.fileMenuIcon}></BorderInner> Inner
+          <BorderInner style={menuItemIconStyles}></BorderInner> Inner
         </MenuItem>
         <MenuItem>
-          <BorderHorizontal style={styles.fileMenuIcon}></BorderHorizontal>{" "}
+          <BorderHorizontal style={menuItemIconStyles}></BorderHorizontal>{" "}
           Horizontal
         </MenuItem>
         <MenuItem>
-          <BorderVertical style={styles.fileMenuIcon}></BorderVertical> Vertical
+          <BorderVertical style={menuItemIconStyles}></BorderVertical> Vertical
         </MenuItem>
       </SubMenu>
     </Menu>

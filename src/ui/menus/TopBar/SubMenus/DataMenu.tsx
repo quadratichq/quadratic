@@ -11,14 +11,8 @@ import {
 import "@szhsin/react-menu/dist/index.css";
 import { Tooltip } from "@mui/material";
 
+import { menuItemIconStyles, topBarIconStyles } from "./menuStyles";
 import colors from "../../../../theme/colors";
-
-const styles = {
-  fileMenuIcon: {
-    marginRight: "0.5rem",
-    color: colors.darkGray,
-  },
-};
 
 export const DataMenu = () => {
   return (
@@ -26,7 +20,7 @@ export const DataMenu = () => {
       menuButton={
         <Tooltip title="Data" arrow>
           <Button style={{ color: colors.darkGray }}>
-            <DataObjectOutlined></DataObjectOutlined>
+            <DataObjectOutlined style={topBarIconStyles}></DataObjectOutlined>
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
           </Button>
         </Tooltip>
@@ -35,12 +29,12 @@ export const DataMenu = () => {
       <MenuHeader>Import</MenuHeader>
       <MenuItem>
         <CloudDownloadOutlined
-          style={styles.fileMenuIcon}
+          style={menuItemIconStyles}
         ></CloudDownloadOutlined>
         SaaS
       </MenuItem>
       <MenuItem>
-        <StorageOutlined style={styles.fileMenuIcon}></StorageOutlined> Database
+        <StorageOutlined style={menuItemIconStyles}></StorageOutlined> Database
       </MenuItem>
     </Menu>
   );
