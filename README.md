@@ -1,3 +1,5 @@
+![Quadratic Tests](https://github.com/quadratic-eng/quadratic/actions/workflows/main.yml/badge.svg)
+
 ## Quadratic
 
 **_The future spreadsheet._**
