@@ -1,6 +1,6 @@
 ## Quadratic
 
-**_The future spreadsheet._**
+**_The Data Science Spreadsheet._**
 
 Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to pull any data.
 
