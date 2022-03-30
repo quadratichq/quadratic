@@ -111,9 +111,10 @@ export default function CodeEditor() {
           minWidth: "400px",
           height: "100%",
           borderStyle: "solid",
-          borderWidth: "0 0 0 1px",
+          borderWidth: "1px 0 0 1px",
           borderColor: colors.mediumGray,
           backgroundColor: "#ffffff",
+          marginTop: "2.5rem",
         }}
       >
         <Editor
@@ -145,7 +146,7 @@ export default function CodeEditor() {
               id="outlined-multiline-static"
               label="OUTPUT"
               multiline
-              rows={11}
+              rows={7}
               value={cell?.python_output || ""}
               style={{
                 width: "100%",
