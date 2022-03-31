@@ -49,9 +49,9 @@ const PixiComponentViewport = PixiComponent("Viewport", {
 
       const globals = new Globals(viewport, props.app.view, grid_ui);
 
-      let interaction = new Interaction(globals);
-      interaction.makeInteractive();
-      props.cursorRef.current = interaction.cursor;
+      // let interaction = new Interaction(globals);
+      // interaction.makeInteractive();
+      // props.cursorRef.current = interaction.cursor;
 
       let ticker = PIXI.Ticker.shared;
 

@@ -11,11 +11,20 @@ import { useLoading } from "../../contexts/LoadingContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
 import CellPixiReact from "./graphics/CellPixiReact";
 import AxesPixiReact from "./graphics/AxesPixiReact";
+import CursorPixiReact from "./interaction/CursorPixiReact";
+import MultiCursorPixiReact from "./interaction/MultiCursorPixiReact";
+import { cursorPositionAtom, multicursorPositionAtom } from "../../atoms";
+import { useRecoilState } from "recoil";
 
 export default function QuadraticGrid() {
   let navigate = useNavigate();
   const { loading } = useLoading();
-  const cursorRef = useRef<Cursor>();
+  const cursorRef = useRef<Cursor>(); // OLD REMOVE
+  const [cursorPosition, setCursorPosition] =
+    useRecoilState(cursorPositionAtom);
+  const [multicursorPosition, setMulticursorPosition] = useRecoilState(
+    multicursorPositionAtom
+  );
   const viewportRef = useRef<Viewport>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const cells = useLiveQuery(() => GetCellsDB());
@@ -34,6 +43,7 @@ export default function QuadraticGrid() {
         autoDensity: true,
       }}
       onKeyDown={(event) => {
+        // TODO move all interaction listeners to here!
         if (event.key === "/") {
           const x = cursorRef.current?.location.x;
           const y = cursorRef.current?.location.y;
@@ -73,6 +83,11 @@ export default function QuadraticGrid() {
             ></CellPixiReact>
           ))}
         <AxesPixiReact visible={showGridAxes}></AxesPixiReact>
+        <CursorPixiReact location={cursorPosition}></CursorPixiReact>
+        <MultiCursorPixiReact
+          originLocation={multicursorPosition.originLocation}
+          terminalLocation={multicursorPosition.terminalLocation}
+        ></MultiCursorPixiReact>
       </ViewportComponent>
     </Stage>
   );
