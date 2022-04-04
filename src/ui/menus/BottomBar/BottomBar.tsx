@@ -18,6 +18,7 @@ export const BottomBar = () => {
         paddingRight: "1rem",
         fontFamily: "sans-serif",
         fontSize: "0.7rem",
+        userSelect: "none",
       }}
     >
       <Box
