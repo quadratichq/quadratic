@@ -6,9 +6,10 @@ export const cursorPositionAtom = atom({
   default: { x: 5, y: 5 } as CellReference,
 });
 
-interface multiCursorPosition {
+export interface MultiCursorPosition {
   originLocation: CellReference;
   terminalLocation: CellReference;
+  visible?: boolean;
   color?: number;
 }
 
@@ -16,6 +17,7 @@ export const multicursorPositionAtom = atom({
   key: "multicursorPosition", // unique ID (with respect to other atoms/selectors)
   default: {
     originLocation: { x: 0, y: 0 },
-    terminalLocation: { x: 5, y: 5 },
-  } as multiCursorPosition,
+    terminalLocation: { x: 0, y: 0 },
+    visible: false,
+  } as MultiCursorPosition,
 });

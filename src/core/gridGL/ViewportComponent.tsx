@@ -4,8 +4,6 @@ import { Simple } from "pixi-cull";
 import { ZoomCulling } from "./graphics/zoomCulling";
 
 import drawGridLines from "./graphics/drawGridLines";
-import Interaction from "./interaction/interaction";
-import Cursor from "./interaction/cursor";
 import Globals from "./globals";
 import { PixiComponent, useApp } from "@inlet/react-pixi";
 
@@ -13,7 +11,6 @@ export interface ViewportProps {
   screenWidth: number;
   screenHeight: number;
   children?: React.ReactNode;
-  cursorRef: React.MutableRefObject<Cursor | undefined>;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
 }
 

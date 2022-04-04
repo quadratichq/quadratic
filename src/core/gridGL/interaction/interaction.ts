@@ -34,40 +34,6 @@ export default class Interaction {
 
     // General keydown listener when user is interacting with The Grid
     this.globals.canvas.addEventListener("keydown", (event) => {
-      // Prevent these commands if "command" key is being pressed
-      if (event.metaKey) {
-        return;
-      }
-
-      if (event.key === "ArrowUp") {
-        this.cursor.moveCursor({
-          x: this.cursor.location.x,
-          y: this.cursor.location.y - 1,
-        });
-        event.preventDefault();
-      }
-      if (event.key === "ArrowRight") {
-        this.cursor.moveCursor({
-          x: this.cursor.location.x + 1,
-          y: this.cursor.location.y,
-        });
-        event.preventDefault();
-      }
-      if (event.key === "ArrowLeft") {
-        this.cursor.moveCursor({
-          x: this.cursor.location.x - 1,
-          y: this.cursor.location.y,
-        });
-        event.preventDefault();
-      }
-      if (event.key === "ArrowDown") {
-        this.cursor.moveCursor({
-          x: this.cursor.location.x,
-          y: this.cursor.location.y + 1,
-        });
-        event.preventDefault();
-      }
-
       if (event.key === "Enter") {
         this.cursor.moveCursor({
           x: this.cursor.location.x,
