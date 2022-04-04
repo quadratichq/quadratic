@@ -1,14 +1,42 @@
 import CellReference from "../types/cellReference";
 import { SetterOrUpdater } from "recoil";
 import { MultiCursorPosition } from "../../../atoms/cursorAtoms";
+import { copyToClipboard, pasteFromClipboard } from "../../actions/clipboard";
 
 export const onKeyDownCanvas = (
   event: React.KeyboardEvent<HTMLCanvasElement>,
   cursorPosition: CellReference,
   setCursorPosition: SetterOrUpdater<CellReference>,
+  multiCursorPosition: MultiCursorPosition,
   setMulticursorPosition: SetterOrUpdater<MultiCursorPosition>
 ) => {
   console.log(event);
+
+  // TODO make commands work cross platform
+  // Command + V
+  if (event.metaKey && event.code === "KeyV") {
+    console.log("made it here v ");
+    pasteFromClipboard({
+      x: cursorPosition.x,
+      y: cursorPosition.y,
+    });
+  }
+
+  // Command + C
+  if (event.metaKey && event.code === "KeyC") {
+    console.log("made it here c ");
+    copyToClipboard(
+      {
+        x: multiCursorPosition.originLocation.x,
+        y: multiCursorPosition.originLocation.y,
+      },
+      {
+        x: multiCursorPosition.terminalLocation.x,
+        y: multiCursorPosition.terminalLocation.y,
+      }
+    );
+  }
+
   // Prevent these commands if "command" key is being pressed
   if (event.metaKey) {
     return;
@@ -52,6 +80,17 @@ export const onKeyDownCanvas = (
       y: cursorPosition.y + 1,
     });
     hideMultiCursor();
+    event.preventDefault();
+  }
+
+  if (event.key === "Tab") {
+    // TODO: save previous cell
+
+    // move single cursor one right
+    setCursorPosition({
+      x: cursorPosition.x + 1,
+      y: cursorPosition.y,
+    });
     event.preventDefault();
   }
 

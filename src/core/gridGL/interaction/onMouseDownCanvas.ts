@@ -28,8 +28,8 @@ export const onMouseDownCanvas = (
 
   // Keep track of multicursor previous position
   let previousPosition = {
-    originLocation: { x: 0, y: 0 },
-    terminalLocation: { x: 0, y: 0 },
+    originLocation: { x: down_cell_x, y: down_cell_y },
+    terminalLocation: { x: down_cell_x, y: down_cell_y },
     visible: false,
   } as MultiCursorPosition;
 

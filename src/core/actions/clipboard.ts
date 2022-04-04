@@ -58,8 +58,8 @@ export const copyToClipboard = async (
 ) => {
   // write selected cells to clipboard
 
-  const cWidth = Math.abs(cell1.x - cell0.x);
-  const cHeight = Math.abs(cell1.y - cell0.y);
+  const cWidth = Math.abs(cell1.x - cell0.x) + 1;
+  const cHeight = Math.abs(cell1.y - cell0.y) + 1;
 
   let clipboardString = "";
 

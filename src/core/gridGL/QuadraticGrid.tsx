@@ -64,6 +64,7 @@ export default function QuadraticGrid() {
           event,
           cursorPosition,
           setCursorPosition,
+          multicursorPosition,
           setMulticursorPosition
         );
       }}
