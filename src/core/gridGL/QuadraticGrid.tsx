@@ -60,7 +60,12 @@ export default function QuadraticGrid() {
       }}
       tabIndex={0}
       onKeyDown={(event) => {
-        onKeyDownCanvas(event, cursorPosition, setCursorPosition);
+        onKeyDownCanvas(
+          event,
+          cursorPosition,
+          setCursorPosition,
+          setMulticursorPosition
+        );
       }}
       onMouseDown={(event) => {
         onMouseDownCanvas(
@@ -70,12 +75,6 @@ export default function QuadraticGrid() {
           viewportRef
         );
       }}
-      // onMouseMove={(event) => {
-      //   onMouseMoveCanvas(event);
-      // }}
-      // onMouseUp={(event) => {
-      //   onMouseUpCanvas(event);
-      // }}
       style={{ display: loading ? "none" : "inline" }}
       // Disable rendering on each frame, instead render state change (next line)
       raf={false}
