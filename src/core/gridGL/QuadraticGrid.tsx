@@ -34,17 +34,17 @@ export default function QuadraticGrid() {
   const cells = useLiveQuery(() => GetCellsDB());
   const [showGridAxes] = useLocalStorage("showGridAxes", true);
 
-  useEffect(() => {
-    // TODO: THIS DOES NOT WORK
-    if (viewportRef.current)
-      viewportRef.current.ensureVisible(
-        cursorPosition.x,
-        cursorPosition.y,
-        CELL_WIDTH,
-        CELL_HEIGHT,
-        false
-      );
-  }, [cursorPosition]);
+  // useEffect(() => {
+  //   // TODO: THIS DOES NOT WORK
+  //   if (viewportRef.current)
+  //     viewportRef.current.ensureVisible(
+  //       cursorPosition.x,
+  //       cursorPosition.y,
+  //       CELL_WIDTH,
+  //       CELL_HEIGHT,
+  //       false
+  //     );
+  // }, [cursorPosition]);
 
   return (
     <Stage
@@ -65,7 +65,8 @@ export default function QuadraticGrid() {
           cursorPosition,
           setCursorPosition,
           multicursorPosition,
-          setMulticursorPosition
+          setMulticursorPosition,
+          navigate
         );
       }}
       onMouseDown={(event) => {
