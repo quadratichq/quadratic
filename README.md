@@ -1,4 +1,4 @@
-![Quadratic Tests](https://github.com/quadratic-eng/quadratic/actions/workflows/main.yml/badge.svg) ![License ELv2](https://user-images.githubusercontent.com/3479421/162047443-5469b5a7-43e9-4c23-a2fa-3f9e5b2ecfaf.svg)
+![Quadratic Tests](https://github.com/quadratichq/quadratic/actions/workflows/main.yml/badge.svg) ![License ELv2](https://user-images.githubusercontent.com/3479421/162047443-5469b5a7-43e9-4c23-a2fa-3f9e5b2ecfaf.svg)
 
 
 ![quadraticlogo4 1](https://user-images.githubusercontent.com/3479421/162037216-2fea1620-2310-4cfa-96fb-31299195e3a9.png)
@@ -23,8 +23,8 @@ Quadratic is in ALPHA. We do not recommend relying on Quadratic.
 - [x] WebGL Grid (pinch and zoom)
 - [x] Python
 - [x] Pandas Support
-- [ ] Database Connection Support (issue [#35](https://github.com/quadratic-eng/quadratic/issues/35))
-- [ ] SQL Support (issue [#34](https://github.com/quadratic-eng/quadratic/issues/34))
+- [ ] Database Connection Support (issue [#35](https://github.com/quadratichq/quadratic/issues/35))
+- [ ] SQL Support (issue [#34](https://github.com/quadratichq/quadratic/issues/34))
 - [ ] JS Support
 
 Notice an bug? Submit a Github Issue!
@@ -42,6 +42,10 @@ Install Dependencies `npm install`
 Run Web `npm start`
 
 Run Electron `npm run dev`
+
+# Examples
+
+Located in the `examples` folder in this repo.
 
 # License
 Quadratic is licensed under the Elastic License 2.0 (ELv2).
