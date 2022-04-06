@@ -108,6 +108,9 @@ export default function QuadraticGrid() {
             viewportRef
           );
         }}
+        onDoubleClick={(event) => {
+          console.log("double click", event);
+        }}
         style={{ display: loading ? "none" : "inline" }}
         // Disable rendering on each frame, instead render state change (next line)
         raf={false}
