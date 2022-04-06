@@ -15,7 +15,24 @@ Take your data and do something useful with it as quickly and as easily as possi
 
 Quadratic is a WebGL + WASM React App that runs both in browser and in Electron.
 
+# Development Progress
+
+Quadratic is in ALPHA. We do not recommend relying on Quadratic.
+
+- [x] WebGL Grid (pinch and zoom)
+- [x] Python
+- [x] Pandas Support
+- [ ] Database Connection Support (issue [#35](https://github.com/quadratic-eng/quadratic/issues/35))
+- [ ] SQL Support (issue [#34](https://github.com/quadratic-eng/quadratic/issues/34))
+- [ ] JS Support
+
 # Getting Started
+
+## Online Demo
+
+https://early.quadratic.to
+
+## Locally
 
 Install Dependencies
 
