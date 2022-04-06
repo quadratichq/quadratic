@@ -37,31 +37,11 @@ https://early.quadratic.to
 
 ## Locally
 
-Install Dependencies
+Install Dependencies `npm install`
 
-```bash
-npm install
-```
+Run Web `npm start`
 
-Run Electron
-
-```bash
-npm run dev
-```
-
-Run Web
-
-```bash
-npm start
-```
-
-Deploying on Amplify
-
-Make sure to add all file types to "Rewrites and redirects"
-
-```
-</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json|wasm|data|fnt|tar|py)$)([^.]+$)/>
-```
+Run Electron `npm run dev`
 
 # License
 Quadratic is licensed under the Elastic License 2.0 (ELv2).
