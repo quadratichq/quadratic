@@ -34,6 +34,36 @@ export const GridInput = (props: InputPixiReactProps) => {
 
   // let viewport = props.viewportRef.current;
 
+  if (!interactionState.showInput) {
+    return null;
+  }
+
+  const movedListener = () => {
+    console.log("moved");
+    let transform = "";
+    let m = viewportRef.current?.worldTransform;
+
+    let cell_offset_scaled = viewportRef.current?.toScreen(
+      cellLoation.current.x * CELL_WIDTH + 1,
+      cellLoation.current.y * CELL_HEIGHT + 1
+    );
+
+    console.log("cell_offset_scaled", cell_offset_scaled);
+
+    if (m && cell_offset_scaled)
+      transform =
+        "matrix(" +
+        [m.a, m.b, m.c, m.d, cell_offset_scaled.x, cell_offset_scaled.y].join(
+          ","
+        ) +
+        ")";
+
+    //@ts-expect-error
+    if (textInput.current) textInput.current.style.transform = transform;
+
+    return transform;
+  };
+
   const saveAndCloseCell = async (
     transpose = { x: 0, y: 0 } as CellReference
   ) => {
@@ -65,45 +95,24 @@ export const GridInput = (props: InputPixiReactProps) => {
     });
     setValue(undefined);
     document.getElementById("QuadraticCanvasID")?.focus();
-    viewportRef.current?.removeAllListeners();
+
+    viewportRef.current?.removeListener("moved", movedListener);
+    viewportRef.current?.removeListener("moved-end", movedListener);
   };
 
-  if (!interactionState.showInput) {
-    return null;
-  } else {
-    if (value === undefined && value !== interactionState.inputInitialValue) {
-      setValue(interactionState.inputInitialValue);
-      cellLoation.current = interactionState.cursorPosition;
-    }
+  if (value === undefined && value !== interactionState.inputInitialValue) {
+    // Happens on initialization
+    setValue(interactionState.inputInitialValue);
+    cellLoation.current = interactionState.cursorPosition;
   }
-
-  const movedListener = () => {
-    console.log("moved");
-    let transform = "";
-    let m = viewportRef.current?.worldTransform;
-
-    let cell_offset_scaled = viewportRef.current?.toScreen(
-      cellLoation.current.x * CELL_WIDTH + 1,
-      cellLoation.current.y * CELL_HEIGHT + 1
-    );
-
-    console.log("cell_offset_scaled", cell_offset_scaled);
-
-    if (m && cell_offset_scaled)
-      transform =
-        "matrix(" +
-        [m.a, m.b, m.c, m.d, cell_offset_scaled.x, cell_offset_scaled.y].join(
-          ","
-        ) +
-        ")";
-
-    //@ts-expect-error
-    if (textInput.current) textInput.current.style.transform = transform;
-  };
 
   viewportRef.current?.addListener("moved", movedListener);
   viewportRef.current?.addListener("moved-end", movedListener);
-  movedListener();
+
+  // set initial position correctly
+  const transform = movedListener();
+
+  console.log("transform", transform);
 
   return (
     <input
@@ -119,7 +128,7 @@ export const GridInput = (props: InputPixiReactProps) => {
         lineHeight: "1",
         background: "none",
         transformOrigin: "0 0",
-        // transform: transform,
+        transform: transform,
         fontSize: "14px",
       }}
       value={value}

@@ -108,6 +108,8 @@ export const onMouseDownCanvas = (
           inputInitialValue: "",
         });
 
+        viewportRef.current.dirty = true;
+
         // update previousPosition
         previousPosition = {
           originPosition: { x: originX, y: originY },
