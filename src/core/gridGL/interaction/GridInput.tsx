@@ -1,109 +1,19 @@
 import { useRef, useEffect, useState } from "react";
-import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
+import {
+  CELL_WIDTH,
+  CELL_HEIGHT,
+  CELL_TEXT_MARGIN_LEFT,
+  CELL_TEXT_MARGIN_TOP,
+} from "../../../constants/gridConstants";
 import { PixiComponent } from "@inlet/react-pixi";
 import { DeleteCellsDB } from "../../gridDB/Cells/DeleteCellsDB";
 import { updateCellAndDCells } from "../../actions/updateCellAndDCells";
 import { GridInteractionState } from "../QuadraticGrid";
 import { Container } from "@inlet/react-pixi";
 import type { Viewport } from "pixi-viewport";
-import { IntegrationInstructions } from "@mui/icons-material";
+import { IntegrationInstructions, ViewDayOutlined } from "@mui/icons-material";
 import { CellTypes } from "../../gridDB/db";
 import CellReference from "../types/cellReference";
-
-// let Input = PixiComponent("Input", {
-//   create: (props: InputPixiReactProps) => {
-//     const { interactionState } = props;
-
-//     const x_pos = interactionState.cursorPosition.x * CELL_WIDTH;
-//     const y_pos = interactionState.cursorPosition.y * CELL_HEIGHT;
-
-//     // instantiate input and return it
-//     let input = new TextInput({
-//       input: {
-//         fontSize: "14px",
-//         spellcheck: "false",
-//         marginLeft: "0px",
-//         marginTop: "2px",
-//         width: "100px",
-//         // backgroundColor: "white",
-//       },
-//       box: {
-//         default: {
-//           width: "100px",
-//         },
-//         focused: {},
-//         disabled: {},
-//       },
-//     });
-
-//     input.x = x_pos;
-//     input.y = y_pos;
-
-//     // input.substituteText = false;
-
-//     input.placeholderColor = 0xffffff;
-
-//     input.text = interactionState.inputInitialValue;
-
-//     console.log(input);
-
-//     input.on("keydown", (keycode: any) => {
-//       console.log("key pressed:", keycode);
-
-//       // if enter is pressed
-//       if (keycode === 13) {
-//         // save cell
-//         input.blur();
-//         // move cursor
-//         // focus canvas
-//         // unrender input
-//       }
-//       // esc
-//       if (keycode === 27) {
-//         // save cell
-//         input.blur();
-//         // move cursor
-//         // focus canvas
-//         // unrender input
-//         // props.setShowInput(false);
-//         // props.setInputInitialValue("");
-//       }
-
-//       // Request frame after each keypress.
-//     });
-
-//     input.on("blur", () => {
-//       // save cell
-//       saveAndCloseCell();
-//       // unrender input
-//     });
-
-//     return input;
-//   },
-//   didMount: (instance, parent) => {
-//     // apply custom logic on mount
-//     instance.focus();
-//   },
-//   willUnmount: (instance, parent) => {
-//     // clean up before removal
-//   },
-//   applyProps: (instance, oldProps, newProps) => {
-//     if (!oldProps?.interactionState?.showInput) {
-//       if (newProps?.interactionState?.showInput) {
-//         instance.focus();
-//       }
-//     }
-//   },
-//   config: {
-//     // destroy instance on unmount?
-//     // default true
-//     destroy: true,
-
-//     /// destroy its children on unmount?
-//     // default true
-//     destroyChildren: true,
-//   },
-// });
 
 interface InputPixiReactProps {
   interactionState: GridInteractionState;
@@ -116,8 +26,9 @@ interface InputPixiReactProps {
 export const GridInput = (props: InputPixiReactProps) => {
   const { interactionState, setInteractionState, viewportRef } = props;
 
-  const [value, setValue] = useState(interactionState.inputInitialValue);
+  const [value, setValue] = useState<string | undefined>(undefined);
   const cellLoation = useRef(interactionState.cursorPosition);
+  const textInput = useRef(null);
 
   // if (!props.viewportRef.current) return <></>;
 
@@ -138,7 +49,7 @@ export const GridInput = (props: InputPixiReactProps) => {
         x: cellLoation.current.x,
         y: cellLoation.current.y,
         type: "TEXT",
-        value: value,
+        value: value || "",
       });
     }
     setInteractionState({
@@ -152,32 +63,64 @@ export const GridInput = (props: InputPixiReactProps) => {
         inputInitialValue: "",
       },
     });
-    setValue("");
+    setValue(undefined);
     document.getElementById("QuadraticCanvasID")?.focus();
+    viewportRef.current?.removeAllListeners();
   };
 
   if (!interactionState.showInput) {
     return null;
   } else {
-    if (value === "" && value !== interactionState.inputInitialValue) {
+    if (value === undefined && value !== interactionState.inputInitialValue) {
       setValue(interactionState.inputInitialValue);
       cellLoation.current = interactionState.cursorPosition;
     }
   }
 
+  const movedListener = () => {
+    console.log("moved");
+    let transform = "";
+    let m = viewportRef.current?.worldTransform;
+
+    let cell_offset_scaled = viewportRef.current?.toScreen(
+      cellLoation.current.x * CELL_WIDTH + 1,
+      cellLoation.current.y * CELL_HEIGHT + 1
+    );
+
+    console.log("cell_offset_scaled", cell_offset_scaled);
+
+    if (m && cell_offset_scaled)
+      transform =
+        "matrix(" +
+        [m.a, m.b, m.c, m.d, cell_offset_scaled.x, cell_offset_scaled.y].join(
+          ","
+        ) +
+        ")";
+
+    //@ts-expect-error
+    if (textInput.current) textInput.current.style.transform = transform;
+  };
+
+  viewportRef.current?.addListener("moved", movedListener);
+  viewportRef.current?.addListener("moved-end", movedListener);
+  movedListener();
+
   return (
     <input
       autoFocus
+      ref={textInput}
       style={{
         display: "block",
         position: "absolute",
-        top: 100,
-        left: 20,
+        top: 0,
+        left: 0,
         border: "none",
         outline: "none",
         lineHeight: "1",
         background: "none",
         transformOrigin: "0 0",
+        // transform: transform,
+        fontSize: "14px",
       }}
       value={value}
       onChange={(event) => {

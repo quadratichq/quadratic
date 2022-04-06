@@ -125,4 +125,6 @@ export const onMouseDownCanvas = (
   event.target.addEventListener("mouseup", () => {
     event.target?.removeEventListener("mousemove", onMouseMove);
   });
+
+  viewportRef.current.dirty = true;
 };

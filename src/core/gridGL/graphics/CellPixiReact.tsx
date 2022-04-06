@@ -3,7 +3,12 @@ import { Graphics, Container } from "@inlet/react-pixi";
 
 import FastBitmapText from "./primatives/FastBitmapText";
 
-import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
+import {
+  CELL_WIDTH,
+  CELL_HEIGHT,
+  CELL_TEXT_MARGIN_LEFT,
+  CELL_TEXT_MARGIN_TOP,
+} from "../../../constants/gridConstants";
 import { CellTypes } from "../../gridDB/db";
 import colors from "../../../theme/colors";
 
@@ -19,8 +24,6 @@ const CellPixiReact = (props: CellPixiReactProps) => {
   // Calculate X and Y positions
   const x_pos = props.x * CELL_WIDTH;
   const y_pos = props.y * CELL_HEIGHT;
-  const margin_left = 2;
-  const margin_top = -1;
 
   const draw_outline = useCallback(
     (g) => {
@@ -42,8 +45,8 @@ const CellPixiReact = (props: CellPixiReactProps) => {
   return (
     <Container interactiveChildren={false}>
       <FastBitmapText
-        x={x_pos + margin_left}
-        y={y_pos + margin_top}
+        x={x_pos + CELL_TEXT_MARGIN_LEFT}
+        y={y_pos + CELL_TEXT_MARGIN_TOP}
         text={props.text}
         visible={props.renderText}
       />

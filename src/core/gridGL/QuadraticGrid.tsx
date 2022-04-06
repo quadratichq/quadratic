@@ -127,8 +127,8 @@ export default function QuadraticGrid() {
                 text={cell.value}
                 type={cell.type}
                 renderText={
-                  true ||
                   !(
+                    interactionState.showInput &&
                     interactionState.cursorPosition.x === cell.x &&
                     interactionState.cursorPosition.y === cell.y
                   )
