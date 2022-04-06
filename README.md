@@ -2,10 +2,8 @@
 
 ![quadraticlogo4 1](https://user-images.githubusercontent.com/3479421/162037216-2fea1620-2310-4cfa-96fb-31299195e3a9.png)
 
-
-## Quadratic
-
-**_The Data Science Spreadsheet._**
+![quardatic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg)  **_The Data Science Spreadsheet._**
+----
 
 Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to pull any data.
 
