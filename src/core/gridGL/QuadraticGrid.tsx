@@ -20,7 +20,7 @@ import { useRecoilState } from "recoil";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
 import { onKeyDownCanvas } from "./interaction/onKeyDownCanvas";
 import { onMouseDownCanvas } from "./interaction/onMouseDownCanvas";
-import InputPixiReact from "./interaction/InputPixiReact";
+import { GridInput } from "./interaction/GridInput";
 import CellReference from "./types/cellReference";
 
 export interface GridInteractionState {
@@ -78,66 +78,84 @@ export default function QuadraticGrid() {
   // }, [cursorPosition]);
 
   return (
-    <Stage
-      height={windowHeight}
-      width={windowWidth}
-      options={{
-        resizeTo: window,
-        resolution:
-          window.devicePixelRatio === 1.0 ? 2 : window.devicePixelRatio,
-        backgroundColor: 0xffffff,
-        antialias: true,
-        autoDensity: true,
-      }}
-      tabIndex={0}
-      onKeyDown={(event) => {
-        onKeyDownCanvas(event, interactionState, setInteractionState, navigate);
-      }}
-      onMouseDown={(event) => {
-        onMouseDownCanvas(
-          event,
-          interactionState,
-          setInteractionState,
-          viewportRef
-        );
-      }}
-      style={{ display: loading ? "none" : "inline" }}
-      // Disable rendering on each frame, instead render state change (next line)
-      raf={false}
-      renderOnComponentChange={true}
-    >
-      <ViewportComponent
-        screenWidth={windowWidth}
-        screenHeight={windowHeight}
-        viewportRef={viewportRef}
+    <>
+      <Stage
+        id="QuadraticCanvasID"
+        height={windowHeight}
+        width={windowWidth}
+        options={{
+          resizeTo: window,
+          resolution:
+            window.devicePixelRatio === 1.0 ? 2 : window.devicePixelRatio,
+          backgroundColor: 0xffffff,
+          antialias: true,
+          autoDensity: true,
+        }}
+        tabIndex={0}
+        onKeyDown={(event) => {
+          onKeyDownCanvas(
+            event,
+            interactionState,
+            setInteractionState,
+            navigate
+          );
+        }}
+        onMouseDown={(event) => {
+          onMouseDownCanvas(
+            event,
+            interactionState,
+            setInteractionState,
+            viewportRef
+          );
+        }}
+        style={{ display: loading ? "none" : "inline" }}
+        // Disable rendering on each frame, instead render state change (next line)
+        raf={false}
+        renderOnComponentChange={true}
       >
-        {!loading &&
-          cells?.map((cell) => (
-            <CellPixiReact
-              key={`${cell.x},${cell.y}`}
-              x={cell.x}
-              y={cell.y}
-              text={cell.value}
-              type={cell.type}
-              renderText={true}
-            ></CellPixiReact>
-          ))}
-        <AxesPixiReact visible={showGridAxes}></AxesPixiReact>
-        <CursorPixiReact
-          location={interactionState.cursorPosition}
-        ></CursorPixiReact>
-        <MultiCursorPixiReact
-          originLocation={interactionState.multiCursorPosition.originPosition}
-          terminalLocation={
-            interactionState.multiCursorPosition.terminalPosition
-          }
-          visible={interactionState.showMultiCursor}
-        ></MultiCursorPixiReact>
-        <InputPixiReact
-          interactionState={interactionState}
-          setInteractionState={setInteractionState}
-        ></InputPixiReact>
-      </ViewportComponent>
-    </Stage>
+        <ViewportComponent
+          screenWidth={windowWidth}
+          screenHeight={windowHeight}
+          viewportRef={viewportRef}
+        >
+          {!loading &&
+            cells?.map((cell) => (
+              <CellPixiReact
+                key={`${cell.x},${cell.y}`}
+                x={cell.x}
+                y={cell.y}
+                text={cell.value}
+                type={cell.type}
+                renderText={
+                  true ||
+                  !(
+                    interactionState.cursorPosition.x === cell.x &&
+                    interactionState.cursorPosition.y === cell.y
+                  )
+                }
+              ></CellPixiReact>
+            ))}
+          <AxesPixiReact visible={showGridAxes}></AxesPixiReact>
+          <CursorPixiReact
+            location={interactionState.cursorPosition}
+          ></CursorPixiReact>
+          <MultiCursorPixiReact
+            originLocation={interactionState.multiCursorPosition.originPosition}
+            terminalLocation={
+              interactionState.multiCursorPosition.terminalPosition
+            }
+            visible={interactionState.showMultiCursor}
+          ></MultiCursorPixiReact>
+          {/* <InputPixiReact
+
+        ></InputPixiReact> */}
+        </ViewportComponent>
+      </Stage>
+      <GridInput
+        interactionState={interactionState}
+        setInteractionState={setInteractionState}
+        viewportRef={viewportRef}
+      ></GridInput>
+    </>
   );
 }
