@@ -26,6 +26,8 @@ Quadratic is in ALPHA. We do not recommend relying on Quadratic.
 - [ ] SQL Support (issue [#34](https://github.com/quadratic-eng/quadratic/issues/34))
 - [ ] JS Support
 
+Notice an bug? Submit a Github Issue!
+
 # Getting Started
 
 ## Online Demo
