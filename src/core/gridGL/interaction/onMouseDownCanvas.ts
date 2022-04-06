@@ -3,11 +3,14 @@ import { MultiCursorPosition } from "../../../atoms/cursorAtoms";
 import { SetterOrUpdater } from "recoil";
 import type { Viewport } from "pixi-viewport";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
+import { GridInteractionState } from "../QuadraticGrid";
 
 export const onMouseDownCanvas = (
   event: React.MouseEvent<HTMLCanvasElement, MouseEvent>,
-  setCursorPosition: SetterOrUpdater<CellReference>,
-  setMulticursorPosition: SetterOrUpdater<MultiCursorPosition>,
+  interactionState: GridInteractionState,
+  setInteractionState: React.Dispatch<
+    React.SetStateAction<GridInteractionState>
+  >,
   viewportRef: React.MutableRefObject<Viewport | undefined>
 ) => {
   // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
@@ -21,20 +24,25 @@ export const onMouseDownCanvas = (
   let down_cell_x = Math.floor(downX / CELL_WIDTH);
   let down_cell_y = Math.floor(downY / CELL_HEIGHT);
 
-  // Move cursor to mouse down position
-  setCursorPosition({ x: down_cell_x, y: down_cell_y });
+  console.log(event);
 
-  viewportRef.current.dirty = true;
-
-  // Keep track of multicursor previous position
+  // Keep track of multiCursor previous position
   let previousPosition = {
-    originLocation: { x: down_cell_x, y: down_cell_y },
-    terminalLocation: { x: down_cell_x, y: down_cell_y },
-    visible: false,
-  } as MultiCursorPosition;
+    originPosition: { x: down_cell_x, y: down_cell_y },
+    terminalPosition: { x: down_cell_x, y: down_cell_y },
+  };
 
-  // If single click, make sure to hide multicursor
-  setMulticursorPosition(previousPosition);
+  // Move cursor to mouse down position
+  // For single click, hide multiCursor
+  setInteractionState({
+    ...interactionState,
+    ...{
+      cursorPosition: { x: down_cell_x, y: down_cell_y },
+      multiCursorPosition: previousPosition,
+      showMultiCursor: false,
+    },
+  });
+  // setMulticursorPosition(previousPosition);
 
   function onMouseMove(move_event: any) {
     // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
@@ -51,12 +59,21 @@ export const onMouseDownCanvas = (
     // cursor start and end in the same cell
     if (move_cell_x === down_cell_x && move_cell_y === down_cell_y) {
       // hide multi cursor when only selecting one cell
-      setMulticursorPosition({
-        originLocation: { x: down_cell_x, y: down_cell_y },
-        terminalLocation: { x: move_cell_x, y: move_cell_y },
-        visible: false,
+      // setMulticursorPosition({
+      //   originLocation: { x: down_cell_x, y: down_cell_y },
+      //   terminalLocation: { x: move_cell_x, y: move_cell_y },
+      //   visible: false,
+      // });
+      setInteractionState({
+        cursorPosition: { x: down_cell_x, y: down_cell_y },
+        multiCursorPosition: {
+          originPosition: { x: down_cell_x, y: down_cell_y },
+          terminalPosition: { x: down_cell_x, y: down_cell_y },
+        },
+        showMultiCursor: false,
+        showInput: false,
+        inputInitialValue: "",
       });
-      viewportRef.current.dirty = true;
     } else {
       // cursor origin and terminal are not in the same cell
 
@@ -68,32 +85,43 @@ export const onMouseDownCanvas = (
 
       // determine if the cursor has moved from the previous event
       const hasMoved = !(
-        previousPosition.originLocation.x === originX &&
-        previousPosition.originLocation.y === originY &&
-        previousPosition.terminalLocation.x === termX &&
-        previousPosition.terminalLocation.y === termY
+        previousPosition.originPosition.x === originX &&
+        previousPosition.originPosition.y === originY &&
+        previousPosition.terminalPosition.x === termX &&
+        previousPosition.terminalPosition.y === termY
       );
 
       // only set state if changed
       // this reduces the number of hooks fired
       if (hasMoved) {
         // update multicursor
-        const newPosition = {
-          originLocation: { x: originX, y: originY },
-          terminalLocation: { x: termX, y: termY },
-          visible: true,
-        } as MultiCursorPosition;
-        setMulticursorPosition(newPosition);
-        viewportRef.current.dirty = true;
+        // setMulticursorPosition(newPosition);
+
+        setInteractionState({
+          cursorPosition: { x: down_cell_x, y: down_cell_y },
+          multiCursorPosition: {
+            originPosition: { x: originX, y: originY },
+            terminalPosition: { x: termX, y: termY },
+          },
+          showMultiCursor: true,
+          showInput: false,
+          inputInitialValue: "",
+        });
 
         // update previousPosition
-        previousPosition = newPosition;
+        previousPosition = {
+          originPosition: { x: originX, y: originY },
+          terminalPosition: { x: termX, y: termY },
+        };
       }
     }
   }
 
   // onMouseMove lifecycle events
   event.target.addEventListener("mousemove", onMouseMove);
+  event.target.addEventListener("blur", () => {
+    event.target?.removeEventListener("mousemove", onMouseMove);
+  });
   event.target.addEventListener("mouseup", () => {
     event.target?.removeEventListener("mousemove", onMouseMove);
   });

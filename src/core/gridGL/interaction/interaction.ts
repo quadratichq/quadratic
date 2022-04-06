@@ -6,7 +6,7 @@ import GridInput from "./input";
 import isAlphaNumeric from "./helpers/isAlphaNumeric";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 import { deleteCellsRange } from "../../actions/deleteCellsRange";
-import { copyToClipboard, pasteFromClipboard } from "../../actions/clipboard";
+
 export default class Interaction {
   globals: Globals;
   cursor: Cursor;
@@ -58,18 +58,6 @@ export default class Interaction {
         event.preventDefault();
       }
 
-      // if key is a letter or enter start taking input
-      if (isAlphaNumeric(event.key)) {
-        this.input.moveInputToCursor().then(() => {
-          // Start off input with first key pressed.
-          // Make sure grid updates visually with this key.
-          this.input.input.text = event.key;
-          this.input.setGridToInput();
-          this.input.input.focus();
-          event.preventDefault();
-        });
-      }
-
       this.globals.viewport.dirty = true;
     });
 
@@ -119,46 +107,6 @@ export default class Interaction {
       this.multiCursor.isInteractive = false;
     });
 
-    this.globals.canvas.addEventListener("keydown", (event) => {
-      if (event.key === "Tab") {
-        // save previous cell
-        this.input.moveInputToCursor();
-        this.input.saveCell();
-
-        this.globals.canvas.focus();
-
-        // move single cursor one right
-        this.cursor.moveCursor({
-          x: this.cursor.location.x + 1,
-          y: this.cursor.location.y,
-        });
-        event.preventDefault();
-      }
-
-      // TODO make commands work cross platform
-      // Command + V
-      if (event.metaKey && event.code === "KeyV") {
-        pasteFromClipboard({
-          x: this.cursor.location.x,
-          y: this.cursor.location.y,
-        });
-      }
-
-      // Command + C
-      if (event.metaKey && event.code === "KeyC") {
-        copyToClipboard(
-          {
-            x: this.multiCursor.originLocation.x,
-            y: this.multiCursor.originLocation.y,
-          },
-          {
-            x: this.multiCursor.terminalLocation.x,
-            y: this.multiCursor.terminalLocation.y,
-          }
-        );
-      }
-
-      this.globals.viewport.dirty = true;
-    });
+    this.globals.canvas.addEventListener("keydown", (event) => {});
   }
 }

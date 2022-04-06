@@ -4,46 +4,54 @@ import { MultiCursorPosition } from "../../../atoms/cursorAtoms";
 import { copyToClipboard, pasteFromClipboard } from "../../actions/clipboard";
 import { deleteCellsRange } from "../../actions/deleteCellsRange";
 import { GetCellsDB } from "../../gridDB/Cells/GetCellsDB";
+import isAlphaNumeric from "./helpers/isAlphaNumeric";
 import { NavigateFunction } from "react-router-dom";
+import { GridInteractionState } from "../QuadraticGrid";
+import type { Viewport } from "pixi-viewport";
 
 export const onKeyDownCanvas = (
   event: React.KeyboardEvent<HTMLCanvasElement>,
-  cursorPosition: CellReference,
-  setCursorPosition: SetterOrUpdater<CellReference>,
-  multiCursorPosition: MultiCursorPosition,
-  setMulticursorPosition: SetterOrUpdater<MultiCursorPosition>,
+  interactionState: GridInteractionState,
+  setInteractionState: React.Dispatch<
+    React.SetStateAction<GridInteractionState>
+  >,
   navigate: NavigateFunction
 ) => {
   // Helper Functions
-  const hideMultiCursor = () => {
-    setMulticursorPosition({
-      originLocation: { x: 0, y: 0 },
-      terminalLocation: { x: 0, y: 0 },
-      visible: false,
-    } as MultiCursorPosition);
-  };
+  // const hideMultiCursor = () => {
+  //   setInteractionState({
+  //     ...interactionState,
+  //     ...{
+  //       showMultiCursor: false,
+  //     },
+  //   } as GridInteractionState);
+
+  //   // setMulticursorPosition({
+  //   //   originLocation: { x: 0, y: 0 },
+  //   //   terminalLocation: { x: 0, y: 0 },
+  //   //   visible: false,
+  //   // } as MultiCursorPosition);
+  // };
 
   // TODO make commands work cross platform
   // Command + V
   if (event.metaKey && event.code === "KeyV") {
-    console.log("made it here v ");
     pasteFromClipboard({
-      x: cursorPosition.x,
-      y: cursorPosition.y,
+      x: interactionState.cursorPosition.x,
+      y: interactionState.cursorPosition.y,
     });
   }
 
   // Command + C
   if (event.metaKey && event.code === "KeyC") {
-    console.log("made it here c ");
     copyToClipboard(
       {
-        x: multiCursorPosition.originLocation.x,
-        y: multiCursorPosition.originLocation.y,
+        x: interactionState.multiCursorPosition.originPosition.x,
+        y: interactionState.multiCursorPosition.originPosition.y,
       },
       {
-        x: multiCursorPosition.terminalLocation.x,
-        y: multiCursorPosition.terminalLocation.y,
+        x: interactionState.multiCursorPosition.terminalPosition.x,
+        y: interactionState.multiCursorPosition.terminalPosition.y,
       }
     );
   }
@@ -54,35 +62,79 @@ export const onKeyDownCanvas = (
   }
 
   if (event.key === "ArrowUp") {
-    setCursorPosition({
-      x: cursorPosition.x,
-      y: cursorPosition.y - 1,
+    setInteractionState({
+      ...interactionState,
+      ...{
+        showMultiCursor: false,
+        cursorPosition: {
+          x: interactionState.cursorPosition.x,
+          y: interactionState.cursorPosition.y - 1,
+        },
+      },
     });
-    hideMultiCursor();
+
+    // setCursorPosition({
+    //   x: cursorPosition.x,
+    //   y: cursorPosition.y - 1,
+    // });
+    // hideMultiCursor();
     event.preventDefault();
   }
   if (event.key === "ArrowRight") {
-    setCursorPosition({
-      x: cursorPosition.x + 1,
-      y: cursorPosition.y,
+    setInteractionState({
+      ...interactionState,
+      ...{
+        showMultiCursor: false,
+        cursorPosition: {
+          x: interactionState.cursorPosition.x + 1,
+          y: interactionState.cursorPosition.y,
+        },
+      },
     });
-    hideMultiCursor();
+
+    // setCursorPosition({
+    //   x: cursorPosition.x + 1,
+    //   y: cursorPosition.y,
+    // });
+    // hideMultiCursor();
     event.preventDefault();
   }
   if (event.key === "ArrowLeft") {
-    setCursorPosition({
-      x: cursorPosition.x - 1,
-      y: cursorPosition.y,
+    setInteractionState({
+      ...interactionState,
+      ...{
+        showMultiCursor: false,
+        cursorPosition: {
+          x: interactionState.cursorPosition.x - 1,
+          y: interactionState.cursorPosition.y,
+        },
+      },
     });
-    hideMultiCursor();
+
+    // setCursorPosition({
+    //   x: cursorPosition.x - 1,
+    //   y: cursorPosition.y,
+    // });
+    // hideMultiCursor();
     event.preventDefault();
   }
   if (event.key === "ArrowDown") {
-    setCursorPosition({
-      x: cursorPosition.x,
-      y: cursorPosition.y + 1,
+    setInteractionState({
+      ...interactionState,
+      ...{
+        showMultiCursor: false,
+        cursorPosition: {
+          x: interactionState.cursorPosition.x,
+          y: interactionState.cursorPosition.y + 1,
+        },
+      },
     });
-    hideMultiCursor();
+
+    // setCursorPosition({
+    //   x: cursorPosition.x,
+    //   y: cursorPosition.y + 1,
+    // });
+    // hideMultiCursor();
     event.preventDefault();
   }
 
@@ -90,36 +142,58 @@ export const onKeyDownCanvas = (
     // TODO: save previous cell
 
     // move single cursor one right
-    setCursorPosition({
-      x: cursorPosition.x + 1,
-      y: cursorPosition.y,
+    setInteractionState({
+      ...interactionState,
+      ...{
+        showMultiCursor: false,
+        cursorPosition: {
+          x: interactionState.cursorPosition.x + 1,
+          y: interactionState.cursorPosition.y,
+        },
+      },
     });
     event.preventDefault();
   }
 
   if (event.key === "Backspace") {
+    console.log("backspace event", event);
     deleteCellsRange(
       {
-        x: multiCursorPosition.originLocation.x,
-        y: multiCursorPosition.originLocation.y,
+        x: interactionState.multiCursorPosition.originPosition.x,
+        y: interactionState.multiCursorPosition.originPosition.y,
       },
       {
-        x: multiCursorPosition.terminalLocation.x,
-        y: multiCursorPosition.terminalLocation.y,
+        x: interactionState.multiCursorPosition.terminalPosition.x,
+        y: interactionState.multiCursorPosition.terminalPosition.y,
       }
     );
     event.preventDefault();
   }
 
   if (event.key === "/") {
-    const x = cursorPosition.x;
-    const y = cursorPosition.y;
+    const x = interactionState.cursorPosition.x;
+    const y = interactionState.cursorPosition.y;
     GetCellsDB(x, y, x, y).then((cells) => {
       if (cells.length) {
         navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
       } else {
         navigate(`/cell-type-menu/${x}/${y}`);
       }
+    });
+    event.preventDefault();
+  }
+
+  // if key is a letter or enter start taking input
+  if (isAlphaNumeric(event.key)) {
+    // setInputInitialValue(event.key);
+    // setShowInput(true);
+
+    setInteractionState({
+      ...interactionState,
+      ...{
+        showInput: true,
+        inputInitialValue: event.key,
+      },
     });
 
     event.preventDefault();
