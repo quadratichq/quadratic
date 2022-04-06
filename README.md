@@ -1,5 +1,8 @@
 ![Quadratic Tests](https://github.com/quadratic-eng/quadratic/actions/workflows/main.yml/badge.svg)
 
+![quadraticlogo4 1](https://user-images.githubusercontent.com/3479421/162037216-2fea1620-2310-4cfa-96fb-31299195e3a9.png)
+
+
 ## Quadratic
 
 **_The Data Science Spreadsheet._**
