@@ -42,3 +42,6 @@ Make sure to add all file types to "Rewrites and redirects"
 ```
 </^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json|wasm|data|fnt|tar|py)$)([^.]+$)/>
 ```
+
+# License
+Quadratic is licensed under the Elastic License 2.0 (ELv2).
