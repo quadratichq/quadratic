@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import Box from "@mui/material/Box";
-import LinearProgress from "@mui/material/LinearProgress";
+import { useState, useEffect } from 'react';
+import Box from '@mui/material/Box';
+import LinearProgress from '@mui/material/LinearProgress';
 
-import "./styles.css";
+import './styles.css';
 
 export function QuadraticLoading() {
   const [progress, setProgress] = useState<number>(0);
@@ -27,9 +27,10 @@ export function QuadraticLoading() {
   return (
     <div
       style={{
-        height: "100%",
-        display: "flex",
-        justifyContent: "center",
+        height: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        userSelect: 'none',
       }}
     >
       <div className="loadingContainer">
@@ -38,7 +39,7 @@ export function QuadraticLoading() {
           src="/images/logo_loading.gif"
           alt="Loading Quadratic Grid"
         ></img>
-        <Box sx={{ width: "100px", marginTop: "15px" }}>
+        <Box sx={{ width: '100px', marginTop: '15px' }}>
           <LinearProgress variant="determinate" value={progress} />
         </Box>
       </div>
