@@ -36,14 +36,13 @@ export default function QuadraticGrid() {
   );
 
   // When the cursor moves ensure it is visible
-  if (!interactionState.showMultiCursor)
-    viewportRef.current?.ensureVisible(
-      interactionState.cursorPosition.x * CELL_WIDTH,
-      interactionState.cursorPosition.y * CELL_HEIGHT - 40,
-      CELL_WIDTH,
-      CELL_HEIGHT * 4,
-      false
-    );
+  viewportRef.current?.ensureVisible(
+    interactionState.cursorPosition.x * CELL_WIDTH,
+    interactionState.cursorPosition.y * CELL_HEIGHT - 40,
+    CELL_WIDTH,
+    CELL_HEIGHT * 4,
+    false
+  );
 
   return (
     <>

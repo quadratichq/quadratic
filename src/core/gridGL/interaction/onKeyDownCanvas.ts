@@ -53,7 +53,6 @@ export const onKeyDownCanvas = (
         setInteractionState({
           ...interactionState,
           ...{
-            cursorPosition: { x: x_min.x, y: y_min.y },
             multiCursorPosition: {
               originPosition: { x: x_min.x, y: y_min.y },
               terminalPosition: { x: x_max.x, y: y_max.y },
