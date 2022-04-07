@@ -64,8 +64,7 @@ export default function QuadraticGrid() {
       inputInitialValue: "",
     });
 
-  console.log("state change", interactionState);
-
+  // when the cursor moves ensure it is visible.
   viewportRef.current?.ensureVisible(
     interactionState.cursorPosition.x * CELL_WIDTH,
     interactionState.cursorPosition.y * CELL_HEIGHT - 40,
@@ -114,8 +113,9 @@ export default function QuadraticGrid() {
           );
         }}
         style={{ display: loading ? "none" : "inline" }}
-        // Disable rendering on each frame, instead render state change (next line)
+        // Disable rendering on each frame
         raf={false}
+        // Render on each state change
         renderOnComponentChange={true}
       >
         <ViewportComponent
