@@ -1,37 +1,37 @@
-import { useRef, useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useLiveQuery } from "dexie-react-hooks";
-import Editor, { Monaco, loader } from "@monaco-editor/react";
-import monaco from "monaco-editor";
-import colors from "../../../theme/colors";
-import { QuadraticEditorTheme } from "../../../theme/quadraticEditorTheme";
-import { GetCellsDB } from "../../../core/gridDB/Cells/GetCellsDB";
-import { CellTypes } from "../../../core/gridDB/db";
-import TextField from "@mui/material/TextField";
-import { Cell } from "../../../core/gridDB/db";
-import "./CodeEditor.css";
+import { useRef, useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
+import Editor, { Monaco, loader } from '@monaco-editor/react';
+import monaco from 'monaco-editor';
+import colors from '../../../theme/colors';
+import { QuadraticEditorTheme } from '../../../theme/quadraticEditorTheme';
+import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
+import { CellTypes } from '../../../core/gridDB/db';
+import TextField from '@mui/material/TextField';
+import { Cell } from '../../../core/gridDB/db';
+import './CodeEditor.css';
 
-import { updateCellAndDCells } from "../../../core/actions/updateCellAndDCells";
+import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
 
-loader.config({ paths: { vs: "/monaco/vs" } });
+loader.config({ paths: { vs: '/monaco/vs' } });
 
 export default function CodeEditor() {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   let navigate = useNavigate();
   const { x, y, mode } = useParams();
-  const [editorContent, setEditorContent] = useState<string | undefined>("");
+  const [editorContent, setEditorContent] = useState<string | undefined>('');
   const cells = useLiveQuery(() =>
     GetCellsDB(Number(x), Number(y), Number(x), Number(y))
   );
 
   const closeEditor = () => {
-    navigate("/");
-    document?.querySelector("canvas")?.focus();
+    navigate('/');
+    document?.querySelector('canvas')?.focus();
   };
 
   useEffect(() => {
     if (cells?.length) {
-      if ((mode as CellTypes) === "PYTHON") {
+      if ((mode as CellTypes) === 'PYTHON') {
         setEditorContent(cells[0].python_code);
       } else {
         setEditorContent(cells[0].value);
@@ -48,22 +48,22 @@ export default function CodeEditor() {
       x: Number(x),
       y: Number(y),
       type: mode as CellTypes,
-      value: "",
+      value: '',
     } as Cell;
   }
 
   const save = (close = true) => {
-    const editorContent = editorRef.current?.getValue() || "";
-    if ((mode as CellTypes) === "TEXT") {
+    const editorContent = editorRef.current?.getValue() || '';
+    if ((mode as CellTypes) === 'TEXT') {
       if (cell) {
         cell.value = editorContent;
 
         updateCellAndDCells(cell);
       }
-    } else if ((mode as CellTypes) === "PYTHON") {
+    } else if ((mode as CellTypes) === 'PYTHON') {
       if (cell) {
-        cell.type = "PYTHON";
-        cell.value = "";
+        cell.type = 'PYTHON';
+        cell.value = '';
         cell.python_code = editorContent;
 
         updateCellAndDCells(cell);
@@ -96,66 +96,66 @@ export default function CodeEditor() {
       closeEditor();
     });
 
-    monaco.editor.defineTheme("quadratic", QuadraticEditorTheme);
-    monaco.editor.setTheme("quadratic");
+    monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
+    monaco.editor.setTheme('quadratic');
   }
 
   if (cells !== undefined)
     return (
       <div
         style={{
-          position: "fixed",
+          position: 'fixed',
           // top: 35,
           right: 0,
-          width: "35%",
-          minWidth: "400px",
-          height: "100%",
-          borderStyle: "solid",
-          borderWidth: "1px 0 0 1px",
+          width: '35%',
+          minWidth: '400px',
+          height: '100%',
+          borderStyle: 'solid',
+          borderWidth: '1px 0 0 1px',
           borderColor: colors.mediumGray,
-          backgroundColor: "#ffffff",
-          marginTop: "2.5rem",
+          backgroundColor: '#ffffff',
+          marginTop: '2.5rem',
         }}
       >
         <Editor
           height="75%"
           width="100%"
-          defaultLanguage={mode === "PYTHON" ? "python" : "text"}
+          defaultLanguage={mode === 'PYTHON' ? 'python' : 'text'}
           value={editorContent}
           onChange={(value) => {
             setEditorContent(value);
           }}
           onMount={handleEditorDidMount}
           options={{
-            minimap: { enabled: false }, // Causes strange issue cutting off
+            minimap: { enabled: true }, // Causes strange issue cutting off
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
             overviewRulerBorder: false,
             scrollbar: {
               // vertical: "hidden",
-              horizontal: "hidden",
-              handleMouseWheel: false,
+              horizontal: 'hidden',
+              // handleMouseWheel: false,
             },
-            wordWrap: "on",
+            wordWrap: 'on',
           }}
         />
-        {(mode as CellTypes) === "PYTHON" && (
-          <div style={{ margin: "15px" }}>
+        {(mode as CellTypes) === 'PYTHON' && (
+          <div style={{ margin: '15px' }}>
             <TextField
               disabled
               id="outlined-multiline-static"
               label="OUTPUT"
               multiline
               rows={7}
-              value={cell?.python_output || ""}
+              value={cell?.python_output || ''}
               style={{
-                width: "100%",
+                width: '100%',
               }}
               inputProps={{
                 style: {
-                  fontFamily: "monospace",
-                  fontSize: "medium",
-                  lineHeight: "normal",
+                  fontFamily: 'monospace',
+                  fontSize: 'medium',
+                  lineHeight: 'normal',
                 },
               }}
             />
