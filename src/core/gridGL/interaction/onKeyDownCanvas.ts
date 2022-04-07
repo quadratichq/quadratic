@@ -13,22 +13,6 @@ export const onKeyDownCanvas = (
   >,
   navigate: NavigateFunction
 ) => {
-  // Helper Functions
-  // const hideMultiCursor = () => {
-  //   setInteractionState({
-  //     ...interactionState,
-  //     ...{
-  //       showMultiCursor: false,
-  //     },
-  //   } as GridInteractionState);
-
-  //   // setMulticursorPosition({
-  //   //   originLocation: { x: 0, y: 0 },
-  //   //   terminalLocation: { x: 0, y: 0 },
-  //   //   visible: false,
-  //   // } as MultiCursorPosition);
-  // };
-
   // TODO make commands work cross platform
   // Command + V
   if (event.metaKey && event.code === "KeyV") {
@@ -69,11 +53,6 @@ export const onKeyDownCanvas = (
       },
     });
 
-    // setCursorPosition({
-    //   x: cursorPosition.x,
-    //   y: cursorPosition.y - 1,
-    // });
-    // hideMultiCursor();
     event.preventDefault();
   }
   if (event.key === "ArrowRight") {
@@ -88,11 +67,6 @@ export const onKeyDownCanvas = (
       },
     });
 
-    // setCursorPosition({
-    //   x: cursorPosition.x + 1,
-    //   y: cursorPosition.y,
-    // });
-    // hideMultiCursor();
     event.preventDefault();
   }
   if (event.key === "ArrowLeft") {
@@ -107,11 +81,6 @@ export const onKeyDownCanvas = (
       },
     });
 
-    // setCursorPosition({
-    //   x: cursorPosition.x - 1,
-    //   y: cursorPosition.y,
-    // });
-    // hideMultiCursor();
     event.preventDefault();
   }
   if (event.key === "ArrowDown") {
@@ -125,18 +94,10 @@ export const onKeyDownCanvas = (
         },
       },
     });
-
-    // setCursorPosition({
-    //   x: cursorPosition.x,
-    //   y: cursorPosition.y + 1,
-    // });
-    // hideMultiCursor();
     event.preventDefault();
   }
 
   if (event.key === "Tab") {
-    // TODO: save previous cell
-
     // move single cursor one right
     setInteractionState({
       ...interactionState,
@@ -152,7 +113,6 @@ export const onKeyDownCanvas = (
   }
 
   if (event.key === "Backspace") {
-    console.log("backspace event", event);
     deleteCellsRange(
       {
         x: interactionState.multiCursorPosition.originPosition.x,
@@ -213,9 +173,6 @@ export const onKeyDownCanvas = (
 
   // if key is a letter or enter start taking input
   if (isAlphaNumeric(event.key) || event.key === " ") {
-    // setInputInitialValue(event.key);
-    // setShowInput(true);
-
     setInteractionState({
       ...interactionState,
       ...{
