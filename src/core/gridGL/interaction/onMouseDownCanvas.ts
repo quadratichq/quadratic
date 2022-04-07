@@ -1,6 +1,3 @@
-import CellReference from "../types/cellReference";
-import { MultiCursorPosition } from "../../../atoms/cursorAtoms";
-import { SetterOrUpdater } from "recoil";
 import type { Viewport } from "pixi-viewport";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 import { GridInteractionState } from "../QuadraticGrid";
@@ -24,8 +21,6 @@ export const onMouseDownCanvas = (
   let down_cell_x = Math.floor(downX / CELL_WIDTH);
   let down_cell_y = Math.floor(downY / CELL_HEIGHT);
 
-  console.log(event);
-
   // Keep track of multiCursor previous position
   let previousPosition = {
     originPosition: { x: down_cell_x, y: down_cell_y },
@@ -42,7 +37,6 @@ export const onMouseDownCanvas = (
       showMultiCursor: false,
     },
   });
-  // setMulticursorPosition(previousPosition);
 
   function onMouseMove(move_event: any) {
     // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
@@ -59,11 +53,6 @@ export const onMouseDownCanvas = (
     // cursor start and end in the same cell
     if (move_cell_x === down_cell_x && move_cell_y === down_cell_y) {
       // hide multi cursor when only selecting one cell
-      // setMulticursorPosition({
-      //   originLocation: { x: down_cell_x, y: down_cell_y },
-      //   terminalLocation: { x: move_cell_x, y: move_cell_y },
-      //   visible: false,
-      // });
       setInteractionState({
         cursorPosition: { x: down_cell_x, y: down_cell_y },
         multiCursorPosition: {
@@ -94,9 +83,7 @@ export const onMouseDownCanvas = (
       // only set state if changed
       // this reduces the number of hooks fired
       if (hasMoved) {
-        // update multicursor
-        // setMulticursorPosition(newPosition);
-
+        // update multiCursor
         setInteractionState({
           cursorPosition: { x: down_cell_x, y: down_cell_y },
           multiCursorPosition: {
