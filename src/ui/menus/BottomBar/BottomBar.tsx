@@ -112,8 +112,7 @@ export const BottomBar = () => {
           gap: '1rem',
         }}
       >
-        <span>✓ WebGL</span>
-        <span>✓ Python</span>
+        <span>✓ Python 3.9.5</span>
         <span>✕ SQL</span>
         <span>✕ JS</span>
       </Box>
