@@ -1,18 +1,10 @@
-import { useRef, useEffect, useState } from "react";
-import {
-  CELL_WIDTH,
-  CELL_HEIGHT,
-  CELL_TEXT_MARGIN_LEFT,
-  CELL_TEXT_MARGIN_TOP,
-} from "../../../constants/gridConstants";
-import { PixiComponent } from "@inlet/react-pixi";
+import { useEffect, useRef, useState } from "react";
+import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
+
 import { DeleteCellsDB } from "../../gridDB/Cells/DeleteCellsDB";
 import { updateCellAndDCells } from "../../actions/updateCellAndDCells";
 import { GridInteractionState } from "../QuadraticGrid";
-import { Container } from "@inlet/react-pixi";
-import type { Viewport } from "pixi-viewport";
-import { IntegrationInstructions, ViewDayOutlined } from "@mui/icons-material";
-import { CellTypes } from "../../gridDB/db";
+import { Viewport } from "pixi-viewport";
 import CellReference from "../types/cellReference";
 
 interface InputPixiReactProps {
@@ -28,18 +20,9 @@ export const GridInput = (props: InputPixiReactProps) => {
 
   const [value, setValue] = useState<string | undefined>(undefined);
   const cellLoation = useRef(interactionState.cursorPosition);
-  const textInput = useRef(null);
-
-  // if (!props.viewportRef.current) return <></>;
-
-  // let viewport = props.viewportRef.current;
-
-  if (!interactionState.showInput) {
-    return null;
-  }
+  const textInput = useRef<HTMLInputElement>(null);
 
   const movedListener = () => {
-    console.log("moved");
     let transform = "";
     let m = viewportRef.current?.worldTransform;
 
@@ -58,15 +41,21 @@ export const GridInput = (props: InputPixiReactProps) => {
         ) +
         ")";
 
-    //@ts-expect-error
     if (textInput.current) textInput.current.style.transform = transform;
 
     return transform;
   };
 
-  const saveAndCloseCell = async (
-    transpose = { x: 0, y: 0 } as CellReference
-  ) => {
+  const viewport = viewportRef.current;
+  if (!viewport) return null;
+
+  // If the input is not shown, we can do nothing and return null
+  if (!interactionState.showInput) {
+    return null;
+  }
+
+  const closeInput = async (transpose = { x: 0, y: 0 } as CellReference) => {
+    console.log("closing");
     if (value === "") {
       await DeleteCellsDB([
         {
@@ -82,6 +71,7 @@ export const GridInput = (props: InputPixiReactProps) => {
         value: value || "",
       });
     }
+
     setInteractionState({
       ...interactionState,
       ...{
@@ -96,23 +86,22 @@ export const GridInput = (props: InputPixiReactProps) => {
     setValue(undefined);
     document.getElementById("QuadraticCanvasID")?.focus();
 
-    viewportRef.current?.removeListener("moved", movedListener);
-    viewportRef.current?.removeListener("moved-end", movedListener);
+    // TODO: this may be overly broad
+    viewport.removeAllListeners("moved-end");
+    viewport.removeAllListeners("moved");
   };
 
   if (value === undefined && value !== interactionState.inputInitialValue) {
     // Happens on initialization
     setValue(interactionState.inputInitialValue);
     cellLoation.current = interactionState.cursorPosition;
+
+    viewport.addListener("moved", movedListener);
+    viewport.addListener("moved-end", movedListener);
   }
 
-  viewportRef.current?.addListener("moved", movedListener);
-  viewportRef.current?.addListener("moved-end", movedListener);
-
-  // set initial position correctly
+  // set input's initial position correctly
   const transform = movedListener();
-
-  console.log("transform", transform);
 
   return (
     <input
@@ -123,6 +112,7 @@ export const GridInput = (props: InputPixiReactProps) => {
         position: "absolute",
         top: 0,
         left: 0,
+        width: 100,
         border: "none",
         outline: "none",
         lineHeight: "1",
@@ -136,16 +126,16 @@ export const GridInput = (props: InputPixiReactProps) => {
         setValue(event.target.value);
       }}
       onBlur={() => {
-        saveAndCloseCell();
+        closeInput();
       }}
       onKeyDown={(event) => {
         if (event.key === "Enter") {
-          saveAndCloseCell({ x: 0, y: 1 });
-        } else if (event.key == "Tab") {
-          saveAndCloseCell({ x: 1, y: 0 });
+          closeInput({ x: 0, y: 1 });
+        } else if (event.key === "Tab") {
+          closeInput({ x: 1, y: 0 });
           event.preventDefault();
         } else if (event.key === "Escape") {
-          saveAndCloseCell();
+          closeInput();
         }
       }}
     ></input>
