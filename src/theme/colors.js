@@ -6,14 +6,15 @@ const colors = {
   cursorCell: 0x6cd4ff,
   highlightYellow: 0xffc800,
   independence: 0x5d576b,
-  lightGray: "#f6f8fa",
-  mediumGray: "#cfd7de",
-  darkGray: "#55606b",
-  quadraticPrimary: "#6CD4FF",
-  quadraticSecondary: "#8ECB89",
-  quadraticThird: "#CB8999",
-  quadraticForth: "#FFC800",
-  quadraticFifth: "#5D576B",
+  darkGrayNum: 0x55606b,
+  lightGray: '#f6f8fa',
+  mediumGray: '#cfd7de',
+  darkGray: '#55606b',
+  quadraticPrimary: '#6CD4FF',
+  quadraticSecondary: '#8ECB89',
+  quadraticThird: '#CB8999',
+  quadraticForth: '#FFC800',
+  quadraticFifth: '#5D576B',
 };
 
 export default colors;

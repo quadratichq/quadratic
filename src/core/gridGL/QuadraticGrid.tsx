@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import useWindowDimensions from '../../hooks/useWindowDimensions';
 import type { Viewport } from 'pixi-viewport';
 import { Stage } from '@inlet/react-pixi';
-import ViewportComponent from './ViewportComponent';
+import ViewportComponent from './graphics/ViewportComponent';
 import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -43,6 +43,18 @@ export default function QuadraticGrid() {
     CELL_HEIGHT * 4,
     false
   );
+
+  let showCursorPlaceholderText = true;
+  const result = cells?.filter(
+    (cell) =>
+      cell.x === interactionState.cursorPosition.x &&
+      cell.y === interactionState.cursorPosition.y
+  );
+  console.log(result);
+  if (result?.length) {
+    showCursorPlaceholderText = false;
+  }
+  if (interactionState.showInput) showCursorPlaceholderText = false;
 
   return (
     <>
@@ -114,9 +126,12 @@ export default function QuadraticGrid() {
               ></CellPixiReact>
             ))}
           <AxesPixiReact visible={showGridAxes}></AxesPixiReact>
-          <CursorPixiReact
-            location={interactionState.cursorPosition}
-          ></CursorPixiReact>
+          {!loading && (
+            <CursorPixiReact
+              location={interactionState.cursorPosition}
+              showPlaceholder={showCursorPlaceholderText}
+            ></CursorPixiReact>
+          )}
           <MultiCursorPixiReact
             originLocation={interactionState.multiCursorPosition.originPosition}
             terminalLocation={

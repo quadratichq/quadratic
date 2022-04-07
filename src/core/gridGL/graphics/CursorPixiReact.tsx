@@ -1,11 +1,14 @@
-import { useCallback } from "react";
+import { useCallback } from 'react';
 
-import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
-import colors from "../../../theme/colors";
-import { Graphics, Container } from "@inlet/react-pixi";
-import CellReference from "../types/cellReference";
+import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
+import colors from '../../../theme/colors';
+import { Graphics, Container } from '@inlet/react-pixi';
+import CellReference from '../types/cellReference';
+import FastBitmapText from '../graphics/primatives/FastBitmapText';
+
 interface CursorPixiReactProps {
   location: CellReference;
+  showPlaceholder: boolean;
 }
 
 const CursorPixiReact = (props: CursorPixiReactProps) => {
@@ -24,6 +27,19 @@ const CursorPixiReact = (props: CursorPixiReactProps) => {
   return (
     <Container>
       <Graphics draw={draw_outline}></Graphics>
+      <FastBitmapText
+        x={x_pos + 4}
+        y={y_pos}
+        text={'Press `/` to code'}
+        visible={props.showPlaceholder}
+        style={{
+          fontName: 'OpenSans',
+          fontSize: 12,
+          tint: colors.darkGrayNum,
+          align: 'left',
+          // maxWidth: 100,
+        }}
+      />
     </Container>
   );
 };
