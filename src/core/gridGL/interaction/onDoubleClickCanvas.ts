@@ -1,6 +1,6 @@
-import { GridInteractionState } from "../../../atoms/gridInteractionStateAtom";
-import { GetCellsDB } from "../../gridDB/Cells/GetCellsDB";
-import { NavigateFunction } from "react-router-dom";
+import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { GetCellsDB } from '../../gridDB/Cells/GetCellsDB';
+import { NavigateFunction } from 'react-router-dom';
 
 export const onDoubleClickCanvas = (
   event: React.MouseEvent<HTMLCanvasElement, MouseEvent>,
@@ -10,14 +10,16 @@ export const onDoubleClickCanvas = (
   >,
   navigate: NavigateFunction
 ) => {
+  // Get the double clicked cell, check if it is already set
   const x = interactionState.cursorPosition.x;
   const y = interactionState.cursorPosition.y;
   GetCellsDB(x, y, x, y).then((cells) => {
+    // Check if cell is already set or not
     if (cells.length) {
       const cell = cells[0];
 
-      if (cell.type === "TEXT" || cell.type === "COMPUTED") {
-        // open single line
+      // open single line, for TEXT and COMPUTED
+      if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
         setInteractionState({
           ...interactionState,
           ...{
@@ -26,14 +28,16 @@ export const onDoubleClickCanvas = (
           },
         });
       } else {
+        // Open code editor
         navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
       }
     } else {
+      // If no previous value, open single line Input
       setInteractionState({
         ...interactionState,
         ...{
           showInput: true,
-          inputInitialValue: "",
+          inputInitialValue: '',
         },
       });
     }
