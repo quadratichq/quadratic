@@ -36,13 +36,14 @@ export default function QuadraticGrid() {
   );
 
   // When the cursor moves ensure it is visible
-  viewportRef.current?.ensureVisible(
-    interactionState.cursorPosition.x * CELL_WIDTH,
-    interactionState.cursorPosition.y * CELL_HEIGHT - 40,
-    CELL_WIDTH,
-    CELL_HEIGHT * 4,
-    false
-  );
+  if (!interactionState.showMultiCursor)
+    viewportRef.current?.ensureVisible(
+      interactionState.cursorPosition.x * CELL_WIDTH,
+      interactionState.cursorPosition.y * CELL_HEIGHT - 40,
+      CELL_WIDTH,
+      CELL_HEIGHT * 4,
+      false
+    );
 
   return (
     <>
@@ -65,7 +66,8 @@ export default function QuadraticGrid() {
             event,
             interactionState,
             setInteractionState,
-            navigate
+            navigate,
+            viewportRef
           );
         }}
         onMouseDown={(event) => {

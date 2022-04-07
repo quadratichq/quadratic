@@ -1,12 +1,12 @@
-import Dexie, { Table } from "dexie";
+import Dexie, { Table } from 'dexie';
 
 export type CellTypes =
-  | "TEXT"
-  | "FORMULA"
-  | "JAVASCRIPT"
-  | "PYTHON"
-  | "SQL"
-  | "COMPUTED";
+  | 'TEXT'
+  | 'FORMULA'
+  | 'JAVASCRIPT'
+  | 'PYTHON'
+  | 'SQL'
+  | 'COMPUTED';
 
 export interface Cell {
   x: number;
@@ -37,10 +37,10 @@ export class QDexie extends Dexie {
   qgrid!: Table<Grid>;
 
   constructor() {
-    super("quadratic_grid1");
-    this.version(17).stores({
-      cells: "[x+y]",
-      qgrid: "&id",
+    super('quadratic_grid1');
+    this.version(18).stores({
+      cells: '[x+y],[y+x]',
+      qgrid: '&id',
     });
   }
 }
