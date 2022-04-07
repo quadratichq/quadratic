@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { Simple } from 'pixi-cull';
-import { ZoomCulling } from './graphics/zoomCulling';
+import { ZoomCulling } from './zoomCulling';
 
-import drawGridLines from './graphics/drawGridLines';
-import Globals from './globals';
+import drawGridLines from './drawGridLines';
+import Globals from '../globals';
 import { PixiComponent, useApp } from '@inlet/react-pixi';
 
 export interface ViewportProps {
