@@ -1,6 +1,6 @@
-import type { Viewport } from "pixi-viewport";
-import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
-import { GridInteractionState } from "../../../atoms/gridInteractionStateAtom";
+import type { Viewport } from 'pixi-viewport';
+import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
+import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 
 export const onMouseDownCanvas = (
   event: React.MouseEvent<HTMLCanvasElement, MouseEvent>,
@@ -61,7 +61,7 @@ export const onMouseDownCanvas = (
         },
         showMultiCursor: false,
         showInput: false,
-        inputInitialValue: "",
+        inputInitialValue: '',
       });
     } else {
       // cursor origin and terminal are not in the same cell
@@ -92,7 +92,7 @@ export const onMouseDownCanvas = (
           },
           showMultiCursor: true,
           showInput: false,
-          inputInitialValue: "",
+          inputInitialValue: '',
         });
 
         viewportRef.current.dirty = true;
@@ -107,12 +107,13 @@ export const onMouseDownCanvas = (
   }
 
   // onMouseMove lifecycle events
-  event.target.addEventListener("mousemove", onMouseMove);
-  event.target.addEventListener("blur", () => {
-    event.target?.removeEventListener("mousemove", onMouseMove);
+  event.target.addEventListener('mousemove', onMouseMove);
+  event.target.addEventListener('blur', () => {
+    event.target?.removeEventListener('mousemove', onMouseMove);
   });
-  event.target.addEventListener("mouseup", () => {
-    event.target?.removeEventListener("mousemove", onMouseMove);
+  // Done on window to capture mouseup if mouse left canvas area
+  window.addEventListener('mouseup', () => {
+    event.target?.removeEventListener('mousemove', onMouseMove);
   });
 
   viewportRef.current.dirty = true;
