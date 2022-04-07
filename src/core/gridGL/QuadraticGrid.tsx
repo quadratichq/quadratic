@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import useWindowDimensions from '../../hooks/useWindowDimensions';
 import type { Viewport } from 'pixi-viewport';
 import { Stage } from '@inlet/react-pixi';
-import ViewportComponent from './ViewportComponent';
+import ViewportComponent from './graphics/ViewportComponent';
 import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
