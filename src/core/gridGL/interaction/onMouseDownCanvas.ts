@@ -1,6 +1,6 @@
 import type { Viewport } from "pixi-viewport";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
-import { GridInteractionState } from "../QuadraticGrid";
+import { GridInteractionState } from "../../../atoms/gridInteractionStateAtom";
 
 export const onMouseDownCanvas = (
   event: React.MouseEvent<HTMLCanvasElement, MouseEvent>,

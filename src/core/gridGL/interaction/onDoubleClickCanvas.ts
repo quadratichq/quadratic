@@ -1,4 +1,4 @@
-import { GridInteractionState } from "../QuadraticGrid";
+import { GridInteractionState } from "../../../atoms/gridInteractionStateAtom";
 import { GetCellsDB } from "../../gridDB/Cells/GetCellsDB";
 import { NavigateFunction } from "react-router-dom";
 

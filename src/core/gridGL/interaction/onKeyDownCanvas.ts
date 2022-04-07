@@ -3,7 +3,7 @@ import { deleteCellsRange } from "../../actions/deleteCellsRange";
 import { GetCellsDB } from "../../gridDB/Cells/GetCellsDB";
 import isAlphaNumeric from "./helpers/isAlphaNumeric";
 import { NavigateFunction } from "react-router-dom";
-import { GridInteractionState } from "../QuadraticGrid";
+import { GridInteractionState } from "../../../atoms/gridInteractionStateAtom";
 
 export const onKeyDownCanvas = (
   event: React.KeyboardEvent<HTMLCanvasElement>,
