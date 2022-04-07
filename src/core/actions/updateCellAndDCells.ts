@@ -154,6 +154,8 @@ export const updateCellAndDCells = async (cell: Cell) => {
 
         // update current cell
         cell.dependent_cells = result.cells_accessed;
+
+        cell.last_modified = new Date().toISOString();
         await UpdateCellsDB([cell]);
       }
     }
