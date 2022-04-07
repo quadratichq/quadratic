@@ -20,7 +20,7 @@ import { useRecoilState } from "recoil";
 import { CELL_WIDTH, CELL_HEIGHT } from "../../constants/gridConstants";
 import { onKeyDownCanvas } from "./interaction/onKeyDownCanvas";
 import { onMouseDownCanvas } from "./interaction/onMouseDownCanvas";
-import { GridInput } from "./interaction/GridInput";
+import { CellInput } from "./interaction/CellInput";
 import CellReference from "./types/cellReference";
 import { onDoubleClickCanvas } from "./interaction/onDoubleClickCanvas";
 
@@ -156,11 +156,11 @@ export default function QuadraticGrid() {
         ></InputPixiReact> */}
         </ViewportComponent>
       </Stage>
-      <GridInput
+      <CellInput
         interactionState={interactionState}
         setInteractionState={setInteractionState}
         viewportRef={viewportRef}
-      ></GridInput>
+      ></CellInput>
     </>
   );
 }
