@@ -1,10 +1,10 @@
-import { useRef, useState } from "react";
-import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
-import { deleteCellsRange } from "../../actions/deleteCellsRange";
-import { updateCellAndDCells } from "../../actions/updateCellAndDCells";
-import { GridInteractionState } from "../../../atoms/gridInteractionStateAtom";
-import { Viewport } from "pixi-viewport";
-import CellReference from "../types/cellReference";
+import { useRef, useState } from 'react';
+import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
+import { deleteCellsRange } from '../../actions/deleteCellsRange';
+import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
+import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { Viewport } from 'pixi-viewport';
+import CellReference from '../types/cellReference';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -27,7 +27,7 @@ export const CellInput = (props: CellInputProps) => {
 
   // Function used to move and scale the Input with the Grid
   function updateInputCSSTransform() {
-    if (!viewport) return "";
+    if (!viewport) return '';
 
     // Get world transform matrix
     let worldTransform = viewport.worldTransform;
@@ -40,7 +40,7 @@ export const CellInput = (props: CellInputProps) => {
 
     // Generate transform CSS
     const transform =
-      "matrix(" +
+      'matrix(' +
       [
         worldTransform.a,
         worldTransform.b,
@@ -48,8 +48,8 @@ export const CellInput = (props: CellInputProps) => {
         worldTransform.d,
         cell_offset_scaled.x,
         cell_offset_scaled.y,
-      ].join(",") +
-      ")";
+      ].join(',') +
+      ')';
 
     // Update input css matrix
     if (textInput.current) textInput.current.style.transform = transform;
@@ -66,7 +66,7 @@ export const CellInput = (props: CellInputProps) => {
   // When done editing with the input
   const closeInput = async (transpose = { x: 0, y: 0 } as CellReference) => {
     // Update Cell and dependent cells
-    if (value === "") {
+    if (value === '') {
       deleteCellsRange(
         {
           x: cellLoation.current.x,
@@ -81,8 +81,8 @@ export const CellInput = (props: CellInputProps) => {
       await updateCellAndDCells({
         x: cellLoation.current.x,
         y: cellLoation.current.y,
-        type: "TEXT",
-        value: value || "",
+        type: 'TEXT',
+        value: value || '',
       });
     }
 
@@ -95,18 +95,18 @@ export const CellInput = (props: CellInputProps) => {
           y: interactionState.cursorPosition.y + transpose.y,
         },
         showInput: false,
-        inputInitialValue: "",
+        inputInitialValue: '',
       },
     });
     setValue(undefined);
 
     // Set focus back to Grid
-    document.getElementById("QuadraticCanvasID")?.focus();
+    document.getElementById('QuadraticCanvasID')?.focus();
 
     // Clean up listeners
     // NOTE: this may accidentally cancel events registered elsewhere
-    viewport.removeListener("moved-end");
-    viewport.removeListener("moved");
+    viewport.removeListener('moved-end');
+    viewport.removeListener('moved');
   };
 
   // Happens when a cell is being edited
@@ -116,8 +116,8 @@ export const CellInput = (props: CellInputProps) => {
     cellLoation.current = interactionState.cursorPosition;
 
     // Register lister for when grid moves to resize and move input with CSS
-    viewport.addListener("moved", updateInputCSSTransform);
-    viewport.addListener("moved-end", updateInputCSSTransform);
+    viewport.addListener('moved', updateInputCSSTransform);
+    viewport.addListener('moved-end', updateInputCSSTransform);
   }
 
   // set input's initial position correctly
@@ -127,19 +127,20 @@ export const CellInput = (props: CellInputProps) => {
     <input
       autoFocus
       ref={textInput}
+      spellCheck={false}
       style={{
-        display: "block",
-        position: "absolute",
+        display: 'block',
+        position: 'absolute',
         top: 0,
         left: 0,
         width: 100,
-        border: "none",
-        outline: "none",
-        lineHeight: "1",
-        background: "none",
-        transformOrigin: "0 0",
+        border: 'none',
+        outline: 'none',
+        lineHeight: '1',
+        background: 'none',
+        transformOrigin: '0 0',
         transform: transform,
-        fontSize: "14px",
+        fontSize: '14px',
       }}
       value={value}
       onChange={(event) => {
@@ -149,12 +150,12 @@ export const CellInput = (props: CellInputProps) => {
         closeInput();
       }}
       onKeyDown={(event) => {
-        if (event.key === "Enter") {
+        if (event.key === 'Enter') {
           closeInput({ x: 0, y: 1 });
-        } else if (event.key === "Tab") {
+        } else if (event.key === 'Tab') {
           closeInput({ x: 1, y: 0 });
           event.preventDefault();
-        } else if (event.key === "Escape") {
+        } else if (event.key === 'Escape') {
           closeInput();
         }
       }}
