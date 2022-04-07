@@ -22,6 +22,7 @@ import { onKeyDownCanvas } from "./interaction/onKeyDownCanvas";
 import { onMouseDownCanvas } from "./interaction/onMouseDownCanvas";
 import { GridInput } from "./interaction/GridInput";
 import CellReference from "./types/cellReference";
+import { onDoubleClickCanvas } from "./interaction/onDoubleClickCanvas";
 
 export interface GridInteractionState {
   cursorPosition: CellReference;
@@ -65,17 +66,13 @@ export default function QuadraticGrid() {
 
   console.log("state change", interactionState);
 
-  // useEffect(() => {
-  //   // TODO: THIS DOES NOT WORK
-  //   if (viewportRef.current)
-  //     viewportRef.current.ensureVisible(
-  //       cursorPosition.x,
-  //       cursorPosition.y,
-  //       CELL_WIDTH,
-  //       CELL_HEIGHT,
-  //       false
-  //     );
-  // }, [cursorPosition]);
+  viewportRef.current?.ensureVisible(
+    interactionState.cursorPosition.x * CELL_WIDTH,
+    interactionState.cursorPosition.y * CELL_HEIGHT - 40,
+    CELL_WIDTH,
+    CELL_HEIGHT * 4,
+    false
+  );
 
   return (
     <>
@@ -109,7 +106,12 @@ export default function QuadraticGrid() {
           );
         }}
         onDoubleClick={(event) => {
-          console.log("double click", event);
+          onDoubleClickCanvas(
+            event,
+            interactionState,
+            setInteractionState,
+            navigate
+          );
         }}
         style={{ display: loading ? "none" : "inline" }}
         // Disable rendering on each frame, instead render state change (next line)
