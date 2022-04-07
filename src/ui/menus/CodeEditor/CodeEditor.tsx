@@ -12,6 +12,7 @@ import { Cell } from '../../../core/gridDB/db';
 import './CodeEditor.css';
 
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
+import { focusGrid } from '../../../helpers/focusGrid';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -26,7 +27,7 @@ export default function CodeEditor() {
 
   const closeEditor = () => {
     navigate('/');
-    document?.querySelector('canvas')?.focus();
+    focusGrid();
   };
 
   useEffect(() => {

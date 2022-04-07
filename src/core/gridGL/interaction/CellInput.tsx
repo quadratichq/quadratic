@@ -5,6 +5,7 @@ import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { Viewport } from 'pixi-viewport';
 import CellReference from '../types/cellReference';
+import { focusGrid } from '../../../helpers/focusGrid';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -101,7 +102,7 @@ export const CellInput = (props: CellInputProps) => {
     setValue(undefined);
 
     // Set focus back to Grid
-    document.getElementById('QuadraticCanvasID')?.focus();
+    focusGrid();
 
     // Clean up listeners
     // NOTE: this may accidentally cancel events registered elsewhere

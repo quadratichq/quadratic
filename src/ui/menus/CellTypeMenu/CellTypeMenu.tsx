@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Divider,
   List,
@@ -9,51 +9,52 @@ import {
   Typography,
   Card,
   CardContent,
-} from "@mui/material";
-import TextField from "@mui/material/TextField";
-import { useNavigate, useParams } from "react-router-dom";
+} from '@mui/material';
+import TextField from '@mui/material/TextField';
+import { useNavigate, useParams } from 'react-router-dom';
 
-import "./styles.css";
+import './styles.css';
+import { focusGrid } from '../../../helpers/focusGrid';
 
 const CELL_TYPE_OPTIONS = [
   {
     key: 0,
-    name: "Text",
-    short: "Aa",
-    slug: "TEXT",
-    description: "Input any text or numerical data.",
+    name: 'Text',
+    short: 'Aa',
+    slug: 'TEXT',
+    description: 'Input any text or numerical data.',
     disabled: false,
   },
   {
     key: 10,
-    name: "Formula",
-    short: "=",
-    slug: "FORMULA",
-    description: "Familiar Excel-like formulas.",
+    name: 'Formula',
+    short: '=',
+    slug: 'FORMULA',
+    description: 'Familiar Excel-like formulas.',
     disabled: true,
   },
   {
     key: 20,
-    name: "Python",
-    short: "Py",
-    slug: "PYTHON",
-    description: "Write Python to quickly compute with data.",
+    name: 'Python',
+    short: 'Py',
+    slug: 'PYTHON',
+    description: 'Write Python to quickly compute with data.',
     disabled: false,
   },
   {
     key: 30,
-    name: "JavaScript",
-    short: "Js",
-    slug: "JAVASCRIPT",
-    description: "Write JavaScript to quickly compute with data.",
+    name: 'JavaScript',
+    short: 'Js',
+    slug: 'JAVASCRIPT',
+    description: 'Write JavaScript to quickly compute with data.',
     disabled: true,
   },
   {
     key: 40,
-    name: "SQL Query",
-    short: "DB",
-    slug: "SQL",
-    description: "Query your data using SQL.",
+    name: 'SQL Query',
+    short: 'DB',
+    slug: 'SQL',
+    description: 'Query your data using SQL.',
     disabled: true,
   },
 ];
@@ -62,9 +63,9 @@ export default function CellTypeMenu() {
   let navigate = useNavigate();
   const { x, y } = useParams();
 
-  const [value, setValue] = React.useState<string>("");
+  const [value, setValue] = React.useState<string>('');
   const [selected_value, setSelectedValue] = React.useState<string | undefined>(
-    "TEXT"
+    'TEXT'
   );
   const [filtered_cell_type_list, setFilteredCellTypeList] =
     React.useState<any>(CELL_TYPE_OPTIONS);
@@ -82,8 +83,8 @@ export default function CellTypeMenu() {
   };
 
   const close = () => {
-    navigate("/");
-    document?.querySelector("canvas")?.focus();
+    navigate('/');
+    focusGrid();
   };
 
   const openEditor = (mode = null) => {
@@ -99,10 +100,10 @@ export default function CellTypeMenu() {
             update_filter(event.target.value);
           }}
           onKeyUp={(event) => {
-            if (event.key === "Escape") {
+            if (event.key === 'Escape') {
               close();
             }
-            if (event.key === "Enter") {
+            if (event.key === 'Enter') {
               openEditor();
             }
           }}
@@ -120,7 +121,7 @@ export default function CellTypeMenu() {
                 key={e.key}
                 selected={selected_value === e.slug}
                 disabled={e.disabled}
-                style={{ width: "100%" }}
+                style={{ width: '100%' }}
                 onClick={() => {
                   openEditor(e.slug);
                 }}
