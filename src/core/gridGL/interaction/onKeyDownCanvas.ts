@@ -170,6 +170,38 @@ export const onKeyDownCanvas = (
     event.preventDefault();
   }
 
+  if (event.key === "Enter") {
+    const x = interactionState.cursorPosition.x;
+    const y = interactionState.cursorPosition.y;
+    GetCellsDB(x, y, x, y).then((cells) => {
+      if (cells.length) {
+        const cell = cells[0];
+
+        if (cell.type === "TEXT" || cell.type === "COMPUTED") {
+          // open single line
+          setInteractionState({
+            ...interactionState,
+            ...{
+              showInput: true,
+              inputInitialValue: cell.value,
+            },
+          });
+        } else {
+          navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
+        }
+      } else {
+        setInteractionState({
+          ...interactionState,
+          ...{
+            showInput: true,
+            inputInitialValue: "",
+          },
+        });
+      }
+    });
+    event.preventDefault();
+  }
+
   if (event.key === "/") {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
@@ -184,7 +216,7 @@ export const onKeyDownCanvas = (
   }
 
   // if key is a letter or enter start taking input
-  if (isAlphaNumeric(event.key)) {
+  if (isAlphaNumeric(event.key) || event.key === " ") {
     // setInputInitialValue(event.key);
     // setShowInput(true);
 
