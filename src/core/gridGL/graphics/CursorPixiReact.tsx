@@ -2,17 +2,15 @@ import { useCallback } from "react";
 
 import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
 import colors from "../../../theme/colors";
-
 import { Graphics, Container } from "@inlet/react-pixi";
-
+import CellReference from "../types/cellReference";
 interface CursorPixiReactProps {
-  x: number;
-  y: number;
+  location: CellReference;
 }
 
 const CursorPixiReact = (props: CursorPixiReactProps) => {
-  const x_pos = props.x * CELL_WIDTH;
-  const y_pos = props.y * CELL_HEIGHT;
+  const x_pos = props.location.x * CELL_WIDTH;
+  const y_pos = props.location.y * CELL_HEIGHT;
 
   const draw_outline = useCallback(
     (g) => {

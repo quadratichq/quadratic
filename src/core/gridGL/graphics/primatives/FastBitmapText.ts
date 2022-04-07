@@ -22,15 +22,13 @@ const FastBitmapText = PixiComponent("FastText", {
 
     instance.visible = visible;
 
-    if (visible) {
-      if (x !== oldProps.x || y !== oldProps.y) {
-        instance.x = x;
-        instance.y = y;
-      }
+    if (x !== oldProps.x || y !== oldProps.y) {
+      instance.x = x;
+      instance.y = y;
+    }
 
-      if (text !== oldProps.text) {
-        instance.text = text;
-      }
+    if (text !== oldProps.text) {
+      instance.text = text;
     }
   },
 });

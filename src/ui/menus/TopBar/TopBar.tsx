@@ -47,6 +47,7 @@ export const TopBar = () => {
         sx={{
           display: "flex",
           alignItems: "center",
+          userSelect: "none",
         }}
       >
         <Typography

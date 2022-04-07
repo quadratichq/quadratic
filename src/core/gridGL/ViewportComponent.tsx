@@ -1,19 +1,16 @@
-import * as PIXI from "pixi.js";
-import { Viewport } from "pixi-viewport";
-import { Simple } from "pixi-cull";
-import { ZoomCulling } from "./graphics/zoomCulling";
+import * as PIXI from 'pixi.js';
+import { Viewport } from 'pixi-viewport';
+import { Simple } from 'pixi-cull';
+import { ZoomCulling } from './graphics/zoomCulling';
 
-import drawGridLines from "./graphics/drawGridLines";
-import Interaction from "./interaction/interaction";
-import Cursor from "./interaction/cursor";
-import Globals from "./globals";
-import { PixiComponent, useApp } from "@inlet/react-pixi";
+import drawGridLines from './graphics/drawGridLines';
+import Globals from './globals';
+import { PixiComponent, useApp } from '@inlet/react-pixi';
 
 export interface ViewportProps {
   screenWidth: number;
   screenHeight: number;
   children?: React.ReactNode;
-  cursorRef: React.MutableRefObject<Cursor | undefined>;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
 }
 
@@ -22,8 +19,9 @@ export interface PixiComponentViewportProps extends ViewportProps {
   setLoading?: Function;
 }
 
-const PixiComponentViewport = PixiComponent("Viewport", {
+const PixiComponentViewport = PixiComponent('Viewport', {
   create: (props: PixiComponentViewportProps) => {
+    // Viewport is the component which allows panning and zooming
     const viewport = new Viewport({
       screenWidth: props.screenWidth,
       screenHeight: props.screenHeight,
@@ -44,14 +42,12 @@ const PixiComponentViewport = PixiComponent("Viewport", {
     // set initial position
     viewport.moveCorner(-50, -75);
 
+    // startup the viewport
     function startup() {
+      // draw grid lines
       let grid_ui = drawGridLines(viewport);
 
       const globals = new Globals(viewport, props.app.view, grid_ui);
-
-      let interaction = new Interaction(globals);
-      interaction.makeInteractive();
-      props.cursorRef.current = interaction.cursor;
 
       let ticker = PIXI.Ticker.shared;
 
@@ -100,11 +96,11 @@ const PixiComponentViewport = PixiComponent("Viewport", {
       //   console.log(`Current Frame Rate: ${props.app.ticker.FPS}`);
       // });
 
-      console.log("[QuadraticGL] environment ready");
+      console.log('[QuadraticGL] environment ready');
     }
 
     props.app.loader
-      .add("OpenSans", "fonts/opensans/OpenSans.fnt")
+      .add('OpenSans', 'fonts/opensans/OpenSans.fnt')
       .load(startup);
 
     return viewport;
