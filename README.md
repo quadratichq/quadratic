@@ -10,8 +10,7 @@ Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to
 
 Take your data and do something useful with it as quickly and as easily as possible.
 
-<img width="1679" alt="Screen Shot 2022-04-07 at 4 08 06 PM" src="https://user-images.githubusercontent.com/3479421/162327662-25649528-d0d9-4b58-8e6b-ee807a9e26f0.png">
-
+![Screen Shot 2022-04-07 at 4 14 24 PM](https://user-images.githubusercontent.com/3479421/162328324-462d4f2b-1b37-45e0-83a1-3771455e646b.png)
 
 # Info
 
