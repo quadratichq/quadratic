@@ -25,6 +25,8 @@ export interface Cell {
   formula_code?: string;
   js_code?: string;
   sql_code?: string;
+
+  last_modified?: string;
 }
 
 export interface Grid {
