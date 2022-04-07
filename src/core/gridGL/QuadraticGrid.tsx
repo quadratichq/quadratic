@@ -10,8 +10,8 @@ import { useLoading } from "../../contexts/LoadingContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
 import CellPixiReact from "./graphics/CellPixiReact";
 import AxesPixiReact from "./graphics/AxesPixiReact";
-import CursorPixiReact from "./interaction/CursorPixiReact";
-import MultiCursorPixiReact from "./interaction/MultiCursorPixiReact";
+import CursorPixiReact from "./graphics/CursorPixiReact";
+import MultiCursorPixiReact from "./graphics/MultiCursorPixiReact";
 import {
   cursorPositionAtom,
   multicursorPositionAtom,
