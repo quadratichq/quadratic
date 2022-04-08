@@ -14,11 +14,12 @@ import CursorPixiReact from './graphics/CursorPixiReact';
 import MultiCursorPixiReact from './graphics/MultiCursorPixiReact';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { useRecoilState } from 'recoil';
-import { CELL_WIDTH, CELL_HEIGHT } from '../../constants/gridConstants';
 import { onKeyDownCanvas } from './interaction/onKeyDownCanvas';
 import { onMouseDownCanvas } from './interaction/onMouseDownCanvas';
 import { CellInput } from './interaction/CellInput';
 import { onDoubleClickCanvas } from './interaction/onDoubleClickCanvas';
+
+import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 
 export default function QuadraticGrid() {
   let navigate = useNavigate();
@@ -33,15 +34,6 @@ export default function QuadraticGrid() {
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(
     gridInteractionStateAtom
-  );
-
-  // When the cursor moves ensure it is visible
-  viewportRef.current?.ensureVisible(
-    interactionState.cursorPosition.x * CELL_WIDTH,
-    interactionState.cursorPosition.y * CELL_HEIGHT - 40,
-    CELL_WIDTH,
-    CELL_HEIGHT * 4,
-    false
   );
 
   return (
@@ -132,6 +124,11 @@ export default function QuadraticGrid() {
         setInteractionState={setInteractionState}
         viewportRef={viewportRef}
       ></CellInput>
+      {viewportRef.current && (
+        <ViewportEventRegister
+          viewport={viewportRef.current}
+        ></ViewportEventRegister>
+      )}
     </>
   );
 }
