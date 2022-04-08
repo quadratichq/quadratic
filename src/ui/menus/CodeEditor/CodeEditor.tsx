@@ -10,6 +10,7 @@ import { CellTypes } from '../../../core/gridDB/db';
 import TextField from '@mui/material/TextField';
 import { Cell } from '../../../core/gridDB/db';
 import './CodeEditor.css';
+import { Button } from '@mui/material';
 
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -118,8 +119,78 @@ export default function CodeEditor() {
           marginTop: '2.5rem',
         }}
       >
+        <div
+          style={{
+            color: colors.darkGray,
+            fontSize: '0.8em',
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            // backgroundColor: colors.lightGray,
+            borderStyle: 'solid',
+            borderWidth: '0 0 1px 0',
+            borderColor: colors.mediumGray,
+          }}
+        >
+          <Button
+            style={{
+              color: colors.darkGray,
+              borderColor: colors.darkGray,
+              padding: '1px 4px',
+              // lineHeight: '1',
+            }}
+            variant="text"
+            size="small"
+            onClick={closeEditor}
+          >
+            Close
+          </Button>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              flexDirection: 'column',
+              paddingLeft: '3px',
+              paddingRight: '3px',
+              borderStyle: 'solid',
+              borderWidth: '2px',
+              borderColor:
+                mode === 'PYTHON'
+                  ? colors.colorPython
+                  : colors.quadraticSecondary,
+            }}
+          >
+            <span
+              style={{
+                // color:
+                //   mode === 'PYTHON'
+                //     ? colors.colorPython
+                //     : colors.quadraticSecondary,
+                color: 'black',
+                // fontWeight: 'bold',
+              }}
+            >
+              CELL ({x}, {y}) {mode}
+            </span>
+          </div>
+          <Button
+            style={{
+              color: colors.darkGray,
+              borderColor: colors.darkGray,
+              padding: '1px 4px',
+              // lineHeight: '1',
+            }}
+            variant="text"
+            size="small"
+            onClick={() => {
+              save(false);
+            }}
+          >
+            Run
+          </Button>
+        </div>
         <Editor
-          height="75%"
+          height="70%"
           width="100%"
           defaultLanguage={mode === 'PYTHON' ? 'python' : 'text'}
           value={editorContent}
@@ -128,7 +199,7 @@ export default function CodeEditor() {
           }}
           onMount={handleEditorDidMount}
           options={{
-            minimap: { enabled: true }, // Causes strange issue cutting off
+            minimap: { enabled: true },
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
             overviewRulerBorder: false,
