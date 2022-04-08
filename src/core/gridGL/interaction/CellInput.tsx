@@ -35,7 +35,7 @@ export const CellInput = (props: CellInputProps) => {
 
     // Calculate position of input based on cell
     let cell_offset_scaled = viewport.toScreen(
-      cellLoation.current.x * CELL_WIDTH + 1,
+      cellLoation.current.x * CELL_WIDTH + 0.5,
       cellLoation.current.y * CELL_HEIGHT + 1
     );
 
@@ -142,6 +142,7 @@ export const CellInput = (props: CellInputProps) => {
         transformOrigin: '0 0',
         transform: transform,
         fontSize: '14px',
+        letterSpacing: '0.015em',
       }}
       value={value}
       onChange={(event) => {
