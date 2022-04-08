@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { Simple } from 'pixi-cull';
-import { ZoomCulling } from './zoomCulling';
+import { UpdateGridAlphaOnZoom } from './UpdateGridAlphaOnZoom';
 
 import drawGridLines from './drawGridLines';
 import Globals from '../globals';
@@ -83,8 +83,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
             );
             cull.cull(visibleBoundsExtended);
 
-            // Zoom culling
-            ZoomCulling(globals);
+            UpdateGridAlphaOnZoom(globals);
           }
         },
         null,
