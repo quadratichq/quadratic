@@ -5,7 +5,7 @@ import { Avatar, AvatarGroup } from '@mui/material';
 
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { FormatMenu } from './SubMenus/FormatMenu';
-import colors from '../../../theme/colors';
+import { colors } from '../../../theme/colors';
 
 import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';

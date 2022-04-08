@@ -2,7 +2,7 @@ import { Button } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { useRecoilState } from 'recoil';
 import { zoomStateAtom } from '../../../atoms/zoomStateAtom';
-import colors from '../../../theme/colors';
+import { colors } from '../../../theme/colors';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 

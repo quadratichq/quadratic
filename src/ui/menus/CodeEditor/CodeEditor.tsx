@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
-import colors from '../../../theme/colors';
+import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from '../../../theme/quadraticEditorTheme';
 import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
 import { CellTypes } from '../../../core/gridDB/db';

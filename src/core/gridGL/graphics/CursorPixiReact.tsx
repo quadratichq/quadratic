@@ -1,9 +1,9 @@
-import { useCallback } from "react";
+import { useCallback } from 'react';
 
-import { CELL_WIDTH, CELL_HEIGHT } from "../../../constants/gridConstants";
-import colors from "../../../theme/colors";
-import { Graphics, Container } from "@inlet/react-pixi";
-import CellReference from "../types/cellReference";
+import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
+import { colors } from '../../../theme/colors';
+import { Graphics, Container } from '@inlet/react-pixi';
+import CellReference from '../types/cellReference';
 interface CursorPixiReactProps {
   location: CellReference;
 }

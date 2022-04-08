@@ -1,19 +1,19 @@
-import { CSSProperties } from "react";
-import Button from "@mui/material/Button";
-import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
-import { Menu, MenuItem, MenuHeader, MenuDivider } from "@szhsin/react-menu";
+import { CSSProperties } from 'react';
+import Button from '@mui/material/Button';
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
+import { Menu, MenuItem, MenuHeader, MenuDivider } from '@szhsin/react-menu';
 
-import "@szhsin/react-menu/dist/index.css";
-import { Tooltip } from "@mui/material";
+import '@szhsin/react-menu/dist/index.css';
+import { Tooltip } from '@mui/material';
 
-import colors from "../../../../theme/colors";
+import { colors } from '../../../../theme/colors';
 
 const numberExStyle = {
   color: colors.darkGray,
-  display: "inline-block",
-  fontFamily: "monospace",
-  textAlign: "right",
-  width: "100%",
+  display: 'inline-block',
+  fontFamily: 'monospace',
+  textAlign: 'right',
+  width: '100%',
 } as CSSProperties;
 
 export const NumberFormatMenu = () => {
@@ -22,12 +22,12 @@ export const NumberFormatMenu = () => {
       menuButton={
         <Tooltip title="Number Format" arrow>
           <Button style={{ color: colors.darkGray }}>
-            <span style={{ fontSize: "1rem" }}>123</span>
+            <span style={{ fontSize: '1rem' }}>123</span>
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
           </Button>
         </Tooltip>
       }
-      menuStyles={{ minWidth: "18rem" }}
+      menuStyles={{ minWidth: '18rem' }}
     >
       <MenuHeader>Number Format</MenuHeader>
       <MenuItem type="checkbox" checked={true}>

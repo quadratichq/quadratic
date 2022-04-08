@@ -1,16 +1,16 @@
-import { useCallback } from "react";
-import { Graphics, Container } from "@inlet/react-pixi";
+import { useCallback } from 'react';
+import { Graphics, Container } from '@inlet/react-pixi';
 
-import FastBitmapText from "./primatives/FastBitmapText";
+import FastBitmapText from './primatives/FastBitmapText';
 
 import {
   CELL_WIDTH,
   CELL_HEIGHT,
   CELL_TEXT_MARGIN_LEFT,
   CELL_TEXT_MARGIN_TOP,
-} from "../../../constants/gridConstants";
-import { CellTypes } from "../../gridDB/db";
-import colors from "../../../theme/colors";
+} from '../../../constants/gridConstants';
+import { CellTypes } from '../../gridDB/db';
+import { colors } from '../../../theme/colors';
 
 interface CellPixiReactProps {
   x: number;
@@ -29,11 +29,11 @@ const CellPixiReact = (props: CellPixiReactProps) => {
     (g) => {
       g.clear();
 
-      if (props.type === "TEXT") {
+      if (props.type === 'TEXT') {
         g.lineStyle(1, colors.cellColorUserText, 0.75, 0.5, true);
-      } else if (props.type === "PYTHON") {
+      } else if (props.type === 'PYTHON') {
         g.lineStyle(1, colors.cellColorUserPython, 0.75, 0.5, true);
-      } else if (props.type === "COMPUTED") {
+      } else if (props.type === 'COMPUTED') {
         g.lineStyle(1, colors.independence, 0.75, 0.5, true);
       }
 

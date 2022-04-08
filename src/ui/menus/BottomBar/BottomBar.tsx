@@ -1,5 +1,5 @@
 import { Box } from '@mui/system';
-import colors from '../../../theme/colors';
+import { colors } from '../../../theme/colors';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { useEffect, useState } from 'react';

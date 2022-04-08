@@ -1,13 +1,13 @@
-import { Fragment } from "react";
-import Button from "@mui/material/Button";
-import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import { Fragment } from 'react';
+import Button from '@mui/material/Button';
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import {
   Menu,
   MenuItem,
   MenuDivider,
   MenuHeader,
   SubMenu,
-} from "@szhsin/react-menu";
+} from '@szhsin/react-menu';
 
 import {
   FormatBold,
@@ -28,14 +28,14 @@ import {
   BorderInner,
   BorderHorizontal,
   BorderVertical,
-} from "@mui/icons-material";
-import { PaletteOutlined } from "@mui/icons-material";
-import "@szhsin/react-menu/dist/index.css";
-import { Tooltip } from "@mui/material";
+} from '@mui/icons-material';
+import { PaletteOutlined } from '@mui/icons-material';
+import '@szhsin/react-menu/dist/index.css';
+import { Tooltip } from '@mui/material';
 
-import { menuItemIconStyles, topBarIconStyles } from "./menuStyles";
+import { menuItemIconStyles, topBarIconStyles } from './menuStyles';
 
-import colors from "../../../../theme/colors";
+import { colors } from '../../../../theme/colors';
 
 export const FormatMenu = () => {
   return (
@@ -65,7 +65,7 @@ export const FormatMenu = () => {
         <FormatAlignLeft style={menuItemIconStyles}></FormatAlignLeft> Left
       </MenuItem>
       <MenuItem>
-        <FormatAlignCenter style={menuItemIconStyles}></FormatAlignCenter>{" "}
+        <FormatAlignCenter style={menuItemIconStyles}></FormatAlignCenter>{' '}
         Center
       </MenuItem>
       <MenuItem>
@@ -116,7 +116,7 @@ export const FormatMenu = () => {
           <BorderInner style={menuItemIconStyles}></BorderInner> Inner
         </MenuItem>
         <MenuItem>
-          <BorderHorizontal style={menuItemIconStyles}></BorderHorizontal>{" "}
+          <BorderHorizontal style={menuItemIconStyles}></BorderHorizontal>{' '}
           Horizontal
         </MenuItem>
         <MenuItem>
