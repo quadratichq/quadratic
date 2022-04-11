@@ -35,7 +35,11 @@ const PixiComponentViewport = PixiComponent('Viewport', {
       .drag({ pressDrag: false })
       .decelerate()
       .pinch()
-      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 });
+      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 })
+      .clampZoom({
+        minScale: 0.01,
+        maxScale: 10,
+      });
 
     props.viewportRef.current = viewport;
 
