@@ -26,7 +26,7 @@ Quadratic is in ALPHA. We do not recommend relying on Quadratic.
 - [ ] Database Connection Support (issue [#35](https://github.com/quadratichq/quadratic/issues/35))
 - [ ] SQL Support (issue [#34](https://github.com/quadratichq/quadratic/issues/34))
 - [ ] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
-- [ ] Cell Formatting
+- [ ] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
 - [ ] Import CSV
 - [ ] JS Support
 
