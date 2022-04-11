@@ -29,48 +29,50 @@ export const NumberFormatMenu = () => {
       }
       menuStyles={{ minWidth: '18rem' }}
     >
+      <MenuHeader>Coming Soon</MenuHeader>
+      <MenuDivider></MenuDivider>
       <MenuHeader>Number Format</MenuHeader>
-      <MenuItem type="checkbox" checked={true}>
+      <MenuItem disabled type="checkbox" checked={true}>
         Automatic
       </MenuItem>
-      <MenuItem type="checkbox" checked={false}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Plain text
       </MenuItem>
       <MenuDivider></MenuDivider>
-      <MenuItem type="checkbox" checked={false}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Number <span style={numberExStyle}>9,999.99</span>
       </MenuItem>
-      <MenuItem type="checkbox" checked={false}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Percent <span style={numberExStyle}>99.99%</span>
       </MenuItem>
-      <MenuItem type="checkbox" checked={false}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Scientific <span style={numberExStyle}>6.02E+23</span>
       </MenuItem>
       <MenuDivider></MenuDivider>
-      <MenuItem type="checkbox" checked={false}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Accounting <span style={numberExStyle}>$(9,999.99)</span>
       </MenuItem>
-      <MenuItem type="checkbox" checked={false}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Financial <span style={numberExStyle}>(9,999.99)</span>
       </MenuItem>
-      <MenuItem type="checkbox" checked={false}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Currency <span style={numberExStyle}>$9,999.99</span>
       </MenuItem>
       <MenuDivider></MenuDivider>
-      <MenuItem type="checkbox" checked={false}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Date <span style={numberExStyle}>1/1/2022</span>
       </MenuItem>
-      <MenuItem type="checkbox" checked={false}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Time <span style={numberExStyle}>12:59 PM</span>
       </MenuItem>
-      {/* <MenuItem type="checkbox" checked={false}>
+      {/* <MenuItem disabled type="checkbox" checked={false}>
         Datetime <span style={numberExStyle}>01/01/2022 12:59 PM</span>
       </MenuItem> */}
-      <MenuItem type="checkbox" checked={false}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Duration <span style={numberExStyle}>5h 45m 6s</span>
       </MenuItem>
       <MenuDivider></MenuDivider>
-      <MenuItem type="checkbox" checked={false}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Custom
       </MenuItem>
     </Menu>

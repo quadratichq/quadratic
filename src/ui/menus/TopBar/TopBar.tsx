@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import { Button } from '@mui/material';
+import { Button, Tooltip } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Avatar, AvatarGroup } from '@mui/material';
 
@@ -63,7 +63,7 @@ export const TopBar = () => {
           fontFamily={'sans-serif'}
           color={colors.darkGray}
         >
-          / PythonExample.grid
+          / Untitled.grid
         </Typography>
         <KeyboardArrowDown
           fontSize="small"
@@ -75,11 +75,12 @@ export const TopBar = () => {
         sx={{
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'flex-end',
           gap: '1rem',
           width: '15rem',
         }}
       >
-        <AvatarGroup>
+        {/* <AvatarGroup>
           <Avatar
             sx={{
               bgcolor: colors.quadraticPrimary,
@@ -98,20 +99,23 @@ export const TopBar = () => {
               fontSize: '0.9rem',
             }}
           >
-            OP
+            You
           </Avatar>
-        </AvatarGroup>
-        <Button
-          style={{
-            color: colors.darkGray,
-            borderColor: colors.darkGray,
-            padding: '1px 4px',
-          }}
-          variant="outlined"
-          size="small"
-        >
-          Share
-        </Button>
+        </AvatarGroup> */}
+
+        <Tooltip title="Quadratic Cloud only" arrow>
+          <Button
+            style={{
+              color: colors.darkGray,
+              borderColor: colors.darkGray,
+              padding: '1px 4px',
+            }}
+            variant="outlined"
+            size="small"
+          >
+            Share
+          </Button>
+        </Tooltip>
         <ZoomDropdown></ZoomDropdown>
       </Box>
     </Box>

@@ -26,15 +26,16 @@ export const DataMenu = () => {
         </Tooltip>
       }
     >
-      <MenuHeader>Import</MenuHeader>
-      <MenuItem>
+      <MenuHeader>Connect Data</MenuHeader>
+      <MenuItem disabled>
         <CloudDownloadOutlined
           style={menuItemIconStyles}
         ></CloudDownloadOutlined>
-        SaaS
+        SaaS (Quadratic Cloud only)
       </MenuItem>
-      <MenuItem>
+      <MenuItem disabled>
         <StorageOutlined style={menuItemIconStyles}></StorageOutlined> Database
+        (coming soon)
       </MenuItem>
     </Menu>
   );

@@ -28,6 +28,7 @@ import {
   BorderInner,
   BorderHorizontal,
   BorderVertical,
+  ReadMore,
 } from '@mui/icons-material';
 import { PaletteOutlined } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
@@ -49,32 +50,48 @@ export const FormatMenu = () => {
         </Tooltip>
       }
     >
+      <MenuHeader>Coming Soon</MenuHeader>
+      <MenuDivider></MenuDivider>
       <MenuHeader>Text</MenuHeader>
-      <MenuItem>
+      <MenuItem disabled>
         <FormatBold style={menuItemIconStyles}></FormatBold> Bold
       </MenuItem>
-      <MenuItem>
+      <MenuItem disabled>
         <FormatItalic style={menuItemIconStyles}></FormatItalic> Italic
       </MenuItem>
-      <MenuItem>
+      <MenuItem disabled>
         <FormatColorText style={menuItemIconStyles}></FormatColorText> Color
       </MenuItem>
 
       <MenuDivider />
-      <MenuItem>
+      <SubMenu
+        label={
+          <Fragment>
+            <ReadMore style={menuItemIconStyles}></ReadMore>
+            <span>Wrapping</span>
+          </Fragment>
+        }
+      >
+        <MenuItem disabled>Overflow</MenuItem>
+        <MenuItem disabled>Wrap</MenuItem>
+        <MenuItem disabled>Clip</MenuItem>
+      </SubMenu>
+
+      <MenuDivider />
+      <MenuItem disabled>
         <FormatAlignLeft style={menuItemIconStyles}></FormatAlignLeft> Left
       </MenuItem>
-      <MenuItem>
+      <MenuItem disabled>
         <FormatAlignCenter style={menuItemIconStyles}></FormatAlignCenter>{' '}
         Center
       </MenuItem>
-      <MenuItem>
+      <MenuItem disabled>
         <FormatAlignRight style={menuItemIconStyles}></FormatAlignRight> Right
       </MenuItem>
 
       <MenuDivider />
       <MenuHeader>Cell</MenuHeader>
-      <MenuItem>
+      <MenuItem disabled>
         <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill
         Color
       </MenuItem>
@@ -87,39 +104,39 @@ export const FormatMenu = () => {
           </Fragment>
         }
       >
-        <MenuItem>
+        <MenuItem disabled>
           <BorderColor style={menuItemIconStyles}></BorderColor> Color
         </MenuItem>
-        <MenuItem>
+        <MenuItem disabled>
           <LineStyle style={menuItemIconStyles}></LineStyle>
           Line Style
         </MenuItem>
-        <MenuItem>
+        <MenuItem disabled>
           <BorderAll style={menuItemIconStyles}></BorderAll> All
         </MenuItem>
-        <MenuItem>
+        <MenuItem disabled>
           <BorderOuter style={menuItemIconStyles}></BorderOuter> Outer
         </MenuItem>
-        <MenuItem>
+        <MenuItem disabled>
           <BorderTop style={menuItemIconStyles}></BorderTop> Top
         </MenuItem>
-        <MenuItem>
+        <MenuItem disabled>
           <BorderLeft style={menuItemIconStyles}></BorderLeft> Left
         </MenuItem>
-        <MenuItem>
+        <MenuItem disabled>
           <BorderRight style={menuItemIconStyles}></BorderRight> Right
         </MenuItem>
-        <MenuItem>
+        <MenuItem disabled>
           <BorderBottom style={menuItemIconStyles}></BorderBottom> Bottom
         </MenuItem>
-        <MenuItem>
+        <MenuItem disabled>
           <BorderInner style={menuItemIconStyles}></BorderInner> Inner
         </MenuItem>
-        <MenuItem>
+        <MenuItem disabled>
           <BorderHorizontal style={menuItemIconStyles}></BorderHorizontal>{' '}
           Horizontal
         </MenuItem>
-        <MenuItem>
+        <MenuItem disabled>
           <BorderVertical style={menuItemIconStyles}></BorderVertical> Vertical
         </MenuItem>
       </SubMenu>

@@ -152,12 +152,12 @@ export default function CodeEditor() {
               flexDirection: 'column',
               paddingLeft: '3px',
               paddingRight: '3px',
-              borderStyle: 'solid',
-              borderWidth: '2px',
-              borderColor:
-                mode === 'PYTHON'
-                  ? colors.colorPython
-                  : colors.quadraticSecondary,
+              // borderStyle: 'solid',
+              // borderWidth: '2px',
+              // borderColor:
+              //   mode === 'PYTHON'
+              //     ? colors.colorPython
+              //     : colors.quadraticSecondary,
             }}
           >
             <span

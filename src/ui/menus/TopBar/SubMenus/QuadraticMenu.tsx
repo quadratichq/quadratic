@@ -53,6 +53,11 @@ export const QuadraticMenu = () => {
           Grid
         </MenuItem>
       </SubMenu>
+      <SubMenu label="Import">
+        <MenuHeader>Import</MenuHeader>
+        <MenuItem disabled>CSV (coming soon)</MenuItem>
+        <MenuItem disabled>Excel (coming soon)</MenuItem>
+      </SubMenu>
       <SubMenu label="View">
         <MenuHeader>Grid</MenuHeader>
         <MenuItem
