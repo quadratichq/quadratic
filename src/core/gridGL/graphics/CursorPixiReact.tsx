@@ -6,19 +6,24 @@ import { Graphics, Container } from '@inlet/react-pixi';
 import CellReference from '../types/cellReference';
 interface CursorPixiReactProps {
   location: CellReference;
+  color?: number;
 }
 
 const CursorPixiReact = (props: CursorPixiReactProps) => {
-  const x_pos = props.location.x * CELL_WIDTH;
-  const y_pos = props.location.y * CELL_HEIGHT;
+  const { location, color } = props;
+  const x_pos = location.x * CELL_WIDTH;
+  const y_pos = location.y * CELL_HEIGHT;
 
   const draw_outline = useCallback(
     (g) => {
       g.clear();
-      g.lineStyle(1.5, colors.cursorCell);
+
+      if (color) g.lineStyle(1.5, color);
+      else g.lineStyle(1.5, colors.cursorCell);
+
       g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
     },
-    [x_pos, y_pos]
+    [x_pos, y_pos, color]
   );
 
   return (

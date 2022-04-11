@@ -18,6 +18,7 @@ import { onKeyDownCanvas } from './interaction/onKeyDownCanvas';
 import { onMouseDownCanvas } from './interaction/onMouseDownCanvas';
 import { CellInput } from './interaction/CellInput';
 import { onDoubleClickCanvas } from './interaction/onDoubleClickCanvas';
+import { colors } from '../../theme/colors';
 
 import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 
@@ -104,6 +105,7 @@ export default function QuadraticGrid() {
                     interactionState.cursorPosition.y === cell.y
                   )
                 }
+                array_cells={cell.array_cells}
               ></CellPixiReact>
             ))}
           <AxesPixiReact visible={showGridAxes}></AxesPixiReact>
@@ -117,6 +119,10 @@ export default function QuadraticGrid() {
             }
             visible={interactionState.showMultiCursor}
           ></MultiCursorPixiReact>
+          {/* <CursorPixiReact
+            location={{ x: 4, y: 3 }}
+            color={colors.cellColorUserPython}
+          ></CursorPixiReact> */}
         </ViewportComponent>
       </Stage>
       <CellInput

@@ -18,6 +18,7 @@ interface CellPixiReactProps {
   text: string;
   type: CellTypes;
   renderText: boolean;
+  array_cells?: [number, number][];
 }
 
 const CellPixiReact = (props: CellPixiReactProps) => {
@@ -37,9 +38,29 @@ const CellPixiReact = (props: CellPixiReactProps) => {
         g.lineStyle(1, colors.independence, 0.75, 0.5, true);
       }
 
+      // TODO CLEANUP
+      g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
+
+      // draw array cell outline
+      if (!props.array_cells) return g;
+
+      // if (props.array_cells.length)
+
+      let width = 1;
+      let height = 1;
+      for (let i = 0; i < props.array_cells.length; i++) {
+        const cell = props.array_cells[i];
+        if (cell[0] - props.x + 1 > width) width = cell[0] - props.x + 1;
+        if (cell[1] - props.y + 1 > height) height = cell[1] - props.y + 1;
+      }
+      g.lineStyle(1, colors.cellColorUserPython, 0.35, 0.5, false, 1);
+      g.drawRect(x_pos, y_pos, CELL_WIDTH * width, CELL_HEIGHT * height);
+
+      // g.lineStyle(1, colors.cellColorUserPython, 0.35, 0.5, false, 1);
+      g.lineStyle(1, colors.cellColorUserPython, 0.25, 0.5, false, 1);
       g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
     },
-    [x_pos, y_pos, props.type]
+    [props.type, props.array_cells, props.x, props.y, x_pos, y_pos]
   );
 
   return (
