@@ -68,7 +68,7 @@ export const CellInput = (props: CellInputProps) => {
   const closeInput = async (transpose = { x: 0, y: 0 } as CellReference) => {
     // Update Cell and dependent cells
     if (value === '') {
-      deleteCellsRange(
+      await deleteCellsRange(
         {
           x: cellLoation.current.x,
           y: cellLoation.current.y,
