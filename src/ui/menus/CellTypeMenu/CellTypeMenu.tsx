@@ -11,10 +11,21 @@ import {
   CardContent,
 } from '@mui/material';
 import TextField from '@mui/material/TextField';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { CellTypes } from '../../../core/gridDB/db';
 
 import './styles.css';
 import { focusGrid } from '../../../helpers/focusGrid';
+
+export interface CellTypeMenuItem {
+  key: number;
+  name: string;
+  short: string;
+  slug: CellTypes;
+  description: string;
+  disabled: boolean;
+}
 
 const CELL_TYPE_OPTIONS = [
   {
@@ -57,16 +68,18 @@ const CELL_TYPE_OPTIONS = [
     description: 'Query your data using SQL.',
     disabled: true,
   },
-];
+] as CellTypeMenuItem[];
 
 export default function CellTypeMenu() {
-  let navigate = useNavigate();
-  const { x, y } = useParams();
+  // Interaction State hook
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(
+    editorInteractionStateAtom
+  );
 
   const [value, setValue] = React.useState<string>('');
-  const [selected_value, setSelectedValue] = React.useState<string | undefined>(
-    'TEXT'
-  );
+  const [selected_value, setSelectedValue] = React.useState<
+    CellTypes | undefined
+  >('TEXT');
   const [filtered_cell_type_list, setFilteredCellTypeList] =
     React.useState<any>(CELL_TYPE_OPTIONS);
 
@@ -83,12 +96,24 @@ export default function CellTypeMenu() {
   };
 
   const close = () => {
-    navigate('/');
+    setEditorInteractionState({
+      ...editorInteractionState,
+      showCellTypeMenu: false,
+    });
+    setValue('');
+    update_filter('');
     focusGrid();
   };
 
   const openEditor = (mode = null) => {
-    navigate(`/code-editor/${x}/${y}/${mode || selected_value}`);
+    setEditorInteractionState({
+      ...editorInteractionState,
+      ...{
+        showCodeEditor: true,
+        showCellTypeMenu: false,
+        mode: mode || selected_value || 'TEXT',
+      },
+    });
   };
 
   return (

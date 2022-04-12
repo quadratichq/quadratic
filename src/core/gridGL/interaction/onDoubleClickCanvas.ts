@@ -1,6 +1,6 @@
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GetCellsDB } from '../../gridDB/Cells/GetCellsDB';
-import { NavigateFunction } from 'react-router-dom';
 
 export const onDoubleClickCanvas = (
   event: React.MouseEvent<HTMLCanvasElement, MouseEvent>,
@@ -8,7 +8,9 @@ export const onDoubleClickCanvas = (
   setInteractionState: React.Dispatch<
     React.SetStateAction<GridInteractionState>
   >,
-  navigate: NavigateFunction
+  setEditorInteractionState: React.Dispatch<
+    React.SetStateAction<EditorInteractionState>
+  >
 ) => {
   // Get the double clicked cell, check if it is already set
   const x = interactionState.cursorPosition.x;
@@ -29,7 +31,13 @@ export const onDoubleClickCanvas = (
         });
       } else {
         // Open code editor
-        navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
+        // navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
+        setEditorInteractionState({
+          showCellTypeMenu: false,
+          showCodeEditor: true,
+          selectedCell: { x: x, y: y },
+          mode: cells[0].type,
+        });
       }
     } else {
       // If no previous value, open single line Input

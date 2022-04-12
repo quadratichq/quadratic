@@ -2,10 +2,10 @@ import { copyToClipboard, pasteFromClipboard } from '../../actions/clipboard';
 import { deleteCellsRange } from '../../actions/deleteCellsRange';
 import { GetCellsDB } from '../../gridDB/Cells/GetCellsDB';
 import isAlphaNumeric from './helpers/isAlphaNumeric';
-import { NavigateFunction } from 'react-router-dom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { getGridMinMax } from '../../../helpers/getGridMinMax';
 import type { Viewport } from 'pixi-viewport';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 
 export const onKeyDownCanvas = (
   event: React.KeyboardEvent<HTMLCanvasElement>,
@@ -13,7 +13,9 @@ export const onKeyDownCanvas = (
   setInteractionState: React.Dispatch<
     React.SetStateAction<GridInteractionState>
   >,
-  navigate: NavigateFunction,
+  setEditorInteractionState: React.Dispatch<
+    React.SetStateAction<EditorInteractionState>
+  >,
   viewportRef: React.MutableRefObject<Viewport | undefined>
 ) => {
   // TODO make commands work cross platform
@@ -173,7 +175,12 @@ export const onKeyDownCanvas = (
             },
           });
         } else {
-          navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
+          setEditorInteractionState({
+            showCellTypeMenu: false,
+            showCodeEditor: true,
+            selectedCell: { x: x, y: y },
+            mode: cells[0].type,
+          });
         }
       } else {
         setInteractionState({
@@ -193,9 +200,21 @@ export const onKeyDownCanvas = (
     const y = interactionState.cursorPosition.y;
     GetCellsDB(x, y, x, y).then((cells) => {
       if (cells.length) {
-        navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
+        // navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
+        setEditorInteractionState({
+          showCellTypeMenu: false,
+          showCodeEditor: true,
+          selectedCell: { x: x, y: y },
+          mode: cells[0].type,
+        });
       } else {
-        navigate(`/cell-type-menu/${x}/${y}`);
+        // navigate(`/cell-type-menu/${x}/${y}`);
+        setEditorInteractionState({
+          showCellTypeMenu: true,
+          showCodeEditor: false,
+          selectedCell: { x: x, y: y },
+          mode: 'TEXT',
+        });
       }
     });
     event.preventDefault();

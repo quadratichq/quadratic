@@ -4,7 +4,6 @@ import type { Viewport } from 'pixi-viewport';
 import { Stage } from '@inlet/react-pixi';
 import ViewportComponent from './graphics/ViewportComponent';
 import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
-import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useLoading } from '../../contexts/LoadingContext';
 import useLocalStorage from '../../hooks/useLocalStorage';
@@ -13,7 +12,8 @@ import AxesPixiReact from './graphics/AxesPixiReact';
 import CursorPixiReact from './graphics/CursorPixiReact';
 import MultiCursorPixiReact from './graphics/MultiCursorPixiReact';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
-import { useRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 import { onKeyDownCanvas } from './interaction/onKeyDownCanvas';
 import { onMouseDownCanvas } from './interaction/onMouseDownCanvas';
 import { CellInput } from './interaction/CellInput';
@@ -23,7 +23,6 @@ import { colors } from '../../theme/colors';
 import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 
 export default function QuadraticGrid() {
-  let navigate = useNavigate();
   const { loading } = useLoading();
   const viewportRef = useRef<Viewport>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
@@ -35,6 +34,10 @@ export default function QuadraticGrid() {
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(
     gridInteractionStateAtom
+  );
+
+  const setEditorInteractionState = useSetRecoilState(
+    editorInteractionStateAtom
   );
 
   return (
@@ -58,7 +61,7 @@ export default function QuadraticGrid() {
             event,
             interactionState,
             setInteractionState,
-            navigate,
+            setEditorInteractionState,
             viewportRef
           );
         }}
@@ -75,7 +78,7 @@ export default function QuadraticGrid() {
             event,
             interactionState,
             setInteractionState,
-            navigate
+            setEditorInteractionState
           );
         }}
         style={{ display: loading ? 'none' : 'inline' }}
