@@ -158,6 +158,7 @@ export default function CodeEditor() {
             borderStyle: 'solid',
             borderWidth: '0 0 1px 0',
             borderColor: colors.mediumGray,
+            userSelect: 'none',
           }}
         >
           <Button
