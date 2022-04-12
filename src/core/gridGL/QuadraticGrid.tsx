@@ -13,7 +13,7 @@ import CursorPixiReact from './graphics/CursorPixiReact';
 import MultiCursorPixiReact from './graphics/MultiCursorPixiReact';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { onKeyDownCanvas } from './interaction/onKeyDownCanvas';
 import { onMouseDownCanvas } from './interaction/onMouseDownCanvas';
 import { CellInput } from './interaction/CellInput';
@@ -36,7 +36,7 @@ export default function QuadraticGrid() {
     gridInteractionStateAtom
   );
 
-  const setEditorInteractionState = useSetRecoilState(
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(
     editorInteractionStateAtom
   );
 
@@ -122,10 +122,16 @@ export default function QuadraticGrid() {
             }
             visible={interactionState.showMultiCursor}
           ></MultiCursorPixiReact>
-          {/* <CursorPixiReact
-            location={{ x: 4, y: 3 }}
-            color={colors.cellColorUserPython}
-          ></CursorPixiReact> */}
+          {editorInteractionState.showCodeEditor && (
+            <CursorPixiReact
+              location={editorInteractionState.selectedCell}
+              color={
+                editorInteractionState.mode === 'PYTHON'
+                  ? colors.cellColorUserPython
+                  : colors.independence
+              }
+            ></CursorPixiReact>
+          )}
         </ViewportComponent>
       </Stage>
       <CellInput
