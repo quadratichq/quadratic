@@ -1,6 +1,4 @@
 import { useRef, useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
@@ -11,35 +9,65 @@ import TextField from '@mui/material/TextField';
 import { Cell } from '../../../core/gridDB/db';
 import './CodeEditor.css';
 import { Button } from '@mui/material';
-
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { useRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { useLiveQuery } from 'dexie-react-hooks';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
 export default function CodeEditor() {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  let navigate = useNavigate();
-  const { x, y, mode } = useParams();
+  // let navigate = useNavigate();
+  // const { x, y, mode } = useParams();
   const [editorContent, setEditorContent] = useState<string | undefined>('');
+
+  // Interaction State hook
+  const [interactionState, setInteractionState] = useRecoilState(
+    editorInteractionStateAtom
+  );
+
+  const x = interactionState.selectedCell.x;
+  const y = interactionState.selectedCell.y;
+  const mode = interactionState.mode;
+
   const cells = useLiveQuery(() =>
     GetCellsDB(Number(x), Number(y), Number(x), Number(y))
   );
 
-  const closeEditor = () => {
-    navigate('/');
-    focusGrid();
-  };
-
+  // When cell changes
   useEffect(() => {
     if (cells?.length) {
-      if ((mode as CellTypes) === 'PYTHON') {
+      // set existing cell
+      if (mode === 'PYTHON') {
         setEditorContent(cells[0].python_code);
       } else {
         setEditorContent(cells[0].value);
       }
     }
-  }, [cells, mode]);
+  }, [cells, mode, setEditorContent]);
+
+  const closeEditor = () => {
+    setInteractionState({
+      ...interactionState,
+      ...{ showCodeEditor: false },
+    });
+    setEditorContent('');
+    focusGrid();
+  };
+
+  // use exiting cell or create new cell
+  // if (cells !== undefined && cells[0] !== undefined) {
+  //   cell = cells[0];
+  // } else if (x !== undefined && y !== undefined) {
+  //   cell = {
+  //     x: Number(x),
+  //     y: Number(y),
+  //     type: mode as CellTypes,
+  //     value: '',
+  //   } as Cell;
+  // }
 
   // use exiting cell or create new cell
   let cell: Cell | undefined;
@@ -102,7 +130,7 @@ export default function CodeEditor() {
     monaco.editor.setTheme('quadratic');
   }
 
-  if (cells !== undefined)
+  if (cell !== undefined)
     return (
       <div
         style={{
@@ -219,7 +247,7 @@ export default function CodeEditor() {
               label="OUTPUT"
               multiline
               rows={7}
-              value={cell?.python_output || ''}
+              value={cell.python_output || ''}
               style={{
                 width: '100%',
               }}
