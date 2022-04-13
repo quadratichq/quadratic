@@ -12,7 +12,7 @@ Take your data and do something useful with it as quickly and easily as possible
 
 ![Screen Shot 2022-04-07 at 4 15 52 PM](https://user-images.githubusercontent.com/3479421/162328478-198f27d1-4ab8-4334-8420-b082e68edefc.png)
 
-# What is a Data Science Spreadsheet?
+# What is Quadratic?
 
 Quadratic is a Web-based spreadsheet application that runs in the browser and as a native app (via Electron). 
 
@@ -21,8 +21,8 @@ Our goal is to build the easiest way to pull your data from wherever it happens 
 Quadratic has no environment to configure. Our grid runs entirely in the browser with no backend service. This makes our grids completely portable and very easy to share.
 
 ## What can I do with Quadratic?
-- Build internal tools
 - Build dashboards
+- Create internal tools in minutes
 - Quickly mix data from different sources
 - Explore your data for new insights
 
