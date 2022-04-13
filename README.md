@@ -6,9 +6,9 @@
 ![quardatic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg)  **_The Data Science Spreadsheet_**
 ----
 
-Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to pull any data.
+Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to pull in your data.
 
-Take your data and do something useful with it as quickly and easily as possible.
+Take your data and do something useful with it as quickly and easily as possible!
 
 ![Screen Shot 2022-04-07 at 4 15 52 PM](https://user-images.githubusercontent.com/3479421/162328478-198f27d1-4ab8-4334-8420-b082e68edefc.png)
 
@@ -16,7 +16,9 @@ Take your data and do something useful with it as quickly and easily as possible
 
 Quadratic is a Web-based spreadsheet application that runs both in the browser and as a standalone application (via Electron). 
 
-Our goal for Quadrataic: The easiest way to pull your data from wherever it happens to be (SaaS, Database, CSV, API, etc) and allow you to work with your data using the most popular data science tools today (Python, Pandas, SQL, JS, Excel Formulas, etc).
+Our goal for Quadrataic: The easiest way to pull your data from wherever it happens to be (SaaS, Database, CSV, API, etc) and allow you to work with your data using the most popular data science tools today (Python, Pandas, SQL, JS, Excel Formulas, etc). 
+
+Quadratic has no environment to configure. Our spreadsheet runs entirely in the browser with no backend service. This makes our grids completely portable and very easy to share.
 
 ## What can I do with Quadratic?
 - Build internal tools
