@@ -47,9 +47,11 @@ Notice a bug? Submit a Github Issue!
 
 ## Online Demo
 
+We have a hosted version of the `main` branch available online. Try it out!
+
 https://early.quadratic.to
 
-## Locally
+## Run Quadratic Locally
 
 Install Dependencies `npm install`
 
