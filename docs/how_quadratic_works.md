@@ -16,6 +16,6 @@ We envision a spreadsheet application where you can seamlessly bring in millions
 
 To achieve this, we envision the grid being a [Vector Tilemap](https://docs.mapbox.com/data/tilesets/guides/vector-tiles-introduction/) (think Google Maps) this way we can have lots of data in a file, allow the user to navigate with pan and zoom quickly, but not require all data to be loaded at all times.
 
-A blog post series by the CTO of Figma [Evan Wallnce](https://twitter.com/evanwallace?lang=en) has convinced us this is possible using a combination of WebAssembly (Rust!) and WebGL.
+A blog post series by the CTO of Figma [Evan Wallnce](https://twitter.com/evanwallace?lang=en) has convinced us this is possible using a combination of WebAssembly (Rust!), WebWorkers, and WebGL.
 - https://www.figma.com/blog/webassembly-cut-figmas-load-time-by-3x/
 - https://www.figma.com/blog/building-a-professional-design-tool-on-the-web/
