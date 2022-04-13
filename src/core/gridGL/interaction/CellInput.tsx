@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { deleteCellsRange } from '../../actions/deleteCellsRange';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
@@ -21,6 +21,11 @@ export const CellInput = (props: CellInputProps) => {
   const [value, setValue] = useState<string | undefined>(undefined);
   const cellLoation = useRef(interactionState.cursorPosition);
   const textInput = useRef<HTMLInputElement>(null);
+
+  // Effect for sizing the input width to the length of the value
+  useEffect(() => {
+    if (textInput.current) textInput.current.size = value?.length || 0 + 1;
+  }, [value, textInput]);
 
   // If we don't have a viewport, we can't continue.
   const viewport = viewportRef.current;
@@ -134,7 +139,7 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        width: 100,
+        minWidth: 100,
         border: 'none',
         outline: 'none',
         lineHeight: '1',
