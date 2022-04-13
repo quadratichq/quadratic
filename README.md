@@ -41,7 +41,7 @@ _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 - [ ] Import CSV
 - [ ] JS Support
 
-**Notice a bug?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
+**Feature request or bug report?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
 
 **Want to contribute?** Read our [Contribution Guide](./CONTRIBUTING.md).
 
