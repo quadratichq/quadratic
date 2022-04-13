@@ -41,11 +41,11 @@ _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 - [ ] Import CSV
 - [ ] JS Support
 
-Notice a bug? Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/)
+**Notice a bug?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
 
-Want to contribute? Read our [Contribution Guide](./CONTRIBUTING.md)
+**Want to contribute?** Read our [Contribution Guide](./CONTRIBUTING.md).
 
-Want to learn more about how Quadratic works? Read our [How Quadratic Works](./docs/how_quadratic_works.md) doc.
+Want to learn more about how Quadratic works? Read the [How Quadratic Works](./docs/how_quadratic_works.md) doc.
 
 # Getting Started
 
