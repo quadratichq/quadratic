@@ -46,12 +46,16 @@ Scan through our [existing issues](https://github.com/github/docs/issues) to fin
 
 1. Create a new working branch and start making your changes!
 
+1. Lint and format your changes using Prettier.
+
 ### Pull Request
 
 When you're finished with your changes:
 
 1. Create a pull request.
+
 1. Link your PR to the GitHub Issue [link PR to issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue) if you are working on an Issue.
+
 1. Enable the checkbox to [allow maintainer edits](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork) so the branch can be updated for a merge.
 
 We review all PRs quickly, so we will give you feedback in short order!
