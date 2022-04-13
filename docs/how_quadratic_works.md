@@ -14,7 +14,7 @@ All cell code is executed on the front end in the client's browser. This creates
 
 We envision a spreadsheet application where you can seamlessly bring in millions of rows of data, and run formulas, scripts, and SQL on your data all in one visual environment.
 
-To achieve this, we envision the grid being a [ector Tilemap](https://docs.mapbox.com/data/tilesets/guides/vector-tiles-introduction/) (think online maps) this way we can have lots of data in a file, allow the user to navigate with pan and zoom quickly, but not require all data to be loaded at all times.
+To achieve this, we envision the grid being a [Vector Tilemap](https://docs.mapbox.com/data/tilesets/guides/vector-tiles-introduction/) (think Google Maps) this way we can have lots of data in a file, allow the user to navigate with pan and zoom quickly, but not require all data to be loaded at all times.
 
 A blog post series by the CTO of Figma [Evan Wallnce](https://twitter.com/evanwallace?lang=en) has convinced us this is possible using a combination of WebAssembly (Rust!) and WebGL.
 - https://www.figma.com/blog/webassembly-cut-figmas-load-time-by-3x/
