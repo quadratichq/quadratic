@@ -28,7 +28,7 @@ Quadratic has no environment to configure. Our spreadsheet runs entirely in the 
 
 # Development Progress and Roadmap
 
-Quadratic is in ALPHA. We do not recommend relying on Quadratic.
+_Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 
 - [x] WebGL Grid (pinch and zoom grid)
 - [x] Open and Save files locally
@@ -42,6 +42,8 @@ Quadratic is in ALPHA. We do not recommend relying on Quadratic.
 - [ ] JS Support
 
 Notice a bug? Submit a Github Issue!
+
+Want to learn more about how Quadratic works? Read our [How Quadratic Works](./docs/how_quadratic_works.md) doc.
 
 # Getting Started
 
@@ -58,6 +60,14 @@ Install Dependencies `npm install`
 Run Web `npm start`
 
 Run Electron `npm run dev`
+
+# Documentation
+
+Read the docs on [docs.quadratic.to](https://docs.quadratic.to)
+- [Quick Start Guide](https://docs.quadratic.to/quick-start)
+- [Python Cell Reference](https://docs.quadratic.to/reference/python-cell-reference)
+- [Pandas DataFrames in Quadratic](https://docs.quadratic.to/reference/python-cell-reference/pandas-dataframe)
+- [Development Updates](https://docs.quadratic.to/development-updates)
 
 # Examples
 
