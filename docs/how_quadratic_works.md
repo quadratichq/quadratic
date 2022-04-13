@@ -10,6 +10,7 @@ Python code is executed via [Pyodide](https://pyodide.org/en/stable/) a WebAssem
 All cell code is executed on the front end in the client's browser. This creates some Python compatibility issues because system functions do not work, and network requests are made from the front end in the browser.
 
 # Future Architecture
+Note: this is not the current Architecture. This diagram is where we envision the product architecture going.
 <img width="2224" alt="Quadratic Client Architecture 2" src="https://user-images.githubusercontent.com/3479421/163222487-c979082b-6854-4e81-a807-907d7e5fa8be.png">
 
 We envision a spreadsheet application where you can seamlessly bring in millions of rows of data, and run formulas, scripts, and SQL on your data all in one visual environment.
