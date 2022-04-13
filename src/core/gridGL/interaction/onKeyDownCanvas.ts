@@ -198,7 +198,7 @@ export const onKeyDownCanvas = (
     event.preventDefault();
   }
 
-  if (event.key === '/') {
+  if (event.key === '/' || event.key === '=') {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
     GetCellsDB(x, y, x, y).then((cells) => {
