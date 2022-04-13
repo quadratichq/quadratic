@@ -1,6 +1,6 @@
-# Welcome to Quadratic contributing guide <!-- omit in toc -->
+# Quadratic Contribution Guide 
 
-Thank you for considering investing your time contributing to the data science spreadsheet :sparkles:
+Thank you for considering contributing to the data science spreadsheet :sparkles:
 
 Read our [Code of Conduct](./CODE_OF_CONDUCT.md) to keep our community approachable and respectable.
 
