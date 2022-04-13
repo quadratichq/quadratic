@@ -1,6 +1,12 @@
 {
   "name": "quadratic",
   "version": "0.1.0",
+  "author": {
+    "name": "David Kircos",
+    "email": "david.kircos@quadratic.to",
+    "url": "https://quadratic.to"
+  },
+  "repository": "https://github.com/quadratichq/quadratic.git",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.7.0",
