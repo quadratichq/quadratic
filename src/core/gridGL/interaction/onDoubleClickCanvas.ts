@@ -8,6 +8,7 @@ export const onDoubleClickCanvas = (
   setInteractionState: React.Dispatch<
     React.SetStateAction<GridInteractionState>
   >,
+  editorInteractionState: EditorInteractionState,
   setEditorInteractionState: React.Dispatch<
     React.SetStateAction<EditorInteractionState>
   >
@@ -30,14 +31,14 @@ export const onDoubleClickCanvas = (
           },
         });
       } else {
-        // Open code editor
-        // navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
-        setEditorInteractionState({
-          showCellTypeMenu: false,
-          showCodeEditor: true,
-          selectedCell: { x: x, y: y },
-          mode: cells[0].type,
-        });
+        // Open code editor, if not already open
+        if (!editorInteractionState.showCodeEditor)
+          setEditorInteractionState({
+            showCellTypeMenu: false,
+            showCodeEditor: true,
+            selectedCell: { x: x, y: y },
+            mode: cells[0].type,
+          });
       }
     } else {
       // If no previous value, open single line Input

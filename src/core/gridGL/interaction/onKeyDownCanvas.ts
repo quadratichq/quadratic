@@ -13,6 +13,7 @@ export const onKeyDownCanvas = (
   setInteractionState: React.Dispatch<
     React.SetStateAction<GridInteractionState>
   >,
+  editorInteractionState: EditorInteractionState,
   setEditorInteractionState: React.Dispatch<
     React.SetStateAction<EditorInteractionState>
   >,
@@ -175,12 +176,14 @@ export const onKeyDownCanvas = (
             },
           });
         } else {
-          setEditorInteractionState({
-            showCellTypeMenu: false,
-            showCodeEditor: true,
-            selectedCell: { x: x, y: y },
-            mode: cells[0].type,
-          });
+          // Open code editor, if not already open
+          if (!editorInteractionState.showCodeEditor)
+            setEditorInteractionState({
+              showCellTypeMenu: false,
+              showCodeEditor: true,
+              selectedCell: { x: x, y: y },
+              mode: cells[0].type,
+            });
         }
       } else {
         setInteractionState({
@@ -200,21 +203,23 @@ export const onKeyDownCanvas = (
     const y = interactionState.cursorPosition.y;
     GetCellsDB(x, y, x, y).then((cells) => {
       if (cells.length) {
-        // navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
-        setEditorInteractionState({
-          showCellTypeMenu: false,
-          showCodeEditor: true,
-          selectedCell: { x: x, y: y },
-          mode: cells[0].type,
-        });
+        // Open code editor, if not already open
+        if (!editorInteractionState.showCodeEditor)
+          setEditorInteractionState({
+            showCellTypeMenu: false,
+            showCodeEditor: true,
+            selectedCell: { x: x, y: y },
+            mode: cells[0].type,
+          });
       } else {
-        // navigate(`/cell-type-menu/${x}/${y}`);
-        setEditorInteractionState({
-          showCellTypeMenu: true,
-          showCodeEditor: false,
-          selectedCell: { x: x, y: y },
-          mode: 'TEXT',
-        });
+        // Open code editor, if not already open
+        if (!editorInteractionState.showCodeEditor)
+          setEditorInteractionState({
+            showCellTypeMenu: true,
+            showCodeEditor: false,
+            selectedCell: { x: x, y: y },
+            mode: 'TEXT',
+          });
       }
     });
     event.preventDefault();

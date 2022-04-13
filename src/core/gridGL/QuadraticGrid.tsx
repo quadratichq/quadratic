@@ -61,6 +61,7 @@ export default function QuadraticGrid() {
             event,
             interactionState,
             setInteractionState,
+            editorInteractionState,
             setEditorInteractionState,
             viewportRef
           );
@@ -78,6 +79,7 @@ export default function QuadraticGrid() {
             event,
             interactionState,
             setInteractionState,
+            editorInteractionState,
             setEditorInteractionState
           );
         }}
