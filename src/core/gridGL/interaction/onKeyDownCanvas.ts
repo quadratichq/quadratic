@@ -146,16 +146,33 @@ export const onKeyDownCanvas = (
   }
 
   if (event.key === 'Backspace') {
-    deleteCellsRange(
-      {
-        x: interactionState.multiCursorPosition.originPosition.x,
-        y: interactionState.multiCursorPosition.originPosition.y,
-      },
-      {
-        x: interactionState.multiCursorPosition.terminalPosition.x,
-        y: interactionState.multiCursorPosition.terminalPosition.y,
-      }
-    );
+    // delete a range or a single cell, depending on if MultiCursor is active
+    if (interactionState.showMultiCursor) {
+      // delete a range of cells
+      deleteCellsRange(
+        {
+          x: interactionState.multiCursorPosition.originPosition.x,
+          y: interactionState.multiCursorPosition.originPosition.y,
+        },
+        {
+          x: interactionState.multiCursorPosition.terminalPosition.x,
+          y: interactionState.multiCursorPosition.terminalPosition.y,
+        }
+      );
+    } else {
+      // delete a single cell
+      deleteCellsRange(
+        {
+          x: interactionState.cursorPosition.x,
+          y: interactionState.cursorPosition.y,
+        },
+        {
+          x: interactionState.cursorPosition.x,
+          y: interactionState.cursorPosition.y,
+        }
+      );
+    }
+
     event.preventDefault();
   }
 
