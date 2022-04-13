@@ -8,19 +8,28 @@
 
 Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to pull any data.
 
-Take your data and do something useful with it as quickly and as easily as possible.
+Take your data and do something useful with it as quickly and easily as possible.
 
 ![Screen Shot 2022-04-07 at 4 15 52 PM](https://user-images.githubusercontent.com/3479421/162328478-198f27d1-4ab8-4334-8420-b082e68edefc.png)
 
-# Info
+# What is a Data Science Spreadsheet?
 
-Quadratic is a WebGL + WASM React App that runs both in browser and in Electron.
+Quadratic is a Web-based spreadsheet application that runs both in the browser and as a standalone application (via Electron). 
 
-# Development Progress
+Our goal for Quadrataic: The easiest way to pull your data from wherever it happens to be (SaaS, Database, CSV, API, etc) and allow you to work with your data using the most popular data science tools today (Python, Pandas, SQL, JS, Excel Formulas, etc).
+
+## What can I do with Quadratic?
+- Build internal tools
+- Build dashboards
+- Quickly mix data from different sources
+- Explore your data for new insights
+
+# Development Progress and Roadmap
 
 Quadratic is in ALPHA. We do not recommend relying on Quadratic.
 
-- [x] WebGL Grid (pinch and zoom)
+- [x] WebGL Grid (pinch and zoom grid)
+- [x] Open and Save files locally
 - [x] Python
 - [x] Pandas Support
 - [ ] Database Connection Support (issue [#35](https://github.com/quadratichq/quadratic/issues/35))
@@ -30,7 +39,7 @@ Quadratic is in ALPHA. We do not recommend relying on Quadratic.
 - [ ] Import CSV
 - [ ] JS Support
 
-Notice an bug? Submit a Github Issue!
+Notice a bug? Submit a Github Issue!
 
 # Getting Started
 
@@ -48,7 +57,7 @@ Run Electron `npm run dev`
 
 # Examples
 
-Located in the `examples` folder in this repo.
+Example files are located in the `examples` folder in this repo.
 
 # License
 Quadratic is licensed under the Elastic License 2.0 (ELv2).
