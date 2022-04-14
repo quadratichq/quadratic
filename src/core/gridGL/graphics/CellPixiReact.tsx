@@ -30,6 +30,7 @@ const CellPixiReact = (props: CellPixiReactProps) => {
     (g) => {
       g.clear();
 
+      // Change outline color based on cell type
       if (props.type === 'TEXT') {
         g.lineStyle(1, colors.cellColorUserText, 0.75, 0.5, true);
       } else if (props.type === 'PYTHON') {
@@ -38,14 +39,12 @@ const CellPixiReact = (props: CellPixiReactProps) => {
         g.lineStyle(1, colors.independence, 0.75, 0.5, true);
       }
 
-      // TODO CLEANUP
+      // Draw outline
       g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
 
-      // draw array cell outline
       if (!props.array_cells) return g;
 
-      // if (props.array_cells.length)
-
+      // calculate array cells outline size
       let width = 1;
       let height = 1;
       for (let i = 0; i < props.array_cells.length; i++) {
@@ -53,10 +52,12 @@ const CellPixiReact = (props: CellPixiReactProps) => {
         if (cell[0] - props.x + 1 > width) width = cell[0] - props.x + 1;
         if (cell[1] - props.y + 1 > height) height = cell[1] - props.y + 1;
       }
+
+      // draw array cells outline
       g.lineStyle(1, colors.cellColorUserPython, 0.35, 0.5, false, 1);
       g.drawRect(x_pos, y_pos, CELL_WIDTH * width, CELL_HEIGHT * height);
 
-      // g.lineStyle(1, colors.cellColorUserPython, 0.35, 0.5, false, 1);
+      // double outline the master cell
       g.lineStyle(1, colors.cellColorUserPython, 0.25, 0.5, false, 1);
       g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
     },
