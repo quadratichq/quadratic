@@ -58,18 +58,6 @@ export default function CodeEditor() {
   };
 
   // use exiting cell or create new cell
-  // if (cells !== undefined && cells[0] !== undefined) {
-  //   cell = cells[0];
-  // } else if (x !== undefined && y !== undefined) {
-  //   cell = {
-  //     x: Number(x),
-  //     y: Number(y),
-  //     type: mode as CellTypes,
-  //     value: '',
-  //   } as Cell;
-  // }
-
-  // use exiting cell or create new cell
   let cell: Cell | undefined;
   if (cells !== undefined && cells[0] !== undefined) {
     cell = cells[0];
