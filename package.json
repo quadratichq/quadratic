@@ -71,6 +71,7 @@
   },
   "devDependencies": {
     "concurrently": "^6.3.0",
+    "dotenv": "^16.0.0",
     "electron": "^15.3.0",
     "electron-is-dev": "^2.0.0",
     "wait-on": "^6.0.1"
