@@ -6,7 +6,6 @@ frontend:
         - npm install
     build:
       commands:
-        - echo "REACT_APP_ANALYTICS=$REACT_APP_ANALYTICS" >> .env
         - npm run build
   artifacts:
     baseDirectory: build
