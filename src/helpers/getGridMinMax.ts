@@ -1,6 +1,7 @@
 import { qdb } from '../core/gridDB/db';
 
 export const getGridMinMax = async () => {
+  // Calculates bounds of the content in the current grid
   let x_min = await qdb.cells.orderBy('x').first();
   let x_max = await qdb.cells.orderBy('x').last();
   let y_min = await qdb.cells.orderBy('y').first();
