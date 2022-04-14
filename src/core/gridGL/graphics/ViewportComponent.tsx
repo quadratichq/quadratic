@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { Simple } from 'pixi-cull';
-import { ZoomCulling } from './graphics/zoomCulling';
+import { UpdateGridAlphaOnZoom } from './UpdateGridAlphaOnZoom';
 
-import drawGridLines from './graphics/drawGridLines';
-import Globals from './globals';
+import drawGridLines from './drawGridLines';
+import Globals from '../globals';
 import { PixiComponent, useApp } from '@inlet/react-pixi';
 
 export interface ViewportProps {
@@ -35,7 +35,11 @@ const PixiComponentViewport = PixiComponent('Viewport', {
       .drag({ pressDrag: false })
       .decelerate()
       .pinch()
-      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 });
+      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 })
+      .clampZoom({
+        minScale: 0.01,
+        maxScale: 10,
+      });
 
     props.viewportRef.current = viewport;
 
@@ -83,8 +87,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
             );
             cull.cull(visibleBoundsExtended);
 
-            // Zoom culling
-            ZoomCulling(globals);
+            UpdateGridAlphaOnZoom(globals);
           }
         },
         null,

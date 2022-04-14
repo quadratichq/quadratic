@@ -1,11 +1,12 @@
-import { DirectedGraph } from "./primatives/directedGraph";
+//@ts-expect-error
+import { DirectedGraph } from './primatives/directedGraph';
 
 const cell_to_string = (cell: [number, number]): string => {
   return `${cell[0]},${cell[1]}`;
 };
 
 const string_to_cell = (cell: string): [number, number] => {
-  const result = cell.split(",");
+  const result = cell.split(',');
   return [Number(result[0]), Number(result[1])];
 };
 
@@ -13,7 +14,7 @@ function replacer(key: any, value: any) {
   // From https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
   if (value instanceof Map) {
     return {
-      dataType: "Map",
+      dataType: 'Map',
       value: Array.from(value.entries()), // or with spread: value: [...value]
     };
   } else {
@@ -23,8 +24,8 @@ function replacer(key: any, value: any) {
 
 function reviver(key: any, value: any) {
   // From https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
-  if (typeof value === "object" && value !== null) {
-    if (value.dataType === "Map") {
+  if (typeof value === 'object' && value !== null) {
+    if (value.dataType === 'Map') {
       return new Map(value.value);
     }
   }
@@ -48,7 +49,7 @@ export default class QuadraticDependencyGraph {
 
   human_readable_string() {
     // used for debugging
-    let result = "DGraph: \n";
+    let result = 'DGraph: \n';
     for (const [key, value] of this._dgraph.getAllEdges().entries()) {
       result += `connection: ${key} updates ${[...value.keys()]}\n`;
     }
@@ -121,7 +122,7 @@ export default class QuadraticDependencyGraph {
 
   get_children_cells(cell: [number, number]) {
     let result = new Array<[number, number]>();
-    this._dgraph.traverseBfs(cell_to_string(cell), (key, value) =>
+    this._dgraph.traverseBfs(cell_to_string(cell), (key: string) =>
       result.push(string_to_cell(key))
     );
     return result.slice(1);

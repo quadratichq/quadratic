@@ -1,13 +1,48 @@
 import { Box } from '@mui/system';
-import colors from '../../../theme/colors';
+import { colors } from '../../../theme/colors';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
+import { useEffect, useState } from 'react';
+import { Cell } from '../../../core/gridDB/db';
+import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
+import { formatDistance } from 'date-fns';
+import { focusGrid } from '../../../helpers/focusGrid';
 
 export const BottomBar = () => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
+  const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
+  // Generate string describing cursor location
   const cursorPositionString = `(${interactionState.cursorPosition.x}, ${interactionState.cursorPosition.y})`;
   const multiCursorPositionString = `(${interactionState.multiCursorPosition.originPosition.x}, ${interactionState.multiCursorPosition.originPosition.y}), (${interactionState.multiCursorPosition.terminalPosition.x}, ${interactionState.multiCursorPosition.terminalPosition.y})`;
+
+  useEffect(() => {
+    const updateCellData = async () => {
+      // Don't update if we have not moved cursor position
+      if (
+        selectedCell?.x === interactionState.cursorPosition.x &&
+        selectedCell?.y === interactionState.cursorPosition.y
+      )
+        return;
+
+      // Get cell at position
+      const cells = await GetCellsDB(
+        interactionState.cursorPosition.x,
+        interactionState.cursorPosition.y,
+        interactionState.cursorPosition.x,
+        interactionState.cursorPosition.y
+      );
+
+      // If cell exists set selectedCell
+      // Otherwise set to undefined
+      if (cells.length) {
+        setSelectedCell(cells[0]);
+      } else {
+        setSelectedCell(undefined);
+      }
+    };
+    updateCellData();
+  }, [interactionState, selectedCell]);
 
   return (
     <Box
@@ -32,9 +67,43 @@ export const BottomBar = () => {
         sx={{
           display: 'flex',
           alignItems: 'center',
+          gap: '1rem',
         }}
       >
-        <span>You, 30 seconds ago.</span>
+        <span
+          style={{ cursor: 'pointer' }}
+          onClick={() => {
+            // copy cell position
+            navigator.clipboard.writeText(cursorPositionString);
+            // Set focus back to Grid
+            focusGrid();
+          }}
+        >
+          Cursor: {cursorPositionString}
+        </span>
+        {selectedCell?.last_modified && (
+          <span>
+            You,{' '}
+            {formatDistance(
+              Date.parse(selectedCell.last_modified),
+              new Date(),
+              { addSuffix: true }
+            )}
+          </span>
+        )}
+        {interactionState.showMultiCursor && (
+          <span
+            style={{ cursor: 'pointer' }}
+            onClick={() => {
+              // copy multiCursor position
+              navigator.clipboard.writeText(multiCursorPositionString);
+              // Set focus back to Grid
+              focusGrid();
+            }}
+          >
+            Selection: {multiCursorPositionString}
+          </span>
+        )}
       </Box>
       <Box
         sx={{
@@ -43,27 +112,7 @@ export const BottomBar = () => {
           gap: '1rem',
         }}
       >
-        {interactionState.showMultiCursor ? (
-          <span
-            style={{ cursor: 'pointer' }}
-            onClick={() => {
-              navigator.clipboard.writeText(multiCursorPositionString);
-            }}
-          >
-            Selection: {multiCursorPositionString}
-          </span>
-        ) : (
-          <span
-            style={{ cursor: 'pointer' }}
-            onClick={() => {
-              navigator.clipboard.writeText(cursorPositionString);
-            }}
-          >
-            Cursor: {cursorPositionString}
-          </span>
-        )}
-        <span>✓ WebGL</span>
-        <span>✓ Python</span>
+        <span>✓ Python 3.9.5</span>
         <span>✕ SQL</span>
         <span>✕ JS</span>
       </Box>

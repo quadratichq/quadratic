@@ -1,36 +1,36 @@
-import Button from "@mui/material/Button";
-import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import Button from '@mui/material/Button';
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import {
   Menu,
   MenuItem,
   SubMenu,
   MenuDivider,
   MenuHeader,
-} from "@szhsin/react-menu";
+} from '@szhsin/react-menu';
 import {
   MenuBookOutlined,
   FileOpenOutlined,
   SaveOutlined,
   BugReportOutlined,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
 
-import "@szhsin/react-menu/dist/index.css";
-import useLocalStorage from "../../../../hooks/useLocalStorage";
-import { Tooltip } from "@mui/material";
+import '@szhsin/react-menu/dist/index.css';
+import useLocalStorage from '../../../../hooks/useLocalStorage';
+import { Tooltip } from '@mui/material';
 
-import { SaveGridFile } from "../../../../core/actions/gridFile/SaveGridFile";
-import { OpenGridFile } from "../../../../core/actions/gridFile/OpenGridFile";
+import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
+import { OpenGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
 
-import { menuItemIconStyles } from "./menuStyles";
-import colors from "../../../../theme/colors";
-import { DOCUMENTATION_URL, BUG_REPORT_URL } from "../../../../constants/urls";
+import { menuItemIconStyles } from './menuStyles';
+import { colors } from '../../../../theme/colors';
+import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 
 export const QuadraticMenu = () => {
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage(
-    "showDebugMenu",
+    'showDebugMenu',
     false
   );
-  const [showGridAxes, setShowGridAxes] = useLocalStorage("showGridAxes", true);
+  const [showGridAxes, setShowGridAxes] = useLocalStorage('showGridAxes', true);
 
   return (
     <Menu
@@ -52,6 +52,11 @@ export const QuadraticMenu = () => {
           <FileOpenOutlined style={menuItemIconStyles}></FileOpenOutlined> Open
           Grid
         </MenuItem>
+      </SubMenu>
+      <SubMenu label="Import">
+        <MenuHeader>Import</MenuHeader>
+        <MenuItem disabled>CSV (coming soon)</MenuItem>
+        <MenuItem disabled>Excel (coming soon)</MenuItem>
       </SubMenu>
       <SubMenu label="View">
         <MenuHeader>Grid</MenuHeader>
@@ -75,12 +80,12 @@ export const QuadraticMenu = () => {
         </MenuItem>
       </SubMenu>
       <SubMenu label="Help">
-        <MenuItem onClick={() => window.open(DOCUMENTATION_URL, "_blank")}>
+        <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>
           <MenuBookOutlined style={menuItemIconStyles}></MenuBookOutlined> Read
           the docs
         </MenuItem>
-        <MenuItem onClick={() => window.open(BUG_REPORT_URL, "_blank")}>
-          <BugReportOutlined style={menuItemIconStyles}></BugReportOutlined>{" "}
+        <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>
+          <BugReportOutlined style={menuItemIconStyles}></BugReportOutlined>{' '}
           Report a problem
         </MenuItem>
       </SubMenu>

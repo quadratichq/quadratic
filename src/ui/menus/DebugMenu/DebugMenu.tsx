@@ -1,13 +1,13 @@
 // import { useState } from "react";
-import { GetDGraphDB } from "../../../core/gridDB/DGraph/GetDGraphDB";
-import { UpdateDGraphDB } from "../../../core/gridDB/DGraph/UpdateDGraphDB";
-import { GetCellsDB } from "../../../core/gridDB/Cells/GetCellsDB";
-import { qdb } from "../../../core/gridDB/db";
-import { useLiveQuery } from "dexie-react-hooks";
-import colors from "../../../theme/colors";
-import TextField from "@mui/material/TextField";
-import { Button } from "@mui/material";
-import QuadraticDependencyGraph from "../../../core/dgraph/QuadraticDependencyGraph";
+import { GetDGraphDB } from '../../../core/gridDB/DGraph/GetDGraphDB';
+import { UpdateDGraphDB } from '../../../core/gridDB/DGraph/UpdateDGraphDB';
+import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
+import { qdb } from '../../../core/gridDB/db';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { colors } from '../../../theme/colors';
+import TextField from '@mui/material/TextField';
+import { Button } from '@mui/material';
+import QuadraticDependencyGraph from '../../../core/dgraph/QuadraticDependencyGraph';
 // import CellReference from "../../../core/gridGL/types/cellReference";
 
 export default function DebugMenu() {
@@ -25,24 +25,24 @@ export default function DebugMenu() {
     dgraph_str = JSON.stringify(dgraph?.export_to_obj());
 
   try {
-    file_state = `${dgraph_str}\n${JSON.stringify(cells || "", null, "\t")}`;
+    file_state = `${dgraph_str}\n${JSON.stringify(cells || '', null, '\t')}`;
   } catch {
-    file_state = "";
+    file_state = '';
   }
 
   return (
     <div
       style={{
-        position: "fixed",
+        position: 'fixed',
         // top: 35,
         left: 0,
         bottom: 0,
-        width: "65%",
-        height: "400px",
-        borderStyle: "solid",
-        borderWidth: "1px",
+        width: '65%',
+        height: '400px',
+        borderStyle: 'solid',
+        borderWidth: '1px',
         borderColor: colors.mediumGray,
-        backgroundColor: "#ffffff",
+        backgroundColor: '#ffffff',
       }}
     >
       <Button
@@ -68,7 +68,7 @@ export default function DebugMenu() {
         multiline
         rows={14}
         value={file_state}
-        style={{ width: "100%" }}
+        style={{ width: '100%' }}
       />
     </div>
   );

@@ -1,16 +1,16 @@
-import { useCallback } from "react";
-import { Graphics, Container } from "@inlet/react-pixi";
+import { useCallback } from 'react';
+import { Graphics, Container } from '@inlet/react-pixi';
 
-import FastBitmapText from "./primatives/FastBitmapText";
+import FastBitmapText from './primatives/FastBitmapText';
 
 import {
   CELL_WIDTH,
   CELL_HEIGHT,
   CELL_TEXT_MARGIN_LEFT,
   CELL_TEXT_MARGIN_TOP,
-} from "../../../constants/gridConstants";
-import { CellTypes } from "../../gridDB/db";
-import colors from "../../../theme/colors";
+} from '../../../constants/gridConstants';
+import { CellTypes } from '../../gridDB/db';
+import { colors } from '../../../theme/colors';
 
 interface CellPixiReactProps {
   x: number;
@@ -18,6 +18,7 @@ interface CellPixiReactProps {
   text: string;
   type: CellTypes;
   renderText: boolean;
+  array_cells?: [number, number][];
 }
 
 const CellPixiReact = (props: CellPixiReactProps) => {
@@ -29,17 +30,39 @@ const CellPixiReact = (props: CellPixiReactProps) => {
     (g) => {
       g.clear();
 
-      if (props.type === "TEXT") {
+      // Change outline color based on cell type
+      if (props.type === 'TEXT') {
         g.lineStyle(1, colors.cellColorUserText, 0.75, 0.5, true);
-      } else if (props.type === "PYTHON") {
+      } else if (props.type === 'PYTHON') {
         g.lineStyle(1, colors.cellColorUserPython, 0.75, 0.5, true);
-      } else if (props.type === "COMPUTED") {
+      } else if (props.type === 'COMPUTED') {
         g.lineStyle(1, colors.independence, 0.75, 0.5, true);
       }
 
+      // Draw outline
+      g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
+
+      // for cells that output an array, draw an outline around the array
+      if (!props.array_cells) return g;
+
+      // calculate array cells outline size
+      let width = 1;
+      let height = 1;
+      for (let i = 0; i < props.array_cells.length; i++) {
+        const cell = props.array_cells[i];
+        if (cell[0] - props.x + 1 > width) width = cell[0] - props.x + 1;
+        if (cell[1] - props.y + 1 > height) height = cell[1] - props.y + 1;
+      }
+
+      // draw array cells outline
+      g.lineStyle(1, colors.cellColorUserPython, 0.35, 0.5, false, 1);
+      g.drawRect(x_pos, y_pos, CELL_WIDTH * width, CELL_HEIGHT * height);
+
+      // double outline the master cell
+      g.lineStyle(1, colors.cellColorUserPython, 0.25, 0.5, false, 1);
       g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
     },
-    [x_pos, y_pos, props.type]
+    [props.type, props.array_cells, props.x, props.y, x_pos, y_pos]
   );
 
   return (

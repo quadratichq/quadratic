@@ -2,9 +2,8 @@ import { useRef } from 'react';
 import useWindowDimensions from '../../hooks/useWindowDimensions';
 import type { Viewport } from 'pixi-viewport';
 import { Stage } from '@inlet/react-pixi';
-import ViewportComponent from './ViewportComponent';
+import ViewportComponent from './graphics/ViewportComponent';
 import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
-import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useLoading } from '../../contexts/LoadingContext';
 import useLocalStorage from '../../hooks/useLocalStorage';
@@ -13,15 +12,17 @@ import AxesPixiReact from './graphics/AxesPixiReact';
 import CursorPixiReact from './graphics/CursorPixiReact';
 import MultiCursorPixiReact from './graphics/MultiCursorPixiReact';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
+import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
-import { CELL_WIDTH, CELL_HEIGHT } from '../../constants/gridConstants';
 import { onKeyDownCanvas } from './interaction/onKeyDownCanvas';
 import { onMouseDownCanvas } from './interaction/onMouseDownCanvas';
 import { CellInput } from './interaction/CellInput';
 import { onDoubleClickCanvas } from './interaction/onDoubleClickCanvas';
+import { colors } from '../../theme/colors';
+
+import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 
 export default function QuadraticGrid() {
-  let navigate = useNavigate();
   const { loading } = useLoading();
   const viewportRef = useRef<Viewport>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
@@ -35,13 +36,8 @@ export default function QuadraticGrid() {
     gridInteractionStateAtom
   );
 
-  // When the cursor moves ensure it is visible
-  viewportRef.current?.ensureVisible(
-    interactionState.cursorPosition.x * CELL_WIDTH,
-    interactionState.cursorPosition.y * CELL_HEIGHT - 40,
-    CELL_WIDTH,
-    CELL_HEIGHT * 4,
-    false
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(
+    editorInteractionStateAtom
   );
 
   return (
@@ -65,7 +61,9 @@ export default function QuadraticGrid() {
             event,
             interactionState,
             setInteractionState,
-            navigate
+            editorInteractionState,
+            setEditorInteractionState,
+            viewportRef
           );
         }}
         onMouseDown={(event) => {
@@ -81,7 +79,8 @@ export default function QuadraticGrid() {
             event,
             interactionState,
             setInteractionState,
-            navigate
+            editorInteractionState,
+            setEditorInteractionState
           );
         }}
         style={{ display: loading ? 'none' : 'inline' }}
@@ -111,6 +110,7 @@ export default function QuadraticGrid() {
                     interactionState.cursorPosition.y === cell.y
                   )
                 }
+                array_cells={cell.array_cells}
               ></CellPixiReact>
             ))}
           <AxesPixiReact visible={showGridAxes}></AxesPixiReact>
@@ -124,6 +124,16 @@ export default function QuadraticGrid() {
             }
             visible={interactionState.showMultiCursor}
           ></MultiCursorPixiReact>
+          {editorInteractionState.showCodeEditor && (
+            <CursorPixiReact
+              location={editorInteractionState.selectedCell}
+              color={
+                editorInteractionState.mode === 'PYTHON'
+                  ? colors.cellColorUserPython
+                  : colors.independence
+              }
+            ></CursorPixiReact>
+          )}
         </ViewportComponent>
       </Stage>
       <CellInput
@@ -131,6 +141,11 @@ export default function QuadraticGrid() {
         setInteractionState={setInteractionState}
         viewportRef={viewportRef}
       ></CellInput>
+      {viewportRef.current && (
+        <ViewportEventRegister
+          viewport={viewportRef.current}
+        ></ViewportEventRegister>
+      )}
     </>
   );
 }

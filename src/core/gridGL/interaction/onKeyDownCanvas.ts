@@ -1,9 +1,11 @@
-import { copyToClipboard, pasteFromClipboard } from "../../actions/clipboard";
-import { deleteCellsRange } from "../../actions/deleteCellsRange";
-import { GetCellsDB } from "../../gridDB/Cells/GetCellsDB";
-import isAlphaNumeric from "./helpers/isAlphaNumeric";
-import { NavigateFunction } from "react-router-dom";
-import { GridInteractionState } from "../../../atoms/gridInteractionStateAtom";
+import { copyToClipboard, pasteFromClipboard } from '../../actions/clipboard';
+import { deleteCellsRange } from '../../actions/deleteCellsRange';
+import { GetCellsDB } from '../../gridDB/Cells/GetCellsDB';
+import isAlphaNumeric from './helpers/isAlphaNumeric';
+import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { getGridMinMax } from '../../../helpers/getGridMinMax';
+import type { Viewport } from 'pixi-viewport';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 
 export const onKeyDownCanvas = (
   event: React.KeyboardEvent<HTMLCanvasElement>,
@@ -11,11 +13,15 @@ export const onKeyDownCanvas = (
   setInteractionState: React.Dispatch<
     React.SetStateAction<GridInteractionState>
   >,
-  navigate: NavigateFunction
+  editorInteractionState: EditorInteractionState,
+  setEditorInteractionState: React.Dispatch<
+    React.SetStateAction<EditorInteractionState>
+  >,
+  viewportRef: React.MutableRefObject<Viewport | undefined>
 ) => {
   // TODO make commands work cross platform
   // Command + V
-  if (event.metaKey && event.code === "KeyV") {
+  if (event.metaKey && event.code === 'KeyV') {
     pasteFromClipboard({
       x: interactionState.cursorPosition.x,
       y: interactionState.cursorPosition.y,
@@ -23,7 +29,7 @@ export const onKeyDownCanvas = (
   }
 
   // Command + C
-  if (event.metaKey && event.code === "KeyC") {
+  if (event.metaKey && event.code === 'KeyC') {
     copyToClipboard(
       {
         x: interactionState.multiCursorPosition.originPosition.x,
@@ -36,12 +42,39 @@ export const onKeyDownCanvas = (
     );
   }
 
+  // Command + A
+  if (event.metaKey && event.code === 'KeyA') {
+    // Calculate the min and max cells.
+    // Select all cells
+    const selectAllCells = async () => {
+      const bounds = await getGridMinMax();
+
+      if (bounds !== undefined) {
+        setInteractionState({
+          ...interactionState,
+          ...{
+            multiCursorPosition: {
+              originPosition: bounds[0],
+              terminalPosition: bounds[1],
+            },
+            showMultiCursor: true,
+          },
+        });
+
+        if (viewportRef.current) viewportRef.current.dirty = true;
+      }
+    };
+    selectAllCells();
+
+    event.preventDefault();
+  }
+
   // Prevent these commands if "command" key is being pressed
   if (event.metaKey) {
     return;
   }
 
-  if (event.key === "ArrowUp") {
+  if (event.key === 'ArrowUp') {
     setInteractionState({
       ...interactionState,
       ...{
@@ -55,7 +88,7 @@ export const onKeyDownCanvas = (
 
     event.preventDefault();
   }
-  if (event.key === "ArrowRight") {
+  if (event.key === 'ArrowRight') {
     setInteractionState({
       ...interactionState,
       ...{
@@ -69,7 +102,7 @@ export const onKeyDownCanvas = (
 
     event.preventDefault();
   }
-  if (event.key === "ArrowLeft") {
+  if (event.key === 'ArrowLeft') {
     setInteractionState({
       ...interactionState,
       ...{
@@ -83,7 +116,7 @@ export const onKeyDownCanvas = (
 
     event.preventDefault();
   }
-  if (event.key === "ArrowDown") {
+  if (event.key === 'ArrowDown') {
     setInteractionState({
       ...interactionState,
       ...{
@@ -97,7 +130,7 @@ export const onKeyDownCanvas = (
     event.preventDefault();
   }
 
-  if (event.key === "Tab") {
+  if (event.key === 'Tab') {
     // move single cursor one right
     setInteractionState({
       ...interactionState,
@@ -112,28 +145,45 @@ export const onKeyDownCanvas = (
     event.preventDefault();
   }
 
-  if (event.key === "Backspace") {
-    deleteCellsRange(
-      {
-        x: interactionState.multiCursorPosition.originPosition.x,
-        y: interactionState.multiCursorPosition.originPosition.y,
-      },
-      {
-        x: interactionState.multiCursorPosition.terminalPosition.x,
-        y: interactionState.multiCursorPosition.terminalPosition.y,
-      }
-    );
+  if (event.key === 'Backspace') {
+    // delete a range or a single cell, depending on if MultiCursor is active
+    if (interactionState.showMultiCursor) {
+      // delete a range of cells
+      deleteCellsRange(
+        {
+          x: interactionState.multiCursorPosition.originPosition.x,
+          y: interactionState.multiCursorPosition.originPosition.y,
+        },
+        {
+          x: interactionState.multiCursorPosition.terminalPosition.x,
+          y: interactionState.multiCursorPosition.terminalPosition.y,
+        }
+      );
+    } else {
+      // delete a single cell
+      deleteCellsRange(
+        {
+          x: interactionState.cursorPosition.x,
+          y: interactionState.cursorPosition.y,
+        },
+        {
+          x: interactionState.cursorPosition.x,
+          y: interactionState.cursorPosition.y,
+        }
+      );
+    }
+
     event.preventDefault();
   }
 
-  if (event.key === "Enter") {
+  if (event.key === 'Enter') {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
     GetCellsDB(x, y, x, y).then((cells) => {
       if (cells.length) {
         const cell = cells[0];
 
-        if (cell.type === "TEXT" || cell.type === "COMPUTED") {
+        if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
           // open single line
           setInteractionState({
             ...interactionState,
@@ -143,14 +193,21 @@ export const onKeyDownCanvas = (
             },
           });
         } else {
-          navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
+          // Open code editor, if not already open
+          if (!editorInteractionState.showCodeEditor)
+            setEditorInteractionState({
+              showCellTypeMenu: false,
+              showCodeEditor: true,
+              selectedCell: { x: x, y: y },
+              mode: cells[0].type,
+            });
         }
       } else {
         setInteractionState({
           ...interactionState,
           ...{
             showInput: true,
-            inputInitialValue: "",
+            inputInitialValue: '',
           },
         });
       }
@@ -158,21 +215,35 @@ export const onKeyDownCanvas = (
     event.preventDefault();
   }
 
-  if (event.key === "/") {
+  if (event.key === '/' || event.key === '=') {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
     GetCellsDB(x, y, x, y).then((cells) => {
       if (cells.length) {
-        navigate(`/code-editor/${x}/${y}/${cells[0].type}`);
+        // Open code editor, if not already open
+        if (!editorInteractionState.showCodeEditor)
+          setEditorInteractionState({
+            showCellTypeMenu: false,
+            showCodeEditor: true,
+            selectedCell: { x: x, y: y },
+            mode: cells[0].type,
+          });
       } else {
-        navigate(`/cell-type-menu/${x}/${y}`);
+        // Open code editor, if not already open
+        if (!editorInteractionState.showCodeEditor)
+          setEditorInteractionState({
+            showCellTypeMenu: true,
+            showCodeEditor: false,
+            selectedCell: { x: x, y: y },
+            mode: 'TEXT',
+          });
       }
     });
     event.preventDefault();
   }
 
-  // if key is a letter or enter start taking input
-  if (isAlphaNumeric(event.key) || event.key === " ") {
+  // if key is a letter number or space start taking input
+  if (isAlphaNumeric(event.key) || event.key === ' ') {
     setInteractionState({
       ...interactionState,
       ...{

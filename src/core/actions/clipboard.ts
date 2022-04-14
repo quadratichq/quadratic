@@ -1,8 +1,8 @@
-import CellReference from "../gridGL/types/cellReference";
-import { Cell } from "../gridDB/db";
-import { GetCellsDB } from "../gridDB/Cells/GetCellsDB";
-import { UpdateCellsDB } from "../gridDB/Cells/UpdateCellsDB";
-import { DeleteCellsDB } from "../gridDB/Cells/DeleteCellsDB";
+import CellReference from '../gridGL/types/cellReference';
+import { Cell } from '../gridDB/db';
+import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
+import { UpdateCellsDB } from '../gridDB/Cells/UpdateCellsDB';
+import { DeleteCellsDB } from '../gridDB/Cells/DeleteCellsDB';
 
 export const pasteFromClipboard = (pasteToCell: CellReference) => {
   // get contents from clipboard
@@ -14,21 +14,22 @@ export const pasteFromClipboard = (pasteToCell: CellReference) => {
     let cells_to_write: Cell[] = [];
     let cells_to_delete: CellReference[] = [];
 
-    let str_rows: string[] = text.split("\n");
+    let str_rows: string[] = text.split('\n');
 
     // for each copied row
     str_rows.forEach((str_row) => {
-      let str_cells: string[] = str_row.split("\t");
+      let str_cells: string[] = str_row.split('\t');
 
       // for each copied cell
       str_cells.forEach((str_cell) => {
         // update or clear cell
-        if (str_cell !== "") {
+        if (str_cell !== '') {
           cells_to_write.push({
             x: cell_x,
             y: cell_y,
-            type: "TEXT",
+            type: 'TEXT',
             value: str_cell,
+            last_modified: new Date().toISOString(),
           });
         } else {
           cells_to_delete.push({
@@ -61,11 +62,11 @@ export const copyToClipboard = async (
   const cWidth = Math.abs(cell1.x - cell0.x) + 1;
   const cHeight = Math.abs(cell1.y - cell0.y) + 1;
 
-  let clipboardString = "";
+  let clipboardString = '';
 
   for (let offset_y = 0; offset_y < cHeight; offset_y++) {
     if (offset_y > 0) {
-      clipboardString += "\n";
+      clipboardString += '\n';
     }
 
     for (let offset_x = 0; offset_x < cWidth; offset_x++) {
@@ -73,13 +74,13 @@ export const copyToClipboard = async (
       let cell_y = cell0.y + offset_y;
 
       if (offset_x > 0) {
-        clipboardString += "\t";
+        clipboardString += '\t';
       }
 
       const cell = await GetCellsDB(cell_x, cell_y, cell_x, cell_y);
 
       if (cell.length > 0) {
-        clipboardString += cell[0].value || "";
+        clipboardString += cell[0].value || '';
       }
     }
   }

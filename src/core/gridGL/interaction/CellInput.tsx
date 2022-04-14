@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { deleteCellsRange } from '../../actions/deleteCellsRange';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { Viewport } from 'pixi-viewport';
 import CellReference from '../types/cellReference';
+import { focusGrid } from '../../../helpers/focusGrid';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -21,6 +22,11 @@ export const CellInput = (props: CellInputProps) => {
   const cellLoation = useRef(interactionState.cursorPosition);
   const textInput = useRef<HTMLInputElement>(null);
 
+  // Effect for sizing the input width to the length of the value
+  useEffect(() => {
+    if (textInput.current) textInput.current.size = value?.length || 0 + 1;
+  }, [value, textInput]);
+
   // If we don't have a viewport, we can't continue.
   const viewport = viewportRef.current;
   if (!viewport) return null;
@@ -34,7 +40,7 @@ export const CellInput = (props: CellInputProps) => {
 
     // Calculate position of input based on cell
     let cell_offset_scaled = viewport.toScreen(
-      cellLoation.current.x * CELL_WIDTH + 1,
+      cellLoation.current.x * CELL_WIDTH + 0.5,
       cellLoation.current.y * CELL_HEIGHT + 1
     );
 
@@ -67,7 +73,7 @@ export const CellInput = (props: CellInputProps) => {
   const closeInput = async (transpose = { x: 0, y: 0 } as CellReference) => {
     // Update Cell and dependent cells
     if (value === '') {
-      deleteCellsRange(
+      await deleteCellsRange(
         {
           x: cellLoation.current.x,
           y: cellLoation.current.y,
@@ -101,7 +107,7 @@ export const CellInput = (props: CellInputProps) => {
     setValue(undefined);
 
     // Set focus back to Grid
-    document.getElementById('QuadraticCanvasID')?.focus();
+    focusGrid();
 
     // Clean up listeners
     // NOTE: this may accidentally cancel events registered elsewhere
@@ -133,7 +139,7 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        width: 100,
+        minWidth: 100,
         border: 'none',
         outline: 'none',
         lineHeight: '1',
@@ -141,6 +147,7 @@ export const CellInput = (props: CellInputProps) => {
         transformOrigin: '0 0',
         transform: transform,
         fontSize: '14px',
+        letterSpacing: '0.015em',
       }}
       value={value}
       onChange={(event) => {
