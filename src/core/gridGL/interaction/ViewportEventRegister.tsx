@@ -60,8 +60,11 @@ export const ViewportEventRegister = (props: { viewport: Viewport }) => {
 
   // When zoom state updates, tell the viewport to zoom
   useEffect(() => {
+    // Don't trigger a new zoom event, if we are already zooming
     if (!viewport.zooming)
       if (zoomState === Infinity) {
+        // Infinity is passed as a keyword to trigger a Zoom Fit
+        // Zoom Fit
         getGridMinMax().then((bounds) => {
           if (bounds) {
             const anchor_x = bounds[0].x * CELL_WIDTH;
@@ -70,8 +73,10 @@ export const ViewportEventRegister = (props: { viewport: Viewport }) => {
             const width = (bounds[1].x - bounds[0].x) * CELL_WIDTH;
             const height = (bounds[1].y - bounds[0].y) * CELL_HEIGHT;
 
+            // calc scale, and leave a little room on the top and sides
             let scale = viewport.findFit(width * 1.2, height * 1.2);
 
+            // Don't zoom in more than a factor of 2
             if (scale > 2.0) scale = 2;
 
             viewport.animate({
