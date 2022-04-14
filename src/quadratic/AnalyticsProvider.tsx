@@ -21,6 +21,7 @@ export const AnalyticsProvider = () => {
 
     if (typeof window !== 'undefined') {
       document.body.appendChild(script);
+      console.log('[Analytics] segment activated');
     }
   });
 
