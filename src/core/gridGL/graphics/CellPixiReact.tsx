@@ -42,6 +42,7 @@ const CellPixiReact = (props: CellPixiReactProps) => {
       // Draw outline
       g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
 
+      // for cells that output an array, draw an outline around the array
       if (!props.array_cells) return g;
 
       // calculate array cells outline size
