@@ -107,7 +107,7 @@ export const TopBar = () => {
           src="https://ghbtns.com/github-btn.html?user=quadratichq&repo=quadratic&type=star&count=true"
           frameBorder="0"
           scrolling="0"
-          width="85"
+          width="90"
           height="20"
           title="GitHub"
         ></iframe>
