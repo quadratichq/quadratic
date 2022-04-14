@@ -77,7 +77,7 @@ export const TopBar = () => {
           alignItems: 'center',
           justifyContent: 'flex-end',
           gap: '1rem',
-          width: '15rem',
+          width: '20rem',
         }}
       >
         {/* <AvatarGroup>
@@ -102,6 +102,15 @@ export const TopBar = () => {
             You
           </Avatar>
         </AvatarGroup> */}
+
+        <iframe
+          src="https://ghbtns.com/github-btn.html?user=quadratichq&repo=quadratic&type=star&count=true"
+          frameBorder="0"
+          scrolling="0"
+          width="85"
+          height="20"
+          title="GitHub"
+        ></iframe>
 
         <Tooltip title="Quadratic Cloud only" arrow>
           <Button
