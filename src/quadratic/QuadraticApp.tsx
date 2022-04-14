@@ -6,6 +6,7 @@ import { useLoading } from '../contexts/LoadingContext';
 import { QuadraticLoading } from '../ui/QuadtraticLoading';
 import { loadPython } from '../core/computations/python/loadPython';
 import { TopBarLoading } from '../ui/components/TopBarLoading';
+import { WelcomeComponent } from './WelcomeComponent';
 
 export default function QuadraticApp() {
   const { loading, setLoading } = useLoading();
@@ -20,6 +21,8 @@ export default function QuadraticApp() {
 
   return (
     <RecoilRoot>
+      {/* Welcome Component for first time users */}
+      {!loading && <WelcomeComponent></WelcomeComponent>}
       {/* Provider of WebGL Canvas and Quadratic Grid */}
       <QuadraticGrid></QuadraticGrid>
       {/* Provider of All React UI Components */}
