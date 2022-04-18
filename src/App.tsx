@@ -11,7 +11,14 @@ export default function App() {
     <LoadingProvider>
       {/* Provider of QuadraticApp */}
       <QuadraticApp></QuadraticApp>
-      <button onClick={methodDoesNotExist}>Break the world</button>;
+      <button
+        onClick={() => {
+          throw new Error('Hello Sentry');
+        }}
+      >
+        Break the world
+      </button>
+      ;
     </LoadingProvider>
   );
 }
