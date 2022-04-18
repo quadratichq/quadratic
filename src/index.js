@@ -6,7 +6,7 @@ import reportWebVitals from './reportWebVitals';
 import * as Sentry from '@sentry/react';
 import { BrowserTracing } from '@sentry/tracing';
 
-// Enable sentry only if SENTRY_DSN is in ENV (Quadratic Cloud)
+// Enable sentry only if SENTRY_DSN is in ENV
 if (process.env.REACT_APP_SENTRY_DSN)
   Sentry.init({
     dsn: process.env.REACT_APP_SENTRY_DSN,
