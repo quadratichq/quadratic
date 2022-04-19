@@ -11,14 +11,6 @@ export default function App() {
     <LoadingProvider>
       {/* Provider of QuadraticApp */}
       <QuadraticApp></QuadraticApp>
-      <button
-        onClick={() => {
-          throw new Error('Hello Sentry');
-        }}
-      >
-        Break the world
-      </button>
-      ;
     </LoadingProvider>
   );
 }
