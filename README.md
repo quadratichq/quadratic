@@ -26,27 +26,6 @@ Quadratic has no environment to configure. Our grid runs entirely in the browser
 - Quickly mix data from different sources
 - Explore your data for new insights
 
-# Development Progress and Roadmap
-
-_Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
-
-- [x] WebGL Grid (pinch and zoom grid)
-- [x] Open and Save files locally
-- [x] Python (WASM)
-- [x] Pandas Support
-- [ ] Database Connection Support (issue [#35](https://github.com/quadratichq/quadratic/issues/35))
-- [ ] SQL Support (issue [#34](https://github.com/quadratichq/quadratic/issues/34))
-- [ ] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
-- [ ] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
-- [ ] Import CSV
-- [ ] JS Support
-
-**Feature request or bug report?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
-
-**Want to contribute?** Read our [Contribution Guide](./CONTRIBUTING.md).
-
-Want to learn more about how Quadratic works? Read the [How Quadratic Works](./docs/how_quadratic_works.md) doc.
-
 # Getting Started
 
 ### Online Demo
@@ -71,9 +50,27 @@ All of our documentation is available at [docs.quadratic.to](https://docs.quadra
 - [Pandas DataFrames in Quadratic](https://docs.quadratic.to/reference/python-cell-reference/pandas-dataframe)
 - [Development Updates](https://docs.quadratic.to/development-updates)
 
+# Development Progress and Roadmap
+
+_Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
+
+- [x] WebGL Grid (pinch and zoom grid)
+- [x] Open and Save files locally
+- [x] Python (WASM)
+- [x] Pandas Support
+- [ ] Database Connection Support (issue [#35](https://github.com/quadratichq/quadratic/issues/35))
+- [ ] SQL Support (issue [#34](https://github.com/quadratichq/quadratic/issues/34))
+- [ ] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
+- [ ] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
+- [ ] Import CSV
+- [ ] JS Support
+
+**Feature request or bug report?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
+
+**Want to contribute?** Read our [Contribution Guide](./CONTRIBUTING.md).
+
+Want to learn more about how Quadratic works? Read the [How Quadratic Works](./docs/how_quadratic_works.md) doc.
+
 ## Examples
 
 Example files are located in the `examples` folder in this repo.
-
-# License
-Quadratic is licensed under the Elastic License 2.0 (ELv2).
