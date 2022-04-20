@@ -30,9 +30,9 @@ Quadratic has no environment to configure. Our grid runs entirely in the browser
 
 ### Online Demo
 
-We have a hosted version of the `main` branch available online. Try it out!
+We have a hosted version of the `main` branch available online. 
 
-https://early.quadratic.to
+**Try it out! --> https://early.quadratic.to**
 
 ### Run Quadratic Locally
 
