@@ -1,4 +1,4 @@
-![Quadratic Tests](https://github.com/quadratichq/quadratic/actions/workflows/main.yml/badge.svg) ![License ELv2](https://user-images.githubusercontent.com/3479421/162047443-5469b5a7-43e9-4c23-a2fa-3f9e5b2ecfaf.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![Quadratic Tests](https://github.com/quadratichq/quadratic/actions/workflows/main.yml/badge.svg) 
 
 
 ![quadraticlogo4 1](https://user-images.githubusercontent.com/3479421/162037216-2fea1620-2310-4cfa-96fb-31299195e3a9.png)
