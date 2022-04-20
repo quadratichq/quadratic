@@ -73,4 +73,6 @@ Want to learn more about how Quadratic works? Read the [How Quadratic Works](./d
 
 ## Examples
 
-Example files are located in the `examples` folder in this repo.
+There are more example files are located in the `examples` folder in this repo.
+
+You can download them and then open them in Quadratic via File > Open Grid
