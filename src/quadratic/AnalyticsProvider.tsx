@@ -4,17 +4,16 @@ export const AnalyticsProvider = () => {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Only track analytics on hosted version
+    // Only track analytics on cloud version where REACT_APP_GOOGLE_ANALYTICS_GTAG is set
     if (!process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG) {
       setLoaded(true);
       return;
     }
 
+    // Prevent loading twice
     if (loaded) return;
 
-    console.log('activating...');
-
-    // set up segment analytics
+    // set up Google Analytics
     const script_1 = document.createElement('script');
     script_1.src = `https://www.googletagmanager.com/gtag/js?id=${process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG}`;
     script_1.async = true;
@@ -24,10 +23,10 @@ export const AnalyticsProvider = () => {
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-    
       gtag('config', '${process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG}');
     `;
 
+    // add google analytics scripts to document
     if (typeof window !== 'undefined') {
       document.head.appendChild(script_1);
       document.head.appendChild(script_2);
