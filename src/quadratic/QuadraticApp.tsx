@@ -22,7 +22,7 @@ export default function QuadraticApp() {
 
   return (
     <RecoilRoot>
-      {/* Provider for Analytics when running in Cloud mode */}
+      {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
       <AnalyticsProvider></AnalyticsProvider>
       {/* Welcome Component for first time users */}
       {!loading && <WelcomeComponent></WelcomeComponent>}
