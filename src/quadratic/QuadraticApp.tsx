@@ -7,6 +7,7 @@ import { QuadraticLoading } from '../ui/QuadtraticLoading';
 import { loadPython } from '../core/computations/python/loadPython';
 import { TopBarLoading } from '../ui/components/TopBarLoading';
 import { WelcomeComponent } from './WelcomeComponent';
+import { AnalyticsProvider } from './AnalyticsProvider';
 
 export default function QuadraticApp() {
   const { loading, setLoading } = useLoading();
@@ -21,6 +22,8 @@ export default function QuadraticApp() {
 
   return (
     <RecoilRoot>
+      {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
+      <AnalyticsProvider></AnalyticsProvider>
       {/* Welcome Component for first time users */}
       {!loading && <WelcomeComponent></WelcomeComponent>}
       {/* Provider of WebGL Canvas and Quadratic Grid */}
