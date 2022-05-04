@@ -17,12 +17,11 @@ export const TopBar = () => {
     <Box
       style={{
         position: 'absolute',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        backgroundColor: 'rgba(255, 255, 255)',
         color: '#212121',
         //@ts-expect-error
         WebkitAppRegion: 'drag', // this allows the window to be dragged in Electron
         paddingLeft: isElectron() ? '4.5rem' : '2rem',
-        backdropFilter: 'blur(1px)',
         width: '100%',
         display: 'flex',
         justifyContent: 'space-between',
