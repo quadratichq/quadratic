@@ -99,15 +99,12 @@ export default function CodeEditor() {
 
     editor.focus();
 
-    editor.addCommand(
-      monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
-      function () {
-        save(true);
-      }
-    );
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+      save(false); // and dont close
+    });
 
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
-      save(false);
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      save(false); // and dont close
     });
 
     editor.addCommand(monaco.KeyCode.Escape, () => {
