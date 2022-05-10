@@ -209,6 +209,10 @@ async def run_python(code):
         if isinstance(output_value, pd.DataFrame):
             array_output = np.transpose(output_value.to_numpy()).tolist()
 
+        # Convert Pandas.Series to array_output
+        if isinstance(output_value, pd.Series):
+            array_output = np.transpose(output_value.to_numpy()).tolist()
+
         return {
             "output_value": str(output_value),
             "array_output": array_output,
