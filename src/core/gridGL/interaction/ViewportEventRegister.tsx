@@ -17,13 +17,15 @@ export const ViewportEventRegister = (props: { viewport: Viewport }) => {
 
   // When the cursor moves ensure it is visible
   useEffect(() => {
-    viewport.ensureVisible(
-      interactionState.cursorPosition.x * CELL_WIDTH,
-      interactionState.cursorPosition.y * CELL_HEIGHT - 40,
-      CELL_WIDTH,
-      CELL_HEIGHT * 4,
-      false
-    );
+    // When multiCursor is visible don't force the single cursor to be visible
+    if (!interactionState.showMultiCursor)
+      viewport.ensureVisible(
+        interactionState.cursorPosition.x * CELL_WIDTH,
+        interactionState.cursorPosition.y * CELL_HEIGHT - 40,
+        CELL_WIDTH,
+        CELL_HEIGHT * 4,
+        false
+      );
   }, [viewport, interactionState]);
 
   // register zooming event listener to set Atom state
