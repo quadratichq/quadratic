@@ -166,6 +166,7 @@ export default function QuadraticGrid() {
         state={rightClickMenuState}
         anchorPoint={rightClickPoint}
         onClose={() => toggleRightClickMenu(false)}
+        interactionState={interactionState}
       />
     </div>
   );
