@@ -229,14 +229,13 @@ export const onKeyDownCanvas = (
             mode: cells[0].type,
           });
       } else {
-        // Open code editor, if not already open
-        if (!editorInteractionState.showCodeEditor)
-          setEditorInteractionState({
-            showCellTypeMenu: true,
-            showCodeEditor: false,
-            selectedCell: { x: x, y: y },
-            mode: 'TEXT',
-          });
+        // Open cell type menu, close editor.
+        setEditorInteractionState({
+          showCellTypeMenu: true,
+          showCodeEditor: false,
+          selectedCell: { x: x, y: y },
+          mode: 'PYTHON',
+        });
       }
     });
     event.preventDefault();

@@ -4,123 +4,137 @@ import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from '../../../theme/quadraticEditorTheme';
 import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
-import { CellTypes } from '../../../core/gridDB/db';
 import TextField from '@mui/material/TextField';
 import { Cell } from '../../../core/gridDB/db';
 import './CodeEditor.css';
 import { Button } from '@mui/material';
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useSetRecoilState } from 'recoil';
+import {
+  EditorInteractionState,
+  editorInteractionStateAtom,
+} from '../../../atoms/editorInteractionStateAtom';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
-export default function CodeEditor() {
+interface CodeEditorProps {
+  editorInteractionState: EditorInteractionState;
+}
+
+export const CodeEditor = (props: CodeEditorProps) => {
+  const { editorInteractionState } = props;
+
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  // let navigate = useNavigate();
-  // const { x, y, mode } = useParams();
+
   const [editorContent, setEditorContent] = useState<string | undefined>('');
 
   // Interaction State hook
-  const [interactionState, setInteractionState] = useRecoilState(
-    editorInteractionStateAtom
-  );
+  const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
-  const x = interactionState.selectedCell.x;
-  const y = interactionState.selectedCell.y;
-  const mode = interactionState.mode;
-
-  const cells = useLiveQuery(() =>
-    GetCellsDB(Number(x), Number(y), Number(x), Number(y))
-  );
-
-  // When cell changes
-  useEffect(() => {
-    if (cells?.length) {
-      // set existing cell
-      if (mode === 'PYTHON') {
-        setEditorContent(cells[0].python_code);
-      } else {
-        setEditorContent(cells[0].value);
-      }
-    }
-  }, [cells, mode, setEditorContent]);
+  // Selected Cell State
+  const [selectedCell, setSelectedCell] = useState<Cell | undefined>(undefined);
 
   const closeEditor = () => {
     setInteractionState({
-      ...interactionState,
+      ...editorInteractionState,
       ...{ showCodeEditor: false },
     });
     setEditorContent('');
+    setSelectedCell(undefined);
     focusGrid();
   };
 
-  // use exiting cell or create new cell
-  let cell: Cell | undefined;
-  if (cells !== undefined && cells[0] !== undefined) {
-    cell = cells[0];
-  } else if (x !== undefined && y !== undefined) {
-    cell = {
-      x: Number(x),
-      y: Number(y),
-      type: mode as CellTypes,
-      value: '',
-    } as Cell;
-  }
+  useEffect(() => {
+    // focus editor on show editor change
+    editorRef.current?.focus();
+  }, [editorInteractionState.showCodeEditor]);
 
-  const save = (close = true) => {
-    const editorContent = editorRef.current?.getValue() || '';
-    if ((mode as CellTypes) === 'TEXT') {
-      if (cell) {
-        cell.value = editorContent;
+  // When cell changes
+  useEffect(() => {
+    const x = editorInteractionState.selectedCell.x;
+    const y = editorInteractionState.selectedCell.y;
 
-        updateCellAndDCells(cell);
+    // if we haven't moved, don't do anything
+    if (selectedCell?.x === x && selectedCell?.y === y) return;
+
+    // save previous cell, if it has changed
+    if (selectedCell?.python_code !== editorContent) saveSelectedCell();
+
+    console.log('moved cell ', selectedCell?.x, selectedCell?.y, x, y);
+
+    // focus editor on cell change
+    editorRef.current?.focus();
+
+    GetCellsDB(Number(x), Number(y), Number(x), Number(y)).then((cells) => {
+      if (cells?.length && cells[0] !== undefined) {
+        // load cell content
+        setSelectedCell(cells[0]);
+        setEditorContent(cells[0].python_code);
+      } else {
+        // create blank cell
+        setSelectedCell({
+          x: Number(x),
+          y: Number(y),
+          type: editorInteractionState.mode,
+          value: '',
+        } as Cell);
+        setEditorContent('');
       }
-    } else if ((mode as CellTypes) === 'PYTHON') {
-      if (cell) {
-        cell.type = 'PYTHON';
-        cell.value = '';
-        cell.python_code = editorContent;
+    });
+  });
 
-        updateCellAndDCells(cell);
-      }
-    }
+  const saveSelectedCell = () => {
+    if (!selectedCell) return;
 
-    if (close) closeEditor();
+    selectedCell.type = 'PYTHON';
+    selectedCell.value = '';
+    selectedCell.python_code = editorContent;
+
+    updateCellAndDCells(selectedCell);
   };
 
-  function handleEditorDidMount(
+  const handleEditorDidMount = (
     editor: monaco.editor.IStandaloneCodeEditor,
     monaco: Monaco
-  ) {
+  ) => {
     editorRef.current = editor;
 
     editor.focus();
 
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-      save(false); // and dont close
-    });
-
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      save(false); // and dont close
-    });
-
-    editor.addCommand(monaco.KeyCode.Escape, () => {
-      closeEditor();
-    });
-
     monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
     monaco.editor.setTheme('quadratic');
-  }
+  };
 
-  if (cell !== undefined)
+  const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    // Command + S
+    if (event.metaKey && event.key === 's') {
+      event.preventDefault();
+      saveSelectedCell();
+    }
+
+    // Command + Enter
+    console.log('event', event);
+    // !!!!!!!!!!!!!!!!!!!!!
+    // TODO: this is not working
+    // !!!!!!!!!!!!!!!!!!!!!
+    if (event.metaKey && event.code === 'Enter') {
+      event.preventDefault();
+      saveSelectedCell();
+    }
+
+    // Esc
+    if (!event.metaKey && event.key === 'Escape') {
+      event.preventDefault();
+      closeEditor();
+    }
+  };
+
+  if (selectedCell !== undefined)
     return (
       <div
         style={{
           position: 'fixed',
-          // top: 35,
           right: 0,
           width: '35%',
           minWidth: '400px',
@@ -130,7 +144,9 @@ export default function CodeEditor() {
           borderColor: colors.mediumGray,
           backgroundColor: '#ffffff',
           marginTop: '2.5rem',
+          display: editorInteractionState.showCodeEditor ? 'block' : 'none',
         }}
+        onKeyDown={onKeyDownEditor}
       >
         <div
           style={{
@@ -139,7 +155,6 @@ export default function CodeEditor() {
             display: 'flex',
             flexDirection: 'row',
             justifyContent: 'space-between',
-            // backgroundColor: colors.lightGray,
             borderStyle: 'solid',
             borderWidth: '0 0 1px 0',
             borderColor: colors.mediumGray,
@@ -151,7 +166,6 @@ export default function CodeEditor() {
               color: colors.darkGray,
               borderColor: colors.darkGray,
               padding: '1px 4px',
-              // lineHeight: '1',
             }}
             variant="text"
             size="small"
@@ -166,25 +180,14 @@ export default function CodeEditor() {
               flexDirection: 'column',
               paddingLeft: '3px',
               paddingRight: '3px',
-              // borderStyle: 'solid',
-              // borderWidth: '2px',
-              // borderColor:
-              //   mode === 'PYTHON'
-              //     ? colors.colorPython
-              //     : colors.quadraticSecondary,
             }}
           >
             <span
               style={{
-                // color:
-                //   mode === 'PYTHON'
-                //     ? colors.colorPython
-                //     : colors.quadraticSecondary,
                 color: 'black',
-                // fontWeight: 'bold',
               }}
             >
-              CELL ({x}, {y}) {mode}
+              CELL ({selectedCell.x}, {selectedCell.y}) {selectedCell.type}
             </span>
           </div>
           <Button
@@ -197,7 +200,7 @@ export default function CodeEditor() {
             variant="text"
             size="small"
             onClick={() => {
-              save(false);
+              saveSelectedCell();
             }}
           >
             Run
@@ -206,7 +209,7 @@ export default function CodeEditor() {
         <Editor
           height="70%"
           width="100%"
-          defaultLanguage={mode === 'PYTHON' ? 'python' : 'text'}
+          defaultLanguage={'python'}
           value={editorContent}
           onChange={(value) => {
             setEditorContent(value);
@@ -225,7 +228,7 @@ export default function CodeEditor() {
             wordWrap: 'on',
           }}
         />
-        {(mode as CellTypes) === 'PYTHON' && (
+        {editorInteractionState.mode === 'PYTHON' && (
           <div style={{ margin: '15px' }}>
             <TextField
               disabled
@@ -233,7 +236,7 @@ export default function CodeEditor() {
               label="OUTPUT"
               multiline
               rows={7}
-              value={cell.python_output || ''}
+              value={selectedCell.python_output || ''}
               style={{
                 width: '100%',
               }}
@@ -250,4 +253,4 @@ export default function CodeEditor() {
       </div>
     );
   return <></>;
-}
+};
