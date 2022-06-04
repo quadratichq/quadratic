@@ -21,7 +21,7 @@ export const onKeyDownCanvas = (
 ) => {
   // TODO make commands work cross platform
   // Command + V
-  if (event.metaKey && event.code === 'KeyV') {
+  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyV') {
     pasteFromClipboard({
       x: interactionState.cursorPosition.x,
       y: interactionState.cursorPosition.y,
@@ -29,7 +29,7 @@ export const onKeyDownCanvas = (
   }
 
   // Command + C
-  if (event.metaKey && event.code === 'KeyC') {
+  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyC') {
     copyToClipboard(
       {
         x: interactionState.multiCursorPosition.originPosition.x,
@@ -43,7 +43,7 @@ export const onKeyDownCanvas = (
   }
 
   // Command + A
-  if (event.metaKey && event.code === 'KeyA') {
+  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyA') {
     // Calculate the min and max cells.
     // Select all cells
     const selectAllCells = async () => {
@@ -70,7 +70,7 @@ export const onKeyDownCanvas = (
   }
 
   // Prevent these commands if "command" key is being pressed
-  if (event.metaKey) {
+  if (event.metaKey || event.ctrlKey) {
     return;
   }
 

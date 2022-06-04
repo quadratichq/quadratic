@@ -39,7 +39,7 @@ export const ViewportEventRegister = (props: { viewport: Viewport }) => {
   // Attach event listener to zoom in and out commands
   useEffect(() => {
     function listenForZoom(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.code === 'Equal') {
+      if ((event.metaKey || event.ctrlKey) && event.code === 'Equal') {
         viewport.animate({
           time: ZOOM_ANIMATION_TIME_MS,
           scale: viewport.scale.x * 2,
@@ -47,7 +47,7 @@ export const ViewportEventRegister = (props: { viewport: Viewport }) => {
         event.preventDefault();
       }
 
-      if ((event.ctrlKey || event.metaKey) && event.code === 'Minus') {
+      if ((event.metaKey || event.ctrlKey) && event.code === 'Minus') {
         viewport.animate({
           time: ZOOM_ANIMATION_TIME_MS,
           scale: viewport.scale.x * 0.5,
