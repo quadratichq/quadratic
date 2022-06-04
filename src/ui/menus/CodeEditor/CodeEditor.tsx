@@ -108,23 +108,19 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Command + S
-    if (event.metaKey && event.key === 's') {
+    if ((event.metaKey || event.ctrlKey) && event.key === 's') {
       event.preventDefault();
       saveSelectedCell();
     }
 
     // Command + Enter
-    console.log('event', event);
-    // !!!!!!!!!!!!!!!!!!!!!
-    // TODO: this is not working
-    // !!!!!!!!!!!!!!!!!!!!!
-    if (event.metaKey && event.code === 'Enter') {
+    if ((event.metaKey || event.ctrlKey) && event.code === 'Enter') {
       event.preventDefault();
       saveSelectedCell();
     }
 
     // Esc
-    if (!event.metaKey && event.key === 'Escape') {
+    if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
       event.preventDefault();
       closeEditor();
     }
@@ -146,7 +142,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
           marginTop: '2.5rem',
           display: editorInteractionState.showCodeEditor ? 'block' : 'none',
         }}
-        onKeyDown={onKeyDownEditor}
+        onKeyDownCapture={onKeyDownEditor}
       >
         <div
           style={{
