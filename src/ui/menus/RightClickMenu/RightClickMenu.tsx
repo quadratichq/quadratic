@@ -55,7 +55,7 @@ export const RightClickMenu = (props: RightClickMenuProps) => {
           );
         }}
       >
-        Delete Selection
+        Delete
       </MenuItem>
     </ControlledMenu>
   );
