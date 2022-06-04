@@ -48,6 +48,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   useEffect(() => {
     // focus editor on show editor change
     editorRef.current?.focus();
+    editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
   }, [editorInteractionState.showCodeEditor]);
 
   // When cell changes
@@ -65,6 +66,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
     // focus editor on cell change
     editorRef.current?.focus();
+    editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
 
     GetCellsDB(Number(x), Number(y), Number(x), Number(y)).then((cells) => {
       if (cells?.length && cells[0] !== undefined) {
@@ -116,6 +118,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     // Command + Enter
     if ((event.metaKey || event.ctrlKey) && event.code === 'Enter') {
       event.preventDefault();
+      event.stopPropagation();
       saveSelectedCell();
     }
 
