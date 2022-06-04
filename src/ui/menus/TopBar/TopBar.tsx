@@ -113,6 +113,9 @@ export const TopBar = () => {
           width="90"
           height="20"
           title="GitHub"
+          style={{
+            userSelect: 'none',
+          }}
         ></iframe>
 
         <Tooltip title="Quadratic Cloud only" arrow>

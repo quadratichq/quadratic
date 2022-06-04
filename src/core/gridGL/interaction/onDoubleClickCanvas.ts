@@ -31,14 +31,13 @@ export const onDoubleClickCanvas = (
           },
         });
       } else {
-        // Open code editor, if not already open
-        if (!editorInteractionState.showCodeEditor)
-          setEditorInteractionState({
-            showCellTypeMenu: false,
-            showCodeEditor: true,
-            selectedCell: { x: x, y: y },
-            mode: cells[0].type,
-          });
+        // Open code editor, or move code editor if already open.
+        setEditorInteractionState({
+          showCellTypeMenu: false,
+          showCodeEditor: true,
+          selectedCell: { x: x, y: y },
+          mode: cells[0].type,
+        });
       }
     } else {
       // If no previous value, open single line Input
