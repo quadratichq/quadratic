@@ -45,8 +45,12 @@ export const BottomBar = () => {
   }, [interactionState, selectedCell]);
 
   return (
-    <Box
-      sx={{
+    <div
+      onContextMenu={(event) => {
+        // Disable right-click
+        event.preventDefault();
+      }}
+      style={{
         position: 'fixed',
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
         color: colors.darkGray,
@@ -116,6 +120,6 @@ export const BottomBar = () => {
         <span>✕ SQL</span>
         <span>✕ JS</span>
       </Box>
-    </Box>
+    </div>
   );
 };
