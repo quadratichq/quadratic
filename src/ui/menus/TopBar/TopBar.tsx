@@ -14,7 +14,11 @@ import { ZoomDropdown } from './ZoomDropdown';
 
 export const TopBar = () => {
   return (
-    <Box
+    <div
+      onContextMenu={(event) => {
+        // Disable right-click
+        event.preventDefault();
+      }}
       style={{
         position: 'absolute',
         backgroundColor: 'rgba(255, 255, 255)',
@@ -126,6 +130,6 @@ export const TopBar = () => {
         </Tooltip>
         <ZoomDropdown></ZoomDropdown>
       </Box>
-    </Box>
+    </div>
   );
 };
