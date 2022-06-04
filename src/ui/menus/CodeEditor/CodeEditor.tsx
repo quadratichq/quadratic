@@ -62,8 +62,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
     // save previous cell, if it has changed
     if (selectedCell?.python_code !== editorContent) saveSelectedCell();
 
-    console.log('moved cell ', selectedCell?.x, selectedCell?.y, x, y);
-
     // focus editor on cell change
     editorRef.current?.focus();
     editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
