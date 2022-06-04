@@ -24,39 +24,58 @@ interface RightClickMenuProps {
 
 export const RightClickMenu = (props: RightClickMenuProps) => {
   return (
-    <ControlledMenu
-      state={props.state}
-      anchorPoint={props.anchorPoint}
-      onClose={props.onClose}
-    >
-      <MenuItem
-        onClick={() => {
-          copyToClipboard(
-            props.interactionState.multiCursorPosition.originPosition,
-            props.interactionState.multiCursorPosition.terminalPosition
-          );
+    <>
+      <div
+        style={{
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          width: '100%',
+          height: '100%',
+          zIndex: '1000',
+          display: props.state === 'open' ? 'block' : 'none',
+        }}
+        onClick={(event) => {
+          props.onClose({ reason: 'blur' });
+        }}
+      ></div>
+      <ControlledMenu
+        state={props.state}
+        anchorPoint={props.anchorPoint}
+        onClose={props.onClose}
+        menuStyles={{
+          zIndex: '10000',
         }}
       >
-        Copy
-      </MenuItem>
-      <MenuItem
-        onClick={() => {
-          pasteFromClipboard(props.interactionState.cursorPosition);
-        }}
-      >
-        Paste
-      </MenuItem>
-      <MenuDivider />
-      <MenuItem
-        onClick={() => {
-          deleteCellsRange(
-            props.interactionState.multiCursorPosition.originPosition,
-            props.interactionState.multiCursorPosition.terminalPosition
-          );
-        }}
-      >
-        Delete
-      </MenuItem>
-    </ControlledMenu>
+        <MenuItem
+          onClick={() => {
+            copyToClipboard(
+              props.interactionState.multiCursorPosition.originPosition,
+              props.interactionState.multiCursorPosition.terminalPosition
+            );
+          }}
+        >
+          Copy
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            pasteFromClipboard(props.interactionState.cursorPosition);
+          }}
+        >
+          Paste
+        </MenuItem>
+        <MenuDivider />
+        <MenuItem
+          onClick={() => {
+            deleteCellsRange(
+              props.interactionState.multiCursorPosition.originPosition,
+              props.interactionState.multiCursorPosition.terminalPosition
+            );
+          }}
+        >
+          Delete
+        </MenuItem>
+      </ControlledMenu>
+    </>
   );
 };
