@@ -11,6 +11,7 @@ import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
+import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 
 export const TopBar = () => {
   return (
@@ -30,6 +31,11 @@ export const TopBar = () => {
         display: 'flex',
         justifyContent: 'space-between',
         paddingRight: '1rem',
+      }}
+      onDoubleClick={(event) => {
+        // if clicked (not child clicked), maximize window. For electron.
+        if (event.target === event.currentTarget)
+          electronMaximizeCurrentWindow();
       }}
     >
       <Box
