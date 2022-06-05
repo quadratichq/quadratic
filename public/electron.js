@@ -1,6 +1,6 @@
 const path = require('path');
 
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const isDev = require('electron-is-dev');
 
 function createWindow() {
@@ -12,9 +12,11 @@ function createWindow() {
     trafficLightPosition: { x: 10, y: 10 },
     webPreferences: {
       nodeIntegration: true,
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
+  // maximize when first opened
   win.maximize();
 
   // and load the index.html of the app.
@@ -48,4 +50,11 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+});
+
+// Command to maximize the window from app
+ipcMain.on('maximize-current-window', (event) => {
+  const webContents = event.sender;
+  const win = BrowserWindow.fromWebContents(webContents);
+  win.maximize();
 });
