@@ -1,4 +1,4 @@
-import { electronMaximizeFocusedWindow } from '../../helpers/electronMaximizeFocusedWindow';
+import { electronMaximizeCurrentWindow } from '../../helpers/electronMaximizeCurrentWindow';
 
 export const TopBarLoading = () => {
   // TopBarLoading allows window to be moved while loading in electron
@@ -15,7 +15,7 @@ export const TopBarLoading = () => {
       }}
       onDoubleClick={() => {
         // maximize window, for electron.
-        electronMaximizeFocusedWindow();
+        electronMaximizeCurrentWindow();
       }}
     ></div>
   );
