@@ -193,14 +193,13 @@ export const onKeyDownCanvas = (
             },
           });
         } else {
-          // Open code editor, if not already open
-          if (!editorInteractionState.showCodeEditor)
-            setEditorInteractionState({
-              showCellTypeMenu: false,
-              showCodeEditor: true,
-              selectedCell: { x: x, y: y },
-              mode: cells[0].type,
-            });
+          // Open code editor, or move code editor if already open.
+          setEditorInteractionState({
+            showCellTypeMenu: false,
+            showCodeEditor: true,
+            selectedCell: { x: x, y: y },
+            mode: cells[0].type,
+          });
         }
       } else {
         setInteractionState({
@@ -220,14 +219,13 @@ export const onKeyDownCanvas = (
     const y = interactionState.cursorPosition.y;
     GetCellsDB(x, y, x, y).then((cells) => {
       if (cells.length) {
-        // Open code editor, if not already open
-        if (!editorInteractionState.showCodeEditor)
-          setEditorInteractionState({
-            showCellTypeMenu: false,
-            showCodeEditor: true,
-            selectedCell: { x: x, y: y },
-            mode: cells[0].type,
-          });
+        // Open code editor, or move code editor if already open.
+        setEditorInteractionState({
+          showCellTypeMenu: false,
+          showCodeEditor: true,
+          selectedCell: { x: x, y: y },
+          mode: cells[0].type,
+        });
       } else {
         // Open cell type menu, close editor.
         setEditorInteractionState({
