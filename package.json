@@ -41,7 +41,7 @@
     "typescript": "^4.4.4",
     "web-vitals": "^1.0.1"
   },
-  "main": "public/electron.js",
+  "main": "electron/app.js",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
