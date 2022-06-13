@@ -1,6 +1,6 @@
-import { useCallback } from "react";
-import { Graphics } from "@inlet/react-pixi";
-import { Graphics as PixiGraphics } from "pixi.js";
+import { useCallback } from 'react';
+import { Graphics } from '@inlet/react-pixi';
+import { Graphics as PixiGraphics } from 'pixi.js';
 
 interface AxesPixiReactProps {
   visible: boolean;
@@ -20,6 +20,9 @@ const AxesPixiReact = (props: AxesPixiReactProps) => {
         g.moveTo(0, -1000000000000);
         g.lineTo(0, 1000000000000);
       }
+
+      //@ts-expect-error
+      g.cullable = false;
     },
     [props.visible]
   );
