@@ -1,9 +1,9 @@
-import { Box } from '@mui/material';
+import { electronMaximizeCurrentWindow } from '../../helpers/electronMaximizeCurrentWindow';
 
 export const TopBarLoading = () => {
   // TopBarLoading allows window to be moved while loading in electron
   return (
-    <Box
+    <div
       style={{
         position: 'absolute',
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -13,6 +13,10 @@ export const TopBarLoading = () => {
         display: 'flex',
         height: '40px',
       }}
-    ></Box>
+      onDoubleClick={() => {
+        // maximize window, for electron.
+        electronMaximizeCurrentWindow();
+      }}
+    ></div>
   );
 };

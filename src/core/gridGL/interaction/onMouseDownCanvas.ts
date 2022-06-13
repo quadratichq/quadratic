@@ -21,6 +21,18 @@ export const onMouseDownCanvas = (
   let down_cell_x = Math.floor(downX / CELL_WIDTH);
   let down_cell_y = Math.floor(downY / CELL_HEIGHT);
 
+  // If right click and we have a multi cell selection.
+  // If the user has clicked inside the selection.
+  if (event.button === 2 && interactionState.showMultiCursor)
+    if (
+      down_cell_x >= interactionState.multiCursorPosition.originPosition.x &&
+      down_cell_x <= interactionState.multiCursorPosition.terminalPosition.x &&
+      down_cell_y >= interactionState.multiCursorPosition.originPosition.y &&
+      down_cell_y <= interactionState.multiCursorPosition.terminalPosition.y
+    )
+      // Ignore this click. User is accessing the RightClickMenu.
+      return;
+
   // Keep track of multiCursor previous position
   let previousPosition = {
     originPosition: { x: down_cell_x, y: down_cell_y },

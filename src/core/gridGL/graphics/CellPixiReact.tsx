@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { Graphics, Container } from '@inlet/react-pixi';
+import { CodeIcon } from './primatives/CodeIcon';
 
 import FastBitmapText from './primatives/FastBitmapText';
 
@@ -74,6 +75,9 @@ const CellPixiReact = (props: CellPixiReactProps) => {
         visible={props.renderText}
       />
       <Graphics draw={draw_outline} />
+      {props.type === 'PYTHON' && (
+        <CodeIcon x_pos={x_pos} y_pos={y_pos}></CodeIcon>
+      )}
     </Container>
   );
 };

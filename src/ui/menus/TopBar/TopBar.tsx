@@ -11,10 +11,15 @@ import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
+import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 
 export const TopBar = () => {
   return (
-    <Box
+    <div
+      onContextMenu={(event) => {
+        // Disable right-click
+        event.preventDefault();
+      }}
       style={{
         position: 'absolute',
         backgroundColor: 'rgba(255, 255, 255)',
@@ -26,6 +31,11 @@ export const TopBar = () => {
         display: 'flex',
         justifyContent: 'space-between',
         paddingRight: '1rem',
+      }}
+      onDoubleClick={(event) => {
+        // if clicked (not child clicked), maximize window. For electron.
+        if (event.target === event.currentTarget)
+          electronMaximizeCurrentWindow();
       }}
     >
       <Box
@@ -109,6 +119,9 @@ export const TopBar = () => {
           width="90"
           height="20"
           title="GitHub"
+          style={{
+            userSelect: 'none',
+          }}
         ></iframe>
 
         <Tooltip title="Quadratic Cloud only" arrow>
@@ -126,6 +139,6 @@ export const TopBar = () => {
         </Tooltip>
         <ZoomDropdown></ZoomDropdown>
       </Box>
-    </Box>
+    </div>
   );
 };

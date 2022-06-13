@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import useWindowDimensions from '../../hooks/useWindowDimensions';
 import type { Viewport } from 'pixi-viewport';
 import { Stage } from '@inlet/react-pixi';
@@ -19,6 +19,8 @@ import { onMouseDownCanvas } from './interaction/onMouseDownCanvas';
 import { CellInput } from './interaction/CellInput';
 import { onDoubleClickCanvas } from './interaction/onDoubleClickCanvas';
 import { colors } from '../../theme/colors';
+import { useMenuState } from '@szhsin/react-menu';
+import RightClickMenu from '../../ui/menus/RightClickMenu';
 
 import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 
@@ -26,6 +28,8 @@ export default function QuadraticGrid() {
   const { loading } = useLoading();
   const viewportRef = useRef<Viewport>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+
+  // Live query to update cells
   const cells = useLiveQuery(() => GetCellsDB());
 
   // Local Storage Config
@@ -36,12 +40,24 @@ export default function QuadraticGrid() {
     gridInteractionStateAtom
   );
 
+  // Editor Interaction State hook
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(
     editorInteractionStateAtom
   );
 
+  // Right click menu
+  const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } =
+    useMenuState();
+  const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
+
   return (
-    <>
+    <div
+      onContextMenu={(event) => {
+        event.preventDefault();
+        setRightClickPoint({ x: event.clientX, y: event.clientY });
+        toggleRightClickMenu(true);
+      }}
+    >
       <Stage
         id="QuadraticCanvasID"
         height={windowHeight}
@@ -146,6 +162,12 @@ export default function QuadraticGrid() {
           viewport={viewportRef.current}
         ></ViewportEventRegister>
       )}
-    </>
+      <RightClickMenu
+        state={rightClickMenuState}
+        anchorPoint={rightClickPoint}
+        onClose={() => toggleRightClickMenu(false)}
+        interactionState={interactionState}
+      />
+    </div>
   );
 }

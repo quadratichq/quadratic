@@ -28,29 +28,29 @@ export interface CellTypeMenuItem {
 }
 
 const CELL_TYPE_OPTIONS = [
+  // {
+  //   key: 0,
+  //   name: 'Text',
+  //   short: 'Aa',
+  //   slug: 'TEXT',
+  //   description: 'Input any text or numerical data.',
+  //   disabled: true,
+  // },
   {
     key: 0,
-    name: 'Text',
-    short: 'Aa',
-    slug: 'TEXT',
-    description: 'Input any text or numerical data.',
-    disabled: false,
-  },
-  {
-    key: 10,
-    name: 'Formula',
-    short: '=',
-    slug: 'FORMULA',
-    description: 'Familiar Excel-like formulas.',
-    disabled: true,
-  },
-  {
-    key: 20,
     name: 'Python',
     short: 'Py',
     slug: 'PYTHON',
     description: 'Write Python to quickly compute with data.',
     disabled: false,
+  },
+  {
+    key: 20,
+    name: 'Formula',
+    short: '=',
+    slug: 'FORMULA',
+    description: 'Familiar Excel-like formulas.',
+    disabled: true,
   },
   {
     key: 30,
@@ -79,7 +79,7 @@ export default function CellTypeMenu() {
   const [value, setValue] = React.useState<string>('');
   const [selected_value, setSelectedValue] = React.useState<
     CellTypes | undefined
-  >('TEXT');
+  >('PYTHON');
   const [filtered_cell_type_list, setFilteredCellTypeList] =
     React.useState<any>(CELL_TYPE_OPTIONS);
 
@@ -111,7 +111,7 @@ export default function CellTypeMenu() {
       ...{
         showCodeEditor: true,
         showCellTypeMenu: false,
-        mode: mode || selected_value || 'TEXT',
+        mode: mode || selected_value || 'PYTHON',
       },
     });
   };

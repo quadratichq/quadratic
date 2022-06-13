@@ -15,7 +15,7 @@ export default function QuadraticUI() {
   return (
     <>
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
-      {editorInteractionState.showCodeEditor && <CodeEditor></CodeEditor>}
+      <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
       {showDebugMenu && <DebugMenu />}
       <TopBar></TopBar>
       <BottomBar></BottomBar>

@@ -17,13 +17,15 @@ export const ViewportEventRegister = (props: { viewport: Viewport }) => {
 
   // When the cursor moves ensure it is visible
   useEffect(() => {
-    viewport.ensureVisible(
-      interactionState.cursorPosition.x * CELL_WIDTH,
-      interactionState.cursorPosition.y * CELL_HEIGHT - 40,
-      CELL_WIDTH,
-      CELL_HEIGHT * 4,
-      false
-    );
+    // When multiCursor is visible don't force the single cursor to be visible
+    if (!interactionState.showMultiCursor)
+      viewport.ensureVisible(
+        interactionState.cursorPosition.x * CELL_WIDTH,
+        interactionState.cursorPosition.y * CELL_HEIGHT - 40,
+        CELL_WIDTH,
+        CELL_HEIGHT * 4,
+        false
+      );
   }, [viewport, interactionState]);
 
   // register zooming event listener to set Atom state
@@ -37,7 +39,7 @@ export const ViewportEventRegister = (props: { viewport: Viewport }) => {
   // Attach event listener to zoom in and out commands
   useEffect(() => {
     function listenForZoom(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.code === 'Equal') {
+      if ((event.metaKey || event.ctrlKey) && event.code === 'Equal') {
         viewport.animate({
           time: ZOOM_ANIMATION_TIME_MS,
           scale: viewport.scale.x * 2,
@@ -45,7 +47,7 @@ export const ViewportEventRegister = (props: { viewport: Viewport }) => {
         event.preventDefault();
       }
 
-      if ((event.ctrlKey || event.metaKey) && event.code === 'Minus') {
+      if ((event.metaKey || event.ctrlKey) && event.code === 'Minus') {
         viewport.animate({
           time: ZOOM_ANIMATION_TIME_MS,
           scale: viewport.scale.x * 0.5,
