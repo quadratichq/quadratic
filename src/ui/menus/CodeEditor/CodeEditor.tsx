@@ -15,6 +15,7 @@ import {
   EditorInteractionState,
   editorInteractionStateAtom,
 } from '../../../atoms/editorInteractionStateAtom';
+import { useLiveQuery } from 'dexie-react-hooks';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -34,6 +35,18 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   // Selected Cell State
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>(undefined);
+
+  // Monitor selected cell for changes
+  const x = editorInteractionState.selectedCell.x;
+  const y = editorInteractionState.selectedCell.y;
+  const cells = useLiveQuery(() => GetCellsDB(x, y, x, y), [x, y]);
+
+  // When selected cell changes in LocalDB update the UI here.
+  useEffect(() => {
+    if (cells?.length) {
+      setSelectedCell(cells[0]);
+    }
+  }, [cells]);
 
   const closeEditor = () => {
     setInteractionState({
