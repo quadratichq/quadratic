@@ -121,6 +121,7 @@ export const TopBar = () => {
           title="GitHub"
           style={{
             userSelect: 'none',
+            display: 'none',
           }}
         ></iframe>
 
