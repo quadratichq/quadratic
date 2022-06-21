@@ -1,6 +1,7 @@
 import GetCellsDB
 
 import sys
+import re
 import traceback
 import pyodide
 import asyncio
@@ -20,11 +21,17 @@ micropip.install("autopep8")
 
 
 def attempt_fix_await(code):
-    code = code.replace("getCell", "await getCell")
-    code = code.replace("await await getCell", "await getCell")
+    # Insert a "await" keyword between known async functions to improve the UX
+    code = re.sub(r"([^a-zA-Z0-9]|^)cells\(", r"\1await cells(", code)
+    code = re.sub(r"([^a-zA-Z0-9]|^)cell\(", r"\1await cell(", code)
+    code = re.sub(r"([^a-zA-Z0-9]|^)c\(", r"\1await c(", code)
+    code = re.sub(r"([^a-zA-Z0-9]|^)getCells\(", r"\1await getCells(", code)
 
-    code = code.replace("c(", "await c(")
+    code = code.replace("await await getCell", "await getCell")
     code = code.replace("await await c(", "await c(")
+    code = code.replace("await await cell(", "await cell(")
+    code = code.replace("await await cells(", "await cells(")
+
     return code
 
 
@@ -168,10 +175,24 @@ async def run_python(code):
         else:
             return None
 
+    # Aliases for common functions
     async def c(p0_x, p0_y):
         return await getCell(p0_x, p0_y)
 
-    globals = {"getCells": getCells, "getCell": getCell, "c": c, "result": None}
+    async def cell(p0_x, p0_y):
+        return await getCell(p0_x, p0_y)
+
+    async def cells(p0, p1):
+        return await getCells(p0, p1)
+
+    globals = {
+        "getCells": getCells,
+        "getCell": getCell,
+        "c": c,
+        "result": None,
+        "cell": cell,
+        "cells": cells,
+    }
 
     sout = StringIO()
     output_value = None
