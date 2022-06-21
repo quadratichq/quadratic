@@ -100,13 +100,14 @@ export const updateCellAndDCells = async (cell: Cell) => {
           for (const row of result.array_output) {
             let y_offset = 0;
             for (const cell of row) {
-              array_cells_to_output.push({
-                x: ref_cell_to_update[0] + x_offset,
-                y: ref_cell_to_update[1] + y_offset,
-                type: 'COMPUTED',
-                value: cell.toString(),
-                last_modified: new Date().toISOString(),
-              });
+              if (cell !== undefined)
+                array_cells_to_output.push({
+                  x: ref_cell_to_update[0] + x_offset,
+                  y: ref_cell_to_update[1] + y_offset,
+                  type: 'COMPUTED',
+                  value: cell.toString(),
+                  last_modified: new Date().toISOString(),
+                });
               y_offset++;
             }
             x_offset++;
