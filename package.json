@@ -72,6 +72,7 @@
     ]
   },
   "devDependencies": {
+    "@playwright/test": "^1.22.2",
     "concurrently": "^6.3.0",
     "electron": "^15.3.0",
     "electron-is-dev": "^2.0.0",
