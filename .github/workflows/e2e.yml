@@ -25,3 +25,8 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action/composite@v1
+        if: always()
+        with:
+          files: 'test-results/**/*.xml'
