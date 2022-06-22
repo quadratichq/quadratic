@@ -56,6 +56,7 @@ const config: PlaywrightTestConfig = {
       use: {
         ...devices['Desktop Firefox'],
       },
+      timeout: 60 * 1000, // firefox can be slow
     },
 
     {
