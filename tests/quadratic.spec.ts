@@ -38,6 +38,8 @@ test.describe('Grid interaction', () => {
 
     await page.locator('#CellTypeMenuID').waitFor();
 
+    await page.locator('#CellTypeMenuInputID').focus();
+
     await page.keyboard.type('python');
 
     await page.keyboard.press('Enter');
