@@ -44,9 +44,7 @@ test.describe('Grid interaction', () => {
 
     await page.locator('#QuadraticCodeEditorID').waitFor();
 
-    await expect(
-      page.locator('#QuadraticCodeEditorID').isVisible()
-    ).toBeTruthy();
+    await expect(page.locator('#QuadraticCodeEditorID')).toBeVisible();
 
     await page.keyboard.type('1 + 1');
 
@@ -54,8 +52,8 @@ test.describe('Grid interaction', () => {
 
     await page.locator('#QuadraticCodeEditorCloseButtonID').click();
 
-    await page.locator('#QuadraticCodeEditorID').waitFor({ state: 'detached' });
+    await page.locator('#QuadraticCodeEditorID').waitFor({ state: 'hidden' });
 
-    await expect(page.locator('#QuadraticCodeEditorID')).toHaveCount(0);
+    await expect(page.locator('#QuadraticCodeEditorID')).toBeHidden();
   });
 });
