@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page, baseURL }) => {
   await page.goto('/');
@@ -29,5 +29,33 @@ test.describe('Grid interaction', () => {
     await page.keyboard.type('Hello World!');
 
     await page.keyboard.press('Enter');
+  });
+
+  test('should write code cell', async ({ page }) => {
+    await page.locator('#QuadraticCanvasID').click();
+
+    await page.keyboard.press('Equal');
+
+    await page.locator('#CellTypeMenuID').waitFor();
+
+    await page.keyboard.type('python');
+
+    await page.keyboard.press('Enter');
+
+    await page.locator('#QuadraticCodeEditorID').waitFor();
+
+    await expect(
+      page.locator('#QuadraticCodeEditorID').isVisible()
+    ).toBeTruthy();
+
+    await page.keyboard.type('1 + 1');
+
+    await page.locator('#QuadraticCodeEditorRunButtonID').click();
+
+    await page.locator('#QuadraticCodeEditorCloseButtonID').click();
+
+    await page.locator('#QuadraticCodeEditorID').waitFor({ state: 'detached' });
+
+    await expect(page.locator('#QuadraticCodeEditorID')).toHaveCount(0);
   });
 });

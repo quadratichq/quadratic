@@ -117,7 +117,7 @@ export default function CellTypeMenu() {
   };
 
   return (
-    <Card elevation={1} className="container">
+    <Card id="CellTypeMenuID" elevation={1} className="container">
       <CardContent>
         <TextField
           value={value}
