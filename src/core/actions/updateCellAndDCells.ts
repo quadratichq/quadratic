@@ -96,9 +96,9 @@ export const updateCellAndDCells = async (cell: Cell) => {
           typeof result.array_output[0] !== 'string'
         ) {
           // 2d array
-          let x_offset = 0;
+          let y_offset = 0;
           for (const row of result.array_output) {
-            let y_offset = 0;
+            let x_offset = 0;
             for (const cell of row) {
               if (cell !== undefined)
                 array_cells_to_output.push({
@@ -108,9 +108,9 @@ export const updateCellAndDCells = async (cell: Cell) => {
                   value: cell.toString(),
                   last_modified: new Date().toISOString(),
                 });
-              y_offset++;
+              x_offset++;
             }
-            x_offset++;
+            y_offset++;
           }
         } else {
           // 1d array

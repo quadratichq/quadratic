@@ -62,6 +62,9 @@ class Cell:
     def __repr__(self):
         return str(self.value)
 
+    def __int__(self):
+        return int(self.value)
+
     def __float__(self):
         self_only_num = "".join(_ for _ in str(self) if _ in "+-,.1234567890")
         return float(self_only_num)
@@ -208,11 +211,13 @@ async def run_python(code):
         error_class = err.__class__.__name__
         detail = err.args[0]
         line_number = err.lineno
+        # full_trace = traceback.format_exc()
     except Exception as err:
         error_class = err.__class__.__name__
         detail = err.args[0]
         cl, exc, tb = sys.exc_info()
         line_number = traceback.extract_tb(tb)[-1][1]
+        # full_trace = traceback.format_exc()
     else:
         # Successfully Created a Result
         import autopep8
@@ -228,11 +233,20 @@ async def run_python(code):
 
         # Convert DF to array_output
         if isinstance(output_value, pd.DataFrame):
-            array_output = np.transpose(output_value.to_numpy()).tolist()
+            # If output_value columns is not the default (RangeIndex)
+            if type(output_value.columns) != pd.core.indexes.range.RangeIndex:
+                # Return Column names and values
+                array_output = [
+                    output_value.columns.tolist()
+                ] + output_value.values.tolist()
+
+            else:
+                # Just return PD values
+                array_output = output_value.values.tolist()
 
         # Convert Pandas.Series to array_output
         if isinstance(output_value, pd.Series):
-            array_output = np.transpose(output_value.to_numpy()).tolist()
+            array_output = output_value.to_numpy().tolist()
 
         return {
             "output_value": str(output_value),
