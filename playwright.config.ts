@@ -31,7 +31,7 @@ const config: PlaywrightTestConfig = {
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI
-    ? [['junit', { outputFile: 'test-results/e2e.xml' }]]
+    ? [['line'], ['junit', { outputFile: 'test-results/e2e.xml' }]]
     : 'list',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
@@ -102,7 +102,7 @@ const config: PlaywrightTestConfig = {
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'serve -s build',
+    command: process.env.CI ? 'serve -s build' : 'npm run start',
     port: 3000,
     timeout: 150 * 1000,
     reuseExistingServer: !process.env.CI,
