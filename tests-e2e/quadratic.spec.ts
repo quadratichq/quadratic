@@ -36,6 +36,8 @@ test.describe('Grid interaction', () => {
 
     await page.keyboard.press('Equal');
 
+    await page.locator('#QuadraticCanvasID').waitFor();
+
     await page.locator('#CellTypeMenuID').waitFor();
 
     await page.locator('#CellTypeMenuInputID').focus();
