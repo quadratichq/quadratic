@@ -1,4 +1,4 @@
-name: Unit Tests
+name: Python Tests
 on: push
 
 jobs:
@@ -12,4 +12,4 @@ jobs:
           node-version: '17'
           cache: 'npm'
       - run: npm install
-      - run: npm test
+      - run: npm run test-python

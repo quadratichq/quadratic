@@ -1,9 +1,6 @@
 name: E2E Tests
-on:
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
+on: push
+
 jobs:
   test:
     timeout-minutes: 60
@@ -18,7 +15,7 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
       - name: Run Playwright tests
-        run: npx playwright test
+        run: npm run test-e2e
       - uses: actions/upload-artifact@v2
         if: always()
         with:
