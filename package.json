@@ -79,6 +79,7 @@
     "concurrently": "^6.3.0",
     "electron": "^15.3.0",
     "electron-is-dev": "^2.0.0",
+    "serve": "^13.0.2",
     "wait-on": "^6.0.1"
   }
 }
