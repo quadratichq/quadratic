@@ -4,6 +4,7 @@ from unittest import IsolatedAsyncioTestCase
 from pprint import pprint
 
 
+#  Mock definitions
 def mock_GetCellsDB():
     return []
 
@@ -40,11 +41,6 @@ class TestTesting(IsolatedAsyncioTestCase):
 
     def test_attempt_fix_await(self):
         self.assertEqual(attempt_fix_await("1 + 1"), "1 + 1")
-
-        # code = re.sub(r"([^a-zA-Z0-9]|^)cells\(", r"\1await cells(", code)
-        # code = re.sub(r"([^a-zA-Z0-9]|^)cell\(", r"\1await cell(", code)
-        # code = re.sub(r"([^a-zA-Z0-9]|^)c\(", r"\1await c(", code)
-        # code = re.sub(r"([^a-zA-Z0-9]|^)getCells\(", r"\1await getCells(", code)
 
         # simple adding await
         self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
