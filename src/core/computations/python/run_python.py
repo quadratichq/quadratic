@@ -215,7 +215,9 @@ async def run_python(code):
         line_number = traceback.extract_tb(tb)[-1][1]
     else:
         # Successfully Created a Result
-        await micropip.install("autopep8")
+        await micropip.install(
+            "autopep8"
+        )  # fixes a timing bug where autopep8 is not yet installed when attempting to import
         import autopep8
 
         # get output_value (last statement) or use local "result"
