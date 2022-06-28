@@ -26,7 +26,9 @@ test.describe('Grid interaction', () => {
 
     await page.keyboard.press('Enter');
 
-    await pause(500);
+    // flakey, this takes a different amount of time based on resources and browser
+    // waiting for grid to update. Should be able to await a real event.
+    await pause(2000);
 
     await expect(await getGridScreenshot(page)).toMatchSnapshot('uEy6dp.png');
   });
@@ -56,7 +58,9 @@ test.describe('Grid interaction', () => {
 
     await page.locator('#QuadraticCodeEditorCloseButtonID').click();
 
-    await pause(500);
+    // flakey, this takes a different amount of time based on resources and browser
+    // waiting for grid to update. Should be able to await a real event.
+    await pause(2000);
 
     await expect(page.locator('#QuadraticCodeEditorID')).toBeHidden();
 
