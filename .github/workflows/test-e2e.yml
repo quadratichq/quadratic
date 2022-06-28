@@ -1,7 +1,7 @@
 name: E2E Tests
 on: push
 
-
+jobs:
   test:
     timeout-minutes: 60
     runs-on: macos-latest
@@ -15,7 +15,7 @@ on: push
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
       - name: Run Playwright tests
-        run: npm run test-e2e
+        run: npm run test-e2e -- --headed --workers=1
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v2
