@@ -25,10 +25,10 @@ on: push
 #           node-version: ${{matrix.node-version}}
 #       - run: npm ci
 #       - run: npx playwright install --with-deps
-      # - run: npm run test-e2e
-      #   if: matrix.os != 'ubuntu-latest'
-      # - run: xvfb-run npm run test-e2e
-      #   if: matrix.os == 'ubuntu-latest'
+#       - run: npm run test-e2e
+#         if: matrix.os != 'ubuntu-latest'
+#       - run: xvfb-run npm run test-e2e
+#         if: matrix.os == 'ubuntu-latest'
 #       - name: Upload test results
 #         if: always()
 #         uses: actions/upload-artifact@v2
