@@ -47,7 +47,7 @@
     "build": "react-scripts build",
     "test-all": "concurrently \"npm run test-unit\" \"npm run test-e2e\" \"npm run test-python\"",
     "test-unit": "react-scripts test",
-    "test-e2e": "playwright test",
+    "test-e2e": "playwright test --workers=1",
     "test-python": "python3 tests-python/test.py",
     "eject": "react-scripts eject",
     "dev": "concurrently -k \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
