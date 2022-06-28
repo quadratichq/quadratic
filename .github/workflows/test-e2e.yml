@@ -2,6 +2,39 @@ name: E2E Tests
 on: push
 
 jobs:
+  test_multi_platform_runner:
+    name: Test Runner
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [17]
+        # include:
+        #   - os: ubuntu-latest
+        #     node-version: 12
+        #   - os: windows-latest
+        #     node-version: 16
+        #   - os: windows-latest
+        #     node-version: 16
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: ${{matrix.node-version}}
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npm run test-e2e
+        if: matrix.os != 'ubuntu-latest'
+      - run: xvfb-run npm run test-e2e
+        if: matrix.os == 'ubuntu-latest'
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results
+          path: test-results
+
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
@@ -9,7 +42,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '14.x'
+          node-version: '17.x'
       - name: Install dependencies
         run: npm ci
       - name: Install Playwright Browsers
