@@ -14,10 +14,10 @@ from io import StringIO
 from contextlib import redirect_stdout
 from decimal import Decimal, DecimalException
 
+micropip.install("autopep8")
+
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
-
-micropip.install("autopep8")
 
 
 def attempt_fix_await(code):
