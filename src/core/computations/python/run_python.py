@@ -14,10 +14,10 @@ from io import StringIO
 from contextlib import redirect_stdout
 from decimal import Decimal, DecimalException
 
-micropip.install("autopep8")
-
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
+
+micropip.install("autopep8")
 
 
 def attempt_fix_await(code):
@@ -215,6 +215,7 @@ async def run_python(code):
         line_number = traceback.extract_tb(tb)[-1][1]
     else:
         # Successfully Created a Result
+        await micropip.install("autopep8")
         import autopep8
 
         # get output_value (last statement) or use local "result"
