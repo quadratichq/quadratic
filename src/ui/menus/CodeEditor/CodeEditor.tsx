@@ -143,6 +143,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   if (selectedCell !== undefined)
     return (
       <div
+        id="QuadraticCodeEditorID"
         style={{
           position: 'fixed',
           right: 0,
@@ -172,6 +173,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
           }}
         >
           <Button
+            id="QuadraticCodeEditorCloseButtonID"
             style={{
               color: colors.darkGray,
               borderColor: colors.darkGray,
@@ -201,6 +203,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
             </span>
           </div>
           <Button
+            id="QuadraticCodeEditorRunButtonID"
             style={{
               color: colors.darkGray,
               borderColor: colors.darkGray,

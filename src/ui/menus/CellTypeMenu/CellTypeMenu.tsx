@@ -117,9 +117,10 @@ export default function CellTypeMenu() {
   };
 
   return (
-    <Card elevation={1} className="container">
+    <Card id="CellTypeMenuID" elevation={1} className="container">
       <CardContent>
         <TextField
+          id="CellTypeMenuInputID"
           value={value}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             update_filter(event.target.value);
