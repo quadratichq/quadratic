@@ -6,14 +6,6 @@ test.beforeEach(async ({ page, baseURL }) => {
   await page.goto('/');
 });
 
-test.describe('Grid loads', () => {
-  test('should load the Quadratic grid', async ({ page }) => {
-    await page.locator('.loadingContainer').isVisible();
-
-    await page.locator('#QuadraticCanvasID').waitFor();
-  });
-});
-
 test.describe('Grid interaction', () => {
   test.beforeEach(async ({ page, baseURL }) => {
     await page.evaluate(`window.localStorage.setItem('firstTime', false)`);
@@ -28,14 +20,18 @@ test.describe('Grid interaction', () => {
 
     await page.keyboard.press('Enter');
 
+    await pause(500);
+
     await page.keyboard.type('Hello World!');
 
     await page.keyboard.press('Enter');
+
+    await pause(500);
+
+    await expect(await getGridScreenshot(page)).toMatchSnapshot('uEy6dp.png');
   });
 
   test('should write code cell', async ({ page, browserName }) => {
-    // test.skip(browserName === 'firefox');
-
     await page.locator('#QuadraticCanvasID').click();
 
     await page.keyboard.press('Equal');
@@ -60,14 +56,10 @@ test.describe('Grid interaction', () => {
 
     await page.locator('#QuadraticCodeEditorCloseButtonID').click();
 
-    await page.locator('#QuadraticCodeEditorID').waitFor({ state: 'hidden' });
+    await pause(500);
 
     await expect(page.locator('#QuadraticCodeEditorID')).toBeHidden();
 
-    await pause(500);
-
-    await expect(await getGridScreenshot(page)).toMatchSnapshot('test.png', {
-      threshold: 0.2,
-    });
+    await expect(await getGridScreenshot(page)).toMatchSnapshot('ie670m.png');
   });
 });

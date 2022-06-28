@@ -13,13 +13,13 @@ import { devices } from '@playwright/test';
 const config: PlaywrightTestConfig = {
   testDir: './tests-e2e',
   /* Maximum time one test can run for. */
-  timeout: process.env.CI ? 3 * 60 * 1000 : 3 * 60 * 1000,
+  timeout: process.env.CI ? 3 * 60 * 1000 : 60 * 1000,
   expect: {
     /**
      * Maximum time expect() should wait for the condition to be met.
      * For example in `await expect(locator).toHaveText();`
      */
-    timeout: process.env.CI ? 30 * 1000 : 5 * 1000,
+    timeout: process.env.CI ? 15 * 1000 : 5 * 1000,
   },
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -56,7 +56,6 @@ const config: PlaywrightTestConfig = {
       use: {
         ...devices['Desktop Firefox'],
       },
-      timeout: process.env.CI ? 150 * 1000 : 60 * 1000, // firefox can be slow
     },
 
     {
@@ -100,7 +99,7 @@ const config: PlaywrightTestConfig = {
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: process.env.CI ? 'serve -s build' : 'npm run start',
+    command: 'npm run start',
     port: 3000,
     timeout: 150 * 1000,
     reuseExistingServer: !process.env.CI,
