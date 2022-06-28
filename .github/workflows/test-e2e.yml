@@ -13,9 +13,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install chromium
       - name: Run Playwright tests
-        run: npm run test-e2e -- --headed --workers=1
+        run: npm run test-e2e -- --project=chromium
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v2
