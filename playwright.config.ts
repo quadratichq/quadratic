@@ -31,7 +31,7 @@ const config: PlaywrightTestConfig = {
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI
-    ? [['dot'], ['json', { outputFile: 'test-results/report.json' }]]
+    ? [['list'], ['json', { outputFile: 'test-results/report.json' }]]
     : [['list']],
   preserveOutput: process.env.CI ? 'failures-only' : 'always',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
