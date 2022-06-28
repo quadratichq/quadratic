@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { getGridScreenshot } from './utils/getGridScreenshot';
+import { pause } from './utils/pause';
 
 test.beforeEach(async ({ page, baseURL }) => {
   await page.goto('/');
@@ -31,7 +33,9 @@ test.describe('Grid interaction', () => {
     await page.keyboard.press('Enter');
   });
 
-  test('should write code cell', async ({ page }) => {
+  test('should write code cell', async ({ page, browserName }) => {
+    // test.skip(browserName === 'firefox');
+
     await page.locator('#QuadraticCanvasID').click();
 
     await page.keyboard.press('Equal');
@@ -59,5 +63,11 @@ test.describe('Grid interaction', () => {
     await page.locator('#QuadraticCodeEditorID').waitFor({ state: 'hidden' });
 
     await expect(page.locator('#QuadraticCodeEditorID')).toBeHidden();
+
+    await pause(500);
+
+    await expect(await getGridScreenshot(page)).toMatchSnapshot('test.png', {
+      threshold: 0.2,
+    });
   });
 });
