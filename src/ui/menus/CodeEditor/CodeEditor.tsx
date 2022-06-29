@@ -9,6 +9,7 @@ import { Cell } from '../../../core/gridDB/db';
 import './CodeEditor.css';
 import { Button } from '@mui/material';
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
+import { deleteCellsRange } from '../../../core/actions/deleteCellsRange';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
 import {
@@ -72,8 +73,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
     // if we haven't moved, don't do anything
     if (selectedCell?.x === x && selectedCell?.y === y) return;
 
-    // save previous cell, if it has changed
-    if (selectedCell?.python_code !== editorContent) saveSelectedCell();
+    // save previous cell, if it is defined and has changed
+    // This code causes a timing bug.
+    // if (selectedCell?.python_code !== editorContent) saveSelectedCell();
 
     // focus editor on cell change
     editorRef.current?.focus();
