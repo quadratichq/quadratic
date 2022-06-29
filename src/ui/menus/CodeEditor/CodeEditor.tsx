@@ -74,6 +74,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     if (selectedCell?.x === x && selectedCell?.y === y) return;
 
     // save previous cell, if it is defined and has changed
+    // This code causes a timing bug.
     // if (selectedCell?.python_code !== editorContent) saveSelectedCell();
 
     // focus editor on cell change
