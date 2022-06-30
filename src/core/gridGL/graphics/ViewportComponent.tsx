@@ -21,6 +21,9 @@ export interface PixiComponentViewportProps extends ViewportProps {
 
 const PixiComponentViewport = PixiComponent('Viewport', {
   create: (props: PixiComponentViewportProps) => {
+    // keep a reference of app on window, used for Playwright tests
+    //@ts-expect-error
+    window.pixiapp = props.app;
     // Viewport is the component which allows panning and zooming
     const viewport = new Viewport({
       screenWidth: props.screenWidth,
