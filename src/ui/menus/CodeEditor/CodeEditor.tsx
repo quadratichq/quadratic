@@ -9,7 +9,6 @@ import { Cell } from '../../../core/gridDB/db';
 import './CodeEditor.css';
 import { Button } from '@mui/material';
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
-import { deleteCellsRange } from '../../../core/actions/deleteCellsRange';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
 import {
