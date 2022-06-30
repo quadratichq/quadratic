@@ -1,8 +1,16 @@
 import { expect, Page } from '@playwright/test';
-import { pause } from '../utils/pause';
+import { pause } from './pause';
 
-export const enterCodeInCell = async (page: Page, code: string) => {
+export const enterCodeInCell = async (
+  page: Page,
+  code: string,
+  browserName: string
+) => {
   await expect(page.locator('#QuadraticCodeEditorID')).toBeHidden();
+
+  // webkit won't always refocus
+  if (browserName === 'webkit')
+    await page.locator('#QuadraticCanvasID').focus();
 
   await page.keyboard.press('Equal');
 
@@ -27,4 +35,8 @@ export const enterCodeInCell = async (page: Page, code: string) => {
   await page.locator('#QuadraticCodeEditorCloseButtonID').click();
 
   await expect(page.locator('#QuadraticCodeEditorID')).toBeHidden();
+
+  // webkit won't always refocus
+  if (browserName === 'webkit')
+    await page.locator('#QuadraticCanvasID').focus();
 };
