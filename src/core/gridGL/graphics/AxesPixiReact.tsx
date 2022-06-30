@@ -1,6 +1,6 @@
-import { useCallback } from "react";
-import { Graphics } from "@inlet/react-pixi";
-import { Graphics as PixiGraphics } from "pixi.js";
+import { useCallback } from 'react';
+import { Graphics } from '@inlet/react-pixi';
+import { Graphics as PixiGraphics } from 'pixi.js';
 
 interface AxesPixiReactProps {
   visible: boolean;
@@ -12,13 +12,13 @@ const AxesPixiReact = (props: AxesPixiReactProps) => {
       g.clear();
 
       if (props.visible) {
-        g.lineStyle(1, 0x000000, 0.2, 0, true);
+        g.lineStyle(1, 0x000000, 0.35, 0, true);
 
-        g.moveTo(-1000000000000, 0);
-        g.lineTo(1000000000000, 0);
+        g.moveTo(-1000000, 0);
+        g.lineTo(1000000, 0);
 
-        g.moveTo(0, -1000000000000);
-        g.lineTo(0, 1000000000000);
+        g.moveTo(0, -1000000);
+        g.lineTo(0, 1000000);
       }
     },
     [props.visible]
