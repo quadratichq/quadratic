@@ -64,8 +64,6 @@ _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 - [ ] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
 - [ ] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
 - [ ] Moving cells and resizing columns
-- [ ] Import CSV
-- [ ] JS Support
 
 **Feature request or bug report?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
 
