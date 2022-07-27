@@ -16,7 +16,6 @@ export interface ViewportProps {
 
 export interface PixiComponentViewportProps extends ViewportProps {
   app: PIXI.Application;
-  setLoading?: Function;
 }
 
 const PixiComponentViewport = PixiComponent('Viewport', {

@@ -21,8 +21,8 @@ export const TopBar = () => {
         event.preventDefault();
       }}
       style={{
-        position: 'absolute',
         backgroundColor: 'rgba(255, 255, 255)',
+        // backgroundColor: 'yellow',
         color: '#212121',
         //@ts-expect-error
         WebkitAppRegion: 'drag', // this allows the window to be dragged in Electron

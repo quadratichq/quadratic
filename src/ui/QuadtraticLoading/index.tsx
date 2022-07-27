@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
 
 import './styles.css';
+import { TopBarLoading } from '../components/TopBarLoading';
 
 export function QuadraticLoading() {
   const [progress, setProgress] = useState<number>(0);
@@ -25,24 +26,27 @@ export function QuadraticLoading() {
   }, []);
 
   return (
-    <div
-      style={{
-        height: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        userSelect: 'none',
-      }}
-    >
-      <div className="loadingContainer">
-        <img
-          className="loadingLogoGif"
-          src="/images/logo_loading.gif"
-          alt="Loading Quadratic Grid"
-        ></img>
-        <Box sx={{ width: '100px', marginTop: '15px' }}>
-          <LinearProgress variant="determinate" value={progress} />
-        </Box>
+    <>
+      <TopBarLoading></TopBarLoading>
+      <div
+        style={{
+          height: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          userSelect: 'none',
+        }}
+      >
+        <div className="loadingContainer">
+          <img
+            className="loadingLogoGif"
+            src="/images/logo_loading.gif"
+            alt="Loading Quadratic Grid"
+          ></img>
+          <Box sx={{ width: '100px', marginTop: '15px' }}>
+            <LinearProgress variant="determinate" value={progress} />
+          </Box>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
