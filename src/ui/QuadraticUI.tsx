@@ -7,18 +7,41 @@ import useLocalStorage from '../hooks/useLocalStorage';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import BottomBar from './menus/BottomBar';
+import QuadraticGrid from '../core/gridGL/QuadraticGrid';
+import { QuadraticLoading } from './QuadtraticLoading';
 
-export default function QuadraticUI() {
+interface QuadraticUIProps {
+  loading: boolean;
+}
+
+export default function QuadraticUI(props: QuadraticUIProps) {
+  const { loading } = props;
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   return (
     <>
-      {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          flex: 1,
+          // backgroundColor: 'purple',
+          height: '100%',
+        }}
+      >
+        {/* WebGL Canvas and Quadratic Grid */}
+        {!loading && <TopBar></TopBar>}
+
+        <QuadraticGrid loading={loading}></QuadraticGrid>
+        {!loading && <BottomBar></BottomBar>}
+        {/* Loading screen */}
+        {loading && <QuadraticLoading></QuadraticLoading>}
+      </div>
       <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
+      {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu />}
-      <TopBar></TopBar>
-      <BottomBar></BottomBar>
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { createRef, useRef, useState, useLayoutEffect } from 'react';
 import useWindowDimensions from '../../hooks/useWindowDimensions';
 import type { Viewport } from 'pixi-viewport';
 import { Stage } from '@inlet/react-pixi';
@@ -24,9 +24,14 @@ import RightClickMenu from '../../ui/menus/RightClickMenu';
 
 import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 
-export default function QuadraticGrid() {
-  const { loading } = useLoading();
+interface QuadraticGridProps {
+  loading: boolean;
+}
+
+export default function QuadraticGrid(props: QuadraticGridProps) {
+  const { loading } = props;
   const viewportRef = useRef<Viewport>();
+  const stageContainerRef = createRef<HTMLDivElement>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 
   // Live query to update cells
@@ -50,20 +55,40 @@ export default function QuadraticGrid() {
     useMenuState();
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
 
+  const [width, setWidth] = useState(0);
+  const [height, setHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    setWidth(stageContainerRef?.current?.offsetWidth || 100);
+    setHeight(stageContainerRef?.current?.offsetHeight || 100);
+  }, [stageContainerRef]);
+
+  console.log('width ', width, ' height ', height);
+
   return (
     <div
+      style={{
+        // backgroundColor: 'green',
+        display: 'flex',
+        flexGrow: 1,
+        // height: '100%',
+        // position: 'absolute',
+        overflow: 'hidden',
+      }}
       onContextMenu={(event) => {
         event.preventDefault();
         setRightClickPoint({ x: event.clientX, y: event.clientY });
         toggleRightClickMenu(true);
       }}
+      ref={stageContainerRef}
     >
       <Stage
         id="QuadraticCanvasID"
-        height={windowHeight}
-        width={windowWidth}
+        style={{ display: loading ? 'none' : 'block', position: 'static' }}
+        width={width}
+        height={height}
         options={{
-          resizeTo: window,
+          // resizeTo: window,
           resolution:
             // Always use 2 instead of 1. Better resolution.
             window.devicePixelRatio === 1.0 ? 2 : window.devicePixelRatio,
@@ -99,15 +124,14 @@ export default function QuadraticGrid() {
             setEditorInteractionState
           );
         }}
-        style={{ display: loading ? 'none' : 'inline' }}
         // Disable rendering on each frame
         raf={false}
         // Render on each state change
         renderOnComponentChange={true}
       >
         <ViewportComponent
-          screenWidth={windowWidth}
-          screenHeight={windowHeight}
+          screenWidth={width}
+          screenHeight={height}
           viewportRef={viewportRef}
         >
           {!loading &&
