@@ -3,7 +3,7 @@ import { Viewport } from 'pixi-viewport';
 import { Simple } from 'pixi-cull';
 import { UpdateGridAlphaOnZoom } from './UpdateGridAlphaOnZoom';
 
-import drawGridLines from './drawGridLines';
+import drawGridLines, { moveGrid } from './drawGridLines';
 import Globals from '../globals';
 import { PixiComponent, useApp } from '@inlet/react-pixi';
 
@@ -67,6 +67,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
             // render
             props.app.renderer.render(props.app.stage);
             viewport.dirty = false;
+            moveGrid(viewport, grid_ui);
           }
         },
         null,
