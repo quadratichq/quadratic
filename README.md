@@ -18,7 +18,7 @@ Quadratic is a Web-based spreadsheet application that runs in the browser and as
 
 Our goal is to build a spreadsheet that enables you to pull your data from its source (SaaS, Database, CSV, API, etc) and then work with that data using the most popular data science tools today (Python, Pandas, SQL, JS, Excel Formulas, etc).
 
-Quadratic has no environment to configure. Our grid runs entirely in the browser with no backend service. This makes our grids completely portable and very easy to share.
+Quadratic has no environment to configure. The grid runs entirely in the browser with no backend service. This makes our grids completely portable and very easy to share.
 
 ## What can I do with Quadratic?
 - Build dashboards
