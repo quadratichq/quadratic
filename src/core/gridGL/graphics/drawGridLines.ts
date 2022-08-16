@@ -5,7 +5,6 @@ import {
   CELL_HEIGHT,
   GRID_SIZE,
 } from '../../../constants/gridConstants';
-import * as PIXI from 'pixi.js';
 
 import { colors } from '../../../theme/colors';
 
