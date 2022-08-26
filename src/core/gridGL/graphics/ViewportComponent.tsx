@@ -12,6 +12,7 @@ export interface ViewportProps {
   screenHeight: number;
   children?: React.ReactNode;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
+  showGridAxes: boolean;
   onPointerDown: (world: PIXI.Point, event: PointerEvent) => void;
 }
 
@@ -54,7 +55,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     // startup the viewport
     function startup() {
       // draw grid lines
-      let grid_ui = drawGridLines(viewport);
+      let grid_ui = viewport.addChild(new PIXI.Graphics());
 
       const globals = new Globals(viewport, props.app.view, grid_ui);
 
@@ -66,7 +67,9 @@ const PixiComponentViewport = PixiComponent('Viewport', {
       ticker.add(
         () => {
           if (viewport.dirty) {
+
             // render
+            drawGridLines(viewport, grid_ui, props.showGridAxes);
             props.app.renderer.render(props.app.stage);
             viewport.dirty = false;
           }
