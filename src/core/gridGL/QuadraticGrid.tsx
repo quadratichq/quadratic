@@ -8,7 +8,6 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useLoading } from '../../contexts/LoadingContext';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import CellPixiReact from './graphics/CellPixiReact';
-import AxesPixiReact from './graphics/AxesPixiReact';
 import CursorPixiReact from './graphics/CursorPixiReact';
 import MultiCursorPixiReact from './graphics/MultiCursorPixiReact';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
