@@ -8,6 +8,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useLoading } from '../../contexts/LoadingContext';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import CellPixiReact from './graphics/CellPixiReact';
+import AxesPixiReact from './graphics/AxesPixiReact';
 import CursorPixiReact from './graphics/CursorPixiReact';
 import MultiCursorPixiReact from './graphics/MultiCursorPixiReact';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
@@ -108,7 +109,6 @@ export default function QuadraticGrid() {
           screenWidth={windowWidth}
           screenHeight={windowHeight}
           viewportRef={viewportRef}
-          showGridAxes={showGridAxes}
         >
           {!loading &&
             cells?.map((cell) => (
@@ -129,6 +129,7 @@ export default function QuadraticGrid() {
                 array_cells={cell.array_cells}
               ></CellPixiReact>
             ))}
+          <AxesPixiReact visible={showGridAxes}></AxesPixiReact>
           <CursorPixiReact
             location={interactionState.cursorPosition}
           ></CursorPixiReact>

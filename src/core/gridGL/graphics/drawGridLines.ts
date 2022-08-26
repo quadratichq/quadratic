@@ -7,7 +7,7 @@ import {
 
 import { colors } from '../../../theme/colors';
 
-const drawGridLines = function (viewport: Viewport, grid: Graphics, showGridAxes: boolean): void {
+const drawGridLines = function (viewport: Viewport, grid: Graphics): void {
   grid.clear();
 
   // Configure Line Style
@@ -27,18 +27,6 @@ const drawGridLines = function (viewport: Viewport, grid: Graphics, showGridAxes
   for (let y = bounds.top; y <= bounds.bottom + CELL_HEIGHT; y += CELL_HEIGHT) {
     grid.moveTo(bounds.left, y - y_offset);
     grid.lineTo(bounds.right, y - y_offset);
-  }
-
-  if (showGridAxes) {
-    grid.lineStyle(10, 0x000000, 0.35, 0, true);
-    if (0 >= bounds.left && 0 <= bounds.right) {
-      grid.moveTo(0, bounds.top);
-      grid.lineTo(0, bounds.bottom);
-    }
-    if (0 >= bounds.top && 0 <= bounds.bottom) {
-      grid.moveTo(bounds.left, 0);
-      grid.lineTo(bounds.right, 0);
-    }
   }
 };
 
