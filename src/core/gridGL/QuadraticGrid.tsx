@@ -109,6 +109,7 @@ export default function QuadraticGrid() {
           screenWidth={windowWidth}
           screenHeight={windowHeight}
           viewportRef={viewportRef}
+          showGridAxes={showGridAxes}
         >
           {!loading &&
             cells?.map((cell) => (
@@ -129,7 +130,6 @@ export default function QuadraticGrid() {
                 array_cells={cell.array_cells}
               ></CellPixiReact>
             ))}
-          <AxesPixiReact visible={showGridAxes}></AxesPixiReact>
           <CursorPixiReact
             location={interactionState.cursorPosition}
           ></CursorPixiReact>
