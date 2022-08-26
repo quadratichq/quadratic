@@ -12,6 +12,7 @@ export interface ViewportProps {
   screenHeight: number;
   children?: React.ReactNode;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
+  showGridAxes: boolean;
 }
 
 export interface PixiComponentViewportProps extends ViewportProps {
@@ -66,7 +67,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
           if (viewport.dirty) {
 
             // render
-            drawGridLines(viewport, grid_ui);
+            drawGridLines(viewport, grid_ui, props.showGridAxes);
             props.app.renderer.render(props.app.stage);
             viewport.dirty = false;
           }
