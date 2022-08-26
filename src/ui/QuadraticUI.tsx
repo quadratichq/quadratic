@@ -7,18 +7,28 @@ import useLocalStorage from '../hooks/useLocalStorage';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import BottomBar from './menus/BottomBar';
+import QuadraticGrid from '../core/gridGL/QuadraticGrid';
 
 export default function QuadraticUI() {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   return (
-    <>
+    <div style={{
+      width: "100%",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+    }}>
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
       {showDebugMenu && <DebugMenu />}
-      <TopBar></TopBar>
-      <BottomBar></BottomBar>
-    </>
+      <TopBar />
+
+      {/* Provider of WebGL Canvas and Quadratic Grid */}
+      <QuadraticGrid />
+
+      <BottomBar />
+    </div>
   );
 }

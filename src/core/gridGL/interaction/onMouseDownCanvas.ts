@@ -1,9 +1,11 @@
+import * as PIXI from 'pixi.js';
 import type { Viewport } from 'pixi-viewport';
 import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 
 export const onMouseDownCanvas = (
-  event: React.MouseEvent<HTMLCanvasElement, MouseEvent>,
+  world: PIXI.Point,
+  event: PointerEvent,
   interactionState: GridInteractionState,
   setInteractionState: React.Dispatch<
     React.SetStateAction<GridInteractionState>
@@ -13,13 +15,13 @@ export const onMouseDownCanvas = (
   // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
   if (viewportRef.current === undefined) return;
 
-  // Calculate mouse down position
-  const { x: downX, y: downY } = viewportRef.current.toWorld(
-    event.clientX,
-    event.clientY
-  );
-  let down_cell_x = Math.floor(downX / CELL_WIDTH);
-  let down_cell_y = Math.floor(downY / CELL_HEIGHT);
+  // // Calculate mouse down position
+  // const { x: downX, y: downY } = viewportRef.current.toWorld(
+  //   event.clientX,
+  //   event.clientY
+  // );
+  let down_cell_x = Math.floor(world.x / CELL_WIDTH);
+  let down_cell_y = Math.floor(world.y / CELL_HEIGHT);
 
   // If right click and we have a multi cell selection.
   // If the user has clicked inside the selection.
@@ -119,14 +121,17 @@ export const onMouseDownCanvas = (
   }
 
   // onMouseMove lifecycle events
-  event.target.addEventListener('mousemove', onMouseMove);
-  event.target.addEventListener('blur', () => {
-    event.target?.removeEventListener('mousemove', onMouseMove);
-  });
+
+  // todo....
+
+  // event.target.addEventListener('mousemove', onMouseMove);
+  // event.target.addEventListener('blur', () => {
+  //   event.target?.removeEventListener('mousemove', onMouseMove);
+  // });
   // Done on window to capture mouseup if mouse left canvas area
-  window.addEventListener('mouseup', () => {
-    event.target?.removeEventListener('mousemove', onMouseMove);
-  });
+  // window.addEventListener('mouseup', () => {
+  //   event.target?.removeEventListener('mousemove', onMouseMove);
+  // });
 
   viewportRef.current.dirty = true;
 };
