@@ -168,7 +168,6 @@ export default function QuadraticGrid() {
             viewportRef={viewportRef}
             showGridAxes={showGridAxes}
           />
-          <GridHeaders viewportRef={viewportRef} />
           <CursorPixiReact
             location={interactionState.cursorPosition}
           ></CursorPixiReact>
@@ -189,6 +188,7 @@ export default function QuadraticGrid() {
               }
             ></CursorPixiReact>
           )}
+        <GridHeaders viewportRef={viewportRef} />
         </ViewportComponent>
       </Stage>
       <CellInput

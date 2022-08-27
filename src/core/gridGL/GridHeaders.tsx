@@ -12,6 +12,7 @@ import { colors } from '../../theme/colors';
 import { Container, Graphics } from '@inlet/react-pixi';
 import { IContainer, IGraphics } from './types/pixiRefs';
 import { useTicker } from './graphics/hooks/useTicker';
+import useLocalStorage from '../../hooks/useLocalStorage';
 
 interface IProps {
     viewportRef: MutableRefObject<Viewport | undefined>;
@@ -22,6 +23,7 @@ export function GridHeaders(props: IProps) {
     const graphicsRef = useRef<IGraphics>(null);
     const labelsRef = useRef<IContainer>(null);
     const cornerRef = useRef<IGraphics>(null);
+    const [showHeadings] = useLocalStorage('showHeadings', true);
     const [dirty, setDirty] = useState(false);
 
     const setDirtyTrue = useCallback(() => setDirty(true), [setDirty]);
@@ -36,6 +38,10 @@ export function GridHeaders(props: IProps) {
             viewport.off('moved', setDirtyTrue);
         }
     }, [props.viewportRef, setDirtyTrue]);
+
+    useEffect(() => {
+        setDirty(true);
+    }, [showHeadings]);
 
     const characterSize = useMemo(() => {
         const label = new PIXI.BitmapText("X", {
@@ -55,6 +61,7 @@ export function GridHeaders(props: IProps) {
     };
 
     useTicker(() => {
+        if (!showHeadings) return;
         if (!dirty) return;
         const graphics = graphicsRef.current;
         const labels = labelsRef.current;
@@ -166,9 +173,12 @@ export function GridHeaders(props: IProps) {
         drawHorizontal();
         drawVertical();
         drawCorner();
+        viewport.dirty = true;
 
         setDirty(false);
     });
+
+    if (!showHeadings) return null;
 
     return <Container>
         <Graphics ref={graphicsRef} />
