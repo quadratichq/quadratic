@@ -20,8 +20,9 @@ import { onDoubleClickCanvas } from './interaction/onDoubleClickCanvas';
 import { colors } from '../../theme/colors';
 import { useMenuState } from '@szhsin/react-menu';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
-
 import { ViewportEventRegister } from './interaction/ViewportEventRegister';
+import { GridLines } from './GridLines';
+import { AxesLines } from './AxesLines';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -48,6 +49,8 @@ export default function QuadraticGrid() {
   const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } =
     useMenuState();
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
+
+  if (loading) return null;
 
   return (
     <div
@@ -99,8 +102,10 @@ export default function QuadraticGrid() {
           );
         }}
         style={{ display: loading ? 'none' : 'inline' }}
+
         // Disable rendering on each frame
         raf={false}
+
         // Render on each state change
         renderOnComponentChange={true}
       >
@@ -108,10 +113,8 @@ export default function QuadraticGrid() {
           screenWidth={windowWidth}
           screenHeight={windowHeight}
           viewportRef={viewportRef}
-          showGridAxes={showGridAxes}
         >
-          {!loading &&
-            cells?.map((cell) => (
+          {cells?.map((cell) => (
               <CellPixiReact
                 key={`${cell.x},${cell.y}`}
                 x={cell.x}
@@ -129,6 +132,11 @@ export default function QuadraticGrid() {
                 array_cells={cell.array_cells}
               ></CellPixiReact>
             ))}
+          <GridLines viewportRef={viewportRef} />
+          <AxesLines
+            viewportRef={viewportRef}
+            showGridAxes={showGridAxes}
+          />
           <CursorPixiReact
             location={interactionState.cursorPosition}
           ></CursorPixiReact>
