@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useWindowDimensions from '../../hooks/useWindowDimensions';
 import type { Viewport } from 'pixi-viewport';
 import { Stage } from '@inlet/react-pixi';
@@ -32,6 +32,17 @@ export default function QuadraticGrid() {
   // Live query to update cells
   const cells = useLiveQuery(() => GetCellsDB());
 
+  const [canvasSize, setCanvasSize] = useState<{ width: number, height: number } | undefined>(undefined);
+  const [canvasRef, setCanvasRef] = useState<HTMLCanvasElement>();
+  const containerRef = useCallback(node => {
+    setCanvasSize({ width: node.offsetWidth, height: node.offsetHeight });
+    setCanvasRef(node);
+  }, []);
+
+  useEffect(() => {
+    setCanvasSize({ width: canvasRef?.offsetWidth ?? 0, height: canvasRef?.offsetHeight ?? 0 });
+  }, [windowWidth, windowHeight, canvasRef]);
+
   // Local Storage Config
   const [showGridAxes] = useLocalStorage('showGridAxes', true);
 
@@ -54,6 +65,11 @@ export default function QuadraticGrid() {
 
   return (
     <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: "100%",
+      }}
       onContextMenu={(event) => {
         event.preventDefault();
         setRightClickPoint({ x: event.clientX, y: event.clientY });
@@ -62,8 +78,8 @@ export default function QuadraticGrid() {
     >
       <Stage
         id="QuadraticCanvasID"
-        height={windowHeight}
-        width={windowWidth}
+        width={canvasSize?.width ?? 0}
+        height={canvasSize?.height ?? 0}
         options={{
           resizeTo: window,
           resolution:
@@ -84,14 +100,14 @@ export default function QuadraticGrid() {
             viewportRef
           );
         }}
-        onMouseDown={(event) => {
-          onMouseDownCanvas(
-            event,
-            interactionState,
-            setInteractionState,
-            viewportRef
-          );
-        }}
+        // onMouseDown={(event) => {
+        //   onMouseDownCanvas(
+        //     event,
+        //     interactionState,
+        //     setInteractionState,
+        //     viewportRef
+        //   );
+        // }}
         onDoubleClick={(event) => {
           onDoubleClickCanvas(
             event,
@@ -101,7 +117,10 @@ export default function QuadraticGrid() {
             setEditorInteractionState
           );
         }}
-        style={{ display: loading ? 'none' : 'inline' }}
+        style={{
+          display: 'inline',
+          position: 'relative',
+        }}
 
         // Disable rendering on each frame
         raf={false}
@@ -113,6 +132,15 @@ export default function QuadraticGrid() {
           screenWidth={windowWidth}
           screenHeight={windowHeight}
           viewportRef={viewportRef}
+          onPointerDown={(world, event) => {
+            onMouseDownCanvas(
+              world,
+              event,
+              interactionState,
+              setInteractionState,
+              viewportRef
+            );
+          }}
         >
           {cells?.map((cell) => (
               <CellPixiReact

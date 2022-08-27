@@ -30,8 +30,6 @@ export default function QuadraticApp() {
       <AnalyticsProvider></AnalyticsProvider>
       {/* Welcome Component for first time users */}
       {!loading && <WelcomeComponent></WelcomeComponent>}
-      {/* Provider of WebGL Canvas and Quadratic Grid */}
-      <QuadraticGrid></QuadraticGrid>
       {/* Provider of All React UI Components */}
       {!loading && <QuadraticUI></QuadraticUI>}
       {/* ToBarLoading allows window to be moved while loading in electron */}

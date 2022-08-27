@@ -51,7 +51,6 @@ export const BottomBar = () => {
         event.preventDefault();
       }}
       style={{
-        position: 'fixed',
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
         color: colors.darkGray,
         bottom: 0,

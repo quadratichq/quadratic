@@ -21,7 +21,6 @@ export const TopBar = () => {
         event.preventDefault();
       }}
       style={{
-        position: 'absolute',
         backgroundColor: 'rgba(255, 255, 255)',
         color: '#212121',
         //@ts-expect-error

@@ -8,6 +8,7 @@ export interface ViewportProps {
   screenHeight: number;
   children?: React.ReactNode;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
+  onPointerDown: (world: PIXI.Point, event: PointerEvent) => void;
 }
 
 export interface PixiComponentViewportProps extends ViewportProps {
@@ -41,6 +42,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
         minScale: 0.01,
         maxScale: 10,
       });
+    viewport.on("pointerdown", (e) => props.onPointerDown(viewport.toWorld(e.data.global), e.data.originalEvent));
 
     props.viewportRef.current = viewport;
 
