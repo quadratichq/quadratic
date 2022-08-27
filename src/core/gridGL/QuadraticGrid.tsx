@@ -163,12 +163,12 @@ export default function QuadraticGrid() {
                 array_cells={cell.array_cells}
               ></CellPixiReact>
           ))}
-          <GridHeaders viewportRef={viewportRef} />
           <GridLines viewportRef={viewportRef} />
           <AxesLines
             viewportRef={viewportRef}
             showGridAxes={showGridAxes}
           />
+          <GridHeaders viewportRef={viewportRef} />
           <CursorPixiReact
             location={interactionState.cursorPosition}
           ></CursorPixiReact>

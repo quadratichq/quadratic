@@ -117,6 +117,9 @@ export function GridHeaders(props: IProps) {
                     label.position.set(x, bounds.top + cellHeight / 2);
                     label.scale.set(inverseScale);
                 }
+                graphics.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
+                graphics.moveTo(x - CELL_WIDTH / 2, bounds.top);
+                graphics.lineTo(x - CELL_WIDTH / 2, bounds.top + cellHeight);
             }
         };
 
@@ -131,7 +134,7 @@ export function GridHeaders(props: IProps) {
             const bottomNumberLength = Math.round(bottomOffset / CELL_HEIGHT - 1).toString().length;
             rowWidth = Math.max(topNumberLength, bottomNumberLength) * characterSize.width / viewport.scale.x + LABEL_PADDING_ROWS / viewport.scale.x * 2;
             rowWidth = Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
-
+            graphics.lineStyle(0);
             graphics.beginFill(colors.headerBackgroundColor);
             graphics.drawRect(bounds.left, bounds.top + CELL_HEIGHT / viewport.scale.x, rowWidth, bounds.height - CELL_HEIGHT / viewport.scale.x);
             let mod = 0;
@@ -147,6 +150,9 @@ export function GridHeaders(props: IProps) {
                     label.position.set(bounds.left + rowWidth / 2, y);
                     label.scale.set(inverseScale);
                 }
+                graphics.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
+                graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);
+                graphics.lineTo(bounds.left + rowWidth, y + CELL_HEIGHT / 2);
             }
         };
 
