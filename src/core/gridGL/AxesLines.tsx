@@ -1,9 +1,8 @@
 import { MutableRefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { Viewport } from 'pixi-viewport';
-import { Graphics, PixiRef } from '@inlet/react-pixi';
+import { Graphics } from '@inlet/react-pixi';
 import { useTicker } from './graphics/hooks/useTicker';
-
-type IGraphics = PixiRef<typeof Graphics>;
+import { IGraphics } from './types/pixiRefs';
 
 interface IProps {
     viewportRef: MutableRefObject<Viewport | undefined>;

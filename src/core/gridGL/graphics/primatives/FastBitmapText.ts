@@ -6,13 +6,14 @@ interface FastBitmapTextProps {
   y: number;
   text: string;
   visible: boolean;
+  fontSize?: number;
 }
 
 const FastBitmapText = PixiComponent("FastText", {
   create: (props: FastBitmapTextProps) =>
     new BitmapText(props.text, {
       fontName: "OpenSans",
-      fontSize: 14,
+      fontSize: props.fontSize ?? 14,
       tint: 0x000000,
       align: "left",
       // maxWidth: 100,

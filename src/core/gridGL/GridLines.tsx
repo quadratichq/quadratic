@@ -1,15 +1,14 @@
 import { MutableRefObject, useCallback, useEffect, useRef, useState } from 'react';
 import * as PIXI from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
-import { Graphics, PixiRef } from '@inlet/react-pixi';
+import { Graphics } from '@inlet/react-pixi';
 import {
     CELL_WIDTH,
     CELL_HEIGHT,
 } from '../../constants/gridConstants';
 import { colors } from '../../theme/colors';
 import { useTicker } from './graphics/hooks/useTicker';
-
-type IGraphics = PixiRef<typeof Graphics>;
+import { IGraphics } from './types/pixiRefs';
 
 interface IProps {
     viewportRef: MutableRefObject<Viewport | undefined>;
@@ -20,7 +19,6 @@ export function GridLines(props: IProps) {
     const [dirty, setDirty] = useState(false);
 
     const setDirtyTrue = useCallback(() => setDirty(true), [setDirty]);
-
     useEffect(() => {
         const viewport = props.viewportRef.current;
         if (!viewport) return;

@@ -23,6 +23,7 @@ import RightClickMenu from '../../ui/menus/RightClickMenu';
 import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 import { GridLines } from './GridLines';
 import { AxesLines } from './AxesLines';
+import { GridHeaders } from './GridHeaders';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -35,8 +36,10 @@ export default function QuadraticGrid() {
   const [canvasSize, setCanvasSize] = useState<{ width: number, height: number } | undefined>(undefined);
   const [canvasRef, setCanvasRef] = useState<HTMLCanvasElement>();
   const containerRef = useCallback(node => {
-    setCanvasSize({ width: node.offsetWidth, height: node.offsetHeight });
-    setCanvasRef(node);
+    if (node) {
+      setCanvasSize({ width: node.offsetWidth, height: node.offsetHeight });
+      setCanvasRef(node);
+    }
   }, []);
 
   useEffect(() => {
@@ -159,7 +162,8 @@ export default function QuadraticGrid() {
                 }
                 array_cells={cell.array_cells}
               ></CellPixiReact>
-            ))}
+          ))}
+          <GridHeaders viewportRef={viewportRef} />
           <GridLines viewportRef={viewportRef} />
           <AxesLines
             viewportRef={viewportRef}
