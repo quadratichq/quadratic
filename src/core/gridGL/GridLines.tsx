@@ -1,3 +1,4 @@
+import { MutableRefObject, useCallback, useEffect, useRef, useState } from 'react';
 import * as PIXI from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { Graphics, PixiRef } from '@inlet/react-pixi';
@@ -6,33 +7,34 @@ import {
     CELL_HEIGHT,
 } from '../../constants/gridConstants';
 import { colors } from '../../theme/colors';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTicker } from './graphics/hooks/useTicker';
 
 type IGraphics = PixiRef<typeof Graphics>;
 
 interface IProps {
-    ticker: PIXI.Ticker;
+    viewportRef: MutableRefObject<Viewport | undefined>;
 }
 
-export const GridLines = (props: IProps) => {
-    const gridRef = useRef<IGraphics>(null);
-    const viewport = gridRef.current?.parent as Viewport;
+export function GridLines(props: IProps) {
+    const graphicsRef = useRef<IGraphics>(null);
     const [dirty, setDirty] = useState(false);
 
     const setDirtyTrue = useCallback(() => setDirty(true), [setDirty]);
 
     useEffect(() => {
+        const viewport = props.viewportRef.current;
         if (!viewport) return;
         viewport.on('zoomed', setDirtyTrue);
         viewport.on('moved', setDirtyTrue);
+        setDirty(true);
         return () => {
             viewport.off('zoomed', setDirtyTrue);
             viewport.off('moved', setDirtyTrue);
         }
-    }, [viewport, setDirtyTrue]);
+    }, [props.viewportRef, setDirtyTrue]);
 
-    const draw = (grid: PIXI.Graphics) => {
+    const draw = useCallback((grid: PIXI.Graphics) => {
+        const viewport = props.viewportRef.current;
         if (!viewport) return;
         if (viewport.scale._x < 0.1) {
             grid.visible = false;
@@ -64,16 +66,16 @@ export const GridLines = (props: IProps) => {
             grid.moveTo(bounds.left, y - y_offset);
             grid.lineTo(bounds.right, y - y_offset);
         }
-    };
+    }, [props.viewportRef]);
 
-    useTicker(props.ticker, () => {
-        const grid = gridRef.current;
-        if (!grid || !viewport) return;
+    useTicker(() => {
+        const grid = graphicsRef.current;
+        if (!grid) return;
         if (dirty) {
             draw(grid);
             setDirty(false);
         }
     });
 
-    return <Graphics ref={gridRef} draw={draw} />;
+    return <Graphics ref={graphicsRef} draw={draw} />;
 };

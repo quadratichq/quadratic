@@ -8,17 +8,21 @@ import { loadPython } from '../core/computations/python/loadPython';
 import { TopBarLoading } from '../ui/components/TopBarLoading';
 import { WelcomeComponent } from './WelcomeComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
+import { loadAssets } from '../core/gridGL/loadAssets';
 
 export default function QuadraticApp() {
-  const { loading, setLoading } = useLoading();
+  const { loading, incrementLoadingCount } = useLoading();
 
   useEffect(() => {
     if (loading) {
       loadPython().then(() => {
-        setLoading(false);
+        incrementLoadingCount();
+      });
+      loadAssets().then(() => {
+        incrementLoadingCount();
       });
     }
-  }, [loading, setLoading]);
+  }, [loading, incrementLoadingCount]);
 
   return (
     <RecoilRoot>

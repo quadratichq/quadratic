@@ -3,16 +3,14 @@ import { useEffect } from 'react';
 
 type Callback = (dt: number) => void;
 
-export function useTicker(ticker: PIXI.Ticker, callback: Callback, disabled?: boolean) {
+export function useTicker(callback: Callback, disabled?: boolean) {
     useEffect(() => {
         if (!disabled) {
             const tick = (dt: number) => callback(dt);
-            ticker.add(tick)
+            PIXI.Ticker.shared.add(tick)
             return () => {
-                if (ticker) {
-                    ticker.remove(tick)
-                }
+                PIXI.Ticker.shared.remove(tick)
             }
         }
-    }, [disabled, callback, ticker]);
+    }, [disabled, callback]);
 };
