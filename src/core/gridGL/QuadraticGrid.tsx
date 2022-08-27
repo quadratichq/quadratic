@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import * as PIXI from 'pixi.js';
+import { useEffect, useRef, useState } from 'react';
 import useWindowDimensions from '../../hooks/useWindowDimensions';
 import type { Viewport } from 'pixi-viewport';
 import { Stage } from '@inlet/react-pixi';
@@ -20,11 +21,17 @@ import { onDoubleClickCanvas } from './interaction/onDoubleClickCanvas';
 import { colors } from '../../theme/colors';
 import { useMenuState } from '@szhsin/react-menu';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
-
 import { ViewportEventRegister } from './interaction/ViewportEventRegister';
+import { GridLines } from './GridLines';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
+  const [ticker] = useState(new PIXI.Ticker());
+
+  useEffect(() => {
+    ticker.autoStart = true
+  }, [ticker]);
+
   const viewportRef = useRef<Viewport>();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 
@@ -129,6 +136,7 @@ export default function QuadraticGrid() {
                 array_cells={cell.array_cells}
               ></CellPixiReact>
             ))}
+          <GridLines ticker={ticker} />
           <CursorPixiReact
             location={interactionState.cursorPosition}
           ></CursorPixiReact>

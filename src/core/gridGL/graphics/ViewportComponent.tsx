@@ -1,12 +1,12 @@
 import * as PIXI from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { Simple } from 'pixi-cull';
-import { UpdateGridAlphaOnZoom } from './UpdateGridAlphaOnZoom';
+// import { UpdateGridAlphaOnZoom } from './UpdateGridAlphaOnZoom';
 
-import drawGridLines from './drawGridLines';
-import Globals from '../globals';
+// import drawGridLines from './drawGridLines';
+// import Globals from '../globals';
 import { PixiComponent, useApp } from '@inlet/react-pixi';
-import { drawAxisLines } from './drawAxesLines';
+// import { drawAxisLines } from './drawAxesLines';
 
 export interface ViewportProps {
   screenWidth: number;
@@ -22,10 +22,15 @@ export interface PixiComponentViewportProps extends ViewportProps {
 }
 
 const PixiComponentViewport = PixiComponent('Viewport', {
+  applyProps: (instance, oldProps, newProps) => {
+    console.log(newProps, instance)
+  },
+
   create: (props: PixiComponentViewportProps) => {
     // keep a reference of app on window, used for Playwright tests
     //@ts-expect-error
     window.pixiapp = props.app;
+
     // Viewport is the component which allows panning and zooming
     const viewport = new Viewport({
       screenWidth: props.screenWidth,
@@ -54,9 +59,9 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     // startup the viewport
     function startup() {
       // draw grid lines
-      let grid_ui = viewport.addChild(new PIXI.Graphics());
-      let axis_ui = viewport.addChild(new PIXI.Graphics());
-      const globals = new Globals(viewport, props.app.view, grid_ui);
+      // let grid_ui = viewport.addChild(new PIXI.Graphics());
+      // let axis_ui = viewport.addChild(new PIXI.Graphics());
+      // const globals = new Globals(viewport, props.app.view, grid_ui);
 
       let ticker = PIXI.Ticker.shared;
 
@@ -68,8 +73,8 @@ const PixiComponentViewport = PixiComponent('Viewport', {
           if (viewport.dirty) {
 
             // render
-            drawGridLines(viewport, grid_ui);
-            drawAxisLines(viewport, axis_ui, props.showGridAxes);
+            // drawGridLines(viewport, grid_ui);
+            // drawAxisLines(viewport, axis_ui, props.showGridAxes);
             props.app.renderer.render(props.app.stage);
             viewport.dirty = false;
           }
@@ -95,7 +100,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
             );
             cull.cull(visibleBoundsExtended);
 
-            UpdateGridAlphaOnZoom(globals);
+            // UpdateGridAlphaOnZoom(globals);
           }
         },
         null,
