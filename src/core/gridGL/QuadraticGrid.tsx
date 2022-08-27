@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import useWindowDimensions from '../../hooks/useWindowDimensions';
 import type { Viewport } from 'pixi-viewport';
 import { Stage } from '@inlet/react-pixi';

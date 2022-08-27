@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import QuadraticUI from '../ui/QuadraticUI';
-import QuadraticGrid from '../core/gridGL/QuadraticGrid';
 import { RecoilRoot } from 'recoil';
 import { useLoading } from '../contexts/LoadingContext';
 import { QuadraticLoading } from '../ui/QuadtraticLoading';
