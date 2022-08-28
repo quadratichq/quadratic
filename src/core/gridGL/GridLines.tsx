@@ -9,6 +9,7 @@ import {
 import { colors } from '../../theme/colors';
 import { useTicker } from './graphics/hooks/useTicker';
 import { IGraphics } from './types/pixiRefs';
+import { alphaGridLines } from '../gridUtils';
 
 interface IProps {
     viewportRef: MutableRefObject<Viewport | undefined>;
@@ -34,15 +35,13 @@ export function GridLines(props: IProps) {
     const draw = useCallback((grid: PIXI.Graphics) => {
         const viewport = props.viewportRef.current;
         if (!viewport) return;
-        if (viewport.scale._x < 0.1) {
+        const gridAlpha = alphaGridLines(viewport);
+        if (gridAlpha === false) {
             grid.visible = false;
             return;
-        } else if (viewport.scale._x < 0.3) {
-            grid.alpha = viewport.scale._x * 3 - 0.3;
-            grid.visible = true;
-        } else {
-            grid.alpha = 1;
         }
+        grid.alpha = gridAlpha;
+        grid.visible = true;
 
         grid.clear();
 

@@ -13,6 +13,7 @@ import { Container, Graphics } from '@inlet/react-pixi';
 import { IContainer, IGraphics } from './types/pixiRefs';
 import { useTicker } from './graphics/hooks/useTicker';
 import useLocalStorage from '../../hooks/useLocalStorage';
+import { alphaGridLines } from '../gridUtils';
 
 interface IProps {
     viewportRef: MutableRefObject<Viewport | undefined>;
@@ -77,6 +78,8 @@ export function GridHeaders(props: IProps) {
         graphics.clear();
         labels.children.forEach(child => child.visible = false);
 
+        const gridAlpha = alphaGridLines(viewport);
+
         // caches labels so we can reuse them on rerender
         let labelIndex = 0;
         const getLabel = (): PIXI.BitmapText => {
@@ -124,9 +127,11 @@ export function GridHeaders(props: IProps) {
                     label.position.set(x, bounds.top + cellHeight / 2);
                     label.scale.set(inverseScale);
                 }
-                graphics.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
-                graphics.moveTo(x - CELL_WIDTH / 2, bounds.top);
-                graphics.lineTo(x - CELL_WIDTH / 2, bounds.top + cellHeight);
+                if (gridAlpha !== false) {
+                    graphics.lineStyle(1, colors.gridLines, 0.25 * gridAlpha, 0.5, true);
+                    graphics.moveTo(x - CELL_WIDTH / 2, bounds.top);
+                    graphics.lineTo(x - CELL_WIDTH / 2, bounds.top + cellHeight);
+                }
             }
         };
 
@@ -157,9 +162,11 @@ export function GridHeaders(props: IProps) {
                     label.position.set(bounds.left + rowWidth / 2, y);
                     label.scale.set(inverseScale);
                 }
-                graphics.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
-                graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);
-                graphics.lineTo(bounds.left + rowWidth, y + CELL_HEIGHT / 2);
+                if (gridAlpha !== false) {
+                    graphics.lineStyle(1, colors.gridLines, 0.25 * gridAlpha, 0.5, true);
+                    graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);
+                    graphics.lineTo(bounds.left + rowWidth, y + CELL_HEIGHT / 2);
+                }
             }
         };
 
