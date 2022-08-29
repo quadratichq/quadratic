@@ -6,7 +6,7 @@ export const colors = {
   cursorCell: 0x6cd4ff,
   highlightYellow: 0xffc800,
   independence: 0x5d576b,
-  headerBackgroundColor: 0xfafafa,
+  headerBackgroundColor: 0xffffff,
   headerCornerBackgroundColor: 0xffffff,
   lightGray: '#f6f8fa',
   mediumGray: '#cfd7de',
