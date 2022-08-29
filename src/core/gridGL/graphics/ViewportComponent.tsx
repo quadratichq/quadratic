@@ -42,12 +42,14 @@ const PixiComponentViewport = PixiComponent('Viewport', {
         minScale: 0.01,
         maxScale: 10,
       });
-    viewport.on("pointerdown", (e) => props.onPointerDown(viewport.toWorld(e.data.global), e.data.originalEvent));
+    viewport.on('pointerdown', (e) =>
+      props.onPointerDown(viewport.toWorld(e.data.global), e.data.originalEvent)
+    );
 
     props.viewportRef.current = viewport;
 
     // set initial position
-    viewport.moveCorner(-50, -75);
+    viewport.moveCorner(-50, -50);
 
     // Quadratic Render Loop, render when dirty.
     // Remember when anything changes on the stage to either set viewport.dirty = true
