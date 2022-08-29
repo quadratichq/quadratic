@@ -30,6 +30,9 @@ export const TopBar = () => {
         display: 'flex',
         justifyContent: 'space-between',
         paddingRight: '1rem',
+        border: colors.mediumGray,
+        borderWidth: '0 0 1px 0',
+        borderStyle: 'solid',
       }}
       onDoubleClick={(event) => {
         // if clicked (not child clicked), maximize window. For electron.
