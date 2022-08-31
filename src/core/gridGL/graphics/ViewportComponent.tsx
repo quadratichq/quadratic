@@ -28,9 +28,6 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     const viewport = new Viewport({
       screenWidth: props.screenWidth,
       screenHeight: props.screenHeight,
-      worldWidth: 1000,
-      worldHeight: 1000,
-
       interaction: props.app.renderer.plugins.interaction, // the interaction module is important for wheel to work properly when renderer.view is placed or scaled
     });
 
@@ -48,7 +45,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     props.viewportRef.current = viewport;
 
     // set initial position
-    viewport.moveCorner(-50, -50);
+    viewport.moveCorner(0, 0);
 
     // Quadratic Render Loop, render when dirty.
     // Remember when anything changes on the stage to either set viewport.dirty = true
@@ -77,14 +74,16 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     return viewport;
   },
 
-  applyProps(viewport: Viewport, _: ViewportProps, newProps: ViewportProps) {
+  applyProps(viewport: Viewport, oldProps: ViewportProps, newProps: ViewportProps) {
     viewport.off('pointerdown');
     viewport.off('pointermove');
     viewport.off('pointerup');
     viewport.on('pointerdown', (e) => newProps.onPointerDown(viewport.toWorld(e.data.global), e.data.originalEvent));
     viewport.on('pointermove', (e) => newProps.onPointerMove(viewport.toWorld(e.data.global), e.data.originalEvent));
     viewport.on('pointerup', () => newProps.onPointerUp());
-
+    if (oldProps.screenWidth !== newProps.screenWidth || oldProps.screenHeight !== newProps.screenHeight) {
+      viewport.resize(newProps.screenWidth, newProps.screenHeight);
+    }
   }
 });
 

@@ -79,30 +79,44 @@ export const onKeyDownCanvas = (
       let originPosition: { x: number, y: number };
       let terminalPosition: { x: number, y: number };
       if (interactionState.showMultiCursor) {
-        originPosition = interactionState.multiCursorPosition.originPosition;
-        terminalPosition = interactionState.multiCursorPosition.terminalPosition;
+        originPosition = { ...interactionState.multiCursorPosition.originPosition };
+        terminalPosition = { ...interactionState.multiCursorPosition.terminalPosition };
       } else {
-        originPosition = interactionState.cursorPosition;
-        terminalPosition = interactionState.cursorPosition;
+        originPosition = { ...interactionState.cursorPosition };
+        terminalPosition = { ...interactionState.cursorPosition };
       }
-      if (originPosition.x > terminalPosition.x) {
-        const swap = originPosition.x;
-        originPosition.x = terminalPosition.x;
-        terminalPosition.x = swap;
-      }
-      if (originPosition.y > terminalPosition.y) {
-        const swap = originPosition.y;
-        originPosition.y = terminalPosition.y;
-        terminalPosition.y = swap;
-      }
-      setInteractionState({
-        ...interactionState,
-        showMultiCursor: true,
-        multiCursorPosition: {
-          originPosition,
-          terminalPosition: { x: terminalPosition.x + deltaX, y: terminalPosition.y + deltaY },
-        }
-      });
+      terminalPosition.x += deltaX;
+      terminalPosition.y += deltaY;
+
+      // if (originPosition.x === terminalPosition.x && originPosition.y === terminalPosition.y) {
+      //   setInteractionState({
+      //     ...interactionState,
+      //     showMultiCursor: false,
+      //     cursorPosition: {
+      //       x: interactionState.multiCursorPosition.originPosition.x + deltaX,
+      //       y: interactionState.multiCursorPosition.originPosition.y + deltaY
+      //     }
+      //   });
+      // } else {
+        // if (originPosition.x > terminalPosition.x) {
+        //   const swap = originPosition.x;
+        //   originPosition.x = terminalPosition.x;
+        //   terminalPosition.x = swap;
+        // }
+        // if (originPosition.y > terminalPosition.y) {
+        //   const swap = originPosition.y;
+        //   originPosition.y = terminalPosition.y;
+        //   terminalPosition.y = swap;
+        // }
+        setInteractionState({
+          ...interactionState,
+          showMultiCursor: true,
+          multiCursorPosition: {
+            originPosition,
+            terminalPosition: { x: terminalPosition.x, y: terminalPosition.y },
+          }
+        });
+      // }
     } else {
       setInteractionState({
         ...interactionState,

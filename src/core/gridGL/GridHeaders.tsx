@@ -25,6 +25,7 @@ import { alphaGridLines } from '../gridUtils';
 interface IProps {
   viewportRef: MutableRefObject<Viewport | undefined>;
   labelFontSize?: number;
+  setHeaderSize: (width: number, height: number) => void;
 }
 
 export function GridHeaders(props: IProps) {
@@ -215,7 +216,7 @@ export function GridHeaders(props: IProps) {
     drawVertical();
     drawCorner();
     viewport.dirty = true;
-
+    props.setHeaderSize(rowWidth!, CELL_HEIGHT);
     setDirty(false);
   });
 

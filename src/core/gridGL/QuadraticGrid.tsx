@@ -35,6 +35,7 @@ export default function QuadraticGrid() {
 
   const [canvasSize, setCanvasSize] = useState<{ width: number, height: number } | undefined>(undefined);
   const [canvasRef, setCanvasRef] = useState<HTMLCanvasElement>();
+  const [headerSize, setHeaderSize] = useState<{ width: number, height: number }>({ width: 0, height: 0 });
   const containerRef = useCallback(node => {
     if (node) {
       setCanvasSize({ width: node.offsetWidth, height: node.offsetHeight });
@@ -69,6 +70,10 @@ export default function QuadraticGrid() {
     interactionState,
     setInteractionState,
   });
+
+  const setHeaderSizeCallback = useCallback((width: number, height: number) => {
+    setHeaderSize({ width, height });
+  }, [setHeaderSize]);
 
   if (loading) return null;
 
@@ -180,7 +185,10 @@ export default function QuadraticGrid() {
               }
             ></CursorPixiReact>
           )}
-        <GridHeaders viewportRef={viewportRef} />
+          <GridHeaders
+            viewportRef={viewportRef}
+            setHeaderSize={setHeaderSizeCallback}
+          />
         </ViewportComponent>
       </Stage>
       <CellInput
@@ -191,6 +199,8 @@ export default function QuadraticGrid() {
       {viewportRef.current && (
         <ViewportEventRegister
           viewport={viewportRef.current}
+          headerWidth={headerSize.width}
+          headerHeight={headerSize.height}
         ></ViewportEventRegister>
       )}
       <RightClickMenu
