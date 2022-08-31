@@ -14,7 +14,7 @@ import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
 import { onKeyDownCanvas } from './interaction/onKeyDownCanvas';
-import { onMouseDownCanvas } from './interaction/onMouseDownCanvas';
+import { usePointerEvents } from './interaction/usePointerEvents';
 import { CellInput } from './interaction/CellInput';
 import { onDoubleClickCanvas } from './interaction/onDoubleClickCanvas';
 import { colors } from '../../theme/colors';
@@ -64,6 +64,12 @@ export default function QuadraticGrid() {
     useMenuState();
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
 
+  const pointerEvents = usePointerEvents({
+    viewportRef,
+    interactionState,
+    setInteractionState,
+  });
+
   if (loading) return null;
 
   return (
@@ -103,14 +109,6 @@ export default function QuadraticGrid() {
             viewportRef
           );
         }}
-        // onMouseDown={(event) => {
-        //   onMouseDownCanvas(
-        //     event,
-        //     interactionState,
-        //     setInteractionState,
-        //     viewportRef
-        //   );
-        // }}
         onDoubleClick={(event) => {
           onDoubleClickCanvas(
             event,
@@ -135,15 +133,9 @@ export default function QuadraticGrid() {
           screenWidth={windowWidth}
           screenHeight={windowHeight}
           viewportRef={viewportRef}
-          onPointerDown={(world, event) => {
-            onMouseDownCanvas(
-              world,
-              event,
-              interactionState,
-              setInteractionState,
-              viewportRef
-            );
-          }}
+          onPointerDown={pointerEvents.onPointerDown}
+          onPointerMove={pointerEvents.onPointerMove}
+          onPointerUp={pointerEvents.onPointerUp}
         >
           {cells?.map((cell) => (
               <CellPixiReact

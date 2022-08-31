@@ -9,6 +9,8 @@ export interface ViewportProps {
   children?: React.ReactNode;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
   onPointerDown: (world: PIXI.Point, event: PointerEvent) => void;
+  onPointerMove: (world: PIXI.Point, event: PointerEvent) => void;
+  onPointerUp: () => void;
 }
 
 export interface PixiComponentViewportProps extends ViewportProps {
@@ -42,9 +44,6 @@ const PixiComponentViewport = PixiComponent('Viewport', {
         minScale: 0.01,
         maxScale: 10,
       });
-    viewport.on('pointerdown', (e) =>
-      props.onPointerDown(viewport.toWorld(e.data.global), e.data.originalEvent)
-    );
 
     props.viewportRef.current = viewport;
 
@@ -77,6 +76,16 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     console.log('[QuadraticGL] environment ready');
     return viewport;
   },
+
+  applyProps(viewport: Viewport, _: ViewportProps, newProps: ViewportProps) {
+    viewport.off('pointerdown');
+    viewport.off('pointermove');
+    viewport.off('pointerup');
+    viewport.on('pointerdown', (e) => newProps.onPointerDown(viewport.toWorld(e.data.global), e.data.originalEvent));
+    viewport.on('pointermove', (e) => newProps.onPointerMove(viewport.toWorld(e.data.global), e.data.originalEvent));
+    viewport.on('pointerup', () => newProps.onPointerUp());
+
+  }
 });
 
 const ViewportComponent = (props: ViewportProps) => {
