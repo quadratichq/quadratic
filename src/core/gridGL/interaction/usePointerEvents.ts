@@ -30,9 +30,11 @@ export const usePointerEvents = (props: IProps): {
     let down_cell_x = Math.floor(world.x / CELL_WIDTH);
     let down_cell_y = Math.floor(world.y / CELL_HEIGHT);
 
+    const rightClick = event.button === 2 || (event.button === 0 && event.ctrlKey);
+
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
-    if (event.button === 2 && props.interactionState.showMultiCursor)
+    if (rightClick && props.interactionState.showMultiCursor) {
       if (
         down_cell_x >= props.interactionState.multiCursorPosition.originPosition.x &&
         down_cell_x <= props.interactionState.multiCursorPosition.terminalPosition.x &&
@@ -41,6 +43,12 @@ export const usePointerEvents = (props: IProps): {
       )
         // Ignore this click. User is accessing the RightClickMenu.
         return;
+    }
+
+    // otherwise ignore right click
+    else if (rightClick) {
+      return;
+    }
 
     setDownPosition({ x: down_cell_x, y: down_cell_y });
 
