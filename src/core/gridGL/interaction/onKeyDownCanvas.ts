@@ -74,60 +74,56 @@ export const onKeyDownCanvas = (
     return;
   }
 
+  const moveCursor = (deltaX: number, deltaY: number) => {
+    if (event.shiftKey) {
+      let originPosition: { x: number, y: number };
+      let terminalPosition: { x: number, y: number };
+      if (interactionState.showMultiCursor) {
+        originPosition = interactionState.multiCursorPosition.originPosition;
+        terminalPosition = interactionState.multiCursorPosition.terminalPosition;
+      } else {
+        originPosition = interactionState.cursorPosition;
+        terminalPosition = interactionState.cursorPosition;
+      }
+      if (originPosition.x > terminalPosition.x) {
+        const swap = originPosition.x;
+        originPosition.x = terminalPosition.x;
+        terminalPosition.x = swap;
+      }
+      if (originPosition.y > terminalPosition.y) {
+        const swap = originPosition.y;
+        originPosition.y = terminalPosition.y;
+        terminalPosition.y = swap;
+      }
+      setInteractionState({
+        ...interactionState,
+        showMultiCursor: true,
+        multiCursorPosition: {
+          originPosition,
+          terminalPosition: { x: terminalPosition.x + deltaX, y: terminalPosition.y + deltaY },
+        }
+      });
+    } else {
+      setInteractionState({
+        ...interactionState,
+        showMultiCursor: false,
+        cursorPosition: {
+          x: interactionState.cursorPosition.x + deltaX,
+          y: interactionState.cursorPosition.y + deltaY
+        }
+      });
+    }
+    event.preventDefault();
+  };
+
   if (event.key === 'ArrowUp') {
-    setInteractionState({
-      ...interactionState,
-      ...{
-        showMultiCursor: false,
-        cursorPosition: {
-          x: interactionState.cursorPosition.x,
-          y: interactionState.cursorPosition.y - 1,
-        },
-      },
-    });
-
-    event.preventDefault();
-  }
-  if (event.key === 'ArrowRight') {
-    setInteractionState({
-      ...interactionState,
-      ...{
-        showMultiCursor: false,
-        cursorPosition: {
-          x: interactionState.cursorPosition.x + 1,
-          y: interactionState.cursorPosition.y,
-        },
-      },
-    });
-
-    event.preventDefault();
-  }
-  if (event.key === 'ArrowLeft') {
-    setInteractionState({
-      ...interactionState,
-      ...{
-        showMultiCursor: false,
-        cursorPosition: {
-          x: interactionState.cursorPosition.x - 1,
-          y: interactionState.cursorPosition.y,
-        },
-      },
-    });
-
-    event.preventDefault();
-  }
-  if (event.key === 'ArrowDown') {
-    setInteractionState({
-      ...interactionState,
-      ...{
-        showMultiCursor: false,
-        cursorPosition: {
-          x: interactionState.cursorPosition.x,
-          y: interactionState.cursorPosition.y + 1,
-        },
-      },
-    });
-    event.preventDefault();
+    moveCursor(0, -1);
+  }  else if (event.key === 'ArrowRight') {
+    moveCursor(1, 0);
+  } else if (event.key === 'ArrowLeft') {
+    moveCursor(-1, 0);
+  } else if (event.key === 'ArrowDown') {
+    moveCursor(0, 1);
   }
 
   if (event.key === 'Tab') {
