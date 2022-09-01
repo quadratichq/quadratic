@@ -13,7 +13,7 @@ import MultiCursorPixiReact from './graphics/MultiCursorPixiReact';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
-import { onKeyDownCanvas } from './interaction/onKeyDownCanvas';
+import { useKeyboardCanvas } from './interaction/onKeyDownCanvas';
 import { usePointerEvents } from './interaction/usePointerEvents';
 import { CellInput } from './interaction/CellInput';
 import { onDoubleClickCanvas } from './interaction/onDoubleClickCanvas';
@@ -75,6 +75,14 @@ export default function QuadraticGrid() {
     setHeaderSize({ width, height });
   }, [setHeaderSize]);
 
+  const { onKeyDownCanvas } = useKeyboardCanvas({
+    interactionState,
+    setInteractionState,
+    editorInteractionState,
+    setEditorInteractionState,
+    viewportRef
+  });
+
   if (loading || !canvasSize) return null;
 
   return (
@@ -104,16 +112,7 @@ export default function QuadraticGrid() {
           autoDensity: true,
         }}
         tabIndex={0}
-        onKeyDown={(event) => {
-          onKeyDownCanvas(
-            event,
-            interactionState,
-            setInteractionState,
-            editorInteractionState,
-            setEditorInteractionState,
-            viewportRef
-          );
-        }}
+        onKeyDown={(event) => onKeyDownCanvas(event)}
         onDoubleClick={(event) => {
           onDoubleClickCanvas(
             event,
