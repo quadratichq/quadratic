@@ -83,6 +83,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     viewport.on('pointerup', () => newProps.onPointerUp());
     if (oldProps.screenWidth !== newProps.screenWidth || oldProps.screenHeight !== newProps.screenHeight) {
       viewport.resize(newProps.screenWidth, newProps.screenHeight);
+      console.log(newProps.screenHeight)
     }
   }
 });

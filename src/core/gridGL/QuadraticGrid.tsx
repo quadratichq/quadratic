@@ -75,7 +75,7 @@ export default function QuadraticGrid() {
     setHeaderSize({ width, height });
   }, [setHeaderSize]);
 
-  if (loading) return null;
+  if (loading || !canvasSize) return null;
 
   return (
     <div
@@ -92,10 +92,10 @@ export default function QuadraticGrid() {
     >
       <Stage
         id="QuadraticCanvasID"
-        width={canvasSize?.width ?? 0}
-        height={canvasSize?.height ?? 0}
+        width={canvasSize.width}
+        height={canvasSize.height}
         options={{
-          resizeTo: window,
+          // resizeTo: window,
           resolution:
             // Always use 2 instead of 1. Better resolution.
             window.devicePixelRatio === 1.0 ? 2 : window.devicePixelRatio,
@@ -135,8 +135,8 @@ export default function QuadraticGrid() {
         renderOnComponentChange={true}
       >
         <ViewportComponent
-          screenWidth={windowWidth}
-          screenHeight={windowHeight}
+          screenWidth={canvasSize.width}
+          screenHeight={canvasSize.height}
           viewportRef={viewportRef}
           onPointerDown={pointerEvents.onPointerDown}
           onPointerMove={pointerEvents.onPointerMove}
