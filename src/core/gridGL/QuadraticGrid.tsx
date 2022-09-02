@@ -16,7 +16,6 @@ import { useRecoilState } from 'recoil';
 import { useKeyboardCanvas } from './interaction/useKeyboardCanvas';
 import { usePointerEvents } from './interaction/usePointerEvents';
 import { CellInput } from './interaction/CellInput';
-import { onDoubleClickCanvas } from './interaction/onDoubleClickCanvas';
 import { colors } from '../../theme/colors';
 import { useMenuState } from '@szhsin/react-menu';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
@@ -69,6 +68,7 @@ export default function QuadraticGrid() {
     viewportRef,
     interactionState,
     setInteractionState,
+    setEditorInteractionState,
   });
 
   const setHeaderSizeCallback = useCallback((width: number, height: number) => {
@@ -113,15 +113,6 @@ export default function QuadraticGrid() {
         }}
         tabIndex={0}
         onKeyDown={(event) => onKeyDownCanvas(event)}
-        onDoubleClick={(event) => {
-          onDoubleClickCanvas(
-            event,
-            interactionState,
-            setInteractionState,
-            editorInteractionState,
-            setEditorInteractionState
-          );
-        }}
         style={{
           display: 'inline',
           position: 'relative',

@@ -3,14 +3,21 @@ import type { Viewport } from 'pixi-viewport';
 import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import React, { useState } from 'react';
+import { onDoubleClickCanvas } from './onDoubleClickCanvas';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 
 interface IProps {
   viewportRef: React.MutableRefObject<Viewport | undefined>;
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
+  setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
 }
 
+const MINIMUM_MOVE_POSITION = 5;
+const DOUBLE_CLICK_TIME = 200;
+
 export const usePointerEvents = (props: IProps): {
+  isDoubleClick: (world: PIXI.Point, event: PointerEvent) => boolean;
   onPointerDown: (world: PIXI.Point, event: PointerEvent) => void;
   onPointerMove: (world: PIXI.Point, event: PointerEvent) => void;
   onPointerUp: () => void;
@@ -18,15 +25,31 @@ export const usePointerEvents = (props: IProps): {
   const { viewportRef, interactionState, setInteractionState } = props;
 
   const [downPosition, setDownPosition] = useState<{ x: number, y: number } | undefined>();
+  const [downPositionRaw, setDownPositionRaw] = useState<{ x: number, y: number } | undefined>();
   const [previousPosition, setPreviousPosition] = useState<{ originPosition: { x: number, y: number }, terminalPosition: { x: number, y: number } } | undefined>();
+  const [pointerMoved, setPointerMoved] = useState(false);
+  const [doubleClickTimeout, setDoubleClickTimeout] = useState<number | undefined>();
+
+  const isDoubleClick = (world: PIXI.Point, event: PointerEvent): boolean => {
+    console.log(0)
+    if (event.button !== 0 || !downPositionRaw || !props.viewportRef.current) return false;
+    console.log(1, doubleClickTimeout, !pointerMoved)
+    if (doubleClickTimeout && !pointerMoved && Math.abs(downPositionRaw.x - world.x) + Math.abs(downPositionRaw.y - world.y) < MINIMUM_MOVE_POSITION * props.viewportRef.current.scale.x) {
+      setDoubleClickTimeout(undefined);
+      onDoubleClickCanvas(event, props.interactionState, props.setInteractionState, props.setEditorInteractionState);
+      return true;
+    }
+    return false;
+  }
 
   const onPointerDown = (
     world: PIXI.Point,
     event: PointerEvent,
   ) => {
+    if (isDoubleClick(world, event)) return;
     // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
     if (viewportRef.current === undefined) return;
-
+    setDownPositionRaw({ x: world.x, y: world.y });
     let down_cell_x = Math.floor(world.x / CELL_WIDTH);
     let down_cell_y = Math.floor(world.y / CELL_HEIGHT);
 
@@ -70,12 +93,16 @@ export const usePointerEvents = (props: IProps): {
         showMultiCursor: false,
       },
     });
+    setPointerMoved(false);
   };
 
   const onPointerMove = (world: PIXI.Point, _: PointerEvent): void => {
     // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
     if (props.viewportRef.current === undefined) return;
-    if (downPosition === undefined || previousPosition === undefined) return;
+    if (downPosition === undefined || previousPosition === undefined || downPositionRaw === undefined) return;
+    if (!pointerMoved && Math.abs(downPositionRaw.x - world.x) + Math.abs(downPositionRaw.y - world.y) > MINIMUM_MOVE_POSITION * props.viewportRef.current.scale.x) {
+      setPointerMoved(true);
+    }
 
     // calculate mouse move position
     let move_cell_x = Math.floor(world.x / CELL_WIDTH);
@@ -138,11 +165,16 @@ export const usePointerEvents = (props: IProps): {
   }
 
   const onPointerUp = () => {
+    if (downPosition && !pointerMoved) {
+      const timeout = window.setTimeout(() => setDoubleClickTimeout(undefined), DOUBLE_CLICK_TIME);
+      setDoubleClickTimeout(timeout);
+    }
     setDownPosition(undefined);
     setPreviousPosition(undefined);
   }
 
   return {
+    isDoubleClick,
     onPointerDown,
     onPointerMove,
     onPointerUp,
