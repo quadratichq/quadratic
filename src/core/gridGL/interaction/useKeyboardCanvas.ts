@@ -90,13 +90,8 @@ export const useKeyboardCanvas = (props: IProps): {
 
       // use arrow to select when shift key is pressed
       if (event.shiftKey) {
-        let originPosition: { x: number, y: number };
-        let terminalPosition: { x: number, y: number };
-
         // we are moving an existing multiCursor
         if (interactionState.showMultiCursor && downPosition && movePosition) {
-          originPosition = { ...interactionState.multiCursorPosition.originPosition };
-          terminalPosition = { ...interactionState.multiCursorPosition.terminalPosition };
           const newMovePosition = { x: movePosition.x + deltaX, y: movePosition.y + deltaY };
           const originX = downPosition.x < newMovePosition.x ? downPosition.x : newMovePosition.x;
           const originY = downPosition.y < newMovePosition.y ? downPosition.y : newMovePosition.y;

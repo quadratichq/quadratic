@@ -13,7 +13,7 @@ import MultiCursorPixiReact from './graphics/MultiCursorPixiReact';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
-import { useKeyboardCanvas } from './interaction/onKeyDownCanvas';
+import { useKeyboardCanvas } from './interaction/useKeyboardCanvas';
 import { usePointerEvents } from './interaction/usePointerEvents';
 import { CellInput } from './interaction/CellInput';
 import { onDoubleClickCanvas } from './interaction/onDoubleClickCanvas';

@@ -34,8 +34,8 @@ export const ViewportEventRegister = (props: IProps) => {
         dirty = true;
       }
 
-      if (interactionState.cursorPosition.y * CELL_HEIGHT - 1 < viewport.top + headerHeight) {
-        viewport.top = interactionState.cursorPosition.y * CELL_HEIGHT - 1 - headerHeight;
+      if (interactionState.cursorPosition.y * CELL_HEIGHT - 1 < viewport.top + headerHeight / viewport.scale.y) {
+        viewport.top = interactionState.cursorPosition.y * CELL_HEIGHT - 1 - headerHeight / viewport.scale.y;
         dirty = true;
       } else if ((interactionState.cursorPosition.y + 1) * CELL_HEIGHT + 1 > viewport.bottom) {
         viewport.bottom = (interactionState.cursorPosition.y + 1) * CELL_HEIGHT + 1;
