@@ -31,9 +31,7 @@ export const usePointerEvents = (props: IProps): {
   const [doubleClickTimeout, setDoubleClickTimeout] = useState<number | undefined>();
 
   const isDoubleClick = (world: PIXI.Point, event: PointerEvent): boolean => {
-    console.log(0)
     if (event.button !== 0 || !downPositionRaw || !props.viewportRef.current) return false;
-    console.log(1, doubleClickTimeout, !pointerMoved)
     if (doubleClickTimeout && !pointerMoved && Math.abs(downPositionRaw.x - world.x) + Math.abs(downPositionRaw.y - world.y) < MINIMUM_MOVE_POSITION * props.viewportRef.current.scale.x) {
       setDoubleClickTimeout(undefined);
       onDoubleClickCanvas(event, props.interactionState, props.setInteractionState, props.setEditorInteractionState);

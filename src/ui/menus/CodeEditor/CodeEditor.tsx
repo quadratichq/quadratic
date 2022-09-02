@@ -141,13 +141,12 @@ export const CodeEditor = (props: CodeEditorProps) => {
     }
   };
 
-  if (selectedCell !== undefined)
+  if (selectedCell !== undefined && editorInteractionState.showCodeEditor)
     return (
       <div
         id="QuadraticCodeEditorID"
         style={{
-          position: 'fixed',
-          right: 0,
+          display: 'block',
           width: '35%',
           minWidth: '400px',
           height: '100%',
@@ -155,8 +154,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
           borderWidth: '1px 0 0 1px',
           borderColor: colors.mediumGray,
           backgroundColor: '#ffffff',
-          marginTop: '2.5rem',
-          display: editorInteractionState.showCodeEditor ? 'block' : 'none',
         }}
         onKeyDownCapture={onKeyDownEditor}
       >

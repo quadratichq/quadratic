@@ -15,18 +15,24 @@ export default function QuadraticUI() {
 
   return (
     <div style={{
-      width: "100%",
-      height: "100%",
-      display: "flex",
-      flexDirection: "column",
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
     }}>
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
-      <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
       {showDebugMenu && <DebugMenu />}
       <TopBar />
 
-      {/* Provider of WebGL Canvas and Quadratic Grid */}
-      <QuadraticGrid />
+      <div style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+      }}>
+        {/* Provider of WebGL Canvas and Quadratic Grid */}
+        <QuadraticGrid />
+        <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
+      </div>
 
       <BottomBar />
     </div>
