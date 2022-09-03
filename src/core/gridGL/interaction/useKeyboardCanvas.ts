@@ -1,12 +1,12 @@
+import React, { useState } from 'react';
+import type { Viewport } from 'pixi-viewport';
 import { copyToClipboard, pasteFromClipboard } from '../../actions/clipboard';
 import { deleteCellsRange } from '../../actions/deleteCellsRange';
 import { GetCellsDB } from '../../gridDB/Cells/GetCellsDB';
 import isAlphaNumeric from './helpers/isAlphaNumeric';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { getGridMinMax } from '../../../helpers/getGridMinMax';
-import type { Viewport } from 'pixi-viewport';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import React, { useState } from 'react';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -18,6 +18,7 @@ interface IProps {
     React.SetStateAction<EditorInteractionState>
   >;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
+  headerSize: { width: number, height: number };
 }
 
 export const useKeyboardCanvas = (props: IProps): {
@@ -26,7 +27,7 @@ export const useKeyboardCanvas = (props: IProps): {
   const [downPosition, setDownPosition] = useState<{ x: number, y: number } | undefined>();
   const [movePosition, setMovePosition] = useState<{ x: number, y: number } | undefined>();
 
-  const { interactionState, setInteractionState, setEditorInteractionState, viewportRef } = props;
+  const { interactionState, setInteractionState, setEditorInteractionState, viewportRef, headerSize } = props;
 
   const onKeyDownCanvas = (
     event: React.KeyboardEvent<HTMLCanvasElement>,
@@ -87,6 +88,7 @@ export const useKeyboardCanvas = (props: IProps): {
     }
 
     const moveCursor = (deltaX: number, deltaY: number) => {
+      let newInteractionState: GridInteractionState | undefined;
 
       // use arrow to select when shift key is pressed
       if (event.shiftKey) {
@@ -97,7 +99,7 @@ export const useKeyboardCanvas = (props: IProps): {
           const originY = downPosition.y < newMovePosition.y ? downPosition.y : newMovePosition.y;
           const termX = downPosition.x > newMovePosition.x ? downPosition.x : newMovePosition.x;
           const termY = downPosition.y > newMovePosition.y ? downPosition.y : newMovePosition.y;
-          props.setInteractionState({
+          newInteractionState = {
             cursorPosition: { x: downPosition.x, y: downPosition.y },
             multiCursorPosition: {
               originPosition: { x: originX, y: originY },
@@ -106,7 +108,8 @@ export const useKeyboardCanvas = (props: IProps): {
             showMultiCursor: true,
             showInput: false,
             inputInitialValue: '',
-          });
+          };
+          setInteractionState(newInteractionState);
           setMovePosition(newMovePosition);
         }
 
@@ -118,7 +121,7 @@ export const useKeyboardCanvas = (props: IProps): {
           const originY = newDownPosition.y < newMovePosition.y ? newDownPosition.y : newMovePosition.y;
           const termX = newDownPosition.x > newMovePosition.x ? newDownPosition.x : newMovePosition.x;
           const termY = newDownPosition.y > newMovePosition.y ? newDownPosition.y : newMovePosition.y;
-          props.setInteractionState({
+          newInteractionState = {
             cursorPosition: newDownPosition,
             multiCursorPosition: {
               originPosition: { x: originX, y: originY },
@@ -127,7 +130,8 @@ export const useKeyboardCanvas = (props: IProps): {
             showMultiCursor: true,
             showInput: false,
             inputInitialValue: '',
-          });
+          };
+          setInteractionState(newInteractionState);
           setDownPosition(newDownPosition);
           setMovePosition(newMovePosition);
         }
@@ -135,14 +139,15 @@ export const useKeyboardCanvas = (props: IProps): {
 
       // move arrow normally
       else {
-        setInteractionState({
+        newInteractionState = {
           ...interactionState,
           showMultiCursor: false,
           cursorPosition: {
             x: interactionState.cursorPosition.x + deltaX,
             y: interactionState.cursorPosition.y + deltaY
           },
-        });
+        };
+        setInteractionState(newInteractionState);
       }
       event.preventDefault();
     };

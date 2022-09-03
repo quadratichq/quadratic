@@ -23,6 +23,7 @@ import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 import { GridLines } from './GridLines';
 import { AxesLines } from './AxesLines';
 import { GridHeaders } from './GridHeaders';
+import { ensureVisible } from './interaction/ensureVisible';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -80,8 +81,22 @@ export default function QuadraticGrid() {
     setInteractionState,
     editorInteractionState,
     setEditorInteractionState,
-    viewportRef
+    viewportRef,
+    headerSize,
   });
+
+  useEffect(() => {
+    if (viewportRef.current) {
+      ensureVisible({
+        interactionState,
+        viewport: viewportRef.current,
+        headerSize,
+      });
+
+      // ensure rerender after a cursor change
+      viewportRef.current.dirty = true;
+    }
+  }, [interactionState, viewportRef.current]);
 
   if (loading || !canvasSize) return null;
 
@@ -187,11 +202,7 @@ export default function QuadraticGrid() {
         viewportRef={viewportRef}
       ></CellInput>
       {viewportRef.current && (
-        <ViewportEventRegister
-          viewport={viewportRef.current}
-          headerWidth={headerSize.width}
-          headerHeight={headerSize.height}
-        ></ViewportEventRegister>
+        <ViewportEventRegister viewport={viewportRef.current}></ViewportEventRegister>
       )}
       <RightClickMenu
         state={rightClickMenuState}

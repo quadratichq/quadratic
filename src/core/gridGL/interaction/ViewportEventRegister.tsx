@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
 import { zoomStateAtom } from '../../../atoms/zoomStateAtom';
-import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import type { Viewport } from 'pixi-viewport';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { getGridMinMax } from '../../../helpers/getGridMinMax';
 import { Point } from 'pixi.js';
@@ -10,42 +9,11 @@ import { ZOOM_ANIMATION_TIME_MS } from '../../../constants/gridConstants';
 
 interface IProps {
   viewport: Viewport;
-  headerWidth: number;
-  headerHeight: number;
 }
 
 export const ViewportEventRegister = (props: IProps) => {
-  const { viewport, headerWidth, headerHeight } = props;
+  const { viewport } = props;
   const [zoomState, setZoomState] = useRecoilState(zoomStateAtom);
-
-  // Interaction State hook
-  const interactionState = useRecoilValue(gridInteractionStateAtom);
-
-  // When the cursor moves ensure it is visible
-  useEffect(() => {
-    // When multiCursor is visible don't force the single cursor to be visible
-    if (!interactionState.showMultiCursor) {
-      let dirty = false;
-      if (interactionState.cursorPosition.x * CELL_WIDTH - 1 < viewport.left + headerWidth) {
-        viewport.left = interactionState.cursorPosition.x * CELL_WIDTH - 1 - headerWidth;
-        dirty = true;
-      } else if ((interactionState.cursorPosition.x + 1) * CELL_WIDTH + 1 > viewport.right) {
-        viewport.right = (interactionState.cursorPosition.x + 1) * CELL_WIDTH + 1;
-        dirty = true;
-      }
-
-      if (interactionState.cursorPosition.y * CELL_HEIGHT - 1 < viewport.top + headerHeight / viewport.scale.y) {
-        viewport.top = interactionState.cursorPosition.y * CELL_HEIGHT - 1 - headerHeight / viewport.scale.y;
-        dirty = true;
-      } else if ((interactionState.cursorPosition.y + 1) * CELL_HEIGHT + 1 > viewport.bottom) {
-        viewport.bottom = (interactionState.cursorPosition.y + 1) * CELL_HEIGHT + 1;
-        dirty = true;
-      }
-      if (dirty) {
-        viewport.emit('moved');
-      }
-    }
-  }, [viewport, interactionState, headerWidth, headerHeight]);
 
   // register zooming event listener to set Atom state
   useEffect(() => {
@@ -74,9 +42,11 @@ export const ViewportEventRegister = (props: IProps) => {
         event.preventDefault();
       }
     }
-
-    window.removeEventListener('keydown', listenForZoom);
     window.addEventListener('keydown', listenForZoom);
+
+    return () => {
+      window.removeEventListener('keydown', listenForZoom);
+    }
   }, [viewport]);
 
   // When zoom state updates, tell the viewport to zoom

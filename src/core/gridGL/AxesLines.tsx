@@ -13,10 +13,12 @@ export function AxesLines(props: IProps) {
     const graphicsRef = useRef<IGraphics>(null);
     const [dirty, setDirty] = useState(false);
 
+    const { viewportRef } = props;
+
     const setDirtyTrue = useCallback(() => setDirty(true), [setDirty]);
 
     useEffect(() => {
-        const viewport = props.viewportRef.current;
+        const viewport = viewportRef.current;
         if (!viewport) return;
         viewport.on('zoomed', setDirtyTrue);
         viewport.on('moved', setDirtyTrue);
@@ -25,14 +27,14 @@ export function AxesLines(props: IProps) {
             viewport.off('zoomed', setDirtyTrue);
             viewport.off('moved', setDirtyTrue);
         }
-    }, [props.viewportRef, setDirtyTrue]);
+    }, [viewportRef, setDirtyTrue]);
 
     useEffect(() => {
         setDirty(true);
     }, [props.showGridAxes]);
 
     useTicker(() => {
-        const viewport = props.viewportRef.current;
+        const viewport = viewportRef.current;
         const graphics = graphicsRef.current;
         if (!viewport || !graphics) return;
         if (dirty) {
