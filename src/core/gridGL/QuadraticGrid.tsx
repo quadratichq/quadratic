@@ -23,6 +23,11 @@ import useLocalStorage from '../../hooks/useLocalStorage';
 import { gridHeadingsProps } from './graphics/gridHeadings';
 import { axesLinesProps } from './graphics/axesLines';
 
+export interface Size {
+  width: number;
+  height: number;
+}
+
 export default function QuadraticGrid() {
   const { loading } = useLoading();
   const viewportRef = useRef<Viewport>();
@@ -30,19 +35,19 @@ export default function QuadraticGrid() {
 
   // Live query to update cells
   const cells = useLiveQuery(() => GetCellsDB());
-  const [canvasSize, setCanvasSize] = useState<{ width: number, height: number } | undefined>(undefined);
-  const [canvasRef, setCanvasRef] = useState<HTMLCanvasElement>();
-  const [headerSize, setHeaderSize] = useState<{ width: number, height: number }>({ width: 0, height: 0 });
+  const [canvasSize, setCanvasSize] = useState<Size | undefined>(undefined);
+  const [container, setContainer] = useState<HTMLDivElement>();
+  const [headerSize, setHeaderSize] = useState<Size>({ width: 0, height: 0 });
   const containerRef = useCallback(node => {
     if (node) {
       setCanvasSize({ width: node.offsetWidth, height: node.offsetHeight });
-      setCanvasRef(node);
+      setContainer(node);
     }
   }, []);
 
   useEffect(() => {
-    setCanvasSize({ width: canvasRef?.offsetWidth ?? 0, height: canvasRef?.offsetHeight ?? 0 });
-  }, [windowWidth, windowHeight, canvasRef]);
+    setCanvasSize({ width: container?.offsetWidth ?? 0, height: container?.offsetHeight ?? 0 });
+  }, [windowWidth, windowHeight, container]);
 
     // Local Storage Config
   const [showGridAxes] = useLocalStorage('showGridAxes', true);
@@ -196,6 +201,8 @@ export default function QuadraticGrid() {
         interactionState={interactionState}
         setInteractionState={setInteractionState}
         viewportRef={viewportRef}
+        headerSize={headerSize}
+        container={container}
       ></CellInput>
       {viewportRef.current && (
         <ViewportEventRegister viewport={viewportRef.current}></ViewportEventRegister>

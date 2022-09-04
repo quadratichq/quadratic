@@ -1,12 +1,13 @@
 import { Viewport } from 'pixi-viewport';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
+import { Size } from '../QuadraticGrid';
 
 // When the cursor moves ensure it is visible
 export function ensureVisible(props: {
     interactionState: GridInteractionState,
     viewport: Viewport,
-    headerSize: { width: number, height: number },
+    headerSize: Size,
 }): void {
     const { interactionState, viewport, headerSize } = props;
     if (interactionState.showMultiCursor) {

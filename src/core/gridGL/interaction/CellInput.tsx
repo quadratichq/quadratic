@@ -6,6 +6,7 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { Viewport } from 'pixi-viewport';
 import CellReference from '../types/cellReference';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { Size } from '../QuadraticGrid';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -13,13 +14,15 @@ interface CellInputProps {
     React.SetStateAction<GridInteractionState>
   >;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
+  headerSize: Size;
+  container?: HTMLDivElement;
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { interactionState, setInteractionState, viewportRef } = props;
+  const { interactionState, setInteractionState, viewportRef, container } = props;
 
   const [value, setValue] = useState<string | undefined>(undefined);
-  const cellLoation = useRef(interactionState.cursorPosition);
+  const cellLocation = useRef(interactionState.cursorPosition);
   const textInput = useRef<HTMLInputElement>(null);
 
   // Effect for sizing the input width to the length of the value
@@ -29,19 +32,19 @@ export const CellInput = (props: CellInputProps) => {
 
   // If we don't have a viewport, we can't continue.
   const viewport = viewportRef.current;
-  if (!viewport) return null;
+  if (!viewport || !container) return null;
 
   // Function used to move and scale the Input with the Grid
   function updateInputCSSTransform() {
-    if (!viewport) return '';
+    if (!viewport || !container) return '';
 
     // Get world transform matrix
     let worldTransform = viewport.worldTransform;
 
     // Calculate position of input based on cell
     let cell_offset_scaled = viewport.toScreen(
-      cellLoation.current.x * CELL_WIDTH + 0.5,
-      cellLoation.current.y * CELL_HEIGHT + 1
+      cellLocation.current.x * CELL_WIDTH + 0.5,
+      cellLocation.current.y * CELL_HEIGHT + 1
     );
 
     // Generate transform CSS
@@ -52,8 +55,8 @@ export const CellInput = (props: CellInputProps) => {
         worldTransform.b,
         worldTransform.c,
         worldTransform.d,
-        cell_offset_scaled.x,
-        cell_offset_scaled.y,
+        cell_offset_scaled.x + container.offsetLeft,
+        cell_offset_scaled.y + container.offsetTop,
       ].join(',') +
       ')';
 
@@ -75,18 +78,18 @@ export const CellInput = (props: CellInputProps) => {
     if (value === '') {
       await deleteCellsRange(
         {
-          x: cellLoation.current.x,
-          y: cellLoation.current.y,
+          x: cellLocation.current.x,
+          y: cellLocation.current.y,
         },
         {
-          x: cellLoation.current.x,
-          y: cellLoation.current.y,
+          x: cellLocation.current.x,
+          y: cellLocation.current.y,
         }
       );
     } else {
       await updateCellAndDCells({
-        x: cellLoation.current.x,
-        y: cellLoation.current.y,
+        x: cellLocation.current.x,
+        y: cellLocation.current.y,
         type: 'TEXT',
         value: value || '',
       });
@@ -110,20 +113,19 @@ export const CellInput = (props: CellInputProps) => {
     focusGrid();
 
     // Clean up listeners
-    // NOTE: this may accidentally cancel events registered elsewhere
-    viewport.removeListener('moved-end');
-    viewport.removeListener('moved');
+    viewport.off('moved-end', updateInputCSSTransform);
+    viewport.off('moved', updateInputCSSTransform);
   };
 
   // Happens when a cell is being edited
   if (value === undefined && value !== interactionState.inputInitialValue) {
     // Set initial value and remember this cells position.
     setValue(interactionState.inputInitialValue);
-    cellLoation.current = interactionState.cursorPosition;
+    cellLocation.current = interactionState.cursorPosition;
 
     // Register lister for when grid moves to resize and move input with CSS
-    viewport.addListener('moved', updateInputCSSTransform);
-    viewport.addListener('moved-end', updateInputCSSTransform);
+    viewport.on('moved', updateInputCSSTransform);
+    viewport.on('moved-end', updateInputCSSTransform);
   }
 
   // set input's initial position correctly

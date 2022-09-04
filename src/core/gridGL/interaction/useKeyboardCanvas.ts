@@ -8,6 +8,7 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { getGridMinMax } from '../../../helpers/getGridMinMax';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { ensureVisible } from './ensureVisible';
+import { Size } from '../QuadraticGrid';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -19,7 +20,7 @@ interface IProps {
     React.SetStateAction<EditorInteractionState>
   >;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
-  headerSize: { width: number, height: number };
+  headerSize: Size;
 }
 
 export const useKeyboardCanvas = (props: IProps): {

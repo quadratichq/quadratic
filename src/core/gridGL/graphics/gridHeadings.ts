@@ -11,6 +11,7 @@ import {
 } from '../../../constants/gridConstants';
 import { colors } from '../../../theme/colors';
 import { alphaGridLines } from './gridUtils';
+import { Size } from '../QuadraticGrid';
 
 interface IProps {
   viewport: Viewport;
@@ -27,7 +28,7 @@ interface LabelData {
   y: number;
 }
 
-let characterSize: { width: number, height: number } | undefined = undefined;
+let characterSize: Size | undefined = undefined;
 
 function calculateCharacterSize(): void {
   const label = new PIXI.BitmapText('X', {
@@ -47,7 +48,7 @@ function findInterval(i: number): number {
 }
 
 export const gridHeadingsProps = { showHeadings: true };
-let lastRowSize: { width: number, height: number } = { width: 0, height: 0 };
+let lastRowSize: Size = { width: 0, height: 0 };
 let lastShowHeadings = false;
 
 export function gridHeadings(props: IProps) {
