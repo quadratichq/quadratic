@@ -7,6 +7,7 @@ import {
   LABEL_MAXIMUM_HEIGHT_PERCENT,
   LABEL_PADDING_ROWS,
   GRID_HEADER_FONT_SIZE,
+  LABEL_DIGITS_TO_CALCULATE_SKIP,
 } from '../../../constants/gridConstants';
 import { colors } from '../../../theme/colors';
 import { alphaGridLines } from './gridUtils';
@@ -18,6 +19,12 @@ interface IProps {
   corner: PIXI.Graphics;
   setHeaderSize: (width: number, height: number) => void;
   showHeadings: boolean;
+}
+
+interface LabelData {
+  text: string;
+  x: number;
+  y: number;
 }
 
 let characterSize: { width: number, height: number } | undefined = undefined;
@@ -47,34 +54,11 @@ export function gridHeadings(props: IProps) {
   const cellWidth = CELL_WIDTH / props.viewport.scale.x;
   const cellHeight = CELL_HEIGHT / props.viewport.scale.x;
   const inverseScale = 1 / props.viewport.scale.x;
-
-  props.labels.children.forEach((child) => (child.visible = false));
-
   const gridAlpha = alphaGridLines(props.viewport);
-
-  // caches labels so we can reuse them on rerender
-  let labelIndex = 0;
-
   const bounds = props.viewport.getVisibleBounds();
 
-  const getLabel = (): PIXI.BitmapText => {
-    if (labelIndex < props.labels.children.length) {
-      const label = props.labels.children[labelIndex];
-      labelIndex++;
-      label.visible = true;
-      return label as PIXI.BitmapText;
-    } else {
-      const label = props.labels.addChild(
-        new PIXI.BitmapText('', {
-          fontName: 'OpenSans',
-          fontSize: GRID_HEADER_FONT_SIZE,
-          tint: 0x55606b,
-        })
-      );
-      label.anchor.set(0.5);
-      return label;
-    }
-  };
+  // holds data for horizontal and vertical labels
+  const labelData: LabelData[] = [];
 
   const drawHorizontal = () => {
     if (!characterSize) return;
@@ -87,33 +71,24 @@ export function gridHeadings(props: IProps) {
     const xOffset = bounds.left % CELL_WIDTH;
     const leftOffset = bounds.left - xOffset - CELL_WIDTH / 2;
     const rightOffset = bounds.right - xOffset + CELL_WIDTH / 2;
-    const leftNumberLength = Math.round(
-      leftOffset / CELL_WIDTH - 1
-    ).toString().length;
-    const rightNumberLength = Math.round(
-      rightOffset / CELL_WIDTH - 1
-    ).toString().length;
-    const largestWidth =
-      Math.max(leftNumberLength, rightNumberLength) * characterSize.width;
+    const labelWidth = LABEL_DIGITS_TO_CALCULATE_SKIP * characterSize.width;
     let mod = 0;
     if (
-      largestWidth >
+      labelWidth >
       CELL_WIDTH * props.viewport.scale.x * LABEL_MAXIMUM_WIDTH_PERCENT
     ) {
       const skipNumbers = Math.ceil(
-        (cellWidth * (1 - LABEL_MAXIMUM_WIDTH_PERCENT)) / largestWidth
+        (cellWidth * (1 - LABEL_MAXIMUM_WIDTH_PERCENT)) / labelWidth
       );
       mod = findInterval(skipNumbers);
     }
 
-    // create labels
+    // create labelData
+    const y = bounds.top + cellHeight / 2;
     for (let x = leftOffset; x < rightOffset; x += CELL_WIDTH) {
       const column = Math.round(x / CELL_WIDTH - 1);
       if (mod === 0 || column % mod === 0) {
-        const label = getLabel();
-        label.text = column.toString();
-        label.position.set(x, bounds.top + cellHeight / 2);
-        label.scale.set(inverseScale);
+        labelData.push({ text: column.toString(), x, y });
       }
       if (gridAlpha !== false) {
         props.graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
@@ -160,13 +135,11 @@ export function gridHeadings(props: IProps) {
       );
       mod = findInterval(skipNumbers);
     }
+    const x = bounds.left + rowWidth / 2;
     for (let y = topOffset; y < bottomOffset; y += CELL_HEIGHT) {
       const row = Math.round(y / CELL_HEIGHT - 1);
       if (mod === 0 || row % mod === 0) {
-        const label = getLabel();
-        label.text = row.toString();
-        label.position.set(bounds.left + rowWidth / 2, y);
-        label.scale.set(inverseScale);
+        labelData.push({ text: row.toString(), x, y });
       }
       if (gridAlpha !== false) {
         props.graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
@@ -183,8 +156,59 @@ export function gridHeadings(props: IProps) {
     props.corner.endFill();
   };
 
+  const addLabel = (): PIXI.BitmapText => {
+    const label = props.labels.addChild(
+      new PIXI.BitmapText('', {
+        fontName: 'OpenSans',
+        fontSize: GRID_HEADER_FONT_SIZE,
+        tint: 0x55606b,
+      })
+    );
+    label.anchor.set(0.5);
+    return label;
+  }
+
+  // add labels to headings using cached labels
+  const addLabels = () => {
+    const available = [...props.labels.children] as PIXI.BitmapText[];
+    const leftovers: LabelData[] = [];
+
+    // reuse existing labels that have the same text
+    labelData.forEach(data => {
+      const index = available.findIndex(label => label.text === data.text);
+      if (index === -1) {
+        leftovers.push(data);
+      } else {
+        const label = available[index];
+        label.visible = true;
+        label.scale.set(inverseScale);
+        label.position.set(data.x, data.y);
+        available.splice(index, 1);
+      }
+    });
+
+    // use existing labels but change the text
+    leftovers.forEach((data, i) => {
+      let label: PIXI.BitmapText;
+      if (i < available.length) {
+        label = available[i];
+        label.visible = true;
+      }
+
+      // otherwise create new labels
+      else {
+        label = addLabel();
+      }
+      label.scale.set(inverseScale);
+      label.position.set(data.x, data.y);
+      label.text = data.text;
+    });
+  };
+
+  props.labels.children.forEach((child) => (child.visible = false));
   drawHorizontal();
   drawVertical();
+  addLabels();
   drawCorner();
   props.setHeaderSize(rowWidth!, CELL_HEIGHT);
 }
