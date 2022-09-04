@@ -9,21 +9,6 @@ html,
   font-weight: 500;
 } */
 
-.canvas-wrapper {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-
-  outline: none;
-  -webkit-tap-highlight-color: transparent; /* mobile webkit */
+.canvas {
+  -webkit-tap-highlight-color: transparent;
 }

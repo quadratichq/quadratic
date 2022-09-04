@@ -25,11 +25,11 @@ export default function QuadraticUI() {
       <TopBar />
 
       <div style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        overflow: "hidden",
       }}>
-        {/* Provider of WebGL Canvas and Quadratic Grid */}
         <QuadraticGrid />
         <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
       </div>

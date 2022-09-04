@@ -111,10 +111,13 @@ export default function QuadraticGrid() {
 
   return (
     <div
+      className="canvas"
       ref={containerRef}
       style={{
         width: "100%",
         height: "100%",
+        outline: "none",
+        overflow: "hidden",
       }}
       onContextMenu={(event) => {
         event.preventDefault();
@@ -138,8 +141,8 @@ export default function QuadraticGrid() {
         tabIndex={0}
         onKeyDown={(event) => onKeyDownCanvas(event)}
         style={{
-          display: 'inline',
-          position: 'relative',
+          // display: 'inline',
+          // position: 'relative',
         }}
 
         // Disable rendering on each frame
