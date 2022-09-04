@@ -146,8 +146,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
       <div
         id="QuadraticCodeEditorID"
         style={{
-          // position: 'fixed',
-          // right: 0,
+          position: 'fixed',
+          right: 0,
           display: 'block',
           width: '35%',
           minWidth: '400px',
