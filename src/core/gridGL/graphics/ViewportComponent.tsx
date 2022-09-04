@@ -62,15 +62,21 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     const corner = headings.addChild(new PIXI.Graphics());
 
     // set initial position
-    if (props.showHeadings) {
-      let width = 0, height = 0;
-
-      // need to obtain the initial width and height of header to properly position viewport
-      gridHeadings({ viewport, graphics: headingsGraphics, labels, corner, setHeaderSize: (w: number, h: number) => { width = w; height = h; }, showHeadings: props.showHeadings })
-      viewport.moveCorner(-width, -height);
-    } else {
-      viewport.moveCorner(0, 0);
-    }
+    // if (props.showHeadings) {
+    //   let width = 0, height = 0;
+    //   // need to obtain the initial width and height of header to properly position viewport
+    //   gridHeadings({
+    //     viewport,
+    //     headings,
+    //     graphics: headingsGraphics,
+    //     labels,
+    //     corner,
+    //     setHeaderSize: (w: number, h: number) => { width = w; height = h; },
+    //   });
+    //   viewport.moveCorner(-width, -height);
+    // } else {
+    //   viewport.moveCorner(0, 0);
+    // }
 
     // Quadratic Render Loop, render when dirty.
     // Remember when anything changes on the stage to either set viewport.dirty = true
@@ -83,7 +89,14 @@ const PixiComponentViewport = PixiComponent('Viewport', {
             headingsGraphics.clear();
             gridLines({ viewport, graphics });
             axesLines({ viewport, graphics, showGridAxes: props.showGridAxes });
-            gridHeadings({ viewport, graphics: headingsGraphics, labels, corner, setHeaderSize: props.setHeaderSize, showHeadings: props.showHeadings })
+            gridHeadings({
+              viewport,
+              headings,
+              graphics: headingsGraphics,
+              labels,
+              corner,
+              setHeaderSize: props.setHeaderSize,
+            });
             dirty = false;
           }
 

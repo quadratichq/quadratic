@@ -20,6 +20,7 @@ import { useMenuState } from '@szhsin/react-menu';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
 import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 import useLocalStorage from '../../hooks/useLocalStorage';
+import { gridHeadingsProps } from './graphics/gridHeadings';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -44,7 +45,17 @@ export default function QuadraticGrid() {
 
     // Local Storage Config
   const [showGridAxes] = useLocalStorage('showGridAxes', true);
-  const [showHeaders] = useLocalStorage('showHeaders', true);
+  const [showHeadings] = useLocalStorage('showHeadings', true);
+
+  useEffect(() => {
+    gridHeadingsProps.showHeadings = showHeadings;
+
+    // force a re-rendering of the headings
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    viewport.emit('zoomed');
+    viewport.dirty = true;
+  }, [showHeadings]);
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(
@@ -133,7 +144,7 @@ export default function QuadraticGrid() {
           onPointerUp={pointerEvents.onPointerUp}
           setHeaderSize={setHeaderSizeCallback}
           showGridAxes={showGridAxes}
-          showHeadings={showHeaders}
+          showHeadings={showHeadings}
         >
           {cells?.map((cell) => (
               <CellPixiReact

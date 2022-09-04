@@ -14,11 +14,11 @@ import { alphaGridLines } from './gridUtils';
 
 interface IProps {
   viewport: Viewport;
+  headings: PIXI.Container;
   graphics: PIXI.Graphics;
   labels: PIXI.Container
   corner: PIXI.Graphics;
   setHeaderSize: (width: number, height: number) => void;
-  showHeadings: boolean;
 }
 
 interface LabelData {
@@ -46,26 +46,41 @@ function findInterval(i: number): number {
   return 5;
 }
 
+export const gridHeadingsProps = { showHeadings: true };
+let lastRowSize: { width: number, height: number } = { width: 0, height: 0 };
+let lastShowHeadings = false;
+
 export function gridHeadings(props: IProps) {
-  if (!props.showHeadings) return;
+  const { viewport, graphics, headings, corner, labels } = props;
+
+  if (!gridHeadingsProps.showHeadings) {
+    headings.visible = false;
+    if (lastShowHeadings) {
+      viewport.x -= lastRowSize.width;
+      viewport.y -= lastRowSize.height;
+      lastShowHeadings = false;
+    }
+    return;
+  }
+  headings.visible = true;
   if (!characterSize) {
       calculateCharacterSize();
   }
-  const cellWidth = CELL_WIDTH / props.viewport.scale.x;
-  const cellHeight = CELL_HEIGHT / props.viewport.scale.x;
-  const inverseScale = 1 / props.viewport.scale.x;
-  const gridAlpha = alphaGridLines(props.viewport);
-  const bounds = props.viewport.getVisibleBounds();
+  const cellWidth = CELL_WIDTH / viewport.scale.x;
+  const cellHeight = CELL_HEIGHT / viewport.scale.x;
+  const inverseScale = 1 / viewport.scale.x;
+  const gridAlpha = alphaGridLines(viewport);
+  let bounds = viewport.getVisibleBounds();
 
   // holds data for horizontal and vertical labels
-  const labelData: LabelData[] = [];
+  let labelData: LabelData[] = [];
 
   const drawHorizontal = () => {
     if (!characterSize) return;
 
     // draw bar
-    props.graphics.beginFill(colors.headerBackgroundColor);
-    props.graphics.drawRect(props.viewport.left, props.viewport.top, props.viewport.width, cellHeight);
+    graphics.beginFill(colors.headerBackgroundColor);
+    graphics.drawRect(viewport.left, viewport.top, viewport.width, cellHeight);
 
     // calculate whether we need to skip numbers
     const xOffset = bounds.left % CELL_WIDTH;
@@ -75,7 +90,7 @@ export function gridHeadings(props: IProps) {
     let mod = 0;
     if (
       labelWidth >
-      CELL_WIDTH * props.viewport.scale.x * LABEL_MAXIMUM_WIDTH_PERCENT
+      CELL_WIDTH * viewport.scale.x * LABEL_MAXIMUM_WIDTH_PERCENT
     ) {
       const skipNumbers = Math.ceil(
         (cellWidth * (1 - LABEL_MAXIMUM_WIDTH_PERCENT)) / labelWidth
@@ -91,9 +106,9 @@ export function gridHeadings(props: IProps) {
         labelData.push({ text: column.toString(), x, y });
       }
       if (gridAlpha !== false) {
-        props.graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
-        props.graphics.moveTo(x - CELL_WIDTH / 2, bounds.top);
-        props.graphics.lineTo(x - CELL_WIDTH / 2, bounds.top + cellHeight);
+        graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
+        graphics.moveTo(x - CELL_WIDTH / 2, bounds.top);
+        graphics.lineTo(x - CELL_WIDTH / 2, bounds.top + cellHeight);
       }
     }
   };
@@ -113,21 +128,22 @@ export function gridHeadings(props: IProps) {
     ).toString().length;
     rowWidth =
       (Math.max(topNumberLength, bottomNumberLength) * characterSize.width) /
-        props.viewport.scale.x +
-      (LABEL_PADDING_ROWS / props.viewport.scale.x) * 2;
-    rowWidth = Math.max(rowWidth, CELL_HEIGHT / props.viewport.scale.x);
-    props.graphics.lineStyle(0);
-    props.graphics.beginFill(colors.headerBackgroundColor);
-    props.graphics.drawRect(
+        viewport.scale.x +
+      (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
+    rowWidth = Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
+
+    graphics.lineStyle(0);
+    graphics.beginFill(colors.headerBackgroundColor);
+    graphics.drawRect(
       bounds.left,
-      bounds.top + CELL_HEIGHT / props.viewport.scale.x,
+      bounds.top + CELL_HEIGHT / viewport.scale.x,
       rowWidth,
-      bounds.height - CELL_HEIGHT / props.viewport.scale.x
+      bounds.height - CELL_HEIGHT / viewport.scale.x
     );
     let mod = 0;
     if (
       characterSize.height >
-      CELL_HEIGHT * props.viewport.scale.x * LABEL_MAXIMUM_HEIGHT_PERCENT
+      CELL_HEIGHT * viewport.scale.x * LABEL_MAXIMUM_HEIGHT_PERCENT
     ) {
       const skipNumbers = Math.ceil(
         (cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) /
@@ -142,22 +158,22 @@ export function gridHeadings(props: IProps) {
         labelData.push({ text: row.toString(), x, y });
       }
       if (gridAlpha !== false) {
-        props.graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
-        props.graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);
-        props.graphics.lineTo(bounds.left + rowWidth, y + CELL_HEIGHT / 2);
+        graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
+        graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);
+        graphics.lineTo(bounds.left + rowWidth, y + CELL_HEIGHT / 2);
       }
     }
   };
 
   const drawCorner = () => {
-    props.corner.clear();
-    props.corner.beginFill(colors.headerCornerBackgroundColor);
-    props.corner.drawRect(bounds.left, bounds.top, rowWidth, cellHeight);
-    props.corner.endFill();
+    corner.clear();
+    corner.beginFill(colors.headerCornerBackgroundColor);
+    corner.drawRect(bounds.left, bounds.top, rowWidth, cellHeight);
+    corner.endFill();
   };
 
   const addLabel = (): PIXI.BitmapText => {
-    const label = props.labels.addChild(
+    const label = labels.addChild(
       new PIXI.BitmapText('', {
         fontName: 'OpenSans',
         fontSize: GRID_HEADER_FONT_SIZE,
@@ -170,7 +186,7 @@ export function gridHeadings(props: IProps) {
 
   // add labels to headings using cached labels
   const addLabels = () => {
-    const available = [...props.labels.children] as PIXI.BitmapText[];
+    const available = [...labels.children] as PIXI.BitmapText[];
     const leftovers: LabelData[] = [];
 
     // reuse existing labels that have the same text
@@ -205,10 +221,25 @@ export function gridHeadings(props: IProps) {
     });
   };
 
-  props.labels.children.forEach((child) => (child.visible = false));
-  drawHorizontal();
+  labels.children.forEach((child) => (child.visible = false));
   drawVertical();
+
+  // adjust viewport position if headings are new
+  if (!lastShowHeadings) {
+    viewport.x += rowWidth!;
+    viewport.y += CELL_HEIGHT;
+    lastShowHeadings = true;
+
+    // need to start over to take into account change in viewport position
+    graphics.clear();
+    bounds = viewport.getVisibleBounds();
+    labelData = [];
+    drawVertical();
+  }
+
+  drawHorizontal();
   addLabels();
   drawCorner();
   props.setHeaderSize(rowWidth!, CELL_HEIGHT);
+  lastRowSize = { width: rowWidth!, height: CELL_HEIGHT };
 }
