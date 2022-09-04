@@ -20,7 +20,7 @@ import { Container, Graphics } from '@inlet/react-pixi';
 import { IContainer, IGraphics } from './types/pixiRefs';
 import { useTicker } from './graphics/hooks/useTicker';
 import useLocalStorage from '../../hooks/useLocalStorage';
-import { alphaGridLines } from '../gridUtils';
+import { alphaGridLines } from './graphics/gridUtils';
 
 interface IProps {
   viewportRef: MutableRefObject<Viewport | undefined>;

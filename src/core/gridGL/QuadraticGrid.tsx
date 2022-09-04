@@ -6,7 +6,6 @@ import ViewportComponent from './graphics/ViewportComponent';
 import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useLoading } from '../../contexts/LoadingContext';
-import useLocalStorage from '../../hooks/useLocalStorage';
 import CellPixiReact from './graphics/CellPixiReact';
 import CursorPixiReact from './graphics/CursorPixiReact';
 import MultiCursorPixiReact from './graphics/MultiCursorPixiReact';
@@ -20,10 +19,7 @@ import { colors } from '../../theme/colors';
 import { useMenuState } from '@szhsin/react-menu';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
 import { ViewportEventRegister } from './interaction/ViewportEventRegister';
-import { GridLines } from './GridLines';
-import { AxesLines } from './AxesLines';
-import { GridHeaders } from './GridHeaders';
-import { ensureVisible } from './interaction/ensureVisible';
+import useLocalStorage from '../../hooks/useLocalStorage';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -32,7 +28,6 @@ export default function QuadraticGrid() {
 
   // Live query to update cells
   const cells = useLiveQuery(() => GetCellsDB());
-
   const [canvasSize, setCanvasSize] = useState<{ width: number, height: number } | undefined>(undefined);
   const [canvasRef, setCanvasRef] = useState<HTMLCanvasElement>();
   const [headerSize, setHeaderSize] = useState<{ width: number, height: number }>({ width: 0, height: 0 });
@@ -47,8 +42,9 @@ export default function QuadraticGrid() {
     setCanvasSize({ width: canvasRef?.offsetWidth ?? 0, height: canvasRef?.offsetHeight ?? 0 });
   }, [windowWidth, windowHeight, canvasRef]);
 
-  // Local Storage Config
+    // Local Storage Config
   const [showGridAxes] = useLocalStorage('showGridAxes', true);
+  const [showHeaders] = useLocalStorage('showHeaders', true);
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(
@@ -73,8 +69,10 @@ export default function QuadraticGrid() {
   });
 
   const setHeaderSizeCallback = useCallback((width: number, height: number) => {
-    setHeaderSize({ width, height });
-  }, [setHeaderSize]);
+    if (headerSize.width !== width || headerSize.height !== height) {
+      setHeaderSize({ width, height });
+    }
+  }, [headerSize, setHeaderSize]);
 
   const { onKeyDownCanvas } = useKeyboardCanvas({
     interactionState,
@@ -84,19 +82,6 @@ export default function QuadraticGrid() {
     viewportRef,
     headerSize,
   });
-
-  useEffect(() => {
-    if (viewportRef.current) {
-      ensureVisible({
-        interactionState,
-        viewport: viewportRef.current,
-        headerSize,
-      });
-
-      // ensure rerender after a cursor change
-      viewportRef.current.dirty = true;
-    }
-  }, [interactionState, viewportRef.current]);
 
   if (loading || !canvasSize) return null;
 
@@ -137,7 +122,7 @@ export default function QuadraticGrid() {
         raf={false}
 
         // Render on each state change
-        renderOnComponentChange={true}
+        // renderOnComponentChange={true}
       >
         <ViewportComponent
           screenWidth={canvasSize.width}
@@ -146,6 +131,9 @@ export default function QuadraticGrid() {
           onPointerDown={pointerEvents.onPointerDown}
           onPointerMove={pointerEvents.onPointerMove}
           onPointerUp={pointerEvents.onPointerUp}
+          setHeaderSize={setHeaderSizeCallback}
+          showGridAxes={showGridAxes}
+          showHeadings={showHeaders}
         >
           {cells?.map((cell) => (
               <CellPixiReact
@@ -165,11 +153,6 @@ export default function QuadraticGrid() {
                 array_cells={cell.array_cells}
               ></CellPixiReact>
           ))}
-          <GridLines viewportRef={viewportRef} />
-          <AxesLines
-            viewportRef={viewportRef}
-            showGridAxes={showGridAxes}
-          />
           <CursorPixiReact
             location={interactionState.cursorPosition}
           ></CursorPixiReact>
@@ -190,10 +173,6 @@ export default function QuadraticGrid() {
               }
             ></CursorPixiReact>
           )}
-          <GridHeaders
-            viewportRef={viewportRef}
-            setHeaderSize={setHeaderSizeCallback}
-          />
         </ViewportComponent>
       </Stage>
       <CellInput

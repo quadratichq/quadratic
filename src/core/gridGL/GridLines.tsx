@@ -9,7 +9,7 @@ import {
 import { colors } from '../../theme/colors';
 import { useTicker } from './graphics/hooks/useTicker';
 import { IGraphics } from './types/pixiRefs';
-import { alphaGridLines } from '../gridUtils';
+import { alphaGridLines } from './graphics/gridUtils';
 
 interface IProps {
     viewportRef: MutableRefObject<Viewport | undefined>;

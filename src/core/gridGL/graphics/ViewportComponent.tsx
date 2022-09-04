@@ -2,6 +2,9 @@ import * as PIXI from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { Simple } from 'pixi-cull';
 import { PixiComponent, useApp } from '@inlet/react-pixi';
+import { gridLines } from './gridLines';
+import { axesLines } from './axesLines';
+import { gridHeadings } from './gridHeadings';
 
 export interface ViewportProps {
   screenWidth: number;
@@ -11,6 +14,9 @@ export interface ViewportProps {
   onPointerDown: (world: PIXI.Point, event: PointerEvent) => void;
   onPointerMove: (world: PIXI.Point, event: PointerEvent) => void;
   onPointerUp: () => void;
+  setHeaderSize: (width: number, height: number) => void;
+  showGridAxes: boolean;
+  showHeadings: boolean;
 }
 
 export interface PixiComponentViewportProps extends ViewportProps {
@@ -44,8 +50,27 @@ const PixiComponentViewport = PixiComponent('Viewport', {
 
     props.viewportRef.current = viewport;
 
+    let dirty = true;
+
+    viewport.on('zoomed', () => dirty = true);
+    viewport.on('moved', () => dirty = true);
+
+    const graphics = viewport.addChild(new PIXI.Graphics());
+    const headings = viewport.addChild(new PIXI.Container());
+    const headingsGraphics = headings.addChild(new PIXI.Graphics());
+    const labels = headings.addChild(new PIXI.Container());
+    const corner = headings.addChild(new PIXI.Graphics());
+
     // set initial position
-    viewport.moveCorner(0, 0);
+    if (props.showHeadings) {
+      let width = 0, height = 0;
+
+      // need to obtain the initial width and height of header to properly position viewport
+      gridHeadings({ viewport, graphics: headingsGraphics, labels, corner, setHeaderSize: (w: number, h: number) => { width = w; height = h; }, showHeadings: props.showHeadings })
+      viewport.moveCorner(-width, -height);
+    } else {
+      viewport.moveCorner(0, 0);
+    }
 
     // Quadratic Render Loop, render when dirty.
     // Remember when anything changes on the stage to either set viewport.dirty = true
@@ -53,6 +78,18 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     PIXI.Ticker.shared.add(
       () => {
         if (viewport.dirty) {
+          if (dirty) {
+            graphics.clear();
+            headingsGraphics.clear();
+            gridLines({ viewport, graphics });
+            axesLines({ viewport, graphics, showGridAxes: props.showGridAxes });
+            gridHeadings({ viewport, graphics: headingsGraphics, labels, corner, setHeaderSize: props.setHeaderSize, showHeadings: props.showHeadings })
+            dirty = false;
+          }
+
+          // need to move headings to the end of the scene tree so it's on top
+          viewport.addChild(headings);
+
           const cull = new Simple();
           cull.addList(viewport.children);
           const bounds = viewport.getVisibleBounds();

@@ -7,6 +7,7 @@ import isAlphaNumeric from './helpers/isAlphaNumeric';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { getGridMinMax } from '../../../helpers/getGridMinMax';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { ensureVisible } from './ensureVisible';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -150,6 +151,9 @@ export const useKeyboardCanvas = (props: IProps): {
         setInteractionState(newInteractionState);
       }
       event.preventDefault();
+      if (viewportRef.current) {
+        ensureVisible({ interactionState: newInteractionState, viewport: viewportRef.current, headerSize });
+      }
     };
 
     if (event.key === 'ArrowUp') {
