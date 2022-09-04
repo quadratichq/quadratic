@@ -5,12 +5,12 @@ import { colors } from '../../../theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
 
 export function gridLines(props: {
-    viewport: Viewport;
-    graphics: PIXI.Graphics;
+  viewport: Viewport;
+  graphics: PIXI.Graphics;
 }): void {
-    const gridAlpha = alphaGridLines(props.viewport);
-    const { viewport, graphics } = props;
-    if (gridAlpha === false) {
+  const gridAlpha = alphaGridLines(props.viewport);
+  const { viewport, graphics } = props;
+  if (gridAlpha === false) {
         graphics.visible = false;
         return;
     }

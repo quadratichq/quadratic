@@ -64,7 +64,7 @@ export function gridHeadings(props: IProps) {
   }
   headings.visible = true;
   if (!characterSize) {
-      calculateCharacterSize();
+    calculateCharacterSize();
   }
   const cellWidth = CELL_WIDTH / viewport.scale.x;
   const cellHeight = CELL_HEIGHT / viewport.scale.x;
@@ -128,7 +128,7 @@ export function gridHeadings(props: IProps) {
     ).toString().length;
     rowWidth =
       (Math.max(topNumberLength, bottomNumberLength) * characterSize.width) /
-        viewport.scale.x +
+      viewport.scale.x +
       (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
     rowWidth = Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
 
@@ -147,7 +147,7 @@ export function gridHeadings(props: IProps) {
     ) {
       const skipNumbers = Math.ceil(
         (cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) /
-          characterSize.height
+        characterSize.height
       );
       mod = findInterval(skipNumbers);
     }
