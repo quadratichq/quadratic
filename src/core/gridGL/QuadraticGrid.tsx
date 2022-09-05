@@ -38,7 +38,7 @@ export default function QuadraticGrid() {
   const [canvasSize, setCanvasSize] = useState<Size | undefined>(undefined);
   const [container, setContainer] = useState<HTMLDivElement>();
   const [headerSize, setHeaderSize] = useState<Size>({ width: 0, height: 0 });
-  const containerRef = useCallback(node => {
+  const containerRef = useCallback((node) => {
     if (node) {
       setCanvasSize({ width: node.offsetWidth, height: node.offsetHeight });
       setContainer(node);
@@ -46,10 +46,13 @@ export default function QuadraticGrid() {
   }, []);
 
   useEffect(() => {
-    setCanvasSize({ width: container?.offsetWidth ?? 0, height: container?.offsetHeight ?? 0 });
+    setCanvasSize({
+      width: container?.offsetWidth ?? 0,
+      height: container?.offsetHeight ?? 0,
+    });
   }, [windowWidth, windowHeight, container]);
 
-    // Local Storage Config
+  // Local Storage Config
   const [showGridAxes] = useLocalStorage('showGridAxes', true);
   const [showHeadings] = useLocalStorage('showHeadings', true);
 
@@ -58,7 +61,7 @@ export default function QuadraticGrid() {
     if (!viewport) return;
     viewport.emit('zoomed');
     viewport.dirty = true;
-  }
+  };
 
   useEffect(() => {
     axesLinesProps.showGridAxes = showGridAxes;
@@ -92,11 +95,14 @@ export default function QuadraticGrid() {
     setEditorInteractionState,
   });
 
-  const setHeaderSizeCallback = useCallback((width: number, height: number) => {
-    if (headerSize.width !== width || headerSize.height !== height) {
-      setHeaderSize({ width, height });
-    }
-  }, [headerSize, setHeaderSize]);
+  const setHeaderSizeCallback = useCallback(
+    (width: number, height: number) => {
+      if (headerSize.width !== width || headerSize.height !== height) {
+        setHeaderSize({ width, height });
+      }
+    },
+    [headerSize, setHeaderSize]
+  );
 
   const { onKeyDownCanvas } = useKeyboardCanvas({
     interactionState,
@@ -114,10 +120,10 @@ export default function QuadraticGrid() {
       className="canvas"
       ref={containerRef}
       style={{
-        width: "100%",
-        height: "100%",
-        outline: "none",
-        overflow: "hidden",
+        width: '100%',
+        height: '100%',
+        outline: 'none',
+        overflow: 'hidden',
       }}
       onContextMenu={(event) => {
         event.preventDefault();
@@ -143,8 +149,9 @@ export default function QuadraticGrid() {
         style={{
           // display: 'inline',
           // position: 'relative',
+          outline: 'none',
+          WebkitTapHighlightColor: 'rgba(255, 255, 255, 0)' /* mobile webkit */,
         }}
-
         // Disable rendering on each frame
         raf={false}
 
@@ -161,22 +168,22 @@ export default function QuadraticGrid() {
           setHeaderSize={setHeaderSizeCallback}
         >
           {cells?.map((cell) => (
-              <CellPixiReact
-                key={`${cell.x},${cell.y}`}
-                x={cell.x}
-                y={cell.y}
-                text={cell.value}
-                type={cell.type}
-                renderText={
-                  // Hide the cell text if the input is currently editing this cell
-                  !(
-                    interactionState.showInput &&
-                    interactionState.cursorPosition.x === cell.x &&
-                    interactionState.cursorPosition.y === cell.y
-                  )
-                }
-                array_cells={cell.array_cells}
-              ></CellPixiReact>
+            <CellPixiReact
+              key={`${cell.x},${cell.y}`}
+              x={cell.x}
+              y={cell.y}
+              text={cell.value}
+              type={cell.type}
+              renderText={
+                // Hide the cell text if the input is currently editing this cell
+                !(
+                  interactionState.showInput &&
+                  interactionState.cursorPosition.x === cell.x &&
+                  interactionState.cursorPosition.y === cell.y
+                )
+              }
+              array_cells={cell.array_cells}
+            ></CellPixiReact>
           ))}
           <CursorPixiReact
             location={interactionState.cursorPosition}
@@ -208,7 +215,9 @@ export default function QuadraticGrid() {
         container={container}
       ></CellInput>
       {viewportRef.current && (
-        <ViewportEventRegister viewport={viewportRef.current}></ViewportEventRegister>
+        <ViewportEventRegister
+          viewport={viewportRef.current}
+        ></ViewportEventRegister>
       )}
       <RightClickMenu
         state={rightClickMenuState}
