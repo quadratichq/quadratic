@@ -10,7 +10,7 @@ import {
   LABEL_DIGITS_TO_CALCULATE_SKIP,
 } from '../../../constants/gridConstants';
 import { colors } from '../../../theme/colors';
-import { alphaGridLines } from './gridUtils';
+import { calculateAlphaForGridLines } from './gridUtils';
 import { Size } from '../types/size';
 
 interface IProps {
@@ -70,7 +70,7 @@ export function gridHeadings(props: IProps) {
   const cellWidth = CELL_WIDTH / viewport.scale.x;
   const cellHeight = CELL_HEIGHT / viewport.scale.x;
   const inverseScale = 1 / viewport.scale.x;
-  const gridAlpha = alphaGridLines(viewport);
+  const gridAlpha = calculateAlphaForGridLines(viewport);
   let bounds = viewport.getVisibleBounds();
 
   // holds data for horizontal and vertical labels
@@ -106,7 +106,7 @@ export function gridHeadings(props: IProps) {
       if (mod === 0 || column % mod === 0) {
         labelData.push({ text: column.toString(), x, y });
       }
-      if (gridAlpha !== false) {
+      if (gridAlpha !== 0) {
         graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
         graphics.moveTo(x - CELL_WIDTH / 2, bounds.top);
         graphics.lineTo(x - CELL_WIDTH / 2, bounds.top + cellHeight);
@@ -158,7 +158,7 @@ export function gridHeadings(props: IProps) {
       if (mod === 0 || row % mod === 0) {
         labelData.push({ text: row.toString(), x, y });
       }
-      if (gridAlpha !== false) {
+      if (gridAlpha !== 0) {
         graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
         graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);
         graphics.lineTo(bounds.left + rowWidth, y + CELL_HEIGHT / 2);

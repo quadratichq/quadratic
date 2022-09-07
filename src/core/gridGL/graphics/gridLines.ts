@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
-import { alphaGridLines } from './gridUtils';
+import { calculateAlphaForGridLines } from './gridUtils';
 import { colors } from '../../../theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
 
@@ -8,9 +8,9 @@ export function gridLines(props: {
   viewport: Viewport;
   graphics: PIXI.Graphics;
 }): void {
-  const gridAlpha = alphaGridLines(props.viewport);
+  const gridAlpha = calculateAlphaForGridLines(props.viewport);
   const { viewport, graphics } = props;
-  if (gridAlpha === false) {
+  if (gridAlpha === 0) {
         graphics.visible = false;
         return;
     }

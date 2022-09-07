@@ -59,9 +59,9 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     const labels = headings.addChild(new PIXI.Container());
     const corner = headings.addChild(new PIXI.Graphics());
 
-    // Quadratic Render Loop, render when dirty.
-    // Remember when anything changes on the stage to either set viewport.dirty = true
-    // Or use a react component that is a child of viewport (React Pixi will trigger a render)
+    // Quadratic Render Loop
+    // pixi renders when viewport.dirty = true (can be triggered by any component that updates the viewport)
+    // headers, grid lines, and axesLines are only updated when dirty = true (which only occurs on a viewport moved or zoomed event)
     PIXI.Ticker.shared.add(
       () => {
         if (viewport.dirty) {
@@ -105,7 +105,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     return viewport;
   },
 
-  applyProps(viewport: Viewport, oldProps: ViewportProps, newProps: ViewportProps) {
+  applyProps: (viewport: Viewport, oldProps: ViewportProps, newProps: ViewportProps) => {
     viewport.off('pointerdown');
     viewport.off('pointermove');
     viewport.off('pointerup');
