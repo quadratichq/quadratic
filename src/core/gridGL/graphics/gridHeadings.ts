@@ -11,7 +11,7 @@ import {
 } from '../../../constants/gridConstants';
 import { colors } from '../../../theme/colors';
 import { alphaGridLines } from './gridUtils';
-import { Size } from '../QuadraticGrid';
+import { Size } from '../types/size';
 
 interface IProps {
   viewport: Viewport;

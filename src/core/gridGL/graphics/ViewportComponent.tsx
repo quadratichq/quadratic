@@ -53,8 +53,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     viewport.on('zoomed', () => dirty = true);
     viewport.on('moved', () => dirty = true);
 
-    const gridGraphics = viewport.addChild(new PIXI.Graphics());
-    const axesGraphics = viewport.addChild(new PIXI.Graphics());
+    const graphics = viewport.addChild(new PIXI.Graphics());
     const headings = viewport.addChild(new PIXI.Container());
     const headingsGraphics = headings.addChild(new PIXI.Graphics());
     const labels = headings.addChild(new PIXI.Container());
@@ -67,10 +66,10 @@ const PixiComponentViewport = PixiComponent('Viewport', {
       () => {
         if (viewport.dirty) {
           if (dirty) {
-            gridGraphics.clear();
+            graphics.clear();
             headingsGraphics.clear();
-            gridLines({ viewport, graphics: gridGraphics });
-            axesLines({ viewport, graphics: axesGraphics });
+            gridLines({ viewport, graphics });
+            axesLines({ viewport, graphics });
             gridHeadings({
               viewport,
               headings,

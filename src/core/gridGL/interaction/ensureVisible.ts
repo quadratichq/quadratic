@@ -1,7 +1,7 @@
 import { Viewport } from 'pixi-viewport';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
-import { Size } from '../QuadraticGrid';
+import { Size } from '../types/size';
 
 // When the cursor moves ensure it is visible
 export function ensureVisible(props: {

@@ -5,8 +5,8 @@ import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { Viewport } from 'pixi-viewport';
 import CellReference from '../types/cellReference';
+import { Size } from '../types/size';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { Size } from '../QuadraticGrid';
 
 interface CellInputProps {
   interactionState: GridInteractionState;

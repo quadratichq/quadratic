@@ -8,7 +8,7 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { getGridMinMax } from '../../../helpers/getGridMinMax';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { ensureVisible } from './ensureVisible';
-import { Size } from '../QuadraticGrid';
+import { Size } from '../types/size';
 
 interface IProps {
   interactionState: GridInteractionState;

@@ -22,11 +22,7 @@ import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { gridHeadingsProps } from './graphics/gridHeadings';
 import { axesLinesProps } from './graphics/axesLines';
-
-export interface Size {
-  width: number;
-  height: number;
-}
+import { Size } from './types/size';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -117,7 +113,7 @@ export default function QuadraticGrid() {
 
   return (
     <div
-      className="canvas"
+      className="canvas-container"
       ref={containerRef}
       style={{
         width: '100%',
