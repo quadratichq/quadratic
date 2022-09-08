@@ -110,6 +110,7 @@ export const usePointerEvents = (props: IProps): {
     if (move_cell_x === downPosition.x && move_cell_y === downPosition.y) {
       // hide multi cursor when only selecting one cell
       props.setInteractionState({
+        keyboardMovePosition: { x: downPosition.x, y: downPosition.y },
         cursorPosition: { x: downPosition.x, y: downPosition.y },
         multiCursorPosition: {
           originPosition: { x: downPosition.x, y: downPosition.y },
@@ -141,6 +142,7 @@ export const usePointerEvents = (props: IProps): {
       if (hasMoved) {
         // update multiCursor
         props.setInteractionState({
+          keyboardMovePosition: { x: move_cell_x, y: move_cell_y },
           cursorPosition: { x: downPosition.x, y: downPosition.y },
           multiCursorPosition: {
             originPosition: { x: originX, y: originY },

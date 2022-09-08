@@ -26,9 +26,6 @@ interface IProps {
 export const useKeyboardCanvas = (props: IProps): {
   onKeyDownCanvas: (event: React.KeyboardEvent<HTMLCanvasElement>) => void;
 } => {
-  const [downPosition, setDownPosition] = useState<{ x: number, y: number } | undefined>();
-  const [movePosition, setMovePosition] = useState<{ x: number, y: number } | undefined>();
-
   const { interactionState, setInteractionState, setEditorInteractionState, viewportRef, headerSize } = props;
 
   const onKeyDownCanvas = (
@@ -92,6 +89,10 @@ export const useKeyboardCanvas = (props: IProps): {
     const moveCursor = (deltaX: number, deltaY: number) => {
       let newInteractionState: GridInteractionState | undefined;
 
+      // movePosition is either originPosition or terminalPosition (whichever !== cursorPosition)
+      const downPosition = interactionState.cursorPosition;
+      const movePosition = interactionState.keyboardMovePosition;
+
       // use arrow to select when shift key is pressed
       if (event.shiftKey) {
         // we are moving an existing multiCursor
@@ -102,40 +103,39 @@ export const useKeyboardCanvas = (props: IProps): {
           const termX = downPosition.x > newMovePosition.x ? downPosition.x : newMovePosition.x;
           const termY = downPosition.y > newMovePosition.y ? downPosition.y : newMovePosition.y;
           newInteractionState = {
-            cursorPosition: { x: downPosition.x, y: downPosition.y },
+            ...interactionState,
             multiCursorPosition: {
               originPosition: { x: originX, y: originY },
               terminalPosition: { x: termX, y: termY },
             },
+            keyboardMovePosition: newMovePosition,
             showMultiCursor: true,
             showInput: false,
             inputInitialValue: '',
           };
           setInteractionState(newInteractionState);
-          setMovePosition(newMovePosition);
         }
 
         // we are creating a new multiCursor
         else {
-          const newDownPosition = { ...interactionState.cursorPosition };
-          const newMovePosition = { x: newDownPosition.x + deltaX, y: newDownPosition.y + deltaY };
-          const originX = newDownPosition.x < newMovePosition.x ? newDownPosition.x : newMovePosition.x;
-          const originY = newDownPosition.y < newMovePosition.y ? newDownPosition.y : newMovePosition.y;
-          const termX = newDownPosition.x > newMovePosition.x ? newDownPosition.x : newMovePosition.x;
-          const termY = newDownPosition.y > newMovePosition.y ? newDownPosition.y : newMovePosition.y;
+          const downPosition = { ...interactionState.cursorPosition };
+          const newMovePosition = { x: downPosition.x + deltaX, y: downPosition.y + deltaY };
+          const originX = downPosition.x < newMovePosition.x ? downPosition.x : newMovePosition.x;
+          const originY = downPosition.y < newMovePosition.y ? downPosition.y : newMovePosition.y;
+          const termX = downPosition.x > newMovePosition.x ? downPosition.x : newMovePosition.x;
+          const termY = downPosition.y > newMovePosition.y ? downPosition.y : newMovePosition.y;
           newInteractionState = {
-            cursorPosition: newDownPosition,
+            ...interactionState,
             multiCursorPosition: {
               originPosition: { x: originX, y: originY },
               terminalPosition: { x: termX, y: termY },
             },
+            keyboardMovePosition: newMovePosition,
             showMultiCursor: true,
             showInput: false,
             inputInitialValue: '',
           };
           setInteractionState(newInteractionState);
-          setDownPosition(newDownPosition);
-          setMovePosition(newMovePosition);
         }
       }
 
