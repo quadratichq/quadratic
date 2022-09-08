@@ -8,6 +8,7 @@ import {
   LABEL_PADDING_ROWS,
   GRID_HEADER_FONT_SIZE,
   LABEL_DIGITS_TO_CALCULATE_SKIP,
+  ROW_DIGIT_OFFSET,
 } from '../../../constants/gridConstants';
 import { colors } from '../../../theme/colors';
 import { calculateAlphaForGridLines } from './gridUtils';
@@ -173,8 +174,16 @@ export function gridHeadings(props: IProps) {
     for (let y = topOffset; y < bottomOffset; y += CELL_HEIGHT) {
       const row = Math.round(y / CELL_HEIGHT - 1);
       if (mod === 0 || row % mod === 0) {
-        labelData.push({ text: row.toString(), x, y });
+        labelData.push({ text: row.toString(), x: x + ROW_DIGIT_OFFSET.x, y: y + ROW_DIGIT_OFFSET.y });
       }
+
+      // uncomment this code for a target to find the ROW_DIGIT_OFFSET for centering the row numbers
+      // graphics.lineStyle(1, 0, 0.5)
+      // graphics.moveTo(bounds.left, y)
+      // graphics.lineTo(bounds.left + rowWidth, y)
+      // graphics.moveTo(bounds.left + rowWidth / 2, y)
+      // graphics.lineTo(bounds.left + rowWidth / 2, y + CELL_HEIGHT)
+
       if (gridAlpha !== 0) {
         graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
         graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);

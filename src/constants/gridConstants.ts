@@ -8,6 +8,7 @@ export const LABEL_MAXIMUM_WIDTH_PERCENT = 0.7;
 export const LABEL_MAXIMUM_HEIGHT_PERCENT = 0.5;
 export const LABEL_PADDING_ROWS = 2;
 export const GRID_HEADER_FONT_SIZE = 9;
+export const ROW_DIGIT_OFFSET = { x: 0, y: -1 };
 
 // this is the number of digits to use when calculating what horizontal headings are hidden
 export const LABEL_DIGITS_TO_CALCULATE_SKIP = 4;
