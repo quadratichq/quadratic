@@ -4,7 +4,7 @@ import { Simple } from 'pixi-cull';
 import { PixiComponent, useApp } from '@inlet/react-pixi';
 import { gridLines } from './gridLines';
 import { axesLines } from './axesLines';
-import { gridHeadings } from './gridHeadings';
+import { gridHeadings, OFFSET_HEADINGS } from './gridHeadings';
 
 export interface ViewportProps {
   screenWidth: number;
@@ -15,6 +15,7 @@ export interface ViewportProps {
   onPointerMove: (world: PIXI.Point, event: PointerEvent) => void;
   onPointerUp: () => void;
   setHeaderSize: (width: number, height: number) => void;
+  showHeadings: boolean;
 }
 
 export interface PixiComponentViewportProps extends ViewportProps {
@@ -47,6 +48,11 @@ const PixiComponentViewport = PixiComponent('Viewport', {
       });
 
     props.viewportRef.current = viewport;
+
+    // if not using OFFSET_HEADINGS, then hardcode the headings offset
+    if (!OFFSET_HEADINGS && props.showHeadings) {
+      viewport.position.set(20, 20);
+    }
 
     let dirty = true;
 

@@ -162,6 +162,7 @@ export default function QuadraticGrid() {
           onPointerMove={pointerEvents.onPointerMove}
           onPointerUp={pointerEvents.onPointerUp}
           setHeaderSize={setHeaderSizeCallback}
+          showHeadings={showHeadings}
         >
           {cells?.map((cell) => (
             <CellPixiReact
