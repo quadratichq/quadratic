@@ -182,9 +182,11 @@ export default function QuadraticGrid() {
             ></CellPixiReact>
           ))}
           <CursorPixiReact
+            viewportRef={viewportRef}
             location={interactionState.cursorPosition}
           ></CursorPixiReact>
           <MultiCursorPixiReact
+            viewportRef={viewportRef}
             originLocation={interactionState.multiCursorPosition.originPosition}
             terminalLocation={
               interactionState.multiCursorPosition.terminalPosition
