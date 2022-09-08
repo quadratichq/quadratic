@@ -100,7 +100,7 @@ export function gridHeadings(props: IProps) {
     // calculate whether we need to skip numbers
     const xOffset = bounds.left % CELL_WIDTH;
     const leftOffset = bounds.left - xOffset - CELL_WIDTH / 2;
-    const rightOffset = bounds.right - xOffset + CELL_WIDTH / 2;
+    const rightOffset = bounds.right - xOffset + 1.5 * CELL_WIDTH;
 
     // labelWidth uses the constant for number of digits--this ensures the mod factor doesn't change when panning
     const labelWidth = LABEL_DIGITS_TO_CALCULATE_SKIP * characterSize.width;
@@ -137,7 +137,7 @@ export function gridHeadings(props: IProps) {
     // determine width of row header
     const yOffset = bounds.top % CELL_HEIGHT;
     const topOffset = bounds.top - yOffset - CELL_HEIGHT / 2;
-    const bottomOffset = bounds.bottom - yOffset - CELL_HEIGHT / 2;
+    const bottomOffset = bounds.bottom - yOffset + 1.5 * CELL_HEIGHT;
     const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString()
       .length;
     const bottomNumberLength = Math.round(
@@ -162,7 +162,7 @@ export function gridHeadings(props: IProps) {
     let mod = 0;
     if (
       characterSize.height >
-      CELL_HEIGHT * viewport.scale.x * LABEL_MAXIMUM_HEIGHT_PERCENT
+      CELL_HEIGHT * viewport.scale.y * LABEL_MAXIMUM_HEIGHT_PERCENT
     ) {
       const skipNumbers = Math.ceil(
         (cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) /
@@ -177,18 +177,18 @@ export function gridHeadings(props: IProps) {
         labelData.push({ text: row.toString(), x: x + ROW_DIGIT_OFFSET.x, y: y + ROW_DIGIT_OFFSET.y });
       }
 
+      if (gridAlpha !== 0) {
+        graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
+        graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);
+        graphics.lineTo(bounds.left + rowWidth, y + CELL_HEIGHT / 2);
+      }
+
       // uncomment this code for a target to find the ROW_DIGIT_OFFSET for centering the row numbers
       // graphics.lineStyle(1, 0, 0.5)
       // graphics.moveTo(bounds.left, y)
       // graphics.lineTo(bounds.left + rowWidth, y)
       // graphics.moveTo(bounds.left + rowWidth / 2, y)
       // graphics.lineTo(bounds.left + rowWidth / 2, y + CELL_HEIGHT)
-
-      if (gridAlpha !== 0) {
-        graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
-        graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);
-        graphics.lineTo(bounds.left + rowWidth, y + CELL_HEIGHT / 2);
-      }
     }
   };
 
