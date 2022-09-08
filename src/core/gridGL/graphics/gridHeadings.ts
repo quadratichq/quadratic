@@ -94,12 +94,14 @@ export function gridHeadings(props: IProps) {
 
     // draw bar
     graphics.beginFill(colors.headerBackgroundColor);
-    graphics.drawRect(viewport.left, viewport.top, viewport.screenWorldWidth, cellHeight);
+    graphics.drawRect(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight);
 
     // calculate whether we need to skip numbers
     const xOffset = bounds.left % CELL_WIDTH;
     const leftOffset = bounds.left - xOffset - CELL_WIDTH / 2;
     const rightOffset = bounds.right - xOffset + CELL_WIDTH / 2;
+
+    // labelWidth uses the constant for number of digits--this ensures the mod factor doesn't change when panning
     const labelWidth = LABEL_DIGITS_TO_CALCULATE_SKIP * characterSize.width;
     let mod = 0;
     if (
@@ -140,6 +142,8 @@ export function gridHeadings(props: IProps) {
     const bottomNumberLength = Math.round(
       bottomOffset / CELL_HEIGHT - 1
     ).toString().length;
+
+    // rowWidth is the maximum number of digits of the top number and bottom number * characterSize.width
     rowWidth =
       (Math.max(topNumberLength, bottomNumberLength) * characterSize.width) /
       viewport.scale.x +
