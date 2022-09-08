@@ -53,7 +53,9 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     viewport.on('zoomed', () => dirty = true);
     viewport.on('moved', () => dirty = true);
 
-    const graphics = viewport.addChild(new PIXI.Graphics());
+    const gridGraphics = viewport.addChild(new PIXI.Graphics());
+    const axesGraphics = viewport.addChild(new PIXI.Graphics());
+
     const headings = viewport.addChild(new PIXI.Container());
     const headingsGraphics = headings.addChild(new PIXI.Graphics());
     const labels = headings.addChild(new PIXI.Container());
@@ -66,10 +68,8 @@ const PixiComponentViewport = PixiComponent('Viewport', {
       () => {
         if (viewport.dirty) {
           if (dirty) {
-            graphics.clear();
-            headingsGraphics.clear();
-            gridLines({ viewport, graphics });
-            axesLines({ viewport, graphics });
+            gridLines({ viewport, graphics: gridGraphics });
+            axesLines({ viewport, graphics: axesGraphics });
             gridHeadings({
               viewport,
               headings,
@@ -81,7 +81,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
             dirty = false;
           }
 
-          // need to move headings to the end of the scene tree so it's on top
+          // need to move headings to the end of the scene tree so it's on top of React-added nodes
           viewport.addChild(headings);
 
           const cull = new Simple();

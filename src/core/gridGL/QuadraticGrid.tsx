@@ -152,7 +152,7 @@ export default function QuadraticGrid() {
         raf={false}
 
         // Render on each state change
-        // renderOnComponentChange={true}
+        renderOnComponentChange={true}
       >
         <ViewportComponent
           screenWidth={canvasSize.width}

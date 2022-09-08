@@ -14,7 +14,7 @@ interface IProps {
 }
 
 const MINIMUM_MOVE_POSITION = 5;
-const DOUBLE_CLICK_TIME = 200;
+const DOUBLE_CLICK_TIME = 500;
 
 export const usePointerEvents = (props: IProps): {
   isDoubleClick: (world: PIXI.Point, event: PointerEvent) => boolean;

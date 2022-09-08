@@ -13,6 +13,9 @@ import { colors } from '../../../theme/colors';
 import { calculateAlphaForGridLines } from './gridUtils';
 import { Size } from '../types/size';
 
+// this ensures the top-left corner of the viewport doesn't move when toggling headings
+export const OFFSET_HEADINGS = false;
+
 interface IProps {
   viewport: Viewport;
   headings: PIXI.Container;
@@ -52,14 +55,24 @@ let lastRowSize: Size = { width: 0, height: 0 };
 let lastShowHeadings = false;
 
 export function gridHeadings(props: IProps) {
-  const { viewport, graphics, headings, corner, labels } = props;
+  const { viewport, headings, graphics, corner, labels } = props;
+
+  graphics.clear();
+  corner.clear();
 
   if (!gridHeadingsProps.showHeadings) {
     headings.visible = false;
+
+    // this is only necessary b/c of a weird conflict between pixi-cull and ReactPixi
+    // which was causing the labels to show even when headings (which is labels' parent).visible was false
+    labels.removeChildren();
+
     if (lastShowHeadings) {
-      viewport.x -= lastRowSize.width;
-      viewport.y -= lastRowSize.height;
-      lastShowHeadings = false;
+      if (OFFSET_HEADINGS) {
+        viewport.x -= lastRowSize.width;
+        viewport.y -= lastRowSize.height;
+        lastShowHeadings = false;
+      }
     }
     return;
   }
@@ -81,7 +94,7 @@ export function gridHeadings(props: IProps) {
 
     // draw bar
     graphics.beginFill(colors.headerBackgroundColor);
-    graphics.drawRect(viewport.left, viewport.top, viewport.width, cellHeight);
+    graphics.drawRect(viewport.left, viewport.top, viewport.screenWorldWidth, cellHeight);
 
     // calculate whether we need to skip numbers
     const xOffset = bounds.left % CELL_WIDTH;
@@ -167,7 +180,6 @@ export function gridHeadings(props: IProps) {
   };
 
   const drawCorner = () => {
-    corner.clear();
     corner.beginFill(colors.headerCornerBackgroundColor);
     corner.drawRect(bounds.left, bounds.top, rowWidth, cellHeight);
     corner.endFill();
@@ -227,12 +239,13 @@ export function gridHeadings(props: IProps) {
 
   // adjust viewport position if headings are new
   if (!lastShowHeadings) {
-    viewport.x += rowWidth!;
-    viewport.y += CELL_HEIGHT;
+    if (OFFSET_HEADINGS) {
+      viewport.x += rowWidth!;
+      viewport.y += CELL_HEIGHT;
+    }
     lastShowHeadings = true;
 
     // need to start over to take into account change in viewport position
-    graphics.clear();
     bounds = viewport.getVisibleBounds();
     labelData = [];
     drawVertical();
