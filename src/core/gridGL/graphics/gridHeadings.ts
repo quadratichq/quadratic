@@ -63,11 +63,6 @@ export function gridHeadings(props: IProps) {
 
   if (!gridHeadingsProps.showHeadings) {
     headings.visible = false;
-
-    // this is only necessary b/c of a weird conflict between pixi-cull and ReactPixi
-    // which was causing the labels to show even when headings (which is labels' parent).visible was false
-    labels.removeChildren();
-
     if (lastShowHeadings) {
       if (OFFSET_HEADINGS) {
         viewport.x -= lastRowSize.width;

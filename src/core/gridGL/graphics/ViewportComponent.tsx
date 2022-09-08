@@ -73,6 +73,10 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     PIXI.Ticker.shared.add(
       () => {
         if (viewport.dirty) {
+          const cull = new Simple();
+          const bounds = viewport.getVisibleBounds();
+          cull.cull(bounds);
+
           if (dirty) {
             gridLines({ viewport, graphics: gridGraphics });
             axesLines({ viewport, graphics: axesGraphics });
@@ -90,10 +94,6 @@ const PixiComponentViewport = PixiComponent('Viewport', {
           // need to move headings to the end of the scene tree so it's on top of React-added nodes
           viewport.addChild(headings);
 
-          const cull = new Simple();
-          cull.addList(viewport.children);
-          const bounds = viewport.getVisibleBounds();
-          cull.cull(bounds);
           props.app.renderer.render(props.app.stage);
           viewport.dirty = false;
         }
