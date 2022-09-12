@@ -32,6 +32,14 @@ export const QuadraticMenu = () => {
   );
   const [showGridAxes, setShowGridAxes] = useLocalStorage('showGridAxes', true);
   const [showHeadings, setShowHeadings] = useLocalStorage('showHeadings', true);
+  const [showGridLines, setShowGridLines] = useLocalStorage(
+    'showGridLines',
+    true
+  );
+  const [showCellTypeOutlines, setShowCellTypeOutlines] = useLocalStorage(
+    'showCellTypeOutlines',
+    true
+  );
 
   return (
     <Menu
@@ -60,6 +68,14 @@ export const QuadraticMenu = () => {
         <MenuItem disabled>Excel (coming soon)</MenuItem>
       </SubMenu>
       <SubMenu label="View">
+        <MenuHeader>UI</MenuHeader>
+        <MenuItem
+          type="checkbox"
+          checked={showHeadings}
+          onClick={() => setShowHeadings(!showHeadings)}
+        >
+          Show Headings
+        </MenuItem>
         <MenuHeader>Grid</MenuHeader>
         <MenuItem
           type="checkbox"
@@ -70,10 +86,17 @@ export const QuadraticMenu = () => {
         </MenuItem>
         <MenuItem
           type="checkbox"
-          checked={showHeadings}
-          onClick={() => setShowHeadings(!showHeadings)}
+          checked={showGridLines}
+          onClick={() => setShowGridLines(!showGridLines)}
         >
-          Show Headings
+          Show Grid Lines
+        </MenuItem>
+        <MenuItem
+          type="checkbox"
+          checked={showCellTypeOutlines}
+          onClick={() => setShowCellTypeOutlines(!showCellTypeOutlines)}
+        >
+          Show Cell Type Outlines
         </MenuItem>
         <MenuDivider />
         <MenuHeader>Debug</MenuHeader>

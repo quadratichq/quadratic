@@ -23,6 +23,7 @@ import useLocalStorage from '../../hooks/useLocalStorage';
 import { gridHeadingsProps } from './graphics/gridHeadings';
 import { axesLinesProps } from './graphics/axesLines';
 import { Size } from './types/size';
+import { gridHeadingsGlobals } from './graphics/gridLines';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -51,6 +52,8 @@ export default function QuadraticGrid() {
   // Local Storage Config
   const [showGridAxes] = useLocalStorage('showGridAxes', true);
   const [showHeadings] = useLocalStorage('showHeadings', true);
+  const [showGridLines] = useLocalStorage('showGridLines', true);
+  const [showCellTypeOutlines] = useLocalStorage('showCellTypeOutlines', true);
 
   const forceRender = (): void => {
     const viewport = viewportRef.current;
@@ -60,14 +63,12 @@ export default function QuadraticGrid() {
   };
 
   useEffect(() => {
+    // When updating localStorage, pass to pure js render functions using Globals
     axesLinesProps.showGridAxes = showGridAxes;
-    forceRender();
-  }, [showGridAxes]);
-
-  useEffect(() => {
     gridHeadingsProps.showHeadings = showHeadings;
+    gridHeadingsGlobals.show = showGridLines;
     forceRender();
-  }, [showHeadings]);
+  }, [showGridAxes, showHeadings, showGridLines]);
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(
@@ -150,7 +151,6 @@ export default function QuadraticGrid() {
         }}
         // Disable rendering on each frame
         raf={false}
-
         // Render on each state change
         renderOnComponentChange={true}
       >
@@ -179,6 +179,7 @@ export default function QuadraticGrid() {
                   interactionState.cursorPosition.y === cell.y
                 )
               }
+              showCellTypeOutlines={showCellTypeOutlines}
               array_cells={cell.array_cells}
             ></CellPixiReact>
           ))}

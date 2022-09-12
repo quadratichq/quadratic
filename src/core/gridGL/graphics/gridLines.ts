@@ -4,6 +4,8 @@ import { calculateAlphaForGridLines } from './gridUtils';
 import { colors } from '../../../theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
 
+export const gridHeadingsGlobals = { show: false };
+
 export function gridLines(props: {
   viewport: Viewport;
   graphics: PIXI.Graphics;
@@ -18,6 +20,8 @@ export function gridLines(props: {
   graphics.visible = true;
 
   graphics.clear();
+
+  if (!gridHeadingsGlobals.show) return;
 
   // Configure Line Style
   graphics.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
