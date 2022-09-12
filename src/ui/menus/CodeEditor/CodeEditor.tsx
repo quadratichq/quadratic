@@ -156,7 +156,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
           right: 0,
           display: 'block',
           width: `${editorWidth}px`,
-          minWidth: '400px',
+          minWidth: '350px',
+          maxWidth: '90%',
           height: '100%',
           backgroundColor: '#ffffff',
         }}
@@ -195,9 +196,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
             display: 'flex',
             flexDirection: 'row',
             justifyContent: 'space-between',
-            borderStyle: 'solid',
-            borderWidth: '0 0 1px 0',
-            borderColor: colors.mediumGray,
+            marginBottom: '2px',
             userSelect: 'none',
           }}
         >
