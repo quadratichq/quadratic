@@ -28,14 +28,6 @@ export interface QuadraticCommand {
 }
 
 const QUADRATIC_COMMANDS = [
-  // {
-  //   key: 0,
-  //   name: 'Text',
-  //   short: 'Aa',
-  //   slug: 'TEXT',
-  //   description: 'Input any text or numerical data.',
-  //   disabled: true,
-  // },
   {
     key: 0,
     name: 'Show Grid Lines',
@@ -50,22 +42,6 @@ const QUADRATIC_COMMANDS = [
     short: '=',
     slug: 'FORMULA',
     description: 'Familiar Excel-like formulas.',
-    disabled: true,
-  },
-  {
-    key: 30,
-    name: 'JavaScript',
-    short: 'Js',
-    slug: 'JAVASCRIPT',
-    description: 'Write JavaScript to quickly compute with data.',
-    disabled: true,
-  },
-  {
-    key: 40,
-    name: 'SQL Query',
-    short: 'DB',
-    slug: 'SQL',
-    description: 'Query your data using SQL.',
     disabled: true,
   },
 ] as QuadraticCommand[];
