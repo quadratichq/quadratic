@@ -1,4 +1,4 @@
-import { qdb, Cell } from "../db";
+import { qdb, Cell } from '../db';
 
 export const GetCellsDB = async (
   p0_x = -Infinity,
@@ -8,7 +8,7 @@ export const GetCellsDB = async (
 ): Promise<Cell[]> => {
   // Return Cells as an Array
   return await qdb.cells
-    .where("x")
+    .where('x')
     .between(p0_x, p1_x, true, true)
     .and((cell) => {
       return cell.y >= p0_y && cell.y <= p1_y;

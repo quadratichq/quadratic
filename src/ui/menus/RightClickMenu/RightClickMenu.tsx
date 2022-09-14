@@ -1,10 +1,7 @@
 import { ControlledMenu, MenuItem, MenuDivider } from '@szhsin/react-menu';
 import { MenuState, MenuCloseEvent } from '@szhsin/react-menu/types';
 
-import {
-  copyToClipboard,
-  pasteFromClipboard,
-} from '../../../core/actions/clipboard';
+import { copyToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { deleteCellsRange } from '../../../core/actions/deleteCellsRange';
 

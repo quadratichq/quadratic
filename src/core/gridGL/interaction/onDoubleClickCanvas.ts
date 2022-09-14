@@ -5,12 +5,8 @@ import { GetCellsDB } from '../../gridDB/Cells/GetCellsDB';
 export const onDoubleClickCanvas = (
   event: PointerEvent,
   interactionState: GridInteractionState,
-  setInteractionState: React.Dispatch<
-    React.SetStateAction<GridInteractionState>
-  >,
-  setEditorInteractionState: React.Dispatch<
-    React.SetStateAction<EditorInteractionState>
-  >
+  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>,
+  setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>
 ) => {
   // Get the double clicked cell, check if it is already set
   const x = interactionState.cursorPosition.x;

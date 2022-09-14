@@ -14,7 +14,6 @@ export interface ViewportProps {
   onPointerDown: (world: PIXI.Point, event: PointerEvent) => void;
   onPointerMove: (world: PIXI.Point, event: PointerEvent) => void;
   onPointerUp: () => void;
-  setHeaderSize: (width: number, height: number) => void;
   showHeadings: boolean;
 }
 
@@ -56,8 +55,8 @@ const PixiComponentViewport = PixiComponent('Viewport', {
 
     let dirty = true;
 
-    viewport.on('zoomed', () => dirty = true);
-    viewport.on('moved', () => dirty = true);
+    viewport.on('zoomed', () => (dirty = true));
+    viewport.on('moved', () => (dirty = true));
 
     const gridGraphics = viewport.addChild(new PIXI.Graphics());
     const axesGraphics = viewport.addChild(new PIXI.Graphics());
@@ -86,7 +85,6 @@ const PixiComponentViewport = PixiComponent('Viewport', {
               graphics: headingsGraphics,
               labels,
               corner,
-              setHeaderSize: props.setHeaderSize,
             });
             dirty = false;
           }
@@ -112,16 +110,23 @@ const PixiComponentViewport = PixiComponent('Viewport', {
   },
 
   applyProps: (viewport: Viewport, oldProps: ViewportProps, newProps: ViewportProps) => {
+    // Unregister previous pointer events
     viewport.off('pointerdown');
     viewport.off('pointermove');
     viewport.off('pointerup');
+    viewport.off('pointerupoutside');
+
+    // Register pointer events
     viewport.on('pointerdown', (e) => newProps.onPointerDown(viewport.toWorld(e.data.global), e.data.originalEvent));
     viewport.on('pointermove', (e) => newProps.onPointerMove(viewport.toWorld(e.data.global), e.data.originalEvent));
     viewport.on('pointerup', () => newProps.onPointerUp());
+    viewport.on('pointerupoutside', () => newProps.onPointerUp());
+
+    // Tell viewport to resize on screenHight or Width change
     if (oldProps.screenWidth !== newProps.screenWidth || oldProps.screenHeight !== newProps.screenHeight) {
       viewport.resize(newProps.screenWidth, newProps.screenHeight);
     }
-  }
+  },
 });
 
 const ViewportComponent = (props: ViewportProps) => {

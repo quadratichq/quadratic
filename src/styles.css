@@ -8,7 +8,3 @@ html,
   letter-spacing: 1rem;
   font-weight: 500;
 } */
-
-.canvas-container {
-  -webkit-tap-highlight-color: transparent;
-}

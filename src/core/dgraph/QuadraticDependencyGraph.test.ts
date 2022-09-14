@@ -1,6 +1,6 @@
-import QuadraticDependencyGraph from "./QuadraticDependencyGraph";
+import QuadraticDependencyGraph from './QuadraticDependencyGraph';
 
-test("test QuadraticDependencyGraph", () => {
+test('test QuadraticDependencyGraph', () => {
   let dg = new QuadraticDependencyGraph();
 
   dg.add_dependency_to_graph(
@@ -147,7 +147,7 @@ test("test QuadraticDependencyGraph", () => {
   // dg.add_dependency_to_graph([1, 2], [[3, 3]]);
 });
 
-test("QuadraticDependencyGraph.add_dependencies_to_graph", () => {
+test('QuadraticDependencyGraph.add_dependencies_to_graph', () => {
   let dg = new QuadraticDependencyGraph();
 
   dg.add_dependencies_to_graph(

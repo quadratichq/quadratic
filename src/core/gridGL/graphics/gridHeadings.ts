@@ -1,29 +1,30 @@
 import * as PIXI from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
-import {
-  CELL_WIDTH,
-  CELL_HEIGHT,
-  LABEL_MAXIMUM_WIDTH_PERCENT,
-  LABEL_MAXIMUM_HEIGHT_PERCENT,
-  LABEL_PADDING_ROWS,
-  GRID_HEADER_FONT_SIZE,
-  LABEL_DIGITS_TO_CALCULATE_SKIP,
-  ROW_DIGIT_OFFSET,
-} from '../../../constants/gridConstants';
+import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { colors } from '../../../theme/colors';
 import { calculateAlphaForGridLines } from './gridUtils';
 import { Size } from '../types/size';
+import { pixiKeyboardCanvasProps } from '../interaction/useKeyboardCanvas';
 
 // this ensures the top-left corner of the viewport doesn't move when toggling headings
 export const OFFSET_HEADINGS = false;
+
+// Constants for headers
+export const LABEL_MAXIMUM_WIDTH_PERCENT = 0.7;
+export const LABEL_MAXIMUM_HEIGHT_PERCENT = 0.5;
+export const LABEL_PADDING_ROWS = 2;
+export const GRID_HEADER_FONT_SIZE = 9;
+export const ROW_DIGIT_OFFSET = { x: 0, y: -1 };
+
+// this is the number of digits to use when calculating what horizontal headings are hidden
+export const LABEL_DIGITS_TO_CALCULATE_SKIP = 4;
 
 interface IProps {
   viewport: Viewport;
   headings: PIXI.Container;
   graphics: PIXI.Graphics;
-  labels: PIXI.Container
+  labels: PIXI.Container;
   corner: PIXI.Graphics;
-  setHeaderSize: (width: number, height: number) => void;
 }
 
 interface LabelData {
@@ -51,7 +52,7 @@ function findInterval(i: number): number {
   return 5;
 }
 
-export const gridHeadingsProps = { showHeadings: true };
+export const gridHeadingsGlobals = { showHeadings: true };
 let lastRowSize: Size = { width: 0, height: 0 };
 let lastShowHeadings = false;
 
@@ -61,7 +62,7 @@ export function gridHeadings(props: IProps) {
   graphics.clear();
   corner.clear();
 
-  if (!gridHeadingsProps.showHeadings) {
+  if (!gridHeadingsGlobals.showHeadings) {
     headings.visible = false;
     if (lastShowHeadings) {
       if (OFFSET_HEADINGS) {
@@ -100,13 +101,8 @@ export function gridHeadings(props: IProps) {
     // labelWidth uses the constant for number of digits--this ensures the mod factor doesn't change when panning
     const labelWidth = LABEL_DIGITS_TO_CALCULATE_SKIP * characterSize.width;
     let mod = 0;
-    if (
-      labelWidth >
-      CELL_WIDTH * viewport.scale.x * LABEL_MAXIMUM_WIDTH_PERCENT
-    ) {
-      const skipNumbers = Math.ceil(
-        (cellWidth * (1 - LABEL_MAXIMUM_WIDTH_PERCENT)) / labelWidth
-      );
+    if (labelWidth > CELL_WIDTH * viewport.scale.x * LABEL_MAXIMUM_WIDTH_PERCENT) {
+      const skipNumbers = Math.ceil((cellWidth * (1 - LABEL_MAXIMUM_WIDTH_PERCENT)) / labelWidth);
       mod = findInterval(skipNumbers);
     }
 
@@ -133,16 +129,12 @@ export function gridHeadings(props: IProps) {
     const yOffset = bounds.top % CELL_HEIGHT;
     const topOffset = bounds.top - yOffset - CELL_HEIGHT / 2;
     const bottomOffset = bounds.bottom - yOffset + 1.5 * CELL_HEIGHT;
-    const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString()
-      .length;
-    const bottomNumberLength = Math.round(
-      bottomOffset / CELL_HEIGHT - 1
-    ).toString().length;
+    const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString().length;
+    const bottomNumberLength = Math.round(bottomOffset / CELL_HEIGHT - 1).toString().length;
 
     // rowWidth is the maximum number of digits of the top number and bottom number * characterSize.width
     rowWidth =
-      (Math.max(topNumberLength, bottomNumberLength) * characterSize.width) /
-      viewport.scale.x +
+      (Math.max(topNumberLength, bottomNumberLength) * characterSize.width) / viewport.scale.x +
       (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
     rowWidth = Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
 
@@ -155,21 +147,19 @@ export function gridHeadings(props: IProps) {
       bounds.height - CELL_HEIGHT / viewport.scale.x
     );
     let mod = 0;
-    if (
-      characterSize.height >
-      CELL_HEIGHT * viewport.scale.y * LABEL_MAXIMUM_HEIGHT_PERCENT
-    ) {
-      const skipNumbers = Math.ceil(
-        (cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) /
-        characterSize.height
-      );
+    if (characterSize.height > CELL_HEIGHT * viewport.scale.y * LABEL_MAXIMUM_HEIGHT_PERCENT) {
+      const skipNumbers = Math.ceil((cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) / characterSize.height);
       mod = findInterval(skipNumbers);
     }
     const x = bounds.left + rowWidth / 2;
     for (let y = topOffset; y < bottomOffset; y += CELL_HEIGHT) {
       const row = Math.round(y / CELL_HEIGHT - 1);
       if (mod === 0 || row % mod === 0) {
-        labelData.push({ text: row.toString(), x: x + ROW_DIGIT_OFFSET.x, y: y + ROW_DIGIT_OFFSET.y });
+        labelData.push({
+          text: row.toString(),
+          x: x + ROW_DIGIT_OFFSET.x,
+          y: y + ROW_DIGIT_OFFSET.y,
+        });
       }
 
       if (gridAlpha !== 0) {
@@ -203,7 +193,7 @@ export function gridHeadings(props: IProps) {
     );
     label.anchor.set(0.5);
     return label;
-  }
+  };
 
   // add labels to headings using cached labels
   const addLabels = () => {
@@ -211,8 +201,8 @@ export function gridHeadings(props: IProps) {
     const leftovers: LabelData[] = [];
 
     // reuse existing labels that have the same text
-    labelData.forEach(data => {
-      const index = available.findIndex(label => label.text === data.text);
+    labelData.forEach((data) => {
+      const index = available.findIndex((label) => label.text === data.text);
       if (index === -1) {
         leftovers.push(data);
       } else {
@@ -262,6 +252,9 @@ export function gridHeadings(props: IProps) {
   drawHorizontal();
   addLabels();
   drawCorner();
-  props.setHeaderSize(rowWidth!, CELL_HEIGHT);
+  pixiKeyboardCanvasProps.headerSize = {
+    width: rowWidth!,
+    height: CELL_HEIGHT,
+  };
   lastRowSize = { width: rowWidth!, height: CELL_HEIGHT };
 }

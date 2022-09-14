@@ -5,7 +5,7 @@
  * Modified by David Kircos Feb 2022
  */
 
-import Queue from "../queue/queue";
+import Queue from '../queue/queue';
 
 /**
  * @class
@@ -101,7 +101,7 @@ export class DirectedGraph {
     }
 
     if (weight && Number.isNaN(+weight)) {
-      throw new Error("addEdge: expects a numberic weight");
+      throw new Error('addEdge: expects a numberic weight');
     }
 
     const w = Number.isNaN(+weight) ? 1 : +weight;
@@ -118,11 +118,7 @@ export class DirectedGraph {
    * @returns {boolean}
    */
   hasEdge(srcKey, destKey) {
-    return (
-      this.hasVertex(srcKey) &&
-      this.hasVertex(destKey) &&
-      this._edges.get(srcKey).has(destKey)
-    );
+    return this.hasVertex(srcKey) && this.hasVertex(destKey) && this._edges.get(srcKey).has(destKey);
   }
 
   /**

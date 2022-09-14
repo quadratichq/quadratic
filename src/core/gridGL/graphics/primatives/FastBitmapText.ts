@@ -1,5 +1,5 @@
-import { BitmapText } from "pixi.js";
-import { PixiComponent } from "@inlet/react-pixi";
+import { BitmapText } from 'pixi.js';
+import { PixiComponent } from '@inlet/react-pixi';
 
 interface FastBitmapTextProps {
   x: number;
@@ -9,13 +9,13 @@ interface FastBitmapTextProps {
   fontSize?: number;
 }
 
-const FastBitmapText = PixiComponent("FastText", {
+const FastBitmapText = PixiComponent('FastText', {
   create: (props: FastBitmapTextProps) =>
     new BitmapText(props.text, {
-      fontName: "OpenSans",
+      fontName: 'OpenSans',
       fontSize: props.fontSize ?? 14,
       tint: 0x000000,
-      align: "left",
+      align: 'left',
       // maxWidth: 100,
     }),
   applyProps: (instance, oldProps, props) => {
