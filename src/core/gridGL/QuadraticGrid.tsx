@@ -22,8 +22,8 @@ import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { gridHeadingsGlobals } from './graphics/gridHeadings';
 import { axesLinesGlobals } from './graphics/axesLines';
-import { Size } from './types/size';
 import { gridLinesGlobals } from './graphics/gridLines';
+import { Size } from './types/size';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -84,15 +84,6 @@ export default function QuadraticGrid() {
     setInteractionState,
     setEditorInteractionState,
   });
-
-  const setHeaderSizeCallback = useCallback(
-    (width: number, height: number) => {
-      if (headerSize.width !== width || headerSize.height !== height) {
-        setHeaderSize({ width, height });
-      }
-    },
-    [headerSize, setHeaderSize]
-  );
 
   const { onKeyDownCanvas } = useKeyboardCanvas({
     interactionState,
