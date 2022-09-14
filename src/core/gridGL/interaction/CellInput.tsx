@@ -5,7 +5,6 @@ import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { Viewport } from 'pixi-viewport';
 import CellReference from '../types/cellReference';
-import { Size } from '../types/size';
 import { focusGrid } from '../../../helpers/focusGrid';
 
 interface CellInputProps {
@@ -14,7 +13,6 @@ interface CellInputProps {
     React.SetStateAction<GridInteractionState>
   >;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
-  headerSize: Size;
   container?: HTMLDivElement;
 }
 

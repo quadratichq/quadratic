@@ -6,12 +6,12 @@ interface IProps {
   graphics: PIXI.Graphics;
 }
 
-export const axesLinesProps = { showGridAxes: true };
+export const axesLinesGlobals = { showGridAxes: true };
 
 export function axesLines(props: IProps): void {
   const { viewport, graphics } = props;
   graphics.clear();
-  if (axesLinesProps.showGridAxes) {
+  if (axesLinesGlobals.showGridAxes) {
     graphics.lineStyle(10, 0x000000, 0.35, 0, true);
     if (0 >= viewport.left && 0 <= viewport.right) {
       graphics.moveTo(0, viewport.top);
