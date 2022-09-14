@@ -11,5 +11,5 @@ jobs:
         with:
           node-version: '17'
           cache: 'npm'
-        working-directory: src/
+      - working-directory: src/
       - run: npx prettier --check .
