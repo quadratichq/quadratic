@@ -33,7 +33,6 @@ export default function QuadraticGrid() {
   const cells = useLiveQuery(() => GetCellsDB());
   const [canvasSize, setCanvasSize] = useState<Size | undefined>(undefined);
   const [container, setContainer] = useState<HTMLDivElement>();
-  const [headerSize, setHeaderSize] = useState<Size>({ width: 0, height: 0 });
   const containerRef = useCallback((node) => {
     if (node) {
       setCanvasSize({ width: node.offsetWidth, height: node.offsetHeight });
@@ -91,22 +90,12 @@ export default function QuadraticGrid() {
     setEditorInteractionState,
   });
 
-  const setHeaderSizeCallback = useCallback(
-    (width: number, height: number) => {
-      if (headerSize.width !== width || headerSize.height !== height) {
-        setHeaderSize({ width, height });
-      }
-    },
-    [headerSize, setHeaderSize]
-  );
-
   const { onKeyDownCanvas } = useKeyboardCanvas({
     interactionState,
     setInteractionState,
     editorInteractionState,
     setEditorInteractionState,
     viewportRef,
-    headerSize,
   });
 
   if (loading || !canvasSize) return null;
@@ -161,7 +150,6 @@ export default function QuadraticGrid() {
           onPointerDown={pointerEvents.onPointerDown}
           onPointerMove={pointerEvents.onPointerMove}
           onPointerUp={pointerEvents.onPointerUp}
-          setHeaderSize={setHeaderSizeCallback}
           showHeadings={showHeadings}
         >
           {cells?.map((cell) => (
@@ -210,7 +198,6 @@ export default function QuadraticGrid() {
         interactionState={interactionState}
         setInteractionState={setInteractionState}
         viewportRef={viewportRef}
-        headerSize={headerSize}
         container={container}
       ></CellInput>
       {viewportRef.current && (

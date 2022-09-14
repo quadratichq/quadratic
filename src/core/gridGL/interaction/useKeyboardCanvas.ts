@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { Viewport } from 'pixi-viewport';
 import { copyToClipboard, pasteFromClipboard } from '../../actions/clipboard';
 import { deleteCellsRange } from '../../actions/deleteCellsRange';
@@ -20,13 +20,14 @@ interface IProps {
     React.SetStateAction<EditorInteractionState>
   >;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
-  headerSize: Size;
 }
+
+export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
 
 export const useKeyboardCanvas = (props: IProps): {
   onKeyDownCanvas: (event: React.KeyboardEvent<HTMLCanvasElement>) => void;
 } => {
-  const { interactionState, setInteractionState, setEditorInteractionState, viewportRef, headerSize } = props;
+  const { interactionState, setInteractionState, setEditorInteractionState, viewportRef } = props;
 
   const onKeyDownCanvas = (
     event: React.KeyboardEvent<HTMLCanvasElement>,
@@ -153,7 +154,7 @@ export const useKeyboardCanvas = (props: IProps): {
       }
       event.preventDefault();
       if (viewportRef.current) {
-        ensureVisible({ interactionState: newInteractionState, viewport: viewportRef.current, headerSize });
+        ensureVisible({ interactionState: newInteractionState, viewport: viewportRef.current, headerSize: pixiKeyboardCanvasProps.headerSize });
       }
     };
 

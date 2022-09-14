@@ -14,7 +14,6 @@ export interface ViewportProps {
   onPointerDown: (world: PIXI.Point, event: PointerEvent) => void;
   onPointerMove: (world: PIXI.Point, event: PointerEvent) => void;
   onPointerUp: () => void;
-  setHeaderSize: (width: number, height: number) => void;
   showHeadings: boolean;
 }
 
@@ -86,7 +85,6 @@ const PixiComponentViewport = PixiComponent('Viewport', {
               graphics: headingsGraphics,
               labels,
               corner,
-              setHeaderSize: props.setHeaderSize,
             });
             dirty = false;
           }

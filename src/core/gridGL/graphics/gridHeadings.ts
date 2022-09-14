@@ -13,6 +13,7 @@ import {
 import { colors } from '../../../theme/colors';
 import { calculateAlphaForGridLines } from './gridUtils';
 import { Size } from '../types/size';
+import { pixiKeyboardCanvasProps } from '../interaction/useKeyboardCanvas';
 
 // this ensures the top-left corner of the viewport doesn't move when toggling headings
 export const OFFSET_HEADINGS = false;
@@ -23,7 +24,6 @@ interface IProps {
   graphics: PIXI.Graphics;
   labels: PIXI.Container
   corner: PIXI.Graphics;
-  setHeaderSize: (width: number, height: number) => void;
 }
 
 interface LabelData {
@@ -262,6 +262,6 @@ export function gridHeadings(props: IProps) {
   drawHorizontal();
   addLabels();
   drawCorner();
-  props.setHeaderSize(rowWidth!, CELL_HEIGHT);
+  pixiKeyboardCanvasProps.headerSize = { width: rowWidth!, height: CELL_HEIGHT };
   lastRowSize = { width: rowWidth!, height: CELL_HEIGHT };
 }
