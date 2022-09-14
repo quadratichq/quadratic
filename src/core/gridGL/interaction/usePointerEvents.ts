@@ -13,10 +13,17 @@ interface IProps {
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
 }
 
+interface MousePosition {
+  x: number;
+  y: number;
+}
+
 const MINIMUM_MOVE_POSITION = 5;
 const DOUBLE_CLICK_TIME = 500;
 
-export const usePointerEvents = (props: IProps): {
+export const usePointerEvents = (
+  props: IProps
+): {
   isDoubleClick: (world: PIXI.Point, event: PointerEvent) => boolean;
   onPointerDown: (world: PIXI.Point, event: PointerEvent) => void;
   onPointerMove: (world: PIXI.Point, event: PointerEvent) => void;
@@ -24,26 +31,30 @@ export const usePointerEvents = (props: IProps): {
 } => {
   const { viewportRef, interactionState, setInteractionState } = props;
 
-  const [downPosition, setDownPosition] = useState<{ x: number, y: number } | undefined>();
-  const [downPositionRaw, setDownPositionRaw] = useState<{ x: number, y: number } | undefined>();
-  const [previousPosition, setPreviousPosition] = useState<{ originPosition: { x: number, y: number }, terminalPosition: { x: number, y: number } } | undefined>();
+  const [downPosition, setDownPosition] = useState<MousePosition | undefined>();
+  const [downPositionRaw, setDownPositionRaw] = useState<MousePosition | undefined>();
+  const [previousPosition, setPreviousPosition] = useState<
+    { originPosition: MousePosition; terminalPosition: MousePosition } | undefined
+  >();
   const [pointerMoved, setPointerMoved] = useState(false);
   const [doubleClickTimeout, setDoubleClickTimeout] = useState<number | undefined>();
 
   const isDoubleClick = (world: PIXI.Point, event: PointerEvent): boolean => {
     if (event.button !== 0 || !downPositionRaw || !props.viewportRef.current) return false;
-    if (doubleClickTimeout && !pointerMoved && Math.abs(downPositionRaw.x - world.x) + Math.abs(downPositionRaw.y - world.y) < MINIMUM_MOVE_POSITION * props.viewportRef.current.scale.x) {
+    if (
+      doubleClickTimeout &&
+      !pointerMoved &&
+      Math.abs(downPositionRaw.x - world.x) + Math.abs(downPositionRaw.y - world.y) <
+        MINIMUM_MOVE_POSITION * props.viewportRef.current.scale.x
+    ) {
       setDoubleClickTimeout(undefined);
       onDoubleClickCanvas(event, props.interactionState, props.setInteractionState, props.setEditorInteractionState);
       return true;
     }
     return false;
-  }
+  };
 
-  const onPointerDown = (
-    world: PIXI.Point,
-    event: PointerEvent,
-  ) => {
+  const onPointerDown = (world: PIXI.Point, event: PointerEvent) => {
     if (isDoubleClick(world, event)) return;
     // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
     if (viewportRef.current === undefined) return;
@@ -98,7 +109,13 @@ export const usePointerEvents = (props: IProps): {
     // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
     if (props.viewportRef.current === undefined) return;
     if (downPosition === undefined || previousPosition === undefined || downPositionRaw === undefined) return;
-    if (!pointerMoved && Math.abs(downPositionRaw.x - world.x) + Math.abs(downPositionRaw.y - world.y) > MINIMUM_MOVE_POSITION * props.viewportRef.current.scale.x) {
+
+    // for determining if double click
+    if (
+      !pointerMoved &&
+      Math.abs(downPositionRaw.x - world.x) + Math.abs(downPositionRaw.y - world.y) >
+        MINIMUM_MOVE_POSITION * props.viewportRef.current.scale.x
+    ) {
       setPointerMoved(true);
     }
 
@@ -162,7 +179,7 @@ export const usePointerEvents = (props: IProps): {
         });
       }
     }
-  }
+  };
 
   const onPointerUp = () => {
     if (downPosition && !pointerMoved) {
@@ -171,12 +188,12 @@ export const usePointerEvents = (props: IProps): {
     }
     setDownPosition(undefined);
     setPreviousPosition(undefined);
-  }
+  };
 
   return {
     isDoubleClick,
     onPointerDown,
     onPointerMove,
     onPointerUp,
-  }
+  };
 };
