@@ -69,18 +69,13 @@ export default function QuadraticGrid() {
   }, [showHeadings]);
 
   // Interaction State hook
-  const [interactionState, setInteractionState] = useRecoilState(
-    gridInteractionStateAtom
-  );
+  const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
 
   // Editor Interaction State hook
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(
-    editorInteractionStateAtom
-  );
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   // Right click menu
-  const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } =
-    useMenuState();
+  const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } = useMenuState();
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
 
   const pointerEvents = usePointerEvents({
@@ -102,13 +97,13 @@ export default function QuadraticGrid() {
 
   return (
     <div
-      className="canvas-container"
       ref={containerRef}
       style={{
         width: '100%',
         height: '100%',
         outline: 'none',
         overflow: 'hidden',
+        WebkitTapHighlightColor: 'transparent',
       }}
       onContextMenu={(event) => {
         event.preventDefault();
@@ -132,8 +127,6 @@ export default function QuadraticGrid() {
         tabIndex={0}
         onKeyDown={(event) => onKeyDownCanvas(event)}
         style={{
-          // display: 'inline',
-          // position: 'relative',
           outline: 'none',
           WebkitTapHighlightColor: 'rgba(255, 255, 255, 0)' /* mobile webkit */,
         }}
@@ -169,26 +162,17 @@ export default function QuadraticGrid() {
               array_cells={cell.array_cells}
             ></CellPixiReact>
           ))}
-          <CursorPixiReact
-            viewportRef={viewportRef}
-            location={interactionState.cursorPosition}
-          ></CursorPixiReact>
+          <CursorPixiReact viewportRef={viewportRef} location={interactionState.cursorPosition}></CursorPixiReact>
           <MultiCursorPixiReact
             viewportRef={viewportRef}
             originLocation={interactionState.multiCursorPosition.originPosition}
-            terminalLocation={
-              interactionState.multiCursorPosition.terminalPosition
-            }
+            terminalLocation={interactionState.multiCursorPosition.terminalPosition}
             visible={interactionState.showMultiCursor}
           ></MultiCursorPixiReact>
           {editorInteractionState.showCodeEditor && (
             <CursorPixiReact
               location={editorInteractionState.selectedCell}
-              color={
-                editorInteractionState.mode === 'PYTHON'
-                  ? colors.cellColorUserPython
-                  : colors.independence
-              }
+              color={editorInteractionState.mode === 'PYTHON' ? colors.cellColorUserPython : colors.independence}
             ></CursorPixiReact>
           )}
         </ViewportComponent>
@@ -199,11 +183,7 @@ export default function QuadraticGrid() {
         viewportRef={viewportRef}
         container={container}
       ></CellInput>
-      {viewportRef.current && (
-        <ViewportEventRegister
-          viewport={viewportRef.current}
-        ></ViewportEventRegister>
-      )}
+      {viewportRef.current && <ViewportEventRegister viewport={viewportRef.current}></ViewportEventRegister>}
       <RightClickMenu
         state={rightClickMenuState}
         anchorPoint={rightClickPoint}

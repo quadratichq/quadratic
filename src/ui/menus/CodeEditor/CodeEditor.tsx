@@ -11,10 +11,7 @@ import { Button } from '@mui/material';
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
-import {
-  EditorInteractionState,
-  editorInteractionStateAtom,
-} from '../../../atoms/editorInteractionStateAtom';
+import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useLiveQuery } from 'dexie-react-hooks';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
@@ -108,10 +105,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     updateCellAndDCells(selectedCell);
   };
 
-  const handleEditorDidMount = (
-    editor: monaco.editor.IStandaloneCodeEditor,
-    monaco: Monaco
-  ) => {
+  const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
 
     editor.focus();
