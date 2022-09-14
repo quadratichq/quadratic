@@ -20,8 +20,8 @@ import { useMenuState } from '@szhsin/react-menu';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
 import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 import useLocalStorage from '../../hooks/useLocalStorage';
-import { gridHeadingsProps } from './graphics/gridHeadings';
-import { axesLinesProps } from './graphics/axesLines';
+import { gridHeadingsGlobals } from './graphics/gridHeadings';
+import { axesLinesGlobals } from './graphics/axesLines';
 import { Size } from './types/size';
 
 export default function QuadraticGrid() {
@@ -59,12 +59,12 @@ export default function QuadraticGrid() {
   };
 
   useEffect(() => {
-    axesLinesProps.showGridAxes = showGridAxes;
+    axesLinesGlobals.showGridAxes = showGridAxes;
     forceRender();
   }, [showGridAxes]);
 
   useEffect(() => {
-    gridHeadingsProps.showHeadings = showHeadings;
+    gridHeadingsGlobals.showHeadings = showHeadings;
     forceRender();
   }, [showHeadings]);
 
@@ -139,7 +139,6 @@ export default function QuadraticGrid() {
         }}
         // Disable rendering on each frame
         raf={false}
-
         // Render on each state change
         renderOnComponentChange={true}
       >
