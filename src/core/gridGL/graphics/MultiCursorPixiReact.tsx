@@ -5,8 +5,10 @@ import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { colors } from '../../../theme/colors';
 
 import { Graphics } from '@inlet/react-pixi';
+import { Viewport } from 'pixi-viewport';
 
 interface CursorPixiReactProps {
+  viewportRef?: React.MutableRefObject<Viewport | undefined>;
   originLocation: CellReference;
   terminalLocation: CellReference;
   visible: boolean;
@@ -32,8 +34,11 @@ const MultiCursorPixiReact = (props: CursorPixiReactProps) => {
       g.lineStyle(1, color, 1, 0, true);
       g.beginFill(color, 0.1);
       g.drawRect(x0_pos, y0_pos, x1_pos - x0_pos, y1_pos - y0_pos);
+      if (props.viewportRef?.current) {
+        props.viewportRef.current.dirty = true;
+      }
     },
-    [x0_pos, y0_pos, x1_pos, y1_pos, color, visible]
+    [x0_pos, y0_pos, x1_pos, y1_pos, color, visible, props.viewportRef]
   );
 
   return <Graphics draw={draw_outline}></Graphics>;

@@ -1,32 +1,19 @@
 import { useEffect } from 'react';
 import { zoomStateAtom } from '../../../atoms/zoomStateAtom';
-import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import type { Viewport } from 'pixi-viewport';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { getGridMinMax } from '../../../helpers/getGridMinMax';
 import { Point } from 'pixi.js';
 import { ZOOM_ANIMATION_TIME_MS } from '../../../constants/gridConstants';
 
-export const ViewportEventRegister = (props: { viewport: Viewport }) => {
+interface IProps {
+  viewport: Viewport;
+}
+
+export const ViewportEventRegister = (props: IProps) => {
   const { viewport } = props;
   const [zoomState, setZoomState] = useRecoilState(zoomStateAtom);
-
-  // Interaction State hook
-  const interactionState = useRecoilValue(gridInteractionStateAtom);
-
-  // When the cursor moves ensure it is visible
-  useEffect(() => {
-    // When multiCursor is visible don't force the single cursor to be visible
-    if (!interactionState.showMultiCursor)
-      viewport.ensureVisible(
-        interactionState.cursorPosition.x * CELL_WIDTH,
-        interactionState.cursorPosition.y * CELL_HEIGHT - 40,
-        CELL_WIDTH,
-        CELL_HEIGHT * 4,
-        false
-      );
-  }, [viewport, interactionState]);
 
   // register zooming event listener to set Atom state
   useEffect(() => {
@@ -55,9 +42,11 @@ export const ViewportEventRegister = (props: { viewport: Viewport }) => {
         event.preventDefault();
       }
     }
-
-    window.removeEventListener('keydown', listenForZoom);
     window.addEventListener('keydown', listenForZoom);
+
+    return () => {
+      window.removeEventListener('keydown', listenForZoom);
+    }
   }, [viewport]);
 
   // When zoom state updates, tell the viewport to zoom

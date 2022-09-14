@@ -3,12 +3,11 @@ import { EditorInteractionState } from '../../../atoms/editorInteractionStateAto
 import { GetCellsDB } from '../../gridDB/Cells/GetCellsDB';
 
 export const onDoubleClickCanvas = (
-  event: React.MouseEvent<HTMLCanvasElement, MouseEvent>,
+  event: PointerEvent,
   interactionState: GridInteractionState,
   setInteractionState: React.Dispatch<
     React.SetStateAction<GridInteractionState>
   >,
-  editorInteractionState: EditorInteractionState,
   setEditorInteractionState: React.Dispatch<
     React.SetStateAction<EditorInteractionState>
   >

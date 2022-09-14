@@ -31,6 +31,7 @@ export const QuadraticMenu = () => {
     false
   );
   const [showGridAxes, setShowGridAxes] = useLocalStorage('showGridAxes', true);
+  const [showHeadings, setShowHeadings] = useLocalStorage('showHeadings', true);
 
   return (
     <Menu
@@ -66,6 +67,13 @@ export const QuadraticMenu = () => {
           onClick={() => setShowGridAxes(!showGridAxes)}
         >
           Show Axis
+        </MenuItem>
+        <MenuItem
+          type="checkbox"
+          checked={showHeadings}
+          onClick={() => setShowHeadings(!showHeadings)}
+        >
+          Show Headings
         </MenuItem>
         <MenuDivider />
         <MenuHeader>Debug</MenuHeader>

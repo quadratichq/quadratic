@@ -1,16 +1,19 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
 type LoadingProviderProps = { children: ReactNode };
+
+const LOAD_COUNT = 2;
 
 export type LoadingContextType = {
   loading: boolean;
-  setLoading: (loading: boolean) => void;
+  incrementLoadingCount: () => void;
 };
 
 export const LoadingContext = createContext<LoadingContextType>({
   loading: true,
-  setLoading: (loading) =>
+  incrementLoadingCount: () =>
     console.warn("useLoading must be used within LoadingProvider1"),
 });
+
 export function useLoading() {
   const context = useContext(LoadingContext);
   if (!context) {
@@ -21,7 +24,19 @@ export function useLoading() {
 
 export function LoadingProvider({ children }: LoadingProviderProps) {
   const [loading, setLoading] = useState(true);
-  const value = { loading, setLoading };
+  const [loadingCount, setLoadingCount] = useState(0);
+
+  const incrementLoadingCount = useCallback(() => {
+    setLoadingCount(count => count + 1);
+  }, [setLoadingCount]);
+
+  const value = { loading, incrementLoadingCount };
+
+  useEffect(() => {
+    if (loadingCount === LOAD_COUNT) {
+      setLoading(false);
+    }
+  }, [loadingCount]);
 
   return (
     <LoadingContext.Provider value={value}>{children}</LoadingContext.Provider>

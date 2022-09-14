@@ -1,6 +1,7 @@
 import { atom } from "recoil";
 import CellReference from "../core/gridGL/types/cellReference";
 export interface GridInteractionState {
+  keyboardMovePosition: CellReference,
   cursorPosition: CellReference;
   showMultiCursor: boolean;
   multiCursorPosition: {
@@ -14,6 +15,7 @@ export interface GridInteractionState {
 export const gridInteractionStateAtom = atom({
   key: "gridInteractionState", // unique ID (with respect to other atoms/selectors)
   default: {
+    keyboardMovePosition: { x: 0, y: 0 },
     cursorPosition: { x: 0, y: 0 },
     showMultiCursor: false,
     multiCursorPosition: {
