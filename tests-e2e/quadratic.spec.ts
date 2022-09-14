@@ -39,6 +39,10 @@ test.describe('Grid interaction', () => {
 
     await enterCodeInCell(page, '1+1', browserName);
 
+    // flakey, this takes a different amount of time based on resources and browser
+    // waiting for grid to update. Should be able to await a real event.
+    await pause(10000);
+
     await expect(await getGridScreenshot(page)).toMatchSnapshot('ie670m.png');
   });
 });
