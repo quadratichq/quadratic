@@ -4,10 +4,9 @@ import { calculateAlphaForGridLines } from './gridUtils';
 import { colors } from '../../../theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
 
-export function gridLines(props: {
-  viewport: Viewport;
-  graphics: PIXI.Graphics;
-}): void {
+export const gridLinesGlobals = { show: false };
+
+export function gridLines(props: { viewport: Viewport; graphics: PIXI.Graphics }): void {
   const gridAlpha = calculateAlphaForGridLines(props.viewport);
   const { viewport, graphics } = props;
   if (gridAlpha === 0) {
@@ -18,6 +17,8 @@ export function gridLines(props: {
   graphics.visible = true;
 
   graphics.clear();
+
+  if (!gridLinesGlobals.show) return;
 
   // Configure Line Style
   graphics.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
