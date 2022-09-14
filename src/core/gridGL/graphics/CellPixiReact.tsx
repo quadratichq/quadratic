@@ -19,6 +19,7 @@ interface CellPixiReactProps {
   text: string;
   type: CellTypes;
   renderText: boolean;
+  showCellTypeOutlines: boolean;
   array_cells?: [number, number][];
 }
 
@@ -74,8 +75,8 @@ const CellPixiReact = (props: CellPixiReactProps) => {
         text={props.text}
         visible={props.renderText}
       />
-      <Graphics draw={draw_outline} />
-      {props.type === 'PYTHON' && (
+      {props.showCellTypeOutlines && <Graphics draw={draw_outline} />}
+      {props.type === 'PYTHON' && props.showCellTypeOutlines && (
         <CodeIcon x_pos={x_pos} y_pos={y_pos}></CodeIcon>
       )}
     </Container>
