@@ -94,7 +94,7 @@ export default function QuadraticGrid() {
   const setHeaderSizeCallback = useCallback(
     (width: number, height: number) => {
       if (headerSize.width !== width || headerSize.height !== height) {
-        setHeaderSize({ width, height });
+        // setHeaderSize({ width, height });
       }
     },
     [headerSize, setHeaderSize]
@@ -150,7 +150,6 @@ export default function QuadraticGrid() {
         }}
         // Disable rendering on each frame
         raf={false}
-
         // Render on each state change
         renderOnComponentChange={true}
       >
