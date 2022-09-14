@@ -1,2 +1,2 @@
-import { TopBar } from "./TopBar";
+import { TopBar } from './TopBar';
 export default TopBar;

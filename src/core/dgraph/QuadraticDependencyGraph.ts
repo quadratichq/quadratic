@@ -61,10 +61,7 @@ export default class QuadraticDependencyGraph {
     this._dgraph.import(igraph);
   }
 
-  add_dependency_to_graph(
-    cell: [number, number],
-    dependent_cells: [number, number][]
-  ) {
+  add_dependency_to_graph(cell: [number, number], dependent_cells: [number, number][]) {
     this._dgraph.addVertex(cell_to_string(cell), undefined);
 
     for (const dcell of dependent_cells) {
@@ -75,10 +72,7 @@ export default class QuadraticDependencyGraph {
     // TODO detect circular reference
   }
 
-  add_dependencies_to_graph(
-    input_cells: [number, number][],
-    dependent_cells: [number, number][]
-  ) {
+  add_dependencies_to_graph(input_cells: [number, number][], dependent_cells: [number, number][]) {
     // TODO: untested
     // console.log(
     //   "add_dependencies_to_graph",
@@ -97,10 +91,7 @@ export default class QuadraticDependencyGraph {
     // TODO detect circular reference
   }
 
-  remove_dependency_from_graph(
-    cell: [number, number],
-    dependent_cells: [number, number][]
-  ) {
+  remove_dependency_from_graph(cell: [number, number], dependent_cells: [number, number][]) {
     for (const dcell of dependent_cells) {
       this._dgraph.removeEdge(cell_to_string(cell), cell_to_string(dcell));
     }
@@ -108,10 +99,7 @@ export default class QuadraticDependencyGraph {
     // TODO remove any orphans from the graph
   }
 
-  remove_dependencies_from_graph(
-    input_cells: [number, number][],
-    dependent_cells: [number, number][]
-  ) {
+  remove_dependencies_from_graph(input_cells: [number, number][], dependent_cells: [number, number][]) {
     // console.log("remove_dependencies_from_graph", input_cells, JSON.stringify(dependent_cells));
     for (const icell of input_cells) {
       for (const dcell of dependent_cells) {
@@ -122,9 +110,7 @@ export default class QuadraticDependencyGraph {
 
   get_children_cells(cell: [number, number]) {
     let result = new Array<[number, number]>();
-    this._dgraph.traverseBfs(cell_to_string(cell), (key: string) =>
-      result.push(string_to_cell(key))
-    );
+    this._dgraph.traverseBfs(cell_to_string(cell), (key: string) => result.push(string_to_cell(key)));
     return result.slice(1);
   }
 }

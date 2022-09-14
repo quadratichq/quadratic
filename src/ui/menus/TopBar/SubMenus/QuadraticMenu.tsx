@@ -1,18 +1,7 @@
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import {
-  Menu,
-  MenuItem,
-  SubMenu,
-  MenuDivider,
-  MenuHeader,
-} from '@szhsin/react-menu';
-import {
-  MenuBookOutlined,
-  FileOpenOutlined,
-  SaveOutlined,
-  BugReportOutlined,
-} from '@mui/icons-material';
+import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
+import { MenuBookOutlined, FileOpenOutlined, SaveOutlined, BugReportOutlined } from '@mui/icons-material';
 
 import '@szhsin/react-menu/dist/index.css';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
@@ -26,20 +15,11 @@ import { colors } from '../../../../theme/colors';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 
 export const QuadraticMenu = () => {
-  const [showDebugMenu, setShowDebugMenu] = useLocalStorage(
-    'showDebugMenu',
-    false
-  );
+  const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
   const [showGridAxes, setShowGridAxes] = useLocalStorage('showGridAxes', true);
   const [showHeadings, setShowHeadings] = useLocalStorage('showHeadings', true);
-  const [showGridLines, setShowGridLines] = useLocalStorage(
-    'showGridLines',
-    true
-  );
-  const [showCellTypeOutlines, setShowCellTypeOutlines] = useLocalStorage(
-    'showCellTypeOutlines',
-    true
-  );
+  const [showGridLines, setShowGridLines] = useLocalStorage('showGridLines', true);
+  const [showCellTypeOutlines, setShowCellTypeOutlines] = useLocalStorage('showCellTypeOutlines', true);
 
   return (
     <Menu
@@ -58,8 +38,7 @@ export const QuadraticMenu = () => {
           <SaveOutlined style={menuItemIconStyles}></SaveOutlined> Save Grid
         </MenuItem>
         <MenuItem onClick={() => OpenGridFile()}>
-          <FileOpenOutlined style={menuItemIconStyles}></FileOpenOutlined> Open
-          Grid
+          <FileOpenOutlined style={menuItemIconStyles}></FileOpenOutlined> Open Grid
         </MenuItem>
       </SubMenu>
       <SubMenu label="Import">
@@ -69,26 +48,14 @@ export const QuadraticMenu = () => {
       </SubMenu>
       <SubMenu label="View">
         <MenuHeader>UI</MenuHeader>
-        <MenuItem
-          type="checkbox"
-          checked={showHeadings}
-          onClick={() => setShowHeadings(!showHeadings)}
-        >
+        <MenuItem type="checkbox" checked={showHeadings} onClick={() => setShowHeadings(!showHeadings)}>
           Show Headings
         </MenuItem>
         <MenuHeader>Grid</MenuHeader>
-        <MenuItem
-          type="checkbox"
-          checked={showGridAxes}
-          onClick={() => setShowGridAxes(!showGridAxes)}
-        >
+        <MenuItem type="checkbox" checked={showGridAxes} onClick={() => setShowGridAxes(!showGridAxes)}>
           Show Axis
         </MenuItem>
-        <MenuItem
-          type="checkbox"
-          checked={showGridLines}
-          onClick={() => setShowGridLines(!showGridLines)}
-        >
+        <MenuItem type="checkbox" checked={showGridLines} onClick={() => setShowGridLines(!showGridLines)}>
           Show Grid Lines
         </MenuItem>
         <MenuItem
@@ -112,12 +79,10 @@ export const QuadraticMenu = () => {
       </SubMenu>
       <SubMenu label="Help">
         <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>
-          <MenuBookOutlined style={menuItemIconStyles}></MenuBookOutlined> Read
-          the docs
+          <MenuBookOutlined style={menuItemIconStyles}></MenuBookOutlined> Read the docs
         </MenuItem>
         <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>
-          <BugReportOutlined style={menuItemIconStyles}></BugReportOutlined>{' '}
-          Report a problem
+          <BugReportOutlined style={menuItemIconStyles}></BugReportOutlined> Report a problem
         </MenuItem>
       </SubMenu>
     </Menu>

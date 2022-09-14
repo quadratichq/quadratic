@@ -1,2 +1,2 @@
-import CellTypeMenu from "./CellTypeMenu";
+import CellTypeMenu from './CellTypeMenu';
 export default CellTypeMenu;

@@ -91,12 +91,7 @@ export function gridHeadings(props: IProps) {
 
     // draw bar
     graphics.beginFill(colors.headerBackgroundColor);
-    graphics.drawRect(
-      viewport.left,
-      viewport.top,
-      viewport.right - viewport.left,
-      cellHeight
-    );
+    graphics.drawRect(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight);
 
     // calculate whether we need to skip numbers
     const xOffset = bounds.left % CELL_WIDTH;
@@ -106,13 +101,8 @@ export function gridHeadings(props: IProps) {
     // labelWidth uses the constant for number of digits--this ensures the mod factor doesn't change when panning
     const labelWidth = LABEL_DIGITS_TO_CALCULATE_SKIP * characterSize.width;
     let mod = 0;
-    if (
-      labelWidth >
-      CELL_WIDTH * viewport.scale.x * LABEL_MAXIMUM_WIDTH_PERCENT
-    ) {
-      const skipNumbers = Math.ceil(
-        (cellWidth * (1 - LABEL_MAXIMUM_WIDTH_PERCENT)) / labelWidth
-      );
+    if (labelWidth > CELL_WIDTH * viewport.scale.x * LABEL_MAXIMUM_WIDTH_PERCENT) {
+      const skipNumbers = Math.ceil((cellWidth * (1 - LABEL_MAXIMUM_WIDTH_PERCENT)) / labelWidth);
       mod = findInterval(skipNumbers);
     }
 
@@ -139,16 +129,12 @@ export function gridHeadings(props: IProps) {
     const yOffset = bounds.top % CELL_HEIGHT;
     const topOffset = bounds.top - yOffset - CELL_HEIGHT / 2;
     const bottomOffset = bounds.bottom - yOffset + 1.5 * CELL_HEIGHT;
-    const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString()
-      .length;
-    const bottomNumberLength = Math.round(
-      bottomOffset / CELL_HEIGHT - 1
-    ).toString().length;
+    const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString().length;
+    const bottomNumberLength = Math.round(bottomOffset / CELL_HEIGHT - 1).toString().length;
 
     // rowWidth is the maximum number of digits of the top number and bottom number * characterSize.width
     rowWidth =
-      (Math.max(topNumberLength, bottomNumberLength) * characterSize.width) /
-        viewport.scale.x +
+      (Math.max(topNumberLength, bottomNumberLength) * characterSize.width) / viewport.scale.x +
       (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
     rowWidth = Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
 
@@ -161,13 +147,8 @@ export function gridHeadings(props: IProps) {
       bounds.height - CELL_HEIGHT / viewport.scale.x
     );
     let mod = 0;
-    if (
-      characterSize.height >
-      CELL_HEIGHT * viewport.scale.y * LABEL_MAXIMUM_HEIGHT_PERCENT
-    ) {
-      const skipNumbers = Math.ceil(
-        (cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) / characterSize.height
-      );
+    if (characterSize.height > CELL_HEIGHT * viewport.scale.y * LABEL_MAXIMUM_HEIGHT_PERCENT) {
+      const skipNumbers = Math.ceil((cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) / characterSize.height);
       mod = findInterval(skipNumbers);
     }
     const x = bounds.left + rowWidth / 2;

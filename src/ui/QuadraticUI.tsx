@@ -14,22 +14,26 @@ export default function QuadraticUI() {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   return (
-    <div style={{
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu />}
       <TopBar />
 
-      <div style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        overflow: "hidden",
-      }}>
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          overflow: 'hidden',
+        }}
+      >
         <QuadraticGrid />
         <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
       </div>

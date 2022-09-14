@@ -1,13 +1,7 @@
 import { Fragment } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import {
-  Menu,
-  MenuItem,
-  MenuDivider,
-  MenuHeader,
-  SubMenu,
-} from '@szhsin/react-menu';
+import { Menu, MenuItem, MenuDivider, MenuHeader, SubMenu } from '@szhsin/react-menu';
 
 import {
   FormatBold,
@@ -82,8 +76,7 @@ export const FormatMenu = () => {
         <FormatAlignLeft style={menuItemIconStyles}></FormatAlignLeft> Left
       </MenuItem>
       <MenuItem disabled>
-        <FormatAlignCenter style={menuItemIconStyles}></FormatAlignCenter>{' '}
-        Center
+        <FormatAlignCenter style={menuItemIconStyles}></FormatAlignCenter> Center
       </MenuItem>
       <MenuItem disabled>
         <FormatAlignRight style={menuItemIconStyles}></FormatAlignRight> Right
@@ -92,8 +85,7 @@ export const FormatMenu = () => {
       <MenuDivider />
       <MenuHeader>Cell</MenuHeader>
       <MenuItem disabled>
-        <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill
-        Color
+        <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill Color
       </MenuItem>
 
       <SubMenu
@@ -133,8 +125,7 @@ export const FormatMenu = () => {
           <BorderInner style={menuItemIconStyles}></BorderInner> Inner
         </MenuItem>
         <MenuItem disabled>
-          <BorderHorizontal style={menuItemIconStyles}></BorderHorizontal>{' '}
-          Horizontal
+          <BorderHorizontal style={menuItemIconStyles}></BorderHorizontal> Horizontal
         </MenuItem>
         <MenuItem disabled>
           <BorderVertical style={menuItemIconStyles}></BorderVertical> Vertical

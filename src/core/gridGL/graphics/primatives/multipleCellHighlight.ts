@@ -6,10 +6,7 @@ import CellReference from '../../types/cellReference';
 
 import { colors } from '../../../../theme/colors.js';
 
-const multipleCellHighlight = (
-  cell0: CellReference,
-  cell1: CellReference
-): Graphics => {
+const multipleCellHighlight = (cell0: CellReference, cell1: CellReference): Graphics => {
   const x0_pos = cell0.x * CELL_WIDTH;
   const y0_pos = cell0.y * CELL_HEIGHT;
   const x1_pos = cell1.x * CELL_WIDTH;

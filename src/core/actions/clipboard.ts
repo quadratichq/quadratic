@@ -53,10 +53,7 @@ export const pasteFromClipboard = (pasteToCell: CellReference) => {
   });
 };
 
-export const copyToClipboard = async (
-  cell0: CellReference,
-  cell1: CellReference
-) => {
+export const copyToClipboard = async (cell0: CellReference, cell1: CellReference) => {
   // write selected cells to clipboard
 
   const cWidth = Math.abs(cell1.x - cell0.x) + 1;

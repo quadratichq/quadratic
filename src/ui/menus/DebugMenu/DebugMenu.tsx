@@ -21,8 +21,7 @@ export default function DebugMenu() {
 
   const HUMAN_READABLE_DGRAPH = true;
   let dgraph_str = dgraph?.human_readable_string();
-  if (!HUMAN_READABLE_DGRAPH)
-    dgraph_str = JSON.stringify(dgraph?.export_to_obj());
+  if (!HUMAN_READABLE_DGRAPH) dgraph_str = JSON.stringify(dgraph?.export_to_obj());
 
   try {
     file_state = `${dgraph_str}\n${JSON.stringify(cells || '', null, '\t')}`;

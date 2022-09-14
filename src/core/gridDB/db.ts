@@ -1,12 +1,6 @@
 import Dexie, { Table } from 'dexie';
 
-export type CellTypes =
-  | 'TEXT'
-  | 'FORMULA'
-  | 'JAVASCRIPT'
-  | 'PYTHON'
-  | 'SQL'
-  | 'COMPUTED';
+export type CellTypes = 'TEXT' | 'FORMULA' | 'JAVASCRIPT' | 'PYTHON' | 'SQL' | 'COMPUTED';
 
 export interface Cell {
   x: number;

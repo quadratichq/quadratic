@@ -13,8 +13,7 @@ export const ZoomDropdown = () => {
     <Menu
       menuButton={
         <Button style={{ color: colors.darkGray }}>
-          {Math.round(zoomState * 100)}%
-          <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
+          {Math.round(zoomState * 100)}%<KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
         </Button>
       }
     >

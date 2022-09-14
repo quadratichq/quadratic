@@ -14,8 +14,7 @@ export const WelcomeComponent = () => {
       setFirstTime(false);
       // Only open example file if the grid is empty.
       qdb.cells.count().then((number_of_cells) => {
-        if (number_of_cells === 0)
-          LoadGridFromJSON(example_grid as GridFileSchema);
+        if (number_of_cells === 0) LoadGridFromJSON(example_grid as GridFileSchema);
       });
     }
   }, [firstTime, setFirstTime]);
