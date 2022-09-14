@@ -113,9 +113,11 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     viewport.off('pointerdown');
     viewport.off('pointermove');
     viewport.off('pointerup');
+    viewport.off('pointerupoutside');
     viewport.on('pointerdown', (e) => newProps.onPointerDown(viewport.toWorld(e.data.global), e.data.originalEvent));
     viewport.on('pointermove', (e) => newProps.onPointerMove(viewport.toWorld(e.data.global), e.data.originalEvent));
-    viewport.on('pointerup', () => newProps.onPointerUp());
+    viewport.on('pointerup', () => newProps.onPointerUp);
+    viewport.on('pointerupoutside', () => newProps.onPointerUp);
     if (oldProps.screenWidth !== newProps.screenWidth || oldProps.screenHeight !== newProps.screenHeight) {
       viewport.resize(newProps.screenWidth, newProps.screenHeight);
     }
