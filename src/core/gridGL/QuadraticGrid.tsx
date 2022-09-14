@@ -20,10 +20,10 @@ import { useMenuState } from '@szhsin/react-menu';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
 import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 import useLocalStorage from '../../hooks/useLocalStorage';
-import { gridHeadingsProps } from './graphics/gridHeadings';
-import { axesLinesProps } from './graphics/axesLines';
+import { gridHeadingsGlobals } from './graphics/gridHeadings';
+import { axesLinesGlobals } from './graphics/axesLines';
 import { Size } from './types/size';
-import { gridHeadingsGlobals } from './graphics/gridLines';
+import { gridLinesGlobals } from './graphics/gridLines';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -34,7 +34,6 @@ export default function QuadraticGrid() {
   const cells = useLiveQuery(() => GetCellsDB());
   const [canvasSize, setCanvasSize] = useState<Size | undefined>(undefined);
   const [container, setContainer] = useState<HTMLDivElement>();
-  const [headerSize, setHeaderSize] = useState<Size>({ width: 0, height: 0 });
   const containerRef = useCallback((node) => {
     if (node) {
       setCanvasSize({ width: node.offsetWidth, height: node.offsetHeight });
@@ -63,26 +62,20 @@ export default function QuadraticGrid() {
   };
 
   useEffect(() => {
-    // When updating localStorage, pass to pure js render functions using Globals
-    axesLinesProps.showGridAxes = showGridAxes;
-    gridHeadingsProps.showHeadings = showHeadings;
-    gridHeadingsGlobals.show = showGridLines;
+    axesLinesGlobals.showGridAxes = showGridAxes;
+    gridHeadingsGlobals.showHeadings = showHeadings;
+    gridLinesGlobals.show = showGridLines;
     forceRender();
   }, [showGridAxes, showHeadings, showGridLines]);
 
   // Interaction State hook
-  const [interactionState, setInteractionState] = useRecoilState(
-    gridInteractionStateAtom
-  );
+  const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
 
   // Editor Interaction State hook
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(
-    editorInteractionStateAtom
-  );
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   // Right click menu
-  const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } =
-    useMenuState();
+  const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } = useMenuState();
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
 
   const pointerEvents = usePointerEvents({
@@ -92,35 +85,25 @@ export default function QuadraticGrid() {
     setEditorInteractionState,
   });
 
-  const setHeaderSizeCallback = useCallback(
-    (width: number, height: number) => {
-      if (headerSize.width !== width || headerSize.height !== height) {
-        setHeaderSize({ width, height });
-      }
-    },
-    [headerSize, setHeaderSize]
-  );
-
   const { onKeyDownCanvas } = useKeyboardCanvas({
     interactionState,
     setInteractionState,
     editorInteractionState,
     setEditorInteractionState,
     viewportRef,
-    headerSize,
   });
 
   if (loading || !canvasSize) return null;
 
   return (
     <div
-      className="canvas-container"
       ref={containerRef}
       style={{
         width: '100%',
         height: '100%',
         outline: 'none',
         overflow: 'hidden',
+        WebkitTapHighlightColor: 'transparent',
       }}
       onContextMenu={(event) => {
         event.preventDefault();
@@ -144,8 +127,6 @@ export default function QuadraticGrid() {
         tabIndex={0}
         onKeyDown={(event) => onKeyDownCanvas(event)}
         style={{
-          // display: 'inline',
-          // position: 'relative',
           outline: 'none',
           WebkitTapHighlightColor: 'rgba(255, 255, 255, 0)' /* mobile webkit */,
         }}
@@ -161,7 +142,6 @@ export default function QuadraticGrid() {
           onPointerDown={pointerEvents.onPointerDown}
           onPointerMove={pointerEvents.onPointerMove}
           onPointerUp={pointerEvents.onPointerUp}
-          setHeaderSize={setHeaderSizeCallback}
           showHeadings={showHeadings}
         >
           {cells?.map((cell) => (
@@ -183,26 +163,17 @@ export default function QuadraticGrid() {
               array_cells={cell.array_cells}
             ></CellPixiReact>
           ))}
-          <CursorPixiReact
-            viewportRef={viewportRef}
-            location={interactionState.cursorPosition}
-          ></CursorPixiReact>
+          <CursorPixiReact viewportRef={viewportRef} location={interactionState.cursorPosition}></CursorPixiReact>
           <MultiCursorPixiReact
             viewportRef={viewportRef}
             originLocation={interactionState.multiCursorPosition.originPosition}
-            terminalLocation={
-              interactionState.multiCursorPosition.terminalPosition
-            }
+            terminalLocation={interactionState.multiCursorPosition.terminalPosition}
             visible={interactionState.showMultiCursor}
           ></MultiCursorPixiReact>
           {editorInteractionState.showCodeEditor && (
             <CursorPixiReact
               location={editorInteractionState.selectedCell}
-              color={
-                editorInteractionState.mode === 'PYTHON'
-                  ? colors.cellColorUserPython
-                  : colors.independence
-              }
+              color={editorInteractionState.mode === 'PYTHON' ? colors.cellColorUserPython : colors.independence}
             ></CursorPixiReact>
           )}
         </ViewportComponent>
@@ -211,14 +182,9 @@ export default function QuadraticGrid() {
         interactionState={interactionState}
         setInteractionState={setInteractionState}
         viewportRef={viewportRef}
-        headerSize={headerSize}
         container={container}
       ></CellInput>
-      {viewportRef.current && (
-        <ViewportEventRegister
-          viewport={viewportRef.current}
-        ></ViewportEventRegister>
-      )}
+      {viewportRef.current && <ViewportEventRegister viewport={viewportRef.current}></ViewportEventRegister>}
       <RightClickMenu
         state={rightClickMenuState}
         anchorPoint={rightClickPoint}

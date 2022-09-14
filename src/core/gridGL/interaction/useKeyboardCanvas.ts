@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { Viewport } from 'pixi-viewport';
 import { copyToClipboard, pasteFromClipboard } from '../../actions/clipboard';
 import { deleteCellsRange } from '../../actions/deleteCellsRange';
@@ -12,25 +12,22 @@ import { Size } from '../types/size';
 
 interface IProps {
   interactionState: GridInteractionState;
-  setInteractionState: React.Dispatch<
-    React.SetStateAction<GridInteractionState>
-  >;
-  editorInteractionState: EditorInteractionState,
-  setEditorInteractionState: React.Dispatch<
-    React.SetStateAction<EditorInteractionState>
-  >;
+  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
+  editorInteractionState: EditorInteractionState;
+  setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
-  headerSize: Size;
 }
 
-export const useKeyboardCanvas = (props: IProps): {
+export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
+
+export const useKeyboardCanvas = (
+  props: IProps
+): {
   onKeyDownCanvas: (event: React.KeyboardEvent<HTMLCanvasElement>) => void;
 } => {
-  const { interactionState, setInteractionState, setEditorInteractionState, viewportRef, headerSize } = props;
+  const { interactionState, setInteractionState, setEditorInteractionState, viewportRef } = props;
 
-  const onKeyDownCanvas = (
-    event: React.KeyboardEvent<HTMLCanvasElement>,
-  ) => {
+  const onKeyDownCanvas = (event: React.KeyboardEvent<HTMLCanvasElement>) => {
     // TODO make commands work cross platform
     // Command + V
     if ((event.metaKey || event.ctrlKey) && event.code === 'KeyV') {
@@ -146,14 +143,18 @@ export const useKeyboardCanvas = (props: IProps): {
           showMultiCursor: false,
           cursorPosition: {
             x: interactionState.cursorPosition.x + deltaX,
-            y: interactionState.cursorPosition.y + deltaY
+            y: interactionState.cursorPosition.y + deltaY,
           },
         };
         setInteractionState(newInteractionState);
       }
       event.preventDefault();
       if (viewportRef.current) {
-        ensureVisible({ interactionState: newInteractionState, viewport: viewportRef.current, headerSize });
+        ensureVisible({
+          interactionState: newInteractionState,
+          viewport: viewportRef.current,
+          headerSize: pixiKeyboardCanvasProps.headerSize,
+        });
       }
     };
 
@@ -299,7 +300,7 @@ export const useKeyboardCanvas = (props: IProps): {
 
       event.preventDefault();
     }
-  }
+  };
 
   return {
     onKeyDownCanvas,
