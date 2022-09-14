@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
@@ -37,6 +37,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const x = editorInteractionState.selectedCell.x;
   const y = editorInteractionState.selectedCell.y;
   const cells = useLiveQuery(() => GetCellsDB(x, y, x, y), [x, y]);
+
+  // Editor Width State
+  const [editorWidth, setEditorWidth] = useState<number>(
+    window.innerWidth * 0.35 // default to 35% of the window width
+  );
 
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
@@ -143,16 +148,40 @@ export const CodeEditor = (props: CodeEditorProps) => {
           position: 'fixed',
           right: 0,
           display: 'block',
-          width: '35%',
-          minWidth: '400px',
+          width: `${editorWidth}px`,
+          minWidth: '350px',
+          maxWidth: '90%',
           height: '100%',
-          borderStyle: 'solid',
-          borderWidth: '1px 0 0 1px',
-          borderColor: colors.mediumGray,
           backgroundColor: '#ffffff',
         }}
         onKeyDownCapture={onKeyDownEditor}
       >
+        <div
+          style={{
+            width: '5px',
+            height: '100%',
+            borderStyle: 'solid',
+            borderWidth: '0 0 0 1px',
+            borderColor: colors.mediumGray,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            cursor: 'col-resize',
+          }}
+          onMouseDown={(e) => {
+            function mousemove(event_mousemove: globalThis.MouseEvent) {
+              setEditorWidth(window.innerWidth - event_mousemove.x);
+            }
+
+            function mouseup() {
+              window.removeEventListener('mousemove', mousemove);
+              window.removeEventListener('mouseup', mouseup);
+            }
+
+            window.addEventListener('mousemove', mousemove);
+            window.addEventListener('mouseup', mouseup);
+          }}
+        ></div>
         <div
           style={{
             color: colors.darkGray,
@@ -160,9 +189,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
             display: 'flex',
             flexDirection: 'row',
             justifyContent: 'space-between',
-            borderStyle: 'solid',
-            borderWidth: '0 0 1px 0',
-            borderColor: colors.mediumGray,
+            marginBottom: '2px',
             userSelect: 'none',
           }}
         >
@@ -213,28 +240,35 @@ export const CodeEditor = (props: CodeEditorProps) => {
             Run
           </Button>
         </div>
-        <Editor
-          height="70%"
-          width="100%"
-          defaultLanguage={'python'}
-          value={editorContent}
-          onChange={(value) => {
-            setEditorContent(value);
+        <div
+          style={{
+            marginLeft: '5px',
+            height: '70%',
           }}
-          onMount={handleEditorDidMount}
-          options={{
-            minimap: { enabled: true },
-            overviewRulerLanes: 0,
-            hideCursorInOverviewRuler: true,
-            overviewRulerBorder: false,
-            scrollbar: {
-              // vertical: "hidden",
-              horizontal: 'hidden',
-              // handleMouseWheel: false,
-            },
-            wordWrap: 'on',
-          }}
-        />
+        >
+          <Editor
+            height="100%"
+            width="100%"
+            defaultLanguage={'python'}
+            value={editorContent}
+            onChange={(value) => {
+              setEditorContent(value);
+            }}
+            onMount={handleEditorDidMount}
+            options={{
+              minimap: { enabled: true },
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              overviewRulerBorder: false,
+              scrollbar: {
+                // vertical: "hidden",
+                horizontal: 'hidden',
+                // handleMouseWheel: false,
+              },
+              wordWrap: 'on',
+            }}
+          />
+        </div>
         {editorInteractionState.mode === 'PYTHON' && (
           <div style={{ margin: '15px' }}>
             <TextField
