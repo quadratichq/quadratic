@@ -1,3 +1,3 @@
-const { DirectedGraph } = require("./directedGraph");
+const { DirectedGraph } = require('./directedGraph');
 
 exports.DirectedGraph = DirectedGraph;

@@ -1,5 +1,5 @@
-import { qdb } from "../db";
-import QuadraticDependencyGraph from "../../dgraph/QuadraticDependencyGraph";
+import { qdb } from '../db';
+import QuadraticDependencyGraph from '../../dgraph/QuadraticDependencyGraph';
 
 export const GetDGraphDB = async (): Promise<QuadraticDependencyGraph> => {
   let grid = await qdb.qgrid.get(1);
@@ -7,7 +7,7 @@ export const GetDGraphDB = async (): Promise<QuadraticDependencyGraph> => {
 
   if (grid !== undefined) {
     // load previously created dgraph
-    qdg.load_from_json(grid?.dgraph_json || "");
+    qdg.load_from_json(grid?.dgraph_json || '');
   } else {
     // init
     qdb.qgrid.add({

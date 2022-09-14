@@ -9,9 +9,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
-  setInteractionState: React.Dispatch<
-    React.SetStateAction<GridInteractionState>
-  >;
+  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   viewportRef: React.MutableRefObject<Viewport | undefined>;
   container?: HTMLDivElement;
 }

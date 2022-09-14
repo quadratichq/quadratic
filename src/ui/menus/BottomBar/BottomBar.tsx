@@ -85,14 +85,7 @@ export const BottomBar = () => {
           Cursor: {cursorPositionString}
         </span>
         {selectedCell?.last_modified && (
-          <span>
-            You,{' '}
-            {formatDistance(
-              Date.parse(selectedCell.last_modified),
-              new Date(),
-              { addSuffix: true }
-            )}
-          </span>
+          <span>You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}</span>
         )}
         {interactionState.showMultiCursor && (
           <span

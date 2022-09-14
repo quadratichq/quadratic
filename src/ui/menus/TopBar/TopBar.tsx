@@ -36,8 +36,7 @@ export const TopBar = () => {
       }}
       onDoubleClick={(event) => {
         // if clicked (not child clicked), maximize window. For electron.
-        if (event.target === event.currentTarget)
-          electronMaximizeCurrentWindow();
+        if (event.target === event.currentTarget) electronMaximizeCurrentWindow();
       }}
     >
       <Box
@@ -62,24 +61,13 @@ export const TopBar = () => {
           userSelect: 'none',
         }}
       >
-        <Typography
-          variant="body2"
-          fontFamily={'sans-serif'}
-          color={colors.mediumGray}
-        >
+        <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
           Personal &nbsp;
         </Typography>
-        <Typography
-          variant="body2"
-          fontFamily={'sans-serif'}
-          color={colors.darkGray}
-        >
+        <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
           / Untitled.grid
         </Typography>
-        <KeyboardArrowDown
-          fontSize="small"
-          style={{ color: colors.darkGray }}
-        ></KeyboardArrowDown>
+        <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown>
       </Box>
 
       <Box

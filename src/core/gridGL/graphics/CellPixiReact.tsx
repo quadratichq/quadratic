@@ -4,12 +4,7 @@ import { CodeIcon } from './primatives/CodeIcon';
 
 import FastBitmapText from './primatives/FastBitmapText';
 
-import {
-  CELL_WIDTH,
-  CELL_HEIGHT,
-  CELL_TEXT_MARGIN_LEFT,
-  CELL_TEXT_MARGIN_TOP,
-} from '../../../constants/gridConstants';
+import { CELL_WIDTH, CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../constants/gridConstants';
 import { CellTypes } from '../../gridDB/db';
 import { colors } from '../../../theme/colors';
 
@@ -76,9 +71,7 @@ const CellPixiReact = (props: CellPixiReactProps) => {
         visible={props.renderText}
       />
       {props.showCellTypeOutlines && <Graphics draw={draw_outline} />}
-      {props.type === 'PYTHON' && props.showCellTypeOutlines && (
-        <CodeIcon x_pos={x_pos} y_pos={y_pos}></CodeIcon>
-      )}
+      {props.type === 'PYTHON' && props.showCellTypeOutlines && <CodeIcon x_pos={x_pos} y_pos={y_pos}></CodeIcon>}
     </Container>
   );
 };

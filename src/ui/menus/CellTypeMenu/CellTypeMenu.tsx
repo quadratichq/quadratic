@@ -72,16 +72,11 @@ const CELL_TYPE_OPTIONS = [
 
 export default function CellTypeMenu() {
   // Interaction State hook
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(
-    editorInteractionStateAtom
-  );
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const [value, setValue] = React.useState<string>('');
-  const [selected_value, setSelectedValue] = React.useState<
-    CellTypes | undefined
-  >('PYTHON');
-  const [filtered_cell_type_list, setFilteredCellTypeList] =
-    React.useState<any>(CELL_TYPE_OPTIONS);
+  const [selected_value, setSelectedValue] = React.useState<CellTypes | undefined>('PYTHON');
+  const [filtered_cell_type_list, setFilteredCellTypeList] = React.useState<any>(CELL_TYPE_OPTIONS);
 
   const update_filter = (value: string) => {
     const filtered_cell_type_list = CELL_TYPE_OPTIONS.filter((cell_type) => {

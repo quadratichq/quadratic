@@ -37,21 +37,13 @@ export const updateCellAndDCells = async (cell: Cell) => {
 
     // get current cell from db
     let cell = (
-      await GetCellsDB(
-        ref_cell_to_update[0],
-        ref_cell_to_update[1],
-        ref_cell_to_update[0],
-        ref_cell_to_update[1]
-      )
+      await GetCellsDB(ref_cell_to_update[0], ref_cell_to_update[1], ref_cell_to_update[0], ref_cell_to_update[1])
     )[0];
 
     if (cell === undefined) continue;
 
     // remove old deps from graph
-    if (cell.dependent_cells)
-      dgraph.remove_dependencies_from_graph(cell.dependent_cells, [
-        [cell.x, cell.y],
-      ]);
+    if (cell.dependent_cells) dgraph.remove_dependencies_from_graph(cell.dependent_cells, [[cell.x, cell.y]]);
 
     // clear old array cells created by this cell
     if (cell.array_cells) {
@@ -65,10 +57,7 @@ export const updateCellAndDCells = async (cell: Cell) => {
     if (cell.type === 'PYTHON') {
       // run cell and format results
       let result = await runPython(cell.python_code || '');
-      let consoleOut = [
-        result.input_python_stack_trace,
-        result.input_python_std_out,
-      ].join('\n');
+      let consoleOut = [result.input_python_stack_trace, result.input_python_std_out].join('\n');
 
       if (consoleOut[0] === '\n') consoleOut = consoleOut.substring(1);
 
@@ -82,19 +71,14 @@ export const updateCellAndDCells = async (cell: Cell) => {
       // add new cell deps to graph
       if (result.cells_accessed.length) {
         // add new deps to graph
-        dgraph.add_dependencies_to_graph(result.cells_accessed, [
-          [cell.x, cell.y],
-        ]);
+        dgraph.add_dependencies_to_graph(result.cells_accessed, [[cell.x, cell.y]]);
       }
 
       let array_cells_to_output: Cell[] = [];
 
       // if array output
       if (result.array_output) {
-        if (
-          result.array_output[0][0] !== undefined &&
-          typeof result.array_output[0] !== 'string'
-        ) {
+        if (result.array_output[0][0] !== undefined && typeof result.array_output[0] !== 'string') {
           // 2d array
           let y_offset = 0;
           for (const row of result.array_output) {
@@ -139,10 +123,7 @@ export const updateCellAndDCells = async (cell: Cell) => {
         }
 
         // keep track of array cells updated by this cell
-        cell.array_cells = array_cells_to_output.map((a_cell) => [
-          a_cell.x,
-          a_cell.y,
-        ]);
+        cell.array_cells = array_cells_to_output.map((a_cell) => [a_cell.x, a_cell.y]);
 
         cell.last_modified = new Date().toISOString();
 

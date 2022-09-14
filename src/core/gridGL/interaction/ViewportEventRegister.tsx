@@ -46,7 +46,7 @@ export const ViewportEventRegister = (props: IProps) => {
 
     return () => {
       window.removeEventListener('keydown', listenForZoom);
-    }
+    };
   }, [viewport]);
 
   // When zoom state updates, tell the viewport to zoom
