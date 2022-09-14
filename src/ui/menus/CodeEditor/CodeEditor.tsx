@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, MouseEvent } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
@@ -13,7 +13,6 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import useLocalStorage from '../../../hooks/useLocalStorage';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
