@@ -37,9 +37,7 @@ export default function QuadraticUI() {
         }}
       >
         <QuadraticGrid />
-        <CodeEditor
-          editorInteractionState={editorInteractionState}
-        ></CodeEditor>
+        <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
       </div>
 
       <BottomBar />
