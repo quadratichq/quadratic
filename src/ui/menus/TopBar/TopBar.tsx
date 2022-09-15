@@ -12,6 +12,7 @@ import { DataMenu } from './SubMenus/DataMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
+import { isMobileOnly } from 'react-device-detect';
 
 export const TopBar = () => {
   return (
@@ -49,26 +50,32 @@ export const TopBar = () => {
         }}
       >
         <QuadraticMenu></QuadraticMenu>
-        <DataMenu></DataMenu>
-        <FormatMenu></FormatMenu>
-        <NumberFormatMenu></NumberFormatMenu>
+        {!isMobileOnly && (
+          <>
+            <DataMenu></DataMenu>
+            <FormatMenu></FormatMenu>
+            <NumberFormatMenu></NumberFormatMenu>
+          </>
+        )}
       </Box>
 
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          userSelect: 'none',
-        }}
-      >
-        <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-          Personal &nbsp;
-        </Typography>
-        <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-          / Untitled.grid
-        </Typography>
-        <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown>
-      </Box>
+      {!isMobileOnly && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            userSelect: 'none',
+          }}
+        >
+          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
+            Personal &nbsp;
+          </Typography>
+          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
+            / Untitled.grid
+          </Typography>
+          <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown>
+        </Box>
+      )}
 
       <Box
         sx={{
@@ -115,19 +122,21 @@ export const TopBar = () => {
           }}
         ></iframe>
 
-        <Tooltip title="Quadratic Cloud only" arrow>
-          <Button
-            style={{
-              color: colors.darkGray,
-              borderColor: colors.darkGray,
-              padding: '1px 4px',
-            }}
-            variant="outlined"
-            size="small"
-          >
-            Share
-          </Button>
-        </Tooltip>
+        {!isMobileOnly && (
+          <Tooltip title="Quadratic Cloud only" arrow>
+            <Button
+              style={{
+                color: colors.darkGray,
+                borderColor: colors.darkGray,
+                padding: '1px 4px',
+              }}
+              variant="outlined"
+              size="small"
+            >
+              Share
+            </Button>
+          </Tooltip>
+        )}
         <ZoomDropdown></ZoomDropdown>
       </Box>
     </div>
