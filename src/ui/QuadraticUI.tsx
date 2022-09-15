@@ -8,7 +8,6 @@ import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../core/gridGL/QuadraticGrid';
-import CommandPalette from './menus/CommandPalette';
 
 export default function QuadraticUI() {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
@@ -25,7 +24,6 @@ export default function QuadraticUI() {
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu />}
-      <CommandPalette></CommandPalette>
       <TopBar />
 
       <div
@@ -37,9 +35,7 @@ export default function QuadraticUI() {
         }}
       >
         <QuadraticGrid />
-        <CodeEditor
-          editorInteractionState={editorInteractionState}
-        ></CodeEditor>
+        <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
       </div>
 
       <BottomBar />
