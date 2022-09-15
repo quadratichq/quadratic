@@ -22,8 +22,8 @@ import { ViewportEventRegister } from './interaction/ViewportEventRegister';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { gridHeadingsGlobals } from './graphics/gridHeadings';
 import { axesLinesGlobals } from './graphics/axesLines';
-import { Size } from './types/size';
 import { gridLinesGlobals } from './graphics/gridLines';
+import { Size } from './types/size';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -60,6 +60,11 @@ export default function QuadraticGrid() {
     viewport.emit('zoomed');
     viewport.dirty = true;
   };
+
+  // render on canvasSize update (when window is resized)
+  useEffect(() => {
+    forceRender();
+  }, [canvasSize]);
 
   useEffect(() => {
     axesLinesGlobals.showGridAxes = showGridAxes;

@@ -5,6 +5,7 @@ import { PixiComponent, useApp } from '@inlet/react-pixi';
 import { gridLines } from './gridLines';
 import { axesLines } from './axesLines';
 import { gridHeadings, OFFSET_HEADINGS } from './gridHeadings';
+import { isMobileOnly } from 'react-device-detect';
 
 export interface ViewportProps {
   screenWidth: number;
@@ -37,7 +38,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
 
     // activate plugins
     viewport
-      .drag({ pressDrag: false })
+      .drag({ pressDrag: isMobileOnly }) // enable drag on mobile, no where else
       .decelerate()
       .pinch()
       .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 })
@@ -101,7 +102,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     );
 
     // FPS log
-    // ticker.add((time) => {
+    // PIXI.Ticker.shared.add((time) => {
     //   console.log(`Current Frame Rate: ${props.app.ticker.FPS}`);
     // });
 
@@ -110,6 +111,13 @@ const PixiComponentViewport = PixiComponent('Viewport', {
   },
 
   applyProps: (viewport: Viewport, oldProps: ViewportProps, newProps: ViewportProps) => {
+    // Tell viewport to resize on screenHight or Width change
+    if (oldProps.screenWidth !== newProps.screenWidth || oldProps.screenHeight !== newProps.screenHeight) {
+      viewport.resize(newProps.screenWidth, newProps.screenHeight);
+    }
+
+    // Register mouse events, not on mobile
+    if (isMobileOnly) return;
     // Unregister previous pointer events
     viewport.off('pointerdown');
     viewport.off('pointermove');
@@ -121,11 +129,6 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     viewport.on('pointermove', (e) => newProps.onPointerMove(viewport.toWorld(e.data.global), e.data.originalEvent));
     viewport.on('pointerup', () => newProps.onPointerUp());
     viewport.on('pointerupoutside', () => newProps.onPointerUp());
-
-    // Tell viewport to resize on screenHight or Width change
-    if (oldProps.screenWidth !== newProps.screenWidth || oldProps.screenHeight !== newProps.screenHeight) {
-      viewport.resize(newProps.screenWidth, newProps.screenHeight);
-    }
   },
 });
 

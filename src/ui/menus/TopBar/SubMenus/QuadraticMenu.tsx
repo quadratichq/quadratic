@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
 import { MenuBookOutlined, FileOpenOutlined, SaveOutlined, BugReportOutlined } from '@mui/icons-material';
+import { isMobileOnly } from 'react-device-detect';
 
 import '@szhsin/react-menu/dist/index.css';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
@@ -20,6 +22,14 @@ export const QuadraticMenu = () => {
   const [showHeadings, setShowHeadings] = useLocalStorage('showHeadings', true);
   const [showGridLines, setShowGridLines] = useLocalStorage('showGridLines', true);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useLocalStorage('showCellTypeOutlines', true);
+
+  // On Mobile set Headers to not visible by default
+  useEffect(() => {
+    if (isMobileOnly) {
+      setShowHeadings(false);
+    }
+    // eslint-disable-next-line
+  }, []);
 
   return (
     <Menu
