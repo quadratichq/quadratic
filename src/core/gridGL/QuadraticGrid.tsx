@@ -61,6 +61,11 @@ export default function QuadraticGrid() {
     viewport.dirty = true;
   };
 
+  // render on canvasSize update (when window is resized)
+  useEffect(() => {
+    forceRender();
+  }, [canvasSize]);
+
   useEffect(() => {
     axesLinesGlobals.showGridAxes = showGridAxes;
     gridHeadingsGlobals.showHeadings = showHeadings;
