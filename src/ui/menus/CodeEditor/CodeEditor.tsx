@@ -169,6 +169,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
             cursor: 'col-resize',
           }}
           onMouseDown={(e) => {
+            // set drag style
+            const target = e.currentTarget;
+            target.style.borderColor = colors.quadraticPrimary;
+            target.style.borderWidth = '0 0 0 2px';
+
             function mousemove(event_mousemove: globalThis.MouseEvent) {
               setEditorWidth(window.innerWidth - event_mousemove.x);
             }
@@ -176,6 +181,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
             function mouseup() {
               window.removeEventListener('mousemove', mousemove);
               window.removeEventListener('mouseup', mouseup);
+
+              // revert to non drag style
+              target.style.borderColor = colors.mediumGray;
+              target.style.borderWidth = '0 0 0 1px';
             }
 
             window.addEventListener('mousemove', mousemove);
