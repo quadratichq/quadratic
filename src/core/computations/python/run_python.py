@@ -165,6 +165,7 @@ async def run_python(code):
         if first_row_header:
             df.rename(columns=df.iloc[0], inplace=True)
             df.drop(df.index[0], inplace=True)
+            df.reset_index(drop=True, inplace=True)
 
         return df
 
