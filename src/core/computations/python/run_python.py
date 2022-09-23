@@ -165,6 +165,7 @@ async def run_python(code):
         if first_row_header:
             df.rename(columns=df.iloc[0], inplace=True)
             df.drop(df.index[0], inplace=True)
+            df.reset_index(drop=True, inplace=True)
 
         return df
 
@@ -185,8 +186,8 @@ async def run_python(code):
     async def cell(p0_x, p0_y):
         return await getCell(p0_x, p0_y)
 
-    async def cells(p0, p1):
-        return await getCells(p0, p1)
+    async def cells(p0, p1, first_row_header=False):
+        return await getCells(p0, p1, first_row_header)
 
     globals = {
         "getCells": getCells,
