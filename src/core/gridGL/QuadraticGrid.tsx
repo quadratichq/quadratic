@@ -124,7 +124,7 @@ export default function QuadraticGrid() {
           // resizeTo: window,
           resolution:
             // Always use 2 instead of 1. Better resolution.
-            window.devicePixelRatio === 1.0 ? 2 : window.devicePixelRatio,
+            window.devicePixelRatio <= 1.0 ? 2 : window.devicePixelRatio,
           backgroundColor: 0xffffff,
           antialias: true,
           autoDensity: true,
