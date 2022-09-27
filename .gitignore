@@ -25,5 +25,5 @@ yarn-error.log*
 /playwright-report/
 /playwright/.cache/
 
-venv/*
+/venv/*
 *.pyc
