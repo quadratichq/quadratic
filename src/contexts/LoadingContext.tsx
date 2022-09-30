@@ -10,7 +10,7 @@ export type LoadingContextType = {
 
 export const LoadingContext = createContext<LoadingContextType>({
   loading: true,
-  incrementLoadingCount: () => console.warn('useLoading must be used within LoadingProvider1'),
+  incrementLoadingCount: () => console.warn('useLoading must be used within LoadingProvider'),
 });
 
 export function useLoading() {

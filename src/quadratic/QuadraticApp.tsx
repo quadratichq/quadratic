@@ -8,6 +8,7 @@ import { TopBarLoading } from '../ui/components/TopBarLoading';
 import { WelcomeComponent } from './WelcomeComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
+import { useAuth0 } from '@auth0/auth0-react';
 
 export default function QuadraticApp() {
   const { loading, incrementLoadingCount } = useLoading();

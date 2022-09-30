@@ -5,6 +5,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import * as Sentry from '@sentry/react';
 import { BrowserTracing } from '@sentry/tracing';
+import { Auth0Provider } from '@auth0/auth0-react';
 
 // Enable sentry only if SENTRY_DSN is in ENV
 if (process.env.REACT_APP_SENTRY_DSN)
@@ -19,7 +20,13 @@ if (process.env.REACT_APP_SENTRY_DSN)
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <Auth0Provider
+      domain="dev-nje7dw8s.us.auth0.com" //MOVE TO ENV
+      clientId="YNbqu5SaEppYmQ9s1P0VbDnF0OBe8agj" //MOVE TO ENV
+      redirectUri={window.location.origin}
+    >
+      <App />
+    </Auth0Provider>
   </React.StrictMode>,
   document.getElementById('root')
 );
