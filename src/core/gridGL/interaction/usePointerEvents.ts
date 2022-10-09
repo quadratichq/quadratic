@@ -2,9 +2,11 @@ import * as PIXI from 'pixi.js';
 import type { Viewport } from 'pixi-viewport';
 import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { onDoubleClickCanvas } from './onDoubleClickCanvas';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { intersectsHeadings } from '../graphics/gridHeadings';
+import { selectAllCells } from './selectCells';
 
 interface IProps {
   viewportRef: React.MutableRefObject<Viewport | undefined>;
@@ -20,6 +22,8 @@ interface MousePosition {
 
 const MINIMUM_MOVE_POSITION = 5;
 const DOUBLE_CLICK_TIME = 500;
+
+let headingDownTimeout: number | undefined;
 
 export const usePointerEvents = (
   props: IProps
@@ -39,6 +43,8 @@ export const usePointerEvents = (
   const [pointerMoved, setPointerMoved] = useState(false);
   const [doubleClickTimeout, setDoubleClickTimeout] = useState<number | undefined>();
 
+  const [downHeadingPosition, setDownHeadingPosition] = useState<PIXI.Point | undefined>();
+
   const isDoubleClick = (world: PIXI.Point, event: PointerEvent): boolean => {
     if (event.button !== 0 || !downPositionRaw || !props.viewportRef.current) return false;
     if (
@@ -54,7 +60,56 @@ export const usePointerEvents = (
     return false;
   };
 
+  const moveToCorner = useCallback((): void => {
+    props.setInteractionState({
+      keyboardMovePosition: { x: 0, y: 0 },
+      cursorPosition: { x: 0, y: 0 },
+      showMultiCursor: false,
+      multiCursorPosition: {
+        originPosition: { x: 0, y: 0 },
+        terminalPosition: { x: 0, y: 0 },
+      },
+      showInput: false,
+      inputInitialValue: '',
+    });
+    const viewport = viewportRef.current;
+    if (viewport) {
+      viewport.animate({
+        time: 200,
+        position: new PIXI.Point(viewport.worldScreenWidth / 2 - 20, viewport.worldScreenHeight / 2 - 20),
+        ease: "easeInOutSine",
+      })
+    }
+  }, [props, viewportRef]);
+
+  const selectAll = (): void => {
+    selectAllCells({
+      setInteractionState: props.setInteractionState,
+      interactionState: props.interactionState,
+      viewport: viewportRef.current,
+    });
+  }
+
+  const isHeadingClick = (world: PIXI.Point): boolean => {
+    const intersects = intersectsHeadings(world);
+    if (!intersects) return false;
+    if (intersects.corner) {
+      if (headingDownTimeout) {
+        headingDownTimeout = undefined;
+        setDownHeadingPosition(undefined);
+        moveToCorner();
+      } else {
+        setDownHeadingPosition(world);
+      }
+    }
+
+    // todo: handle select entire row or column
+
+    return true;
+  };
+
   const onPointerDown = (world: PIXI.Point, event: PointerEvent) => {
+    if (isHeadingClick(world)) return;
     if (isDoubleClick(world, event)) return;
     // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
     if (viewportRef.current === undefined) return;
@@ -188,6 +243,16 @@ export const usePointerEvents = (
     }
     setDownPosition(undefined);
     setPreviousPosition(undefined);
+
+    if (downHeadingPosition) {
+      headingDownTimeout = window.setTimeout(() => {
+        if (headingDownTimeout) {
+          selectAll();
+          headingDownTimeout = undefined;
+        }
+        setDownHeadingPosition(undefined);
+      }, DOUBLE_CLICK_TIME);
+    }
   };
 
   return {

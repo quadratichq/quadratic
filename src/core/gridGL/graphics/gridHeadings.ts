@@ -6,6 +6,7 @@ import { calculateAlphaForGridLines } from './gridUtils';
 import { Size } from '../types/size';
 import { pixiKeyboardCanvasProps } from '../interaction/useKeyboardCanvas';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { rectanglePoint } from '../helpers/intersects';
 
 // this ensures the top-left corner of the viewport doesn't move when toggling headings
 export const OFFSET_HEADINGS = false;
@@ -94,6 +95,11 @@ export const gridHeadingsGlobals: { showHeadings: boolean; interactionState: Gri
 let lastRowSize: Size = { width: 0, height: 0 };
 let lastShowHeadings = false;
 
+// cached heading location for hitTest
+let lastRowRect: PIXI.Rectangle | undefined;
+let lastColumnRect: PIXI.Rectangle | undefined;
+let lastCornerRect: PIXI.Rectangle | undefined;
+
 export function gridHeadings(props: IProps) {
   const { viewport, headings, graphics, corner, labels } = props;
 
@@ -109,6 +115,9 @@ export function gridHeadings(props: IProps) {
         viewport.y -= lastRowSize.height;
         lastShowHeadings = false;
       }
+      lastRowRect = undefined;
+      lastColumnRect = undefined;
+      lastColumnRect = undefined;
     }
     return;
   }
@@ -132,7 +141,8 @@ export function gridHeadings(props: IProps) {
 
     // draw bar
     graphics.beginFill(colors.headerBackgroundColor);
-    graphics.drawRect(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight);
+    lastColumnRect = new PIXI.Rectangle(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight)
+    graphics.drawShape(lastColumnRect);
     graphics.endFill();
 
     // highlight column headings based on selected cells
@@ -213,11 +223,13 @@ export function gridHeadings(props: IProps) {
       (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
     rowWidth = Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
 
+    // draw heading rect
     graphics.lineStyle(0);
     graphics.beginFill(colors.headerBackgroundColor);
     const top = bounds.top + CELL_HEIGHT / viewport.scale.x;
     const bottom = bounds.height - CELL_HEIGHT / viewport.scale.x;
-    graphics.drawRect(bounds.left, top, rowWidth, bottom);
+    lastRowRect = new PIXI.Rectangle(bounds.left, top, rowWidth, bottom);
+    graphics.drawShape(lastRowRect);
     graphics.endFill();
 
     // highlight row headings based on selected cells
@@ -284,7 +296,8 @@ export function gridHeadings(props: IProps) {
 
   const drawCorner = () => {
     corner.beginFill(colors.headerCornerBackgroundColor);
-    corner.drawRect(bounds.left, bounds.top, rowWidth, cellHeight);
+    lastCornerRect = new PIXI.Rectangle(bounds.left, bounds.top, rowWidth, cellHeight)
+    corner.drawShape(lastCornerRect);
     corner.endFill();
   };
 
@@ -362,4 +375,17 @@ export function gridHeadings(props: IProps) {
     height: CELL_HEIGHT,
   };
   lastRowSize = { width: rowWidth!, height: CELL_HEIGHT };
+}
+
+export function intersectsHeadings(world: PIXI.Point): { column?: number, row?: number, corner?: true } | undefined {
+  if (!lastColumnRect || !lastRowRect || !lastCornerRect) return;
+  if (rectanglePoint(lastCornerRect, world)) {
+    return { corner: true };
+  }
+  if (rectanglePoint(lastColumnRect, world)) {
+    return { column: Math.round(world.x / CELL_WIDTH - 1) };
+  }
+  if (rectanglePoint(lastRowRect, world)) {
+    return { row: Math.round(world.y / CELL_HEIGHT - 1) };
+  }
 }
