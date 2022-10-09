@@ -76,12 +76,12 @@ export const usePointerEvents = (
     const viewport = viewportRef.current;
     if (viewport) {
       const cell = new PIXI.Rectangle(0, 0, CELL_WIDTH, CELL_HEIGHT);
-      console.log(cell, viewport.getVisibleBounds())
+      console.log(cell, viewport.getVisibleBounds());
       if (!intersects.rectangleRectangle(viewport.getVisibleBounds(), cell)) {
         viewport.animate({
           time: 200,
           position: new PIXI.Point(viewport.worldScreenWidth / 2 - 20, viewport.worldScreenHeight / 2 - 20),
-          ease: "easeInOutSine",
+          ease: 'easeInOutSine',
         });
       }
     }
@@ -93,7 +93,7 @@ export const usePointerEvents = (
       interactionState: props.interactionState,
       viewport: viewportRef.current,
     });
-  }
+  };
 
   const isHeadingClick = (world: PIXI.Point): boolean => {
     const intersects = intersectsHeadings(world);
@@ -169,7 +169,7 @@ export const usePointerEvents = (
     // todo: this is not ideal -- need a better way of getting canvas
     const canvas = document.querySelector('canvas');
     if (canvas) {
-      canvas.style.cursor = intersectsHeadings(world) ? "pointer" : "auto";
+      canvas.style.cursor = intersectsHeadings(world) ? 'pointer' : 'auto';
     }
   };
 
@@ -180,7 +180,6 @@ export const usePointerEvents = (
     changeMouseCursor(world);
 
     if (downPosition === undefined || previousPosition === undefined || downPositionRaw === undefined) return;
-
 
     // for determining if double click
     if (

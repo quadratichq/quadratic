@@ -141,7 +141,7 @@ export function gridHeadings(props: IProps) {
 
     // draw bar
     graphics.beginFill(colors.headerBackgroundColor);
-    lastColumnRect = new PIXI.Rectangle(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight)
+    lastColumnRect = new PIXI.Rectangle(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight);
     graphics.drawShape(lastColumnRect);
     graphics.endFill();
 
@@ -296,7 +296,7 @@ export function gridHeadings(props: IProps) {
 
   const drawCorner = () => {
     corner.beginFill(colors.headerCornerBackgroundColor);
-    lastCornerRect = new PIXI.Rectangle(bounds.left, bounds.top, rowWidth, cellHeight)
+    lastCornerRect = new PIXI.Rectangle(bounds.left, bounds.top, rowWidth, cellHeight);
     corner.drawShape(lastCornerRect);
     corner.endFill();
   };
@@ -377,7 +377,7 @@ export function gridHeadings(props: IProps) {
   lastRowSize = { width: rowWidth!, height: CELL_HEIGHT };
 }
 
-export function intersectsHeadings(world: PIXI.Point): { column?: number, row?: number, corner?: true } | undefined {
+export function intersectsHeadings(world: PIXI.Point): { column?: number; row?: number; corner?: true } | undefined {
   if (!lastColumnRect || !lastRowRect || !lastCornerRect) return;
   if (intersects.rectanglePoint(lastCornerRect, world)) {
     return { corner: true };
