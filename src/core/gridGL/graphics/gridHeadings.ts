@@ -5,6 +5,7 @@ import { colors } from '../../../theme/colors';
 import { calculateAlphaForGridLines } from './gridUtils';
 import { Size } from '../types/size';
 import { pixiKeyboardCanvasProps } from '../interaction/useKeyboardCanvas';
+import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 
 // this ensures the top-left corner of the viewport doesn't move when toggling headings
 export const OFFSET_HEADINGS = false;
@@ -52,7 +53,7 @@ function findInterval(i: number): number {
   return 5;
 }
 
-export const gridHeadingsGlobals = { showHeadings: true };
+export const gridHeadingsGlobals: { showHeadings: boolean; interactionState: GridInteractionState } = { showHeadings: true, interactionState: {} as GridInteractionState, };
 let lastRowSize: Size = { width: 0, height: 0 };
 let lastShowHeadings = false;
 
@@ -86,12 +87,44 @@ export function gridHeadings(props: IProps) {
   // holds data for horizontal and vertical labels
   let labelData: LabelData[] = [];
 
+  const selectedColumns: number[] = [], selectedRows: number[] = [];
+
+  const interactionState = gridHeadingsGlobals.interactionState
+  if (interactionState.showMultiCursor) {
+    for (let x = interactionState.multiCursorPosition.originPosition.x; x <= interactionState.multiCursorPosition.terminalPosition.x; x++) {
+      selectedColumns.push(x);
+    }
+    for (let y = interactionState.multiCursorPosition.originPosition.y; y <= interactionState.multiCursorPosition.terminalPosition.y; y++) {
+      selectedRows.push(y);
+    }
+  } else {
+    selectedColumns.push(interactionState.cursorPosition.x);
+    selectedRows.push(interactionState.cursorPosition.y);
+  }
+
   const drawHorizontal = () => {
     if (!characterSize) return;
 
     // draw bar
     graphics.beginFill(colors.headerBackgroundColor);
     graphics.drawRect(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight);
+    graphics.endFill();
+
+    // highlight column headings based on selected cells
+    graphics.beginFill(colors.headerSelectedBackgroundColor);
+    for (const column of selectedColumns) {
+      const xStart = column * CELL_WIDTH;
+      const xEnd = xStart + CELL_WIDTH;
+      if (xStart >= viewport.left || xEnd <= viewport.right) {
+        graphics.drawRect(
+          xStart,
+          viewport.top,
+          xEnd - xStart,
+          CELL_HEIGHT / viewport.scale.y,
+        );
+      }
+    }
+    graphics.endFill();
 
     // calculate whether we need to skip numbers
     const xOffset = bounds.left % CELL_WIDTH;
@@ -108,15 +141,27 @@ export function gridHeadings(props: IProps) {
 
     // create labelData
     const y = bounds.top + cellHeight / 2;
+
+    // this is used to avoid overlap of selected value with automatic values
+    const scaledLabelWidth = labelWidth / viewport.scale.x;
+    const selectedX = selectedColumns[0] * CELL_WIDTH + CELL_WIDTH / 2;
+
     for (let x = leftOffset; x < rightOffset; x += CELL_WIDTH) {
       const column = Math.round(x / CELL_WIDTH - 1);
-      if (mod === 0 || column % mod === 0) {
+      const selected = selectedColumns[0] === column;
+
+      // only show the label if selected or mod calculation
+      if (!selected && mod !== 0 && column % mod !== 0) continue;
+
+      // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
+      const overlap = x >= selectedX - scaledLabelWidth / 2 && x <= selectedX + scaledLabelWidth / 2;
+      if (selected || !overlap) {
         labelData.push({ text: column.toString(), x, y });
       }
       if (gridAlpha !== 0) {
         graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
-        graphics.moveTo(x - CELL_WIDTH / 2, bounds.top);
-        graphics.lineTo(x - CELL_WIDTH / 2, bounds.top + cellHeight);
+        graphics.moveTo(x - cellWidth / 2, bounds.top);
+        graphics.lineTo(x - cellWidth / 2, bounds.top + cellHeight);
       }
     }
   };
@@ -140,28 +185,61 @@ export function gridHeadings(props: IProps) {
 
     graphics.lineStyle(0);
     graphics.beginFill(colors.headerBackgroundColor);
+    const top = bounds.top + CELL_HEIGHT / viewport.scale.x;
+    const bottom = bounds.height - CELL_HEIGHT / viewport.scale.x;
     graphics.drawRect(
       bounds.left,
-      bounds.top + CELL_HEIGHT / viewport.scale.x,
+      top,
       rowWidth,
-      bounds.height - CELL_HEIGHT / viewport.scale.x
+      bottom,
     );
+    graphics.endFill();
+
+    // highlight row headings based on selected cells
+    graphics.beginFill(colors.headerSelectedBackgroundColor);
+    for (const row of selectedRows) {
+      const yStart = row * CELL_HEIGHT;
+      const yEnd = yStart + CELL_HEIGHT;
+      if (yStart >= top || yEnd <= bottom) {
+        graphics.drawRect(
+          bounds.left,
+          yStart,
+          rowWidth,
+          yEnd - yStart,
+        );
+      }
+    }
+    graphics.endFill();
+
     let mod = 0;
     if (characterSize.height > CELL_HEIGHT * viewport.scale.y * LABEL_MAXIMUM_HEIGHT_PERCENT) {
       const skipNumbers = Math.ceil((cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) / characterSize.height);
       mod = findInterval(skipNumbers);
     }
+
+    // create labelData
     const x = bounds.left + rowWidth / 2;
+
+    // this is used to avoid overlap of selected value with automatic values
+    const scaledLabelHeight = CELL_HEIGHT / viewport.scale.x;
+    const selectedY = selectedRows[0] * CELL_HEIGHT + CELL_HEIGHT / 2;
+
     for (let y = topOffset; y < bottomOffset; y += CELL_HEIGHT) {
       const row = Math.round(y / CELL_HEIGHT - 1);
-      if (mod === 0 || row % mod === 0) {
+      const selected = selectedRows[0] === row;
+
+      // only show the label if selected or mod calculation
+      if (!selected && mod !== 0 && row % mod !== 0) continue;
+
+      // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
+      const overlap = y >= selectedY - scaledLabelHeight / 2 && y <= selectedY + scaledLabelHeight / 2;
+      if (selected || !overlap) {
         labelData.push({
           text: row.toString(),
           x: x + ROW_DIGIT_OFFSET.x,
           y: y + ROW_DIGIT_OFFSET.y,
         });
       }
-
       if (gridAlpha !== 0) {
         graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
         graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);
