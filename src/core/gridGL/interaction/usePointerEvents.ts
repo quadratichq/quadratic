@@ -165,10 +165,22 @@ export const usePointerEvents = (
     setPointerMoved(false);
   };
 
+  const changeMouseCursor = (world: PIXI.Point): void => {
+    // todo: this is not ideal -- need a better way of getting canvas
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      canvas.style.cursor = intersectsHeadings(world) ? "pointer" : "auto";
+    }
+  };
+
   const onPointerMove = (world: PIXI.Point, _: PointerEvent): void => {
     // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
     if (props.viewportRef.current === undefined) return;
+
+    changeMouseCursor(world);
+
     if (downPosition === undefined || previousPosition === undefined || downPositionRaw === undefined) return;
+
 
     // for determining if double click
     if (
