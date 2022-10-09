@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import type { Viewport } from 'pixi-viewport';
 import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import { onDoubleClickCanvas } from './onDoubleClickCanvas';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { intersectsHeadings } from '../graphics/gridHeadings';
@@ -61,7 +61,7 @@ export const usePointerEvents = (
     return false;
   };
 
-  const moveToCorner = useCallback((): void => {
+  const moveToCorner = (): void => {
     props.setInteractionState({
       keyboardMovePosition: { x: 0, y: 0 },
       cursorPosition: { x: 0, y: 0 },
@@ -85,7 +85,7 @@ export const usePointerEvents = (
         });
       }
     }
-  }, [props, viewportRef]);
+  };
 
   const selectAll = (): void => {
     selectAllCells({
