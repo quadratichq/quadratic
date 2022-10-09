@@ -7,6 +7,7 @@ import { onDoubleClickCanvas } from './onDoubleClickCanvas';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { intersectsHeadings } from '../graphics/gridHeadings';
 import { selectAllCells } from './selectCells';
+import { intersects } from '../helpers/intersects';
 
 interface IProps {
   viewportRef: React.MutableRefObject<Viewport | undefined>;
@@ -74,11 +75,15 @@ export const usePointerEvents = (
     });
     const viewport = viewportRef.current;
     if (viewport) {
-      viewport.animate({
-        time: 200,
-        position: new PIXI.Point(viewport.worldScreenWidth / 2 - 20, viewport.worldScreenHeight / 2 - 20),
-        ease: "easeInOutSine",
-      })
+      const cell = new PIXI.Rectangle(0, 0, CELL_WIDTH, CELL_HEIGHT);
+      console.log(cell, viewport.getVisibleBounds())
+      if (!intersects.rectangleRectangle(viewport.getVisibleBounds(), cell)) {
+        viewport.animate({
+          time: 200,
+          position: new PIXI.Point(viewport.worldScreenWidth / 2 - 20, viewport.worldScreenHeight / 2 - 20),
+          ease: "easeInOutSine",
+        });
+      }
     }
   }, [props, viewportRef]);
 

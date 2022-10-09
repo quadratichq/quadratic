@@ -6,7 +6,7 @@ import { calculateAlphaForGridLines } from './gridUtils';
 import { Size } from '../types/size';
 import { pixiKeyboardCanvasProps } from '../interaction/useKeyboardCanvas';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { rectanglePoint } from '../helpers/intersects';
+import { intersects } from '../helpers/intersects';
 
 // this ensures the top-left corner of the viewport doesn't move when toggling headings
 export const OFFSET_HEADINGS = false;
@@ -379,13 +379,13 @@ export function gridHeadings(props: IProps) {
 
 export function intersectsHeadings(world: PIXI.Point): { column?: number, row?: number, corner?: true } | undefined {
   if (!lastColumnRect || !lastRowRect || !lastCornerRect) return;
-  if (rectanglePoint(lastCornerRect, world)) {
+  if (intersects.rectanglePoint(lastCornerRect, world)) {
     return { corner: true };
   }
-  if (rectanglePoint(lastColumnRect, world)) {
+  if (intersects.rectanglePoint(lastColumnRect, world)) {
     return { column: Math.round(world.x / CELL_WIDTH - 1) };
   }
-  if (rectanglePoint(lastRowRect, world)) {
+  if (intersects.rectanglePoint(lastRowRect, world)) {
     return { row: Math.round(world.y / CELL_HEIGHT - 1) };
   }
 }
