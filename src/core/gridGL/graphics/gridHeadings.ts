@@ -36,6 +36,7 @@ interface LabelData {
 
 let characterSize: Size | undefined = undefined;
 
+// calculates static character size (used in overlap calculations)
 function calculateCharacterSize(): void {
   const label = new PIXI.BitmapText('X', {
     fontName: 'OpenSans',
@@ -45,6 +46,7 @@ function calculateCharacterSize(): void {
   characterSize = { width: label.width, height: label.height };
 }
 
+// simple interval finding algorithm -- this can be improved to allow for more numbers
 function findInterval(i: number): number {
   if (i > 100) return 500;
   if (i > 50) return 100;
@@ -53,7 +55,27 @@ function findInterval(i: number): number {
   return 5;
 }
 
+// creates arrays of selected columns and rows
+function createSelectedArrays(interactionState: GridInteractionState): { selectedColumns: number[], selectedRows: number[] } {
+  const selectedColumns: number[] = [], selectedRows: number[] = [];
+  if (interactionState.showMultiCursor) {
+    for (let x = interactionState.multiCursorPosition.originPosition.x; x <= interactionState.multiCursorPosition.terminalPosition.x; x++) {
+      selectedColumns.push(x);
+    }
+    for (let y = interactionState.multiCursorPosition.originPosition.y; y <= interactionState.multiCursorPosition.terminalPosition.y; y++) {
+      selectedRows.push(y);
+    }
+  } else {
+    selectedColumns.push(interactionState.cursorPosition.x);
+    selectedRows.push(interactionState.cursorPosition.y);
+  }
+  return { selectedColumns, selectedRows };
+}
+
+// global variables (these are needed since recoil state setting falls behind the frame rate)
 export const gridHeadingsGlobals: { showHeadings: boolean; interactionState: GridInteractionState } = { showHeadings: true, interactionState: {} as GridInteractionState, };
+
+// cached globals to avoid redrawing if possible
 let lastRowSize: Size = { width: 0, height: 0 };
 let lastShowHeadings = false;
 
@@ -63,6 +85,7 @@ export function gridHeadings(props: IProps) {
   graphics.clear();
   corner.clear();
 
+  // handle showHeadings = false and allow for adjust headings (if OFFSET_HEADINGS flag is set)
   if (!gridHeadingsGlobals.showHeadings) {
     headings.visible = false;
     if (lastShowHeadings) {
@@ -87,20 +110,7 @@ export function gridHeadings(props: IProps) {
   // holds data for horizontal and vertical labels
   let labelData: LabelData[] = [];
 
-  const selectedColumns: number[] = [], selectedRows: number[] = [];
-
-  const interactionState = gridHeadingsGlobals.interactionState
-  if (interactionState.showMultiCursor) {
-    for (let x = interactionState.multiCursorPosition.originPosition.x; x <= interactionState.multiCursorPosition.terminalPosition.x; x++) {
-      selectedColumns.push(x);
-    }
-    for (let y = interactionState.multiCursorPosition.originPosition.y; y <= interactionState.multiCursorPosition.terminalPosition.y; y++) {
-      selectedRows.push(y);
-    }
-  } else {
-    selectedColumns.push(interactionState.cursorPosition.x);
-    selectedRows.push(interactionState.cursorPosition.y);
-  }
+  const { selectedColumns, selectedRows } = createSelectedArrays(gridHeadingsGlobals.interactionState);
 
   const drawHorizontal = () => {
     if (!characterSize) return;
@@ -144,17 +154,18 @@ export function gridHeadings(props: IProps) {
 
     // this is used to avoid overlap of selected value with automatic values
     const scaledLabelWidth = labelWidth / viewport.scale.x;
-    const selectedX = selectedColumns[0] * CELL_WIDTH + CELL_WIDTH / 2;
+    const selectedXStart = selectedColumns[0] * CELL_WIDTH + CELL_WIDTH / 2;
+    const selectedXEnd = selectedColumns.length > 1 ? selectedColumns[selectedColumns.length - 1] * CELL_WIDTH + CELL_WIDTH / 2 : undefined;
 
     for (let x = leftOffset; x < rightOffset; x += CELL_WIDTH) {
       const column = Math.round(x / CELL_WIDTH - 1);
-      const selected = selectedColumns[0] === column;
+      const selected = selectedColumns[0] === column || (selectedColumns.length > 1 && selectedColumns[selectedColumns.length - 1] === column);
 
       // only show the label if selected or mod calculation
       if (!selected && mod !== 0 && column % mod !== 0) continue;
 
-      // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
-      const overlap = x >= selectedX - scaledLabelWidth / 2 && x <= selectedX + scaledLabelWidth / 2;
+      // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
+      const overlap = (x >= selectedXStart - scaledLabelWidth / 2 && x <= selectedXStart + scaledLabelWidth / 2) || (selectedXEnd !== undefined && x >= selectedXEnd - scaledLabelWidth / 2 && x <= selectedXEnd + scaledLabelWidth / 2);
       if (selected || !overlap) {
         labelData.push({ text: column.toString(), x, y });
       }
@@ -222,17 +233,18 @@ export function gridHeadings(props: IProps) {
 
     // this is used to avoid overlap of selected value with automatic values
     const scaledLabelHeight = CELL_HEIGHT / viewport.scale.x;
-    const selectedY = selectedRows[0] * CELL_HEIGHT + CELL_HEIGHT / 2;
+    const selectedYStart = selectedRows[0] * CELL_HEIGHT + CELL_HEIGHT / 2;
+    const selectedYEnd = selectedRows.length > 1 ? selectedRows[selectedRows.length - 1] * CELL_HEIGHT + CELL_HEIGHT / 2 : undefined;
 
     for (let y = topOffset; y < bottomOffset; y += CELL_HEIGHT) {
       const row = Math.round(y / CELL_HEIGHT - 1);
-      const selected = selectedRows[0] === row;
+      const selected = selectedRows[0] === row || (selectedRows.length > 1 && selectedRows[selectedRows.length - 1] === row);
 
       // only show the label if selected or mod calculation
       if (!selected && mod !== 0 && row % mod !== 0) continue;
 
       // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
-      const overlap = y >= selectedY - scaledLabelHeight / 2 && y <= selectedY + scaledLabelHeight / 2;
+      const overlap = (y >= selectedYStart - scaledLabelHeight / 2 && y <= selectedYStart + scaledLabelHeight / 2) || (selectedYEnd !== undefined && y >= selectedYEnd - scaledLabelHeight / 2 && y <= selectedYEnd + scaledLabelHeight / 2);
       if (selected || !overlap) {
         labelData.push({
           text: row.toString(),
