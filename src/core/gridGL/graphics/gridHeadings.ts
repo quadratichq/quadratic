@@ -399,9 +399,9 @@ export function intersectsHeadings(world: PIXI.Point): { column?: number; row?: 
     return { corner: true };
   }
   if (intersects.rectanglePoint(lastColumnRect, world)) {
-    return { column: Math.round(world.x / CELL_WIDTH - 1) };
+    return { column: Math.round((world.x - CELL_WIDTH / 2) / CELL_WIDTH) };
   }
   if (intersects.rectanglePoint(lastRowRect, world)) {
-    return { row: Math.round(world.y / CELL_HEIGHT - 1) };
+    return { row: Math.round((world.y - CELL_HEIGHT / 2) / CELL_HEIGHT) };
   }
 }

@@ -9,6 +9,7 @@ import { intersectsHeadings } from '../graphics/gridHeadings';
 import { selectAllCells } from './selectCells';
 import { intersects } from '../helpers/intersects';
 import { zoomToFit } from './zoom';
+import { getGridColumnMinMax } from '../../../helpers/getGridMinMax';
 
 interface IProps {
   viewportRef: React.MutableRefObject<Viewport | undefined>;
@@ -44,8 +45,6 @@ export const usePointerEvents = (
   >();
   const [pointerMoved, setPointerMoved] = useState(false);
   const [doubleClickTimeout, setDoubleClickTimeout] = useState<number | undefined>();
-
-  const [downHeadingPosition, setDownHeadingPosition] = useState<PIXI.Point | undefined>();
 
   const isDoubleClick = (world: PIXI.Point, event: PointerEvent): boolean => {
     if (event.button !== 0 || !downPositionRaw || !props.viewportRef.current) return false;
@@ -89,8 +88,13 @@ export const usePointerEvents = (
       }
     }
 
-    // todo: handle select entire row or column
-
+    selectAllCells({
+      setInteractionState: props.setInteractionState,
+      interactionState: props.interactionState,
+      viewport: viewportRef.current,
+      column: intersects.column,
+      row: intersects.row,
+    })
     return true;
   };
 
