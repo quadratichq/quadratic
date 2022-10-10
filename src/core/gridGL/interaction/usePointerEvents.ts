@@ -7,9 +7,7 @@ import { onDoubleClickCanvas } from './onDoubleClickCanvas';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { intersectsHeadings } from '../graphics/gridHeadings';
 import { selectAllCells } from './selectCells';
-import { intersects } from '../helpers/intersects';
 import { zoomToFit } from './zoom';
-import { getGridColumnMinMax } from '../../../helpers/getGridMinMax';
 
 interface IProps {
   viewportRef: React.MutableRefObject<Viewport | undefined>;
@@ -98,11 +96,32 @@ export const usePointerEvents = (
     return true;
   };
 
+  const selectShiftPointerDown = (world: PIXI.Point, event: PointerEvent): boolean => {
+    if (!event.shiftKey) return false;
+    const x = Math.floor(world.x / CELL_WIDTH);
+    const y = Math.floor(world.y / CELL_HEIGHT);
+    const cursorPosition = props.interactionState.cursorPosition;
+    const minX = Math.min(x, cursorPosition.x);
+    const minY = Math.min(y, cursorPosition.y);
+    const maxX = Math.max(x, cursorPosition.x);
+    const maxY = Math.max(y, cursorPosition.y);
+    setInteractionState({
+      ...interactionState,
+      showMultiCursor: true,
+      multiCursorPosition: {
+        originPosition: { x: minX, y: minY },
+        terminalPosition: { x: maxX, y: maxY },
+      },
+    });
+    return true;
+  }
+
   const onPointerDown = (world: PIXI.Point, event: PointerEvent) => {
+    if (viewportRef.current === undefined) return;
     if (isHeadingClick(world)) return;
     if (isDoubleClick(world, event)) return;
-    // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
-    if (viewportRef.current === undefined) return;
+    if (selectShiftPointerDown(world, event)) return;
+
     setDownPositionRaw({ x: world.x, y: world.y });
     let down_cell_x = Math.floor(world.x / CELL_WIDTH);
     let down_cell_y = Math.floor(world.y / CELL_HEIGHT);
