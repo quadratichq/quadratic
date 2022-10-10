@@ -7,7 +7,7 @@ export const colors = {
   highlightYellow: 0xffc800,
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,
-  headerSelectedBackgroundColor: 0xeeeeee,
+  headerSelectedBackgroundColor: 0xf2fbff,
   headerCornerBackgroundColor: 0xffffff,
   lightGray: '#f6f8fa',
   mediumGray: '#cfd7de',
