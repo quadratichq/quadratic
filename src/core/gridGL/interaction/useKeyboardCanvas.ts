@@ -8,7 +8,7 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { ensureVisible } from './ensureVisible';
 import { Size } from '../types/size';
-import { selectAllCells } from './selectCells';
+import { selectAllCells } from './selectCellsAction';
 
 interface IProps {
   interactionState: GridInteractionState;

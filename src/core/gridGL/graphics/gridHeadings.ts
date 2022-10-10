@@ -7,6 +7,7 @@ import { Size } from '../types/size';
 import { pixiKeyboardCanvasProps } from '../interaction/useKeyboardCanvas';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { intersects } from '../helpers/intersects';
+import { isArrayShallowEqual } from '../helpers/isEqual';
 
 // this ensures the top-left corner of the viewport doesn't move when toggling headings
 export const OFFSET_HEADINGS = false;
@@ -27,6 +28,7 @@ interface IProps {
   graphics: PIXI.Graphics;
   labels: PIXI.Container;
   corner: PIXI.Graphics;
+  dirty: boolean;
 }
 
 interface LabelData {
@@ -99,9 +101,18 @@ let lastShowHeadings = false;
 let lastRowRect: PIXI.Rectangle | undefined;
 let lastColumnRect: PIXI.Rectangle | undefined;
 let lastCornerRect: PIXI.Rectangle | undefined;
+let lastSelectedColumns: number[] | undefined;
+let lastSelectedRows: number[] | undefined;
 
 export function gridHeadings(props: IProps) {
-  const { viewport, headings, graphics, corner, labels } = props;
+  const { viewport, headings, graphics, corner, labels, dirty } = props;
+
+  const { selectedColumns, selectedRows } = createSelectedArrays(gridHeadingsGlobals.interactionState);
+
+  // only redraw headings if dirty or selection has changed
+  if (!dirty && isArrayShallowEqual(selectedColumns, lastSelectedColumns) && isArrayShallowEqual(selectedRows, lastSelectedRows)) return;
+  lastSelectedColumns = selectedColumns;
+  lastSelectedRows = selectedRows;
 
   graphics.clear();
   corner.clear();
@@ -133,8 +144,6 @@ export function gridHeadings(props: IProps) {
 
   // holds data for horizontal and vertical labels
   let labelData: LabelData[] = [];
-
-  const { selectedColumns, selectedRows } = createSelectedArrays(gridHeadingsGlobals.interactionState);
 
   const drawHorizontal = () => {
     if (!characterSize) return;

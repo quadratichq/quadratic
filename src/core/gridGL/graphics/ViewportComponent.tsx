@@ -83,6 +83,7 @@ const PixiComponentViewport = PixiComponent('Viewport', {
             graphics: headingsGraphics,
             labels,
             corner,
+            dirty,
           });
 
           if (dirty) {

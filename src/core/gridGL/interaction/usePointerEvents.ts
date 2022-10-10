@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { onDoubleClickCanvas } from './onDoubleClickCanvas';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { intersectsHeadings } from '../graphics/gridHeadings';
-import { selectAllCells, selectColumns, selectRows } from './selectCells';
+import { selectAllCells, selectColumns, selectRows } from './selectCellsAction';
 import { zoomToFit } from './zoom';
 
 interface IProps {
@@ -195,7 +195,7 @@ export const usePointerEvents = (
 
   const changeMouseCursor = (world: PIXI.Point): void => {
     // todo: this is not ideal -- need a better way of getting canvas
-    const canvas = document.querySelector('canvas');
+    const canvas = document.querySelector('#QuadraticCanvasID') as HTMLCanvasElement;
     if (canvas) {
       canvas.style.cursor = intersectsHeadings(world) ? 'pointer' : 'auto';
     }
