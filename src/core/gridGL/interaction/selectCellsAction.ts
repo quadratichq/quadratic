@@ -9,12 +9,23 @@ export async function selectAllCells(options: {
   column?: number;
   row?: number;
 }): Promise<void> {
-  let bounds = options.row !== undefined ? await getGridRowMinMax(options.row) : options.column !== undefined ? await getGridColumnMinMax(options.column) : await getGridMinMax();
+  let bounds =
+    options.row !== undefined
+      ? await getGridRowMinMax(options.row)
+      : options.column !== undefined
+      ? await getGridColumnMinMax(options.column)
+      : await getGridMinMax();
   if (!bounds) {
     if (options.row !== undefined) {
-      bounds = [{ x: 0, y: options.row }, { x: 0, y: options.row }];
+      bounds = [
+        { x: 0, y: options.row },
+        { x: 0, y: options.row },
+      ];
     } else if (options.column !== undefined) {
-      bounds = [{ x: options.column, y: 0 }, { x: options.column, y: 0 }];
+      bounds = [
+        { x: options.column, y: 0 },
+        { x: options.column, y: 0 },
+      ];
     } else {
       return;
     }
@@ -44,7 +55,10 @@ export async function selectColumns(options: {
   start: number;
   end: number;
 }): Promise<void> {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
   for (let x = options.start; x <= options.end; x++) {
     const bounds = await getGridColumnMinMax(x);
     if (bounds) {
@@ -77,7 +91,10 @@ export async function selectRows(options: {
   start: number;
   end: number;
 }): Promise<void> {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
   for (let y = options.start; y <= options.end; y++) {
     const bounds = await getGridRowMinMax(y);
     if (bounds) {

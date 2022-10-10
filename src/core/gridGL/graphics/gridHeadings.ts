@@ -110,7 +110,12 @@ export function gridHeadings(props: IProps) {
   const { selectedColumns, selectedRows } = createSelectedArrays(gridHeadingsGlobals.interactionState);
 
   // only redraw headings if dirty or selection has changed
-  if (!dirty && isArrayShallowEqual(selectedColumns, lastSelectedColumns) && isArrayShallowEqual(selectedRows, lastSelectedRows)) return;
+  if (
+    !dirty &&
+    isArrayShallowEqual(selectedColumns, lastSelectedColumns) &&
+    isArrayShallowEqual(selectedRows, lastSelectedRows)
+  )
+    return;
   lastSelectedColumns = selectedColumns;
   lastSelectedRows = selectedRows;
 
@@ -149,7 +154,7 @@ export function gridHeadings(props: IProps) {
     if (!characterSize) return;
 
     // draw bar
-    graphics.lineStyle(0)
+    graphics.lineStyle(0);
     graphics.beginFill(colors.headerBackgroundColor);
     lastColumnRect = new PIXI.Rectangle(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight);
     graphics.drawShape(lastColumnRect);
@@ -191,7 +196,6 @@ export function gridHeadings(props: IProps) {
         : undefined;
 
     for (let x = leftOffset; x < rightOffset; x += CELL_WIDTH) {
-
       // draw grid lines
       if (gridAlpha !== 0) {
         graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
@@ -272,7 +276,6 @@ export function gridHeadings(props: IProps) {
       selectedRows.length > 1 ? selectedRows[selectedRows.length - 1] * CELL_HEIGHT + CELL_HEIGHT / 2 : undefined;
 
     for (let y = topOffset; y < bottomOffset; y += CELL_HEIGHT) {
-
       // draw grid lines
       if (gridAlpha !== 0) {
         graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
@@ -323,7 +326,7 @@ export function gridHeadings(props: IProps) {
     graphics.lineTo(bounds.left + rowWidth, viewport.bottom);
     graphics.moveTo(bounds.left, bounds.top + cellHeight);
     graphics.lineTo(bounds.right, bounds.top + cellHeight);
-  }
+  };
 
   const addLabel = (): PIXI.BitmapText => {
     const label = labels.addChild(

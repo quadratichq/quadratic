@@ -25,7 +25,7 @@ export const getGridColumnMinMax = async (column: number) => {
       { x: column, y: columnArray[columnArray.length - 1].y },
     ];
   }
-}
+};
 
 export const getGridRowMinMax = async (row: number) => {
   const rowArray = await qdb.cells.where('y').equals(row).toArray();
@@ -35,4 +35,4 @@ export const getGridRowMinMax = async (row: number) => {
       { x: rowArray[rowArray.length - 1].x, y: row },
     ];
   }
-}
+};

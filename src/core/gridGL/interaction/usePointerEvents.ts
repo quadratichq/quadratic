@@ -138,7 +138,7 @@ export const usePointerEvents = (
       },
     });
     return true;
-  }
+  };
 
   const onPointerDown = (world: PIXI.Point, event: PointerEvent) => {
     if (viewportRef.current === undefined) return;
