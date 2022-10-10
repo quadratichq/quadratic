@@ -8,6 +8,7 @@ import { EditorInteractionState } from '../../../atoms/editorInteractionStateAto
 import { intersectsHeadings } from '../graphics/gridHeadings';
 import { selectAllCells } from './selectCells';
 import { intersects } from '../helpers/intersects';
+import { zoomToFit } from './zoom';
 
 interface IProps {
   viewportRef: React.MutableRefObject<Viewport | undefined>;
@@ -61,32 +62,6 @@ export const usePointerEvents = (
     return false;
   };
 
-  const moveToCorner = (): void => {
-    props.setInteractionState({
-      keyboardMovePosition: { x: 0, y: 0 },
-      cursorPosition: { x: 0, y: 0 },
-      showMultiCursor: false,
-      multiCursorPosition: {
-        originPosition: { x: 0, y: 0 },
-        terminalPosition: { x: 0, y: 0 },
-      },
-      showInput: false,
-      inputInitialValue: '',
-    });
-    const viewport = viewportRef.current;
-    if (viewport) {
-      const cell = new PIXI.Rectangle(0, 0, CELL_WIDTH, CELL_HEIGHT);
-      console.log(cell, viewport.getVisibleBounds());
-      if (!intersects.rectangleRectangle(viewport.getVisibleBounds(), cell)) {
-        viewport.animate({
-          time: 200,
-          position: new PIXI.Point(viewport.worldScreenWidth / 2 - 20, viewport.worldScreenHeight / 2 - 20),
-          ease: 'easeInOutSine',
-        });
-      }
-    }
-  };
-
   const selectAll = (): void => {
     selectAllCells({
       setInteractionState: props.setInteractionState,
@@ -101,10 +76,16 @@ export const usePointerEvents = (
     if (intersects.corner) {
       if (headingDownTimeout) {
         headingDownTimeout = undefined;
-        setDownHeadingPosition(undefined);
-        moveToCorner();
+        if (viewportRef.current) {
+          zoomToFit(viewportRef.current);
+        }
       } else {
-        setDownHeadingPosition(world);
+        selectAll();
+        headingDownTimeout = window.setTimeout(() => {
+          if (headingDownTimeout) {
+            headingDownTimeout = undefined;
+          }
+        }, DOUBLE_CLICK_TIME);
       }
     }
 
@@ -259,16 +240,6 @@ export const usePointerEvents = (
     }
     setDownPosition(undefined);
     setPreviousPosition(undefined);
-
-    if (downHeadingPosition) {
-      headingDownTimeout = window.setTimeout(() => {
-        if (headingDownTimeout) {
-          selectAll();
-          headingDownTimeout = undefined;
-        }
-        setDownHeadingPosition(undefined);
-      }, DOUBLE_CLICK_TIME);
-    }
   };
 
   return {
