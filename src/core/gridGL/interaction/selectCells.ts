@@ -36,3 +36,69 @@ export async function selectAllCells(options: {
     if (options.viewport) options.viewport.dirty = true;
   }
 }
+
+export async function selectColumns(options: {
+  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
+  interactionState: GridInteractionState;
+  viewport?: Viewport;
+  start: number;
+  end: number;
+}): Promise<void> {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (let x = options.start; x <= options.end; x++) {
+    const bounds = await getGridColumnMinMax(x);
+    if (bounds) {
+      minX = Math.min(minX, bounds[0].x);
+      maxX = Math.max(maxX, bounds[bounds.length - 1].x);
+      minY = Math.min(minY, bounds[0].y);
+      maxY = Math.max(maxY, bounds[bounds.length - 1].y);
+    }
+  }
+  if (minX !== Infinity && minY !== Infinity) {
+    options.setInteractionState({
+      ...options.interactionState,
+      ...{
+        multiCursorPosition: {
+          originPosition: { x: minX, y: minY },
+          terminalPosition: { x: maxX, y: maxY },
+        },
+        showMultiCursor: true,
+      },
+    });
+
+    if (options.viewport) options.viewport.dirty = true;
+  }
+}
+
+export async function selectRows(options: {
+  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
+  interactionState: GridInteractionState;
+  viewport?: Viewport;
+  start: number;
+  end: number;
+}): Promise<void> {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (let y = options.start; y <= options.end; y++) {
+    const bounds = await getGridRowMinMax(y);
+    if (bounds) {
+      minX = Math.min(minX, bounds[0].x);
+      maxX = Math.max(maxX, bounds[bounds.length - 1].x);
+      minY = Math.min(minY, bounds[0].y);
+      maxY = Math.max(maxY, bounds[bounds.length - 1].y);
+    }
+  }
+  if (minX !== Infinity && minY !== Infinity) {
+    options.setInteractionState({
+      ...options.interactionState,
+      ...{
+        multiCursorPosition: {
+          originPosition: { x: minX, y: minY },
+          terminalPosition: { x: maxX, y: maxY },
+        },
+        showMultiCursor: true,
+      },
+    });
+
+    if (options.viewport) options.viewport.dirty = true;
+  }
+}

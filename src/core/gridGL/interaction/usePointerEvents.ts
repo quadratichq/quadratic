@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { onDoubleClickCanvas } from './onDoubleClickCanvas';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { intersectsHeadings } from '../graphics/gridHeadings';
-import { selectAllCells } from './selectCells';
+import { selectAllCells, selectColumns, selectRows } from './selectCells';
 import { zoomToFit } from './zoom';
 
 interface IProps {
@@ -67,7 +67,7 @@ export const usePointerEvents = (
     });
   };
 
-  const isHeadingClick = (world: PIXI.Point): boolean => {
+  const isHeadingClick = (world: PIXI.Point, event: PointerEvent): boolean => {
     const intersects = intersectsHeadings(world);
     if (!intersects) return false;
     if (intersects.corner) {
@@ -86,13 +86,37 @@ export const usePointerEvents = (
       }
     }
 
-    selectAllCells({
-      setInteractionState: props.setInteractionState,
-      interactionState: props.interactionState,
-      viewport: viewportRef.current,
-      column: intersects.column,
-      row: intersects.row,
-    })
+    if (event.shiftKey) {
+      if (intersects.column !== undefined) {
+        let x1 = interactionState.cursorPosition.x;
+        let x2 = intersects.column;
+        selectColumns({
+          setInteractionState: props.setInteractionState,
+          interactionState: props.interactionState,
+          viewport: viewportRef.current,
+          start: Math.min(x1, x2),
+          end: Math.max(x1, x2),
+        });
+      } else if (intersects.row !== undefined) {
+        let y1 = interactionState.cursorPosition.y;
+        let y2 = intersects.row;
+        selectRows({
+          setInteractionState: props.setInteractionState,
+          interactionState: props.interactionState,
+          viewport: viewportRef.current,
+          start: Math.min(y1, y2),
+          end: Math.max(y1, y2),
+        });
+      }
+    } else {
+      selectAllCells({
+        setInteractionState: props.setInteractionState,
+        interactionState: props.interactionState,
+        viewport: viewportRef.current,
+        column: intersects.column,
+        row: intersects.row,
+      });
+    }
     return true;
   };
 
@@ -118,7 +142,7 @@ export const usePointerEvents = (
 
   const onPointerDown = (world: PIXI.Point, event: PointerEvent) => {
     if (viewportRef.current === undefined) return;
-    if (isHeadingClick(world)) return;
+    if (isHeadingClick(world, event)) return;
     if (isDoubleClick(world, event)) return;
     if (selectShiftPointerDown(world, event)) return;
 
