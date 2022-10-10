@@ -2,10 +2,8 @@ import { useEffect } from 'react';
 import { zoomStateAtom } from '../../../atoms/zoomStateAtom';
 import type { Viewport } from 'pixi-viewport';
 import { useRecoilState } from 'recoil';
-import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
-import { getGridMinMax } from '../../../helpers/getGridMinMax';
-import { Point } from 'pixi.js';
 import { ZOOM_ANIMATION_TIME_MS } from '../../../constants/gridConstants';
+import { zoomToFit } from './zoom';
 
 interface IProps {
   viewport: Viewport;
@@ -55,34 +53,7 @@ export const ViewportEventRegister = (props: IProps) => {
     if (!viewport.zooming)
       if (zoomState === Infinity) {
         // Infinity is passed as a keyword to trigger a Zoom Fit
-        // Zoom Fit
-        getGridMinMax().then((bounds) => {
-          if (bounds) {
-            const anchor_x = bounds[0].x * CELL_WIDTH;
-            const anchor_y = bounds[0].y * CELL_HEIGHT;
-
-            const width = (bounds[1].x - bounds[0].x) * CELL_WIDTH;
-            const height = (bounds[1].y - bounds[0].y) * CELL_HEIGHT;
-
-            // calc scale, and leave a little room on the top and sides
-            let scale = viewport.findFit(width * 1.2, height * 1.2);
-
-            // Don't zoom in more than a factor of 2
-            if (scale > 2.0) scale = 2;
-
-            viewport.animate({
-              time: ZOOM_ANIMATION_TIME_MS,
-              position: new Point(anchor_x + width / 2, anchor_y + height / 2),
-              scale: scale,
-            });
-          } else {
-            viewport.animate({
-              time: ZOOM_ANIMATION_TIME_MS,
-              position: new Point(0, 0),
-              scale: 1,
-            });
-          }
-        });
+        zoomToFit(viewport);
 
         // update UI to not show Infinity
         setZoomState(viewport.scale.x);

@@ -5,6 +5,9 @@ import { colors } from '../../../theme/colors';
 import { calculateAlphaForGridLines } from './gridUtils';
 import { Size } from '../types/size';
 import { pixiKeyboardCanvasProps } from '../interaction/useKeyboardCanvas';
+import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { intersects } from '../helpers/intersects';
+import { isArrayShallowEqual } from '../helpers/isEqual';
 
 // this ensures the top-left corner of the viewport doesn't move when toggling headings
 export const OFFSET_HEADINGS = false;
@@ -25,6 +28,7 @@ interface IProps {
   graphics: PIXI.Graphics;
   labels: PIXI.Container;
   corner: PIXI.Graphics;
+  dirty: boolean;
 }
 
 interface LabelData {
@@ -35,6 +39,7 @@ interface LabelData {
 
 let characterSize: Size | undefined = undefined;
 
+// calculates static character size (used in overlap calculations)
 function calculateCharacterSize(): void {
   const label = new PIXI.BitmapText('X', {
     fontName: 'OpenSans',
@@ -44,6 +49,7 @@ function calculateCharacterSize(): void {
   characterSize = { width: label.width, height: label.height };
 }
 
+// simple interval finding algorithm -- this can be improved to allow for more numbers
 function findInterval(i: number): number {
   if (i > 100) return 500;
   if (i > 50) return 100;
@@ -52,16 +58,71 @@ function findInterval(i: number): number {
   return 5;
 }
 
-export const gridHeadingsGlobals = { showHeadings: true };
+// creates arrays of selected columns and rows
+function createSelectedArrays(interactionState: GridInteractionState): {
+  selectedColumns: number[];
+  selectedRows: number[];
+} {
+  const selectedColumns: number[] = [],
+    selectedRows: number[] = [];
+  if (interactionState.showMultiCursor) {
+    for (
+      let x = interactionState.multiCursorPosition.originPosition.x;
+      x <= interactionState.multiCursorPosition.terminalPosition.x;
+      x++
+    ) {
+      selectedColumns.push(x);
+    }
+    for (
+      let y = interactionState.multiCursorPosition.originPosition.y;
+      y <= interactionState.multiCursorPosition.terminalPosition.y;
+      y++
+    ) {
+      selectedRows.push(y);
+    }
+  } else {
+    selectedColumns.push(interactionState.cursorPosition.x);
+    selectedRows.push(interactionState.cursorPosition.y);
+  }
+  return { selectedColumns, selectedRows };
+}
+
+// global variables (these are needed since recoil state setting falls behind the frame rate)
+export const gridHeadingsGlobals: { showHeadings: boolean; interactionState: GridInteractionState } = {
+  showHeadings: true,
+  interactionState: {} as GridInteractionState,
+};
+
+// cached globals to avoid redrawing if possible
 let lastRowSize: Size = { width: 0, height: 0 };
 let lastShowHeadings = false;
 
+// cached heading location for hitTest
+let lastRowRect: PIXI.Rectangle | undefined;
+let lastColumnRect: PIXI.Rectangle | undefined;
+let lastCornerRect: PIXI.Rectangle | undefined;
+let lastSelectedColumns: number[] | undefined;
+let lastSelectedRows: number[] | undefined;
+
 export function gridHeadings(props: IProps) {
-  const { viewport, headings, graphics, corner, labels } = props;
+  const { viewport, headings, graphics, corner, labels, dirty } = props;
+
+  const { selectedColumns, selectedRows } = createSelectedArrays(gridHeadingsGlobals.interactionState);
+
+  // only redraw headings if dirty or selection has changed
+  if (
+    !dirty &&
+    isArrayShallowEqual(selectedColumns, lastSelectedColumns) &&
+    isArrayShallowEqual(selectedRows, lastSelectedRows)
+  )
+    return;
+  lastSelectedColumns = selectedColumns;
+  lastSelectedRows = selectedRows;
 
   graphics.clear();
   corner.clear();
 
+  // handle showHeadings = false and allow for adjust headings (if OFFSET_HEADINGS flag is set)
   if (!gridHeadingsGlobals.showHeadings) {
     headings.visible = false;
     if (lastShowHeadings) {
@@ -70,6 +131,9 @@ export function gridHeadings(props: IProps) {
         viewport.y -= lastRowSize.height;
         lastShowHeadings = false;
       }
+      lastRowRect = undefined;
+      lastColumnRect = undefined;
+      lastColumnRect = undefined;
     }
     return;
   }
@@ -90,8 +154,22 @@ export function gridHeadings(props: IProps) {
     if (!characterSize) return;
 
     // draw bar
+    graphics.lineStyle(0);
     graphics.beginFill(colors.headerBackgroundColor);
-    graphics.drawRect(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight);
+    lastColumnRect = new PIXI.Rectangle(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight);
+    graphics.drawShape(lastColumnRect);
+    graphics.endFill();
+
+    // highlight column headings based on selected cells
+    graphics.beginFill(colors.headerSelectedBackgroundColor);
+    for (const column of selectedColumns) {
+      const xStart = column * CELL_WIDTH;
+      const xEnd = xStart + CELL_WIDTH;
+      if (xStart >= viewport.left || xEnd <= viewport.right) {
+        graphics.drawRect(xStart, viewport.top, xEnd - xStart, CELL_HEIGHT / viewport.scale.y);
+      }
+    }
+    graphics.endFill();
 
     // calculate whether we need to skip numbers
     const xOffset = bounds.left % CELL_WIDTH;
@@ -108,15 +186,39 @@ export function gridHeadings(props: IProps) {
 
     // create labelData
     const y = bounds.top + cellHeight / 2;
+
+    // this is used to avoid overlap of selected value with automatic values
+    const scaledLabelWidth = labelWidth / viewport.scale.x;
+    const selectedXStart = selectedColumns[0] * CELL_WIDTH + CELL_WIDTH / 2;
+    const selectedXEnd =
+      selectedColumns.length > 1
+        ? selectedColumns[selectedColumns.length - 1] * CELL_WIDTH + CELL_WIDTH / 2
+        : undefined;
+
     for (let x = leftOffset; x < rightOffset; x += CELL_WIDTH) {
-      const column = Math.round(x / CELL_WIDTH - 1);
-      if (mod === 0 || column % mod === 0) {
-        labelData.push({ text: column.toString(), x, y });
-      }
+      // draw grid lines
       if (gridAlpha !== 0) {
         graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
         graphics.moveTo(x - CELL_WIDTH / 2, bounds.top);
         graphics.lineTo(x - CELL_WIDTH / 2, bounds.top + cellHeight);
+      }
+
+      const column = Math.round(x / CELL_WIDTH - 1);
+      const selected =
+        selectedColumns[0] === column ||
+        (selectedColumns.length > 1 && selectedColumns[selectedColumns.length - 1] === column);
+
+      // only show the label if selected or mod calculation
+      if (!selected && mod !== 0 && column % mod !== 0) continue;
+
+      // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
+      const overlap =
+        (x >= selectedXStart - scaledLabelWidth / 2 && x <= selectedXStart + scaledLabelWidth / 2) ||
+        (selectedXEnd !== undefined &&
+          x >= selectedXEnd - scaledLabelWidth / 2 &&
+          x <= selectedXEnd + scaledLabelWidth / 2);
+      if (selected || !overlap) {
+        labelData.push({ text: column.toString(), x, y });
       }
     }
   };
@@ -138,34 +240,68 @@ export function gridHeadings(props: IProps) {
       (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
     rowWidth = Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
 
+    // draw heading rect
     graphics.lineStyle(0);
     graphics.beginFill(colors.headerBackgroundColor);
-    graphics.drawRect(
-      bounds.left,
-      bounds.top + CELL_HEIGHT / viewport.scale.x,
-      rowWidth,
-      bounds.height - CELL_HEIGHT / viewport.scale.x
-    );
+    const top = bounds.top + CELL_HEIGHT / viewport.scale.x;
+    const bottom = bounds.height - CELL_HEIGHT / viewport.scale.x;
+    lastRowRect = new PIXI.Rectangle(bounds.left, top, rowWidth, bottom);
+    graphics.drawShape(lastRowRect);
+    graphics.endFill();
+
+    // highlight row headings based on selected cells
+    graphics.beginFill(colors.headerSelectedBackgroundColor);
+    for (const row of selectedRows) {
+      const yStart = row * CELL_HEIGHT;
+      const yEnd = yStart + CELL_HEIGHT;
+      if (yStart >= top || yEnd <= bottom) {
+        graphics.drawRect(bounds.left, yStart, rowWidth, yEnd - yStart);
+      }
+    }
+    graphics.endFill();
+
     let mod = 0;
     if (characterSize.height > CELL_HEIGHT * viewport.scale.y * LABEL_MAXIMUM_HEIGHT_PERCENT) {
       const skipNumbers = Math.ceil((cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) / characterSize.height);
       mod = findInterval(skipNumbers);
     }
+
+    // create labelData
     const x = bounds.left + rowWidth / 2;
+
+    // this is used to avoid overlap of selected value with automatic values
+    const scaledLabelHeight = CELL_HEIGHT / viewport.scale.x;
+    const selectedYStart = selectedRows[0] * CELL_HEIGHT + CELL_HEIGHT / 2;
+    const selectedYEnd =
+      selectedRows.length > 1 ? selectedRows[selectedRows.length - 1] * CELL_HEIGHT + CELL_HEIGHT / 2 : undefined;
+
     for (let y = topOffset; y < bottomOffset; y += CELL_HEIGHT) {
+      // draw grid lines
+      if (gridAlpha !== 0) {
+        graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
+        graphics.moveTo(bounds.left, y - CELL_HEIGHT / 2);
+        graphics.lineTo(bounds.left + rowWidth, y - CELL_HEIGHT / 2);
+      }
+
       const row = Math.round(y / CELL_HEIGHT - 1);
-      if (mod === 0 || row % mod === 0) {
+      const selected =
+        selectedRows[0] === row || (selectedRows.length > 1 && selectedRows[selectedRows.length - 1] === row);
+
+      // only show the label if selected or mod calculation
+      if (!selected && mod !== 0 && row % mod !== 0) continue;
+
+      // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
+      const overlap =
+        (y >= selectedYStart - scaledLabelHeight / 2 && y <= selectedYStart + scaledLabelHeight / 2) ||
+        (selectedYEnd !== undefined &&
+          y >= selectedYEnd - scaledLabelHeight / 2 &&
+          y <= selectedYEnd + scaledLabelHeight / 2);
+      if (selected || !overlap) {
         labelData.push({
           text: row.toString(),
           x: x + ROW_DIGIT_OFFSET.x,
           y: y + ROW_DIGIT_OFFSET.y,
         });
-      }
-
-      if (gridAlpha !== 0) {
-        graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
-        graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);
-        graphics.lineTo(bounds.left + rowWidth, y + CELL_HEIGHT / 2);
       }
 
       // uncomment this code for a target to find the ROW_DIGIT_OFFSET for centering the row numbers
@@ -179,8 +315,17 @@ export function gridHeadings(props: IProps) {
 
   const drawCorner = () => {
     corner.beginFill(colors.headerCornerBackgroundColor);
-    corner.drawRect(bounds.left, bounds.top, rowWidth, cellHeight);
+    lastCornerRect = new PIXI.Rectangle(bounds.left, bounds.top, rowWidth, cellHeight);
+    corner.drawShape(lastCornerRect);
     corner.endFill();
+  };
+
+  const drawHeadingLines = () => {
+    graphics.lineStyle(1, colors.cursorCell, 0.25, 0.5, true);
+    graphics.moveTo(bounds.left + rowWidth, viewport.top);
+    graphics.lineTo(bounds.left + rowWidth, viewport.bottom);
+    graphics.moveTo(bounds.left, bounds.top + cellHeight);
+    graphics.lineTo(bounds.right, bounds.top + cellHeight);
   };
 
   const addLabel = (): PIXI.BitmapText => {
@@ -250,6 +395,7 @@ export function gridHeadings(props: IProps) {
   }
 
   drawHorizontal();
+  drawHeadingLines();
   addLabels();
   drawCorner();
   pixiKeyboardCanvasProps.headerSize = {
@@ -257,4 +403,17 @@ export function gridHeadings(props: IProps) {
     height: CELL_HEIGHT,
   };
   lastRowSize = { width: rowWidth!, height: CELL_HEIGHT };
+}
+
+export function intersectsHeadings(world: PIXI.Point): { column?: number; row?: number; corner?: true } | undefined {
+  if (!lastColumnRect || !lastRowRect || !lastCornerRect) return;
+  if (intersects.rectanglePoint(lastCornerRect, world)) {
+    return { corner: true };
+  }
+  if (intersects.rectanglePoint(lastColumnRect, world)) {
+    return { column: Math.round((world.x - CELL_WIDTH / 2) / CELL_WIDTH) };
+  }
+  if (intersects.rectanglePoint(lastRowRect, world)) {
+    return { row: Math.round((world.y - CELL_HEIGHT / 2) / CELL_HEIGHT) };
+  }
 }
