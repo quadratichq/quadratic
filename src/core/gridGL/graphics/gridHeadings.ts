@@ -140,6 +140,7 @@ export function gridHeadings(props: IProps) {
     if (!characterSize) return;
 
     // draw bar
+    graphics.lineStyle(0)
     graphics.beginFill(colors.headerBackgroundColor);
     lastColumnRect = new PIXI.Rectangle(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight);
     graphics.drawShape(lastColumnRect);
@@ -181,6 +182,14 @@ export function gridHeadings(props: IProps) {
         : undefined;
 
     for (let x = leftOffset; x < rightOffset; x += CELL_WIDTH) {
+
+      // draw grid lines
+      if (gridAlpha !== 0) {
+        graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
+        graphics.moveTo(x - CELL_WIDTH / 2, bounds.top);
+        graphics.lineTo(x - CELL_WIDTH / 2, bounds.top + cellHeight);
+      }
+
       const column = Math.round(x / CELL_WIDTH - 1);
       const selected =
         selectedColumns[0] === column ||
@@ -197,11 +206,6 @@ export function gridHeadings(props: IProps) {
           x <= selectedXEnd + scaledLabelWidth / 2);
       if (selected || !overlap) {
         labelData.push({ text: column.toString(), x, y });
-      }
-      if (gridAlpha !== 0) {
-        graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
-        graphics.moveTo(x - cellWidth / 2, bounds.top);
-        graphics.lineTo(x - cellWidth / 2, bounds.top + cellHeight);
       }
     }
   };
@@ -259,6 +263,14 @@ export function gridHeadings(props: IProps) {
       selectedRows.length > 1 ? selectedRows[selectedRows.length - 1] * CELL_HEIGHT + CELL_HEIGHT / 2 : undefined;
 
     for (let y = topOffset; y < bottomOffset; y += CELL_HEIGHT) {
+
+      // draw grid lines
+      if (gridAlpha !== 0) {
+        graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
+        graphics.moveTo(bounds.left, y - CELL_HEIGHT / 2);
+        graphics.lineTo(bounds.left + rowWidth, y - CELL_HEIGHT / 2);
+      }
+
       const row = Math.round(y / CELL_HEIGHT - 1);
       const selected =
         selectedRows[0] === row || (selectedRows.length > 1 && selectedRows[selectedRows.length - 1] === row);
@@ -279,11 +291,6 @@ export function gridHeadings(props: IProps) {
           y: y + ROW_DIGIT_OFFSET.y,
         });
       }
-      if (gridAlpha !== 0) {
-        graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
-        graphics.moveTo(bounds.left, y + CELL_HEIGHT / 2);
-        graphics.lineTo(bounds.left + rowWidth, y + CELL_HEIGHT / 2);
-      }
 
       // uncomment this code for a target to find the ROW_DIGIT_OFFSET for centering the row numbers
       // graphics.lineStyle(1, 0, 0.5)
@@ -300,6 +307,14 @@ export function gridHeadings(props: IProps) {
     corner.drawShape(lastCornerRect);
     corner.endFill();
   };
+
+  const drawHeadingLines = () => {
+    graphics.lineStyle(1, colors.cursorCell, 0.25, 0.5, true);
+    graphics.moveTo(bounds.left + rowWidth, viewport.top);
+    graphics.lineTo(bounds.left + rowWidth, viewport.bottom);
+    graphics.moveTo(bounds.left, bounds.top + cellHeight);
+    graphics.lineTo(bounds.right, bounds.top + cellHeight);
+  }
 
   const addLabel = (): PIXI.BitmapText => {
     const label = labels.addChild(
@@ -368,6 +383,7 @@ export function gridHeadings(props: IProps) {
   }
 
   drawHorizontal();
+  drawHeadingLines();
   addLabels();
   drawCorner();
   pixiKeyboardCanvasProps.headerSize = {
