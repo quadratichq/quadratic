@@ -5,6 +5,9 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import React, { useState } from 'react';
 import { onDoubleClickCanvas } from './onDoubleClickCanvas';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { intersectsHeadings } from '../graphics/gridHeadings';
+import { selectAllCells, selectColumns, selectRows } from './selectCellsAction';
+import { zoomToFit } from './zoom';
 
 interface IProps {
   viewportRef: React.MutableRefObject<Viewport | undefined>;
@@ -20,6 +23,8 @@ interface MousePosition {
 
 const MINIMUM_MOVE_POSITION = 5;
 const DOUBLE_CLICK_TIME = 500;
+
+let headingDownTimeout: number | undefined;
 
 export const usePointerEvents = (
   props: IProps
@@ -54,10 +59,93 @@ export const usePointerEvents = (
     return false;
   };
 
+  const selectAll = (): void => {
+    selectAllCells({
+      setInteractionState: props.setInteractionState,
+      interactionState: props.interactionState,
+      viewport: viewportRef.current,
+    });
+  };
+
+  const isHeadingClick = (world: PIXI.Point, event: PointerEvent): boolean => {
+    const intersects = intersectsHeadings(world);
+    if (!intersects) return false;
+    if (intersects.corner) {
+      if (headingDownTimeout) {
+        headingDownTimeout = undefined;
+        if (viewportRef.current) {
+          zoomToFit(viewportRef.current);
+        }
+      } else {
+        selectAll();
+        headingDownTimeout = window.setTimeout(() => {
+          if (headingDownTimeout) {
+            headingDownTimeout = undefined;
+          }
+        }, DOUBLE_CLICK_TIME);
+      }
+    }
+
+    if (event.shiftKey) {
+      if (intersects.column !== undefined) {
+        let x1 = interactionState.cursorPosition.x;
+        let x2 = intersects.column;
+        selectColumns({
+          setInteractionState: props.setInteractionState,
+          interactionState: props.interactionState,
+          viewport: viewportRef.current,
+          start: Math.min(x1, x2),
+          end: Math.max(x1, x2),
+        });
+      } else if (intersects.row !== undefined) {
+        let y1 = interactionState.cursorPosition.y;
+        let y2 = intersects.row;
+        selectRows({
+          setInteractionState: props.setInteractionState,
+          interactionState: props.interactionState,
+          viewport: viewportRef.current,
+          start: Math.min(y1, y2),
+          end: Math.max(y1, y2),
+        });
+      }
+    } else {
+      selectAllCells({
+        setInteractionState: props.setInteractionState,
+        interactionState: props.interactionState,
+        viewport: viewportRef.current,
+        column: intersects.column,
+        row: intersects.row,
+      });
+    }
+    return true;
+  };
+
+  const selectShiftPointerDown = (world: PIXI.Point, event: PointerEvent): boolean => {
+    if (!event.shiftKey) return false;
+    const x = Math.floor(world.x / CELL_WIDTH);
+    const y = Math.floor(world.y / CELL_HEIGHT);
+    const cursorPosition = props.interactionState.cursorPosition;
+    const minX = Math.min(x, cursorPosition.x);
+    const minY = Math.min(y, cursorPosition.y);
+    const maxX = Math.max(x, cursorPosition.x);
+    const maxY = Math.max(y, cursorPosition.y);
+    setInteractionState({
+      ...interactionState,
+      showMultiCursor: true,
+      multiCursorPosition: {
+        originPosition: { x: minX, y: minY },
+        terminalPosition: { x: maxX, y: maxY },
+      },
+    });
+    return true;
+  };
+
   const onPointerDown = (world: PIXI.Point, event: PointerEvent) => {
-    if (isDoubleClick(world, event)) return;
-    // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
     if (viewportRef.current === undefined) return;
+    if (isHeadingClick(world, event)) return;
+    if (isDoubleClick(world, event)) return;
+    if (selectShiftPointerDown(world, event)) return;
+
     setDownPositionRaw({ x: world.x, y: world.y });
     let down_cell_x = Math.floor(world.x / CELL_WIDTH);
     let down_cell_y = Math.floor(world.y / CELL_HEIGHT);
@@ -105,9 +193,20 @@ export const usePointerEvents = (
     setPointerMoved(false);
   };
 
+  const changeMouseCursor = (world: PIXI.Point): void => {
+    // todo: this is not ideal -- need a better way of getting canvas
+    const canvas = document.querySelector('#QuadraticCanvasID') as HTMLCanvasElement;
+    if (canvas) {
+      canvas.style.cursor = intersectsHeadings(world) ? 'pointer' : 'auto';
+    }
+  };
+
   const onPointerMove = (world: PIXI.Point, _: PointerEvent): void => {
     // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
     if (props.viewportRef.current === undefined) return;
+
+    changeMouseCursor(world);
+
     if (downPosition === undefined || previousPosition === undefined || downPositionRaw === undefined) return;
 
     // for determining if double click

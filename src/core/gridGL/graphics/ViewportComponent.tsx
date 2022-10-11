@@ -77,16 +77,18 @@ const PixiComponentViewport = PixiComponent('Viewport', {
           const bounds = viewport.getVisibleBounds();
           cull.cull(bounds);
 
+          gridHeadings({
+            viewport,
+            headings,
+            graphics: headingsGraphics,
+            labels,
+            corner,
+            dirty,
+          });
+
           if (dirty) {
             gridLines({ viewport, graphics: gridGraphics });
             axesLines({ viewport, graphics: axesGraphics });
-            gridHeadings({
-              viewport,
-              headings,
-              graphics: headingsGraphics,
-              labels,
-              corner,
-            });
             dirty = false;
           }
 

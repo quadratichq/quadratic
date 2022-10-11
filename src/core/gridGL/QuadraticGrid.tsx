@@ -76,6 +76,13 @@ export default function QuadraticGrid() {
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
 
+  useEffect(() => {
+    gridHeadingsGlobals.interactionState = interactionState;
+    if (viewportRef.current) {
+      viewportRef.current.dirty = true;
+    }
+  }, [interactionState]);
+
   // Editor Interaction State hook
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
