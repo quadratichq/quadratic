@@ -26,13 +26,13 @@ def attempt_fix_await(code):
     code = re.sub(r"([^a-zA-Z0-9]|^)cell\(", r"\1await cell(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)c\(", r"\1await c(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)getCells\(", r"\1await getCells(", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)grid\[", r"\1await grid[", code)
+    code = re.sub(r"([^a-zA-Z0-9]|^)cells\[", r"\1await cells[", code)
 
     code = code.replace("await await getCell", "await getCell")
     code = code.replace("await await c(", "await c(")
     code = code.replace("await await cell(", "await cell(")
     code = code.replace("await await cells(", "await cells(")
-    code = code.replace("await await grid[", "await grid[")
+    code = code.replace("await await cells[", "await cells[")
 
     return code
 
@@ -191,13 +191,6 @@ async def run_python(code):
         def __call__(p0, p1, first_row_header=False):
             return getCells(p0, p1, first_row_header)
 
-    cell = CellFunc()
-    cells = CellsFunc()
-
-    # Aliases for common functions
-    c = cell
-
-    class Grid:
         @staticmethod
         def __getitem__(item):
             if type(item) == tuple and len(item) == 2:
@@ -205,7 +198,7 @@ async def run_python(code):
                 col_idx = item[1]
 
                 if type(row_idx) == type(col_idx) == int:
-                    return cell(row_idx, col_idx)
+                    return getCell(row_idx, col_idx)
 
                 elif type(row_idx) in (int, slice) and type(col_idx) in (int, slice):
                     if type(row_idx) == slice:
@@ -229,28 +222,25 @@ async def run_python(code):
                     if row_step is not None or col_step is not None:
                         raise IndexError("Slice step-size parameter not supported")
 
-                    return cells((col_start, row_start), (col_stop - 1, row_stop - 1), first_row_header=False)
+                    return getCells((col_start, row_start), (col_stop - 1, row_stop - 1), first_row_header=False)
 
                 else:
                     raise IndexError("Only int and slice type indices supported")
             else:
                 raise IndexError("""Expected usage:
-                        1. grid[row                        , col                        ]
-                        2. grid[row_slice_min:row_slice_max, col                        ]
-                        3. grid[row                        , col_slice_min:col_slice_max]
-                        4. grid[row_slice_min:row_slice_max, col_slice_min:col_slice_max]
+                        1. cells[row                        , col                        ]
+                        2. cells[row_slice_min:row_slice_max, col                        ]
+                        3. cells[row                        , col_slice_min:col_slice_max]
+                        4. cells[row_slice_min:row_slice_max, col_slice_min:col_slice_max]
                         """)
-
-    grid = Grid()
 
     globals = {
         "getCells": getCells,
         "getCell": getCell,
-        "c": c,
+        "c": CellFunc(),
         "result": None,
-        "cell": cell,
-        "cells": cells,
-        "grid": grid,
+        "cell": CellFunc(),
+        "cells": CellsFunc(),
     }
 
     sout = StringIO()
