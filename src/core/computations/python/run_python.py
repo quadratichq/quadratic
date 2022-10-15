@@ -181,15 +181,21 @@ async def run_python(code):
         else:
             return None
 
+    class CellFunc:
+        @staticmethod
+        def __call__(p0_x, p0_y):
+            return getCell(p0_x, p0_y)
+
+    class CellsFunc:
+        @staticmethod
+        def __call__(p0, p1, first_row_header=False):
+            return getCells(p0, p1, first_row_header)
+
+    cell = CellFunc()
+    cells = CellsFunc()
+
     # Aliases for common functions
-    async def c(p0_x, p0_y):
-        return await getCell(p0_x, p0_y)
-
-    async def cell(p0_x, p0_y):
-        return await getCell(p0_x, p0_y)
-
-    async def cells(p0, p1, first_row_header=False):
-        return await getCells(p0, p1, first_row_header)
+    c = cell
 
     class Grid:
         @staticmethod
