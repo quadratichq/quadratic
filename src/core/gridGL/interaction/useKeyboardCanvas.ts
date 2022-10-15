@@ -5,10 +5,10 @@ import { deleteCellsRange } from '../../actions/deleteCellsRange';
 import { GetCellsDB } from '../../gridDB/Cells/GetCellsDB';
 import isAlphaNumeric from './helpers/isAlphaNumeric';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { getGridMinMax } from '../../../helpers/getGridMinMax';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { ensureVisible } from './ensureVisible';
 import { Size } from '../types/size';
+import { selectAllCells } from './selectCellsAction';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -53,27 +53,11 @@ export const useKeyboardCanvas = (
 
     // Command + A
     if ((event.metaKey || event.ctrlKey) && event.code === 'KeyA') {
-      // Calculate the min and max cells.
-      // Select all cells
-      const selectAllCells = async () => {
-        const bounds = await getGridMinMax();
-
-        if (bounds !== undefined) {
-          setInteractionState({
-            ...interactionState,
-            ...{
-              multiCursorPosition: {
-                originPosition: bounds[0],
-                terminalPosition: bounds[1],
-              },
-              showMultiCursor: true,
-            },
-          });
-
-          if (viewportRef.current) viewportRef.current.dirty = true;
-        }
-      };
-      selectAllCells();
+      selectAllCells({
+        setInteractionState: props.setInteractionState,
+        interactionState: props.interactionState,
+        viewport: viewportRef.current,
+      });
 
       event.preventDefault();
     }
