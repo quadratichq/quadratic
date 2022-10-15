@@ -23,6 +23,11 @@ export interface Cell {
   last_modified?: string;
 }
 
+export interface Heading {
+  id: number;
+  size? : number;
+}
+
 export interface Grid {
   id: number;
   dgraph_json?: string;
@@ -31,12 +36,16 @@ export interface Grid {
 export class QDexie extends Dexie {
   cells!: Table<Cell>;
   qgrid!: Table<Grid>;
+  columns!: Table<Heading>;
+  rows!: Table<Heading>;
 
   constructor() {
     super('quadratic_grid1');
-    this.version(18).stores({
+    this.version(19).stores({
       cells: '[x+y],[y+x]',
       qgrid: '&id',
+      columns: '&id',
+      rows: '&id',
     });
   }
 }
