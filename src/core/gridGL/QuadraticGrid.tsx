@@ -135,6 +135,22 @@ export default function QuadraticGrid() {
     };
   }, [interactionState.cursorPosition, headings])
 
+  const multiCursor = useMemo(() => {
+    if (!headings || !interactionState.showMultiCursor) return;
+    const start = interactionState.multiCursorPosition.originPosition;
+    const startColumn = gridOffsets.getColumnPlacement(start.x);
+    const startRow = gridOffsets.getRowPlacement(start.y);
+    const end = interactionState.multiCursorPosition.terminalPosition;
+    const endColumn = gridOffsets.getColumnPlacement(end.x);
+    const endRow = gridOffsets.getRowPlacement(end.y);
+    return {
+      x: startColumn.x,
+      y: startRow.y,
+      width: endColumn.x + endColumn.width - startColumn.x,
+      height: endRow.y + endRow.height - startRow.y,
+    }
+  }, [interactionState.multiCursorPosition, interactionState.showMultiCursor, headings])
+
   // Right click menu
   const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } = useMenuState();
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
@@ -237,8 +253,7 @@ export default function QuadraticGrid() {
           />
           <MultiCursorPixiReact
             viewportRef={viewportRef}
-            originLocation={interactionState.multiCursorPosition.originPosition}
-            terminalLocation={interactionState.multiCursorPosition.terminalPosition}
+            multiCursor={multiCursor}
             visible={interactionState.showMultiCursor}
           ></MultiCursorPixiReact>
           {editorInteractionState.showCodeEditor && (
