@@ -5,7 +5,7 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import React, { useState } from 'react';
 import { onDoubleClickCanvas } from './onDoubleClickCanvas';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { intersectsHeadings } from '../graphics/gridHeadings';
+import { intersectsHeadingGridLine, intersectsHeadings } from '../graphics/gridHeadings';
 import { selectAllCells, selectColumns, selectRows } from './selectCellsAction';
 import { zoomToFit } from './zoom';
 import { gridOffsets } from '../../gridDB/gridOffsets';
@@ -121,6 +121,15 @@ export const usePointerEvents = (
     return true;
   };
 
+  const isHeadingResize = (world: PIXI.Point, event: PointerEvent): boolean => {
+    if (event.shiftKey) return false;
+    const headingResize = intersectsHeadingGridLine(world);
+    if (headingResize) {
+      return true;
+    }
+    return false;
+  }
+
   const selectShiftPointerDown = (world: PIXI.Point, event: PointerEvent): boolean => {
     if (!event.shiftKey) return false;
     const x = Math.floor(world.x / CELL_WIDTH);
@@ -143,6 +152,7 @@ export const usePointerEvents = (
 
   const onPointerDown = (world: PIXI.Point, event: PointerEvent) => {
     if (viewportRef.current === undefined) return;
+    if (isHeadingResize(world, event)) return;
     if (isHeadingClick(world, event)) return;
     if (isDoubleClick(world, event)) return;
     if (selectShiftPointerDown(world, event)) return;
@@ -194,10 +204,14 @@ export const usePointerEvents = (
   };
 
   const changeMouseCursor = (world: PIXI.Point): void => {
-    // todo: this is not ideal -- need a better way of getting canvas
     const canvas = document.querySelector('#QuadraticCanvasID') as HTMLCanvasElement;
     if (canvas) {
-      canvas.style.cursor = intersectsHeadings(world) ? 'pointer' : 'auto';
+      const headingResize = intersectsHeadingGridLine(world);
+      if (headingResize) {
+        canvas.style.cursor = headingResize.column ? "col-resize" : "row-resize";
+      } else {
+        canvas.style.cursor = intersectsHeadings(world) ? 'pointer' : 'auto';
+      }
     }
   };
 
