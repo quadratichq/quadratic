@@ -1,61 +1,107 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
-import { Heading } from './db';
+import { Heading, QDexie } from './db';
 
 export class GridOffsets {
-  private columns?: Heading[];
-  private rows?: Heading[];
-  private columnsCached = { minimum: 0, maximum: 0, cache: {} };
-  private rowsCached = { minimum: 0, maximum: 0, cache: {} };
+  private columns: Record<string, Heading> = {};
+  private rows: Record<string, Heading> = {};
 
-  populate(columns: Heading[], rows: Heading[]): void {
-    this.columns = columns;
-    this.rows = rows;
-    this.columnsCache = undefined;
-    this.rowsCache = undefined;
+  async populate(qdb: QDexie): Promise<void> {
+
+    // testing code
+    await qdb.columns.put({ id: 0, size: CELL_WIDTH * 2 }, 0)
+    await qdb.columns.put({ id: 1, size: CELL_WIDTH }, 0)
+    await qdb.columns.put({ id: 2, size: CELL_WIDTH * 3 }, 0)
+    await qdb.columns.put({ id: -5, size: CELL_WIDTH * 0.5}, 0)
+    await qdb.rows.put({ id: 1, size: CELL_HEIGHT* 2 }, 0)
+    await qdb.rows.put({ id: -3, size: CELL_HEIGHT * 0.5}, 0)
+
+    this.columns = {};
+    await qdb.columns.each(entry => this.columns[entry.id] = entry);
+    this.rows = {};
+    await qdb.rows.each(entry => this.rows[entry.id] = entry);
+  }
+
+  getColumnWidth(column: number): number {
+    return this.columns[column]?.size ?? CELL_WIDTH;
+  }
+
+  getRowHeight(row: number): number {
+    return this.rows[row]?.size ?? CELL_HEIGHT;
   }
 
   getColumnPlacement(column: number): { x: number, width: number } {
-    if (!this.columns) {
-      return { x: column * CELL_WIDTH, width: CELL_WIDTH };
-    }
-    if (this.columnsCachedTo < )
-    if (column === 0) {
-      const width = this.columns[0]?.size !== undefined ? this.columns[0].size : CELL_WIDTH;
-      return { x: 0, width };
-    }
-    if (column > 0) {
-      let xPosition = 0;
+    let position = 0;
+    if (column >= 0) {
       for (let x = 0; x < column; x++) {
-        xPosition += this.columns[x]?.size ?? CELL_WIDTH;
+        position += this.columns[x]?.size ?? CELL_WIDTH;
       }
-      return { x: xPosition, width: this.columns[column]?.size ?? CELL_WIDTH };
+      return { x: position, width: this.getColumnWidth(column) };
+    } else {
+      for (let x = column; x < 0; x++) {
+        position -= this.columns[x]?.size ?? CELL_WIDTH;
+      }
+      return { x: position, width: this.getColumnWidth(column) };
     }
-    let xPosition = 0;
-    for (let x = column; x < 0; x++) {
-      xPosition -= this.columns[x]?.size ?? CELL_WIDTH;
-    }
-    return { x: xPosition, width: this.columns[column]?.size ?? CELL_WIDTH };
   }
 
   getRowPlacement(row: number): { y: number, height: number } {
-    if (!this.rows) {
-      return { y: row * CELL_WIDTH, height: CELL_WIDTH };
-    }
-    if (row === 0) {
-      const height = this.rows[0]?.size !== undefined ? this.rows[0].size : CELL_WIDTH;
-      return { y: 0, height };
-    }
-    if (row > 0) {
-      let yPosition = 0;
+    let position = 0;
+    if (row >= 0) {
       for (let y = 0; y < row; y++) {
-        yPosition += this.rows[y]?.size ?? CELL_HEIGHT;
+        position += this.rows[y]?.size ?? CELL_HEIGHT;
       }
-      return { y: yPosition, height: this.rows[row]?.size ?? CELL_HEIGHT };
+      return { y: position, height: this.getRowHeight(row) };
+    } else {
+      for (let y = row; y < 0; y++) {
+        position -= this.rows[y]?.size ?? CELL_HEIGHT;
+      }
+      return { y: position, height: this.getRowHeight(row) };
     }
-    let yPosition = 0;
-    for (let y = row; y < 0; y++) {
-      yPosition -= this.rows[y]?.size ?? CELL_HEIGHT;
+  }
+
+  getColumnIndex(x: number): { index: number, position: number } {
+    if (x >= 0) {
+      let index = 0;
+      let position = 0;
+      let nextWidth = this.getColumnWidth(0)
+      while (position + nextWidth < x) {
+        position += nextWidth;
+        index++;
+        nextWidth = this.getColumnWidth(index);
+      }
+      return { index, position };
+    } else {
+      let index = 0;
+      let position = 0;
+      while (position > x) {
+        index--;
+        position -= this.getColumnWidth(index);
+      }
+      return { index, position };
     }
-    return { y: yPosition, height: this.rows[row]?.size ?? CELL_HEIGHT };
+  }
+
+  getRowIndex(y: number): { index: number, position: number } {
+    if (y >= 0) {
+      let index = 0;
+      let position = 0;
+      let nextHeight = this.getRowHeight(0);
+      while (position + nextHeight < y) {
+        position += nextHeight;
+        index++;
+        nextHeight = this.getRowHeight(index);
+      }
+      return { index, position };
+    } else {
+      let index = 0;
+      let position = 0;
+      while (position > y) {
+        index--;
+        position -= this.getRowHeight(index);
+      }
+      return { index, position };
+    }
   }
 }
+
+export const gridOffsets = new GridOffsets();

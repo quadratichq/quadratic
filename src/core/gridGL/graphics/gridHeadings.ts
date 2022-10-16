@@ -8,6 +8,7 @@ import { pixiKeyboardCanvasProps } from '../interaction/useKeyboardCanvas';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { intersects } from '../helpers/intersects';
 import { isArrayShallowEqual } from '../helpers/isEqual';
+import { gridOffsets } from '../../gridDB/gridOffsets';
 
 // this ensures the top-left corner of the viewport doesn't move when toggling headings
 export const OFFSET_HEADINGS = false;
@@ -49,7 +50,7 @@ function calculateCharacterSize(): void {
   characterSize = { width: label.width, height: label.height };
 }
 
-// simple interval finding algorithm -- this can be improved to allow for more numbers
+// simple interval finding algorithm -- this can be improved to allow for different intervals
 function findInterval(i: number): number {
   if (i > 100) return 500;
   if (i > 50) return 100;
@@ -141,6 +142,7 @@ export function gridHeadings(props: IProps) {
   if (!characterSize) {
     calculateCharacterSize();
   }
+
   const cellWidth = CELL_WIDTH / viewport.scale.x;
   const cellHeight = CELL_HEIGHT / viewport.scale.x;
   const inverseScale = 1 / viewport.scale.x;
@@ -153,28 +155,37 @@ export function gridHeadings(props: IProps) {
   const drawHorizontal = () => {
     if (!characterSize) return;
 
-    // draw bar
+    // draw horizontal bar
     graphics.lineStyle(0);
     graphics.beginFill(colors.headerBackgroundColor);
     lastColumnRect = new PIXI.Rectangle(viewport.left, viewport.top, viewport.right - viewport.left, cellHeight);
     graphics.drawShape(lastColumnRect);
     graphics.endFill();
 
+    // calculate selection bounds
+    const selectedStart = gridOffsets.getColumnPlacement(selectedColumns[0]);
+    const selectedEnd = gridOffsets.getColumnPlacement(selectedColumns[selectedColumns.length - 1]);
+    const xSelectedStart = selectedStart.x;
+    let xSelectedEnd = xSelectedStart + selectedStart.width;
+    for (let i = 1; i < selectedColumns.length; i++) {
+      xSelectedEnd += gridOffsets.getColumnWidth(selectedColumns[i]);
+    }
+
+    // use these bounds for digit overlap comparison
+    const startHalfWidth = characterSize.width * selectedColumns[0].toString().length / 2 / viewport.scale.x;
+    const endHalfWidth = characterSize.width * selectedColumns[0].toString().length / 2 / viewport.scale.x;
+    const xSelectedStartLine1D = { start: xSelectedStart + selectedStart.width / 2 - startHalfWidth, end: xSelectedStart + selectedStart.width / 2 + startHalfWidth };
+    const xSelectedEndLine1D = { start: xSelectedEnd - selectedEnd.width / 2 - endHalfWidth, end: xSelectedEnd - selectedEnd.width / 2 + endHalfWidth };
+
     // highlight column headings based on selected cells
     graphics.beginFill(colors.headerSelectedBackgroundColor);
-    for (const column of selectedColumns) {
-      const xStart = column * CELL_WIDTH;
-      const xEnd = xStart + CELL_WIDTH;
-      if (xStart >= viewport.left || xEnd <= viewport.right) {
-        graphics.drawRect(xStart, viewport.top, xEnd - xStart, CELL_HEIGHT / viewport.scale.y);
-      }
-    }
+    graphics.drawRect(xSelectedStart, viewport.top, xSelectedEnd - xSelectedStart, cellHeight);
     graphics.endFill();
 
-    // calculate whether we need to skip numbers
-    const xOffset = bounds.left % CELL_WIDTH;
-    const leftOffset = bounds.left - xOffset - CELL_WIDTH / 2;
-    const rightOffset = bounds.right - xOffset + 1.5 * CELL_WIDTH;
+    const start = gridOffsets.getColumnIndex(bounds.left);
+    const end = gridOffsets.getColumnIndex(bounds.right);
+    const leftOffset = start.position;
+    const rightOffset = end.position;
 
     // labelWidth uses the constant for number of digits--this ensures the mod factor doesn't change when panning
     const labelWidth = LABEL_DIGITS_TO_CALCULATE_SKIP * characterSize.width;
@@ -184,42 +195,37 @@ export function gridHeadings(props: IProps) {
       mod = findInterval(skipNumbers);
     }
 
-    // create labelData
     const y = bounds.top + cellHeight / 2;
-
-    // this is used to avoid overlap of selected value with automatic values
-    const scaledLabelWidth = labelWidth / viewport.scale.x;
-    const selectedXStart = selectedColumns[0] * CELL_WIDTH + CELL_WIDTH / 2;
-    const selectedXEnd =
-      selectedColumns.length > 1
-        ? selectedColumns[selectedColumns.length - 1] * CELL_WIDTH + CELL_WIDTH / 2
-        : undefined;
-
-    for (let x = leftOffset; x < rightOffset; x += CELL_WIDTH) {
-      // draw grid lines
+    let column = start.index;
+    let currentWidth = 0;
+    for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
+      currentWidth = gridOffsets.getColumnWidth(column);
       if (gridAlpha !== 0) {
         graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
-        graphics.moveTo(x - CELL_WIDTH / 2, bounds.top);
-        graphics.lineTo(x - CELL_WIDTH / 2, bounds.top + cellHeight);
+        graphics.moveTo(x, bounds.top);
+        graphics.lineTo(x, bounds.top + cellHeight);
       }
 
-      const column = Math.round(x / CELL_WIDTH - 1);
+      // show first and last selected numbers unless last selected number overlaps first selected number
       const selected =
         selectedColumns[0] === column ||
-        (selectedColumns.length > 1 && selectedColumns[selectedColumns.length - 1] === column);
+        (selectedColumns.length > 1 && selectedColumns[selectedColumns.length - 1] === column && !intersects.lineLineOneDimension(xSelectedStartLine1D.start, xSelectedStartLine1D.end, xSelectedEndLine1D.start, xSelectedEndLine1D.end));
 
       // only show the label if selected or mod calculation
-      if (!selected && mod !== 0 && column % mod !== 0) continue;
+      if (selected || mod === 0 || column % mod === 0) {
+        // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
+        let xPosition = x + currentWidth / 2;
+        const characterHalfWidth = characterSize.width * column.toString().length / 2 / viewport.scale.x;
+        const left = xPosition - characterHalfWidth;
+        const right = xPosition + characterHalfWidth;
 
-      // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
-      const overlap =
-        (x >= selectedXStart - scaledLabelWidth / 2 && x <= selectedXStart + scaledLabelWidth / 2) ||
-        (selectedXEnd !== undefined &&
-          x >= selectedXEnd - scaledLabelWidth / 2 &&
-          x <= selectedXEnd + scaledLabelWidth / 2);
-      if (selected || !overlap) {
-        labelData.push({ text: column.toString(), x, y });
+        // only when selected or not intersects one of the selected numbers
+        if (selected || !(intersects.lineLineOneDimension(xSelectedStartLine1D.start, xSelectedStartLine1D.end, left, right) ||
+          intersects.lineLineOneDimension(xSelectedEndLine1D.start, xSelectedEndLine1D.end, left, right))) {
+          labelData.push({ text: column.toString(), x: xPosition, y });
+        }
       }
+      column++;
     }
   };
 
@@ -228,9 +234,10 @@ export function gridHeadings(props: IProps) {
     if (!characterSize) return;
 
     // determine width of row header
-    const yOffset = bounds.top % CELL_HEIGHT;
-    const topOffset = bounds.top - yOffset - CELL_HEIGHT / 2;
-    const bottomOffset = bounds.bottom - yOffset + 1.5 * CELL_HEIGHT;
+    const start = gridOffsets.getRowIndex(bounds.top);
+    const end = gridOffsets.getRowIndex(bounds.bottom);
+    const topOffset = start.position;
+    const bottomOffset = end.position;
     const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString().length;
     const bottomNumberLength = Math.round(bottomOffset / CELL_HEIGHT - 1).toString().length;
 
@@ -240,24 +247,32 @@ export function gridHeadings(props: IProps) {
       (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
     rowWidth = Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
 
-    // draw heading rect
+    // draw vertical bar
     graphics.lineStyle(0);
     graphics.beginFill(colors.headerBackgroundColor);
-    const top = bounds.top + CELL_HEIGHT / viewport.scale.x;
-    const bottom = bounds.height - CELL_HEIGHT / viewport.scale.x;
+    const top = bounds.top + cellHeight;
+    const bottom = bounds.height - cellHeight;
     lastRowRect = new PIXI.Rectangle(bounds.left, top, rowWidth, bottom);
     graphics.drawShape(lastRowRect);
     graphics.endFill();
 
+    // calculated selection bounds
+    const selectedStart = gridOffsets.getRowPlacement(selectedRows[0]);
+    const selectedEnd = gridOffsets.getRowPlacement(selectedRows[selectedRows.length - 1]);
+    const ySelectedStart = selectedStart.y;
+    let ySelectedEnd = ySelectedStart + selectedStart.height;
+    for (let i = 1; i < selectedRows.length; i++) {
+      ySelectedEnd += gridOffsets.getRowHeight(selectedRows[i]);
+    }
+    const halfCharacterHeight = characterSize.height / 2 / viewport.scale.x;
+
+    // use these bounds for digit overlap comparison
+    const ySelectedStartLine1D = { start: ySelectedStart + selectedStart.height / 2 - halfCharacterHeight, end: ySelectedStart + selectedStart.height / 2 + halfCharacterHeight };
+    const ySelectedEndLine1D = { start: ySelectedEnd - selectedEnd.height / 2 - halfCharacterHeight, end: ySelectedEnd - selectedEnd.height / 2 + halfCharacterHeight };
+
     // highlight row headings based on selected cells
     graphics.beginFill(colors.headerSelectedBackgroundColor);
-    for (const row of selectedRows) {
-      const yStart = row * CELL_HEIGHT;
-      const yEnd = yStart + CELL_HEIGHT;
-      if (yStart >= top || yEnd <= bottom) {
-        graphics.drawRect(bounds.left, yStart, rowWidth, yEnd - yStart);
-      }
-    }
+    graphics.drawRect(viewport.left, ySelectedStart, rowWidth, ySelectedEnd - ySelectedStart);
     graphics.endFill();
 
     let mod = 0;
@@ -266,43 +281,37 @@ export function gridHeadings(props: IProps) {
       mod = findInterval(skipNumbers);
     }
 
-    // create labelData
     const x = bounds.left + rowWidth / 2;
-
-    // this is used to avoid overlap of selected value with automatic values
-    const scaledLabelHeight = CELL_HEIGHT / viewport.scale.x;
-    const selectedYStart = selectedRows[0] * CELL_HEIGHT + CELL_HEIGHT / 2;
-    const selectedYEnd =
-      selectedRows.length > 1 ? selectedRows[selectedRows.length - 1] * CELL_HEIGHT + CELL_HEIGHT / 2 : undefined;
-
-    for (let y = topOffset; y < bottomOffset; y += CELL_HEIGHT) {
-      // draw grid lines
+    let row = start.index;
+    let currentHeight = 0;
+    for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
+      currentHeight = gridOffsets.getRowHeight(row);
       if (gridAlpha !== 0) {
         graphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
-        graphics.moveTo(bounds.left, y - CELL_HEIGHT / 2);
-        graphics.lineTo(bounds.left + rowWidth, y - CELL_HEIGHT / 2);
+        graphics.moveTo(bounds.left, y);
+        graphics.lineTo(bounds.left + rowWidth, y);
       }
 
-      const row = Math.round(y / CELL_HEIGHT - 1);
+      // show first and last selected numbers unless last selected number overlaps first selected number
       const selected =
-        selectedRows[0] === row || (selectedRows.length > 1 && selectedRows[selectedRows.length - 1] === row);
+        selectedRows[0] === row || (selectedRows.length > 1 && selectedRows[selectedRows.length - 1] === row && !intersects.lineLineOneDimension(ySelectedStartLine1D.start, ySelectedStartLine1D.end, ySelectedEndLine1D.start, ySelectedEndLine1D.end));
 
       // only show the label if selected or mod calculation
-      if (!selected && mod !== 0 && row % mod !== 0) continue;
-
-      // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
-      const overlap =
-        (y >= selectedYStart - scaledLabelHeight / 2 && y <= selectedYStart + scaledLabelHeight / 2) ||
-        (selectedYEnd !== undefined &&
-          y >= selectedYEnd - scaledLabelHeight / 2 &&
-          y <= selectedYEnd + scaledLabelHeight / 2);
-      if (selected || !overlap) {
-        labelData.push({
-          text: row.toString(),
-          x: x + ROW_DIGIT_OFFSET.x,
-          y: y + ROW_DIGIT_OFFSET.y,
-        });
+      if (selected || mod === 0 || row % mod === 0) {
+        // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
+        let yPosition = y + currentHeight / 2;
+        const top = yPosition - halfCharacterHeight;
+        const bottom = yPosition + halfCharacterHeight;
+        if (selected || !(intersects.lineLineOneDimension(ySelectedStartLine1D.start, ySelectedStartLine1D.end, top, bottom) ||
+          intersects.lineLineOneDimension(ySelectedEndLine1D.start, ySelectedEndLine1D.end, top, bottom))) {
+          labelData.push({
+            text: row.toString(),
+            x: x + ROW_DIGIT_OFFSET.x,
+            y: yPosition + ROW_DIGIT_OFFSET.y,
+          });
+        }
       }
+      row++;
 
       // uncomment this code for a target to find the ROW_DIGIT_OFFSET for centering the row numbers
       // graphics.lineStyle(1, 0, 0.5)

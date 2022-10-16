@@ -1,4 +1,5 @@
 import Dexie, { Table } from 'dexie';
+import { gridOffsets } from './gridOffsets';
 
 export type CellTypes = 'TEXT' | 'FORMULA' | 'JAVASCRIPT' | 'PYTHON' | 'SQL' | 'COMPUTED';
 
@@ -25,7 +26,7 @@ export interface Cell {
 
 export interface Heading {
   id: number;
-  size? : number;
+  size?: number;
 }
 
 export interface Grid {
@@ -47,6 +48,7 @@ export class QDexie extends Dexie {
       columns: '&id',
       rows: '&id',
     });
+    gridOffsets.populate(this)
   }
 }
 
