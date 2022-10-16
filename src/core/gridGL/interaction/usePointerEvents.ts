@@ -8,6 +8,7 @@ import { EditorInteractionState } from '../../../atoms/editorInteractionStateAto
 import { intersectsHeadings } from '../graphics/gridHeadings';
 import { selectAllCells, selectColumns, selectRows } from './selectCellsAction';
 import { zoomToFit } from './zoom';
+import { gridOffsets } from '../../gridDB/gridOffsets';
 
 interface IProps {
   viewportRef: React.MutableRefObject<Viewport | undefined>;
@@ -147,8 +148,7 @@ export const usePointerEvents = (
     if (selectShiftPointerDown(world, event)) return;
 
     setDownPositionRaw({ x: world.x, y: world.y });
-    let down_cell_x = Math.floor(world.x / CELL_WIDTH);
-    let down_cell_y = Math.floor(world.y / CELL_HEIGHT);
+    const { column: down_cell_x, row: down_cell_y } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
 
     const rightClick = event.button === 2 || (event.button === 0 && event.ctrlKey);
 
@@ -219,8 +219,7 @@ export const usePointerEvents = (
     }
 
     // calculate mouse move position
-    let move_cell_x = Math.floor(world.x / CELL_WIDTH);
-    let move_cell_y = Math.floor(world.y / CELL_HEIGHT);
+    const { column: move_cell_x, row: move_cell_y } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
 
     // cursor start and end in the same cell
     if (move_cell_x === downPosition.x && move_cell_y === downPosition.y) {

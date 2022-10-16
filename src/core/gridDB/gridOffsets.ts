@@ -102,6 +102,10 @@ export class GridOffsets {
       return { index, position };
     }
   }
+
+  getRowColumnFromWorld(x: number, y: number ): { column: number, row: number } {
+    return { column: this.getColumnIndex(x).index, row: this.getRowIndex(y).index };
+  }
 }
 
 export const gridOffsets = new GridOffsets();
