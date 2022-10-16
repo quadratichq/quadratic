@@ -19,11 +19,15 @@ export const WelcomeScreen = () => {
     return <div>Oops... {error.message}</div>;
   }
 
-  return (
-    <div>
-      <h1>Welcome to Quadratic</h1>
-      <h2>Quadratic is currently in Alpha</h2>
-      <button onClick={() => loginWithRedirect()}>Log In</button>
-    </div>
-  );
+  loginWithRedirect({ screen_hint: 'signup' });
+
+  return null;
+
+  // return (
+  //   <div>
+  //     <h1>Welcome to Quadratic</h1>
+  //     <h2>Quadratic is currently in Alpha</h2>
+  //     <button onClick={() => loginWithRedirect()}>Log In</button>
+  //   </div>
+  // );
 };

@@ -21,7 +21,7 @@ if (process.env.REACT_APP_SENTRY_DSN)
 ReactDOM.render(
   <React.StrictMode>
     <Auth0Provider
-      domain="dev-nje7dw8s.us.auth0.com" //MOVE TO ENV
+      domain="auth.quadratic.to" //MOVE TO ENV
       clientId="YNbqu5SaEppYmQ9s1P0VbDnF0OBe8agj" //MOVE TO ENV
       redirectUri={window.location.origin}
     >
