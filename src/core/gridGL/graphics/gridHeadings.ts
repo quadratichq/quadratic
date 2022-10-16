@@ -420,9 +420,9 @@ export function intersectsHeadings(world: PIXI.Point): { column?: number; row?: 
     return { corner: true };
   }
   if (intersects.rectanglePoint(lastColumnRect, world)) {
-    return { column: Math.round((world.x - CELL_WIDTH / 2) / CELL_WIDTH) };
+    return { column: gridOffsets.getColumnIndex(world.x).index };
   }
   if (intersects.rectanglePoint(lastRowRect, world)) {
-    return { row: Math.round((world.y - CELL_HEIGHT / 2) / CELL_HEIGHT) };
+    return { row: gridOffsets.getRowIndex(world.y).index };
   }
 }
