@@ -1,24 +1,15 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
-import { Heading, QDexie } from './db';
+import { Heading } from './db';
 
 export class GridOffsets {
   private columns: Record<string, Heading> = {};
   private rows: Record<string, Heading> = {};
 
-  async populate(qdb: QDexie): Promise<void> {
-
-    // testing code
-    await qdb.columns.put({ id: 0, size: CELL_WIDTH * 2 }, 0)
-    await qdb.columns.put({ id: 1, size: CELL_WIDTH }, 0)
-    await qdb.columns.put({ id: 2, size: CELL_WIDTH * 3 }, 0)
-    await qdb.columns.put({ id: -5, size: CELL_WIDTH * 0.5}, 0)
-    await qdb.rows.put({ id: 1, size: CELL_HEIGHT* 2 }, 0)
-    await qdb.rows.put({ id: -3, size: CELL_HEIGHT * 0.5}, 0)
-
+  populate(columns: Heading[], rows: Heading[]): void {
     this.columns = {};
-    await qdb.columns.each(entry => this.columns[entry.id] = entry);
+    columns.forEach(entry => this.columns[entry.id] = entry);
     this.rows = {};
-    await qdb.rows.each(entry => this.rows[entry.id] = entry);
+    rows.forEach(entry => this.rows[entry.id] = entry);
   }
 
   getColumnWidth(column: number): number {
@@ -105,6 +96,17 @@ export class GridOffsets {
 
   getRowColumnFromWorld(x: number, y: number ): { column: number, row: number } {
     return { column: this.getColumnIndex(x).index, row: this.getRowIndex(y).index };
+  }
+
+  getCell(column: number, row: number): { x: number, y: number, width: number, height: number } {
+    const columnPlacement = this.getColumnPlacement(column);
+    const rowPlacement = this.getRowPlacement(row);
+    return {
+      x: columnPlacement.x,
+      y: rowPlacement.y,
+      width: columnPlacement.width,
+      height: rowPlacement.height,
+    }
   }
 }
 

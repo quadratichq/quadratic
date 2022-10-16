@@ -11,6 +11,10 @@ import { colors } from '../../../theme/colors';
 interface CellPixiReactProps {
   x: number;
   y: number;
+  xPosition?: number;
+  yPosition?: number;
+  width?: number;
+  height?: number;
   text: string;
   type: CellTypes;
   renderText: boolean;
@@ -20,8 +24,8 @@ interface CellPixiReactProps {
 
 const CellPixiReact = (props: CellPixiReactProps) => {
   // Calculate X and Y positions
-  const x_pos = props.x * CELL_WIDTH;
-  const y_pos = props.y * CELL_HEIGHT;
+  const x_pos = props.xPosition;
+  const y_pos = props.yPosition;
 
   const draw_outline = useCallback(
     (g) => {
@@ -37,7 +41,7 @@ const CellPixiReact = (props: CellPixiReactProps) => {
       }
 
       // Draw outline
-      g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
+      g.drawRect(x_pos, y_pos, props.width, props.height);
 
       // for cells that output an array, draw an outline around the array
       if (!props.array_cells) return g;
@@ -57,10 +61,12 @@ const CellPixiReact = (props: CellPixiReactProps) => {
 
       // double outline the master cell
       g.lineStyle(1, colors.cellColorUserPython, 0.25, 0.5, false, 1);
-      g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
+      g.drawRect(x_pos, y_pos, props.width, props.height);
     },
-    [props.type, props.array_cells, props.x, props.y, x_pos, y_pos]
+    [props.type, props.array_cells, props.x, props.y, x_pos, y_pos, props.width, props.height]
   );
+
+  if (x_pos === undefined || y_pos === undefined || props.width === undefined || props.height === undefined) return null;
 
   return (
     <Container interactiveChildren={false}>

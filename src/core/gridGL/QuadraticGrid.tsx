@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useWindowDimensions from '../../hooks/useWindowDimensions';
 import type { Viewport } from 'pixi-viewport';
 import { Stage } from '@inlet/react-pixi';
@@ -24,6 +24,17 @@ import { gridHeadingsGlobals } from './graphics/gridHeadings';
 import { axesLinesGlobals } from './graphics/axesLines';
 import { gridLinesGlobals } from './graphics/gridLines';
 import { Size } from './types/size';
+import { Cell } from '../gridDB/db';
+import { gridOffsets } from '../gridDB/gridOffsets';
+import { GetHeadingsDB } from '../gridDB/Cells/GetHeadingsDB';
+import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
+
+interface CellSized extends Cell {
+  xPosition?: number;
+  yPosition?: number
+  width?: number;
+  height?: number;
+}
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -31,7 +42,8 @@ export default function QuadraticGrid() {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 
   // Live query to update cells
-  const cells = useLiveQuery(() => GetCellsDB());
+  const cellsWithoutPosition = useLiveQuery(() => GetCellsDB());
+  const headings = useLiveQuery(() => GetHeadingsDB());
   const [canvasSize, setCanvasSize] = useState<Size | undefined>(undefined);
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node) => {
@@ -40,6 +52,30 @@ export default function QuadraticGrid() {
       setContainer(node);
     }
   }, []);
+
+  const cells: CellSized[] = useMemo(() => {
+    if (headings) {
+      gridOffsets.populate(headings.columns, headings.rows);
+    }
+    if (cellsWithoutPosition) {
+      // forces a refresh of the viewport after gridOffsets updates
+      if (viewportRef.current) {
+        viewportRef.current.emit("moved");
+        viewportRef.current.dirty = true;
+      }
+      return cellsWithoutPosition.map(cell => {
+        const result = gridOffsets.getCell(cell.x, cell.y);
+        return {
+          ...cell,
+          xPosition: result.x,
+          yPosition: result.y,
+          width: result.width,
+          height: result.height,
+        };
+      });
+    }
+    return [];
+  }, [cellsWithoutPosition, headings]);
 
   useEffect(() => {
     setCanvasSize({
@@ -86,6 +122,19 @@ export default function QuadraticGrid() {
   // Editor Interaction State hook
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
+  const { cursorX, cursorY, cursorWidth, cursorHeight } = useMemo(() => {
+    if (!headings) return { cursorX: 0, cursorY: 0, cursorWidth: CELL_WIDTH, cursorHeight: CELL_HEIGHT };
+    const cell = interactionState.cursorPosition;
+    const column = gridOffsets.getColumnPlacement(cell.x);
+    const row = gridOffsets.getRowPlacement(cell.y);
+    return {
+      cursorX: column.x,
+      cursorY: row.y,
+      cursorWidth: column.width,
+      cursorHeight: row.height,
+    };
+  }, [interactionState.cursorPosition, headings])
+
   // Right click menu
   const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } = useMenuState();
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
@@ -105,7 +154,7 @@ export default function QuadraticGrid() {
     viewportRef,
   });
 
-  if (loading || !canvasSize) return null;
+  if (loading || !canvasSize || !headings || !cellsWithoutPosition) return null;
 
   return (
     <div
@@ -159,6 +208,10 @@ export default function QuadraticGrid() {
           {cells?.map((cell) => (
             <CellPixiReact
               key={`${cell.x},${cell.y}`}
+              xPosition={cell.xPosition}
+              yPosition={cell.yPosition}
+              width={cell.width}
+              height={cell.height}
               x={cell.x}
               y={cell.y}
               text={cell.value}
@@ -175,7 +228,13 @@ export default function QuadraticGrid() {
               array_cells={cell.array_cells}
             ></CellPixiReact>
           ))}
-          <CursorPixiReact viewportRef={viewportRef} location={interactionState.cursorPosition}></CursorPixiReact>
+          <CursorPixiReact
+            viewportRef={viewportRef}
+            x={cursorX}
+            y={cursorY}
+            width={cursorWidth}
+            height={cursorHeight}
+          />
           <MultiCursorPixiReact
             viewportRef={viewportRef}
             originLocation={interactionState.multiCursorPosition.originPosition}
@@ -184,9 +243,12 @@ export default function QuadraticGrid() {
           ></MultiCursorPixiReact>
           {editorInteractionState.showCodeEditor && (
             <CursorPixiReact
-              location={editorInteractionState.selectedCell}
+              x={cursorX}
+              y={cursorY}
+              width={cursorWidth}
+              height={cursorHeight}
               color={editorInteractionState.mode === 'PYTHON' ? colors.cellColorUserPython : colors.independence}
-            ></CursorPixiReact>
+            />
           )}
         </ViewportComponent>
       </Stage>

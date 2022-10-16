@@ -1,20 +1,18 @@
 import { useCallback } from 'react';
-
-import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { colors } from '../../../theme/colors';
 import { Graphics, Container } from '@inlet/react-pixi';
-import CellReference from '../types/cellReference';
 import { Viewport } from 'pixi-viewport';
 interface CursorPixiReactProps {
   viewportRef?: React.MutableRefObject<Viewport | undefined>;
-  location: CellReference;
+  x: number;
+  y: number
+  width: number;
+  height: number;
   color?: number;
 }
 
 const CursorPixiReact = (props: CursorPixiReactProps) => {
-  const { location, color } = props;
-  const x_pos = location.x * CELL_WIDTH;
-  const y_pos = location.y * CELL_HEIGHT;
+  const { x, y, width, height, color } = props;
 
   const draw_outline = useCallback(
     (g) => {
@@ -23,12 +21,12 @@ const CursorPixiReact = (props: CursorPixiReactProps) => {
       if (color) g.lineStyle(1.5, color);
       else g.lineStyle(1.5, colors.cursorCell);
 
-      g.drawRect(x_pos, y_pos, CELL_WIDTH, CELL_HEIGHT);
+      g.drawRect(x, y, width, height);
       if (props.viewportRef?.current) {
         props.viewportRef.current.dirty = true;
       }
     },
-    [x_pos, y_pos, color, props.viewportRef]
+      [x, y, props.viewportRef, width, height, color]
   );
 
   return (
