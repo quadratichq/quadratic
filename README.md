@@ -13,7 +13,7 @@ Take your data and do something useful with it as quickly and easily as possible
 ![Screen Shot 2022-04-07 at 4 15 52 PM](https://user-images.githubusercontent.com/3479421/162328478-198f27d1-4ab8-4334-8420-b082e68edefc.png)
 
 ## Community
-Join the conversation on our Discord channel -> https://discord.gg/5R6wkpeD
+Join the conversation on our Discord channel -> https://discord.gg/quadratic
 
 # What is Quadratic?
 
