@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { throttle } from 'lodash';
 import useWindowDimensions from '../../hooks/useWindowDimensions';
 import type { Viewport } from 'pixi-viewport';
 import { Stage } from '@inlet/react-pixi';
@@ -13,7 +14,7 @@ import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
 import { useKeyboardCanvas } from './interaction/useKeyboardCanvas';
-import { usePointerEvents } from './interaction/usePointerEvents';
+import { HeadingResizing, usePointerEvents } from './interaction/usePointerEvents';
 import { CellInput } from './interaction/CellInput';
 import { colors } from '../../theme/colors';
 import { useMenuState } from '@szhsin/react-menu';
@@ -44,6 +45,8 @@ export default function QuadraticGrid() {
   // Live query to update cells
   const cellsWithoutPosition = useLiveQuery(() => GetCellsDB());
   const headings = useLiveQuery(() => GetHeadingsDB());
+  const [headingResizing, setHeadingResizing] = useState<HeadingResizing | undefined>();
+
   const [canvasSize, setCanvasSize] = useState<Size | undefined>(undefined);
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node) => {
@@ -53,18 +56,34 @@ export default function QuadraticGrid() {
     }
   }, []);
 
+  const setHeadingResizingCallback = throttle((newHeadingResizing: HeadingResizing | undefined): void => {
+    setHeadingResizing(newHeadingResizing);
+    gridOffsets.headingResizing = newHeadingResizing;
+  }, 16);
+
+  const forceRender = (): void => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    viewport.emit('zoomed');
+    viewport.dirty = true;
+  };
+
   const cells: CellSized[] = useMemo(() => {
     if (headings) {
       gridOffsets.populate(headings.columns, headings.rows);
+      forceRender();
     }
     if (cellsWithoutPosition) {
-      // forces a refresh of the viewport after gridOffsets updates
-      if (viewportRef.current) {
-        viewportRef.current.emit("moved");
-        viewportRef.current.dirty = true;
-      }
+      forceRender();
       return cellsWithoutPosition.map(cell => {
         const result = gridOffsets.getCell(cell.x, cell.y);
+        if (headingResizing) {
+          if (headingResizing.width && cell.x === headingResizing.x) {
+            result.width = headingResizing.width;
+          } else if (headingResizing.height && cell.y === headingResizing.y) {
+            result.height = headingResizing.height;
+          }
+        }
         return {
           ...cell,
           xPosition: result.x,
@@ -75,7 +94,13 @@ export default function QuadraticGrid() {
       });
     }
     return [];
-  }, [cellsWithoutPosition, headings]);
+  }, [cellsWithoutPosition, headings, headingResizing]);
+
+  useEffect(() => {
+    if (headingResizing) {
+      forceRender();
+    }
+  }, [headingResizing]);
 
   useEffect(() => {
     setCanvasSize({
@@ -89,13 +114,6 @@ export default function QuadraticGrid() {
   const [showHeadings] = useLocalStorage('showHeadings', true);
   const [showGridLines] = useLocalStorage('showGridLines', true);
   const [showCellTypeOutlines] = useLocalStorage('showCellTypeOutlines', true);
-
-  const forceRender = (): void => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    viewport.emit('zoomed');
-    viewport.dirty = true;
-  };
 
   // render on canvasSize update (when window is resized)
   useEffect(() => {
@@ -160,6 +178,8 @@ export default function QuadraticGrid() {
     interactionState,
     setInteractionState,
     setEditorInteractionState,
+    setHeadingResizing: setHeadingResizingCallback,
+    headingResizing,
   });
 
   const { onKeyDownCanvas } = useKeyboardCanvas({

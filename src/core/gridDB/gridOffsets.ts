@@ -1,9 +1,11 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
+import { HeadingResizing } from '../gridGL/interaction/usePointerEvents';
 import { Heading } from './db';
 
 export class GridOffsets {
   private columns: Record<string, Heading> = {};
   private rows: Record<string, Heading> = {};
+  headingResizing: HeadingResizing | undefined;
 
   populate(columns: Heading[], rows: Heading[]): void {
     this.columns = {};
@@ -13,10 +15,16 @@ export class GridOffsets {
   }
 
   getColumnWidth(column: number): number {
+    if (this.headingResizing?.column === column && this.headingResizing.width !== undefined) {
+      return this.headingResizing.width;
+    }
     return this.columns[column]?.size ?? CELL_WIDTH;
   }
 
   getRowHeight(row: number): number {
+    if (this.headingResizing?.row === row && this.headingResizing.height !== undefined) {
+      return this.headingResizing.height;
+    }
     return this.rows[row]?.size ?? CELL_HEIGHT;
   }
 
@@ -24,12 +32,12 @@ export class GridOffsets {
     let position = 0;
     if (column >= 0) {
       for (let x = 0; x < column; x++) {
-        position += this.columns[x]?.size ?? CELL_WIDTH;
+        position += this.getColumnWidth(x);
       }
       return { x: position, width: this.getColumnWidth(column) };
     } else {
       for (let x = column; x < 0; x++) {
-        position -= this.columns[x]?.size ?? CELL_WIDTH;
+        position -= this.getColumnWidth(x);
       }
       return { x: position, width: this.getColumnWidth(column) };
     }
@@ -39,12 +47,12 @@ export class GridOffsets {
     let position = 0;
     if (row >= 0) {
       for (let y = 0; y < row; y++) {
-        position += this.rows[y]?.size ?? CELL_HEIGHT;
+        position += this.getRowHeight(y)
       }
       return { y: position, height: this.getRowHeight(row) };
     } else {
       for (let y = row; y < 0; y++) {
-        position -= this.rows[y]?.size ?? CELL_HEIGHT;
+        position -= this.getRowHeight(y);
       }
       return { y: position, height: this.getRowHeight(row) };
     }

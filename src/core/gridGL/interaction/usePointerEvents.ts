@@ -15,11 +15,23 @@ interface IProps {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
+  setHeadingResizing: (resize: HeadingResizing | undefined) => void;
+  headingResizing: HeadingResizing | undefined;
 }
 
 interface MousePosition {
   x: number;
   y: number;
+}
+
+export interface HeadingResizing {
+  x: number;
+  y: number;
+  start: number;
+  column?: number;
+  row?: number;
+  width?: number;
+  height?: number;
 }
 
 const MINIMUM_MOVE_POSITION = 5;
@@ -125,6 +137,15 @@ export const usePointerEvents = (
     if (event.shiftKey) return false;
     const headingResize = intersectsHeadingGridLine(world);
     if (headingResize) {
+      props.setHeadingResizing({
+        x: world.x,
+        y: world.y,
+        start: headingResize.start,
+        row: headingResize.row,
+        column: headingResize.column,
+        width: headingResize.width,
+        height: headingResize.height,
+      })
       return true;
     }
     return false;
@@ -215,10 +236,30 @@ export const usePointerEvents = (
     }
   };
 
+  const pointerMoveResize = (world: PIXI.Point): void => {
+    const downResize = props.headingResizing;
+    if (!downResize) return;
+    if (downResize.column) {
+      const size = Math.max(0, world.x - downResize.start);
+      if (size !== downResize.width) {
+        props.setHeadingResizing({ ...downResize, width: size });
+      }
+    } else if (downResize.row) {
+      const size = Math.max(0, world.y - downResize.start);
+      if (size !== downResize.height) {
+        props.setHeadingResizing({ ...downResize, height: size });
+      }
+    }
+  };
+
   const onPointerMove = (world: PIXI.Point, _: PointerEvent): void => {
     // if no viewport ref, don't do anything. Something went wrong, this shouldn't happen.
     if (props.viewportRef.current === undefined) return;
 
+    if (props.headingResizing) {
+      pointerMoveResize(world);
+      return;
+    }
     changeMouseCursor(world);
 
     if (downPosition === undefined || previousPosition === undefined || downPositionRaw === undefined) return;
@@ -298,6 +339,7 @@ export const usePointerEvents = (
       const timeout = window.setTimeout(() => setDoubleClickTimeout(undefined), DOUBLE_CLICK_TIME);
       setDoubleClickTimeout(timeout);
     }
+    props.setHeadingResizing(undefined);
     setDownPosition(undefined);
     setPreviousPosition(undefined);
   };
