@@ -117,6 +117,8 @@ export default function QuadraticGrid() {
       });
     }
     return [];
+    // headingResizing is used by gridOffsets
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cellsWithoutPosition, headings, headingResizing]);
 
   useEffect(() => {

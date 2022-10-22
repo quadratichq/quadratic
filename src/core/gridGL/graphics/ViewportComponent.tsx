@@ -1,6 +1,5 @@
 import * as PIXI from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
-import { Simple } from 'pixi-cull';
 import { PixiComponent, useApp } from '@inlet/react-pixi';
 import { gridLines } from './gridLines';
 import { axesLines } from './axesLines';
