@@ -8,6 +8,7 @@ import { CELL_WIDTH, CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } 
 import { CellTypes } from '../../gridDB/db';
 import { colors } from '../../../theme/colors';
 import useWhyDidYouUpdate from '../../../hooks/useWhyDidYouUpdate';
+import { gridOffsets } from '../../gridDB/gridOffsets';
 
 interface CellPixiReactProps {
   x: number;
@@ -31,10 +32,14 @@ const CellPixiReact = (props: CellPixiReactProps) => {
   const draw_outline = useCallback(
     (g) => {
       g.clear();
+      if (x_pos === undefined || y_pos === undefined) return g;
 
       // Change outline color based on cell type
       if (props.type !== 'TEXT') {
+
+        // don't draw normal cell outlines since it's handled by the grid
         // g.lineStyle(1, colors.cellColorUserText, 0.75, 0.5, true);
+
         if (props.type === 'PYTHON') {
           g.lineStyle(1, colors.cellColorUserPython, 0.75, 0.5, true);
         } else if (props.type === 'COMPUTED') {
@@ -49,17 +54,19 @@ const CellPixiReact = (props: CellPixiReactProps) => {
       if (!props.array_cells) return g;
 
       // calculate array cells outline size
-      let width = 1;
-      let height = 1;
+      let xEnd = x_pos + gridOffsets.getColumnPlacement(props.x).width;
+      let yEnd = y_pos + gridOffsets.getRowPlacement(props.y).height;
       for (let i = 0; i < props.array_cells.length; i++) {
         const cell = props.array_cells[i];
-        if (cell[0] - props.x + 1 > width) width = cell[0] - props.x + 1;
-        if (cell[1] - props.y + 1 > height) height = cell[1] - props.y + 1;
+        const xPlacement = gridOffsets.getColumnPlacement(cell[0]);
+        xEnd = Math.max(xPlacement.x + xPlacement.width, xEnd);
+        const yPlacement = gridOffsets.getRowPlacement(cell[1]);
+        yEnd = Math.max(yPlacement.y + yPlacement.height, yEnd);
       }
 
       // draw array cells outline
       g.lineStyle(1, colors.cellColorUserPython, 0.35, 0.5, false, 1);
-      g.drawRect(x_pos, y_pos, CELL_WIDTH * width, CELL_HEIGHT * height);
+      g.drawRect(x_pos, y_pos, xEnd - x_pos, yEnd - y_pos);
 
       // double outline the master cell
       g.lineStyle(1, colors.cellColorUserPython, 0.25, 0.5, false, 1);
@@ -71,7 +78,7 @@ const CellPixiReact = (props: CellPixiReactProps) => {
   if (x_pos === undefined || y_pos === undefined || props.width === undefined || props.height === undefined) return null;
 
   return (
-    <Container interactiveChildren={false}>
+    <Container interactiveChildren={false} cullable={true}>
       <FastBitmapText
         x={x_pos + CELL_TEXT_MARGIN_LEFT}
         y={y_pos + CELL_TEXT_MARGIN_TOP}

@@ -73,9 +73,11 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     PIXI.Ticker.shared.add(
       () => {
         if (viewport.dirty) {
-          const cull = new Simple();
-          const bounds = viewport.getVisibleBounds();
-          cull.cull(bounds);
+
+          // using pixi's culling
+          // const cull = new Simple();
+          // const bounds = viewport.getVisibleBounds();
+          // cull.cull(bounds);
 
           gridHeadings({
             viewport,
