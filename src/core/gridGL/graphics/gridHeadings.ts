@@ -453,7 +453,7 @@ export function intersectsHeadingGridLine(world: PIXI.Point): { start: number, c
     for (const line of lastGridLinesRows) {
       if (Math.abs(world.y - line.y) < GRID_HEADING_RESIZE_TOLERANCE) {
         const start = gridOffsets.getRowPlacement(line.row);
-        return { start: start.y, row: line.row - 1, height: line.height };
+        return { start: start.y, row: line.row, height: line.height };
       }
     }
   }
