@@ -1,13 +1,10 @@
 import { useCallback } from 'react';
 import { Graphics, Container } from '@inlet/react-pixi';
 import { CodeIcon } from './primatives/CodeIcon';
-
 import FastBitmapText from './primatives/FastBitmapText';
-
-import { CELL_WIDTH, CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../constants/gridConstants';
+import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../constants/gridConstants';
 import { CellTypes } from '../../gridDB/db';
 import { colors } from '../../../theme/colors';
-import useWhyDidYouUpdate from '../../../hooks/useWhyDidYouUpdate';
 import { gridOffsets } from '../../gridDB/gridOffsets';
 
 interface CellPixiReactProps {
@@ -34,10 +31,8 @@ const CellPixiReact = (props: CellPixiReactProps) => {
       g.clear();
       if (x_pos === undefined || y_pos === undefined) return g;
 
-      // Change outline color based on cell type
+      // Change outline color based on cell type but don't draw TEXT cell outlines since it's handled by the grid
       if (props.type !== 'TEXT') {
-
-        // don't draw normal cell outlines since it's handled by the grid
         // g.lineStyle(1, colors.cellColorUserText, 0.75, 0.5, true);
 
         if (props.type === 'PYTHON') {
