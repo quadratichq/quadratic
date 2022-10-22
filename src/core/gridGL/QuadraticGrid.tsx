@@ -29,7 +29,7 @@ import { Cell } from '../gridDB/db';
 import { gridOffsets } from '../gridDB/gridOffsets';
 import { GetHeadingsDB } from '../gridDB/Cells/GetHeadingsDB';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
-import useWhyDidYouUpdate from '../../hooks/useWhyDidYouUpdate';
+import { UpdateHeading, updateHeadingDB } from '../gridDB/Cells/UpdateHeadingsDB';
 
 interface CellSized extends Cell {
   xPosition?: number;
@@ -62,6 +62,26 @@ export default function QuadraticGrid() {
     gridOffsets.headingResizing = newHeadingResizing;
   }, [setHeadingResizing]);
 
+  const saveHeadingResizing = useCallback(() => {
+    if (!headingResizing) return;
+    let change: UpdateHeading | undefined;
+    if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
+      change = {
+        column: headingResizing.column,
+        size: headingResizing.width,
+      };
+    } else if (headingResizing.row !== undefined && headingResizing.height !== undefined) {
+      change = {
+        row: headingResizing.row,
+        size: headingResizing.height,
+      };
+    }
+    if (change) {
+      gridOffsets.optimisticUpdate(change);
+      updateHeadingDB(change);
+    }
+  }, [headingResizing]);
+
   const forceRender = (): void => {
     const viewport = viewportRef.current;
     if (!viewport) return;
@@ -69,11 +89,14 @@ export default function QuadraticGrid() {
     viewport.dirty = true;
   };
 
-  const cells: CellSized[] = useMemo(() => {
+  useEffect(() => {
     if (headings) {
       gridOffsets.populate(headings.columns, headings.rows);
       forceRender();
     }
+  }, [headings]);
+
+  const cells: CellSized[] = useMemo(() => {
     if (cellsWithoutPosition) {
       forceRender();
       return cellsWithoutPosition.map(cell => {
@@ -152,7 +175,9 @@ export default function QuadraticGrid() {
       cursorWidth: column.width,
       cursorHeight: row.height,
     };
-  }, [interactionState.cursorPosition, headings])
+    // headingResizing is used by gridOffsets
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interactionState.cursorPosition, headings, headingResizing])
 
   const multiCursor = useMemo(() => {
     if (!headings || !interactionState.showMultiCursor) return;
@@ -168,7 +193,9 @@ export default function QuadraticGrid() {
       width: endColumn.x + endColumn.width - startColumn.x,
       height: endRow.y + endRow.height - startRow.y,
     }
-  }, [interactionState.multiCursorPosition, interactionState.showMultiCursor, headings])
+    // headingResizing is used by gridOffsets
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interactionState.multiCursorPosition, interactionState.showMultiCursor, headings, headingResizing])
 
   // Right click menu
   const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } = useMenuState();
@@ -181,6 +208,7 @@ export default function QuadraticGrid() {
     setEditorInteractionState,
     setHeadingResizing: setHeadingResizingCallback,
     headingResizing,
+    saveHeadingResizing,
   });
 
   const { onKeyDownCanvas } = useKeyboardCanvas({

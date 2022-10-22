@@ -1,6 +1,12 @@
 import { qdb } from '../db';
 
-export const UpdateHeadingDB = async (options: { row?: number, column?: number, size: number }) => {
+export interface UpdateHeading {
+  row?: number;
+  column?: number;
+  size: number;
+}
+
+export const updateHeadingDB = async (options: UpdateHeading): Promise<void> => {
   if (options.row !== undefined) {
     await qdb.rows.put({ id: options.row, size: options.size });
   } else if (options.column !== undefined) {

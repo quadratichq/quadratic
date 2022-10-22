@@ -1,5 +1,6 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
 import { HeadingResizing } from '../gridGL/interaction/usePointerEvents';
+import { UpdateHeading } from './Cells/UpdateHeadingsDB';
 import { Heading } from './db';
 
 export class GridOffsets {
@@ -114,6 +115,22 @@ export class GridOffsets {
       y: rowPlacement.y,
       width: columnPlacement.width,
       height: rowPlacement.height,
+    }
+  }
+
+  optimisticUpdate(change: UpdateHeading): void {
+    if (change.row !== undefined) {
+      if (this.rows[change.row]) {
+        this.rows[change.row].size = change.size;
+      } else {
+        this.rows[change.row] = { id: change.row, size: change.size };
+      }
+    } else if (change.column !== undefined) {
+      if (this.columns[change.column]) {
+        this.columns[change.column].size = change.size;
+      } else {
+        this.columns[change.column] = { id: change.column, size: change.size };
+      }
     }
   }
 }

@@ -16,6 +16,7 @@ interface IProps {
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   setHeadingResizing: (resize: HeadingResizing | undefined) => void;
+  saveHeadingResizing: () => void;
   headingResizing: HeadingResizing | undefined;
 }
 
@@ -229,7 +230,7 @@ export const usePointerEvents = (
     if (canvas) {
       const headingResize = intersectsHeadingGridLine(world);
       if (headingResize) {
-        canvas.style.cursor = headingResize.column ? "col-resize" : "row-resize";
+        canvas.style.cursor = headingResize.column !== undefined ? "col-resize" : "row-resize";
       } else {
         canvas.style.cursor = intersectsHeadings(world) ? 'pointer' : 'auto';
       }
@@ -239,12 +240,12 @@ export const usePointerEvents = (
   const pointerMoveResize = (world: PIXI.Point): void => {
     const downResize = props.headingResizing;
     if (!downResize) return;
-    if (downResize.column) {
+    if (downResize.column !== undefined) {
       const size = Math.max(0, world.x - downResize.start);
       if (size !== downResize.width) {
         props.setHeadingResizing({ ...downResize, width: size });
       }
-    } else if (downResize.row) {
+    } else if (downResize.row !== undefined) {
       const size = Math.max(0, world.y - downResize.start);
       if (size !== downResize.height) {
         props.setHeadingResizing({ ...downResize, height: size });
@@ -335,7 +336,9 @@ export const usePointerEvents = (
   };
 
   const onPointerUp = () => {
-    if (downPosition && !pointerMoved) {
+    if (props.headingResizing) {
+      props.saveHeadingResizing();
+    } else if (downPosition && !pointerMoved) {
       const timeout = window.setTimeout(() => setDoubleClickTimeout(undefined), DOUBLE_CLICK_TIME);
       setDoubleClickTimeout(timeout);
     }
