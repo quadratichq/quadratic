@@ -269,7 +269,7 @@ export default function QuadraticGrid() {
           onPointerUp={pointerEvents.onPointerUp}
           showHeadings={showHeadings}
         >
-          {/* {cells?.map((cell) => (
+          {cells?.map((cell) => (
             <CellPixiReact
               key={`${cell.x},${cell.y}`}
               xPosition={cell.xPosition}
@@ -290,8 +290,8 @@ export default function QuadraticGrid() {
               }
               showCellTypeOutlines={showCellTypeOutlines}
               array_cells={cell.array_cells}
-            ></CellPixiReact>
-          ))} */}
+            />
+          ))}
           <CursorPixiReact
             viewportRef={viewportRef}
             x={cursorX}

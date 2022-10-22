@@ -33,16 +33,17 @@ const CellPixiReact = (props: CellPixiReactProps) => {
       g.clear();
 
       // Change outline color based on cell type
-      if (props.type === 'TEXT') {
-        g.lineStyle(1, colors.cellColorUserText, 0.75, 0.5, true);
-      } else if (props.type === 'PYTHON') {
-        g.lineStyle(1, colors.cellColorUserPython, 0.75, 0.5, true);
-      } else if (props.type === 'COMPUTED') {
-        g.lineStyle(1, colors.independence, 0.75, 0.5, true);
-      }
+      if (props.type !== 'TEXT') {
+        // g.lineStyle(1, colors.cellColorUserText, 0.75, 0.5, true);
+        if (props.type === 'PYTHON') {
+          g.lineStyle(1, colors.cellColorUserPython, 0.75, 0.5, true);
+        } else if (props.type === 'COMPUTED') {
+          g.lineStyle(1, colors.independence, 0.75, 0.5, true);
+        }
 
-      // Draw outline
-      g.drawRect(x_pos, y_pos, props.width, props.height);
+        // Draw outline
+        g.drawRect(x_pos, y_pos, props.width, props.height);
+      }
 
       // for cells that output an array, draw an outline around the array
       if (!props.array_cells) return g;
