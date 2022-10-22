@@ -310,17 +310,22 @@ export function gridHeadings(props: IProps) {
 
       // only show the label if selected or mod calculation
       if (selected || mod === 0 || row % mod === 0) {
-        // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
-        let yPosition = y + currentHeight / 2;
-        const top = yPosition - halfCharacterHeight;
-        const bottom = yPosition + halfCharacterHeight;
-        if (selected || !(intersects.lineLineOneDimension(ySelectedStartLine1D.start, ySelectedStartLine1D.end, top, bottom) ||
-          intersects.lineLineOneDimension(ySelectedEndLine1D.start, ySelectedEndLine1D.end, top, bottom))) {
-          labelData.push({
-            text: row.toString(),
-            x: x + ROW_DIGIT_OFFSET.x,
-            y: yPosition + ROW_DIGIT_OFFSET.y,
-          });
+
+        // only show labels if height is large enough
+        if (currentHeight > halfCharacterHeight * 2) {
+
+          // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
+          let yPosition = y + currentHeight / 2;
+          const top = yPosition - halfCharacterHeight;
+          const bottom = yPosition + halfCharacterHeight;
+          if (selected || !(intersects.lineLineOneDimension(ySelectedStartLine1D.start, ySelectedStartLine1D.end, top, bottom) ||
+            intersects.lineLineOneDimension(ySelectedEndLine1D.start, ySelectedEndLine1D.end, top, bottom))) {
+            labelData.push({
+              text: row.toString(),
+              x: x + ROW_DIGIT_OFFSET.x,
+              y: yPosition + ROW_DIGIT_OFFSET.y,
+            });
+          }
         }
       }
       row++;
