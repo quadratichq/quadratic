@@ -12,8 +12,12 @@ function drawVerticalLines(graphics: PIXI.Graphics, bounds: PIXI.Rectangle): voi
   const offset = bounds.left - position;
   let size = 0;
   for (let x = bounds.left; x <= bounds.right; x += size) {
-    graphics.moveTo(x - offset, bounds.top);
-    graphics.lineTo(x - offset, bounds.bottom);
+
+    // don't draw grid lines when hidden
+    if (size !== 0) {
+      graphics.moveTo(x - offset, bounds.top);
+      graphics.lineTo(x - offset, bounds.bottom);
+    }
     size = gridOffsets.getColumnWidth(column);
     column++;
   }
@@ -24,8 +28,12 @@ function drawHorizontalLines(graphics: PIXI.Graphics, bounds: PIXI.Rectangle): v
   const offset = bounds.left - position;
   let size = 0;
   for (let y = bounds.left; y <= bounds.right; y += size) {
-    graphics.moveTo(bounds.left, y - offset);
-    graphics.lineTo(bounds.right, y - offset);
+
+    // don't draw grid lines when hidden
+    if (size !== 0) {
+      graphics.moveTo(bounds.left, y - offset);
+      graphics.lineTo(bounds.right, y - offset);
+    }
     size = gridOffsets.getRowHeight(row);
     row++;
   }
