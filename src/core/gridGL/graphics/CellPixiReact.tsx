@@ -7,6 +7,7 @@ import FastBitmapText from './primatives/FastBitmapText';
 import { CELL_WIDTH, CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../constants/gridConstants';
 import { CellTypes } from '../../gridDB/db';
 import { colors } from '../../../theme/colors';
+import useWhyDidYouUpdate from '../../../hooks/useWhyDidYouUpdate';
 
 interface CellPixiReactProps {
   x: number;

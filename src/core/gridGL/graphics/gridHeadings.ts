@@ -218,16 +218,21 @@ export function gridHeadings(props: IProps) {
 
       // only show the label if selected or mod calculation
       if (selected || mod === 0 || column % mod === 0) {
-        // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
-        let xPosition = x + currentWidth / 2;
-        const characterHalfWidth = characterSize.width * column.toString().length / 2 / viewport.scale.x;
-        const left = xPosition - characterHalfWidth;
-        const right = xPosition + characterHalfWidth;
+        const charactersWidth = characterSize.width * column.toString().length / viewport.scale.x;
 
-        // only when selected or not intersects one of the selected numbers
-        if (selected || !(intersects.lineLineOneDimension(xSelectedStartLine1D.start, xSelectedStartLine1D.end, left, right) ||
-          intersects.lineLineOneDimension(xSelectedEndLine1D.start, xSelectedEndLine1D.end, left, right))) {
-          labelData.push({ text: column.toString(), x: xPosition, y });
+        // hide labels that are too small for the width
+        if (currentWidth > charactersWidth) {
+
+          // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
+          let xPosition = x + currentWidth / 2;
+          const left = xPosition - charactersWidth / 2;
+          const right = xPosition + charactersWidth / 2;
+
+          // only when selected or not intersects one of the selected numbers
+          if (selected || !(intersects.lineLineOneDimension(xSelectedStartLine1D.start, xSelectedStartLine1D.end, left, right) ||
+            intersects.lineLineOneDimension(xSelectedEndLine1D.start, xSelectedEndLine1D.end, left, right))) {
+            labelData.push({ text: column.toString(), x: xPosition, y });
+          }
         }
       }
       column++;
@@ -368,9 +373,9 @@ export function gridHeadings(props: IProps) {
         leftovers.push(data);
       } else {
         const label = available[index];
-        label.visible = true;
         label.scale.set(inverseScale);
         label.position.set(data.x, data.y);
+        label.visible = true;
         available.splice(index, 1);
       }
     });

@@ -29,6 +29,7 @@ import { Cell } from '../gridDB/db';
 import { gridOffsets } from '../gridDB/gridOffsets';
 import { GetHeadingsDB } from '../gridDB/Cells/GetHeadingsDB';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
+import useWhyDidYouUpdate from '../../hooks/useWhyDidYouUpdate';
 
 interface CellSized extends Cell {
   xPosition?: number;
@@ -56,10 +57,10 @@ export default function QuadraticGrid() {
     }
   }, []);
 
-  const setHeadingResizingCallback = throttle((newHeadingResizing: HeadingResizing | undefined): void => {
+  const setHeadingResizingCallback = useCallback((newHeadingResizing: HeadingResizing | undefined): void => {
     setHeadingResizing(newHeadingResizing);
     gridOffsets.headingResizing = newHeadingResizing;
-  }, 16);
+  }, [setHeadingResizing]);
 
   const forceRender = (): void => {
     const viewport = viewportRef.current;
@@ -241,7 +242,7 @@ export default function QuadraticGrid() {
           onPointerUp={pointerEvents.onPointerUp}
           showHeadings={showHeadings}
         >
-          {cells?.map((cell) => (
+          {/* {cells?.map((cell) => (
             <CellPixiReact
               key={`${cell.x},${cell.y}`}
               xPosition={cell.xPosition}
@@ -263,7 +264,7 @@ export default function QuadraticGrid() {
               showCellTypeOutlines={showCellTypeOutlines}
               array_cells={cell.array_cells}
             ></CellPixiReact>
-          ))}
+          ))} */}
           <CursorPixiReact
             viewportRef={viewportRef}
             x={cursorX}
