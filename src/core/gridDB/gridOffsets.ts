@@ -1,7 +1,16 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
-import { HeadingResizing } from '../gridGL/interaction/usePointerEvents';
 import { UpdateHeading } from './Cells/UpdateHeadingsDB';
 import { Heading } from './db';
+
+export interface HeadingResizing {
+  x: number;
+  y: number;
+  start: number;
+  column?: number;
+  row?: number;
+  width?: number;
+  height?: number;
+}
 
 export class GridOffsets {
   private columns: Record<string, Heading> = {};
@@ -16,14 +25,14 @@ export class GridOffsets {
   }
 
   getColumnWidth(column: number): number {
-    if (this.headingResizing?.column === column && this.headingResizing.width !== undefined) {
+    if (this.headingResizing?.column === column && this.headingResizing?.width !== undefined) {
       return this.headingResizing.width;
     }
     return this.columns[column]?.size ?? CELL_WIDTH;
   }
 
   getRowHeight(row: number): number {
-    if (this.headingResizing?.row === row && this.headingResizing.height !== undefined) {
+    if (this.headingResizing?.row === row && this.headingResizing?.height !== undefined) {
       return this.headingResizing.height;
     }
     return this.rows[row]?.size ?? CELL_HEIGHT;
@@ -134,5 +143,3 @@ export class GridOffsets {
     }
   }
 }
-
-export const gridOffsets = new GridOffsets();

@@ -1,34 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import useWindowDimensions from '../../hooks/useWindowDimensions';
-import type { Viewport } from 'pixi-viewport';
-import { Stage } from '@inlet/react-pixi';
-import ViewportComponent from './graphics/ViewportComponent';
+import { useCallback, useEffect, useState } from 'react';
 import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useLoading } from '../../contexts/LoadingContext';
-import CellPixiReact from './graphics/CellPixiReact';
-import CursorPixiReact from './graphics/CursorPixiReact';
-import MultiCursorPixiReact from './graphics/MultiCursorPixiReact';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
-import { useKeyboardCanvas } from './interaction/useKeyboardCanvas';
-import { HeadingResizing, usePointerEvents } from './interaction/usePointerEvents';
-import { CellInput } from './interaction/CellInput';
-import { colors } from '../../theme/colors';
 import { useMenuState } from '@szhsin/react-menu';
-import RightClickMenu from '../../ui/menus/RightClickMenu';
-import { ViewportEventRegister } from './interaction/ViewportEventRegister';
-import useLocalStorage from '../../hooks/useLocalStorage';
-import { gridHeadingsGlobals } from './graphics/gridHeadings';
-import { axesLinesGlobals } from './graphics/axesLines';
-import { gridLinesGlobals } from './graphics/gridLines';
-import { Size } from './types/size';
 import { Cell } from '../gridDB/db';
-import { gridOffsets } from '../gridDB/gridOffsets';
-import { GetHeadingsDB } from '../gridDB/Cells/GetHeadingsDB';
-import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
-import { UpdateHeading, updateHeadingDB } from '../gridDB/Cells/UpdateHeadingsDB';
+import { PixiApp } from './pixiApp/PixiApp';
+import { useHeadings } from '../gridDB/useHeadings';
+import { useGridSettings } from './useGridSettings';
 
 interface CellSized extends Cell {
   xPosition?: number;
@@ -39,188 +20,128 @@ interface CellSized extends Cell {
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
-  const viewportRef = useRef<Viewport>();
-  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+
+  const [app, setApp] = useState<PixiApp>();
+  useEffect(() => setApp(new PixiApp()), []);
+
+  const [container, setContainer] = useState<HTMLDivElement>();
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) setContainer(node);
+  }, []);
+  useEffect(() => {
+    if (app && container) app.attach(container);
+  }, [app, container])
+
 
   // Live query to update cells
-  const cellsWithoutPosition = useLiveQuery(() => GetCellsDB());
-  const headings = useLiveQuery(() => GetHeadingsDB());
-  const [headingResizing, setHeadingResizing] = useState<HeadingResizing | undefined>();
+  const cells = useLiveQuery(() => GetCellsDB());
 
-  const [canvasSize, setCanvasSize] = useState<Size | undefined>(undefined);
-  const [container, setContainer] = useState<HTMLDivElement>();
-  const containerRef = useCallback((node) => {
-    if (node) {
-      setCanvasSize({ width: node.offsetWidth, height: node.offsetHeight });
-      setContainer(node);
-    }
-  }, []);
-
-  const setHeadingResizingCallback = useCallback((newHeadingResizing: HeadingResizing | undefined): void => {
-    setHeadingResizing(newHeadingResizing);
-    gridOffsets.headingResizing = newHeadingResizing;
-  }, [setHeadingResizing]);
-
-  const saveHeadingResizing = useCallback(() => {
-    if (!headingResizing) return;
-    let change: UpdateHeading | undefined;
-    if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
-      change = {
-        column: headingResizing.column,
-        size: headingResizing.width,
-      };
-    } else if (headingResizing.row !== undefined && headingResizing.height !== undefined) {
-      change = {
-        row: headingResizing.row,
-        size: headingResizing.height,
-      };
-    }
-    if (change) {
-      gridOffsets.optimisticUpdate(change);
-      updateHeadingDB(change);
-    }
-  }, [headingResizing]);
-
-  const forceRender = (): void => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    viewport.emit('zoomed');
-    viewport.dirty = true;
-  };
-
+  const { headings, updateHeadings } = useHeadings(app);
   useEffect(() => {
-    if (headings) {
-      gridOffsets.populate(headings.columns, headings.rows);
-      forceRender();
+    if (app && headings) {
+      app.gridOffsets.populate(headings.columns, headings.rows);
     }
-  }, [headings]);
+  }, [app, headings]);
 
-  const cells: CellSized[] = useMemo(() => {
-    if (cellsWithoutPosition) {
-      forceRender();
-      return cellsWithoutPosition.map(cell => {
-        const result = gridOffsets.getCell(cell.x, cell.y);
-        if (headingResizing) {
-          if (headingResizing.width && cell.x === headingResizing.x) {
-            result.width = headingResizing.width;
-          } else if (headingResizing.height && cell.y === headingResizing.y) {
-            result.height = headingResizing.height;
-          }
-        }
-        return {
-          ...cell,
-          xPosition: result.x,
-          yPosition: result.y,
-          width: result.width,
-          height: result.height,
-        };
-      });
-    }
-    return [];
-    // headingResizing is used by gridOffsets
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cellsWithoutPosition, headings, headingResizing]);
-
-  useEffect(() => {
-    if (headingResizing) {
-      forceRender();
-    }
-  }, [headingResizing]);
-
-  useEffect(() => {
-    setCanvasSize({
-      width: container?.offsetWidth ?? 0,
-      height: container?.offsetHeight ?? 0,
-    });
-  }, [windowWidth, windowHeight, container]);
+  // const cells: CellSized[] = useMemo(() => {
+  //   if (cellsWithoutPosition) {
+  //     return cellsWithoutPosition.map(cell => {
+  //       const result = gridOffsets.getCell(cell.x, cell.y);
+  //       if (headingResizing) {
+  //         if (headingResizing.width && cell.x === headingResizing.x) {
+  //           result.width = headingResizing.width;
+  //         } else if (headingResizing.height && cell.y === headingResizing.y) {
+  //           result.height = headingResizing.height;
+  //         }
+  //       }
+  //       return {
+  //         ...cell,
+  //         xPosition: result.x,
+  //         yPosition: result.y,
+  //         width: result.width,
+  //         height: result.height,
+  //       };
+  //     });
+  //   }
+  //   return [];
+  //   // headingResizing is used by gridOffsets
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [cellsWithoutPosition, headings]);
 
   // Local Storage Config
-  const [showGridAxes] = useLocalStorage('showGridAxes', true);
-  const [showHeadings] = useLocalStorage('showHeadings', true);
-  const [showGridLines] = useLocalStorage('showGridLines', true);
-  const [showCellTypeOutlines] = useLocalStorage('showCellTypeOutlines', true);
-
-  // render on canvasSize update (when window is resized)
-  useEffect(() => {
-    forceRender();
-  }, [canvasSize]);
-
-  useEffect(() => {
-    axesLinesGlobals.showGridAxes = showGridAxes;
-    gridHeadingsGlobals.showHeadings = showHeadings;
-    gridLinesGlobals.show = showGridLines;
-    forceRender();
-  }, [showGridAxes, showHeadings, showGridLines]);
+  const settings = useGridSettings();
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
-
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   useEffect(() => {
-    gridHeadingsGlobals.interactionState = interactionState;
-    if (viewportRef.current) {
-      viewportRef.current.dirty = true;
+    if (app) {
+      app.settings.populate({
+        settings,
+        interactionState,
+        editorInteractionState,
+      });
     }
-  }, [interactionState]);
+  }, [app, settings, interactionState, editorInteractionState]);
 
   // Editor Interaction State hook
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
-  const { cursorX, cursorY, cursorWidth, cursorHeight } = useMemo(() => {
-    if (!headings) return { cursorX: 0, cursorY: 0, cursorWidth: CELL_WIDTH, cursorHeight: CELL_HEIGHT };
-    const cell = interactionState.cursorPosition;
-    const column = gridOffsets.getColumnPlacement(cell.x);
-    const row = gridOffsets.getRowPlacement(cell.y);
-    return {
-      cursorX: column.x,
-      cursorY: row.y,
-      cursorWidth: column.width,
-      cursorHeight: row.height,
-    };
-    // headingResizing is used by gridOffsets
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interactionState.cursorPosition, headings, headingResizing])
+  // const { cursorX, cursorY, cursorWidth, cursorHeight } = useMemo(() => {
+  //   if (!headings) return { cursorX: 0, cursorY: 0, cursorWidth: CELL_WIDTH, cursorHeight: CELL_HEIGHT };
+  //   const cell = interactionState.cursorPosition;
+  //   const column = gridOffsets.getColumnPlacement(cell.x);
+  //   const row = gridOffsets.getRowPlacement(cell.y);
+  //   return {
+  //     cursorX: column.x,
+  //     cursorY: row.y,
+  //     cursorWidth: column.width,
+  //     cursorHeight: row.height,
+  //   };
+  //   // headingResizing is used by gridOffsets
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [interactionState.cursorPosition, headings, headingResizing])
 
-  const multiCursor = useMemo(() => {
-    if (!headings || !interactionState.showMultiCursor) return;
-    const start = interactionState.multiCursorPosition.originPosition;
-    const startColumn = gridOffsets.getColumnPlacement(start.x);
-    const startRow = gridOffsets.getRowPlacement(start.y);
-    const end = interactionState.multiCursorPosition.terminalPosition;
-    const endColumn = gridOffsets.getColumnPlacement(end.x);
-    const endRow = gridOffsets.getRowPlacement(end.y);
-    return {
-      x: startColumn.x,
-      y: startRow.y,
-      width: endColumn.x + endColumn.width - startColumn.x,
-      height: endRow.y + endRow.height - startRow.y,
-    }
-    // headingResizing is used by gridOffsets
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interactionState.multiCursorPosition, interactionState.showMultiCursor, headings, headingResizing])
+  // const multiCursor = useMemo(() => {
+  //   if (!headings || !interactionState.showMultiCursor) return;
+  //   const start = interactionState.multiCursorPosition.originPosition;
+  //   const startColumn = gridOffsets.getColumnPlacement(start.x);
+  //   const startRow = gridOffsets.getRowPlacement(start.y);
+  //   const end = interactionState.multiCursorPosition.terminalPosition;
+  //   const endColumn = gridOffsets.getColumnPlacement(end.x);
+  //   const endRow = gridOffsets.getRowPlacement(end.y);
+  //   return {
+  //     x: startColumn.x,
+  //     y: startRow.y,
+  //     width: endColumn.x + endColumn.width - startColumn.x,
+  //     height: endRow.y + endRow.height - startRow.y,
+  //   }
+  //   // headingResizing is used by gridOffsets
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [interactionState.multiCursorPosition, interactionState.showMultiCursor, headings, headingResizing])
 
   // Right click menu
   const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } = useMenuState();
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
 
-  const pointerEvents = usePointerEvents({
-    viewportRef,
-    interactionState,
-    setInteractionState,
-    setEditorInteractionState,
-    setHeadingResizing: setHeadingResizingCallback,
-    headingResizing,
-    saveHeadingResizing,
-  });
+  // const pointerEvents = usePointerEvents({
+  //   viewportRef,
+  //   interactionState,
+  //   setInteractionState,
+  //   setEditorInteractionState,
+  //   setHeadingResizing: setHeadingResizingCallback,
+  //   headingResizing,
+  //   saveHeadingResizing,
+  // });
 
-  const { onKeyDownCanvas } = useKeyboardCanvas({
-    interactionState,
-    setInteractionState,
-    editorInteractionState,
-    setEditorInteractionState,
-    viewportRef,
-  });
+  // const { onKeyDownCanvas } = useKeyboardCanvas({
+  //   interactionState,
+  //   setInteractionState,
+  //   editorInteractionState,
+  //   setEditorInteractionState,
+  //   viewportRef,
+  // });
 
-  if (loading || !canvasSize || !headings || !cellsWithoutPosition) return null;
+  if (loading) return null;
 
   return (
     <div
@@ -238,7 +159,7 @@ export default function QuadraticGrid() {
         toggleRightClickMenu(true);
       }}
     >
-      <Stage
+      {/* <Stage
         id="QuadraticCanvasID"
         width={canvasSize.width}
         height={canvasSize.height}
@@ -255,7 +176,7 @@ export default function QuadraticGrid() {
         onKeyDown={(event) => onKeyDownCanvas(event)}
         style={{
           outline: 'none',
-          WebkitTapHighlightColor: 'rgba(255, 255, 255, 0)' /* mobile webkit */,
+          WebkitTapHighlightColor: 'rgba(255, 255, 255, 0)',
         }}
         // Disable rendering on each frame
         raf={false}
@@ -329,7 +250,7 @@ export default function QuadraticGrid() {
         anchorPoint={rightClickPoint}
         onClose={() => toggleRightClickMenu(false)}
         interactionState={interactionState}
-      />
+      /> */}
     </div>
   );
 }
