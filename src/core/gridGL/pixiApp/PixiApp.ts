@@ -34,7 +34,7 @@ export class PixiApp {
 
   constructor() {
     this.gridOffsets = new GridOffsets(this);
-    this.grid = new gridSpare();
+    this.grid = new gridSpare(this);
 
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'pixi_canvas';

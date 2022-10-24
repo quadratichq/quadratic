@@ -24,51 +24,39 @@ export class Cells extends Container {
   }
 
   private draw() {
-    const { viewport, grid } = this.app;
+    const { viewport, grid, gridOffsets } = this.app;
     this.labels.clear();
     this.cellBackgrounds.clear();
 
-    const bounds = viewport.getVisibleBounds();
-    let columnIndex = this.app.gridOffsets.getColumnIndex(bounds.left);
-    let column = columnIndex.index;
-    const columnStart = column;
-    const offsetX = bounds.left - columnIndex.position;
-    const rowIndex = this.app.gridOffsets.getRowIndex(bounds.top);
-    let row = rowIndex.index;
-    const offsetY = bounds.top - rowIndex.position;
-    let sizeY = 0;
-    let nextY = this.app.gridOffsets.getRowHeight(row);
-    let maxColumn = 0;
-    for (let y = bounds.top; y <= bounds.bottom; y += sizeY) {
-      sizeY = nextY;
-      nextY = this.app.gridOffsets.getRowHeight(row + 1);
-      let sizeX = 0;
-      let nextX = this.app.gridOffsets.getColumnWidth(column);
-      for (let x = bounds.left; x <= bounds.right + nextX; x += sizeX) {
-        sizeX = nextX;
-        nextX = this.app.gridOffsets.getColumnWidth(column + 1);
+    const bounds = grid.getBounds(viewport.getVisibleBounds());
+    const xStart = gridOffsets.getColumnPlacement(bounds.left).x;
+    let y = gridOffsets.getRowPlacement(bounds.top).y;
+    for (let row = bounds.top; row <= bounds.bottom; row++) {
+      let x = xStart;
+      const height = gridOffsets.getRowHeight(row);
+      for (let column = bounds.left; column <= bounds.right; column++) {
+        const width = gridOffsets.getColumnWidth(column);
         const cell = grid.get(column, row);
         if (cell) {
           drawCell({
             graphics: this.cellBackgrounds,
             cell,
-            x: x - offsetX,
-            y: y - offsetY,
-            width: sizeX,
-            height: sizeY,
+            x,
+            y,
+            width,
+            height,
             gridOffsets: this.app.gridOffsets,
           });
           this.labels.add({
-            x: x - offsetX,
-            y: y - offsetY,
+            x: x,
+            y: y,
             text: cell.value,
           });
         }
-        column++;
+        x += width;
       }
-      row++;
-      maxColumn = Math.max(column, maxColumn)
-      column = columnStart;
+      x = xStart;
+      y += height;
     }
     this.labels.update();
   }
