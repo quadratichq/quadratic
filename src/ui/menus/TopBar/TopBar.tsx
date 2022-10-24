@@ -1,9 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import { Button, Tooltip } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Avatar, AvatarGroup } from '@mui/material';
-import { useAuth0 } from '@auth0/auth0-react';
-import { Menu, MenuHeader, MenuItem, SubMenu } from '@szhsin/react-menu';
 
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { FormatMenu } from './SubMenus/FormatMenu';
@@ -17,8 +14,6 @@ import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximize
 import { isMobileOnly } from 'react-device-detect';
 
 export const TopBar = () => {
-  const { user, logout } = useAuth0();
-
   return (
     <div
       onContextMenu={(event) => {
@@ -119,31 +114,6 @@ export const TopBar = () => {
           </Tooltip>
         )}
         <ZoomDropdown></ZoomDropdown>
-
-        {/* <AvatarGroup> */}
-        <Menu
-          menuButton={
-            <Button>
-              <Avatar
-                sx={{
-                  bgcolor: colors.quadraticPrimary,
-                  width: 24,
-                  height: 24,
-                  fontSize: '0.9rem',
-                }}
-                srcSet={user?.picture}
-              >
-                You
-              </Avatar>
-            </Button>
-          }
-        >
-          <MenuHeader>{user?.name}</MenuHeader>
-
-          <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>Log Out</MenuItem>
-        </Menu>
-
-        {/* </AvatarGroup> */}
       </Box>
     </div>
   );
