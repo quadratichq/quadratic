@@ -4,7 +4,7 @@ import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
 import { MenuBookOutlined, FileOpenOutlined, SaveOutlined, BugReportOutlined } from '@mui/icons-material';
 import { isMobileOnly } from 'react-device-detect';
-
+import { useGridSettings } from '../../../../core/gridGL/useGridSettings';
 import '@szhsin/react-menu/dist/index.css';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
@@ -18,15 +18,12 @@ import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 
 export const QuadraticMenu = () => {
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
-  const [showGridAxes, setShowGridAxes] = useLocalStorage('showGridAxes', true);
-  const [showHeadings, setShowHeadings] = useLocalStorage('showHeadings', true);
-  const [showGridLines, setShowGridLines] = useLocalStorage('showGridLines', true);
-  const [showCellTypeOutlines, setShowCellTypeOutlines] = useLocalStorage('showCellTypeOutlines', true);
+  const settings = useGridSettings();
 
   // On Mobile set Headers to not visible by default
   useEffect(() => {
     if (isMobileOnly) {
-      setShowHeadings(false);
+      settings.setShowHeadings(false);
     }
     // eslint-disable-next-line
   }, []);
@@ -58,20 +55,20 @@ export const QuadraticMenu = () => {
       </SubMenu>
       <SubMenu label="View">
         <MenuHeader>UI</MenuHeader>
-        <MenuItem type="checkbox" checked={showHeadings} onClick={() => setShowHeadings(!showHeadings)}>
+        <MenuItem type="checkbox" checked={settings.showHeadings} onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
           Show Headings
         </MenuItem>
         <MenuHeader>Grid</MenuHeader>
-        <MenuItem type="checkbox" checked={showGridAxes} onClick={() => setShowGridAxes(!showGridAxes)}>
+        <MenuItem type="checkbox" checked={settings.showGridAxes} onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}>
           Show Axis
         </MenuItem>
-        <MenuItem type="checkbox" checked={showGridLines} onClick={() => setShowGridLines(!showGridLines)}>
+        <MenuItem type="checkbox" checked={settings.showGridLines} onClick={() => settings.setShowGridLines(!settings.showGridLines)}>
           Show Grid Lines
         </MenuItem>
         <MenuItem
           type="checkbox"
-          checked={showCellTypeOutlines}
-          onClick={() => setShowCellTypeOutlines(!showCellTypeOutlines)}
+          checked={settings.showCellTypeOutlines}
+          onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}
         >
           Show Cell Type Outlines
         </MenuItem>

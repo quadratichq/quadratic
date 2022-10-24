@@ -43,6 +43,8 @@ export class GridHeadings extends Container {
   private columnRect: Rectangle | undefined;
   private cornerRect: Rectangle | undefined;
 
+  dirty = true;
+
   constructor(app: PixiApp) {
     super();
     this.app = app;
@@ -310,16 +312,17 @@ export class GridHeadings extends Container {
     this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
   };
 
-  update(dirty: boolean) {
+  update() {
+    if (!this.dirty) return;
     const { selectedColumns, selectedRows } = this.createSelectedArrays();
 
-    // only redraw headings if dirty or selection has changed
-    if (
-      !dirty &&
-      isArrayShallowEqual(selectedColumns, this.selectedColumns) &&
-      isArrayShallowEqual(selectedRows, this.selectedRows)
-    )
-      return;
+    // // only redraw headings if dirty or selection has changed
+    // if (
+    //   !dirty &&
+    //   isArrayShallowEqual(selectedColumns, this.selectedColumns) &&
+    //   isArrayShallowEqual(selectedRows, this.selectedRows)
+    // )
+    //   return;
 
     this.labels.clear();
     this.selectedColumns = selectedColumns;

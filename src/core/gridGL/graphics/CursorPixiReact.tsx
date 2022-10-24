@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { colors } from '../../../theme/colors';
 import { Graphics, Container } from '@inlet/react-pixi';
 import { Viewport } from 'pixi-viewport';
+
 interface CursorPixiReactProps {
   viewportRef?: React.MutableRefObject<Viewport | undefined>;
   x: number;

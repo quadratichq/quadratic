@@ -1,21 +1,11 @@
-import { AxesLines } from '../UI/AxesLines';
-import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
-import { GridLines } from '../UI/GridLines';
 import { PixiApp } from './PixiApp';
 
 export class Update {
   private pixiApp: PixiApp;
   private raf?: number;
-  private gridLines: GridLines;
-  private axesLines: AxesLines;
-  private headings: GridHeadings;
 
   constructor(app: PixiApp) {
     this.pixiApp = app;
-
-    this.gridLines = app.viewport.addChild(new GridLines(app));
-    this.axesLines = app.viewport.addChild(new AxesLines(app));
-    this.headings = app.viewport.addChild(new GridHeadings(app));
   }
 
   start(): void {
@@ -34,18 +24,16 @@ export class Update {
   private update = (): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
-    if (app.viewport.dirty) {
+    const rendererDirty = app.viewport.dirty || app.gridLines.dirty || app.axesLines.dirty || app.headings.dirty || app.cells.dirty || app.cursor.dirty;
+
+    app.gridLines.update();
+    app.axesLines.update();
+    app.headings.update();
+    app.cells.update();
+    app.cursor.update();
+
+    if (rendererDirty) {
       app.viewport.dirty = false;
-
-      if (app.dirty) {
-        this.gridLines.update();
-        this.axesLines.update();
-      }
-
-      // headings only update on change or if app.dirty is true
-      this.headings.update(app.dirty);
-
-      app.dirty = false;
       app.renderer.render(app.stage);
     }
     this.raf = requestAnimationFrame(this.update);

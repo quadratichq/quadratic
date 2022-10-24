@@ -5,6 +5,7 @@ import { PixiApp } from '../pixiApp/PixiApp';
 
 export class GridLines extends Graphics {
   private app: PixiApp;
+  dirty = true;
 
   constructor(app: PixiApp) {
     super();
@@ -12,26 +13,28 @@ export class GridLines extends Graphics {
   }
 
   update() {
-    if (!this.app.settings.showGridLines) {
-      this.visible = false;
-      return;
+    if (this.dirty) {
+      this.dirty = false;
+      if (!this.app.settings.showGridLines) {
+        this.visible = false;
+        return;
+      }
+
+      const gridAlpha = calculateAlphaForGridLines(this.app.viewport);
+      if (gridAlpha === 0) {
+        this.visible = false;
+        return;
+      }
+
+      this.alpha = gridAlpha;
+      this.visible = true;
+      this.clear();
+
+      this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
+      const bounds = this.app.viewport.getVisibleBounds();
+      this.drawVerticalLines(bounds);
+      this.drawHorizontalLines(bounds);
     }
-
-    const gridAlpha = calculateAlphaForGridLines(this.app.viewport);
-    if (gridAlpha === 0) {
-      this.visible = false;
-      return;
-    }
-
-    this.alpha = gridAlpha;
-    this.visible = true;
-    this.clear();
-
-    this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
-    const bounds = this.app.viewport.getVisibleBounds();
-    this.drawVerticalLines(bounds);
-    this.drawHorizontalLines(bounds);
-
   }
 
   private drawVerticalLines(bounds: Rectangle): void {
@@ -54,9 +57,9 @@ export class GridLines extends Graphics {
   private drawHorizontalLines(bounds: Rectangle): void {
     const { index, position } = this.app.gridOffsets.getRowIndex(bounds.top);
     let row = index;
-    const offset = bounds.left - position;
+    const offset = bounds.top - position;
     let size = 0;
-    for (let y = bounds.left; y <= bounds.right; y += size) {
+    for (let y = bounds.top; y <= bounds.bottom; y += size) {
 
       // don't draw grid lines when hidden
       if (size !== 0) {
