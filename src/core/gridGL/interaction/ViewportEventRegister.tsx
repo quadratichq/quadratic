@@ -3,7 +3,7 @@ import { zoomStateAtom } from '../../../atoms/zoomStateAtom';
 import type { Viewport } from 'pixi-viewport';
 import { useRecoilState } from 'recoil';
 import { ZOOM_ANIMATION_TIME_MS } from '../../../constants/gridConstants';
-import { zoomToFit } from './zoom';
+import { zoomToFit } from '../helpers/zoom';
 
 interface IProps {
   viewport: Viewport;

@@ -1,8 +1,8 @@
 import { Point } from 'pixi.js';
 import { PixiApp } from '../pixiApp/PixiApp';
+import { DOUBLE_CLICK_TIME } from './inputUtils';
 
 const MINIMUM_MOVE_POSITION = 5;
-const DOUBLE_CLICK_TIME = 500;
 
 export class InputDown {
   private app: PixiApp;

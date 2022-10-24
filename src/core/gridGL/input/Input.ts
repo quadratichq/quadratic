@@ -1,16 +1,16 @@
 import { InteractionEvent } from 'pixi.js';
 import { PixiApp } from '../pixiApp/PixiApp';
-import { HeadingResize } from './HeadingResize';
+import { inputHeading } from './inputHeading';
 import { InputDown } from './InputDown';
 
 export class Input {
   private app: PixiApp;
-  private headingResize: HeadingResize;
+  private headingResize: inputHeading;
   private inputDown: InputDown;
 
   constructor(app: PixiApp) {
     this.app = app;
-    this.headingResize = new HeadingResize(app);
+    this.headingResize = new inputHeading(app);
     this.inputDown = new InputDown(app);
     const viewport = app.viewport;
     viewport.on('pointerdown', this.pointerDown);

@@ -3,7 +3,7 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { getGridColumnMinMax, getGridMinMax, getGridRowMinMax } from '../../../helpers/getGridMinMax';
 
 export async function selectAllCells(options: {
-  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
+  setInteractionState: (value: GridInteractionState) => void;
   interactionState: GridInteractionState;
   viewport?: Viewport;
   column?: number;
@@ -49,7 +49,7 @@ export async function selectAllCells(options: {
 }
 
 export async function selectColumns(options: {
-  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
+  setInteractionState: (value: GridInteractionState) => void;
   interactionState: GridInteractionState;
   viewport?: Viewport;
   start: number;
@@ -85,7 +85,7 @@ export async function selectColumns(options: {
 }
 
 export async function selectRows(options: {
-  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
+  setInteractionState: (value: GridInteractionState) => void;
   interactionState: GridInteractionState;
   viewport?: Viewport;
   start: number;
