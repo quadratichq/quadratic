@@ -23,7 +23,7 @@ export const QuadraticMenu = () => {
   const [showHeadings, setShowHeadings] = useLocalStorage('showHeadings', true);
   const [showGridLines, setShowGridLines] = useLocalStorage('showGridLines', true);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useLocalStorage('showCellTypeOutlines', true);
-  const { user, logout } = useAuth0();
+  const { isAuthenticated, user, logout } = useAuth0();
 
   // On Mobile set Headers to not visible by default
   useEffect(() => {
@@ -90,10 +90,12 @@ export const QuadraticMenu = () => {
         </MenuItem>
       </SubMenu>
 
-      <SubMenu label="Account">
-        <MenuHeader>{user?.name}</MenuHeader>
-        <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>Log Out</MenuItem>
-      </SubMenu>
+      {isAuthenticated && (
+        <SubMenu label="Account">
+          <MenuHeader>{user?.name}</MenuHeader>
+          <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>Log Out</MenuItem>
+        </SubMenu>
+      )}
 
       <SubMenu label="Help">
         <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>

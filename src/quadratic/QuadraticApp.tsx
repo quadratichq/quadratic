@@ -31,16 +31,19 @@ export default function QuadraticApp() {
     }
   }, [loading, incrementLoadingCount]);
 
-  if (Auth0IsLoading) {
-    return <QuadraticLoading></QuadraticLoading>;
-  }
+  // Auth0 is Optional
+  if (process.env.REACT_APP_AUTH0_DOMAIN) {
+    if (Auth0IsLoading) {
+      return <QuadraticLoading></QuadraticLoading>;
+    }
 
-  if (Auth0Error) {
-    captureException(Auth0Error);
-    return <div>Authentication Error: {Auth0Error.message}</div>;
-  }
+    if (Auth0Error) {
+      captureException(Auth0Error);
+      return <div>Authentication Error: {Auth0Error.message}</div>;
+    }
 
-  if (!Auth0IsAuthenticated) loginWithRedirect({ screen_hint: 'signup' });
+    if (!Auth0IsAuthenticated) loginWithRedirect({ screen_hint: 'signup' });
+  }
 
   return (
     <RecoilRoot>
