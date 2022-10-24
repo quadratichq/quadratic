@@ -15,8 +15,8 @@ import { gridSpare } from '../../gridDB/gridSparse';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
-  private canvas: HTMLCanvasElement;
   private update: Update;
+  canvas: HTMLCanvasElement;
   gridLines: GridLines;
   axesLines: AxesLines;
   cursor: Cursor;

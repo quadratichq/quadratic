@@ -45,16 +45,18 @@ export default function QuadraticGrid() {
   const settings = useGridSettings();
 
   // Interaction State hook
-  const [interactionState] = useRecoilState(gridInteractionStateAtom);
-  const [editorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   useEffect(() => {
     if (app) {
       app.settings.populate({
         interactionState,
+        setInteractionState,
         editorInteractionState,
+        setEditorInteractionState,
       });
     }
-  }, [app, settings, interactionState, editorInteractionState]);
+  }, [app, settings, interactionState, setInteractionState, editorInteractionState, setEditorInteractionState]);
 
 
   // Right click menu

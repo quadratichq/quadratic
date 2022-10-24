@@ -7,7 +7,9 @@ export class PixiAppSettings {
   private app: PixiApp;
   private settings!: GridSettings;
   interactionState = gridInteractionStateDefault;
+  setInteractionState?: (value: GridInteractionState) => void;
   editorInteractionState = editorInteractionStateDefault;
+  setEditorInteractionState?: (value: EditorInteractionState) => void;
 
   constructor(app: PixiApp) {
     this.app = app;
@@ -33,10 +35,14 @@ export class PixiAppSettings {
 
   populate(options: {
     interactionState: GridInteractionState;
+    setInteractionState: (value: GridInteractionState) => void;
     editorInteractionState: EditorInteractionState;
+    setEditorInteractionState: (value: EditorInteractionState) => void;
   }) {
     this.interactionState = options.interactionState;
+    this.setInteractionState = options.setInteractionState;
     this.editorInteractionState = options.editorInteractionState;
+    this.setEditorInteractionState = options.setEditorInteractionState;
   }
 
   get showGridLines(): boolean {
