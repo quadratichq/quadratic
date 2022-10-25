@@ -109,8 +109,15 @@ export const BottomBar = () => {
         }}
       >
         <span>✓ Python 3.9.5</span>
-        <span>✕ SQL</span>
-        <span>✕ JS</span>
+        <span
+          style={{
+            backgroundColor: colors.quadraticPrimary,
+            padding: '2px 5px 2px 5px',
+            borderRadius: '2px',
+          }}
+        >
+          ALPHA
+        </span>
       </Box>
     </div>
   );
