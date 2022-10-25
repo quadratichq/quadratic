@@ -61,12 +61,12 @@ _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 - [x] Open and Save files locally
 - [x] Python (WASM)
 - [x] Pandas Support
-- [ ] Quadratic Cloud Beta
-- [ ] Database Connection Support (issue [#35](https://github.com/quadratichq/quadratic/issues/35))
-- [ ] SQL Support (issue [#34](https://github.com/quadratichq/quadratic/issues/34))
-- [ ] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
 - [ ] Moving cells and resizing columns
 - [ ] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
+- [ ] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
+- [ ] Database Connection Support (issue [#35](https://github.com/quadratichq/quadratic/issues/35))
+- [ ] SQL Support (issue [#34](https://github.com/quadratichq/quadratic/issues/34))
+- [ ] Quadratic Cloud Beta
 
 **Feature request or bug report?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
 
