@@ -109,9 +109,11 @@ export const BottomBar = () => {
         }}
       >
         <span>✓ Python 3.9.5</span>
+        <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
         <span
           style={{
-            backgroundColor: colors.quadraticPrimary,
+            color: '#ffffff',
+            backgroundColor: colors.quadraticThird,
             padding: '2px 5px 2px 5px',
             borderRadius: '2px',
           }}
