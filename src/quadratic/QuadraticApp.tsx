@@ -8,15 +8,22 @@ import { TopBarLoading } from '../ui/components/TopBarLoading';
 import { WelcomeComponent } from './WelcomeComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
+import { isMobileOnly } from 'react-device-detect';
 
 export default function QuadraticApp() {
   const { loading, incrementLoadingCount } = useLoading();
 
   useEffect(() => {
     if (loading) {
-      loadPython().then(() => {
+      if (!isMobileOnly) {
+        // Only load Python not on mobile
+        loadPython().then(() => {
+          incrementLoadingCount();
+        });
+      } else {
+        // Don't load python on mobile
         incrementLoadingCount();
-      });
+      }
       loadAssets().then(() => {
         incrementLoadingCount();
       });
