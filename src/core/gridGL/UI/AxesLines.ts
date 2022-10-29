@@ -12,6 +12,7 @@ export class AxesLines extends Graphics {
 
   update() {
     if (this.dirty) {
+      this.dirty = false;
       if (!this.app.settings.showGridAxes) {
         this.visible = false;
         return;

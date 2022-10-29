@@ -7,6 +7,7 @@ import { Cell } from '../../../core/gridDB/db';
 import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
 import { formatDistance } from 'date-fns';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { debugShowFPS, debugShowRenderer } from '../../../debugFlags';
 
 export const BottomBar = () => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
@@ -98,6 +99,19 @@ export const BottomBar = () => {
             }}
           >
             Selection: {multiCursorPositionString}
+          </span>
+        )}
+        {debugShowRenderer && (
+          <span className="debug-show-renderer" style={{
+            width: "0.7rem",
+            height: "0.7rem",
+            borderRadius: '50%',
+          }}>&nbsp;</span>
+        )}
+        {debugShowFPS && (
+          <span>
+            <span className="debug-show-FPS">--</span>
+            {" "}FPS
           </span>
         )}
       </Box>

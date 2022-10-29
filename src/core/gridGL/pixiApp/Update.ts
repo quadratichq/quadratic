@@ -1,11 +1,17 @@
+import { debugShowFPS, debugShowRenderer } from '../../../debugFlags';
+import { FPS } from './Fps';
 import { PixiApp } from './PixiApp';
 
 export class Update {
   private pixiApp: PixiApp;
   private raf?: number;
+  private fps?: FPS;
 
   constructor(app: PixiApp) {
     this.pixiApp = app;
+    if (debugShowFPS) {
+      this.fps = new FPS();
+    }
   }
 
   start(): void {
@@ -18,6 +24,13 @@ export class Update {
     if (this.raf) {
       cancelAnimationFrame(this.raf);
       this.raf = undefined;
+    }
+  }
+
+  private setDebugShowRenderer(on: boolean): void {
+    const span = document.querySelector('.debug-show-renderer') as HTMLSpanElement;
+    if (span) {
+      span.style.backgroundColor = on ? '#aa0000' : '#00aa00';
     }
   }
 
@@ -35,7 +48,15 @@ export class Update {
     if (rendererDirty) {
       app.viewport.dirty = false;
       app.renderer.render(app.stage);
+      if (debugShowRenderer) {
+        this.setDebugShowRenderer(true);
+      }
+    } else {
+      if (debugShowRenderer) {
+        this.setDebugShowRenderer(false);
+      }
     }
     this.raf = requestAnimationFrame(this.update);
+    this.fps?.update();
   }
 }
