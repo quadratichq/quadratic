@@ -10,6 +10,8 @@ export class PixiAppSettings {
   setInteractionState?: (value: GridInteractionState) => void;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: (value: EditorInteractionState) => void;
+  zoomState = 100;
+  setZoomState?: (value: number) => void;
 
   constructor(app: PixiApp) {
     this.app = app;
@@ -38,11 +40,15 @@ export class PixiAppSettings {
     setInteractionState: (value: GridInteractionState) => void;
     editorInteractionState: EditorInteractionState;
     setEditorInteractionState: (value: EditorInteractionState) => void;
+    zoomState: number;
+    setZoomState: (value: number) => void;
   }) {
     this.interactionState = options.interactionState;
     this.setInteractionState = options.setInteractionState;
     this.editorInteractionState = options.editorInteractionState;
     this.setEditorInteractionState = options.setEditorInteractionState;
+    this.zoomState = options.zoomState;
+    this.setZoomState = options.setZoomState;
   }
 
   get showGridLines(): boolean {

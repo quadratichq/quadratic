@@ -72,7 +72,10 @@ export class PixiApp {
       this.viewport.position.set(20, 20);
     }
 
-    this.viewport.on('zoomed', this.viewportChanged);
+    this.viewport.on('zoomed', () => {
+      this.viewportChanged();
+      this.settings.setZoomState && this.settings.setZoomState(this.viewport.scale.x);
+    });
     this.viewport.on('moved', this.viewportChanged);
 
     this.input = new Input(this);

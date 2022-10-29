@@ -9,6 +9,7 @@ import { useMenuState } from '@szhsin/react-menu';
 import { PixiApp } from './pixiApp/PixiApp';
 import { useHeadings } from '../gridDB/useHeadings';
 import { useGridSettings } from './useGridSettings';
+import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -47,6 +48,7 @@ export default function QuadraticGrid() {
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [zoomState, setZoomState] = useRecoilState(zoomStateAtom);
   useEffect(() => {
     if (app) {
       app.settings.populate({
@@ -54,6 +56,8 @@ export default function QuadraticGrid() {
         setInteractionState,
         editorInteractionState,
         setEditorInteractionState,
+        zoomState,
+        setZoomState,
       });
     }
   }, [app, settings, interactionState, setInteractionState, editorInteractionState, setEditorInteractionState]);
