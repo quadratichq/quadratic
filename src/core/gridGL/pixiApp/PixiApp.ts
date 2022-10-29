@@ -98,6 +98,7 @@ export class PixiApp {
     this.resize();
     this.parent.addEventListener('resize', this.resize);
     this.update.start();
+    this.canvas.focus();
   }
 
   destroy(): void {

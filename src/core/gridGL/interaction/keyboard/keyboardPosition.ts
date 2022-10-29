@@ -1,5 +1,5 @@
-import { Viewport } from 'pixi-viewport';
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
+import { PixiApp } from '../../pixiApp/PixiApp';
 import { ensureVisible } from '../ensureVisible';
 import { pixiKeyboardCanvasProps } from './useKeyboard';
 
@@ -7,9 +7,10 @@ export function keyboardPosition(options: {
   event: React.KeyboardEvent<HTMLElement>;
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
-  viewport?: Viewport;
+  app?: PixiApp;
 }): boolean {
-  const { event, interactionState, setInteractionState, viewport } = options;
+  const { event, interactionState, setInteractionState, app } = options;
+  const viewport = app?.viewport;
 
   const moveCursor = (deltaX: number, deltaY: number) => {
     let newInteractionState: GridInteractionState | undefined;
@@ -79,9 +80,8 @@ export function keyboardPosition(options: {
     event.preventDefault();
     if (viewport) {
       ensureVisible({
+        app,
         interactionState: newInteractionState,
-        viewport,
-        headerSize: pixiKeyboardCanvasProps.headerSize,
       });
     }
   };

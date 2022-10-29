@@ -33,8 +33,7 @@ export class GridHeadings extends Container {
   private gridLinesRows: { row: number; y: number; height: number }[] = [];
   private rowWidth = 0;
 
-  // cached globals to avoid redrawing if possible
-  private lastRowSize: Size = { width: 0, height: 0 };
+  headingSize: Size = { width: 0, height: 0 };
   private lastShowHeadings = false;
 
   // heading location for hitTest
@@ -365,13 +364,14 @@ export class GridHeadings extends Container {
       this.visible = false;
       if (this.lastShowHeadings) {
         if (OFFSET_HEADINGS) {
-          viewport.x -= this.lastRowSize.width;
-          viewport.y -= this.lastRowSize.height;
+          viewport.x -= this.headingSize.width;
+          viewport.y -= this.headingSize.height;
           this.lastShowHeadings = false;
         }
         this.rowRect = undefined;
         this.columnRect = undefined;
       }
+      this.headingSize = { width: 0, height: 0 };
       return;
     }
     this.visible = true;
@@ -399,7 +399,7 @@ export class GridHeadings extends Container {
     this.labels.update();
     this.drawCorner();
 
-    this.lastRowSize = { width: this.rowWidth, height: CELL_HEIGHT };
+    this.headingSize = { width: this.rowWidth, height: CELL_HEIGHT };
   }
 
   // whether the point is in the heading

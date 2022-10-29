@@ -49,7 +49,7 @@ export const useKeyboard = (
     }
 
     if (
-      keyboardPosition({ event, interactionState, setInteractionState, viewport: app?.viewport }) ||
+      keyboardPosition({ event, interactionState, setInteractionState, app }) ||
       keyboardCell({ event, interactionState, setInteractionState, setEditorInteractionState, app })
     )
       return;
