@@ -54,4 +54,7 @@ export class PixiAppSettings {
   get showHeadings(): boolean {
     return this.settings.showHeadings;
   }
+  get showCellTypeOutlines(): boolean {
+    return this.settings.showCellTypeOutlines;
+  }
 }

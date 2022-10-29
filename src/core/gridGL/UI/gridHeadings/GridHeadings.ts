@@ -4,7 +4,6 @@ import { colors } from '../../../../theme/colors';
 import { calculateAlphaForGridLines } from '../gridUtils';
 import { Size } from '../../types/size';
 import { intersects } from '../../helpers/intersects';
-import { isArrayShallowEqual } from '../../helpers/isEqual';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { GridHeadingsLabels } from './GridHeadingsLabels';
 
@@ -362,15 +361,8 @@ export class GridHeadings extends Container {
     this.drawHorizontal();
     this.drawHeadingLines();
     this.labels.update();
-      this.drawCorner();
+    this.drawCorner();
 
-    // todo
-    // pixiKeyboardCanvasProps.headerSize = {
-    //   width: rowWidth!,
-    //   height: CELL_HEIGHT,
-    // };
-
-    // todo: not sure this is still necessary
     this.lastRowSize = { width: this.rowWidth, height: CELL_HEIGHT };
   }
 
