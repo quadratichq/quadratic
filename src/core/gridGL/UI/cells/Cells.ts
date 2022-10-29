@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { CellsLabels } from './CellsLabels';
-import { CellMarkers } from './CellMarkers';
+import { CellsMarkers } from './CellsMarkers';
 import { drawCell } from './drawCell';
 
 export interface CellsBounds {
@@ -15,7 +15,7 @@ export class Cells extends Container {
   private app: PixiApp;
   private cellBackgrounds: Graphics;
   private labels: CellsLabels;
-  private cellMarkers: CellMarkers;
+  private cellsMarkers: CellsMarkers;
   dirty = true;
 
   constructor(app: PixiApp) {
@@ -23,13 +23,13 @@ export class Cells extends Container {
     this.app = app;
     this.cellBackgrounds = this.addChild(new Graphics());
     this.labels = this.addChild(new CellsLabels());
-    this.cellMarkers = this.addChild(new CellMarkers());
+    this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
   private draw() {
     const { viewport, grid, gridOffsets } = this.app;
     this.labels.clear();
-    this.cellMarkers.clear();
+    this.cellsMarkers.clear();
     this.cellBackgrounds.clear();
 
     const bounds = grid.getBounds(viewport.getVisibleBounds());
@@ -52,7 +52,7 @@ export class Cells extends Container {
             gridOffsets: this.app.gridOffsets,
           });
           if (cell.type === "PYTHON" && this.app.settings.showCellTypeOutlines) {
-            this.cellMarkers.add(x, y, 'CodeIcon');
+            this.cellsMarkers.add(x, y, 'CodeIcon');
           }
           this.labels.add({
             x,

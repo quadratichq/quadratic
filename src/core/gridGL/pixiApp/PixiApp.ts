@@ -12,6 +12,7 @@ import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { Cursor } from '../UI/cursor';
 import { Cells } from '../UI/cells/Cells';
 import { gridSpare } from '../../gridDB/gridSparse';
+import { zoomToFit } from '../helpers/zoom';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -114,5 +115,14 @@ export class PixiApp {
     this.canvas.height = this.renderer.resolution * height;
     this.renderer.resize(width, height);
     this.viewport.resize(width, height);
+  }
+
+  checkZoom(): void {
+    const zoom = this.settings.zoomState;
+    if (zoom === Infinity) {
+      zoomToFit(this.viewport);
+    } else if (zoom  !== this.viewport.scale.x) {
+      this.viewport.setZoom(zoom, true);
+    }
   }
 }

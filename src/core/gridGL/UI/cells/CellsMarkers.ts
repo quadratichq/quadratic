@@ -1,9 +1,9 @@
 import * as PIXI from 'pixi.js';
 import { colors } from '../../../../theme/colors';
 
-export type CellMarkerTypes = 'CodeIcon';
+export type CellsMarkerTypes = 'CodeIcon';
 
-export class CellMarkers extends PIXI.Container {
+export class CellsMarkers extends PIXI.Container {
   private codeIcons: PIXI.BitmapText[] = [];
   private codeIconsIndex = 0;
 
@@ -12,7 +12,7 @@ export class CellMarkers extends PIXI.Container {
     this.codeIconsIndex = 0;
   }
 
-  add(x: number, y: number, type: CellMarkerTypes): void {
+  add(x: number, y: number, type: CellsMarkerTypes): void {
     let child: PIXI.BitmapText;
     if (type === 'CodeIcon') {
       if (this.codeIconsIndex < this.codeIcons.length) {

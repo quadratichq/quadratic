@@ -47,8 +47,9 @@ export class PixiAppSettings {
     this.setInteractionState = options.setInteractionState;
     this.editorInteractionState = options.editorInteractionState;
     this.setEditorInteractionState = options.setEditorInteractionState;
-    this.zoomState = options.zoomState;
     this.setZoomState = options.setZoomState;
+    this.zoomState = options.zoomState;
+    this.app.checkZoom();
   }
 
   get showGridLines(): boolean {

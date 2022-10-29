@@ -60,7 +60,7 @@ export default function QuadraticGrid() {
         setZoomState,
       });
     }
-  }, [app, settings, interactionState, setInteractionState, editorInteractionState, setEditorInteractionState]);
+  }, [app, settings, interactionState, setInteractionState, editorInteractionState, setEditorInteractionState, zoomState, setZoomState]);
 
 
   // Right click menu
