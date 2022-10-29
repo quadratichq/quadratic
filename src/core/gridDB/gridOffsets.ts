@@ -25,9 +25,9 @@ export class GridOffsets {
 
   populate(columns: Heading[], rows: Heading[]): void {
     this.columns = {};
-    columns.forEach(entry => this.columns[entry.id] = entry);
+    columns.forEach((entry) => (this.columns[entry.id] = entry));
     this.rows = {};
-    rows.forEach(entry => this.rows[entry.id] = entry);
+    rows.forEach((entry) => (this.rows[entry.id] = entry));
     this.app.gridLines.dirty = true;
     this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
@@ -47,7 +47,7 @@ export class GridOffsets {
     return this.rows[row]?.size ?? CELL_HEIGHT;
   }
 
-  getColumnPlacement(column: number): { x: number, width: number } {
+  getColumnPlacement(column: number): { x: number; width: number } {
     let position = 0;
     if (column >= 0) {
       for (let x = 0; x < column; x++) {
@@ -62,11 +62,11 @@ export class GridOffsets {
     }
   }
 
-  getRowPlacement(row: number): { y: number, height: number } {
+  getRowPlacement(row: number): { y: number; height: number } {
     let position = 0;
     if (row >= 0) {
       for (let y = 0; y < row; y++) {
-        position += this.getRowHeight(y)
+        position += this.getRowHeight(y);
       }
       return { y: position, height: this.getRowHeight(row) };
     } else {
@@ -77,11 +77,11 @@ export class GridOffsets {
     }
   }
 
-  getColumnIndex(x: number): { index: number, position: number } {
+  getColumnIndex(x: number): { index: number; position: number } {
     if (x >= 0) {
       let index = 0;
       let position = 0;
-      let nextWidth = this.getColumnWidth(0)
+      let nextWidth = this.getColumnWidth(0);
       while (position + nextWidth < x) {
         position += nextWidth;
         index++;
@@ -99,7 +99,7 @@ export class GridOffsets {
     }
   }
 
-  getRowIndex(y: number): { index: number, position: number } {
+  getRowIndex(y: number): { index: number; position: number } {
     if (y >= 0) {
       let index = 0;
       let position = 0;
@@ -121,11 +121,11 @@ export class GridOffsets {
     }
   }
 
-  getRowColumnFromWorld(x: number, y: number ): { column: number, row: number } {
+  getRowColumnFromWorld(x: number, y: number): { column: number; row: number } {
     return { column: this.getColumnIndex(x).index, row: this.getRowIndex(y).index };
   }
 
-  getCell(column: number, row: number): { x: number, y: number, width: number, height: number } {
+  getCell(column: number, row: number): { x: number; y: number; width: number; height: number } {
     const columnPlacement = this.getColumnPlacement(column);
     const rowPlacement = this.getRowPlacement(row);
     return {
@@ -133,7 +133,7 @@ export class GridOffsets {
       y: rowPlacement.y,
       width: columnPlacement.width,
       height: rowPlacement.height,
-    }
+    };
   }
 
   optimisticUpdate(change: UpdateHeading): void {

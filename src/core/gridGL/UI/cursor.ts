@@ -28,7 +28,7 @@ export class Cursor extends Graphics {
     this.lineStyle({
       width: CURSOR_THICKNESS,
       color,
-      alignment: 0
+      alignment: 0,
     });
     this.drawRect(x, y, width, height);
   }
@@ -41,7 +41,12 @@ export class Cursor extends Graphics {
       this.beginFill(colors.cursorCell, FILL_ALPHA);
       const startCell = gridOffsets.getCell(multiCursor.originPosition.x, multiCursor.originPosition.y);
       const endCell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
-      this.drawRect(startCell.x, startCell.y, endCell.x + endCell.width - startCell.x, endCell.y + endCell.height - startCell.y);
+      this.drawRect(
+        startCell.x,
+        startCell.y,
+        endCell.x + endCell.width - startCell.x,
+        endCell.y + endCell.height - startCell.y
+      );
     }
   }
 

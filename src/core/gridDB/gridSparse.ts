@@ -2,7 +2,7 @@ import { Rectangle } from 'pixi.js';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Cell } from './db';
 
-export class gridSpare {
+export class gridSparse {
   private app: PixiApp;
   private cells: Record<string, Cell> = {};
   private minX = 0;
@@ -35,7 +35,7 @@ export class gridSpare {
     this.maxX = -Infinity;
     this.minY = Infinity;
     this.maxY = -Infinity;
-    cells.forEach(cell => {
+    cells.forEach((cell) => {
       this.cells[this.getKey(cell.x, cell.y)] = cell;
       this.minX = Math.min(this.minX, cell.x);
       this.maxX = Math.max(this.maxX, cell.x);

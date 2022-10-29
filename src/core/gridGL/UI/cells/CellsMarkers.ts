@@ -8,7 +8,7 @@ export class CellsMarkers extends PIXI.Container {
   private codeIconsIndex = 0;
 
   clear() {
-    this.codeIcons.forEach(child => child.visible = false);
+    this.codeIcons.forEach((child) => (child.visible = false));
     this.codeIconsIndex = 0;
   }
 

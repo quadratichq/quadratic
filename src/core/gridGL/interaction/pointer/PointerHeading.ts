@@ -1,11 +1,11 @@
 import { InteractivePointerEvent, Point } from 'pixi.js';
-import { selectAllCells, selectColumns, selectRows } from '../helpers/selectCellsAction';
-import { zoomToFit } from '../helpers/zoom';
-import { PixiApp } from '../pixiApp/PixiApp';
-import { DOUBLE_CLICK_TIME } from './inputUtils';
-import { UpdateHeading, updateHeadingDB } from '../../gridDB/Cells/UpdateHeadingsDB';
+import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCellsAction';
+import { zoomToFit } from '../../helpers/zoom';
+import { PixiApp } from '../../pixiApp/PixiApp';
+import { DOUBLE_CLICK_TIME } from './pointerUtils';
+import { UpdateHeading, updateHeadingDB } from '../../../gridDB/Cells/UpdateHeadingsDB';
 
-export class inputHeading {
+export class PointerHeading {
   private app: PixiApp;
   private active = false;
   private downTimeout: number | undefined;
@@ -105,7 +105,7 @@ export class inputHeading {
     const { canvas, headings, gridOffsets, cells, gridLines, cursor } = this.app;
     const headingResize = headings.intersectsHeadingGridLine(world);
     if (headingResize) {
-      canvas.style.cursor = headingResize.column !== undefined ? "col-resize" : "row-resize";
+      canvas.style.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
     } else {
       canvas.style.cursor = headings.intersectsHeadings(world) ? 'pointer' : 'auto';
     }
@@ -147,7 +147,7 @@ export class inputHeading {
             column: headingResizing.column,
             size: headingResizing.width,
           };
-        }  else if (headingResizing.row !== undefined && headingResizing.height !== undefined) {
+        } else if (headingResizing.row !== undefined && headingResizing.height !== undefined) {
           updateHeading = {
             row: headingResizing.row,
             size: headingResizing.height,
@@ -155,7 +155,7 @@ export class inputHeading {
         }
         if (updateHeading) {
           updateHeadingDB(updateHeading);
-          gridOffsets.optimisticUpdate(updateHeading)
+          gridOffsets.optimisticUpdate(updateHeading);
         }
         gridOffsets.headingResizing = undefined;
       }

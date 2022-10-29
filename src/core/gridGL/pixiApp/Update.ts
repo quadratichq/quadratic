@@ -31,9 +31,15 @@ export class Update {
   private updateDebug = (): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
-    const rendererDirty = app.viewport.dirty || app.gridLines.dirty || app.axesLines.dirty || app.headings.dirty || app.cells.dirty || app.cursor.dirty;
+    const rendererDirty =
+      app.viewport.dirty ||
+      app.gridLines.dirty ||
+      app.axesLines.dirty ||
+      app.headings.dirty ||
+      app.cells.dirty ||
+      app.cursor.dirty;
 
-    debugTimeReset()
+    debugTimeReset();
     app.gridLines.update();
     debugTimeCheck('gridLines');
     app.axesLines.update();
@@ -56,12 +62,18 @@ export class Update {
     }
     this.raf = requestAnimationFrame(this.updateDebug);
     this.fps?.update();
-  }
+  };
 
   private update = (): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
-    const rendererDirty = app.viewport.dirty || app.gridLines.dirty || app.axesLines.dirty || app.headings.dirty || app.cells.dirty || app.cursor.dirty;
+    const rendererDirty =
+      app.viewport.dirty ||
+      app.gridLines.dirty ||
+      app.axesLines.dirty ||
+      app.headings.dirty ||
+      app.cells.dirty ||
+      app.cursor.dirty;
 
     app.gridLines.update();
     app.axesLines.update();
@@ -74,5 +86,5 @@ export class Update {
       app.renderer.render(app.stage);
     }
     this.raf = requestAnimationFrame(this.update);
-  }
+  };
 }

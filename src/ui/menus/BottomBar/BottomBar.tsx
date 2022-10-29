@@ -103,16 +103,20 @@ export const BottomBar = () => {
           </span>
         )}
         {debugShowRenderer && (
-          <span className="debug-show-renderer" style={{
-            width: "0.7rem",
-            height: "0.7rem",
-            borderRadius: '50%',
-          }}>&nbsp;</span>
+          <span
+            className="debug-show-renderer"
+            style={{
+              width: '0.7rem',
+              height: '0.7rem',
+              borderRadius: '50%',
+            }}
+          >
+            &nbsp;
+          </span>
         )}
         {debugShowFPS && (
           <span>
-            <span className="debug-show-FPS">--</span>
-            {" "}FPS
+            <span className="debug-show-FPS">--</span> FPS
           </span>
         )}
       </Box>

@@ -33,7 +33,7 @@ function countChildren(parent: PIXI.Container): void {
   if (parent.visible) {
     visibleCount++;
   }
-  parent.children.forEach(child => {
+  parent.children.forEach((child) => {
     if (child instanceof PIXI.Container) {
       countChildren(child);
     }
@@ -45,5 +45,5 @@ export function debugShowChildren(parent: PIXI.Container, name?: string): void {
   count = 0;
   visibleCount = 0;
   countChildren(parent);
-  console.log(`${name ? `[${name}] ` : ""}${count} objects | ${visibleCount} visible`);
+  console.log(`${name ? `[${name}] ` : ''}${count} objects | ${visibleCount} visible`);
 }

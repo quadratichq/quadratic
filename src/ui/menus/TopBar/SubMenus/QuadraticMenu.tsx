@@ -4,7 +4,7 @@ import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
 import { MenuBookOutlined, FileOpenOutlined, SaveOutlined, BugReportOutlined } from '@mui/icons-material';
 import { isMobileOnly } from 'react-device-detect';
-import { useGridSettings } from '../../../../core/gridGL/useGridSettings';
+import { useGridSettings } from './useGridSettings';
 import '@szhsin/react-menu/dist/index.css';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
@@ -55,14 +55,26 @@ export const QuadraticMenu = () => {
       </SubMenu>
       <SubMenu label="View">
         <MenuHeader>UI</MenuHeader>
-        <MenuItem type="checkbox" checked={settings.showHeadings} onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
+        <MenuItem
+          type="checkbox"
+          checked={settings.showHeadings}
+          onClick={() => settings.setShowHeadings(!settings.showHeadings)}
+        >
           Show Headings
         </MenuItem>
         <MenuHeader>Grid</MenuHeader>
-        <MenuItem type="checkbox" checked={settings.showGridAxes} onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}>
+        <MenuItem
+          type="checkbox"
+          checked={settings.showGridAxes}
+          onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}
+        >
           Show Axis
         </MenuItem>
-        <MenuItem type="checkbox" checked={settings.showGridLines} onClick={() => settings.setShowGridLines(!settings.showGridLines)}>
+        <MenuItem
+          type="checkbox"
+          checked={settings.showGridLines}
+          onClick={() => settings.setShowGridLines(!settings.showGridLines)}
+        >
           Show Grid Lines
         </MenuItem>
         <MenuItem

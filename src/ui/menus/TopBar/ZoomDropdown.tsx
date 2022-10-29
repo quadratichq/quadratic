@@ -5,6 +5,7 @@ import { zoomStateAtom } from '../../../atoms/zoomStateAtom';
 import { colors } from '../../../theme/colors';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
+import { KeyboardShortcut } from '../KeyboardShortcut';
 
 export const ZoomDropdown = () => {
   const [zoomState, setZoomState] = useRecoilState(zoomStateAtom);
@@ -13,7 +14,8 @@ export const ZoomDropdown = () => {
     <Menu
       menuButton={
         <Button style={{ color: colors.darkGray }}>
-          {zoomState === Infinity ? 100 : Math.round(zoomState * 100)}%<KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
+          {zoomState === Infinity ? 100 : Math.round(zoomState * 100)}%
+          <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
         </Button>
       }
     >
@@ -28,19 +30,19 @@ export const ZoomDropdown = () => {
       <MenuDivider></MenuDivider>
       <MenuItem
         onClick={() => {
-          setZoomState(zoomState * 2);
+          setZoomState(zoomState => zoomState * 2);
           focusGrid();
         }}
       >
-        Zoom in
+        <KeyboardShortcut text="Zoom in" shortcut='=' ctrl={true} />
       </MenuItem>
       <MenuItem
         onClick={() => {
-          setZoomState(zoomState * 0.5);
+          setZoomState(zoomState => zoomState * 0.5);
           focusGrid();
         }}
       >
-        Zoom out
+        <KeyboardShortcut text="Zoom out" shortcut='-' ctrl={true} />
       </MenuItem>
       <MenuDivider></MenuDivider>
       <MenuItem

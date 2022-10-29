@@ -42,17 +42,19 @@ export class Cells extends Container {
         const width = gridOffsets.getColumnWidth(column);
         const cell = grid.get(column, row);
         if (cell) {
-          drawCell({
-            graphics: this.cellBackgrounds,
-            cell,
-            x,
-            y,
-            width,
-            height,
-            gridOffsets: this.app.gridOffsets,
-          });
-          if (cell.type === "PYTHON" && this.app.settings.showCellTypeOutlines) {
-            this.cellsMarkers.add(x, y, 'CodeIcon');
+          if (this.app.settings.showCellTypeOutlines) {
+            drawCell({
+              graphics: this.cellBackgrounds,
+              cell,
+              x,
+              y,
+              width,
+              height,
+              gridOffsets: this.app.gridOffsets,
+            });
+            if (cell.type === 'PYTHON') {
+              this.cellsMarkers.add(x, y, 'CodeIcon');
+            }
           }
           this.labels.add({
             x,

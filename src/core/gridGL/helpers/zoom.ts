@@ -21,7 +21,7 @@ export function zoomToFit(viewport: Viewport): void {
       viewport.animate({
         time: ZOOM_ANIMATION_TIME_MS,
         position: new PIXI.Point(anchor_x + width / 2, anchor_y + height / 2),
-        scale: scale,
+        scale,
       });
     } else {
       viewport.animate({
@@ -30,5 +30,12 @@ export function zoomToFit(viewport: Viewport): void {
         scale: 1,
       });
     }
+  });
+}
+
+export function zoomInOut(viewport: Viewport, scale: number): void {
+  viewport.animate({
+    time: ZOOM_ANIMATION_TIME_MS,
+    scale,
   });
 }

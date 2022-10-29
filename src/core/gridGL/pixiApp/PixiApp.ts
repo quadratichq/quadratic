@@ -2,7 +2,7 @@ import { Renderer, Container } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { isMobileOnly } from 'react-device-detect';
 import { PixiAppSettings } from './PixiAppSettings';
-import { Input } from '../input/Input';
+import { Pointer } from '../interaction/pointer/Pointer';
 import { Update } from './Update';
 import './pixiApp.css';
 import { GridOffsets } from '../../gridDB/gridOffsets';
@@ -11,8 +11,8 @@ import { AxesLines } from '../UI/AxesLines';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { Cursor } from '../UI/cursor';
 import { Cells } from '../UI/cells/Cells';
-import { gridSpare } from '../../gridDB/gridSparse';
-import { zoomToFit } from '../helpers/zoom';
+import { gridSparse } from '../../gridDB/gridSparse';
+import { zoomInOut, zoomToFit } from '../helpers/zoom';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -24,10 +24,10 @@ export class PixiApp {
   headings: GridHeadings;
   cells: Cells;
 
-  input: Input;
+  input: Pointer;
   viewport: Viewport;
   gridOffsets: GridOffsets;
-  grid: gridSpare;
+  grid: gridSparse;
   settings: PixiAppSettings;
   renderer: Renderer;
   stage = new Container();
@@ -35,13 +35,13 @@ export class PixiApp {
 
   constructor() {
     this.gridOffsets = new GridOffsets(this);
-    this.grid = new gridSpare(this);
+    this.grid = new gridSparse(this);
 
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'pixi_canvas';
     this.canvas.tabIndex = 0;
 
-    const resolution = Math.max(2, window.devicePixelRatio)
+    const resolution = Math.max(2, window.devicePixelRatio);
     this.renderer = new Renderer({
       view: this.canvas,
       resolution,
@@ -79,7 +79,7 @@ export class PixiApp {
     });
     this.viewport.on('moved', this.viewportChanged);
 
-    this.input = new Input(this);
+    this.input = new Pointer(this);
     this.update = new Update(this);
 
     console.log('[QuadraticGL] environment ready');
@@ -122,8 +122,8 @@ export class PixiApp {
     const zoom = this.settings.zoomState;
     if (zoom === Infinity) {
       zoomToFit(this.viewport);
-    } else if (zoom  !== this.viewport.scale.x) {
-      this.viewport.setZoom(zoom, true);
+    } else if (zoom !== this.viewport.scale.x) {
+      zoomInOut(this.viewport, zoom);
       this.viewportChanged();
     }
   }

@@ -17,7 +17,6 @@ function rectangleRectangle(rectangle1: PIXI.Rectangle, rectangle2: PIXI.Rectang
 
 function lineLineOneDimension(iStart: number, iEnd: number, jStart: number, jEnd: number): boolean {
   return iStart < jEnd && iEnd > jStart;
-
 }
 
 export const intersects = {

@@ -1,6 +1,6 @@
 import { EditorInteractionState, editorInteractionStateDefault } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState, gridInteractionStateDefault } from '../../../atoms/gridInteractionStateAtom';
-import { defaultGridSettings, GridSettings } from '../useGridSettings';
+import { defaultGridSettings, GridSettings } from '../../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { PixiApp } from './PixiApp';
 
 export class PixiAppSettings {
@@ -33,22 +33,24 @@ export class PixiAppSettings {
     this.app.gridLines.dirty = true;
     this.app.axesLines.dirty = true;
     this.app.headings.dirty = true;
+    this.app.cells.dirty = true;
+  };
+
+  updateInteractionState(interactionState: GridInteractionState, setInteractionState: (value: GridInteractionState) => void): void {
+    this.interactionState = interactionState;
+    this.setInteractionState = setInteractionState;
+    this.app.cursor.dirty = true;
   }
 
-  populate(options: {
-    interactionState: GridInteractionState;
-    setInteractionState: (value: GridInteractionState) => void;
-    editorInteractionState: EditorInteractionState;
-    setEditorInteractionState: (value: EditorInteractionState) => void;
-    zoomState: number;
-    setZoomState: (value: number) => void;
-  }) {
-    this.interactionState = options.interactionState;
-    this.setInteractionState = options.setInteractionState;
-    this.editorInteractionState = options.editorInteractionState;
-    this.setEditorInteractionState = options.setEditorInteractionState;
-    this.setZoomState = options.setZoomState;
-    this.zoomState = options.zoomState;
+  updateEditorInteractionState(editorInteractionState: EditorInteractionState, setEditorInteractionState: (value: EditorInteractionState) => void): void {
+    this.editorInteractionState = editorInteractionState;
+    this.setEditorInteractionState = setEditorInteractionState;
+    this.app.cursor.dirty = true;
+  }
+
+  updateZoom(zoom: number, setZoomState: (value: number) => void): void {
+    this.zoomState = zoom;
+    this.setZoomState = setZoomState;
     this.app.checkZoom();
   }
 

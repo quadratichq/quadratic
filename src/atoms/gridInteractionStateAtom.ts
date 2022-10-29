@@ -22,7 +22,7 @@ export const gridInteractionStateDefault: GridInteractionState = {
   },
   showInput: false,
   inputInitialValue: '',
-}
+};
 
 export const gridInteractionStateAtom = atom({
   key: 'gridInteractionState', // unique ID (with respect to other atoms/selectors)

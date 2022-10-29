@@ -8,8 +8,8 @@ import { useRecoilState } from 'recoil';
 import { useMenuState } from '@szhsin/react-menu';
 import { PixiApp } from './pixiApp/PixiApp';
 import { useHeadings } from '../gridDB/useHeadings';
-import { useGridSettings } from './useGridSettings';
 import { zoomStateAtom } from '../../atoms/zoomStateAtom';
+import { useKeyboard } from './interaction/keyboard/useKeyboard';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -23,8 +23,7 @@ export default function QuadraticGrid() {
   }, []);
   useEffect(() => {
     if (app && container) app.attach(container);
-  }, [app, container])
-
+  }, [app, container]);
 
   // Live query to update cells
   const cells = useLiveQuery(() => GetCellsDB());
@@ -42,48 +41,33 @@ export default function QuadraticGrid() {
     }
   }, [app, headings]);
 
-
-  const settings = useGridSettings();
-
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
+  useEffect(() => {
+    app?.settings.updateInteractionState(interactionState, setInteractionState);
+  }, [app?.settings, interactionState, setInteractionState]);
+
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  useEffect(() => {
+    app?.settings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
+  }, [app?.settings, editorInteractionState, setEditorInteractionState]);
+
   const [zoomState, setZoomState] = useRecoilState(zoomStateAtom);
   useEffect(() => {
-    if (app) {
-      app.settings.populate({
-        interactionState,
-        setInteractionState,
-        editorInteractionState,
-        setEditorInteractionState,
-        zoomState,
-        setZoomState,
-      });
-    }
-  }, [app, settings, interactionState, setInteractionState, editorInteractionState, setEditorInteractionState, zoomState, setZoomState]);
-
+    app?.settings.updateZoom(zoomState, setZoomState);
+  }, [app?.settings, zoomState, setZoomState,]);
 
   // Right click menu
   const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } = useMenuState();
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
 
-  // const pointerEvents = usePointerEvents({
-  //   viewportRef,
-  //   interactionState,
-  //   setInteractionState,
-  //   setEditorInteractionState,
-  //   setHeadingResizing: setHeadingResizingCallback,
-  //   headingResizing,
-  //   saveHeadingResizing,
-  // });
-
-  // const { onKeyDownCanvas } = useKeyboardCanvas({
-  //   interactionState,
-  //   setInteractionState,
-  //   editorInteractionState,
-  //   setEditorInteractionState,
-  //   viewportRef,
-  // });
+  const { onKeyDown } = useKeyboard({
+    interactionState,
+    setInteractionState,
+    editorInteractionState,
+    setEditorInteractionState,
+    app,
+  });
 
   if (loading) return null;
 
@@ -102,6 +86,7 @@ export default function QuadraticGrid() {
         setRightClickPoint({ x: event.clientX, y: event.clientY });
         toggleRightClickMenu(true);
       }}
+      onKeyDown={onKeyDown}
     >
       {/*<CellInput
         interactionState={interactionState}

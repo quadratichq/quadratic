@@ -43,7 +43,6 @@ export class GridLines extends Graphics {
     const offset = bounds.left - position;
     let size = 0;
     for (let x = bounds.left; x <= bounds.right; x += size) {
-
       // don't draw grid lines when hidden
       if (size !== 0) {
         this.moveTo(x - offset, bounds.top);
@@ -60,7 +59,6 @@ export class GridLines extends Graphics {
     const offset = bounds.top - position;
     let size = 0;
     for (let y = bounds.top; y <= bounds.bottom; y += size) {
-
       // don't draw grid lines when hidden
       if (size !== 0) {
         this.moveTo(bounds.left, y - offset);

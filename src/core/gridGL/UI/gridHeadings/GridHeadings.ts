@@ -29,8 +29,8 @@ export class GridHeadings extends Container {
   private corner: Graphics;
   private selectedColumns: number[] = [];
   private selectedRows: number[] = [];
-  private gridLinesColumns: { column: number, x: number, width: number }[] = [];
-  private gridLinesRows: { row: number, y: number, height: number }[] = [];
+  private gridLinesColumns: { column: number; x: number; width: number }[] = [];
+  private gridLinesRows: { row: number; y: number; height: number }[] = [];
   private rowWidth = 0;
 
   // cached globals to avoid redrawing if possible
@@ -71,7 +71,7 @@ export class GridHeadings extends Container {
   }
 
   // creates arrays of selected columns and rows
-  private createSelectedArrays(): { selectedColumns: number[], selectedRows: number[] } {
+  private createSelectedArrays(): { selectedColumns: number[]; selectedRows: number[] } {
     const interactionState = this.app.settings.interactionState;
     const selectedColumns: number[] = [];
     const selectedRows: number[] = [];
@@ -122,10 +122,17 @@ export class GridHeadings extends Container {
     }
 
     // use these bounds for digit overlap comparison
-    const startHalfWidth = this.characterSize.width * this.selectedColumns[0].toString().length / 2 / viewport.scale.x;
-    const endHalfWidth = this.characterSize.width * this.selectedColumns[0].toString().length / 2 / viewport.scale.x;
-    const xSelectedStartLine1D = { start: xSelectedStart + selectedStart.width / 2 - startHalfWidth, end: xSelectedStart + selectedStart.width / 2 + startHalfWidth };
-    const xSelectedEndLine1D = { start: xSelectedEnd - selectedEnd.width / 2 - endHalfWidth, end: xSelectedEnd - selectedEnd.width / 2 + endHalfWidth };
+    const startHalfWidth =
+      (this.characterSize.width * this.selectedColumns[0].toString().length) / 2 / viewport.scale.x;
+    const endHalfWidth = (this.characterSize.width * this.selectedColumns[0].toString().length) / 2 / viewport.scale.x;
+    const xSelectedStartLine1D = {
+      start: xSelectedStart + selectedStart.width / 2 - startHalfWidth,
+      end: xSelectedStart + selectedStart.width / 2 + startHalfWidth,
+    };
+    const xSelectedEndLine1D = {
+      start: xSelectedEnd - selectedEnd.width / 2 - endHalfWidth,
+      end: xSelectedEnd - selectedEnd.width / 2 + endHalfWidth,
+    };
 
     // highlight column headings based on selected cells
     this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
@@ -161,30 +168,41 @@ export class GridHeadings extends Container {
       // show first and last selected numbers unless last selected number overlaps first selected number
       const selected =
         this.selectedColumns[0] === column ||
-        (this.selectedColumns.length > 1 && this.selectedColumns[this.selectedColumns.length - 1] === column && !intersects.lineLineOneDimension(xSelectedStartLine1D.start, xSelectedStartLine1D.end, xSelectedEndLine1D.start, xSelectedEndLine1D.end));
+        (this.selectedColumns.length > 1 &&
+          this.selectedColumns[this.selectedColumns.length - 1] === column &&
+          !intersects.lineLineOneDimension(
+            xSelectedStartLine1D.start,
+            xSelectedStartLine1D.end,
+            xSelectedEndLine1D.start,
+            xSelectedEndLine1D.end
+          ));
 
       // only show the label if selected or mod calculation
       if (selected || mod === 0 || column % mod === 0) {
-        const charactersWidth = this.characterSize.width * column.toString().length / viewport.scale.x;
+        const charactersWidth = (this.characterSize.width * column.toString().length) / viewport.scale.x;
 
         // hide labels that are too small for the width
         if (currentWidth > charactersWidth) {
-
           // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
           let xPosition = x + currentWidth / 2;
           const left = xPosition - charactersWidth / 2;
           const right = xPosition + charactersWidth / 2;
 
           // only when selected or not intersects one of the selected numbers
-          if (selected || !(intersects.lineLineOneDimension(xSelectedStartLine1D.start, xSelectedStartLine1D.end, left, right) ||
-            intersects.lineLineOneDimension(xSelectedEndLine1D.start, xSelectedEndLine1D.end, left, right))) {
+          if (
+            selected ||
+            !(
+              intersects.lineLineOneDimension(xSelectedStartLine1D.start, xSelectedStartLine1D.end, left, right) ||
+              intersects.lineLineOneDimension(xSelectedEndLine1D.start, xSelectedEndLine1D.end, left, right)
+            )
+          ) {
             this.labels.add({ text: column.toString(), x: xPosition, y });
           }
         }
       }
       column++;
     }
-  };
+  }
 
   private drawVertical() {
     if (!this.characterSize) return;
@@ -227,8 +245,14 @@ export class GridHeadings extends Container {
     const halfCharacterHeight = this.characterSize.height / 2 / viewport.scale.x;
 
     // use these bounds for digit overlap comparison
-    const ySelectedStartLine1D = { start: ySelectedStart + selectedStart.height / 2 - halfCharacterHeight, end: ySelectedStart + selectedStart.height / 2 + halfCharacterHeight };
-    const ySelectedEndLine1D = { start: ySelectedEnd - selectedEnd.height / 2 - halfCharacterHeight, end: ySelectedEnd - selectedEnd.height / 2 + halfCharacterHeight };
+    const ySelectedStartLine1D = {
+      start: ySelectedStart + selectedStart.height / 2 - halfCharacterHeight,
+      end: ySelectedStart + selectedStart.height / 2 + halfCharacterHeight,
+    };
+    const ySelectedEndLine1D = {
+      start: ySelectedEnd - selectedEnd.height / 2 - halfCharacterHeight,
+      end: ySelectedEnd - selectedEnd.height / 2 + halfCharacterHeight,
+    };
 
     // highlight row headings based on selected cells
     this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
@@ -256,20 +280,31 @@ export class GridHeadings extends Container {
 
       // show first and last selected numbers unless last selected number overlaps first selected number
       const selected =
-        this.selectedRows[0] === row || (this.selectedRows.length > 1 && this.selectedRows[this.selectedRows.length - 1] === row && !intersects.lineLineOneDimension(ySelectedStartLine1D.start, ySelectedStartLine1D.end, ySelectedEndLine1D.start, ySelectedEndLine1D.end));
+        this.selectedRows[0] === row ||
+        (this.selectedRows.length > 1 &&
+          this.selectedRows[this.selectedRows.length - 1] === row &&
+          !intersects.lineLineOneDimension(
+            ySelectedStartLine1D.start,
+            ySelectedStartLine1D.end,
+            ySelectedEndLine1D.start,
+            ySelectedEndLine1D.end
+          ));
 
       // only show the label if selected or mod calculation
       if (selected || mod === 0 || row % mod === 0) {
-
         // only show labels if height is large enough
         if (currentHeight > halfCharacterHeight * 2) {
-
           // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
           let yPosition = y + currentHeight / 2;
           const top = yPosition - halfCharacterHeight;
           const bottom = yPosition + halfCharacterHeight;
-          if (selected || !(intersects.lineLineOneDimension(ySelectedStartLine1D.start, ySelectedStartLine1D.end, top, bottom) ||
-            intersects.lineLineOneDimension(ySelectedEndLine1D.start, ySelectedEndLine1D.end, top, bottom))) {
+          if (
+            selected ||
+            !(
+              intersects.lineLineOneDimension(ySelectedStartLine1D.start, ySelectedStartLine1D.end, top, bottom) ||
+              intersects.lineLineOneDimension(ySelectedEndLine1D.start, ySelectedEndLine1D.end, top, bottom)
+            )
+          ) {
             this.labels.add({
               text: row.toString(),
               x: x + ROW_DIGIT_OFFSET.x,
@@ -287,7 +322,7 @@ export class GridHeadings extends Container {
       // graphics.moveTo(bounds.left + rowWidth / 2, y)
       // graphics.lineTo(bounds.left + rowWidth / 2, y + CELL_HEIGHT)
     }
-  };
+  }
 
   private drawCorner(): void {
     const { viewport } = this.app;
@@ -298,7 +333,7 @@ export class GridHeadings extends Container {
     this.cornerRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, cellHeight);
     this.corner.drawShape(this.cornerRect);
     this.corner.endFill();
-  };
+  }
 
   private drawHeadingLines(): void {
     const { viewport } = this.app;
@@ -309,7 +344,7 @@ export class GridHeadings extends Container {
     this.headingsGraphics.lineTo(bounds.left + this.rowWidth, viewport.bottom);
     this.headingsGraphics.moveTo(bounds.left, bounds.top + cellHeight);
     this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
-  };
+  }
 
   update() {
     if (!this.dirty) return;
@@ -383,16 +418,18 @@ export class GridHeadings extends Container {
   }
 
   // whether the point is on the heading gridLine (with tolerance)
-  intersectsHeadingGridLine(world: Point): { start: number, column?: number; row?: number, width?: number, height?: number } | undefined {
+  intersectsHeadingGridLine(
+    world: Point
+  ): { start: number; column?: number; row?: number; width?: number; height?: number } | undefined {
     if (!this.columnRect || !this.rowRect) return;
     const { gridOffsets } = this.app;
     if (intersects.rectanglePoint(this.columnRect, world)) {
-        for (const line of this.gridLinesColumns) {
-          if (Math.abs(world.x - line.x) < GRID_HEADING_RESIZE_TOLERANCE) {
-            const start = gridOffsets.getColumnPlacement(line.column);
-            return { start: start.x, column: line.column, width: line.width };
-          }
+      for (const line of this.gridLinesColumns) {
+        if (Math.abs(world.x - line.x) < GRID_HEADING_RESIZE_TOLERANCE) {
+          const start = gridOffsets.getColumnPlacement(line.column);
+          return { start: start.x, column: line.column, width: line.width };
         }
+      }
     }
     if (intersects.rectanglePoint(this.rowRect, world)) {
       for (const line of this.gridLinesRows) {

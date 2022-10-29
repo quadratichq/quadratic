@@ -1,10 +1,10 @@
 import { Point } from 'pixi.js';
-import { PixiApp } from '../pixiApp/PixiApp';
-import { DOUBLE_CLICK_TIME } from './inputUtils';
+import { PixiApp } from '../../pixiApp/PixiApp';
+import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_MOVE_POSITION = 5;
 
-export class InputDown {
+export class PointerDown {
   private app: PixiApp;
   private active = false;
   private positionRaw?: Point;
@@ -73,7 +73,8 @@ export class InputDown {
 
   pointerMove(world: Point): void {
     const { viewport, gridOffsets, settings, cursor } = this.app;
-    if (!this.active || !this.position || !this.previousPosition || !this.positionRaw || !settings.setInteractionState) return;
+    if (!this.active || !this.position || !this.previousPosition || !this.positionRaw || !settings.setInteractionState)
+      return;
 
     // for determining if double click
     if (
@@ -89,7 +90,6 @@ export class InputDown {
 
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {
-
       // hide multi cursor when only selecting one cell
       settings.setInteractionState({
         keyboardMovePosition: { x: this.position.x, y: this.position.y },
@@ -148,9 +148,16 @@ export class InputDown {
   pointerUp(): void {
     if (this.active) {
       if (!this.pointerMoved) {
-        this.doubleClickTimeout = window.setTimeout(() => this.doubleClickTimeout = undefined, DOUBLE_CLICK_TIME);
+        this.doubleClickTimeout = window.setTimeout(() => (this.doubleClickTimeout = undefined), DOUBLE_CLICK_TIME);
       }
       this.active = false;
+    }
+  }
+
+  destroy(): void {
+    if (this.doubleClickTimeout) {
+      window.clearTimeout(this.doubleClickTimeout);
+      this.doubleClickTimeout = undefined;
     }
   }
 }
