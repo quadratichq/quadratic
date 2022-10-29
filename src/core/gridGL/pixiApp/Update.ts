@@ -1,4 +1,5 @@
-import { debugShowFPS, debugShowRenderer } from '../../../debugFlags';
+import { debug, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
+import { timeCheck, timeReset } from '../helpers/debugPerformance';
 import { FPS } from './Fps';
 import { PixiApp } from './PixiApp';
 
@@ -16,7 +17,7 @@ export class Update {
 
   start(): void {
     if (!this.raf) {
-      this.raf = requestAnimationFrame(this.update);
+      this.raf = requestAnimationFrame(debug ? this.updateDebug : this.update);
     }
   }
 
@@ -34,6 +35,39 @@ export class Update {
     }
   }
 
+  private updateDebug = (): void => {
+    const app = this.pixiApp;
+    if (app.destroyed) return;
+    const rendererDirty = app.viewport.dirty || app.gridLines.dirty || app.axesLines.dirty || app.headings.dirty || app.cells.dirty || app.cursor.dirty;
+
+    timeReset()
+    app.gridLines.update();
+    timeCheck('gridLines');
+    app.axesLines.update();
+    timeCheck('axesLines');
+    app.headings.update();
+    timeCheck('headings');
+    app.cells.update();
+    timeCheck('cells');
+    app.cursor.update();
+    timeCheck('cursor');
+
+    if (rendererDirty) {
+      app.viewport.dirty = false;
+      app.renderer.render(app.stage);
+      timeCheck('render', 10);
+      if (debugShowRenderer) {
+        this.setDebugShowRenderer(true);
+      }
+    } else {
+      if (debugShowRenderer) {
+        this.setDebugShowRenderer(false);
+      }
+    }
+    this.raf = requestAnimationFrame(this.updateDebug);
+    this.fps?.update();
+  }
+
   private update = (): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
@@ -48,15 +82,7 @@ export class Update {
     if (rendererDirty) {
       app.viewport.dirty = false;
       app.renderer.render(app.stage);
-      if (debugShowRenderer) {
-        this.setDebugShowRenderer(true);
-      }
-    } else {
-      if (debugShowRenderer) {
-        this.setDebugShowRenderer(false);
-      }
     }
     this.raf = requestAnimationFrame(this.update);
-    this.fps?.update();
   }
 }
