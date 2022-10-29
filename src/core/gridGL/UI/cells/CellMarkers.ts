@@ -1,6 +1,5 @@
 import * as PIXI from 'pixi.js';
 import { colors } from '../../../../theme/colors';
-import { PixiApp } from '../../pixiApp/PixiApp';
 
 export type CellMarkerTypes = 'CodeIcon';
 
