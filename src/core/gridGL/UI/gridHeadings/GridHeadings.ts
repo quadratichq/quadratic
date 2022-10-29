@@ -314,15 +314,8 @@ export class GridHeadings extends Container {
 
   update() {
     if (!this.dirty) return;
-    const { selectedColumns, selectedRows } = this.createSelectedArrays();
 
-    // // only redraw headings if dirty or selection has changed
-    // if (
-    //   !dirty &&
-    //   isArrayShallowEqual(selectedColumns, this.selectedColumns) &&
-    //   isArrayShallowEqual(selectedRows, this.selectedRows)
-    // )
-    //   return;
+    const { selectedColumns, selectedRows } = this.createSelectedArrays();
 
     this.labels.clear();
     this.selectedColumns = selectedColumns;
