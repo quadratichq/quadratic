@@ -27,7 +27,7 @@ export class gridSpare {
 
   populate(cells?: Cell[]) {
     this.cells = {};
-    if (!cells) {
+    if (!cells?.length) {
       this.empty();
       return;
     }
