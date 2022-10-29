@@ -3,4 +3,5 @@ export const debug = true;
 
 export const debugShowRenderer = true;
 export const debugShowFPS = true;
-export const debugTimeCheck = true;
+export const debugShowTime = true;
+export const debugShowCountRenderedObjects = false;

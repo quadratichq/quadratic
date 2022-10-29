@@ -27,7 +27,8 @@ export class CellsLabels extends Container {
         fontSize,
         tint: 0,
         align: 'left',
-    }));
+      })
+    );
     return label;
   }
 

@@ -21,6 +21,7 @@ export class CellsMarkers extends PIXI.Container {
       } else {
         child = this.addChild(new PIXI.BitmapText('</>', { fontName: 'OpenSans', fontSize: 4 }));
         child.tint = colors.cellColorUserPython;
+        this.codeIcons.push(child);
       }
       child.position.set(x + 1, y - 0.5);
       child.visible = true;
