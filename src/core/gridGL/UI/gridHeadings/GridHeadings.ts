@@ -7,9 +7,6 @@ import { intersects } from '../../helpers/intersects';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { GridHeadingsLabels } from './GridHeadingsLabels';
 
-// this ensures the top-left corner of the viewport doesn't move when toggling headings
-export const OFFSET_HEADINGS = false;
-
 // Constants for headers
 export const LABEL_MAXIMUM_WIDTH_PERCENT = 0.7;
 export const LABEL_MAXIMUM_HEIGHT_PERCENT = 0.5;
@@ -34,7 +31,6 @@ export class GridHeadings extends Container {
   private rowWidth = 0;
 
   headingSize: Size = { width: 0, height: 0 };
-  private lastShowHeadings = false;
 
   // heading location for hitTest
   private rowRect: Rectangle | undefined;
@@ -357,20 +353,10 @@ export class GridHeadings extends Container {
 
     this.headingsGraphics.clear();
 
-    const viewport = this.app.viewport;
-
-    // handle showHeadings = false and allow for adjust headings (if OFFSET_HEADINGS flag is set)
     if (!this.app.settings.showHeadings) {
       this.visible = false;
-      if (this.lastShowHeadings) {
-        if (OFFSET_HEADINGS) {
-          viewport.x -= this.headingSize.width;
-          viewport.y -= this.headingSize.height;
-          this.lastShowHeadings = false;
-        }
-        this.rowRect = undefined;
-        this.columnRect = undefined;
-      }
+      this.rowRect = undefined;
+      this.columnRect = undefined;
       this.headingSize = { width: 0, height: 0 };
       return;
     }
@@ -380,26 +366,12 @@ export class GridHeadings extends Container {
     }
 
     this.drawVertical();
-
-    // adjust viewport position if headings are new
-    if (!this.lastShowHeadings) {
-      if (OFFSET_HEADINGS) {
-        viewport.x += this.rowWidth!;
-        viewport.y += CELL_HEIGHT;
-      }
-      this.lastShowHeadings = true;
-
-      // need to start over to take into account change in viewport position
-      this.labels.clear();
-      this.drawVertical();
-    }
-
     this.drawHorizontal();
     this.drawHeadingLines();
     this.labels.update();
     this.drawCorner();
 
-    this.headingSize = { width: this.rowWidth, height: CELL_HEIGHT };
+    this.headingSize = { width: this.rowWidth * this.app.viewport.scale.x, height: CELL_HEIGHT };
   }
 
   // whether the point is in the heading

@@ -69,6 +69,10 @@ export function keyboardPosition(options: {
     else {
       newInteractionState = {
         ...interactionState,
+        keyboardMovePosition: {
+          x: interactionState.cursorPosition.x + deltaX,
+          y: interactionState.cursorPosition.y + deltaY,
+        },
         showMultiCursor: false,
         cursorPosition: {
           x: interactionState.cursorPosition.x + deltaX,
@@ -78,12 +82,6 @@ export function keyboardPosition(options: {
       setInteractionState(newInteractionState);
     }
     event.preventDefault();
-    if (viewport) {
-      ensureVisible({
-        app,
-        interactionState: newInteractionState,
-      });
-    }
   };
 
   if (event.key === 'ArrowUp') {

@@ -40,6 +40,7 @@ export class PixiAppSettings {
     this.interactionState = interactionState;
     this.setInteractionState = setInteractionState;
     this.app.cursor.dirty = true;
+    this.app.headings.dirty = true;
   }
 
   updateEditorInteractionState(editorInteractionState: EditorInteractionState, setEditorInteractionState: (value: EditorInteractionState) => void): void {

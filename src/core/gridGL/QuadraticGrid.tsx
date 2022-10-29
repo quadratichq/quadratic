@@ -10,6 +10,7 @@ import { PixiApp } from './pixiApp/PixiApp';
 import { useHeadings } from '../gridDB/useHeadings';
 import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
+import { ensureVisible } from './interaction/ensureVisible';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -45,7 +46,11 @@ export default function QuadraticGrid() {
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
   useEffect(() => {
     app?.settings.updateInteractionState(interactionState, setInteractionState);
-  }, [app?.settings, interactionState, setInteractionState]);
+    ensureVisible({
+      app,
+      interactionState,
+    });
+  }, [app, app?.settings, interactionState, setInteractionState]);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   useEffect(() => {

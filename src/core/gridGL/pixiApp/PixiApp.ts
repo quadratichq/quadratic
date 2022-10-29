@@ -85,7 +85,8 @@ export class PixiApp {
     console.log('[QuadraticGL] environment ready');
   }
 
-  private viewportChanged = (): void => {
+  viewportChanged = (): void => {
+    this.viewport.dirty = true;
     this.gridLines.dirty = true;
     this.axesLines.dirty = true;
     this.headings.dirty = true;
