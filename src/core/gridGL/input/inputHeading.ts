@@ -119,6 +119,7 @@ export class inputHeading {
           cells.dirty = true;
           gridLines.dirty = true;
           cursor.dirty = true;
+          headings.dirty = true;
         }
       } else if (gridOffsets.headingResizing.row !== undefined) {
         const size = Math.max(0, world.y - gridOffsets.headingResizing.start);
@@ -127,6 +128,7 @@ export class inputHeading {
           cells.dirty = true;
           gridLines.dirty = true;
           cursor.dirty = true;
+          headings.dirty = true;
         }
       }
     }

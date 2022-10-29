@@ -8,7 +8,7 @@ export class CellsMarkers extends PIXI.Container {
   private codeIconsIndex = 0;
 
   clear() {
-    this.codeIcons.forEach(child => child.visible = true);
+    this.codeIcons.forEach(child => child.visible = false);
     this.codeIconsIndex = 0;
   }
 
@@ -16,7 +16,8 @@ export class CellsMarkers extends PIXI.Container {
     let child: PIXI.BitmapText;
     if (type === 'CodeIcon') {
       if (this.codeIconsIndex < this.codeIcons.length) {
-        child = this.codeIcons[this.codeIconsIndex++] as PIXI.BitmapText;
+        child = this.codeIcons[this.codeIconsIndex] as PIXI.BitmapText;
+        this.codeIconsIndex++;
       } else {
         child = this.addChild(new PIXI.BitmapText('</>', { fontName: 'OpenSans', fontSize: 4 }));
         child.tint = colors.cellColorUserPython;

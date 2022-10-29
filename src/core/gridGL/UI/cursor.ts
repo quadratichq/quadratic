@@ -25,7 +25,6 @@ export class Cursor extends Graphics {
       color = colors.cursorCell;
     }
 
-    this.clear();
     this.lineStyle({
       width: CURSOR_THICKNESS,
       color,
@@ -49,6 +48,7 @@ export class Cursor extends Graphics {
   update() {
     if (this.dirty) {
       this.dirty = false;
+      this.clear();
       this.drawCursor();
       this.drawMultiCursor();
     }

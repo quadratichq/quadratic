@@ -88,6 +88,7 @@ export class PixiApp {
   private viewportChanged = (): void => {
     this.gridLines.dirty = true;
     this.axesLines.dirty = true;
+    this.headings.dirty = true;
     this.cells.dirty = true;
   };
 
@@ -123,6 +124,7 @@ export class PixiApp {
       zoomToFit(this.viewport);
     } else if (zoom  !== this.viewport.scale.x) {
       this.viewport.setZoom(zoom, true);
+      this.viewportChanged();
     }
   }
 }
