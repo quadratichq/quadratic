@@ -10,12 +10,12 @@ import { focusGrid } from '../../../helpers/focusGrid';
 interface CellInputProps {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
-  viewportRef: React.MutableRefObject<Viewport | undefined>;
+  viewport?: Viewport;
   container?: HTMLDivElement;
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { interactionState, setInteractionState, viewportRef, container } = props;
+  const { interactionState, setInteractionState, viewport, container } = props;
 
   const [value, setValue] = useState<string | undefined>(undefined);
   const cellLocation = useRef(interactionState.cursorPosition);
@@ -27,7 +27,6 @@ export const CellInput = (props: CellInputProps) => {
   }, [value, textInput]);
 
   // If we don't have a viewport, we can't continue.
-  const viewport = viewportRef.current;
   if (!viewport || !container) return null;
 
   // Function used to move and scale the Input with the Grid
@@ -94,14 +93,16 @@ export const CellInput = (props: CellInputProps) => {
     // Update Grid Interaction state, reset input value state
     setInteractionState({
       ...interactionState,
-      ...{
-        cursorPosition: {
-          x: interactionState.cursorPosition.x + transpose.x,
-          y: interactionState.cursorPosition.y + transpose.y,
-        },
-        showInput: false,
-        inputInitialValue: '',
+      keyboardMovePosition: {
+        x: interactionState.cursorPosition.x + transpose.x,
+        y: interactionState.cursorPosition.y + transpose.y,
       },
+      cursorPosition: {
+        x: interactionState.cursorPosition.x + transpose.x,
+        y: interactionState.cursorPosition.y + transpose.y,
+      },
+      showInput: false,
+      inputInitialValue: '',
     });
     setValue(undefined);
 

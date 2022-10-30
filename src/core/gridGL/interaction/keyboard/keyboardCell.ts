@@ -18,12 +18,14 @@ export function keyboardCell(options: {
     // move single cursor one right
     setInteractionState({
       ...interactionState,
-      ...{
-        showMultiCursor: false,
-        cursorPosition: {
-          x: interactionState.cursorPosition.x + 1,
-          y: interactionState.cursorPosition.y,
-        },
+      showMultiCursor: false,
+      keyboardMovePosition: {
+        x: interactionState.cursorPosition.x + 1,
+        y: interactionState.cursorPosition.y,
+      },
+      cursorPosition: {
+        x: interactionState.cursorPosition.x + 1,
+        y: interactionState.cursorPosition.y,
       },
     });
     event.preventDefault();

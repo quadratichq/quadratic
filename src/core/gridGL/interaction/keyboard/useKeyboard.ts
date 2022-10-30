@@ -25,11 +25,13 @@ export const useKeyboard = (
   const { interactionState, setInteractionState, setEditorInteractionState, app } = props;
 
   const keyDownWindow = useCallback((event: KeyboardEvent): void => {
+    if (interactionState.showInput) return;
+
     if (keyboardViewport({ event, viewport: app?.viewport })) {
       event.stopPropagation();
       event.preventDefault();
     }
-  }, [app?.viewport]);
+  }, [app?.viewport, interactionState]);
 
   useEffect(() => {
     window.addEventListener('keydown', keyDownWindow);
@@ -37,6 +39,8 @@ export const useKeyboard = (
   }, [keyDownWindow]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (interactionState.showInput) return;
+
     if (
       keyboardClipboard(event, interactionState) ||
       keyboardSelect({ event, interactionState, setInteractionState, viewport: app?.viewport })

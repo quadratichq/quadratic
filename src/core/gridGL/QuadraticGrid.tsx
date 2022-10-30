@@ -11,6 +11,7 @@ import { useHeadings } from '../gridDB/useHeadings';
 import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/ensureVisible';
+import { CellInput } from './interaction/CellInput';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -93,12 +94,13 @@ export default function QuadraticGrid() {
       }}
       onKeyDown={onKeyDown}
     >
-      {/*<CellInput
+      <CellInput
         interactionState={interactionState}
         setInteractionState={setInteractionState}
-        viewportRef={viewportRef}
+        viewport={app?.viewport}
         container={container}
-      ></CellInput>
+      />
+      {/*
       {viewportRef.current && <ViewportEventRegister viewport={viewportRef.current}></ViewportEventRegister>}
       <RightClickMenu
         state={rightClickMenuState}

@@ -1,5 +1,7 @@
 import { Point } from 'pixi.js';
+import { gridSparse } from '../../../gridDB/gridSparse';
 import { PixiApp } from '../../pixiApp/PixiApp';
+import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_MOVE_POSITION = 5;
@@ -46,6 +48,16 @@ export class PointerDown {
     else if (rightClick) {
       return;
     }
+
+    if (this.doubleClickTimeout) {
+      window.clearTimeout(this.doubleClickTimeout);
+      this.doubleClickTimeout = undefined;
+      doubleClickCell({ cell: this.app.grid.get(column, row), app: this.app });
+      this.active = false;
+      event.preventDefault();
+      return;
+    }
+
     this.active = true;
     this.position = new Point(column, row);
 
@@ -61,11 +73,10 @@ export class PointerDown {
     // For single click, hide multiCursor
     setInteractionState({
       ...interactionState,
-      ...{
-        cursorPosition: { x: column, y: row },
-        multiCursorPosition: previousPosition,
-        showMultiCursor: false,
-      },
+      keyboardMovePosition: { x: column, y: row },
+      cursorPosition: { x: column, y: row },
+      multiCursorPosition: previousPosition,
+      showMultiCursor: false,
     });
     cursor.dirty = true;
     this.pointerMoved = false;
