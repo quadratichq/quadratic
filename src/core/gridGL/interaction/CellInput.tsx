@@ -161,6 +161,7 @@ export const CellInput = (props: CellInputProps) => {
       onKeyDown={(event) => {
         if (event.key === 'Enter') {
           closeInput({ x: 0, y: 1 });
+          event.preventDefault();
         } else if (event.key === 'Tab') {
           closeInput({ x: 1, y: 0 });
           event.preventDefault();
