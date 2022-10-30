@@ -12,6 +12,7 @@ import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
+import RightClickMenu from '../../ui/menus/RightClickMenu';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -100,14 +101,12 @@ export default function QuadraticGrid() {
         container={container}
         app={app}
       />
-      {/*
-      {viewportRef.current && <ViewportEventRegister viewport={viewportRef.current}></ViewportEventRegister>}
       <RightClickMenu
         state={rightClickMenuState}
         anchorPoint={rightClickPoint}
         onClose={() => toggleRightClickMenu(false)}
         interactionState={interactionState}
-      /> */}
+      />
     </div>
   );
 }
