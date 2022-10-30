@@ -167,6 +167,10 @@ export const CellInput = (props: CellInputProps) => {
           event.preventDefault();
         } else if (event.key === 'Escape') {
           closeInput();
+        } else if (event.key === 'ArrowUp') {
+          closeInput({ x: 0, y: -1 });
+        } else if (event.key === 'ArrowDown') {
+          closeInput({ x: 0, y: 1 });
         }
       }}
     ></input>
