@@ -28,5 +28,3 @@ yarn-error.log*
 venv/*
 *.pyc
 .idea
-
-.env
