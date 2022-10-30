@@ -1,4 +1,4 @@
-import { debug, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
+import { debug, debugShowFPS } from '../../../debugFlags';
 import { debugRendererLight, debugShowChildren, debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { FPS } from './Fps';
 import { PixiApp } from './PixiApp';

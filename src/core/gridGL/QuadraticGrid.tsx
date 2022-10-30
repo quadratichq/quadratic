@@ -97,8 +97,8 @@ export default function QuadraticGrid() {
       <CellInput
         interactionState={interactionState}
         setInteractionState={setInteractionState}
-        viewport={app?.viewport}
         container={container}
+        app={app}
       />
       {/*
       {viewportRef.current && <ViewportEventRegister viewport={viewportRef.current}></ViewportEventRegister>}

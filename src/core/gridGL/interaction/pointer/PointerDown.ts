@@ -1,5 +1,4 @@
 import { Point } from 'pixi.js';
-import { gridSparse } from '../../../gridDB/gridSparse';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';

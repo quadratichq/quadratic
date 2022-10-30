@@ -3,19 +3,20 @@ import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { deleteCellsRange } from '../../actions/deleteCellsRange';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { Viewport } from 'pixi-viewport';
 import CellReference from '../types/cellReference';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { PixiApp } from '../pixiApp/PixiApp';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
-  viewport?: Viewport;
   container?: HTMLDivElement;
+  app?: PixiApp;
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { interactionState, setInteractionState, viewport, container } = props;
+  const { interactionState, setInteractionState, app, container } = props;
+  const viewport = app?.viewport;
 
   const [value, setValue] = useState<string | undefined>(undefined);
   const cellLocation = useRef(interactionState.cursorPosition);
@@ -31,15 +32,16 @@ export const CellInput = (props: CellInputProps) => {
 
   // Function used to move and scale the Input with the Grid
   function updateInputCSSTransform() {
-    if (!viewport || !container) return '';
+    if (!app || !viewport || !container) return '';
 
     // Get world transform matrix
     let worldTransform = viewport.worldTransform;
 
     // Calculate position of input based on cell
+    const cell = app.gridOffsets.getCell(cellLocation.current.x, cellLocation.current.y);
     let cell_offset_scaled = viewport.toScreen(
-      cellLocation.current.x * CELL_WIDTH + 0.5,
-      cellLocation.current.y * CELL_HEIGHT + 1
+      cell.x,
+      cell.y - 0.66 // magic number via experimentation
     );
 
     // Generate transform CSS
@@ -144,9 +146,11 @@ export const CellInput = (props: CellInputProps) => {
         lineHeight: '1',
         background: 'none',
         transformOrigin: '0 0',
-        transform: transform,
+        transform,
+        fontFamily: 'OpenSans',
         fontSize: '14px',
-        letterSpacing: '0.015em',
+        letterSpacing: '0.07px',
+        // margin: '-7px -10px 0 0',
       }}
       value={value}
       onChange={(event) => {

@@ -1,4 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
+import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { CellsLabels } from './CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
@@ -58,8 +59,8 @@ export class Cells extends Container {
             }
           }
           this.labels.add({
-            x,
-            y,
+            x: x + CELL_TEXT_MARGIN_LEFT,
+            y: y + CELL_TEXT_MARGIN_TOP,
             text: cell.value,
           });
         }

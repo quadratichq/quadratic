@@ -53,7 +53,7 @@ export const useKeyboard = (
     }
 
     if (
-      keyboardPosition({ event, interactionState, setInteractionState, app }) ||
+      keyboardPosition({ event, interactionState, setInteractionState }) ||
       keyboardCell({ event, interactionState, setInteractionState, setEditorInteractionState, app })
     )
       return;

@@ -1,16 +1,11 @@
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
-import { PixiApp } from '../../pixiApp/PixiApp';
-import { ensureVisible } from '../ensureVisible';
-import { pixiKeyboardCanvasProps } from './useKeyboard';
 
 export function keyboardPosition(options: {
   event: React.KeyboardEvent<HTMLElement>;
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
-  app?: PixiApp;
 }): boolean {
-  const { event, interactionState, setInteractionState, app } = options;
-  const viewport = app?.viewport;
+  const { event, interactionState, setInteractionState } = options;
 
   const moveCursor = (deltaX: number, deltaY: number) => {
     let newInteractionState: GridInteractionState | undefined;
