@@ -56,12 +56,20 @@ export class GridHeadings extends Container {
     this.characterSize = { width: label.width, height: label.height };
   }
 
-  // simple interval finding algorithm -- this can be improved to allow for different intervals
-  private findInterval(i: number): number {
-    if (i > 100) return 500;
-    if (i > 50) return 100;
-    if (i > 10) return 50;
+  private findIntervalX(i: number): number {
+    if (i > 100) return 50;
+    if (i > 20) return 25;
     if (i > 5) return 10;
+    return 5;
+  }
+
+  private findIntervalY(i: number): number {
+    if (i > 250) return 250;
+    if (i > 100) return 100;
+    if (i > 50) return 50;
+    if (i > 25) return 25;
+    if (i > 10) return 10;
+    if (i > 5) return 5;
     return 5;
   }
 
@@ -144,7 +152,7 @@ export class GridHeadings extends Container {
     let mod = 0;
     if (labelWidth > CELL_WIDTH * viewport.scale.x * LABEL_MAXIMUM_WIDTH_PERCENT) {
       const skipNumbers = Math.ceil((cellWidth * (1 - LABEL_MAXIMUM_WIDTH_PERCENT)) / labelWidth);
-      mod = this.findInterval(skipNumbers);
+      mod = this.findIntervalX(skipNumbers);
     }
 
     const y = bounds.top + cellHeight / 2;
@@ -174,25 +182,26 @@ export class GridHeadings extends Container {
 
       // only show the label if selected or mod calculation
       if (selected || mod === 0 || column % mod === 0) {
-        const charactersWidth = (this.characterSize.width * column.toString().length) / viewport.scale.x;
 
         // hide labels that are too small for the width
-        if (currentWidth > charactersWidth) {
-          // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
-          let xPosition = x + currentWidth / 2;
-          const left = xPosition - charactersWidth / 2;
-          const right = xPosition + charactersWidth / 2;
+        // if (currentWidth > charactersWidth || this.app.gridLines.alpha === 0) {
 
-          // only when selected or not intersects one of the selected numbers
-          if (
-            selected ||
-            !(
-              intersects.lineLineOneDimension(xSelectedStartLine1D.start, xSelectedStartLine1D.end, left, right) ||
-              intersects.lineLineOneDimension(xSelectedEndLine1D.start, xSelectedEndLine1D.end, left, right)
-            )
-          ) {
-            this.labels.add({ text: column.toString(), x: xPosition, y });
-          }
+        const charactersWidth = (this.characterSize.width * column.toString().length) / viewport.scale.x;
+
+        // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
+        let xPosition = x + currentWidth / 2;
+        const left = xPosition - charactersWidth / 2;
+        const right = xPosition + charactersWidth / 2;
+
+        // only when selected or not intersects one of the selected numbers
+        if (
+          selected ||
+          !(
+            intersects.lineLineOneDimension(xSelectedStartLine1D.start, xSelectedStartLine1D.end, left, right) ||
+            intersects.lineLineOneDimension(xSelectedEndLine1D.start, xSelectedEndLine1D.end, left, right)
+          )
+        ) {
+          this.labels.add({ text: column.toString(), x: xPosition, y });
         }
       }
       column++;
@@ -257,7 +266,7 @@ export class GridHeadings extends Container {
     let mod = 0;
     if (this.characterSize.height > CELL_HEIGHT * viewport.scale.y * LABEL_MAXIMUM_HEIGHT_PERCENT) {
       const skipNumbers = Math.ceil((cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) / this.characterSize.height);
-      mod = this.findInterval(skipNumbers);
+      mod = this.findIntervalY(skipNumbers);
     }
 
     const x = bounds.left + this.rowWidth / 2;
@@ -287,25 +296,26 @@ export class GridHeadings extends Container {
 
       // only show the label if selected or mod calculation
       if (selected || mod === 0 || row % mod === 0) {
+
         // only show labels if height is large enough
-        if (currentHeight > halfCharacterHeight * 2) {
-          // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
-          let yPosition = y + currentHeight / 2;
-          const top = yPosition - halfCharacterHeight;
-          const bottom = yPosition + halfCharacterHeight;
-          if (
-            selected ||
-            !(
-              intersects.lineLineOneDimension(ySelectedStartLine1D.start, ySelectedStartLine1D.end, top, bottom) ||
-              intersects.lineLineOneDimension(ySelectedEndLine1D.start, ySelectedEndLine1D.end, top, bottom)
-            )
-          ) {
-            this.labels.add({
-              text: row.toString(),
-              x: x + ROW_DIGIT_OFFSET.x,
-              y: yPosition + ROW_DIGIT_OFFSET.y,
-            });
-          }
+        // if (currentHeight > halfCharacterHeight * 2 || this.app.gridLines.alpha === 0) {
+
+        // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
+        let yPosition = y + currentHeight / 2;
+        const top = yPosition - halfCharacterHeight;
+        const bottom = yPosition + halfCharacterHeight;
+        if (
+          selected ||
+          !(
+            intersects.lineLineOneDimension(ySelectedStartLine1D.start, ySelectedStartLine1D.end, top, bottom) ||
+            intersects.lineLineOneDimension(ySelectedEndLine1D.start, ySelectedEndLine1D.end, top, bottom)
+          )
+        ) {
+          this.labels.add({
+            text: row.toString(),
+            x: x + ROW_DIGIT_OFFSET.x,
+            y: yPosition + ROW_DIGIT_OFFSET.y,
+          });
         }
       }
       row++;

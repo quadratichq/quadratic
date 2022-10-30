@@ -22,6 +22,7 @@ export class GridLines extends Graphics {
 
       const gridAlpha = calculateAlphaForGridLines(this.app.viewport);
       if (gridAlpha === 0) {
+        this.alpha = 0;
         this.visible = false;
         return;
       }
