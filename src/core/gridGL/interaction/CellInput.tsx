@@ -104,7 +104,7 @@ export const CellInput = (props: CellInputProps) => {
         y: interactionState.cursorPosition.y + transpose.y,
       },
       showInput: false,
-      inputInitialValue: '',
+      // inputInitialValue: '',
     });
     setValue(undefined);
 

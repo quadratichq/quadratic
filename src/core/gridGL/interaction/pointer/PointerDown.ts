@@ -81,15 +81,30 @@ export class PointerDown {
     this.pointerMoved = false;
   }
 
+  private checkForCancelDoubleClick(world: Point): void {
+    const viewport = this.app.viewport;
+    if (!this.positionRaw) return;
+    if (Math.sqrt(Math.pow(this.positionRaw.x - world.x, 2) + Math.pow(this.positionRaw.y - world.y, 2)) >
+        MINIMUM_MOVE_POSITION * viewport.scale.x
+    ) {
+      window.clearTimeout(this.doubleClickTimeout);
+      this.doubleClickTimeout = undefined;
+    }
+  }
+
   pointerMove(world: Point): void {
     const { viewport, gridOffsets, settings, cursor } = this.app;
+    if (!this.active && !this.pointerMoved && this.doubleClickTimeout) {
+      this.checkForCancelDoubleClick(world);
+    }
+
     if (!this.active || !this.position || !this.previousPosition || !this.positionRaw || !settings.setInteractionState)
       return;
 
     // for determining if double click
     if (
       !this.pointerMoved &&
-      Math.abs(this.positionRaw.x - world.x) + Math.abs(this.positionRaw.y - world.y) >
+      Math.sqrt(Math.pow(this.positionRaw.x - world.x, 2) + Math.pow(this.positionRaw.y - world.y, 2)) >
         MINIMUM_MOVE_POSITION * viewport.scale.x
     ) {
       this.pointerMoved = true;
