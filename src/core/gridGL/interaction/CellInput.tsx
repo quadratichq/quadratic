@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
 import { deleteCellsRange } from '../../actions/deleteCellsRange';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
