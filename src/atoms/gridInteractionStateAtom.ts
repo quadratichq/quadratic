@@ -12,17 +12,19 @@ export interface GridInteractionState {
   inputInitialValue: string;
 }
 
+export const gridInteractionStateDefault: GridInteractionState = {
+  keyboardMovePosition: { x: 0, y: 0 },
+  cursorPosition: { x: 0, y: 0 },
+  showMultiCursor: false,
+  multiCursorPosition: {
+    originPosition: { x: 0, y: 0 },
+    terminalPosition: { x: 0, y: 0 },
+  },
+  showInput: false,
+  inputInitialValue: '',
+};
+
 export const gridInteractionStateAtom = atom({
   key: 'gridInteractionState', // unique ID (with respect to other atoms/selectors)
-  default: {
-    keyboardMovePosition: { x: 0, y: 0 },
-    cursorPosition: { x: 0, y: 0 },
-    showMultiCursor: false,
-    multiCursorPosition: {
-      originPosition: { x: 0, y: 0 },
-      terminalPosition: { x: 0, y: 0 },
-    },
-    showInput: false,
-    inputInitialValue: '',
-  } as GridInteractionState,
+  default: gridInteractionStateDefault,
 });

@@ -1,36 +1,38 @@
-import { Viewport } from 'pixi-viewport';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
-import { Size } from '../types/size';
+import { PixiApp } from '../pixiApp/PixiApp';
 
-// When the cursor moves ensure it is visible
+// Ensures the cursor is always visible
 export function ensureVisible(props: {
+  app?: PixiApp,
   interactionState: GridInteractionState;
-  viewport: Viewport;
-  headerSize: Size;
 }): void {
-  const { interactionState, viewport, headerSize } = props;
-  if (interactionState.showMultiCursor) {
-    // todo: maybe zoom to ensure entire cursor range is visible?
-  } else {
-    let dirty = false;
-    if (interactionState.cursorPosition.x * CELL_WIDTH - 1 < viewport.left + headerSize.width) {
-      viewport.left = interactionState.cursorPosition.x * CELL_WIDTH - 1 - headerSize.width;
-      dirty = true;
-    } else if ((interactionState.cursorPosition.x + 1) * CELL_WIDTH + 1 > viewport.right) {
-      viewport.right = (interactionState.cursorPosition.x + 1) * CELL_WIDTH + 1;
-      dirty = true;
-    }
+  const { interactionState, app } = props;
+  if (!app) return;
+  const { viewport, gridOffsets, headings } = app;
+  const headingSize = headings.headingSize;
 
-    if (interactionState.cursorPosition.y * CELL_HEIGHT - 1 < viewport.top + headerSize.height / viewport.scale.y) {
-      viewport.top = interactionState.cursorPosition.y * CELL_HEIGHT - 1 - headerSize.height / viewport.scale.y;
-      dirty = true;
-    } else if ((interactionState.cursorPosition.y + 1) * CELL_HEIGHT + 1 > viewport.bottom) {
-      viewport.bottom = (interactionState.cursorPosition.y + 1) * CELL_HEIGHT + 1;
-      dirty = true;
-    }
-    if (dirty) {
-      viewport.emit('moved');
-    }
+  const column = interactionState.keyboardMovePosition.x;
+  const row = interactionState.keyboardMovePosition.y;
+  const cell = gridOffsets.getCell(column, row);
+  let dirty = false;
+
+  if (cell.x + headingSize.width < viewport.left) {
+    viewport.left = cell.x - headingSize.width / viewport.scale.x;
+    dirty = true;
+  } else if (cell.x + cell.width > viewport.right) {
+    viewport.right = cell.x + cell.width;
+    dirty = true;
+  }
+
+  if (cell.y < viewport.top + headingSize.height / viewport.scale.y) {
+    viewport.top = cell.y - headingSize.height / viewport.scale.y;
+    dirty = true;
+  } else if (cell.y + cell.height > viewport.bottom) {
+    viewport.bottom = cell.y + cell.height;
+    dirty = true;
+  }
+
+  if (dirty) {
+    app.viewportChanged();
   }
 }

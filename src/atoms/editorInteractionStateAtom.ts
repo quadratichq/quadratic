@@ -9,12 +9,14 @@ export interface EditorInteractionState {
   mode: CellTypes;
 }
 
+export const editorInteractionStateDefault: EditorInteractionState = {
+  showCellTypeMenu: false,
+  showCodeEditor: false,
+  selectedCell: { x: 0, y: 0 },
+  mode: 'TEXT',
+};
+
 export const editorInteractionStateAtom = atom({
   key: 'editorInteractionState', // unique ID (with respect to other atoms/selectors)
-  default: {
-    showCellTypeMenu: false,
-    showCodeEditor: false,
-    selectedCell: { x: 0, y: 0 },
-    mode: 'TEXT',
-  } as EditorInteractionState,
+  default: editorInteractionStateDefault,
 });
