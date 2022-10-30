@@ -16,15 +16,16 @@ export function keyboardCell(options: {
 
   if (event.key === 'Tab') {
     // move single cursor one right
+    const delta = event.shiftKey ? -1 : 1;
     setInteractionState({
       ...interactionState,
       showMultiCursor: false,
       keyboardMovePosition: {
-        x: interactionState.cursorPosition.x + 1,
+        x: interactionState.cursorPosition.x + delta,
         y: interactionState.cursorPosition.y,
       },
       cursorPosition: {
-        x: interactionState.cursorPosition.x + 1,
+        x: interactionState.cursorPosition.x + delta,
         y: interactionState.cursorPosition.y,
       },
     });

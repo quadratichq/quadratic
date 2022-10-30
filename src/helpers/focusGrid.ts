@@ -1,4 +1,4 @@
 export const focusGrid = () => {
   // Set focus back to Grid
-  document.getElementById('QuadraticCanvasID')?.focus();
+  (document.querySelector('#pixi-canvas') as HTMLCanvasElement)?.focus();
 };
