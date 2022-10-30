@@ -18,9 +18,9 @@ export const CellInput = (props: CellInputProps) => {
   const viewport = app?.viewport;
 
   const [value, setValue] = useState<string | undefined>(undefined);
+
   const cellLocation = useRef(interactionState.cursorPosition);
   const textInput = useRef<HTMLInputElement>(null);
-
   // Effect for sizing the input width to the length of the value
   useEffect(() => {
     if (textInput.current) textInput.current.size = value?.length || 0 + 1;
@@ -68,27 +68,35 @@ export const CellInput = (props: CellInputProps) => {
     return null;
   }
 
+  // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
+  let closed = false;
+
   // When done editing with the input
-  const closeInput = async (transpose = { x: 0, y: 0 } as CellReference) => {
-    // Update Cell and dependent cells
-    if (value === '') {
-      await deleteCellsRange(
-        {
+  const closeInput = async (transpose = { x: 0, y: 0 } as CellReference, cancel = false) => {
+    if (closed) return;
+    closed = true;
+
+    if (!cancel) {
+      // Update Cell and dependent cells
+      if (value === '') {
+        await deleteCellsRange(
+          {
+            x: cellLocation.current.x,
+            y: cellLocation.current.y,
+          },
+          {
+            x: cellLocation.current.x,
+            y: cellLocation.current.y,
+          }
+        );
+      } else {
+        await updateCellAndDCells({
           x: cellLocation.current.x,
           y: cellLocation.current.y,
-        },
-        {
-          x: cellLocation.current.x,
-          y: cellLocation.current.y,
-        }
-      );
-    } else {
-      await updateCellAndDCells({
-        x: cellLocation.current.x,
-        y: cellLocation.current.y,
-        type: 'TEXT',
-        value: value || '',
-      });
+          type: 'TEXT',
+          value: value || '',
+        });
+      }
     }
 
     // Update Grid Interaction state, reset input value state
@@ -166,7 +174,8 @@ export const CellInput = (props: CellInputProps) => {
           closeInput({ x: 1, y: 0 });
           event.preventDefault();
         } else if (event.key === 'Escape') {
-          closeInput();
+          closeInput(undefined, true);
+          event.preventDefault();
         } else if (event.key === 'ArrowUp') {
           closeInput({ x: 0, y: -1 });
         } else if (event.key === 'ArrowDown') {
