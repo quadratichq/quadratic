@@ -1,18 +1,33 @@
+import Color from 'color';
 import { Graphics } from 'pixi.js';
 import { colors } from '../../../../theme/colors';
-import { Cell } from '../../../gridDB/db';
-import { GridOffsets } from '../../../gridDB/gridOffsets';
+import { Cell, CellFormat } from '../../../gridDB/db';
+import { PixiApp } from '../../pixiApp/PixiApp';
 
 export function drawCell(options: {
+  app: PixiApp;
   graphics: Graphics;
-  cell: Cell;
+  cell?: Cell;
+  cellFormat?: CellFormat;
   x: number;
   y: number;
   width: number;
   height: number;
-  gridOffsets: GridOffsets;
 }): void {
-  const { graphics, cell, x, y, width, height, gridOffsets } = options;
+  const { graphics, cell, x, y, width, height, app, cellFormat } = options;
+  const gridOffsets = app.gridOffsets;
+
+  if (cellFormat) {
+    if (cellFormat.fillColor) {
+      const color = Color(cellFormat.fillColor);
+      graphics.beginFill(color.rgbNumber(), color.alpha());
+      graphics.drawRect(x, y, width, height);
+      graphics.endFill();
+    }
+  }
+
+  if (!cell || !app.settings.showCellTypeOutlines) return;
+
   // Change outline color based on cell type but don't draw TEXT cell outlines since it's handled by the grid
   if (cell.type !== 'TEXT') {
     // g.lineStyle(1, colors.cellColorUserText, 0.75, 0.5, true);

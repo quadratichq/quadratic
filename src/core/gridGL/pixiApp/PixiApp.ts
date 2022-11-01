@@ -5,14 +5,15 @@ import { PixiAppSettings } from './PixiAppSettings';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { Update } from './Update';
 import './pixiApp.css';
-import { GridOffsets } from '../../gridDB/gridOffsets';
+import { GridOffsets } from '../../gridDB/GridOffsets';
 import { GridLines } from '../UI/GridLines';
 import { AxesLines } from '../UI/AxesLines';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { Cursor } from '../UI/cursor';
 import { Cells } from '../UI/cells/Cells';
-import { gridSparse } from '../../gridDB/gridSparse';
+import { GridSparse } from '../../gridDB/GridSparse';
 import { zoomInOut, zoomToFit } from '../helpers/zoom';
+import { GridFormat } from '../../gridDB/GridFormat';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -27,7 +28,8 @@ export class PixiApp {
   input: Pointer;
   viewport: Viewport;
   gridOffsets: GridOffsets;
-  grid: gridSparse;
+  grid: GridSparse;
+  gridFormat: GridFormat;
   settings: PixiAppSettings;
   renderer: Renderer;
   stage = new Container();
@@ -35,7 +37,8 @@ export class PixiApp {
 
   constructor() {
     this.gridOffsets = new GridOffsets(this);
-    this.grid = new gridSparse(this);
+    this.grid = new GridSparse(this);
+    this.gridFormat = new GridFormat(this);
 
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'pixi_canvas';

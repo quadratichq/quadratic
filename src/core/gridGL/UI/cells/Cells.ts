@@ -28,7 +28,7 @@ export class Cells extends Container {
   }
 
   private draw() {
-    const { viewport, grid, gridOffsets } = this.app;
+    const { viewport, grid, gridOffsets, gridFormat: format } = this.app;
     this.labels.clear();
     this.cellsMarkers.clear();
     this.cellBackgrounds.clear();
@@ -42,21 +42,35 @@ export class Cells extends Container {
       const height = gridOffsets.getRowHeight(row);
       for (let column = bounds.left; column <= bounds.right; column++) {
         const width = gridOffsets.getColumnWidth(column);
+
+        // todo: combine the two lookups together
         const cell = grid.get(column, row);
-        if (cell && (!input || input.column !== column || input.row !== row)) {
-          if (this.app.settings.showCellTypeOutlines) {
-            drawCell({
-              graphics: this.cellBackgrounds,
-              cell,
-              x,
-              y,
-              width,
-              height,
-              gridOffsets: this.app.gridOffsets,
-            });
-            if (cell.type === 'PYTHON') {
-              this.cellsMarkers.add(x, y, 'CodeIcon');
-            }
+        const cellFormat = format.get(column, row);
+
+        const isInput = input && input.column === column && input.row === row;
+        if (cellFormat && (!cell || isInput)) {
+          drawCell({
+            app: this.app,
+            graphics: this.cellBackgrounds,
+            cellFormat,
+            x,
+            y,
+            width,
+            height,
+          });
+        } else if (cell && !isInput) {
+          drawCell({
+            app: this.app,
+            graphics: this.cellBackgrounds,
+            cell,
+            cellFormat,
+            x,
+            y,
+            width,
+            height,
+          });
+          if (cell.type === 'PYTHON') {
+            this.cellsMarkers.add(x, y, 'CodeIcon');
           }
           this.labels.add({
             x: x + CELL_TEXT_MARGIN_LEFT,

@@ -13,6 +13,7 @@ import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
+import { GetFormatDB } from '../gridDB/Cells/GetFormatDB';
 
 export default function QuadraticGrid() {
   const { loading } = useLoading();
@@ -38,6 +39,19 @@ export default function QuadraticGrid() {
   }, [app, cells]);
 
   const { headings } = useHeadings(app);
+  useEffect(() => {
+    if (app && headings) {
+      app.gridOffsets.populate(headings.columns, headings.rows);
+    }
+  }, [app, headings]);
+
+  const format = useLiveQuery(() => GetFormatDB());
+  useEffect(() => {
+    if (app && format) {
+      app.gridFormat.populate(format);
+    }
+  }, [app, format]);
+
   useEffect(() => {
     if (app && headings) {
       app.gridOffsets.populate(headings.columns, headings.rows);

@@ -25,14 +25,43 @@ import {
   ReadMore,
 } from '@mui/icons-material';
 import { PaletteOutlined } from '@mui/icons-material';
+import Color from 'color';
 import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
-
-import { menuItemIconStyles, topBarIconStyles } from './menuStyles';
-
 import { colors } from '../../../../theme/colors';
-
+import { useRecoilState } from 'recoil';
+import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
+import { menuItemIconStyles, topBarIconStyles } from './menuStyles';
+import { updateFormatDB } from '../../../../core/gridDB/Cells/UpdateFormatDB';
+import { CellFormat } from '../../../../core/gridDB/db';
 export const FormatMenu = () => {
+  const [interactionState] = useRecoilState(gridInteractionStateAtom);
+  const multiCursor = interactionState.showMultiCursor;
+
+  const onFormat = (options: { fillColor?: string; }): void => {
+    const format: CellFormat = {};
+    if (options.fillColor !== undefined) {
+      format.fillColor = options.fillColor;
+    }
+    if (multiCursor) {
+      const start = interactionState.multiCursorPosition.originPosition;
+      const end = interactionState.multiCursorPosition.terminalPosition;
+      const formats: CellFormat[] = [];
+      for (let y = start.y; y <= end.y; y++) {
+        for (let x = start.x; x <= end.x; x++) {
+          formats.push({ ...format, x, y });
+        }
+      }
+      updateFormatDB(formats);
+    } else {
+      format.x = interactionState.cursorPosition.x;
+      format.y = interactionState.cursorPosition.y;
+      updateFormatDB([format]);
+    }
+  };
+
+  const testColor = Color('red');
+
   return (
     <Menu
       menuButton={
@@ -44,8 +73,6 @@ export const FormatMenu = () => {
         </Tooltip>
       }
     >
-      <MenuHeader>Coming Soon</MenuHeader>
-      <MenuDivider></MenuDivider>
       <MenuHeader>Text</MenuHeader>
       <MenuItem disabled>
         <FormatBold style={menuItemIconStyles}></FormatBold> Bold
@@ -84,7 +111,7 @@ export const FormatMenu = () => {
 
       <MenuDivider />
       <MenuHeader>Cell</MenuHeader>
-      <MenuItem disabled>
+      <MenuItem onClick={() => onFormat({ fillColor: testColor.toString() })}>
         <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill Color
       </MenuItem>
 
@@ -96,40 +123,40 @@ export const FormatMenu = () => {
           </Fragment>
         }
       >
-        <MenuItem disabled>
+        <MenuItem>
           <BorderColor style={menuItemIconStyles}></BorderColor> Color
         </MenuItem>
-        <MenuItem disabled>
+        <MenuItem>
           <LineStyle style={menuItemIconStyles}></LineStyle>
           Line Style
         </MenuItem>
-        <MenuItem disabled>
+        {multiCursor && <MenuItem>
           <BorderAll style={menuItemIconStyles}></BorderAll> All
-        </MenuItem>
-        <MenuItem disabled>
+        </MenuItem>}
+        <MenuItem>
           <BorderOuter style={menuItemIconStyles}></BorderOuter> Outer
         </MenuItem>
-        <MenuItem disabled>
+        <MenuItem>
           <BorderTop style={menuItemIconStyles}></BorderTop> Top
         </MenuItem>
-        <MenuItem disabled>
+        <MenuItem>
           <BorderLeft style={menuItemIconStyles}></BorderLeft> Left
         </MenuItem>
-        <MenuItem disabled>
+        <MenuItem>
           <BorderRight style={menuItemIconStyles}></BorderRight> Right
         </MenuItem>
-        <MenuItem disabled>
+        <MenuItem>
           <BorderBottom style={menuItemIconStyles}></BorderBottom> Bottom
         </MenuItem>
-        <MenuItem disabled>
+        {multiCursor && <MenuItem>
           <BorderInner style={menuItemIconStyles}></BorderInner> Inner
-        </MenuItem>
-        <MenuItem disabled>
+        </MenuItem>}
+        {multiCursor && <MenuItem>
           <BorderHorizontal style={menuItemIconStyles}></BorderHorizontal> Horizontal
-        </MenuItem>
-        <MenuItem disabled>
+        </MenuItem>}
+        {multiCursor && <MenuItem>
           <BorderVertical style={menuItemIconStyles}></BorderVertical> Vertical
-        </MenuItem>
+        </MenuItem>}
       </SubMenu>
     </Menu>
   );

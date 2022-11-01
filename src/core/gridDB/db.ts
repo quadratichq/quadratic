@@ -28,6 +28,13 @@ export interface Heading {
   size?: number;
 }
 
+export interface CellFormat {
+  x?: number;
+  y?: number;
+
+  fillColor?: string;
+}
+
 export interface Grid {
   id: number;
   dgraph_json?: string;
@@ -38,14 +45,16 @@ export class QDexie extends Dexie {
   qgrid!: Table<Grid>;
   columns!: Table<Heading>;
   rows!: Table<Heading>;
+  format!: Table<CellFormat>;
 
   constructor() {
     super('quadratic_grid1');
-    this.version(19).stores({
+    this.version(21).stores({
       cells: '[x+y],[y+x]',
       qgrid: '&id',
       columns: '&id',
       rows: '&id',
+      format: '[x+y]',
     });
   }
 }
