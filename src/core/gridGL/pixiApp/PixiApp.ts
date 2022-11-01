@@ -5,7 +5,7 @@ import { PixiAppSettings } from './PixiAppSettings';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { Update } from './Update';
 import './pixiApp.css';
-import { GridOffsets } from '../../gridDB/gridOffsets';
+import { GridOffsets } from '../../gridDB/GridOffsets';
 import { GridLines } from '../UI/GridLines';
 import { AxesLines } from '../UI/AxesLines';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
@@ -82,6 +82,8 @@ export class PixiApp {
     this.input = new Pointer(this);
     this.update = new Update(this);
 
+    window.addEventListener('resize', this.resize);
+
     console.log('[QuadraticGL] environment ready');
   }
 
@@ -97,7 +99,6 @@ export class PixiApp {
     this.parent = parent;
     parent.appendChild(this.canvas);
     this.resize();
-    this.parent.addEventListener('resize', this.resize);
     this.update.start();
     this.canvas.focus();
   }
@@ -109,9 +110,8 @@ export class PixiApp {
     this.destroyed = true;
   }
 
-  private resize(): void {
+  private resize = (): void => {
     if (!this.parent || this.destroyed) return;
-
     const width = this.parent.offsetWidth;
     const height = this.parent.offsetHeight;
     this.canvas.width = this.renderer.resolution * width;
