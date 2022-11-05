@@ -5,7 +5,7 @@ import { PixiAppSettings } from './PixiAppSettings';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { Update } from './Update';
 import './pixiApp.css';
-import { GridOffsets } from '../../gridDB/tempgridOffsets';
+import { GridOffsets } from '../../gridDB/GridOffsets';
 import { GridLines } from '../UI/GridLines';
 import { AxesLines } from '../UI/AxesLines';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
