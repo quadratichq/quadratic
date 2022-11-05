@@ -31,12 +31,13 @@ export default function QuadraticGrid() {
 
   // Live query to update cells
   const cells = useLiveQuery(() => GetCellsDB());
+  const format = useLiveQuery(() => GetFormatDB());
   useEffect(() => {
     if (app) {
-      app.grid.populate(cells);
+      app.grid.populate(cells, format);
       app.cells.dirty = true;
     }
-  }, [app, cells]);
+  }, [app, cells, format]);
 
   const { headings } = useHeadings(app);
   useEffect(() => {
@@ -44,13 +45,6 @@ export default function QuadraticGrid() {
       app.gridOffsets.populate(headings.columns, headings.rows);
     }
   }, [app, headings]);
-
-  const format = useLiveQuery(() => GetFormatDB());
-  useEffect(() => {
-    if (app && format) {
-      app.gridFormat.populate(format);
-    }
-  }, [app, format]);
 
   useEffect(() => {
     if (app && headings) {

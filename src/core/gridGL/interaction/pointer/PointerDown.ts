@@ -51,7 +51,7 @@ export class PointerDown {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
-      doubleClickCell({ cell: this.app.grid.get(column, row), app: this.app });
+      doubleClickCell({ cell: this.app.grid.getCell(column, row), app: this.app });
       this.active = false;
       event.preventDefault();
       return;
