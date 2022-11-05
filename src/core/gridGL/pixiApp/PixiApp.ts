@@ -9,7 +9,7 @@ import { GridOffsets } from '../../gridDB/GridOffsets';
 import { GridLines } from '../UI/GridLines';
 import { AxesLines } from '../UI/AxesLines';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
-import { Cursor } from '../UI/cursor';
+import { Cursor } from '../UI/tempcursor';
 import { Cells } from '../UI/cells/Cells';
 import { GridSparse } from '../../gridDB/GridSparse';
 import { zoomInOut, zoomToFit } from '../helpers/zoom';
