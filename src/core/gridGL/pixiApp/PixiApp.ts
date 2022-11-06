@@ -11,7 +11,7 @@ import { AxesLines } from '../UI/AxesLines';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { Cursor } from '../UI/cursor';
 import { Cells } from '../UI/cells/Cells';
-import { GridSparse } from '../../gridDB/tempGridSparse';
+import { GridSparse } from '../../gridDB/GridSparse';
 import { zoomInOut, zoomToFit } from '../helpers/zoom';
 
 export class PixiApp {
