@@ -27,12 +27,13 @@ import {
 import { PaletteOutlined } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
-import { colors } from '../../../../theme/colors';
+import { colors } from '../../../../../theme/colors';
 import { useRecoilState } from 'recoil';
-import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
-import { menuItemIconStyles, topBarIconStyles } from './menuStyles';
-import { TwitterPicker } from 'react-color';
-import { useFormatCells } from './useFormatCells';
+import { gridInteractionStateAtom } from '../../../../../atoms/gridInteractionStateAtom';
+import { menuItemIconStyles, topBarIconStyles } from '../menuStyles';
+import { CompactPicker } from 'react-color';
+import { useFormatCells } from '../useFormatCells';
+import './formatMenuStyles.css';
 
 export const FormatMenu = () => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
@@ -90,11 +91,18 @@ export const FormatMenu = () => {
       <MenuDivider />
       <MenuHeader>Cell</MenuHeader>
       <SubMenu
-        label={<><FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill Color</>}
+        id="FillColorMenuID"
+        menuStyles={{
+          padding: '0px',
+        }}
+        label={
+          <>
+            <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill Color
+          </>
+        }
       >
-        <TwitterPicker
-          onChangeComplete={changeFillColor}
-        />
+        <MenuHeader>Fill Color</MenuHeader>
+        <CompactPicker onChangeComplete={changeFillColor} />
       </SubMenu>
 
       <SubMenu
@@ -112,9 +120,11 @@ export const FormatMenu = () => {
           <LineStyle style={menuItemIconStyles}></LineStyle>
           Line Style
         </MenuItem>
-        {multiCursor && <MenuItem>
-          <BorderAll style={menuItemIconStyles}></BorderAll> All
-        </MenuItem>}
+        {multiCursor && (
+          <MenuItem>
+            <BorderAll style={menuItemIconStyles}></BorderAll> All
+          </MenuItem>
+        )}
         <MenuItem>
           <BorderOuter style={menuItemIconStyles}></BorderOuter> Outer
         </MenuItem>
@@ -130,15 +140,21 @@ export const FormatMenu = () => {
         <MenuItem>
           <BorderBottom style={menuItemIconStyles}></BorderBottom> Bottom
         </MenuItem>
-        {multiCursor && <MenuItem>
-          <BorderInner style={menuItemIconStyles}></BorderInner> Inner
-        </MenuItem>}
-        {multiCursor && <MenuItem>
-          <BorderHorizontal style={menuItemIconStyles}></BorderHorizontal> Horizontal
-        </MenuItem>}
-        {multiCursor && <MenuItem>
-          <BorderVertical style={menuItemIconStyles}></BorderVertical> Vertical
-        </MenuItem>}
+        {multiCursor && (
+          <MenuItem>
+            <BorderInner style={menuItemIconStyles}></BorderInner> Inner
+          </MenuItem>
+        )}
+        {multiCursor && (
+          <MenuItem>
+            <BorderHorizontal style={menuItemIconStyles}></BorderHorizontal> Horizontal
+          </MenuItem>
+        )}
+        {multiCursor && (
+          <MenuItem>
+            <BorderVertical style={menuItemIconStyles}></BorderVertical> Vertical
+          </MenuItem>
+        )}
       </SubMenu>
     </Menu>
   );

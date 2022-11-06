@@ -3,7 +3,7 @@ import { Button, Tooltip } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 // import { Avatar, AvatarGroup } from '@mui/material';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { FormatMenu } from './SubMenus/FormatMenu';
+import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { colors } from '../../../theme/colors';
 
 import { isElectron } from '../../../utils/isElectron';
