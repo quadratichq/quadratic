@@ -2,7 +2,7 @@ import { Rectangle } from 'pixi.js';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Cell } from './db';
 
-export class gridSparse {
+export class GridSparse {
   private app: PixiApp;
   private cells: Record<string, Cell> = {};
   private minX = 0;

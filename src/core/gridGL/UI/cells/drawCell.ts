@@ -1,7 +1,7 @@
 import { Graphics } from 'pixi.js';
 import { colors } from '../../../../theme/colors';
 import { Cell } from '../../../gridDB/db';
-import { GridOffsets } from '../../../gridDB/tempGridOffsets';
+import { GridOffsets } from '../../../gridDB/GridOffsets';
 
 export function drawCell(options: {
   graphics: Graphics;

@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { GetHeadingsDB } from './Cells/GetHeadingsDB';
 import { UpdateHeading, updateHeadingDB } from './Cells/UpdateHeadingsDB';
-import { HeadingResizing } from './tempGridOffsets';
+import { HeadingResizing } from './GridOffsets';
 
 export const useHeadings = (app?: PixiApp) => {
   const headings = useLiveQuery(() => GetHeadingsDB());
