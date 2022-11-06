@@ -63,8 +63,8 @@ export class PixiApp {
 
     this.gridLines = this.viewport.addChild(new GridLines(this));
     this.axesLines = this.viewport.addChild(new AxesLines(this));
-    this.cursor = this.viewport.addChild(new Cursor(this));
     this.cells = this.viewport.addChild(new Cells(this));
+    this.cursor = this.viewport.addChild(new Cursor(this));
     this.headings = this.viewport.addChild(new GridHeadings(this));
 
     this.settings = new PixiAppSettings(this);

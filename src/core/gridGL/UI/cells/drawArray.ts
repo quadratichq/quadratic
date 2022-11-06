@@ -2,6 +2,8 @@ import { Graphics } from 'pixi.js';
 import { colors } from '../../../../theme/colors';
 import { PixiApp } from '../../pixiApp/PixiApp';
 
+// todo: use sprites instead of Graphics like CellsDraw
+
 export function drawArray(options: {
   app: PixiApp;
   graphics: Graphics;

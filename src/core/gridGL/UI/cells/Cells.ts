@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { CellsDraw } from './CellsDraw';
@@ -30,15 +30,21 @@ export class Cells extends Container {
     this.cellsArray = this.addChild(new Graphics());
   }
 
-  private draw() {
-    const { viewport, grid, gridOffsets } = this.app;
+  drawSubQuadrant(bounds: Rectangle): void {
+    this.drawBounds(bounds);
+
+    // ensure a screen rerender after a quadrant draw
+    this.dirty = true;
+  }
+
+  private drawBounds(bounds: Rectangle, ignoreInput?: boolean) {
+    const { grid, gridOffsets } = this.app;
     this.labels.clear();
     this.cellsMarkers.clear();
     this.cellsDraw.clear();
     this.cellsArray.clear();
 
-    const input = this.app.settings.interactionState.showInput ? { column: this.app.settings.interactionState.cursorPosition.x, row: this.app.settings.interactionState.cursorPosition.y } : undefined;
-    const bounds = grid.getBounds(viewport.getVisibleBounds());
+    const input = !ignoreInput && this.app.settings.interactionState.showInput ? { column: this.app.settings.interactionState.cursorPosition.x, row: this.app.settings.interactionState.cursorPosition.y } : undefined;
     const xStart = gridOffsets.getColumnPlacement(bounds.left).x;
     let y = gridOffsets.getRowPlacement(bounds.top).y;
     for (let row = bounds.top; row <= bounds.bottom; row++) {
@@ -86,7 +92,8 @@ export class Cells extends Container {
   update(): void {
     if (this.dirty) {
       this.dirty = false;
-      this.draw();
+      const bounds = this.app.grid.getBounds(this.app.viewport.getVisibleBounds());
+      this.drawBounds(bounds);
     }
   }
 }

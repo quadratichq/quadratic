@@ -1,5 +1,5 @@
 import Color from 'color';
-import { Container, Graphics, GraphicsGeometry } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../../../theme/colors';
 import { Cell, CellFormat } from '../../../gridDB/db';
 import { PixiApp } from '../../pixiApp/PixiApp';
@@ -15,19 +15,27 @@ export interface ICellsDraw {
 
 export class CellsDraw extends Container {
   private app: PixiApp;
-  private geometryCache = new Map<string, GraphicsGeometry>();
+  private visibleIndex = 0;
 
   constructor(app: PixiApp) {
     super();
     this.app = app;
   }
 
-  private getGeometryHash(input: ICellsDraw): string | undefined {
-    return `${input?.cell?.type[0] ?? ""}${input?.format?.fillColor ?? ""}}${input.width},${input.height}`;
+  clear() {
+    this.children.forEach(child => child.visible = false);
+    this.visibleIndex = 0;
   }
 
-  clear() {
-    this.removeChildren();
+  getSprite(): Sprite {
+    if (this.visibleIndex < this.children.length) {
+      const sprite = this.children[this.visibleIndex] as Sprite;
+      sprite.visible = true;
+      this.visibleIndex++;
+      return sprite;
+    }
+    this.visibleIndex++;
+    return this.addChild(new Sprite(Texture.WHITE));
   }
 
   draw(input: ICellsDraw, graphics: Graphics): void {
@@ -55,18 +63,58 @@ export class CellsDraw extends Container {
     graphics.drawRect(0, 0, input.width, input.height);
   }
 
+  drawBorder(input: ICellsDraw, tint: number, alpha: number): void {
+    const top = this.getSprite();
+    top.tint = tint;
+    top.alpha = alpha;
+    top.width = input.width;
+    top.height = 1;
+    top.position.set(input.x, input.y);
+
+    const bottom = this.getSprite();
+    bottom.tint = tint;
+    bottom.alpha = alpha;
+    bottom.width = input.width;
+    bottom.height = 1;
+    bottom.position.set(input.x, input.y + input.height - 1);
+
+    const left = this.getSprite();
+    left.tint = tint;
+    left.alpha = alpha;
+    left.width = 1;
+    left.height = input.height;
+    left.position.set(input.x, input.y);
+
+    const right = this.getSprite();
+    right.tint = tint;
+    right.alpha = alpha;
+    right.width = 1;
+    right.height = input.height;
+    right.position.set(input.x + input.width - 1, input.y);
+  }
+
   add(input: ICellsDraw): void {
-    const geometryHash = this.getGeometryHash(input);
-    if (!geometryHash) return;
-    const geometry = this.geometryCache.get(geometryHash);
-    let graphics: Graphics;
-    if (geometry) {
-      graphics = this.addChild(new Graphics(geometry));
-    } else {
-      graphics = this.addChild(new Graphics());
-      this.draw(input, graphics);
-      this.geometryCache.set(geometryHash, graphics.geometry);
+    if (input.format) {
+      if (input.format.fillColor) {
+        const sprite = this.getSprite();
+        const color = Color(input.format.fillColor);
+        sprite.tint = color.rgbNumber();
+        sprite.alpha = color.alpha();
+        sprite.width = input.width;
+        sprite.height = input.height;
+        sprite.position.set(input.x, input.y)
+      }
     }
-    graphics.position.set(input.x, input.y);
+
+    if (!input.cell || !this.app.settings.showCellTypeOutlines) return;
+
+    // Change outline color based on cell type but don't draw TEXT cell outlines since it's handled by the grid
+    if (input.cell.type === 'TEXT') {
+      this.drawBorder(input, colors.cellColorUserText, 0.75);
+    } else if (input.cell.type === 'PYTHON') {
+      this.drawBorder(input, colors.cellColorUserPython, 0.75);
+    } else if (input.cell.type === 'COMPUTED') {
+      this.drawBorder(input, colors.independence, 0.75);
+    }
   }
 }

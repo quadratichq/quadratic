@@ -2,25 +2,25 @@ import { Rectangle } from 'pixi.js';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Cell, CellFormat } from './db';
 
-interface CellAndFormat {
+export interface CellAndFormat {
   cell?: Cell;
   format?: CellFormat;
 }
 
 export class GridSparse {
   private app: PixiApp;
-  private cells = new Map<string, CellAndFormat>();
   private minX = 0;
   private maxX = 0;
   private minY = 0;
   private maxY = 0;
+  cells = new Map<string, CellAndFormat>();
 
   constructor(app: PixiApp) {
     this.app = app;
   }
 
   empty() {
-    this.cells = new Map<string, CellAndFormat>();
+    this.cells.clear();
     this.minX = 0;
     this.maxX = 0;
     this.minY = 0;
@@ -36,7 +36,7 @@ export class GridSparse {
       this.empty();
       return;
     }
-    this.cells = new Map<string, CellAndFormat>();
+    this.cells.clear();
     this.minX = Infinity;
     this.maxX = -Infinity;
     this.minY = Infinity;
@@ -94,5 +94,9 @@ export class GridSparse {
     const rowEnd = rowEndIndex.index < this.maxY ? rowEndIndex.index : this.maxY;
 
     return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
+  }
+
+  getGridBounds(): Rectangle {
+    return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
   }
 }

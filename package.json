@@ -26,6 +26,7 @@
     "@types/jest": "^27.0.2",
     "@types/node": "^14.14.31",
     "@types/react": "^17.0.33",
+    "@types/react-color": "^3.0.6",
     "@types/react-dom": "^17.0.10",
     "ace-builds": "^1.4.13",
     "axios": "^0.24.0",
@@ -38,6 +39,7 @@
     "pixi-viewport": "^4.37.0",
     "pixi.js": "^6.5.1",
     "react": "^17.0.2",
+    "react-color": "^2.19.3",
     "react-device-detect": "^2.2.2",
     "react-dom": "^17.0.2",
     "react-scripts": "5.0.1",
@@ -53,6 +55,7 @@
     "test-unit": "react-scripts test",
     "test-e2e": "playwright test --workers=1",
     "test-python": "python3 tests-python/test.py",
+    "test": "",
     "eject": "react-scripts eject",
     "dev": "concurrently -k \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron": "electron ."

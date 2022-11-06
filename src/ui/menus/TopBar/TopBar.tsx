@@ -2,7 +2,6 @@ import { Box, Typography } from '@mui/material';
 import { Button, Tooltip } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 // import { Avatar, AvatarGroup } from '@mui/material';
-
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { FormatMenu } from './SubMenus/FormatMenu';
 import { colors } from '../../../theme/colors';
@@ -53,7 +52,7 @@ export const TopBar = () => {
         {!isMobileOnly && (
           <>
             <DataMenu></DataMenu>
-            <FormatMenu></FormatMenu>
+            <FormatMenu />
             <NumberFormatMenu></NumberFormatMenu>
           </>
         )}
