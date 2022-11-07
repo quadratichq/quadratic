@@ -10,11 +10,12 @@ In this guide, you will get an overview of the contribution workflow from openin
 
 Make sure you can run Quadratic locally from the source.
 
-Install Dependencies `npm install`
+1. Install npm, [rustup](https://www.rust-lang.org/tools/install), and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+2. Run `rustup target add wasm32-unknown-unknown`
 
-Run Web `npm start`
+To run the web app: `npm start`
 
-Run Electron `npm run dev`
+To run the Electron app: `npm run dev`
 
 If you have any problems getting the project to run locally, please create an issue to document the problem. See "Create an issue" below.
 

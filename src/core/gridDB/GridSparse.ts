@@ -1,6 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Cell } from './db';
+import { hello } from 'quadratic-core';
 
 export class GridSparse {
   private app: PixiApp;
@@ -12,6 +13,7 @@ export class GridSparse {
 
   constructor(app: PixiApp) {
     this.app = app;
+    alert(hello("world"));
   }
 
   empty() {
