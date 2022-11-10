@@ -2,12 +2,12 @@
 
 use wasm_bindgen::prelude::*;
 
-// pub mod grid;
+pub mod grid;
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
-// pub use grid::*;
+pub use grid::*;
 
 
 #[wasm_bindgen]
