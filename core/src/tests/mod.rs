@@ -1,7 +1,7 @@
 use proptest::prelude::*;
 use std::collections::HashMap;
 
-use crate::sheet::*;
+use crate::grid::*;
 
 proptest! {
     #[test]
@@ -27,7 +27,7 @@ mod strategies {
 
 fn test_set_cells(cells: &[(Pos, Cell)]) {
     // Compare the sheet against a hashmap for reference.
-    let mut sheet = Sheet::default();
+    let mut sheet = Grid::default();
     let mut hashmap = HashMap::new();
     for (pos, cell) in cells {
         sheet.set_cell(*pos, cell.clone());

@@ -3,21 +3,27 @@ use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fmt};
 
 mod cell;
-mod import;
 
 pub use cell::Cell;
 
 #[derive(Serialize, Deserialize, Default, Clone)]
-pub struct Sheet {
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+pub struct Grid {
     /// Map from X to column.
     pub columns: rpds::RedBlackTreeMap<i64, Column>,
 }
-impl fmt::Debug for Sheet {
+impl fmt::Debug for Grid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_map().entries(&self.columns).finish()
     }
 }
-impl Sheet {
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+impl Grid {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(constructor))]
+    pub fn new() -> Self {
+        Grid::default()
+    }
+
     pub fn is_valid(&self) -> bool {
         self.columns.iter().all(|(_, col)| col.is_valid())
     }

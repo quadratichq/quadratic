@@ -1,11 +1,13 @@
 #![warn(rust_2018_idioms, clippy::if_then_some_else_none)]
 
-pub mod sheet;
+use wasm_bindgen::prelude::*;
+
+pub mod grid;
 
 #[cfg(test)]
 mod tests;
 
-use wasm_bindgen::prelude::*;
+pub use grid::*;
 
 #[wasm_bindgen]
 extern "C" {
