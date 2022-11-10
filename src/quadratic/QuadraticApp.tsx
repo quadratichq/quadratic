@@ -9,6 +9,7 @@ import { WelcomeComponent } from './WelcomeComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
 import { isMobileOnly } from 'react-device-detect';
+import init from 'quadratic-core';
 
 export default function QuadraticApp() {
   const { loading, incrementLoadingCount } = useLoading();
@@ -25,6 +26,10 @@ export default function QuadraticApp() {
         incrementLoadingCount();
       }
       loadAssets().then(() => {
+        incrementLoadingCount();
+      });
+      // load wasm
+      init().then(() => {
         incrementLoadingCount();
       });
     }
