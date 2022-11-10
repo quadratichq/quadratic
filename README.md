@@ -1,10 +1,8 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![E2E Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-e2e.yml/badge.svg) ![Python Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-python.yml/badge.svg) ![Unit Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-unit.yml/badge.svg) 
-
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![E2E Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-e2e.yml/badge.svg) ![Python Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-python.yml/badge.svg) ![Unit Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-unit.yml/badge.svg)
 
 ![quadraticlogo4 1](https://user-images.githubusercontent.com/3479421/162037216-2fea1620-2310-4cfa-96fb-31299195e3a9.png)
 
-![quardatic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg)  **_The Data Science Spreadsheet_**
-----
+## ![quardatic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **_The Data Science Spreadsheet_**
 
 Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to pull in your data.
 
@@ -14,31 +12,33 @@ Take your data and do something useful with it as quickly and easily as possible
 
 ## Online Demo
 
-We have a hosted version of the `main` branch available online. 
+We have a hosted version of the `main` branch available online.
 
 **Try it out! --> https://early.quadratic.to**
 
 ## Community
+
 Join the conversation on our Discord channel -> https://discord.gg/quadratic
 
 ## Documentation
 
 All of our documentation is available at [docs.quadratic.to](https://docs.quadratic.to)
+
 - [Quick Start Guide](https://docs.quadratic.to/quick-start)
 - [Python Cell Reference](https://docs.quadratic.to/reference/python-cell-reference)
 - [Pandas DataFrames in Quadratic](https://docs.quadratic.to/reference/python-cell-reference/pandas-dataframe)
 - [Development Updates](https://docs.quadratic.to/development-updates)
 
-
 # What is Quadratic?
 
-Quadratic is a Web-based spreadsheet application that runs in the browser and as a native app (via Electron). 
+Quadratic is a Web-based spreadsheet application that runs in the browser and as a native app (via Electron).
 
 Our goal is to build a spreadsheet that enables you to pull your data from its source (SaaS, Database, CSV, API, etc) and then work with that data using the most popular data science tools today (Python, Pandas, SQL, JS, Excel Formulas, etc).
 
 Quadratic has no environment to configure. The grid runs entirely in the browser with no backend service. This makes our grids completely portable and very easy to share.
 
 ## What can I do with Quadratic?
+
 - Build dashboards
 - Create internal tools in minutes
 - Quickly mix data from different sources
@@ -51,6 +51,8 @@ Quadratic has no environment to configure. The grid runs entirely in the browser
 Install Dependencies `npm install`
 
 Run Web `npm start`
+
+Build Rust `npm run build:wasm`
 
 Run Electron `npm run dev`
 

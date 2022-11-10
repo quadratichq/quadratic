@@ -2,19 +2,15 @@
 
 use wasm_bindgen::prelude::*;
 
-pub mod grid;
+// pub mod grid;
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
-pub use grid::*;
+// pub use grid::*;
 
-#[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
-}
 
 #[wasm_bindgen]
 pub fn hello(s: &str) -> String {
-    format!("Hello {s}!")
+    format!("[Rust/WASM] Hello {s}!")
 }

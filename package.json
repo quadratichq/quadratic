@@ -35,7 +35,7 @@
     "monaco-editor": "^0.31.1",
     "pixi-viewport": "^4.37.0",
     "pixi.js": "^6.5.1",
-    "quadratic-core": "file:./core/pkg",
+    "quadratic-core": "file:core/pkg",
     "react": "^17.0.2",
     "react-device-detect": "^2.2.2",
     "react-dom": "^17.0.2",
@@ -48,6 +48,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:wasm": "cd core && wasm-pack build --target web --out-dir pkg",
     "test-all": "concurrently \"npm run test-unit\" \"npm run test-e2e\" \"npm run test-python\"",
     "test-unit": "react-scripts test",
     "test-e2e": "playwright test --workers=1",

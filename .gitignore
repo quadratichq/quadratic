@@ -30,3 +30,6 @@ venv/*
 .idea
 
 .env
+
+# Generated Rust files
+core/target/
