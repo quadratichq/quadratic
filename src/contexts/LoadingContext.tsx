@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 type LoadingProviderProps = { children: ReactNode };
 
-const LOAD_COUNT = 2;
+const LOAD_COUNT = 3; // Pixi, WASM/Rust, WASM/Python
 
 export type LoadingContextType = {
   loading: boolean;
