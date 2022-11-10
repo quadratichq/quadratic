@@ -26,15 +26,16 @@ mod strategies {
 }
 
 fn test_set_cells(cells: &[(Pos, Cell)]) {
-    // Compare the sheet against a hashmap for reference.
-    let mut sheet = Grid::default();
+    // Compare the grid against a hashmap for reference.
+    let mut grid = Grid::default();
     let mut hashmap = HashMap::new();
     for (pos, cell) in cells {
-        sheet.set_cell(*pos, cell.clone());
-        hashmap.insert(*pos, cell);
+        let old_expected = hashmap.insert(*pos, cell);
+        let old_actual = grid.set_cell(*pos, cell.clone()).unwrap();
+        assert_eq!(old_actual, *old_expected.unwrap_or(&Cell::Empty));
     }
-    assert!(dbg!(&sheet).is_valid());
+    assert!(dbg!(&grid).is_valid());
     for (pos, cell) in hashmap {
-        assert_eq!(cell, sheet.get_cell(pos))
+        assert_eq!(cell, grid.get_cell(pos))
     }
 }
