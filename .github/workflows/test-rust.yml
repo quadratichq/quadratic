@@ -1,0 +1,40 @@
+name: Rust Tests
+
+# This workflow run tests and build for each push
+
+on: push
+
+jobs:
+  test_rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Update local toolchain
+        run: |
+          rustup update
+          rustup component add clippy
+          rustup install nightly
+
+      - name: Toolchain info
+        run: |
+          cargo --version --verbose
+          rustc --version
+          cargo clippy --version
+
+      # - name: Lint
+      #   run: |
+      #     cd core
+      #     cargo fmt -- --check
+      #     cargo clippy -- -D warnings
+
+      - name: Test
+        run: |
+          cd core
+          cargo check
+          cargo test --all
+
+      - name: Build
+        run: |
+          cd core
+          cargo build --release
