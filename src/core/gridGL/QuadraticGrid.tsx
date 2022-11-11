@@ -15,62 +15,66 @@ import { CellInput } from './interaction/CellInput';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
 import { GetFormatDB } from '../gridDB/Cells/GetFormatDB';
 
-export default function QuadraticGrid() {
+interface IProps {
+  app?: PixiApp;
+  setApp: (app: PixiApp) => void;
+}
+
+export default function QuadraticGrid(props: IProps) {
   const { loading } = useLoading();
 
-  const [app, setApp] = useState<PixiApp>();
-  useEffect(() => setApp(new PixiApp()), []);
+  useEffect(() => props.setApp(new PixiApp()), []);
 
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node: HTMLDivElement | null) => {
     if (node) setContainer(node);
   }, []);
   useEffect(() => {
-    if (app && container) app.attach(container);
-  }, [app, container]);
+    if (props.app && container) props.app.attach(container);
+  }, [props.app, container]);
 
   // Live query to update cells
   const cells = useLiveQuery(() => GetCellsDB());
   const format = useLiveQuery(() => GetFormatDB());
   useEffect(() => {
-    if (app) {
-      app.grid.populate(cells, format);
-      app.cells.dirty = true;
+    if (props.app) {
+      props.app.grid.populate(cells, format);
+      props.app.cells.dirty = true;
     }
-  }, [app, cells, format]);
+  }, [props.app, cells, format]);
 
-  const { headings } = useHeadings(app);
+  const { headings } = useHeadings(props.app);
   useEffect(() => {
-    if (app && headings) {
-      app.gridOffsets.populate(headings.columns, headings.rows);
+    if (props.app && headings) {
+      props.app.gridOffsets.populate(headings.columns, headings.rows);
     }
-  }, [app, headings]);
+  }, [props.app, headings]);
 
   useEffect(() => {
-    if (app && headings) {
-      app.gridOffsets.populate(headings.columns, headings.rows);
+    if (props.app && headings) {
+      props.app.gridOffsets.populate(headings.columns, headings.rows);
     }
-  }, [app, headings]);
+  }, [props.app, headings]);
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
   useEffect(() => {
-    app?.settings.updateInteractionState(interactionState, setInteractionState);
+    props.app?.settings.updateInteractionState(interactionState, setInteractionState);
     ensureVisible({
-      app,
+      app: props.app,
       interactionState,
     });
-  }, [app, app?.settings, interactionState, setInteractionState]);
+  }, [props.app, props.app?.settings, interactionState, setInteractionState]);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   useEffect(() => {
-    app?.settings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
-  }, [app?.settings, editorInteractionState, setEditorInteractionState]);
+    props.app?.settings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
+  }, [props.app?.settings, editorInteractionState, setEditorInteractionState]);
 
   const [zoomState, setZoomState] = useRecoilState(zoomStateAtom);
   useEffect(() => {
-    app?.settings.updateZoom(zoomState, setZoomState);
-  }, [app?.settings, zoomState, setZoomState]);
+    props.app?.settings.updateZoom(zoomState, setZoomState);
+  }, [props.app?.settings, zoomState, setZoomState]);
 
   // Right click menu
   const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } = useMenuState();
@@ -81,7 +85,7 @@ export default function QuadraticGrid() {
     setInteractionState,
     editorInteractionState,
     setEditorInteractionState,
-    app,
+    app: props.app,
   });
 
   if (loading) return null;
@@ -107,7 +111,7 @@ export default function QuadraticGrid() {
         interactionState={interactionState}
         setInteractionState={setInteractionState}
         container={container}
-        app={app}
+        app={props.app}
       />
       <RightClickMenu
         state={rightClickMenuState}

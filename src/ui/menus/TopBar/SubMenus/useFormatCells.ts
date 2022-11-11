@@ -1,52 +1,173 @@
-import Color from 'color';
 import { ColorResult } from 'react-color';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
-import { updateFormatDB } from '../../../../core/gridDB/Cells/UpdateFormatDB';
-import { CellFormat } from '../../../../core/gridDB/db';
+import { clearFormatDB, updateFormatDB } from '../../../../core/gridDB/Cells/UpdateFormatDB';
+import { borderAll, borderBottom, borderLeft, borderRight, borderTop, CellFormat } from '../../../../core/gridDB/db';
+import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
+import { convertReactColorToString } from '../../../../helpers/convertColor';
 
 interface IResults {
   changeFillColor: (rgb: ColorResult) => void;
   removeFillColor: () => void;
+  changeBorder: (options: { borderLeft?: boolean; borderTop?: boolean; borderBottom?: boolean; borderRight?: boolean, borderHorizontal?: boolean; borderVertical?: boolean }) => void;
+  changeBorderColor: (rgb: ColorResult) => void;
+  clearFormatting: () => void;
 }
 
-export const useFormatCells = (): IResults => {
+type CellFormatNoPosition = Exclude<CellFormat, 'x' | 'y'>;
+
+interface IProps {
+  app?: PixiApp;
+}
+
+export const useFormatCells = (props: IProps): IResults => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const multiCursor = interactionState.showMultiCursor;
 
-  const onFormat = (options: { fillColor?: string; }): void => {
-    const format: CellFormat = {};
-    if (options.fillColor !== undefined) {
-      format.fillColor = options.fillColor;
-    }
+  const onFormat = (updatedFormat: CellFormatNoPosition): void => {
+    if (!props.app) return;
     if (multiCursor) {
       const start = interactionState.multiCursorPosition.originPosition;
       const end = interactionState.multiCursorPosition.terminalPosition;
       const formats: CellFormat[] = [];
       for (let y = start.y; y <= end.y; y++) {
         for (let x = start.x; x <= end.x; x++) {
-          formats.push({ ...format, x, y });
+          const format = props.app.grid.getFormat(x, y) ?? { x, y };
+          formats.push({ ...format, ...updatedFormat });
         }
       }
       updateFormatDB(formats);
     } else {
-      format.x = interactionState.cursorPosition.x;
-      format.y = interactionState.cursorPosition.y;
-      updateFormatDB([format]);
+      const { x, y } = interactionState.cursorPosition;
+      const format = props.app.grid.getFormat(x, y) ?? { x, y };
+      updateFormatDB([{ ...format, ...updatedFormat }]);
     }
   };
 
-  const changeFillColor = (result: ColorResult) => {
-    const rgb = result.rgb;
-    onFormat({ fillColor: Color({ r: rgb.r, g: rgb.g, b: rgb.b }).rgb().toString() });
+  const changeFillColor = (color: ColorResult): void => {
+    onFormat({ fillColor: convertReactColorToString(color) });
   };
 
   const removeFillColor = () => {
     onFormat({ fillColor: undefined });
-  }
+  };
+
+  const changeBorder = (options: { borderLeft?: boolean; borderTop?: boolean; borderBottom?: boolean; borderRight?: boolean, borderHorizontal?: boolean; borderVertical?: boolean }): void => {
+    if (!props.app) return;
+    let start: { x: number, y: number };
+    let end: { x: number, y: number };
+    if (multiCursor) {
+      start = interactionState.multiCursorPosition.originPosition;
+      end = interactionState.multiCursorPosition.terminalPosition;
+    } else {
+      start = interactionState.cursorPosition;
+      end = interactionState.cursorPosition;
+    }
+    const formats: CellFormat[] = [];
+
+    // gets neighbor from changed formats list or from gridSparse
+    const updateNeighbor = (x: number, y: number, value: number): CellFormat | undefined => {
+      if (!props.app) return;
+      const neighbor = formats.find(format => format.x === x && format.y === y);
+      if (neighbor?.border) {
+        if (neighbor?.border & value) {
+          const invert = 0b1111 ^ value;
+          neighbor.border = neighbor.border & invert;
+        }
+        return neighbor;
+      }
+      const newNeighbor = props.app.grid.getFormat(x - 1, y);
+      if (newNeighbor?.border) {
+        const format = { ...newNeighbor };
+        formats.push(format);
+        return { ...newNeighbor };
+      }
+    };
+
+    // this updates border and removes neighboring borders (if necessary)
+    for (let y = start.y; y <= end.y; y++) {
+      for (let x = start.x; x <= end.x; x++) {
+        const format = props.app.grid.getFormat(x, y) ?? { x, y };
+        let border = format?.border ?? 0;
+        if (x === start.x && options.borderLeft !== undefined) {
+          if (options.borderLeft === true) {
+            border = border | borderLeft;
+          } else if (options.borderLeft === false) {
+            border = border & (borderAll ^ borderLeft);
+          }
+          updateNeighbor(x - 1, y, borderRight);
+        }
+        if (x === end.x && options.borderRight !== undefined) {
+          if (options.borderRight === true) {
+            border = border | borderRight;
+          } else if (options.borderRight === false) {
+            border = border & (borderAll ^ borderRight);
+          }
+          updateNeighbor(x + 1, y, borderLeft);
+        }
+        if (y === start.y && options.borderTop !== undefined) {
+          if (options.borderTop === true) {
+            border = border | borderTop;
+          } else if (options.borderTop === false) {
+            border = border & (borderAll ^ borderTop);
+          }
+          updateNeighbor(x, y - 1, borderBottom);
+        }
+        if (y === end.y && options.borderBottom !== undefined) {
+          if (options.borderBottom === true) {
+            border = border | borderBottom;
+          } else if (options.borderBottom === false) {
+            border = border & (borderAll ^ borderBottom);
+          }
+          updateNeighbor(x, y + 1, borderTop);
+        }
+        if (multiCursor && x !== end.x && options.borderHorizontal !== undefined) {
+          if (options.borderHorizontal === true) {
+            border = border | borderRight;
+          }
+          updateNeighbor(x + 1, y, borderLeft);
+        }
+        if (multiCursor && x !== end.y && options.borderVertical !== undefined) {
+          if (options.borderVertical === true) {
+            border = border | borderBottom;
+          }
+          updateNeighbor(x + 1, y, borderBottom);
+        }
+        formats.push({ ...format, border });
+      }
+    }
+    updateFormatDB(formats);
+  };
+
+  const changeBorderColor = (color: ColorResult): void => {
+    console.log(convertReactColorToString(color))
+    onFormat({ borderColor: convertReactColorToString(color) })
+  };
+
+  const clearFormatting = (): void => {
+    let start: { x: number, y: number };
+    let end: { x: number, y: number };
+    if (multiCursor) {
+      start = interactionState.multiCursorPosition.originPosition;
+      end = interactionState.multiCursorPosition.terminalPosition;
+    } else {
+      start = interactionState.cursorPosition;
+      end = interactionState.cursorPosition;
+    }
+    const cells: { x: number, y: number }[] = [];
+    for (let y = start.y; y <= end.y; y++) {
+      for (let x = start.x; x <= end.x; x++) {
+        cells.push({ x, y });
+      }
+    }
+    clearFormatDB(cells);
+  };
 
   return {
     changeFillColor,
     removeFillColor,
+    changeBorder,
+    changeBorderColor,
+    clearFormatting,
   };
 }

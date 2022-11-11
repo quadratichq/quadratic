@@ -9,6 +9,7 @@ export const colors = {
   headerBackgroundColor: 0xffffff,
   headerSelectedBackgroundColor: 0xf2fbff,
   headerCornerBackgroundColor: 0xffffff,
+  defaultBorderColor: 0,
   lightGray: '#f6f8fa',
   mediumGray: '#cfd7de',
   darkGray: '#55606b',

@@ -12,8 +12,13 @@ import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isMobileOnly } from 'react-device-detect';
+import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 
-export const TopBar = () => {
+interface IProps {
+  app?: PixiApp;
+}
+
+export const TopBar = (props: IProps) => {
   return (
     <div
       onContextMenu={(event) => {
@@ -52,7 +57,7 @@ export const TopBar = () => {
         {!isMobileOnly && (
           <>
             <DataMenu></DataMenu>
-            <FormatMenu />
+            <FormatMenu app={props.app} />
             <NumberFormatMenu></NumberFormatMenu>
           </>
         )}

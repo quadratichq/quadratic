@@ -28,11 +28,19 @@ export interface Heading {
   size?: number;
 }
 
+export const borderLeft = 0b0001;
+export const borderTop = 0b0010;
+export const borderRight = 0b0100;
+export const borderBottom = 0b1000;
+export const borderAll = 0b1111;
+
 export interface CellFormat {
   x?: number;
   y?: number;
 
   fillColor?: string;
+  borderColor?: string;
+  border?: number;
 }
 
 export interface Grid {
@@ -49,7 +57,7 @@ export class QDexie extends Dexie {
 
   constructor() {
     super('quadratic_grid1');
-    this.version(21).stores({
+    this.version(22).stores({
       cells: '[x+y],[y+x]',
       qgrid: '&id',
       columns: '&id',

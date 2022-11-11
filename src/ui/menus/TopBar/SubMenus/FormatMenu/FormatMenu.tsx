@@ -23,6 +23,7 @@ import {
   BorderHorizontal,
   BorderVertical,
   ReadMore,
+  BorderClear,
 } from '@mui/icons-material';
 import { PaletteOutlined } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
@@ -34,12 +35,17 @@ import { menuItemIconStyles, topBarIconStyles } from '../menuStyles';
 import { CompactPicker } from 'react-color';
 import { useFormatCells } from '../useFormatCells';
 import './formatMenuStyles.css';
+import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 
-export const FormatMenu = () => {
+interface IProps {
+  app?: PixiApp;
+}
+
+export const FormatMenu = (props: IProps) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const multiCursor = interactionState.showMultiCursor;
 
-  const { changeFillColor, removeFillColor } = useFormatCells();
+  const { changeFillColor, removeFillColor, changeBorder, changeBorderColor, clearFormatting } = useFormatCells({ app: props.app });
 
   return (
     <Menu
@@ -116,49 +122,76 @@ export const FormatMenu = () => {
           </Fragment>
         }
       >
-        <MenuItem>
-          <BorderColor style={menuItemIconStyles}></BorderColor> Color
-        </MenuItem>
-        <MenuItem>
+      <SubMenu
+        id="FillBorderColorMenuID"
+        menuStyles={{
+          padding: '0px',
+        }}
+        label={
+          <>
+            <BorderColor style={menuItemIconStyles}></BorderColor> Color
+          </>
+        }
+      >
+        <MenuHeader>Border Color</MenuHeader>
+        <CompactPicker onChangeComplete={changeBorderColor} />
+      </SubMenu>
+        <MenuItem disabled={true}>
           <LineStyle style={menuItemIconStyles}></LineStyle>
           Line Style
         </MenuItem>
         {multiCursor && (
-          <MenuItem>
+          <MenuItem onClick={() => changeBorder({
+            borderLeft: true,
+            borderRight: true,
+            borderTop: true,
+            borderBottom: true,
+            borderVertical: true,
+            borderHorizontal: true,
+          })}>
             <BorderAll style={menuItemIconStyles}></BorderAll> All
           </MenuItem>
         )}
-        <MenuItem>
+        <MenuItem onClick={() => changeBorder({
+            borderLeft: true,
+            borderRight: true,
+            borderTop: true,
+            borderBottom: true,
+        })}>
           <BorderOuter style={menuItemIconStyles}></BorderOuter> Outer
         </MenuItem>
-        <MenuItem>
+        <MenuItem onClick={() => changeBorder({ borderTop: true })}>
           <BorderTop style={menuItemIconStyles}></BorderTop> Top
         </MenuItem>
-        <MenuItem>
+        <MenuItem onClick={() => changeBorder({ borderLeft: true })}>
           <BorderLeft style={menuItemIconStyles}></BorderLeft> Left
         </MenuItem>
-        <MenuItem>
+        <MenuItem onClick={() => changeBorder({ borderRight: true })}>
           <BorderRight style={menuItemIconStyles}></BorderRight> Right
         </MenuItem>
-        <MenuItem>
+        <MenuItem onClick={() => changeBorder({ borderBottom: true })}>
           <BorderBottom style={menuItemIconStyles}></BorderBottom> Bottom
         </MenuItem>
         {multiCursor && (
-          <MenuItem>
+          <MenuItem onClick={() => changeBorder({ borderHorizontal: true, borderVertical: true })}>
             <BorderInner style={menuItemIconStyles}></BorderInner> Inner
           </MenuItem>
         )}
         {multiCursor && (
-          <MenuItem>
+          <MenuItem onClick={() => changeBorder({ borderHorizontal: true })}>
             <BorderHorizontal style={menuItemIconStyles}></BorderHorizontal> Horizontal
           </MenuItem>
         )}
         {multiCursor && (
-          <MenuItem>
+          <MenuItem onClick={() => changeBorder({ borderVertical: true })}>
             <BorderVertical style={menuItemIconStyles}></BorderVertical> Vertical
           </MenuItem>
         )}
+        <MenuItem onClick={() => changeBorder({ borderTop: false, borderBottom: false, borderLeft: false, borderRight: false, borderHorizontal: false, borderVertical: false })}>
+          <BorderClear style={menuItemIconStyles}></BorderClear> Clear Borders
+        </MenuItem>
       </SubMenu>
+      <MenuItem onClick={clearFormatting}>Clear Formatting</MenuItem>
     </Menu>
   );
 };
