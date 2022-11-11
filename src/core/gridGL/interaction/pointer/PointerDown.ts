@@ -1,4 +1,5 @@
 import { Point } from 'pixi.js';
+import { isMobile } from 'react-device-detect';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
@@ -19,6 +20,8 @@ export class PointerDown {
   }
 
   pointerDown(world: Point, event: PointerEvent): void {
+    if (isMobile) return;
+
     this.positionRaw = world;
     const { gridOffsets, settings, cursor } = this.app;
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
@@ -51,10 +54,16 @@ export class PointerDown {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
-      doubleClickCell({ cell: this.app.grid.getCell(column, row), app: this.app });
-      this.active = false;
-      event.preventDefault();
-      return;
+      if (
+        this.previousPosition &&
+        column === this.previousPosition.originPosition.x &&
+        row === this.previousPosition.originPosition.y
+      ) {
+        doubleClickCell({ cell: this.app.grid.getCell(column, row), app: this.app });
+        this.active = false;
+        event.preventDefault();
+        return;
+      }
     }
 
     this.active = true;
@@ -83,17 +92,29 @@ export class PointerDown {
 
   pointerMove(world: Point): void {
     const { viewport, gridOffsets, settings, cursor } = this.app;
+
+    // for determining if double click
+    if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
+      if (
+        Math.abs(this.positionRaw.x - world.x) + Math.abs(this.positionRaw.y - world.y) >
+        MINIMUM_MOVE_POSITION / viewport.scale.x
+      ) {
+        this.pointerMoved = true;
+        this.clearDoubleClick();
+      }
+    }
+
     if (!this.active || !this.position || !this.previousPosition || !this.positionRaw || !settings.setInteractionState)
       return;
 
-    // for determining if double click
-    if (
-      !this.pointerMoved &&
-      Math.abs(this.positionRaw.x - world.x) + Math.abs(this.positionRaw.y - world.y) >
-        MINIMUM_MOVE_POSITION * viewport.scale.x
-    ) {
-      this.pointerMoved = true;
-    }
+    // if (
+    //   !this.pointerMoved &&
+    //   Math.abs(this.positionRaw.x - world.x) + Math.abs(this.positionRaw.y - world.y) >
+    //     MINIMUM_MOVE_POSITION * viewport.scale.x
+    // ) {
+    //   console.log('moved')
+    //   this.pointerMoved = true;
+    // }
 
     // calculate mouse move position
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
@@ -164,10 +185,14 @@ export class PointerDown {
     }
   }
 
-  destroy(): void {
+  private clearDoubleClick(): void {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
     }
+  }
+
+  destroy(): void {
+    this.clearDoubleClick();
   }
 }

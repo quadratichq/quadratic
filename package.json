@@ -54,6 +54,7 @@
     "test-all": "concurrently \"npm run test-unit\" \"npm run test-e2e\" \"npm run test-python\"",
     "test-unit": "react-scripts test",
     "test-e2e": "playwright test --workers=1",
+    "test-e2e-debug": "playwright test --debug",
     "test-python": "python3 tests-python/test.py",
     "test": "",
     "eject": "react-scripts eject",

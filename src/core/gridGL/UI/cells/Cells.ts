@@ -44,7 +44,12 @@ export class Cells extends Container {
     this.cellsDraw.clear();
     this.cellsArray.clear();
 
-    const input = !ignoreInput && this.app.settings.interactionState.showInput ? { column: this.app.settings.interactionState.cursorPosition.x, row: this.app.settings.interactionState.cursorPosition.y } : undefined;
+    const input = this.app.settings.interactionState.showInput
+      ? {
+          column: this.app.settings.interactionState.cursorPosition.x,
+          row: this.app.settings.interactionState.cursorPosition.y,
+        }
+      : undefined;
     const xStart = gridOffsets.getColumnPlacement(bounds.left).x;
     let y = gridOffsets.getRowPlacement(bounds.top).y;
     for (let row = bounds.top; row <= bounds.bottom; row++) {

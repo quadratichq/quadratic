@@ -22,8 +22,10 @@ export const KeyboardShortcut = (props: IKeyboardShortcut): JSX.Element => {
     return shortcut;
   }, [props.shortcut, props.ctrl]);
 
-  return <div style={{ display: 'flex', width: '175px' }}>
-    <div style={{ width: '140px' }}>{props.text}</div>
-    {shortcut && <div style={{ fontSize: '14px', color: '#aaaaaa' }}>{shortcut}</div>}
-  </div>
-}
+  return (
+    <div style={{ display: 'flex', width: '175px' }}>
+      <div style={{ width: '140px' }}>{props.text}</div>
+      {shortcut && <div style={{ fontSize: '14px', color: '#aaaaaa' }}>{shortcut}</div>}
+    </div>
+  );
+};

@@ -70,7 +70,7 @@ export default function QuadraticGrid() {
   const [zoomState, setZoomState] = useRecoilState(zoomStateAtom);
   useEffect(() => {
     app?.settings.updateZoom(zoomState, setZoomState);
-  }, [app?.settings, zoomState, setZoomState,]);
+  }, [app?.settings, zoomState, setZoomState]);
 
   // Right click menu
   const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } = useMenuState();

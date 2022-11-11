@@ -36,7 +36,10 @@ export class PixiAppSettings {
     this.app.cells.dirty = true;
   };
 
-  updateInteractionState(interactionState: GridInteractionState, setInteractionState: (value: GridInteractionState) => void): void {
+  updateInteractionState(
+    interactionState: GridInteractionState,
+    setInteractionState: (value: GridInteractionState) => void
+  ): void {
     this.interactionState = interactionState;
     this.setInteractionState = setInteractionState;
     this.app.cursor.dirty = true;
@@ -44,7 +47,10 @@ export class PixiAppSettings {
     this.app.cells.dirty = true;
   }
 
-  updateEditorInteractionState(editorInteractionState: EditorInteractionState, setEditorInteractionState: (value: EditorInteractionState) => void): void {
+  updateEditorInteractionState(
+    editorInteractionState: EditorInteractionState,
+    setEditorInteractionState: (value: EditorInteractionState) => void
+  ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
     this.app.cursor.dirty = true;

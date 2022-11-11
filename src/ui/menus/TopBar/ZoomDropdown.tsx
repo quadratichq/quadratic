@@ -30,19 +30,19 @@ export const ZoomDropdown = () => {
       <MenuDivider></MenuDivider>
       <MenuItem
         onClick={() => {
-          setZoomState(zoomState => zoomState * 2);
+          setZoomState((zoomState) => zoomState * 2);
           focusGrid();
         }}
       >
-        <KeyboardShortcut text="Zoom in" shortcut='=' ctrl={true} />
+        <KeyboardShortcut text="Zoom in" shortcut="=" ctrl={true} />
       </MenuItem>
       <MenuItem
         onClick={() => {
-          setZoomState(zoomState => zoomState * 0.5);
+          setZoomState((zoomState) => zoomState * 0.5);
           focusGrid();
         }}
       >
-        <KeyboardShortcut text="Zoom out" shortcut='-' ctrl={true} />
+        <KeyboardShortcut text="Zoom out" shortcut="-" ctrl={true} />
       </MenuItem>
       <MenuDivider></MenuDivider>
       <MenuItem

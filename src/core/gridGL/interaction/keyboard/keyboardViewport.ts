@@ -1,7 +1,7 @@
 import { Viewport } from 'pixi-viewport';
 import { zoomInOut } from '../../helpers/zoom';
 
-export function keyboardViewport(options: { event: KeyboardEvent, viewport?: Viewport }): boolean {
+export function keyboardViewport(options: { event: KeyboardEvent; viewport?: Viewport }): boolean {
   const { event, viewport } = options;
 
   if (!viewport) return false;

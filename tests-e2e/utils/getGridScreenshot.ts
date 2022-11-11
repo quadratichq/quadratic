@@ -4,6 +4,7 @@ export const getGridScreenshot = async (page: any) => {
 
     //@ts-expect-error
     window.pixiapp.render();
+
     //@ts-expect-error
     return window.pixiapp.renderer.plugins.extract.base64();
   })) as string;
