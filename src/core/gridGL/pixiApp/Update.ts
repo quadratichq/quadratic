@@ -1,5 +1,5 @@
-import { debug, debugShowFPS } from '../../../debugFlags';
-import { debugRendererLight, debugShowChildren, debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
+import { debug, debugShowCachedSpriteCounts, debugShowFPS } from '../../../debugFlags';
+import { debugRendererLight, debugShowCachedCounts, debugShowChildren, debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { FPS } from '../helpers/Fps';
 import { PixiApp } from './PixiApp';
 
@@ -57,6 +57,7 @@ export class Update {
       debugTimeCheck('render', 10);
       debugRendererLight(true);
       debugShowChildren(app.stage, 'stage');
+      debugShowCachedCounts(app);
     } else {
       debugRendererLight(false);
     }

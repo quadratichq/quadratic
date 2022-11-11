@@ -34,4 +34,8 @@ export class CellsBackground extends Container {
       }
     }
   }
+
+  debugShowCachedCounts(): void {
+    console.log(`[CellsBackground] ${this.children.length} objects | ${this.children.filter(child => child.visible).length} visible`);
+  }
 }

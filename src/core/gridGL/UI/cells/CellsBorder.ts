@@ -70,4 +70,8 @@ export class CellsBorder extends Container {
       this.drawBorder(input, colors.independence, 0.75);
     }
   }
+
+  debugShowCachedCounts(): void {
+    console.log(`[CellsBorder] ${this.children.length} objects | ${this.children.filter(child => child.visible).length} visible`);
+  }
 }
