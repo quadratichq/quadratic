@@ -38,6 +38,7 @@ export class PixiApp {
     this.grid = new GridSparse(this);
 
     this.canvas = document.createElement('canvas');
+    this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
     this.canvas.tabIndex = 0;
 
@@ -48,6 +49,12 @@ export class PixiApp {
       antialias: true,
       backgroundColor: 0xffffff,
     });
+
+    // keep a reference of app on window, used for Playwright tests
+
+    //@ts-expect-error
+    window.pixiapp = this;
+
 
     this.viewport = new Viewport({ interaction: this.renderer.plugins.interaction });
     this.stage.addChild(this.viewport);
@@ -128,5 +135,10 @@ export class PixiApp {
       zoomInOut(this.viewport, zoom);
       this.viewportChanged();
     }
+  }
+
+  // helper for playwright
+  render() {
+    this.renderer.render(this.stage)
   }
 }
