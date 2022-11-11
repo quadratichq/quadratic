@@ -39,7 +39,7 @@ export const FormatMenu = () => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const multiCursor = interactionState.showMultiCursor;
 
-  const { changeFillColor } = useFormatCells();
+  const { changeFillColor, removeFillColor } = useFormatCells();
 
   return (
     <Menu
@@ -102,7 +102,12 @@ export const FormatMenu = () => {
         }
       >
         <MenuHeader>Fill Color</MenuHeader>
-        <CompactPicker onChangeComplete={changeFillColor} />
+        <MenuItem>
+          <CompactPicker onChangeComplete={changeFillColor} />
+        </MenuItem>
+        <MenuItem onClick={removeFillColor}>
+          Clear Fill Color
+        </MenuItem>
       </SubMenu>
 
       <SubMenu

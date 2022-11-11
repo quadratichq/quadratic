@@ -7,6 +7,7 @@ import { CellFormat } from '../../../../core/gridDB/db';
 
 interface IResults {
   changeFillColor: (rgb: ColorResult) => void;
+  removeFillColor: () => void;
 }
 
 export const useFormatCells = (): IResults => {
@@ -40,7 +41,12 @@ export const useFormatCells = (): IResults => {
     onFormat({ fillColor: Color({ r: rgb.r, g: rgb.g, b: rgb.b }).rgb().toString() });
   };
 
+  const removeFillColor = () => {
+    onFormat({ fillColor: undefined });
+  }
+
   return {
     changeFillColor,
+    removeFillColor,
   };
 }
