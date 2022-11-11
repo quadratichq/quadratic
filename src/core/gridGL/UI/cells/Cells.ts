@@ -1,7 +1,9 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
+import { Cell, CellFormat } from '../../../gridDB/db';
 import { PixiApp } from '../../pixiApp/PixiApp';
-import { CellsDraw } from './CellsDraw';
+import { CellsBackground } from './cellsBackground';
+import { CellsBorder } from './CellsBorder';
 import { CellsLabels } from './CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
 import { drawArray } from './drawArray';
@@ -13,18 +15,29 @@ export interface CellsBounds {
   maxY: number;
 }
 
+export interface ICellsDraw {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  cell?: Cell;
+  format?: CellFormat;
+}
+
 export class Cells extends Container {
   private app: PixiApp;
-  private cellsDraw: CellsDraw;
+  private cellsBorder: CellsBorder;
   private labels: CellsLabels;
   private cellsMarkers: CellsMarkers;
   private cellsArray: Graphics;
+  cellsBackground: CellsBackground;
   dirty = true;
 
   constructor(app: PixiApp) {
     super();
     this.app = app;
-    this.cellsDraw = this.addChild(new CellsDraw(app));
+    this.cellsBackground = new CellsBackground();
+    this.cellsBorder = this.addChild(new CellsBorder(app));
     this.labels = this.addChild(new CellsLabels());
     this.cellsMarkers = this.addChild(new CellsMarkers());
     this.cellsArray = this.addChild(new Graphics());
@@ -41,7 +54,8 @@ export class Cells extends Container {
     const { grid, gridOffsets } = this.app;
     this.labels.clear();
     this.cellsMarkers.clear();
-    this.cellsDraw.clear();
+    this.cellsBackground.clear();
+    this.cellsBorder.clear();
     this.cellsArray.clear();
 
     const input = this.app.settings.interactionState.showInput
@@ -61,8 +75,9 @@ export class Cells extends Container {
         const cell = grid.get(column, row);
         if (cell) {
           const isInput = input && input.column === column && input.row === row;
-          if (!isInput) {
-            this.cellsDraw.add({ ...cell, x, y, width, height });
+          if (!isInput && cell.format) {
+            this.cellsBorder.draw({ ...cell, x, y, width, height });
+            this.cellsBackground.draw({ ...cell, x, y, width, height });
           }
           if (cell.cell) {
             if (cell.cell?.type === 'PYTHON') {

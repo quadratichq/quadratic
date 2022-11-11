@@ -1,6 +1,6 @@
 import { debug, debugShowFPS } from '../../../debugFlags';
 import { debugRendererLight, debugShowChildren, debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
-import { FPS } from './Fps';
+import { FPS } from '../helpers/Fps';
 import { PixiApp } from './PixiApp';
 
 export class Update {
