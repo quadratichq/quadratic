@@ -1,4 +1,5 @@
 import { Point } from 'pixi.js';
+import { isMobile } from 'react-device-detect';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
@@ -19,6 +20,8 @@ export class PointerDown {
   }
 
   pointerDown(world: Point, event: PointerEvent): void {
+    if (isMobile) return;
+
     this.positionRaw = world;
     const { gridOffsets, settings, cursor } = this.app;
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
