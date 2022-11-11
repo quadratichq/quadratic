@@ -18,12 +18,7 @@ export class Cursor extends Graphics {
     const { settings, gridOffsets } = this.app;
     const cell = settings.interactionState.cursorPosition;
     const { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
-    let color: number;
-    if (settings.editorInteractionState.showCodeEditor) {
-      color = settings.editorInteractionState.mode === 'PYTHON' ? colors.cellColorUserPython : colors.independence;
-    } else {
-      color = colors.cursorCell;
-    }
+    const color = colors.cursorCell;
 
     this.lineStyle({
       width: CURSOR_THICKNESS,
@@ -50,12 +45,28 @@ export class Cursor extends Graphics {
     }
   }
 
+  private drawCodeCursor(): void {
+    const { editorInteractionState } = this.app.settings;
+    if (editorInteractionState.showCodeEditor) {
+      const cell = editorInteractionState.selectedCell;
+      const { x, y, width, height } = this.app.gridOffsets.getCell(cell.x, cell.y);
+      const color = editorInteractionState.mode === 'PYTHON' ? colors.cellColorUserPython : colors.independence;
+      this.lineStyle({
+        width: CURSOR_THICKNESS,
+        color,
+        alignment: 0,
+      });
+      this.drawRect(x, y, width, height);
+    }
+  }
+
   update() {
     if (this.dirty) {
       this.dirty = false;
       this.clear();
       this.drawCursor();
       this.drawMultiCursor();
+      this.drawCodeCursor();
     }
   }
 }
