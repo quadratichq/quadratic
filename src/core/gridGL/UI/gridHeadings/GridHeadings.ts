@@ -182,7 +182,6 @@ export class GridHeadings extends Container {
 
       // only show the label if selected or mod calculation
       if (selected || mod === 0 || column % mod === 0) {
-
         // hide labels that are too small for the width
         // if (currentWidth > charactersWidth || this.app.gridLines.alpha === 0) {
 
@@ -296,7 +295,6 @@ export class GridHeadings extends Container {
 
       // only show the label if selected or mod calculation
       if (selected || mod === 0 || row % mod === 0) {
-
         // only show labels if height is large enough
         // if (currentHeight > halfCharacterHeight * 2 || this.app.gridLines.alpha === 0) {
 

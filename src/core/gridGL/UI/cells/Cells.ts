@@ -33,7 +33,12 @@ export class Cells extends Container {
     this.cellsMarkers.clear();
     this.cellBackgrounds.clear();
 
-    const input = this.app.settings.interactionState.showInput ? { column: this.app.settings.interactionState.cursorPosition.x, row: this.app.settings.interactionState.cursorPosition.y } : undefined;
+    const input = this.app.settings.interactionState.showInput
+      ? {
+          column: this.app.settings.interactionState.cursorPosition.x,
+          row: this.app.settings.interactionState.cursorPosition.y,
+        }
+      : undefined;
     const bounds = grid.getBounds(viewport.getVisibleBounds());
     const xStart = gridOffsets.getColumnPlacement(bounds.left).x;
     let y = gridOffsets.getRowPlacement(bounds.top).y;

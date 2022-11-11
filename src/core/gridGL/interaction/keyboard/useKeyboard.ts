@@ -19,19 +19,20 @@ interface IProps {
 
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
 
-export const useKeyboard = (
-  props: IProps
-): { onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void; } => {
+export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void } => {
   const { interactionState, setInteractionState, setEditorInteractionState, app } = props;
 
-  const keyDownWindow = useCallback((event: KeyboardEvent): void => {
-    if (interactionState.showInput) return;
+  const keyDownWindow = useCallback(
+    (event: KeyboardEvent): void => {
+      if (interactionState.showInput) return;
 
-    if (keyboardViewport({ event, viewport: app?.viewport })) {
-      event.stopPropagation();
-      event.preventDefault();
-    }
-  }, [app?.viewport, interactionState]);
+      if (keyboardViewport({ event, viewport: app?.viewport })) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+    },
+    [app?.viewport, interactionState]
+  );
 
   useEffect(() => {
     window.addEventListener('keydown', keyDownWindow);

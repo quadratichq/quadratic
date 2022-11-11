@@ -118,7 +118,7 @@ export class PixiApp {
     this.canvas.height = this.renderer.resolution * height;
     this.renderer.resize(width, height);
     this.viewport.resize(width, height);
-  }
+  };
 
   checkZoom(): void {
     const zoom = this.settings.zoomState;

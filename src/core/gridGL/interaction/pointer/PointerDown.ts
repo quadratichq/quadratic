@@ -54,7 +54,11 @@ export class PointerDown {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
-      if (this.previousPosition && column === this.previousPosition.originPosition.x && row === this.previousPosition.originPosition.y) {
+      if (
+        this.previousPosition &&
+        column === this.previousPosition.originPosition.x &&
+        row === this.previousPosition.originPosition.y
+      ) {
         doubleClickCell({ cell: this.app.grid.get(column, row), app: this.app });
         this.active = false;
         event.preventDefault();
@@ -91,7 +95,8 @@ export class PointerDown {
 
     // for determining if double click
     if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
-      if (Math.abs(this.positionRaw.x - world.x) + Math.abs(this.positionRaw.y - world.y) >
+      if (
+        Math.abs(this.positionRaw.x - world.x) + Math.abs(this.positionRaw.y - world.y) >
         MINIMUM_MOVE_POSITION / viewport.scale.x
       ) {
         this.pointerMoved = true;

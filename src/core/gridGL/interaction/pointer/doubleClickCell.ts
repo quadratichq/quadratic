@@ -1,7 +1,7 @@
 import { Cell } from '../../../gridDB/db';
 import { PixiApp } from '../../pixiApp/PixiApp';
 
-export function doubleClickCell(options: { cell?: Cell, app: PixiApp }): void {
+export function doubleClickCell(options: { cell?: Cell; app: PixiApp }): void {
   const { cell, app } = options;
   const settings = app.settings;
 
