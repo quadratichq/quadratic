@@ -45,7 +45,7 @@ export const FormatMenu = (props: IProps) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const multiCursor = interactionState.showMultiCursor;
 
-  const { changeFillColor, removeFillColor, changeBorder, changeBorderColor, clearFormatting } = useFormatCells({ app: props.app });
+  const { changeFillColor, removeFillColor, changeBorder, changeBorderColor, clearBorders, clearFormatting } = useFormatCells({ app: props.app });
 
   // focus canvas after the format menu closes
   const onMenuChange = useCallback((event: MenuChangeEvent) => {
@@ -193,7 +193,7 @@ export const FormatMenu = (props: IProps) => {
             <BorderVertical style={menuItemIconStyles}></BorderVertical> Vertical
           </MenuItem>
         )}
-        <MenuItem onClick={() => changeBorder({ borderTop: false, borderBottom: false, borderLeft: false, borderRight: false, borderHorizontal: false, borderVertical: false })}>
+        <MenuItem onClick={clearBorders}>
           <BorderClear style={menuItemIconStyles}></BorderClear> Clear Borders
         </MenuItem>
       </SubMenu>

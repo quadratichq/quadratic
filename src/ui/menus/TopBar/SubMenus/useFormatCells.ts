@@ -11,6 +11,7 @@ interface IResults {
   removeFillColor: () => void;
   changeBorder: (options: { borderLeft?: boolean; borderTop?: boolean; borderBottom?: boolean; borderRight?: boolean, borderHorizontal?: boolean; borderVertical?: boolean }) => void;
   changeBorderColor: (rgb: ColorResult) => void;
+  clearBorders: () => void;
   clearFormatting: () => void;
 }
 
@@ -144,6 +145,28 @@ export const useFormatCells = (props: IProps): IResults => {
     onFormat({ borderColor: convertReactColorToString(color) })
   };
 
+  const clearBorders = (): void => {
+    let start: { x: number, y: number };
+    let end: { x: number, y: number };
+    if (multiCursor) {
+      start = interactionState.multiCursorPosition.originPosition;
+      end = interactionState.multiCursorPosition.terminalPosition;
+    } else {
+      start = interactionState.cursorPosition;
+      end = interactionState.cursorPosition;
+    }
+    const formats: CellFormat[] = [];
+    for (let y = start.y; y <= end.y; y++) {
+      for (let x = start.x; x <= end.x; x++) {
+        const format = props.app?.grid.getFormat(x, y);
+        if (format) {
+          formats.push({ ...format, border: 0 });
+        }
+      }
+    }
+    updateFormatDB(formats);
+  }
+
   const clearFormatting = (): void => {
     let start: { x: number, y: number };
     let end: { x: number, y: number };
@@ -168,6 +191,7 @@ export const useFormatCells = (props: IProps): IResults => {
     removeFillColor,
     changeBorder,
     changeBorderColor,
+    clearBorders,
     clearFormatting,
   };
 }
