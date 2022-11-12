@@ -5,9 +5,6 @@ export const updateFormatDB = async (format: CellFormat[]): Promise<void> => {
 };
 
 export const clearFormatDB = async (cells: { x: number, y: number }[]): Promise<void> => {
-
-  // todo: see if this is working on clear formatting
-
-  const keys = cells.map(cell => `${cell.x}+${cell.y}`);
+  const keys = cells.map(cell => [cell.x, cell.y]);
   await qdb.format.bulkDelete(keys);
 };

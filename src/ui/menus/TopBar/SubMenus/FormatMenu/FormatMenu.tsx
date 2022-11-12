@@ -1,7 +1,7 @@
-import { Fragment } from 'react';
+import { Fragment, useCallback } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Menu, MenuItem, MenuDivider, MenuHeader, SubMenu } from '@szhsin/react-menu';
+import { Menu, MenuItem, MenuDivider, MenuHeader, SubMenu, MenuChangeEvent } from '@szhsin/react-menu';
 
 import {
   FormatBold,
@@ -47,8 +47,14 @@ export const FormatMenu = (props: IProps) => {
 
   const { changeFillColor, removeFillColor, changeBorder, changeBorderColor, clearFormatting } = useFormatCells({ app: props.app });
 
+  // focus canvas after the format menu closes
+  const onMenuChange = useCallback((event: MenuChangeEvent) => {
+    if (!event.open) props.app?.focus();
+  }, [props.app]);
+
   return (
     <Menu
+      onMenuChange={onMenuChange}
       menuButton={
         <Tooltip title="Format" arrow>
           <Button style={{ color: colors.darkGray }}>

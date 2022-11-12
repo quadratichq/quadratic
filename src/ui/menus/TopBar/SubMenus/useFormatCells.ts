@@ -121,17 +121,17 @@ export const useFormatCells = (props: IProps): IResults => {
           }
           updateNeighbor(x, y + 1, borderTop);
         }
-        if (multiCursor && x !== end.x && options.borderHorizontal !== undefined) {
+        if (multiCursor && y !== end.y && options.borderHorizontal !== undefined) {
           if (options.borderHorizontal === true) {
+            border = border | borderBottom;
+          }
+          updateNeighbor(x + 1, y, borderTop);
+        }
+        if (multiCursor && x !== end.x && options.borderVertical !== undefined) {
+          if (options.borderVertical === true) {
             border = border | borderRight;
           }
           updateNeighbor(x + 1, y, borderLeft);
-        }
-        if (multiCursor && x !== end.y && options.borderVertical !== undefined) {
-          if (options.borderVertical === true) {
-            border = border | borderBottom;
-          }
-          updateNeighbor(x + 1, y, borderBottom);
         }
         formats.push({ ...format, border });
       }

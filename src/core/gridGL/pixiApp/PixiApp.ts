@@ -144,4 +144,8 @@ export class PixiApp {
   render() {
     this.renderer.render(this.stage)
   }
+
+  focus() {
+    this.canvas?.focus();
+  }
 }
