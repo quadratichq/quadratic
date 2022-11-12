@@ -19,7 +19,8 @@ default = ["console_error_panic_hook"]
 anyhow = "1.0"
 itertools = "0.10.5"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0" }
+serde_json = "1.0"
+serde-wasm-bindgen = "0.4.5"
 wasm-bindgen = "0.2.83"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by

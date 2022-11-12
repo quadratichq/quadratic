@@ -5,11 +5,15 @@ use std::{collections::BTreeMap, fmt};
 use wasm_bindgen::prelude::*;
 
 mod cell;
+mod command;
+mod controller;
 
 pub use cell::Cell;
+pub use command::Command;
+pub use controller::GridController;
 
 /// Sparse grid of cells.
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
 pub struct Grid {
     /// Map from X to column.
     pub columns: BTreeMap<i64, Column>,
@@ -26,7 +30,7 @@ impl Grid {
     }
 
     /// Returns whether the grid is valid:
-    /// - Every [Column] is valid
+    /// - Every column is valid (see [`Column::is_valid()`])
     pub fn is_valid(&self) -> bool {
         self.columns.iter().all(|(_, col)| col.is_valid())
     }
@@ -40,16 +44,24 @@ impl Grid {
     }
 
     /// Sets a cell in the grid, returning its old contents.
-    pub fn set_cell(&mut self, pos: Pos, contents: Cell) -> Result<Cell> {
+    pub fn set_cell(&mut self, pos: Pos, contents: Cell) -> Cell {
         match self.columns.get_mut(&pos.x) {
-            Some(col) => col.set_cell(pos.y, contents),
+            Some(col) => {
+                let ret = col.set_cell(pos.y, contents);
+                if col.blocks.is_empty() {
+                    self.columns.remove(&pos.x);
+                }
+                ret
+            }
             None => {
-                // Make a new column containing just this cell.
-                let mut col = Column::default();
-                col.set_cell(pos.y, contents)?;
-                self.columns.insert(pos.x, col);
+                if !contents.is_empty() {
+                    // Make a new column containing just this cell.
+                    let mut col = Column::default();
+                    col.set_cell(pos.y, contents);
+                    self.columns.insert(pos.x, col);
+                }
                 // The cell didn't exist before.
-                Ok(Cell::Empty)
+                Cell::Empty
             }
         }
     }
@@ -65,7 +77,8 @@ impl fmt::Debug for Column {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut ret = f.debug_struct("Column");
         for (top, block) in &self.blocks {
-            ret.field(&format!("{:?}", *top..top + block.len() as i64), block);
+            let bottom = top + block.len() as i64 - 1;
+            ret.field(&format!("{:?}", *top..=bottom), block);
         }
         ret.finish()
     }
@@ -79,7 +92,7 @@ impl Column {
         }
     }
     /// Sets a cell in the column, returning its old contents.
-    pub fn set_cell(&mut self, y: i64, contents: Cell) -> Result<Cell> {
+    pub fn set_cell(&mut self, y: i64, contents: Cell) -> Cell {
         if contents.is_empty() {
             return self.clear_cell(y);
         }
@@ -92,7 +105,7 @@ impl Column {
         if let Some((top, block)) = at {
             // The cell already exists in a block. Set its value.
             let offset = y - top;
-            block.set_cell(offset, contents)
+            block.set_cell(offset, contents).expect("wrong block")
         } else if let Some((_, above)) = above {
             // There is a block that ends directly above this cell, so append
             // the cell to that block.
@@ -104,15 +117,15 @@ impl Column {
                 self.blocks.remove(&(y + 1));
             }
             // The cell didn't exist before.
-            Ok(Cell::Empty)
+            Cell::Empty
         } else if let Some((_, below)) = below {
             // There is a block that starts directly below this cell, so insert
             // the cell at the top of it.
             below.insert_top(contents);
-            let block = self.blocks.remove(&(y + 1)).context("block vanished")?;
+            let block = self.blocks.remove(&(y + 1)).expect("block vanished");
             self.blocks.insert(y, block);
             // The cell didn't exist before.
-            Ok(Cell::Empty)
+            Cell::Empty
         } else {
             // There is no block nearby, so add a new one.
             let block = Block {
@@ -120,23 +133,24 @@ impl Column {
             };
             self.blocks.insert(y, block);
             // The cell didn't exist before.
-            Ok(Cell::Empty)
+            Cell::Empty
         }
     }
     /// Clears a cell in the column, returning its old contents.
-    pub fn clear_cell(&mut self, y: i64) -> Result<Cell> {
+    pub fn clear_cell(&mut self, y: i64) -> Cell {
         if let Some((&top, block)) = self.block_containing(y) {
-            let ret = block.get_cell(y - top)?.clone();
+            let ret = block.get_cell(y - top).expect("wrong block").clone();
 
             if block.len() == 1 {
                 // The cell is the entire block. Just delete the block.
                 self.blocks.remove(&y);
             } else if top == y {
-                // The cell is at the top of the block. Create a new block
-                // missing that cell.
+                // The cell is at the top of the block. Delete the block
+                // containing it and create a new block missing that cell.
                 let new_block = Block {
                     cells: block.cells.iter().skip(1).cloned().collect(),
                 };
+                self.blocks.remove(&top);
                 self.blocks.insert(top + 1, new_block);
             } else if top + block.len() as i64 - 1 == y {
                 // The cell is at the bottom of the block. Simply remove it.
@@ -154,18 +168,20 @@ impl Column {
                 self.blocks.insert(y + 1, below);
             }
 
-            Ok(ret)
+            ret
         } else {
             // The cell does not exist. There is nothing to do.
-            Ok(Cell::Empty)
+            Cell::Empty
         }
     }
 
     /// Checks whether the column is valid:
-    /// - Every [Block] is valid
+    /// - Contains at least one block
+    /// - Every block is valid (see [`Block::is_valid()`])
     /// - There must be no adjacent/overlapping blocks
     pub fn is_valid(&self) -> bool {
-        self.blocks.iter().all(|(_, block)| block.is_valid())
+        !self.blocks.is_empty()
+            && self.blocks.iter().all(|(_, block)| block.is_valid())
             && self
                 .blocks
                 .iter()
@@ -187,7 +203,7 @@ impl Column {
 pub struct Block {
     /// Cells in the block.
     ///
-    /// TOOD: Consider using Apache Arrow or some other homogenous list
+    /// TODO: Consider using Apache Arrow or some other homogenous list
     /// structure, perhaps in combination with a tree.
     pub cells: Vec<Cell>,
 }
