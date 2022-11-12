@@ -1,3 +1,4 @@
+import { format } from 'path';
 import { ColorResult } from 'react-color';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
@@ -141,11 +142,11 @@ export const useFormatCells = (props: IProps): IResults => {
   };
 
   const changeBorderColor = (color: ColorResult): void => {
-    console.log(convertReactColorToString(color))
     onFormat({ borderColor: convertReactColorToString(color) })
   };
 
   const clearBorders = (): void => {
+    if (!props.app) return;
     let start: { x: number, y: number };
     let end: { x: number, y: number };
     if (multiCursor) {
@@ -155,19 +156,49 @@ export const useFormatCells = (props: IProps): IResults => {
       start = interactionState.cursorPosition;
       end = interactionState.cursorPosition;
     }
+
     const formats: CellFormat[] = [];
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
-        const format = props.app?.grid.getFormat(x, y);
+        const format = props.app.grid.getFormat(x, y);
         if (format) {
           formats.push({ ...format, border: 0 });
         }
+
+        // clear neighbor's borderBottom above
+        if (y === start.y) {
+          const format = props.app.grid.getFormat(x, y - 1);
+          if (format?.border && format.border & borderBottom) {
+            formats.push({ ...format, border: format.border & (borderAll ^ borderBottom) });
+          }
+        }
+
+        // clear neighbor's borderTop below
+        if (y === end.y) {
+          const format = props.app.grid.getFormat(x, y + 1);
+          if (format?.border && format.border & borderTop) {
+            formats.push({ ...format, border: format.border & (borderAll ^ borderTop) });
+          }
+        }
+      }
+
+      // clear neighbor's borderRight to the left
+      const left = props.app.grid.getFormat(start.x - 1, y);
+      if (left?.border && left.border & borderRight) {
+        formats.push({ ...left, border: left.border & (borderAll ^ borderRight) });
+      }
+
+      // clear neighbor's borderLeft to the right
+      const right = props.app.grid.getFormat(end.x + 1, y);
+      if (right?.border && right.border & borderLeft) {
+        formats.push({ ...right, border: right.border & (borderAll ^ borderLeft) });
       }
     }
     updateFormatDB(formats);
   }
 
   const clearFormatting = (): void => {
+    if (!props.app) return;
     let start: { x: number, y: number };
     let end: { x: number, y: number };
     if (multiCursor) {
@@ -178,12 +209,44 @@ export const useFormatCells = (props: IProps): IResults => {
       end = interactionState.cursorPosition;
     }
     const cells: { x: number, y: number }[] = [];
+    const formats: CellFormat[] = [];
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
         cells.push({ x, y });
+
+        // clear neighbor's borderBottom above
+        if (y === start.y) {
+          const format = props.app.grid.getFormat(x, y - 1);
+          if (format?.border && format.border & borderBottom) {
+            formats.push({ ...format, border: format.border & (borderAll ^ borderBottom) });
+          }
+        }
+
+        // clear neighbor's borderTop below
+        if (y === end.y) {
+          const format = props.app.grid.getFormat(x, y + 1);
+          if (format?.border && format.border & borderTop) {
+            formats.push({ ...format, border: format.border & (borderAll ^ borderTop) });
+          }
+        }
+      }
+
+      // clear neighbor's borderRight to the left
+      const left = props.app.grid.getFormat(start.x - 1, y);
+      if (left?.border && left.border & borderRight) {
+        formats.push({ ...left, border: left.border & (borderAll ^ borderRight) });
+      }
+
+      // clear neighbor's borderLeft to the right
+      const right = props.app.grid.getFormat(end.x + 1, y);
+      if (right?.border && right.border & borderLeft) {
+        formats.push({ ...right, border: right.border & (borderAll ^ borderLeft) });
       }
     }
     clearFormatDB(cells);
+    if (formats.length) {
+      updateFormatDB(formats);
+    }
   };
 
   return {
