@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fmt};
+use wasm_bindgen::prelude::*;
 
 mod cell;
 
@@ -9,20 +10,17 @@ pub use cell::Cell;
 
 /// Sparse grid of cells.
 #[derive(Serialize, Deserialize, Default, Clone)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub struct Grid {
     /// Map from X to column.
-    pub columns: rpds::RedBlackTreeMap<i64, Column>,
+    pub columns: BTreeMap<i64, Column>,
 }
 impl fmt::Debug for Grid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_map().entries(&self.columns).finish()
     }
 }
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl Grid {
     /// Constructs a new empty grid.
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(constructor))]
     pub fn new() -> Self {
         Grid::default()
     }
@@ -49,7 +47,7 @@ impl Grid {
                 // Make a new column containing just this cell.
                 let mut col = Column::default();
                 col.set_cell(pos.y, contents)?;
-                self.columns.insert_mut(pos.x, col);
+                self.columns.insert(pos.x, col);
                 // The cell didn't exist before.
                 Ok(Cell::Empty)
             }
@@ -111,14 +109,14 @@ impl Column {
             // There is a block that starts directly below this cell, so insert
             // the cell at the top of it.
             below.insert_top(contents);
-            let block = self.blocks.remove(&(y + 1)).expect("block vanished");
+            let block = self.blocks.remove(&(y + 1)).context("block vanished")?;
             self.blocks.insert(y, block);
             // The cell didn't exist before.
             Ok(Cell::Empty)
         } else {
             // There is no block nearby, so add a new one.
             let block = Block {
-                contents: rpds::vector![contents],
+                cells: vec![contents],
             };
             self.blocks.insert(y, block);
             // The cell didn't exist before.
@@ -137,20 +135,20 @@ impl Column {
                 // The cell is at the top of the block. Create a new block
                 // missing that cell.
                 let new_block = Block {
-                    contents: block.contents.iter().skip(1).cloned().collect(),
+                    cells: block.cells.iter().skip(1).cloned().collect(),
                 };
                 self.blocks.insert(top + 1, new_block);
             } else if top + block.len() as i64 - 1 == y {
                 // The cell is at the bottom of the block. Simply remove it.
-                block.contents.drop_last_mut();
+                block.cells.pop();
             } else {
                 // The cell is in the middle of the block. Split the block.
-                let mut iter = block.contents.iter().cloned();
+                let mut iter = block.cells.iter().cloned();
                 let above = Block {
-                    contents: (top..y).map_while(|_| iter.next()).collect(),
+                    cells: (top..y).map_while(|_| iter.next()).collect(),
                 };
                 let below = Block {
-                    contents: iter.collect(),
+                    cells: iter.collect(),
                 };
                 *block = above;
                 self.blocks.insert(y + 1, below);
@@ -191,11 +189,11 @@ pub struct Block {
     ///
     /// TOOD: Consider using Apache Arrow or some other homogenous list
     /// structure, perhaps in combination with a tree.
-    pub contents: rpds::Vector<Cell>,
+    pub cells: Vec<Cell>,
 }
 impl fmt::Debug for Block {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_list().entries(&self.contents).finish()
+        f.debug_list().entries(&self.cells).finish()
     }
 }
 impl Block {
@@ -203,52 +201,47 @@ impl Block {
     /// - Contains at least one cell
     /// - All cells are nonempty
     pub fn is_valid(&self) -> bool {
-        !self.contents.is_empty() && self.contents.iter().all(|cell| !cell.is_empty())
+        !self.cells.is_empty() && self.cells.iter().all(|cell| !cell.is_empty())
     }
 
     /// Returns the number of cells in the block.
     pub fn len(&self) -> usize {
-        self.contents.len()
+        self.cells.len()
     }
 
     /// Returns a cell in the block, or an error if the offset is out of range.
     pub fn get_cell(&self, offset: i64) -> Result<&Cell> {
         let offset: usize = offset.try_into().context("cell offset outside block")?;
-        self.contents
-            .get(offset)
-            .context("cell offset outside block")
+        self.cells.get(offset).context("cell offset outside block")
     }
     /// Sets an existing cell in the block, returning its old contents, or an
     /// error if the offset is out of range.
     pub fn set_cell(&mut self, offset: i64, contents: Cell) -> Result<Cell> {
         let ret = self.get_cell(offset)?.clone();
 
-        // Casting to `usize` here is fine because `get_cell()` already
-        // confirmed it's in range.
-        self.contents.set_mut(offset as usize, contents);
+        // Panicking indexing is fine because `get_cell()` already confirmed
+        // it's in range.
+        self.cells[offset as usize] = contents;
 
         Ok(ret)
     }
     /// Appends a cell to the bottom of the block in O(1) time.
     pub fn push_bottom(&mut self, contents: Cell) {
-        self.contents.push_back_mut(contents);
+        self.cells.push(contents);
     }
     /// Inserts a cell at the top of the block in O(n) time.
     pub fn insert_top(&mut self, contents: Cell) {
-        let mut new = Block {
-            contents: rpds::vector![contents],
-        };
-        new.merge(self);
-        *self = new;
+        self.cells.insert(0, contents);
     }
     /// Merges the block with another directly below it.
     pub fn merge(&mut self, below: &Block) {
-        self.contents.extend(below.contents.iter().cloned());
+        self.cells.extend_from_slice(&below.cells);
     }
 }
 
 /// Rectangular range of cells.
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[wasm_bindgen]
 pub struct Rect {
     /// Left edge (column)
     pub x: i64,
@@ -270,6 +263,7 @@ impl Rect {
 
 /// Cell position.
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[wasm_bindgen]
 pub struct Pos {
     /// Column
     pub x: i64,
