@@ -247,7 +247,32 @@ export const useFormatCells = (props: IProps): IResults => {
         const format = props.app.grid.getFormat(x, y) ?? { x, y };
         formats.push({ ...format, borderType: type });
 
-        // todo: change format of outside neighbors by moving borders to selected cells if necessary
+        // change neighbor's borderBottom above
+        if (y === start.y) {
+          const format = props.app.grid.getFormat(x, y - 1);
+          if (format?.border && format.border & borderBottom && format.borderType !== type) {
+            formats.push({ ...format, borderType: type });
+          }
+        }
+
+        // change neighbor's borderTop below
+        if (y === end.y) {
+          const format = props.app.grid.getFormat(x, y + 1);
+          if (format?.border && format.border & borderTop && format.borderType !== type) {
+            formats.push({ ...format, borderType: type });
+          }
+        }
+      }
+      // change neighbor's borderRight to the left
+      const left = props.app.grid.getFormat(start.x - 1, y);
+      if (left?.border && left.border & borderRight && left.borderType !== type) {
+        formats.push({ ...left, borderType: type });
+      }
+
+      // change neighbor's borderLeft to the right
+      const right = props.app.grid.getFormat(end.x + 1, y);
+      if (right?.border && right.border & borderLeft && right.borderType !== type) {
+        formats.push({ ...right, borderType: type });
       }
     }
     updateFormatDB(formats);
