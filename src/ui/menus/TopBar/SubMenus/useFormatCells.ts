@@ -7,10 +7,19 @@ import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../../../core/gridGL/types/size';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 
+export interface ChangeBorder {
+  borderLeft?: boolean;
+  borderTop?: boolean;
+  borderBottom?: boolean;
+  borderRight?: boolean,
+  borderHorizontal?: boolean;
+  borderVertical?: boolean;
+}
+
 interface IResults {
   changeFillColor: (rgb: ColorResult) => void;
   removeFillColor: () => void;
-  changeBorder: (options: { borderLeft?: boolean; borderTop?: boolean; borderBottom?: boolean; borderRight?: boolean, borderHorizontal?: boolean; borderVertical?: boolean }) => void;
+  changeBorder: (options: ChangeBorder) => void;
   changeBorderColor: (rgb: ColorResult) => void;
   clearBorders: () => void;
   clearFormatting: () => void;

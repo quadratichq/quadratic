@@ -1,7 +1,7 @@
 import { Fragment, useCallback } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Menu, MenuItem, MenuDivider, MenuHeader, SubMenu, MenuChangeEvent } from '@szhsin/react-menu';
+import { Menu, MenuItem, MenuDivider, MenuHeader, SubMenu, MenuChangeEvent, ClickEvent } from '@szhsin/react-menu';
 
 import {
   FormatBold,
@@ -33,7 +33,7 @@ import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../../atoms/gridInteractionStateAtom';
 import { menuItemIconStyles, topBarIconStyles } from '../menuStyles';
 import { CompactPicker } from 'react-color';
-import { useFormatCells } from '../useFormatCells';
+import { ChangeBorder, useFormatCells } from '../useFormatCells';
 import './formatMenuStyles.css';
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { BorderType } from '../../../../../core/gridDB/db';
@@ -47,6 +47,21 @@ export const FormatMenu = (props: IProps) => {
   const multiCursor = interactionState.showMultiCursor;
 
   const { changeFillColor, removeFillColor, changeBorder, changeBorderColor, clearBorders, clearFormatting, changeBorderType } = useFormatCells({ app: props.app });
+
+  const handleChangeBorderType = useCallback((e: ClickEvent, borderType?: BorderType) => {
+    changeBorderType(borderType);
+    e.keepOpen = true;
+  }, [changeBorderType]);
+
+  const handleChangeBorder = useCallback((e: ClickEvent, options: ChangeBorder) => {
+    changeBorder(options);
+    e.keepOpen = true;
+  }, [changeBorder]);
+
+  const handleClearBorders = useCallback((e: ClickEvent) => {
+    clearBorders();
+    e.keepOpen = true;
+  }, [clearBorders]);
 
   // focus canvas after the format menu closes
   const onMenuChange = useCallback((event: MenuChangeEvent) => {
@@ -149,15 +164,15 @@ export const FormatMenu = (props: IProps) => {
             <LineStyle style={menuItemIconStyles}></LineStyle> Line Style
           </>}
         >
-          <MenuItem onClick={() => changeBorderType()}><div className="lineStyleBorder normalBorder"></div></MenuItem>
-          <MenuItem onClick={() => changeBorderType(BorderType.line2)}><div className="lineStyleBorder doubleBorder"></div></MenuItem>
-          <MenuItem onClick={() => changeBorderType(BorderType.line3)}><div className="lineStyleBorder tripleBorder"></div></MenuItem>
-          <MenuItem onClick={() => changeBorderType(BorderType.dashed)}><div className="lineStyleBorder dashedBorder"></div></MenuItem>
-          <MenuItem onClick={() => changeBorderType(BorderType.dotted)}><div className="lineStyleBorder dottedBorder"></div></MenuItem>
-          <MenuItem onClick={() => changeBorderType(BorderType.double)}><div className="lineStyleBorder twoLineBorder"></div></MenuItem>
+          <MenuItem onClick={(e) => handleChangeBorderType(e)}><div className="lineStyleBorder normalBorder"></div></MenuItem>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.line2)}><div className="lineStyleBorder doubleBorder"></div></MenuItem>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.line3)}><div className="lineStyleBorder tripleBorder"></div></MenuItem>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.dashed)}><div className="lineStyleBorder dashedBorder"></div></MenuItem>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.dotted)}><div className="lineStyleBorder dottedBorder"></div></MenuItem>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.double)}><div className="lineStyleBorder twoLineBorder"></div></MenuItem>
         </SubMenu>
         {multiCursor && (
-          <MenuItem onClick={() => changeBorder({
+          <MenuItem onClick={(e) => handleChangeBorder(e, {
             borderLeft: true,
             borderRight: true,
             borderTop: true,
@@ -168,7 +183,7 @@ export const FormatMenu = (props: IProps) => {
             <BorderAll style={menuItemIconStyles}></BorderAll> All
           </MenuItem>
         )}
-        <MenuItem onClick={() => changeBorder({
+        <MenuItem onClick={(e) => handleChangeBorder(e, {
             borderLeft: true,
             borderRight: true,
             borderTop: true,
@@ -176,34 +191,34 @@ export const FormatMenu = (props: IProps) => {
         })}>
           <BorderOuter style={menuItemIconStyles}></BorderOuter> Outer
         </MenuItem>
-        <MenuItem onClick={() => changeBorder({ borderTop: true })}>
+        <MenuItem onClick={(e) => handleChangeBorder(e, { borderTop: true })}>
           <BorderTop style={menuItemIconStyles}></BorderTop> Top
         </MenuItem>
-        <MenuItem onClick={() => changeBorder({ borderLeft: true })}>
+        <MenuItem onClick={(e) => handleChangeBorder(e, { borderLeft: true })}>
           <BorderLeft style={menuItemIconStyles}></BorderLeft> Left
         </MenuItem>
-        <MenuItem onClick={() => changeBorder({ borderRight: true })}>
+        <MenuItem onClick={(e) => handleChangeBorder(e, { borderRight: true })}>
           <BorderRight style={menuItemIconStyles}></BorderRight> Right
         </MenuItem>
-        <MenuItem onClick={() => changeBorder({ borderBottom: true })}>
+        <MenuItem onClick={(e) => handleChangeBorder(e, { borderBottom: true })}>
           <BorderBottom style={menuItemIconStyles}></BorderBottom> Bottom
         </MenuItem>
         {multiCursor && (
-          <MenuItem onClick={() => changeBorder({ borderHorizontal: true, borderVertical: true })}>
+          <MenuItem onClick={(e) => handleChangeBorder(e, { borderHorizontal: true, borderVertical: true })}>
             <BorderInner style={menuItemIconStyles}></BorderInner> Inner
           </MenuItem>
         )}
         {multiCursor && (
-          <MenuItem onClick={() => changeBorder({ borderHorizontal: true })}>
+          <MenuItem onClick={(e) => handleChangeBorder(e, { borderHorizontal: true })}>
             <BorderHorizontal style={menuItemIconStyles}></BorderHorizontal> Horizontal
           </MenuItem>
         )}
         {multiCursor && (
-          <MenuItem onClick={() => changeBorder({ borderVertical: true })}>
+          <MenuItem onClick={(e) => handleChangeBorder(e, { borderVertical: true })}>
             <BorderVertical style={menuItemIconStyles}></BorderVertical> Vertical
           </MenuItem>
         )}
-        <MenuItem onClick={clearBorders}>
+        <MenuItem onClick={(e) => handleClearBorders(e)}>
           <BorderClear style={menuItemIconStyles}></BorderClear> Clear Borders
         </MenuItem>
       </SubMenu>
