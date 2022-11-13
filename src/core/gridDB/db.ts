@@ -34,6 +34,14 @@ export const borderRight = 0b0100;
 export const borderBottom = 0b1000;
 export const borderAll = 0b1111;
 
+export enum BorderType {
+  line2 = 1,
+  line3 = 2,
+  dotted = 3,
+  dashed = 4,
+  double = 5,
+};
+
 export interface CellFormat {
   x?: number;
   y?: number;
@@ -41,6 +49,7 @@ export interface CellFormat {
   fillColor?: string;
   borderColor?: string;
   border?: number;
+  borderType?: BorderType;
 }
 
 export interface Grid {

@@ -23,7 +23,9 @@ interface IProps {
 export default function QuadraticGrid(props: IProps) {
   const { loading } = useLoading();
 
-  useEffect(() => props.setApp(new PixiApp()), []);
+  const { setApp } = props;
+
+  useEffect(() => setApp(new PixiApp()), [setApp]);
 
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node: HTMLDivElement | null) => {

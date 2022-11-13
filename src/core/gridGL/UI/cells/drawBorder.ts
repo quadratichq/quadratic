@@ -1,4 +1,6 @@
-import { Sprite } from 'pixi.js';
+import { Sprite, Texture, TilingSprite } from 'pixi.js';
+import { BorderType } from '../../../gridDB/db';
+import { dashedTextures } from '../../dashedTextures';
 
 export function drawBorder(options: {
   x: number;
@@ -7,47 +9,65 @@ export function drawBorder(options: {
   height: number;
   tint: number;
   alpha: number;
-  getSprite: () => Sprite;
+  getSprite: (tiling?: boolean) => Sprite;
   top?: boolean;
   left?: boolean;
   bottom?: boolean;
   right?: boolean;
-  lineWidth?: number;
+  borderType?: BorderType;
 }) {
-  const lineWidth = options.lineWidth ?? 1;
+  const { borderType } = options;
+  const lineWidth = borderType === BorderType.line2 ? 2 : borderType === BorderType.line3 ? 3 : 1;
+
+  const tiling = borderType === BorderType.dashed || borderType === BorderType.dotted;
+
+  const setTexture = (sprite: Sprite | TilingSprite, horizontal: boolean): void => {
+    if (borderType === BorderType.dashed) {
+      sprite.texture = horizontal ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical;
+    } else if (borderType === BorderType.dotted) {
+      sprite.texture = horizontal ? dashedTextures.dottedHorizontal : dashedTextures.dottedVertical;
+    } else {
+      sprite.texture = Texture.WHITE;
+    }
+  }
+
   if (options.top) {
-    const top = options.getSprite();
+    const top = options.getSprite(tiling);
+    setTexture(top, true);
     top.tint = options.tint;
     top.alpha = options.alpha;
-    top.width = options.width;
+    top.width = options.width + lineWidth;
     top.height = lineWidth;
-    top.position.set(options.x, options.y);
+    top.position.set(options.x - lineWidth / 2, options.y - lineWidth / 2);
   }
 
   if (options.bottom) {
-    const bottom = options.getSprite();
+    const bottom = options.getSprite(tiling);
+    setTexture(bottom, true);
     bottom.tint = options.tint;
     bottom.alpha = options.alpha;
-    bottom.width = options.width;
+    bottom.width = options.width + lineWidth;
     bottom.height = lineWidth;
-    bottom.position.set(options.x, options.y + options.height - lineWidth);
+    bottom.position.set(options.x - lineWidth / 2, options.y + options.height - lineWidth / 2);
   }
 
   if (options.left) {
-    const left = options.getSprite();
+    const left = options.getSprite(tiling);
+    setTexture(left, false);
     left.tint = options.tint;
     left.alpha = options.alpha;
     left.width = lineWidth;
-    left.height = options.height;
-    left.position.set(options.x, options.y);
+    left.height = options.height + lineWidth;
+    left.position.set(options.x - lineWidth / 2, options.y - lineWidth / 2);
   }
 
   if (options.right) {
-    const right = options.getSprite();
+    const right = options.getSprite(tiling);
+    setTexture(right, false);
     right.tint = options.tint;
     right.alpha = options.alpha;
     right.width = lineWidth;
-    right.height = options.height;
-    right.position.set(options.x + options.width - lineWidth, options.y);
+    right.height = options.height + lineWidth;
+    right.position.set(options.x + options.width - lineWidth / 2, options.y - lineWidth / 2);
   }
 }

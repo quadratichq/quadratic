@@ -1,3 +1,43 @@
 #FillColorMenuID > div > div {
-    box-shadow: none !important;
-  }
+  box-shadow: none !important;
+}
+
+.lineStyleBorder {
+  width: 110px;
+  margin-top: 5px;
+  padding-bottom: 5px;
+}
+
+.normalBorder {
+  border-top: 1px solid black;
+}
+
+.doubleBorder {
+  border-top: 2px solid black;
+}
+
+.tripleBorder {
+  border-top: 3px solid black;
+}
+
+.dashedBorder {
+  border-top: 1px dashed black;
+}
+
+.dottedBorder {
+  border-top: 1px dotted black;
+}
+
+.twoLineBorder {
+  border-top: 1px solid black;
+  position: relative;
+  margin-bottom: 5px;
+}
+
+.twoLineBorder:after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  border-bottom: 1px solid black;
+  bottom: 3px;
+}

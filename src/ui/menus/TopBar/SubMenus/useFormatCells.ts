@@ -1,10 +1,10 @@
-import { format } from 'path';
 import { ColorResult } from 'react-color';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { clearFormatDB, updateFormatDB } from '../../../../core/gridDB/Cells/UpdateFormatDB';
-import { borderAll, borderBottom, borderLeft, borderRight, borderTop, CellFormat } from '../../../../core/gridDB/db';
+import { borderAll, borderBottom, borderLeft, borderRight, borderTop, BorderType, CellFormat } from '../../../../core/gridDB/db';
 import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
+import { Coordinate } from '../../../../core/gridGL/types/size';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 
 interface IResults {
@@ -14,6 +14,7 @@ interface IResults {
   changeBorderColor: (rgb: ColorResult) => void;
   clearBorders: () => void;
   clearFormatting: () => void;
+  changeBorderType: (type?: BorderType) => void;
 }
 
 type CellFormatNoPosition = Exclude<CellFormat, 'x' | 'y'>;
@@ -26,24 +27,29 @@ export const useFormatCells = (props: IProps): IResults => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const multiCursor = interactionState.showMultiCursor;
 
+  const getStartEnd = (): { start: Coordinate, end: Coordinate } => {
+    let start: Coordinate, end: Coordinate;
+    if (multiCursor) {
+      start = interactionState.multiCursorPosition.originPosition;
+      end = interactionState.multiCursorPosition.terminalPosition;
+    } else {
+      start = interactionState.cursorPosition;
+      end = interactionState.cursorPosition;
+    }
+    return { start, end };
+  };
+
   const onFormat = (updatedFormat: CellFormatNoPosition): void => {
     if (!props.app) return;
-    if (multiCursor) {
-      const start = interactionState.multiCursorPosition.originPosition;
-      const end = interactionState.multiCursorPosition.terminalPosition;
-      const formats: CellFormat[] = [];
-      for (let y = start.y; y <= end.y; y++) {
-        for (let x = start.x; x <= end.x; x++) {
-          const format = props.app.grid.getFormat(x, y) ?? { x, y };
-          formats.push({ ...format, ...updatedFormat });
-        }
+    const { start, end } = getStartEnd();
+    const formats: CellFormat[] = [];
+    for (let y = start.y; y <= end.y; y++) {
+      for (let x = start.x; x <= end.x; x++) {
+        const format = props.app.grid.getFormat(x, y) ?? { x, y };
+        formats.push({ ...format, ...updatedFormat });
       }
-      updateFormatDB(formats);
-    } else {
-      const { x, y } = interactionState.cursorPosition;
-      const format = props.app.grid.getFormat(x, y) ?? { x, y };
-      updateFormatDB([{ ...format, ...updatedFormat }]);
     }
+    updateFormatDB(formats);
   };
 
   const changeFillColor = (color: ColorResult): void => {
@@ -56,15 +62,7 @@ export const useFormatCells = (props: IProps): IResults => {
 
   const changeBorder = (options: { borderLeft?: boolean; borderTop?: boolean; borderBottom?: boolean; borderRight?: boolean, borderHorizontal?: boolean; borderVertical?: boolean }): void => {
     if (!props.app) return;
-    let start: { x: number, y: number };
-    let end: { x: number, y: number };
-    if (multiCursor) {
-      start = interactionState.multiCursorPosition.originPosition;
-      end = interactionState.multiCursorPosition.terminalPosition;
-    } else {
-      start = interactionState.cursorPosition;
-      end = interactionState.cursorPosition;
-    }
+    const { start, end } = getStartEnd();
     const formats: CellFormat[] = [];
 
     // gets neighbor from changed formats list or from gridSparse
@@ -73,8 +71,7 @@ export const useFormatCells = (props: IProps): IResults => {
       const neighbor = formats.find(format => format.x === x && format.y === y);
       if (neighbor?.border) {
         if (neighbor?.border & value) {
-          const invert = 0b1111 ^ value;
-          neighbor.border = neighbor.border & invert;
+          neighbor.border = neighbor.border & (borderAll ^ value);
         }
         return neighbor;
       }
@@ -147,16 +144,7 @@ export const useFormatCells = (props: IProps): IResults => {
 
   const clearBorders = (): void => {
     if (!props.app) return;
-    let start: { x: number, y: number };
-    let end: { x: number, y: number };
-    if (multiCursor) {
-      start = interactionState.multiCursorPosition.originPosition;
-      end = interactionState.multiCursorPosition.terminalPosition;
-    } else {
-      start = interactionState.cursorPosition;
-      end = interactionState.cursorPosition;
-    }
-
+    const { start, end } = getStartEnd();
     const formats: CellFormat[] = [];
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
@@ -199,15 +187,7 @@ export const useFormatCells = (props: IProps): IResults => {
 
   const clearFormatting = (): void => {
     if (!props.app) return;
-    let start: { x: number, y: number };
-    let end: { x: number, y: number };
-    if (multiCursor) {
-      start = interactionState.multiCursorPosition.originPosition;
-      end = interactionState.multiCursorPosition.terminalPosition;
-    } else {
-      start = interactionState.cursorPosition;
-      end = interactionState.cursorPosition;
-    }
+    const { start, end } = getStartEnd();
     const cells: { x: number, y: number }[] = [];
     const formats: CellFormat[] = [];
     for (let y = start.y; y <= end.y; y++) {
@@ -249,6 +229,21 @@ export const useFormatCells = (props: IProps): IResults => {
     }
   };
 
+  const changeBorderType = (type?: BorderType): void => {
+    if (!props.app) return;
+    const { start, end } = getStartEnd();
+    const formats: CellFormat[] = [];
+    for (let y = start.y; y <= end.y; y++) {
+      for (let x = start.x; x <= end.x; x++) {
+        const format = props.app.grid.getFormat(x, y) ?? { x, y };
+        formats.push({ ...format, borderType: type });
+
+        // todo: change format of outside neighbors by moving borders to selected cells if necessary
+      }
+    }
+    updateFormatDB(formats);
+  };
+
   return {
     changeFillColor,
     removeFillColor,
@@ -256,5 +251,6 @@ export const useFormatCells = (props: IProps): IResults => {
     changeBorderColor,
     clearBorders,
     clearFormatting,
+    changeBorderType,
   };
 }

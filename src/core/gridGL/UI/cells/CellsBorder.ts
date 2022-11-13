@@ -1,4 +1,4 @@
-import { Container, Sprite, Texture } from 'pixi.js';
+import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { convertColorStringToTint } from '../../../../helpers/convertColor';
 import { colors } from '../../../../theme/colors';
 import { borderBottom, borderLeft, borderRight, borderTop } from '../../../gridDB/db';
@@ -8,27 +8,46 @@ import { drawBorder } from './drawBorder';
 
 export class CellsBorder extends Container {
   private app: PixiApp;
-  private visibleIndex = 0;
+  private spritesIndex = 0;
+  private sprites: Container;
+  private tilingIndex = 0;
+  private tilingSprites: Container;
 
   constructor(app: PixiApp) {
     super();
     this.app = app;
+    this.sprites = this.addChild(new Container());
+    this.tilingSprites = this.addChild(new Container());
   }
 
   clear() {
-    this.children.forEach(child => child.visible = false);
-    this.visibleIndex = 0;
+    this.sprites.children.forEach(child => child.visible = false);
+    this.spritesIndex = 0;
+    this.tilingSprites.children.forEach(child => child.visible = false);
+    this.tilingIndex = 0;
   }
 
-  private getSprite = (): Sprite => {
-    if (this.visibleIndex < this.children.length) {
-      const sprite = this.children[this.visibleIndex] as Sprite;
-      sprite.visible = true;
-      this.visibleIndex++;
-      return sprite;
+  private getSprite = (tiling?: boolean): Sprite | TilingSprite => {
+    if (tiling) {
+      if (this.tilingIndex < this.tilingSprites.children.length) {
+        const tilingSprite = this.tilingSprites.children[this.tilingIndex] as TilingSprite;
+        tilingSprite.visible = true;
+        tilingSprite.uvRespectAnchor = true;
+        this.tilingIndex++;
+        return tilingSprite;
+      }
+      this.tilingIndex++;
+      return this.tilingSprites.addChild(new TilingSprite(Texture.WHITE));
+    } else {
+      if (this.spritesIndex < this.sprites.children.length) {
+        const sprite = this.sprites.children[this.spritesIndex] as Sprite;
+        sprite.visible = true;
+        this.spritesIndex++;
+        return sprite;
+      }
+      this.spritesIndex++;
+      return this.sprites.addChild(new Sprite(Texture.WHITE));
     }
-    this.visibleIndex++;
-    return this.addChild(new Sprite(Texture.WHITE));
   }
 
   draw(input: ICellsDraw): void {
@@ -47,6 +66,7 @@ export class CellsBorder extends Container {
         bottom: true,
         left: true,
         right: true,
+        borderType: input.format?.borderType,
       });
     }
 
@@ -75,11 +95,13 @@ export class CellsBorder extends Container {
         right: !!(border & borderRight),
         top: !!(border & borderTop),
         bottom: !!(border & borderBottom),
+        borderType: input.format?.borderType,
       });
     }
   }
 
   debugShowCachedCounts(): void {
-    console.log(`[CellsBorder] ${this.children.length} objects | ${this.children.filter(child => child.visible).length} visible`);
+    console.log(`[CellsBorder].Sprite ${this.sprites.children.length} objects | ${this.sprites.children.filter(child => child.visible).length} visible`);
+    console.log(`[CellsBorder].TilingSprite ${this.tilingSprites.children.length} objects | ${this.tilingSprites.children.filter(child => child.visible).length} visible`);
   }
 }

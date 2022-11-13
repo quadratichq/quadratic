@@ -9,13 +9,14 @@ import { WelcomeComponent } from './WelcomeComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
 import { isMobileOnly } from 'react-device-detect';
+import { debugSkipPythonLoad } from '../debugFlags';
 
 export default function QuadraticApp() {
   const { loading, incrementLoadingCount } = useLoading();
 
   useEffect(() => {
     if (loading) {
-      if (!isMobileOnly) {
+      if (!isMobileOnly && !debugSkipPythonLoad) {
         // Only load Python not on mobile
         loadPython().then(() => {
           incrementLoadingCount();

@@ -45,6 +45,7 @@ export class Cells extends Container {
     this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
+  // todo
   drawSubQuadrant(bounds: Rectangle): void {
     this.drawBounds(bounds);
 
@@ -77,7 +78,7 @@ export class Cells extends Container {
         const cell = grid.get(column, row);
         if (cell) {
           const isInput = input && input.column === column && input.row === row;
-          if (!isInput && cell.format) {
+          if (!isInput && (cell.cell || cell.format)) {
             this.cellsBorder.draw({ ...cell, x, y, width, height });
             this.cellsBackground.draw({ ...cell, x, y, width, height });
             if (cell.cell) {

@@ -36,6 +36,7 @@ import { CompactPicker } from 'react-color';
 import { useFormatCells } from '../useFormatCells';
 import './formatMenuStyles.css';
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
+import { BorderType } from '../../../../../core/gridDB/db';
 
 interface IProps {
   app?: PixiApp;
@@ -45,7 +46,7 @@ export const FormatMenu = (props: IProps) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const multiCursor = interactionState.showMultiCursor;
 
-  const { changeFillColor, removeFillColor, changeBorder, changeBorderColor, clearBorders, clearFormatting } = useFormatCells({ app: props.app });
+  const { changeFillColor, removeFillColor, changeBorder, changeBorderColor, clearBorders, clearFormatting, changeBorderType } = useFormatCells({ app: props.app });
 
   // focus canvas after the format menu closes
   const onMenuChange = useCallback((event: MenuChangeEvent) => {
@@ -142,10 +143,19 @@ export const FormatMenu = (props: IProps) => {
         <MenuHeader>Border Color</MenuHeader>
         <CompactPicker onChangeComplete={changeBorderColor} />
       </SubMenu>
-        <MenuItem disabled={true}>
-          <LineStyle style={menuItemIconStyles}></LineStyle>
-          Line Style
-        </MenuItem>
+        <SubMenu
+          id="BorderLineStyleMenuID"
+          label={<>
+            <LineStyle style={menuItemIconStyles}></LineStyle> Line Style
+          </>}
+        >
+          <MenuItem onClick={() => changeBorderType()}><div className="lineStyleBorder normalBorder"></div></MenuItem>
+          <MenuItem onClick={() => changeBorderType(BorderType.line2)}><div className="lineStyleBorder doubleBorder"></div></MenuItem>
+          <MenuItem onClick={() => changeBorderType(BorderType.line3)}><div className="lineStyleBorder tripleBorder"></div></MenuItem>
+          <MenuItem onClick={() => changeBorderType(BorderType.dashed)}><div className="lineStyleBorder dashedBorder"></div></MenuItem>
+          <MenuItem onClick={() => changeBorderType(BorderType.dotted)}><div className="lineStyleBorder dottedBorder"></div></MenuItem>
+          <MenuItem onClick={() => changeBorderType(BorderType.double)}><div className="lineStyleBorder twoLineBorder"></div></MenuItem>
+        </SubMenu>
         {multiCursor && (
           <MenuItem onClick={() => changeBorder({
             borderLeft: true,
