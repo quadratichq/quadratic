@@ -148,7 +148,47 @@ export const useFormatCells = (props: IProps): IResults => {
   };
 
   const changeBorderColor = (color: ColorResult): void => {
-    onFormat({ borderColor: convertReactColorToString(color) })
+    if (!props.app) return;
+    const borderColor = convertReactColorToString(color);
+    const { start, end } = getStartEnd();
+    const formats: CellFormat[] = [];
+    for (let y = start.y; y <= end.y; y++) {
+      for (let x = start.x; x <= end.x; x++) {
+        const format = props.app.grid.getFormat(x, y);
+        if (format) {
+          formats.push({ ...format, borderColor });
+        }
+
+        // change neighbor's borderBottom above
+        if (y === start.y) {
+          const format = props.app.grid.getFormat(x, y - 1);
+          if (format?.border && format.border & borderBottom && format.borderColor !== borderColor) {
+            formats.push({ ...format, borderColor });
+          }
+        }
+
+        // change neighbor's borderTop below
+        if (y === end.y) {
+          const format = props.app.grid.getFormat(x, y + 1);
+          if (format?.border && format.border & borderTop && format.borderColor !== borderColor) {
+            formats.push({ ...format, borderColor });
+          }
+        }
+      }
+
+      // change neighbor's borderRight to the left
+      const left = props.app.grid.getFormat(start.x - 1, y);
+      if (left?.border && left.border & borderRight && left.borderColor !== borderColor) {
+        formats.push({ ...left, borderColor });
+      }
+
+      // change neighbor's borderLeft to the right
+      const right = props.app.grid.getFormat(end.x + 1, y);
+      if (right?.border && right.border & borderLeft && right.borderColor !== borderColor) {
+        formats.push({ ...right, borderColor });
+      }
+    }
+    updateFormatDB(formats);
   };
 
   const clearBorders = (): void => {
