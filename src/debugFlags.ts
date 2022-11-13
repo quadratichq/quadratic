@@ -2,10 +2,10 @@
 export const debug = process.env.REACT_APP_DEBUG === '1' ? true : false;
 
 // shows renderer light
-export const debugShowRenderer = debug && true;
+export const debugShowRenderer = debug && false;
 
 // shows FPS meter
-export const debugShowFPS = debug && true;
+export const debugShowFPS = debug && false;
 
 // shows rendering time for components
 export const debugShowTime = debug && false;
@@ -16,7 +16,7 @@ export const debugShowCountRenderedObjects = debug && false;
 // shows count of cached sprites for formatting
 export const debugShowCachedSpriteCounts = debug && false;
 
-export const debugSkipPythonLoad = debug && true;
+export const debugSkipPythonLoad = debug && false;
 
 export function warn(...args: any): void {
   if (debug) {
