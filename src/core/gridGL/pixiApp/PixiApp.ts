@@ -9,7 +9,7 @@ import { GridOffsets } from '../../gridDB/GridOffsets';
 import { GridLines } from '../UI/GridLines';
 import { AxesLines } from '../UI/AxesLines';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
-import { Cursor } from '../UI/cursor';
+import { Cursor } from '../UI/Cursor';
 import { Cells } from '../UI/cells/Cells';
 import { GridSparse } from '../../gridDB/GridSparse';
 import { zoomInOut, zoomToFit } from '../helpers/zoom';
@@ -55,7 +55,6 @@ export class PixiApp {
     //@ts-expect-error
     window.pixiapp = this;
 
-
     this.viewport = new Viewport({ interaction: this.renderer.plugins.interaction });
     this.stage.addChild(this.viewport);
     this.viewport
@@ -66,12 +65,16 @@ export class PixiApp {
       .clampZoom({
         minScale: 0.01,
         maxScale: 10,
-      });
+    });
 
     this.gridLines = this.viewport.addChild(new GridLines(this));
     this.axesLines = this.viewport.addChild(new AxesLines(this));
-    this.cursor = this.viewport.addChild(new Cursor(this));
     this.cells = this.viewport.addChild(new Cells(this));
+
+    // ensure the cell's background color is drawn first
+    this.viewport.addChildAt(this.cells.cellsBackground, 0);
+
+    this.cursor = this.viewport.addChild(new Cursor(this));
     this.headings = this.viewport.addChild(new GridHeadings(this));
 
     this.settings = new PixiAppSettings(this);
@@ -140,5 +143,9 @@ export class PixiApp {
   // helper for playwright
   render() {
     this.renderer.render(this.stage)
+  }
+
+  focus() {
+    this.canvas?.focus();
   }
 }

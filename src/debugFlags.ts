@@ -13,6 +13,11 @@ export const debugShowTime = debug && false;
 // counts number of children and which are visible in the viewport
 export const debugShowCountRenderedObjects = debug && false;
 
+// shows count of cached sprites for formatting
+export const debugShowCachedSpriteCounts = debug && false;
+
+export const debugSkipPythonLoad = debug && true;
+
 export function warn(...args: any): void {
   if (debug) {
     console.warn(...args);

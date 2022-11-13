@@ -2,9 +2,8 @@ import { Box, Typography } from '@mui/material';
 import { Button, Tooltip } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 // import { Avatar, AvatarGroup } from '@mui/material';
-
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { FormatMenu } from './SubMenus/FormatMenu';
+import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { colors } from '../../../theme/colors';
 
 import { isElectron } from '../../../utils/isElectron';
@@ -13,8 +12,13 @@ import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isMobileOnly } from 'react-device-detect';
+import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 
-export const TopBar = () => {
+interface IProps {
+  app?: PixiApp;
+}
+
+export const TopBar = (props: IProps) => {
   return (
     <div
       onContextMenu={(event) => {
@@ -53,7 +57,7 @@ export const TopBar = () => {
         {!isMobileOnly && (
           <>
             <DataMenu></DataMenu>
-            <FormatMenu></FormatMenu>
+            <FormatMenu app={props.app} />
             <NumberFormatMenu></NumberFormatMenu>
           </>
         )}

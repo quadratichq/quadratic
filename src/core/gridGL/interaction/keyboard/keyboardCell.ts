@@ -66,7 +66,7 @@ export function keyboardCell(options: {
   if (event.key === 'Enter') {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
-    const cell = app.grid.get(x, y);
+    const cell = app.grid.getCell(x, y);
     if (cell) {
       if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
         // open single line
@@ -101,7 +101,7 @@ export function keyboardCell(options: {
   if (event.key === '/' || event.key === '=') {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
-    const cell = app.grid.get(x, y);
+    const cell = app.grid.getCell(x, y);
     if (cell) {
       if (cell.type === 'PYTHON') {
         // Open code editor, or move code editor if already open.

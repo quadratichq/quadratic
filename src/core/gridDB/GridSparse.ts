@@ -1,52 +1,85 @@
 import { Rectangle } from 'pixi.js';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import { Cell } from './db';
+import { Cell, CellFormat } from './db';
+
+export interface CellAndFormat {
+  cell?: Cell;
+  format?: CellFormat;
+}
 
 export class GridSparse {
   private app: PixiApp;
-  private cells: Record<string, Cell> = {};
   private minX = 0;
   private maxX = 0;
   private minY = 0;
   private maxY = 0;
+  cells = new Map<string, CellAndFormat>();
 
   constructor(app: PixiApp) {
     this.app = app;
   }
 
   empty() {
+    this.cells.clear();
     this.minX = 0;
     this.maxX = 0;
     this.minY = 0;
     this.maxY = 0;
   }
 
-  private getKey(x: number, y: number): string {
-    return `${x},${y}`;
+  private getKey(x?: number, y?: number): string {
+    return `${x ?? ""},${y ?? ""}`;
   }
 
-  populate(cells?: Cell[]) {
-    this.cells = {};
-    if (!cells?.length) {
+  populate(cells?: Cell[], format?: CellFormat[]) {
+    if (!cells?.length && !format?.length) {
       this.empty();
       return;
     }
+    this.cells.clear();
     this.minX = Infinity;
     this.maxX = -Infinity;
     this.minY = Infinity;
     this.maxY = -Infinity;
-    cells.forEach((cell) => {
-      this.cells[this.getKey(cell.x, cell.y)] = cell;
+    cells?.forEach((cell) => {
+      this.cells.set(this.getKey(cell.x, cell.y), { cell });
       this.minX = Math.min(this.minX, cell.x);
       this.maxX = Math.max(this.maxX, cell.x);
       this.minY = Math.min(this.minY, cell.y);
       this.maxY = Math.max(this.maxY, cell.y);
     });
+    format?.forEach((format) => {
+      const key = this.getKey(format.x, format.y);
+      const cell = this.cells.get(key);
+      if (cell) {
+        cell.format = format;
+      } else {
+        this.cells.set(key, { format });
+      }
+      if (format.x !== undefined) {
+        this.minX = Math.min(this.minX, format.x);
+        this.maxX = Math.max(this.maxX, format.x);
+      }
+      if (format.y !== undefined) {
+        this.minY = Math.min(this.minY, format.y);
+        this.maxY = Math.max(this.maxY, format.y);
+      }
+    });
   }
 
-  get(x: number, y: number): Cell | undefined {
+  get(x: number, y: number): CellAndFormat | undefined {
     if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
-    return this.cells[this.getKey(x, y)];
+    return this.cells.get(this.getKey(x, y));
+  }
+
+  getCell(x: number, y: number): Cell | undefined {
+    if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
+    return this.cells.get(this.getKey(x, y))?.cell;
+  }
+
+  getFormat(x: number, y: number): CellFormat | undefined {
+    if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
+    return this.cells.get(this.getKey(x, y))?.format;
   }
 
   getBounds(bounds: Rectangle): Rectangle {
@@ -61,5 +94,9 @@ export class GridSparse {
     const rowEnd = rowEndIndex.index < this.maxY ? rowEndIndex.index : this.maxY;
 
     return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
+  }
+
+  getGridBounds(): Rectangle {
+    return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
   }
 }

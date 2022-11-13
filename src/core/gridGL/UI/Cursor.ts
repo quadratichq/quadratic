@@ -40,7 +40,7 @@ export class Cursor extends Graphics {
         startCell.x,
         startCell.y,
         endCell.x + endCell.width - startCell.x,
-        endCell.y + endCell.height - startCell.y
+        endCell.y + endCell.height - startCell.y,
       );
     }
   }
@@ -56,7 +56,7 @@ export class Cursor extends Graphics {
         color,
         alignment: 0,
       });
-      this.drawRect(x, y, width, height);
+      this.drawRect(x, y, width - CURSOR_THICKNESS, height - CURSOR_THICKNESS);
     }
   }
 

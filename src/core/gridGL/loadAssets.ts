@@ -1,5 +1,6 @@
-import * as PIXI from 'pixi.js';
+import { Loader } from 'pixi.js';
 import FontFaceObserver from 'fontfaceobserver';
+import { createBorderTypes } from './dashedTextures';
 
 let count = 0;
 
@@ -12,6 +13,7 @@ export function loadAssets(): Promise<void> {
   return new Promise((resolve) => {
     const font = new FontFaceObserver('OpenSans');
     font.load().then(() => complete(resolve));
-    PIXI.Loader.shared.add('OpenSans', 'fonts/opensans/OpenSans.fnt').load(() => complete(resolve));
+    Loader.shared.add('OpenSans', 'fonts/opensans/OpenSans.fnt').load(() => complete(resolve));
+    createBorderTypes();
   });
 }

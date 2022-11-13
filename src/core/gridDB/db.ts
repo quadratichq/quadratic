@@ -28,6 +28,30 @@ export interface Heading {
   size?: number;
 }
 
+export const borderLeft = 0b0001;
+export const borderTop = 0b0010;
+export const borderRight = 0b0100;
+export const borderBottom = 0b1000;
+export const borderAll = 0b1111;
+
+export enum BorderType {
+  line2 = 1,
+  line3 = 2,
+  dotted = 3,
+  dashed = 4,
+  double = 5,
+};
+
+export interface CellFormat {
+  x?: number;
+  y?: number;
+
+  fillColor?: string;
+  borderColor?: string;
+  border?: number;
+  borderType?: BorderType;
+}
+
 export interface Grid {
   id: number;
   dgraph_json?: string;
@@ -38,14 +62,16 @@ export class QDexie extends Dexie {
   qgrid!: Table<Grid>;
   columns!: Table<Heading>;
   rows!: Table<Heading>;
+  format!: Table<CellFormat>;
 
   constructor() {
     super('quadratic_grid1');
-    this.version(19).stores({
+    this.version(22).stores({
       cells: '[x+y],[y+x]',
       qgrid: '&id',
       columns: '&id',
       rows: '&id',
+      format: '[x+y]',
     });
   }
 }

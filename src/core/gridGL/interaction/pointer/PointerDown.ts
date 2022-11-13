@@ -59,7 +59,7 @@ export class PointerDown {
         column === this.previousPosition.originPosition.x &&
         row === this.previousPosition.originPosition.y
       ) {
-        doubleClickCell({ cell: this.app.grid.get(column, row), app: this.app });
+        doubleClickCell({ cell: this.app.grid.getCell(column, row), app: this.app });
         this.active = false;
         event.preventDefault();
         return;
