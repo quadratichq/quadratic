@@ -1,50 +1,43 @@
-use crate::fetch::fetch_text_file;
 use crate::utils::log;
-use js_sys::Uint8Array;
+use arrow2::array::Array;
+use arrow2::chunk::Chunk;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
-use wasm_bindgen_futures::JsFuture;
-use web_sys::{Request, RequestInit, RequestMode, Response};
 
 mod fetch;
 mod reader;
 mod utils;
 
-type WasmResult<T> = std::result::Result<T, JsError>;
-const FILE_PATH: &str = "./data/test-data.txt";
-
-// We expose the Struct QCore and it's methods to JS
+// We expose the Struct QCore and its methods to JS
 #[wasm_bindgen]
 pub struct QuadraticCore {
-    pub data: usize,
+    matrices: Vec<Vec<Vec<String>>>,
+    chunks: Vec<Chunk<Box<dyn Array>>>,
 }
 
 #[wasm_bindgen]
 impl QuadraticCore {
     pub fn new() -> Self {
-        QuadraticCore { data: 8 }
+        QuadraticCore {
+            matrices: vec![],
+            chunks: vec![],
+        }
     }
-    pub async fn wasm_fetch_file() -> Result<JsValue, JsValue> {
-        let mut opts = RequestInit::new();
-        opts.method("GET");
-        opts.mode(RequestMode::Cors);
 
-        let request = Request::new_with_str_and_init(FILE_PATH, &opts)?;
+    pub fn copy_string_rects_to_javascript(&self) -> JsValue {
+        serde_wasm_bindgen::to_value(&self.matrices).unwrap() // Unwrap should be properly handled
+    }
 
-        request.headers().set("Accept", "application/binary")?;
-
-        let window = web_sys::window().unwrap();
-        let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
-
-        // `resp_value` is a `Response` object.
-        assert!(resp_value.is_instance_of::<Response>());
-        let resp: Response = resp_value.dyn_into().unwrap();
-
-        // Convert this other `Promise` into a rust `Future`.
-        let text = JsFuture::from(resp.text()?).await?;
-
-        // Send the JSON response back to JS.
-        Ok(text)
+    pub fn print_matrices(&self) {
+        log(&format!("Number of matrices {}", self.matrices.len()));
+        for m in &self.matrices {
+            log(&format!("Number of vectors {}", m.len()));
+            for v in m {
+                log(&format!("Number of values {}", v.len()));
+                for val in v {
+                    log(&val)
+                }
+            }
+        }
     }
 
     pub fn read_parquet_meta_data(parquet_file: &[u8]) -> String {
@@ -56,16 +49,14 @@ impl QuadraticCore {
         }
     }
 
-    pub fn read_parquet(parquet_file: &[u8]) -> WasmResult<Uint8Array> {
-        utils::assert_parquet_file_not_empty(parquet_file)?;
-
-        let buffer = reader::read_parquet(parquet_file)?;
-
-        utils::copy_vec_to_uint8_array(buffer)
+    pub fn load_parquet(&mut self, parquet_file: &[u8]) {
+        match utils::assert_parquet_file_not_empty(parquet_file) {
+            Ok(_) => reader::read_parquet(self, parquet_file),
+            Err(_) => utils::log("Parquet file is empty..."),
+        }
     }
 
-    pub fn read_csv() {
-        let csv_path = "./data/addresses.csv";
-        let csv = fetch_text_file(csv_path);
+    pub fn generate_string_matrices(&mut self) {
+        reader::generate_string_matrices(self);
     }
 }
