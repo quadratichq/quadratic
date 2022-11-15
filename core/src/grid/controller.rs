@@ -104,7 +104,7 @@ impl GridController {
             .unwrap()
         }
     }
-    /// retunrs all information about every cell in the grid.
+    /// returns all information about every cell in the grid.
     pub fn get_all(&self) -> JsValue {
         serde_wasm_bindgen::to_value(
             &self
@@ -142,8 +142,8 @@ impl GridController {
     /// Returns the minimum bounding rectangle of the grid in cell coordinates.
     #[wasm_bindgen(js_name = "getCellRect")]
     pub fn cell_rect(&self) -> Rect {
-        let min_x = *self.grid.columns.keys().next().unwrap_or(&i64::MAX);
-        let max_x = *self.grid.columns.keys().last().unwrap_or(&i64::MIN);
+        let min_x = *self.grid.columns.keys().next().unwrap_or(&-1000);
+        let max_x = *self.grid.columns.keys().last().unwrap_or(&1000);
 
         let min_y = self
             .grid
@@ -151,14 +151,14 @@ impl GridController {
             .iter()
             .filter_map(|(_, col)| col.min_y())
             .min()
-            .unwrap_or(i64::MAX);
+            .unwrap_or(-1000);
         let max_y = self
             .grid
             .columns
             .iter()
             .filter_map(|(_, col)| col.max_y())
             .max()
-            .unwrap_or(i64::MIN);
+            .unwrap_or(1000);
 
         Rect {
             x: min_x,
@@ -166,6 +166,10 @@ impl GridController {
             w: max_x.saturating_sub(min_x).try_into().unwrap_or(0),
             h: max_y.saturating_sub(min_y).try_into().unwrap_or(0),
         }
+    }
+
+    pub fn test(&self) -> JsValue {
+        todo!()
     }
 
     /// Empties the grid.
@@ -209,3 +213,18 @@ impl GridController {
         self.grid.is_valid()
     }
 }
+
+// #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+// #[wasm_bindgen]
+// pub struct TestStruct {
+//     // pub a: String,
+//     // pub contents: Vec<String>,
+//     pub formatting: Vec<Formatting>,
+// }
+
+// #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+// #[wasm_bindgen]
+// pub struct Formatting {
+//     color1: String,
+//     color2: String,
+// }
