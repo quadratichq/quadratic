@@ -8,7 +8,7 @@ mod cell;
 mod command;
 mod controller;
 
-pub use cell::Cell;
+pub use cell::*;
 pub use command::Command;
 pub use controller::GridController;
 
@@ -285,4 +285,11 @@ pub struct Pos {
     pub x: i64,
     /// Row
     pub y: i64,
+}
+#[wasm_bindgen]
+impl Pos {
+    #[wasm_bindgen(constructor)]
+    pub fn new(x: i64, y: i64) -> Self {
+        Self { x, y }
+    }
 }

@@ -3,7 +3,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use super::{Command, Grid};
+use super::{Cell, Command, Grid, JsCell, Pos, Rect};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 #[wasm_bindgen]
@@ -55,16 +55,122 @@ impl GridController {
     /// Sets a list of cells on the grid. Example input:
     ///
     /// ```js
-    /// set_cells([
+    /// set_cells(JSON.stringify([
     ///     [{x: 5, y: -3}, {Int: 10}],
     ///     [{x: 5, y: 6}, {Text: "hello"}],
-    /// ]);
+    /// ]));
     /// ```
     #[wasm_bindgen(js_name = "setCells")]
-    pub fn set_cells(&mut self, cells: JsValue) {
+    pub fn set_cells(&mut self, cells: &str) {
         self.execute(Command::SetCells(
-            serde_wasm_bindgen::from_value(cells).expect("bad cell list"),
+            serde_json::from_str(cells).expect("bad cell list"),
         ));
+    }
+
+    /// Clears the whole grid and then adds new cells to it.
+    pub fn populate(&mut self, cells: &str) {
+        self.empty();
+        let cell_list: Vec<JsCell> = serde_json::from_str(cells).expect("expected list of cells");
+        for cell in cell_list {
+            self.grid.set_cell(
+                Pos {
+                    x: cell.x,
+                    y: cell.y,
+                },
+                Cell::Text(cell.value),
+            );
+        }
+    }
+
+    /// Returns all information about a single cell in the grid.
+    pub fn get(&self, x: f64, y: f64) -> JsValue {
+        let cell = self.grid.get_cell(Pos {
+            x: x as i64,
+            y: y as i64,
+        });
+        if cell.is_empty() {
+            JsValue::UNDEFINED
+        } else {
+            serde_wasm_bindgen::to_value(&JsCell {
+                x: x as i64,
+                y: y as i64,
+                value: cell.string_value(),
+                dependent_cells: None,
+                python_code: None,
+                python_output: None,
+                array_cells: None,
+                last_modified: None,
+            })
+            .unwrap()
+        }
+    }
+    /// retunrs all information about every cell in the grid.
+    pub fn get_all(&self) -> JsValue {
+        serde_wasm_bindgen::to_value(
+            &self
+                .grid
+                .columns
+                .iter()
+                .flat_map(|(&x, col)| {
+                    col.blocks.iter().flat_map(move |(&y, block)| {
+                        (0..block.len() as i64)
+                            .map(move |offset| self.get_internal(Pos { x, y: y + offset }))
+                    })
+                })
+                .collect_vec(),
+        )
+        .unwrap()
+    }
+    fn get_internal(&self, pos: Pos) -> Option<JsCell> {
+        let cell = self.grid.get_cell(pos);
+        if cell.is_empty() {
+            None
+        } else {
+            Some(JsCell {
+                x: pos.x,
+                y: pos.y,
+                value: cell.string_value(),
+                dependent_cells: None,
+                python_code: None,
+                python_output: None,
+                array_cells: None,
+                last_modified: None,
+            })
+        }
+    }
+
+    /// Returns the minimum bounding rectangle of the grid in cell coordinates.
+    #[wasm_bindgen(js_name = "getCellRect")]
+    pub fn cell_rect(&self) -> Rect {
+        let x1 = *self.grid.columns.keys().next().unwrap_or(&i64::MAX);
+        let x2 = *self.grid.columns.keys().last().unwrap_or(&i64::MIN);
+
+        let y1 = *self
+            .grid
+            .columns
+            .iter()
+            .filter_map(|(_, col)| col.blocks.keys().next())
+            .min()
+            .unwrap_or(&i64::MAX);
+        let y2 = *self
+            .grid
+            .columns
+            .iter()
+            .filter_map(|(_, col)| col.blocks.keys().last())
+            .max()
+            .unwrap_or(&i64::MIN);
+
+        Rect {
+            x: x1,
+            y: y1,
+            w: x2.saturating_sub(x1).try_into().unwrap_or(0),
+            h: y2.saturating_sub(y1).try_into().unwrap_or(0),
+        }
+    }
+
+    /// Empties the grid.
+    pub fn empty(&mut self) {
+        self.grid = Grid::new();
     }
 }
 impl GridController {
