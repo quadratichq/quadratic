@@ -142,29 +142,29 @@ impl GridController {
     /// Returns the minimum bounding rectangle of the grid in cell coordinates.
     #[wasm_bindgen(js_name = "getCellRect")]
     pub fn cell_rect(&self) -> Rect {
-        let x1 = *self.grid.columns.keys().next().unwrap_or(&i64::MAX);
-        let x2 = *self.grid.columns.keys().last().unwrap_or(&i64::MIN);
+        let min_x = *self.grid.columns.keys().next().unwrap_or(&i64::MAX);
+        let max_x = *self.grid.columns.keys().last().unwrap_or(&i64::MIN);
 
-        let y1 = *self
+        let min_y = self
             .grid
             .columns
             .iter()
-            .filter_map(|(_, col)| col.blocks.keys().next())
+            .filter_map(|(_, col)| col.min_y())
             .min()
-            .unwrap_or(&i64::MAX);
-        let y2 = *self
+            .unwrap_or(i64::MAX);
+        let max_y = self
             .grid
             .columns
             .iter()
-            .filter_map(|(_, col)| col.blocks.keys().last())
+            .filter_map(|(_, col)| col.max_y())
             .max()
-            .unwrap_or(&i64::MIN);
+            .unwrap_or(i64::MIN);
 
         Rect {
-            x: x1,
-            y: y1,
-            w: x2.saturating_sub(x1).try_into().unwrap_or(0),
-            h: y2.saturating_sub(y1).try_into().unwrap_or(0),
+            x: min_x,
+            y: min_y,
+            w: max_x.saturating_sub(min_x).try_into().unwrap_or(0),
+            h: max_y.saturating_sub(min_y).try_into().unwrap_or(0),
         }
     }
 
