@@ -10,7 +10,7 @@ export class GridSparse {
   private maxX = 0;
   private minY = 0;
   private maxY = 0;
-  private controller: GridController;
+  controller: GridController;
 
   constructor(app: PixiApp) {
     this.app = app;
