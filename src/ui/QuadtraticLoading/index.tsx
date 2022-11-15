@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
+import { TopBarLoading } from '../components/TopBarLoading';
 
 import './styles.css';
 
@@ -33,6 +34,8 @@ export function QuadraticLoading() {
         userSelect: 'none',
       }}
     >
+      {/* ToBarLoading allows window to be moved while loading in electron */}
+      <TopBarLoading></TopBarLoading>
       <div className="loadingContainer">
         <img className="loadingLogoGif" src="/images/logo_loading.gif" alt="Loading Quadratic Grid"></img>
         <Box sx={{ width: '100px', marginTop: '15px' }}>
