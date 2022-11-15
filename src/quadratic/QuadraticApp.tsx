@@ -30,6 +30,7 @@ export default function QuadraticApp() {
       });
       // load wasm
       init().then(() => {
+        console.log('[WASM/Rust] quadratic-core ready')
         incrementLoadingCount();
       });
     }
