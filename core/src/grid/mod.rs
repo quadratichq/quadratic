@@ -196,6 +196,18 @@ impl Column {
             .last()
             .filter(|(&top, block)| top + block.len() as i64 > y)
     }
+
+    /// Returns the minimum Y value of a non-empty cell.
+    pub fn min_y(&self) -> Option<i64> {
+        self.blocks.iter().map(|(&y, _)| y).min()
+    }
+    /// Returns the maximum Y value of a non-empty cell.
+    pub fn max_y(&self) -> Option<i64> {
+        self.blocks
+            .iter()
+            .map(|(&y, block)| y + block.len() as i64 - 1)
+            .max()
+    }
 }
 
 /// Width-1 vertical block of cells.
