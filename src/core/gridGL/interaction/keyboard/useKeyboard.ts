@@ -8,6 +8,7 @@ import { keyboardPosition } from './keyboardPosition';
 import { keyboardCell } from './keyboardCell';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { keyboardViewport } from './keyboardViewport';
+import { keyboardUndoRedo } from './keyboardUndoRedo';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -19,19 +20,20 @@ interface IProps {
 
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
 
-export const useKeyboard = (
-  props: IProps
-): { onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void; } => {
+export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void } => {
   const { interactionState, setInteractionState, setEditorInteractionState, app } = props;
 
-  const keyDownWindow = useCallback((event: KeyboardEvent): void => {
-    if (interactionState.showInput) return;
+  const keyDownWindow = useCallback(
+    (event: KeyboardEvent): void => {
+      if (interactionState.showInput) return;
 
-    if (keyboardViewport({ event, viewport: app?.viewport })) {
-      event.stopPropagation();
-      event.preventDefault();
-    }
-  }, [app?.viewport, interactionState]);
+      if (keyboardViewport({ event, viewport: app?.viewport })) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+    },
+    [app?.viewport, interactionState]
+  );
 
   useEffect(() => {
     window.addEventListener('keydown', keyDownWindow);
@@ -43,7 +45,8 @@ export const useKeyboard = (
 
     if (
       keyboardClipboard(event, interactionState) ||
-      keyboardSelect({ event, interactionState, setInteractionState, viewport: app?.viewport })
+      keyboardSelect({ event, interactionState, setInteractionState, viewport: app?.viewport }) ||
+      keyboardUndoRedo({ event, app })
     )
       return;
 
