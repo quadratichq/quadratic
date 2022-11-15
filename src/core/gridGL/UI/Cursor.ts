@@ -40,7 +40,7 @@ export class Cursor extends Graphics {
         startCell.x,
         startCell.y,
         endCell.x + endCell.width - startCell.x,
-        endCell.y + endCell.height - startCell.y,
+        endCell.y + endCell.height - startCell.y
       );
     }
   }

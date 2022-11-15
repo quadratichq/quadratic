@@ -65,7 +65,7 @@ export class PixiApp {
       .clampZoom({
         minScale: 0.01,
         maxScale: 10,
-    });
+      });
 
     this.gridLines = this.viewport.addChild(new GridLines(this));
     this.axesLines = this.viewport.addChild(new AxesLines(this));
@@ -142,7 +142,7 @@ export class PixiApp {
 
   // helper for playwright
   render() {
-    this.renderer.render(this.stage)
+    this.renderer.render(this.stage);
   }
 
   focus() {

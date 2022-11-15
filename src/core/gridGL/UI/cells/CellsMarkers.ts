@@ -28,6 +28,8 @@ export class CellsMarkers extends PIXI.Container {
   }
 
   debugShowCachedCounts(): void {
-    console.log(`[CellsMarker] ${this.children.length} objects | ${this.children.filter(child => child.visible).length} visible`);
+    console.log(
+      `[CellsMarker] ${this.children.length} objects | ${this.children.filter((child) => child.visible).length} visible`
+    );
   }
 }

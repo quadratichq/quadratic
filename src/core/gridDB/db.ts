@@ -40,7 +40,7 @@ export enum BorderType {
   dotted = 3,
   dashed = 4,
   double = 5,
-};
+}
 
 export interface CellFormat {
   x?: number;
