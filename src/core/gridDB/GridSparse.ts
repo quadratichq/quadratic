@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Cell } from './db';
-import { hello } from 'quadratic-core';
+import { GridController } from 'quadratic-core';
 
 export class GridSparse {
   private app: PixiApp;
@@ -10,18 +10,15 @@ export class GridSparse {
   private maxX = 0;
   private minY = 0;
   private maxY = 0;
+  private controller: GridController;
 
   constructor(app: PixiApp) {
     this.app = app;
-
-    console.log(hello('from wasm'));
+    this.controller = new GridController();
   }
 
   empty() {
-    this.minX = 0;
-    this.maxX = 0;
-    this.minY = 0;
-    this.maxY = 0;
+    this.controller.empty();
   }
 
   private getKey(x: number, y: number): string {
@@ -29,27 +26,21 @@ export class GridSparse {
   }
 
   populate(cells?: Cell[]) {
-    this.cells = {};
-    if (!cells?.length) {
+    if (cells === undefined) {
       this.empty();
-      return;
+    } else {
+      this.controller.populate(JSON.stringify(cells));
     }
-    this.minX = Infinity;
-    this.maxX = -Infinity;
-    this.minY = Infinity;
-    this.maxY = -Infinity;
-    cells.forEach((cell) => {
-      this.cells[this.getKey(cell.x, cell.y)] = cell;
-      this.minX = Math.min(this.minX, cell.x);
-      this.maxX = Math.max(this.maxX, cell.x);
-      this.minY = Math.min(this.minY, cell.y);
-      this.maxY = Math.max(this.maxY, cell.y);
-    });
+
+    const rect = this.controller.getCellRect();
+    this.minX = Number(rect.x);
+    this.minY = Number(rect.y);
+    this.maxX = this.minX + Number(rect.w);
+    this.maxY = this.minY + Number(rect.h);
   }
 
   get(x: number, y: number): Cell | undefined {
-    if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
-    return this.cells[this.getKey(x, y)];
+    return this.controller.get(x, y);
   }
 
   getBounds(bounds: Rectangle): Rectangle {
