@@ -30,11 +30,11 @@ jobs:
 
       - name: Test
         run: |
-          cd core
+          cd quadratic-core
           cargo check
           cargo test --all
 
       - name: Build
         run: |
-          cd core
+          cd quadratic-core
           cargo build --release
