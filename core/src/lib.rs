@@ -10,6 +10,15 @@ mod tests;
 pub use grid::*;
 
 #[wasm_bindgen]
-pub fn hello(s: &str) -> String {
-    format!("[WASM/Rust] Hello {s}!")
+extern "C" {
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
+#[wasm_bindgen]
+pub fn hello() {
+    // say hello, when loaded successfully
+    log("[WASM/Rust] quadratic-core ready")
 }
