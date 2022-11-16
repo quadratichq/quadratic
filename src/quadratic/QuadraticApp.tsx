@@ -8,7 +8,7 @@ import { WelcomeComponent } from './WelcomeComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
 import { isMobileOnly } from 'react-device-detect';
-import init from 'quadratic-core';
+import init, { hello } from 'quadratic-core';
 
 export default function QuadraticApp() {
   const { loading, incrementLoadingCount } = useLoading();
@@ -29,7 +29,7 @@ export default function QuadraticApp() {
       });
       // load wasm
       init().then(() => {
-        console.log('[WASM/Rust] quadratic-core ready');
+        hello(); // let Rust say hello to console
         incrementLoadingCount();
       });
     }
