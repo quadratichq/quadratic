@@ -32,4 +32,4 @@ venv/*
 .env
 
 # Generated Rust files
-core/target/
+quadratic-core/target/
