@@ -225,7 +225,7 @@ pub struct JsRect {
     pub w: f64,
     pub h: f64,
 }
-#[wasm_bindgen]
+#[wasm_bindgen(js_class = "Rect")]
 impl JsRect {
     #[wasm_bindgen(constructor)]
     pub fn new(x: f64, y: f64, w: f64, h: f64) -> Self {
