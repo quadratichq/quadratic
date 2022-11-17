@@ -15,6 +15,18 @@ proptest! {
     }
 }
 
+#[test]
+fn test_split_block() {
+    test_set_and_get_cells(&[
+        (Pos { x: 1, y: 1 }, Cell::Int(10)),
+        (Pos { x: 1, y: 2 }, Cell::Int(20)),
+        (Pos { x: 1, y: 3 }, Cell::Int(30)),
+        (Pos { x: 1, y: 4 }, Cell::Int(40)),
+        (Pos { x: 1, y: 5 }, Cell::Int(50)),
+        (Pos { x: 1, y: 3 }, Cell::Empty),
+    ])
+}
+
 mod strategies {
     use super::*;
 
@@ -38,9 +50,24 @@ fn test_set_and_get_cells(cells: &[(Pos, Cell)]) {
         assert_eq!(old_actual, *old_expected.unwrap_or(&Cell::Empty));
     }
     assert!(dbg!(&grid).is_valid());
-    for (pos, cell) in hashmap {
-        assert_eq!(cell, grid.get_cell(pos));
+    for (&pos, cell) in &hashmap {
+        assert_eq!(*cell, grid.get_cell(pos));
     }
+
+    // Check bounds.
+    hashmap.retain(|_pos, cell| !cell.is_empty());
+    // IIFE to mimic try_block
+    let expected_rect: Option<Rect> = (|| {
+        let min_x = hashmap.keys().map(|pos| pos.x).min()?;
+        let max_x = hashmap.keys().map(|pos| pos.x).max()?;
+        let min_y = hashmap.keys().map(|pos| pos.y).min()?;
+        let max_y = hashmap.keys().map(|pos| pos.y).max()?;
+        Some(Rect::from_span(
+            Pos { x: min_x, y: min_y },
+            Pos { x: max_x, y: max_y },
+        ))
+    })();
+    assert_eq!(expected_rect, grid.bounds());
 }
 
 fn test_undo_redo(cell_batches: [Vec<(Pos, Cell)>; 4]) {

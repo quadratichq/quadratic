@@ -1,7 +1,9 @@
-use anyhow::{Context, Result};
+use anyhow::{ensure, Result};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, fmt};
+use std::collections::BTreeMap;
+use std::fmt;
+use std::ops::RangeInclusive;
 use wasm_bindgen::prelude::*;
 
 mod cell;
@@ -32,7 +34,7 @@ impl Grid {
     /// Returns whether the grid is valid:
     /// - Every column is valid (see [`Column::is_valid()`])
     pub fn is_valid(&self) -> bool {
-        self.columns.iter().all(|(_, col)| col.is_valid())
+        self.columns.iter().all(|(_x, col)| col.is_valid())
     }
 
     /// Returns a cell in the grid.
@@ -65,6 +67,41 @@ impl Grid {
             }
         }
     }
+
+    /// Returns the bounds of the farthest cells in the grid or `None` if the
+    /// grid is empty.
+    pub fn bounds(&self) -> Option<Rect> {
+        let min_x = *self.columns.keys().next()?;
+        let max_x = *self.columns.keys().last()?;
+        let min_y = self.columns.values().filter_map(Column::min_y).min()?;
+        let max_y = self.columns.values().filter_map(Column::max_y).max()?;
+        Some(Rect::from_span(
+            Pos { x: min_x, y: min_y },
+            Pos { x: max_x, y: max_y },
+        ))
+    }
+
+    /// Returns the bounds of the farthest cells in the grid considering only
+    /// the ones within `region`, or `None` if that region is empty.
+    pub fn bounds_within(&self, region: Rect) -> Option<Rect> {
+        let min_x = *self.columns.range(region.x_range()).next()?.0;
+        let max_x = *self.columns.range(region.x_range()).last()?.0;
+        let min_y = self
+            .columns
+            .values()
+            .filter_map(|col| col.min_y_in_range(region.y_range()))
+            .max()?;
+        let max_y = self
+            .columns
+            .values()
+            .filter_map(|col| col.max_y_in_range(region.y_range()))
+            .min()?;
+
+        Some(Rect::from_span(
+            Pos { x: min_x, y: min_y },
+            Pos { x: max_x, y: max_y },
+        ))
+    }
 }
 
 /// Vertical column of the spreadsheet.
@@ -77,8 +114,7 @@ impl fmt::Debug for Column {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut ret = f.debug_struct("Column");
         for (top, block) in &self.blocks {
-            let bottom = top + block.len() as i64 - 1;
-            ret.field(&format!("{:?}", *top..=bottom), block);
+            ret.field(&top.to_string(), block);
         }
         ret.finish()
     }
@@ -87,7 +123,7 @@ impl Column {
     /// Returns a cell in the column.
     pub fn get_cell(&self, y: i64) -> &Cell {
         match self.blocks.range(..=y).next_back() {
-            Some((top, block)) => block.get_cell(y - top).unwrap_or(&Cell::Empty),
+            Some((_, block)) => block.get_cell(y).unwrap_or(&Cell::Empty),
             None => &Cell::Empty,
         }
     }
@@ -98,14 +134,13 @@ impl Column {
         }
 
         let mut iter = self.blocks.range_mut(..=(y + 1)).rev().peekable();
-        let below = iter.next_if(|(&top, _)| top == y + 1);
-        let at = iter.next_if(|(&top, block)| top + block.len() as i64 > y);
-        let above = iter.next_if(|(&top, block)| top + block.len() as i64 == y);
+        let below = iter.next_if(|(_, block)| block.top() == y + 1);
+        let at = iter.next_if(|(_, block)| block.y_range().contains(&y));
+        let above = iter.next_if(|(_, block)| block.bottom() == y - 1);
 
-        if let Some((top, block)) = at {
+        if let Some((_, block)) = at {
             // The cell already exists in a block. Set its value.
-            let offset = y - top;
-            block.set_cell(offset, contents).expect("wrong block")
+            block.set_cell(y, contents).expect("wrong block")
         } else if let Some((_, above)) = above {
             // There is a block that ends directly above this cell, so append
             // the cell to that block.
@@ -129,6 +164,7 @@ impl Column {
         } else {
             // There is no block nearby, so add a new one.
             let block = Block {
+                top: y,
                 cells: vec![contents],
             };
             self.blocks.insert(y, block);
@@ -138,8 +174,8 @@ impl Column {
     }
     /// Clears a cell in the column, returning its old contents.
     pub fn clear_cell(&mut self, y: i64) -> Cell {
-        if let Some((&top, block)) = self.block_containing(y) {
-            let ret = block.get_cell(y - top).expect("wrong block").clone();
+        if let Some((&top, block)) = self.block_containing_mut(y) {
+            let ret = block.get_cell(y).expect("wrong block").clone();
 
             if block.len() == 1 {
                 // The cell is the entire block. Just delete the block.
@@ -148,22 +184,34 @@ impl Column {
                 // The cell is at the top of the block. Delete the block
                 // containing it and create a new block missing that cell.
                 let new_block = Block {
+                    top: y + 1,
                     cells: block.cells.iter().skip(1).cloned().collect(),
                 };
                 self.blocks.remove(&top);
                 self.blocks.insert(top + 1, new_block);
-            } else if top + block.len() as i64 - 1 == y {
+            } else if block.bottom() == y {
                 // The cell is at the bottom of the block. Simply remove it.
                 block.cells.pop();
             } else {
-                // The cell is in the middle of the block. Split the block.
+                // The cell is in the middle of the block.
                 let mut iter = block.cells.iter().cloned();
+
+                // The block above gets everything up to the `y`th value, but
+                // not including it.
                 let above = Block {
+                    top,
                     cells: (top..y).map_while(|_| iter.next()).collect(),
                 };
+
+                // Skip the `y`th value.
+                iter.next();
+
+                // The block below gets all the rest.
                 let below = Block {
+                    top: y + 1,
                     cells: iter.collect(),
                 };
+
                 *block = above;
                 self.blocks.insert(y + 1, below);
             }
@@ -181,47 +229,101 @@ impl Column {
     /// - There must be no adjacent/overlapping blocks
     pub fn is_valid(&self) -> bool {
         !self.blocks.is_empty()
-            && self.blocks.iter().all(|(_, block)| block.is_valid())
+            && self
+                .blocks
+                .iter()
+                .all(|(&y, block)| y == block.top && block.is_valid())
             && self
                 .blocks
                 .iter()
                 .tuple_windows()
-                .all(|((y1, block1), (y2, _block2))| (y1 + block1.len() as i64) < *y2)
+                .all(|((_, block1), (_, block2))| block1.bottom() + 1 < block2.top())
     }
 
-    /// Returns a mutable reference to the block containing row `y`.
-    fn block_containing(&mut self, y: i64) -> Option<(&i64, &mut Block)> {
+    /// Returns a mutable reference to the block containing row `y`, or `None`
+    /// if no such block exists.
+    fn block_containing_mut(&mut self, y: i64) -> Option<(&i64, &mut Block)> {
         self.blocks
             .range_mut(..=y)
             .last()
-            .filter(|(&top, block)| top + block.len() as i64 > y)
+            .filter(|(_, block)| block.y_range().contains(&y))
+    }
+    /// Returns the block containing row `y`, or `None` if no such block exists.
+    fn block_containing(&self, y: i64) -> Option<(&i64, &Block)> {
+        self.blocks
+            .range(..=y)
+            .last()
+            .filter(|(_, block)| block.y_range().contains(&y))
+    }
+    /// Returns an iterator over the blocks overlapping `y_range`.
+    fn blocks_overlapping_range(
+        &self,
+        y_range: RangeInclusive<i64>,
+    ) -> std::collections::btree_map::Range<'_, i64, Block> {
+        // If there is a block containing the start of the range, start with
+        // that block. Otherwise, start at the top of the range.
+        let start_key = match self.block_containing(*y_range.start()) {
+            Some((top, _)) => *top,
+            None => *y_range.start(),
+        };
+        let end_key = *y_range.end();
+        self.blocks.range(start_key..=end_key)
     }
 
-    /// Returns the minimum Y value of a non-empty cell.
-    pub fn min_y(&self) -> Option<i64> {
-        self.blocks.iter().map(|(&y, _)| y).min()
+    /// Returns an iterator over the cells within `y_range`.
+    pub fn cells_in_range(
+        &self,
+        y_range: RangeInclusive<i64>,
+    ) -> impl Iterator<Item = (i64, &Cell)> {
+        self.blocks_overlapping_range(y_range.clone())
+            .flat_map(move |(_, block)| block.cells_in_range(y_range.clone()))
     }
-    /// Returns the maximum Y value of a non-empty cell.
+
+    /// Returns the minimum Y value of a non-empty cell, or `None` if the column
+    /// is empty.
+    pub fn min_y(&self) -> Option<i64> {
+        self.blocks.values().map(Block::top).min()
+    }
+    /// Returns the maximum Y value of a non-empty cell, or `None` if the column
+    /// is empty.
     pub fn max_y(&self) -> Option<i64> {
-        self.blocks
-            .iter()
-            .map(|(&y, block)| y + block.len() as i64 - 1)
-            .max()
+        self.blocks.values().map(Block::bottom).max()
+    }
+
+    /// Returns the minimum Y value of a non-empty cell within `range`, or `None`
+    /// if the column is empty in that range.
+    pub fn min_y_in_range(&self, y_range: RangeInclusive<i64>) -> Option<i64> {
+        self.blocks_overlapping_range(y_range.clone())
+            .next()
+            .map(|(&top, _block)| std::cmp::max(top, *y_range.start()))
+    }
+    /// Returns the maximum Y value of a non-empty cell within `range`, or
+    /// `None` if the column is empty in that range.
+    pub fn max_y_in_range(&self, y_range: RangeInclusive<i64>) -> Option<i64> {
+        self.blocks_overlapping_range(y_range.clone())
+            .last()
+            .map(|(_, block)| std::cmp::min(block.bottom(), *y_range.end()))
     }
 }
 
 /// Width-1 vertical block of cells.
 #[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
 pub struct Block {
+    /// Y coordinates of the topmost cell in the column.
+    top: i64,
+
     /// Cells in the block.
     ///
     /// TODO: Consider using Apache Arrow or some other homogenous list
     /// structure, perhaps in combination with a tree.
-    pub cells: Vec<Cell>,
+    cells: Vec<Cell>,
 }
 impl fmt::Debug for Block {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_list().entries(&self.cells).finish()
+        f.debug_struct("Block")
+            .field("y_range", &self.y_range())
+            .field("cells", &self.cells)
+            .finish()
     }
 }
 impl Block {
@@ -236,22 +338,52 @@ impl Block {
     pub fn len(&self) -> usize {
         self.cells.len()
     }
-
-    /// Returns a cell in the block, or an error if the offset is out of range.
-    pub fn get_cell(&self, offset: i64) -> Result<&Cell> {
-        let offset: usize = offset.try_into().context("cell offset outside block")?;
-        self.cells.get(offset).context("cell offset outside block")
+    /// Returns the top (min Y coord) of the block.
+    pub fn top(&self) -> i64 {
+        self.top
     }
-    /// Sets an existing cell in the block, returning its old contents, or an
-    /// error if the offset is out of range.
-    pub fn set_cell(&mut self, offset: i64, contents: Cell) -> Result<Cell> {
-        let ret = self.get_cell(offset)?.clone();
+    /// Returns the bottom (max Y coord) of the block.
+    pub fn bottom(&self) -> i64 {
+        self.top + self.len() as i64 - 1
+    }
+    /// Returns the range of Y values spanned by the block.
+    pub fn y_range(&self) -> RangeInclusive<i64> {
+        self.top()..=self.bottom()
+    }
 
-        // Panicking indexing is fine because `get_cell()` already confirmed
-        // it's in range.
-        self.cells[offset as usize] = contents;
+    /// Returns a slice of the cells in the block that are within `y_range`.
+    pub fn cells_in_range(
+        &self,
+        y_range: RangeInclusive<i64>,
+    ) -> impl Iterator<Item = (i64, &Cell)> {
+        let start = std::cmp::max(self.top(), *y_range.start());
+        let end = std::cmp::min(self.bottom(), *y_range.end());
+        let slice = if start <= end {
+            let i = (start - self.top) as usize;
+            let j = (end - self.top) as usize;
+            &self.cells[i..=j]
+        } else {
+            &[]
+        };
+        (start..=end).zip(slice)
+    }
 
-        Ok(ret)
+    /// Returns the cell at the given Y coordinate, or an error if the Y
+    /// coordinate is not covered by the block.
+    pub fn get_cell(&self, y: i64) -> Result<&Cell> {
+        ensure!(self.y_range().contains(&y), "Y coordinate outside block");
+        let offset = y - self.top();
+        Ok(&self.cells[offset as usize])
+    }
+    /// Set an existing cell at the given Y coordinate, or an error if the Y
+    /// coordinate is not covered by the block.
+    pub fn set_cell(&mut self, y: i64, contents: Cell) -> Result<Cell> {
+        ensure!(self.y_range().contains(&y), "Y coordinate outside block");
+        let offset = y - self.top();
+        Ok(std::mem::replace(
+            &mut self.cells[offset as usize],
+            contents,
+        ))
     }
     /// Appends a cell to the bottom of the block in O(1) time.
     pub fn push_bottom(&mut self, contents: Cell) {
@@ -259,6 +391,7 @@ impl Block {
     }
     /// Inserts a cell at the top of the block in O(n) time.
     pub fn insert_top(&mut self, contents: Cell) {
+        self.top -= 1;
         self.cells.insert(0, contents);
     }
     /// Merges the block with another directly below it.
@@ -269,23 +402,63 @@ impl Block {
 
 /// Rectangular range of cells.
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
-#[wasm_bindgen]
 pub struct Rect {
     /// Left edge (column)
-    pub x: i64,
+    x: i64,
     /// Top edge (row)
-    pub y: i64,
+    y: i64,
     /// Width (columns)
-    pub w: u32,
+    w: u32,
     /// Height (rows)
-    pub h: u32,
+    h: u32,
 }
 impl Rect {
+    pub fn new(x: i64, y: i64, w: u32, h: u32) -> Self {
+        Self { x, y, w, h }
+    }
+
+    /// Constructs a rectangle spanning two positions.
+    pub fn from_span(a: Pos, b: Pos) -> Self {
+        Self {
+            x: std::cmp::min(a.x, b.x),
+            y: std::cmp::min(a.y, b.y),
+            w: a.x.abs_diff(b.x) as u32 + 1,
+            h: a.y.abs_diff(b.y) as u32 + 1,
+        }
+    }
+
+    /// Returns the left (min X coord) of the rectangle.
+    pub fn left(&self) -> i64 {
+        self.x
+    }
+    /// Returns the top (min Y coord) of the rectangle.
+    pub fn top(&self) -> i64 {
+        self.y
+    }
+    /// Returns the right (max X coord) of the rectangle.
+    pub fn right(&self) -> i64 {
+        self.x + self.w as i64 - 1
+    }
+    /// Returns the bottom (max Y coord) of the rectangle.
+    pub fn bottom(&self) -> i64 {
+        self.y + self.h as i64 - 1
+    }
+
     /// Returns whether the rectangle contains a position.
     pub fn contains(&self, pos: Pos) -> bool {
         let x_contains = self.x <= pos.x && pos.x < self.x + self.w as i64;
         let y_contains = self.y <= pos.y && pos.y < self.y + self.h as i64;
         x_contains && y_contains
+    }
+}
+impl Rect {
+    /// Returns the range of X values of the rectangle.
+    pub fn x_range(&self) -> RangeInclusive<i64> {
+        self.left()..=self.right()
+    }
+    /// Returns the range of Y values of the rectangle.
+    pub fn y_range(&self) -> RangeInclusive<i64> {
+        self.top()..=self.bottom()
     }
 }
 
@@ -304,4 +477,7 @@ impl Pos {
     pub fn new(x: i64, y: i64) -> Self {
         Self { x, y }
     }
+}
+impl Pos {
+    pub const ORIGIN: Self = Self { x: 0, y: 0 };
 }

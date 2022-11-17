@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use wasm_bindgen::prelude::*;
 
 /// Contents of a single spreadsheet cell.
@@ -14,11 +15,11 @@ impl Cell {
         matches!(self, Self::Empty)
     }
 
-    pub fn string_value(&self) -> String {
+    pub fn string_value(&self) -> Cow<'_, str> {
         match self {
-            Cell::Empty => String::new(),
-            Cell::Int(i) => i.to_string(),
-            Cell::Text(s) => s.clone(),
+            Cell::Empty => "".into(),
+            Cell::Int(i) => i.to_string().into(),
+            Cell::Text(s) => s.into(),
         }
     }
 }
