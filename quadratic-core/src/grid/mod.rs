@@ -11,8 +11,8 @@ mod command;
 mod controller;
 
 pub use cell::*;
-pub use command::Command;
-pub use controller::GridController;
+pub use command::*;
+pub use controller::*;
 
 /// Sparse grid of cells.
 #[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
@@ -480,4 +480,12 @@ impl Pos {
 }
 impl Pos {
     pub const ORIGIN: Self = Self { x: 0, y: 0 };
+
+    /// Returns which quadrant the cell position is in.
+    pub fn quadrant(self) -> (i64, i64) {
+        (
+            self.x.div_euclid(crate::QUADRANT_SIZE as _),
+            self.y.div_euclid(crate::QUADRANT_SIZE as _),
+        )
+    }
 }
