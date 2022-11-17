@@ -5,11 +5,6 @@ import { GridController } from 'quadratic-core';
 
 export class GridSparse {
   private app: PixiApp;
-  private cells: Record<string, Cell> = {};
-  private minX = 0;
-  private maxX = 0;
-  private minY = 0;
-  private maxY = 0;
   controller: GridController;
 
   constructor(app: PixiApp) {
@@ -31,12 +26,6 @@ export class GridSparse {
     } else {
       this.controller.populate(JSON.stringify(cells));
     }
-
-    const rect = this.controller.getCellRect();
-    this.minX = Number(rect.x);
-    this.minY = Number(rect.y);
-    this.maxX = this.minX + Number(rect.w);
-    this.maxY = this.minY + Number(rect.h);
   }
 
   get(x: number, y: number): Cell | undefined {
@@ -44,15 +33,25 @@ export class GridSparse {
   }
 
   getBounds(bounds: Rectangle): Rectangle {
+    const gridBounds = this.controller.getCellBounds();
+
+    let minX = 0, maxX = 0, minY = 0, maxY = 0;
+    if (gridBounds) {
+      minX = Number(gridBounds.x);
+      maxX = Number(gridBounds.x + gridBounds.w - 1);
+      minY = Number(gridBounds.y);
+      maxY = Number(gridBounds.y + gridBounds.h - 1);
+    }
+
     const columnStartIndex = this.app.gridOffsets.getColumnIndex(bounds.left);
-    const columnStart = columnStartIndex.index > this.minX ? columnStartIndex.index : this.minX;
+    const columnStart = columnStartIndex.index > minX ? columnStartIndex.index : minX;
     const columnEndIndex = this.app.gridOffsets.getColumnIndex(bounds.right);
-    const columnEnd = columnEndIndex.index < this.maxX ? columnEndIndex.index : this.maxX;
+    const columnEnd = columnEndIndex.index < maxX ? columnEndIndex.index : maxX;
 
     const rowStartIndex = this.app.gridOffsets.getRowIndex(bounds.top);
-    const rowStart = rowStartIndex.index > this.minY ? rowStartIndex.index : this.minY;
+    const rowStart = rowStartIndex.index > minY ? rowStartIndex.index : minY;
     const rowEndIndex = this.app.gridOffsets.getRowIndex(bounds.bottom);
-    const rowEnd = rowEndIndex.index < this.maxY ? rowEndIndex.index : this.maxY;
+    const rowEnd = rowEndIndex.index < maxY ? rowEndIndex.index : maxY;
 
     return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
   }

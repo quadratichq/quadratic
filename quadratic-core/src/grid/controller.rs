@@ -94,7 +94,7 @@ impl GridController {
             serde_wasm_bindgen::to_value(&JsCell {
                 x: x as i64,
                 y: y as i64,
-                value: cell.string_value(),
+                value: cell.string_value().to_string(),
                 dependent_cells: None,
                 python_code: None,
                 python_output: None,
@@ -104,75 +104,77 @@ impl GridController {
             .unwrap()
         }
     }
-    /// returns all information about every cell in the grid.
-    pub fn get_all(&self) -> JsValue {
-        serde_wasm_bindgen::to_value(
-            &self
-                .grid
-                .columns
-                .iter()
-                .flat_map(|(&x, col)| {
-                    col.blocks.iter().flat_map(move |(&y, block)| {
-                        (0..block.len() as i64)
-                            .map(move |offset| self.get_internal(Pos { x, y: y + offset }))
-                    })
-                })
-                .collect_vec(),
-        )
-        .unwrap()
-    }
-    fn get_internal(&self, pos: Pos) -> Option<JsCell> {
-        let cell = self.grid.get_cell(pos);
-        if cell.is_empty() {
-            None
-        } else {
-            Some(JsCell {
-                x: pos.x,
-                y: pos.y,
-                value: cell.string_value(),
-                dependent_cells: None,
-                python_code: None,
-                python_output: None,
-                array_cells: None,
-                last_modified: None,
-            })
-        }
-    }
 
-    /// Returns the minimum bounding rectangle of the grid in cell coordinates.
-    #[wasm_bindgen(js_name = "getCellRect")]
-    pub fn cell_rect(&self) -> Rect {
-        let min_x = *self.grid.columns.keys().next().unwrap_or(&-1000);
-        let max_x = *self.grid.columns.keys().last().unwrap_or(&1000);
-
-        let min_y = self
+    /// Returns the string contents of every cell.
+    ///
+    /// Output format is the same as `getCellStringsWithin()`.
+    #[wasm_bindgen(js_name = "getCellStrings")]
+    pub fn get_cell_strings(&self) -> JsValue {
+        let bounds = self
             .grid
-            .columns
-            .iter()
-            .filter_map(|(_, col)| col.min_y())
-            .min()
-            .unwrap_or(-1000);
-        let max_y = self
-            .grid
-            .columns
-            .iter()
-            .filter_map(|(_, col)| col.max_y())
-            .max()
-            .unwrap_or(1000);
+            .bounds()
+            .unwrap_or(Rect::from_span(Pos::ORIGIN, Pos::ORIGIN));
 
-        Rect {
-            x: min_x,
-            y: min_y,
-            w: max_x.saturating_sub(min_x).try_into().unwrap_or(0),
-            h: max_y.saturating_sub(min_y).try_into().unwrap_or(0),
+        self.get_cell_strings_within(bounds.into())
+    }
+    /// Returns all information about every cell within `region`.
+    ///
+    /// All cells are concatenated into one long string, and each cell consists
+    /// of an XY pair, an byte offset into that string, and a length of how many
+    /// bytes to take from it. E.g.,
+    ///
+    /// ```json
+    /// {
+    ///     contents: "cell 1cell 2cell 3",
+    ///     cell_data: [
+    ///         -3, -12, 0,  6, // (-3, -12) contains "cell 1"
+    ///         -3, -13, 6,  6, // (-3, -13) contains "cell 2"
+    ///         -3, -15, 12, 6, // (-3, -12) contains "cell 3"
+    ///     ]
+    /// }
+    /// ```
+    #[wasm_bindgen(js_name = "getCellStringsWithin")]
+    pub fn get_cell_strings_within(&self, region: JsRect) -> JsValue {
+        let region = Rect::from(region);
+
+        #[derive(Serialize, Debug, Default, Clone)]
+        struct CellStrings {
+            contents: String,
+            cell_data: Vec<i64>,
         }
+        let mut ret = CellStrings::default();
+
+        for (&x, col) in self.grid.columns.range(region.x_range()) {
+            for (y, cell) in col.cells_in_range(region.y_range()) {
+                let string_start = ret.contents.len() as i64;
+                ret.contents.push_str(&cell.string_value());
+                let string_end = ret.contents.len() as i64;
+                ret.cell_data.extend([x, y, string_start, string_end]);
+            }
+        }
+
+        serde_wasm_bindgen::to_value(&ret).unwrap()
     }
 
-    pub fn test(&self) -> JsValue {
-        todo!()
+    /// Returns the minimum bounding rectangle of the grid in cell coordinates,
+    /// or `None` if it is empty.
+    #[wasm_bindgen(js_name = "getCellBounds")]
+    pub fn bounds(&self) -> Option<JsRect> {
+        let ret = self.grid.bounds();
+        Some(ret?.into())
     }
 
-    /// Empties the grid.
+    /// Returns the minimum bounding rectangle of the grid in cell coordinates,
+    /// considering only the cells within `region`, or `None` if the region is
+    /// emptys.
+    #[wasm_bindgen(js_name = "getCellBoundsWithin")]
+    pub fn bounds_within(&self, region: JsRect) -> Option<JsRect> {
+        let region = Rect::from(region);
+        let ret = self.grid.bounds_within(region);
+        Some(ret?.into())
+    }
+
+    /// Empties the grid. **This does not affect undo/redo.**
     pub fn empty(&mut self) {
         self.grid = Grid::new();
     }
@@ -214,17 +216,39 @@ impl GridController {
     }
 }
 
-// #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-// #[wasm_bindgen]
-// pub struct TestStruct {
-//     // pub a: String,
-//     // pub contents: Vec<String>,
-//     pub formatting: Vec<Formatting>,
-// }
-
-// #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-// #[wasm_bindgen]
-// pub struct Formatting {
-//     color1: String,
-//     color2: String,
-// }
+/// Rectangle type exported to JS.
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+#[wasm_bindgen(js_name = "Rect")]
+pub struct JsRect {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+}
+#[wasm_bindgen]
+impl JsRect {
+    #[wasm_bindgen(constructor)]
+    pub fn new(x: f64, y: f64, w: f64, h: f64) -> Self {
+        Self { x, y, w, h }
+    }
+}
+impl From<Rect> for JsRect {
+    fn from(rect: Rect) -> Self {
+        JsRect {
+            x: rect.x as _,
+            y: rect.y as _,
+            w: rect.w as _,
+            h: rect.h as _,
+        }
+    }
+}
+impl From<JsRect> for Rect {
+    fn from(rect: JsRect) -> Self {
+        Rect {
+            x: rect.x as _,
+            y: rect.y as _,
+            w: rect.w as _,
+            h: rect.h as _,
+        }
+    }
+}
