@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Cell } from './db';
-import { GridController } from 'quadratic-core';
+import { GridController, Rect } from 'quadratic-core';
 
 export class GridSparse {
   private app: PixiApp;
@@ -26,6 +26,9 @@ export class GridSparse {
     } else {
       this.controller.populate(JSON.stringify(cells));
     }
+
+    // Example usage
+    console.log(this.controller.getCellStringsWithin(new Rect(4, 4, 3, 5)));
   }
 
   get(x: number, y: number): Cell | undefined {
