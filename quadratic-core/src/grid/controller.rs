@@ -1,6 +1,7 @@
 use anyhow::Result;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
 use super::{Cell, Command, Grid, JsCell, Pos, Rect};
@@ -35,24 +36,21 @@ impl GridController {
     pub fn has_redo(&self) -> bool {
         !self.redo_stack.is_empty()
     }
-    /// Undoes one action, if there is an action to be undone. Returns whether
-    /// an action was undone.
-    pub fn undo(&mut self) -> bool {
-        let Some(command) = self.undo_stack.pop() else { return false };
-        let reverse_command = self.exec_internal(command).unwrap();
-        self.redo_stack.push(reverse_command);
-        true
+    /// Undoes one action, if there is an action to be undone. Returns a list of
+    /// dirty quadrants (XY pairs flattened) or `null` if nothing happened.
+    #[wasm_bindgen(js_name = "undo")]
+    pub fn js_undo(&mut self) -> JsValue {
+        option_to_js_value(self.undo())
     }
-    /// Redoes one action, if there is an action to be redone. Returns whether
-    /// an action was redone.
-    pub fn redo(&mut self) -> bool {
-        let Some(command) = self.redo_stack.pop() else { return false };
-        let reverse_command = self.exec_internal(command).unwrap();
-        self.undo_stack.push(reverse_command);
-        true
+    /// Redoes one action, if there is an action to be redone. Returns a list of
+    /// dirty quadrants (XY pairs flattened) or `null` if nothing happened.
+    #[wasm_bindgen(js_name = "redo")]
+    pub fn js_redo(&mut self) -> JsValue {
+        option_to_js_value(self.redo())
     }
 
-    /// Sets a list of cells on the grid. Example input:
+    /// Sets a list of cells on the grid and returns a list of dirty quadrants
+    /// (XY pairs flattened). Example input:
     ///
     /// ```js
     /// set_cells(JSON.stringify([
@@ -61,10 +59,11 @@ impl GridController {
     /// ]));
     /// ```
     #[wasm_bindgen(js_name = "setCells")]
-    pub fn set_cells(&mut self, cells: &str) {
-        self.execute(Command::SetCells(
+    pub fn set_cells(&mut self, cells: &str) -> JsValue {
+        let dirty_set = self.execute(Command::SetCells(
             serde_json::from_str(cells).expect("bad cell list"),
         ));
+        serde_wasm_bindgen::to_value(&dirty_set).unwrap()
     }
 
     /// Clears the whole grid and then adds new cells to it.
@@ -82,7 +81,8 @@ impl GridController {
         }
     }
 
-    /// Returns all information about a single cell in the grid.
+    /// Returns all information about a single cell in the grid. Returns
+    /// `undefined` if the cell is empty.
     pub fn get(&self, x: f64, y: f64) -> JsValue {
         let cell = self.grid.get_cell(Pos {
             x: x as i64,
@@ -180,23 +180,47 @@ impl GridController {
     }
 }
 impl GridController {
+    /// Undoes one action, if there is an action to be undone. Returns a list of
+    /// dirty quadrants or `None` if nothing happened.
+    pub fn undo(&mut self) -> Option<DirtyQuadrants> {
+        let command = self.undo_stack.pop()?;
+        let (reverse_command, dirty_set) = self.exec_internal(command).unwrap();
+        self.redo_stack.push(reverse_command);
+        Some(dirty_set)
+    }
+    /// Redoes one action, if there is an action to be redone. Returns a list of
+    /// dirty quadrants or `None` if nothing happened.
+    pub fn redo(&mut self) -> Option<DirtyQuadrants> {
+        let command = self.redo_stack.pop()?;
+        let (reverse_command, dirty_set) = self.exec_internal(command).unwrap();
+        self.undo_stack.push(reverse_command);
+        Some(dirty_set)
+    }
+
     /// Executes a command on the grid, managing the undo and redo stacks
-    /// appropriately.
-    pub fn execute(&mut self, command: Command) {
+    /// appropriately. Returns a set of dirty quadrants.
+    pub fn execute(&mut self, command: Command) -> DirtyQuadrants {
         self.redo_stack.clear();
-        let reverse_command = self
+        let (reverse_command, dirty_set) = self
             .exec_internal(command)
             .expect("error executing command");
         self.undo_stack.push(reverse_command);
+        dirty_set
     }
 
-    /// Executes a command on the grid and returns the reverse command.
-    fn exec_internal(&mut self, command: Command) -> Result<Command> {
-        match command {
+    /// Executes a command on the grid. Returns the reverse command and a set of
+    /// dirty quadrants.
+    fn exec_internal(&mut self, command: Command) -> Result<(Command, DirtyQuadrants)> {
+        let mut dirty_set = DirtyQuadrants::default();
+
+        let reverse_command = match command {
             Command::SetCells(cells) => {
                 let mut old_values = cells
                     .into_iter()
-                    .map(|(pos, contents)| (pos, self.grid.set_cell(pos, contents)))
+                    .map(|(pos, contents)| {
+                        dirty_set.add_cell(pos);
+                        (pos, self.grid.set_cell(pos, contents))
+                    })
                     .collect_vec();
                 // In case there are duplicates, make sure to set them in the
                 // reverse order. For example, suppose a cell initially contains
@@ -204,9 +228,12 @@ impl GridController {
                 // then "C" and then "D". The reverse command should set the
                 // cell to "C" and then "B" and then finally "A".
                 old_values.reverse();
-                Ok(Command::SetCells(old_values))
+
+                Command::SetCells(old_values)
             }
-        }
+        };
+
+        Ok((reverse_command, dirty_set))
     }
 
     /// Returns whether the underlying [`Grid`] is valid.
@@ -250,5 +277,36 @@ impl From<JsRect> for Rect {
             w: rect.w as _,
             h: rect.h as _,
         }
+    }
+}
+
+/// Set of dirty quadrants.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct DirtyQuadrants(pub HashSet<(i64, i64)>);
+impl Serialize for DirtyQuadrants {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeSeq;
+
+        let mut seq = serializer.serialize_seq(Some(self.0.len() * 2))?;
+        for (x, y) in &self.0 {
+            seq.serialize_element(x)?;
+            seq.serialize_element(y)?;
+        }
+        seq.end()
+    }
+}
+impl DirtyQuadrants {
+    fn add_cell(&mut self, pos: Pos) {
+        self.0.insert(pos.quadrant());
+    }
+}
+
+fn option_to_js_value(val: Option<impl Serialize>) -> JsValue {
+    match val {
+        Some(val) => serde_wasm_bindgen::to_value(&val).unwrap(),
+        None => JsValue::NULL,
     }
 }
