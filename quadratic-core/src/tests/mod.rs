@@ -27,6 +27,39 @@ fn test_split_block() {
     ])
 }
 
+#[test]
+fn test_dirty_quadrants() {
+    assert!(
+        crate::QUADRANT_SIZE >= 4,
+        "this test expects larger quadrants"
+    );
+
+    let mut grid = GridController::new();
+
+    // This command shouldn't matter.
+    grid.execute(Command::SetCells(vec![
+        (Pos { x: -1, y: 1 }, Cell::Int(-10)),
+        (Pos { x: -1, y: -6 }, Cell::Int(-20)),
+    ]));
+
+    // This is the command whose dirty set we'll be testing.
+    let dirty = grid.execute(Command::SetCells(vec![
+        (Pos { x: -1, y: 1 }, Cell::Int(10)),
+        (Pos { x: 1, y: 1 }, Cell::Int(10)),
+        (Pos { x: 1, y: 2 }, Cell::Int(20)),
+        (Pos { x: 1, y: 3 }, Cell::Int(30)),
+    ]));
+    let expected_dirty = DirtyQuadrants([(0, 0), (-1, 0)].into_iter().collect());
+
+    assert_eq!(dirty, expected_dirty,);
+
+    // Undo should have the same dirty set.
+    assert_eq!(grid.undo(), Some(dirty.clone()));
+
+    // Same with redo.
+    assert_eq!(grid.redo(), Some(dirty));
+}
+
 mod strategies {
     use super::*;
 
@@ -84,32 +117,32 @@ fn test_undo_redo(cell_batches: [Vec<(Pos, Cell)>; 4]) {
     let grid_c = grid.clone(); // a -> b -> c
 
     assert!(
-        !grid.redo(),
+        grid.redo().is_none(),
         "redo should fail because there is nothing to redo",
     );
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, grid_c);
 
-    assert!(grid.undo(), "undo should succeed");
+    assert!(grid.undo().is_some(), "undo should succeed");
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, grid_b);
 
-    assert!(grid.undo(), "undo should succeed");
+    assert!(grid.undo().is_some(), "undo should succeed");
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, grid_a);
 
-    assert!(grid.undo(), "undo should succeed");
+    assert!(grid.undo().is_some(), "undo should succeed");
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, initial);
 
     assert!(
-        !grid.undo(),
+        grid.undo().is_none(),
         "undo should fail because the stack has been exhausted",
     );
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, initial);
 
-    assert!(grid.redo(), "redo should succeed",);
+    assert!(grid.redo().is_some(), "redo should succeed",);
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, grid_a);
 
@@ -120,7 +153,7 @@ fn test_undo_redo(cell_batches: [Vec<(Pos, Cell)>; 4]) {
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, grid_d);
     assert!(
-        !grid.redo(),
+        grid.redo().is_none(),
         "redo should fail because new command clears the redo stack",
     );
     assert!(grid.is_valid(), "{:?}", grid);
@@ -128,25 +161,25 @@ fn test_undo_redo(cell_batches: [Vec<(Pos, Cell)>; 4]) {
     dbg!(&grid_a);
 
     dbg!(&grid);
-    assert!(grid.undo(), "undo should succeed");
+    assert!(grid.undo().is_some(), "undo should succeed");
     dbg!(&grid);
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, grid_a);
 
-    assert!(grid.undo(), "undo should succeed");
+    assert!(grid.undo().is_some(), "undo should succeed");
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, initial);
 
-    assert!(grid.redo(), "redo should succeed");
+    assert!(grid.redo().is_some(), "redo should succeed");
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, grid_a);
 
-    assert!(grid.redo(), "redo should succeed");
+    assert!(grid.redo().is_some(), "redo should succeed");
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, grid_d);
 
     assert!(
-        !grid.redo(),
+        grid.redo().is_none(),
         "redo should fail because the stack has been exhausted",
     );
     assert!(grid.is_valid(), "{:?}", grid);
