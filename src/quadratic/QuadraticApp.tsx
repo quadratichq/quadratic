@@ -7,12 +7,9 @@ import { loadPython } from '../core/computations/python/loadPython';
 import { WelcomeComponent } from './WelcomeComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
-<<<<<<< HEAD
 import { useAuth0 } from '@auth0/auth0-react';
 import { captureException } from '@sentry/react';
-=======
 import { isMobileOnly } from 'react-device-detect';
->>>>>>> main
 
 export default function QuadraticApp() {
   const { loading, incrementLoadingCount } = useLoading();
@@ -27,7 +24,7 @@ export default function QuadraticApp() {
   useEffect(() => {
     if (loading) {
       if (!isMobileOnly) {
-        // Only load Python not on mobile
+        // Load Python on desktop
         loadPython().then(() => {
           incrementLoadingCount();
         });
