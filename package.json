@@ -30,6 +30,7 @@
     "date-fns": "^2.28.0",
     "dexie": "^3.2.0",
     "dexie-react-hooks": "^1.1.1",
+    "firebase": "^9.14.0",
     "monaco-editor": "^0.31.1",
     "pixi-cull": "^2.1.0",
     "pixi-viewport": "^4.35.1",
