@@ -1,5 +1,6 @@
 import { Container, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
+import { CellRectangle } from '../../../gridDB/CellRectangle';
 import { Cell, CellFormat } from '../../../gridDB/db';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { CellsArray } from './CellsArray';
@@ -46,15 +47,15 @@ export class Cells extends Container {
   }
 
   // todo
-  drawSubQuadrant(bounds: Rectangle): void {
-    this.drawBounds(bounds);
+  // drawSubQuadrant(bounds: Rectangle): void {
+  //   this.drawBounds(bounds);
 
-    // ensure a screen rerender after a quadrant draw
-    this.dirty = true;
-  }
+  //   // ensure a screen rerender after a quadrant draw
+  //   this.dirty = true;
+  // }
 
-  private drawBounds(bounds: Rectangle) {
-    const { grid, gridOffsets } = this.app;
+  private drawBounds(bounds: Rectangle, cellRectangle: CellRectangle) {
+    const { gridOffsets } = this.app;
     this.labels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
@@ -74,26 +75,25 @@ export class Cells extends Container {
       const height = gridOffsets.getRowHeight(row);
       for (let column = bounds.left; column <= bounds.right; column++) {
         const width = gridOffsets.getColumnWidth(column);
-
-        const cell = grid.get(column, row);
-        if (cell) {
+        const entry = cellRectangle.get(column, row);
+        if (entry) {
           const isInput = input && input.column === column && input.row === row;
-          if (!isInput && (cell.cell || cell.format)) {
-            this.cellsBorder.draw({ ...cell, x, y, width, height });
-            this.cellsBackground.draw({ ...cell, x, y, width, height });
-            if (cell.cell) {
-              if (cell.cell?.type === 'PYTHON') {
+          if (!isInput && (entry.cell || entry.format)) {
+            this.cellsBorder.draw({ ...entry, x, y, width, height });
+            this.cellsBackground.draw({ ...entry, x, y, width, height });
+            if (entry.cell) {
+              if (entry.cell?.type === 'PYTHON') {
                 this.cellsMarkers.add(x, y, 'CodeIcon');
               }
               this.labels.add({
                 x: x + CELL_TEXT_MARGIN_LEFT,
                 y: y + CELL_TEXT_MARGIN_TOP,
-                text: cell.cell.value,
+                text: entry.cell.value,
               });
             }
           }
-          if (cell.cell?.array_cells) {
-            this.cellsArray.draw(cell.cell.array_cells, x, y, width, height);
+          if (entry.cell?.array_cells) {
+            this.cellsArray.draw(entry.cell.array_cells, x, y, width, height);
           }
         }
         x += width;
@@ -108,7 +108,8 @@ export class Cells extends Container {
     if (this.dirty) {
       this.dirty = false;
       const bounds = this.app.grid.getBounds(this.app.viewport.getVisibleBounds());
-      this.drawBounds(bounds);
+      const cellRectangle = this.app.grid.getCells(bounds);
+      this.drawBounds(bounds, cellRectangle);
     }
   }
 

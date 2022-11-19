@@ -1,5 +1,6 @@
 import { Rectangle } from 'pixi.js';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { CellRectangle } from './CellRectangle';
 import { Cell, CellFormat } from './db';
 
 export interface CellAndFormat {
@@ -80,6 +81,10 @@ export class GridSparse {
   getFormat(x: number, y: number): CellFormat | undefined {
     if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
     return this.cells.get(this.getKey(x, y))?.format;
+  }
+
+  getCells(size: Rectangle): CellRectangle {
+    return new CellRectangle(size, this);
   }
 
   getBounds(bounds: Rectangle): Rectangle {
