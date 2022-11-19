@@ -12,8 +12,23 @@ Take your data and do something useful with it as quickly and easily as possible
 
 ![Screen Shot 2022-04-07 at 4 15 52 PM](https://user-images.githubusercontent.com/3479421/162328478-198f27d1-4ab8-4334-8420-b082e68edefc.png)
 
+## Online Demo
+
+We have a hosted version of the `main` branch available online. 
+
+**Try it out! --> https://early.quadratic.to**
+
 ## Community
-Join the conversation on our Discord channel -> https://discord.gg/5R6wkpeD
+Join the conversation on our Discord channel -> https://discord.gg/quadratic
+
+## Documentation
+
+All of our documentation is available at [docs.quadratic.to](https://docs.quadratic.to)
+- [Quick Start Guide](https://docs.quadratic.to/quick-start)
+- [Python Cell Reference](https://docs.quadratic.to/reference/python-cell-reference)
+- [Pandas DataFrames in Quadratic](https://docs.quadratic.to/reference/python-cell-reference/pandas-dataframe)
+- [Development Updates](https://docs.quadratic.to/development-updates)
+
 
 # What is Quadratic?
 
@@ -31,12 +46,6 @@ Quadratic has no environment to configure. The grid runs entirely in the browser
 
 # Getting Started
 
-### Online Demo
-
-We have a hosted version of the `main` branch available online. 
-
-**Try it out! --> https://early.quadratic.to**
-
 ### Run Quadratic Locally
 
 Install Dependencies `npm install`
@@ -44,14 +53,6 @@ Install Dependencies `npm install`
 Run Web `npm start`
 
 Run Electron `npm run dev`
-
-## Documentation
-
-All of our documentation is available at [docs.quadratic.to](https://docs.quadratic.to)
-- [Quick Start Guide](https://docs.quadratic.to/quick-start)
-- [Python Cell Reference](https://docs.quadratic.to/reference/python-cell-reference)
-- [Pandas DataFrames in Quadratic](https://docs.quadratic.to/reference/python-cell-reference/pandas-dataframe)
-- [Development Updates](https://docs.quadratic.to/development-updates)
 
 # Development Progress and Roadmap
 
@@ -61,12 +62,12 @@ _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 - [x] Open and Save files locally
 - [x] Python (WASM)
 - [x] Pandas Support
-- [ ] Quadratic Cloud Beta
+- [ ] Moving cells and resizing columns (issue [#138](https://github.com/quadratichq/quadratic/pull/138))
+- [ ] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
+- [ ] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
 - [ ] Database Connection Support (issue [#35](https://github.com/quadratichq/quadratic/issues/35))
 - [ ] SQL Support (issue [#34](https://github.com/quadratichq/quadratic/issues/34))
-- [ ] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
-- [ ] Moving cells and resizing columns
-- [ ] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
+- [ ] Quadratic Cloud Beta
 
 **Feature request or bug report?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
 

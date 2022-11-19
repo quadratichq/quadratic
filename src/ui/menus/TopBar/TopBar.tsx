@@ -58,24 +58,34 @@ export const TopBar = () => {
         )}
       </Box>
 
-      {!isMobileOnly && (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            userSelect: 'none',
-          }}
-        >
-          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-            Personal &nbsp;
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          userSelect: 'none',
+        }}
+      >
+        {isMobileOnly ? (
+          <Typography
+            variant="body2"
+            fontFamily={'sans-serif'}
+            color={colors.mediumGray}
+            style={{ whiteSpace: 'nowrap', marginLeft: '1rem' }}
+          >
+            Read Only
           </Typography>
-          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-            / Untitled.grid
-          </Typography>
-          <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown>
-        </Box>
-      )}
-
+        ) : (
+          <>
+            <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
+              Personal &nbsp;
+            </Typography>
+            <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
+              / Untitled.grid
+            </Typography>
+            <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown>
+          </>
+        )}
+      </Box>
       <Box
         sx={{
           display: 'flex',

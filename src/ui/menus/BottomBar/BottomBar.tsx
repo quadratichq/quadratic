@@ -7,6 +7,7 @@ import { Cell } from '../../../core/gridDB/db';
 import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
 import { formatDistance } from 'date-fns';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { isMobileOnly } from 'react-device-detect';
 
 export const BottomBar = () => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
@@ -108,9 +109,18 @@ export const BottomBar = () => {
           gap: '1rem',
         }}
       >
-        <span>✓ Python 3.9.5</span>
-        <span>✕ SQL</span>
-        <span>✕ JS</span>
+        {!isMobileOnly && <span>✓ Python 3.9.5</span>}
+        <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
+        <span
+          style={{
+            color: '#ffffff',
+            backgroundColor: colors.quadraticThird,
+            padding: '2px 5px 2px 5px',
+            borderRadius: '2px',
+          }}
+        >
+          ALPHA
+        </span>
       </Box>
     </div>
   );
