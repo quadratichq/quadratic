@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
+// Import the functions you need from the SDKs you need
+import { initializeApp } from 'firebase/app';
+import { getAnalytics } from 'firebase/analytics';
 
 export const AnalyticsProvider = () => {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Only track analytics on cloud version where REACT_APP_GOOGLE_ANALYTICS_GTAG is set
-    if (!process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG) {
+    // Need All Env Vars to Continue
+    if (!process.env.REACT_APP_FIREBASE_API_KEY) {
       setLoaded(true);
       return;
     }
@@ -13,26 +16,24 @@ export const AnalyticsProvider = () => {
     // Prevent loading twice
     if (loaded) return;
 
-    // set up Google Analytics
-    const script_1 = document.createElement('script');
-    script_1.src = `https://www.googletagmanager.com/gtag/js?id=${process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG}`;
-    script_1.async = true;
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
 
-    const script_2 = document.createElement('script');
-    script_2.innerText = `
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', '${process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG}');
-    `;
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+      authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.REACT_APP_FIREBASE_MSG_SENDER_ID,
+      appId: process.env.REACT_APP_FIREBASE_APP_ID,
+      measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
+    };
 
-    // add google analytics scripts to document
-    if (typeof window !== 'undefined') {
-      document.head.appendChild(script_1);
-      document.head.appendChild(script_2);
-
-      console.log('[Analytics] activated');
-    }
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    getAnalytics(app);
 
     setLoaded(true);
   }, [loaded, setLoaded]);
