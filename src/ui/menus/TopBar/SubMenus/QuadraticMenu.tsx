@@ -2,7 +2,13 @@ import { useEffect } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
-import { MenuBookOutlined, FileOpenOutlined, SaveOutlined, BugReportOutlined } from '@mui/icons-material';
+import {
+  MenuBookOutlined,
+  FileOpenOutlined,
+  SaveOutlined,
+  BugReportOutlined,
+  LogoutOutlined,
+} from '@mui/icons-material';
 import { isMobileOnly } from 'react-device-detect';
 import { useAuth0 } from '@auth0/auth0-react';
 
@@ -93,7 +99,10 @@ export const QuadraticMenu = () => {
       {isAuthenticated && (
         <SubMenu label="Account">
           <MenuHeader>{user?.email}</MenuHeader>
-          <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>Log Out</MenuItem>
+          <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>
+            <LogoutOutlined style={menuItemIconStyles} />
+            Log Out
+          </MenuItem>
         </SubMenu>
       )}
 

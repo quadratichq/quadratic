@@ -1,5 +1,4 @@
-import { Box, Typography } from '@mui/material';
-import { Button, Tooltip } from '@mui/material';
+import { Box, Typography, Button, Tooltip, AvatarGroup, Avatar } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -12,8 +11,11 @@ import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isMobileOnly } from 'react-device-detect';
+import { useAuth0 } from '@auth0/auth0-react';
 
 export const TopBar = () => {
+  const { user } = useAuth0();
+
   return (
     <div
       onContextMenu={(event) => {
@@ -95,21 +97,23 @@ export const TopBar = () => {
           width: '20rem',
         }}
       >
-        <iframe
-          src="https://ghbtns.com/github-btn.html?user=quadratichq&repo=quadratic&type=star&count=true"
-          frameBorder="0"
-          scrolling="0"
-          width="90"
-          height="20"
-          title="GitHub"
-          style={{
-            userSelect: 'none',
-            display: 'none',
-          }}
-        ></iframe>
+        <AvatarGroup>
+          <Avatar
+            sx={{
+              bgcolor: colors.quadraticSecondary,
+              width: 24,
+              height: 24,
+              fontSize: '0.8rem',
+            }}
+            alt={user?.name}
+            src={user?.picture}
+          >
+            {user?.name && user?.name[0]}
+          </Avatar>
+        </AvatarGroup>
 
         {!isMobileOnly && (
-          <Tooltip title="Quadratic Cloud only" arrow>
+          <Tooltip title="Coming Soon" arrow>
             <Button
               style={{
                 color: colors.darkGray,
