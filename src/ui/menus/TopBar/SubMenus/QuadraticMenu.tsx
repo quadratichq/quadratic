@@ -2,8 +2,15 @@ import { useEffect } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
-import { MenuBookOutlined, FileOpenOutlined, SaveOutlined, BugReportOutlined } from '@mui/icons-material';
+import {
+  MenuBookOutlined,
+  FileOpenOutlined,
+  SaveOutlined,
+  BugReportOutlined,
+  LogoutOutlined,
+} from '@mui/icons-material';
 import { isMobileOnly } from 'react-device-detect';
+import { useAuth0 } from '@auth0/auth0-react';
 
 import '@szhsin/react-menu/dist/index.css';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
@@ -22,6 +29,7 @@ export const QuadraticMenu = () => {
   const [showHeadings, setShowHeadings] = useLocalStorage('showHeadings', true);
   const [showGridLines, setShowGridLines] = useLocalStorage('showGridLines', true);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useLocalStorage('showCellTypeOutlines', true);
+  const { isAuthenticated, user, logout } = useAuth0();
 
   // On Mobile set Headers to not visible by default
   useEffect(() => {
@@ -87,6 +95,17 @@ export const QuadraticMenu = () => {
           Show DebugMenu
         </MenuItem>
       </SubMenu>
+
+      {isAuthenticated && (
+        <SubMenu label="Account">
+          <MenuHeader>{user?.email}</MenuHeader>
+          <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>
+            <LogoutOutlined style={menuItemIconStyles} />
+            Log Out
+          </MenuItem>
+        </SubMenu>
+      )}
+
       <SubMenu label="Help">
         <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>
           <MenuBookOutlined style={menuItemIconStyles}></MenuBookOutlined> Read the docs

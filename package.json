@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "author": {
     "name": "David Kircos",
-    "email": "david.kircos@quadratic.to",
-    "url": "https://quadratic.to"
+    "email": "david@quadratichq.com",
+    "url": "https://quadratichq.com"
   },
   "repository": "https://github.com/quadratichq/quadratic.git",
   "private": true,
   "dependencies": {
+    "@auth0/auth0-react": "^1.11.0",
     "@emotion/react": "^11.7.0",
     "@emotion/styled": "^11.6.0",
     "@inlet/react-pixi": "^6.6.5",

@@ -4,7 +4,7 @@ import './styles.css';
 
 import { LoadingProvider } from './contexts/LoadingContext';
 
-import QuadraticApp from './quadratic/QuadraticApp';
+import { QuadraticAuth } from './quadratic/QuadraticAuth';
 import { isWASMSupported } from './utils/isWASMSupported';
 import { BrowserNotSupported } from './ui/overlays/BrowserNotSupported';
 
@@ -15,7 +15,7 @@ export default function App() {
   return (
     <LoadingProvider>
       {/* Provider of QuadraticApp */}
-      <QuadraticApp></QuadraticApp>
+      <QuadraticAuth></QuadraticAuth>
     </LoadingProvider>
   );
 }
