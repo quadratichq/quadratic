@@ -18,6 +18,7 @@ export default function QuadraticApp() {
     error: Auth0Error,
     isAuthenticated: Auth0IsAuthenticated,
     loginWithRedirect,
+    logout,
   } = useAuth0();
 
   // Loading Effect
@@ -47,7 +48,13 @@ export default function QuadraticApp() {
 
     if (Auth0Error) {
       captureException(Auth0Error.message);
-      return <div>Authentication Error: {Auth0Error.message}</div>;
+      return (
+        <div>
+          <div>Authentication Error: {Auth0Error.message}</div>
+          <br></br>
+          <button onClick={() => logout({ returnTo: window.location.origin })}>Log out</button>
+        </div>
+      );
     }
 
     if (!Auth0IsAuthenticated) loginWithRedirect({ screen_hint: 'signup' });
