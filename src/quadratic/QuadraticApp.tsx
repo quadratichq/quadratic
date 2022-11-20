@@ -47,7 +47,7 @@ export default function QuadraticApp() {
     }
 
     if (Auth0Error) {
-      captureException(Auth0Error.message);
+      captureException(Auth0Error.stack);
       return (
         <div>
           <div>Authentication Error: {Auth0Error.message}</div>
