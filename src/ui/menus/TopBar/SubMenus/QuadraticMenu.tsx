@@ -92,7 +92,7 @@ export const QuadraticMenu = () => {
 
       {isAuthenticated && (
         <SubMenu label="Account">
-          <MenuHeader>{user?.name}</MenuHeader>
+          <MenuHeader>{user?.email}</MenuHeader>
           <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>Log Out</MenuItem>
         </SubMenu>
       )}

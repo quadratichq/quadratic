@@ -42,7 +42,7 @@ export default function QuadraticApp() {
   if (process.env.REACT_APP_AUTH0_DOMAIN) {
     console.log('Using Auth');
     if (Auth0IsLoading) {
-      return null;
+      return <QuadraticLoading></QuadraticLoading>;
     }
 
     if (Auth0Error) {
