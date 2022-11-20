@@ -97,35 +97,36 @@ export const TopBar = () => {
           width: '20rem',
         }}
       >
-        <AvatarGroup>
-          <Avatar
-            sx={{
-              bgcolor: colors.quadraticSecondary,
-              width: 24,
-              height: 24,
-              fontSize: '0.8rem',
-            }}
-            alt={user?.name}
-            src={user?.picture}
-          >
-            {user?.name && user?.name[0]}
-          </Avatar>
-        </AvatarGroup>
-
         {!isMobileOnly && (
-          <Tooltip title="Coming Soon" arrow>
-            <Button
-              style={{
-                color: colors.darkGray,
-                borderColor: colors.darkGray,
-                padding: '1px 4px',
-              }}
-              variant="outlined"
-              size="small"
-            >
-              Share
-            </Button>
-          </Tooltip>
+          <>
+            <AvatarGroup>
+              <Avatar
+                sx={{
+                  bgcolor: colors.quadraticSecondary,
+                  width: 24,
+                  height: 24,
+                  fontSize: '0.8rem',
+                }}
+                alt={user?.name}
+                src={user?.picture}
+              >
+                {user?.name && user?.name[0]}
+              </Avatar>
+            </AvatarGroup>
+            <Tooltip title="Coming Soon" arrow>
+              <Button
+                style={{
+                  color: colors.darkGray,
+                  borderColor: colors.darkGray,
+                  padding: '1px 4px',
+                }}
+                variant="outlined"
+                size="small"
+              >
+                Share
+              </Button>
+            </Tooltip>
+          </>
         )}
         <ZoomDropdown></ZoomDropdown>
       </Box>
