@@ -2,24 +2,15 @@ import { useEffect } from 'react';
 import QuadraticUI from '../ui/QuadraticUI';
 import { RecoilRoot } from 'recoil';
 import { useLoading } from '../contexts/LoadingContext';
-import { QuadraticLoading } from '../ui/QuadtraticLoading';
+import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { loadPython } from '../core/computations/python/loadPython';
 import { WelcomeComponent } from './WelcomeComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
-import { useAuth0 } from '@auth0/auth0-react';
-import { captureException } from '@sentry/react';
 import { isMobileOnly } from 'react-device-detect';
 
-export default function QuadraticApp() {
+export const QuadraticApp = () => {
   const { loading, incrementLoadingCount } = useLoading();
-  const {
-    isLoading: Auth0IsLoading,
-    error: Auth0Error,
-    isAuthenticated: Auth0IsAuthenticated,
-    loginWithRedirect,
-    logout,
-  } = useAuth0();
 
   // Loading Effect
   useEffect(() => {
@@ -39,27 +30,6 @@ export default function QuadraticApp() {
     }
   }, [loading, incrementLoadingCount]);
 
-  // Auth0 is Optional
-  if (process.env.REACT_APP_AUTH0_DOMAIN) {
-    console.log('Using Auth');
-    if (Auth0IsLoading) {
-      return <QuadraticLoading></QuadraticLoading>;
-    }
-
-    if (Auth0Error) {
-      captureException(Auth0Error.stack);
-      return (
-        <div>
-          <div>Authentication Error: {Auth0Error.message}</div>
-          <br></br>
-          <button onClick={() => logout({ returnTo: window.location.origin })}>Log out</button>
-        </div>
-      );
-    }
-
-    if (!Auth0IsAuthenticated) loginWithRedirect({ screen_hint: 'signup' });
-  }
-
   return (
     <RecoilRoot>
       {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
@@ -72,4 +42,4 @@ export default function QuadraticApp() {
       {loading && <QuadraticLoading></QuadraticLoading>}
     </RecoilRoot>
   );
-}
+};
