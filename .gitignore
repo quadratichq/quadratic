@@ -28,3 +28,5 @@ yarn-error.log*
 venv/*
 *.pyc
 .idea
+
+quadratic-api/target
