@@ -5,42 +5,18 @@ import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { FormatMenu } from './SubMenus/FormatMenu';
 import { colors } from '../../../theme/colors';
 
-import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
-import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isMobileOnly } from 'react-device-detect';
 import { useAuth0 } from '@auth0/auth0-react';
+import { TopBar } from '../../components/TopBar';
 
-export const TopBar = () => {
+export const AppTopBar = () => {
   const { user } = useAuth0();
 
   return (
-    <div
-      onContextMenu={(event) => {
-        // Disable right-click
-        event.preventDefault();
-      }}
-      style={{
-        backgroundColor: 'rgba(255, 255, 255)',
-        color: '#212121',
-        //@ts-expect-error
-        WebkitAppRegion: 'drag', // this allows the window to be dragged in Electron
-        paddingLeft: isElectron() ? '4.5rem' : '2rem',
-        width: '100%',
-        display: 'flex',
-        justifyContent: 'space-between',
-        paddingRight: '1rem',
-        border: colors.mediumGray,
-        borderWidth: '0 0 1px 0',
-        borderStyle: 'solid',
-      }}
-      onDoubleClick={(event) => {
-        // if clicked (not child clicked), maximize window. For electron.
-        if (event.target === event.currentTarget) electronMaximizeCurrentWindow();
-      }}
-    >
+    <TopBar>
       <Box
         style={{
           //@ts-expect-error
@@ -130,6 +106,6 @@ export const TopBar = () => {
         )}
         <ZoomDropdown></ZoomDropdown>
       </Box>
-    </div>
+    </TopBar>
   );
 };

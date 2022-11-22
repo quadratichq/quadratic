@@ -1,5 +1,5 @@
 import * as React from 'react';
-import TopBar from '../ui/menus/TopBar';
+import AppTopBar from './menus/AppTopBar';
 import CellTypeMenu from '../ui/menus/CellTypeMenu/';
 import CodeEditor from '../ui/menus/CodeEditor';
 import DebugMenu from './menus/DebugMenu/DebugMenu';
@@ -24,7 +24,7 @@ export default function QuadraticUI() {
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu />}
-      <TopBar />
+      <AppTopBar />
 
       <div
         style={{

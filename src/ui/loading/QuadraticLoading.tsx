@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
-import { TopBarLoading } from '../components/TopBarLoading';
+import { TopBarLoading } from './TopBarLoading';
 
 import './styles.css';
 

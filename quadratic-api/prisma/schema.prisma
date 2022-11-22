@@ -19,9 +19,11 @@ model QUser {
 }
 
 model QGrid {
-  id         Int    @id @default(autoincrement())
-  url        String @unique @default(uuid())
-  user_owner QUser  @relation(fields: [id], references: [id])
-  name       String
-  data       Bytes?
+  id           Int      @id @default(autoincrement())
+  url          String   @unique @default(uuid())
+  user_owner   QUser    @relation(fields: [id], references: [id])
+  name         String
+  data         Bytes?
+  created_date DateTime @default(now())
+  updated_date DateTime @default(now())
 }
