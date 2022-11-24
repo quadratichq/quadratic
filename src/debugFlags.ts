@@ -16,7 +16,17 @@ export const debugShowCountRenderedObjects = debug && false;
 // shows count of cached sprites for formatting
 export const debugShowCachedSpriteCounts = debug && false;
 
+// skip python load (used to speed up debugging)
 export const debugSkipPythonLoad = debug && true;
+
+// add a CACHE marker to the footer to indicate when cache is visible instead of cells
+export const debugShowCacheOn = debug && true;
+
+// shows information about cache generation
+export const debugShowCacheInfo = debug && false;
+
+// always show cache instead of cell rendering
+export const debugAlwaysShowCache = debug && false;
 
 export function warn(...args: any): void {
   if (debug) {

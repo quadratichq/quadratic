@@ -32,6 +32,7 @@ export class GridSparse {
     return `${x ?? ""},${y ?? ""}`;
   }
 
+  // todo: this is expensive; should be broken up between initial populate and updates to specific cells/quadrants
   populate(cells?: Cell[], format?: CellFormat[]) {
     if (!cells?.length && !format?.length) {
       this.empty();
@@ -66,6 +67,7 @@ export class GridSparse {
         this.maxY = Math.max(this.maxY, format.y);
       }
     });
+    this.app.quadrants.rebuild();
   }
 
   get(x: number, y: number): CellAndFormat | undefined {
@@ -83,8 +85,8 @@ export class GridSparse {
     return this.cells.get(this.getKey(x, y))?.format;
   }
 
-  getCells(size: Rectangle): CellRectangle {
-    return new CellRectangle(size, this);
+  getCells(rectangle: Rectangle): CellRectangle {
+    return new CellRectangle(rectangle, this);
   }
 
   getBounds(bounds: Rectangle): Rectangle {

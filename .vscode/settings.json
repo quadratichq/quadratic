@@ -1,6 +1,8 @@
 {
     "editor.formatOnSave": true,
     "cSpell.words": [
-        "pixiapp"
+        "pixiapp",
+        "subquadrant",
+        "subquadrants"
     ]
 }

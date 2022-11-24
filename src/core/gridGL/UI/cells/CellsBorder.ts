@@ -37,7 +37,8 @@ export class CellsBorder extends Container {
         return tilingSprite;
       }
       this.tilingIndex++;
-      return this.tilingSprites.addChild(new TilingSprite(Texture.WHITE));
+      const tilingSprite = this.tilingSprites.addChild(new TilingSprite(Texture.WHITE));
+      return tilingSprite;
     } else {
       if (this.spritesIndex < this.sprites.children.length) {
         const sprite = this.sprites.children[this.spritesIndex] as Sprite;
@@ -46,7 +47,8 @@ export class CellsBorder extends Container {
         return sprite;
       }
       this.spritesIndex++;
-      return this.sprites.addChild(new Sprite(Texture.WHITE));
+      const sprite = this.sprites.addChild(new Sprite(Texture.WHITE));
+      return sprite;
     }
   }
 
