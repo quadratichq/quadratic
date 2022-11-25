@@ -6,7 +6,7 @@ export class CellsBackground extends Container {
   private visibleIndex = 0;
 
   clear() {
-    this.children.forEach(child => child.visible = false);
+    this.children.forEach((child) => (child.visible = false));
     this.visibleIndex = 0;
   }
 
@@ -30,12 +30,16 @@ export class CellsBackground extends Container {
         sprite.alpha = color.alpha();
         sprite.width = input.width;
         sprite.height = input.height;
-        sprite.position.set(input.x, input.y)
+        sprite.position.set(input.x, input.y);
       }
     }
   }
 
   debugShowCachedCounts(): void {
-    console.log(`[CellsBackground] ${this.children.length} objects | ${this.children.filter(child => child.visible).length} visible`);
+    console.log(
+      `[CellsBackground] ${this.children.length} objects | ${
+        this.children.filter((child) => child.visible).length
+      } visible`
+    );
   }
 }

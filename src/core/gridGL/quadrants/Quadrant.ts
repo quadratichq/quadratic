@@ -33,14 +33,19 @@ export class Quadrant extends Container {
     const oldRectangle = this.visibleRectangle;
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
-    this.visibleRectangle = this.app.gridOffsets.getScreenRectangle(columnStart, rowStart, QUADRANT_COLUMNS - 2, QUADRANT_ROWS - 2);
+    this.visibleRectangle = this.app.gridOffsets.getScreenRectangle(
+      columnStart,
+      rowStart,
+      QUADRANT_COLUMNS - 2,
+      QUADRANT_ROWS - 2
+    );
 
     // reposition subQuadrants based on any deltas
     if (oldRectangle) {
       const deltaX = this.visibleRectangle.x - oldRectangle.x;
       const deltaY = this.visibleRectangle.y - oldRectangle.y;
       if (deltaX || deltaY) {
-        this.children.forEach(child => {
+        this.children.forEach((child) => {
           child.x += deltaX;
           child.y += deltaY;
         });
@@ -60,7 +65,7 @@ export class Quadrant extends Container {
 
   // creates/reuses a Sprite with an appropriately sized RenderTexture
   private getSubQuadrant(subQuadrantX: number, subQuadrantY: number, size: number): SubQuadrant {
-    let sprite = this.subquadrants.find(child => {
+    let sprite = this.subquadrants.find((child) => {
       const spriteQuadrant = child as SubQuadrant;
       if (spriteQuadrant.subQuadrantX === subQuadrantX && spriteQuadrant.subQuadrantY === subQuadrantY) {
         return true;
@@ -68,16 +73,19 @@ export class Quadrant extends Container {
       return false;
     }) as SubQuadrant;
     if (sprite) {
-
       // reuse existing sprite and resize texture if needed
       if (sprite.texture.width !== size || sprite.texture.height !== size) {
         sprite.texture.resize(size, size);
       }
       sprite.visible = true;
     } else {
-
       // create and position a Sprite with the appropriately sized RenderTexture
-      const texture = RenderTexture.create({ width: size, height: size, resolution: window.devicePixelRatio, mipmap: MIPMAP_MODES.ON_MANUAL });
+      const texture = RenderTexture.create({
+        width: size,
+        height: size,
+        resolution: window.devicePixelRatio,
+        mipmap: MIPMAP_MODES.ON_MANUAL,
+      });
       sprite = this.addChild(new Sprite(texture)) as SubQuadrant;
       sprite.scale.set(1 / QUADRANT_SCALE);
       sprite.subQuadrantX = subQuadrantX;
@@ -88,7 +96,7 @@ export class Quadrant extends Container {
   }
 
   private clear(): void {
-    this.subquadrants.forEach(subquadrant => (subquadrant.visible = false));
+    this.subquadrants.forEach((subquadrant) => (subquadrant.visible = false));
   }
 
   update(timeStart?: number, debug?: string): void {
@@ -100,7 +108,12 @@ export class Quadrant extends Container {
 
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
-    const screenRectangle = app.gridOffsets.getScreenRectangle(columnStart, rowStart, QUADRANT_COLUMNS - 2, QUADRANT_ROWS - 2);
+    const screenRectangle = app.gridOffsets.getScreenRectangle(
+      columnStart,
+      rowStart,
+      QUADRANT_COLUMNS - 2,
+      QUADRANT_ROWS - 2
+    );
 
     // number of subquadrants necessary (should be equal to 1 unless heading size has changed)
     const xCount = Math.ceil(screenRectangle.width / QUADRANT_TEXTURE_SIZE);
@@ -111,31 +124,39 @@ export class Quadrant extends Container {
 
     for (let subQuadrantY = 0; subQuadrantY < yCount; subQuadrantY++) {
       for (let subQuadrantX = 0; subQuadrantX < xCount; subQuadrantX++) {
-
-        const cellBounds = app.gridOffsets.getCellRectangle(screenRectangle.x + subQuadrantX * subQuadrantWidth, screenRectangle.y + subQuadrantY * subQuadrantHeight, subQuadrantWidth, subQuadrantHeight);
+        const cellBounds = app.gridOffsets.getCellRectangle(
+          screenRectangle.x + subQuadrantX * subQuadrantWidth,
+          screenRectangle.y + subQuadrantY * subQuadrantHeight,
+          subQuadrantWidth,
+          subQuadrantHeight
+        );
         const cellRectangle = app.grid.getCells(cellBounds);
 
         // returns the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
         const reducedDrawingRectangle = app.cells.drawBounds(cellBounds, cellRectangle);
         if (reducedDrawingRectangle) {
-
           // prepare a transform to translate the world to the start of the content for this subQuadrant, and properly scale it
           const transform = new Matrix();
           transform.translate(-reducedDrawingRectangle.left, -reducedDrawingRectangle.top);
           transform.scale(QUADRANT_SCALE, QUADRANT_SCALE);
 
           // get the Sprite and render to the Sprite's texture
-          const size = Math.max(nearestPowerOf2(reducedDrawingRectangle.width), nearestPowerOf2(reducedDrawingRectangle.height));
+          const size = Math.max(
+            nearestPowerOf2(reducedDrawingRectangle.width),
+            nearestPowerOf2(reducedDrawingRectangle.height)
+          );
           const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, size);
 
           if (debugShowSubCacheInfo) {
-            console.log(`Quadrant [${this.location.x},${this.location.y}] - Subquadrant [${subQuadrantX},${subQuadrantY}] texture size: ${size}`);
+            console.log(
+              `Quadrant [${this.location.x},${this.location.y}] - Subquadrant [${subQuadrantX},${subQuadrantY}] texture size: ${size}`
+            );
           }
 
           const container = app.prepareForQuadrantRendering();
           app.renderer.render(container, { renderTexture: subQuadrant.texture, transform, clear: true });
           app.cleanUpAfterQuadrantRendering();
-          subQuadrant.position.set(reducedDrawingRectangle.left, reducedDrawingRectangle.top)
+          subQuadrant.position.set(reducedDrawingRectangle.left, reducedDrawingRectangle.top);
         }
       }
     }

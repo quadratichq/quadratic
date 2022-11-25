@@ -66,6 +66,31 @@ export class PointerDown {
       }
     }
 
+    // select cells between pressed and cursor position
+    if (event.shiftKey) {
+      const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
+      const cursorPosition = interactionState.cursorPosition;
+      if (column !== cursorPosition.x || row !== cursorPosition.y) {
+        // make origin top left, and terminal bottom right
+        const originX = cursorPosition.x < column ? cursorPosition.x : column;
+        const originY = cursorPosition.y < row ? cursorPosition.y : row;
+        const termX = cursorPosition.x > column ? cursorPosition.x : column;
+        const termY = cursorPosition.y > row ? cursorPosition.y : row;
+
+        setInteractionState({
+          ...interactionState,
+          keyboardMovePosition: { x: column, y: row },
+          multiCursorPosition: {
+            originPosition: new Point(originX, originY),
+            terminalPosition: new Point(termX, termY),
+          },
+          showMultiCursor: true,
+        });
+        cursor.dirty = true;
+      }
+      return;
+    }
+
     this.active = true;
     this.position = new Point(column, row);
 
@@ -106,15 +131,6 @@ export class PointerDown {
 
     if (!this.active || !this.position || !this.previousPosition || !this.positionRaw || !settings.setInteractionState)
       return;
-
-    // if (
-    //   !this.pointerMoved &&
-    //   Math.abs(this.positionRaw.x - world.x) + Math.abs(this.positionRaw.y - world.y) >
-    //     MINIMUM_MOVE_POSITION * viewport.scale.x
-    // ) {
-    //   console.log('moved')
-    //   this.pointerMoved = true;
-    // }
 
     // calculate mouse move position
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);

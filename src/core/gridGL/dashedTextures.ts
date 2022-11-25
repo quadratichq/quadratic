@@ -21,8 +21,8 @@ export const dashedTextures: DashedTexture = {
 
 function createDashedLine(horizontal: boolean): Texture {
   const canvas = document.createElement('canvas');
-  canvas.width = (horizontal ? DASHED : THICKNESS);
-  canvas.height = (horizontal ? THICKNESS : DASHED);
+  canvas.width = horizontal ? DASHED : THICKNESS;
+  canvas.height = horizontal ? THICKNESS : DASHED;
   const context = canvas.getContext('2d');
   if (!context) {
     console.warn('Expected context to be defined in createBorderType');
@@ -44,8 +44,8 @@ function createDashedLine(horizontal: boolean): Texture {
 
 function createDottedLine(horizontal: boolean): Texture {
   const canvas = document.createElement('canvas');
-  canvas.width = (horizontal ? DOTTED : THICKNESS);
-  canvas.height = (horizontal ? THICKNESS : DOTTED);
+  canvas.width = horizontal ? DOTTED : THICKNESS;
+  canvas.height = horizontal ? THICKNESS : DOTTED;
   const context = canvas.getContext('2d');
   if (!context) {
     console.warn('Expected context to be defined in createBorderType');
@@ -59,7 +59,7 @@ function createDottedLine(horizontal: boolean): Texture {
     context.lineTo(DOTTED / 2, THICKNESS / 2);
   } else {
     context.moveTo(THICKNESS / 2, 0);
-    context.lineTo(THICKNESS / 2, DOTTED / 2 );
+    context.lineTo(THICKNESS / 2, DOTTED / 2);
   }
   context.stroke();
   return Texture.from(canvas, { wrapMode: WRAP_MODES.REPEAT, scaleMode: SCALE_MODES.NEAREST });

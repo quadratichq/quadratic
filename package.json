@@ -57,6 +57,7 @@
     "test-e2e-debug": "playwright test --debug",
     "test-python": "python3 tests-python/test.py",
     "test": "",
+    "prettier": "prettier --write src",
     "eject": "react-scripts eject",
     "dev": "concurrently -k \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron": "electron ."

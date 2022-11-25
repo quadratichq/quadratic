@@ -14,7 +14,7 @@ export class QuadrantCells {
     this.container = new Container();
 
     // draw test backgrounds in quadrants
-    this.test = new Graphics();  //this.container.addChild(new Graphics());
+    this.test = new Graphics(); //this.container.addChild(new Graphics());
 
     this.cells = this.container.addChild(new Cells(app));
     this.container.addChildAt(this.cells.cellsBackground, 0);

@@ -14,7 +14,7 @@ export const useHeadings = (app?: PixiApp) => {
   const multiCursor = interactionState.showMultiCursor;
   const headings = useLiveQuery(() => GetHeadingsDB());
 
-  const getStartEnd = useCallback((): { start: Coordinate, end: Coordinate } => {
+  const getStartEnd = useCallback((): { start: Coordinate; end: Coordinate } => {
     let start: Coordinate, end: Coordinate;
     if (multiCursor) {
       start = interactionState.multiCursorPosition.originPosition;
@@ -61,7 +61,7 @@ export const useHeadings = (app?: PixiApp) => {
       rows.push(y);
     }
     if (rows.length || columns.length) {
-      deleteHeadingDB({ rows, columns })
+      deleteHeadingDB({ rows, columns });
     }
   }, [app, getStartEnd]);
 

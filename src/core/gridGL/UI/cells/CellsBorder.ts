@@ -21,9 +21,9 @@ export class CellsBorder extends Container {
   }
 
   clear() {
-    this.sprites.children.forEach(child => child.visible = false);
+    this.sprites.children.forEach((child) => (child.visible = false));
     this.spritesIndex = 0;
-    this.tilingSprites.children.forEach(child => child.visible = false);
+    this.tilingSprites.children.forEach((child) => (child.visible = false));
     this.tilingIndex = 0;
   }
 
@@ -50,7 +50,7 @@ export class CellsBorder extends Container {
       const sprite = this.sprites.addChild(new Sprite(Texture.WHITE));
       return sprite;
     }
-  }
+  };
 
   draw(input: ICellsDraw): void {
     if (!this.app.settings.showCellTypeOutlines) return;
@@ -70,7 +70,7 @@ export class CellsBorder extends Container {
         right: true,
         borderType: input.format?.borderType,
       });
-    }
+    };
 
     if (input.cell) {
       // Change outline color based on cell type
@@ -90,7 +90,9 @@ export class CellsBorder extends Container {
         y: input.y,
         width: input.width,
         height: input.height,
-        tint: input.format?.borderColor ? convertColorStringToTint(input.format.borderColor) : colors.defaultBorderColor,
+        tint: input.format?.borderColor
+          ? convertColorStringToTint(input.format.borderColor)
+          : colors.defaultBorderColor,
         alpha: 1,
         getSprite: this.getSprite,
         left: !!(border & borderLeft),
@@ -103,7 +105,15 @@ export class CellsBorder extends Container {
   }
 
   debugShowCachedCounts(): void {
-    console.log(`[CellsBorder].Sprite ${this.sprites.children.length} objects | ${this.sprites.children.filter(child => child.visible).length} visible`);
-    console.log(`[CellsBorder].TilingSprite ${this.tilingSprites.children.length} objects | ${this.tilingSprites.children.filter(child => child.visible).length} visible`);
+    console.log(
+      `[CellsBorder].Sprite ${this.sprites.children.length} objects | ${
+        this.sprites.children.filter((child) => child.visible).length
+      } visible`
+    );
+    console.log(
+      `[CellsBorder].TilingSprite ${this.tilingSprites.children.length} objects | ${
+        this.tilingSprites.children.filter((child) => child.visible).length
+      } visible`
+    );
   }
 }

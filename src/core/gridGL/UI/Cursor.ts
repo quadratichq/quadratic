@@ -4,6 +4,8 @@ import { PixiApp } from '../pixiApp/PixiApp';
 
 const CURSOR_THICKNESS = 1.5;
 const FILL_ALPHA = 0.1;
+const INDICATOR_SIZE = 8;
+const INDICATOR_PADDING = 1;
 
 export class Cursor extends Graphics {
   private app: PixiApp;
@@ -29,20 +31,39 @@ export class Cursor extends Graphics {
   }
 
   private drawMultiCursor(): void {
-    const { settings, gridOffsets } = this.app;
+    const { settings, gridOffsets, viewport } = this.app;
+    let endCell: { x: number; y: number; width: number; height: number };
     if (settings.interactionState.showMultiCursor) {
       const multiCursor = settings.interactionState.multiCursorPosition;
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
       this.beginFill(colors.cursorCell, FILL_ALPHA);
       const startCell = gridOffsets.getCell(multiCursor.originPosition.x, multiCursor.originPosition.y);
-      const endCell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
+      endCell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
       this.drawRect(
         startCell.x,
         startCell.y,
         endCell.x + endCell.width - startCell.x,
-        endCell.y + endCell.height - startCell.y,
+        endCell.y + endCell.height - startCell.y
+      );
+    } else {
+      endCell = gridOffsets.getCell(
+        settings.interactionState.cursorPosition.x,
+        settings.interactionState.cursorPosition.y
       );
     }
+
+    // draw cursor indicator
+    const size = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
+    const padding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
+    const x = endCell.x + endCell.width;
+    const y = endCell.y + endCell.height;
+    this.lineStyle(0);
+    this.beginFill(0xffffff)
+      .drawRect(x - size / 2 - padding, y - size / 2 - padding, size + padding, size + padding)
+      .endFill();
+    this.beginFill(colors.cursorCell)
+      .drawRect(x - size / 2, y - size / 2, size, size)
+      .endFill();
   }
 
   private drawCodeCursor(): void {

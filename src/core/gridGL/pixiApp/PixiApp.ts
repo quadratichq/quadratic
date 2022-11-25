@@ -76,7 +76,7 @@ export class PixiApp {
       .clampZoom({
         minScale: 0.01,
         maxScale: 10,
-    });
+      });
 
     // this holds the viewport's contents so it can be reused in Quadrants
     this.viewportContents = this.viewport.addChild(new Container());
@@ -141,6 +141,7 @@ export class PixiApp {
     this.gridLines.dirty = true;
     this.axesLines.dirty = true;
     this.headings.dirty = true;
+    this.cursor.dirty = true;
     if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
       this.showCache();
     } else {
@@ -207,7 +208,7 @@ export class PixiApp {
 
   // helper for playwright
   render() {
-    this.renderer.render(this.stage)
+    this.renderer.render(this.stage);
   }
 
   focus() {

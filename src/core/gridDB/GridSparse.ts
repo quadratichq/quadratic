@@ -29,7 +29,7 @@ export class GridSparse {
   }
 
   private getKey(x?: number, y?: number): string {
-    return `${x ?? ""},${y ?? ""}`;
+    return `${x ?? ''},${y ?? ''}`;
   }
 
   // todo: this is expensive; should be broken up between initial populate and updates to specific cells/quadrants

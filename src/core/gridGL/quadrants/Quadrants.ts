@@ -43,7 +43,11 @@ export class Quadrants extends Container {
       }
     }
     if (debugShowCacheInfo) {
-      console.log(`[Quadrants] Added ${Math.ceil(bounds.width / QUADRANT_COLUMNS) * Math.ceil(bounds.height / QUADRANT_ROWS)} quadrants to queue.`);
+      console.log(
+        `[Quadrants] Added ${
+          Math.ceil(bounds.width / QUADRANT_COLUMNS) * Math.ceil(bounds.height / QUADRANT_ROWS)
+        } quadrants to queue.`
+      );
     }
   }
 
@@ -55,7 +59,7 @@ export class Quadrants extends Container {
   update(timeStart: number): boolean {
     if (debugSkipQuadrantRendering) return false;
 
-    const firstDirty = this.children.find(child => (child as Quadrant).dirty) as Quadrant;
+    const firstDirty = this.children.find((child) => (child as Quadrant).dirty) as Quadrant;
     if (firstDirty) {
       if (debugShowCacheInfo) {
         const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0) - 1;
@@ -68,12 +72,14 @@ export class Quadrants extends Container {
         firstDirty.update();
         this.complete = false;
       }
-      return this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle);
+      return (
+        this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle)
+      );
     }
     return false;
   }
 
-  private getQuadrant(row: number, column: number): Quadrant | undefined{
+  private getQuadrant(row: number, column: number): Quadrant | undefined {
     return this.quadrants.get(`${row},${column}`);
   }
 
@@ -86,7 +92,7 @@ export class Quadrants extends Container {
         const quadrantY = Math.floor(options.row / QUADRANT_ROWS);
         const quadrant = this.getQuadrant(quadrantX, quadrantY);
         if (!quadrant) {
-          warn("Expected quadrant to be defined in quadrantChanged");
+          warn('Expected quadrant to be defined in quadrantChanged');
         } else {
           quadrant.dirty = true;
         }
@@ -99,7 +105,7 @@ export class Quadrants extends Container {
           const quadrantY = Math.floor(y / QUADRANT_ROWS);
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
           if (!quadrant) {
-            warn("Expected quadrant to be defined in quadrantChanged");
+            warn('Expected quadrant to be defined in quadrantChanged');
           } else {
             quadrant.reposition();
           }
@@ -112,7 +118,7 @@ export class Quadrants extends Container {
         const quadrantY = Math.floor(y / QUADRANT_ROWS);
         const quadrant = this.getQuadrant(quadrantX, quadrantY);
         if (!quadrant) {
-          warn("Expected quadrant to be defined in quadrantChanged");
+          warn('Expected quadrant to be defined in quadrantChanged');
         } else {
           quadrant.dirty = true;
         }
@@ -125,7 +131,7 @@ export class Quadrants extends Container {
           const quadrantY = Math.floor(y / QUADRANT_ROWS);
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
           if (!quadrant) {
-            warn("Expected quadrant to be defined in quadrantChanged");
+            warn('Expected quadrant to be defined in quadrantChanged');
           } else {
             quadrant.reposition();
           }
@@ -138,12 +144,17 @@ export class Quadrants extends Container {
   getCellsForDirtyQuadrants(): CellRectangle[] {
     const { viewport, gridOffsets, grid } = this.app;
     const screen = viewport.getVisibleBounds();
-    return this.children.flatMap(child => {
+    return this.children.flatMap((child) => {
       const quadrant = child as Quadrant;
       if (!quadrant.dirty) return [];
       const quadrantScreen = quadrant.visibleRectangle;
       if (intersects.rectangleRectangle(screen, quadrantScreen)) {
-        const cellBounds = gridOffsets.getCellRectangle(quadrantScreen.x, quadrantScreen.y, quadrantScreen.width, quadrantScreen.height);
+        const cellBounds = gridOffsets.getCellRectangle(
+          quadrantScreen.x,
+          quadrantScreen.y,
+          quadrantScreen.width,
+          quadrantScreen.height
+        );
         return grid.getCells(cellBounds);
       }
       return [];
@@ -151,7 +162,7 @@ export class Quadrants extends Container {
   }
 
   private debugCacheStats(): void {
-    const textures = this.children.reduce((count, child) => count + ((child as Quadrant).debugTextureCount()), 0);
+    const textures = this.children.reduce((count, child) => count + (child as Quadrant).debugTextureCount(), 0);
     console.log(`[Quadrants] Rendered ${textures} quadrant textures.`);
   }
 }

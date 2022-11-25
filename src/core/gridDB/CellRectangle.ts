@@ -10,7 +10,7 @@ export class CellRectangle {
     const cells: (CellAndFormat | undefined)[] = [];
     this.size = size;
     for (let y = size.top; y <= size.bottom; y++) {
-      for (let x = size.left; x <= size.right; x++){
+      for (let x = size.left; x <= size.right; x++) {
         cells[y * (size.width + 1) + x] = grid.get(x, y);
       }
     }

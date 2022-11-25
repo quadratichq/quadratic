@@ -1,5 +1,11 @@
 import { debug, debugShowFPS } from '../../../debugFlags';
-import { debugRendererLight, debugShowCachedCounts, debugShowChildren, debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
+import {
+  debugRendererLight,
+  debugShowCachedCounts,
+  debugShowChildren,
+  debugTimeCheck,
+  debugTimeReset,
+} from '../helpers/debugPerformance';
 import { FPS } from '../helpers/Fps';
 import { QUADRANT_RENDER_WAIT } from '../quadrants/quadrantConstants';
 import { PixiApp } from './PixiApp';

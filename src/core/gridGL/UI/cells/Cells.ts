@@ -63,12 +63,13 @@ export class Cells extends Container {
     this.cellsBackground.clear();
     this.cellsBorder.clear();
 
-    const input = !ignoreInput && this.app.settings.interactionState.showInput
-      ? {
-          column: this.app.settings.interactionState.cursorPosition.x,
-          row: this.app.settings.interactionState.cursorPosition.y,
-        }
-      : undefined;
+    const input =
+      !ignoreInput && this.app.settings.interactionState.showInput
+        ? {
+            column: this.app.settings.interactionState.cursorPosition.x,
+            row: this.app.settings.interactionState.cursorPosition.y,
+          }
+        : undefined;
 
     // keeps track of screen position
     const xStart = gridOffsets.getColumnPlacement(bounds.left).x;
@@ -169,7 +170,7 @@ export class Cells extends Container {
             }
 
             // don't render input (unless ignoreInput === true)
-            const isInput = false //input && input.column === column && input.row === row;
+            const isInput = false; //input && input.column === column && input.row === row;
 
             // only render if there is cell data, cell formatting
             if (!isInput && (entry.cell || entry.format)) {

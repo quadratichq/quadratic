@@ -42,5 +42,5 @@ export function zoomInOut(viewport: Viewport, scale: number): void {
 
 // from https://stackoverflow.com/a/42799104
 export function nearestPowerOf2(n: number): number {
-  return 1 << 31 - Math.clz32(n);
+  return 1 << (31 - Math.clz32(n));
 }
