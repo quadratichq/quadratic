@@ -13,7 +13,7 @@ export class CellsArray extends Container {
   }
 
   clear() {
-    this.children.forEach(child => child.visible = false);
+    this.children.forEach((child) => (child.visible = false));
     this.visibleIndex = 0;
   }
 
@@ -26,7 +26,7 @@ export class CellsArray extends Container {
     }
     this.visibleIndex++;
     return this.addChild(new Sprite(Texture.WHITE));
-  }
+  };
 
   draw(cellArray: number[][], x: number, y: number, width: number, height: number): void {
     const { gridOffsets } = this.app;
@@ -72,6 +72,8 @@ export class CellsArray extends Container {
   }
 
   debugShowCachedCounts(): void {
-    console.log(`[CellsArray] ${this.children.length} objects | ${this.children.filter(child => child.visible).length} visible`);
+    console.log(
+      `[CellsArray] ${this.children.length} objects | ${this.children.filter((child) => child.visible).length} visible`
+    );
   }
 }

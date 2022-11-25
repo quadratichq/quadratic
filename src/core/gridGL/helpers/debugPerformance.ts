@@ -1,5 +1,10 @@
 import * as PIXI from 'pixi.js';
-import { debugShowCachedSpriteCounts, debugShowCountRenderedObjects, debugShowRenderer, debugShowTime } from '../../../debugFlags';
+import {
+  debugShowCachedSpriteCounts,
+  debugShowCountRenderedObjects,
+  debugShowRenderer,
+  debugShowTime,
+} from '../../../debugFlags';
 import { PixiApp } from '../pixiApp/PixiApp';
 
 const MINIMUM_MS_TO_DISPLAY = 10;

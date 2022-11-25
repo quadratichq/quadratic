@@ -32,7 +32,7 @@ export class Cursor extends Graphics {
 
   private drawMultiCursor(): void {
     const { settings, gridOffsets, viewport } = this.app;
-    let endCell: { x: number, y: number, width: number, height: number };
+    let endCell: { x: number; y: number; width: number; height: number };
     if (settings.interactionState.showMultiCursor) {
       const multiCursor = settings.interactionState.multiCursorPosition;
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
@@ -43,10 +43,13 @@ export class Cursor extends Graphics {
         startCell.x,
         startCell.y,
         endCell.x + endCell.width - startCell.x,
-        endCell.y + endCell.height - startCell.y,
+        endCell.y + endCell.height - startCell.y
       );
     } else {
-      endCell = gridOffsets.getCell(settings.interactionState.cursorPosition.x, settings.interactionState.cursorPosition.y);
+      endCell = gridOffsets.getCell(
+        settings.interactionState.cursorPosition.x,
+        settings.interactionState.cursorPosition.y
+      );
     }
 
     // draw cursor indicator
@@ -55,8 +58,12 @@ export class Cursor extends Graphics {
     const x = endCell.x + endCell.width;
     const y = endCell.y + endCell.height;
     this.lineStyle(0);
-    this.beginFill(0xffffff).drawRect(x - size / 2 - padding, y - size / 2 - padding, size + padding, size + padding).endFill();
-    this.beginFill(colors.cursorCell).drawRect(x - size / 2, y - size / 2, size, size).endFill();
+    this.beginFill(0xffffff)
+      .drawRect(x - size / 2 - padding, y - size / 2 - padding, size + padding, size + padding)
+      .endFill();
+    this.beginFill(colors.cursorCell)
+      .drawRect(x - size / 2, y - size / 2, size, size)
+      .endFill();
   }
 
   private drawCodeCursor(): void {

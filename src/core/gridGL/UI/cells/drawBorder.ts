@@ -30,7 +30,7 @@ export function drawBorder(options: {
     } else {
       sprite.texture = Texture.WHITE;
     }
-  }
+  };
 
   if (options.top) {
     const top = options.getSprite(tiling);
@@ -48,7 +48,10 @@ export function drawBorder(options: {
       top.alpha = options.alpha;
       top.width = options.width + lineWidth - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
       top.height = lineWidth;
-      top.position.set(options.x - lineWidth / 2 + (options.left ? doubleDistance : 0), options.y + doubleDistance - lineWidth / 2);
+      top.position.set(
+        options.x - lineWidth / 2 + (options.left ? doubleDistance : 0),
+        options.y + doubleDistance - lineWidth / 2
+      );
     }
   }
 
@@ -68,7 +71,10 @@ export function drawBorder(options: {
       bottom.alpha = options.alpha;
       bottom.width = options.width + lineWidth - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
       bottom.height = lineWidth;
-      bottom.position.set(options.x - lineWidth / 2 + (options.left ? doubleDistance : 0), options.y - doubleDistance + options.height - lineWidth / 2);
+      bottom.position.set(
+        options.x - lineWidth / 2 + (options.left ? doubleDistance : 0),
+        options.y - doubleDistance + options.height - lineWidth / 2
+      );
     }
   }
 
@@ -88,7 +94,10 @@ export function drawBorder(options: {
       left.alpha = options.alpha;
       left.width = lineWidth;
       left.height = options.height + lineWidth - ((options.top ? 1 : 0) + (options.bottom ? 1 : 0)) * doubleDistance;
-      left.position.set(options.x - lineWidth / 2 + doubleDistance, options.y - lineWidth / 2 + (options.top ? doubleDistance : 0));
+      left.position.set(
+        options.x - lineWidth / 2 + doubleDistance,
+        options.y - lineWidth / 2 + (options.top ? doubleDistance : 0)
+      );
     }
   }
 
@@ -108,7 +117,10 @@ export function drawBorder(options: {
       right.alpha = options.alpha;
       right.width = lineWidth;
       right.height = options.height + lineWidth - ((options.top ? 1 : 0) + (options.bottom ? 1 : 0)) * doubleDistance;
-      right.position.set(options.x + options.width - lineWidth / 2 - doubleDistance, options.y - lineWidth / 2 + (options.bottom ? doubleDistance : 0));
+      right.position.set(
+        options.x + options.width - lineWidth / 2 - doubleDistance,
+        options.y - lineWidth / 2 + (options.bottom ? doubleDistance : 0)
+      );
     }
   }
 }
