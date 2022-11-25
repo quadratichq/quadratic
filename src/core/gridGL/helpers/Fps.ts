@@ -1,6 +1,3 @@
-const MAX_FPS = 60;
-const TOLERANCE = 0;
-
 export class FPS {
   private lastTime = 0;
   private frameNumber = 0;
@@ -18,9 +15,6 @@ export class FPS {
     if (currentTime > 500) {
       if (this.lastTime !== 0) {
         this.lastFPS = Math.floor(this.frameNumber / (currentTime / 1000));
-        if (this.lastFPS > MAX_FPS || (this.lastFPS >= MAX_FPS - TOLERANCE && this.lastFPS <= MAX_FPS + TOLERANCE)) {
-          this.lastFPS = MAX_FPS;
-        }
       }
       this.lastTime = performance.now();
       this.frameNumber = 0;

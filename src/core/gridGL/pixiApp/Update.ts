@@ -1,12 +1,14 @@
 import { debug, debugShowFPS } from '../../../debugFlags';
 import { debugRendererLight, debugShowCachedCounts, debugShowChildren, debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { FPS } from '../helpers/Fps';
+import { QUADRANT_RENDER_WAIT } from '../quadrants/quadrantConstants';
 import { PixiApp } from './PixiApp';
 
 export class Update {
   private pixiApp: PixiApp;
   private raf?: number;
   private fps?: FPS;
+  private nextQuadrantRender = 0;
 
   constructor(app: PixiApp) {
     this.pixiApp = app;
@@ -28,9 +30,10 @@ export class Update {
     }
   }
 
-  private updateDebug = (): void => {
+  private updateDebug = (timeStart: number): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
+
     const rendererDirty =
       app.viewport.dirty ||
       app.gridLines.dirty ||
@@ -41,33 +44,41 @@ export class Update {
 
     debugTimeReset();
     app.gridLines.update();
-    debugTimeCheck('gridLines');
+    debugTimeCheck('[Update] gridLines');
     app.axesLines.update();
-    debugTimeCheck('axesLines');
+    debugTimeCheck('[Update] axesLines');
     app.headings.update();
-    debugTimeCheck('headings');
+    debugTimeCheck('[Update] headings');
     app.cells.update();
-    debugTimeCheck('cells');
+    debugTimeCheck('[Update] cells');
     app.cursor.update();
-    debugTimeCheck('cursor');
+    debugTimeCheck('[Update] cursor');
 
     if (rendererDirty) {
       app.viewport.dirty = false;
       app.renderer.render(app.stage);
-      debugTimeCheck('render', 10);
+      this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
+      debugTimeCheck('[Update] render', 10);
       debugRendererLight(true);
       debugShowChildren(app.stage, 'stage');
       debugShowCachedCounts(app);
     } else {
       debugRendererLight(false);
+
+      // only render quadrants when the viewport hasn't been dirty for a while
+      if (timeStart > this.nextQuadrantRender) {
+        app.quadrants.update(timeStart);
+      }
     }
+
     this.raf = requestAnimationFrame(this.updateDebug);
     this.fps?.update();
   };
 
-  private update = (): void => {
+  private update = (timeStart: number): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
+
     const rendererDirty =
       app.viewport.dirty ||
       app.gridLines.dirty ||
@@ -85,7 +96,14 @@ export class Update {
     if (rendererDirty) {
       app.viewport.dirty = false;
       app.renderer.render(app.stage);
+      this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
+    } else {
+      // only render quadrants when the viewport hasn't been dirty for a while
+      if (timeStart > this.nextQuadrantRender) {
+        app.quadrants.update(timeStart);
+      }
     }
+
     this.raf = requestAnimationFrame(this.update);
   };
 }

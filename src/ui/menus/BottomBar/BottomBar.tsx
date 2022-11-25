@@ -8,7 +8,7 @@ import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
 import { formatDistance } from 'date-fns';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { isMobileOnly } from 'react-device-detect';
-import { debugShowCacheOn, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
+import { debugShowCacheFlag, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
 
 export const BottomBar = () => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
@@ -119,7 +119,7 @@ export const BottomBar = () => {
             <span className="debug-show-FPS">--</span> FPS
           </span>
         )}
-        {debugShowCacheOn && (
+        {debugShowCacheFlag && (
           <span>
             <span className="debug-show-cache-on"></span>
           </span>

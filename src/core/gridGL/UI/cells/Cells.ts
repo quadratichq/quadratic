@@ -41,6 +41,7 @@ export class Cells extends Container {
 
     // this is added directly in pixiApp to control z-index (instead of using pixi's sortable children)
     this.cellsBackground = new CellsBackground();
+
     this.cellsArray = this.addChild(new CellsArray(app));
     this.cellsBorder = this.addChild(new CellsBorder(app));
     this.labels = this.addChild(new CellsLabels());
@@ -128,6 +129,7 @@ export class Cells extends Container {
     if (!blank) {
       // renders labels
       this.labels.update();
+
       return content;
     }
   }

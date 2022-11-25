@@ -8,7 +8,7 @@ export const debugShowRenderer = debug && true;
 export const debugShowFPS = debug && true;
 
 // shows rendering time for components
-export const debugShowTime = debug && false;
+export const debugShowTime = debug && true;
 
 // counts number of children and which are visible in the viewport
 export const debugShowCountRenderedObjects = debug && false;
@@ -19,11 +19,14 @@ export const debugShowCachedSpriteCounts = debug && false;
 // skip python load (used to speed up debugging)
 export const debugSkipPythonLoad = debug && true;
 
-// add a CACHE marker to the footer to indicate when cache is visible instead of cells
-export const debugShowCacheOn = debug && true;
+// add a CACHE flag to the footer to indicate when cache is visible instead of cells
+export const debugShowCacheFlag = debug && true;
 
-// shows information about cache generation
-export const debugShowCacheInfo = debug && false;
+// shows information about quadrant generation
+export const debugShowCacheInfo = debug && true;
+
+// shows information about subquadrant generation
+export const debugShowSubCacheInfo = debug && false;
 
 // always show cache instead of cell rendering
 export const debugAlwaysShowCache = debug && false;

@@ -1,8 +1,8 @@
 import { Container, Matrix, MIPMAP_MODES, RenderTexture, Sprite } from 'pixi.js';
-import { debugShowCacheInfo, debugShowTime } from '../../../debugFlags';
+import { debugShowCacheInfo, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
 import { nearestPowerOf2 } from '../helpers/zoom';
+import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
-import { QuadrantCells } from './QuadrantCells';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS, QUADRANT_SCALE, QUADRANT_TEXTURE_SIZE } from './quadrantConstants';
 
 // subquadrants are sprites that live within a quadrant mapped to a rendered texture size
@@ -15,22 +15,21 @@ interface SubQuadrant extends Sprite {
 // A quadrant is a cached portion of the sheet mapped to column, row size (which can change based on heading size)
 // at the default heading size, one subquadrant is needed per quadrant
 export class Quadrant extends Container {
-  private quadrants: SubQuadrant[];
-  private quadrantCells: QuadrantCells;
-  private quadrant: Coordinate;
-  dirty = false;
+  private app: PixiApp;
+  private subquadrants: SubQuadrant[];
+  private location: Coordinate;
+  dirty = true;
 
-  constructor(quadrantCells: QuadrantCells, quadrantX: number, quadrantY: number) {
+  constructor(app: PixiApp, quadrantX: number, quadrantY: number) {
     super();
-    this.quadrantCells = quadrantCells;
-    this.quadrant = { x: quadrantX, y: quadrantY };
-    this.quadrants = [];
-    this.updateQuadrant();
+    this.app = app;
+    this.location = { x: quadrantX, y: quadrantY };
+    this.subquadrants = [];
   }
 
   // creates/reuses a Sprite with an appropriately sized RenderTexture
   private getSubQuadrant(subQuadrantX: number, subQuadrantY: number, size: number): SubQuadrant {
-    let sprite = this.quadrants.find(child => {
+    let sprite = this.subquadrants.find(child => {
       const spriteQuadrant = child as SubQuadrant;
       if (spriteQuadrant.subQuadrantX === subQuadrantX && spriteQuadrant.subQuadrantY === subQuadrantY) {
         return true;
@@ -52,24 +51,24 @@ export class Quadrant extends Container {
       sprite.scale.set(1 / QUADRANT_SCALE);
       sprite.subQuadrantX = subQuadrantX;
       sprite.subQuadrantY = subQuadrantY;
-      this.quadrants.push(sprite);
+      this.subquadrants.push(sprite);
     }
     return sprite;
   }
 
   private clear(): void {
-    this.quadrants.forEach(subquadrant => (subquadrant.visible = false));
+    this.subquadrants.forEach(subquadrant => (subquadrant.visible = false));
   }
 
-  private updateQuadrant(): void {
-    if (debugShowTime) console.time(`Rendered quadrant [${this.quadrant.x},${this.quadrant.y}]`);
-
+  update(timeStart?: number, debug?: string): void {
+    if (!this.dirty) return;
+    this.dirty = false;
     this.clear();
 
-    const { app, cells, container } = this.quadrantCells;
+    const app = this.app;
 
-    const columnStart = this.quadrant.x * QUADRANT_COLUMNS;
-    const rowStart = this.quadrant.y * QUADRANT_ROWS;
+    const columnStart = this.location.x * QUADRANT_COLUMNS;
+    const rowStart = this.location.y * QUADRANT_ROWS;
 
     const screenRectangle = app.gridOffsets.getScreenRectangle(columnStart, rowStart, QUADRANT_COLUMNS - 2, QUADRANT_ROWS - 2);
 
@@ -87,7 +86,7 @@ export class Quadrant extends Container {
         const cellRectangle = app.grid.getCells(cellBounds);
 
         // returns the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
-        const reducedDrawingRectangle = cells.drawBounds(cellBounds, cellRectangle);
+        const reducedDrawingRectangle = app.cells.drawBounds(cellBounds, cellRectangle);
         if (reducedDrawingRectangle) {
 
           // prepare a transform to translate the world to the start of the content for this subQuadrant, and properly scale it
@@ -99,21 +98,23 @@ export class Quadrant extends Container {
           const size = Math.max(nearestPowerOf2(reducedDrawingRectangle.width), nearestPowerOf2(reducedDrawingRectangle.height));
           const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, size);
 
-          if (debugShowCacheInfo) console.log(`Quadrant [${this.quadrant.x},${this.quadrant.y}] - Subquadrant [${subQuadrantX},${subQuadrantY}] texture size: ${size}`);
+          if (debugShowSubCacheInfo) {
+            console.log(`Quadrant [${this.location.x},${this.location.y}] - Subquadrant [${subQuadrantX},${subQuadrantY}] texture size: ${size}`);
+          }
 
+          const container = app.prepareForQuadrantRendering();
           app.renderer.render(container, { renderTexture: subQuadrant.texture, transform, clear: true });
+          app.cleanUpAfterQuadrantRendering();
           subQuadrant.position.set(reducedDrawingRectangle.left, reducedDrawingRectangle.top)
         }
       }
     }
-
-    if (debugShowTime) console.timeEnd(`Rendered quadrant [${this.quadrant.x},${this.quadrant.y}]`);
+    if (debugShowTime && debugShowCacheInfo && timeStart) {
+      console.log(`[Quadrant] Rendered ${this.getName()} ${debug} (${Math.round(performance.now() - timeStart)} ms)`);
+    }
   }
 
-  update(): void {
-    if (this.dirty) {
-      this.dirty = false;
-      this.updateQuadrant();
-    }
+  getName(): string {
+    return `Q[${this.location.x},${this.location.y}]`;
   }
 }
