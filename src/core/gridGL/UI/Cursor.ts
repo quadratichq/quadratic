@@ -4,7 +4,7 @@ import { PixiApp } from '../pixiApp/PixiApp';
 
 const CURSOR_THICKNESS = 1.5;
 const FILL_ALPHA = 0.1;
-const INDICATOR_SIZE = 10;
+const INDICATOR_SIZE = 8;
 const INDICATOR_PADDING = 1;
 
 export class Cursor extends Graphics {
