@@ -47,11 +47,13 @@ export class Quadrants extends Container {
         }
       } else {
         firstDirty.update();
+        this.complete = false;
       }
     }
   }
 
   private debugCacheStats(): void {
-
+    const textures = this.children.reduce((count, child) => count + ((child as Quadrant).debugTextureCount()), 0);
+    console.log(`[Quadrants] Rendered ${textures} quadrant textures.`);
   }
 }

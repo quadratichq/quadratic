@@ -110,11 +110,15 @@ export class Quadrant extends Container {
       }
     }
     if (debugShowTime && debugShowCacheInfo && timeStart) {
-      console.log(`[Quadrant] Rendered ${this.getName()} ${debug} (${Math.round(performance.now() - timeStart)} ms)`);
+      console.log(`[Quadrant] Rendered ${this.debugName()} ${debug} (${Math.round(performance.now() - timeStart)} ms)`);
     }
   }
 
-  getName(): string {
+  debugName(): string {
     return `Q[${this.location.x},${this.location.y}]`;
+  }
+
+  debugTextureCount(): number {
+    return this.children.reduce((count, child) => count + (child.visible ? 1 : 0), 0);
   }
 }
