@@ -1,4 +1,4 @@
-import { Container, Matrix, MIPMAP_MODES, RenderTexture, Sprite } from 'pixi.js';
+import { Container, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
 import { debugShowCacheInfo, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
 import { nearestPowerOf2 } from '../helpers/zoom';
 import { PixiApp } from '../pixiApp/PixiApp';
@@ -17,7 +17,8 @@ interface SubQuadrant extends Sprite {
 export class Quadrant extends Container {
   private app: PixiApp;
   private subquadrants: SubQuadrant[];
-  private location: Coordinate;
+  visibleRectangle: Rectangle;
+  location: Coordinate;
   dirty = true;
 
   constructor(app: PixiApp, quadrantX: number, quadrantY: number) {
@@ -25,6 +26,7 @@ export class Quadrant extends Container {
     this.app = app;
     this.location = { x: quadrantX, y: quadrantY };
     this.subquadrants = [];
+    this.visibleRectangle = new Rectangle();
   }
 
   // creates/reuses a Sprite with an appropriately sized RenderTexture
@@ -109,6 +111,8 @@ export class Quadrant extends Container {
         }
       }
     }
+    this.visibleRectangle = screenRectangle;
+
     if (debugShowTime && debugShowCacheInfo && timeStart) {
       console.log(`[Quadrant] Rendered ${this.debugName()} ${debug} (${Math.round(performance.now() - timeStart)} ms)`);
     }

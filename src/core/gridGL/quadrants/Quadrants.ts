@@ -1,22 +1,33 @@
 import { Container } from 'pixi.js';
-import { debugShowCacheInfo } from '../../../debugFlags';
+import { debugShowCacheInfo, warn } from '../../../debugFlags';
+import { intersects } from '../helpers/intersects';
 import { PixiApp } from '../pixiApp/PixiApp';
+import { Coordinate } from '../types/size';
 import { Quadrant } from './Quadrant';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS } from './quadrantConstants';
+
+interface QuadrantChanged {
+  row?: number;
+  column?: number;
+  cells?: Coordinate[];
+}
 
 // Parent for all quadrants - renders the cache in loop
 export class Quadrants extends Container {
   private app: PixiApp;
   private complete = false;
+  private quadrants: Map<string, Quadrant>;
 
   constructor(app: PixiApp) {
     super();
     this.app = app;
     this.cullable = true;
+    this.quadrants = new Map<string, Quadrant>();
   }
 
   build(): void {
     this.removeChildren();
+    this.quadrants.clear();
 
     const { grid } = this.app;
     const bounds = grid.getGridBounds();
@@ -26,7 +37,8 @@ export class Quadrants extends Container {
       for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
         const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
         const quadrantY = Math.floor(y / QUADRANT_ROWS);
-        this.addChild(new Quadrant(this.app, quadrantX, quadrantY));
+        const quadrant = this.addChild(new Quadrant(this.app, quadrantX, quadrantY));
+        this.quadrants.set(`${quadrantX},${quadrantY}`, quadrant);
       }
     }
     if (debugShowCacheInfo) {
@@ -34,8 +46,12 @@ export class Quadrants extends Container {
     }
   }
 
-  // updates one dirty quadrant per frame (any more and UI felt less responsive, even if within frame time)
-  update(timeStart: number): void {
+  /**
+   * updates one dirty quadrant per frame(any more and UI felt less responsive, even if within frame time)
+   * @param timeStart used for console debugging
+   * @returns whether the app should rerender if quadrants are visible and the updated quadrant is visible
+   */
+  update(timeStart: number): boolean {
     const firstDirty = this.children.find(child => (child as Quadrant).dirty) as Quadrant;
     if (firstDirty) {
       if (debugShowCacheInfo) {
@@ -48,6 +64,40 @@ export class Quadrants extends Container {
       } else {
         firstDirty.update();
         this.complete = false;
+      }
+      return this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle);
+    }
+    return false;
+  }
+
+  private getQuadrant(row: number, column: number): Quadrant | undefined{
+    return this.quadrants.get(`${row},${column}`);
+  }
+
+  quadrantChanged(options: QuadrantChanged): void {
+    const bounds = this.app.grid.getGridBounds();
+    if (options.row !== undefined) {
+      for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
+        const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
+        const quadrantY = Math.floor(options.row / QUADRANT_ROWS);
+        const quadrant = this.getQuadrant(quadrantX, quadrantY);
+        if (!quadrant) {
+          warn("Expected quadrant to be defined in quadrantChanged");
+        } else {
+          quadrant.dirty = true;
+        }
+      }
+    }
+    if (options.column !== undefined) {
+      for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
+        const quadrantX = Math.floor(options.column / QUADRANT_COLUMNS);
+        const quadrantY = Math.floor(y / QUADRANT_ROWS);
+        const quadrant = this.getQuadrant(quadrantX, quadrantY);
+        if (!quadrant) {
+          warn("Expected quadrant to be defined in quadrantChanged");
+        } else {
+          quadrant.dirty = true;
+        }
       }
     }
   }

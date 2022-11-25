@@ -67,7 +67,9 @@ export class Update {
 
       // only render quadrants when the viewport hasn't been dirty for a while
       if (timeStart > this.nextQuadrantRender) {
-        app.quadrants.update(timeStart);
+        if (app.quadrants.update(timeStart)) {
+          app.renderer.render(app.stage);
+        }
       }
     }
 
@@ -100,7 +102,9 @@ export class Update {
     } else {
       // only render quadrants when the viewport hasn't been dirty for a while
       if (timeStart > this.nextQuadrantRender) {
-        app.quadrants.update(timeStart);
+        if (app.quadrants.update(timeStart)) {
+          app.renderer.render(app.stage);
+        }
       }
     }
 
