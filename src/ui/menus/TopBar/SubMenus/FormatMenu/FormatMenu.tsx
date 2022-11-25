@@ -37,6 +37,7 @@ import { ChangeBorder, useFormatCells } from '../useFormatCells';
 import './formatMenuStyles.css';
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { BorderType } from '../../../../../core/gridDB/db';
+import { useHeadings } from '../../../../../core/gridDB/useHeadings';
 
 interface IProps {
   app?: PixiApp;
@@ -47,6 +48,7 @@ export const FormatMenu = (props: IProps) => {
   const multiCursor = interactionState.showMultiCursor;
 
   const { changeFillColor, removeFillColor, changeBorder, changeBorderColor, clearBorders, clearFormatting, changeBorderType } = useFormatCells({ app: props.app });
+  const { clearCellSizes } = useHeadings(props.app);
 
   const handleChangeBorderType = useCallback((e: ClickEvent, borderType?: BorderType) => {
     changeBorderType(borderType);
@@ -223,6 +225,7 @@ export const FormatMenu = (props: IProps) => {
         </MenuItem>
       </SubMenu>
       <MenuItem onClick={clearFormatting}>Clear Formatting</MenuItem>
+      <MenuItem onClick={clearCellSizes}>Clear Cell Sizes</MenuItem>
     </Menu>
   );
 };

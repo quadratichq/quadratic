@@ -17,16 +17,45 @@ interface SubQuadrant extends Sprite {
 export class Quadrant extends Container {
   private app: PixiApp;
   private subquadrants: SubQuadrant[];
-  visibleRectangle: Rectangle;
+  private _dirty = true;
+  visibleRectangle!: Rectangle;
   location: Coordinate;
-  dirty = true;
 
   constructor(app: PixiApp, quadrantX: number, quadrantY: number) {
     super();
     this.app = app;
     this.location = { x: quadrantX, y: quadrantY };
     this.subquadrants = [];
-    this.visibleRectangle = new Rectangle();
+    this.reposition();
+  }
+
+  reposition() {
+    const oldRectangle = this.visibleRectangle;
+    const columnStart = this.location.x * QUADRANT_COLUMNS;
+    const rowStart = this.location.y * QUADRANT_ROWS;
+    this.visibleRectangle = this.app.gridOffsets.getScreenRectangle(columnStart, rowStart, QUADRANT_COLUMNS - 2, QUADRANT_ROWS - 2);
+
+    // reposition subQuadrants based on any deltas
+    if (oldRectangle) {
+      const deltaX = this.visibleRectangle.x - oldRectangle.x;
+      const deltaY = this.visibleRectangle.y - oldRectangle.y;
+      if (deltaX || deltaY) {
+        this.children.forEach(child => {
+          child.x += deltaX;
+          child.y += deltaY;
+        });
+      }
+    }
+  }
+
+  set dirty(value: boolean) {
+    if (this._dirty !== value) {
+      this._dirty = value;
+      this.visible = !value;
+    }
+  }
+  get dirty(): boolean {
+    return this._dirty;
   }
 
   // creates/reuses a Sprite with an appropriately sized RenderTexture
@@ -71,7 +100,6 @@ export class Quadrant extends Container {
 
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
-
     const screenRectangle = app.gridOffsets.getScreenRectangle(columnStart, rowStart, QUADRANT_COLUMNS - 2, QUADRANT_ROWS - 2);
 
     // number of subquadrants necessary (should be equal to 1 unless heading size has changed)

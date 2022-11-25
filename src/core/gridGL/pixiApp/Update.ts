@@ -56,6 +56,14 @@ export class Update {
 
     if (rendererDirty) {
       app.viewport.dirty = false;
+
+      if (app.quadrants.visible) {
+        const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
+        if (cellRectangles.length) {
+          app.cells.visible = true;
+          app.cells.drawMultipleBounds(cellRectangles);
+        }
+      }
       app.renderer.render(app.stage);
       this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
       debugTimeCheck('[Update] render', 10);

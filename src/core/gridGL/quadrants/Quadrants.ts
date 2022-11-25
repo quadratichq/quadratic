@@ -1,5 +1,6 @@
 import { Container } from 'pixi.js';
-import { debugShowCacheInfo, warn } from '../../../debugFlags';
+import { debugShowCacheInfo, debugSkipQuadrantRendering, warn } from '../../../debugFlags';
+import { CellRectangle } from '../../gridDB/CellRectangle';
 import { intersects } from '../helpers/intersects';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
@@ -52,6 +53,8 @@ export class Quadrants extends Container {
    * @returns whether the app should rerender if quadrants are visible and the updated quadrant is visible
    */
   update(timeStart: number): boolean {
+    if (debugSkipQuadrantRendering) return false;
+
     const firstDirty = this.children.find(child => (child as Quadrant).dirty) as Quadrant;
     if (firstDirty) {
       if (debugShowCacheInfo) {
@@ -74,6 +77,7 @@ export class Quadrants extends Container {
     return this.quadrants.get(`${row},${column}`);
   }
 
+  /** marks quadrants dirty based on what has changed */
   quadrantChanged(options: QuadrantChanged): void {
     const bounds = this.app.grid.getGridBounds();
     if (options.row !== undefined) {
@@ -85,6 +89,20 @@ export class Quadrants extends Container {
           warn("Expected quadrant to be defined in quadrantChanged");
         } else {
           quadrant.dirty = true;
+        }
+      }
+
+      // reposition quadrants below the row
+      for (let y = options.row + QUADRANT_ROWS; y <= bounds.bottom; y += QUADRANT_ROWS) {
+        for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
+          const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
+          const quadrantY = Math.floor(y / QUADRANT_ROWS);
+          const quadrant = this.getQuadrant(quadrantX, quadrantY);
+          if (!quadrant) {
+            warn("Expected quadrant to be defined in quadrantChanged");
+          } else {
+            quadrant.reposition();
+          }
         }
       }
     }
@@ -99,7 +117,37 @@ export class Quadrants extends Container {
           quadrant.dirty = true;
         }
       }
+
+      // reposition quadrants to the right of the column
+      for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
+        for (let x = options.column + QUADRANT_ROWS; x <= bounds.right; x += QUADRANT_COLUMNS) {
+          const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
+          const quadrantY = Math.floor(y / QUADRANT_ROWS);
+          const quadrant = this.getQuadrant(quadrantX, quadrantY);
+          if (!quadrant) {
+            warn("Expected quadrant to be defined in quadrantChanged");
+          } else {
+            quadrant.reposition();
+          }
+        }
+      }
     }
+  }
+
+  /** Returns CellRectangles for visible dirty quadrants */
+  getCellsForDirtyQuadrants(): CellRectangle[] {
+    const { viewport, gridOffsets, grid } = this.app;
+    const screen = viewport.getVisibleBounds();
+    return this.children.flatMap(child => {
+      const quadrant = child as Quadrant;
+      if (!quadrant.dirty) return [];
+      const quadrantScreen = quadrant.visibleRectangle;
+      if (intersects.rectangleRectangle(screen, quadrantScreen)) {
+        const cellBounds = gridOffsets.getCellRectangle(quadrantScreen.x, quadrantScreen.y, quadrantScreen.width, quadrantScreen.height);
+        return grid.getCells(cellBounds);
+      }
+      return [];
+    });
   }
 
   private debugCacheStats(): void {

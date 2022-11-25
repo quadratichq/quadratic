@@ -3,7 +3,7 @@ import { CellAndFormat, GridSparse } from './GridSparse';
 
 export class CellRectangle {
   private cells: (CellAndFormat | undefined)[];
-  private size: Rectangle;
+  size: Rectangle;
 
   // todo: the GridSparse call will be replaced by the rust controller call
   constructor(size: Rectangle, grid: GridSparse) {

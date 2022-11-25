@@ -17,6 +17,7 @@ export const debugShowCacheInfo = debug && true;                // shows informa
 export const debugShowSubCacheInfo = debug && false;            // shows information about subquadrant generation
 export const debugAlwaysShowCache = debug && false;             // always show cache instead of cell rendering
 export const debugNeverShowCache = debug && false;              // always show cells instead of cache rendering
+export const debugSkipQuadrantRendering = debug && false;       // don't render quadrants
 
 export function warn(...args: any): void {
   if (debug) {

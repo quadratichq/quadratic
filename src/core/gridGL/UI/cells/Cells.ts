@@ -134,6 +134,80 @@ export class Cells extends Container {
     }
   }
 
+  drawMultipleBounds(cellRectangles: CellRectangle[]): void {
+    const { gridOffsets } = this.app;
+    this.labels.clear();
+    this.cellsMarkers.clear();
+    this.cellsArray.clear();
+    this.cellsBackground.clear();
+    this.cellsBorder.clear();
+
+    let blank = true;
+    for (const cellRectangle of cellRectangles) {
+      const bounds = cellRectangle.size;
+
+      // keeps track of screen position
+      const xStart = gridOffsets.getColumnPlacement(bounds.left).x;
+      const yStart = gridOffsets.getRowPlacement(bounds.top).y;
+      let y = yStart;
+      const content = new Rectangle(Infinity, Infinity, -Infinity, -Infinity);
+
+      // iterate through the rows and columns
+      for (let row = bounds.top; row <= bounds.bottom; row++) {
+        let x = xStart;
+        const height = gridOffsets.getRowHeight(row);
+        for (let column = bounds.left; column <= bounds.right; column++) {
+          const width = gridOffsets.getColumnWidth(column);
+          const entry = cellRectangle.get(column, row);
+          if (entry) {
+            const hasContent = entry.cell?.value || entry.format;
+
+            if (hasContent) {
+              blank = false;
+              if (x < content.left) content.x = x;
+              if (y < content.top) content.y = y;
+            }
+
+            // don't render input (unless ignoreInput === true)
+            const isInput = false //input && input.column === column && input.row === row;
+
+            // only render if there is cell data, cell formatting
+            if (!isInput && (entry.cell || entry.format)) {
+              this.cellsBorder.draw({ ...entry, x, y, width, height });
+              this.cellsBackground.draw({ ...entry, x, y, width, height });
+              if (entry.cell) {
+                if (entry.cell?.type === 'PYTHON') {
+                  this.cellsMarkers.add(x, y, 'CodeIcon');
+                }
+                this.labels.add({
+                  x: x + CELL_TEXT_MARGIN_LEFT,
+                  y: y + CELL_TEXT_MARGIN_TOP,
+                  text: entry.cell.value,
+                });
+              }
+            }
+            if (entry.cell?.array_cells) {
+              this.cellsArray.draw(entry.cell.array_cells, x, y, width, height);
+            }
+
+            if (hasContent) {
+              if (x + width > content.right) content.width = x + width - content.left;
+              if (y + height > content.bottom) content.height = y + height - content.top;
+            }
+          }
+          x += width;
+        }
+        x = xStart;
+        y += height;
+      }
+    }
+
+    if (!blank) {
+      // renders labels
+      this.labels.update();
+    }
+  }
+
   update(): void {
     if (this.dirty) {
       this.dirty = false;
