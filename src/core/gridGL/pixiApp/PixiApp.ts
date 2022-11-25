@@ -15,7 +15,7 @@ import { GridSparse } from '../../gridDB/GridSparse';
 import { zoomInOut, zoomToFit } from '../helpers/zoom';
 import { Quadrants } from '../quadrants/Quadrants';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
-import { debugAlwaysShowCache, debugShowCacheFlag } from '../../../debugFlags';
+import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../../debugFlags';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -130,6 +130,7 @@ export class PixiApp {
     if (debugShowCacheFlag && !this.cells.visible) {
       (document.querySelector('.debug-show-cache-on') as HTMLSpanElement).innerHTML = '';
     }
+    this.cells.dirty = true;
     this.cells.visible = true;
     this.quadrants.visible = false;
     this.cacheIsVisible = false;
@@ -140,7 +141,7 @@ export class PixiApp {
     this.gridLines.dirty = true;
     this.axesLines.dirty = true;
     this.headings.dirty = true;
-    if (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache) {
+    if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
       this.showCache();
     } else {
       this.showCells();
