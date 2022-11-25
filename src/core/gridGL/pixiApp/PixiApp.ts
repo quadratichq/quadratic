@@ -103,6 +103,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cells.dirty = true;
+    this.cursor.dirty = true;
   };
 
   attach(parent: HTMLDivElement): void {
