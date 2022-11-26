@@ -88,7 +88,7 @@ export class PixiApp {
     // ensure the cell's background color is drawn first
     this.viewportContents.addChildAt(this.cells.cellsBackground, 0);
 
-    this.quadrants = this.viewport.addChild(new Quadrants(this));
+    this.quadrants = this.viewportContents.addChild(new Quadrants(this));
     this.quadrants.visible = false;
 
     this.cursor = this.viewportContents.addChild(new Cursor(this));

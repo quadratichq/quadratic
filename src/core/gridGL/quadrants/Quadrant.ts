@@ -110,8 +110,8 @@ export class Quadrant extends Container {
     const screenRectangle = app.gridOffsets.getScreenRectangle(
       columnStart,
       rowStart,
-      QUADRANT_COLUMNS,
-      QUADRANT_ROWS
+      QUADRANT_COLUMNS - 1,
+      QUADRANT_ROWS - 1
     );
 
     // number of subquadrants necessary (should be equal to 1 unless heading size has changed)
