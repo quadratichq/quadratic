@@ -34,7 +34,6 @@ export class Cursor extends Graphics {
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
     const xOffset = !multiCursor ? indicatorSize / 2 + indicatorPadding : 0;
     const yOffset = !multiCursor ? indicatorSize / 2 + indicatorPadding : 0;
-    console.log(xOffset, yOffset)
     this.moveTo(x, y);
     this.lineTo(x + width, y);
     this.lineTo(x + width, y + height - yOffset);
