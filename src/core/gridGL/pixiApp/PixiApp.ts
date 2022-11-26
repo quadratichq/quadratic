@@ -13,11 +13,13 @@ import { Cursor } from '../UI/Cursor';
 import { Cells } from '../UI/cells/Cells';
 import { GridSparse } from '../../gridDB/GridSparse';
 import { zoomInOut, zoomToFit } from '../helpers/zoom';
+import { GridBorders } from '../../gridDB/GridBorders';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
   private update: Update;
   canvas: HTMLCanvasElement;
+  viewport: Viewport;
   gridLines: GridLines;
   axesLines: AxesLines;
   cursor: Cursor;
@@ -25,9 +27,10 @@ export class PixiApp {
   cells: Cells;
 
   input: Pointer;
-  viewport: Viewport;
+
   gridOffsets: GridOffsets;
   grid: GridSparse;
+  borders: GridBorders;
   settings: PixiAppSettings;
   renderer: Renderer;
   stage = new Container();
@@ -36,6 +39,7 @@ export class PixiApp {
   constructor() {
     this.gridOffsets = new GridOffsets(this);
     this.grid = new GridSparse(this);
+    this.borders = new GridBorders(this);
 
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
