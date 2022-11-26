@@ -32,12 +32,16 @@ export class Cursor extends Graphics {
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
-    const xOffset = !multiCursor ? indicatorSize / 2 + indicatorPadding : 0;
-    const yOffset = !multiCursor ? indicatorSize / 2 + indicatorPadding : 0;
+    const terminalPosition = settings.interactionState.multiCursorPosition.terminalPosition;
+    const cursorPosition = settings.interactionState.cursorPosition;
+    let offset = 0;
+    if (!multiCursor || (terminalPosition.x === cursorPosition.x && terminalPosition.y === cursorPosition.y)) {
+      offset = indicatorSize / 2 + indicatorPadding;
+    }
     this.moveTo(x, y);
     this.lineTo(x + width, y);
-    this.lineTo(x + width, y + height - yOffset);
-    this.moveTo(x + width - xOffset, y + height);
+    this.lineTo(x + width, y + height - offset);
+    this.moveTo(x + width - offset, y + height);
     this.lineTo(x, y + height);
     this.lineTo(x, y);
   }
