@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 import { debugShowCacheInfo, debugSkipQuadrantRendering, warn } from '../../../debugFlags';
 import { CellRectangle } from '../../gridDB/CellRectangle';
 import { intersects } from '../helpers/intersects';
@@ -34,8 +34,8 @@ export class Quadrants extends Container {
     const bounds = grid.getGridBounds();
 
     // iterate through visible grid bounds and prepare quadrants
-    for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
-      for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
+    for (let y = bounds.top; y <= bounds.bottom + QUADRANT_ROWS; y += QUADRANT_ROWS) {
+      for (let x = bounds.left; x <= bounds.right + QUADRANT_COLUMNS; x += QUADRANT_COLUMNS) {
         const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
         const quadrantY = Math.floor(y / QUADRANT_ROWS);
         const quadrant = this.addChild(new Quadrant(this.app, quadrantX, quadrantY));
@@ -126,7 +126,7 @@ export class Quadrants extends Container {
 
       // reposition quadrants to the right of the column
       for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
-        for (let x = options.column + QUADRANT_ROWS; x <= bounds.right; x += QUADRANT_COLUMNS) {
+        for (let x = options.column + QUADRANT_COLUMNS; x <= bounds.right; x += QUADRANT_COLUMNS) {
           const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
           const quadrantY = Math.floor(y / QUADRANT_ROWS);
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
@@ -142,20 +142,15 @@ export class Quadrants extends Container {
 
   /** Returns CellRectangles for visible dirty quadrants */
   getCellsForDirtyQuadrants(): CellRectangle[] {
-    const { viewport, gridOffsets, grid } = this.app;
+    const { viewport, grid } = this.app;
     const screen = viewport.getVisibleBounds();
     return this.children.flatMap((child) => {
       const quadrant = child as Quadrant;
       if (!quadrant.dirty) return [];
-      const quadrantScreen = quadrant.visibleRectangle;
-      if (intersects.rectangleRectangle(screen, quadrantScreen)) {
-        const cellBounds = gridOffsets.getCellRectangle(
-          quadrantScreen.x,
-          quadrantScreen.y,
-          quadrantScreen.width,
-          quadrantScreen.height
-        );
-        return grid.getCells(cellBounds);
+      if (intersects.rectangleRectangle(screen, quadrant.visibleRectangle)) {
+        const columnStart = quadrant.location.x * QUADRANT_COLUMNS;
+        const rowStart = quadrant.location.y * QUADRANT_ROWS;
+        return [grid.getCells(new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS, QUADRANT_ROWS))];
       }
       return [];
     });

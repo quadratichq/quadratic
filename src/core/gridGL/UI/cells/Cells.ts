@@ -1,4 +1,4 @@
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
 import { Cell, CellFormat } from '../../../gridDB/db';
@@ -8,6 +8,9 @@ import { CellsBackground } from './cellsBackground';
 import { CellsBorder } from './CellsBorder';
 import { CellsLabels } from './CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
+
+const debugColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0x880000, 0x008800, 0x000088, 0x888800, 0x008888];
+let debugColor = 0;
 
 export interface CellsBounds {
   minX: number;
@@ -27,6 +30,7 @@ export interface ICellsDraw {
 
 export class Cells extends Container {
   private app: PixiApp;
+  private debug: Graphics;
   private cellsArray: CellsArray;
   private cellsBorder: CellsBorder;
   private labels: CellsLabels;
@@ -38,6 +42,8 @@ export class Cells extends Container {
   constructor(app: PixiApp) {
     super();
     this.app = app;
+
+    this.debug = this.addChild(new Graphics());
 
     // this is added directly in pixiApp to control z-index (instead of using pixi's sortable children)
     this.cellsBackground = new CellsBackground();
@@ -55,7 +61,15 @@ export class Cells extends Container {
    * @param ignoreInput if false then don't draw input location (as it's handled by the DOM)
    * @returns a Rectangle of the content bounds (not including empty area), or undefined if nothing is drawn
    */
-  drawBounds(bounds: Rectangle, cellRectangle: CellRectangle, ignoreInput?: boolean): Rectangle | undefined {
+  drawBounds(options: {
+    bounds: Rectangle;
+    cellRectangle: CellRectangle;
+    ignoreInput?: boolean;
+    showDebugColors?: boolean;
+  }): Rectangle | undefined {
+    const { bounds, cellRectangle, ignoreInput, showDebugColors } = options;
+    if (showDebugColors) this.debug.clear();
+
     const { gridOffsets } = this.app;
     this.labels.clear();
     this.cellsMarkers.clear();
@@ -131,11 +145,18 @@ export class Cells extends Container {
       // renders labels
       this.labels.update();
 
+      if (showDebugColors) {
+        const rect = gridOffsets.getScreenRectangle(cellRectangle.size.left, cellRectangle.size.top, cellRectangle.size.width, cellRectangle.size.height);
+        this.debug.beginFill(debugColors[debugColor], 0.25).drawShape(rect).endFill();
+        debugColor = (debugColor + 1) % debugColors.length;
+      }
       return content;
     }
   }
 
   drawMultipleBounds(cellRectangles: CellRectangle[]): void {
+    this.debug.clear();
+
     const { gridOffsets } = this.app;
     this.labels.clear();
     this.cellsMarkers.clear();
@@ -214,7 +235,7 @@ export class Cells extends Container {
       this.dirty = false;
       const bounds = this.app.grid.getBounds(this.app.viewport.getVisibleBounds());
       const cellRectangle = this.app.grid.getCells(bounds);
-      this.drawBounds(bounds, cellRectangle);
+      this.drawBounds({ bounds, cellRectangle });
     }
   }
 

@@ -1,23 +1,56 @@
 // set this in .env (if set to false then all debug flags are turned off)
 export const debug = process.env.REACT_APP_DEBUG === '1' ? true : false;
 
-export const debugShowRenderer = debug && true; // shows renderer light
-export const debugShowFPS = debug && true; // shows FPS meter
+// skip python load (used to speed up debugging)
+export const debugSkipPythonLoad = debug && true;
 
-export const debugSkipPythonLoad = debug && true; // skip python load (used to speed up debugging)
+// ------------------
+// Debug footer marks
+// ------------------
 
+// shows renderer light
+export const debugShowRenderer = debug && true;
+
+// shows FPS meter
+export const debugShowFPS = debug && true;
+
+// -------------------------
 // Rendering time and counts
-export const debugShowTime = debug && false; // shows rendering time
-export const debugShowCountRenderedObjects = debug && false; // counts number of children and which are visible in the viewport
-export const debugShowCachedSpriteCounts = debug && false; // shows count of cached sprites for formatting
+// -------------------------
 
+// shows rendering time
+export const debugShowTime = debug && false;
+
+// counts number of children and which are visible in the viewport
+export const debugShowCountRenderedObjects = debug && false;
+
+// shows count of cached sprites for formatting
+export const debugShowCachedSpriteCounts = debug && false;
+
+// ----------------
 // Quadrant caching
-export const debugShowCacheFlag = debug && true; // add a CACHE flag to the footer to indicate when cache is visible instead of cells
-export const debugShowCacheInfo = debug && true; // shows information about quadrant generation
-export const debugShowSubCacheInfo = debug && false; // shows information about subquadrant generation
-export const debugAlwaysShowCache = debug && false; // always show cache instead of cell rendering
-export const debugNeverShowCache = debug && false; // always show cells instead of cache rendering
-export const debugSkipQuadrantRendering = debug && false; // don't render quadrants
+// ----------------
+
+// add a CACHE flag to the footer to indicate when cache is visible instead of cells
+export const debugShowCacheFlag = debug && true;
+
+// shows information about quadrant generation
+export const debugShowCacheInfo = debug && false;
+
+// shows information about subquadrant generation
+export const debugShowSubCacheInfo = debug && false;
+
+// always show cache instead of cell rendering
+export const debugAlwaysShowCache = debug && false;
+
+// always show cells instead of cache rendering
+export const debugNeverShowCache = debug && false;
+
+// don't render quadrants
+export const debugSkipQuadrantRendering = debug && false;
+
+// show quadrant colored boxes
+export const debugShowQuadrantBoxes = debug && false;
 
 export function warn(...args: any): void {
   if (debug) {

@@ -1,5 +1,5 @@
 import { Container, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
-import { debugShowCacheInfo, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
+import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
 import { nearestPowerOf2 } from '../helpers/zoom';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
@@ -84,7 +84,7 @@ export class Quadrant extends Container {
         width: size,
         height: size,
         resolution: window.devicePixelRatio,
-        mipmap: MIPMAP_MODES.ON_MANUAL,
+        mipmap: MIPMAP_MODES.ON,
       });
       sprite = this.addChild(new Sprite(texture)) as SubQuadrant;
       sprite.scale.set(1 / QUADRANT_SCALE);
@@ -101,7 +101,6 @@ export class Quadrant extends Container {
 
   update(timeStart?: number, debug?: string): void {
     if (!this.dirty) return;
-    this.dirty = false;
     this.clear();
 
     const app = this.app;
@@ -111,8 +110,8 @@ export class Quadrant extends Container {
     const screenRectangle = app.gridOffsets.getScreenRectangle(
       columnStart,
       rowStart,
-      QUADRANT_COLUMNS - 2,
-      QUADRANT_ROWS - 2
+      QUADRANT_COLUMNS,
+      QUADRANT_ROWS
     );
 
     // number of subquadrants necessary (should be equal to 1 unless heading size has changed)
@@ -133,14 +132,14 @@ export class Quadrant extends Container {
         const cellRectangle = app.grid.getCells(cellBounds);
 
         // returns the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
-        const reducedDrawingRectangle = app.cells.drawBounds(cellBounds, cellRectangle);
+        const reducedDrawingRectangle = app.cells.drawBounds({ bounds: cellBounds, cellRectangle, showDebugColors: debugShowQuadrantBoxes });
         if (reducedDrawingRectangle) {
           // prepare a transform to translate the world to the start of the content for this subQuadrant, and properly scale it
           const transform = new Matrix();
           transform.translate(-reducedDrawingRectangle.left, -reducedDrawingRectangle.top);
           transform.scale(QUADRANT_SCALE, QUADRANT_SCALE);
 
-          // get the Sprite and render to the Sprite's texture
+          // get the Sprite and resize the texture if needed
           const size = Math.max(
             nearestPowerOf2(reducedDrawingRectangle.width),
             nearestPowerOf2(reducedDrawingRectangle.height)
@@ -149,10 +148,11 @@ export class Quadrant extends Container {
 
           if (debugShowSubCacheInfo) {
             console.log(
-              `Quadrant [${this.location.x},${this.location.y}] - Subquadrant [${subQuadrantX},${subQuadrantY}] texture size: ${size}`
+              `[Quadrant] ${this.debugName()}.[${subQuadrantX},${subQuadrantY}] [${cellBounds.toString()} texture size: ${size}`
             );
           }
 
+          // render the sprite's texture
           const container = app.prepareForQuadrantRendering();
           app.renderer.render(container, { renderTexture: subQuadrant.texture, transform, clear: true });
           app.cleanUpAfterQuadrantRendering();
@@ -165,6 +165,7 @@ export class Quadrant extends Container {
     if (debugShowTime && debugShowCacheInfo && timeStart) {
       console.log(`[Quadrant] Rendered ${this.debugName()} ${debug} (${Math.round(performance.now() - timeStart)} ms)`);
     }
+    this.dirty = false;
   }
 
   debugName(): string {
