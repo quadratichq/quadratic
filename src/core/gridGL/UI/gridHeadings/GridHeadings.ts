@@ -13,7 +13,7 @@ export const LABEL_MAXIMUM_HEIGHT_PERCENT = 0.5;
 export const LABEL_PADDING_ROWS = 2;
 export const GRID_HEADER_FONT_SIZE = 9;
 export const ROW_DIGIT_OFFSET = { x: 0, y: -1 };
-const GRID_HEADING_RESIZE_TOLERANCE = 2;
+const GRID_HEADING_RESIZE_TOLERANCE = 3;
 
 // this is the number of digits to use when calculating what horizontal headings are hidden
 export const LABEL_DIGITS_TO_CALCULATE_SKIP = 4;
@@ -401,11 +401,12 @@ export class GridHeadings extends Container {
   intersectsHeadingGridLine(
     world: Point
   ): { start: number; column?: number; row?: number; width?: number; height?: number } | undefined {
+    const tolerance = GRID_HEADING_RESIZE_TOLERANCE / this.app.viewport.scale.x;
     if (!this.columnRect || !this.rowRect) return;
     const { gridOffsets } = this.app;
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
-        if (Math.abs(world.x - line.x) < GRID_HEADING_RESIZE_TOLERANCE) {
+        if (Math.abs(world.x - line.x) < tolerance) {
           const start = gridOffsets.getColumnPlacement(line.column);
           return { start: start.x, column: line.column, width: line.width };
         }
@@ -413,7 +414,7 @@ export class GridHeadings extends Container {
     }
     if (intersects.rectanglePoint(this.rowRect, world)) {
       for (const line of this.gridLinesRows) {
-        if (Math.abs(world.y - line.y) < GRID_HEADING_RESIZE_TOLERANCE) {
+        if (Math.abs(world.y - line.y) < tolerance) {
           const start = gridOffsets.getRowPlacement(line.row);
           return { start: start.y, row: line.row, height: line.height };
         }
