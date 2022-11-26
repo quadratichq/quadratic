@@ -17,8 +17,9 @@ export class Cursor extends Graphics {
   }
 
   private drawCursor(): void {
-    const { settings, gridOffsets } = this.app;
+    const { settings, gridOffsets, viewport } = this.app;
     const cell = settings.interactionState.cursorPosition;
+    const multiCursor = settings.interactionState.showMultiCursor;
     const { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
     const color = colors.cursorCell;
 
@@ -27,7 +28,19 @@ export class Cursor extends Graphics {
       color,
       alignment: 0,
     });
-    this.drawRect(x, y, width, height);
+
+    // draw cursor but leave room for cursor indicator if needed
+    const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
+    const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
+    const xOffset = !multiCursor ? indicatorSize / 2 + indicatorPadding : 0;
+    const yOffset = !multiCursor ? indicatorSize / 2 + indicatorPadding : 0;
+    console.log(xOffset, yOffset)
+    this.moveTo(x, y);
+    this.lineTo(x + width, y);
+    this.lineTo(x + width, y + height - yOffset);
+    this.moveTo(x + width - xOffset, y + height);
+    this.lineTo(x, y + height);
+    this.lineTo(x, y);
   }
 
   private drawMultiCursor(): void {
@@ -53,16 +66,12 @@ export class Cursor extends Graphics {
     }
 
     // draw cursor indicator
-    const size = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
-    const padding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
+    const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
     const x = endCell.x + endCell.width;
     const y = endCell.y + endCell.height;
     this.lineStyle(0);
-    this.beginFill(0xffffff)
-      .drawRect(x - size / 2 - padding, y - size / 2 - padding, size + padding, size + padding)
-      .endFill();
     this.beginFill(colors.cursorCell)
-      .drawRect(x - size / 2, y - size / 2, size, size)
+      .drawRect(x - indicatorSize / 2, y - indicatorSize / 2, indicatorSize, indicatorSize)
       .endFill();
   }
 
