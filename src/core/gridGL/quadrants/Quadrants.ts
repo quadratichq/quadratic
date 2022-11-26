@@ -1,5 +1,5 @@
 import { Container, Rectangle } from 'pixi.js';
-import { debugShowCacheInfo, debugSkipQuadrantRendering, warn } from '../../../debugFlags';
+import { debugShowCacheFlag, debugShowCacheInfo, debugSkipQuadrantRendering, warn } from '../../../debugFlags';
 import { CellRectangle } from '../../gridDB/CellRectangle';
 import { intersects } from '../helpers/intersects';
 import { PixiApp } from '../pixiApp/PixiApp';
@@ -71,6 +71,10 @@ export class Quadrants extends Container {
       } else {
         firstDirty.update();
         this.complete = false;
+      }
+      if (debugShowCacheFlag) {
+        const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0);
+        (document.querySelector('.debug-show-cache-count') as HTMLSpanElement).innerHTML = `Quadrants: ${this.children.length - dirtyCount}/${this.children.length}`;
       }
       return (
         this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle)
