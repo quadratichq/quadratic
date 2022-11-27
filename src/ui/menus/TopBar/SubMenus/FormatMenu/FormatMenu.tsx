@@ -1,7 +1,7 @@
 import { Fragment, useCallback } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Menu, MenuItem, MenuDivider, MenuHeader, SubMenu, MenuChangeEvent, ClickEvent } from '@szhsin/react-menu';
+import { Menu, MenuItem, MenuDivider, MenuHeader, SubMenu, MenuChangeEvent } from '@szhsin/react-menu';
 
 import {
   FormatBold,
