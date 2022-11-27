@@ -1,10 +1,9 @@
 import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
-import { convertColorStringToTint } from '../../../../helpers/convertColor';
 import { colors } from '../../../../theme/colors';
-import { borderBottom, borderLeft, borderRight, borderTop } from '../../../gridDB/db';
+import { Border } from '../../../gridDB/db';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { ICellsDraw } from './Cells';
-import { drawBorder } from './drawBorder';
+import { drawBorder, drawCellBorder } from './drawBorder';
 
 export class CellsBorder extends Container {
   private app: PixiApp;
@@ -53,8 +52,6 @@ export class CellsBorder extends Container {
   };
 
   draw(input: ICellsDraw): void {
-    if (!this.app.settings.showCellTypeOutlines) return;
-
     const drawInputBorder = (input: ICellsDraw, tint: number, alpha: number): void => {
       drawBorder({
         x: input.x,
@@ -68,11 +65,10 @@ export class CellsBorder extends Container {
         bottom: true,
         left: true,
         right: true,
-        borderType: input.format?.borderType,
       });
     };
 
-    if (input.cell) {
+    if (input.cell && this.app.settings.showCellTypeOutlines) {
       // Change outline color based on cell type
       if (input.cell.type === 'TEXT') {
         drawInputBorder(input, colors.cellColorUserText, 0.75);
@@ -83,25 +79,39 @@ export class CellsBorder extends Container {
       }
     }
 
-    const border = input.format?.border;
-    if (border) {
-      drawBorder({
-        x: input.x,
-        y: input.y,
-        width: input.width,
-        height: input.height,
-        tint: input.format?.borderColor
-          ? convertColorStringToTint(input.format.borderColor)
-          : colors.defaultBorderColor,
-        alpha: 1,
-        getSprite: this.getSprite,
-        left: !!(border & borderLeft),
-        right: !!(border & borderRight),
-        top: !!(border & borderTop),
-        bottom: !!(border & borderBottom),
-        borderType: input.format?.borderType,
-      });
-    }
+    // const border = input.format?.border;
+    // if (border) {
+    //   drawBorder({
+    //     x: input.x,
+    //     y: input.y,
+    //     width: input.width,
+    //     height: input.height,
+    //     tint: input.format?.borderColor
+    //       ? convertColorStringToTint(input.format.borderColor)
+    //       : colors.defaultBorderColor,
+    //     alpha: 1,
+    //     getSprite: this.getSprite,
+    //     left: !!(border & borderLeft),
+    //     right: !!(border & borderRight),
+    //     top: !!(border & borderTop),
+    //     bottom: !!(border & borderBottom),
+    //     borderType: input.format?.borderType,
+    //   });
+    // }
+  }
+
+  drawBorders(borders: Border[]): void {
+    const { gridOffsets } = this.app;
+    borders.forEach(border => {
+      const position = gridOffsets.getCell(border.x, border.y);
+      if (border.horizontal || border.vertical) {
+        drawCellBorder({
+          position,
+          border,
+          getSprite: this.getSprite,
+        });
+      }
+    });
   }
 
   debugShowCachedCounts(): void {

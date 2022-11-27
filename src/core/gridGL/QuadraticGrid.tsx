@@ -14,6 +14,7 @@ import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
 import { GetFormatDB } from '../gridDB/Cells/GetFormatDB';
+import { GetBordersDB } from '../gridDB/Cells/GetBordersDB';
 
 interface IProps {
   app?: PixiApp;
@@ -38,12 +39,15 @@ export default function QuadraticGrid(props: IProps) {
   // Live query to update cells
   const cells = useLiveQuery(() => GetCellsDB());
   const format = useLiveQuery(() => GetFormatDB());
+  const borders = useLiveQuery(() => GetBordersDB());
+
   useEffect(() => {
-    if (props.app) {
+    if (props.app && cells && format && borders) {
       props.app.grid.populate(cells, format);
+      props.app.borders.populate(borders);
       props.app.cells.dirty = true;
     }
-  }, [props.app, cells, format]);
+  }, [props.app, cells, format, borders]);
 
   const { headings } = useHeadings(props.app);
   useEffect(() => {

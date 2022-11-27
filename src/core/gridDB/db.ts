@@ -28,13 +28,14 @@ export interface Heading {
   size?: number;
 }
 
-export const borderLeft = 0b0001;
-export const borderTop = 0b0010;
-export const borderRight = 0b0100;
-export const borderBottom = 0b1000;
-export const borderAll = 0b1111;
+export interface CellFormat {
+  x?: number;
+  y?: number;
+  fillColor?: string;
+}
 
 export enum BorderType {
+  line1 = 0,
   line2 = 1,
   line3 = 2,
   dotted = 3,
@@ -42,14 +43,17 @@ export enum BorderType {
   double = 5,
 }
 
-export interface CellFormat {
-  x?: number;
-  y?: number;
+export interface BorderDirection {
+  type?: BorderType;
+  color?: string;
+}
 
-  fillColor?: string;
-  borderColor?: string;
-  border?: number;
-  borderType?: BorderType;
+/** starts at the top-left corner: horizontal goes to the top-right corner; vertical goes to the bottom-left corner */
+export interface Border {
+  x: number;
+  y: number;
+  horizontal?: BorderDirection;
+  vertical?: BorderDirection;
 }
 
 export interface Grid {
@@ -63,15 +67,17 @@ export class QDexie extends Dexie {
   columns!: Table<Heading>;
   rows!: Table<Heading>;
   format!: Table<CellFormat>;
+  borders!: Table<Border>;
 
   constructor() {
     super('quadratic_grid1');
-    this.version(22).stores({
+    this.version(27).stores({
       cells: '[x+y],[y+x]',
       qgrid: '&id',
       columns: '&id',
       rows: '&id',
       format: '[x+y]',
+      borders: '[x+y]',
     });
   }
 }

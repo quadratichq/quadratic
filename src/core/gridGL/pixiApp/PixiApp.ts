@@ -16,6 +16,7 @@ import { zoomInOut, zoomToFit } from '../helpers/zoom';
 import { Quadrants } from '../quadrants/Quadrants';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
 import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../../debugFlags';
+import { GridBorders } from '../../gridDB/GridBorders';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -23,6 +24,7 @@ export class PixiApp {
   private cacheIsVisible = false;
 
   canvas: HTMLCanvasElement;
+  viewport: Viewport;
   gridLines: GridLines;
   axesLines: AxesLines;
   cursor: Cursor;
@@ -31,10 +33,10 @@ export class PixiApp {
   quadrants: Quadrants;
 
   input: Pointer;
-  viewport: Viewport;
   viewportContents: Container;
   gridOffsets: GridOffsets;
   grid: GridSparse;
+  borders: GridBorders;
   settings: PixiAppSettings;
   renderer: Renderer;
   stage = new Container();
@@ -47,6 +49,7 @@ export class PixiApp {
   constructor() {
     this.gridOffsets = new GridOffsets(this);
     this.grid = new GridSparse(this);
+    this.borders = new GridBorders(this);
 
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';

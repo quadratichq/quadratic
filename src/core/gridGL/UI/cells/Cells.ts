@@ -233,9 +233,15 @@ export class Cells extends Container {
   update(): void {
     if (this.dirty) {
       this.dirty = false;
-      const bounds = this.app.grid.getBounds(this.app.viewport.getVisibleBounds());
+      const visibleBounds = this.app.viewport.getVisibleBounds();
+      const bounds = this.app.grid.getBounds(visibleBounds);
       const cellRectangle = this.app.grid.getCells(bounds);
       this.drawBounds({ bounds, cellRectangle });
+
+      // draw borders
+      const borderBounds = this.app.borders.getBounds(visibleBounds);
+      const borders = this.app.borders.getBorders(borderBounds);
+      this.cellsBorder.drawBorders(borders);
     }
   }
 
