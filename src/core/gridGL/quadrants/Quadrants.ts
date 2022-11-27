@@ -30,8 +30,11 @@ export class Quadrants extends Container {
     this.removeChildren();
     this.quadrants.clear();
 
-    const { grid } = this.app;
-    const bounds = grid.getGridBounds();
+    const { grid, borders } = this.app;
+    const gridBounds = grid.getGridBounds();
+    const borderBounds = borders.getGridBounds();
+    const bounds = intersects.rectangleUnion(gridBounds, borderBounds);
+    if (!bounds) return;
 
     // iterate through visible grid bounds and prepare quadrants
     for (let y = bounds.top; y <= bounds.bottom + QUADRANT_ROWS; y += QUADRANT_ROWS) {
@@ -154,7 +157,7 @@ export class Quadrants extends Container {
       if (intersects.rectangleRectangle(screen, quadrant.visibleRectangle)) {
         const columnStart = quadrant.location.x * QUADRANT_COLUMNS;
         const rowStart = quadrant.location.y * QUADRANT_ROWS;
-        return [grid.getCells(new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS, QUADRANT_ROWS))];
+        return [grid.getCells(new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS - 1, QUADRANT_ROWS - 1))];
       }
       return [];
     });

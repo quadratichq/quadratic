@@ -2,6 +2,7 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
 import { Cell, CellFormat } from '../../../gridDB/db';
+import { intersects } from '../../helpers/intersects';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { CellsArray } from './CellsArray';
 import { CellsBackground } from './cellsBackground';
@@ -61,7 +62,7 @@ export class Cells extends Container {
    * @param ignoreInput if false then don't draw input location (as it's handled by the DOM)
    * @returns a Rectangle of the content bounds (not including empty area), or undefined if nothing is drawn
    */
-  drawBounds(options: {
+    drawBounds(options: {
     bounds: Rectangle;
     cellRectangle: CellRectangle;
     ignoreInput?: boolean;
@@ -230,18 +231,24 @@ export class Cells extends Container {
     }
   }
 
+  drawCells(visibleBounds: Rectangle, showDebugColors: boolean): Rectangle | undefined {
+    const bounds = this.app.grid.getBounds(visibleBounds);
+    const cellRectangle = this.app.grid.getCells(bounds);
+    const rectCells = this.drawBounds({ bounds, cellRectangle, showDebugColors });
+
+    // draw borders
+    const borderBounds = this.app.borders.getBounds(visibleBounds);
+    const borders = this.app.borders.getBorders(borderBounds);
+    const rectBorders = this.cellsBorder.drawBorders(borders);
+
+    return intersects.rectangleUnion(rectCells, rectBorders);
+  }
+
   update(): void {
     if (this.dirty) {
       this.dirty = false;
       const visibleBounds = this.app.viewport.getVisibleBounds();
-      const bounds = this.app.grid.getBounds(visibleBounds);
-      const cellRectangle = this.app.grid.getCells(bounds);
-      this.drawBounds({ bounds, cellRectangle });
-
-      // draw borders
-      const borderBounds = this.app.borders.getBounds(visibleBounds);
-      const borders = this.app.borders.getBorders(borderBounds);
-      this.cellsBorder.drawBorders(borders);
+      this.drawCells(visibleBounds, false);
     }
   }
 

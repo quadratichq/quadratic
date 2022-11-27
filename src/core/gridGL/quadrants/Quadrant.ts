@@ -123,16 +123,16 @@ export class Quadrant extends Container {
 
     for (let subQuadrantY = 0; subQuadrantY < yCount; subQuadrantY++) {
       for (let subQuadrantX = 0; subQuadrantX < xCount; subQuadrantX++) {
-        const cellBounds = app.gridOffsets.getCellRectangle(
+        const cellBounds = new Rectangle(
           screenRectangle.x + subQuadrantX * subQuadrantWidth,
           screenRectangle.y + subQuadrantY * subQuadrantHeight,
           subQuadrantWidth,
           subQuadrantHeight
         );
-        const cellRectangle = app.grid.getCells(cellBounds);
 
         // returns the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
-        const reducedDrawingRectangle = app.cells.drawBounds({ bounds: cellBounds, cellRectangle, showDebugColors: debugShowQuadrantBoxes });
+        const reducedDrawingRectangle = app.cells.drawCells(cellBounds, debugShowQuadrantBoxes)
+
         if (reducedDrawingRectangle) {
           // prepare a transform to translate the world to the start of the content for this subQuadrant, and properly scale it
           const transform = new Matrix();
