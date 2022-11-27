@@ -1,19 +1,18 @@
-import { ColorResult } from 'react-color';
 import { clearBorderDB, updateBorderDB } from '../../../../core/gridDB/Cells/UpdateBordersDB';
 import { Border, BorderType } from '../../../../core/gridDB/db';
 import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../../../core/gridGL/types/size';
-import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { useGetSelection } from './useGetSelection';
 
 export interface ChangeBorder {
+  borderAll?: boolean;
   borderLeft?: boolean;
   borderTop?: boolean;
   borderBottom?: boolean;
   borderRight?: boolean;
   borderHorizontal?: boolean;
   borderVertical?: boolean;
-  color?: ColorResult;
+  color?: string;
   type?: BorderType;
 }
 
@@ -27,58 +26,54 @@ export const useBorders = (app?: PixiApp): IResults => {
 
   const changeBorders = (options: ChangeBorder): void => {
     if (!app) return;
-    const borderColor = options.color ? convertReactColorToString(options.color) : undefined;
+    const borderColor = options.color;
     const borderUpdates: Border[] = [];
 
-    const updateBorderLeft = (x: number, y: number, value: boolean): void => {
+    const addBorderLeft = (x: number, y: number): void => {
 
       // update an existing borderUpdate
       const border = borderUpdates.find(update => update.x === x && update.y === y);
       if (border) {
-        if (value === true) {
-          border.vertical = { type: options.type, color: borderColor };
-        } else if (border.vertical) {
-          delete border.vertical;
-        }
+        border.vertical = { type: options.type, color: borderColor };
       } else {
 
         // update an existing border
         const border = app.borders.get(x, y);
         if (border) {
-          if (value) {
-            borderUpdates.push({ ...border, horizontal: { ...border.horizontal }, vertical: { type: options.type, color: borderColor } });
+          const update: Border = { x, y, vertical: { type: options.type, color: borderColor }};
+          if (border.horizontal) {
+            update.horizontal = { ...border.horizontal };
           }
+          borderUpdates.push(update);
         }
 
         // create a new border
-        else if (value) {
+        else {
           borderUpdates.push({ x, y, vertical: { type: options.type, color: borderColor } });
         }
       }
     };
 
-    const updateBorderTop = (x: number, y: number, value: boolean): void => {
+    const addBorderTop = (x: number, y: number): void => {
 
       // update an existing borderUpdate
       const border = borderUpdates.find(update => update.x === x && update.y === y);
       if (border) {
-        if (value === true) {
-          border.horizontal = { type: options.type, color: borderColor };
-        } else if (border.horizontal) {
-          delete border.horizontal;
-        }
+        border.horizontal = { type: options.type, color: borderColor };
       } else {
 
         // update an existing border
         const border = app.borders.get(x, y);
         if (border) {
-          if (value) {
-            borderUpdates.push({ ...border, vertical: { ...border.vertical }, horizontal: { type: options.type, color: borderColor } });
+          const update: Border = { x, y, horizontal: { type: options.type, color: borderColor } };
+          if (border.vertical) {
+            update.vertical = { ...border.vertical };
           }
+          borderUpdates.push(update);
         }
 
         // create a new border
-        else if (value) {
+        else {
           borderUpdates.push({ x, y, horizontal: { type: options.type, color: borderColor } });
         }
       }
@@ -87,23 +82,34 @@ export const useBorders = (app?: PixiApp): IResults => {
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
 
-        if (x === start.x && options.borderLeft !== undefined) {
-          updateBorderLeft(x, y, options.borderLeft);
-        }
-        if (x === end.x && options.borderRight !== undefined) {
-          updateBorderLeft(x + 1, y, options.borderRight);
-        }
-        if (y === start.y && options.borderTop !== undefined) {
-          updateBorderTop(x, y, options.borderTop);
-        }
-        if (y === end.y && options.borderBottom !== undefined) {
-          updateBorderTop(x, y + 1, options.borderBottom);
-        }
-        if (multiCursor && y !== start.y && options.borderHorizontal !== undefined) {
-          updateBorderTop(x, y, options.borderHorizontal);
-        }
-        if (multiCursor && x !== start.x && options.borderVertical !== undefined) {
-          updateBorderLeft(x, y, options.borderVertical);
+        if (options.borderAll) {
+          addBorderLeft(x, y);
+          addBorderTop(x, y);
+          if (x === end.x) {
+            addBorderLeft(x + 1, y);
+          }
+          if (y === end.y) {
+            addBorderTop(x, y + 1);
+          }
+        } else {
+          if (x === start.x && options.borderLeft) {
+            addBorderLeft(x, y);
+          }
+          if (x === end.x && options.borderRight) {
+            addBorderLeft(x + 1, y);
+          }
+          if (y === start.y && options.borderTop) {
+            addBorderTop(x, y);
+          }
+          if (y === end.y && options.borderBottom) {
+            addBorderTop(x, y + 1);
+          }
+          if (multiCursor && y !== start.y && options.borderHorizontal) {
+            addBorderTop(x, y);
+          }
+          if (multiCursor && x !== start.x && options.borderVertical) {
+            addBorderLeft(x, y);
+          }
         }
       }
     }
@@ -114,6 +120,7 @@ export const useBorders = (app?: PixiApp): IResults => {
 
   const clearBorders = (): void => {
     if (!app) return;
+    const borderUpdate: Border[] = [];
     const borderDelete: Coordinate[] = [];
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
@@ -121,9 +128,34 @@ export const useBorders = (app?: PixiApp): IResults => {
         if (border) {
           borderDelete.push({ x, y });
         }
+        if (x === end.x) {
+          const border = app.borders.get(x + 1, y);
+          if (border?.vertical) {
+            if (!border.horizontal) {
+              borderDelete.push({ x: x + 1, y });
+            } else {
+              borderUpdate.push({ ...border, vertical: undefined });
+            }
+          }
+        }
+        if (y === end.y) {
+          const border = app.borders.get(x, y + 1);
+          if (border?.horizontal) {
+            if (!border.vertical) {
+              borderDelete.push({ x, y: y + 1 });
+            } else {
+              borderUpdate.push({ ...border, horizontal: undefined });
+            }
+          }
+        }
       }
     }
-    clearBorderDB(borderDelete);
+    if (borderDelete.length) {
+      clearBorderDB(borderDelete);
+    }
+    if (borderUpdate.length) {
+      updateBorderDB(borderUpdate);
+    }
   };
 
   return {

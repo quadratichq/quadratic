@@ -9,3 +9,7 @@ export function convertReactColorToString(color: ColorResult): string {
 export function convertColorStringToTint(color: string): number {
   return Color(color).rgbNumber();
 }
+
+export function convertTintToString(color: number): string {
+  return Color(color).rgb().toString();
+}

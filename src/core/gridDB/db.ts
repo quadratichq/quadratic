@@ -71,7 +71,7 @@ export class QDexie extends Dexie {
 
   constructor() {
     super('quadratic_grid1');
-    this.version(23).stores({
+    this.version(27).stores({
       cells: '[x+y],[y+x]',
       qgrid: '&id',
       columns: '&id',

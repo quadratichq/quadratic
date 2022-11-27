@@ -3,7 +3,7 @@ import { colors } from '../../../../theme/colors';
 import { Border } from '../../../gridDB/db';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { ICellsDraw } from './Cells';
-import { drawBorder } from './drawBorder';
+import { drawBorder, drawCellBorder } from './drawBorder';
 
 export class CellsBorder extends Container {
   private app: PixiApp;
@@ -99,12 +99,16 @@ export class CellsBorder extends Container {
   }
 
   drawBorders(borders: Border[]): void {
+    const { gridOffsets } = this.app;
     borders.forEach(border => {
-      drawBorder({
-        x: border.x,
-        y: border.y,
-
-      })
+      const position = gridOffsets.getCell(border.x, border.y);
+      if (border.horizontal || border.vertical) {
+        drawCellBorder({
+          position,
+          border,
+          getSprite: this.getSprite,
+        });
+      }
     });
   }
 

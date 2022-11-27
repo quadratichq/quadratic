@@ -50,6 +50,17 @@ export class GridBorders {
     return this.borders.get(this.getKey(x, y));
   }
 
+  getBorders(bounds: Rectangle): Border[] {
+    const borders: Border[] = [];
+    for (let y = bounds.top; y <= bounds.bottom; y++) {
+      for (let x = bounds.left; x <= bounds.right; x++) {
+        const border = this.borders.get(this.getKey(x, y));
+        if (border) borders.push(border)
+      }
+    }
+    return borders;
+  }
+
   getBounds(bounds: Rectangle): Rectangle {
     const columnStartIndex = this.app.gridOffsets.getColumnIndex(bounds.left);
     const columnStart = columnStartIndex.index > this.minX ? columnStartIndex.index : this.minX;
