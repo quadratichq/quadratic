@@ -23,6 +23,7 @@ import { useFormatCells } from '../useFormatCells';
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { useGetBorderMenu } from './useGetBorderMenu';
 import './formatMenuStyles.css';
+import { useBorders } from '../useBorders';
 
 interface IProps {
   app?: PixiApp;
@@ -34,7 +35,7 @@ export const FormatMenu = (props: IProps) => {
     removeFillColor,
     clearFormatting,
   } = useFormatCells(props.app);
-
+  const { clearBorders } = useBorders(props.app);
 
   // focus canvas after the format menu closes
   const onMenuChange = useCallback(
@@ -45,6 +46,11 @@ export const FormatMenu = (props: IProps) => {
   );
 
   const borders = useGetBorderMenu({ app: props.app });
+
+  const handleClearFormatting = useCallback(() => {
+    clearFormatting();
+    clearBorders();
+  }, [clearFormatting, clearBorders]);
 
   return (
     <Menu
@@ -114,7 +120,7 @@ export const FormatMenu = (props: IProps) => {
 
       {borders}
 
-      <MenuItem onClick={clearFormatting}>Clear Formatting</MenuItem>
+      <MenuItem onClick={handleClearFormatting}>Clear Formatting</MenuItem>
     </Menu>
   );
 };
