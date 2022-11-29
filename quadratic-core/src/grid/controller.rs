@@ -1,17 +1,47 @@
 use anyhow::Result;
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
 use super::{Cell, Command, Grid, JsCell, Pos, Rect};
 
+#[derive(Debug)]
+pub struct TransactionInProgress<'a> {
+    controller: &'a mut GridController,
+    reverse_commands: Vec<Command>,
+    dirty: DirtyQuadrants,
+}
+impl TransactionInProgress<'_> {
+    /// Returns the underlying grid.
+    pub fn grid(&self) -> &GridController {
+        self.controller
+    }
+    /// Executes a command as part of the transaction.
+    pub fn exec(&mut self, command: Command) -> Result<()> {
+        let reverse = self.controller.exec_internal(command, &mut self.dirty)?;
+        self.reverse_commands.push(reverse);
+        Ok(())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Transaction {
+    commands: Vec<Command>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 #[wasm_bindgen]
 pub struct GridController {
+    /// Underlying grid of cells.
     grid: Grid,
-    undo_stack: Vec<Command>,
-    redo_stack: Vec<Command>,
+    /// Stack of transactions that an undo command pops from. Each undo command
+    /// takes one transaction from the top of the stack and executes all
+    /// commands in it, in order.
+    undo_stack: Vec<Transaction>,
+    /// Stack of transactions that a redo command pops from. Each undo command
+    /// takes one transaction from the top of the stack and executes all
+    /// commands in it, in order.
+    redo_stack: Vec<Transaction>,
 }
 impl PartialEq for GridController {
     fn eq(&self, other: &Self) -> bool {
@@ -49,8 +79,8 @@ impl GridController {
         option_to_js_value(self.redo())
     }
 
-    /// Sets a list of cells on the grid and returns a list of dirty quadrants
-    /// (XY pairs flattened). Example input:
+    /// Clears the whole grid and then adds new cells to it. Also clears
+    /// undo/redo history. Example input:
     ///
     /// ```js
     /// set_cells(JSON.stringify([
@@ -58,27 +88,28 @@ impl GridController {
     ///     [{x: 5, y: 6}, {Text: "hello"}],
     /// ]));
     /// ```
-    #[wasm_bindgen(js_name = "setCells")]
-    pub fn set_cells(&mut self, cells: &str) -> JsValue {
-        let dirty_set = self.execute(Command::SetCells(
-            serde_json::from_str(cells).expect("bad cell list"),
-        ));
-        serde_wasm_bindgen::to_value(&dirty_set).unwrap()
+    ///
+    /// Returns a list of dirty quadrants as XY pairs.
+    pub fn populate(&mut self, cells: &str) -> JsValue {
+        let cell_list: Vec<(Pos, Cell)> =
+            serde_json::from_str(cells).expect("expected list of cells");
+
+        *self = Self::new();
+
+        self.js_transact(|t| {
+            for (pos, cell) in cell_list {
+                t.exec(Command::SetCell(pos, cell))?;
+            }
+            Ok(())
+        })
     }
 
-    /// Clears the whole grid and then adds new cells to it.
-    pub fn populate(&mut self, cells: &str) {
-        self.empty();
-        let cell_list: Vec<JsCell> = serde_json::from_str(cells).expect("expected list of cells");
-        for cell in cell_list {
-            self.grid.set_cell(
-                Pos {
-                    x: cell.x,
-                    y: cell.y,
-                },
-                Cell::Text(cell.value),
-            );
-        }
+    /// Sets a cell in the grid as a single transaction.
+    ///
+    /// Returns a list of dirty quadrants as XY pairs.
+    #[wasm_bindgen(js_name = "setCell")]
+    pub fn set_cell(&mut self, pos: Pos, text_contents: String) -> JsValue {
+        self.js_transact(|t| t.exec(Command::SetCell(pos, Cell::Text(text_contents))))
     }
 
     /// Returns all information about a single cell in the grid. Returns
@@ -173,67 +204,121 @@ impl GridController {
         let ret = self.grid.bounds_within(region);
         Some(ret?.into())
     }
-
-    /// Empties the grid. **This does not affect undo/redo.**
-    pub fn empty(&mut self) {
-        self.grid = Grid::new();
-    }
 }
 impl GridController {
+    /// Executes a transaction and serializes the result for output to JS.
+    fn js_transact(
+        &mut self,
+        f: impl FnOnce(&mut TransactionInProgress<'_>) -> Result<()>,
+    ) -> JsValue {
+        serde_wasm_bindgen::to_value(&self.transact(f))
+            .expect("failed to serialize dirty quadrants")
+    }
+
+    /// Executes multiple commands as a **transaction**, which can be
+    /// undone/redone as a single action.
+    pub fn transact(
+        &mut self,
+        f: impl FnOnce(&mut TransactionInProgress<'_>) -> Result<()>,
+    ) -> DirtyQuadrants {
+        // Start the transaction.
+        let mut t = TransactionInProgress {
+            controller: self,
+            reverse_commands: vec![],
+            dirty: DirtyQuadrants::default(),
+        };
+
+        // Execute commands.
+        let res = f(&mut t);
+
+        // Reverse the order of the commands so that we can undo the whole
+        // transaction by executing `reverse_commands` in order.
+        t.reverse_commands.reverse();
+        let reverse_transaction = Transaction {
+            commands: t.reverse_commands,
+        };
+        let mut dirty_set = t.dirty;
+
+        // Finish the transaction.
+        match res {
+            Ok(()) => {
+                // Success! Push the reverse transaction to the undo stack.
+                self.redo_stack.clear();
+                self.undo_stack.push(reverse_transaction);
+                dirty_set
+            }
+            Err(err) => {
+                // There was an error, so roll back the transaction.
+                for c in reverse_transaction.commands {
+                    // I don't care if there was an error here when rolling
+                    // back; we're about to panic out anyway.
+                    let _ = self.exec_internal(c, &mut dirty_set);
+                }
+                panic!("error executing transaction: {err}")
+            }
+        }
+    }
+
     /// Undoes one action, if there is an action to be undone. Returns a list of
     /// dirty quadrants or `None` if nothing happened.
     pub fn undo(&mut self) -> Option<DirtyQuadrants> {
-        let command = self.undo_stack.pop()?;
-        let (reverse_command, dirty_set) = self.exec_internal(command).unwrap();
-        self.redo_stack.push(reverse_command);
+        let transaction = self.undo_stack.pop()?;
+        let mut reverse_commands = vec![];
+        let mut dirty_set = DirtyQuadrants::default();
+        for command in transaction.commands {
+            reverse_commands.push(
+                self.exec_internal(command, &mut dirty_set)
+                    .expect("failed to undo command"),
+            )
+        }
+        // Reverse the order of the commands so that we can redo the whole
+        // transaction by executing `reverse_commands` in order.
+        reverse_commands.reverse();
+
+        self.redo_stack.push(Transaction {
+            commands: reverse_commands,
+        });
         Some(dirty_set)
     }
     /// Redoes one action, if there is an action to be redone. Returns a list of
     /// dirty quadrants or `None` if nothing happened.
     pub fn redo(&mut self) -> Option<DirtyQuadrants> {
-        let command = self.redo_stack.pop()?;
-        let (reverse_command, dirty_set) = self.exec_internal(command).unwrap();
-        self.undo_stack.push(reverse_command);
+        let transaction = self.redo_stack.pop()?;
+        let mut reverse_commands = vec![];
+        let mut dirty_set = DirtyQuadrants::default();
+
+        for command in transaction.commands {
+            reverse_commands.push(
+                self.exec_internal(command, &mut dirty_set)
+                    .expect("failed to redo command"),
+            )
+        }
+        // Reverse the order of the commands so that we can undo the whole
+        // transaction again by executing `reverse_commands` in order.
+        reverse_commands.reverse();
+
+        self.undo_stack.push(Transaction {
+            commands: reverse_commands,
+        });
         Some(dirty_set)
     }
 
-    /// Executes a command on the grid, managing the undo and redo stacks
-    /// appropriately. Returns a set of dirty quadrants.
-    pub fn execute(&mut self, command: Command) -> DirtyQuadrants {
-        self.redo_stack.clear();
-        let (reverse_command, dirty_set) = self
-            .exec_internal(command)
-            .expect("error executing command");
-        self.undo_stack.push(reverse_command);
-        dirty_set
-    }
-
-    /// Executes a command on the grid. Returns the reverse command and a set of
-    /// dirty quadrants.
-    fn exec_internal(&mut self, command: Command) -> Result<(Command, DirtyQuadrants)> {
-        let mut dirty_set = DirtyQuadrants::default();
-
+    /// Executes a command on the grid. Returns the reverse command.
+    #[must_use = "save the reverse command to undo it later"]
+    fn exec_internal(
+        &mut self,
+        command: Command,
+        dirty_set: &mut DirtyQuadrants,
+    ) -> Result<Command> {
         let reverse_command = match command {
-            Command::SetCells(cells) => {
-                let mut old_values = cells
-                    .into_iter()
-                    .map(|(pos, contents)| {
-                        dirty_set.add_cell(pos);
-                        (pos, self.grid.set_cell(pos, contents))
-                    })
-                    .collect_vec();
-                // In case there are duplicates, make sure to set them in the
-                // reverse order. For example, suppose a cell initially contains
-                // the value "A", then we run a command that sets it to "B" and
-                // then "C" and then "D". The reverse command should set the
-                // cell to "C" and then "B" and then finally "A".
-                old_values.reverse();
-
-                Command::SetCells(old_values)
+            Command::SetCell(pos, contents) => {
+                dirty_set.add_cell(pos);
+                let old_value = self.grid.set_cell(pos, contents);
+                Command::SetCell(pos, old_value)
             }
         };
 
-        Ok((reverse_command, dirty_set))
+        Ok(reverse_command)
     }
 
     /// Returns whether the underlying [`Grid`] is valid.
