@@ -1,3 +1,4 @@
+use anyhow::Result;
 use proptest::prelude::*;
 use std::collections::HashMap;
 
@@ -37,13 +38,13 @@ fn test_dirty_quadrants() {
     let mut grid = GridController::new();
 
     // This command shouldn't matter.
-    grid.execute(Command::SetCells(vec![
+    grid.transact(set_cells_transaction([
         (Pos { x: -1, y: 1 }, Cell::Int(-10)),
         (Pos { x: -1, y: -6 }, Cell::Int(-20)),
     ]));
 
     // This is the command whose dirty set we'll be testing.
-    let dirty = grid.execute(Command::SetCells(vec![
+    let dirty = grid.transact(set_cells_transaction([
         (Pos { x: -1, y: 1 }, Cell::Int(10)),
         (Pos { x: 1, y: 1 }, Cell::Int(10)),
         (Pos { x: 1, y: 2 }, Cell::Int(20)),
@@ -51,7 +52,7 @@ fn test_dirty_quadrants() {
     ]));
     let expected_dirty = DirtyQuadrants([(0, 0), (-1, 0)].into_iter().collect());
 
-    assert_eq!(dirty, expected_dirty,);
+    assert_eq!(dirty, expected_dirty);
 
     // Undo should have the same dirty set.
     assert_eq!(grid.undo(), Some(dirty.clone()));
@@ -104,16 +105,16 @@ fn test_set_and_get_cells(cells: &[(Pos, Cell)]) {
 }
 
 fn test_undo_redo(cell_batches: [Vec<(Pos, Cell)>; 4]) {
-    let [a, b, c, d] = cell_batches.map(|batch| Command::SetCells(batch));
+    let [a, b, c, d] = cell_batches.map(set_cells_transaction);
 
     // For reference
     let mut grid = GridController::new();
     let initial = grid.clone();
-    grid.execute(a);
+    grid.transact(a);
     let grid_a = grid.clone(); // a
-    grid.execute(b);
+    grid.transact(b);
     let grid_b = grid.clone(); // a -> b
-    grid.execute(c);
+    grid.transact(c);
     let grid_c = grid.clone(); // a -> b -> c
 
     assert!(
@@ -147,9 +148,9 @@ fn test_undo_redo(cell_batches: [Vec<(Pos, Cell)>; 4]) {
     assert_eq!(grid, grid_a);
 
     let mut grid_d = grid_a.clone();
-    grid_d.execute(d.clone()); // a -> d
+    grid_d.transact(d.clone()); // a -> d
 
-    grid.execute(d);
+    grid.transact(d);
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, grid_d);
     assert!(
@@ -184,4 +185,15 @@ fn test_undo_redo(cell_batches: [Vec<(Pos, Cell)>; 4]) {
     );
     assert!(grid.is_valid(), "{:?}", grid);
     assert_eq!(grid, grid_d);
+}
+
+fn set_cells_transaction(
+    cells: impl Clone + IntoIterator<Item = (Pos, Cell)>,
+) -> impl Clone + FnOnce(&mut TransactionInProgress<'_>) -> Result<()> {
+    move |t| {
+        for (pos, cell) in cells {
+            t.exec(Command::SetCell(pos, cell))?;
+        }
+        Ok(())
+    }
 }
