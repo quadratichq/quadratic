@@ -1,20 +1,25 @@
 import Card from '@mui/material/Card';
 import CardHeader from '@mui/material/CardHeader';
 import CardMedia from '@mui/material/CardMedia';
-
 import Avatar from '@mui/material/Avatar';
 import IconButton from '@mui/material/IconButton';
-
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { format } from 'timeago.js';
 
-export const FilePreviewCard = () => {
+interface FilePreviewCardProps {
+  file: any;
+}
+
+export const FilePreviewCard = (props: FilePreviewCardProps) => {
+  const { file } = props;
+
   return (
     <Card sx={{ width: '275px' }}>
       <CardMedia
         component="img"
         height="194"
         image="/images/example_file_preview.png"
-        alt="Paella dish"
+        alt={file.name}
         sx={{ objectFit: 'contain' }}
       />
       <CardHeader
@@ -26,8 +31,8 @@ export const FilePreviewCard = () => {
             <MoreVertIcon />
           </IconButton>
         }
-        title="Python Example File"
-        subheader="Edited 3 Days Ago"
+        title={file.name}
+        subheader={format(file.updated_date, 'en_US')}
       />
     </Card>
   );

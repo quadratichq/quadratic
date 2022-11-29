@@ -15,15 +15,16 @@ datasource db {
 model QUser {
   id            Int     @id @default(autoincrement())
   auth0_user_id String? @unique
-  QGrid         QGrid[]
+  QFile         QFile[]
 }
 
-model QGrid {
+model QFile {
   id           Int      @id @default(autoincrement())
   url          String   @unique @default(uuid())
-  user_owner   QUser    @relation(fields: [id], references: [id])
+  user_owner   QUser    @relation(fields: [qUserId], references: [id])
   name         String
   data         Bytes?
   created_date DateTime @default(now())
   updated_date DateTime @default(now())
+  qUserId      Int
 }

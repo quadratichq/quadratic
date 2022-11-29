@@ -1,15 +1,47 @@
+import { useState, useEffect } from 'react';
 import { FilePreviewCard } from './FilePreviewCard';
 import { Container, Avatar, ListItem, ListItemAvatar, ListItemText, Tooltip, Button, Box } from '@mui/material';
-import { Menu, MenuItem } from '@szhsin/react-menu';
+import { Menu } from '@szhsin/react-menu';
 import { FileNewCard } from './FileNewCard';
-import { FileSearchBar } from '../FileSearchBar';
-import { TopBar } from '../../ui/components/TopBar';
+import { FileSearchBar } from '../../quadratic/FileSearchBar';
+import { TopBar } from '../components/TopBar';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { colors } from '../../theme/colors';
 import { useAuth0 } from '@auth0/auth0-react';
 
 export const FileBrowser = () => {
   const { user } = useAuth0();
+
+  const [files, setFiles] = useState<any[]>();
+
+  const { getAccessTokenSilently } = useAuth0();
+
+  const fetchData = async () => {
+    console.log('test');
+    // based on implementation from https://github.com/dennisMeeQ/auth0-react-express/blob/master/client/src/components/people.js#L15
+
+    const token = await getAccessTokenSilently();
+
+    const res = await fetch(`http://localhost:8000/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    res
+      .json()
+      .then((json) => {
+        setFiles(json.files);
+      })
+      .catch((err) => console.log(err));
+  };
+
+  useEffect(
+    () => {
+      fetchData();
+    },
+    // eslint-disable-next-line
+    []
+  );
 
   return (
     <>
@@ -79,8 +111,7 @@ export const FileBrowser = () => {
           }}
         >
           <FileNewCard></FileNewCard>
-          <FilePreviewCard></FilePreviewCard>
-          <FilePreviewCard></FilePreviewCard>
+          {files && files.map((file) => <FilePreviewCard key={file.id} file={file}></FilePreviewCard>)}
         </div>
       </Container>
     </>

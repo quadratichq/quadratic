@@ -2,7 +2,7 @@ import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 
 import { useAuth0 } from '@auth0/auth0-react';
 import { captureException } from '@sentry/react';
-import { FileBrowser } from './fileBrowser/FileBrowser';
+import { FileBrowser } from '../ui/fileBrowser/FileBrowser';
 import { QuadraticApp } from './QuadraticApp';
 
 export const QuadraticAuth = () => {
