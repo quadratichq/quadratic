@@ -1,4 +1,4 @@
-use petgraph::algo::is_cyclic_directed;
+// use petgraph::algo::is_cyclic_directed;
 use petgraph::dot::Dot;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::visit::Bfs;
@@ -70,6 +70,8 @@ impl DGraphController {
         result[1..].to_vec()
     }
 
+    // easy way to visualize the dgraph
+    // paste into (http://viz-js.com/) to visualize
     pub fn get_dot_graph(&self) -> String {
         format!("{}", Dot::new(&self.graph))
     }
