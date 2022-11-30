@@ -41,9 +41,9 @@ impl DGraphController {
         }
 
         // check for cycles
-        if is_cyclic_directed(&self.graph) {
-            panic!("Cyclic dependency detected!");
-        }
+        // if is_cyclic_directed(&self.graph) {
+        //     panic!("Cyclic dependency detected!");
+        // }
     }
 
     pub fn remove_dependencies_from_graph(
@@ -57,7 +57,7 @@ impl DGraphController {
             }
         }
 
-        // todo: remove nodes that are not connected to any other nodes
+        // todo: remove nodes that are not connected to any other nodes (isolate nodes)
     }
 
     pub fn get_children_cells(&self, cell: CellPosition) -> Vec<CellPosition> {
@@ -198,42 +198,4 @@ fn test_dgraph_controller() {
 
     //   // Test CircularReferenceException, should throw error
     //   // dg.add_dependency_to_graph([1, 2], [[3, 3]]);
-}
-
-#[test]
-fn test_dgraph() {
-    let mut graph = DiGraphMap::<CellPosition, usize>::new();
-    let origin = graph.add_node(CellPosition { x: 0, y: 0 });
-    let destination_1 = graph.add_node(CellPosition { x: 0, y: 1 });
-    let destination_2 = graph.add_node(CellPosition { x: 0, y: 2 });
-    graph.add_edge(origin, destination_1, 1);
-    graph.add_edge(origin, destination_2, 1);
-
-    let n_1_0 = graph.add_node(CellPosition { x: 1, y: 0 });
-
-    let origin2 = graph.add_node(CellPosition { x: 0, y: 0 });
-    let destination_3 = graph.add_node(CellPosition { x: 0, y: 1 });
-    graph.add_edge(origin2, destination_3, 1);
-
-    // outputs the graph in the DOT language (http://viz-js.com/)
-    println!("{}", Dot::new(&graph));
-
-    // bredth first search
-    let mut bfs = Bfs::new(&graph, n_1_0);
-
-    print!("[{}] ", n_1_0);
-    while let Some(visited) = bfs.next(&graph) {
-        print!(" {}", visited);
-    }
-    println!();
-
-    // detect cycles
-    let is_cyclic = is_cyclic_directed(&graph);
-    println!("is_cyclic: {}", is_cyclic);
-    // make cycle
-    graph.add_edge(destination_1, origin, 1);
-    let is_cyclic = is_cyclic_directed(&graph);
-    println!("is_cyclic: {}", is_cyclic);
-
-    // panic to show output
 }
