@@ -2,6 +2,7 @@
 
 use wasm_bindgen::prelude::*;
 
+pub mod dgraph;
 pub mod grid;
 
 #[cfg(test)]
@@ -46,5 +47,5 @@ fn test_ser() {
         }
         println!();
     }
-    panic!()
+    // panic!()
 }
