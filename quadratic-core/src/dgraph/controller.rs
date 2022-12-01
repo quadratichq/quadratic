@@ -70,10 +70,15 @@ impl DGraphController {
         for &dependency in dependencies.iter() {
             self.graph.remove_edge(dependency, cell);
 
-            // remove nodes that are not connected to any other nodes (isolate nodes)
+            // remove nodes that are not connected to any other nodes
             if self.graph.neighbors(dependency).count() == 0 {
                 self.graph.remove_node(dependency);
             }
+        }
+
+        // remove cell if not connected to any other nodes
+        if self.graph.neighbors(cell).count() == 0 {
+            self.graph.remove_node(cell);
         }
     }
 
