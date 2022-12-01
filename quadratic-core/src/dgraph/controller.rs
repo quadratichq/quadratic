@@ -45,27 +45,15 @@ impl DGraphController {
         &self.graph
     }
 
-    pub fn set_dependencies(
+    pub fn add_dependencies(
         &mut self,
         cell: Pos,
         dependencies: &[Pos],
-    ) -> Result<Vec<Pos>, DependencyCycleError> {
-        let old_dependencies = self.graph.neighbors(cell).collect::<Vec<Pos>>();
-
-        // remove old dependencies
-        for &old_dependency in old_dependencies.iter() {
-            self.graph.remove_edge(old_dependency, cell);
-
-            // remove nodes that are not connected to any other nodes (isolate nodes)
-            if self.graph.neighbors(old_dependency).count() == 0 {
-                self.graph.remove_node(old_dependency);
-            }
-        }
-
+    ) -> Result<(), DependencyCycleError> {
         // add new dependencies
         for &dcell in dependencies {
             // add_edge automatically adds nodes if they don't exist
-            self.graph.add_edge(cell, dcell, 1);
+            self.graph.add_edge(dcell, cell, 1);
         }
 
         println!("{}", self);
@@ -75,7 +63,20 @@ impl DGraphController {
             Err(DependencyCycleError { source: cell })
         } else {
             // return previous state for cell
-            Ok(old_dependencies)
+            Ok(())
+        }
+    }
+
+    pub fn remove_dependencies(&mut self, cell: Pos, dependencies: &[Pos]) {
+        // remove old dependencies
+        for &dependency in dependencies.iter() {
+            println!("removing edge {:?} -> {:?}", dependency, cell);
+            self.graph.remove_edge(dependency, cell);
+
+            // remove nodes that are not connected to any other nodes (isolate nodes)
+            if self.graph.neighbors(dependency).count() == 0 {
+                self.graph.remove_node(dependency);
+            }
         }
     }
 

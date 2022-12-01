@@ -322,11 +322,17 @@ impl GridController {
                 let old_value = self.grid.set_cell(pos, contents);
                 Command::SetCell(pos, old_value)
             }
-            Command::SetCellDependencies(p1, dependencies) => {
-                let old_dependencies = self.graph.set_dependencies(p1, &dependencies).unwrap();
+            Command::AddCellDependencies(p1, dependencies) => {
+                self.graph.add_dependencies(p1, &dependencies).unwrap();
 
                 // return reverse command
-                Command::SetCellDependencies(p1, old_dependencies)
+                Command::RemoveCellDependencies(p1, dependencies)
+            }
+            Command::RemoveCellDependencies(p1, dependencies) => {
+                self.graph.remove_dependencies(p1, &dependencies);
+
+                // return reverse command
+                Command::AddCellDependencies(p1, dependencies)
             }
         };
 
