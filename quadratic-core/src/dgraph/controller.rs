@@ -56,8 +56,6 @@ impl DGraphController {
             self.graph.add_edge(dcell, cell, 1);
         }
 
-        println!("{}", self);
-
         // check for cycles
         if is_cyclic_directed(&self.graph) {
             Err(DependencyCycleError { source: cell })
@@ -70,7 +68,6 @@ impl DGraphController {
     pub fn remove_dependencies(&mut self, cell: Pos, dependencies: &[Pos]) {
         // remove old dependencies
         for &dependency in dependencies.iter() {
-            println!("removing edge {:?} -> {:?}", dependency, cell);
             self.graph.remove_edge(dependency, cell);
 
             // remove nodes that are not connected to any other nodes (isolate nodes)
