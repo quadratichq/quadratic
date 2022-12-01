@@ -98,6 +98,7 @@ fn test_dgraph_controller() {
     println!("{}", grid);
 
     assert_eq!(grid.graph().edge_count(), 0);
+    assert_eq!(grid.graph().node_count(), 0);
 
     //   // Test CircularReferenceException, should throw error
     //   // dg.add_dependency_to_graph([1, 2], [[3, 3]]);
