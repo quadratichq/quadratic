@@ -4,15 +4,16 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::RangeInclusive;
-use wasm_bindgen::prelude::*;
 
 mod cell;
 mod command;
 mod controller;
+mod position;
 
 pub use cell::*;
 pub use command::*;
 pub use controller::*;
+pub use position::*;
 
 /// Sparse grid of cells.
 #[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
@@ -459,33 +460,5 @@ impl Rect {
     /// Returns the range of Y values of the rectangle.
     pub fn y_range(&self) -> RangeInclusive<i64> {
         self.top()..=self.bottom()
-    }
-}
-
-/// Cell position.
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
-#[wasm_bindgen]
-pub struct Pos {
-    /// Column
-    pub x: i64,
-    /// Row
-    pub y: i64,
-}
-#[wasm_bindgen]
-impl Pos {
-    #[wasm_bindgen(constructor)]
-    pub fn new(x: i64, y: i64) -> Self {
-        Self { x, y }
-    }
-}
-impl Pos {
-    pub const ORIGIN: Self = Self { x: 0, y: 0 };
-
-    /// Returns which quadrant the cell position is in.
-    pub fn quadrant(self) -> (i64, i64) {
-        (
-            self.x.div_euclid(crate::QUADRANT_SIZE as _),
-            self.y.div_euclid(crate::QUADRANT_SIZE as _),
-        )
     }
 }
