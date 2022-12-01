@@ -6,5 +6,6 @@ use super::{Cell, Pos};
 pub enum Command {
     /// Sets a single cell in the grid.
     SetCell(Pos, Cell),
-    SetCellDependencies(Pos, Vec<Pos>),
+    AddCellDependencies(Pos, Vec<Pos>),
+    RemoveCellDependencies(Pos, Vec<Pos>),
 }
