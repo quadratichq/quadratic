@@ -4,6 +4,9 @@ use std::collections::HashMap;
 
 use crate::grid::*;
 
+#[cfg(test)]
+mod gc_deps;
+
 proptest! {
     #[test]
     fn proptest_set_and_get_cells(cells in strategies::cells_to_set()) {
@@ -59,6 +62,14 @@ fn test_dirty_quadrants() {
 
     // Same with redo.
     assert_eq!(grid.redo(), Some(dirty));
+
+    // Manually create a transaction.
+    grid.transact(|t| {
+        t.exec(Command::SetCell(Pos { x: 1, y: 1 }, Cell::Int(11)))?;
+        t.exec(Command::SetCell(Pos { x: 1, y: 1 }, Cell::Int(11)))?;
+        t.exec(Command::SetCell(Pos { x: 1, y: 1 }, Cell::Int(11)))?;
+        Ok(())
+    });
 }
 
 mod strategies {
