@@ -305,6 +305,8 @@ impl GridController {
         Some(dirty_set)
     }
 
+    /// Returns a vector of cells that depend on `cell`.
+    /// Does not return input `cell` as a dependent.
     pub fn get_dependent_cells(&self, cell: Pos) -> Vec<Pos> {
         self.graph.get_dependent_cells(cell)
     }
