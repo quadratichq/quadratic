@@ -2,6 +2,7 @@
 
 use wasm_bindgen::prelude::*;
 
+pub mod dgraph;
 pub mod formulas;
 pub mod grid;
 
@@ -47,5 +48,5 @@ fn test_ser() {
         }
         println!();
     }
-    panic!()
+    // panic!()
 }

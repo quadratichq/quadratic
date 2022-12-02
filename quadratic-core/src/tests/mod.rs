@@ -4,6 +4,9 @@ use std::collections::HashMap;
 
 use crate::grid::*;
 
+#[cfg(test)]
+mod gc_deps;
+
 proptest! {
     #[test]
     fn proptest_set_and_get_cells(cells in strategies::cells_to_set()) {

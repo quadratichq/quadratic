@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
 use super::{Cell, Command, Grid, JsCell, Pos, Rect};
+use crate::dgraph::DGraphController;
 
 #[derive(Debug)]
 pub struct TransactionInProgress<'a> {
@@ -29,11 +30,12 @@ pub struct Transaction {
     commands: Vec<Command>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Debug, Default, Clone)]
 #[wasm_bindgen]
 pub struct GridController {
     /// Underlying grid of cells.
     grid: Grid,
+    graph: DGraphController,
     /// Stack of transactions that an undo command pops from. Each undo command
     /// takes one transaction from the top of the stack and executes all
     /// commands in it, in order.
@@ -303,6 +305,12 @@ impl GridController {
         Some(dirty_set)
     }
 
+    /// Returns a vector of cells that depend on `cell`.
+    /// Does not return input `cell` as a dependent.
+    pub fn get_dependent_cells(&self, cell: Pos) -> Vec<Pos> {
+        self.graph.get_dependent_cells(cell)
+    }
+
     /// Executes a command on the grid. Returns the reverse command.
     #[must_use = "save the reverse command to undo it later"]
     fn exec_internal(
@@ -315,6 +323,18 @@ impl GridController {
                 dirty_set.add_cell(pos);
                 let old_value = self.grid.set_cell(pos, contents);
                 Command::SetCell(pos, old_value)
+            }
+            Command::AddCellDependencies(p1, dependencies) => {
+                self.graph.add_dependencies(p1, &dependencies).unwrap();
+
+                // return reverse command
+                Command::RemoveCellDependencies(p1, dependencies)
+            }
+            Command::RemoveCellDependencies(p1, dependencies) => {
+                self.graph.remove_dependencies(p1, &dependencies);
+
+                // return reverse command
+                Command::AddCellDependencies(p1, dependencies)
             }
         };
 

@@ -33,3 +33,6 @@ venv/*
 
 # Generated Rust files
 quadratic-core/target/
+
+
+quadratic-api/node_modules
