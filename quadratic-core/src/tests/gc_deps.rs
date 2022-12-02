@@ -111,8 +111,8 @@ fn test_gc_simulate_user_actions() {
 
     // User sets B1 to "A1 + A2"
     grid.transact(|t| {
-        // TODO: Command to formula on B1 to "A1 + A2"
-        // TODO: Compute result, and dependencies of formula on B1
+        // TODO: Command to save formula on B1 of "=A1+A2" in R1C1 form "=RC[-1]+R[1]C[-1]"
+        // TODO: Compute result
         t.exec(Command::SetCell(Pos { x: 1, y: 0 }, Cell::Int(30)))?;
         t.exec(Command::AddCellDependencies(
             Pos { x: 1, y: 0 },
@@ -122,6 +122,7 @@ fn test_gc_simulate_user_actions() {
         Ok(())
     });
 
+    // Show consistent behavior in graph when undoing and redoing
     assert_eq!(
         grid.get_dependent_cells(Pos { x: 0, y: 0 }),
         vec![Pos { x: 1, y: 0 }]
@@ -132,14 +133,11 @@ fn test_gc_simulate_user_actions() {
     );
     assert!(grid.has_undo());
     assert!(!grid.has_redo());
-
     grid.undo();
-
     assert_eq!(grid.get_dependent_cells(Pos { x: 0, y: 0 }), vec![]);
     assert_eq!(grid.get_dependent_cells(Pos { x: 0, y: 1 }), vec![]);
     assert!(grid.has_undo());
     assert!(grid.has_redo());
-
     grid.redo();
 
     // User sets A1 to 15
