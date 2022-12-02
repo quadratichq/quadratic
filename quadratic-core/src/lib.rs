@@ -3,6 +3,7 @@
 use wasm_bindgen::prelude::*;
 
 pub mod dgraph;
+pub mod formulas;
 pub mod grid;
 
 #[cfg(test)]
