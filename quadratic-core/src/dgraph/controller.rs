@@ -45,6 +45,8 @@ impl DGraphController {
         &self.graph
     }
 
+    /// Given `cell` adds `dependencies` to the graph.
+    /// Checks for cycles and returns an error if one is found.
     pub fn add_dependencies(
         &mut self,
         cell: Pos,
@@ -60,11 +62,12 @@ impl DGraphController {
         if is_cyclic_directed(&self.graph) {
             Err(DependencyCycleError { source: cell })
         } else {
-            // return previous state for cell
             Ok(())
         }
     }
 
+    /// Given `cell` removes `dependencies` to the graph.
+    /// Checks for isolated nodes and removes them from the graph.
     pub fn remove_dependencies(&mut self, cell: Pos, dependencies: &[Pos]) {
         // remove old dependencies
         for &dependency in dependencies.iter() {
@@ -76,19 +79,21 @@ impl DGraphController {
             }
         }
 
-        // remove cell if not connected to any other nodes
+        // remove cell node if not connected to any other nodes
         if self.graph.neighbors(cell).count() == 0 {
             self.graph.remove_node(cell);
         }
     }
 
+    /// Returns a vector of cells that depend on `cell`.
+    /// Does not return input `cell` as a dependent.
     pub fn get_dependent_cells(&self, cell: Pos) -> Vec<Pos> {
         let mut result = Vec::<Pos>::new();
         let mut bfs = Bfs::new(&self.graph, cell);
         while let Some(visited) = bfs.next(&self.graph) {
             result.push(visited);
         }
-        // return result except the first element (will always be input cell position)
+        // return result except `cell` in pos 0
         result[1..].to_vec()
     }
 }
