@@ -7,7 +7,7 @@ use std::fmt;
 
 use crate::grid::Pos;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct DependencyCycleError {
     pub source: Pos,
 }
