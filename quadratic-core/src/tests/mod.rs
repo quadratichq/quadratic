@@ -62,14 +62,6 @@ fn test_dirty_quadrants() {
 
     // Same with redo.
     assert_eq!(grid.redo(), Some(dirty));
-
-    // Manually create a transaction.
-    grid.transact(|t| {
-        t.exec(Command::SetCell(Pos { x: 1, y: 1 }, Cell::Int(11)))?;
-        t.exec(Command::SetCell(Pos { x: 1, y: 1 }, Cell::Int(11)))?;
-        t.exec(Command::SetCell(Pos { x: 1, y: 1 }, Cell::Int(11)))?;
-        Ok(())
-    });
 }
 
 mod strategies {
