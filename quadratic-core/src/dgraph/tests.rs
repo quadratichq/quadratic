@@ -99,7 +99,22 @@ fn test_dgraph_controller() {
 
     assert_eq!(grid.graph().edge_count(), 0);
     assert_eq!(grid.graph().node_count(), 0);
+}
 
-    //   // Test CircularReferenceException, should throw error
-    //   // dg.add_dependency_to_graph([1, 2], [[3, 3]]);
+#[test]
+fn test_dgraph_controller_cycle() {
+    let mut grid = DGraphController::new();
+
+    grid.add_dependencies(Pos { x: 0, y: 0 }, &[Pos { x: 1, y: 1 }])
+        .unwrap();
+
+    // create circular dependency
+    let result = grid.add_dependencies(Pos { x: 1, y: 1 }, &[Pos { x: 0, y: 0 }]);
+
+    assert_eq!(
+        result,
+        Err(DependencyCycleError {
+            source: Pos { x: 1, y: 1 }
+        })
+    );
 }
