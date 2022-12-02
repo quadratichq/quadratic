@@ -1,6 +1,6 @@
-use std::ops::Range;
-
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::ops::Range;
 
 use crate::{Cell, Grid, Pos};
 
@@ -9,6 +9,11 @@ use crate::{Cell, Grid, Pos};
 pub struct Formula {
     ast: AstNode,
 }
+impl fmt::Display for Formula {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.ast, f)
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AstNode {
@@ -16,13 +21,38 @@ struct AstNode {
     span: Range<usize>,
     contents: AstNodeContents,
 }
+impl fmt::Display for AstNode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.contents, f)
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum AstNodeContents {
-    FunctionCall { f: String, args: Vec<AstNode> },
+    FunctionCall { func: String, args: Vec<AstNode> },
     CellRef { x: CellRefCoord, y: CellRefCoord },
     String(String),
     Number(f64),
+}
+impl fmt::Display for AstNodeContents {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AstNodeContents::FunctionCall { func, args } => {
+                write!(f, "{}(", func)?;
+                if let Some(first) = args.first() {
+                    write!(f, "{}", first)?;
+                    for arg in args.iter().skip(1) {
+                        write!(f, ", {}", arg)?;
+                    }
+                }
+                write!(f, ")")?;
+                Ok(())
+            }
+            AstNodeContents::CellRef { x, y } => write!(f, "R{x}C{y}"),
+            AstNodeContents::String(s) => write!(f, "{s:?}"),
+            AstNodeContents::Number(n) => write!(f, "{n:?}"),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -35,11 +65,19 @@ impl Default for CellRefCoord {
         Self::Relative(0)
     }
 }
+impl fmt::Display for CellRefCoord {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CellRefCoord::Relative(delta) => write!(f, "[{delta}]"),
+            CellRefCoord::Absolute(coord) => write!(f, "{coord}"),
+        }
+    }
+}
 impl CellRefCoord {
     fn from(self, base: i64) -> i64 {
         match self {
             CellRefCoord::Relative(delta) => base + delta,
-            CellRefCoord::Absolute(pos) => pos,
+            CellRefCoord::Absolute(coord) => coord,
         }
     }
 }
@@ -53,7 +91,7 @@ impl Formula {
             ast: AstNode {
                 span: 0..0,
                 contents: AstNodeContents::FunctionCall {
-                    f: "SUM".to_string(),
+                    func: "SUM".to_string(),
                     args: cells
                         .iter()
                         .map(|&Pos { x, y }| AstNode {
@@ -84,14 +122,17 @@ impl AstNode {
     }
     fn eval(&self, grid: &Grid, pos: Pos) -> Result<Cell, FormulaError> {
         match &self.contents {
-            AstNodeContents::FunctionCall { f, args } => match f.to_ascii_lowercase().as_str() {
-                "sum" => args
-                    .iter()
-                    .map(|arg| arg.eval_number(grid, pos))
-                    .try_fold(0.0, |sum, next| Ok(sum + next?))
-                    .map(|sum| Cell::Text(sum.to_string())),
-                _ => Err(FormulaErrorMsg::UnknownFormula { f: f.clone() }.with_span(&self.span)),
-            },
+            AstNodeContents::FunctionCall { func, args } => {
+                match func.to_ascii_lowercase().as_str() {
+                    "sum" => args
+                        .iter()
+                        .map(|arg| arg.eval_number(grid, pos))
+                        .try_fold(0.0, |sum, next| Ok(sum + next?))
+                        .map(|sum| Cell::Text(sum.to_string())),
+                    _ => Err(FormulaErrorMsg::UnknownFormula { func: func.clone() }
+                        .with_span(&self.span)),
+                }
+            }
             AstNodeContents::CellRef { x, y } => {
                 let ref_pos = Pos {
                     x: x.from(pos.x),
@@ -115,7 +156,7 @@ pub struct FormulaError {
 
 pub enum FormulaErrorMsg {
     SelfReference,
-    UnknownFormula { f: String },
+    UnknownFormula { func: String },
     ExpectedNumber { got: String },
 }
 impl FormulaErrorMsg {
@@ -126,3 +167,6 @@ impl FormulaErrorMsg {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
