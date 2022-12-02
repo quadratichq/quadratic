@@ -17,7 +17,7 @@ impl fmt::Display for Formula {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AstNode {
-    /// Span of text in the original formula (for error messages)
+    /// Span of text in the original formula (for error messages).
     span: Range<usize>,
     contents: AstNodeContents,
 }
@@ -116,7 +116,10 @@ impl AstNode {
     fn eval_number(&self, grid: &Grid, pos: Pos) -> Result<f64, FormulaError> {
         let out = self.eval(grid, pos)?;
         let s = out.string_value();
-        s.parse().map_err(|_| {
+        if s.trim().is_empty() {
+            return Ok(0.0);
+        }
+        s.trim().parse().map_err(|_| {
             FormulaErrorMsg::ExpectedNumber { got: s.to_string() }.with_span(&self.span)
         })
     }
@@ -149,11 +152,14 @@ impl AstNode {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct FormulaError {
+    /// Span of text in the original formula where the error occurred.
     pub span: Range<usize>,
     pub msg: FormulaErrorMsg,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum FormulaErrorMsg {
     SelfReference,
     UnknownFormula { func: String },
