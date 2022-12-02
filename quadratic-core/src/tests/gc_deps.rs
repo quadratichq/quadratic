@@ -111,7 +111,8 @@ fn test_gc_simulate_user_actions() {
 
     // User sets B1 to "A1 + A2"
     grid.transact(|t| {
-        // TODO: Set formula on B1 to "A1 + A2"
+        // TODO: Command to formula on B1 to "A1 + A2"
+        // TODO: Compute result, and dependencies of formula on B1
         t.exec(Command::SetCell(Pos { x: 1, y: 0 }, Cell::Int(30)))?;
         t.exec(Command::AddCellDependencies(
             Pos { x: 1, y: 0 },
@@ -144,7 +145,7 @@ fn test_gc_simulate_user_actions() {
     // User sets A1 to 15
     grid.transact(|t| {
         t.exec(Command::SetCell(Pos { x: 0, y: 0 }, Cell::Int(15)))?;
-        // TODO: loop through all dependent cells and update them
+        // TODO: loop through all dependent cells and compute them
         t.exec(Command::SetCell(Pos { x: 1, y: 0 }, Cell::Int(35)))?;
 
         Ok(())
