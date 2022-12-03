@@ -102,7 +102,6 @@ export class Quadrant extends Container {
   update(timeStart?: number, debug?: string): void {
     if (!this.dirty) return;
     this.clear();
-
     const app = this.app;
 
     const columnStart = this.location.x * QUADRANT_COLUMNS;
@@ -130,7 +129,7 @@ export class Quadrant extends Container {
           subQuadrantHeight
         );
 
-        // returns the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
+        // draw quadrant and return the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
         const reducedDrawingRectangle = app.cells.drawCells(cellBounds, debugShowQuadrantBoxes)
 
         if (reducedDrawingRectangle) {

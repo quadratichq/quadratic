@@ -69,6 +69,7 @@ export class Cells extends Container {
     showDebugColors?: boolean;
   }): Rectangle | undefined {
     const { bounds, cellRectangle, ignoreInput, showDebugColors } = options;
+
     if (showDebugColors) this.debug.clear();
 
     const { gridOffsets } = this.app;

@@ -33,8 +33,8 @@ export class GridBorders {
     }
     this.borders.clear();
     this.minX = Infinity;
-    this.maxX = -Infinity;
     this.minY = Infinity;
+    this.maxX = -Infinity;
     this.maxY = -Infinity;
     borders?.forEach((border) => {
       this.borders.set(this.getKey(border.x, border.y), border);

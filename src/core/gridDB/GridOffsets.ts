@@ -106,10 +106,8 @@ export class GridOffsets {
       }
 
       // iterate starting from the -column until we hit -1 to find xStart
-      for (let x = column; x < 0; x++) {
-
-        // set xEnd if found within this iteration then use the value before subtracting the position
-        if (xEnd === undefined && x === column + width) {
+      for (let x = -1; x >= column; x--) {
+        if (x === column + width - 1) {
           xEnd = position;
         }
         position -= this.getColumnWidth(x);
@@ -176,10 +174,8 @@ export class GridOffsets {
       }
 
       // iterate starting from the -row until we hit -1 to find yStart
-      for (let y = row; y < 0; y++) {
-
-        // set yEnd if found within this iteration then use the value before subtracting the position
-        if (yEnd === undefined && y === row + height) {
+      for (let y = -1; y >= row; y--) {
+        if (y === row + height - 1) {
           yEnd = position;
         }
         position -= this.getRowHeight(y);
@@ -315,5 +311,9 @@ export class GridOffsets {
         this.columns[change.column] = { id: change.column, size: change.size };
       }
     }
+  }
+
+  debugRowsColumns(): { rows: Heading[], columns: Heading[] } {
+    return { rows: Object.values(this.rows), columns: Object.values(this.columns) };
   }
 }

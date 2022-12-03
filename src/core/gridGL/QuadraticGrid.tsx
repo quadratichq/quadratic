@@ -43,8 +43,9 @@ export default function QuadraticGrid(props: IProps) {
 
   useEffect(() => {
     if (props.app && cells && format && borders) {
-      props.app.grid.populate(cells, format);
       props.app.borders.populate(borders);
+      props.app.grid.populate(cells, format);
+      props.app.quadrants.build();
       props.app.cells.dirty = true;
     }
   }, [props.app, cells, format, borders]);

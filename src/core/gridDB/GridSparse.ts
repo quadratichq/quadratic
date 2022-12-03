@@ -67,7 +67,6 @@ export class GridSparse {
         this.maxY = Math.max(this.maxY, format.y);
       }
     });
-    this.app.quadrants.build();
   }
 
   get(x: number, y: number): CellAndFormat | undefined {
