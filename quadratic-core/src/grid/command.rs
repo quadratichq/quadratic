@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::{Cell, Pos};
+use crate::codestore::CodeCell;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Command {
@@ -11,4 +12,5 @@ pub enum Command {
     // SetCellDependencies which would return the previous dependencies, delete them from the graph,
     // and then set only the new ones.
     RemoveCellDependencies(Pos, Vec<Pos>),
+    SetCellCode(Pos, Option<CodeCell>),
 }

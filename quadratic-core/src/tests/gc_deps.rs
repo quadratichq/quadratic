@@ -1,3 +1,6 @@
+use crate::codestore::CodeCell;
+use crate::codestore::CodeType;
+use crate::formulas::*;
 use crate::grid::*;
 
 #[test]
@@ -111,9 +114,23 @@ fn test_gc_simulate_user_actions() {
 
     // User sets B1 to "A1 + A2"
     grid.transact(|t| {
-        // TODO: Command to save formula on B1 of "=A1+A2" in R1C1 form "=RC[-1]+R[1]C[-1]"
-        // TODO: Compute result
-        t.exec(Command::SetCell(Pos { x: 1, y: 0 }, Cell::Int(30)))?;
+        // eval formula
+        let form = Formula::new_sum(&[Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 }]);
+        let r_cell = form.eval(t.grid().get_grid(), Pos { x: 1, y: 0 }).unwrap();
+        let r_expected = Cell::Text((30).to_string());
+        assert_eq!(r_expected, r_cell);
+
+        // Command to save formula on B1 of "=A1+A2" in R1C1 form "=RC[-1]+R[1]C[-1]"
+        t.exec(Command::SetCellCode(
+            Pos { x: 1, y: 0 },
+            Some(CodeCell {
+                code: form.to_string(),
+                code_type: CodeType::Formula,
+            }),
+        ))?;
+
+        // set result value, and update dep graph
+        t.exec(Command::SetCell(Pos { x: 1, y: 0 }, r_cell))?;
         t.exec(Command::AddCellDependencies(
             Pos { x: 1, y: 0 },
             vec![Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 }],
