@@ -55,6 +55,9 @@ export const debugSkipQuadrantRendering = debug && false;
 // show quadrant colored boxes around rendered range
 export const debugShowQuadrantBoxes = debug && false;
 
+// only render getCellsForDirtyQuadrants
+export const debugShowCellsForDirtyQuadrants = debug && false;
+
 export function warn(...args: any): void {
   if (debug) {
     console.warn(...args);

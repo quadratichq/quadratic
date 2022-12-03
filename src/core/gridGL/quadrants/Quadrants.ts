@@ -1,5 +1,5 @@
 import { Container, Rectangle } from 'pixi.js';
-import { debugShowCacheFlag, debugShowCacheInfo, debugSkipQuadrantRendering, warn } from '../../../debugFlags';
+import { debugShowCacheFlag, debugShowCacheInfo, debugShowCellsForDirtyQuadrants, debugSkipQuadrantRendering, warn } from '../../../debugFlags';
 import { CellRectangle } from '../../gridDB/CellRectangle';
 import { intersects } from '../helpers/intersects';
 import { PixiApp } from '../pixiApp/PixiApp';
@@ -153,7 +153,7 @@ export class Quadrants extends Container {
     const screen = viewport.getVisibleBounds();
     return this.children.flatMap((child) => {
       const quadrant = child as Quadrant;
-      if (!quadrant.dirty) return [];
+      if (!quadrant.dirty && !debugShowCellsForDirtyQuadrants) return [];
       if (intersects.rectangleRectangle(screen, quadrant.visibleRectangle)) {
         const columnStart = quadrant.location.x * QUADRANT_COLUMNS;
         const rowStart = quadrant.location.y * QUADRANT_ROWS;

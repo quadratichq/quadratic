@@ -1,4 +1,4 @@
-import { debug, debugShowFPS } from '../../../debugFlags';
+import { debug, debugShowCellsForDirtyQuadrants, debugShowFPS } from '../../../debugFlags';
 import {
   debugRendererLight,
   debugShowCachedCounts,
@@ -36,6 +36,7 @@ export class Update {
     }
   }
 
+  // update loop w/debug checks
   private updateDebug = (timeStart: number): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
@@ -63,7 +64,16 @@ export class Update {
     if (rendererDirty) {
       app.viewport.dirty = false;
 
-      if (app.quadrants.visible) {
+      // forces the temporary replacement cells to render instead of the cache or cells
+      if (debugShowCellsForDirtyQuadrants) {
+        app.quadrants.visible = false;
+        const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
+        app.cells.visible = true;
+        app.cells.drawMultipleBounds(cellRectangles);
+      }
+
+      // normal rendering
+      else if (app.quadrants.visible) {
         const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
         if (cellRectangles.length) {
           app.cells.visible = true;
@@ -91,6 +101,7 @@ export class Update {
     this.fps?.update();
   };
 
+  // update loop w/o debug checks
   private update = (timeStart: number): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
