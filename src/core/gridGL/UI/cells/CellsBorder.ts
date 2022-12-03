@@ -1,4 +1,4 @@
-import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { colors } from '../../../../theme/colors';
 import { Border } from '../../../gridDB/db';
 import { PixiApp } from '../../pixiApp/PixiApp';
@@ -36,7 +36,8 @@ export class CellsBorder extends Container {
         return tilingSprite;
       }
       this.tilingIndex++;
-      return this.tilingSprites.addChild(new TilingSprite(Texture.WHITE));
+      const tilingSprite = this.tilingSprites.addChild(new TilingSprite(Texture.WHITE));
+      return tilingSprite;
     } else {
       if (this.spritesIndex < this.sprites.children.length) {
         const sprite = this.sprites.children[this.spritesIndex] as Sprite;
@@ -45,7 +46,8 @@ export class CellsBorder extends Container {
         return sprite;
       }
       this.spritesIndex++;
-      return this.sprites.addChild(new Sprite(Texture.WHITE));
+      const sprite = this.sprites.addChild(new Sprite(Texture.WHITE));
+      return sprite;
     }
   };
 
@@ -76,31 +78,16 @@ export class CellsBorder extends Container {
         drawInputBorder(input, colors.independence, 0.75);
       }
     }
-
-    // const border = input.format?.border;
-    // if (border) {
-    //   drawBorder({
-    //     x: input.x,
-    //     y: input.y,
-    //     width: input.width,
-    //     height: input.height,
-    //     tint: input.format?.borderColor
-    //       ? convertColorStringToTint(input.format.borderColor)
-    //       : colors.defaultBorderColor,
-    //     alpha: 1,
-    //     getSprite: this.getSprite,
-    //     left: !!(border & borderLeft),
-    //     right: !!(border & borderRight),
-    //     top: !!(border & borderTop),
-    //     bottom: !!(border & borderBottom),
-    //     borderType: input.format?.borderType,
-    //   });
-    // }
   }
 
-  drawBorders(borders: Border[]): void {
+  drawBorders(borders: Border[]): Rectangle | undefined {
+    if (!borders.length) return;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
     const { gridOffsets } = this.app;
-    borders.forEach(border => {
+    borders.forEach((border) => {
       const position = gridOffsets.getCell(border.x, border.y);
       if (border.horizontal || border.vertical) {
         drawCellBorder({
@@ -108,8 +95,21 @@ export class CellsBorder extends Container {
           border,
           getSprite: this.getSprite,
         });
+        if (border.horizontal) {
+          minX = Math.min(minX, position.x);
+          minY = Math.min(minY, position.y);
+          maxX = Math.max(maxX, position.x + position.width);
+          maxY = Math.max(maxY, position.y);
+        }
+        if (border.vertical) {
+          minX = Math.min(minX, position.x);
+          minY = Math.min(minY, position.y);
+          maxX = Math.max(maxX, position.x);
+          maxY = Math.max(maxY, position.y + position.height);
+        }
       }
     });
+    return new Rectangle(minX, minY, maxX - minX, maxY - minY);
   }
 
   debugShowCachedCounts(): void {

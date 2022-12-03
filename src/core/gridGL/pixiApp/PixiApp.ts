@@ -1,4 +1,4 @@
-import { Renderer, Container } from 'pixi.js';
+import { Renderer, Container, Graphics } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { isMobileOnly } from 'react-device-detect';
 import { PixiAppSettings } from './PixiAppSettings';
@@ -13,11 +13,16 @@ import { Cursor } from '../UI/Cursor';
 import { Cells } from '../UI/cells/Cells';
 import { GridSparse } from '../../gridDB/GridSparse';
 import { zoomInOut, zoomToFit } from '../helpers/zoom';
+import { Quadrants } from '../quadrants/Quadrants';
+import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
+import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../../debugFlags';
 import { GridBorders } from '../../gridDB/GridBorders';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
   private update: Update;
+  private cacheIsVisible = false;
+
   canvas: HTMLCanvasElement;
   viewport: Viewport;
   gridLines: GridLines;
@@ -25,16 +30,21 @@ export class PixiApp {
   cursor: Cursor;
   headings: GridHeadings;
   cells: Cells;
+  quadrants: Quadrants;
 
   input: Pointer;
-
+  viewportContents: Container;
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
   settings: PixiAppSettings;
   renderer: Renderer;
   stage = new Container();
+  loading = true;
   destroyed = false;
+
+  // for testing purposes
+  debug: Graphics;
 
   constructor() {
     this.gridOffsets = new GridOffsets(this);
@@ -71,21 +81,28 @@ export class PixiApp {
         maxScale: 10,
       });
 
-    this.gridLines = this.viewport.addChild(new GridLines(this));
-    this.axesLines = this.viewport.addChild(new AxesLines(this));
-    this.cells = this.viewport.addChild(new Cells(this));
+    // this holds the viewport's contents so it can be reused in Quadrants
+    this.viewportContents = this.viewport.addChild(new Container());
+
+    this.gridLines = this.viewportContents.addChild(new GridLines(this));
+    this.axesLines = this.viewportContents.addChild(new AxesLines(this));
+    this.cells = this.viewportContents.addChild(new Cells(this));
 
     // ensure the cell's background color is drawn first
-    this.viewport.addChildAt(this.cells.cellsBackground, 0);
+    this.viewportContents.addChildAt(this.cells.cellsBackground, 0);
 
-    this.cursor = this.viewport.addChild(new Cursor(this));
-    this.headings = this.viewport.addChild(new GridHeadings(this));
+    this.quadrants = this.viewportContents.addChild(new Quadrants(this));
+    this.quadrants.visible = false;
+
+    this.cursor = this.viewportContents.addChild(new Cursor(this));
+    this.headings = this.viewportContents.addChild(new GridHeadings(this));
+
+    // useful for debugging at viewport locations
+    this.debug = this.viewportContents.addChild(new Graphics());
 
     this.settings = new PixiAppSettings(this);
 
-    if (this.settings.showHeadings) {
-      this.viewport.position.set(20, 20);
-    }
+    if (this.settings.showHeadings) this.viewport.position.set(20, 20);
 
     this.viewport.on('zoomed', () => {
       this.viewportChanged();
@@ -96,9 +113,30 @@ export class PixiApp {
     this.input = new Pointer(this);
     this.update = new Update(this);
 
+    if (debugAlwaysShowCache) this.showCache();
+
     window.addEventListener('resize', this.resize);
 
     console.log('[QuadraticGL] environment ready');
+  }
+
+  private showCache(): void {
+    if (debugShowCacheFlag && !this.quadrants.visible) {
+      (document.querySelector('.debug-show-cache-on') as HTMLSpanElement).innerHTML = 'CACHE';
+    }
+    this.cells.visible = false;
+    this.quadrants.visible = true;
+    this.cacheIsVisible = true;
+  }
+
+  private showCells(): void {
+    if (debugShowCacheFlag && !this.cells.visible) {
+      (document.querySelector('.debug-show-cache-on') as HTMLSpanElement).innerHTML = '';
+    }
+    this.cells.dirty = true;
+    this.cells.visible = true;
+    this.quadrants.visible = false;
+    this.cacheIsVisible = false;
   }
 
   viewportChanged = (): void => {
@@ -106,8 +144,12 @@ export class PixiApp {
     this.gridLines.dirty = true;
     this.axesLines.dirty = true;
     this.headings.dirty = true;
-    this.cells.dirty = true;
     this.cursor.dirty = true;
+    if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
+      this.showCache();
+    } else {
+      this.showCells();
+    }
   };
 
   attach(parent: HTMLDivElement): void {
@@ -143,6 +185,28 @@ export class PixiApp {
       zoomInOut(this.viewport, zoom);
       this.viewportChanged();
     }
+  }
+
+  // called before and after a quadrant render
+  prepareForQuadrantRendering(): Container {
+    this.gridLines.visible = false;
+    this.axesLines.visible = false;
+    this.cursor.visible = false;
+    this.headings.visible = false;
+    this.quadrants.visible = false;
+    this.cells.visible = true;
+    this.cells.dirty = true;
+    return this.viewportContents;
+  }
+
+  cleanUpAfterQuadrantRendering(): void {
+    this.gridLines.visible = true;
+    this.axesLines.visible = true;
+    this.cursor.visible = true;
+    this.headings.visible = true;
+    this.quadrants.visible = this.cacheIsVisible;
+    this.cells.visible = !this.cacheIsVisible;
+    if (!this.cacheIsVisible) this.cells.dirty = true;
   }
 
   // helper for playwright

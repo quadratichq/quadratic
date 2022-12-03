@@ -5,7 +5,7 @@ import { Border, BorderType } from '../../../gridDB/db';
 import { dashedTextures } from '../../dashedTextures';
 import { Rectangle } from '../../types/size';
 
-function setTexture(sprite: Sprite | TilingSprite, horizontal: boolean, borderType?: BorderType, ): void {
+function setTexture(sprite: Sprite | TilingSprite, horizontal: boolean, borderType?: BorderType): void {
   if (borderType === BorderType.dashed) {
     sprite.texture = horizontal ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical;
   } else if (borderType === BorderType.dotted) {
@@ -129,8 +129,8 @@ export function drawBorder(options: {
 }
 
 export function drawCellBorder(options: {
-  position: Rectangle,
-  border: Border,
+  position: Rectangle;
+  border: Border;
   getSprite: (tiling?: boolean) => Sprite;
 }): void {
   const { position, border, getSprite } = options;
@@ -143,7 +143,9 @@ export function drawCellBorder(options: {
 
     const top = getSprite(tiling);
     setTexture(top, true, borderType);
-    const color = border.horizontal.color ? convertColorStringToTint(border.horizontal.color) : colors.defaultBorderColor;
+    const color = border.horizontal.color
+      ? convertColorStringToTint(border.horizontal.color)
+      : colors.defaultBorderColor;
     top.tint = color;
     top.width = position.width + lineWidth;
     top.height = lineWidth;
@@ -181,7 +183,7 @@ export function drawCellBorder(options: {
       setTexture(left, false, borderType);
       left.tint = color;
       left.width = lineWidth;
-      left.height = position.height + lineWidth // todo - ((options.top ? 1 : 0) + (options.bottom ? 1 : 0)) * doubleDistance;
+      left.height = position.height + lineWidth; // todo - ((options.top ? 1 : 0) + (options.bottom ? 1 : 0)) * doubleDistance;
       left.position.set(
         position.x - lineWidth / 2 + doubleDistance,
         position.y - lineWidth / 2 // todo + (options.top ? doubleDistance : 0)

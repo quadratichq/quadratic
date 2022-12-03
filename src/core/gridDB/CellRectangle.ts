@@ -1,9 +1,12 @@
 import { Rectangle } from 'pixi.js';
+import { Border } from './db';
+import { GridBorders } from './GridBorders';
 import { CellAndFormat, GridSparse } from './GridSparse';
 
 export class CellRectangle {
   private cells: (CellAndFormat | undefined)[];
-  private size: Rectangle;
+  size: Rectangle;
+  borders?: Border[];
 
   // todo: the GridSparse call will be replaced by the rust controller call
   constructor(size: Rectangle, grid: GridSparse) {
@@ -15,6 +18,10 @@ export class CellRectangle {
       }
     }
     this.cells = cells;
+  }
+
+  addBorders(gridBorders: GridBorders): void {
+    this.borders = gridBorders.getBorders(this.size);
   }
 
   get(x: number, y: number): CellAndFormat | undefined {

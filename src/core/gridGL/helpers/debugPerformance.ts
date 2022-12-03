@@ -51,7 +51,7 @@ export function debugShowChildren(parent: PIXI.Container, name?: string): void {
   count = 0;
   visibleCount = 0;
   countChildren(parent);
-  console.log(`${name ? `[${name}] ` : ''}${count} objects | ${visibleCount} visible`);
+  console.log(`[Rendered] ${name ? `[${name}] ` : ''}${count} objects | ${visibleCount} visible`);
 }
 
 export function debugShowCachedCounts(app: PixiApp): void {

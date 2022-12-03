@@ -1,4 +1,4 @@
-import { ClickEvent, MenuHeader, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu'
+import { ClickEvent, MenuHeader, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
 import { menuItemIconStyles } from '../menuStyles';
 import { BorderType } from '../../../../../core/gridDB/db';
 import {
@@ -59,60 +59,82 @@ export function useGetBorderMenu(props: Props): JSX.Element {
     setBorderSelection(0);
   }, [interactionState]);
 
-  const handleChangeBorders = useCallback((borderSelection: BorderSelection, color: string, lineStyle?: BorderType): void => {
-    if (!borderSelection) return;
-    const borders: ChangeBorder = {};
-    if (color !== defaultColor) borders.color = color;
-    if (lineStyle) borders.type = lineStyle;
-    switch (borderSelection) {
-      case BorderSelection.all:
-        borders.borderAll = true; break;
-      case BorderSelection.outer:
-        borders.borderLeft = true;
-        borders.borderRight = true;
-        borders.borderTop = true;
-        borders.borderBottom = true;
-        break;
-      case BorderSelection.inner:
-        borders.borderHorizontal = true;
-        borders.borderVertical = true;
-        break;
-      case BorderSelection.horizontal:
-        borders.borderHorizontal = true; break;
-      case BorderSelection.vertical:
-        borders.borderVertical = true; break;
-      case BorderSelection.left:
-        borders.borderLeft = true; break;
-      case BorderSelection.top:
-        borders.borderTop = true; break;
-      case BorderSelection.right:
-        borders.borderRight = true; break;
-      case BorderSelection.bottom:
-        borders.borderBottom = true; break;
-    }
-    changeBorders(borders);
-  }, [changeBorders, defaultColor]);
+  const handleChangeBorders = useCallback(
+    (borderSelection: BorderSelection, color: string, lineStyle?: BorderType): void => {
+      if (!borderSelection) return;
+      const borders: ChangeBorder = {};
+      if (color !== defaultColor) borders.color = color;
+      if (lineStyle) borders.type = lineStyle;
+      switch (borderSelection) {
+        case BorderSelection.all:
+          borders.borderAll = true;
+          break;
+        case BorderSelection.outer:
+          borders.borderLeft = true;
+          borders.borderRight = true;
+          borders.borderTop = true;
+          borders.borderBottom = true;
+          break;
+        case BorderSelection.inner:
+          borders.borderHorizontal = true;
+          borders.borderVertical = true;
+          break;
+        case BorderSelection.horizontal:
+          borders.borderHorizontal = true;
+          break;
+        case BorderSelection.vertical:
+          borders.borderVertical = true;
+          break;
+        case BorderSelection.left:
+          borders.borderLeft = true;
+          break;
+        case BorderSelection.top:
+          borders.borderTop = true;
+          break;
+        case BorderSelection.right:
+          borders.borderRight = true;
+          break;
+        case BorderSelection.bottom:
+          borders.borderBottom = true;
+          break;
+      }
+      changeBorders(borders);
+    },
+    [changeBorders, defaultColor]
+  );
 
-  const handleChangeBorderColor = useCallback((change: ColorResult) => {
-    const converted = convertReactColorToString(change);
-    if (converted !== color) {
-      setColor(converted);
-    }
-    handleChangeBorders(borderSelection, converted, lineStyle);
-  }, [color, setColor, borderSelection, handleChangeBorders, lineStyle]);
+  const handleChangeBorderColor = useCallback(
+    (change: ColorResult) => {
+      const converted = convertReactColorToString(change);
+      if (converted !== color) {
+        setColor(converted);
+      }
+      handleChangeBorders(borderSelection, converted, lineStyle);
+    },
+    [color, setColor, borderSelection, handleChangeBorders, lineStyle]
+  );
 
-  const handleChangeBorderType = useCallback((e: ClickEvent, change?: BorderType): void => {
-    e.keepOpen = true;
-    if (change !== lineStyle) {
-      setLineStyle(change);
-    }
-    handleChangeBorders(borderSelection, color, change);
-  }, [lineStyle, setLineStyle, borderSelection, color, handleChangeBorders]);
+  const handleChangeBorderType = useCallback(
+    (e: ClickEvent, change?: BorderType): void => {
+      e.keepOpen = true;
+      if (change !== lineStyle) {
+        setLineStyle(change);
+      }
+      handleChangeBorders(borderSelection, color, change);
+    },
+    [lineStyle, setLineStyle, borderSelection, color, handleChangeBorders]
+  );
 
-  const BorderSelectionButton = (props: { type: BorderSelection, label: JSX.Element, disabled?: boolean }): JSX.Element => {
+  const BorderSelectionButton = (props: {
+    type: BorderSelection;
+    label: JSX.Element;
+    disabled?: boolean;
+  }): JSX.Element => {
     return (
       <div
-        className={`borderMenuType ${borderSelection === props.type ? 'borderSelected' : ''} ${props.disabled ? 'borderDisabled' : ''}`}
+        className={`borderMenuType ${borderSelection === props.type ? 'borderSelected' : ''} ${
+          props.disabled ? 'borderDisabled' : ''
+        }`}
         onClick={() => {
           if (!props.disabled) {
             setBorderSelection(props.type);
@@ -140,15 +162,21 @@ export function useGetBorderMenu(props: Props): JSX.Element {
             <BorderSelectionButton type={BorderSelection.all} label={<BorderAll />} />
             <BorderSelectionButton type={BorderSelection.inner} label={<BorderInner />} disabled={!multiCursor} />
             <BorderSelectionButton type={BorderSelection.outer} label={<BorderOuter />} />
-            <BorderSelectionButton type={BorderSelection.horizontal} label={<BorderHorizontal />} disabled={!multiCursor} />
+            <BorderSelectionButton
+              type={BorderSelection.horizontal}
+              label={<BorderHorizontal />}
+              disabled={!multiCursor}
+            />
             <BorderSelectionButton type={BorderSelection.vertical} label={<BorderVertical />} disabled={!multiCursor} />
           </div>
           <div className="borderMenuLine">
-            <BorderSelectionButton type={BorderSelection.left} label={<BorderLeft/>} />
-            <BorderSelectionButton type={BorderSelection.top} label={<BorderTop/>} />
-            <BorderSelectionButton type={BorderSelection.right} label={<BorderRight/>} />
-            <BorderSelectionButton type={BorderSelection.bottom} label={<BorderBottom/>} />
-            <div className="borderMenuType" onClick={clearBorders}><BorderClear/></div>
+            <BorderSelectionButton type={BorderSelection.left} label={<BorderLeft />} />
+            <BorderSelectionButton type={BorderSelection.top} label={<BorderTop />} />
+            <BorderSelectionButton type={BorderSelection.right} label={<BorderRight />} />
+            <BorderSelectionButton type={BorderSelection.bottom} label={<BorderBottom />} />
+            <div className="borderMenuType" onClick={clearBorders}>
+              <BorderClear />
+            </div>
           </div>
         </div>
         <div className="borderMenuFormatting">
@@ -189,6 +217,6 @@ export function useGetBorderMenu(props: Props): JSX.Element {
           </SubMenu>
         </div>
       </div>
-   </SubMenu>
+    </SubMenu>
   );
 }

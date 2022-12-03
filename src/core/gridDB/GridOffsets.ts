@@ -1,3 +1,4 @@
+import { Rectangle } from 'pixi.js';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { UpdateHeading } from './Cells/UpdateHeadingsDB';
@@ -47,6 +48,11 @@ export class GridOffsets {
     return this.rows[row]?.size ?? CELL_HEIGHT;
   }
 
+  /**
+   * Gets screen location of column
+   * @param column
+   * @returns x position and width of column
+   */
   getColumnPlacement(column: number): { x: number; width: number } {
     let position = 0;
     if (column >= 0) {
@@ -62,6 +68,59 @@ export class GridOffsets {
     }
   }
 
+  /**
+   * Gets the screen x-coordinate for a range of columns
+   * @param column
+   * @param width
+   * @returns bounding start and end values
+   */
+  getColumnsStartEnd(column: number, width: number): { xStart: number; xEnd: number } {
+    let position = 0;
+    let xStart: number;
+
+    // calculate starting from 0 to column to find xStart and xEnd
+    if (column >= 0) {
+      for (let x = 0; x < column; x++) {
+        position += this.getColumnWidth(x);
+      }
+      xStart = position;
+      for (let x = column; x < column + width; x++) {
+        position += this.getColumnWidth(x);
+      }
+      return { xStart, xEnd: position };
+    }
+
+    // calculate starting from -column to 0 to find xStart; xEnd is found in that iteration, or calculated directly if column + width is positive
+    else {
+      let xEnd: number | undefined;
+
+      // if the column ends at 0 then xEnd = 0
+      if (column + width === 0) {
+        xEnd = 0;
+      }
+
+      // if the column ends at a positive number then xEnd is calculated directly
+      else if (column + width > 0) {
+        const placement = this.getColumnPlacement(column + width);
+        xEnd = placement.x;
+      }
+
+      // iterate starting from the -column until we hit -1 to find xStart
+      for (let x = -1; x >= column; x--) {
+        if (x === column + width - 1) {
+          xEnd = position;
+        }
+        position -= this.getColumnWidth(x);
+      }
+      return { xStart: position, xEnd: xEnd as number };
+    }
+  }
+
+  /**
+   * Gets screen location of row
+   * @param row
+   * @returns y position and height of column
+   */
   getRowPlacement(row: number): { y: number; height: number } {
     let position = 0;
     if (row >= 0) {
@@ -77,6 +136,59 @@ export class GridOffsets {
     }
   }
 
+  /**
+   * Gets the screen x-coordinate for a range of columns
+   * @param column
+   * @param width
+   * @returns bounding start and end values
+   */
+  getRowsStartEnd(row: number, height: number): { yStart: number; yEnd: number } {
+    let position = 0;
+    let yStart: number;
+
+    // calculate starting from 0 to row to find yStart and yEnd
+    if (row >= 0) {
+      for (let y = 0; y < row; y++) {
+        position += this.getRowHeight(y);
+      }
+      yStart = position;
+      for (let y = row; y < row + height; y++) {
+        position += this.getRowHeight(y);
+      }
+      return { yStart, yEnd: position };
+    }
+
+    // calculate starting from -row to 0 to find yStart; yEnd is found in that iteration, or calculated directly if row + height is positive
+    else {
+      let yEnd: number | undefined;
+
+      // if the row ends at 0 then yEnd = 0
+      if (row + height === 0) {
+        yEnd = 0;
+      }
+
+      // if the row ends at a positive number then yEnd is calculated directly
+      else if (row + height > 0) {
+        const placement = this.getRowPlacement(row + height);
+        yEnd = placement.y;
+      }
+
+      // iterate starting from the -row until we hit -1 to find yStart
+      for (let y = -1; y >= row; y--) {
+        if (y === row + height - 1) {
+          yEnd = position;
+        }
+        position -= this.getRowHeight(y);
+      }
+      return { yStart: position, yEnd: yEnd as number };
+    }
+  }
+
+  /**
+   * Gets column using screen's x-position
+   * @param x
+   * @returns column and x-position of that column
+   */
   getColumnIndex(x: number): { index: number; position: number } {
     if (x >= 0) {
       let index = 0;
@@ -99,6 +211,11 @@ export class GridOffsets {
     }
   }
 
+  /**
+   * Gets row using screen's y-position
+   * @param x
+   * @returns row and y-position of that row
+   */
   getRowIndex(y: number): { index: number; position: number } {
     if (y >= 0) {
       let index = 0;
@@ -121,10 +238,22 @@ export class GridOffsets {
     }
   }
 
+  /**
+   * gets row and column based on screen position
+   * @param x
+   * @param y
+   * @returns row and column
+   */
   getRowColumnFromWorld(x: number, y: number): { column: number; row: number } {
     return { column: this.getColumnIndex(x).index, row: this.getRowIndex(y).index };
   }
 
+  /**
+   * gets cell at row and column
+   * @param column
+   * @param row
+   * @returns
+   */
   getCell(column: number, row: number): { x: number; y: number; width: number; height: number } {
     const columnPlacement = this.getColumnPlacement(column);
     const rowPlacement = this.getRowPlacement(row);
@@ -136,6 +265,38 @@ export class GridOffsets {
     };
   }
 
+  /**
+   * gets a screen rectangle using a column/row rectangle
+   * @param column
+   * @param row
+   * @param width
+   * @param height
+   * @returns the screen rectangle
+   */
+  getScreenRectangle(column: number, row: number, width: number, height: number): Rectangle {
+    const { xStart, xEnd } = this.getColumnsStartEnd(column, width);
+    const { yStart, yEnd } = this.getRowsStartEnd(row, height);
+    return new Rectangle(xStart, yStart, xEnd - xStart, yEnd - yStart);
+  }
+
+  /**
+   * gets a column/row rectangle using a screen rectangle
+   * @param x
+   * @param y
+   * @param width
+   * @param height
+   * @returns
+   */
+  getCellRectangle(x: number, y: number, width: number, height: number): Rectangle {
+    const { column: columnStart, row: rowStart } = this.getRowColumnFromWorld(x, y);
+    const { column: columnEnd, row: rowEnd } = this.getRowColumnFromWorld(x + width, y + height);
+    return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
+  }
+
+  /**
+   * optimistically update row/column size instead of waiting for next populate
+   * @param change
+   */
   optimisticUpdate(change: UpdateHeading): void {
     if (change.row !== undefined) {
       if (this.rows[change.row]) {
@@ -150,5 +311,9 @@ export class GridOffsets {
         this.columns[change.column] = { id: change.column, size: change.size };
       }
     }
+  }
+
+  debugRowsColumns(): { rows: Heading[]; columns: Heading[] } {
+    return { rows: Object.values(this.rows), columns: Object.values(this.columns) };
   }
 }

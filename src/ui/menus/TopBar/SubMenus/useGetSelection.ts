@@ -24,4 +24,4 @@ export const useGetSelection = (): GetSelection => {
     }
     return { start, end, multiCursor };
   }, [interactionState.multiCursorPosition, interactionState.cursorPosition, multiCursor]);
-}
+};

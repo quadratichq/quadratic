@@ -22,19 +22,15 @@ import { CompactPicker } from 'react-color';
 import { useFormatCells } from '../useFormatCells';
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { useGetBorderMenu } from './useGetBorderMenu';
-import './formatMenuStyles.css';
 import { useBorders } from '../useBorders';
+import './formatMenuStyles.css';
 
 interface IProps {
   app?: PixiApp;
 }
 
 export const FormatMenu = (props: IProps) => {
-  const {
-    changeFillColor,
-    removeFillColor,
-    clearFormatting,
-  } = useFormatCells(props.app);
+  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(props.app);
   const { clearBorders } = useBorders(props.app);
 
   // focus canvas after the format menu closes

@@ -120,6 +120,7 @@ export class PointerHeading {
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
+          this.app.quadrants.quadrantChanged({ column: gridOffsets.headingResizing.column });
         }
       } else if (gridOffsets.headingResizing.row !== undefined) {
         const size = Math.max(0, world.y - gridOffsets.headingResizing.start);
@@ -129,6 +130,7 @@ export class PointerHeading {
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
+          this.app.quadrants.quadrantChanged({ row: gridOffsets.headingResizing.row });
         }
       }
     }
