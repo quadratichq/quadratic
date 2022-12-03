@@ -116,7 +116,7 @@ fn test_gc_simulate_user_actions() {
     grid.transact(|t| {
         // eval formula
         let form = Formula::new_sum(&[Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 }]);
-        let r_cell = form.eval(t.grid().get_grid(), Pos { x: 1, y: 0 }).unwrap();
+        let r_cell = form.eval(t.cells(), Pos { x: 1, y: 0 }).unwrap();
         let r_expected = Cell::Text((30).to_string());
         assert_eq!(r_expected, r_cell);
 
