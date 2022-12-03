@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
 use super::{Cell, Command, Grid, JsCell, Pos, Rect};
+use crate::codestore::CodeStore;
 use crate::dgraph::DGraphController;
 
 #[derive(Debug)]
@@ -36,6 +37,7 @@ pub struct GridController {
     /// Underlying grid of cells.
     grid: Grid,
     graph: DGraphController,
+    code_store: CodeStore,
     /// Stack of transactions that an undo command pops from. Each undo command
     /// takes one transaction from the top of the stack and executes all
     /// commands in it, in order.
@@ -326,19 +328,23 @@ impl GridController {
             }
             Command::AddCellDependencies(p1, dependencies) => {
                 self.graph.add_dependencies(p1, &dependencies).unwrap();
-
-                // return reverse command
-                Command::RemoveCellDependencies(p1, dependencies)
+                Command::RemoveCellDependencies(p1, dependencies) // return reverse command
             }
             Command::RemoveCellDependencies(p1, dependencies) => {
                 self.graph.remove_dependencies(p1, &dependencies);
-
-                // return reverse command
-                Command::AddCellDependencies(p1, dependencies)
+                Command::AddCellDependencies(p1, dependencies) // return reverse command
+            }
+            Command::SetCellCode(p1, code_cell) => {
+                let old_value = self.code_store.set_cell_code(p1, code_cell);
+                Command::SetCellCode(p1, old_value)
             }
         };
 
         Ok(reverse_command)
+    }
+
+    pub fn get_grid(&self) -> &Grid {
+        &self.grid
     }
 
     /// Returns whether the underlying [`Grid`] is valid.
