@@ -347,6 +347,10 @@ impl GridController {
         &self.grid
     }
 
+    pub fn get_graph(&self) -> &DGraphController {
+        &self.graph
+    }
+
     /// Returns whether the underlying [`Grid`] is valid.
     #[cfg(test)]
     pub fn is_valid(&self) -> bool {

@@ -2,6 +2,7 @@
 
 use wasm_bindgen::prelude::*;
 
+pub mod actions;
 pub mod codestore;
 pub mod dgraph;
 pub mod formulas;
