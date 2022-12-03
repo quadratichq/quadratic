@@ -30,17 +30,15 @@ export const useBorders = (app?: PixiApp): IResults => {
     const borderUpdates: Border[] = [];
 
     const addBorderLeft = (x: number, y: number): void => {
-
       // update an existing borderUpdate
-      const border = borderUpdates.find(update => update.x === x && update.y === y);
+      const border = borderUpdates.find((update) => update.x === x && update.y === y);
       if (border) {
         border.vertical = { type: options.type, color: borderColor };
       } else {
-
         // update an existing border
         const border = app.borders.get(x, y);
         if (border) {
-          const update: Border = { x, y, vertical: { type: options.type, color: borderColor }};
+          const update: Border = { x, y, vertical: { type: options.type, color: borderColor } };
           if (border.horizontal) {
             update.horizontal = { ...border.horizontal };
           }
@@ -55,13 +53,11 @@ export const useBorders = (app?: PixiApp): IResults => {
     };
 
     const addBorderTop = (x: number, y: number): void => {
-
       // update an existing borderUpdate
-      const border = borderUpdates.find(update => update.x === x && update.y === y);
+      const border = borderUpdates.find((update) => update.x === x && update.y === y);
       if (border) {
         border.horizontal = { type: options.type, color: borderColor };
       } else {
-
         // update an existing border
         const border = app.borders.get(x, y);
         if (border) {
@@ -77,11 +73,10 @@ export const useBorders = (app?: PixiApp): IResults => {
           borderUpdates.push({ x, y, horizontal: { type: options.type, color: borderColor } });
         }
       }
-    }
+    };
 
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
-
         if (options.borderAll) {
           addBorderLeft(x, y);
           addBorderTop(x, y);
@@ -162,4 +157,4 @@ export const useBorders = (app?: PixiApp): IResults => {
     changeBorders,
     clearBorders,
   };
-}
+};

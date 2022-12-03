@@ -82,9 +82,12 @@ export class CellsBorder extends Container {
 
   drawBorders(borders: Border[]): Rectangle | undefined {
     if (!borders.length) return;
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
     const { gridOffsets } = this.app;
-    borders.forEach(border => {
+    borders.forEach((border) => {
       const position = gridOffsets.getCell(border.x, border.y);
       if (border.horizontal || border.vertical) {
         drawCellBorder({

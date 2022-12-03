@@ -119,12 +119,8 @@ export const BottomBar = () => {
             <span className="debug-show-FPS">--</span> FPS
           </span>
         )}
-        {debugShowCacheFlag && (
-          <span className="debug-show-cache-on" />
-        )}
-        {debugShowCacheCount && (
-          <span className="debug-show-cache-count" />
-        )}
+        {debugShowCacheFlag && <span className="debug-show-cache-on" />}
+        {debugShowCacheCount && <span className="debug-show-cache-count" />}
       </Box>
       <Box
         sx={{

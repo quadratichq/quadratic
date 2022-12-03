@@ -20,7 +20,13 @@ describe('gridOffsets', () => {
   });
 
   it('populates rows and columns', () => {
-    gridOffsets.populate([{ id: 3, size: 10 }], [{ id: 4, size: 5 }, { id: 5, size: 6 }]);
+    gridOffsets.populate(
+      [{ id: 3, size: 10 }],
+      [
+        { id: 4, size: 5 },
+        { id: 5, size: 6 },
+      ]
+    );
     const { rows, columns } = gridOffsets.debugRowsColumns();
     expect(columns.length).toBe(1);
     expect(rows.length).toBe(2);
@@ -62,56 +68,114 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of columns (positive)', () => {
-    gridOffsets.populate([{ id: 1, size: 5 }, { id: 2, size: 6 }, { id: 3, size: 7 }], []);
+    gridOffsets.populate(
+      [
+        { id: 1, size: 5 },
+        { id: 2, size: 6 },
+        { id: 3, size: 7 },
+      ],
+      []
+    );
     const { xStart, xEnd } = gridOffsets.getColumnsStartEnd(0, 5);
     expect(xStart).toBe(0);
     expect(xEnd).toBe(CELL_WIDTH + 5 + 6 + 7 + CELL_WIDTH);
   });
 
   it('gets the start and end of a range of columns (negative) to 0', () => {
-    gridOffsets.populate([{ id: -1, size: 5 }, { id: -2, size: 6 }, { id: -3, size: 7 }], []);
+    gridOffsets.populate(
+      [
+        { id: -1, size: 5 },
+        { id: -2, size: 6 },
+        { id: -3, size: 7 },
+      ],
+      []
+    );
     const { xStart, xEnd } = gridOffsets.getColumnsStartEnd(-5, 5);
     expect(xStart).toBe(-(CELL_WIDTH + 5 + 6 + 7 + CELL_WIDTH));
     expect(xEnd).toBe(0);
   });
 
   it('gets the start and end of a range of columns (negative) to < 0', () => {
-    gridOffsets.populate([{ id: -1, size: 5 }, { id: -2, size: 6 }, { id: -3, size: 7 }], []);
+    gridOffsets.populate(
+      [
+        { id: -1, size: 5 },
+        { id: -2, size: 6 },
+        { id: -3, size: 7 },
+      ],
+      []
+    );
     const { xStart, xEnd } = gridOffsets.getColumnsStartEnd(-5, 4);
     expect(xStart).toBe(-(CELL_WIDTH + CELL_WIDTH + 7 + 6 + 5));
     expect(xEnd).toBe(-5);
   });
 
   it('gets the start and end of a range of columns (negative) to > 0', () => {
-    gridOffsets.populate([{ id: -1, size: 5 }, { id: -2, size: 6 }, { id: -3, size: 7 }, { id: 0, size: 4}], []);
+    gridOffsets.populate(
+      [
+        { id: -1, size: 5 },
+        { id: -2, size: 6 },
+        { id: -3, size: 7 },
+        { id: 0, size: 4 },
+      ],
+      []
+    );
     const { xStart, xEnd } = gridOffsets.getColumnsStartEnd(-5, 7);
     expect(xStart).toBe(-(CELL_WIDTH + CELL_WIDTH + 7 + 6 + 5));
     expect(xEnd).toBe(4 + CELL_WIDTH);
   });
 
   it('gets the start and end of a range of row (positive)', () => {
-    gridOffsets.populate([], [{ id: 1, size: 5 }, { id: 2, size: 6 }, { id: 3, size: 7 }]);
+    gridOffsets.populate(
+      [],
+      [
+        { id: 1, size: 5 },
+        { id: 2, size: 6 },
+        { id: 3, size: 7 },
+      ]
+    );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(0, 5);
     expect(yStart).toBe(0);
     expect(yEnd).toBe(CELL_HEIGHT + 5 + 6 + 7 + CELL_HEIGHT);
   });
 
   it('gets the start and end of a range of rows (negative) to 0', () => {
-    gridOffsets.populate([], [{ id: -1, size: 5 }, { id: -2, size: 6 }, { id: -3, size: 7 }]);
+    gridOffsets.populate(
+      [],
+      [
+        { id: -1, size: 5 },
+        { id: -2, size: 6 },
+        { id: -3, size: 7 },
+      ]
+    );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(-5, 5);
     expect(yStart).toBe(-(CELL_HEIGHT + 5 + 6 + 7 + CELL_HEIGHT));
     expect(yEnd).toBe(0);
   });
 
   it('gets the start and end of a range of rows (negative) to < 0', () => {
-    gridOffsets.populate([], [{ id: -1, size: 5 }, { id: -2, size: 6 }, { id: -3, size: 7 }]);
+    gridOffsets.populate(
+      [],
+      [
+        { id: -1, size: 5 },
+        { id: -2, size: 6 },
+        { id: -3, size: 7 },
+      ]
+    );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(-5, 4);
     expect(yStart).toBe(-(CELL_HEIGHT + CELL_HEIGHT + 7 + 6 + 5));
     expect(yEnd).toBe(-5);
   });
 
   it('gets the start and end of a range of rows (negative) to > 0', () => {
-    gridOffsets.populate([], [{ id: -1, size: 5 }, { id: -2, size: 6 }, { id: -3, size: 7 }, { id: 0, size: 4}]);
+    gridOffsets.populate(
+      [],
+      [
+        { id: -1, size: 5 },
+        { id: -2, size: 6 },
+        { id: -3, size: 7 },
+        { id: 0, size: 4 },
+      ]
+    );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(-5, 7);
     expect(yStart).toBe(-(CELL_HEIGHT + CELL_HEIGHT + 7 + 6 + 5));
     expect(yEnd).toBe(4 + CELL_HEIGHT);

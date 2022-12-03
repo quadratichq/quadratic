@@ -40,7 +40,6 @@ export const useFormatCells = (app?: PixiApp): IResults => {
     if (!app) return;
 
     // todo: clear formatting w/clearing borders
-
   };
 
   return {

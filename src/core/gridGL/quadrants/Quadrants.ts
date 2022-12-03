@@ -1,5 +1,11 @@
 import { Container, Rectangle } from 'pixi.js';
-import { debugShowCacheFlag, debugShowCacheInfo, debugShowCellsForDirtyQuadrants, debugSkipQuadrantRendering, warn } from '../../../debugFlags';
+import {
+  debugShowCacheFlag,
+  debugShowCacheInfo,
+  debugShowCellsForDirtyQuadrants,
+  debugSkipQuadrantRendering,
+  warn,
+} from '../../../debugFlags';
 import { CellRectangle } from '../../gridDB/CellRectangle';
 import { intersects } from '../helpers/intersects';
 import { PixiApp } from '../pixiApp/PixiApp';
@@ -77,7 +83,9 @@ export class Quadrants extends Container {
       }
       if (debugShowCacheFlag) {
         const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0);
-        (document.querySelector('.debug-show-cache-count') as HTMLSpanElement).innerHTML = `Quadrants: ${this.children.length - dirtyCount}/${this.children.length}`;
+        (document.querySelector('.debug-show-cache-count') as HTMLSpanElement).innerHTML = `Quadrants: ${
+          this.children.length - dirtyCount
+        }/${this.children.length}`;
       }
       return (
         this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle)
@@ -157,7 +165,9 @@ export class Quadrants extends Container {
       if (intersects.rectangleRectangle(screen, quadrant.visibleRectangle)) {
         const columnStart = quadrant.location.x * QUADRANT_COLUMNS;
         const rowStart = quadrant.location.y * QUADRANT_ROWS;
-        const cellRectangle = grid.getCells(new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS - 1, QUADRANT_ROWS - 1));
+        const cellRectangle = grid.getCells(
+          new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS - 1, QUADRANT_ROWS - 1)
+        );
         cellRectangle.addBorders(this.app.borders);
         return [cellRectangle];
       }

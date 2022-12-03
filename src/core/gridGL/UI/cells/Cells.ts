@@ -61,7 +61,7 @@ export class Cells extends Container {
    * @param ignoreInput if false then don't draw input location (as it's handled by the DOM)
    * @returns a Rectangle of the content bounds (not including empty area), or undefined if nothing is drawn
    */
-    drawBounds(options: {
+  drawBounds(options: {
     bounds: Rectangle;
     cellRectangle: CellRectangle;
     ignoreInput?: boolean;
@@ -239,7 +239,7 @@ export class Cells extends Container {
     if (isQuadrant && debugShowQuadrantBoxes && fullBounds) {
       this.debug.clear();
       this.debug.beginFill(debugGetColor(), 0.25);
-      this.debug.drawShape(fullBounds)
+      this.debug.drawShape(fullBounds);
       this.debug.endFill();
     }
 

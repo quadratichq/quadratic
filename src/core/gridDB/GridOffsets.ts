@@ -74,7 +74,7 @@ export class GridOffsets {
    * @param width
    * @returns bounding start and end values
    */
-  getColumnsStartEnd(column: number, width: number): { xStart: number, xEnd: number } {
+  getColumnsStartEnd(column: number, width: number): { xStart: number; xEnd: number } {
     let position = 0;
     let xStart: number;
 
@@ -142,7 +142,7 @@ export class GridOffsets {
    * @param width
    * @returns bounding start and end values
    */
-  getRowsStartEnd(row: number, height: number): { yStart: number, yEnd: number } {
+  getRowsStartEnd(row: number, height: number): { yStart: number; yEnd: number } {
     let position = 0;
     let yStart: number;
 
@@ -313,7 +313,7 @@ export class GridOffsets {
     }
   }
 
-  debugRowsColumns(): { rows: Heading[], columns: Heading[] } {
+  debugRowsColumns(): { rows: Heading[]; columns: Heading[] } {
     return { rows: Object.values(this.rows), columns: Object.values(this.columns) };
   }
 }
