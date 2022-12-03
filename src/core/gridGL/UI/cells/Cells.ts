@@ -1,7 +1,9 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
+import { debugShowQuadrantBoxes } from '../../../../debugFlags';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
 import { Cell, CellFormat } from '../../../gridDB/db';
+import { debugGetColor } from '../../helpers/debugColors';
 import { intersects } from '../../helpers/intersects';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { CellsArray } from './CellsArray';
@@ -9,9 +11,6 @@ import { CellsBackground } from './cellsBackground';
 import { CellsBorder } from './CellsBorder';
 import { CellsLabels } from './CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
-
-const debugColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0x880000, 0x008800, 0x000088, 0x888800, 0x008888];
-let debugColor = 0;
 
 export interface CellsBounds {
   minX: number;
@@ -66,11 +65,8 @@ export class Cells extends Container {
     bounds: Rectangle;
     cellRectangle: CellRectangle;
     ignoreInput?: boolean;
-    showDebugColors?: boolean;
   }): Rectangle | undefined {
-    const { bounds, cellRectangle, ignoreInput, showDebugColors } = options;
-
-    if (showDebugColors) this.debug.clear();
+    const { bounds, cellRectangle, ignoreInput } = options;
 
     const { gridOffsets } = this.app;
     this.labels.clear();
@@ -146,12 +142,6 @@ export class Cells extends Container {
     if (!blank) {
       // renders labels
       this.labels.update();
-
-      if (showDebugColors) {
-        const rect = gridOffsets.getScreenRectangle(cellRectangle.size.left, cellRectangle.size.top, cellRectangle.size.width, cellRectangle.size.height);
-        this.debug.beginFill(debugColors[debugColor], 0.25).drawShape(rect).endFill();
-        debugColor = (debugColor + 1) % debugColors.length;
-      }
       return content;
     }
   }
@@ -232,17 +222,26 @@ export class Cells extends Container {
     }
   }
 
-  drawCells(visibleBounds: Rectangle, showDebugColors: boolean): Rectangle | undefined {
+  drawCells(visibleBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
     const bounds = this.app.grid.getBounds(visibleBounds);
     const cellRectangle = this.app.grid.getCells(bounds);
-    const rectCells = this.drawBounds({ bounds, cellRectangle, showDebugColors });
+    const rectCells = this.drawBounds({ bounds, cellRectangle });
 
     // draw borders
     const borderBounds = this.app.borders.getBounds(visibleBounds);
     const borders = this.app.borders.getBorders(borderBounds);
     const rectBorders = this.cellsBorder.drawBorders(borders);
 
-    return intersects.rectangleUnion(rectCells, rectBorders);
+    const fullBounds = intersects.rectangleUnion(rectCells, rectBorders);
+
+    if (isQuadrant && debugShowQuadrantBoxes && fullBounds) {
+      this.debug.clear();
+      this.debug.beginFill(debugGetColor(), 0.25);
+      this.debug.drawShape(fullBounds)
+      this.debug.endFill();
+    }
+
+    return fullBounds;
   }
 
   update(): void {

@@ -2,7 +2,7 @@
 export const debug = process.env.REACT_APP_DEBUG === '1' ? true : false;
 
 // skip python load (used to speed up debugging)
-export const debugSkipPythonLoad = debug && true;
+export const debugSkipPythonLoad = debug && false;
 
 // ------------------
 // Debug footer marks
@@ -52,7 +52,7 @@ export const debugNeverShowCache = debug && false;
 // don't render quadrants
 export const debugSkipQuadrantRendering = debug && false;
 
-// show quadrant colored boxes
+// show quadrant colored boxes around rendered range
 export const debugShowQuadrantBoxes = debug && false;
 
 export function warn(...args: any): void {

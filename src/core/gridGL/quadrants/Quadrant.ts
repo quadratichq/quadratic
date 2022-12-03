@@ -1,5 +1,5 @@
 import { Container, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
-import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
+import { debugShowCacheInfo, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
 import { nearestPowerOf2 } from '../helpers/zoom';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
@@ -130,7 +130,7 @@ export class Quadrant extends Container {
         );
 
         // draw quadrant and return the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
-        const reducedDrawingRectangle = app.cells.drawCells(cellBounds, debugShowQuadrantBoxes)
+        const reducedDrawingRectangle = app.cells.drawCells(cellBounds, true);
 
         if (reducedDrawingRectangle) {
           // prepare a transform to translate the world to the start of the content for this subQuadrant, and properly scale it
