@@ -157,7 +157,9 @@ export class Quadrants extends Container {
       if (intersects.rectangleRectangle(screen, quadrant.visibleRectangle)) {
         const columnStart = quadrant.location.x * QUADRANT_COLUMNS;
         const rowStart = quadrant.location.y * QUADRANT_ROWS;
-        return [grid.getCells(new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS - 1, QUADRANT_ROWS - 1))];
+        const cellRectangle = grid.getCells(new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS - 1, QUADRANT_ROWS - 1));
+        cellRectangle.addBorders(this.app.borders);
+        return [cellRectangle];
       }
       return [];
     });

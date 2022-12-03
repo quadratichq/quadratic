@@ -147,8 +147,6 @@ export class Cells extends Container {
   }
 
   drawMultipleBounds(cellRectangles: CellRectangle[]): void {
-    this.debug.clear();
-
     const { gridOffsets } = this.app;
     this.labels.clear();
     this.cellsMarkers.clear();
@@ -213,6 +211,10 @@ export class Cells extends Container {
         }
         x = xStart;
         y += height;
+      }
+
+      if (cellRectangle.borders) {
+        this.cellsBorder.drawBorders(cellRectangle.borders);
       }
     }
 

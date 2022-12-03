@@ -78,26 +78,6 @@ export class CellsBorder extends Container {
         drawInputBorder(input, colors.independence, 0.75);
       }
     }
-
-    // const border = input.format?.border;
-    // if (border) {
-    //   drawBorder({
-    //     x: input.x,
-    //     y: input.y,
-    //     width: input.width,
-    //     height: input.height,
-    //     tint: input.format?.borderColor
-    //       ? convertColorStringToTint(input.format.borderColor)
-    //       : colors.defaultBorderColor,
-    //     alpha: 1,
-    //     getSprite: this.getSprite,
-    //     left: !!(border & borderLeft),
-    //     right: !!(border & borderRight),
-    //     top: !!(border & borderTop),
-    //     bottom: !!(border & borderBottom),
-    //     borderType: input.format?.borderType,
-    //   });
-    // }
   }
 
   drawBorders(borders: Border[]): Rectangle | undefined {
