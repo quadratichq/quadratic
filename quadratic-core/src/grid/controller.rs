@@ -347,7 +347,7 @@ impl GridController {
         Ok(reverse_command)
     }
 
-    pub fn get_grid(&self) -> &Grid {
+    pub fn cells(&self) -> &Grid {
         &self.grid
     }
 
