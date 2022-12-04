@@ -1,8 +1,7 @@
 import { Rectangle } from 'pixi.js';
-import { GridFileSchema } from '../actions/gridFile/GridFileSchema';
+import { GridFileSchema, GRID_FILE_VERSION } from '../actions/gridFile/GridFileSchema';
 import { intersects } from '../gridGL/helpers/intersects';
 import CellReference from '../gridGL/types/cellReference';
-import { Coordinate } from '../gridGL/types/size';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
 import { CellAndFormat, GridSparse } from './GridSparse';
@@ -19,19 +18,23 @@ export class Sheet {
     this.borders = new GridBorders(this.gridOffsets);
   }
 
-  getJSON(): string {
+  populate(sheet: GridFileSchema): void {
+    this.gridOffsets.populate(sheet.rows, sheet.columns);
+    this.grid.populate(sheet.cells);
+    this.borders.populate(sheet.borders);
+  }
+
+  save(): string {
     return JSON.stringify({
       columns: this.gridOffsets.getColumnsArray(),
       rows: this.gridOffsets.getRowsArray(),
       cells: Object.values(this.grid.cells),
       borders: this.borders.getArray(),
-    });
-  }
 
-  load(gridFile: GridFileSchema): void {
-    this.gridOffsets.populate(gridFile.columns, gridFile.rows);
-    this.grid.populate(gridFile.cells);
-    this.borders.populate(gridFile.borders);
+      // todo: fix
+      dgraph: "",
+      version: GRID_FILE_VERSION,
+    });
   }
 
   getCell(x: number, y: number): CellAndFormat | undefined {

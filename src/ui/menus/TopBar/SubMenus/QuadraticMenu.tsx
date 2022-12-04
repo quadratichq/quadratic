@@ -10,7 +10,7 @@ import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
 
 import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
-import { OpenGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
+import { openGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
 
 import { menuItemIconStyles } from './menuStyles';
 import { colors } from '../../../../theme/colors';
@@ -49,7 +49,7 @@ export const QuadraticMenu = (props: Props) => {
         <MenuItem onClick={() => SaveGridFile(props.sheet, true)}>
           <SaveOutlined style={menuItemIconStyles}></SaveOutlined> Save Grid
         </MenuItem>
-        <MenuItem onClick={() => OpenGridFile(props.sheet)}>
+        <MenuItem onClick={() => openGridFile(props.sheet)}>
           <FileOpenOutlined style={menuItemIconStyles}></FileOpenOutlined> Open Grid
         </MenuItem>
       </SubMenu>

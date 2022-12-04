@@ -17,7 +17,7 @@ function downloadFile(filename: string, data: string) {
 }
 
 export const SaveGridFile = async (sheet: Sheet, autoDownload = false) => {
-  const file_j = sheet.getJSON();
+  const file_j = sheet.save();
 
   //  auto download file
   if (autoDownload) downloadFile('quadraticFile.grid', file_j);

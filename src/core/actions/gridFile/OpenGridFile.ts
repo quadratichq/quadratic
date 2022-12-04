@@ -38,20 +38,16 @@ const openFileMenuAsync = async () => {
   });
 };
 
-export const LoadGridFromJSON = async (gridFileJSON: GridFileSchema, sheet: Sheet) => {
-  sheet.load(gridFileJSON);
-
-  // todo
-  // let qdg = new QuadraticDependencyGraph();
-  // qdg.load_from_json(gridFileJSON.dgraph);
+export const loadGridFromJSON = async (gridFileJSON: GridFileSchema, sheet: Sheet) => {
+  sheet.populate(gridFileJSON);
 };
 
-export const OpenGridFile = async (sheet: Sheet) => {
+export const openGridFile = async (sheet: Sheet) => {
   // take file input selection from user
   const fileToLoad = await openFileMenuAsync();
   const result = await readFileAsync(fileToLoad);
 
   // parse file
   const gridFileJSON = JSON.parse(result) as GridFileSchema;
-  sheet.load(gridFileJSON);
+  sheet.populate(gridFileJSON);
 };

@@ -28,32 +28,11 @@ export default function QuadraticGrid(props: IProps) {
     if (props.app && container) props.app.attach(container);
   }, [props.app, container]);
 
-  // Live query to update cells
-  // const cells = useLiveQuery(() => GetCellsDB());
-  // const format = useLiveQuery(() => GetFormatDB());
-  // const borders = useLiveQuery(() => GetBordersDB());
-
-  // useEffect(() => {
-  //   if (cells && format && borders) {
-  //     props.app.borders.populate(borders);
-  //     props.app.grid.populate(cells, format);
-  //     props.app.quadrants.build();
-  //     props.app.cells.dirty = true;
-  //   }
-  // }, [props.app, cells, format, borders]);
-
-  // const { headings } = useHeadings(props.app);
-  // useEffect(() => {
-  //   if (props.app && headings) {
-  //     props.app.gridOffsets.populate(headings.columns, headings.rows);
-  //   }
-  // }, [props.app, headings]);
-
-  // useEffect(() => {
-  //   if (props.app && headings) {
-  //     props.app.gridOffsets.populate(headings.columns, headings.rows);
-  //   }
-  // }, [props.app, headings]);
+  useEffect(() => {
+    if (props.app) {
+      props.app.quadrants.build();
+    }
+  }, [props.sheet, props.app]);
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);

@@ -1,4 +1,10 @@
-export const example_grid = {
+import { GridFileSchema, GRID_FILE_VERSION } from '../core/actions/gridFile/GridFileSchema';
+
+export const example_grid: GridFileSchema = {
+  columns: [],
+  rows: [],
+  borders: [],
+  version: GRID_FILE_VERSION,
   cells: [
     {
       x: 0,
