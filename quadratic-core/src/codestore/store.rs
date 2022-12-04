@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt;
 
 use crate::Pos;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum CodeType {
     Formula,
     Python,
@@ -18,30 +17,21 @@ pub struct CodeCell {
 }
 
 #[derive(Default, Clone, Debug)]
+/// Stores the code for a grid.
 pub struct CodeStore {
     pub code: HashMap<Pos, CodeCell>,
 }
 
-impl fmt::Display for CodeStore {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "CodeStore {{ code: {:?} }}", self.code)
-    }
-}
-
-/// Stores the code for a grid.
 impl CodeStore {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn set_cell_code(
-        &mut self,
-        pos: Pos,
-        code_cell_or_none: Option<CodeCell>,
-    ) -> Option<CodeCell> {
+    pub fn set_cell_code(&mut self, pos: Pos, code_cell: Option<CodeCell>) -> Option<CodeCell> {
         // sets code at pos and returns the old code or None if there was no code at pos
-        if code_cell_or_none.is_some() {
-            self.code.insert(pos, code_cell_or_none.unwrap())
+
+        if let Some(code_cell) = code_cell {
+            self.code.insert(pos, code_cell)
         } else {
             self.code.remove(&pos)
         }
