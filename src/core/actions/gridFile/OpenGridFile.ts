@@ -1,5 +1,5 @@
 import { GridFileSchema } from './GridFileSchema';
-import { Sheet } from '../../gridDB/sheet';
+import { Sheet } from '../../gridDB/tempSheet';
 
 const readFileAsync = async (file: File) => {
   // takes a File object and returns it as a string

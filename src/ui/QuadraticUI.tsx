@@ -9,7 +9,7 @@ import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../core/gridGL/QuadraticGrid';
 import { useState } from 'react';
 import { PixiApp } from '../core/gridGL/pixiApp/PixiApp';
-import { Sheet } from '../core/gridDB/sheet';
+import { Sheet } from '../core/gridDB/tempSheet';
 
 interface Props {
   sheet: Sheet;

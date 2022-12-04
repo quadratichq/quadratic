@@ -24,10 +24,34 @@ export class GridSparse {
   updateCells(cells: Cell[]): void {
     cells.forEach(cell => {
       const update = this.cells.get(this.getKey(cell.x, cell.y));
-      if (!update) {
-        console.warn("Expected cell to be defined in updateCells");
-      } else {
+      if (update) {
         update.cell = cell;
+      } else {
+        this.cells.set(this.getKey(cell.x, cell.y), { cell });
+      }
+    })
+  }
+
+  updateFormat(formats: CellFormat[]): void {
+    formats.forEach(format => {
+      const update = this.cells.get(this.getKey(format.x, format.y));
+      if (update) {
+        update.format = format;
+      } else {
+        this.cells.set(this.getKey(format.x, format.y), { format });
+      }
+    })
+  }
+
+  clearFormat(formats: CellFormat[]): void {
+    formats.forEach(format => {
+      const key = this.getKey(format.x, format.y);
+      const clear = this.cells.get(key);
+      if (clear) {
+        delete clear.format;
+        if (Object.keys(clear).length === 0) {
+          this.cells.delete(key);
+        }
       }
     })
   }
@@ -102,6 +126,19 @@ export class GridSparse {
 
   getCells(rectangle: Rectangle): CellRectangle {
     return new CellRectangle(rectangle, this);
+  }
+
+  getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
+    const cells: Cell[] = [];
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const cell = this.cells.get(this.getKey(x, y));
+        if (cell?.cell) {
+          cells.push(cell.cell);
+        }
+      }
+    }
+    return cells;
   }
 
   getBounds(bounds: Rectangle): Rectangle {

@@ -1,7 +1,7 @@
 import { ColorResult } from 'react-color';
-import { updateFormatDB } from '../../../../core/gridDB/Cells/UpdateFormatDB';
 import { CellFormat } from '../../../../core/gridDB/gridTypes';
-import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
+import { Sheet } from '../../../../core/gridDB/tempSheet';
+import { Coordinate } from '../../../../core/gridGL/types/size';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { useGetSelection } from './useGetSelection';
 
@@ -13,19 +13,22 @@ interface IResults {
 
 type CellFormatNoPosition = Exclude<CellFormat, 'x' | 'y'>;
 
-export const useFormatCells = (app?: PixiApp): IResults => {
+interface Props {
+  sheet: Sheet;
+}
+
+export const useFormatCells = (props: Props): IResults => {
   const { start, end } = useGetSelection();
 
   const onFormat = (updatedFormat: CellFormatNoPosition): void => {
-    if (!app) return;
     const formats: CellFormat[] = [];
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
-        const format = app.grid.getFormat(x, y) ?? { x, y };
+        const format = props.sheet.grid.getFormat(x, y) ?? { x, y };
         formats.push({ ...format, ...updatedFormat });
       }
     }
-    updateFormatDB(formats);
+    props.sheet.grid.updateFormat(formats);
   };
 
   const changeFillColor = (color: ColorResult): void => {
@@ -37,9 +40,13 @@ export const useFormatCells = (app?: PixiApp): IResults => {
   };
 
   const clearFormatting = (): void => {
-    if (!app) return;
-
-    // todo: clear formatting w/clearing borders
+    const clear: Coordinate[] = [];
+    for (let y = start.y; y <= end.y; y++) {
+      for (let x = start.x; x <= end.x; x++) {
+        clear.push({ x, y });
+      }
+    }
+    props.sheet.grid.clearFormat(clear);
   };
 
   return {

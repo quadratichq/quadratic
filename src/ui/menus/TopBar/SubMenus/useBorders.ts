@@ -1,6 +1,5 @@
-import { clearBorderDB, updateBorderDB } from '../../../../core/gridDB/Cells/UpdateBordersDB';
 import { Border, BorderType } from '../../../../core/gridDB/gridTypes';
-import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
+import { Sheet } from '../../../../core/gridDB/tempSheet';
 import { Coordinate } from '../../../../core/gridGL/types/size';
 import { useGetSelection } from './useGetSelection';
 
@@ -21,11 +20,14 @@ interface IResults {
   clearBorders: () => void;
 }
 
-export const useBorders = (app?: PixiApp): IResults => {
+interface Props {
+  sheet: Sheet;
+}
+
+export const useBorders = (props: Props): IResults => {
   const { start, end, multiCursor } = useGetSelection();
 
   const changeBorders = (options: ChangeBorder): void => {
-    if (!app) return;
     const borderColor = options.color;
     const borderUpdates: Border[] = [];
 
@@ -36,7 +38,7 @@ export const useBorders = (app?: PixiApp): IResults => {
         border.vertical = { type: options.type, color: borderColor };
       } else {
         // update an existing border
-        const border = app.borders.get(x, y);
+        const border = props.sheet.borders.get(x, y);
         if (border) {
           const update: Border = { x, y, vertical: { type: options.type, color: borderColor } };
           if (border.horizontal) {
@@ -59,7 +61,7 @@ export const useBorders = (app?: PixiApp): IResults => {
         border.horizontal = { type: options.type, color: borderColor };
       } else {
         // update an existing border
-        const border = app.borders.get(x, y);
+        const border = props.sheet.borders.get(x, y);
         if (border) {
           const update: Border = { x, y, horizontal: { type: options.type, color: borderColor } };
           if (border.vertical) {
@@ -109,22 +111,21 @@ export const useBorders = (app?: PixiApp): IResults => {
       }
     }
     if (borderUpdates.length) {
-      updateBorderDB(borderUpdates);
+      props.sheet.borders.update(borderUpdates);
     }
   };
 
   const clearBorders = (): void => {
-    if (!app) return;
     const borderUpdate: Border[] = [];
     const borderDelete: Coordinate[] = [];
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
-        const border = app.borders.get(x, y);
+        const border = props.sheet.borders.get(x, y);
         if (border) {
           borderDelete.push({ x, y });
         }
         if (x === end.x) {
-          const border = app.borders.get(x + 1, y);
+          const border = props.sheet.borders.get(x + 1, y);
           if (border?.vertical) {
             if (!border.horizontal) {
               borderDelete.push({ x: x + 1, y });
@@ -134,7 +135,7 @@ export const useBorders = (app?: PixiApp): IResults => {
           }
         }
         if (y === end.y) {
-          const border = app.borders.get(x, y + 1);
+          const border = props.sheet.borders.get(x, y + 1);
           if (border?.horizontal) {
             if (!border.vertical) {
               borderDelete.push({ x, y: y + 1 });
@@ -146,10 +147,10 @@ export const useBorders = (app?: PixiApp): IResults => {
       }
     }
     if (borderDelete.length) {
-      clearBorderDB(borderDelete);
+      props.sheet.borders.clear(borderDelete);
     }
     if (borderUpdate.length) {
-      updateBorderDB(borderUpdate);
+      props.sheet.borders.update(borderUpdate);
     }
   };
 

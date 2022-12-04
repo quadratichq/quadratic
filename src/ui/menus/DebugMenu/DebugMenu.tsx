@@ -1,33 +1,35 @@
 // import { useState } from "react";
-import { GetDGraphDB } from '../../../core/gridDB/DGraph/GetDGraphDB';
 import { UpdateDGraphDB } from '../../../core/gridDB/DGraph/UpdateDGraphDB';
-import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
-import { qdb } from '../../../core/gridDB/gridTypes';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { colors } from '../../../theme/colors';
 import TextField from '@mui/material/TextField';
 import { Button } from '@mui/material';
 import QuadraticDependencyGraph from '../../../core/dgraph/QuadraticDependencyGraph';
+import { Sheet } from '../../../core/gridDB/tempSheet';
 // import CellReference from "../../../core/gridGL/types/cellReference";
 
-export default function DebugMenu() {
+interface Props {
+  sheet: Sheet;
+}
+
+// todo when rust is ready
+export default function DebugMenu(props: Props) {
   //   const [debugContent, setDebugContent] = useState<string>("");
-  const dgraph = useLiveQuery(() => GetDGraphDB());
-  const cells = useLiveQuery(() => GetCellsDB());
+  // const dgraph = useLiveQuery(() => GetDGraphDB());
+  // const cells = useLiveQuery(() => GetCellsDB());
 
   // const dgraph_json_str = dgraph?.export_to_json();
 
-  let file_state: string;
+  // let file_state: string;
 
-  const HUMAN_READABLE_DGRAPH = true;
-  let dgraph_str = dgraph?.human_readable_string();
-  if (!HUMAN_READABLE_DGRAPH) dgraph_str = JSON.stringify(dgraph?.export_to_obj());
+  // const HUMAN_READABLE_DGRAPH = true;
+  // let dgraph_str = dgraph?.human_readable_string();
+  // if (!HUMAN_READABLE_DGRAPH) dgraph_str = JSON.stringify(dgraph?.export_to_obj());
 
-  try {
-    file_state = `${dgraph_str}\n${JSON.stringify(cells || '', null, '\t')}`;
-  } catch {
-    file_state = '';
-  }
+  // try {
+  //   file_state = `${dgraph_str}\n${JSON.stringify(cells || '', null, '\t')}`;
+  // } catch {
+  //   file_state = '';
+  // }
 
   return (
     <div
@@ -54,8 +56,8 @@ export default function DebugMenu() {
       </Button>
       <Button
         onClick={() => {
-          qdb.cells.clear();
-          qdb.qgrid.clear();
+          // qdb.cells.clear();
+          // qdb.qgrid.clear();
         }}
       >
         Reset Grid
@@ -66,7 +68,7 @@ export default function DebugMenu() {
         label="DEBUG"
         multiline
         rows={14}
-        value={file_state}
+        value={""/*file_state*/}
         style={{ width: '100%' }}
       />
     </div>

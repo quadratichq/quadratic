@@ -3,7 +3,7 @@ import { MenuState, MenuCloseEvent } from '@szhsin/react-menu/types';
 
 import { copyToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { Sheet } from '../../../core/gridDB/sheet';
+import { Sheet } from '../../../core/gridDB/tempSheet';
 
 interface EventHandler<E> {
   (event: E): void;

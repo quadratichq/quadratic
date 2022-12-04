@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
-import { UpdateHeading } from './Cells/UpdateHeadingsDB';
 import { Heading } from './gridTypes';
+import { UpdateHeading } from './useHeadings';
 
 export interface HeadingResizing {
   x: number;
@@ -289,11 +289,12 @@ export class GridOffsets {
     return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
   }
 
-  /**
-   * optimistically update row/column size instead of waiting for next populate
-   * @param change
-   */
-  optimisticUpdate(change: UpdateHeading): void {
+  delete(options: { rows: number[], columns: number[] }): void {
+    options.rows.forEach(row => delete this.rows[row]);
+    options.columns.forEach(column => delete this.columns[column]);
+  }
+
+  update(change: UpdateHeading): void {
     if (change.row !== undefined) {
       if (this.rows[change.row]) {
         this.rows[change.row].size = change.size;

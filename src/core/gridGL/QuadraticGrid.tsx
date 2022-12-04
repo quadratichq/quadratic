@@ -10,7 +10,7 @@ import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
-import { Sheet } from '../gridDB/sheet';
+import { Sheet } from '../gridDB/tempSheet';
 
 interface IProps {
   sheet: Sheet;
@@ -85,6 +85,7 @@ export default function QuadraticGrid(props: IProps) {
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
 
   const { onKeyDown } = useKeyboard({
+    sheet: props.sheet,
     interactionState,
     setInteractionState,
     editorInteractionState,
@@ -118,6 +119,7 @@ export default function QuadraticGrid(props: IProps) {
         app={props.app}
       />
       <RightClickMenu
+        sheet={props.sheet}
         state={rightClickMenuState}
         anchorPoint={rightClickPoint}
         onClose={() => toggleRightClickMenu(false)}

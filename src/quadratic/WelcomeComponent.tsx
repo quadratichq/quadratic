@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { LoadGridFromJSON } from '../core/actions/gridFile/OpenGridFile';
 import { loadLocalFile } from '../core/gridDB/localFile';
-import { Sheet } from '../core/gridDB/sheet';
+import { Sheet } from '../core/gridDB/tempSheet';
 
 interface Props {
   sheet: Sheet;

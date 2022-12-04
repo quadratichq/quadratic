@@ -1,6 +1,6 @@
 import CellReference from '../gridGL/types/cellReference';
 import { Cell } from '../gridDB/gridTypes';
-import { Sheet } from '../gridDB/sheet';
+import { Sheet } from '../gridDB/tempSheet';
 
 export const pasteFromClipboard = (sheet: Sheet, pasteToCell: CellReference) => {
   // get contents from clipboard

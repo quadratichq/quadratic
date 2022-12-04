@@ -1,4 +1,6 @@
+import { Rectangle } from 'pixi.js';
 import { GridFileSchema } from '../actions/gridFile/GridFileSchema';
+import { intersects } from '../gridGL/helpers/intersects';
 import CellReference from '../gridGL/types/cellReference';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
@@ -65,5 +67,9 @@ export class Sheet {
 
   updateCells(cells: Cell[]): void {
     this.grid.updateCells(cells);
+  }
+
+  getGridBounds(): Rectangle | undefined {
+    return intersects.rectangleUnion(this.grid.getGridBounds(), this.borders.getGridBounds());
   }
 }

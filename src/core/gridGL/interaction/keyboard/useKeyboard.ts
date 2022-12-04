@@ -8,7 +8,7 @@ import { keyboardPosition } from './keyboardPosition';
 import { keyboardCell } from './keyboardCell';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { keyboardViewport } from './keyboardViewport';
-import { Sheet } from '../../../gridDB/sheet';
+import { Sheet } from '../../../gridDB/tempSheet';
 
 interface IProps {
   interactionState: GridInteractionState;

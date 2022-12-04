@@ -3,15 +3,18 @@ import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectC
 import { zoomToFit } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { UpdateHeading, updateHeadingDB } from '../../../gridDB/Cells/UpdateHeadingsDB';
+import { Sheet } from '../../../gridDB/tempSheet';
+import { UpdateHeading } from '../../../gridDB/useHeadings';
 
 export class PointerHeading {
   private app: PixiApp;
+  private sheet: Sheet;
   private active = false;
   private downTimeout: number | undefined;
 
-  constructor(app: PixiApp) {
+  constructor(app: PixiApp, sheet: Sheet) {
     this.app = app;
+    this.sheet = sheet;
   }
 
   selectAll() {
@@ -27,7 +30,8 @@ export class PointerHeading {
 
   pointerDown(world: Point, event: InteractivePointerEvent): boolean {
     if (event.shiftKey) return false;
-    const { headings, gridOffsets, viewport, settings, cursor } = this.app;
+    const { headings, viewport, settings, cursor } = this.app;
+    const { gridOffsets } = this.sheet;
     if (!settings.setInteractionState) {
       console.warn('Expected pixiAppSettings.setInteractionState to be defined');
       return false;
@@ -102,7 +106,8 @@ export class PointerHeading {
   }
 
   pointerMove(world: Point): boolean {
-    const { canvas, headings, gridOffsets, cells, gridLines, cursor } = this.app;
+    const { canvas, headings, cells, gridLines, cursor } = this.app;
+    const { gridOffsets } = this.sheet;
     const headingResize = headings.intersectsHeadingGridLine(world);
     if (headingResize) {
       canvas.style.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
@@ -139,7 +144,7 @@ export class PointerHeading {
 
   pointerUp(): boolean {
     if (this.active) {
-      const { gridOffsets } = this.app;
+      const { gridOffsets } = this.sheet;
       this.active = false;
       const { headingResizing } = gridOffsets;
       if (headingResizing) {
@@ -156,8 +161,7 @@ export class PointerHeading {
           };
         }
         if (updateHeading) {
-          updateHeadingDB(updateHeading);
-          gridOffsets.optimisticUpdate(updateHeading);
+          gridOffsets.update(updateHeading);
         }
         gridOffsets.headingResizing = undefined;
       }

@@ -1,4 +1,5 @@
 import { Rectangle } from 'pixi.js';
+import { Coordinate } from '../gridGL/types/size';
 import { GridOffsets } from './GridOffsets';
 import { Border } from './gridTypes';
 
@@ -48,6 +49,16 @@ export class GridBorders {
   get(x: number, y: number): Border | undefined {
     if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
     return this.borders.get(this.getKey(x, y));
+  }
+
+  clear(coordinates: Coordinate[]): void {
+    coordinates.forEach(coordinate => this.borders.delete(this.getKey(coordinate.x, coordinate.y)));
+  }
+
+  update(borders: Border[]): void {
+    borders.forEach(border => {
+      this.borders.set(this.getKey(border.x, border.y), border);
+    });
   }
 
   getBorders(bounds: Rectangle): Border[] {

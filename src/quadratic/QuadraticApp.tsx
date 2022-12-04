@@ -10,7 +10,8 @@ import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
 import { isMobileOnly } from 'react-device-detect';
 import { debugSkipPythonLoad } from '../debugFlags';
-import { Sheet } from '../core/gridDB/sheet';
+import { Sheet } from '../core/gridDB/tempSheet';
+import { GetCellsDBSetSheet } from '../core/gridDB/Cells/GetCellsDB';
 
 export default function QuadraticApp() {
   const { loading, incrementLoadingCount } = useLoading();
@@ -32,6 +33,11 @@ export default function QuadraticApp() {
       });
     }
   }, [loading, incrementLoadingCount]);
+
+  // hack until rust backend is running
+  useEffect(() => {
+    GetCellsDBSetSheet(sheet);
+  }, [sheet]);
 
   return (
     <RecoilRoot>

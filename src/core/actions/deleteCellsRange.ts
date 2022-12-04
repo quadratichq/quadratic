@@ -1,6 +1,6 @@
 import { GetDGraphDB } from '../gridDB/DGraph/GetDGraphDB';
 import { UpdateDGraphDB } from '../gridDB/DGraph/UpdateDGraphDB';
-import { Sheet } from '../gridDB/sheet';
+import { Sheet } from '../gridDB/tempSheet';
 import CellReference from '../gridGL/types/cellReference';
 
 export const deleteCellsRange = async (sheet: Sheet, p0: CellReference, p1: CellReference) => {

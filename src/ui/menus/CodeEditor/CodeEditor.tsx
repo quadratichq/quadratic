@@ -1,23 +1,22 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from '../../../theme/quadraticEditorTheme';
-import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
 import TextField from '@mui/material/TextField';
 import { Cell } from '../../../core/gridDB/gridTypes';
 import './CodeEditor.css';
 import { Button } from '@mui/material';
-import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { Sheet } from '../../../core/gridDB/tempSheet';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
 interface CodeEditorProps {
   editorInteractionState: EditorInteractionState;
+  sheet: Sheet;
 }
 
 export const CodeEditor = (props: CodeEditorProps) => {
@@ -36,7 +35,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // Monitor selected cell for changes
   const x = editorInteractionState.selectedCell.x;
   const y = editorInteractionState.selectedCell.y;
-  const cells = useLiveQuery(() => GetCellsDB(x, y, x, y), [x, y]);
+  const cell = useMemo(() => props.sheet.getCell(x, y), [x, y, props.sheet]);
 
   // Editor Width State
   const [editorWidth, setEditorWidth] = useState<number>(
@@ -45,10 +44,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
-    if (cells?.length) {
-      setSelectedCell(cells[0]);
+    if (cell) {
+      setSelectedCell(cell.cell);
     }
-  }, [cells]);
+  }, [cell]);
 
   const closeEditor = () => {
     setInteractionState({
@@ -82,23 +81,22 @@ export const CodeEditor = (props: CodeEditorProps) => {
     editorRef.current?.focus();
     editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
 
-    GetCellsDB(Number(x), Number(y), Number(x), Number(y)).then((cells) => {
-      if (cells?.length && cells[0] !== undefined) {
-        // load cell content
-        setSelectedCell(cells[0]);
-        setEditorContent(cells[0].python_code);
-      } else {
-        // create blank cell
-        setSelectedCell({
-          x: Number(x),
-          y: Number(y),
-          type: editorInteractionState.mode,
-          value: '',
-        } as Cell);
-        setEditorContent('');
-      }
-    });
-  });
+    const cell = props.sheet.getCell(x, y)?.cell;
+    if (cell) {
+      // load cell content
+      setSelectedCell(cell);
+      setEditorContent(cell.python_code);
+    } else {
+      // create blank cell
+      setSelectedCell({
+        x: Number(x),
+        y: Number(y),
+        type: editorInteractionState.mode,
+        value: '',
+      } as Cell);
+      setEditorContent('');
+    }
+  }, [selectedCell, editorInteractionState, props.sheet]);
 
   const saveSelectedCell = () => {
     if (!selectedCell) return;
@@ -107,7 +105,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     selectedCell.value = '';
     selectedCell.python_code = editorContent;
 
-    updateCellAndDCells(selectedCell);
+    props.sheet.updateCells([selectedCell]);
   };
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {

@@ -2,7 +2,7 @@ import { Cell } from '../gridDB/gridTypes';
 import { runPython } from '../computations/python/runPython';
 import { GetDGraphDB } from '../gridDB/DGraph/GetDGraphDB';
 import { UpdateDGraphDB } from '../gridDB/DGraph/UpdateDGraphDB';
-import { Sheet } from '../gridDB/sheet';
+import { Sheet } from '../gridDB/tempSheet';
 
 export const updateCellAndDCells = async (sheet: Sheet, cell: Cell) => {
   //save currently edited cell
