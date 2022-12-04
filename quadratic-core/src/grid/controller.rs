@@ -14,9 +14,13 @@ pub struct TransactionInProgress<'a> {
     dirty: DirtyQuadrants,
 }
 impl TransactionInProgress<'_> {
-    /// Returns the underlying grid.
-    pub fn grid(&self) -> &GridController {
+    /// Returns the grid controller.
+    pub fn controller(&self) -> &GridController {
         self.controller
+    }
+    /// Returns the underlying cell grid.
+    pub fn cells(&self) -> &Grid {
+        &self.controller.grid
     }
     /// Executes a command as part of the transaction.
     pub fn exec(&mut self, command: Command) -> Result<()> {
@@ -343,7 +347,7 @@ impl GridController {
         Ok(reverse_command)
     }
 
-    pub fn get_grid(&self) -> &Grid {
+    pub fn cells(&self) -> &Grid {
         &self.grid
     }
 
