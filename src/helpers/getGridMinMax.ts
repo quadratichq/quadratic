@@ -1,4 +1,4 @@
-import { qdb } from '../core/gridDB/db';
+import { qdb } from '../core/gridDB/gridTypes';
 
 export const getGridMinMax = async () => {
   // Calculates bounds of the content in the current grid

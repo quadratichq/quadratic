@@ -3,7 +3,7 @@ import { colors } from '../../../theme/colors';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { useEffect, useState } from 'react';
-import { Cell } from '../../../core/gridDB/db';
+import { Cell } from '../../../core/gridDB/gridTypes';
 import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
 import { formatDistance } from 'date-fns';
 import { focusGrid } from '../../../helpers/focusGrid';

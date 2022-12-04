@@ -1,22 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
-import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useLoading } from '../../contexts/LoadingContext';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
 import { useMenuState } from '@szhsin/react-menu';
 import { PixiApp } from './pixiApp/PixiApp';
-import { useHeadings } from '../gridDB/useHeadings';
 import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
-import { GetFormatDB } from '../gridDB/Cells/GetFormatDB';
-import { GetBordersDB } from '../gridDB/Cells/GetBordersDB';
+import { Sheet } from '../gridDB/sheet';
 
 interface IProps {
+  sheet: Sheet;
   app?: PixiApp;
   setApp: (app: PixiApp) => void;
 }
@@ -37,31 +34,31 @@ export default function QuadraticGrid(props: IProps) {
   }, [props.app, container]);
 
   // Live query to update cells
-  const cells = useLiveQuery(() => GetCellsDB());
-  const format = useLiveQuery(() => GetFormatDB());
-  const borders = useLiveQuery(() => GetBordersDB());
+  // const cells = useLiveQuery(() => GetCellsDB());
+  // const format = useLiveQuery(() => GetFormatDB());
+  // const borders = useLiveQuery(() => GetBordersDB());
 
-  useEffect(() => {
-    if (props.app && cells && format && borders) {
-      props.app.borders.populate(borders);
-      props.app.grid.populate(cells, format);
-      props.app.quadrants.build();
-      props.app.cells.dirty = true;
-    }
-  }, [props.app, cells, format, borders]);
+  // useEffect(() => {
+  //   if (cells && format && borders) {
+  //     props.app.borders.populate(borders);
+  //     props.app.grid.populate(cells, format);
+  //     props.app.quadrants.build();
+  //     props.app.cells.dirty = true;
+  //   }
+  // }, [props.app, cells, format, borders]);
 
-  const { headings } = useHeadings(props.app);
-  useEffect(() => {
-    if (props.app && headings) {
-      props.app.gridOffsets.populate(headings.columns, headings.rows);
-    }
-  }, [props.app, headings]);
+  // const { headings } = useHeadings(props.app);
+  // useEffect(() => {
+  //   if (props.app && headings) {
+  //     props.app.gridOffsets.populate(headings.columns, headings.rows);
+  //   }
+  // }, [props.app, headings]);
 
-  useEffect(() => {
-    if (props.app && headings) {
-      props.app.gridOffsets.populate(headings.columns, headings.rows);
-    }
-  }, [props.app, headings]);
+  // useEffect(() => {
+  //   if (props.app && headings) {
+  //     props.app.gridOffsets.populate(headings.columns, headings.rows);
+  //   }
+  // }, [props.app, headings]);
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);

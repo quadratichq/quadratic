@@ -1,8 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { UpdateHeading } from './Cells/UpdateHeadingsDB';
-import { Heading } from './db';
+import { Heading } from './gridTypes';
 
 export interface HeadingResizing {
   x: number;
@@ -15,23 +14,20 @@ export interface HeadingResizing {
 }
 
 export class GridOffsets {
-  private app: PixiApp;
   private columns: Record<string, Heading> = {};
   private rows: Record<string, Heading> = {};
   headingResizing: HeadingResizing | undefined;
-
-  constructor(app: PixiApp) {
-    this.app = app;
-  }
 
   populate(columns: Heading[], rows: Heading[]): void {
     this.columns = {};
     columns.forEach((entry) => (this.columns[entry.id] = entry));
     this.rows = {};
     rows.forEach((entry) => (this.rows[entry.id] = entry));
-    this.app.gridLines.dirty = true;
-    this.app.headings.dirty = true;
-    this.app.cursor.dirty = true;
+
+    // todo: move this somewhere else...
+    // this.app.gridLines.dirty = true;
+    // this.app.headings.dirty = true;
+    // this.app.cursor.dirty = true;
   }
 
   getColumnWidth(column: number): number {
@@ -315,5 +311,13 @@ export class GridOffsets {
 
   debugRowsColumns(): { rows: Heading[]; columns: Heading[] } {
     return { rows: Object.values(this.rows), columns: Object.values(this.columns) };
+  }
+
+  getColumnsArray(): Heading[] {
+    return Object.values(this.columns);
+  }
+
+  getRowsArray(): Heading[] {
+    return Object.values(this.rows);
   }
 }

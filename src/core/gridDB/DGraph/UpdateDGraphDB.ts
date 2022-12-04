@@ -1,4 +1,4 @@
-import { qdb } from '../db';
+import { qdb } from '../gridTypes';
 import QuadraticDependencyGraph from '../../dgraph/QuadraticDependencyGraph';
 
 export const UpdateDGraphDB = async (qdg: QuadraticDependencyGraph) => {

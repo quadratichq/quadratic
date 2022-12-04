@@ -1,15 +1,13 @@
-import { Cell } from '../gridDB/db';
-import { UpdateCellsDB } from '../gridDB/Cells/UpdateCellsDB';
+import { Cell } from '../gridDB/gridTypes';
 import { runPython } from '../computations/python/runPython';
 import { GetDGraphDB } from '../gridDB/DGraph/GetDGraphDB';
 import { UpdateDGraphDB } from '../gridDB/DGraph/UpdateDGraphDB';
-import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
-import { DeleteCellsDB } from '../gridDB/Cells/DeleteCellsDB';
+import { Sheet } from '../gridDB/sheet';
 
-export const updateCellAndDCells = async (cell: Cell) => {
+export const updateCellAndDCells = async (sheet: Sheet, cell: Cell) => {
   //save currently edited cell
   cell.last_modified = new Date().toISOString();
-  await UpdateCellsDB([cell]);
+  sheet.updateCells([cell]);
   let dgraph = await GetDGraphDB();
 
   // start with a plan to just update the current cell
@@ -36,9 +34,7 @@ export const updateCellAndDCells = async (cell: Cell) => {
     if (ref_cell_to_update === undefined) break;
 
     // get current cell from db
-    let cell = (
-      await GetCellsDB(ref_cell_to_update[0], ref_cell_to_update[1], ref_cell_to_update[0], ref_cell_to_update[1])
-    )[0];
+    let cell = sheet.getCell(ref_cell_to_update[0], ref_cell_to_update[1])?.cell;
 
     if (cell === undefined) continue;
 
@@ -51,7 +47,7 @@ export const updateCellAndDCells = async (cell: Cell) => {
         return { x: cell[0], y: cell[1] };
       });
       // old_array_cells.unshift(); // remove this cell
-      await DeleteCellsDB(old_array_cells);
+      sheet.deleteCells(old_array_cells);
     }
 
     if (cell.type === 'PYTHON') {
@@ -127,7 +123,7 @@ export const updateCellAndDCells = async (cell: Cell) => {
 
         cell.last_modified = new Date().toISOString();
 
-        await UpdateCellsDB([cell, ...array_cells_to_output]);
+        sheet.updateCells([cell, ...array_cells_to_output]);
       } else {
         // not array output
 
@@ -138,7 +134,7 @@ export const updateCellAndDCells = async (cell: Cell) => {
         cell.dependent_cells = result.cells_accessed;
 
         cell.last_modified = new Date().toISOString();
-        await UpdateCellsDB([cell]);
+        sheet.updateCells([cell]);
       }
     }
 

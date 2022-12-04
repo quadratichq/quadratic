@@ -2,7 +2,7 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
 import { debugShowQuadrantBoxes } from '../../../../debugFlags';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
-import { Cell, CellFormat } from '../../../gridDB/db';
+import { Cell, CellFormat } from '../../../gridDB/gridTypes';
 import { debugGetColor } from '../../helpers/debugColors';
 import { intersects } from '../../helpers/intersects';
 import { PixiApp } from '../../pixiApp/PixiApp';

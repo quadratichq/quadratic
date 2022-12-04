@@ -5,18 +5,15 @@ import { PixiAppSettings } from './PixiAppSettings';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { Update } from './Update';
 import './pixiApp.css';
-import { GridOffsets } from '../../gridDB/GridOffsets';
 import { GridLines } from '../UI/GridLines';
 import { AxesLines } from '../UI/AxesLines';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { Cursor } from '../UI/Cursor';
 import { Cells } from '../UI/cells/Cells';
-import { GridSparse } from '../../gridDB/GridSparse';
 import { zoomInOut, zoomToFit } from '../helpers/zoom';
 import { Quadrants } from '../quadrants/Quadrants';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
 import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../../debugFlags';
-import { GridBorders } from '../../gridDB/GridBorders';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -34,9 +31,6 @@ export class PixiApp {
 
   input: Pointer;
   viewportContents: Container;
-  gridOffsets: GridOffsets;
-  grid: GridSparse;
-  borders: GridBorders;
   settings: PixiAppSettings;
   renderer: Renderer;
   stage = new Container();
@@ -47,10 +41,6 @@ export class PixiApp {
   debug: Graphics;
 
   constructor() {
-    this.gridOffsets = new GridOffsets(this);
-    this.grid = new GridSparse(this);
-    this.borders = new GridBorders(this);
-
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';

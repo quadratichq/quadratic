@@ -1,4 +1,4 @@
-import { Cell } from '../../../gridDB/db';
+import { Cell } from '../../../gridDB/gridTypes';
 import { PixiApp } from '../../pixiApp/PixiApp';
 
 export function doubleClickCell(options: { cell?: Cell; app: PixiApp }): void {

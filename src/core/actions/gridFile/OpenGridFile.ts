@@ -1,8 +1,5 @@
 import { GridFileSchema } from './GridFileSchema';
-import { qdb } from '../../gridDB/db';
-import { UpdateCellsDB } from '../../gridDB/Cells/UpdateCellsDB';
-import { UpdateDGraphDB } from '../../gridDB/DGraph/UpdateDGraphDB';
-import QuadraticDependencyGraph from '../../dgraph/QuadraticDependencyGraph';
+import { Sheet } from '../../gridDB/sheet';
 
 const readFileAsync = async (file: File) => {
   // takes a File object and returns it as a string
@@ -41,25 +38,20 @@ const openFileMenuAsync = async () => {
   });
 };
 
-export const LoadGridFromJSON = async (gridFileJSON: GridFileSchema) => {
-  // clear current grid
-  await qdb.cells.clear();
-  await qdb.qgrid.clear();
+export const LoadGridFromJSON = async (gridFileJSON: GridFileSchema, sheet: Sheet) => {
+  sheet.load(gridFileJSON);
 
-  // Open file cells and dgraph
-  await UpdateCellsDB(gridFileJSON.cells);
-  let qdg = new QuadraticDependencyGraph();
-  qdg.load_from_json(gridFileJSON.dgraph);
-  await UpdateDGraphDB(qdg);
+  // todo
+  // let qdg = new QuadraticDependencyGraph();
+  // qdg.load_from_json(gridFileJSON.dgraph);
 };
 
-export const OpenGridFile = async () => {
+export const OpenGridFile = async (sheet: Sheet) => {
   // take file input selection from user
   const fileToLoad = await openFileMenuAsync();
   const result = await readFileAsync(fileToLoad);
 
   // parse file
   const gridFileJSON = JSON.parse(result) as GridFileSchema;
-
-  await LoadGridFromJSON(gridFileJSON);
+  sheet.load(gridFileJSON);
 };

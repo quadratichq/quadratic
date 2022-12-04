@@ -1,4 +1,4 @@
-import { qdb, Heading } from '../db';
+import { qdb, Heading } from '../gridTypes';
 
 export const GetHeadingsDB = async (): Promise<{ rows: Heading[]; columns: Heading[] }> => {
   // Return Cells as an Array

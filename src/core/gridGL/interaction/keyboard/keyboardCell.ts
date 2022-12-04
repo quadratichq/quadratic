@@ -1,17 +1,18 @@
 import { EditorInteractionState } from '../../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
-import { deleteCellsRange } from '../../../actions/deleteCellsRange';
+import { Sheet } from '../../../gridDB/sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import isAlphaNumeric from './isAlphaNumeric';
 
 export function keyboardCell(options: {
+  sheet: Sheet;
   event: React.KeyboardEvent<HTMLElement>;
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   app?: PixiApp;
 }): boolean {
-  const { event, interactionState, setInteractionState, setEditorInteractionState, app } = options;
+  const { event, interactionState, setInteractionState, setEditorInteractionState, app, sheet } = options;
   if (!app) return false;
 
   if (event.key === 'Tab') {
@@ -36,27 +37,17 @@ export function keyboardCell(options: {
     // delete a range or a single cell, depending on if MultiCursor is active
     if (interactionState.showMultiCursor) {
       // delete a range of cells
-      deleteCellsRange(
-        {
-          x: interactionState.multiCursorPosition.originPosition.x,
-          y: interactionState.multiCursorPosition.originPosition.y,
-        },
-        {
-          x: interactionState.multiCursorPosition.terminalPosition.x,
-          y: interactionState.multiCursorPosition.terminalPosition.y,
-        }
+      sheet.deleteCellsRange(
+        interactionState.multiCursorPosition.originPosition.x,
+        interactionState.multiCursorPosition.originPosition.y,
+        interactionState.multiCursorPosition.terminalPosition.x,
+        interactionState.multiCursorPosition.terminalPosition.y,
       );
     } else {
       // delete a single cell
-      deleteCellsRange(
-        {
-          x: interactionState.cursorPosition.x,
-          y: interactionState.cursorPosition.y,
-        },
-        {
-          x: interactionState.cursorPosition.x,
-          y: interactionState.cursorPosition.y,
-        }
+      sheet.deleteCellsRange(
+        interactionState.cursorPosition.x,
+        interactionState.cursorPosition.y,
       );
     }
 
@@ -66,7 +57,7 @@ export function keyboardCell(options: {
   if (event.key === 'Enter') {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
-    const cell = app.grid.getCell(x, y);
+    const cell = sheet.getCell(x, y)?.cell;
     if (cell) {
       if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
         // open single line
@@ -101,7 +92,7 @@ export function keyboardCell(options: {
   if (event.key === '/' || event.key === '=') {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
-    const cell = app.grid.getCell(x, y);
+    const cell = sheet.getCell(x, y)?.cell;
     if (cell) {
       if (cell.type === 'PYTHON') {
         // Open code editor, or move code editor if already open.

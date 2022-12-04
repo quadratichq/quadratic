@@ -1,4 +1,3 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';

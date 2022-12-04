@@ -5,7 +5,7 @@ import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from '../../../theme/quadraticEditorTheme';
 import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
 import TextField from '@mui/material/TextField';
-import { Cell } from '../../../core/gridDB/db';
+import { Cell } from '../../../core/gridDB/gridTypes';
 import './CodeEditor.css';
 import { Button } from '@mui/material';
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';

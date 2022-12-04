@@ -1,4 +1,4 @@
-import { qdb, Cell } from '../db';
+import { qdb, Cell } from '../gridTypes';
 
 export const GetCellsDB = async (
   p0_x = -Infinity,

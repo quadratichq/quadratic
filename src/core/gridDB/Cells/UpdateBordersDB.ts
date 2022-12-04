@@ -1,5 +1,5 @@
 import { Coordinate } from '../../gridGL/types/size';
-import { Border, qdb } from '../db';
+import { Border, qdb } from '../gridTypes';
 
 export const updateBorderDB = async (borders: Border[]): Promise<void> => {
   await qdb.borders.bulkPut(borders);

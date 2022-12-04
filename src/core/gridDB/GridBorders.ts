@@ -1,17 +1,17 @@
 import { Rectangle } from 'pixi.js';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import { Border } from './db';
+import { GridOffsets } from './GridOffsets';
+import { Border } from './gridTypes';
 
 export class GridBorders {
-  private app: PixiApp;
+  private gridOffsets: GridOffsets;
   private minX = 0;
   private maxX = 0;
   private minY = 0;
   private maxY = 0;
   borders = new Map<string, Border>();
 
-  constructor(app: PixiApp) {
-    this.app = app;
+  constructor(gridOffsets: GridOffsets) {
+    this.gridOffsets = gridOffsets;
   }
 
   empty() {
@@ -62,14 +62,14 @@ export class GridBorders {
   }
 
   getBounds(bounds: Rectangle): Rectangle {
-    const columnStartIndex = this.app.gridOffsets.getColumnIndex(bounds.left);
+    const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
     const columnStart = columnStartIndex.index > this.minX ? columnStartIndex.index : this.minX;
-    const columnEndIndex = this.app.gridOffsets.getColumnIndex(bounds.right);
+    const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
     const columnEnd = columnEndIndex.index < this.maxX ? columnEndIndex.index : this.maxX;
 
-    const rowStartIndex = this.app.gridOffsets.getRowIndex(bounds.top);
+    const rowStartIndex = this.gridOffsets.getRowIndex(bounds.top);
     const rowStart = rowStartIndex.index > this.minY ? rowStartIndex.index : this.minY;
-    const rowEndIndex = this.app.gridOffsets.getRowIndex(bounds.bottom);
+    const rowEndIndex = this.gridOffsets.getRowIndex(bounds.bottom);
     const rowEnd = rowEndIndex.index < this.maxY ? rowEndIndex.index : this.maxY;
 
     return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
@@ -77,5 +77,9 @@ export class GridBorders {
 
   getGridBounds(): Rectangle {
     return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
+  }
+
+  getArray(): Border[] {
+    return Object.values(this.borders);
   }
 }

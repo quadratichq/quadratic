@@ -3,7 +3,7 @@ import { MenuState, MenuCloseEvent } from '@szhsin/react-menu/types';
 
 import { copyToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { deleteCellsRange } from '../../../core/actions/deleteCellsRange';
+import { Sheet } from '../../../core/gridDB/sheet';
 
 interface EventHandler<E> {
   (event: E): void;
@@ -17,6 +17,7 @@ interface RightClickMenuProps {
   };
   onClose: EventHandler<MenuCloseEvent>;
   interactionState: GridInteractionState;
+  sheet: Sheet;
 }
 
 export const RightClickMenu = (props: RightClickMenuProps) => {
@@ -47,6 +48,7 @@ export const RightClickMenu = (props: RightClickMenuProps) => {
         <MenuItem
           onClick={() => {
             copyToClipboard(
+              props.sheet,
               props.interactionState.multiCursorPosition.originPosition,
               props.interactionState.multiCursorPosition.terminalPosition
             );
@@ -56,7 +58,7 @@ export const RightClickMenu = (props: RightClickMenuProps) => {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            pasteFromClipboard(props.interactionState.cursorPosition);
+            pasteFromClipboard(props.sheet, props.interactionState.cursorPosition);
           }}
         >
           Paste
@@ -64,10 +66,10 @@ export const RightClickMenu = (props: RightClickMenuProps) => {
         <MenuDivider />
         <MenuItem
           onClick={() => {
-            deleteCellsRange(
+            props.sheet.deleteCells([
               props.interactionState.multiCursorPosition.originPosition,
               props.interactionState.multiCursorPosition.terminalPosition
-            );
+            ]);
           }}
         >
           Delete

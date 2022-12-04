@@ -1,6 +1,6 @@
 import { ColorResult } from 'react-color';
 import { updateFormatDB } from '../../../../core/gridDB/Cells/UpdateFormatDB';
-import { CellFormat } from '../../../../core/gridDB/db';
+import { CellFormat } from '../../../../core/gridDB/gridTypes';
 import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { useGetSelection } from './useGetSelection';

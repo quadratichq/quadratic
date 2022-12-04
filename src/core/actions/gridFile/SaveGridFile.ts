@@ -1,6 +1,4 @@
-import { GridFileSchema } from './GridFileSchema';
-import { GetCellsDB } from '../../gridDB/Cells/GetCellsDB';
-import { GetDGraphDB } from '../../gridDB/DGraph/GetDGraphDB';
+import { Sheet } from '../../gridDB/sheet';
 
 function downloadFile(filename: string, data: string) {
   const blob = new Blob([data], { type: 'text/csv' });
@@ -18,18 +16,10 @@ function downloadFile(filename: string, data: string) {
   }
 }
 
-export const SaveGridFile = async (autoDownload = false) => {
-  // todo load grid file from JSON blob
-  const cells = await GetCellsDB();
-  const dgraph = await GetDGraphDB();
+export const SaveGridFile = async (sheet: Sheet, autoDownload = false) => {
+  const file_j = sheet.getJSON();
 
-  // generate file as json
-  const file_j = JSON.stringify({
-    cells: cells,
-    dgraph: dgraph.export_to_json(),
-  } as GridFileSchema);
-
-  //  autodownload file
+  //  auto download file
   if (autoDownload) downloadFile('quadraticFile.grid', file_j);
 
   return file_j;

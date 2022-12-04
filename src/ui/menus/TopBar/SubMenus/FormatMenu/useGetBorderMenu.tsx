@@ -1,6 +1,6 @@
 import { ClickEvent, MenuHeader, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
 import { menuItemIconStyles } from '../menuStyles';
-import { BorderType } from '../../../../../core/gridDB/db';
+import { BorderType } from '../../../../../core/gridDB/gridTypes';
 import {
   BorderColor,
   LineStyle,

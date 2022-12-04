@@ -1,5 +1,5 @@
 import { clearBorderDB, updateBorderDB } from '../../../../core/gridDB/Cells/UpdateBordersDB';
-import { Border, BorderType } from '../../../../core/gridDB/db';
+import { Border, BorderType } from '../../../../core/gridDB/gridTypes';
 import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../../../core/gridGL/types/size';
 import { useGetSelection } from './useGetSelection';

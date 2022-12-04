@@ -1,4 +1,4 @@
-import { qdb, Border } from '../db';
+import { qdb, Border } from '../gridTypes';
 
 export const GetBordersDB = async (): Promise<Border[]> => {
   // Return Cells as an Array

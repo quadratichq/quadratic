@@ -1,4 +1,4 @@
-import { qdb } from '../db';
+import { qdb } from '../gridTypes';
 
 export interface UpdateHeading {
   row?: number;

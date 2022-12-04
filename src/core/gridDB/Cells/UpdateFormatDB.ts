@@ -1,4 +1,4 @@
-import { CellFormat, qdb } from '../db';
+import { CellFormat, qdb } from '../gridTypes';
 
 export const updateFormatDB = async (format: CellFormat[]): Promise<void> => {
   await qdb.format.bulkPut(format);

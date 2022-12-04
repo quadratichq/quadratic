@@ -1,4 +1,4 @@
-import { qdb, CellFormat } from '../db';
+import { qdb, CellFormat } from '../gridTypes';
 
 export const GetFormatDB = async (): Promise<CellFormat[]> => {
   // Return Cells as an Array

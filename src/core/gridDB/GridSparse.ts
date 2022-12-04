@@ -1,7 +1,8 @@
 import { Rectangle } from 'pixi.js';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import CellReference from '../gridGL/types/cellReference';
 import { CellRectangle } from './CellRectangle';
-import { Cell, CellFormat } from './db';
+import { GridOffsets } from './GridOffsets';
+import { Cell, CellFormat } from './gridTypes';
 
 export interface CellAndFormat {
   cell?: Cell;
@@ -9,15 +10,30 @@ export interface CellAndFormat {
 }
 
 export class GridSparse {
-  private app: PixiApp;
+  private gridOffsets: GridOffsets;
   private minX = 0;
   private maxX = 0;
   private minY = 0;
   private maxY = 0;
   cells = new Map<string, CellAndFormat>();
 
-  constructor(app: PixiApp) {
-    this.app = app;
+  constructor(gridOffsets: GridOffsets) {
+    this.gridOffsets = gridOffsets;
+  }
+
+  updateCells(cells: Cell[]): void {
+    cells.forEach(cell => {
+      const update = this.cells.get(this.getKey(cell.x, cell.y));
+      if (!update) {
+        console.warn("Expected cell to be defined in updateCells");
+      } else {
+        update.cell = cell;
+      }
+    })
+  }
+
+  deleteCells(cells: CellReference[]): void {
+    cells.forEach(cell => this.cells.delete(this.getKey(cell.x, cell.y)));
   }
 
   empty() {
@@ -89,14 +105,14 @@ export class GridSparse {
   }
 
   getBounds(bounds: Rectangle): Rectangle {
-    const columnStartIndex = this.app.gridOffsets.getColumnIndex(bounds.left);
+    const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
     const columnStart = columnStartIndex.index > this.minX ? columnStartIndex.index : this.minX;
-    const columnEndIndex = this.app.gridOffsets.getColumnIndex(bounds.right);
+    const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
     const columnEnd = columnEndIndex.index < this.maxX ? columnEndIndex.index : this.maxX;
 
-    const rowStartIndex = this.app.gridOffsets.getRowIndex(bounds.top);
+    const rowStartIndex = this.gridOffsets.getRowIndex(bounds.top);
     const rowStart = rowStartIndex.index > this.minY ? rowStartIndex.index : this.minY;
-    const rowEndIndex = this.app.gridOffsets.getRowIndex(bounds.bottom);
+    const rowEndIndex = this.gridOffsets.getRowIndex(bounds.bottom);
     const rowEnd = rowEndIndex.index < this.maxY ? rowEndIndex.index : this.maxY;
 
     return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);

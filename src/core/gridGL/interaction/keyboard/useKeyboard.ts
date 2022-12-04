@@ -8,6 +8,7 @@ import { keyboardPosition } from './keyboardPosition';
 import { keyboardCell } from './keyboardCell';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { keyboardViewport } from './keyboardViewport';
+import { Sheet } from '../../../gridDB/sheet';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -15,6 +16,7 @@ interface IProps {
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   app?: PixiApp;
+  sheet: Sheet;
 }
 
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
@@ -55,7 +57,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
 
     if (
       keyboardPosition({ event, interactionState, setInteractionState }) ||
-      keyboardCell({ event, interactionState, setInteractionState, setEditorInteractionState, app })
+      keyboardCell({ sheet: props.sheet, event, interactionState, setInteractionState, setEditorInteractionState, app })
     )
       return;
   };

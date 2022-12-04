@@ -2,7 +2,7 @@
 import { GetDGraphDB } from '../../../core/gridDB/DGraph/GetDGraphDB';
 import { UpdateDGraphDB } from '../../../core/gridDB/DGraph/UpdateDGraphDB';
 import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
-import { qdb } from '../../../core/gridDB/db';
+import { qdb } from '../../../core/gridDB/gridTypes';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { colors } from '../../../theme/colors';
 import TextField from '@mui/material/TextField';

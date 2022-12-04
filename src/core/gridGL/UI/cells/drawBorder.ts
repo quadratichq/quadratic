@@ -1,7 +1,7 @@
 import { Sprite, Texture, TilingSprite } from 'pixi.js';
 import { convertColorStringToTint } from '../../../../helpers/convertColor';
 import { colors } from '../../../../theme/colors';
-import { Border, BorderType } from '../../../gridDB/db';
+import { Border, BorderType } from '../../../gridDB/gridTypes';
 import { dashedTextures } from '../../dashedTextures';
 import { Rectangle } from '../../types/size';
 
