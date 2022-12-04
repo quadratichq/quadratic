@@ -1,6 +1,6 @@
 import { EditorInteractionState } from '../../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
-import { Sheet } from '../../../gridDB/tempSheet';
+import { Sheet } from '../../../gridDB/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import isAlphaNumeric from './isAlphaNumeric';
 

@@ -9,7 +9,7 @@ import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../core/gridGL/QuadraticGrid';
 import { useState } from 'react';
 import { PixiApp } from '../core/gridGL/pixiApp/PixiApp';
-import { Sheet } from '../core/gridDB/tempSheet';
+import { Sheet } from '../core/gridDB/Sheet';
 
 interface Props {
   sheet: Sheet;
@@ -19,9 +19,7 @@ export default function QuadraticUI(props: Props) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
-  // this is a temporary move: need a way of getting the gridSparse in format
-  // this will be moved back to QuadraticGrid once we have the rust backend where I can query cells from the menu
-  const [app, setApp] = useState<PixiApp | undefined>();
+  const [app] = useState(new PixiApp(props.sheet));
 
   return (
     <div
@@ -33,8 +31,8 @@ export default function QuadraticUI(props: Props) {
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
-      {showDebugMenu && <DebugMenu />}
-      <TopBar app={app} />
+      {showDebugMenu && <DebugMenu sheet={props.sheet} />}
+      <TopBar app={app} sheet={props.sheet} />
 
       <div
         style={{
@@ -44,11 +42,11 @@ export default function QuadraticUI(props: Props) {
           overflow: 'hidden',
         }}
       >
-        <QuadraticGrid sheet={props.sheet} app={app} setApp={setApp} />
-        <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
+        <QuadraticGrid sheet={props.sheet} app={app} />
+        <CodeEditor editorInteractionState={editorInteractionState} sheet={props.sheet} />
       </div>
 
-      <BottomBar />
+      <BottomBar sheet={props.sheet} />
     </div>
   );
 }

@@ -20,18 +20,20 @@ import { colors } from '../../../../../theme/colors';
 import { menuItemIconStyles, topBarIconStyles } from '../menuStyles';
 import { CompactPicker } from 'react-color';
 import { useFormatCells } from '../useFormatCells';
-import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { useGetBorderMenu } from './useGetBorderMenu';
 import { useBorders } from '../useBorders';
 import './formatMenuStyles.css';
+import { Sheet } from '../../../../../core/gridDB/Sheet';
+import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 
 interface IProps {
   app?: PixiApp;
+  sheet: Sheet;
 }
 
 export const FormatMenu = (props: IProps) => {
-  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(props.app);
-  const { clearBorders } = useBorders(props.app);
+  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(props.sheet);
+  const { clearBorders } = useBorders(props.sheet);
 
   // focus canvas after the format menu closes
   const onMenuChange = useCallback(
@@ -41,7 +43,7 @@ export const FormatMenu = (props: IProps) => {
     [props.app]
   );
 
-  const borders = useGetBorderMenu({ app: props.app });
+  const borders = useGetBorderMenu({ sheet: props.sheet });
 
   const handleClearFormatting = useCallback(() => {
     clearFormatting();

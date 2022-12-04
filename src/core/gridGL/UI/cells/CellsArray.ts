@@ -29,7 +29,7 @@ export class CellsArray extends Container {
   };
 
   draw(cellArray: number[][], x: number, y: number, width: number, height: number): void {
-    const { gridOffsets } = this.app;
+    const { gridOffsets } = this.app.sheet;
 
     // calculate array cells outline size
     let xEnd = x + width;

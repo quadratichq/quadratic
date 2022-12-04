@@ -15,8 +15,13 @@ import { OpenGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
 import { menuItemIconStyles } from './menuStyles';
 import { colors } from '../../../../theme/colors';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
+import { Sheet } from '../../../../core/gridDB/Sheet';
 
-export const QuadraticMenu = () => {
+interface Props {
+  sheet: Sheet;
+}
+
+export const QuadraticMenu = (props: Props) => {
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
   const settings = useGridSettings();
 
@@ -41,10 +46,10 @@ export const QuadraticMenu = () => {
     >
       <MenuHeader>Quadratic</MenuHeader>
       <SubMenu label="File">
-        <MenuItem onClick={() => SaveGridFile(true)}>
+        <MenuItem onClick={() => SaveGridFile(props.sheet, true)}>
           <SaveOutlined style={menuItemIconStyles}></SaveOutlined> Save Grid
         </MenuItem>
-        <MenuItem onClick={() => OpenGridFile()}>
+        <MenuItem onClick={() => OpenGridFile(props.sheet)}>
           <FileOpenOutlined style={menuItemIconStyles}></FileOpenOutlined> Open Grid
         </MenuItem>
       </SubMenu>

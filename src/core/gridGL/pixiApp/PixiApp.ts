@@ -14,11 +14,14 @@ import { zoomInOut, zoomToFit } from '../helpers/zoom';
 import { Quadrants } from '../quadrants/Quadrants';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
 import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../../debugFlags';
+import { Sheet } from '../../gridDB/Sheet';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
   private update: Update;
   private cacheIsVisible = false;
+
+  sheet: Sheet;
 
   canvas: HTMLCanvasElement;
   viewport: Viewport;
@@ -40,7 +43,8 @@ export class PixiApp {
   // for testing purposes
   debug: Graphics;
 
-  constructor() {
+  constructor(sheet: Sheet) {
+    this.sheet = sheet;
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
@@ -170,7 +174,7 @@ export class PixiApp {
   checkZoom(): void {
     const zoom = this.settings.zoomState;
     if (zoom === Infinity) {
-      zoomToFit(this.viewport);
+      zoomToFit(this.sheet, this.viewport);
     } else if (zoom !== this.viewport.scale.x) {
       zoomInOut(this.viewport, zoom);
       this.viewportChanged();

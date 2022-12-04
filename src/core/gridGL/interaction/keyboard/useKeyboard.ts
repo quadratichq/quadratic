@@ -8,7 +8,7 @@ import { keyboardPosition } from './keyboardPosition';
 import { keyboardCell } from './keyboardCell';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { keyboardViewport } from './keyboardViewport';
-import { Sheet } from '../../../gridDB/tempSheet';
+import { Sheet } from '../../../gridDB/Sheet';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -45,8 +45,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     if (interactionState.showInput) return;
 
     if (
-      keyboardClipboard(event, interactionState) ||
-      keyboardSelect({ event, interactionState, setInteractionState, viewport: app?.viewport })
+      keyboardClipboard(event, interactionState, props.sheet) ||
+      keyboardSelect({ event, interactionState, setInteractionState, viewport: app?.viewport, sheet: props.sheet })
     )
       return;
 

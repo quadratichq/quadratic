@@ -2,6 +2,7 @@ import { Rectangle } from 'pixi.js';
 import { GridFileSchema } from '../actions/gridFile/GridFileSchema';
 import { intersects } from '../gridGL/helpers/intersects';
 import CellReference from '../gridGL/types/cellReference';
+import { Coordinate } from '../gridGL/types/size';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
 import { CellAndFormat, GridSparse } from './GridSparse';

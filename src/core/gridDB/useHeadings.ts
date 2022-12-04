@@ -4,7 +4,7 @@ import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
 import { Coordinate } from '../gridGL/types/size';
 import { HeadingResizing } from './GridOffsets';
-import { Sheet } from './tempSheet';
+import { Sheet } from './Sheet';
 
 interface Props {
   sheet: Sheet;

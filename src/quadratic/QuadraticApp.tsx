@@ -10,7 +10,7 @@ import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
 import { isMobileOnly } from 'react-device-detect';
 import { debugSkipPythonLoad } from '../debugFlags';
-import { Sheet } from '../core/gridDB/tempSheet';
+import { Sheet } from '../core/gridDB/Sheet';
 import { GetCellsDBSetSheet } from '../core/gridDB/Cells/GetCellsDB';
 
 export default function QuadraticApp() {

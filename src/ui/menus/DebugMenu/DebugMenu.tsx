@@ -4,7 +4,7 @@ import { colors } from '../../../theme/colors';
 import TextField from '@mui/material/TextField';
 import { Button } from '@mui/material';
 import QuadraticDependencyGraph from '../../../core/dgraph/QuadraticDependencyGraph';
-import { Sheet } from '../../../core/gridDB/tempSheet';
+import { Sheet } from '../../../core/gridDB/Sheet';
 // import CellReference from "../../../core/gridGL/types/cellReference";
 
 interface Props {

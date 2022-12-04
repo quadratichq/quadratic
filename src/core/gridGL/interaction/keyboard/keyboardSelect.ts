@@ -1,5 +1,6 @@
 import { Viewport } from 'pixi-viewport';
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
+import { Sheet } from '../../../gridDB/Sheet';
 import { selectAllCells } from '../../helpers/selectCellsAction';
 
 export function keyboardSelect(options: {
@@ -7,12 +8,14 @@ export function keyboardSelect(options: {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   viewport?: Viewport;
+  sheet: Sheet;
 }): boolean {
   if (!options.viewport) return false;
 
   // Command + A
   if ((options.event.metaKey || options.event.ctrlKey) && options.event.code === 'KeyA') {
     selectAllCells({
+      sheet: options.sheet,
       setInteractionState: options.setInteractionState,
       interactionState: options.interactionState,
       viewport: options.viewport,

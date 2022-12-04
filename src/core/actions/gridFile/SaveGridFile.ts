@@ -1,4 +1,4 @@
-import { Sheet } from '../../gridDB/tempSheet';
+import { Sheet } from '../../gridDB/Sheet';
 
 function downloadFile(filename: string, data: string) {
   const blob = new Blob([data], { type: 'text/csv' });

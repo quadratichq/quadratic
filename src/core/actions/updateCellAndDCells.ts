@@ -2,7 +2,7 @@ import { Cell } from '../gridDB/gridTypes';
 import { runPython } from '../computations/python/runPython';
 import { GetDGraphDB } from '../gridDB/DGraph/GetDGraphDB';
 import { UpdateDGraphDB } from '../gridDB/DGraph/UpdateDGraphDB';
-import { Sheet } from '../gridDB/tempSheet';
+import { Sheet } from '../gridDB/Sheet';
 
 export const updateCellAndDCells = async (sheet: Sheet, cell: Cell) => {
   //save currently edited cell
@@ -39,7 +39,7 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell) => {
     if (cell === undefined) continue;
 
     // remove old deps from graph
-    if (cell.dependent_cells) dgraph.remove_dependencies_from_graph(cell.dependent_cells, [[cell.x, cell.y]]);
+    // if (cell.dependent_cells) dgraph.remove_dependencies_from_graph(cell.dependent_cells, [[cell.x, cell.y]]);
 
     // clear old array cells created by this cell
     if (cell.array_cells) {
@@ -67,7 +67,7 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell) => {
       // add new cell deps to graph
       if (result.cells_accessed.length) {
         // add new deps to graph
-        dgraph.add_dependencies_to_graph(result.cells_accessed, [[cell.x, cell.y]]);
+        // dgraph.add_dependencies_to_graph(result.cells_accessed, [[cell.x, cell.y]]);
       }
 
       let array_cells_to_output: Cell[] = [];
@@ -114,8 +114,8 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell) => {
         // if any updated cells have other cells depending on them, add to list to update
         for (const array_cell of array_cells_to_output) {
           // add array cells to list to update
-          let deps = dgraph.get_children_cells([array_cell.x, array_cell.y]);
-          cells_to_update.push(...deps);
+          // let deps = dgraph.get_children_cells([array_cell.x, array_cell.y]);
+          // cells_to_update.push(...deps);
         }
 
         // keep track of array cells updated by this cell
@@ -139,9 +139,9 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell) => {
     }
 
     // if this cell updates other cells add them to the list to update
-    let deps = dgraph.get_children_cells([cell.x, cell.y]);
-    cells_to_update.push(...deps);
+    // let deps = dgraph.get_children_cells([cell.x, cell.y]);
+    // cells_to_update.push(...deps);
   }
 
-  await UpdateDGraphDB(dgraph);
+  // await UpdateDGraphDB(dgraph);
 };

@@ -1,5 +1,5 @@
 import { Cell } from '../gridTypes';
-import { Sheet } from '../tempSheet';
+import { Sheet } from '../Sheet';
 
 // use to fake entry to sheet (this is only temporary as rust will directly handle this call)
 let sheet: Sheet | undefined;

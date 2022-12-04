@@ -1,5 +1,6 @@
 import { Rectangle } from 'pixi.js';
 import CellReference from '../gridGL/types/cellReference';
+import { Coordinate } from '../gridGL/types/size';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
 import { Cell, CellFormat } from './gridTypes';

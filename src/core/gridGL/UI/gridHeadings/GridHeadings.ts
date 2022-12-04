@@ -102,7 +102,8 @@ export class GridHeadings extends Container {
 
   private drawHorizontal() {
     if (!this.characterSize) return;
-    const { viewport, gridOffsets } = this.app;
+    const { viewport } = this.app;
+    const { gridOffsets } = this.app.sheet;
     const cellWidth = CELL_WIDTH / viewport.scale.x;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
@@ -209,7 +210,8 @@ export class GridHeadings extends Container {
 
   private drawVertical() {
     if (!this.characterSize) return;
-    const { viewport, gridOffsets } = this.app;
+    const { viewport } = this.app;
+    const { gridOffsets } = this.app.sheet;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
     const bounds = viewport.getVisibleBounds();
@@ -388,7 +390,7 @@ export class GridHeadings extends Container {
     if (intersects.rectanglePoint(this.cornerRect, world)) {
       return { corner: true };
     }
-    const { gridOffsets } = this.app;
+    const { gridOffsets } = this.app.sheet;
     if (intersects.rectanglePoint(this.columnRect, world)) {
       return { column: gridOffsets.getColumnIndex(world.x).index };
     }
@@ -403,7 +405,7 @@ export class GridHeadings extends Container {
   ): { start: number; column?: number; row?: number; width?: number; height?: number } | undefined {
     const tolerance = GRID_HEADING_RESIZE_TOLERANCE / this.app.viewport.scale.x;
     if (!this.columnRect || !this.rowRect) return;
-    const { gridOffsets } = this.app;
+    const { gridOffsets } = this.app.sheet;
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {

@@ -5,7 +5,6 @@ import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { colors } from '../../../theme/colors';
-
 import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
@@ -13,9 +12,11 @@ import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isMobileOnly } from 'react-device-detect';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
+import { Sheet } from '../../../core/gridDB/Sheet';
 
 interface IProps {
   app?: PixiApp;
+  sheet: Sheet;
 }
 
 export const TopBar = (props: IProps) => {
@@ -53,11 +54,11 @@ export const TopBar = (props: IProps) => {
           width: '15rem',
         }}
       >
-        <QuadraticMenu></QuadraticMenu>
+        <QuadraticMenu sheet={props.sheet} />
         {!isMobileOnly && (
           <>
             <DataMenu></DataMenu>
-            <FormatMenu app={props.app} />
+            <FormatMenu app={props.app} sheet={props.sheet} />
             <NumberFormatMenu></NumberFormatMenu>
           </>
         )}

@@ -36,7 +36,7 @@ export class Quadrants extends Container {
     this.removeChildren();
     this.quadrants.clear();
 
-    const { grid, borders } = this.app;
+    const { grid, borders } = this.app.sheet;
     const gridBounds = grid.getGridBounds();
     const borderBounds = borders.getGridBounds();
     const bounds = intersects.rectangleUnion(gridBounds, borderBounds);
@@ -100,7 +100,7 @@ export class Quadrants extends Container {
 
   /** marks quadrants dirty based on what has changed */
   quadrantChanged(options: QuadrantChanged): void {
-    const bounds = this.app.grid.getGridBounds();
+    const bounds = this.app.sheet.grid.getGridBounds();
     if (options.row !== undefined) {
       for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
         const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
@@ -157,7 +157,8 @@ export class Quadrants extends Container {
 
   /** Returns CellRectangles for visible dirty quadrants */
   getCellsForDirtyQuadrants(): CellRectangle[] {
-    const { viewport, grid } = this.app;
+    const { viewport } = this.app;
+    const { grid, borders }  = this.app.sheet;
     const screen = viewport.getVisibleBounds();
     return this.children.flatMap((child) => {
       const quadrant = child as Quadrant;
@@ -168,7 +169,7 @@ export class Quadrants extends Container {
         const cellRectangle = grid.getCells(
           new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS - 1, QUADRANT_ROWS - 1)
         );
-        cellRectangle.addBorders(this.app.borders);
+        cellRectangle.addBorders(borders);
         return [cellRectangle];
       }
       return [];

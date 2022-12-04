@@ -10,20 +10,15 @@ import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
-import { Sheet } from '../gridDB/tempSheet';
+import { Sheet } from '../gridDB/Sheet';
 
 interface IProps {
   sheet: Sheet;
   app?: PixiApp;
-  setApp: (app: PixiApp) => void;
 }
 
 export default function QuadraticGrid(props: IProps) {
   const { loading } = useLoading();
-
-  const { setApp } = props;
-
-  useEffect(() => setApp(new PixiApp()), [setApp]);
 
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node: HTMLDivElement | null) => {
@@ -65,10 +60,11 @@ export default function QuadraticGrid(props: IProps) {
   useEffect(() => {
     props.app?.settings.updateInteractionState(interactionState, setInteractionState);
     ensureVisible({
+      sheet: props.sheet,
       app: props.app,
       interactionState,
     });
-  }, [props.app, props.app?.settings, interactionState, setInteractionState]);
+  }, [props.app, props.app?.settings, interactionState, setInteractionState, props.sheet]);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   useEffect(() => {
@@ -117,6 +113,7 @@ export default function QuadraticGrid(props: IProps) {
         setInteractionState={setInteractionState}
         container={container}
         app={props.app}
+        sheet={props.sheet}
       />
       <RightClickMenu
         sheet={props.sheet}

@@ -10,7 +10,7 @@ import { Button } from '@mui/material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { Sheet } from '../../../core/gridDB/tempSheet';
+import { Sheet } from '../../../core/gridDB/Sheet';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 

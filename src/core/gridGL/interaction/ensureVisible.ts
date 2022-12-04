@@ -1,11 +1,13 @@
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { Sheet } from '../../gridDB/Sheet';
 import { PixiApp } from '../pixiApp/PixiApp';
 
 // Ensures the cursor is always visible
-export function ensureVisible(props: { app?: PixiApp; interactionState: GridInteractionState }): void {
-  const { interactionState, app } = props;
+export function ensureVisible(props: { app?: PixiApp; interactionState: GridInteractionState, sheet: Sheet }): void {
+  const { interactionState, app, sheet } = props;
   if (!app) return;
-  const { viewport, gridOffsets, headings } = app;
+  const { viewport, headings } = app;
+  const { gridOffsets } = sheet;
   const headingSize = headings.headingSize;
 
   const column = interactionState.keyboardMovePosition.x;

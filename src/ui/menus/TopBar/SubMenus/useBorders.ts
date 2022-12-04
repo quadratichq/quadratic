@@ -1,5 +1,5 @@
 import { Border, BorderType } from '../../../../core/gridDB/gridTypes';
-import { Sheet } from '../../../../core/gridDB/tempSheet';
+import { Sheet } from '../../../../core/gridDB/Sheet';
 import { Coordinate } from '../../../../core/gridGL/types/size';
 import { useGetSelection } from './useGetSelection';
 
@@ -20,11 +20,7 @@ interface IResults {
   clearBorders: () => void;
 }
 
-interface Props {
-  sheet: Sheet;
-}
-
-export const useBorders = (props: Props): IResults => {
+export const useBorders = (sheet: Sheet): IResults => {
   const { start, end, multiCursor } = useGetSelection();
 
   const changeBorders = (options: ChangeBorder): void => {
@@ -38,7 +34,7 @@ export const useBorders = (props: Props): IResults => {
         border.vertical = { type: options.type, color: borderColor };
       } else {
         // update an existing border
-        const border = props.sheet.borders.get(x, y);
+        const border = sheet.borders.get(x, y);
         if (border) {
           const update: Border = { x, y, vertical: { type: options.type, color: borderColor } };
           if (border.horizontal) {
@@ -61,7 +57,7 @@ export const useBorders = (props: Props): IResults => {
         border.horizontal = { type: options.type, color: borderColor };
       } else {
         // update an existing border
-        const border = props.sheet.borders.get(x, y);
+        const border = sheet.borders.get(x, y);
         if (border) {
           const update: Border = { x, y, horizontal: { type: options.type, color: borderColor } };
           if (border.vertical) {
@@ -111,7 +107,7 @@ export const useBorders = (props: Props): IResults => {
       }
     }
     if (borderUpdates.length) {
-      props.sheet.borders.update(borderUpdates);
+      sheet.borders.update(borderUpdates);
     }
   };
 
@@ -120,12 +116,12 @@ export const useBorders = (props: Props): IResults => {
     const borderDelete: Coordinate[] = [];
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
-        const border = props.sheet.borders.get(x, y);
+        const border = sheet.borders.get(x, y);
         if (border) {
           borderDelete.push({ x, y });
         }
         if (x === end.x) {
-          const border = props.sheet.borders.get(x + 1, y);
+          const border = sheet.borders.get(x + 1, y);
           if (border?.vertical) {
             if (!border.horizontal) {
               borderDelete.push({ x: x + 1, y });
@@ -135,7 +131,7 @@ export const useBorders = (props: Props): IResults => {
           }
         }
         if (y === end.y) {
-          const border = props.sheet.borders.get(x, y + 1);
+          const border = sheet.borders.get(x, y + 1);
           if (border?.horizontal) {
             if (!border.vertical) {
               borderDelete.push({ x, y: y + 1 });
@@ -147,10 +143,10 @@ export const useBorders = (props: Props): IResults => {
       }
     }
     if (borderDelete.length) {
-      props.sheet.borders.clear(borderDelete);
+      sheet.borders.clear(borderDelete);
     }
     if (borderUpdate.length) {
-      props.sheet.borders.update(borderUpdate);
+      sheet.borders.update(borderUpdate);
     }
   };
 

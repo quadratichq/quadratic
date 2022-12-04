@@ -39,7 +39,8 @@ export class GridLines extends Graphics {
   }
 
   private drawVerticalLines(bounds: Rectangle): void {
-    const { index, position } = this.app.gridOffsets.getColumnIndex(bounds.left);
+    const { gridOffsets } = this.app.sheet;
+    const { index, position } = gridOffsets.getColumnIndex(bounds.left);
     let column = index;
     const offset = bounds.left - position;
     let size = 0;
@@ -49,13 +50,14 @@ export class GridLines extends Graphics {
         this.moveTo(x - offset, bounds.top);
         this.lineTo(x - offset, bounds.bottom);
       }
-      size = this.app.gridOffsets.getColumnWidth(column);
+      size = gridOffsets.getColumnWidth(column);
       column++;
     }
   }
 
   private drawHorizontalLines(bounds: Rectangle): void {
-    const { index, position } = this.app.gridOffsets.getRowIndex(bounds.top);
+    const { gridOffsets } = this.app.sheet;
+    const { index, position } = gridOffsets.getRowIndex(bounds.top);
     let row = index;
     const offset = bounds.top - position;
     let size = 0;
@@ -65,7 +67,7 @@ export class GridLines extends Graphics {
         this.moveTo(bounds.left, y - offset);
         this.lineTo(bounds.right, y - offset);
       }
-      size = this.app.gridOffsets.getRowHeight(row);
+      size = gridOffsets.getRowHeight(row);
       row++;
     }
   }

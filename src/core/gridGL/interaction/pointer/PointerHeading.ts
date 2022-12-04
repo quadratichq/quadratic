@@ -3,24 +3,27 @@ import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectC
 import { zoomToFit } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { Sheet } from '../../../gridDB/tempSheet';
+import { Sheet } from '../../../gridDB/Sheet';
 import { UpdateHeading } from '../../../gridDB/useHeadings';
 
 export class PointerHeading {
   private app: PixiApp;
-  private sheet: Sheet;
   private active = false;
   private downTimeout: number | undefined;
 
-  constructor(app: PixiApp, sheet: Sheet) {
+  constructor(app: PixiApp) {
     this.app = app;
-    this.sheet = sheet;
+  }
+
+  get sheet() {
+    return this.app.sheet;
   }
 
   selectAll() {
     const { viewport, settings, cursor } = this.app;
     if (!settings.setInteractionState) return;
     selectAllCells({
+      sheet: this.sheet,
       setInteractionState: settings.setInteractionState,
       interactionState: settings.interactionState,
       viewport,
@@ -54,7 +57,7 @@ export class PointerHeading {
         if (intersects.corner) {
           if (this.downTimeout) {
             this.downTimeout = undefined;
-            zoomToFit(viewport);
+            zoomToFit(this.sheet, viewport);
           } else {
             this.selectAll();
             this.downTimeout = window.setTimeout(() => {
@@ -91,6 +94,7 @@ export class PointerHeading {
           }
         } else {
           selectAllCells({
+            sheet: this.sheet,
             setInteractionState: settings.setInteractionState,
             interactionState: settings.interactionState,
             viewport,

@@ -19,14 +19,14 @@ import { Fragment, useCallback, useEffect, useState } from 'react';
 import { ColorResult, CompactPicker } from 'react-color';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../../atoms/gridInteractionStateAtom';
-import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
 import { colors } from '../../../../../theme/colors';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
+import { Sheet } from '../../../../../core/gridDB/Sheet';
 
 interface Props extends SubMenuProps {
-  app?: PixiApp;
+  sheet: Sheet;
 }
 
 enum BorderSelection {
@@ -52,7 +52,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
   const defaultColor = convertTintToString(colors.defaultBorderColor);
   const [color, setColor] = useState<string>(defaultColor);
 
-  const { changeBorders, clearBorders } = useBorders(props.app);
+  const { changeBorders, clearBorders } = useBorders(props.sheet);
 
   // clear border type when changing selection
   useEffect(() => {

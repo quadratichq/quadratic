@@ -68,7 +68,7 @@ export class Cells extends Container {
   }): Rectangle | undefined {
     const { bounds, cellRectangle, ignoreInput } = options;
 
-    const { gridOffsets } = this.app;
+    const { gridOffsets } = this.app.sheet;
     this.labels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
@@ -147,7 +147,7 @@ export class Cells extends Container {
   }
 
   drawMultipleBounds(cellRectangles: CellRectangle[]): void {
-    const { gridOffsets } = this.app;
+    const { gridOffsets } = this.app.sheet;
     this.labels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
@@ -225,14 +225,15 @@ export class Cells extends Container {
   }
 
   drawCells(visibleBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
-    const bounds = this.app.grid.getBounds(visibleBounds);
-    const cellRectangle = this.app.grid.getCells(bounds);
+    const { grid, borders } = this.app.sheet;
+    const bounds = grid.getBounds(visibleBounds);
+    const cellRectangle = grid.getCells(bounds);
     const rectCells = this.drawBounds({ bounds, cellRectangle });
 
     // draw borders
-    const borderBounds = this.app.borders.getBounds(visibleBounds);
-    const borders = this.app.borders.getBorders(borderBounds);
-    const rectBorders = this.cellsBorder.drawBorders(borders);
+    const borderBounds = borders.getBounds(visibleBounds);
+    const bordersList = borders.getBorders(borderBounds);
+    const rectBorders = this.cellsBorder.drawBorders(bordersList);
 
     const fullBounds = intersects.rectangleUnion(rectCells, rectBorders);
 

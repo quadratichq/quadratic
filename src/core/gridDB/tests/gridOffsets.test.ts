@@ -1,22 +1,11 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
-import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { GridOffsets, HeadingResizing } from '../GridOffsets';
 
-function mockApp(): PixiApp {
-  return {
-    gridLines: {},
-    headings: {},
-    cursor: {},
-  } as PixiApp;
-}
-
 describe('gridOffsets', () => {
-  let app: PixiApp;
   let gridOffsets: GridOffsets;
 
   beforeEach(() => {
-    app = mockApp();
-    gridOffsets = new GridOffsets(app);
+    gridOffsets = new GridOffsets();
   });
 
   it('populates rows and columns', () => {
@@ -30,9 +19,9 @@ describe('gridOffsets', () => {
     const { rows, columns } = gridOffsets.debugRowsColumns();
     expect(columns.length).toBe(1);
     expect(rows.length).toBe(2);
-    expect(app.gridLines.dirty).toBe(true);
-    expect(app.headings.dirty).toBe(true);
-    expect(app.cursor.dirty).toBe(true);
+    // expect(app.gridLines.dirty).toBe(true);
+    // expect(app.headings.dirty).toBe(true);
+    // expect(app.cursor.dirty).toBe(true);
   });
 
   it('gets column default width', () => {

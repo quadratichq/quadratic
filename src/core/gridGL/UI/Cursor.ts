@@ -17,7 +17,8 @@ export class Cursor extends Graphics {
   }
 
   private drawCursor(): void {
-    const { settings, gridOffsets, viewport } = this.app;
+    const { settings, viewport } = this.app;
+    const { gridOffsets } = this.app.sheet;
     const cell = settings.interactionState.cursorPosition;
     const multiCursor = settings.interactionState.showMultiCursor;
     const { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
@@ -47,7 +48,8 @@ export class Cursor extends Graphics {
   }
 
   private drawMultiCursor(): void {
-    const { settings, gridOffsets, viewport } = this.app;
+    const { settings, viewport } = this.app;
+    const { gridOffsets } = this.app.sheet;
     let endCell: { x: number; y: number; width: number; height: number };
     if (settings.interactionState.showMultiCursor) {
       const multiCursor = settings.interactionState.multiCursorPosition;
@@ -82,7 +84,7 @@ export class Cursor extends Graphics {
     const { editorInteractionState } = this.app.settings;
     if (editorInteractionState.showCodeEditor) {
       const cell = editorInteractionState.selectedCell;
-      const { x, y, width, height } = this.app.gridOffsets.getCell(cell.x, cell.y);
+      const { x, y, width, height } = this.app.sheet.gridOffsets.getCell(cell.x, cell.y);
       const color = editorInteractionState.mode === 'PYTHON' ? colors.cellColorUserPython : colors.independence;
       this.lineStyle({
         width: CURSOR_THICKNESS,

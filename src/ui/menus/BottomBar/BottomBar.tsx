@@ -8,7 +8,7 @@ import { formatDistance } from 'date-fns';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { isMobileOnly } from 'react-device-detect';
 import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
-import { Sheet } from '../../../core/gridDB/tempSheet';
+import { Sheet } from '../../../core/gridDB/Sheet';
 
 interface Props {
   sheet: Sheet;

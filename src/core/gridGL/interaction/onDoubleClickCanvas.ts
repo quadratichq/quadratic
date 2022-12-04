@@ -1,6 +1,6 @@
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { Sheet } from '../../gridDB/tempSheet';
+import { Sheet } from '../../gridDB/Sheet';
 
 export const onDoubleClickCanvas = (
   event: PointerEvent,

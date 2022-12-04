@@ -86,7 +86,7 @@ export class CellsBorder extends Container {
       minY = Infinity,
       maxX = -Infinity,
       maxY = -Infinity;
-    const { gridOffsets } = this.app;
+    const { gridOffsets } = this.app.sheet;
     borders.forEach((border) => {
       const position = gridOffsets.getCell(border.x, border.y);
       if (border.horizontal || border.vertical) {
