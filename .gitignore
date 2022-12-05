@@ -30,3 +30,8 @@ venv/*
 .idea
 
 .env
+
+quadratic-core/target/
+
+
+quadratic-api/node_modules

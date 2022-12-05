@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useLoading } from '../../contexts/LoadingContext';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
@@ -36,10 +35,9 @@ export default function QuadraticGrid(props: IProps) {
     if (props.app && container) props.app.attach(container);
   }, [props.app, container]);
 
-  // Live query to update cells
-  const cells = useLiveQuery(() => GetCellsDB());
-  const format = useLiveQuery(() => GetFormatDB());
-  const borders = useLiveQuery(() => GetBordersDB());
+  const cells = GetCellsDB();
+  const format = GetFormatDB();
+  const borders = GetBordersDB();
 
   useEffect(() => {
     if (props.app && cells && format && borders) {

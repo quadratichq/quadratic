@@ -1,4 +1,3 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
@@ -12,7 +11,7 @@ import { HeadingResizing } from './GridOffsets';
 export const useHeadings = (app?: PixiApp) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const multiCursor = interactionState.showMultiCursor;
-  const headings = useLiveQuery(() => GetHeadingsDB());
+  const headings = GetHeadingsDB();
 
   const getStartEnd = useCallback((): { start: Coordinate; end: Coordinate } => {
     let start: Coordinate, end: Coordinate;

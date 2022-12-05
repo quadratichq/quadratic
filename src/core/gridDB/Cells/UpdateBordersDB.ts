@@ -6,6 +6,5 @@ export const updateBorderDB = async (borders: Border[]): Promise<void> => {
 };
 
 export const clearBorderDB = async (borders: Coordinate[]): Promise<void> => {
-  const keys = borders.map((border) => [border.x, border.y]);
-  await qdb.borders.bulkDelete(keys);
+  await qdb.borders.bulkDelete(borders);
 };

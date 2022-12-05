@@ -44,7 +44,7 @@ const openFileMenuAsync = async () => {
 export const LoadGridFromJSON = async (gridFileJSON: GridFileSchema) => {
   // clear current grid
   await qdb.cells.clear();
-  await qdb.qgrid.clear();
+  await qdb.graph.clear();
 
   // Open file cells and dgraph
   await UpdateCellsDB(gridFileJSON.cells);

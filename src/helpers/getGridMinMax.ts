@@ -1,24 +1,32 @@
 import { qdb } from '../core/gridDB/db';
 
 export const getGridMinMax = async () => {
-  // Calculates bounds of the content in the current grid
-  let x_min = await qdb.cells.orderBy('x').first();
-  let x_max = await qdb.cells.orderBy('x').last();
-  let y_min = await qdb.cells.orderBy('y').first();
-  let y_max = await qdb.cells.orderBy('y').last();
-
-  if (x_min && x_max && y_min && y_max) {
-    return [
-      { x: x_min.x, y: y_min.y },
-      { x: x_max.x, y: y_max.y },
-    ];
-  } else {
+  // Calculates min of Cells in in qdb.cells
+  if (qdb.cells.cells.length === 0) {
     return undefined;
   }
+
+  const x_min = qdb.cells.cells.reduce(function (prev, curr) {
+    return prev.x < curr.x ? prev : curr;
+  });
+  const x_max = qdb.cells.cells.reduce(function (prev, curr) {
+    return prev.x > curr.x ? prev : curr;
+  });
+  const y_min = qdb.cells.cells.reduce(function (prev, curr) {
+    return prev.y < curr.y ? prev : curr;
+  });
+  const y_max = qdb.cells.cells.reduce(function (prev, curr) {
+    return prev.y > curr.y ? prev : curr;
+  });
+
+  return [
+    { x: x_min.x, y: y_min.y },
+    { x: x_max.x, y: y_max.y },
+  ];
 };
 
 export const getGridColumnMinMax = async (column: number) => {
-  const columnArray = await qdb.cells.where('x').equals(column).toArray();
+  const columnArray = qdb.cells.cells.filter((cell) => cell.x === column);
   if (columnArray.length) {
     return [
       { x: column, y: columnArray[0].y },
@@ -28,7 +36,7 @@ export const getGridColumnMinMax = async (column: number) => {
 };
 
 export const getGridRowMinMax = async (row: number) => {
-  const rowArray = await qdb.cells.where('y').equals(row).toArray();
+  const rowArray = qdb.cells.cells.filter((cell) => cell.y === row);
   if (rowArray.length) {
     return [
       { x: rowArray[0].x, y: row },

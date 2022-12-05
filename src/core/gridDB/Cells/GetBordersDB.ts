@@ -1,6 +1,6 @@
 import { qdb, Border } from '../db';
 
-export const GetBordersDB = async (): Promise<Border[]> => {
+export const GetBordersDB = (): Border[] => {
   // Return Cells as an Array
-  return await qdb.borders.toArray();
+  return qdb.borders.borders;
 };
