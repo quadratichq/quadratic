@@ -351,7 +351,7 @@ impl GridController {
         &self.grid
     }
 
-    pub fn get_graph(&self) -> &DGraphController {
+    pub fn graph(&self) -> &DGraphController {
         &self.graph
     }
 

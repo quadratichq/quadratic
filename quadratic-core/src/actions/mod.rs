@@ -39,7 +39,7 @@ impl UserGridController {
                 self.controller.transact(|t| {
                     // TODO: Updating all dependent cells should be broken out into a separate function
                     // this needs to be reused in other UserActions.
-                    let dependent_cells = t.grid().get_graph().get_dependent_cells(pos);
+                    let dependent_cells = t.controller().graph().get_dependent_cells(pos);
                     for _cell in dependent_cells {
                         // recompute _cell
                         // call Command::SetCell(_cell, result)
@@ -53,7 +53,7 @@ impl UserGridController {
                 self.controller.transact(|t| {
                     t.exec(Command::SetCell(pos, Cell::Text(value)))?;
 
-                    let dependent_cells = t.grid().get_graph().get_dependent_cells(pos);
+                    let dependent_cells = t.controller().graph().get_dependent_cells(pos);
                     for _cell in dependent_cells {
                         // recompute _cell
                         // call Command::SetCell(_cell, result)
@@ -70,7 +70,7 @@ impl UserGridController {
                     // run cell
                     t.exec(Command::SetCell(pos, Cell::Text("result".to_string())))?;
 
-                    let dependent_cells = t.grid().get_graph().get_dependent_cells(pos);
+                    let dependent_cells = t.controller().graph().get_dependent_cells(pos);
                     for _cell in dependent_cells {
                         // recompute _cell
                         // call Command::SetCell(_cell, result)
