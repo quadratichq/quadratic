@@ -3,7 +3,6 @@ import { GetDGraphDB } from '../../../core/gridDB/DGraph/GetDGraphDB';
 import { UpdateDGraphDB } from '../../../core/gridDB/DGraph/UpdateDGraphDB';
 import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
 import { qdb } from '../../../core/gridDB/db';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { colors } from '../../../theme/colors';
 import TextField from '@mui/material/TextField';
 import { Button } from '@mui/material';
@@ -12,8 +11,8 @@ import QuadraticDependencyGraph from '../../../core/dgraph/QuadraticDependencyGr
 
 export default function DebugMenu() {
   //   const [debugContent, setDebugContent] = useState<string>("");
-  const dgraph = useLiveQuery(() => GetDGraphDB());
-  const cells = useLiveQuery(() => GetCellsDB());
+  const dgraph = GetDGraphDB();
+  const cells = GetCellsDB();
 
   // const dgraph_json_str = dgraph?.export_to_json();
 
@@ -55,7 +54,7 @@ export default function DebugMenu() {
       <Button
         onClick={() => {
           qdb.cells.clear();
-          qdb.qgrid.clear();
+          qdb.graph.clear();
         }}
       >
         Reset Grid

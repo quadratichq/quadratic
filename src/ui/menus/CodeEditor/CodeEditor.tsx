@@ -12,7 +12,6 @@ import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { useLiveQuery } from 'dexie-react-hooks';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -36,7 +35,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // Monitor selected cell for changes
   const x = editorInteractionState.selectedCell.x;
   const y = editorInteractionState.selectedCell.y;
-  const cells = useLiveQuery(() => GetCellsDB(x, y, x, y), [x, y]);
+  const cells = GetCellsDB(x, y, x, y);
 
   // Editor Width State
   const [editorWidth, setEditorWidth] = useState<number>(
@@ -82,23 +81,28 @@ export const CodeEditor = (props: CodeEditorProps) => {
     editorRef.current?.focus();
     editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
 
-    GetCellsDB(Number(x), Number(y), Number(x), Number(y)).then((cells) => {
-      if (cells?.length && cells[0] !== undefined) {
-        // load cell content
-        setSelectedCell(cells[0]);
-        setEditorContent(cells[0].python_code);
-      } else {
-        // create blank cell
-        setSelectedCell({
-          x: Number(x),
-          y: Number(y),
-          type: editorInteractionState.mode,
-          value: '',
-        } as Cell);
-        setEditorContent('');
-      }
-    });
-  });
+    let cells = GetCellsDB(Number(x), Number(y), Number(x), Number(y));
+    if (cells?.length && cells[0] !== undefined) {
+      // load cell content
+      setSelectedCell(cells[0]);
+      setEditorContent(cells[0].python_code);
+    } else {
+      // create blank cell
+      setSelectedCell({
+        x: Number(x),
+        y: Number(y),
+        type: editorInteractionState.mode,
+        value: '',
+      } as Cell);
+      setEditorContent('');
+    }
+  }, [
+    editorInteractionState.selectedCell.x,
+    editorInteractionState.selectedCell.y,
+    editorInteractionState.mode,
+    selectedCell?.x,
+    selectedCell?.y,
+  ]);
 
   const saveSelectedCell = () => {
     if (!selectedCell) return;
