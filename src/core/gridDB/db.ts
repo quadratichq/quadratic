@@ -17,6 +17,8 @@ export interface Cell {
 
   array_cells?: [number, number][]; // list of output array cells created by this cell
 
+  number_formatting_pattern?: string;
+
   // not implemented yet
   formula_code?: string;
   js_code?: string;

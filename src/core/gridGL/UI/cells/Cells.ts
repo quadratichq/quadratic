@@ -1,6 +1,7 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
 import { debugShowQuadrantBoxes } from '../../../../debugFlags';
+import { CellTextFormatter } from '../../../formatting/formatter';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
 import { Cell, CellFormat } from '../../../gridDB/db';
 import { debugGetColor } from '../../helpers/debugColors';
@@ -120,7 +121,7 @@ export class Cells extends Container {
               this.labels.add({
                 x: x + CELL_TEXT_MARGIN_LEFT,
                 y: y + CELL_TEXT_MARGIN_TOP,
-                text: entry.cell.value,
+                text: CellTextFormatter(entry.cell),
               });
             }
           }
