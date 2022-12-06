@@ -8,6 +8,7 @@ import { WelcomeComponent } from './WelcomeComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
 import { isMobileOnly } from 'react-device-detect';
+import { ChatSupportProvider } from './ChatSupportProvider';
 
 export const QuadraticApp = () => {
   const { loading, incrementLoadingCount } = useLoading();
@@ -34,6 +35,8 @@ export const QuadraticApp = () => {
     <RecoilRoot>
       {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
       <AnalyticsProvider></AnalyticsProvider>
+      {/* Provider for LiveChat */}
+      <ChatSupportProvider></ChatSupportProvider>
       {/* Welcome Component for first time users */}
       {!loading && <WelcomeComponent></WelcomeComponent>}
       {/* Provider of All React UI Components */}

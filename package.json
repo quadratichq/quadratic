@@ -13,6 +13,7 @@
     "@emotion/react": "^11.7.0",
     "@emotion/styled": "^11.6.0",
     "@inlet/react-pixi": "^6.6.5",
+    "@livechat/widget-react": "^1.2.1",
     "@monaco-editor/react": "^4.3.1",
     "@mui/icons-material": "^5.2.0",
     "@mui/material": "^5.2.2",
