@@ -3,7 +3,7 @@ import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { Coordinate } from '../../../../core/gridGL/types/size';
 
-interface GetSelection {
+export interface GetSelection {
   start: Coordinate;
   end: Coordinate;
   multiCursor: boolean;
