@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { loadGridFromJSON } from '../core/actions/gridFile/OpenGridFile';
-import { loadLocalFile } from '../core/gridDB/localFile';
+import { loadLocalFile, saveLocalFile } from '../core/gridDB/localFile';
 import { Sheet } from '../core/gridDB/Sheet';
 import { example_grid } from './example_grid';
 import { getURLParameter } from '../helpers/getURL';
+import { debugShowFileIO } from '../debugFlags';
+
+const EXAMPLE_FILE_FILENAME = 'example.grid';
 
 interface Props {
   sheet: Sheet;
@@ -16,21 +18,25 @@ export const WelcomeComponent = (props: Props) => {
   useEffect(() => {
 
     if (getURLParameter('example')) {
-      loadGridFromJSON(example_grid, props.sheet);
+      if (debugShowFileIO) {
+        console.log(`[WelcomeComponent] Loading example file b/c ?example=1`);
+      }
+      props.sheet.populate(example_grid);
+      saveLocalFile(EXAMPLE_FILE_FILENAME, props.sheet.save());
       return;
     }
 
-    // On first load, open an example file.
-    if (firstTime) {
-      setFirstTime(false);
-      loadLocalFile().then(data => {
-        if (data) {
-          loadGridFromJSON(data, props.sheet);
-        } else if (firstTime) {
-          loadGridFromJSON(example_grid, props.sheet);
+    loadLocalFile().then(data => {
+      if (data) {
+        props.sheet.populate(data);
+      } else if (firstTime) {
+        if (debugShowFileIO) {
+          console.log(`[WelcomeComponent] Loading example file b/c this is the first time`);
         }
-      });
-    }
+        props.sheet.populate(example_grid);
+        saveLocalFile(EXAMPLE_FILE_FILENAME, props.sheet.save());
+      }
+    });
   }, [firstTime, setFirstTime, props.sheet]);
 
   return null;

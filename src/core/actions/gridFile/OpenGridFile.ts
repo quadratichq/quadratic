@@ -38,10 +38,6 @@ const openFileMenuAsync = async () => {
   });
 };
 
-export const loadGridFromJSON = async (gridFileJSON: GridFileSchema, sheet: Sheet) => {
-  sheet.populate(gridFileJSON);
-};
-
 export const openGridFile = async (sheet: Sheet) => {
   // take file input selection from user
   const fileToLoad = await openFileMenuAsync();

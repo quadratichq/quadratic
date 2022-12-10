@@ -45,6 +45,7 @@ export class PixiApp {
 
   constructor(sheet: Sheet) {
     this.sheet = sheet;
+    this.sheet.onRebuild = this.rebuild;
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
@@ -204,11 +205,21 @@ export class PixiApp {
   }
 
   // helper for playwright
-  render() {
+  render(): void {
     this.renderer.render(this.stage);
   }
 
-  focus() {
+  focus(): void {
     this.canvas?.focus();
+  }
+
+  rebuild = (): void => {
+    this.viewport.dirty = true;
+    this.gridLines.dirty = true;
+    this.axesLines.dirty = true;
+    this.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.cells.dirty = true;
+    this.quadrants.build();
   }
 }

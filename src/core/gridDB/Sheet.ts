@@ -11,6 +11,7 @@ export class Sheet {
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
+  onRebuild?: () => void;
 
   constructor() {
     this.gridOffsets = new GridOffsets();
@@ -20,21 +21,24 @@ export class Sheet {
 
   populate(sheet: GridFileSchema): void {
     this.gridOffsets.populate(sheet.rows, sheet.columns);
-    this.grid.populate(sheet.cells);
+    this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
+    this.onRebuild?.();
   }
 
-  save(): string {
-    return JSON.stringify({
+  save(): GridFileSchema {
+    const { cells, formats } = this.grid.getArrays();
+    return {
       columns: this.gridOffsets.getColumnsArray(),
       rows: this.gridOffsets.getRowsArray(),
-      cells: Object.values(this.grid.cells),
+      cells,
+      formats,
       borders: this.borders.getArray(),
 
       // todo: fix
       dgraph: "",
       version: GRID_FILE_VERSION,
-    });
+    };
   }
 
   getCell(x: number, y: number): CellAndFormat | undefined {

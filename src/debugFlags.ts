@@ -58,6 +58,12 @@ export const debugShowQuadrantBoxes = debug && false;
 // only render getCellsForDirtyQuadrants
 export const debugShowCellsForDirtyQuadrants = debug && false;
 
+// --------
+// file i/o
+// --------
+
+export const debugShowFileIO = debug && true;
+
 export function warn(...args: any): void {
   if (debug) {
     console.warn(...args);

@@ -4,6 +4,7 @@ export const example_grid: GridFileSchema = {
   columns: [],
   rows: [],
   borders: [],
+  formats: [],
   version: GRID_FILE_VERSION,
   cells: [
     {

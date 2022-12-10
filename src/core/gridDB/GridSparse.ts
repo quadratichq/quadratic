@@ -1,6 +1,5 @@
 import { Rectangle } from 'pixi.js';
 import CellReference from '../gridGL/types/cellReference';
-import { Coordinate } from '../gridGL/types/size';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
 import { Cell, CellFormat } from './gridTypes';
@@ -74,8 +73,8 @@ export class GridSparse {
   }
 
   // todo: this is expensive; should be broken up between initial populate and updates to specific cells/quadrants
-  populate(cells?: Cell[], format?: CellFormat[]) {
-    if (!cells?.length && !format?.length) {
+  populate(cells?: Cell[], formats?: CellFormat[]) {
+    if (!cells?.length && !formats?.length) {
       this.empty();
       return;
     }
@@ -91,7 +90,7 @@ export class GridSparse {
       this.minY = Math.min(this.minY, cell.y);
       this.maxY = Math.max(this.maxY, cell.y);
     });
-    format?.forEach((format) => {
+    formats?.forEach((format) => {
       const key = this.getKey(format.x, format.y);
       const cell = this.cells.get(key);
       if (cell) {
@@ -158,5 +157,19 @@ export class GridSparse {
 
   getGridBounds(): Rectangle {
     return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
+  }
+
+  getArrays(): { cells: Cell[], formats: CellFormat[] } {
+    const array = Array.from(this.cells, ([name, value]) => value);
+    return {
+      cells: array.flatMap(entry => {
+        if (entry.cell) return [entry.cell];
+        return [];
+      }),
+      formats: array.flatMap(entry => {
+        if (entry.format) return [entry.format];
+        return [];
+      })
+    };
   }
 }
