@@ -112,7 +112,7 @@ export const FormatMenu = (props: IProps) => {
         }
       >
         <MenuHeader>Fill Color</MenuHeader>
-        <CompactPicker onChangeComplete={changeFillColor} />
+        <CompactPicker onChange={changeFillColor} />
         <MenuItem onClick={removeFillColor}>Clear Fill Color</MenuItem>
       </SubMenu>
 

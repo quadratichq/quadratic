@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
@@ -17,7 +17,6 @@ import { colors } from '../../../../theme/colors';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { Sheet } from '../../../../core/gridDB/Sheet';
 import { useLocalFiles } from '../../../../hooks/useLocalFiles';
-import { localFiles } from '../../../../core/gridDB/localFiles';
 
 interface Props {
   sheet: Sheet;

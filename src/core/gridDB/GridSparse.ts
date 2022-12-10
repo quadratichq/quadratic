@@ -40,7 +40,7 @@ export class GridSparse {
       } else {
         this.cells.set(this.getKey(format.x, format.y), { format });
       }
-    })
+    });
   }
 
   clearFormat(formats: CellFormat[]): void {
@@ -72,7 +72,6 @@ export class GridSparse {
     return `${x ?? ''},${y ?? ''}`;
   }
 
-  // todo: this is expensive; should be broken up between initial populate and updates to specific cells/quadrants
   populate(cells?: Cell[], formats?: CellFormat[]) {
     if (!cells?.length && !formats?.length) {
       this.empty();
