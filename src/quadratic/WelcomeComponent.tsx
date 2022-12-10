@@ -26,7 +26,7 @@ export const WelcomeComponent = (props: Props): JSX.Element | null => {
       return;
     }
 
-    localFiles.loadLocal().then(data => {
+    localFiles.loadLocalLastFile().then(data => {
       if (data) {
         props.sheet.populate(data);
       } else if (firstTime) {

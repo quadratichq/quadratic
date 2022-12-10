@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
@@ -10,12 +10,14 @@ import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
 
 import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
-import { openGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
+import { openGridFile, openLocalGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
 
 import { menuItemIconStyles } from './menuStyles';
 import { colors } from '../../../../theme/colors';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { Sheet } from '../../../../core/gridDB/Sheet';
+import { useLocalFiles } from '../../../../hooks/useLocalFiles';
+import { localFiles } from '../../../../core/gridDB/localFiles';
 
 interface Props {
   sheet: Sheet;
@@ -32,6 +34,8 @@ export const QuadraticMenu = (props: Props) => {
     }
     // eslint-disable-next-line
   }, []);
+
+  const { fileList } = useLocalFiles();
 
   return (
     <Menu
@@ -52,6 +56,8 @@ export const QuadraticMenu = (props: Props) => {
         <MenuItem onClick={() => openGridFile(props.sheet)}>
           <FileOpenOutlined style={menuItemIconStyles}></FileOpenOutlined> Open Grid
         </MenuItem>
+        {fileList.length ? <MenuDivider /> : null}
+        {fileList.length ? fileList.map(entry => <MenuItem key={entry} onClick={() => openLocalGridFile(entry, props.sheet)}>{entry}</MenuItem>) : null}
       </SubMenu>
       <SubMenu label="Import">
         <MenuHeader>Import</MenuHeader>

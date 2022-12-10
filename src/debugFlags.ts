@@ -62,7 +62,7 @@ export const debugShowCellsForDirtyQuadrants = debug && false;
 // file i/o
 // --------
 
-export const debugShowFileIO = debug && true;
+export const debugShowFileIO = debug && false;
 
 export function warn(...args: any): void {
   if (debug) {

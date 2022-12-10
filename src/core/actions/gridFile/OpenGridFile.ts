@@ -48,5 +48,11 @@ export const openGridFile = async (sheet: Sheet) => {
   const gridFileJSON = JSON.parse(result) as GridFileSchema;
   sheet.populate(gridFileJSON);
   localFiles.loadedExternalFile(fileToLoad.name, gridFileJSON);
-
 };
+
+export const openLocalGridFile = async (filename: string, sheet: Sheet) => {
+  const data = await localFiles.loadLocal(filename);
+  if (data) {
+    sheet.populate(data);
+  }
+}

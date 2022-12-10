@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LocalFilesListEvent, LocalFilesLoadEvent, LOCAL_FILES_LIST_EVENT, LOCAL_FILES_LOAD_EVENT } from '../core/gridDB/localFiles';
+import { localFiles, LocalFilesListEvent, LocalFilesLoadEvent, LOCAL_FILES_LIST_EVENT, LOCAL_FILES_LOAD_EVENT } from '../core/gridDB/localFiles';
 
 interface LocalFiles {
   localFilename?: string;
@@ -7,7 +7,7 @@ interface LocalFiles {
 }
 
 export const useLocalFiles = (): LocalFiles => {
-  const [localFilename, setLocalFilename] = useState<string | undefined>();
+  const [localFilename, setLocalFilename] = useState<string | undefined>(localFiles.filename);
 
   const loadFile = useCallback((event: CustomEvent<LocalFilesLoadEvent>) => {
     if (event.detail !== localFilename) {
@@ -22,7 +22,7 @@ export const useLocalFiles = (): LocalFiles => {
     }
   }, [loadFile]);
 
-  const [fileList, setFileList] = useState<string[]>([]);
+  const [fileList, setFileList] = useState<string[]>(localFiles.fileList);
 
   const loadFileList = useCallback((event: CustomEvent<LocalFilesListEvent>) => {
     if (event.detail !== fileList) {
