@@ -1,5 +1,6 @@
 import { GridFileSchema } from './GridFileSchema';
 import { Sheet } from '../../gridDB/Sheet';
+import { localFiles } from '../../gridDB/localFiles';
 
 const readFileAsync = async (file: File) => {
   // takes a File object and returns it as a string
@@ -46,4 +47,6 @@ export const openGridFile = async (sheet: Sheet) => {
   // parse file
   const gridFileJSON = JSON.parse(result) as GridFileSchema;
   sheet.populate(gridFileJSON);
+  localFiles.loadedExternalFile(fileToLoad.name, gridFileJSON);
+
 };

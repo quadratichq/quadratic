@@ -12,6 +12,7 @@ import { isMobileOnly } from 'react-device-detect';
 import { debugSkipPythonLoad } from '../debugFlags';
 import { Sheet } from '../core/gridDB/Sheet';
 import { GetCellsDBSetSheet } from '../core/gridDB/Cells/GetCellsDB';
+import { localFiles } from '../core/gridDB/localFiles';
 
 export default function QuadraticApp() {
   const { loading, incrementLoadingCount } = useLoading();
@@ -29,6 +30,9 @@ export default function QuadraticApp() {
         incrementLoadingCount();
       }
       loadAssets().then(() => {
+        incrementLoadingCount();
+      });
+      localFiles.initialize().then(() => {
         incrementLoadingCount();
       });
     }

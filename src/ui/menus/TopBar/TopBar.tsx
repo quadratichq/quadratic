@@ -13,6 +13,7 @@ import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximize
 import { isMobileOnly } from 'react-device-detect';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { Sheet } from '../../../core/gridDB/Sheet';
+import { useLocalFiles } from '../../../hooks/useLocalFiles';
 
 interface IProps {
   app?: PixiApp;
@@ -20,6 +21,7 @@ interface IProps {
 }
 
 export const TopBar = (props: IProps) => {
+  const { localFilename } = useLocalFiles();
   return (
     <div
       onContextMenu={(event) => {
@@ -86,7 +88,7 @@ export const TopBar = (props: IProps) => {
               Personal &nbsp;
             </Typography>
             <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-              / Untitled.grid
+              / {localFilename}
             </Typography>
             <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown>
           </>
