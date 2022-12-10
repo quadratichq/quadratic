@@ -87,7 +87,16 @@ class LocalFiles {
     this.addToFileList(filename, data);
   }
 
+  saveLastLocal(data: GridFileSchema): void {
+    if (!this.filename) {
+      console.warn("Expected filename to be defined in saveLastLocal");
+    } else {
+      localForage.setItem(this.getFilename(this.filename), data);
+    }
+  }
+
   async loadedExternalFile(filename: string, data: GridFileSchema): Promise<void> {
+    this.filename = filename;
     this.emitLoadEvent(filename);
     await this.saveLocal(filename, data);
   }

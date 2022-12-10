@@ -91,6 +91,6 @@ export class GridBorders {
   }
 
   getArray(): Border[] {
-    return Object.values(this.borders);
+    return Array.from(this.borders, ([_, border]) => border);
   }
 }

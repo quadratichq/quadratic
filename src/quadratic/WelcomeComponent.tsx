@@ -33,7 +33,7 @@ export const WelcomeComponent = (props: Props): JSX.Element | null => {
           console.log(`[WelcomeComponent] Loading example file b/c this is the first time`);
         }
         props.sheet.populate(example_grid);
-        localFiles.saveLocal(EXAMPLE_FILE_FILENAME, props.sheet.save());
+        localFiles.loadedExternalFile(EXAMPLE_FILE_FILENAME, props.sheet.save());
       }
     });
   }, [firstTime, setFirstTime, props.sheet]);

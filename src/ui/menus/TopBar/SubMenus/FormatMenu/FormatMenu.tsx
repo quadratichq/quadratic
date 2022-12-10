@@ -32,8 +32,8 @@ interface IProps {
 }
 
 export const FormatMenu = (props: IProps) => {
-  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(props.sheet);
-  const { clearBorders } = useBorders(props.sheet);
+  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(props.sheet, props.app);
+  const { clearBorders } = useBorders(props.sheet, props.app);
 
   // focus canvas after the format menu closes
   const onMenuChange = useCallback(
@@ -43,7 +43,7 @@ export const FormatMenu = (props: IProps) => {
     [props.app]
   );
 
-  const borders = useGetBorderMenu({ sheet: props.sheet });
+  const borders = useGetBorderMenu({ sheet: props.sheet, app: props.app });
 
   const handleClearFormatting = useCallback(() => {
     clearFormatting();

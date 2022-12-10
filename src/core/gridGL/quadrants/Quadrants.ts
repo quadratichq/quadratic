@@ -17,6 +17,7 @@ interface QuadrantChanged {
   row?: number;
   column?: number;
   cells?: Coordinate[];
+  range?: { start: Coordinate, end: Coordinate };
 }
 
 // Parent for all quadrants - renders the cache in loop
@@ -101,6 +102,7 @@ export class Quadrants extends Container {
   /** marks quadrants dirty based on what has changed */
   quadrantChanged(options: QuadrantChanged): void {
     const bounds = this.app.sheet.grid.getGridBounds();
+
     if (options.row !== undefined) {
       for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
         const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
@@ -149,6 +151,43 @@ export class Quadrants extends Container {
             warn('Expected quadrant to be defined in quadrantChanged');
           } else {
             quadrant.reposition();
+          }
+        }
+      }
+    }
+
+    // set quadrant of list of cells dirty
+    if (options.cells) {
+      const quadrants = new Set<string>();
+      options.cells.forEach(coordinate => {
+        const quadrantX = Math.floor(coordinate.x / QUADRANT_COLUMNS);
+        const quadrantY = Math.floor(coordinate.y / QUADRANT_ROWS);
+        const key = `${quadrantX},${quadrantY}`;
+        if (!quadrants.has(key)) {
+          const quadrant = this.getQuadrant(quadrantX, quadrantY);
+          if (quadrant) {
+            quadrant.dirty = true;
+            quadrants.add(key);
+          }
+        }
+      });
+    }
+
+    // set range of cells dirty
+    if (options.range) {
+      const { start, end } = options.range;
+      const quadrants = new Set<string>();
+      for (let y = start.y; y <= end.y; y++) {
+        for (let x = start.x; x <= end.x; x++) {
+          const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
+          const quadrantY = Math.floor(y / QUADRANT_ROWS);
+          const key = `${quadrantX},${quadrantY}`;
+          if (!quadrants.has(key)) {
+            const quadrant = this.getQuadrant(quadrantX, quadrantY);
+            if (quadrant) {
+              quadrant.dirty = true;
+              quadrants.add(key);
+            }
           }
         }
       }

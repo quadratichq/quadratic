@@ -1,5 +1,7 @@
 import { Border, BorderType } from '../../../../core/gridDB/gridTypes';
+import { localFiles } from '../../../../core/gridDB/localFiles';
 import { Sheet } from '../../../../core/gridDB/Sheet';
+import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../../../core/gridGL/types/size';
 import { useGetSelection } from './useGetSelection';
 
@@ -20,7 +22,7 @@ interface IResults {
   clearBorders: () => void;
 }
 
-export const useBorders = (sheet: Sheet): IResults => {
+export const useBorders = (sheet: Sheet, app?: PixiApp): IResults => {
   const { start, end, multiCursor } = useGetSelection();
 
   const changeBorders = (options: ChangeBorder): void => {
@@ -108,6 +110,11 @@ export const useBorders = (sheet: Sheet): IResults => {
     }
     if (borderUpdates.length) {
       sheet.borders.update(borderUpdates);
+      if (app) {
+        app.cells.dirty = true;
+        app.quadrants.quadrantChanged({ range: { start, end } });
+      }
+      localFiles.saveLastLocal(sheet.save());
     }
   };
 
@@ -148,6 +155,11 @@ export const useBorders = (sheet: Sheet): IResults => {
     if (borderUpdate.length) {
       sheet.borders.update(borderUpdate);
     }
+    if (app) {
+      app.cells.dirty = true;
+      app.quadrants.quadrantChanged({ range: { start, end } });
+    }
+    localFiles.saveLastLocal(sheet.save());
   };
 
   return {

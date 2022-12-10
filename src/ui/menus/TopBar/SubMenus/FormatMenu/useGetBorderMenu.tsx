@@ -24,9 +24,11 @@ import './useGetBorderMenu.css';
 import { colors } from '../../../../../theme/colors';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
 import { Sheet } from '../../../../../core/gridDB/Sheet';
+import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 
 interface Props extends SubMenuProps {
   sheet: Sheet;
+  app?: PixiApp;
 }
 
 enum BorderSelection {
@@ -52,7 +54,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
   const defaultColor = convertTintToString(colors.defaultBorderColor);
   const [color, setColor] = useState<string>(defaultColor);
 
-  const { changeBorders, clearBorders } = useBorders(props.sheet);
+  const { changeBorders, clearBorders } = useBorders(props.sheet, props.app);
 
   // clear border type when changing selection
   useEffect(() => {

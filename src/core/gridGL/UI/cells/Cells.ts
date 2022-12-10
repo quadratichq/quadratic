@@ -247,6 +247,11 @@ export class Cells extends Container {
     return fullBounds;
   }
 
+  changeVisibility(visible: boolean): void {
+    this.visible = visible;
+    this.cellsBackground.visible = visible;
+  }
+
   update(): void {
     if (this.dirty) {
       this.dirty = false;

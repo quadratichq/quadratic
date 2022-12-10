@@ -119,7 +119,7 @@ export class PixiApp {
     if (debugShowCacheFlag && !this.quadrants.visible) {
       (document.querySelector('.debug-show-cache-on') as HTMLSpanElement).innerHTML = 'CACHE';
     }
-    this.cells.visible = false;
+    this.cells.changeVisibility(false);
     this.quadrants.visible = true;
     this.cacheIsVisible = true;
   }
@@ -129,7 +129,7 @@ export class PixiApp {
       (document.querySelector('.debug-show-cache-on') as HTMLSpanElement).innerHTML = '';
     }
     this.cells.dirty = true;
-    this.cells.visible = true;
+    this.cells.changeVisibility(true);
     this.quadrants.visible = false;
     this.cacheIsVisible = false;
   }
@@ -189,7 +189,7 @@ export class PixiApp {
     this.cursor.visible = false;
     this.headings.visible = false;
     this.quadrants.visible = false;
-    this.cells.visible = true;
+    this.cells.changeVisibility(true);
     this.cells.dirty = true;
     return this.viewportContents;
   }
@@ -200,7 +200,7 @@ export class PixiApp {
     this.cursor.visible = true;
     this.headings.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
-    this.cells.visible = !this.cacheIsVisible;
+    this.cells.changeVisibility(!this.cacheIsVisible);
     if (!this.cacheIsVisible) this.cells.dirty = true;
   }
 
