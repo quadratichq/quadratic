@@ -3,6 +3,7 @@ import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { useAuth0 } from '@auth0/auth0-react';
 import { captureException } from '@sentry/react';
 import { QuadraticApp } from './QuadraticApp';
+import { envVarToBool } from '../utils/envVarToBool';
 
 export const QuadraticAuth = () => {
   const {
@@ -14,7 +15,7 @@ export const QuadraticAuth = () => {
   } = useAuth0();
 
   // Auth0 is Optional
-  if (process.env.REACT_APP_AUTH0_DOMAIN) {
+  if (envVarToBool(process.env.REACT_APP_AUTH0_ENABLED) && process.env.REACT_APP_AUTH0_DOMAIN) {
     if (Auth0IsLoading) {
       return <QuadraticLoading></QuadraticLoading>;
     }

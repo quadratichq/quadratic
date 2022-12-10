@@ -6,9 +6,10 @@ import reportWebVitals from './reportWebVitals';
 import * as Sentry from '@sentry/react';
 import { BrowserTracing } from '@sentry/tracing';
 import { Auth0Provider } from '@auth0/auth0-react';
+import { envVarToBool } from './utils/envVarToBool';
 
 // Enable sentry only if SENTRY_DSN is in ENV
-if (process.env.REACT_APP_SENTRY_DSN)
+if (envVarToBool(process.env.REACT_APP_SENTRY_ENABLED) && process.env.REACT_APP_SENTRY_DSN)
   Sentry.init({
     dsn: process.env.REACT_APP_SENTRY_DSN,
     integrations: [new BrowserTracing()],

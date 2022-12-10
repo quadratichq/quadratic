@@ -1,17 +1,21 @@
 import { LiveChatWidget } from '@livechat/widget-react';
 import { isMobileOnly } from 'react-device-detect';
 import { useAuth0 } from '@auth0/auth0-react';
+import { envVarToBool } from '../utils/envVarToBool';
 
 export const ChatSupportProvider = () => {
   const { user } = useAuth0();
 
-  // Only track analytics on cloud version where REACT_APP_GOOGLE_ANALYTICS_GTAG is set
-  if (!process.env.REACT_APP_LIVECHAT_LICENSE) {
-    return null;
-  }
+  // Check feature flag for livechat
+  if (!envVarToBool(process.env.REACT_APP_LIVECHAT_ENABLED)) return null;
 
   // Prevent loading on mobile
   if (isMobileOnly) {
+    return null;
+  }
+
+  // make sure we have what we need to load the widget
+  if (!(process.env.REACT_APP_LIVECHAT_LICENSE && process.env.REACT_APP_LIVECHAT_GROUP)) {
     return null;
   }
 

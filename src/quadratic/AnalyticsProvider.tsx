@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react';
+import { envVarToBool } from '../utils/envVarToBool';
 
 export const AnalyticsProvider = () => {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Only track analytics on cloud version where REACT_APP_GOOGLE_ANALYTICS_GTAG is set
+    // Check feature flag for analytics
+    if (!envVarToBool(process.env.REACT_APP_GOOGLE_ANALYTICS_ENABLED)) {
+      setLoaded(true);
+      return;
+    }
+
+    // make sure we have what we need to load analytics
     if (!process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG) {
       setLoaded(true);
       return;
