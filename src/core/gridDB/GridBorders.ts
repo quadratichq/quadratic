@@ -52,11 +52,11 @@ export class GridBorders {
   }
 
   clear(coordinates: Coordinate[]): void {
-    coordinates.forEach(coordinate => this.borders.delete(this.getKey(coordinate.x, coordinate.y)));
+    coordinates.forEach((coordinate) => this.borders.delete(this.getKey(coordinate.x, coordinate.y)));
   }
 
   update(borders: Border[]): void {
-    borders.forEach(border => {
+    borders.forEach((border) => {
       this.borders.set(this.getKey(border.x, border.y), border);
     });
   }

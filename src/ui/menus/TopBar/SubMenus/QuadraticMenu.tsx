@@ -56,7 +56,13 @@ export const QuadraticMenu = (props: Props) => {
           <FileOpenOutlined style={menuItemIconStyles}></FileOpenOutlined> Open Grid
         </MenuItem>
         {fileList.length ? <MenuDivider /> : null}
-        {fileList.length ? fileList.map(entry => <MenuItem key={entry} onClick={() => openLocalGridFile(entry, props.sheet)}>{entry}</MenuItem>) : null}
+        {fileList.length
+          ? fileList.map((entry) => (
+              <MenuItem key={entry} onClick={() => openLocalGridFile(entry, props.sheet)}>
+                {entry}
+              </MenuItem>
+            ))
+          : null}
       </SubMenu>
       <SubMenu label="Import">
         <MenuHeader>Import</MenuHeader>

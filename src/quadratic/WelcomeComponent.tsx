@@ -16,7 +16,6 @@ export const WelcomeComponent = (props: Props): JSX.Element | null => {
   const [firstTime, setFirstTime] = useLocalStorage('firstTime', true);
 
   useEffect(() => {
-
     if (getURLParameter('example')) {
       if (debugShowFileIO) {
         console.log(`[WelcomeComponent] Loading example file b/c ?example=1`);
@@ -26,7 +25,7 @@ export const WelcomeComponent = (props: Props): JSX.Element | null => {
       return;
     }
 
-    localFiles.loadLocalLastFile().then(data => {
+    localFiles.loadLocalLastFile().then((data) => {
       if (data) {
         props.sheet.populate(data);
       } else if (firstTime) {

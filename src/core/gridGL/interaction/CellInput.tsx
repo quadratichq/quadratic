@@ -83,15 +83,17 @@ export const CellInput = (props: CellInputProps) => {
           {
             x: cellLocation.current.x,
             y: cellLocation.current.y,
-          }
-        ])
+          },
+        ]);
       } else {
-        props.sheet.updateCells([{
-          x: cellLocation.current.x,
-          y: cellLocation.current.y,
-          type: 'TEXT',
-          value: value || '',
-        }]);
+        props.sheet.updateCells([
+          {
+            x: cellLocation.current.x,
+            y: cellLocation.current.y,
+            type: 'TEXT',
+            value: value || '',
+          },
+        ]);
       }
     }
 

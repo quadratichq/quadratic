@@ -55,4 +55,4 @@ export const openLocalGridFile = async (filename: string, sheet: Sheet) => {
   if (data) {
     sheet.populate(data);
   }
-}
+};

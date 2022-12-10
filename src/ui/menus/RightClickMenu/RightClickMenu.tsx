@@ -68,7 +68,7 @@ export const RightClickMenu = (props: RightClickMenuProps) => {
           onClick={() => {
             props.sheet.deleteCells([
               props.interactionState.multiCursorPosition.originPosition,
-              props.interactionState.multiCursorPosition.terminalPosition
+              props.interactionState.multiCursorPosition.terminalPosition,
             ]);
           }}
         >

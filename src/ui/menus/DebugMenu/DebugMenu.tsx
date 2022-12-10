@@ -68,7 +68,7 @@ export default function DebugMenu(props: Props) {
         label="DEBUG"
         multiline
         rows={14}
-        value={""/*file_state*/}
+        value={'' /*file_state*/}
         style={{ width: '100%' }}
       />
     </div>

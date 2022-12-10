@@ -36,7 +36,7 @@ export class Sheet {
       borders: this.borders.getArray(),
 
       // todo: fix
-      dgraph: "",
+      dgraph: '',
       version: GRID_FILE_VERSION,
     };
   }

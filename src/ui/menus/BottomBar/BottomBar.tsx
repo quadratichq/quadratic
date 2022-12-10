@@ -32,10 +32,7 @@ export const BottomBar = (props: Props) => {
         return;
 
       // Get cell at position
-      const cell = props.sheet.getCell(
-        interactionState.cursorPosition.x,
-        interactionState.cursorPosition.y
-      )?.cell;
+      const cell = props.sheet.getCell(interactionState.cursorPosition.x, interactionState.cursorPosition.y)?.cell;
 
       // If cell exists set selectedCell
       // Otherwise set to undefined

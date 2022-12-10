@@ -289,9 +289,9 @@ export class GridOffsets {
     return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
   }
 
-  delete(options: { rows: number[], columns: number[] }): void {
-    options.rows.forEach(row => delete this.rows[row]);
-    options.columns.forEach(column => delete this.columns[column]);
+  delete(options: { rows: number[]; columns: number[] }): void {
+    options.rows.forEach((row) => delete this.rows[row]);
+    options.columns.forEach((column) => delete this.columns[column]);
   }
 
   update(change: UpdateHeading): void {

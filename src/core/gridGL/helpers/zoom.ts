@@ -6,7 +6,12 @@ import { ZOOM_ANIMATION_TIME_MS } from '../../../constants/gridConstants';
 export function zoomToFit(sheet: Sheet, viewport: Viewport): void {
   const gridBounds = sheet.getGridBounds();
   if (gridBounds) {
-    const screenRectangle = sheet.gridOffsets.getScreenRectangle(gridBounds.x, gridBounds.y, gridBounds.width, gridBounds.height);
+    const screenRectangle = sheet.gridOffsets.getScreenRectangle(
+      gridBounds.x,
+      gridBounds.y,
+      gridBounds.width,
+      gridBounds.height
+    );
 
     // calc scale, and leave a little room on the top and sides
     let scale = viewport.findFit(screenRectangle.width * 1.2, screenRectangle.height * 1.2);
@@ -16,7 +21,10 @@ export function zoomToFit(sheet: Sheet, viewport: Viewport): void {
 
     viewport.animate({
       time: ZOOM_ANIMATION_TIME_MS,
-      position: new PIXI.Point(screenRectangle.x + screenRectangle.width / 2, screenRectangle.y + screenRectangle.height / 2),
+      position: new PIXI.Point(
+        screenRectangle.x + screenRectangle.width / 2,
+        screenRectangle.y + screenRectangle.height / 2
+      ),
       scale,
     });
   } else {

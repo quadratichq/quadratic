@@ -221,5 +221,5 @@ export class PixiApp {
     this.cursor.dirty = true;
     this.cells.dirty = true;
     this.quadrants.build();
-  }
+  };
 }

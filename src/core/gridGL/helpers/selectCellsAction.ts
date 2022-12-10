@@ -45,7 +45,6 @@ export async function selectAllCells(options: {
   //     },
   //     cursorPosition,
   //   });
-
   //   if (options.viewport) options.viewport.dirty = true;
   // }
 }
@@ -81,7 +80,6 @@ export async function selectColumns(options: {
   //       showMultiCursor: true,
   //     },
   //   });
-
   //   if (options.viewport) options.viewport.dirty = true;
   // }
 }
@@ -117,7 +115,6 @@ export async function selectRows(options: {
   //       showMultiCursor: true,
   //     },
   //   });
-
   //   if (options.viewport) options.viewport.dirty = true;
   // }
 }

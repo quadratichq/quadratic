@@ -22,18 +22,18 @@ export class GridSparse {
   }
 
   updateCells(cells: Cell[]): void {
-    cells.forEach(cell => {
+    cells.forEach((cell) => {
       const update = this.cells.get(this.getKey(cell.x, cell.y));
       if (update) {
         update.cell = cell;
       } else {
         this.cells.set(this.getKey(cell.x, cell.y), { cell });
       }
-    })
+    });
   }
 
   updateFormat(formats: CellFormat[]): void {
-    formats.forEach(format => {
+    formats.forEach((format) => {
       const update = this.cells.get(this.getKey(format.x, format.y));
       if (update) {
         update.format = format;
@@ -44,7 +44,7 @@ export class GridSparse {
   }
 
   clearFormat(formats: CellFormat[]): void {
-    formats.forEach(format => {
+    formats.forEach((format) => {
       const key = this.getKey(format.x, format.y);
       const clear = this.cells.get(key);
       if (clear) {
@@ -53,11 +53,11 @@ export class GridSparse {
           this.cells.delete(key);
         }
       }
-    })
+    });
   }
 
   deleteCells(cells: CellReference[]): void {
-    cells.forEach(cell => this.cells.delete(this.getKey(cell.x, cell.y)));
+    cells.forEach((cell) => this.cells.delete(this.getKey(cell.x, cell.y)));
   }
 
   empty() {
@@ -158,17 +158,17 @@ export class GridSparse {
     return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
   }
 
-  getArrays(): { cells: Cell[], formats: CellFormat[] } {
+  getArrays(): { cells: Cell[]; formats: CellFormat[] } {
     const array = Array.from(this.cells, ([name, value]) => value);
     return {
-      cells: array.flatMap(entry => {
+      cells: array.flatMap((entry) => {
         if (entry.cell) return [entry.cell];
         return [];
       }),
-      formats: array.flatMap(entry => {
+      formats: array.flatMap((entry) => {
         if (entry.format) return [entry.format];
         return [];
-      })
+      }),
     };
   }
 }

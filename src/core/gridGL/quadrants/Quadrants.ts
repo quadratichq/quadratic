@@ -158,7 +158,7 @@ export class Quadrants extends Container {
   /** Returns CellRectangles for visible dirty quadrants */
   getCellsForDirtyQuadrants(): CellRectangle[] {
     const { viewport } = this.app;
-    const { grid, borders }  = this.app.sheet;
+    const { grid, borders } = this.app.sheet;
     const screen = viewport.getVisibleBounds();
     return this.children.flatMap((child) => {
       const quadrant = child as Quadrant;

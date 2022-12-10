@@ -3,7 +3,7 @@ import { Sheet } from '../../gridDB/Sheet';
 import { PixiApp } from '../pixiApp/PixiApp';
 
 // Ensures the cursor is always visible
-export function ensureVisible(props: { app?: PixiApp; interactionState: GridInteractionState, sheet: Sheet }): void {
+export function ensureVisible(props: { app?: PixiApp; interactionState: GridInteractionState; sheet: Sheet }): void {
   const { interactionState, app, sheet } = props;
   if (!app) return;
   const { viewport, headings } = app;

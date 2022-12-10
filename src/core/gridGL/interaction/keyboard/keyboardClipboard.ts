@@ -5,7 +5,7 @@ import { Sheet } from '../../../gridDB/Sheet';
 export function keyboardClipboard(
   event: React.KeyboardEvent<HTMLElement>,
   interactionState: GridInteractionState,
-  sheet: Sheet,
+  sheet: Sheet
 ): boolean {
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyV') {
     pasteFromClipboard(sheet, {
@@ -17,7 +17,8 @@ export function keyboardClipboard(
 
   // Command + C
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyC') {
-    copyToClipboard(sheet,
+    copyToClipboard(
+      sheet,
       {
         x: interactionState.multiCursorPosition.originPosition.x,
         y: interactionState.multiCursorPosition.originPosition.y,

@@ -5,9 +5,9 @@ import { GridFileSchema } from '../actions/gridFile/GridFileSchema';
 const LAST_FILES = 'last-file-queue';
 const FILENAME_PREFIX = 'file-';
 
-export const LOCAL_FILES_LOAD_EVENT = "grid-load-event";
+export const LOCAL_FILES_LOAD_EVENT = 'grid-load-event';
 export type LocalFilesLoadEvent = string;
-export const LOCAL_FILES_LIST_EVENT = "grid-list-event";
+export const LOCAL_FILES_LIST_EVENT = 'grid-list-event';
 export type LocalFilesListEvent = string[];
 
 class LocalFiles {
@@ -15,7 +15,7 @@ class LocalFiles {
   fileList: string[] = [];
 
   constructor() {
-    localForage.config({ "name": "Quadratic", version: 1 });
+    localForage.config({ name: 'Quadratic', version: 1 });
     if (debugShowFileIO) console.log('[localFiles] initialized localForage');
   }
 
@@ -28,7 +28,7 @@ class LocalFiles {
   }
 
   async initialize(): Promise<void> {
-    this.fileList = (await localForage.getItem(LAST_FILES) as string[]) ?? [];
+    this.fileList = ((await localForage.getItem(LAST_FILES)) as string[]) ?? [];
     this.emitListEvent(this.fileList);
   }
 
@@ -38,9 +38,9 @@ class LocalFiles {
   }
 
   private async addToFileList(filename: string, data: GridFileSchema): Promise<void> {
-    let lastFiles = await localForage.getItem(LAST_FILES) as string[];
+    let lastFiles = (await localForage.getItem(LAST_FILES)) as string[];
     if (lastFiles) {
-      lastFiles = lastFiles.filter(file => file !== filename);
+      lastFiles = lastFiles.filter((file) => file !== filename);
     } else {
       lastFiles = [];
     }
@@ -48,7 +48,11 @@ class LocalFiles {
     localForage.setItem(LAST_FILES, lastFiles);
     this.emitListEvent(lastFiles);
     if (debugShowFileIO) {
-      console.log(`[localFile] Saving ${filename} (${(new TextEncoder().encode(JSON.stringify(data))).length.toLocaleString()} bytes) and adding to lastFiles (${lastFiles.length} files in lastFiles)`);
+      console.log(
+        `[localFile] Saving ${filename} (${new TextEncoder()
+          .encode(JSON.stringify(data))
+          .length.toLocaleString()} bytes) and adding to lastFiles (${lastFiles.length} files in lastFiles)`
+      );
     }
   }
 
@@ -61,14 +65,16 @@ class LocalFiles {
         return data as GridFileSchema;
       }
     } else {
-      console.warn("Expected filename to be in lastFiles in loadLocal");
+      console.warn('Expected filename to be in lastFiles in loadLocal');
     }
   }
 
   async loadLocalLastFile(): Promise<GridFileSchema | undefined> {
     if (this.fileList.length) {
       if (debugShowFileIO) {
-        console.log(`[localFile] Loading "${this.fileList[0]}" as last file (${this.fileList.length} files in lastFiles)`);
+        console.log(
+          `[localFile] Loading "${this.fileList[0]}" as last file (${this.fileList.length} files in lastFiles)`
+        );
       }
       const file = await localForage.getItem(this.getFilename(this.fileList[0] as string));
       this.emitLoadEvent(this.fileList[0]);

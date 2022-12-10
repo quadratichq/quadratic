@@ -41,14 +41,11 @@ export function keyboardCell(options: {
         interactionState.multiCursorPosition.originPosition.x,
         interactionState.multiCursorPosition.originPosition.y,
         interactionState.multiCursorPosition.terminalPosition.x,
-        interactionState.multiCursorPosition.terminalPosition.y,
+        interactionState.multiCursorPosition.terminalPosition.y
       );
     } else {
       // delete a single cell
-      sheet.deleteCellsRange(
-        interactionState.cursorPosition.x,
-        interactionState.cursorPosition.y,
-      );
+      sheet.deleteCellsRange(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
     }
 
     event.preventDefault();

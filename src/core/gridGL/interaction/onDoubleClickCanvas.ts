@@ -14,7 +14,6 @@ export const onDoubleClickCanvas = (
   const y = interactionState.cursorPosition.y;
   const cell = sheet.getCell(x, y)?.cell;
   if (cell) {
-
     // open single line, for TEXT and COMPUTED
     if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
       setInteractionState({
