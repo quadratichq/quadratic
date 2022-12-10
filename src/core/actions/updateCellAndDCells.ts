@@ -3,11 +3,16 @@ import { runPython } from '../computations/python/runPython';
 import { GetDGraphDB } from '../gridDB/DGraph/GetDGraphDB';
 import { UpdateDGraphDB } from '../gridDB/DGraph/UpdateDGraphDB';
 import { Sheet } from '../gridDB/Sheet';
+import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { Coordinate } from '../gridGL/types/size';
+import { localFiles } from '../gridDB/localFiles';
 
-export const updateCellAndDCells = async (sheet: Sheet, cell: Cell) => {
+export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiApp) => {
   //save currently edited cell
+  const updatedCells: Coordinate[] = []
   cell.last_modified = new Date().toISOString();
   sheet.updateCells([cell]);
+  updatedCells.push({ x: cell.x, y: cell.y });
   let dgraph = await GetDGraphDB();
 
   // start with a plan to just update the current cell
@@ -48,6 +53,7 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell) => {
       });
       // old_array_cells.unshift(); // remove this cell
       sheet.deleteCells(old_array_cells);
+      updatedCells.push(...old_array_cells);
     }
 
     if (cell.type === 'PYTHON') {
@@ -124,6 +130,7 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell) => {
         cell.last_modified = new Date().toISOString();
 
         sheet.updateCells([cell, ...array_cells_to_output]);
+        updatedCells.push(...array_cells_to_output);
       } else {
         // not array output
 
@@ -144,4 +151,6 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell) => {
   }
 
   // await UpdateDGraphDB(dgraph);
+  app?.quadrants.quadrantChanged({ cells: updatedCells });
+  localFiles.saveLastLocal(sheet.save());
 };

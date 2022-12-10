@@ -4,6 +4,7 @@ import CellReference from '../types/cellReference';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Sheet } from '../../gridDB/Sheet';
+import { localFiles } from '../../gridDB/localFiles';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -14,7 +15,7 @@ interface CellInputProps {
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { interactionState, setInteractionState, app, container } = props;
+  const { interactionState, setInteractionState, app, container, sheet } = props;
   const viewport = app?.viewport;
 
   const [value, setValue] = useState<string | undefined>(undefined);
@@ -37,7 +38,7 @@ export const CellInput = (props: CellInputProps) => {
     let worldTransform = viewport.worldTransform;
 
     // Calculate position of input based on cell
-    const cell = props.sheet.gridOffsets.getCell(cellLocation.current.x, cellLocation.current.y);
+    const cell = sheet.gridOffsets.getCell(cellLocation.current.x, cellLocation.current.y);
     let cell_offset_scaled = viewport.toScreen(
       cell.x,
       cell.y - 0.66 // magic number via experimentation
@@ -79,14 +80,14 @@ export const CellInput = (props: CellInputProps) => {
     if (!cancel) {
       // Update Cell and dependent cells
       if (value === '') {
-        props.sheet.deleteCells([
+        sheet.deleteCells([
           {
             x: cellLocation.current.x,
             y: cellLocation.current.y,
           },
         ]);
       } else {
-        props.sheet.updateCells([
+        sheet.updateCells([
           {
             x: cellLocation.current.x,
             y: cellLocation.current.y,
@@ -95,6 +96,9 @@ export const CellInput = (props: CellInputProps) => {
           },
         ]);
       }
+      app?.quadrants.quadrantChanged({ cells: [cellLocation.current] });
+      localFiles.saveLastLocal(sheet.save());
+
     }
 
     // Update Grid Interaction state, reset input value state
