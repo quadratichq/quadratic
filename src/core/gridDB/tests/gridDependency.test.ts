@@ -8,7 +8,7 @@ describe('gridOffsets', () => {
   });
 
   it('adds a new cell dependency', () => {
-    gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }]);
+    expect(gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }])?.length).toBe(2);
     expect(gridDependency.getDependents({ x: 1, y: 2 })?.length).toBe(0);
     expect(gridDependency.getDependents({ x: 2, y: 2 })?.length).toBe(1);
     expect(gridDependency.getDependents({ x: 3, y: 2 })?.length).toBe(1);
@@ -18,7 +18,7 @@ describe('gridOffsets', () => {
 
   it('removes a cell dependency', () => {
     gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }]);
-    gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }]);
+    expect(gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }])?.length).toBe(1);
     expect(gridDependency.getDependents({ x: 1, y: 2 })?.length).toBe(0);
     expect(gridDependency.getDependents({ x: 2, y: 2 })?.length).toBe(1);
     expect(gridDependency.getDependents({ x: 3, y: 2 })?.length).toBe(0);
@@ -28,7 +28,7 @@ describe('gridOffsets', () => {
 
   it('adds a cell dependency', () => {
     gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }]);
-    gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 }]);
+    expect(gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 }])?.length).toBe(1);
     expect(gridDependency.getDependents({ x: 1, y: 2 })?.length).toBe(0);
     expect(gridDependency.getDependents({ x: 2, y: 2 })?.length).toBe(1);
     expect(gridDependency.getDependents({ x: 3, y: 2 })?.length).toBe(1);
@@ -39,7 +39,7 @@ describe('gridOffsets', () => {
 
   it('clears cell dependencies', () => {
     gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }]);
-    gridDependency.empty({ x: 1, y: 2 });
+    expect(gridDependency.empty({ x: 1, y: 2 })?.length).toBe(2);
     expect(gridDependency.getDependents({ x: 1, y: 2 })?.length).toBe(0);
     expect(gridDependency.getDependents({ x: 2, y: 2 })?.length).toBe(0);
     expect(gridDependency.getDependents({ x: 3, y: 2 })?.length).toBe(0);
@@ -76,7 +76,7 @@ describe('gridOffsets', () => {
 
   it('does not have multiples of the same dependency', () => {
     gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }]);
-    gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }]);
+    expect(gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }])?.length).toBe(0);
     expect(gridDependency.getDependents({ x: 1, y: 2 })?.length).toBe(0);
     expect(gridDependency.getDependents({ x: 2, y: 2 })?.length).toBe(1);
     expect(gridDependency.getDependents({ x: 3, y: 2 })?.length).toBe(1);

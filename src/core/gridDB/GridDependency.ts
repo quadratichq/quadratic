@@ -17,7 +17,8 @@ export class GridDependency {
     return `${location.x},${location.y}`;
   }
 
-  empty(cell: Coordinate): void {
+  empty(cell: Coordinate): Coordinate[] {
+    const changes: Coordinate[] = [];
     const cellKey = this.getKey(cell);
     const originalDependency = this.dependents.get(cellKey);
     if (originalDependency) {
@@ -30,11 +31,13 @@ export class GridDependency {
           const index = renderDependency.needToRender.findIndex(search => coordinateEqual(search, cell));
           if (index !== -1) {
             renderDependency.needToRender.splice(index, 1);
+            changes.push(renderLocation);
           }
         }
       })
       this.dependents.set(cellKey, { ...originalDependency, renderThisCell: []});
     }
+    return changes;
   }
 
   /**
@@ -59,15 +62,15 @@ export class GridDependency {
             const index = remove.needToRender.findIndex(search => coordinateEqual(search, cell));
             if (index !== -1) {
               remove.needToRender.splice(index, 1);
+              changes.push(entry);
             }
           }
-          changes.push(entry);
         }
       });
 
       // add render entries for cells that are new dependents
       renderThisCell.forEach(entry => {
-        if (!originalDependency.needToRender.find(search => coordinateEqual(search, entry))) {
+        if (!originalDependency.renderThisCell.find(search => coordinateEqual(search, entry))) {
           const add = this.dependents.get(this.getKey(entry));
           if (add) {
             add.renderThisCell.push(cell);
@@ -88,6 +91,7 @@ export class GridDependency {
         } else {
           this.dependents.set(this.getKey(entry), { location: entry, needToRender: [cell], renderThisCell: [] });
         }
+        changes.push(cell);
       });
       this.dependents.set(cellKey, { location: cell, needToRender: [], renderThisCell });
     }
