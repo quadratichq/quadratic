@@ -1,8 +1,10 @@
 import { Rectangle } from 'pixi.js';
 import { GridFileSchema, GRID_FILE_VERSION } from '../actions/gridFile/GridFileSchema';
+import QuadraticDependencyGraph from '../dgraph/QuadraticDependencyGraph';
 import { intersects } from '../gridGL/helpers/intersects';
 import CellReference from '../gridGL/types/cellReference';
 import { GridBorders } from './GridBorders';
+import { GridDependency } from './GridDependency';
 import { GridOffsets } from './GridOffsets';
 import { CellAndFormat, GridSparse } from './GridSparse';
 import { Cell } from './gridTypes';
@@ -11,18 +13,24 @@ export class Sheet {
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
+  dependency: GridDependency;
+  dgraph: QuadraticDependencyGraph;
   onRebuild?: () => void;
 
   constructor() {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
+    this.dependency = new GridDependency();
+    this.dgraph = new QuadraticDependencyGraph();
   }
 
   populate(sheet: GridFileSchema): void {
     this.gridOffsets.populate(sheet.rows, sheet.columns);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
+    this.dependency.load(sheet.dependency);
+    this.dgraph.load_from_json(sheet.dgraph);
     this.onRebuild?.();
   }
 
@@ -34,9 +42,8 @@ export class Sheet {
       cells,
       formats,
       borders: this.borders.getArray(),
-
-      // todo: fix
-      dgraph: '',
+      dependency: this.dependency.save(),
+      dgraph: this.dgraph.export_to_json(),
       version: GRID_FILE_VERSION,
     };
   }
@@ -71,6 +78,10 @@ export class Sheet {
       }
     }
     this.grid.deleteCells(cells);
+  }
+
+  debugGetCells(): Cell[] {
+    return this.grid.getAllCells();
   }
 
   updateCells(cells: Cell[]): void {

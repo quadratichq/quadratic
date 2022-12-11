@@ -1,35 +1,28 @@
-// import { useState } from "react";
-import { UpdateDGraphDB } from '../../../core/gridDB/DGraph/UpdateDGraphDB';
 import { colors } from '../../../theme/colors';
 import TextField from '@mui/material/TextField';
 import { Button } from '@mui/material';
-import QuadraticDependencyGraph from '../../../core/dgraph/QuadraticDependencyGraph';
 import { Sheet } from '../../../core/gridDB/Sheet';
-// import CellReference from "../../../core/gridGL/types/cellReference";
 
 interface Props {
   sheet: Sheet;
 }
 
-// todo when rust is ready
 export default function DebugMenu(props: Props) {
-  //   const [debugContent, setDebugContent] = useState<string>("");
-  // const dgraph = useLiveQuery(() => GetDGraphDB());
-  // const cells = useLiveQuery(() => GetCellsDB());
+  const { sheet } = props;
+  const { dgraph } = sheet;
 
-  // const dgraph_json_str = dgraph?.export_to_json();
+  const cells = sheet.debugGetCells();
+  let file_state: string;
 
-  // let file_state: string;
+  const HUMAN_READABLE_DGRAPH = true;
+  let dgraph_str = dgraph.human_readable_string();
+  if (!HUMAN_READABLE_DGRAPH) dgraph_str = JSON.stringify(dgraph.export_to_obj());
 
-  // const HUMAN_READABLE_DGRAPH = true;
-  // let dgraph_str = dgraph?.human_readable_string();
-  // if (!HUMAN_READABLE_DGRAPH) dgraph_str = JSON.stringify(dgraph?.export_to_obj());
-
-  // try {
-  //   file_state = `${dgraph_str}\n${JSON.stringify(cells || '', null, '\t')}`;
-  // } catch {
-  //   file_state = '';
-  // }
+  try {
+    file_state = `${dgraph_str}\n${JSON.stringify(cells || '', null, '\t')}`;
+  } catch {
+    file_state = '';
+  }
 
   return (
     <div
@@ -48,16 +41,15 @@ export default function DebugMenu(props: Props) {
     >
       <Button
         onClick={() => {
-          const qdg = new QuadraticDependencyGraph();
-          UpdateDGraphDB(qdg);
+          dgraph.clear();
         }}
       >
         Reset DGraph
       </Button>
       <Button
         onClick={() => {
-          // qdb.cells.clear();
-          // qdb.qgrid.clear();
+          sheet.grid.empty();
+          dgraph.clear();
         }}
       >
         Reset Grid
@@ -68,7 +60,7 @@ export default function DebugMenu(props: Props) {
         label="DEBUG"
         multiline
         rows={14}
-        value={'' /*file_state*/}
+        value={file_state}
         style={{ width: '100%' }}
       />
     </div>

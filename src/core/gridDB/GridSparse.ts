@@ -158,6 +158,14 @@ export class GridSparse {
     return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
   }
 
+  getAllCells(): Cell[] {
+    const array = Array.from(this.cells, ([name, value]) => value);
+    return array.flatMap((entry) => {
+      if (entry.cell) return [entry.cell];
+      return [];
+    });
+  }
+
   getArrays(): { cells: Cell[]; formats: CellFormat[] } {
     const array = Array.from(this.cells, ([name, value]) => value);
     return {

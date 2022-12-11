@@ -1,11 +1,13 @@
-import { Container, Graphics, Rectangle } from 'pixi.js';
+import { Container, Graphics, Point, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
 import { debugShowQuadrantBoxes } from '../../../../debugFlags';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
+import { CellAndFormat } from '../../../gridDB/GridSparse';
 import { Cell, CellFormat } from '../../../gridDB/gridTypes';
 import { debugGetColor } from '../../helpers/debugColors';
 import { intersects } from '../../helpers/intersects';
 import { PixiApp } from '../../pixiApp/PixiApp';
+import { Coordinate, coordinateEqual } from '../../types/size';
 import { CellsArray } from './CellsArray';
 import { CellsBackground } from './cellsBackground';
 import { CellsBorder } from './CellsBorder';
@@ -55,6 +57,95 @@ export class Cells extends Container {
   }
 
   /**
+   * update visual dependency graph for labels generated via quadrants
+   * note: this will not remove dependencies for cells that have been deleted but had dependencies
+   * @returns (todo) dependency cells that are changed (to trigger a quadrant refresh)
+   */
+  private handleOverflow(): void {
+    const labels = this.labels.get();
+    const { quadrants } = this.app;
+    const { dependency, gridOffsets } = this.app.sheet;
+    const changes: Coordinate[] = [];
+    labels.forEach(label => {
+      if (!label.location) return;
+      if (!label.overflowLeft && !label.overflowRight) {
+        dependency.empty(label.location);
+      } else {
+        const dependents: Coordinate[] = [];
+
+        // find cells that overflow to the right
+        if (label.overflowRight) {
+          let column = label.location.x + 1;
+          let x = 0;
+          do {
+            dependents.push({ x: column, y: label.location.y });
+            x += gridOffsets.getColumnPlacement(column).width;
+            column++;
+          } while (x < label.overflowRight);
+        }
+
+        // find cells that overflow to the left
+        if (label.overflowLeft) {
+          let column = label.location.x - 1;
+          let x = 0;
+          do {
+            dependents.push({ x: column, y: label.location.y });
+            x -= gridOffsets.getColumnPlacement(column).width;
+            column--;
+          } while (x > label.overflowLeft);
+        }
+
+        changes.push(...dependency.update(label.location, dependents));
+      }
+    });
+
+    // mark quadrants of changed cells dirty
+    if (changes.length) {
+      quadrants.quadrantChanged({ cells: changes });
+    }
+  }
+
+  private renderCell(options: { entry?: CellAndFormat, x: number, y: number, width: number, height: number, isQuadrant?: boolean, content: Rectangle, isInput?: boolean }): boolean {
+    const { entry, x, y, width, height, isQuadrant, content, isInput } = options;
+    if (entry) {
+      const hasContent = entry.cell?.value || entry.format;
+
+      if (hasContent) {
+        if (x < content.left) content.x = x;
+        if (y < content.top) content.y = y;
+      }
+
+      // only render if there is cell data, cell formatting
+      if (!isInput && (entry.cell || entry.format)) {
+        this.cellsBorder.draw({ ...entry, x, y, width, height });
+        this.cellsBackground.draw({ ...entry, x, y, width, height });
+        if (entry.cell) {
+          if (entry.cell?.type === 'PYTHON') {
+            this.cellsMarkers.add(x, y, 'CodeIcon');
+          }
+          this.labels.add({
+            x: x + CELL_TEXT_MARGIN_LEFT,
+            y: y + CELL_TEXT_MARGIN_TOP,
+            text: entry.cell.value,
+            expectedWidth: isQuadrant ? width : undefined,
+            location: isQuadrant ? { x: entry.cell.x, y: entry.cell.y } : undefined,
+          });
+        }
+      }
+      if (entry.cell?.array_cells) {
+        this.cellsArray.draw(entry.cell.array_cells, x, y, width, height);
+      }
+
+      if (hasContent) {
+        if (x + width > content.right) content.width = x + width - content.left;
+        if (y + height > content.bottom) content.height = y + height - content.top;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Draws all items within the visible bounds
    * @param bounds visible bounds
    * @param cellRectangle data for entries within the visible bounds
@@ -65,10 +156,11 @@ export class Cells extends Container {
     bounds: Rectangle;
     cellRectangle: CellRectangle;
     ignoreInput?: boolean;
+    isQuadrant?: boolean;
   }): Rectangle | undefined {
-    const { bounds, cellRectangle, ignoreInput } = options;
+    const { bounds, cellRectangle, ignoreInput, isQuadrant } = options;
 
-    const { gridOffsets } = this.app.sheet;
+    const { gridOffsets, dependency, grid } = this.app.sheet;
     this.labels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
@@ -90,60 +182,60 @@ export class Cells extends Container {
     let blank = true;
     const content = new Rectangle(Infinity, Infinity, -Infinity, -Infinity);
 
+    const dependentCells: Coordinate[] = [];
+
     // iterate through the rows and columns
     for (let row = bounds.top; row <= bounds.bottom; row++) {
       let x = xStart;
       const height = gridOffsets.getRowHeight(row);
       for (let column = bounds.left; column <= bounds.right; column++) {
         const width = gridOffsets.getColumnWidth(column);
-        const entry = cellRectangle.get(column, row);
-        if (entry) {
-          const hasContent = entry.cell?.value || entry.format;
 
-          if (hasContent) {
-            blank = false;
-            if (x < content.left) content.x = x;
-            if (y < content.top) content.y = y;
-          }
+        // track dependents that are outside the bounds of this rectangle
+        const dependents = dependency.getDependents({ x: column, y: row });
+        if (dependents?.length) {
+          const outsideDependents = dependents.filter(dependent => !intersects.rectanglePoint(bounds, new Point(dependent.x, dependent.y)));
+          if (outsideDependents.length) {
 
-          // don't render input (unless ignoreInput === true)
-          const isInput = input && input.column === column && input.row === row;
-
-          // only render if there is cell data, cell formatting
-          if (!isInput && (entry.cell || entry.format)) {
-            this.cellsBorder.draw({ ...entry, x, y, width, height });
-            this.cellsBackground.draw({ ...entry, x, y, width, height });
-            if (entry.cell) {
-              if (entry.cell?.type === 'PYTHON') {
-                this.cellsMarkers.add(x, y, 'CodeIcon');
+            // ensure no duplicates
+            outsideDependents.forEach(dependent => {
+              if (!dependentCells.find(search => coordinateEqual(search, dependent))) {
+                dependentCells.push(dependent);
               }
-              this.labels.add({
-                x: x + CELL_TEXT_MARGIN_LEFT,
-                y: y + CELL_TEXT_MARGIN_TOP,
-                text: entry.cell.value,
-              });
-            }
-          }
-          if (entry.cell?.array_cells) {
-            this.cellsArray.draw(entry.cell.array_cells, x, y, width, height);
-          }
-
-          if (hasContent) {
-            if (x + width > content.right) content.width = x + width - content.left;
-            if (y + height > content.bottom) content.height = y + height - content.top;
+            });
           }
         }
+
+        const entry = cellRectangle.get(column, row);
+
+        // don't render input (unless ignoreInput === true)
+      const isInput = input && input.column === column && input.row === row;
+
+        const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, content, isInput });
+        blank = blank === true ? !rendered : blank;
         x += width;
       }
       x = xStart;
       y += height;
     }
 
-    if (!blank) {
-      // renders labels
-      this.labels.update();
-      return content;
+    if (dependentCells.length) {
+      dependentCells.forEach(coordinate => {
+        const entry = grid.get(coordinate.x, coordinate.y);
+        if (entry) {
+          const position = gridOffsets.getCell(coordinate.x, coordinate.y);
+          const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
+          this.renderCell({ entry, ...position, content, isInput });
+        }
+      });
     }
+
+    this.labels.update();
+
+    // only calculate overflow when rendering quadrants so it's only done one time
+    if (isQuadrant) this.handleOverflow();
+
+    return !blank ? content : undefined;
   }
 
   drawMultipleBounds(cellRectangles: CellRectangle[]): void {
@@ -228,7 +320,7 @@ export class Cells extends Container {
     const { grid, borders } = this.app.sheet;
     const bounds = grid.getBounds(visibleBounds);
     const cellRectangle = grid.getCells(bounds);
-    const rectCells = this.drawBounds({ bounds, cellRectangle });
+    const rectCells = this.drawBounds({ bounds, cellRectangle, isQuadrant });
 
     // draw borders
     const borderBounds = borders.getBounds(visibleBounds);

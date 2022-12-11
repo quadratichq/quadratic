@@ -5,6 +5,7 @@ export const example_grid: GridFileSchema = {
   rows: [],
   borders: [],
   formats: [],
+  dependency: [],
   version: GRID_FILE_VERSION,
   cells: [
     {

@@ -48,6 +48,8 @@ export function keyboardCell(options: {
       sheet.deleteCellsRange(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
     }
 
+    // todo: update dependency graph
+
     event.preventDefault();
   }
 

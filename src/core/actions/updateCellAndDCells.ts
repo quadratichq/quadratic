@@ -1,7 +1,5 @@
 import { Cell } from '../gridDB/gridTypes';
 import { runPython } from '../computations/python/runPython';
-import { GetDGraphDB } from '../gridDB/DGraph/GetDGraphDB';
-import { UpdateDGraphDB } from '../gridDB/DGraph/UpdateDGraphDB';
 import { Sheet } from '../gridDB/Sheet';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../gridGL/types/size';
@@ -13,7 +11,6 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
   cell.last_modified = new Date().toISOString();
   sheet.updateCells([cell]);
   updatedCells.push({ x: cell.x, y: cell.y });
-  let dgraph = await GetDGraphDB();
 
   // start with a plan to just update the current cell
   let cells_to_update: [number, number][] = [[cell.x, cell.y]];
@@ -44,14 +41,14 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
     if (cell === undefined) continue;
 
     // remove old deps from graph
-    // if (cell.dependent_cells) dgraph.remove_dependencies_from_graph(cell.dependent_cells, [[cell.x, cell.y]]);
+    if (cell.dependent_cells) sheet.dgraph.remove_dependencies_from_graph(cell.dependent_cells, [[cell.x, cell.y]]);
 
     // clear old array cells created by this cell
     if (cell.array_cells) {
       const old_array_cells = cell.array_cells.map((cell) => {
         return { x: cell[0], y: cell[1] };
       });
-      // old_array_cells.unshift(); // remove this cell
+      old_array_cells.unshift(); // remove this cell
       sheet.deleteCells(old_array_cells);
       updatedCells.push(...old_array_cells);
     }
@@ -73,7 +70,7 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
       // add new cell deps to graph
       if (result.cells_accessed.length) {
         // add new deps to graph
-        // dgraph.add_dependencies_to_graph(result.cells_accessed, [[cell.x, cell.y]]);
+        sheet.dgraph.add_dependencies_to_graph(result.cells_accessed, [[cell.x, cell.y]]);
       }
 
       let array_cells_to_output: Cell[] = [];
@@ -120,8 +117,8 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
         // if any updated cells have other cells depending on them, add to list to update
         for (const array_cell of array_cells_to_output) {
           // add array cells to list to update
-          // let deps = dgraph.get_children_cells([array_cell.x, array_cell.y]);
-          // cells_to_update.push(...deps);
+          let deps = sheet.dgraph.get_children_cells([array_cell.x, array_cell.y]);
+          cells_to_update.push(...deps);
         }
 
         // keep track of array cells updated by this cell
@@ -146,11 +143,10 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
     }
 
     // if this cell updates other cells add them to the list to update
-    // let deps = dgraph.get_children_cells([cell.x, cell.y]);
-    // cells_to_update.push(...deps);
+    let deps = sheet.dgraph.get_children_cells([cell.x, cell.y]);
+    cells_to_update.push(...deps);
   }
 
-  // await UpdateDGraphDB(dgraph);
   app?.quadrants.quadrantChanged({ cells: updatedCells });
   localFiles.saveLastLocal(sheet.save());
 };

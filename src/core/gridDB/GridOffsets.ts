@@ -23,11 +23,6 @@ export class GridOffsets {
     columns.forEach((entry) => (this.columns[entry.id] = entry));
     this.rows = {};
     rows.forEach((entry) => (this.rows[entry.id] = entry));
-
-    // todo: move this somewhere else...
-    // this.app.gridLines.dirty = true;
-    // this.app.headings.dirty = true;
-    // this.app.cursor.dirty = true;
   }
 
   getColumnWidth(column: number): number {

@@ -39,7 +39,11 @@ export default class QuadraticDependencyGraph {
     this._dgraph = new DirectedGraph<string, undefined>();
   }
 
-  export_to_json() {
+  clear(): void {
+    this._dgraph.clear();
+  }
+
+  export_to_json(): string {
     return JSON.stringify(this.export_to_obj(), replacer);
   }
 

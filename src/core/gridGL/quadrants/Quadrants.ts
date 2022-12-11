@@ -33,6 +33,13 @@ export class Quadrants extends Container {
     this.quadrants = new Map<string, Quadrant>();
   }
 
+  getQuadrantCoordinate(x: number, y: number): Coordinate {
+    return {
+      x: Math.floor(x / QUADRANT_COLUMNS),
+      y: Math.floor(y / QUADRANT_ROWS),
+    };
+  }
+
   build(): void {
     this.removeChildren();
     this.quadrants.clear();
@@ -46,8 +53,7 @@ export class Quadrants extends Container {
     // iterate through visible grid bounds and prepare quadrants
     for (let y = bounds.top; y <= bounds.bottom + QUADRANT_ROWS; y += QUADRANT_ROWS) {
       for (let x = bounds.left; x <= bounds.right + QUADRANT_COLUMNS; x += QUADRANT_COLUMNS) {
-        const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
-        const quadrantY = Math.floor(y / QUADRANT_ROWS);
+        const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
         const quadrant = this.addChild(new Quadrant(this.app, quadrantX, quadrantY));
         this.quadrants.set(`${quadrantX},${quadrantY}`, quadrant);
       }
@@ -105,8 +111,7 @@ export class Quadrants extends Container {
 
     if (options.row !== undefined) {
       for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
-        const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
-        const quadrantY = Math.floor(options.row / QUADRANT_ROWS);
+        const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, options.row);
         const quadrant = this.getQuadrant(quadrantX, quadrantY);
         if (!quadrant) {
           warn('Expected quadrant to be defined in quadrantChanged');
@@ -118,8 +123,7 @@ export class Quadrants extends Container {
       // reposition quadrants below the row
       for (let y = options.row + QUADRANT_ROWS; y <= bounds.bottom; y += QUADRANT_ROWS) {
         for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
-          const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
-          const quadrantY = Math.floor(y / QUADRANT_ROWS);
+        const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
           if (!quadrant) {
             warn('Expected quadrant to be defined in quadrantChanged');
@@ -131,8 +135,7 @@ export class Quadrants extends Container {
     }
     if (options.column !== undefined) {
       for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
-        const quadrantX = Math.floor(options.column / QUADRANT_COLUMNS);
-        const quadrantY = Math.floor(y / QUADRANT_ROWS);
+        const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(options.column, y);
         const quadrant = this.getQuadrant(quadrantX, quadrantY);
         if (!quadrant) {
           warn('Expected quadrant to be defined in quadrantChanged');
@@ -144,8 +147,7 @@ export class Quadrants extends Container {
       // reposition quadrants to the right of the column
       for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
         for (let x = options.column + QUADRANT_COLUMNS; x <= bounds.right; x += QUADRANT_COLUMNS) {
-          const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
-          const quadrantY = Math.floor(y / QUADRANT_ROWS);
+          const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
           if (!quadrant) {
             warn('Expected quadrant to be defined in quadrantChanged');
@@ -160,8 +162,7 @@ export class Quadrants extends Container {
     if (options.cells) {
       const quadrants = new Set<string>();
       options.cells.forEach(coordinate => {
-        const quadrantX = Math.floor(coordinate.x / QUADRANT_COLUMNS);
-        const quadrantY = Math.floor(coordinate.y / QUADRANT_ROWS);
+        const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(coordinate.x, coordinate.y);
         const key = `${quadrantX},${quadrantY}`;
         if (!quadrants.has(key)) {
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
@@ -179,8 +180,7 @@ export class Quadrants extends Container {
       const quadrants = new Set<string>();
       for (let y = start.y; y <= end.y; y++) {
         for (let x = start.x; x <= end.x; x++) {
-          const quadrantX = Math.floor(x / QUADRANT_COLUMNS);
-          const quadrantY = Math.floor(y / QUADRANT_ROWS);
+          const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
           const key = `${quadrantX},${quadrantY}`;
           if (!quadrants.has(key)) {
             const quadrant = this.getQuadrant(quadrantX, quadrantY);
