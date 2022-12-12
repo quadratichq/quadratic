@@ -5,7 +5,7 @@ import { useLoading } from '../contexts/LoadingContext';
 import { QuadraticLoading } from '../ui/QuadtraticLoading';
 import { loadPython } from '../core/computations/python/loadPython';
 import { TopBarLoading } from '../ui/components/TopBarLoading';
-import { WelcomeComponent } from './WelcomeComponent';
+import { FileLoadingComponent } from './FileLoadingComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
 import { isMobileOnly } from 'react-device-detect';
@@ -38,7 +38,6 @@ export default function QuadraticApp() {
     }
   }, [loading, incrementLoadingCount]);
 
-  // hack until rust backend is running
   useEffect(() => {
     GetCellsDBSetSheet(sheet);
   }, [sheet]);
@@ -47,8 +46,8 @@ export default function QuadraticApp() {
     <RecoilRoot>
       {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
       <AnalyticsProvider></AnalyticsProvider>
-      {/* Welcome Component for first time users */}
-      {!loading && <WelcomeComponent sheet={sheet} />}
+      {/* Welcome Component loads appropriate sheet */}
+      {!loading && <FileLoadingComponent sheet={sheet} />}
       {/* Provider of All React UI Components */}
       {!loading && <QuadraticUI sheet={sheet} />}
       {/* ToBarLoading allows window to be moved while loading in electron */}

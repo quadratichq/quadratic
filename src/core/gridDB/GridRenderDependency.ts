@@ -6,7 +6,7 @@ export interface Dependency {
   renderThisCell: Coordinate[]; // these are cells that render this cell when drawing
 }
 
-export class GridDependency {
+export class GridRenderDependency {
   private dependents: Map<string, Dependency> = new Map();
 
   clear(): void {

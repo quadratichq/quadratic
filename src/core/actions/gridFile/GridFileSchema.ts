@@ -1,4 +1,4 @@
-import { Dependency } from '../../gridDB/GridDependency';
+import { Dependency } from '../../gridDB/GridRenderDependency';
 import { Border, Cell, CellFormat, Heading } from '../../gridDB/gridTypes';
 
 export const GRID_FILE_VERSION = 1;

@@ -9,6 +9,7 @@ export interface CellAndFormat {
   format?: CellFormat;
 }
 
+/** Stores all cells and format locations */
 export class GridSparse {
   private gridOffsets: GridOffsets;
   private minX = 0;
@@ -159,7 +160,7 @@ export class GridSparse {
   }
 
   getAllCells(): Cell[] {
-    const array = Array.from(this.cells, ([name, value]) => value);
+    const array = Array.from(this.cells, ([_, value]) => value);
     return array.flatMap((entry) => {
       if (entry.cell) return [entry.cell];
       return [];

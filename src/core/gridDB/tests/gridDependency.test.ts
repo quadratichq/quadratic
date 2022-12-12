@@ -1,10 +1,10 @@
-import { GridDependency } from '../GridDependency';
+import { GridRenderDependency } from '../GridRenderDependency';
 
 describe('gridOffsets', () => {
-  let gridDependency: GridDependency;
+  let gridDependency: GridRenderDependency;
 
   beforeEach(() => {
-    gridDependency = new GridDependency();
+    gridDependency = new GridRenderDependency();
   });
 
   it('adds a new cell dependency', () => {

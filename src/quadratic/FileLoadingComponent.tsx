@@ -12,7 +12,7 @@ interface Props {
   sheet: Sheet;
 }
 
-export const WelcomeComponent = (props: Props): JSX.Element | null => {
+export const FileLoadingComponent = (props: Props): JSX.Element | null => {
   const [firstTime, setFirstTime] = useLocalStorage('firstTime', true);
 
   useEffect(() => {

@@ -13,6 +13,7 @@ export interface HeadingResizing {
   height?: number;
 }
 
+/** Stores all column and row locations; helper functions to translate between screen and coordinate */
 export class GridOffsets {
   private columns: Record<string, Heading> = {};
   private rows: Record<string, Heading> = {};

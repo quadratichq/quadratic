@@ -4,7 +4,7 @@ import QuadraticDependencyGraph from '../dgraph/QuadraticDependencyGraph';
 import { intersects } from '../gridGL/helpers/intersects';
 import CellReference from '../gridGL/types/cellReference';
 import { GridBorders } from './GridBorders';
-import { GridDependency } from './GridDependency';
+import { GridRenderDependency } from './GridRenderDependency';
 import { GridOffsets } from './GridOffsets';
 import { CellAndFormat, GridSparse } from './GridSparse';
 import { Cell } from './gridTypes';
@@ -13,7 +13,7 @@ export class Sheet {
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
-  dependency: GridDependency;
+  dependency: GridRenderDependency;
   dgraph: QuadraticDependencyGraph;
   onRebuild?: () => void;
 
@@ -21,7 +21,7 @@ export class Sheet {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
-    this.dependency = new GridDependency();
+    this.dependency = new GridRenderDependency();
     this.dgraph = new QuadraticDependencyGraph();
   }
 
