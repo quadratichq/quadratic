@@ -7,7 +7,7 @@ import { localFiles } from '../gridDB/localFiles';
 
 export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiApp) => {
   //save currently edited cell
-  const updatedCells: Coordinate[] = []
+  const updatedCells: Coordinate[] = [];
   cell.last_modified = new Date().toISOString();
   sheet.updateCells([cell]);
   updatedCells.push({ x: cell.x, y: cell.y });
@@ -148,5 +148,5 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
   }
 
   app?.quadrants.quadrantChanged({ cells: updatedCells });
-  localFiles.saveLastLocal(sheet.save());
+  localFiles.saveLastLocal(sheet.export_file());
 };

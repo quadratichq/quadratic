@@ -28,7 +28,7 @@ export const useFormatCells = (sheet: Sheet, app?: PixiApp): IResults => {
     }
     sheet.grid.updateFormat(formats);
     app?.quadrants.quadrantChanged({ range: { start, end } });
-    localFiles.saveLastLocal(sheet.save());
+    localFiles.saveLastLocal(sheet.export_file());
   };
 
   const changeFillColor = (color: ColorResult): void => {
@@ -48,7 +48,7 @@ export const useFormatCells = (sheet: Sheet, app?: PixiApp): IResults => {
     }
     sheet.grid.clearFormat(clear);
     app?.quadrants.quadrantChanged({ range: { start, end } });
-    localFiles.saveLastLocal(sheet.save());
+    localFiles.saveLastLocal(sheet.export_file());
   };
 
   return {

@@ -20,20 +20,20 @@ export const FileLoadingComponent = (props: Props): JSX.Element | null => {
       if (debugShowFileIO) {
         console.log(`[WelcomeComponent] Loading example file b/c ?example=1`);
       }
-      props.sheet.populate(example_grid);
-      localFiles.saveLocal(EXAMPLE_FILE_FILENAME, props.sheet.save());
+      props.sheet.load_file(example_grid);
+      localFiles.saveLocal(EXAMPLE_FILE_FILENAME, props.sheet.export_file());
       return;
     }
 
     localFiles.loadLocalLastFile().then((data) => {
       if (data) {
-        props.sheet.populate(data);
+        props.sheet.load_file(data);
       } else if (firstTime) {
         if (debugShowFileIO) {
           console.log(`[WelcomeComponent] Loading example file b/c this is the first time`);
         }
-        props.sheet.populate(example_grid);
-        localFiles.loadedExternalFile(EXAMPLE_FILE_FILENAME, props.sheet.save());
+        props.sheet.load_file(example_grid);
+        localFiles.loadedExternalFile(EXAMPLE_FILE_FILENAME, props.sheet.export_file());
       }
     });
   }, [firstTime, setFirstTime, props.sheet]);

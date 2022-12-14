@@ -115,7 +115,8 @@ export class GridSparse {
   }
 
   getCell(x: number, y: number): Cell | undefined {
-    if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
+    // if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
+    // I am not sure were the min and max are coming from, but they are not updated when calling updateCells
     return this.cells.get(this.getKey(x, y))?.cell;
   }
 

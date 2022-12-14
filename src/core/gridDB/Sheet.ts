@@ -25,7 +25,7 @@ export class Sheet {
     this.dgraph = new QuadraticDependencyGraph();
   }
 
-  populate(sheet: GridFileSchema): void {
+  load_file(sheet: GridFileSchema): void {
     this.gridOffsets.populate(sheet.rows, sheet.columns);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
@@ -34,7 +34,7 @@ export class Sheet {
     this.onRebuild?.();
   }
 
-  save(): GridFileSchema {
+  export_file(): GridFileSchema {
     const { cells, formats } = this.grid.getArrays();
     return {
       columns: this.gridOffsets.getColumnsArray(),
@@ -80,15 +80,15 @@ export class Sheet {
     this.grid.deleteCells(cells);
   }
 
-  debugGetCells(): Cell[] {
-    return this.grid.getAllCells();
-  }
-
   updateCells(cells: Cell[]): void {
     this.grid.updateCells(cells);
   }
 
   getGridBounds(): Rectangle | undefined {
     return intersects.rectangleUnion(this.grid.getGridBounds(), this.borders.getGridBounds());
+  }
+
+  debugGetCells(): Cell[] {
+    return this.grid.getAllCells();
   }
 }

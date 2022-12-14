@@ -114,7 +114,7 @@ export const useBorders = (sheet: Sheet, app?: PixiApp): IResults => {
         app.cells.dirty = true;
         app.quadrants.quadrantChanged({ range: { start, end } });
       }
-      localFiles.saveLastLocal(sheet.save());
+      localFiles.saveLastLocal(sheet.export_file());
     }
   };
 
@@ -159,7 +159,7 @@ export const useBorders = (sheet: Sheet, app?: PixiApp): IResults => {
       app.cells.dirty = true;
       app.quadrants.quadrantChanged({ range: { start, end } });
     }
-    localFiles.saveLastLocal(sheet.save());
+    localFiles.saveLastLocal(sheet.export_file());
   };
 
   return {

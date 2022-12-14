@@ -97,8 +97,7 @@ export const CellInput = (props: CellInputProps) => {
         ]);
       }
       app?.quadrants.quadrantChanged({ cells: [cellLocation.current] });
-      localFiles.saveLastLocal(sheet.save());
-
+      localFiles.saveLastLocal(sheet.export_file());
     }
 
     // Update Grid Interaction state, reset input value state
