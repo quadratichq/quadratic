@@ -10,13 +10,14 @@ import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
 import { isMobileOnly } from 'react-device-detect';
 import { debugSkipPythonLoad } from '../debugFlags';
-import { Sheet } from '../core/gridDB/Sheet';
 import { GetCellsDBSetSheet } from '../core/gridDB/Cells/GetCellsDB';
 import { localFiles } from '../core/gridDB/localFiles';
+import { SheetController } from '../core/transaction/sheetController';
 
 export default function QuadraticApp() {
   const { loading, incrementLoadingCount } = useLoading();
-  const [sheet] = useState<Sheet>(new Sheet());
+  const [sheet_controller] = useState<SheetController>(new SheetController());
+  const sheet = sheet_controller.sheet;
 
   useEffect(() => {
     if (loading) {
