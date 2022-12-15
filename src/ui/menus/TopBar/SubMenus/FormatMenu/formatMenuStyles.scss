@@ -41,3 +41,18 @@
   border-bottom: 1px solid black;
   bottom: 3px;
 }
+
+.compact-picker {
+  width: 160px !important;
+  margin-right: 5px;
+  margin-left: 5px;
+
+  /* hides custom RBG input on color picker */
+  .flexbox-fix {
+    display: none !important;
+  }
+
+  div span:last-of-type div {
+    border: 1px solid #eee;
+  }
+}

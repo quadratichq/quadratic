@@ -18,12 +18,12 @@ import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
 import { colors } from '../../../../../theme/colors';
 import { menuItemIconStyles, topBarIconStyles } from '../menuStyles';
-import { CompactPicker } from 'react-color';
+import { QColorPicker } from '../../../../components/qColorPicker';
 import { useFormatCells } from '../useFormatCells';
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { useGetBorderMenu } from './useGetBorderMenu';
 import { useBorders } from '../useBorders';
-import './formatMenuStyles.css';
+import './formatMenuStyles.scss';
 
 interface IProps {
   app?: PixiApp;
@@ -110,7 +110,7 @@ export const FormatMenu = (props: IProps) => {
         }
       >
         <MenuHeader>Fill Color</MenuHeader>
-        <CompactPicker onChangeComplete={changeFillColor} />
+        <QColorPicker onChangeComplete={changeFillColor} />
         <MenuItem onClick={removeFillColor}>Clear Fill Color</MenuItem>
       </SubMenu>
 

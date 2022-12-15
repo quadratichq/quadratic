@@ -16,7 +16,7 @@ import {
   BorderClear,
 } from '@mui/icons-material';
 import { Fragment, useCallback, useEffect, useState } from 'react';
-import { ColorResult, CompactPicker } from 'react-color';
+import { ColorResult } from 'react-color';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
@@ -24,6 +24,7 @@ import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
 import { colors } from '../../../../../theme/colors';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
+import { QColorPicker } from '../../../../components/qColorPicker';
 
 interface Props extends SubMenuProps {
   app?: PixiApp;
@@ -189,7 +190,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
             label={<BorderColor style={{ ...menuItemIconStyles, color }}></BorderColor>}
           >
             <MenuHeader>Border Color</MenuHeader>
-            <CompactPicker onChangeComplete={handleChangeBorderColor} />
+            <QColorPicker onChangeComplete={handleChangeBorderColor}></QColorPicker>
           </SubMenu>
           <SubMenu
             id="BorderLineStyleMenuID"
