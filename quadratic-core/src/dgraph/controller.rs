@@ -11,22 +11,28 @@ use crate::grid::Pos;
 pub struct DependencyCycleError {
     pub source: Pos,
 }
-
 impl fmt::Display for DependencyCycleError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Dependency cycle detected at {:?}", self.source)
     }
 }
 
-#[derive(Default, Clone, Debug)]
-pub struct DGraphController {
-    // The Quadratic Dependency Graph stores the cells that depend on other cells.
-    // The children of a cell are the cells that depend on it.
-    // All edges have a weight of 1 (weights don't matter for this implementation)
-    graph: DiGraphMap<Pos, usize>,
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct NoEdgeWeight;
+impl fmt::Display for NoEdgeWeight {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "")
+    }
 }
 
-impl fmt::Display for DGraphController {
+#[derive(Default, Clone, Debug)]
+pub struct DGraph {
+    // The Quadratic Dependency Graph stores the cells that depend on other cells.
+    // The children of a cell are the cells that depend on it.
+    graph: DiGraphMap<Pos, NoEdgeWeight>,
+}
+
+impl fmt::Display for DGraph {
     /// easy way to visualize the dgraph.
     /// paste into <http://viz-js.com/> to visualize
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -34,14 +40,14 @@ impl fmt::Display for DGraphController {
     }
 }
 
-impl DGraphController {
+impl DGraph {
     /// Constructs a new empty dgraph.
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Returns a immutable reference to the underlying graph.
-    pub fn graph(&self) -> &DiGraphMap<Pos, usize> {
+    pub fn graph(&self) -> &DiGraphMap<Pos, NoEdgeWeight> {
         &self.graph
     }
 
@@ -55,7 +61,7 @@ impl DGraphController {
         // add new dependencies
         for &dcell in dependencies {
             // add_edge automatically adds nodes if they don't exist
-            self.graph.add_edge(dcell, cell, 1);
+            self.graph.add_edge(dcell, cell, NoEdgeWeight);
         }
 
         // check for cycles
