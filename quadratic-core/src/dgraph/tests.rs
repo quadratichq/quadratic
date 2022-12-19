@@ -3,7 +3,7 @@ use crate::grid::Pos;
 
 #[test]
 fn test_dgraph_controller() {
-    let mut grid = DGraphController::new();
+    let mut grid = DGraph::new();
 
     grid.add_dependencies(
         Pos { x: 1, y: 3 },
@@ -103,7 +103,7 @@ fn test_dgraph_controller() {
 
 #[test]
 fn test_dgraph_controller_cycle() {
-    let mut grid = DGraphController::new();
+    let mut grid = DGraph::new();
 
     grid.add_dependencies(Pos { x: 0, y: 0 }, &[Pos { x: 1, y: 1 }])
         .unwrap();

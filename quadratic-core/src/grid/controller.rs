@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 
 use super::{Cell, Command, Grid, JsCell, Pos, Rect};
 use crate::codestore::CodeStore;
-use crate::dgraph::DGraphController;
+use crate::dgraph::DGraph;
 
 #[derive(Debug)]
 pub struct TransactionInProgress<'a> {
@@ -40,7 +40,7 @@ pub struct Transaction {
 pub struct GridController {
     /// Underlying grid of cells.
     grid: Grid,
-    graph: DGraphController,
+    graph: DGraph,
     code_store: CodeStore,
     /// Stack of transactions that an undo command pops from. Each undo command
     /// takes one transaction from the top of the stack and executes all
