@@ -6,6 +6,7 @@ pub mod codestore;
 pub mod dgraph;
 pub mod formulas;
 pub mod grid;
+pub mod util;
 
 #[cfg(test)]
 mod tests;
