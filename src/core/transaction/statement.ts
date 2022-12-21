@@ -10,9 +10,9 @@ export type Statement =
       };
     }
   | {
-      type: 'SET_CELL_FORMAT';
+      type: 'SET_CELL_DEPENDENCIES';
       data: {
-        position: number[];
-        format: string;
+        position: [number, number];
+        dependencies: [number, number][] | null;
       };
     };

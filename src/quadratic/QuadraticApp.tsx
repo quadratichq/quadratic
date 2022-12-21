@@ -50,7 +50,7 @@ export default function QuadraticApp() {
       {/* Welcome Component loads appropriate sheet */}
       {!loading && <FileLoadingComponent sheet={sheet} />}
       {/* Provider of All React UI Components */}
-      {!loading && <QuadraticUI sheet={sheet} />}
+      {!loading && <QuadraticUI sheetController={sheet_controller} />}
       {/* ToBarLoading allows window to be moved while loading in electron */}
       {loading && <TopBarLoading></TopBarLoading>}
       {/* Loading screen */}

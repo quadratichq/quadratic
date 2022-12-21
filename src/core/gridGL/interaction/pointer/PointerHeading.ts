@@ -3,7 +3,6 @@ import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectC
 import { zoomToFit } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { Sheet } from '../../../gridDB/Sheet';
 import { UpdateHeading } from '../../../gridDB/useHeadings';
 
 export class PointerHeading {

@@ -65,6 +65,17 @@ export default class QuadraticDependencyGraph {
     this._dgraph.import(igraph);
   }
 
+  set_cell_dependencies(cell: [number, number], dependent_cells: [number, number][] | null) {
+    // save previous dependencies
+    //const previous_dependent_cells = //
+    this._dgraph.removeVertex(cell_to_string(cell));
+    if (dependent_cells !== null) {
+      this.add_dependency_to_graph(cell, dependent_cells);
+    }
+
+    //return previous_dependent_cells
+  }
+
   add_dependency_to_graph(cell: [number, number], dependent_cells: [number, number][]) {
     this._dgraph.addVertex(cell_to_string(cell), undefined);
 

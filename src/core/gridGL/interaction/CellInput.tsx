@@ -3,19 +3,19 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import CellReference from '../types/cellReference';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../pixiApp/PixiApp';
-import { Sheet } from '../../gridDB/Sheet';
 import { localFiles } from '../../gridDB/localFiles';
+import { SheetController } from '../../transaction/sheetController';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
   app?: PixiApp;
-  sheet: Sheet;
+  sheetController: SheetController;
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { interactionState, setInteractionState, app, container, sheet } = props;
+  const { interactionState, setInteractionState, app, container, sheetController } = props;
   const viewport = app?.viewport;
 
   const [value, setValue] = useState<string | undefined>(undefined);
@@ -38,7 +38,7 @@ export const CellInput = (props: CellInputProps) => {
     let worldTransform = viewport.worldTransform;
 
     // Calculate position of input based on cell
-    const cell = sheet.gridOffsets.getCell(cellLocation.current.x, cellLocation.current.y);
+    const cell = sheetController.sheet.gridOffsets.getCell(cellLocation.current.x, cellLocation.current.y);
     let cell_offset_scaled = viewport.toScreen(
       cell.x,
       cell.y - 0.66 // magic number via experimentation
@@ -80,24 +80,35 @@ export const CellInput = (props: CellInputProps) => {
     if (!cancel) {
       // Update Cell and dependent cells
       if (value === '') {
-        sheet.deleteCells([
+        // delete cell if input is empty
+        sheetController.predefined_transaction([
           {
-            x: cellLocation.current.x,
-            y: cellLocation.current.y,
+            type: 'SET_CELL',
+            data: {
+              position: [cellLocation.current.x, cellLocation.current.y],
+              value: undefined,
+            },
           },
         ]);
       } else {
-        sheet.updateCells([
+        // create cell with value at input location
+        sheetController.predefined_transaction([
           {
-            x: cellLocation.current.x,
-            y: cellLocation.current.y,
-            type: 'TEXT',
-            value: value || '',
+            type: 'SET_CELL',
+            data: {
+              position: [cellLocation.current.x, cellLocation.current.y],
+              value: {
+                x: cellLocation.current.x,
+                y: cellLocation.current.y,
+                type: 'TEXT',
+                value: value || '',
+              },
+            },
           },
         ]);
       }
       app?.quadrants.quadrantChanged({ cells: [cellLocation.current] });
-      localFiles.saveLastLocal(sheet.export_file());
+      localFiles.saveLastLocal(sheetController.sheet.export_file());
     }
 
     // Update Grid Interaction state, reset input value state

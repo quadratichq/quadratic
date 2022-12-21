@@ -64,6 +64,17 @@ export class SheetController {
     return previous_transaction;
   }
 
+  public predefined_transaction(statements: Statement[]): Transaction {
+    // Starts a transaction, executes all statements, and ends the transaction.
+    // Returns the transaction.
+    // Transaction is automatically added to the undo stack.
+    this.start_transaction();
+    statements.forEach((statement) => {
+      this.execute_statement(statement);
+    });
+    return this.end_transaction();
+  }
+
   public has_undo(): boolean {
     return this.undo_stack.length > 0;
   }
@@ -79,7 +90,7 @@ export class SheetController {
     // run each statement in transaction
     // end transaction
     // add reverse transaction to redo stack
-    if (this.undo_stack.length === 0) throw new Error('Nothing to undo.');
+    if (this.undo_stack.length === 0) return;
 
     if (this.transaction_in_progress) throw new Error('Transaction in progress.');
 
@@ -109,7 +120,7 @@ export class SheetController {
     // run each statement in transaction
     // end transaction
     // add reverse transaction to undo stack
-    if (this.redo_stack.length === 0) throw new Error('Nothing to redo.');
+    if (this.redo_stack.length === 0) return;
 
     if (this.transaction_in_progress) throw new Error('Transaction in progress.');
 

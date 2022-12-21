@@ -8,7 +8,8 @@ import { keyboardPosition } from './keyboardPosition';
 import { keyboardCell } from './keyboardCell';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { keyboardViewport } from './keyboardViewport';
-import { Sheet } from '../../../gridDB/Sheet';
+import { SheetController } from '../../../transaction/sheetController';
+import { keyboardUndoRedo } from './keyboardUndoRedo';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -16,7 +17,7 @@ interface IProps {
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   app?: PixiApp;
-  sheet: Sheet;
+  sheetController: SheetController;
 }
 
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
@@ -45,8 +46,15 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     if (interactionState.showInput) return;
 
     if (
-      keyboardClipboard(event, interactionState, props.sheet) ||
-      keyboardSelect({ event, interactionState, setInteractionState, viewport: app?.viewport, sheet: props.sheet })
+      keyboardClipboard(event, interactionState, props.sheetController.sheet) ||
+      keyboardUndoRedo(event, interactionState, props.sheetController) ||
+      keyboardSelect({
+        event,
+        interactionState,
+        setInteractionState,
+        viewport: app?.viewport,
+        sheet: props.sheetController.sheet,
+      })
     )
       return;
 
@@ -57,7 +65,14 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
 
     if (
       keyboardPosition({ event, interactionState, setInteractionState }) ||
-      keyboardCell({ sheet: props.sheet, event, interactionState, setInteractionState, setEditorInteractionState, app })
+      keyboardCell({
+        sheet: props.sheetController.sheet,
+        event,
+        interactionState,
+        setInteractionState,
+        setEditorInteractionState,
+        app,
+      })
     )
       return;
   };

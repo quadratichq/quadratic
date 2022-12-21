@@ -10,10 +10,10 @@ import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
-import { Sheet } from '../gridDB/Sheet';
+import { SheetController } from '../transaction/sheetController';
 
 interface IProps {
-  sheet: Sheet;
+  sheetController: SheetController;
   app?: PixiApp;
 }
 
@@ -32,18 +32,18 @@ export default function QuadraticGrid(props: IProps) {
     if (props.app) {
       props.app.quadrants.build();
     }
-  }, [props.sheet, props.app]);
+  }, [props.sheetController.sheet, props.app]);
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
   useEffect(() => {
     props.app?.settings.updateInteractionState(interactionState, setInteractionState);
     ensureVisible({
-      sheet: props.sheet,
+      sheet: props.sheetController.sheet,
       app: props.app,
       interactionState,
     });
-  }, [props.app, props.app?.settings, interactionState, setInteractionState, props.sheet]);
+  }, [props.app, props.app?.settings, interactionState, setInteractionState, props.sheetController.sheet]);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function QuadraticGrid(props: IProps) {
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
 
   const { onKeyDown } = useKeyboard({
-    sheet: props.sheet,
+    sheetController: props.sheetController,
     interactionState,
     setInteractionState,
     editorInteractionState,
@@ -92,10 +92,10 @@ export default function QuadraticGrid(props: IProps) {
         setInteractionState={setInteractionState}
         container={container}
         app={props.app}
-        sheet={props.sheet}
+        sheetController={props.sheetController}
       />
       <RightClickMenu
-        sheet={props.sheet}
+        sheet={props.sheetController.sheet}
         state={rightClickMenuState}
         anchorPoint={rightClickPoint}
         onClose={() => toggleRightClickMenu(false)}
