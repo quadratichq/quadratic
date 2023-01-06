@@ -10,9 +10,3 @@ export const menuItemIconStyles = {
   marginRight: '0.5rem',
   color: colors.darkGray,
 };
-
-export const menuItemIconExternalLinkStyles = {
-  color: colors.darkGray,
-  fontSize: '.8125rem',
-  marginLeft: '1rem',
-};

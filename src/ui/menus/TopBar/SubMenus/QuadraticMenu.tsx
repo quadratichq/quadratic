@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
-import { LogoutOutlined, NorthEastOutlined } from '@mui/icons-material';
 import { isMobileOnly } from 'react-device-detect';
 import { useAuth0 } from '@auth0/auth0-react';
 
@@ -13,7 +12,6 @@ import { Tooltip } from '@mui/material';
 import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
 import { OpenGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
 
-import { menuItemIconStyles, menuItemIconExternalLinkStyles } from './menuStyles';
 import { colors } from '../../../../theme/colors';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 
@@ -86,22 +84,13 @@ export const QuadraticMenu = () => {
       {isAuthenticated && (
         <SubMenu label="Account">
           <MenuHeader>{user?.email}</MenuHeader>
-          <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>
-            <LogoutOutlined style={menuItemIconStyles} />
-            Log out
-          </MenuItem>
+          <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>Log out</MenuItem>
         </SubMenu>
       )}
 
       <SubMenu label="Help">
-        <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>
-          Read the docs
-          <NorthEastOutlined style={menuItemIconExternalLinkStyles} fontSize="inherit" />
-        </MenuItem>
-        <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>
-          Report a problem
-          <NorthEastOutlined style={menuItemIconExternalLinkStyles} fontSize="inherit" />
-        </MenuItem>
+        <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>Read the docs</MenuItem>
+        <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>Report a problem</MenuItem>
       </SubMenu>
     </Menu>
   );
