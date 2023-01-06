@@ -15,8 +15,8 @@ export default function DebugMenu(props: Props) {
   let file_state: string;
 
   const HUMAN_READABLE_DGRAPH = true;
-  let dgraph_str = dgraph.human_readable_string();
-  if (!HUMAN_READABLE_DGRAPH) dgraph_str = JSON.stringify(dgraph.export_to_obj());
+  let dgraph_str = JSON.stringify(dgraph);
+  if (!HUMAN_READABLE_DGRAPH) dgraph_str = JSON.stringify(dgraph);
 
   try {
     file_state = `${dgraph_str}\n${JSON.stringify(cells || '', null, '\t')}`;

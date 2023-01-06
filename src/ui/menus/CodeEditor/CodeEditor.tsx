@@ -10,13 +10,14 @@ import { Button } from '@mui/material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { Sheet } from '../../../core/gridDB/Sheet';
+import { SheetController } from '../../../core/transaction/sheetController';
+import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
 interface CodeEditorProps {
   editorInteractionState: EditorInteractionState;
-  sheet: Sheet;
+  sheet_controller: SheetController;
 }
 
 export const CodeEditor = (props: CodeEditorProps) => {
@@ -35,7 +36,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // Monitor selected cell for changes
   const x = editorInteractionState.selectedCell.x;
   const y = editorInteractionState.selectedCell.y;
-  const cell = useMemo(() => props.sheet.getCell(x, y), [x, y, props.sheet]);
+  const cell = useMemo(() => props.sheet_controller.sheet.getCell(x, y), [x, y, props.sheet_controller.sheet]);
 
   // Editor Width State
   const [editorWidth, setEditorWidth] = useState<number>(
@@ -81,7 +82,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     editorRef.current?.focus();
     editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
 
-    const cell = props.sheet.getCell(x, y)?.cell;
+    const cell = props.sheet_controller.sheet.getCell(x, y)?.cell;
     if (cell) {
       // load cell content
       setSelectedCell(cell);
@@ -96,7 +97,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
       } as Cell);
       setEditorContent('');
     }
-  }, [selectedCell, editorInteractionState, props.sheet]);
+  }, [selectedCell, editorInteractionState, props.sheet_controller.sheet]);
 
   const saveSelectedCell = () => {
     if (!selectedCell) return;
@@ -105,7 +106,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
     selectedCell.value = '';
     selectedCell.python_code = editorContent;
 
-    props.sheet.updateCells([selectedCell]);
+    // props.sheet_controller.sheet.updateCells([selectedCell]);
+    updateCellAndDCells(props.sheet_controller, selectedCell);
   };
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {

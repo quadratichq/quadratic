@@ -43,7 +43,7 @@ export default function QuadraticUI(props: Props) {
         }}
       >
         <QuadraticGrid sheetController={props.sheetController} app={app} />
-        <CodeEditor editorInteractionState={editorInteractionState} sheet={props.sheetController.sheet} />
+        <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={props.sheetController} />
       </div>
 
       <BottomBar sheet={props.sheetController.sheet} />

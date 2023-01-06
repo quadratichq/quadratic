@@ -40,6 +40,7 @@ export default function QuadraticApp() {
   }, [loading, incrementLoadingCount]);
 
   useEffect(() => {
+    // temporary way to attach sheet to global for use in GetCellsDB function
     GetCellsDBSetSheet(sheet);
   }, [sheet]);
 
