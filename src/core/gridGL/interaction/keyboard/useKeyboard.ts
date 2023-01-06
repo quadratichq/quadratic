@@ -66,7 +66,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     if (
       keyboardPosition({ event, interactionState, setInteractionState }) ||
       keyboardCell({
-        sheet: props.sheetController.sheet,
+        sheet_controller: props.sheetController,
         event,
         interactionState,
         setInteractionState,
