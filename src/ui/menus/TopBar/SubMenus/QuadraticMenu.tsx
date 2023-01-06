@@ -34,7 +34,7 @@ export const QuadraticMenu = () => {
   return (
     <Menu
       menuButton={
-        <Tooltip title="Main Menu" arrow>
+        <Tooltip title="Main menu" arrow>
           <Button style={{ color: colors.darkGray }}>
             <img src="favicon.ico" height="22px" alt="Quadratic Icon" />
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
@@ -53,7 +53,7 @@ export const QuadraticMenu = () => {
       </SubMenu>
       <SubMenu label="View">
         <MenuItem type="checkbox" checked={showHeadings} onClick={() => setShowHeadings(!showHeadings)}>
-          Show headings
+          Show row & column headings
         </MenuItem>
         <MenuDivider />
         <MenuItem type="checkbox" checked={showGridAxes} onClick={() => setShowGridAxes(!showGridAxes)}>

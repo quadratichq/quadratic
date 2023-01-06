@@ -44,7 +44,7 @@ export const FormatMenu = () => {
         </Tooltip>
       }
     >
-      <MenuHeader>Coming Soon</MenuHeader>
+      <MenuHeader>Coming soon</MenuHeader>
       <MenuDivider></MenuDivider>
       <MenuHeader>Text</MenuHeader>
       <MenuItem disabled>
