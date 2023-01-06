@@ -5,18 +5,23 @@ export const SetCellDependenciesRunner = (sheet: Sheet, statement: Statement): S
   if (statement.type !== 'SET_CELL_DEPENDENCIES') throw new Error('Incorrect statement type.');
   // Applies the SET_CELL statement to the sheet and returns the reverse statement
 
-  sheet.dgraph.set_cell_dependencies(statement.data.position, statement.data.dependencies);
-
-  // return reverse statement
-
-  // raise error not implemented yet
-  throw new Error('Not implemented yet.');
-
-  // return {
-  //   type: 'SET_CELL_DEPENDENCIES',
-  //   data: {
-  //     position: [1, 1],
-  //     dependencies: [[1, 1]],
-  //   },
-  // } as Statement;
+  if (statement.data.dependencies === null) {
+    sheet.dgraph.delete(statement.data.position);
+    return {
+      type: 'SET_CELL_DEPENDENCIES',
+      data: {
+        position: statement.data.position,
+        dependencies: sheet.dgraph.get(statement.data.position),
+      },
+    } as Statement;
+  } else {
+    sheet.dgraph.set(statement.data.position, statement.data.dependencies);
+    return {
+      type: 'SET_CELL_DEPENDENCIES',
+      data: {
+        position: statement.data.position,
+        dependencies: sheet.dgraph.get(statement.data.position),
+      },
+    } as Statement;
+  }
 };
