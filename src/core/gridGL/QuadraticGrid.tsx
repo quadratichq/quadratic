@@ -95,7 +95,7 @@ export default function QuadraticGrid(props: IProps) {
         sheetController={props.sheetController}
       />
       <RightClickMenu
-        sheet={props.sheetController.sheet}
+        sheet_controller={props.sheetController}
         state={rightClickMenuState}
         anchorPoint={rightClickPoint}
         onClose={() => toggleRightClickMenu(false)}

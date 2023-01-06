@@ -1,14 +1,14 @@
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
 import { copyToClipboard, pasteFromClipboard } from '../../../actions/clipboard';
-import { Sheet } from '../../../gridDB/Sheet';
+import { SheetController } from '../../../transaction/sheetController';
 
 export function keyboardClipboard(
   event: React.KeyboardEvent<HTMLElement>,
   interactionState: GridInteractionState,
-  sheet: Sheet
+  sheet_controller: SheetController
 ): boolean {
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyV') {
-    pasteFromClipboard(sheet, {
+    pasteFromClipboard(sheet_controller, {
       x: interactionState.cursorPosition.x,
       y: interactionState.cursorPosition.y,
     });
@@ -18,7 +18,7 @@ export function keyboardClipboard(
   // Command + C
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyC') {
     copyToClipboard(
-      sheet,
+      sheet_controller,
       {
         x: interactionState.multiCursorPosition.originPosition.x,
         y: interactionState.multiCursorPosition.originPosition.y,

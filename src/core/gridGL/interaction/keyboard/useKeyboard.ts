@@ -46,7 +46,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     if (interactionState.showInput) return;
 
     if (
-      keyboardClipboard(event, interactionState, props.sheetController.sheet) ||
+      keyboardClipboard(event, interactionState, props.sheetController) ||
       keyboardUndoRedo(event, interactionState, props.sheetController) ||
       keyboardSelect({
         event,

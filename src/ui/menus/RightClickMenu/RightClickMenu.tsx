@@ -1,9 +1,9 @@
-import { ControlledMenu, MenuItem, MenuDivider } from '@szhsin/react-menu';
+import { ControlledMenu, MenuItem } from '@szhsin/react-menu';
 import { MenuState, MenuCloseEvent } from '@szhsin/react-menu/types';
 
 import { copyToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { Sheet } from '../../../core/gridDB/Sheet';
+import { SheetController } from '../../../core/transaction/sheetController';
 
 interface EventHandler<E> {
   (event: E): void;
@@ -17,7 +17,7 @@ interface RightClickMenuProps {
   };
   onClose: EventHandler<MenuCloseEvent>;
   interactionState: GridInteractionState;
-  sheet: Sheet;
+  sheet_controller: SheetController;
 }
 
 export const RightClickMenu = (props: RightClickMenuProps) => {
@@ -48,7 +48,7 @@ export const RightClickMenu = (props: RightClickMenuProps) => {
         <MenuItem
           onClick={() => {
             copyToClipboard(
-              props.sheet,
+              props.sheet_controller,
               props.interactionState.multiCursorPosition.originPosition,
               props.interactionState.multiCursorPosition.terminalPosition
             );
@@ -58,21 +58,10 @@ export const RightClickMenu = (props: RightClickMenuProps) => {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            pasteFromClipboard(props.sheet, props.interactionState.cursorPosition);
+            pasteFromClipboard(props.sheet_controller, props.interactionState.cursorPosition);
           }}
         >
           Paste
-        </MenuItem>
-        <MenuDivider />
-        <MenuItem
-          onClick={() => {
-            props.sheet.deleteCells([
-              props.interactionState.multiCursorPosition.originPosition,
-              props.interactionState.multiCursorPosition.terminalPosition,
-            ]);
-          }}
-        >
-          Delete
         </MenuItem>
       </ControlledMenu>
     </>
