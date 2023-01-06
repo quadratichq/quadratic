@@ -14,7 +14,7 @@ export const GetCellsDB = async (
   if (sheet) {
     return sheet.grid.getNakedCells(p0_x, p0_y, p1_x, p1_y);
   }
-  console.warn('Expected sheet to be defined in GetCellsDB');
+  console.warn('Expected `sheet` to be defined in GetCellsDB');
   return [];
 };
 

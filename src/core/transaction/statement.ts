@@ -5,7 +5,7 @@ export type Statement =
   | {
       type: 'SET_CELL';
       data: {
-        position: number[];
+        position: [number, number];
         value: Cell | undefined;
       };
     }

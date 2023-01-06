@@ -1,15 +1,24 @@
 import { Cell } from '../gridDB/gridTypes';
 import { runPython } from '../computations/python/runPython';
-import { Sheet } from '../gridDB/Sheet';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../gridGL/types/size';
 import { localFiles } from '../gridDB/localFiles';
+import { SheetController } from '../transaction/sheetController';
 
-export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiApp) => {
+export const updateCellAndDCells = async (sheet_controller: SheetController, cell: Cell, app?: PixiApp) => {
+  // start transaction
+  sheet_controller.start_transaction();
+
   //save currently edited cell
   const updatedCells: Coordinate[] = [];
   cell.last_modified = new Date().toISOString();
-  sheet.updateCells([cell]);
+  sheet_controller.execute_statement({
+    type: 'SET_CELL',
+    data: {
+      position: [0, 0],
+      value: cell,
+    },
+  });
   updatedCells.push({ x: cell.x, y: cell.y });
 
   // start with a plan to just update the current cell
@@ -36,12 +45,16 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
     if (ref_cell_to_update === undefined) break;
 
     // get current cell from db
-    let cell = sheet.getCell(ref_cell_to_update[0], ref_cell_to_update[1])?.cell;
+    let cell = sheet_controller.sheet.getCell(ref_cell_to_update[0], ref_cell_to_update[1])?.cell;
 
     if (cell === undefined) continue;
 
     // remove old deps from graph
-    if (cell.dependent_cells) sheet.dgraph.remove_dependencies_from_graph(cell.dependent_cells, [[cell.x, cell.y]]);
+    if (cell.dependent_cells)
+      sheet_controller.execute_statement({
+        type: 'SET_CELL_DEPENDENCIES',
+        data: { position: [cell.x, cell.y], dependencies: null },
+      });
 
     // clear old array cells created by this cell
     if (cell.array_cells) {
@@ -49,7 +62,14 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
         return { x: cell[0], y: cell[1] };
       });
       old_array_cells.unshift(); // remove this cell
-      sheet.deleteCells(old_array_cells);
+
+      // delete old array cells
+      old_array_cells.forEach((cell) => {
+        sheet_controller.execute_statement({
+          type: 'SET_CELL',
+          data: { position: [cell.x, cell.y], value: undefined },
+        });
+      });
       updatedCells.push(...old_array_cells);
     }
 
@@ -70,7 +90,10 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
       // add new cell deps to graph
       if (result.cells_accessed.length) {
         // add new deps to graph
-        sheet.dgraph.add_dependencies_to_graph(result.cells_accessed, [[cell.x, cell.y]]);
+        sheet_controller.execute_statement({
+          type: 'SET_CELL_DEPENDENCIES',
+          data: { position: [cell.x, cell.y], dependencies: result.cells_accessed },
+        });
       }
 
       let array_cells_to_output: Cell[] = [];
@@ -117,8 +140,10 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
         // if any updated cells have other cells depending on them, add to list to update
         for (const array_cell of array_cells_to_output) {
           // add array cells to list to update
-          let deps = sheet.dgraph.get_children_cells([array_cell.x, array_cell.y]);
-          cells_to_update.push(...deps);
+          console.log(typeof sheet_controller.sheet.dgraph);
+          let deps = sheet_controller.sheet.dgraph.get([array_cell.x, array_cell.y]);
+
+          if (deps) cells_to_update.push(...deps);
         }
 
         // keep track of array cells updated by this cell
@@ -126,7 +151,13 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
 
         cell.last_modified = new Date().toISOString();
 
-        sheet.updateCells([cell, ...array_cells_to_output]);
+        [cell, ...array_cells_to_output].forEach((cell) => {
+          sheet_controller.execute_statement({
+            type: 'SET_CELL',
+            data: { position: [cell.x, cell.y], value: cell },
+          });
+        });
+
         updatedCells.push(...array_cells_to_output);
       } else {
         // not array output
@@ -138,15 +169,22 @@ export const updateCellAndDCells = async (sheet: Sheet, cell: Cell, app?: PixiAp
         cell.dependent_cells = result.cells_accessed;
 
         cell.last_modified = new Date().toISOString();
-        sheet.updateCells([cell]);
+
+        sheet_controller.execute_statement({
+          type: 'SET_CELL',
+          data: { position: [cell.x, cell.y], value: cell },
+        });
       }
     }
 
     // if this cell updates other cells add them to the list to update
-    let deps = sheet.dgraph.get_children_cells([cell.x, cell.y]);
-    cells_to_update.push(...deps);
+    let deps = sheet_controller.sheet.dgraph.get([cell.x, cell.y]);
+
+    if (deps) cells_to_update.push(...deps);
   }
 
   app?.quadrants.quadrantChanged({ cells: updatedCells });
-  localFiles.saveLastLocal(sheet.export_file());
+  localFiles.saveLastLocal(sheet_controller.sheet.export_file());
+
+  sheet_controller.end_transaction();
 };
