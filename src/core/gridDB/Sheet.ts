@@ -1,7 +1,6 @@
 import { Rectangle } from 'pixi.js';
 import { GridFileSchema, GRID_FILE_VERSION } from '../actions/gridFile/GridFileSchema';
 import { intersects } from '../gridGL/helpers/intersects';
-import CellReference from '../gridGL/types/cellReference';
 import { GridBorders } from './GridBorders';
 import { GridRenderDependency } from './GridRenderDependency';
 import { GridOffsets } from './GridOffsets';
@@ -49,16 +48,6 @@ export class Sheet {
 
   getCell(x: number, y: number): CellAndFormat | undefined {
     return this.grid.get(x, y);
-  }
-
-  deleteCells(cells: CellReference[]): void {
-    console.warn('Do not modify grid outside of a transaction via GridController');
-    this.grid.deleteCells(cells);
-  }
-
-  updateCells(cells: Cell[]): void {
-    console.warn('Do not modify grid outside of a transaction via GridController');
-    this.grid.updateCells(cells);
   }
 
   getGridBounds(): Rectangle | undefined {

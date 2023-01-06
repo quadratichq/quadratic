@@ -106,7 +106,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
     selectedCell.value = '';
     selectedCell.python_code = editorContent;
 
-    // props.sheet_controller.sheet.updateCells([selectedCell]);
     updateCellAndDCells(props.sheet_controller, selectedCell);
   };
 
