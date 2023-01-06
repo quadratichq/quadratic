@@ -2,13 +2,6 @@ import { useEffect } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
-import {
-  MenuBookOutlined,
-  FileOpenOutlined,
-  SaveOutlined,
-  BugReportOutlined,
-  LogoutOutlined,
-} from '@mui/icons-material';
 import { isMobileOnly } from 'react-device-detect';
 import { useAuth0 } from '@auth0/auth0-react';
 
@@ -19,7 +12,6 @@ import { Tooltip } from '@mui/material';
 import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
 import { OpenGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
 
-import { menuItemIconStyles } from './menuStyles';
 import { colors } from '../../../../theme/colors';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 
@@ -42,7 +34,7 @@ export const QuadraticMenu = () => {
   return (
     <Menu
       menuButton={
-        <Tooltip title="Main Menu" arrow>
+        <Tooltip title="Main menu" arrow>
           <Button style={{ color: colors.darkGray }}>
             <img src="favicon.ico" height="22px" alt="Quadratic Icon" />
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
@@ -52,39 +44,32 @@ export const QuadraticMenu = () => {
     >
       <MenuHeader>Quadratic</MenuHeader>
       <SubMenu label="File">
-        <MenuItem onClick={() => SaveGridFile(true)}>
-          <SaveOutlined style={menuItemIconStyles}></SaveOutlined> Save Grid
-        </MenuItem>
-        <MenuItem onClick={() => OpenGridFile()}>
-          <FileOpenOutlined style={menuItemIconStyles}></FileOpenOutlined> Open Grid
-        </MenuItem>
+        <MenuItem onClick={() => SaveGridFile(true)}>Save grid</MenuItem>
+        <MenuItem onClick={() => OpenGridFile()}>Open grid</MenuItem>
       </SubMenu>
       <SubMenu label="Import">
-        <MenuHeader>Import</MenuHeader>
         <MenuItem disabled>CSV (coming soon)</MenuItem>
         <MenuItem disabled>Excel (coming soon)</MenuItem>
       </SubMenu>
       <SubMenu label="View">
-        <MenuHeader>UI</MenuHeader>
         <MenuItem type="checkbox" checked={showHeadings} onClick={() => setShowHeadings(!showHeadings)}>
-          Show Headings
+          Show row & column headings
         </MenuItem>
-        <MenuHeader>Grid</MenuHeader>
+        <MenuDivider />
         <MenuItem type="checkbox" checked={showGridAxes} onClick={() => setShowGridAxes(!showGridAxes)}>
-          Show Axis
+          Show grid axis
         </MenuItem>
         <MenuItem type="checkbox" checked={showGridLines} onClick={() => setShowGridLines(!showGridLines)}>
-          Show Grid Lines
+          Show grid lines
         </MenuItem>
         <MenuItem
           type="checkbox"
           checked={showCellTypeOutlines}
           onClick={() => setShowCellTypeOutlines(!showCellTypeOutlines)}
         >
-          Show Cell Type Outlines
+          Show cell type outlines
         </MenuItem>
         <MenuDivider />
-        <MenuHeader>Debug</MenuHeader>
         <MenuItem
           type="checkbox"
           checked={showDebugMenu}
@@ -92,27 +77,20 @@ export const QuadraticMenu = () => {
             setShowDebugMenu(!showDebugMenu);
           }}
         >
-          Show DebugMenu
+          Show debug menu
         </MenuItem>
       </SubMenu>
 
       {isAuthenticated && (
         <SubMenu label="Account">
           <MenuHeader>{user?.email}</MenuHeader>
-          <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>
-            <LogoutOutlined style={menuItemIconStyles} />
-            Log Out
-          </MenuItem>
+          <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>Log out</MenuItem>
         </SubMenu>
       )}
 
       <SubMenu label="Help">
-        <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>
-          <MenuBookOutlined style={menuItemIconStyles}></MenuBookOutlined> Read the docs
-        </MenuItem>
-        <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>
-          <BugReportOutlined style={menuItemIconStyles}></BugReportOutlined> Report a problem
-        </MenuItem>
+        <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>Read the docs</MenuItem>
+        <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>Report a problem</MenuItem>
       </SubMenu>
     </Menu>
   );

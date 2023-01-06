@@ -20,7 +20,7 @@ export const NumberFormatMenu = () => {
   return (
     <Menu
       menuButton={
-        <Tooltip title="Number Format" arrow>
+        <Tooltip title="Number format" arrow>
           <Button style={{ color: colors.darkGray }}>
             <span style={{ fontSize: '1rem' }}>123</span>
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
@@ -29,9 +29,9 @@ export const NumberFormatMenu = () => {
       }
       menuStyles={{ minWidth: '18rem' }}
     >
-      <MenuHeader>Coming Soon</MenuHeader>
+      <MenuHeader>Coming soon</MenuHeader>
       <MenuDivider></MenuDivider>
-      <MenuHeader>Number Format</MenuHeader>
+      <MenuHeader>Number format</MenuHeader>
       <MenuItem disabled type="checkbox" checked={true}>
         Automatic
       </MenuItem>

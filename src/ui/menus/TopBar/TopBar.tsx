@@ -113,7 +113,7 @@ export const TopBar = () => {
                 {user?.name && user?.name[0]}
               </Avatar>
             </AvatarGroup>
-            <Tooltip title="Coming Soon" arrow>
+            <Tooltip title="Coming soon" arrow>
               <Button
                 style={{
                   color: colors.darkGray,
