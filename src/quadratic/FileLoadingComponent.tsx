@@ -34,6 +34,8 @@ export const FileLoadingComponent = (props: Props): JSX.Element | null => {
         }
         props.sheet.load_file(example_grid);
         localFiles.loadedExternalFile(EXAMPLE_FILE_FILENAME, props.sheet.export_file());
+      } else {
+        localFiles.newFile();
       }
     });
   }, [firstTime, setFirstTime, props.sheet]);

@@ -10,6 +10,8 @@ export type LocalFilesLoadEvent = string;
 export const LOCAL_FILES_LIST_EVENT = 'grid-list-event';
 export type LocalFilesListEvent = string[];
 
+const DEFAULT_FILENAME = "New Grid File";
+
 class LocalFiles {
   filename?: string;
   fileList: string[] = [];
@@ -35,6 +37,23 @@ class LocalFiles {
   private emitLoadEvent(filename: string): void {
     this.filename = filename;
     window.dispatchEvent(new CustomEvent<LocalFilesLoadEvent>(LOCAL_FILES_LOAD_EVENT, { detail: filename }));
+  }
+
+  async newFile(): Promise<void> {
+    const filename = DEFAULT_FILENAME;
+    this.filename = DEFAULT_FILENAME;
+    let lastFiles = (await localForage.getItem(LAST_FILES)) as string[];
+    if (lastFiles) {
+      lastFiles = lastFiles.filter((file) => file !== filename);
+    } else {
+      lastFiles = [];
+    }
+    lastFiles.unshift(filename);
+    localForage.setItem(LAST_FILES, lastFiles);
+    this.emitListEvent(lastFiles);
+    if (debugShowFileIO) {
+      console.log(`[localFile] Creating new file: ${DEFAULT_FILENAME} and adding to lastFiles`);
+    }
   }
 
   private async addToFileList(filename: string, data: GridFileSchema): Promise<void> {
