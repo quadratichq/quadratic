@@ -1,6 +1,6 @@
 import { GridFileSchema } from './GridFileSchema';
-import { Sheet } from '../../gridDB/Sheet';
 import { localFiles } from '../../gridDB/localFiles';
+import { SheetController } from '../../transaction/sheetController';
 
 const readFileAsync = async (file: File) => {
   // takes a File object and returns it as a string
@@ -39,25 +39,35 @@ const openFileMenuAsync = async () => {
   });
 };
 
-export const openGridFile = async (sheet: Sheet): Promise<void> => {
+export const openGridFile = async (sheetController: SheetController): Promise<void> => {
   // take file input selection from user
   const fileToLoad = await openFileMenuAsync();
   const result = await readFileAsync(fileToLoad);
   const gridFileJSON = JSON.parse(result) as GridFileSchema;
-  sheet.load_file(gridFileJSON);
+  sheetController.sheet.load_file(gridFileJSON);
+  sheetController.clear();
   localFiles.loadedExternalFile(fileToLoad.name, gridFileJSON);
 };
 
-export const openLocalGridFile = async (filename: string, sheet: Sheet): Promise<void> => {
+export const openLocalGridFile = async (filename: string, sheetController: SheetController): Promise<void> => {
   const data = await localFiles.loadLocal(filename);
   if (data) {
-    sheet.load_file(data);
+    sheetController.sheet.load_file(data);
+    sheetController.clear();
   }
 };
 
-export const openExampleGridFile = async (filename: string, sheet: Sheet): Promise<void> => {
+export const openExampleGridFile = async (filename: string, sheetController: SheetController): Promise<void> => {
   const file = await fetch(`/examples/${filename}`);
   const gridFileJSON = await file.json() as GridFileSchema;
-  sheet.load_file(gridFileJSON);
+  sheetController.sheet.load_file(gridFileJSON);
+  sheetController.clear();
   localFiles.loadedExternalFile(filename, gridFileJSON);
+}
+
+export const newGridFile = (filename: string, sheetController: SheetController): void => {
+  const { sheet } = sheetController;
+  sheet.newFile();
+  localFiles.loadedExternalFile(filename, sheet.export_file());
+  sheetController.clear();
 }

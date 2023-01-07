@@ -144,6 +144,12 @@ export class SheetController {
     this.undo_stack.push(reverse_transaction);
   }
 
+  public clear(): void {
+    this.undo_stack = [];
+    this.redo_stack = [];
+    this.transaction_in_progress = undefined;
+  }
+
   public setApp(app: PixiApp): void {
     this.app = app;
   }

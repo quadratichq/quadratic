@@ -12,15 +12,16 @@ import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isMobileOnly } from 'react-device-detect';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
-import { Sheet } from '../../../core/gridDB/Sheet';
 import { useLocalFiles } from '../../../hooks/useLocalFiles';
+import { SheetController } from '../../../core/transaction/sheetController';
 
 interface IProps {
   app?: PixiApp;
-  sheet: Sheet;
+  sheetController: SheetController;
 }
 
 export const TopBar = (props: IProps) => {
+  const { sheet } = props.sheetController;
   const { localFilename } = useLocalFiles();
   return (
     <div
@@ -56,11 +57,11 @@ export const TopBar = (props: IProps) => {
           width: '15rem',
         }}
       >
-        <QuadraticMenu sheet={props.sheet} />
+        <QuadraticMenu sheetController={props.sheetController} />
         {!isMobileOnly && (
           <>
             <DataMenu></DataMenu>
-            <FormatMenu app={props.app} sheet={props.sheet} />
+            <FormatMenu app={props.app} sheet={sheet} />
             <NumberFormatMenu></NumberFormatMenu>
           </>
         )}

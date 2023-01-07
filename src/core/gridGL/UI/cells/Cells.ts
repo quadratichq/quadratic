@@ -59,7 +59,6 @@ export class Cells extends Container {
   /**
    * update visual dependency graph for labels generated via quadrants
    * note: this will not remove dependencies for cells that have been deleted but had dependencies
-   * @returns (todo) dependency cells that are changed (to trigger a quadrant refresh)
    */
   private handleOverflow(): void {
     const labels = this.labels.get();
@@ -105,7 +104,16 @@ export class Cells extends Container {
     }
   }
 
-  private renderCell(options: { entry?: CellAndFormat, x: number, y: number, width: number, height: number, isQuadrant?: boolean, content: Rectangle, isInput?: boolean }): boolean {
+  private renderCell(options: {
+    entry?: CellAndFormat;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    isQuadrant?: boolean;
+    content: Rectangle;
+    isInput?: boolean;
+  }): boolean {
     const { entry, x, y, width, height, isQuadrant, content, isInput } = options;
     if (entry) {
       const hasContent = entry.cell?.value || entry.format;
@@ -127,7 +135,8 @@ export class Cells extends Container {
             x: x + CELL_TEXT_MARGIN_LEFT,
             y: y + CELL_TEXT_MARGIN_TOP,
             text: entry.cell.value,
-            expectedWidth: isQuadrant ? width : undefined,
+            isQuadrant,
+            expectedWidth: width,
             location: isQuadrant ? { x: entry.cell.x, y: entry.cell.y } : undefined,
           });
         }
@@ -209,7 +218,7 @@ export class Cells extends Container {
         const entry = cellRectangle.get(column, row);
 
         // don't render input (unless ignoreInput === true)
-      const isInput = input && input.column === column && input.row === row;
+        const isInput = input && input.column === column && input.row === row;
 
         const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, content, isInput });
         blank = blank === true ? !rendered : blank;
@@ -287,6 +296,7 @@ export class Cells extends Container {
                   x: x + CELL_TEXT_MARGIN_LEFT,
                   y: y + CELL_TEXT_MARGIN_TOP,
                   text: entry.cell.value,
+                  expectedWidth: width,
                 });
               }
             }

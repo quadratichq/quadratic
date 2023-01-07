@@ -23,6 +23,15 @@ export class Sheet {
     this.dgraph = new Map<[number, number], [number, number][]>();
   }
 
+  newFile(): void {
+    this.gridOffsets = new GridOffsets();
+    this.grid = new GridSparse(this.gridOffsets);
+    this.borders = new GridBorders(this.gridOffsets);
+    this.dependency = new GridRenderDependency();
+    this.dgraph = new Map<[number, number], [number, number][]>();
+    this.onRebuild?.();
+  }
+
   load_file(sheet: GridFileSchema): void {
     this.gridOffsets.populate(sheet.rows, sheet.columns);
     this.grid.populate(sheet.cells, sheet.formats);
