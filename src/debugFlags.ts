@@ -50,7 +50,7 @@ export const debugAlwaysShowCache = debug && false;
 export const debugNeverShowCache = debug && false;
 
 // don't render quadrants
-export const debugSkipQuadrantRendering = debug && true;
+export const debugSkipQuadrantRendering = debug && false;
 
 // show quadrant colored boxes around rendered range
 export const debugShowQuadrantBoxes = debug && false;
