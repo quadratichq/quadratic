@@ -7,7 +7,7 @@ import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../core/gridGL/QuadraticGrid';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PixiApp } from '../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../core/transaction/sheetController';
 
@@ -21,6 +21,12 @@ export default function QuadraticUI(props: Props) {
 
   const [app] = useState(new PixiApp(props.sheetController.sheet));
 
+  const { sheetController } = props;
+
+  useEffect(() => {
+    sheetController.setApp(app);
+  }, [sheetController, app]);
+
   return (
     <div
       style={{
@@ -31,8 +37,8 @@ export default function QuadraticUI(props: Props) {
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
-      {showDebugMenu && <DebugMenu sheet={props.sheetController.sheet} />}
-      <TopBar app={app} sheet={props.sheetController.sheet} />
+      {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
+      <TopBar app={app} sheet={sheetController.sheet} />
 
       <div
         style={{
@@ -42,11 +48,11 @@ export default function QuadraticUI(props: Props) {
           overflow: 'hidden',
         }}
       >
-        <QuadraticGrid sheetController={props.sheetController} app={app} />
-        <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={props.sheetController} />
+        <QuadraticGrid sheetController={sheetController} app={app} />
+        <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
 
-      <BottomBar sheet={props.sheetController.sheet} />
+      <BottomBar sheet={sheetController.sheet} />
     </div>
   );
 }

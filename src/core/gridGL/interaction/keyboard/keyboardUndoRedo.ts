@@ -8,14 +8,12 @@ export function keyboardUndoRedo(
 ): boolean {
   // Command + Shift + Z
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.code === 'KeyZ') {
-    console.log('redo');
     sheetController.redo();
     return true;
   }
 
   // Command + Z
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyZ') {
-    console.log('undo');
     sheetController.undo();
     return true;
   }

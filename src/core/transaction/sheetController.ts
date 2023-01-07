@@ -2,8 +2,10 @@ import { Sheet } from '../gridDB/Sheet';
 import { Transaction } from './transaction';
 import { Statement } from './statement';
 import { StatementRunner } from './runners/runner';
+import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 
 export class SheetController {
+  app?: PixiApp;
   sheet: Sheet;
   transaction_in_progress: Transaction | undefined;
   undo_stack: Transaction[];
@@ -43,7 +45,7 @@ export class SheetController {
     }
 
     // run statement and add reverse statement to transaction_in_progress
-    const reverse_statement = StatementRunner(this.sheet, statement);
+    const reverse_statement = StatementRunner(this.sheet, statement, this.app);
 
     this.transaction_in_progress.statements.push(reverse_statement);
   }
@@ -140,5 +142,9 @@ export class SheetController {
     const reverse_transaction = this.end_transaction(false);
     // add reverse transaction to undo stack
     this.undo_stack.push(reverse_transaction);
+  }
+
+  public setApp(app: PixiApp): void {
+    this.app = app;
   }
 }
