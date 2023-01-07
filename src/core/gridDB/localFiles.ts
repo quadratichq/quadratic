@@ -10,7 +10,7 @@ export type LocalFilesLoadEvent = string;
 export const LOCAL_FILES_LIST_EVENT = 'grid-list-event';
 export type LocalFilesListEvent = string[];
 
-const DEFAULT_FILENAME = "New Grid File";
+const DEFAULT_FILENAME = "new_grid_file.grid";
 
 class LocalFiles {
   filename?: string;

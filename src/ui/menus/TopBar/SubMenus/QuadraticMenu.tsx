@@ -1,3 +1,5 @@
+import '@szhsin/react-menu/dist/index.css';
+
 import { useEffect } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
@@ -5,13 +7,10 @@ import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-
 import { MenuBookOutlined, FileOpenOutlined, SaveOutlined, BugReportOutlined } from '@mui/icons-material';
 import { isMobileOnly } from 'react-device-detect';
 import { useGridSettings } from './useGridSettings';
-import '@szhsin/react-menu/dist/index.css';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
-
 import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
-import { openGridFile, openLocalGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
-
+import { openExampleGridFile, openGridFile, openLocalGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
 import { menuItemIconStyles } from './menuStyles';
 import { colors } from '../../../../theme/colors';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
@@ -21,6 +20,15 @@ import { useLocalFiles } from '../../../../hooks/useLocalFiles';
 interface Props {
   sheet: Sheet;
 }
+
+const examples = [
+  'python.grid',
+  'airports_large.grid',
+  'airport_distance.grid',
+  'expenses.grid',
+  'monte_carlo_simulation.grid',
+  'startup_portfolio.grid',
+];
 
 export const QuadraticMenu = (props: Props) => {
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
@@ -55,6 +63,15 @@ export const QuadraticMenu = (props: Props) => {
         <MenuItem onClick={() => openGridFile(props.sheet)}>
           <FileOpenOutlined style={menuItemIconStyles}></FileOpenOutlined> Open Grid
         </MenuItem>
+        <MenuDivider />
+        <SubMenu label="Sample Files">
+          {examples.map(filename => (
+            <MenuItem
+              key={`sample-${filename}`}
+              onClick={() => openExampleGridFile(filename, props.sheet)}
+            >{filename}</MenuItem>
+          ))}
+        </SubMenu>
         {fileList.length ? <MenuDivider /> : null}
         {fileList.length
           ? fileList.map((entry) => (

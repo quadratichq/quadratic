@@ -39,20 +39,25 @@ const openFileMenuAsync = async () => {
   });
 };
 
-export const openGridFile = async (sheet: Sheet) => {
+export const openGridFile = async (sheet: Sheet): Promise<void> => {
   // take file input selection from user
   const fileToLoad = await openFileMenuAsync();
   const result = await readFileAsync(fileToLoad);
-
-  // parse file
   const gridFileJSON = JSON.parse(result) as GridFileSchema;
   sheet.load_file(gridFileJSON);
   localFiles.loadedExternalFile(fileToLoad.name, gridFileJSON);
 };
 
-export const openLocalGridFile = async (filename: string, sheet: Sheet) => {
+export const openLocalGridFile = async (filename: string, sheet: Sheet): Promise<void> => {
   const data = await localFiles.loadLocal(filename);
   if (data) {
     sheet.load_file(data);
   }
 };
+
+export const openExampleGridFile = async (filename: string, sheet: Sheet): Promise<void> => {
+  const file = await fetch(`/examples/${filename}`);
+  const gridFileJSON = await file.json() as GridFileSchema;
+  sheet.load_file(gridFileJSON);
+  localFiles.loadedExternalFile(filename, gridFileJSON);
+}
