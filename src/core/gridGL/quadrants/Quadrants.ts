@@ -4,7 +4,6 @@ import {
   debugShowCacheInfo,
   debugShowCellsForDirtyQuadrants,
   debugSkipQuadrantRendering,
-  warn,
 } from '../../../debugFlags';
 import { CellRectangle } from '../../gridDB/CellRectangle';
 import { intersects } from '../helpers/intersects';
@@ -114,7 +113,7 @@ export class Quadrants extends Container {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, options.row);
         const quadrant = this.getQuadrant(quadrantX, quadrantY);
         if (!quadrant) {
-          warn('Expected quadrant to be defined in quadrantChanged');
+          throw new Error('Expected quadrant to be defined in quadrantChanged');
         } else {
           quadrant.dirty = true;
         }
@@ -126,7 +125,7 @@ export class Quadrants extends Container {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
           if (!quadrant) {
-            warn('Expected quadrant to be defined in quadrantChanged');
+            throw new Error('Expected quadrant to be defined in quadrantChanged');
           } else {
             quadrant.reposition();
           }
@@ -138,7 +137,7 @@ export class Quadrants extends Container {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(options.column, y);
         const quadrant = this.getQuadrant(quadrantX, quadrantY);
         if (!quadrant) {
-          warn('Expected quadrant to be defined in quadrantChanged');
+          throw new Error('Expected quadrant to be defined in quadrantChanged');
         } else {
           quadrant.dirty = true;
         }
@@ -150,7 +149,7 @@ export class Quadrants extends Container {
           const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
           if (!quadrant) {
-            warn('Expected quadrant to be defined in quadrantChanged');
+            throw new Error('Expected quadrant to be defined in quadrantChanged');
           } else {
             quadrant.reposition();
           }

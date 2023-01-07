@@ -46,6 +46,23 @@ export class GridBorders {
     });
   }
 
+  recalculateBounds(): void {
+    if (this.borders.size === 0) {
+      this.empty();
+      return;
+    }
+    this.minX = Infinity;
+    this.maxX = -Infinity;
+    this.minY = Infinity;
+    this.maxY = -Infinity;
+    this.borders.forEach(border => {
+      this.minX = Math.min(this.minX, border.x);
+      this.maxX = Math.max(this.maxX, border.x);
+      this.minY = Math.min(this.minY, border.y);
+      this.maxY = Math.max(this.maxY, border.y);
+    });
+  }
+
   get(x: number, y: number): Border | undefined {
     if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
     return this.borders.get(this.getKey(x, y));
@@ -53,12 +70,14 @@ export class GridBorders {
 
   clear(coordinates: Coordinate[]): void {
     coordinates.forEach((coordinate) => this.borders.delete(this.getKey(coordinate.x, coordinate.y)));
+    this.recalculateBounds();
   }
 
   update(borders: Border[]): void {
     borders.forEach((border) => {
       this.borders.set(this.getKey(border.x, border.y), border);
     });
+    this.recalculateBounds();
   }
 
   getBorders(bounds: Rectangle): Border[] {

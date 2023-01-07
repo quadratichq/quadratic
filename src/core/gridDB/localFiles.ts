@@ -65,7 +65,7 @@ class LocalFiles {
         return data as GridFileSchema;
       }
     } else {
-      console.warn('Expected filename to be in lastFiles in loadLocal');
+      throw new Error('Expected filename to be in lastFiles in loadLocal');
     }
   }
 
@@ -89,7 +89,7 @@ class LocalFiles {
 
   saveLastLocal(data: GridFileSchema): void {
     if (!this.filename) {
-      console.warn("Expected filename to be defined in saveLastLocal");
+      throw new Error("Expected filename to be defined in saveLastLocal");
     } else {
       localForage.setItem(this.getFilename(this.filename), data);
     }

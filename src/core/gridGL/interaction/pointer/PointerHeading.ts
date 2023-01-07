@@ -35,8 +35,7 @@ export class PointerHeading {
     const { headings, viewport, settings, cursor } = this.app;
     const { gridOffsets } = this.sheet;
     if (!settings.setInteractionState) {
-      console.warn('Expected pixiAppSettings.setInteractionState to be defined');
-      return false;
+      throw new Error('Expected pixiAppSettings.setInteractionState to be defined');
     }
     const intersects = headings.intersectsHeadings(world);
     if (intersects) {

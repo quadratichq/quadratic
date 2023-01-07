@@ -31,6 +31,30 @@ export class GridSparse {
         this.cells.set(this.getKey(cell.x, cell.y), { cell });
       }
     });
+    this.recalculateBounds();
+  }
+
+  recalculateBounds(): void {
+    if (this.cells.size === 0) {
+      this.empty();
+      return;
+    }
+    this.minX = Infinity;
+    this.maxX = -Infinity;
+    this.minY = Infinity;
+    this.maxY = -Infinity;
+    this.cells.forEach(cell => {
+      const x = cell.cell?.x ?? cell.format?.x;
+      const y = cell.cell?.y ?? cell.format?.y;
+      if (x === undefined || y === undefined) {
+        throw new Error("Expected CellAndFormat to have defined cell or format");
+      } else {
+        this.minX = Math.min(this.minX, x);
+        this.maxX = Math.max(this.maxX, x);
+        this.minY = Math.min(this.minY, y);
+        this.maxY = Math.max(this.maxY, y);
+      }
+    });
   }
 
   updateFormat(formats: CellFormat[]): void {
@@ -55,10 +79,12 @@ export class GridSparse {
         }
       }
     });
+    this.recalculateBounds();
   }
 
   deleteCells(cells: CellReference[]): void {
     cells.forEach((cell) => this.cells.delete(this.getKey(cell.x, cell.y)));
+    this.recalculateBounds();
   }
 
   empty() {

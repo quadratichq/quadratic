@@ -38,8 +38,7 @@ export class PointerDown {
     // If the user has clicked inside the selection.
     const { interactionState, setInteractionState } = settings;
     if (!setInteractionState) {
-      console.warn('Expected setInteractionState to be defined');
-      return;
+      throw new Error('Expected setInteractionState to be defined');
     }
     if (rightClick && interactionState.showMultiCursor) {
       if (

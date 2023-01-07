@@ -25,8 +25,7 @@ function createDashedLine(horizontal: boolean): Texture {
   canvas.height = horizontal ? THICKNESS : DASHED;
   const context = canvas.getContext('2d');
   if (!context) {
-    console.warn('Expected context to be defined in createBorderType');
-    return Texture.WHITE;
+    throw new Error('Expected context to be defined in createBorderType');
   }
   context.lineWidth = THICKNESS;
   context.strokeStyle = 'white';
@@ -48,8 +47,7 @@ function createDottedLine(horizontal: boolean): Texture {
   canvas.height = horizontal ? THICKNESS : DOTTED;
   const context = canvas.getContext('2d');
   if (!context) {
-    console.warn('Expected context to be defined in createBorderType');
-    return Texture.WHITE;
+    throw new Error('Expected context to be defined in createBorderType');
   }
   context.lineWidth = THICKNESS;
   context.strokeStyle = 'white';
