@@ -51,6 +51,10 @@ export const QuadraticMenu = (props: Props) => {
 
   const createNewFile = useCallback((filename?: string) => {
     if (filename) {
+      const extension = filename.split('.').pop();
+      if (!extension || extension !== 'grid') {
+        filename += '.grid';
+      }
       newGridFile(filename, props.sheetController);
     }
     setNewFileOpen(false);
