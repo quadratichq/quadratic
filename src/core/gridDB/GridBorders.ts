@@ -9,6 +9,7 @@ export class GridBorders {
   private maxX = 0;
   private minY = 0;
   private maxY = 0;
+  private isEmpty = true;
   borders = new Map<string, Border>();
 
   constructor(gridOffsets: GridOffsets) {
@@ -21,6 +22,7 @@ export class GridBorders {
     this.maxX = 0;
     this.minY = 0;
     this.maxY = 0;
+    this.isEmpty = true;
   }
 
   private getKey(x?: number, y?: number): string {
@@ -32,6 +34,7 @@ export class GridBorders {
       this.empty();
       return;
     }
+    this.isEmpty = false;
     this.borders.clear();
     this.minX = Infinity;
     this.minY = Infinity;
@@ -105,7 +108,8 @@ export class GridBorders {
     return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
   }
 
-  getGridBounds(): Rectangle {
+  getGridBounds(): Rectangle | undefined {
+    if (this.isEmpty) return;
     return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
   }
 

@@ -29,8 +29,9 @@ export class CellsLabels extends Container {
     if (label.textWidth > data.expectedWidth) {
       const start = label.x + data.expectedWidth;
       const end = start + (label.width - data.expectedWidth);
-      const neighboringLabel = this.labelData.find(search => search.y === data.y && search.x >= start && search.x <= end);
-      if (neighboringLabel) {
+      const neighboringLabels = this.labelData.filter(search => search.y === data.y && search.x >= start && search.x <= end);
+      if (neighboringLabels.length) {
+        const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
         label.setClip(neighboringLabel.x - data.x - CELL_TEXT_MARGIN_LEFT * 2);
       } else {
         label.setClip();

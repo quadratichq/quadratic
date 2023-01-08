@@ -16,6 +16,7 @@ export class GridSparse {
   private maxX = 0;
   private minY = 0;
   private maxY = 0;
+  private isEmpty = true;
   cells = new Map<string, CellAndFormat>();
 
   constructor(gridOffsets: GridOffsets) {
@@ -93,6 +94,7 @@ export class GridSparse {
     this.maxX = 0;
     this.minY = 0;
     this.maxY = 0;
+    this.isEmpty = true;
   }
 
   private getKey(x?: number, y?: number): string {
@@ -104,6 +106,7 @@ export class GridSparse {
       this.empty();
       return;
     }
+    this.isEmpty = false;
     this.cells.clear();
     this.minX = Infinity;
     this.maxX = -Infinity;
@@ -182,7 +185,8 @@ export class GridSparse {
     return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
   }
 
-  getGridBounds(): Rectangle {
+  getGridBounds(): Rectangle | undefined {
+    if (this.isEmpty) return;
     return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
   }
 

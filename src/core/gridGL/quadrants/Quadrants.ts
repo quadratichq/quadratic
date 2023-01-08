@@ -47,11 +47,12 @@ export class Quadrants extends Container {
     const gridBounds = grid.getGridBounds();
     const borderBounds = borders.getGridBounds();
     const bounds = intersects.rectangleUnion(gridBounds, borderBounds);
+
     if (!bounds?.width && !bounds?.height) return;
 
     // iterate through visible grid bounds and prepare quadrants
-    for (let y = bounds.top; y <= bounds.bottom + QUADRANT_ROWS; y += QUADRANT_ROWS) {
-      for (let x = bounds.left; x <= bounds.right + QUADRANT_COLUMNS; x += QUADRANT_COLUMNS) {
+    for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
+      for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
         const quadrant = this.addChild(new Quadrant(this.app, quadrantX, quadrantY));
         this.quadrants.set(`${quadrantX},${quadrantY}`, quadrant);
@@ -107,6 +108,7 @@ export class Quadrants extends Container {
   /** marks quadrants dirty based on what has changed */
   quadrantChanged(options: QuadrantChanged): void {
     const bounds = this.app.sheet.grid.getGridBounds();
+    if (!bounds) return;
 
     if (options.row !== undefined) {
       for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
