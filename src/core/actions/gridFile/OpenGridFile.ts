@@ -61,8 +61,8 @@ export const openExampleGridFile = async (filename: string, sheetController: She
   const file = await fetch(`/examples/${filename}`);
   const gridFileJSON = await file.json() as GridFileSchema;
   sheetController.sheet.load_file(gridFileJSON);
-  sheetController.clear();
   localFiles.loadedExternalFile(filename, gridFileJSON);
+  sheetController.clear();
 }
 
 export const newGridFile = (filename: string, sheetController: SheetController): void => {
