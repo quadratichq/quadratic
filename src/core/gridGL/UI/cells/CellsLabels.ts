@@ -1,6 +1,7 @@
 import { Container } from 'pixi.js';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
+import { CELL_TEXT_MARGIN_LEFT } from '../../../../constants/gridConstants';
 
 interface LabelData {
   text: string;
@@ -24,17 +25,18 @@ export class CellsLabels extends Container {
 
   // checks to see if the label needs to be clipped based on other labels
   private checkForClipping(label: CellLabel, data: LabelData): void {
-    if (label.textWidth! > data.expectedWidth) {
+    label.setClip();
+    if (label.textWidth > data.expectedWidth) {
       const start = label.x + data.expectedWidth;
       const end = start + (label.width - data.expectedWidth);
-      const labels = this.labelData.filter(search => search.y === data.y && search.x >= start && search.x <= end);
-      if (labels.length) {
-        label.setMask(data.expectedWidth);
+      const neighboringLabel = this.labelData.find(search => search.y === data.y && search.x >= start && search.x <= end);
+      if (neighboringLabel) {
+        label.setClip(neighboringLabel.x - data.x - CELL_TEXT_MARGIN_LEFT * 2);
       } else {
-        label.clearMask();
+        label.setClip();
       }
     } else {
-      label.clearMask();
+      label.setClip();
     }
   }
 
@@ -48,7 +50,7 @@ export class CellsLabels extends Container {
 
     // reuse existing labels that have the same text
     this.labelData.forEach((data) => {
-      const index = available.findIndex((label) => label.text === data.text);
+      const index = available.findIndex((label) => label.originalText === data.text);
       if (index === -1) {
         leftovers.push(data);
       } else {
@@ -83,7 +85,6 @@ export class CellsLabels extends Container {
       }
       label.position.set(data.x, data.y);
       label.text = data.text;
-
       this.checkForClipping(label, data);
 
       // track overflowed widths
