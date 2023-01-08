@@ -23,17 +23,18 @@ import { useFormatCells } from '../useFormatCells';
 import { useGetBorderMenu } from './useGetBorderMenu';
 import { useBorders } from '../useBorders';
 import './formatMenuStyles.css';
-import { Sheet } from '../../../../../core/gridDB/Sheet';
+
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../../../core/transaction/sheetController';
 
 interface IProps {
   app?: PixiApp;
-  sheet: Sheet;
+  sheet_controller: SheetController;
 }
 
 export const FormatMenu = (props: IProps) => {
-  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(props.sheet, props.app);
-  const { clearBorders } = useBorders(props.sheet, props.app);
+  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(props.sheet_controller, props.app);
+  const { clearBorders } = useBorders(props.sheet_controller.sheet, props.app);
 
   // focus canvas after the format menu closes
   const onMenuChange = useCallback(
@@ -43,7 +44,7 @@ export const FormatMenu = (props: IProps) => {
     [props.app]
   );
 
-  const borders = useGetBorderMenu({ sheet: props.sheet, app: props.app });
+  const borders = useGetBorderMenu({ sheet: props.sheet_controller.sheet, app: props.app });
 
   const handleClearFormatting = useCallback(() => {
     clearFormatting();

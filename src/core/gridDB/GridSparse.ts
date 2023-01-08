@@ -44,11 +44,11 @@ export class GridSparse {
     this.maxX = -Infinity;
     this.minY = Infinity;
     this.maxY = -Infinity;
-    this.cells.forEach(cell => {
+    this.cells.forEach((cell) => {
       const x = cell.cell?.x ?? cell.format?.x;
       const y = cell.cell?.y ?? cell.format?.y;
       if (x === undefined || y === undefined) {
-        throw new Error("Expected CellAndFormat to have defined cell or format");
+        throw new Error('Expected CellAndFormat to have defined cell or format');
       } else {
         this.minX = Math.min(this.minX, x);
         this.maxX = Math.max(this.maxX, x);

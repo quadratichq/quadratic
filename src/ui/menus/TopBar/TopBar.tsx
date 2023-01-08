@@ -21,7 +21,6 @@ interface IProps {
 }
 
 export const TopBar = (props: IProps) => {
-  const { sheet } = props.sheetController;
   const { localFilename } = useLocalFiles();
   return (
     <div
@@ -61,7 +60,7 @@ export const TopBar = (props: IProps) => {
         {!isMobileOnly && (
           <>
             <DataMenu></DataMenu>
-            <FormatMenu app={props.app} sheet={sheet} />
+            <FormatMenu app={props.app} sheet_controller={props.sheetController} />
             <NumberFormatMenu></NumberFormatMenu>
           </>
         )}

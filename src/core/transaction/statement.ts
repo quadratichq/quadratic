@@ -1,4 +1,4 @@
-import { Cell } from '../gridDB/gridTypes';
+import { Cell, CellFormat } from '../gridDB/gridTypes';
 
 // Everything that modifies Sheet must go through a Statement
 export type Statement =
@@ -14,5 +14,12 @@ export type Statement =
       data: {
         position: [number, number];
         dependencies: [number, number][] | null;
+      };
+    }
+  | {
+      type: 'SET_CELL_FORMAT';
+      data: {
+        position: [number, number];
+        value: CellFormat | undefined;
       };
     };
