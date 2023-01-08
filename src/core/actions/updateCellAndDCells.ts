@@ -138,7 +138,6 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, sta
         // if any updated cells have other cells depending on them, add to list to update
         for (const array_cell of array_cells_to_output) {
           // add array cells to list to update
-          console.log(typeof sheet_controller.sheet.dgraph);
           let deps = sheet_controller.sheet.dgraph.get([array_cell.x, array_cell.y]);
 
           if (deps) cells_to_update.push(...deps);
@@ -149,7 +148,7 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, sta
 
         cell.last_modified = new Date().toISOString();
 
-        [cell, ...array_cells_to_output].forEach((cell) => {
+        array_cells_to_output.forEach((cell) => {
           sheet_controller.execute_statement({
             type: 'SET_CELL',
             data: { position: [cell.x, cell.y], value: cell },
@@ -167,7 +166,6 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, sta
         cell.dependent_cells = result.cells_accessed;
 
         cell.last_modified = new Date().toISOString();
-
         sheet_controller.execute_statement({
           type: 'SET_CELL',
           data: { position: [cell.x, cell.y], value: cell },
