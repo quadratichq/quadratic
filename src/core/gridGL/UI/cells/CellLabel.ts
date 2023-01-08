@@ -1,6 +1,8 @@
 import { BitmapText, Container, Graphics } from 'pixi.js';
 import { Coordinate } from '../../types/size';
 
+// todo: This does not implement RTL overlap clipping or more than 1 cell clipping
+
 // todo: make this part of the cell's style data structure
 const fontSize = 14;
 
