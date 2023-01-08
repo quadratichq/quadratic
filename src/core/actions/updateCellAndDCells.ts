@@ -5,24 +5,15 @@ import { Coordinate } from '../gridGL/types/size';
 import { localFiles } from '../gridDB/localFiles';
 import { SheetController } from '../transaction/sheetController';
 
-export const updateCellAndDCells = async (sheet_controller: SheetController, cell: Cell, app?: PixiApp) => {
+export const updateCellAndDCells = async (sheet_controller: SheetController, starting_cell: Cell, app?: PixiApp) => {
   // start transaction
   sheet_controller.start_transaction();
 
-  //save currently edited cell
+  // keep track of cells that have been updated so we can update the quadrant cache
   const updatedCells: Coordinate[] = [];
-  cell.last_modified = new Date().toISOString();
-  sheet_controller.execute_statement({
-    type: 'SET_CELL',
-    data: {
-      position: [0, 0],
-      value: cell,
-    },
-  });
-  updatedCells.push({ x: cell.x, y: cell.y });
 
   // start with a plan to just update the current cell
-  let cells_to_update: [number, number][] = [[cell.x, cell.y]];
+  let cells_to_update: [number, number][] = [[starting_cell.x, starting_cell.y]];
 
   // update cells, starting with the current cell
   while (cells_to_update.length > 0) {
@@ -44,8 +35,15 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, cel
     const ref_cell_to_update = cells_to_update.shift();
     if (ref_cell_to_update === undefined) break;
 
-    // get current cell from db
-    let cell = sheet_controller.sheet.getCell(ref_cell_to_update[0], ref_cell_to_update[1])?.cell;
+    // get cell from db or starting_cell if it is the starting cell passed in to this function
+    let cell: Cell | undefined;
+    if (ref_cell_to_update[0] === starting_cell.x && ref_cell_to_update[1] === starting_cell.y) {
+      // if the ref_cell_to_update is the starting_cell, we need to used the passed in version
+      // because it may contain code changes that are not yet in the DB.
+      cell = starting_cell;
+    } else {
+      cell = sheet_controller.sheet.getCell(ref_cell_to_update[0], ref_cell_to_update[1])?.cell;
+    }
 
     if (cell === undefined) continue;
 
@@ -183,8 +181,14 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, cel
     if (deps) cells_to_update.push(...deps);
   }
 
-  app?.quadrants.quadrantChanged({ cells: updatedCells });
-  localFiles.saveLastLocal(sheet_controller.sheet.export_file());
-
+  // Officially end the transaction
   sheet_controller.end_transaction();
+
+  // Pass updatedCells to the app so it can update the Grid Quadrants which changed.
+  // TODO: move this to sheetController so it happens automatically with every transaction?
+  // Maybe sheet_controller.end_transaction() should return a list of cells which updated in the transaction?
+  app?.quadrants.quadrantChanged({ cells: updatedCells });
+
+  // TODO: move this to sheetController so we can better control when it is called?
+  localFiles.saveLastLocal(sheet_controller.sheet.export_file());
 };

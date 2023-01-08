@@ -76,7 +76,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
     // save previous cell, if it is defined and has changed
     // This code causes a timing bug.
-    // if (selectedCell?.python_code !== editorContent) saveSelectedCell();
+    // if (selectedCell?.python_code !== editorContent) saveAndRunCell();
 
     // focus editor on cell change
     editorRef.current?.focus();
@@ -99,7 +99,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     }
   }, [selectedCell, editorInteractionState, props.sheet_controller.sheet]);
 
-  const saveSelectedCell = () => {
+  const saveAndRunCell = () => {
     if (!selectedCell) return;
 
     selectedCell.type = 'PYTHON';
@@ -122,14 +122,14 @@ export const CodeEditor = (props: CodeEditorProps) => {
     // Command + S
     if ((event.metaKey || event.ctrlKey) && event.key === 's') {
       event.preventDefault();
-      saveSelectedCell();
+      saveAndRunCell();
     }
 
     // Command + Enter
     if ((event.metaKey || event.ctrlKey) && event.code === 'Enter') {
       event.preventDefault();
       event.stopPropagation();
-      saveSelectedCell();
+      saveAndRunCell();
     }
 
     // Esc
@@ -242,7 +242,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
             variant="text"
             size="small"
             onClick={() => {
-              saveSelectedCell();
+              saveAndRunCell();
             }}
           >
             Run
