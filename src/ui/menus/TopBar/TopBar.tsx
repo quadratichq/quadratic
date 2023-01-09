@@ -16,7 +16,7 @@ import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../core/transaction/sheetController';
 
 interface IProps {
-  app?: PixiApp;
+  app: PixiApp;
   sheetController: SheetController;
 }
 

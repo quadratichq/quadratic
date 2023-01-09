@@ -1,4 +1,4 @@
-import { Cell, CellFormat } from '../gridDB/gridTypes';
+import { Border, Cell, CellFormat } from '../gridDB/gridTypes';
 import { HeadingSize } from '../gridDB/useHeadings';
 
 // Everything that modifies Sheet must go through a Statement
@@ -28,5 +28,12 @@ export type Statement =
       type: 'SET_HEADING_SIZE';
       data: {
         heading_size: HeadingSize;
+      };
+    }
+  | {
+      type: 'SET_BORDER';
+      data: {
+        position: [number, number];
+        border: Border | undefined;
       };
     };

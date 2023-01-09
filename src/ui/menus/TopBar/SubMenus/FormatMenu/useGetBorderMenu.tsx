@@ -28,7 +28,7 @@ import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 
 interface Props extends SubMenuProps {
   sheet: Sheet;
-  app?: PixiApp;
+  app: PixiApp;
 }
 
 enum BorderSelection {

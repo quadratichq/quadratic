@@ -28,7 +28,7 @@ import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../../core/transaction/sheetController';
 
 interface IProps {
-  app?: PixiApp;
+  app: PixiApp;
   sheet_controller: SheetController;
 }
 

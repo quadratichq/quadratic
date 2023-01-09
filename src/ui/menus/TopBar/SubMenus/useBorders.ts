@@ -22,8 +22,9 @@ interface IResults {
   clearBorders: () => void;
 }
 
-export const useBorders = (sheet: Sheet, app?: PixiApp): IResults => {
+export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
   const { start, end, multiCursor } = useGetSelection();
+  const { sheet_controller } = app;
 
   const changeBorders = (options: ChangeBorder): void => {
     const borderColor = options.color;
@@ -109,11 +110,22 @@ export const useBorders = (sheet: Sheet, app?: PixiApp): IResults => {
       }
     }
     if (borderUpdates.length) {
-      sheet.borders.update(borderUpdates);
-      if (app) {
-        app.cells.dirty = true;
-        app.quadrants.quadrantChanged({ range: { start, end } });
-      }
+      // create transaction to update borders
+      sheet_controller.start_transaction();
+      borderUpdates.forEach((border) => {
+        sheet_controller.execute_statement({
+          type: 'SET_BORDER',
+          data: {
+            position: [border.x, border.y],
+            border: border,
+          },
+        });
+      });
+      sheet_controller.end_transaction();
+
+      app.cells.dirty = true;
+      app.quadrants.quadrantChanged({ range: { start, end } });
+
       localFiles.saveLastLocal(sheet.export_file());
     }
   };
@@ -149,16 +161,36 @@ export const useBorders = (sheet: Sheet, app?: PixiApp): IResults => {
         }
       }
     }
+
+    // create transaction to update borders
+    sheet_controller.start_transaction();
     if (borderDelete.length) {
-      sheet.borders.clear(borderDelete);
+      borderDelete.forEach((border_coord) => {
+        sheet_controller.execute_statement({
+          type: 'SET_BORDER',
+          data: {
+            position: [border_coord.x, border_coord.y],
+            border: undefined,
+          },
+        });
+      });
     }
     if (borderUpdate.length) {
-      sheet.borders.update(borderUpdate);
+      borderUpdate.forEach((border) => {
+        sheet_controller.execute_statement({
+          type: 'SET_BORDER',
+          data: {
+            position: [border.x, border.y],
+            border: border,
+          },
+        });
+      });
     }
-    if (app) {
-      app.cells.dirty = true;
-      app.quadrants.quadrantChanged({ range: { start, end } });
-    }
+    sheet_controller.end_transaction();
+
+    app.cells.dirty = true;
+    app.quadrants.quadrantChanged({ range: { start, end } });
+
     localFiles.saveLastLocal(sheet.export_file());
   };
 

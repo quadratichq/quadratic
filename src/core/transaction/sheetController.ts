@@ -64,6 +64,7 @@ export class SheetController {
     this.transaction_in_progress = undefined;
 
     // TODO: This is a good place to do things like mark Quadrants as dirty, save the file, etc.
+    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
 
     return previous_transaction;
   }
@@ -114,6 +115,10 @@ export class SheetController {
     const reverse_transaction = this.end_transaction(false);
     // add reverse transaction to redo stack
     this.redo_stack.push(reverse_transaction);
+
+    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
+    // This will be very inefficient on large files.
+    if (this.app) this.app.rebuild();
   }
 
   public redo(): void {
@@ -144,6 +149,10 @@ export class SheetController {
     const reverse_transaction = this.end_transaction(false);
     // add reverse transaction to undo stack
     this.undo_stack.push(reverse_transaction);
+
+    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
+    // This will be very inefficient on large files.
+    if (this.app) this.app.rebuild();
   }
 
   public clear(): void {
