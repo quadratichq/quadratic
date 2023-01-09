@@ -8,8 +8,6 @@ export const SetHeadingSizeRunner = (sheet: Sheet, statement: Statement, app?: P
 
   const { heading_size } = statement.data;
 
-  console.log('SET_HEADING_SIZE', heading_size);
-
   // create reverse statement
   let reverse_heading_size = { ...heading_size };
   if (heading_size.column !== undefined)
@@ -17,8 +15,6 @@ export const SetHeadingSizeRunner = (sheet: Sheet, statement: Statement, app?: P
   else if (heading_size.row !== undefined)
     reverse_heading_size.size = sheet.gridOffsets.getCommittedRowHeight(heading_size.row);
   else throw new Error('Heading size must be set for a column or a row.');
-
-  console.log('reverse_heading_size', reverse_heading_size);
 
   // set heading size
   sheet.gridOffsets.update(heading_size);
