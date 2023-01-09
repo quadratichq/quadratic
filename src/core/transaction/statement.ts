@@ -1,4 +1,5 @@
 import { Cell, CellFormat } from '../gridDB/gridTypes';
+import { HeadingSize } from '../gridDB/useHeadings';
 
 // Everything that modifies Sheet must go through a Statement
 export type Statement =
@@ -21,5 +22,11 @@ export type Statement =
       data: {
         position: [number, number];
         value: CellFormat | undefined;
+      };
+    }
+  | {
+      type: 'SET_HEADING_SIZE';
+      data: {
+        heading_size: HeadingSize;
       };
     };

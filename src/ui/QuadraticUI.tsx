@@ -19,7 +19,7 @@ export default function QuadraticUI(props: Props) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
-  const [app] = useState(new PixiApp(props.sheetController.sheet));
+  const [app] = useState(new PixiApp(props.sheetController));
 
   const { sheetController } = props;
 

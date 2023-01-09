@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
 import { Heading } from './gridTypes';
-import { UpdateHeading } from './useHeadings';
+import { HeadingSize } from './useHeadings';
 
 export interface HeadingResizing {
   x: number;
@@ -27,16 +27,28 @@ export class GridOffsets {
   }
 
   getColumnWidth(column: number): number {
+    // if resizing in progress get from headingResizing
     if (this.headingResizing?.column === column && this.headingResizing?.width !== undefined) {
       return this.headingResizing.width;
     }
-    return this.columns[column]?.size ?? CELL_WIDTH;
+    return this.getCommittedColumnWidth(column);
   }
 
   getRowHeight(row: number): number {
+    // if resizing in progress get from headingResizing
     if (this.headingResizing?.row === row && this.headingResizing?.height !== undefined) {
       return this.headingResizing.height;
     }
+    return this.getCommittedRowHeight(row);
+  }
+
+  getCommittedColumnWidth(column: number): number {
+    // get last saved width
+    return this.columns[column]?.size ?? CELL_WIDTH;
+  }
+
+  getCommittedRowHeight(row: number): number {
+    // get last saved height
     return this.rows[row]?.size ?? CELL_HEIGHT;
   }
 
@@ -290,7 +302,7 @@ export class GridOffsets {
     options.columns.forEach((column) => delete this.columns[column]);
   }
 
-  update(change: UpdateHeading): void {
+  update(change: HeadingSize): void {
     if (change.row !== undefined) {
       if (this.rows[change.row]) {
         this.rows[change.row].size = change.size;

@@ -15,12 +15,14 @@ import { Quadrants } from '../quadrants/Quadrants';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
 import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../../debugFlags';
 import { Sheet } from '../../gridDB/Sheet';
+import { SheetController } from '../../transaction/sheetController';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
   private update: Update;
   private cacheIsVisible = false;
 
+  sheet_controller: SheetController;
   sheet: Sheet;
 
   canvas: HTMLCanvasElement;
@@ -43,8 +45,9 @@ export class PixiApp {
   // for testing purposes
   debug: Graphics;
 
-  constructor(sheet: Sheet) {
-    this.sheet = sheet;
+  constructor(sheet_controller: SheetController) {
+    this.sheet_controller = sheet_controller;
+    this.sheet = sheet_controller.sheet;
     this.sheet.onRebuild = this.rebuild;
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';

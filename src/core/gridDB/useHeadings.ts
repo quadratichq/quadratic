@@ -10,7 +10,7 @@ interface Props {
   sheet: Sheet;
 }
 
-export interface UpdateHeading {
+export interface HeadingSize {
   row?: number;
   column?: number;
   size: number;
@@ -39,7 +39,7 @@ export const useHeadings = (props: Props) => {
 
   const updateHeadings = useCallback(
     (headingResizing: HeadingResizing) => {
-      let change: UpdateHeading | undefined;
+      let change: HeadingSize | undefined;
       if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
         change = {
           column: headingResizing.column,

@@ -3,7 +3,7 @@ import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectC
 import { zoomToFit } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { UpdateHeading } from '../../../gridDB/useHeadings';
+import { HeadingSize } from '../../../gridDB/useHeadings';
 
 export class PointerHeading {
   private app: PixiApp;
@@ -150,7 +150,7 @@ export class PointerHeading {
       this.active = false;
       const { headingResizing } = gridOffsets;
       if (headingResizing) {
-        let updateHeading: UpdateHeading | undefined;
+        let updateHeading: HeadingSize | undefined;
         if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
           updateHeading = {
             column: headingResizing.column,
@@ -163,7 +163,14 @@ export class PointerHeading {
           };
         }
         if (updateHeading) {
-          gridOffsets.update(updateHeading);
+          this.app.sheet_controller.predefined_transaction([
+            {
+              type: 'SET_HEADING_SIZE',
+              data: {
+                heading_size: updateHeading,
+              },
+            },
+          ]);
         }
         gridOffsets.headingResizing = undefined;
       }

@@ -3,7 +3,7 @@ import { Statement } from '../statement';
 
 export const SetCellDependenciesRunner = (sheet: Sheet, statement: Statement): Statement => {
   if (statement.type !== 'SET_CELL_DEPENDENCIES') throw new Error('Incorrect statement type.');
-  // Applies the SET_CELL statement to the sheet and returns the reverse statement
+  // Applies the SET_CELL_DEPENDENCIES statement to the sheet and returns the reverse statement
 
   if (statement.data.dependencies === null) {
     sheet.dgraph.delete(statement.data.position);

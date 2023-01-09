@@ -15,7 +15,7 @@ const CopyCellFormat = (format: CellFormat | undefined): CellFormat | undefined 
 
 export const SetCellFormatRunner = (sheet: Sheet, statement: Statement, app?: PixiApp): Statement => {
   if (statement.type !== 'SET_CELL_FORMAT') throw new Error('Incorrect statement type.');
-  // Applies the SET_CELL statement to the sheet and returns the reverse statement
+  // Applies the SET_CELL_FORMAT statement to the sheet and returns the reverse statement
   const { position, value: new_value } = statement.data;
   const old_value = CopyCellFormat(sheet.grid.getFormat(position[0], position[1]));
 

@@ -63,6 +63,8 @@ export class SheetController {
     // clear the transaction
     this.transaction_in_progress = undefined;
 
+    // TODO: This is a good place to do things like mark Quadrants as dirty, save the file, etc.
+
     return previous_transaction;
   }
 
