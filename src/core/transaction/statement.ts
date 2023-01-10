@@ -7,7 +7,7 @@ export type Statement =
       type: 'SET_CELL';
       data: {
         position: [number, number];
-        value: Cell | undefined;
+        value: Cell | undefined; // TODO: Make this accept more than one cell
       };
     }
   | {
@@ -21,7 +21,7 @@ export type Statement =
       type: 'SET_CELL_FORMAT';
       data: {
         position: [number, number];
-        value: CellFormat | undefined;
+        value: CellFormat | undefined; // TODO: Make this accept more than one CellFormat
       };
     }
   | {
@@ -34,6 +34,6 @@ export type Statement =
       type: 'SET_BORDER';
       data: {
         position: [number, number];
-        border: Border | undefined;
+        border: Border | undefined; // TODO: Make this accept more than one border
       };
     };
