@@ -84,7 +84,17 @@ export class GridSparse {
   }
 
   deleteCells(cells: CellReference[]): void {
-    cells.forEach((cell) => this.cells.delete(this.getKey(cell.x, cell.y)));
+    cells.forEach((cell) => {
+      const candf = this.cells.get(this.getKey(cell.x, cell.y));
+      if (candf) {
+        // Delete cell
+        delete candf.cell;
+        // If cell has no format, also delete the key
+        if (candf.format === undefined) {
+          this.cells.delete(this.getKey(cell.x, cell.y));
+        }
+      }
+    });
     this.recalculateBounds();
   }
 
