@@ -9,12 +9,14 @@ export function keyboardUndoRedo(
   // Command + Shift + Z
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.code === 'KeyZ') {
     sheetController.redo();
+    event.preventDefault();
     return true;
   }
 
   // Command + Z
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyZ') {
     sheetController.undo();
+    event.preventDefault();
     return true;
   }
 
