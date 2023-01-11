@@ -190,7 +190,6 @@ export function useGetBorderMenu(props: Props): JSX.Element {
             }}
             label={<BorderColor style={{ ...menuItemIconStyles, color }}></BorderColor>}
           >
-            <MenuHeader>Border Color</MenuHeader>
             <CompactPicker onChangeComplete={handleChangeBorderColor} />
           </SubMenu>
           <SubMenu
