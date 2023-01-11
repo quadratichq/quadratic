@@ -1,4 +1,4 @@
-import { ClickEvent, MenuHeader, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
+import { ClickEvent, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
 import { menuItemIconStyles } from '../menuStyles';
 import { BorderType } from '../../../../../core/gridDB/gridTypes';
 import {
@@ -107,7 +107,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
       }
       changeBorders(borders);
     },
-    [changeBorders, defaultColor]
+    [changeBorders, defaultColor, clearBorders]
   );
 
   const handleChangeBorderColor = useCallback(
