@@ -107,20 +107,22 @@ export const TopBar = (props: IProps) => {
       >
         {!isMobileOnly && (
           <>
-            <AvatarGroup>
-              <Avatar
-                sx={{
-                  bgcolor: colors.quadraticSecondary,
-                  width: 24,
-                  height: 24,
-                  fontSize: '0.8rem',
-                }}
-                alt={user?.name}
-                src={user?.picture}
-              >
-                {user?.name && user?.name[0]}
-              </Avatar>
-            </AvatarGroup>
+            {user !== undefined && (
+              <AvatarGroup>
+                <Avatar
+                  sx={{
+                    bgcolor: colors.quadraticSecondary,
+                    width: 24,
+                    height: 24,
+                    fontSize: '0.8rem',
+                  }}
+                  alt={user?.name}
+                  src={user?.picture}
+                >
+                  {user?.name && user?.name[0]}
+                </Avatar>
+              </AvatarGroup>
+            )}
             <Tooltip title="Coming soon" arrow>
               <Button
                 style={{
