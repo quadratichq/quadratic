@@ -25,7 +25,7 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        Zoom to Fit
+        Zoom to fit
       </MenuItem>
       <MenuDivider></MenuDivider>
       <MenuItem

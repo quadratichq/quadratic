@@ -26,7 +26,7 @@ export const example_grid: GridFileSchema = {
       x: 0,
       y: 2,
       type: 'TEXT',
-      value: 'Read more docs.quadratic.to',
+      value: 'Read more docs.quadratichq.com',
       last_modified: '2022-07-06T17:32:01.914Z',
     },
     {

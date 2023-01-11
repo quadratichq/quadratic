@@ -4,14 +4,29 @@ import { useCallback, useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
-import { MenuBookOutlined, FileOpenOutlined, SaveOutlined, BugReportOutlined, CreateOutlined } from '@mui/icons-material';
+import {
+  MenuBookOutlined,
+  FileOpenOutlined,
+  SaveOutlined,
+  BugReportOutlined,
+  CreateOutlined,
+} from '@mui/icons-material';
 import { isMobileOnly } from 'react-device-detect';
 import { useGridSettings } from './useGridSettings';
+import { useAuth0 } from '@auth0/auth0-react';
+
+import '@szhsin/react-menu/dist/index.css';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
 import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
-import { newGridFile, openExampleGridFile, openGridFile, openLocalGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
+import {
+  newGridFile,
+  openExampleGridFile,
+  openGridFile,
+  openLocalGridFile,
+} from '../../../../core/actions/gridFile/OpenGridFile';
 import { menuItemIconStyles } from './menuStyles';
+
 import { colors } from '../../../../theme/colors';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { useLocalFiles } from '../../../../hooks/useLocalFiles';
@@ -35,9 +50,12 @@ export const QuadraticMenu = (props: Props) => {
   const { sheetController } = props;
   const { sheet } = sheetController;
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
+
   const settings = useGridSettings();
 
   const [newFileOpen, setNewFileOpen] = useState(false);
+
+  const { isAuthenticated, user, logout } = useAuth0();
 
   // On Mobile set Headers to not visible by default
   useEffect(() => {
@@ -49,16 +67,19 @@ export const QuadraticMenu = (props: Props) => {
 
   const { fileList } = useLocalFiles();
 
-  const createNewFile = useCallback((filename?: string) => {
-    if (filename) {
-      const extension = filename.split('.').pop();
-      if (!extension || extension !== 'grid') {
-        filename += '.grid';
+  const createNewFile = useCallback(
+    (filename?: string) => {
+      if (filename) {
+        const extension = filename.split('.').pop();
+        if (!extension || extension !== 'grid') {
+          filename += '.grid';
+        }
+        newGridFile(filename, sheetController);
       }
-      newGridFile(filename, props.sheetController);
-    }
-    setNewFileOpen(false);
-  }, []);
+      setNewFileOpen(false);
+    },
+    [sheetController]
+  );
 
   return (
     <>
@@ -85,11 +106,10 @@ export const QuadraticMenu = (props: Props) => {
           </MenuItem>
           <MenuDivider />
           <SubMenu label="Sample Files">
-            {examples.map(filename => (
-              <MenuItem
-                key={`sample-${filename}`}
-                onClick={() => openExampleGridFile(filename, sheetController)}
-              >{filename}</MenuItem>
+            {examples.map((filename) => (
+              <MenuItem key={`sample-${filename}`} onClick={() => openExampleGridFile(filename, sheetController)}>
+                {filename}
+              </MenuItem>
             ))}
           </SubMenu>
           {fileList.length ? <MenuDivider /> : null}
@@ -149,6 +169,14 @@ export const QuadraticMenu = (props: Props) => {
             Show DebugMenu
           </MenuItem>
         </SubMenu>
+
+        {isAuthenticated && (
+          <SubMenu label="Account">
+            <MenuHeader>{user?.email}</MenuHeader>
+            <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>Log out</MenuItem>
+          </SubMenu>
+        )}
+
         <SubMenu label="Help">
           <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>
             <MenuBookOutlined style={menuItemIconStyles}></MenuBookOutlined> Read the docs

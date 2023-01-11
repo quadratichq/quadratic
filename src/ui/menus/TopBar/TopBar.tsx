@@ -1,5 +1,4 @@
-import { Box, Typography } from '@mui/material';
-import { Button, Tooltip } from '@mui/material';
+import { Box, Typography, Button, Tooltip, AvatarGroup, Avatar } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 // import { Avatar, AvatarGroup } from '@mui/material';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -14,6 +13,7 @@ import { isMobileOnly } from 'react-device-detect';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../core/transaction/sheetController';
+import { useAuth0 } from '@auth0/auth0-react';
 
 interface IProps {
   app: PixiApp;
@@ -22,6 +22,8 @@ interface IProps {
 
 export const TopBar = (props: IProps) => {
   const { localFilename } = useLocalFiles();
+  const { user } = useAuth0();
+
   return (
     <div
       onContextMenu={(event) => {
@@ -103,56 +105,36 @@ export const TopBar = (props: IProps) => {
           width: '20rem',
         }}
       >
-        {/* <AvatarGroup>
-          <Avatar
-            sx={{
-              bgcolor: colors.quadraticPrimary,
-              width: 24,
-              height: 24,
-              fontSize: '0.9rem',
-            }}
-          >
-            DK
-          </Avatar>
-          <Avatar
-            sx={{
-              bgcolor: colors.quadraticSecondary,
-              width: 24,
-              height: 24,
-              fontSize: '0.9rem',
-            }}
-          >
-            You
-          </Avatar>
-        </AvatarGroup> */}
-
-        <iframe
-          src="https://ghbtns.com/github-btn.html?user=quadratichq&repo=quadratic&type=star&count=true"
-          frameBorder="0"
-          scrolling="0"
-          width="90"
-          height="20"
-          title="GitHub"
-          style={{
-            userSelect: 'none',
-            display: 'none',
-          }}
-        ></iframe>
-
         {!isMobileOnly && (
-          <Tooltip title="Quadratic Cloud only" arrow>
-            <Button
-              style={{
-                color: colors.darkGray,
-                borderColor: colors.darkGray,
-                padding: '1px 4px',
-              }}
-              variant="outlined"
-              size="small"
-            >
-              Share
-            </Button>
-          </Tooltip>
+          <>
+            <AvatarGroup>
+              <Avatar
+                sx={{
+                  bgcolor: colors.quadraticSecondary,
+                  width: 24,
+                  height: 24,
+                  fontSize: '0.8rem',
+                }}
+                alt={user?.name}
+                src={user?.picture}
+              >
+                {user?.name && user?.name[0]}
+              </Avatar>
+            </AvatarGroup>
+            <Tooltip title="Coming soon" arrow>
+              <Button
+                style={{
+                  color: colors.darkGray,
+                  borderColor: colors.darkGray,
+                  padding: '1px 4px',
+                }}
+                variant="outlined"
+                size="small"
+              >
+                Share
+              </Button>
+            </Tooltip>
+          </>
         )}
         <ZoomDropdown></ZoomDropdown>
       </Box>

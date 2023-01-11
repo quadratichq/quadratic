@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 import QuadraticUI from '../ui/QuadraticUI';
 import { RecoilRoot } from 'recoil';
 import { useLoading } from '../contexts/LoadingContext';
-import { QuadraticLoading } from '../ui/QuadtraticLoading';
+import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { loadPython } from '../core/computations/python/loadPython';
-import { TopBarLoading } from '../ui/components/TopBarLoading';
 import { FileLoadingComponent } from './FileLoadingComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../core/gridGL/loadAssets';
@@ -14,15 +13,16 @@ import { GetCellsDBSetSheet } from '../core/gridDB/Cells/GetCellsDB';
 import { localFiles } from '../core/gridDB/localFiles';
 import { SheetController } from '../core/transaction/sheetController';
 
-export default function QuadraticApp() {
+export const QuadraticApp = () => {
   const { loading, incrementLoadingCount } = useLoading();
   const [sheet_controller] = useState<SheetController>(new SheetController());
   const sheet = sheet_controller.sheet;
 
+  // Loading Effect
   useEffect(() => {
     if (loading) {
       if (!isMobileOnly && !debugSkipPythonLoad) {
-        // Only load Python not on mobile
+        // Load Python on desktop
         loadPython().then(() => {
           incrementLoadingCount();
         });
@@ -52,10 +52,8 @@ export default function QuadraticApp() {
       {!loading && <FileLoadingComponent sheet={sheet} />}
       {/* Provider of All React UI Components */}
       {!loading && <QuadraticUI sheetController={sheet_controller} />}
-      {/* ToBarLoading allows window to be moved while loading in electron */}
-      {loading && <TopBarLoading></TopBarLoading>}
       {/* Loading screen */}
       {loading && <QuadraticLoading></QuadraticLoading>}
     </RecoilRoot>
   );
-}
+};
