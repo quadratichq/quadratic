@@ -140,9 +140,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
   }): JSX.Element => {
     return (
       <div
-        className={`borderMenuType ${borderSelection === props.type ? 'borderSelected' : ''} ${
-          props.disabled ? 'borderDisabled' : ''
-        }`}
+        className={`borderMenuType ${props.disabled ? 'borderDisabled' : ''}`}
         onClick={() => {
           if (!props.disabled) {
             setBorderSelection(props.type);
