@@ -10,3 +10,8 @@ export const menuItemIconStyles = {
   marginRight: '0.5rem',
   color: colors.darkGray,
 };
+
+export const menuItemIconDisabledStyles = {
+  ...menuItemIconStyles,
+  color: 'inherit',
+};

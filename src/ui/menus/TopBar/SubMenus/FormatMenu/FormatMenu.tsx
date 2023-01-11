@@ -1,7 +1,7 @@
 import { Fragment, useCallback } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Menu, MenuItem, MenuDivider, MenuHeader, SubMenu, MenuChangeEvent } from '@szhsin/react-menu';
+import { Menu, MenuItem, MenuDivider, SubMenu, MenuChangeEvent } from '@szhsin/react-menu';
 
 import {
   FormatBold,
@@ -11,13 +11,14 @@ import {
   FormatAlignCenter,
   FormatColorText,
   FormatColorFill,
+  FormatClear,
   ReadMore,
 } from '@mui/icons-material';
 import { PaletteOutlined } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
 import { colors } from '../../../../../theme/colors';
-import { menuItemIconStyles, topBarIconStyles } from '../menuStyles';
+import { menuItemIconStyles, menuItemIconDisabledStyles, topBarIconStyles } from '../menuStyles';
 import { CompactPicker } from 'react-color';
 import { useFormatCells } from '../useFormatCells';
 import { useGetBorderMenu } from './useGetBorderMenu';
@@ -63,15 +64,14 @@ export const FormatMenu = (props: IProps) => {
         </Tooltip>
       }
     >
-      <MenuHeader>Text</MenuHeader>
       <MenuItem disabled>
-        <FormatBold style={menuItemIconStyles}></FormatBold> Bold
+        <FormatBold style={menuItemIconDisabledStyles}></FormatBold> Bold
       </MenuItem>
       <MenuItem disabled>
-        <FormatItalic style={menuItemIconStyles}></FormatItalic> Italic
+        <FormatItalic style={menuItemIconDisabledStyles}></FormatItalic> Italic
       </MenuItem>
       <MenuItem disabled>
-        <FormatColorText style={menuItemIconStyles}></FormatColorText> Color
+        <FormatColorText style={menuItemIconDisabledStyles}></FormatColorText> Text color
       </MenuItem>
 
       <MenuDivider />
@@ -90,17 +90,16 @@ export const FormatMenu = (props: IProps) => {
 
       <MenuDivider />
       <MenuItem disabled>
-        <FormatAlignLeft style={menuItemIconStyles}></FormatAlignLeft> Left
+        <FormatAlignLeft style={menuItemIconDisabledStyles}></FormatAlignLeft> Left
       </MenuItem>
       <MenuItem disabled>
-        <FormatAlignCenter style={menuItemIconStyles}></FormatAlignCenter> Center
+        <FormatAlignCenter style={menuItemIconDisabledStyles}></FormatAlignCenter> Center
       </MenuItem>
       <MenuItem disabled>
-        <FormatAlignRight style={menuItemIconStyles}></FormatAlignRight> Right
+        <FormatAlignRight style={menuItemIconDisabledStyles}></FormatAlignRight> Right
       </MenuItem>
 
       <MenuDivider />
-      <MenuHeader>Cell</MenuHeader>
       <SubMenu
         id="FillColorMenuID"
         menuStyles={{
@@ -108,18 +107,21 @@ export const FormatMenu = (props: IProps) => {
         }}
         label={
           <>
-            <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill Color
+            <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill color
           </>
         }
       >
-        <MenuHeader>Fill Color</MenuHeader>
         <CompactPicker onChange={changeFillColor} />
-        <MenuItem onClick={removeFillColor}>Clear Fill Color</MenuItem>
+        <MenuItem onClick={removeFillColor}>Clear</MenuItem>
       </SubMenu>
 
       {borders}
 
-      <MenuItem onClick={handleClearFormatting}>Clear Formatting</MenuItem>
+      <MenuDivider />
+      <MenuItem onClick={handleClearFormatting}>
+        <FormatClear style={menuItemIconStyles}></FormatClear>
+        Clear formatting
+      </MenuItem>
     </Menu>
   );
 };
