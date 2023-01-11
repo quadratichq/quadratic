@@ -3,14 +3,18 @@ import { colors } from '../../../theme/colors';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { useEffect, useState } from 'react';
-import { Cell } from '../../../core/gridDB/db';
-import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
+import { Cell } from '../../../core/gridDB/gridTypes';
 import { formatDistance } from 'date-fns';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { isMobileOnly } from 'react-device-detect';
 import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
+import { Sheet } from '../../../core/gridDB/Sheet';
 
-export const BottomBar = () => {
+interface Props {
+  sheet: Sheet;
+}
+
+export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
@@ -28,23 +32,18 @@ export const BottomBar = () => {
         return;
 
       // Get cell at position
-      const cells = await GetCellsDB(
-        interactionState.cursorPosition.x,
-        interactionState.cursorPosition.y,
-        interactionState.cursorPosition.x,
-        interactionState.cursorPosition.y
-      );
+      const cell = props.sheet.getCell(interactionState.cursorPosition.x, interactionState.cursorPosition.y)?.cell;
 
       // If cell exists set selectedCell
       // Otherwise set to undefined
-      if (cells.length) {
-        setSelectedCell(cells[0]);
+      if (cell) {
+        setSelectedCell(cell);
       } else {
         setSelectedCell(undefined);
       }
     };
     updateCellData();
-  }, [interactionState, selectedCell]);
+  }, [interactionState, selectedCell, props.sheet]);
 
   return (
     <div

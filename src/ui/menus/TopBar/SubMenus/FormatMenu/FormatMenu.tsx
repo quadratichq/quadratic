@@ -1,7 +1,7 @@
 import { Fragment, useCallback } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Menu, MenuItem, MenuDivider, MenuHeader, SubMenu, MenuChangeEvent } from '@szhsin/react-menu';
+import { Menu, MenuItem, MenuDivider, SubMenu, MenuChangeEvent } from '@szhsin/react-menu';
 
 import {
   FormatBold,
@@ -11,27 +11,31 @@ import {
   FormatAlignCenter,
   FormatColorText,
   FormatColorFill,
+  FormatClear,
   ReadMore,
 } from '@mui/icons-material';
 import { PaletteOutlined } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
 import { colors } from '../../../../../theme/colors';
-import { menuItemIconStyles, topBarIconStyles } from '../menuStyles';
+import { menuItemIconStyles, menuItemIconDisabledStyles, topBarIconStyles } from '../menuStyles';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { useFormatCells } from '../useFormatCells';
-import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { useGetBorderMenu } from './useGetBorderMenu';
 import { useBorders } from '../useBorders';
 import './formatMenuStyles.scss';
 
+import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../../../core/transaction/sheetController';
+
 interface IProps {
-  app?: PixiApp;
+  app: PixiApp;
+  sheet_controller: SheetController;
 }
 
 export const FormatMenu = (props: IProps) => {
-  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(props.app);
-  const { clearBorders } = useBorders(props.app);
+  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(props.sheet_controller, props.app);
+  const { clearBorders } = useBorders(props.sheet_controller.sheet, props.app);
 
   // focus canvas after the format menu closes
   const onMenuChange = useCallback(
@@ -41,7 +45,7 @@ export const FormatMenu = (props: IProps) => {
     [props.app]
   );
 
-  const borders = useGetBorderMenu({ app: props.app });
+  const borders = useGetBorderMenu({ sheet: props.sheet_controller.sheet, app: props.app });
 
   const handleClearFormatting = useCallback(() => {
     clearFormatting();
@@ -60,15 +64,14 @@ export const FormatMenu = (props: IProps) => {
         </Tooltip>
       }
     >
-      <MenuHeader>Text</MenuHeader>
       <MenuItem disabled>
-        <FormatBold style={menuItemIconStyles}></FormatBold> Bold
+        <FormatBold style={menuItemIconDisabledStyles}></FormatBold> Bold
       </MenuItem>
       <MenuItem disabled>
-        <FormatItalic style={menuItemIconStyles}></FormatItalic> Italic
+        <FormatItalic style={menuItemIconDisabledStyles}></FormatItalic> Italic
       </MenuItem>
       <MenuItem disabled>
-        <FormatColorText style={menuItemIconStyles}></FormatColorText> Color
+        <FormatColorText style={menuItemIconDisabledStyles}></FormatColorText> Text color
       </MenuItem>
 
       <MenuDivider />
@@ -87,17 +90,16 @@ export const FormatMenu = (props: IProps) => {
 
       <MenuDivider />
       <MenuItem disabled>
-        <FormatAlignLeft style={menuItemIconStyles}></FormatAlignLeft> Left
+        <FormatAlignLeft style={menuItemIconDisabledStyles}></FormatAlignLeft> Left
       </MenuItem>
       <MenuItem disabled>
-        <FormatAlignCenter style={menuItemIconStyles}></FormatAlignCenter> Center
+        <FormatAlignCenter style={menuItemIconDisabledStyles}></FormatAlignCenter> Center
       </MenuItem>
       <MenuItem disabled>
-        <FormatAlignRight style={menuItemIconStyles}></FormatAlignRight> Right
+        <FormatAlignRight style={menuItemIconDisabledStyles}></FormatAlignRight> Right
       </MenuItem>
 
       <MenuDivider />
-      <MenuHeader>Cell</MenuHeader>
       <SubMenu
         id="FillColorMenuID"
         menuStyles={{
@@ -105,18 +107,21 @@ export const FormatMenu = (props: IProps) => {
         }}
         label={
           <>
-            <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill Color
+            <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill color
           </>
         }
       >
-        <MenuHeader>Fill Color</MenuHeader>
         <QColorPicker onChangeComplete={changeFillColor} />
-        <MenuItem onClick={removeFillColor}>Clear Fill Color</MenuItem>
+        <MenuItem onClick={removeFillColor}>Clear</MenuItem>
       </SubMenu>
 
       {borders}
 
-      <MenuItem onClick={handleClearFormatting}>Clear Formatting</MenuItem>
+      <MenuDivider />
+      <MenuItem onClick={handleClearFormatting}>
+        <FormatClear style={menuItemIconStyles}></FormatClear>
+        Clear formatting
+      </MenuItem>
     </Menu>
   );
 };

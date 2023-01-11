@@ -3,7 +3,7 @@ import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectC
 import { zoomToFit } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { UpdateHeading, updateHeadingDB } from '../../../gridDB/Cells/UpdateHeadingsDB';
+import { HeadingSize } from '../../../gridDB/useHeadings';
 
 export class PointerHeading {
   private app: PixiApp;
@@ -14,10 +14,15 @@ export class PointerHeading {
     this.app = app;
   }
 
+  get sheet() {
+    return this.app.sheet;
+  }
+
   selectAll() {
     const { viewport, settings, cursor } = this.app;
     if (!settings.setInteractionState) return;
     selectAllCells({
+      sheet: this.sheet,
       setInteractionState: settings.setInteractionState,
       interactionState: settings.interactionState,
       viewport,
@@ -27,10 +32,10 @@ export class PointerHeading {
 
   pointerDown(world: Point, event: InteractivePointerEvent): boolean {
     if (event.shiftKey) return false;
-    const { headings, gridOffsets, viewport, settings, cursor } = this.app;
+    const { headings, viewport, settings, cursor } = this.app;
+    const { gridOffsets } = this.sheet;
     if (!settings.setInteractionState) {
-      console.warn('Expected pixiAppSettings.setInteractionState to be defined');
-      return false;
+      throw new Error('Expected pixiAppSettings.setInteractionState to be defined');
     }
     const intersects = headings.intersectsHeadings(world);
     if (intersects) {
@@ -50,7 +55,7 @@ export class PointerHeading {
         if (intersects.corner) {
           if (this.downTimeout) {
             this.downTimeout = undefined;
-            zoomToFit(viewport);
+            zoomToFit(this.sheet, viewport);
           } else {
             this.selectAll();
             this.downTimeout = window.setTimeout(() => {
@@ -87,6 +92,7 @@ export class PointerHeading {
           }
         } else {
           selectAllCells({
+            sheet: this.sheet,
             setInteractionState: settings.setInteractionState,
             interactionState: settings.interactionState,
             viewport,
@@ -102,7 +108,8 @@ export class PointerHeading {
   }
 
   pointerMove(world: Point): boolean {
-    const { canvas, headings, gridOffsets, cells, gridLines, cursor } = this.app;
+    const { canvas, headings, cells, gridLines, cursor } = this.app;
+    const { gridOffsets } = this.sheet;
     const headingResize = headings.intersectsHeadingGridLine(world);
     if (headingResize) {
       canvas.style.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
@@ -139,11 +146,11 @@ export class PointerHeading {
 
   pointerUp(): boolean {
     if (this.active) {
-      const { gridOffsets } = this.app;
+      const { gridOffsets } = this.sheet;
       this.active = false;
       const { headingResizing } = gridOffsets;
       if (headingResizing) {
-        let updateHeading: UpdateHeading | undefined;
+        let updateHeading: HeadingSize | undefined;
         if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
           updateHeading = {
             column: headingResizing.column,
@@ -156,8 +163,14 @@ export class PointerHeading {
           };
         }
         if (updateHeading) {
-          updateHeadingDB(updateHeading);
-          gridOffsets.optimisticUpdate(updateHeading);
+          this.app.sheet_controller.predefined_transaction([
+            {
+              type: 'SET_HEADING_SIZE',
+              data: {
+                heading_size: updateHeading,
+              },
+            },
+          ]);
         }
         gridOffsets.headingResizing = undefined;
       }

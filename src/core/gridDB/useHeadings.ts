@@ -1,18 +1,29 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../gridGL/types/size';
-import { GetHeadingsDB } from './Cells/GetHeadingsDB';
-import { deleteHeadingDB, UpdateHeading, updateHeadingDB } from './Cells/UpdateHeadingsDB';
 import { HeadingResizing } from './GridOffsets';
+import { Sheet } from './Sheet';
 
-export const useHeadings = (app?: PixiApp) => {
+interface Props {
+  sheet: Sheet;
+}
+
+export interface HeadingSize {
+  row?: number;
+  column?: number;
+  size: number;
+}
+
+export interface DeleteHeadings {
+  rows: number[];
+  columns: number[];
+}
+
+export const useHeadings = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const multiCursor = interactionState.showMultiCursor;
-  const headings = useLiveQuery(() => GetHeadingsDB());
 
   const getStartEnd = useCallback((): { start: Coordinate; end: Coordinate } => {
     let start: Coordinate, end: Coordinate;
@@ -28,7 +39,7 @@ export const useHeadings = (app?: PixiApp) => {
 
   const updateHeadings = useCallback(
     (headingResizing: HeadingResizing) => {
-      let change: UpdateHeading | undefined;
+      let change: HeadingSize | undefined;
       if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
         change = {
           column: headingResizing.column,
@@ -41,32 +52,30 @@ export const useHeadings = (app?: PixiApp) => {
         };
       }
       if (change) {
-        app && app.gridOffsets.optimisticUpdate(change);
-        updateHeadingDB(change);
+        props.sheet.gridOffsets.update(change);
       }
     },
-    [app]
+    [props.sheet]
   );
 
   const clearCellSizes = useCallback(() => {
     const { start, end } = getStartEnd();
-    const columns = [];
+    const columns: number[] = [];
     for (let x = start.x; x <= end.x; x++) {
-      app?.gridOffsets.optimisticUpdate({ column: x, size: CELL_WIDTH });
+      props.sheet.gridOffsets.update({ column: x, size: CELL_WIDTH });
       columns.push(x);
     }
-    const rows = [];
+    const rows: number[] = [];
     for (let y = start.y; y <= end.y; y++) {
-      app?.gridOffsets.optimisticUpdate({ row: y, size: CELL_HEIGHT });
+      props.sheet.gridOffsets.update({ row: y, size: CELL_HEIGHT });
       rows.push(y);
     }
     if (rows.length || columns.length) {
-      deleteHeadingDB({ rows, columns });
+      props.sheet.gridOffsets.delete({ rows, columns });
     }
-  }, [app, getStartEnd]);
+  }, [props.sheet, getStartEnd]);
 
   return {
-    headings,
     updateHeadings,
     clearCellSizes,
   };

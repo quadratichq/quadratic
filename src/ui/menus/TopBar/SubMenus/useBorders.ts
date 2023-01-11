@@ -1,5 +1,6 @@
-import { clearBorderDB, updateBorderDB } from '../../../../core/gridDB/Cells/UpdateBordersDB';
-import { Border, BorderType } from '../../../../core/gridDB/db';
+import { Border, BorderType } from '../../../../core/gridDB/gridTypes';
+import { localFiles } from '../../../../core/gridDB/localFiles';
+import { Sheet } from '../../../../core/gridDB/Sheet';
 import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../../../core/gridGL/types/size';
 import { useGetSelection } from './useGetSelection';
@@ -21,11 +22,11 @@ interface IResults {
   clearBorders: () => void;
 }
 
-export const useBorders = (app?: PixiApp): IResults => {
+export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
   const { start, end, multiCursor } = useGetSelection();
+  const { sheet_controller } = app;
 
   const changeBorders = (options: ChangeBorder): void => {
-    if (!app) return;
     const borderColor = options.color;
     const borderUpdates: Border[] = [];
 
@@ -36,7 +37,7 @@ export const useBorders = (app?: PixiApp): IResults => {
         border.vertical = { type: options.type, color: borderColor };
       } else {
         // update an existing border
-        const border = app.borders.get(x, y);
+        const border = sheet.borders.get(x, y);
         if (border) {
           const update: Border = { x, y, vertical: { type: options.type, color: borderColor } };
           if (border.horizontal) {
@@ -59,7 +60,7 @@ export const useBorders = (app?: PixiApp): IResults => {
         border.horizontal = { type: options.type, color: borderColor };
       } else {
         // update an existing border
-        const border = app.borders.get(x, y);
+        const border = sheet.borders.get(x, y);
         if (border) {
           const update: Border = { x, y, horizontal: { type: options.type, color: borderColor } };
           if (border.vertical) {
@@ -109,22 +110,37 @@ export const useBorders = (app?: PixiApp): IResults => {
       }
     }
     if (borderUpdates.length) {
-      updateBorderDB(borderUpdates);
+      // create transaction to update borders
+      sheet_controller.start_transaction();
+      borderUpdates.forEach((border) => {
+        sheet_controller.execute_statement({
+          type: 'SET_BORDER',
+          data: {
+            position: [border.x, border.y],
+            border: border,
+          },
+        });
+      });
+      sheet_controller.end_transaction();
+
+      app.cells.dirty = true;
+      app.quadrants.quadrantChanged({ range: { start, end } });
+
+      localFiles.saveLastLocal(sheet.export_file());
     }
   };
 
   const clearBorders = (): void => {
-    if (!app) return;
     const borderUpdate: Border[] = [];
     const borderDelete: Coordinate[] = [];
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
-        const border = app.borders.get(x, y);
+        const border = sheet.borders.get(x, y);
         if (border) {
           borderDelete.push({ x, y });
         }
         if (x === end.x) {
-          const border = app.borders.get(x + 1, y);
+          const border = sheet.borders.get(x + 1, y);
           if (border?.vertical) {
             if (!border.horizontal) {
               borderDelete.push({ x: x + 1, y });
@@ -134,7 +150,7 @@ export const useBorders = (app?: PixiApp): IResults => {
           }
         }
         if (y === end.y) {
-          const border = app.borders.get(x, y + 1);
+          const border = sheet.borders.get(x, y + 1);
           if (border?.horizontal) {
             if (!border.vertical) {
               borderDelete.push({ x, y: y + 1 });
@@ -145,12 +161,37 @@ export const useBorders = (app?: PixiApp): IResults => {
         }
       }
     }
+
+    // create transaction to update borders
+    sheet_controller.start_transaction();
     if (borderDelete.length) {
-      clearBorderDB(borderDelete);
+      borderDelete.forEach((border_coord) => {
+        sheet_controller.execute_statement({
+          type: 'SET_BORDER',
+          data: {
+            position: [border_coord.x, border_coord.y],
+            border: undefined,
+          },
+        });
+      });
     }
     if (borderUpdate.length) {
-      updateBorderDB(borderUpdate);
+      borderUpdate.forEach((border) => {
+        sheet_controller.execute_statement({
+          type: 'SET_BORDER',
+          data: {
+            position: [border.x, border.y],
+            border: border,
+          },
+        });
+      });
     }
+    sheet_controller.end_transaction();
+
+    app.cells.dirty = true;
+    app.quadrants.quadrantChanged({ range: { start, end } });
+
+    localFiles.saveLastLocal(sheet.export_file());
   };
 
   return {

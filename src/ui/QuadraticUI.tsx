@@ -7,16 +7,25 @@ import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../core/gridGL/QuadraticGrid';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PixiApp } from '../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../core/transaction/sheetController';
 
-export default function QuadraticUI() {
+interface Props {
+  sheetController: SheetController;
+}
+
+export default function QuadraticUI(props: Props) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
-  // this is a temporary move: need a way of getting the gridSparse in format
-  // this will be moved back to QuadraticGrid once we have the rust backend where I can query cells from the menu
-  const [app, setApp] = useState<PixiApp | undefined>();
+  const [app] = useState(new PixiApp(props.sheetController));
+
+  const { sheetController } = props;
+
+  useEffect(() => {
+    sheetController.setApp(app);
+  }, [sheetController, app]);
 
   return (
     <div
@@ -28,8 +37,8 @@ export default function QuadraticUI() {
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
-      {showDebugMenu && <DebugMenu />}
-      <TopBar app={app} />
+      {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
+      <TopBar app={app} sheetController={sheetController} />
 
       <div
         style={{
@@ -39,11 +48,11 @@ export default function QuadraticUI() {
           overflow: 'hidden',
         }}
       >
-        <QuadraticGrid app={app} setApp={setApp} />
-        <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
+        <QuadraticGrid sheetController={sheetController} app={app} />
+        <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
 
-      <BottomBar />
+      <BottomBar sheet={sheetController.sheet} />
     </div>
   );
 }

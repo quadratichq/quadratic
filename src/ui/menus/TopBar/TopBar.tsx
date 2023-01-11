@@ -5,7 +5,6 @@ import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { colors } from '../../../theme/colors';
-
 import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
@@ -13,12 +12,16 @@ import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isMobileOnly } from 'react-device-detect';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
+import { useLocalFiles } from '../../../hooks/useLocalFiles';
+import { SheetController } from '../../../core/transaction/sheetController';
 
 interface IProps {
-  app?: PixiApp;
+  app: PixiApp;
+  sheetController: SheetController;
 }
 
 export const TopBar = (props: IProps) => {
+  const { localFilename } = useLocalFiles();
   return (
     <div
       onContextMenu={(event) => {
@@ -53,11 +56,11 @@ export const TopBar = (props: IProps) => {
           width: '15rem',
         }}
       >
-        <QuadraticMenu></QuadraticMenu>
+        <QuadraticMenu sheetController={props.sheetController} />
         {!isMobileOnly && (
           <>
             <DataMenu></DataMenu>
-            <FormatMenu app={props.app} />
+            <FormatMenu app={props.app} sheet_controller={props.sheetController} />
             <NumberFormatMenu></NumberFormatMenu>
           </>
         )}
@@ -85,7 +88,7 @@ export const TopBar = (props: IProps) => {
               Personal &nbsp;
             </Typography>
             <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-              / Untitled.grid
+              / {localFilename}
             </Typography>
             <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown>
           </>

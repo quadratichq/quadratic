@@ -1,32 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
-import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useLoading } from '../../contexts/LoadingContext';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
 import { useMenuState } from '@szhsin/react-menu';
 import { PixiApp } from './pixiApp/PixiApp';
-import { useHeadings } from '../gridDB/useHeadings';
 import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
 import RightClickMenu from '../../ui/menus/RightClickMenu';
-import { GetFormatDB } from '../gridDB/Cells/GetFormatDB';
-import { GetBordersDB } from '../gridDB/Cells/GetBordersDB';
+import { SheetController } from '../transaction/sheetController';
 
 interface IProps {
+  sheetController: SheetController;
   app?: PixiApp;
-  setApp: (app: PixiApp) => void;
 }
 
 export default function QuadraticGrid(props: IProps) {
   const { loading } = useLoading();
-
-  const { setApp } = props;
-
-  useEffect(() => setApp(new PixiApp()), [setApp]);
 
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node: HTMLDivElement | null) => {
@@ -36,42 +28,22 @@ export default function QuadraticGrid(props: IProps) {
     if (props.app && container) props.app.attach(container);
   }, [props.app, container]);
 
-  // Live query to update cells
-  const cells = useLiveQuery(() => GetCellsDB());
-  const format = useLiveQuery(() => GetFormatDB());
-  const borders = useLiveQuery(() => GetBordersDB());
-
   useEffect(() => {
-    if (props.app && cells && format && borders) {
-      props.app.borders.populate(borders);
-      props.app.grid.populate(cells, format);
+    if (props.app) {
       props.app.quadrants.build();
-      props.app.cells.dirty = true;
     }
-  }, [props.app, cells, format, borders]);
-
-  const { headings } = useHeadings(props.app);
-  useEffect(() => {
-    if (props.app && headings) {
-      props.app.gridOffsets.populate(headings.columns, headings.rows);
-    }
-  }, [props.app, headings]);
-
-  useEffect(() => {
-    if (props.app && headings) {
-      props.app.gridOffsets.populate(headings.columns, headings.rows);
-    }
-  }, [props.app, headings]);
+  }, [props.sheetController.sheet, props.app]);
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
   useEffect(() => {
     props.app?.settings.updateInteractionState(interactionState, setInteractionState);
     ensureVisible({
+      sheet: props.sheetController.sheet,
       app: props.app,
       interactionState,
     });
-  }, [props.app, props.app?.settings, interactionState, setInteractionState]);
+  }, [props.app, props.app?.settings, interactionState, setInteractionState, props.sheetController.sheet]);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   useEffect(() => {
@@ -88,6 +60,7 @@ export default function QuadraticGrid(props: IProps) {
   const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
 
   const { onKeyDown } = useKeyboard({
+    sheetController: props.sheetController,
     interactionState,
     setInteractionState,
     editorInteractionState,
@@ -119,8 +92,10 @@ export default function QuadraticGrid(props: IProps) {
         setInteractionState={setInteractionState}
         container={container}
         app={props.app}
+        sheetController={props.sheetController}
       />
       <RightClickMenu
+        sheet_controller={props.sheetController}
         state={rightClickMenuState}
         anchorPoint={rightClickPoint}
         onClose={() => toggleRightClickMenu(false)}

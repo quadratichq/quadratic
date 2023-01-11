@@ -1,6 +1,6 @@
-import { ClickEvent, MenuHeader, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
+import { ClickEvent, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
 import { menuItemIconStyles } from '../menuStyles';
-import { BorderType } from '../../../../../core/gridDB/db';
+import { BorderType } from '../../../../../core/gridDB/gridTypes';
 import {
   BorderColor,
   LineStyle,
@@ -15,19 +15,22 @@ import {
   BorderVertical,
   BorderClear,
 } from '@mui/icons-material';
+import { Tooltip } from '@mui/material';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { ColorResult } from 'react-color';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../../atoms/gridInteractionStateAtom';
-import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
 import { colors } from '../../../../../theme/colors';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
+import { Sheet } from '../../../../../core/gridDB/Sheet';
+import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { QColorPicker } from '../../../../components/qColorPicker';
 
 interface Props extends SubMenuProps {
-  app?: PixiApp;
+  sheet: Sheet;
+  app: PixiApp;
 }
 
 enum BorderSelection {
@@ -53,7 +56,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
   const defaultColor = convertTintToString(colors.defaultBorderColor);
   const [color, setColor] = useState<string>(defaultColor);
 
-  const { changeBorders, clearBorders } = useBorders(props.app);
+  const { changeBorders, clearBorders } = useBorders(props.sheet, props.app);
 
   // clear border type when changing selection
   useEffect(() => {
@@ -63,6 +66,10 @@ export function useGetBorderMenu(props: Props): JSX.Element {
   const handleChangeBorders = useCallback(
     (borderSelection: BorderSelection, color: string, lineStyle?: BorderType): void => {
       if (!borderSelection) return;
+      if (borderSelection === BorderSelection.clear) {
+        clearBorders();
+        return;
+      }
       const borders: ChangeBorder = {};
       if (color !== defaultColor) borders.color = color;
       if (lineStyle) borders.type = lineStyle;
@@ -101,7 +108,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
       }
       changeBorders(borders);
     },
-    [changeBorders, defaultColor]
+    [changeBorders, defaultColor, clearBorders]
   );
 
   const handleChangeBorderColor = useCallback(
@@ -130,12 +137,11 @@ export function useGetBorderMenu(props: Props): JSX.Element {
     type: BorderSelection;
     label: JSX.Element;
     disabled?: boolean;
+    title: string;
   }): JSX.Element => {
     return (
       <div
-        className={`borderMenuType ${borderSelection === props.type ? 'borderSelected' : ''} ${
-          props.disabled ? 'borderDisabled' : ''
-        }`}
+        className={`borderMenuType ${props.disabled ? 'borderDisabled' : ''}`}
         onClick={() => {
           if (!props.disabled) {
             setBorderSelection(props.type);
@@ -143,7 +149,9 @@ export function useGetBorderMenu(props: Props): JSX.Element {
           }
         }}
       >
-        {props.label}
+        <Tooltip title={props.title} arrow>
+          {props.label}
+        </Tooltip>
       </div>
     );
   };
@@ -160,24 +168,33 @@ export function useGetBorderMenu(props: Props): JSX.Element {
       <div className="borderMenu">
         <div className="borderMenuLines">
           <div className="borderMenuLine">
-            <BorderSelectionButton type={BorderSelection.all} label={<BorderAll />} />
-            <BorderSelectionButton type={BorderSelection.inner} label={<BorderInner />} disabled={!multiCursor} />
-            <BorderSelectionButton type={BorderSelection.outer} label={<BorderOuter />} />
+            <BorderSelectionButton type={BorderSelection.all} title="All borders" label={<BorderAll />} />
+            <BorderSelectionButton
+              type={BorderSelection.inner}
+              title="Inner borders"
+              label={<BorderInner />}
+              disabled={!multiCursor}
+            />
+            <BorderSelectionButton type={BorderSelection.outer} title="Outer borders" label={<BorderOuter />} />
             <BorderSelectionButton
               type={BorderSelection.horizontal}
+              title="Horizontal borders"
               label={<BorderHorizontal />}
               disabled={!multiCursor}
             />
-            <BorderSelectionButton type={BorderSelection.vertical} label={<BorderVertical />} disabled={!multiCursor} />
+            <BorderSelectionButton
+              type={BorderSelection.vertical}
+              title="Vertical borders"
+              label={<BorderVertical />}
+              disabled={!multiCursor}
+            />
           </div>
           <div className="borderMenuLine">
-            <BorderSelectionButton type={BorderSelection.left} label={<BorderLeft />} />
-            <BorderSelectionButton type={BorderSelection.top} label={<BorderTop />} />
-            <BorderSelectionButton type={BorderSelection.right} label={<BorderRight />} />
-            <BorderSelectionButton type={BorderSelection.bottom} label={<BorderBottom />} />
-            <div className="borderMenuType" onClick={clearBorders}>
-              <BorderClear />
-            </div>
+            <BorderSelectionButton type={BorderSelection.left} title="Left border" label={<BorderLeft />} />
+            <BorderSelectionButton type={BorderSelection.top} title="Top border" label={<BorderTop />} />
+            <BorderSelectionButton type={BorderSelection.right} title="Right border" label={<BorderRight />} />
+            <BorderSelectionButton type={BorderSelection.bottom} title="Bottom border" label={<BorderBottom />} />
+            <BorderSelectionButton type={BorderSelection.clear} title="Clear borders" label={<BorderClear />} />
           </div>
         </div>
         <div className="borderMenuFormatting">
@@ -189,7 +206,6 @@ export function useGetBorderMenu(props: Props): JSX.Element {
             }}
             label={<BorderColor style={{ ...menuItemIconStyles, color }}></BorderColor>}
           >
-            <MenuHeader>Border Color</MenuHeader>
             <QColorPicker onChangeComplete={handleChangeBorderColor}></QColorPicker>
           </SubMenu>
           <SubMenu

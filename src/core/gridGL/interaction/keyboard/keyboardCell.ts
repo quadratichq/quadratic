@@ -1,17 +1,18 @@
 import { EditorInteractionState } from '../../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
-import { deleteCellsRange } from '../../../actions/deleteCellsRange';
+import { SheetController } from '../../../transaction/sheetController';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import isAlphaNumeric from './isAlphaNumeric';
 
 export function keyboardCell(options: {
+  sheet_controller: SheetController;
   event: React.KeyboardEvent<HTMLElement>;
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   app?: PixiApp;
 }): boolean {
-  const { event, interactionState, setInteractionState, setEditorInteractionState, app } = options;
+  const { event, interactionState, setInteractionState, setEditorInteractionState, app, sheet_controller } = options;
   if (!app) return false;
 
   if (event.key === 'Tab') {
@@ -36,29 +37,34 @@ export function keyboardCell(options: {
     // delete a range or a single cell, depending on if MultiCursor is active
     if (interactionState.showMultiCursor) {
       // delete a range of cells
-      deleteCellsRange(
-        {
-          x: interactionState.multiCursorPosition.originPosition.x,
-          y: interactionState.multiCursorPosition.originPosition.y,
-        },
-        {
-          x: interactionState.multiCursorPosition.terminalPosition.x,
-          y: interactionState.multiCursorPosition.terminalPosition.y,
-        }
+      const cells_to_delete = sheet_controller.sheet.grid.getNakedCells(
+        interactionState.multiCursorPosition.originPosition.x,
+        interactionState.multiCursorPosition.originPosition.y,
+        interactionState.multiCursorPosition.terminalPosition.x,
+        interactionState.multiCursorPosition.terminalPosition.y
       );
+
+      sheet_controller.start_transaction();
+      cells_to_delete.forEach((cell) => {
+        sheet_controller.execute_statement({
+          type: 'SET_CELL',
+          data: { position: [cell.x, cell.y], value: undefined },
+        });
+      });
+      sheet_controller.end_transaction();
+      // TODO: Needs to update any dependent cells
     } else {
       // delete a single cell
-      deleteCellsRange(
+      sheet_controller.predefined_transaction([
         {
-          x: interactionState.cursorPosition.x,
-          y: interactionState.cursorPosition.y,
+          type: 'SET_CELL',
+          data: { position: [interactionState.cursorPosition.x, interactionState.cursorPosition.y], value: undefined },
         },
-        {
-          x: interactionState.cursorPosition.x,
-          y: interactionState.cursorPosition.y,
-        }
-      );
+      ]);
+      // TODO: Needs to update any dependent cells
     }
+
+    // todo: update dependency graph
 
     event.preventDefault();
   }
@@ -66,7 +72,7 @@ export function keyboardCell(options: {
   if (event.key === 'Enter') {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
-    const cell = app.grid.getCell(x, y);
+    const cell = sheet_controller.sheet.getCell(x, y)?.cell;
     if (cell) {
       if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
         // open single line
@@ -101,7 +107,7 @@ export function keyboardCell(options: {
   if (event.key === '/' || event.key === '=') {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
-    const cell = app.grid.getCell(x, y);
+    const cell = sheet_controller.sheet.getCell(x, y)?.cell;
     if (cell) {
       if (cell.type === 'PYTHON') {
         // Open code editor, or move code editor if already open.

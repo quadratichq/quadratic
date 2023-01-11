@@ -1,6 +1,6 @@
 import { atom } from 'recoil';
 import CellReference from '../core/gridGL/types/cellReference';
-import { CellTypes } from '../core/gridDB/db';
+import { CellTypes } from '../core/gridDB/gridTypes';
 
 export interface EditorInteractionState {
   showCellTypeMenu: boolean;

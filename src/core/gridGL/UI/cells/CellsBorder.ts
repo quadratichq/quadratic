@@ -1,6 +1,6 @@
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { colors } from '../../../../theme/colors';
-import { Border } from '../../../gridDB/db';
+import { Border } from '../../../gridDB/gridTypes';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { ICellsDraw } from './Cells';
 import { drawBorder, drawCellBorder } from './drawBorder';
@@ -86,7 +86,7 @@ export class CellsBorder extends Container {
       minY = Infinity,
       maxX = -Infinity,
       maxY = -Infinity;
-    const { gridOffsets } = this.app;
+    const { gridOffsets } = this.app.sheet;
     borders.forEach((border) => {
       const position = gridOffsets.getCell(border.x, border.y);
       if (border.horizontal || border.vertical) {

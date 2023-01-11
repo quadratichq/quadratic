@@ -1,8 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import { UpdateHeading } from './Cells/UpdateHeadingsDB';
-import { Heading } from './db';
+import { Heading } from './gridTypes';
+import { HeadingSize } from './useHeadings';
 
 export interface HeadingResizing {
   x: number;
@@ -14,37 +13,42 @@ export interface HeadingResizing {
   height?: number;
 }
 
+/** Stores all column and row locations; helper functions to translate between screen and coordinate */
 export class GridOffsets {
-  private app: PixiApp;
   private columns: Record<string, Heading> = {};
   private rows: Record<string, Heading> = {};
   headingResizing: HeadingResizing | undefined;
-
-  constructor(app: PixiApp) {
-    this.app = app;
-  }
 
   populate(columns: Heading[], rows: Heading[]): void {
     this.columns = {};
     columns.forEach((entry) => (this.columns[entry.id] = entry));
     this.rows = {};
     rows.forEach((entry) => (this.rows[entry.id] = entry));
-    this.app.gridLines.dirty = true;
-    this.app.headings.dirty = true;
-    this.app.cursor.dirty = true;
   }
 
   getColumnWidth(column: number): number {
+    // if resizing in progress get from headingResizing
     if (this.headingResizing?.column === column && this.headingResizing?.width !== undefined) {
       return this.headingResizing.width;
     }
-    return this.columns[column]?.size ?? CELL_WIDTH;
+    return this.getCommittedColumnWidth(column);
   }
 
   getRowHeight(row: number): number {
+    // if resizing in progress get from headingResizing
     if (this.headingResizing?.row === row && this.headingResizing?.height !== undefined) {
       return this.headingResizing.height;
     }
+    return this.getCommittedRowHeight(row);
+  }
+
+  getCommittedColumnWidth(column: number): number {
+    // get last saved width
+    return this.columns[column]?.size ?? CELL_WIDTH;
+  }
+
+  getCommittedRowHeight(row: number): number {
+    // get last saved height
     return this.rows[row]?.size ?? CELL_HEIGHT;
   }
 
@@ -293,11 +297,12 @@ export class GridOffsets {
     return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
   }
 
-  /**
-   * optimistically update row/column size instead of waiting for next populate
-   * @param change
-   */
-  optimisticUpdate(change: UpdateHeading): void {
+  delete(options: { rows: number[]; columns: number[] }): void {
+    options.rows.forEach((row) => delete this.rows[row]);
+    options.columns.forEach((column) => delete this.columns[column]);
+  }
+
+  update(change: HeadingSize): void {
     if (change.row !== undefined) {
       if (this.rows[change.row]) {
         this.rows[change.row].size = change.size;
@@ -315,5 +320,13 @@ export class GridOffsets {
 
   debugRowsColumns(): { rows: Heading[]; columns: Heading[] } {
     return { rows: Object.values(this.rows), columns: Object.values(this.columns) };
+  }
+
+  getColumnsArray(): Heading[] {
+    return Object.values(this.columns);
+  }
+
+  getRowsArray(): Heading[] {
+    return Object.values(this.rows);
   }
 }

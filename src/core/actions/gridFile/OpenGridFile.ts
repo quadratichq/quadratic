@@ -1,8 +1,6 @@
 import { GridFileSchema } from './GridFileSchema';
-import { qdb } from '../../gridDB/db';
-import { UpdateCellsDB } from '../../gridDB/Cells/UpdateCellsDB';
-import { UpdateDGraphDB } from '../../gridDB/DGraph/UpdateDGraphDB';
-import QuadraticDependencyGraph from '../../dgraph/QuadraticDependencyGraph';
+import { localFiles } from '../../gridDB/localFiles';
+import { SheetController } from '../../transaction/sheetController';
 
 const readFileAsync = async (file: File) => {
   // takes a File object and returns it as a string
@@ -41,25 +39,35 @@ const openFileMenuAsync = async () => {
   });
 };
 
-export const LoadGridFromJSON = async (gridFileJSON: GridFileSchema) => {
-  // clear current grid
-  await qdb.cells.clear();
-  await qdb.qgrid.clear();
-
-  // Open file cells and dgraph
-  await UpdateCellsDB(gridFileJSON.cells);
-  let qdg = new QuadraticDependencyGraph();
-  qdg.load_from_json(gridFileJSON.dgraph);
-  await UpdateDGraphDB(qdg);
-};
-
-export const OpenGridFile = async () => {
+export const openGridFile = async (sheetController: SheetController): Promise<void> => {
   // take file input selection from user
   const fileToLoad = await openFileMenuAsync();
   const result = await readFileAsync(fileToLoad);
-
-  // parse file
   const gridFileJSON = JSON.parse(result) as GridFileSchema;
-
-  await LoadGridFromJSON(gridFileJSON);
+  sheetController.sheet.load_file(gridFileJSON);
+  sheetController.clear();
+  localFiles.loadedExternalFile(fileToLoad.name, gridFileJSON);
 };
+
+export const openLocalGridFile = async (filename: string, sheetController: SheetController): Promise<void> => {
+  const data = await localFiles.loadLocal(filename);
+  if (data) {
+    sheetController.sheet.load_file(data);
+    sheetController.clear();
+  }
+};
+
+export const openExampleGridFile = async (filename: string, sheetController: SheetController): Promise<void> => {
+  const file = await fetch(`/examples/${filename}`);
+  const gridFileJSON = await file.json() as GridFileSchema;
+  sheetController.sheet.load_file(gridFileJSON);
+  localFiles.loadedExternalFile(filename, gridFileJSON);
+  sheetController.clear();
+}
+
+export const newGridFile = (filename: string, sheetController: SheetController): void => {
+  const { sheet } = sheetController;
+  sheet.newFile();
+  localFiles.loadedExternalFile(filename, sheet.export_file());
+  sheetController.clear();
+}

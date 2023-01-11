@@ -1,27 +1,22 @@
-// import { useState } from "react";
-import { GetDGraphDB } from '../../../core/gridDB/DGraph/GetDGraphDB';
-import { UpdateDGraphDB } from '../../../core/gridDB/DGraph/UpdateDGraphDB';
-import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
-import { qdb } from '../../../core/gridDB/db';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { colors } from '../../../theme/colors';
 import TextField from '@mui/material/TextField';
 import { Button } from '@mui/material';
-import QuadraticDependencyGraph from '../../../core/dgraph/QuadraticDependencyGraph';
-// import CellReference from "../../../core/gridGL/types/cellReference";
+import { Sheet } from '../../../core/gridDB/Sheet';
 
-export default function DebugMenu() {
-  //   const [debugContent, setDebugContent] = useState<string>("");
-  const dgraph = useLiveQuery(() => GetDGraphDB());
-  const cells = useLiveQuery(() => GetCellsDB());
+interface Props {
+  sheet: Sheet;
+}
 
-  // const dgraph_json_str = dgraph?.export_to_json();
+export default function DebugMenu(props: Props) {
+  const { sheet } = props;
+  const { dgraph } = sheet;
 
+  const cells = sheet.debugGetCells();
   let file_state: string;
 
   const HUMAN_READABLE_DGRAPH = true;
-  let dgraph_str = dgraph?.human_readable_string();
-  if (!HUMAN_READABLE_DGRAPH) dgraph_str = JSON.stringify(dgraph?.export_to_obj());
+  let dgraph_str = JSON.stringify(dgraph);
+  if (!HUMAN_READABLE_DGRAPH) dgraph_str = JSON.stringify(dgraph);
 
   try {
     file_state = `${dgraph_str}\n${JSON.stringify(cells || '', null, '\t')}`;
@@ -46,16 +41,15 @@ export default function DebugMenu() {
     >
       <Button
         onClick={() => {
-          const qdg = new QuadraticDependencyGraph();
-          UpdateDGraphDB(qdg);
+          dgraph.clear();
         }}
       >
         Reset DGraph
       </Button>
       <Button
         onClick={() => {
-          qdb.cells.clear();
-          qdb.qgrid.clear();
+          sheet.grid.empty();
+          dgraph.clear();
         }}
       >
         Reset Grid

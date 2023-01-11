@@ -1,5 +1,6 @@
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
+import { Sheet } from '../../../gridDB/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
@@ -19,11 +20,16 @@ export class PointerDown {
     this.app = app;
   }
 
+  get sheet(): Sheet {
+    return this.app.sheet;
+  }
+
   pointerDown(world: Point, event: PointerEvent): void {
     if (isMobile) return;
 
     this.positionRaw = world;
-    const { gridOffsets, settings, cursor } = this.app;
+    const { settings, cursor } = this.app;
+    const { gridOffsets } = this.sheet;
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
 
     const rightClick = event.button === 2 || (event.button === 0 && event.ctrlKey);
@@ -32,8 +38,7 @@ export class PointerDown {
     // If the user has clicked inside the selection.
     const { interactionState, setInteractionState } = settings;
     if (!setInteractionState) {
-      console.warn('Expected setInteractionState to be defined');
-      return;
+      throw new Error('Expected setInteractionState to be defined');
     }
     if (rightClick && interactionState.showMultiCursor) {
       if (
@@ -59,7 +64,7 @@ export class PointerDown {
         column === this.previousPosition.originPosition.x &&
         row === this.previousPosition.originPosition.y
       ) {
-        doubleClickCell({ cell: this.app.grid.getCell(column, row), app: this.app });
+        doubleClickCell({ cell: this.sheet.grid.getCell(column, row), app: this.app });
         this.active = false;
         event.preventDefault();
         return;
@@ -116,7 +121,8 @@ export class PointerDown {
   }
 
   pointerMove(world: Point): void {
-    const { viewport, gridOffsets, settings, cursor } = this.app;
+    const { viewport, settings, cursor } = this.app;
+    const { gridOffsets } = this.sheet;
 
     // for determining if double click
     if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {

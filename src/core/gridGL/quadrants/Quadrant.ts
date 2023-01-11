@@ -33,7 +33,7 @@ export class Quadrant extends Container {
     const oldRectangle = this.visibleRectangle;
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
-    this.visibleRectangle = this.app.gridOffsets.getScreenRectangle(
+    this.visibleRectangle = this.app.sheet.gridOffsets.getScreenRectangle(
       columnStart,
       rowStart,
       QUADRANT_COLUMNS - 2,
@@ -106,7 +106,7 @@ export class Quadrant extends Container {
 
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
-    const screenRectangle = app.gridOffsets.getScreenRectangle(
+    const screenRectangle = app.sheet.gridOffsets.getScreenRectangle(
       columnStart,
       rowStart,
       QUADRANT_COLUMNS - 1,

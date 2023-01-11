@@ -1,7 +1,8 @@
 import { ColorResult } from 'react-color';
-import { updateFormatDB } from '../../../../core/gridDB/Cells/UpdateFormatDB';
-import { CellFormat } from '../../../../core/gridDB/db';
+import { CellFormat } from '../../../../core/gridDB/gridTypes';
+import { localFiles } from '../../../../core/gridDB/localFiles';
 import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../../core/transaction/sheetController';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { useGetSelection } from './useGetSelection';
 
@@ -13,19 +14,33 @@ interface IResults {
 
 type CellFormatNoPosition = Exclude<CellFormat, 'x' | 'y'>;
 
-export const useFormatCells = (app?: PixiApp): IResults => {
+export const useFormatCells = (sheet_controller: SheetController, app?: PixiApp): IResults => {
   const { start, end } = useGetSelection();
 
   const onFormat = (updatedFormat: CellFormatNoPosition): void => {
-    if (!app) return;
     const formats: CellFormat[] = [];
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
-        const format = app.grid.getFormat(x, y) ?? { x, y };
+        const format = sheet_controller.sheet.grid.getFormat(x, y) ?? { x, y };
         formats.push({ ...format, ...updatedFormat });
       }
     }
-    updateFormatDB(formats);
+    // Transaction to update formats
+    sheet_controller.start_transaction();
+    formats.forEach((format) => {
+      if (format.x && format.y)
+        sheet_controller.execute_statement({
+          type: 'SET_CELL_FORMAT',
+          data: {
+            position: [format.x, format.y],
+            value: format,
+          },
+        });
+    });
+    sheet_controller.end_transaction();
+
+    app?.quadrants.quadrantChanged({ range: { start, end } });
+    localFiles.saveLastLocal(sheet_controller.sheet.export_file());
   };
 
   const changeFillColor = (color: ColorResult): void => {
@@ -37,9 +52,29 @@ export const useFormatCells = (app?: PixiApp): IResults => {
   };
 
   const clearFormatting = (): void => {
-    if (!app) return;
+    const formats: CellFormat[] = [];
+    for (let y = start.y; y <= end.y; y++) {
+      for (let x = start.x; x <= end.x; x++) {
+        const format = sheet_controller.sheet.grid.getFormat(x, y) ?? { x, y };
+        formats.push({ ...format });
+      }
+    }
+    // transaction to clear cell formats
+    sheet_controller.start_transaction();
+    formats.forEach((format) => {
+      if (format.x && format.y)
+        sheet_controller.execute_statement({
+          type: 'SET_CELL_FORMAT',
+          data: {
+            position: [format.x, format.y],
+            value: undefined, // set to undefined to clear formatting
+          },
+        });
+    });
+    sheet_controller.end_transaction();
 
-    // todo: clear formatting w/clearing borders
+    app?.quadrants.quadrantChanged({ range: { start, end } });
+    localFiles.saveLastLocal(sheet_controller.sheet.export_file());
   };
 
   return {

@@ -1,10 +1,8 @@
 import CellReference from '../gridGL/types/cellReference';
-import { Cell } from '../gridDB/db';
-import { GetCellsDB } from '../gridDB/Cells/GetCellsDB';
-import { UpdateCellsDB } from '../gridDB/Cells/UpdateCellsDB';
-import { DeleteCellsDB } from '../gridDB/Cells/DeleteCellsDB';
+import { Cell } from '../gridDB/gridTypes';
+import { SheetController } from '../transaction/sheetController';
 
-export const pasteFromClipboard = (pasteToCell: CellReference) => {
+export const pasteFromClipboard = (sheet_controller: SheetController, pasteToCell: CellReference) => {
   // get contents from clipboard
   navigator.clipboard.readText().then((text) => {
     let cell_x: number = pasteToCell.x;
@@ -47,13 +45,35 @@ export const pasteFromClipboard = (pasteToCell: CellReference) => {
       cell_x = pasteToCell.x;
     });
 
-    // bulk update and delete cells on api
-    UpdateCellsDB(cells_to_write);
-    DeleteCellsDB(cells_to_delete);
+    // bulk update and delete cells
+    sheet_controller.start_transaction();
+    cells_to_write.forEach((cell) => {
+      sheet_controller.execute_statement({
+        type: 'SET_CELL',
+        data: {
+          position: [cell.x, cell.y],
+          value: cell,
+        },
+      });
+    });
+    cells_to_delete.forEach((cell) => {
+      sheet_controller.execute_statement({
+        type: 'SET_CELL',
+        data: {
+          position: [cell.x, cell.y],
+          value: undefined,
+        },
+      });
+    });
+    sheet_controller.end_transaction();
   });
 };
 
-export const copyToClipboard = async (cell0: CellReference, cell1: CellReference) => {
+export const copyToClipboard = async (
+  sheet_controller: SheetController,
+  cell0: CellReference,
+  cell1: CellReference
+) => {
   // write selected cells to clipboard
 
   const cWidth = Math.abs(cell1.x - cell0.x) + 1;
@@ -74,10 +94,10 @@ export const copyToClipboard = async (cell0: CellReference, cell1: CellReference
         clipboardString += '\t';
       }
 
-      const cell = await GetCellsDB(cell_x, cell_y, cell_x, cell_y);
+      const cell = sheet_controller.sheet.getCell(cell_x, cell_y);
 
-      if (cell.length > 0) {
-        clipboardString += cell[0].value || '';
+      if (cell) {
+        clipboardString += cell.cell?.value || '';
       }
     }
   }

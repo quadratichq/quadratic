@@ -5,23 +5,25 @@ import { PixiAppSettings } from './PixiAppSettings';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { Update } from './Update';
 import './pixiApp.css';
-import { GridOffsets } from '../../gridDB/GridOffsets';
 import { GridLines } from '../UI/GridLines';
 import { AxesLines } from '../UI/AxesLines';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { Cursor } from '../UI/Cursor';
 import { Cells } from '../UI/cells/Cells';
-import { GridSparse } from '../../gridDB/GridSparse';
 import { zoomInOut, zoomToFit } from '../helpers/zoom';
 import { Quadrants } from '../quadrants/Quadrants';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
 import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../../debugFlags';
-import { GridBorders } from '../../gridDB/GridBorders';
+import { Sheet } from '../../gridDB/Sheet';
+import { SheetController } from '../../transaction/sheetController';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
   private update: Update;
   private cacheIsVisible = false;
+
+  sheet_controller: SheetController;
+  sheet: Sheet;
 
   canvas: HTMLCanvasElement;
   viewport: Viewport;
@@ -34,9 +36,6 @@ export class PixiApp {
 
   input: Pointer;
   viewportContents: Container;
-  gridOffsets: GridOffsets;
-  grid: GridSparse;
-  borders: GridBorders;
   settings: PixiAppSettings;
   renderer: Renderer;
   stage = new Container();
@@ -46,11 +45,10 @@ export class PixiApp {
   // for testing purposes
   debug: Graphics;
 
-  constructor() {
-    this.gridOffsets = new GridOffsets(this);
-    this.grid = new GridSparse(this);
-    this.borders = new GridBorders(this);
-
+  constructor(sheet_controller: SheetController) {
+    this.sheet_controller = sheet_controller;
+    this.sheet = sheet_controller.sheet;
+    this.sheet.onRebuild = this.rebuild;
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
@@ -124,7 +122,7 @@ export class PixiApp {
     if (debugShowCacheFlag && !this.quadrants.visible) {
       (document.querySelector('.debug-show-cache-on') as HTMLSpanElement).innerHTML = 'CACHE';
     }
-    this.cells.visible = false;
+    this.cells.changeVisibility(false);
     this.quadrants.visible = true;
     this.cacheIsVisible = true;
   }
@@ -134,7 +132,7 @@ export class PixiApp {
       (document.querySelector('.debug-show-cache-on') as HTMLSpanElement).innerHTML = '';
     }
     this.cells.dirty = true;
-    this.cells.visible = true;
+    this.cells.changeVisibility(true);
     this.quadrants.visible = false;
     this.cacheIsVisible = false;
   }
@@ -180,7 +178,7 @@ export class PixiApp {
   checkZoom(): void {
     const zoom = this.settings.zoomState;
     if (zoom === Infinity) {
-      zoomToFit(this.viewport);
+      zoomToFit(this.sheet, this.viewport);
     } else if (zoom !== this.viewport.scale.x) {
       zoomInOut(this.viewport, zoom);
       this.viewportChanged();
@@ -194,7 +192,7 @@ export class PixiApp {
     this.cursor.visible = false;
     this.headings.visible = false;
     this.quadrants.visible = false;
-    this.cells.visible = true;
+    this.cells.changeVisibility(true);
     this.cells.dirty = true;
     return this.viewportContents;
   }
@@ -205,16 +203,26 @@ export class PixiApp {
     this.cursor.visible = true;
     this.headings.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
-    this.cells.visible = !this.cacheIsVisible;
+    this.cells.changeVisibility(!this.cacheIsVisible);
     if (!this.cacheIsVisible) this.cells.dirty = true;
   }
 
   // helper for playwright
-  render() {
+  render(): void {
     this.renderer.render(this.stage);
   }
 
-  focus() {
+  focus(): void {
     this.canvas?.focus();
   }
+
+  rebuild = (): void => {
+    this.viewport.dirty = true;
+    this.gridLines.dirty = true;
+    this.axesLines.dirty = true;
+    this.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.cells.dirty = true;
+    this.quadrants.build();
+  };
 }

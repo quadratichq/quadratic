@@ -68,7 +68,7 @@ export class Update {
       if (debugShowCellsForDirtyQuadrants) {
         app.quadrants.visible = false;
         const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
-        app.cells.visible = true;
+        app.cells.changeVisibility(true);
         app.cells.drawMultipleBounds(cellRectangles);
       }
 
@@ -76,7 +76,7 @@ export class Update {
       else if (app.quadrants.visible) {
         const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
         if (cellRectangles.length) {
-          app.cells.visible = true;
+          app.cells.changeVisibility(true);
           app.cells.drawMultipleBounds(cellRectangles);
         }
       }
@@ -125,7 +125,7 @@ export class Update {
       if (app.quadrants.visible) {
         const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
         if (cellRectangles.length) {
-          app.cells.visible = true;
+          app.cells.changeVisibility(true);
           app.cells.drawMultipleBounds(cellRectangles);
         }
       }

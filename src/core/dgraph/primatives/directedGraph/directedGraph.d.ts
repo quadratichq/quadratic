@@ -1,4 +1,4 @@
-interface DirectedGraphExport {
+export interface DirectedGraphExport {
   vertices: Map;
   edges: Map;
   edgesCount: number;
