@@ -30,6 +30,9 @@ export const CellInput = (props: CellInputProps) => {
   // If we don't have a viewport, we can't continue.
   if (!viewport || !container) return null;
 
+  const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.current.x, cellLocation.current.y);
+  const cell = sheetController.sheet.getCell(cellLocation.current.x, cellLocation.current.y);
+
   // Function used to move and scale the Input with the Grid
   function updateInputCSSTransform() {
     if (!app || !viewport || !container) return '';
@@ -38,10 +41,9 @@ export const CellInput = (props: CellInputProps) => {
     let worldTransform = viewport.worldTransform;
 
     // Calculate position of input based on cell
-    const cell = sheetController.sheet.gridOffsets.getCell(cellLocation.current.x, cellLocation.current.y);
     let cell_offset_scaled = viewport.toScreen(
-      cell.x,
-      cell.y - 0.66 // magic number via experimentation
+      cell_offsets.x,
+      cell_offsets.y - 0.66 // magic number via experimentation
     );
 
     // Generate transform CSS
@@ -80,16 +82,17 @@ export const CellInput = (props: CellInputProps) => {
     if (!cancel) {
       // Update Cell and dependent cells
       if (value === '') {
-        // delete cell if input is empty
-        sheetController.predefined_transaction([
-          {
-            type: 'SET_CELL',
-            data: {
-              position: [cellLocation.current.x, cellLocation.current.y],
-              value: undefined,
+        // delete cell if input is empty, and wasn't empty before
+        if (cell !== undefined)
+          sheetController.predefined_transaction([
+            {
+              type: 'SET_CELL',
+              data: {
+                position: [cellLocation.current.x, cellLocation.current.y],
+                value: undefined,
+              },
             },
-          },
-        ]);
+          ]);
       } else {
         // create cell with value at input location
         sheetController.predefined_transaction([
