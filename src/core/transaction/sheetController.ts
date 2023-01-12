@@ -50,13 +50,16 @@ export class SheetController {
     this.transaction_in_progress.statements.push(reverse_statement);
   }
 
-  public end_transaction(add_to_undo_stack = true): Transaction {
+  public end_transaction(add_to_undo_stack = true, clear_redo_stack = true): Transaction {
     if (!this.transaction_in_progress) {
       throw new Error('No transaction in progress.');
     }
 
     // add transaction_in_progress to undo stack
     if (add_to_undo_stack) this.undo_stack.push(this.transaction_in_progress);
+
+    // if this Transaction is not from undo/redo. Clear redo stack.
+    if (clear_redo_stack) this.redo_stack = [];
 
     const previous_transaction = this.transaction_in_progress;
 
@@ -112,7 +115,7 @@ export class SheetController {
       this.execute_statement(statement);
     });
 
-    const reverse_transaction = this.end_transaction(false);
+    const reverse_transaction = this.end_transaction(false, false);
     // add reverse transaction to redo stack
     this.redo_stack.push(reverse_transaction);
 
@@ -146,7 +149,7 @@ export class SheetController {
       this.execute_statement(statement);
     });
 
-    const reverse_transaction = this.end_transaction(false);
+    const reverse_transaction = this.end_transaction(false, false);
     // add reverse transaction to undo stack
     this.undo_stack.push(reverse_transaction);
 
