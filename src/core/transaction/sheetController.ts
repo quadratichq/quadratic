@@ -98,7 +98,7 @@ export class SheetController {
     // run each statement in transaction
     // end transaction
     // add reverse transaction to redo stack
-    if (this.undo_stack.length === 0) return;
+    if (!this.has_undo()) return;
 
     if (this.transaction_in_progress) throw new Error('Transaction in progress.');
 
@@ -132,7 +132,7 @@ export class SheetController {
     // run each statement in transaction
     // end transaction
     // add reverse transaction to undo stack
-    if (this.redo_stack.length === 0) return;
+    if (!this.has_redo()) return;
 
     if (this.transaction_in_progress) throw new Error('Transaction in progress.');
 
