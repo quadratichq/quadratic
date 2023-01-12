@@ -1,5 +1,5 @@
 import { Rectangle } from 'pixi.js';
-import CellReference from '../gridGL/types/cellReference';
+import { Coordinate } from '../gridGL/types/size';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
 import { Cell, CellFormat } from './gridTypes';
@@ -83,7 +83,7 @@ export class GridSparse {
     this.recalculateBounds();
   }
 
-  deleteCells(cells: CellReference[]): void {
+  deleteCells(cells: Coordinate[]): void {
     cells.forEach((cell) => {
       const candf = this.cells.get(this.getKey(cell.x, cell.y));
       if (candf) {

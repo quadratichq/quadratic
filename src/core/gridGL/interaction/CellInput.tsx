@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import CellReference from '../types/cellReference';
+import { Coordinate } from '../types/size';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { localFiles } from '../../gridDB/localFiles';
@@ -75,7 +75,7 @@ export const CellInput = (props: CellInputProps) => {
   let closed = false;
 
   // When done editing with the input
-  const closeInput = async (transpose = { x: 0, y: 0 } as CellReference, cancel = false) => {
+  const closeInput = async (transpose = { x: 0, y: 0 } as Coordinate, cancel = false) => {
     if (closed) return;
     closed = true;
 
