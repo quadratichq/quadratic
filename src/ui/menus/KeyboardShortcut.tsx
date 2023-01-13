@@ -5,6 +5,7 @@ export interface IKeyboardShortcut {
   text: string;
   shortcut?: string;
   ctrl?: boolean;
+  shift?: boolean;
 }
 
 export const KeyboardShortcut = (props: IKeyboardShortcut): JSX.Element => {
@@ -18,9 +19,12 @@ export const KeyboardShortcut = (props: IKeyboardShortcut): JSX.Element => {
         shortcut += 'CTRL ';
       }
     }
+    if (props.shift) {
+      shortcut += '⇧ ';
+    }
     shortcut += props.shortcut;
     return shortcut;
-  }, [props.shortcut, props.ctrl]);
+  }, [props.shortcut, props.ctrl, props.shift]);
 
   return (
     <div style={{ display: 'flex', width: '175px' }}>

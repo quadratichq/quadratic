@@ -25,7 +25,7 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        Zoom to fit
+        <KeyboardShortcut text="Zoom to fit" shortcut="1" shift={true} />
       </MenuItem>
       <MenuDivider></MenuDivider>
       <MenuItem
@@ -34,7 +34,7 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        <KeyboardShortcut text="Zoom in" shortcut="=" ctrl={true} />
+        <KeyboardShortcut text="Zoom in" shortcut="+" ctrl={true} />
       </MenuItem>
       <MenuItem
         onClick={() => {
@@ -42,7 +42,7 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        <KeyboardShortcut text="Zoom out" shortcut="-" ctrl={true} />
+        <KeyboardShortcut text="Zoom out" shortcut="−" ctrl={true} />
       </MenuItem>
       <MenuDivider></MenuDivider>
       <MenuItem
@@ -59,7 +59,7 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        Zoom to 100%
+        <KeyboardShortcut text="Zoom to 100%" shortcut="0" ctrl={true} />
       </MenuItem>
       <MenuItem
         onClick={() => {
