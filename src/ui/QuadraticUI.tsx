@@ -25,7 +25,7 @@ export default function QuadraticUI() {
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu />}
-      <CommandPalette></CommandPalette>
+      <CommandPalette />
       <TopBar />
 
       <div
