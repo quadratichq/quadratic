@@ -29,6 +29,7 @@ export class Pointer {
   }
 
   private handlePointerDown = (e: InteractionEvent): void => {
+    this.app.canvas.style.cursor = 'auto';
     const world = this.app.viewport.toWorld(e.data.global);
     const event = e.data.originalEvent;
     this.headingResize.pointerDown(world, event) || this.pointerDown.pointerDown(world, event as PointerEvent);

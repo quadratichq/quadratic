@@ -4,12 +4,14 @@ import { Sheet } from '../../../gridDB/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
+import { intersects } from '../../helpers/intersects';
 
 const MINIMUM_MOVE_POSITION = 5;
 
 export class PointerDown {
   private app: PixiApp;
   private active = false;
+
   private positionRaw?: Point;
   private position?: Point;
   private previousPosition?: { originPosition: Point; terminalPosition: Point };
@@ -24,19 +26,57 @@ export class PointerDown {
     return this.app.sheet;
   }
 
+  /** get world coordinate for the bottom-right of the selected cell to drag the indicator */
+  private getEndCell(): Point {
+    let endCell: Point;
+    const interactionState = this.app.settings.interactionState;
+    const gridOffsets = this.app.sheet.gridOffsets;
+    if (interactionState.showMultiCursor) {
+      const multiCursor = interactionState.multiCursorPosition;
+      const cell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
+      endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
+    } else {
+      const cell = gridOffsets.getCell(
+        interactionState.cursorPosition.x,
+        interactionState.cursorPosition.y
+      );
+      endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
+    }
+    return endCell;
+  }
+
   pointerDown(world: Point, event: PointerEvent): void {
     if (isMobile) return;
 
-    this.positionRaw = world;
     const { settings, cursor } = this.app;
+    const { interactionState, setInteractionState } = settings;
     const { gridOffsets } = this.sheet;
+
+    // handle dragging from the corner
+    if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
+      const cursorPosition = interactionState.cursorPosition;
+      const end = this.getEndCell();
+      const { column, row } = gridOffsets.getRowColumnFromWorld(end.x, end.y);
+      const originX = cursorPosition.x < column ? cursorPosition.x : column;
+      const originY = cursorPosition.y < row ? cursorPosition.y : row;
+      this.active = true;
+      this.position = new Point(originX, originY);
+      this.positionRaw = end;
+      this.pointerMoved = true;
+      this.previousPosition = {
+        originPosition: new Point(originX, originY),
+        terminalPosition: new Point(column, row),
+      };
+      return;
+    }
+
+    this.positionRaw = world;
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
 
     const rightClick = event.button === 2 || (event.button === 0 && event.ctrlKey);
 
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
-    const { interactionState, setInteractionState } = settings;
     if (!setInteractionState) {
       throw new Error('Expected setInteractionState to be defined');
     }
@@ -135,8 +175,12 @@ export class PointerDown {
       }
     }
 
-    if (!this.active || !this.position || !this.previousPosition || !this.positionRaw || !settings.setInteractionState)
+    if (!this.active || !this.position || !this.previousPosition || !this.positionRaw || !settings.setInteractionState) {
+      if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
+        this.app.canvas.style.cursor = 'crosshair';
+      }
       return;
+    }
 
     // calculate mouse move position
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);

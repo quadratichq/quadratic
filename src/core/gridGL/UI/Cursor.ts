@@ -1,4 +1,4 @@
-import { Graphics } from 'pixi.js';
+import { Graphics, Rectangle } from 'pixi.js';
 import { colors } from '../../../theme/colors';
 import { PixiApp } from '../pixiApp/PixiApp';
 
@@ -9,11 +9,13 @@ const INDICATOR_PADDING = 1;
 
 export class Cursor extends Graphics {
   private app: PixiApp;
+  indicator: Rectangle;
   dirty = true;
 
   constructor(app: PixiApp) {
     super();
     this.app = app;
+    this.indicator = new Rectangle();
   }
 
   private drawCursor(): void {
@@ -32,6 +34,7 @@ export class Cursor extends Graphics {
 
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
+    this.indicator.width = this.indicator.height = indicatorSize;
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
     const terminalPosition = settings.interactionState.multiCursorPosition.terminalPosition;
     const cursorPosition = settings.interactionState.cursorPosition;
@@ -74,9 +77,11 @@ export class Cursor extends Graphics {
     const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
     const x = endCell.x + endCell.width;
     const y = endCell.y + endCell.height;
+    this.indicator.x = x - indicatorSize / 2;
+    this.indicator.y = y - indicatorSize / 2;
     this.lineStyle(0);
     this.beginFill(colors.cursorCell)
-      .drawRect(x - indicatorSize / 2, y - indicatorSize / 2, indicatorSize, indicatorSize)
+      .drawShape(this.indicator)
       .endFill();
   }
 
