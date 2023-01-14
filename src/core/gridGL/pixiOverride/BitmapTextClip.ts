@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { BLEND_MODES, BitmapFont, BitmapText, Mesh, MeshGeometry, MeshMaterial, Point, Program, Texture } from 'pixi.js';
 import { splitTextToCharacters, extractCharCode } from './bitmapTextUtils';
 import { msdfFrag, msdfVert } from './shader';
