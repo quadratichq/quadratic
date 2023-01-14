@@ -1,16 +1,18 @@
 import React from 'react';
 import {
   Divider,
+  IconButton,
+  InputBase,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Typography,
-  Card,
-  CardContent,
+  Paper,
 } from '@mui/material';
-import TextField from '@mui/material/TextField';
+import SearchIcon from '@mui/icons-material/Search';
+
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { CellTypes } from '../../../core/gridDB/db';
@@ -48,16 +50,11 @@ const QUADRATIC_COMMANDS = [
 
 export const CommandPalette = () => {
   // Interaction State hook
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(
-    editorInteractionStateAtom
-  );
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const [value, setValue] = React.useState<string>('');
-  const [selected_value, setSelectedValue] = React.useState<
-    CellTypes | undefined
-  >('PYTHON');
-  const [filtered_cell_type_list, setFilteredCellTypeList] =
-    React.useState<any>(QUADRATIC_COMMANDS);
+  const [selected_value, setSelectedValue] = React.useState<CellTypes | undefined>('PYTHON');
+  const [filtered_cell_type_list, setFilteredCellTypeList] = React.useState<any>(QUADRATIC_COMMANDS);
 
   const update_filter = (value: string) => {
     const filtered_cell_type_list = QUADRATIC_COMMANDS.filter((cell_type) => {
@@ -93,50 +90,56 @@ export const CommandPalette = () => {
   };
 
   return (
-    <Card id="CellTypeMenuID" elevation={1} className="container">
-      <CardContent>
-        <TextField
-          id="CommandPaletteInputID"
-          value={value}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            update_filter(event.target.value);
-          }}
-          onKeyUp={(event) => {
-            if (event.key === 'Escape') {
-              close();
-            }
-            if (event.key === 'Enter') {
-              openEditor();
-            }
-          }}
-          fullWidth
-          variant="standard"
-          label="Search menus and commands"
+    <Paper id="CellTypeMenuID" elevation={12} className="container">
+      <div>
+        <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
+          <SearchIcon />
+        </IconButton>
+
+        <InputBase
+          sx={{ ml: 1, flex: 1 }}
+          placeholder="Search…"
+          inputProps={{ 'aria-label': 'Search menus and commands…' }}
           autoFocus
+          value={value}
         />
-        <List dense={true} style={{ height: 350, width: 300 }}>
-          <ListItem></ListItem>
-          <Divider variant="fullWidth" />
-          {filtered_cell_type_list.map((e: any) => {
-            return (
-              <ListItemButton
-                key={e.key}
-                selected={selected_value === e.slug}
-                disabled={e.disabled}
-                style={{ width: '100%' }}
-                onClick={() => {
-                  openEditor(e.slug);
-                }}
-              >
-                <ListItemIcon>
-                  <Typography>{e.short}</Typography>
-                </ListItemIcon>
-                <ListItemText primary={e.name} secondary={e.description} />
-              </ListItemButton>
-            );
-          })}
-        </List>
-      </CardContent>
-    </Card>
+        {/* <TextField
+        id="CommandPaletteInputID"
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+          update_filter(event.target.value);
+        }}
+        onKeyUp={(event) => {
+          if (event.key === 'Escape') {
+            close();
+          }
+          if (event.key === 'Enter') {
+            openEditor();
+          }
+        }}
+        
+      /> */}
+      </div>
+      <List dense={true} style={{ height: 350, width: 300 }}>
+        <Divider variant="fullWidth" />
+        {filtered_cell_type_list.map((e: any) => {
+          return (
+            <ListItemButton
+              key={e.key}
+              selected={selected_value === e.slug}
+              disabled={e.disabled}
+              style={{ width: '100%' }}
+              onClick={() => {
+                openEditor(e.slug);
+              }}
+            >
+              <ListItemIcon>
+                <Typography>{e.short}</Typography>
+              </ListItemIcon>
+              <ListItemText primary={e.name} secondary={e.description} />
+            </ListItemButton>
+          );
+        })}
+      </List>
+    </Paper>
   );
 };
