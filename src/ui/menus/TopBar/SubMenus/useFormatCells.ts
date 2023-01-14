@@ -28,7 +28,7 @@ export const useFormatCells = (sheet_controller: SheetController, app?: PixiApp)
     // Transaction to update formats
     sheet_controller.start_transaction();
     formats.forEach((format) => {
-      if (format.x && format.y)
+      if (format.x !== undefined && format.y !== undefined)
         sheet_controller.execute_statement({
           type: 'SET_CELL_FORMAT',
           data: {
@@ -62,7 +62,7 @@ export const useFormatCells = (sheet_controller: SheetController, app?: PixiApp)
     // transaction to clear cell formats
     sheet_controller.start_transaction();
     formats.forEach((format) => {
-      if (format.x && format.y)
+      if (format.x !== undefined && format.y !== undefined)
         sheet_controller.execute_statement({
           type: 'SET_CELL_FORMAT',
           data: {
