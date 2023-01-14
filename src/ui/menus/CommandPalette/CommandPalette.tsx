@@ -102,20 +102,29 @@ export const CommandPalette = () => {
           inputProps={{ 'aria-label': 'Search menus and commands…' }}
           autoFocus
           value={value}
+          onKeyUp={(e) => {
+            if (e.key === 'Escape') {
+              close();
+            } else if (e.key === 'Enter') {
+              openEditor();
+              // @TODO VScode supports n/p for going up down, should we?
+            } else if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) {
+              e.preventDefault();
+              e.stopPropagation();
+              // handleChangeSelected('down');
+            } else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'p')) {
+              e.preventDefault();
+              e.stopPropagation();
+              // handleChangeSelected('up');
+            }
+          }}
         />
         {/* <TextField
         id="CommandPaletteInputID"
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           update_filter(event.target.value);
         }}
-        onKeyUp={(event) => {
-          if (event.key === 'Escape') {
-            close();
-          }
-          if (event.key === 'Enter') {
-            openEditor();
-          }
-        }}
+        
         
       /> */}
       </div>
