@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 type LoadingProviderProps = { children: ReactNode };
 
-const LOAD_COUNT = 2;
+const LOAD_COUNT = 3;
 
 export type LoadingContextType = {
   loading: boolean;
@@ -10,7 +10,7 @@ export type LoadingContextType = {
 
 export const LoadingContext = createContext<LoadingContextType>({
   loading: true,
-  incrementLoadingCount: () => console.warn('useLoading must be used within LoadingProvider1'),
+  incrementLoadingCount: () => console.warn('useLoading must be used within LoadingProvider'),
 });
 
 export function useLoading() {

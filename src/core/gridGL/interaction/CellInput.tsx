@@ -1,46 +1,49 @@
 import { useEffect, useRef, useState } from 'react';
-import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
-import { deleteCellsRange } from '../../actions/deleteCellsRange';
-import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { Viewport } from 'pixi-viewport';
 import CellReference from '../types/cellReference';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { PixiApp } from '../pixiApp/PixiApp';
+import { localFiles } from '../../gridDB/localFiles';
+import { SheetController } from '../../transaction/sheetController';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
-  viewportRef: React.MutableRefObject<Viewport | undefined>;
   container?: HTMLDivElement;
+  app?: PixiApp;
+  sheetController: SheetController;
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { interactionState, setInteractionState, viewportRef, container } = props;
+  const { interactionState, setInteractionState, app, container, sheetController } = props;
+  const viewport = app?.viewport;
 
   const [value, setValue] = useState<string | undefined>(undefined);
+
   const cellLocation = useRef(interactionState.cursorPosition);
   const textInput = useRef<HTMLInputElement>(null);
-
   // Effect for sizing the input width to the length of the value
   useEffect(() => {
     if (textInput.current) textInput.current.size = value?.length || 0 + 1;
   }, [value, textInput]);
 
   // If we don't have a viewport, we can't continue.
-  const viewport = viewportRef.current;
   if (!viewport || !container) return null;
+
+  const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.current.x, cellLocation.current.y);
+  const cell = sheetController.sheet.getCell(cellLocation.current.x, cellLocation.current.y);
 
   // Function used to move and scale the Input with the Grid
   function updateInputCSSTransform() {
-    if (!viewport || !container) return '';
+    if (!app || !viewport || !container) return '';
 
     // Get world transform matrix
     let worldTransform = viewport.worldTransform;
 
     // Calculate position of input based on cell
     let cell_offset_scaled = viewport.toScreen(
-      cellLocation.current.x * CELL_WIDTH + 0.5,
-      cellLocation.current.y * CELL_HEIGHT + 1
+      cell_offsets.x,
+      cell_offsets.y - 0.66 // magic number via experimentation
     );
 
     // Generate transform CSS
@@ -68,40 +71,62 @@ export const CellInput = (props: CellInputProps) => {
     return null;
   }
 
+  // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
+  let closed = false;
+
   // When done editing with the input
-  const closeInput = async (transpose = { x: 0, y: 0 } as CellReference) => {
-    // Update Cell and dependent cells
-    if (value === '') {
-      await deleteCellsRange(
-        {
-          x: cellLocation.current.x,
-          y: cellLocation.current.y,
-        },
-        {
-          x: cellLocation.current.x,
-          y: cellLocation.current.y,
-        }
-      );
-    } else {
-      await updateCellAndDCells({
-        x: cellLocation.current.x,
-        y: cellLocation.current.y,
-        type: 'TEXT',
-        value: value || '',
-      });
+  const closeInput = async (transpose = { x: 0, y: 0 } as CellReference, cancel = false) => {
+    if (closed) return;
+    closed = true;
+
+    if (!cancel) {
+      // Update Cell and dependent cells
+      if (value === '') {
+        // delete cell if input is empty, and wasn't empty before
+        if (cell !== undefined)
+          sheetController.predefined_transaction([
+            {
+              type: 'SET_CELL',
+              data: {
+                position: [cellLocation.current.x, cellLocation.current.y],
+                value: undefined,
+              },
+            },
+          ]);
+      } else {
+        // create cell with value at input location
+        sheetController.predefined_transaction([
+          {
+            type: 'SET_CELL',
+            data: {
+              position: [cellLocation.current.x, cellLocation.current.y],
+              value: {
+                x: cellLocation.current.x,
+                y: cellLocation.current.y,
+                type: 'TEXT',
+                value: value || '',
+              },
+            },
+          },
+        ]);
+      }
+      app?.quadrants.quadrantChanged({ cells: [cellLocation.current] });
+      localFiles.saveLastLocal(sheetController.sheet.export_file());
     }
 
     // Update Grid Interaction state, reset input value state
     setInteractionState({
       ...interactionState,
-      ...{
-        cursorPosition: {
-          x: interactionState.cursorPosition.x + transpose.x,
-          y: interactionState.cursorPosition.y + transpose.y,
-        },
-        showInput: false,
-        inputInitialValue: '',
+      keyboardMovePosition: {
+        x: interactionState.cursorPosition.x + transpose.x,
+        y: interactionState.cursorPosition.y + transpose.y,
       },
+      cursorPosition: {
+        x: interactionState.cursorPosition.x + transpose.x,
+        y: interactionState.cursorPosition.y + transpose.y,
+      },
+      showInput: false,
+      inputInitialValue: '',
     });
     setValue(undefined);
 
@@ -143,9 +168,11 @@ export const CellInput = (props: CellInputProps) => {
         lineHeight: '1',
         background: 'none',
         transformOrigin: '0 0',
-        transform: transform,
+        transform,
+        fontFamily: 'OpenSans',
         fontSize: '14px',
-        letterSpacing: '0.015em',
+        letterSpacing: '0.07px',
+        // margin: '-7px -10px 0 0',
       }}
       value={value}
       onChange={(event) => {
@@ -157,11 +184,17 @@ export const CellInput = (props: CellInputProps) => {
       onKeyDown={(event) => {
         if (event.key === 'Enter') {
           closeInput({ x: 0, y: 1 });
+          event.preventDefault();
         } else if (event.key === 'Tab') {
           closeInput({ x: 1, y: 0 });
           event.preventDefault();
         } else if (event.key === 'Escape') {
-          closeInput();
+          closeInput(undefined, true);
+          event.preventDefault();
+        } else if (event.key === 'ArrowUp') {
+          closeInput({ x: 0, y: -1 });
+        } else if (event.key === 'ArrowDown') {
+          closeInput({ x: 0, y: 1 });
         }
       }}
     ></input>

@@ -27,3 +27,9 @@ yarn-error.log*
 
 venv/*
 *.pyc
+.idea
+
+.env
+
+quadratic-core/target/*
+quadratic-api/node_modules/*

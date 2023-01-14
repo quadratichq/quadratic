@@ -13,7 +13,7 @@ import {
 import TextField from '@mui/material/TextField';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { CellTypes } from '../../../core/gridDB/db';
+import { CellTypes } from '../../../core/gridDB/gridTypes';
 
 import './styles.css';
 import { focusGrid } from '../../../helpers/focusGrid';

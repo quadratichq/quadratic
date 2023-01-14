@@ -1,4 +1,3 @@
-import * as React from 'react';
 import TopBar from '../ui/menus/TopBar';
 import CellTypeMenu from '../ui/menus/CellTypeMenu/';
 import CodeEditor from '../ui/menus/CodeEditor';
@@ -9,10 +8,25 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../core/gridGL/QuadraticGrid';
 import CommandPalette from './menus/CommandPalette';
+import { useEffect, useState } from 'react';
+import { PixiApp } from '../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../core/transaction/sheetController';
 
-export default function QuadraticUI() {
+interface Props {
+  sheetController: SheetController;
+}
+
+export default function QuadraticUI(props: Props) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+
+  const [app] = useState(() => new PixiApp(props.sheetController));
+
+  const { sheetController } = props;
+
+  useEffect(() => {
+    sheetController.setApp(app);
+  }, [sheetController, app]);
 
   return (
     <div
@@ -24,9 +38,9 @@ export default function QuadraticUI() {
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
-      {showDebugMenu && <DebugMenu />}
+      {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
+      <TopBar app={app} sheetController={sheetController} />
       <CommandPalette />
-      <TopBar />
 
       <div
         style={{
@@ -36,11 +50,11 @@ export default function QuadraticUI() {
           overflow: 'hidden',
         }}
       >
-        <QuadraticGrid />
-        <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
+        <QuadraticGrid sheetController={sheetController} app={app} />
+        <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
 
-      <BottomBar />
+      <BottomBar sheet={sheetController.sheet} />
     </div>
   );
 }

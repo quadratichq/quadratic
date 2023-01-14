@@ -26,11 +26,13 @@ def attempt_fix_await(code):
     code = re.sub(r"([^a-zA-Z0-9]|^)cell\(", r"\1await cell(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)c\(", r"\1await c(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)getCells\(", r"\1await getCells(", code)
+    code = re.sub(r"([^a-zA-Z0-9]|^)grid\[", r"\1await grid[", code)
 
     code = code.replace("await await getCell", "await getCell")
     code = code.replace("await await c(", "await c(")
     code = code.replace("await await cell(", "await cell(")
     code = code.replace("await await cells(", "await cells(")
+    code = code.replace("await await grid[", "await grid[")
 
     return code
 
@@ -165,6 +167,7 @@ async def run_python(code):
         if first_row_header:
             df.rename(columns=df.iloc[0], inplace=True)
             df.drop(df.index[0], inplace=True)
+            df.reset_index(drop=True, inplace=True)
 
         return df
 
@@ -185,8 +188,54 @@ async def run_python(code):
     async def cell(p0_x, p0_y):
         return await getCell(p0_x, p0_y)
 
-    async def cells(p0, p1):
-        return await getCells(p0, p1)
+    async def cells(p0, p1, first_row_header=False):
+        return await getCells(p0, p1, first_row_header)
+
+    class Grid:
+        @staticmethod
+        def __getitem__(item):
+            if type(item) == tuple and len(item) == 2:
+                row_idx = item[0]
+                col_idx = item[1]
+
+                if type(row_idx) == type(col_idx) == int:
+                    return cell(row_idx, col_idx)
+
+                elif type(row_idx) in (int, slice) and type(col_idx) in (int, slice):
+                    if type(row_idx) == slice:
+                        row_start = row_idx.start
+                        row_stop = row_idx.stop
+                        row_step = row_idx.step
+                    else:
+                        row_start = row_idx
+                        row_stop = row_idx + 1
+                        row_step = None
+
+                    if type(col_idx) == slice:
+                        col_start = col_idx.start
+                        col_stop = col_idx.stop
+                        col_step = col_idx.step
+                    else:
+                        col_start = col_idx
+                        col_stop = col_idx + 1
+                        col_step = None
+
+                    if row_step is not None or col_step is not None:
+                        raise IndexError("Slice step-size parameter not supported")
+
+                    return cells((col_start, row_start), (col_stop - 1, row_stop - 1), first_row_header=False)
+
+                else:
+                    raise IndexError("Only int and slice type indices supported")
+            else:
+                raise IndexError("""Expected usage:
+                        1. grid[row                        , col                        ]
+                        2. grid[row_slice_min:row_slice_max, col                        ]
+                        3. grid[row                        , col_slice_min:col_slice_max]
+                        4. grid[row_slice_min:row_slice_max, col_slice_min:col_slice_max]
+                        """)
+
+    grid = Grid()
 
     globals = {
         "getCells": getCells,
@@ -195,6 +244,7 @@ async def run_python(code):
         "result": None,
         "cell": cell,
         "cells": cells,
+        "grid": grid,
     }
 
     sout = StringIO()

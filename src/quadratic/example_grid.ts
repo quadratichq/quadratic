@@ -1,4 +1,12 @@
-export const example_grid = {
+import { GridFileSchema, GRID_FILE_VERSION } from '../core/actions/gridFile/GridFileSchema';
+
+export const example_grid: GridFileSchema = {
+  columns: [],
+  rows: [],
+  borders: [],
+  formats: [],
+  dependency: [],
+  version: GRID_FILE_VERSION,
   cells: [
     {
       x: 0,
@@ -18,7 +26,7 @@ export const example_grid = {
       x: 0,
       y: 2,
       type: 'TEXT',
-      value: 'Read more docs.quadratic.to',
+      value: 'Read more docs.quadratichq.com',
       last_modified: '2022-07-06T17:32:01.914Z',
     },
     {
