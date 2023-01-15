@@ -28,13 +28,13 @@ describe('gridOffsets', () => {
 
   it('adds a cell dependency', () => {
     gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }]);
-    expect(gridDependency.update({ x: 1, y: 2 }, [{ x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 }])?.length).toBe(1);
+    expect(gridDependency.update({ x: 1, y: 2 }, [{ x: 3, y: 2 }, { x: 4, y: 2 }])?.length).toBe(2);
     expect(gridDependency.getDependents({ x: 1, y: 2 })?.length).toBe(0);
-    expect(gridDependency.getDependents({ x: 2, y: 2 })?.length).toBe(1);
+    expect(gridDependency.getDependents({ x: 2, y: 2 })?.length).toBe(0);
     expect(gridDependency.getDependents({ x: 3, y: 2 })?.length).toBe(1);
     expect(gridDependency.getDependents({ x: 4, y: 2 })?.length).toBe(1);
     expect(gridDependency.getDependents({ x: 5, y: 2 })?.length).toBe(undefined);
-    expect(gridDependency.getChangedCells({ x: 1, y: 2 })?.length).toBe(3);
+    expect(gridDependency.getChangedCells({ x: 1, y: 2 })?.length).toBe(2);
   });
 
   it('clears cell dependencies', () => {
