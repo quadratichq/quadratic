@@ -183,7 +183,6 @@ export class Cells extends Container {
     const xStart = gridOffsets.getColumnPlacement(bounds.left).x;
     const yStart = gridOffsets.getRowPlacement(bounds.top).y;
     let y = yStart;
-    let blank = true;
     let content: Rectangle | undefined;
 
     // iterate through the rows and columns
@@ -200,7 +199,6 @@ export class Cells extends Container {
 
         const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, isInput });
         content = content ? intersects.rectangleUnion(content, rendered) : rendered;
-        blank = blank === true ? !rendered : blank;
         x += width;
       }
       x = xStart;
@@ -220,17 +218,17 @@ export class Cells extends Container {
           const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
           const rect = this.renderCell({ entry, ...position, isInput });
           content = content ? intersects.rectangleUnion(content, rect) : rect;
-          blank = false;
         }
       });
     }
+
 
     this.labels.update();
 
     // only calculate overflow when rendering quadrants so it's only done one time
     if (isQuadrant) this.handleOverflow();
 
-    return !blank ? content : undefined;
+    return content;
   }
 
   drawMultipleBounds(cellRectangles: CellRectangle[]): void {
@@ -311,6 +309,8 @@ export class Cells extends Container {
 
   drawCells(fullBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
     const { grid, borders } = this.app.sheet;
+
+    // draw cells
     const bounds = grid.getBounds(fullBounds);
     const cellRectangle = grid.getCells(bounds);
     const rectCells = this.drawBounds({ bounds, fullBounds, cellRectangle, isQuadrant });
@@ -322,14 +322,15 @@ export class Cells extends Container {
 
     const finalBounds = intersects.rectangleUnion(rectCells, rectBorders);
 
+    // debug boxes
     if (isQuadrant && debugShowQuadrantBoxes && finalBounds) {
       this.debug.clear();
       this.debug.beginFill(debugGetColor(), 0.25);
-      this.debug.drawShape(finalBounds);
+      this.debug.drawShape(finalBounds)
       this.debug.endFill();
     }
 
-    return finalBounds;
+    return fullBounds;
   }
 
   changeVisibility(visible: boolean): void {
