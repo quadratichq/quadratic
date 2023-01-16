@@ -193,6 +193,19 @@ export class Cells extends Container {
     let blank = true;
     const content = new Rectangle(Infinity, Infinity, -Infinity, -Infinity);
 
+    // check for dependencies across entire visible bounds
+    const dependentCells = dependency.getDependentsInBounds(fullBounds);
+    if (dependentCells.length) {
+      dependentCells.forEach((coordinate) => {
+        const entry = grid.get(coordinate.x, coordinate.y);
+        if (entry) {
+          const position = gridOffsets.getCell(coordinate.x, coordinate.y);
+          const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
+          this.renderCell({ entry, ...position, content, isInput });
+        }
+      });
+    }
+
     // iterate through the rows and columns
     for (let row = bounds.top; row <= bounds.bottom; row++) {
       let x = xStart;
@@ -227,19 +240,6 @@ export class Cells extends Container {
       }
       x = xStart;
       y += height;
-    }
-
-    // check for dependencies across entire visible bounds
-    const dependentCells = dependency.getDependentsInBounds(fullBounds);
-    if (dependentCells.length) {
-      dependentCells.forEach((coordinate) => {
-        const entry = grid.get(coordinate.x, coordinate.y);
-        if (entry) {
-          const position = gridOffsets.getCell(coordinate.x, coordinate.y);
-          const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
-          this.renderCell({ entry, ...position, content, isInput });
-        }
-      });
     }
 
     this.labels.update();
