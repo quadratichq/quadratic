@@ -39,10 +39,7 @@ export class Sheet {
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
     this.render_dependency.load(sheet.render_dependency);
-    // TODO: Load cell dependency
-    // this.dependency.load(sheet.dependency);
-    // todo
-    // this.dgraph = new Map(Object.entries(JSON.parse(sheet.dgraph)));
+    this.cell_dependency.loadFromString(sheet.cell_dependency);
     this.onRebuild?.();
   }
 
@@ -55,7 +52,7 @@ export class Sheet {
       formats,
       borders: this.borders.getArray(),
       render_dependency: this.render_dependency.save(),
-      cell_dependency: '', // TODO: Save dgraph
+      cell_dependency: this.cell_dependency.exportToString(),
       version: GRID_FILE_VERSION,
     };
   }

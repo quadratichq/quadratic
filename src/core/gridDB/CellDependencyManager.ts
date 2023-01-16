@@ -46,6 +46,27 @@ export class CellDependencyManager {
     return this.dependencies.get(this.getKey(dependent)) || [];
   }
 
+  // save to string
+  exportToString(): string {
+    return JSON.stringify(
+      Array.from(this.dependencies.entries()).map(([key, value]) => ({
+        key,
+        value,
+      }))
+    );
+  }
+
+  // load from string
+  loadFromString(dependencies: string | undefined): void {
+    if (dependencies === undefined) {
+      this.dependencies = new Map();
+    } else {
+      this.dependencies = new Map(
+        JSON.parse(dependencies).map(({ key, value }: { key: string; value: [number, number][] }) => [key, value])
+      );
+    }
+  }
+
   // test combination
 
   // Get dependent cells, that's it! Maybe add some sort of object to make it clear
