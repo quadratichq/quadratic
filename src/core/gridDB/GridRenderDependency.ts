@@ -140,17 +140,15 @@ export class GridRenderDependency {
     }
   }
 
-  /** find all cell dependents within the bounds that point to a cell that is outside the bounds */
-  getDependentsInBounds(bounds: Rectangle): Coordinate[] {
+  /** find all cell dependents that point to a cell that is inside the bounds */
+  getDependentsInBounds(fullBounds: Rectangle): Coordinate[] {
     const coordinates: Coordinate[] = [];
     this.dependents.forEach(dependent => {
       const location = dependent.location;
 
-      // first check that the dependent is within the bounds
-      if (location.x >= bounds.left && location.x <= bounds.right && location.y >= bounds.top && location.y <= bounds.bottom) {
-
-        // now add any cells that need to render for this cell that are also outside the bounds
-        coordinates.push(...dependent.needToRender.filter(dependent => dependent.x < bounds.left || dependent.x > bounds.right || dependent.y < bounds.top || dependent.y > bounds.bottom));
+      // first check that the dependent is within the full bounds
+      if (location.x >= fullBounds.left && location.x <= fullBounds.right && location.y >= fullBounds.top && location.y <= fullBounds.bottom) {
+        coordinates.push(...dependent.renderThisCell);
       }
     });
     return coordinates;

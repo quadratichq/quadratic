@@ -14,9 +14,9 @@ export const debugShowRenderer = debug && true;
 // shows FPS meter
 export const debugShowFPS = debug && true;
 
-// -------------------------
-// Rendering time and counts
-// -------------------------
+// ----------
+// Rendering
+// ----------
 
 // shows rendering time
 export const debugShowTime = debug && false;
@@ -26,6 +26,12 @@ export const debugShowCountRenderedObjects = debug && false;
 
 // shows count of cached sprites for formatting
 export const debugShowCachedSpriteCounts = debug && false;
+
+// shows why renderer is rendering
+export const debugShowWhyRendering = debug && false;
+
+// locks zoom to percentage
+export const debugLockZoom = debug && false;
 
 // ----------------
 // Quadrant caching
@@ -44,7 +50,7 @@ export const debugShowCacheInfo = debug && false;
 export const debugShowSubCacheInfo = debug && false;
 
 // always show cache instead of cell rendering
-export const debugAlwaysShowCache = debug && false;
+export const debugAlwaysShowCache = debug && true;
 
 // always show cells instead of cache rendering
 export const debugNeverShowCache = debug && false;
@@ -55,7 +61,7 @@ export const debugSkipQuadrantRendering = debug && false;
 // show quadrant colored boxes around rendered range
 export const debugShowQuadrantBoxes = debug && false;
 
-// only render getCellsForDirtyQuadrants
+// only render getCellsForDirtyQuadrants -- useful for testing the direct draw of multiple dirty quadrants
 export const debugShowCellsForDirtyQuadrants = debug && false;
 
 // --------

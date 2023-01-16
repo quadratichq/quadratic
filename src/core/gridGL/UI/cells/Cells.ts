@@ -1,4 +1,4 @@
-import { Container, Graphics, Point, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
 import { debugShowQuadrantBoxes } from '../../../../debugFlags';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
@@ -7,7 +7,7 @@ import { Cell, CellFormat } from '../../../gridDB/gridTypes';
 import { debugGetColor } from '../../helpers/debugColors';
 import { intersects } from '../../helpers/intersects';
 import { PixiApp } from '../../pixiApp/PixiApp';
-import { Coordinate, coordinateEqual } from '../../types/size';
+import { Coordinate } from '../../types/size';
 import { CellsArray } from './CellsArray';
 import { CellsBackground } from './cellsBackground';
 import { CellsBorder } from './CellsBorder';
@@ -21,7 +21,7 @@ export interface CellsBounds {
   maxY: number;
 }
 
-export interface ICellsDraw {
+export interface CellsDraw {
   x: number;
   y: number;
   width: number;
@@ -113,17 +113,11 @@ export class Cells extends Container {
     width: number;
     height: number;
     isQuadrant?: boolean;
-    content: Rectangle;
     isInput?: boolean;
-  }): boolean {
-    const { entry, x, y, width, height, isQuadrant, content, isInput } = options;
+  }): Rectangle | undefined {
+    const { entry, x, y, width, height, isQuadrant, isInput } = options;
     if (entry) {
       const hasContent = entry.cell?.value || entry.format;
-
-      if (hasContent) {
-        if (x < content.left) content.x = x;
-        if (y < content.top) content.y = y;
-      }
 
       // only render if there is cell data or cell formatting
       if (!isInput && (entry.cell || entry.format)) {
@@ -148,12 +142,9 @@ export class Cells extends Container {
       }
 
       if (hasContent) {
-        if (x + width > content.right) content.width = x + width - content.left;
-        if (y + height > content.bottom) content.height = y + height - content.top;
+        return new Rectangle(x, y, width, height);
       }
-      return true;
     }
-    return false;
   }
 
   /**
@@ -171,6 +162,7 @@ export class Cells extends Container {
     isQuadrant?: boolean;
   }): Rectangle | undefined {
     const { bounds, fullBounds, cellRectangle, ignoreInput, isQuadrant } = options;
+    const renderedCells = new Set<string>();
 
     const { gridOffsets, dependency, grid } = this.app.sheet;
     this.labels.clear();
@@ -192,7 +184,7 @@ export class Cells extends Container {
     const yStart = gridOffsets.getRowPlacement(bounds.top).y;
     let y = yStart;
     let blank = true;
-    const content = new Rectangle(Infinity, Infinity, -Infinity, -Infinity);
+    let content: Rectangle | undefined;
 
     // iterate through the rows and columns
     for (let row = bounds.top; row <= bounds.bottom; row++) {
@@ -203,9 +195,11 @@ export class Cells extends Container {
         const entry = cellRectangle.get(column, row);
 
         // don't render input (unless ignoreInput === true)
+        renderedCells.add(`${column},${row}`);
         const isInput = input && input.column === column && input.row === row;
 
-        const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, content, isInput });
+        const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, isInput });
+        content = content ? intersects.rectangleUnion(content, rendered) : rendered;
         blank = blank === true ? !rendered : blank;
         x += width;
       }
@@ -213,15 +207,20 @@ export class Cells extends Container {
       y += height;
     }
 
-    // check for dependencies across entire visible bounds
+    // check for dependencies across entire bounds
     const dependentCells = dependency.getDependentsInBounds(fullBounds);
     if (dependentCells.length) {
       dependentCells.forEach(coordinate => {
+        const key = `${coordinate.x},${coordinate.y}`;
+        if (renderedCells.has(key)) return;
+        renderedCells.add(key);
         const entry = grid.get(coordinate.x, coordinate.y);
         if (entry) {
           const position = gridOffsets.getCell(coordinate.x, coordinate.y);
           const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
-          this.renderCell({ entry, ...position, content, isInput });
+          const rect = this.renderCell({ entry, ...position, isInput });
+          content = content ? intersects.rectangleUnion(content, rect) : rect;
+          blank = false;
         }
       });
     }
@@ -235,14 +234,25 @@ export class Cells extends Container {
   }
 
   drawMultipleBounds(cellRectangles: CellRectangle[]): void {
-    const { gridOffsets } = this.app.sheet;
+    const { gridOffsets, dependency, grid } = this.app.sheet;
     this.labels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
     this.cellsBackground.clear();
     this.cellsBorder.clear();
 
-    let blank = true;
+    // ensure every cell renders only once
+    const renderedCells = new Set<string>();
+    let content: Rectangle | undefined;
+
+    const input =
+      this.app.settings.interactionState.showInput
+        ? {
+            column: this.app.settings.interactionState.cursorPosition.x,
+            row: this.app.settings.interactionState.cursorPosition.y,
+          }
+        : undefined;
+
     for (const cellRectangle of cellRectangles) {
       const bounds = cellRectangle.size;
 
@@ -250,7 +260,6 @@ export class Cells extends Container {
       const xStart = gridOffsets.getColumnPlacement(bounds.left).x;
       const yStart = gridOffsets.getRowPlacement(bounds.top).y;
       let y = yStart;
-      const content = new Rectangle(Infinity, Infinity, -Infinity, -Infinity);
 
       // iterate through the rows and columns
       for (let row = bounds.top; row <= bounds.bottom; row++) {
@@ -259,42 +268,12 @@ export class Cells extends Container {
         for (let column = bounds.left; column <= bounds.right; column++) {
           const width = gridOffsets.getColumnWidth(column);
           const entry = cellRectangle.get(column, row);
-          if (entry) {
-            const hasContent = entry.cell?.value || entry.format;
-
-            if (hasContent) {
-              blank = false;
-              if (x < content.left) content.x = x;
-              if (y < content.top) content.y = y;
-            }
-
-            // don't render input (unless ignoreInput === true)
-            const isInput = false; //input && input.column === column && input.row === row;
-
-            // only render if there is cell data, cell formatting
-            if (!isInput && (entry.cell || entry.format)) {
-              this.cellsBorder.draw({ ...entry, x, y, width, height });
-              this.cellsBackground.draw({ ...entry, x, y, width, height });
-              if (entry.cell) {
-                if (entry.cell?.type === 'PYTHON') {
-                  this.cellsMarkers.add(x, y, 'CodeIcon');
-                }
-                this.labels.add({
-                  x: x + CELL_TEXT_MARGIN_LEFT,
-                  y: y + CELL_TEXT_MARGIN_TOP,
-                  text: entry.cell.value,
-                  expectedWidth: width,
-                });
-              }
-            }
-            if (entry.cell?.array_cells) {
-              this.cellsArray.draw(entry.cell.array_cells, x, y, width, height);
-            }
-
-            if (hasContent) {
-              if (x + width > content.right) content.width = x + width - content.left;
-              if (y + height > content.bottom) content.height = y + height - content.top;
-            }
+          const key = `${column},${row}`;
+          if (!renderedCells.has(key)) {
+            renderedCells.add(key);
+            const isInput = input && input.column === column && input.row === row;
+            const rect = this.renderCell({ entry, x, y, width, height, isInput });
+            content = content ? intersects.rectangleUnion(content, rect) : rect;
           }
           x += width;
         }
@@ -305,12 +284,29 @@ export class Cells extends Container {
       if (cellRectangle.borders) {
         this.cellsBorder.drawBorders(cellRectangle.borders);
       }
+
+      // render cell dependencies
+      const dependentCells = dependency.getDependentsInBounds(bounds);
+      if (dependentCells.length) {
+
+        // need this to access content variable:
+        // eslint-disable-next-line no-loop-func
+        dependentCells.forEach(coordinate => {
+          const key = `${coordinate.x},${coordinate.y}`;
+          if (renderedCells.has(key)) return;
+          renderedCells.add(key);
+          const entry = grid.get(coordinate.x, coordinate.y);
+          if (entry) {
+            const position = gridOffsets.getCell(coordinate.x, coordinate.y);
+            const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
+            const rect = this.renderCell({ entry, ...position, isInput });
+            content = content ? intersects.rectangleUnion(content, rect) : rect;
+          }
+        });
+      }
     }
 
-    if (!blank) {
-      // renders labels
-      this.labels.update();
-    }
+    this.labels.update();
   }
 
   drawCells(fullBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
