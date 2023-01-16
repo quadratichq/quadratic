@@ -101,8 +101,13 @@ export class Quadrants extends Container {
     return false;
   }
 
-  private getQuadrant(row: number, column: number): Quadrant | undefined {
-    return this.quadrants.get(`${row},${column}`);
+  private getQuadrant(row: number, column: number): Quadrant {
+    let quadrant = this.quadrants.get(`${row},${column}`);
+    if (quadrant) return quadrant;
+    quadrant = this.addChild(new Quadrant(this.app, row, column));
+    this.quadrants.set(`${row},${column}`, quadrant);
+    this.complete = false;
+    return quadrant;
   }
 
   /** marks quadrants dirty based on what has changed */
@@ -114,11 +119,7 @@ export class Quadrants extends Container {
       for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, options.row);
         const quadrant = this.getQuadrant(quadrantX, quadrantY);
-        if (!quadrant) {
-          throw new Error('Expected quadrant to be defined in quadrantChanged');
-        } else {
-          quadrant.dirty = true;
-        }
+        quadrant.dirty = true;
       }
 
       // reposition quadrants below the row
@@ -126,11 +127,7 @@ export class Quadrants extends Container {
         for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
-          if (!quadrant) {
-            throw new Error('Expected quadrant to be defined in quadrantChanged');
-          } else {
-            quadrant.reposition();
-          }
+          quadrant.reposition();
         }
       }
     }
@@ -138,11 +135,7 @@ export class Quadrants extends Container {
       for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(options.column, y);
         const quadrant = this.getQuadrant(quadrantX, quadrantY);
-        if (!quadrant) {
-          throw new Error('Expected quadrant to be defined in quadrantChanged');
-        } else {
-          quadrant.dirty = true;
-        }
+        quadrant.dirty = true;
       }
 
       // reposition quadrants to the right of the column
@@ -150,11 +143,7 @@ export class Quadrants extends Container {
         for (let x = options.column + QUADRANT_COLUMNS; x <= bounds.right; x += QUADRANT_COLUMNS) {
           const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
-          if (!quadrant) {
-            throw new Error('Expected quadrant to be defined in quadrantChanged');
-          } else {
-            quadrant.reposition();
-          }
+          quadrant.reposition();
         }
       }
     }
@@ -167,10 +156,8 @@ export class Quadrants extends Container {
         const key = `${quadrantX},${quadrantY}`;
         if (!quadrants.has(key)) {
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
-          if (quadrant) {
-            quadrant.dirty = true;
-            quadrants.add(key);
-          }
+          quadrant.dirty = true;
+          quadrants.add(key);
         }
       });
     }
@@ -185,10 +172,8 @@ export class Quadrants extends Container {
           const key = `${quadrantX},${quadrantY}`;
           if (!quadrants.has(key)) {
             const quadrant = this.getQuadrant(quadrantX, quadrantY);
-            if (quadrant) {
-              quadrant.dirty = true;
-              quadrants.add(key);
-            }
+            quadrant.dirty = true;
+            quadrants.add(key);
           }
         }
       }

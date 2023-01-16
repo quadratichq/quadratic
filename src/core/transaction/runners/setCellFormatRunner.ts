@@ -38,7 +38,7 @@ export const SetCellFormatRunner = (sheet: Sheet, statement: Statement, app?: Pi
   } else {
     // if we are setting formatting we update the grid
     // and return a statement that applies the old value.
-    sheet.grid.updateFormat([new_value]);
+    sheet.grid.updateFormat([{ ...new_value, x: position[0], y: position[1] }]);
     if (app) {
       app.quadrants.quadrantChanged({ cells: [{ x: position[0], y: position[1] }] });
       app.cells.dirty = true;

@@ -18,3 +18,8 @@ export interface Coordinate {
 export function coordinateEqual(a: Coordinate, b: Coordinate): boolean {
   return a.x === b.x && a.y === b.y;
 }
+
+export interface MinMax {
+  min: number;
+  max: number;
+}

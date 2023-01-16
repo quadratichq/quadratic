@@ -31,7 +31,6 @@ export class PointerHeading {
   }
 
   pointerDown(world: Point, event: InteractivePointerEvent): boolean {
-    if (event.shiftKey) return false;
     const { headings, viewport, settings, cursor } = this.app;
     const { gridOffsets } = this.sheet;
     if (!settings.setInteractionState) {
@@ -76,6 +75,7 @@ export class PointerHeading {
               viewport,
               start: Math.min(x1, x2),
               end: Math.max(x1, x2),
+              sheet: this.app.sheet,
             });
             cursor.dirty = true;
           } else if (intersects.row !== undefined) {
@@ -87,6 +87,7 @@ export class PointerHeading {
               viewport,
               start: Math.min(y1, y2),
               end: Math.max(y1, y2),
+              sheet: this.app.sheet,
             });
             cursor.dirty = true;
           }

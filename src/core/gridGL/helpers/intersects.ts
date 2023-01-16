@@ -20,14 +20,21 @@ function lineLineOneDimension(iStart: number, iEnd: number, jStart: number, jEnd
   return iStart < jEnd && iEnd > jStart;
 }
 
-function rectangleUnion(rectangle1?: Rectangle, rectangle2?: Rectangle): Rectangle | undefined {
+function rectangleUnion(rectangle1?: Rectangle, rectangle2?: Rectangle, rectangle3?: Rectangle): Rectangle | undefined {
   if (rectangle1 && !rectangle2) return rectangle1;
   if (!rectangle1 && rectangle2) return rectangle2;
-  if (rectangle1 && rectangle2) {
+  if (rectangle1 && rectangle2 && !rectangle3) {
     const minX = Math.min(rectangle1.left, rectangle2.left);
     const maxX = Math.max(rectangle1.right, rectangle2.right);
     const minY = Math.min(rectangle1.top, rectangle2.top);
     const maxY = Math.max(rectangle1.bottom, rectangle2.bottom);
+    return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+  }
+  if (rectangle1 && rectangle2 && rectangle3) {
+    const minX = Math.min(rectangle1.left, rectangle2.left, rectangle3.left);
+    const maxX = Math.max(rectangle1.right, rectangle2.right, rectangle3.right);
+    const minY = Math.min(rectangle1.top, rectangle2.top, rectangle3.top);
+    const maxY = Math.max(rectangle1.bottom, rectangle2.bottom, rectangle3.bottom);
     return new Rectangle(minX, minY, maxX - minX, maxY - minY);
   }
 }

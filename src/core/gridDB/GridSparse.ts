@@ -3,6 +3,7 @@ import { Coordinate } from '../gridGL/types/size';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
 import { Cell, CellFormat } from './gridTypes';
+import { MinMax } from '../gridGL/types/size';
 
 export interface CellAndFormat {
   cell?: Cell;
@@ -67,6 +68,7 @@ export class GridSparse {
         this.cells.set(this.getKey(format.x, format.y), { format });
       }
     });
+    this.recalculateBounds();
   }
 
   clearFormat(formats: CellFormat[]): void {
@@ -198,6 +200,45 @@ export class GridSparse {
   getGridBounds(): Rectangle | undefined {
     if (this.isEmpty) return;
     return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
+  }
+
+  /** finds the minimum and maximum location for content in a row */
+  getRowMinMax(row: number): MinMax {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let x = this.minX; x <= this.maxX; x++) {
+      if (this.get(x, row)) {
+        min = x;
+        break;
+      }
+    }
+    for (let x = this.maxX; x >= this.minX; x--) {
+      if (this.get(x, row)) {
+        max = x;
+        break;
+      }
+    }
+    return { min, max };
+  }
+
+  /**finds the minimum and maximum location for content in a column */
+  getColumnMinMax(column: number): MinMax | undefined {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let y = this.minY; y <= this.maxY; y++) {
+      if (this.get(column, y)) {
+        min = y;
+        break;
+      }
+    }
+    for (let y = this.maxY; y >= this.minY; y--) {
+      if (this.get(column, y)) {
+        max = y;
+        break;
+      }
+    }
+    if (min === Infinity) return;
+    return { min, max };
   }
 
   getAllCells(): Cell[] {

@@ -47,6 +47,7 @@ export const openGridFile = async (sheetController: SheetController): Promise<vo
   sheetController.sheet.load_file(gridFileJSON);
   sheetController.clear();
   localFiles.loadedExternalFile(fileToLoad.name, gridFileJSON);
+  sheetController.app?.rebuild();
 };
 
 export const openLocalGridFile = async (filename: string, sheetController: SheetController): Promise<void> => {
@@ -54,6 +55,7 @@ export const openLocalGridFile = async (filename: string, sheetController: Sheet
   if (data) {
     sheetController.sheet.load_file(data);
     sheetController.clear();
+    sheetController.app?.rebuild();
   }
 };
 
@@ -63,6 +65,7 @@ export const openExampleGridFile = async (filename: string, sheetController: She
   sheetController.sheet.load_file(gridFileJSON);
   localFiles.loadedExternalFile(filename, gridFileJSON);
   sheetController.clear();
+  sheetController.app?.rebuild();
 }
 
 export const newGridFile = (filename: string, sheetController: SheetController): void => {
@@ -70,4 +73,5 @@ export const newGridFile = (filename: string, sheetController: SheetController):
   sheet.newFile();
   localFiles.loadedExternalFile(filename, sheet.export_file());
   sheetController.clear();
+  sheetController.app?.rebuild();
 }

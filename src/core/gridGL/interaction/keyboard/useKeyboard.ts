@@ -23,18 +23,18 @@ interface IProps {
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
 
 export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void } => {
-  const { interactionState, setInteractionState, setEditorInteractionState, app } = props;
+  const { interactionState, setInteractionState, setEditorInteractionState, app, sheetController } = props;
 
   const keyDownWindow = useCallback(
     (event: KeyboardEvent): void => {
       if (interactionState.showInput) return;
 
-      if (keyboardViewport({ event, viewport: app?.viewport })) {
+      if (keyboardViewport({ event, viewport: app?.viewport, sheet: sheetController.sheet })) {
         event.stopPropagation();
         event.preventDefault();
       }
     },
-    [app?.viewport, interactionState]
+    [app?.viewport, interactionState, sheetController.sheet]
   );
 
   useEffect(() => {

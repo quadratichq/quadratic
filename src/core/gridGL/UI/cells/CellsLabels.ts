@@ -66,6 +66,8 @@ export class CellsLabels extends Container {
           const width = label.width;
           if (width > data.expectedWidth) {
             label.overflowRight = width - data.expectedWidth;
+          } else {
+            label.overflowRight = undefined;
           }
         }
         available.splice(index, 1);
@@ -93,6 +95,8 @@ export class CellsLabels extends Container {
         label.location = data.location;
         if (label.textWidth > data.expectedWidth) {
           label.overflowRight = label.textWidth - data.expectedWidth;
+        } else {
+          label.overflowRight = undefined;
         }
       }
     });
@@ -100,5 +104,9 @@ export class CellsLabels extends Container {
 
   get(): CellLabel[] {
     return this.children as CellLabel[];
+  }
+
+  getVisible(): CellLabel[] {
+    return this.children.filter(child => child.visible) as CellLabel[];
   }
 }

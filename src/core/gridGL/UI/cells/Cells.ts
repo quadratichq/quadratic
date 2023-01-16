@@ -61,7 +61,8 @@ export class Cells extends Container {
    * note: this will not remove dependencies for cells that have been deleted but had dependencies
    */
   private handleOverflow(): void {
-    const labels = this.labels.get();
+    const labels = this.labels.getVisible();
+
     const { quadrants } = this.app;
     const { render_dependency: dependency, gridOffsets } = this.app.sheet;
     const changes: Coordinate[] = [];
@@ -123,7 +124,7 @@ export class Cells extends Container {
         if (y < content.top) content.y = y;
       }
 
-      // only render if there is cell data, cell formatting
+      // only render if there is cell data or cell formatting
       if (!isInput && (entry.cell || entry.format)) {
         this.cellsBorder.draw({ ...entry, x, y, width, height });
         this.cellsBackground.draw({ ...entry, x, y, width, height });
@@ -163,11 +164,12 @@ export class Cells extends Container {
    */
   drawBounds(options: {
     bounds: Rectangle;
+    fullBounds: Rectangle;
     cellRectangle: CellRectangle;
     ignoreInput?: boolean;
     isQuadrant?: boolean;
   }): Rectangle | undefined {
-    const { bounds, cellRectangle, ignoreInput, isQuadrant } = options;
+    const { bounds, fullBounds, cellRectangle, ignoreInput, isQuadrant } = options;
 
     const { gridOffsets, render_dependency: dependency, grid } = this.app.sheet;
     this.labels.clear();
@@ -190,8 +192,6 @@ export class Cells extends Container {
     let y = yStart;
     let blank = true;
     const content = new Rectangle(Infinity, Infinity, -Infinity, -Infinity);
-
-    const dependentCells: Coordinate[] = [];
 
     // iterate through the rows and columns
     for (let row = bounds.top; row <= bounds.bottom; row++) {
@@ -229,6 +229,8 @@ export class Cells extends Container {
       y += height;
     }
 
+    // check for dependencies across entire visible bounds
+    const dependentCells = dependency.getDependentsInBounds(fullBounds);
     if (dependentCells.length) {
       dependentCells.forEach((coordinate) => {
         const entry = grid.get(coordinate.x, coordinate.y);
@@ -327,27 +329,27 @@ export class Cells extends Container {
     }
   }
 
-  drawCells(visibleBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
+  drawCells(fullBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
     const { grid, borders } = this.app.sheet;
-    const bounds = grid.getBounds(visibleBounds);
+    const bounds = grid.getBounds(fullBounds);
     const cellRectangle = grid.getCells(bounds);
-    const rectCells = this.drawBounds({ bounds, cellRectangle, isQuadrant });
+    const rectCells = this.drawBounds({ bounds, fullBounds, cellRectangle, isQuadrant });
 
     // draw borders
-    const borderBounds = borders.getBounds(visibleBounds);
+    const borderBounds = borders.getBounds(fullBounds);
     const bordersList = borders.getBorders(borderBounds);
     const rectBorders = this.cellsBorder.drawBorders(bordersList);
 
-    const fullBounds = intersects.rectangleUnion(rectCells, rectBorders);
+    const finalBounds = intersects.rectangleUnion(rectCells, rectBorders);
 
-    if (isQuadrant && debugShowQuadrantBoxes && fullBounds) {
+    if (isQuadrant && debugShowQuadrantBoxes && finalBounds) {
       this.debug.clear();
       this.debug.beginFill(debugGetColor(), 0.25);
-      this.debug.drawShape(fullBounds);
+      this.debug.drawShape(finalBounds);
       this.debug.endFill();
     }
 
-    return fullBounds;
+    return finalBounds;
   }
 
   changeVisibility(visible: boolean): void {
