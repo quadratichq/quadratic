@@ -63,9 +63,9 @@ export class Cells extends Container {
   private handleOverflow(): void {
     const labels = this.labels.get();
     const { quadrants } = this.app;
-    const { dependency, gridOffsets } = this.app.sheet;
+    const { render_dependency: dependency, gridOffsets } = this.app.sheet;
     const changes: Coordinate[] = [];
-    labels.forEach(label => {
+    labels.forEach((label) => {
       if (!label.location) return;
       if (!label.overflowLeft && !label.overflowRight) {
         dependency.empty(label.location);
@@ -169,7 +169,7 @@ export class Cells extends Container {
   }): Rectangle | undefined {
     const { bounds, cellRectangle, ignoreInput, isQuadrant } = options;
 
-    const { gridOffsets, dependency, grid } = this.app.sheet;
+    const { gridOffsets, render_dependency: dependency, grid } = this.app.sheet;
     this.labels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
@@ -203,12 +203,13 @@ export class Cells extends Container {
         // track dependents that are outside the bounds of this rectangle
         const dependents = dependency.getDependents({ x: column, y: row });
         if (dependents?.length) {
-          const outsideDependents = dependents.filter(dependent => !intersects.rectanglePoint(bounds, new Point(dependent.x, dependent.y)));
+          const outsideDependents = dependents.filter(
+            (dependent) => !intersects.rectanglePoint(bounds, new Point(dependent.x, dependent.y))
+          );
           if (outsideDependents.length) {
-
             // ensure no duplicates
-            outsideDependents.forEach(dependent => {
-              if (!dependentCells.find(search => coordinateEqual(search, dependent))) {
+            outsideDependents.forEach((dependent) => {
+              if (!dependentCells.find((search) => coordinateEqual(search, dependent))) {
                 dependentCells.push(dependent);
               }
             });
@@ -229,7 +230,7 @@ export class Cells extends Container {
     }
 
     if (dependentCells.length) {
-      dependentCells.forEach(coordinate => {
+      dependentCells.forEach((coordinate) => {
         const entry = grid.get(coordinate.x, coordinate.y);
         if (entry) {
           const position = gridOffsets.getCell(coordinate.x, coordinate.y);

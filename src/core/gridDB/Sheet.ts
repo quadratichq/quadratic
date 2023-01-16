@@ -6,29 +6,30 @@ import { GridRenderDependency } from './GridRenderDependency';
 import { GridOffsets } from './GridOffsets';
 import { CellAndFormat, GridSparse } from './GridSparse';
 import { Cell } from './gridTypes';
+import { CellDependencyManager } from './CellDependencyManager';
 
 export class Sheet {
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
-  dependency: GridRenderDependency;
-  dgraph: Map<[number, number], [number, number][]>;
+  render_dependency: GridRenderDependency;
+  cell_dependency: CellDependencyManager;
   onRebuild?: () => void;
 
   constructor() {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
-    this.dependency = new GridRenderDependency();
-    this.dgraph = new Map<[number, number], [number, number][]>();
+    this.render_dependency = new GridRenderDependency();
+    this.cell_dependency = new CellDependencyManager();
   }
 
   newFile(): void {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
-    this.dependency = new GridRenderDependency();
-    this.dgraph = new Map<[number, number], [number, number][]>();
+    this.render_dependency = new GridRenderDependency();
+    this.cell_dependency = new CellDependencyManager();
     this.onRebuild?.();
   }
 
@@ -36,8 +37,8 @@ export class Sheet {
     this.gridOffsets.populate(sheet.rows, sheet.columns);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
-    this.dependency.load(sheet.dependency);
-    // this.dgraph = new Map(Object.entries(JSON.parse(sheet.dgraph))); // TODO: I do not think this works
+    this.render_dependency.load(sheet.render_dependency);
+    // TODO: Load cell dependency
     this.onRebuild?.();
   }
 
@@ -49,8 +50,8 @@ export class Sheet {
       cells,
       formats,
       borders: this.borders.getArray(),
-      dependency: this.dependency.save(),
-      dgraph: JSON.stringify(Object.fromEntries(this.dgraph)),
+      render_dependency: this.render_dependency.save(),
+      cell_dependency: '', // TODO: Save dgraph
       version: GRID_FILE_VERSION,
     };
   }

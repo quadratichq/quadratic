@@ -5,6 +5,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { localFiles } from '../../gridDB/localFiles';
 import { SheetController } from '../../transaction/sheetController';
+import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -95,20 +96,30 @@ export const CellInput = (props: CellInputProps) => {
           ]);
       } else {
         // create cell with value at input location
-        sheetController.predefined_transaction([
+        await updateCellAndDCells(
           {
-            type: 'SET_CELL',
-            data: {
-              position: [cellLocation.current.x, cellLocation.current.y],
-              value: {
-                x: cellLocation.current.x,
-                y: cellLocation.current.y,
-                type: 'TEXT',
-                value: value || '',
-              },
-            },
+            x: cellLocation.current.x,
+            y: cellLocation.current.y,
+            type: 'TEXT',
+            value: value || '',
           },
-        ]);
+          sheetController,
+          app
+        );
+        // sheetController.predefined_transaction([
+        //   {
+        //     type: 'SET_CELL',
+        //     data: {
+        //       position: [cellLocation.current.x, cellLocation.current.y],
+        //       value: {
+        //         x: cellLocation.current.x,
+        //         y: cellLocation.current.y,
+        //         type: 'TEXT',
+        //         value: value || '',
+        //       },
+        //     },
+        //   },
+        // ]);
       }
       app?.quadrants.quadrantChanged({ cells: [cellLocation.current] });
       localFiles.saveLastLocal(sheetController.sheet.export_file());

@@ -11,10 +11,17 @@ export type Statement =
       };
     }
   | {
-      type: 'SET_CELL_DEPENDENCIES';
+      type: 'ADD_CELL_DEPENDENCY';
       data: {
         position: [number, number];
-        dependencies: [number, number][] | null;
+        updates: [number, number];
+      };
+    }
+  | {
+      type: 'REMOVE_CELL_DEPENDENCY';
+      data: {
+        position: [number, number];
+        updates: [number, number];
       };
     }
   | {
