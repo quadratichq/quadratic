@@ -1,4 +1,4 @@
-import { debug, debugShowCellsForDirtyQuadrants, debugShowFPS } from '../../../debugFlags';
+import { debug, debugShowCellsForDirtyQuadrants, debugShowFPS, debugShowWhyRendering } from '../../../debugFlags';
 import {
   debugRendererLight,
   debugShowCachedCounts,
@@ -49,6 +49,10 @@ export class Update {
       app.cells.dirty ||
       app.cursor.dirty;
 
+    if (rendererDirty && debugShowWhyRendering) {
+      console.log(`dirty: ${app.viewport.dirty ? 'viewport ' : ''}${app.gridLines.dirty ? 'gridLines ' : ''}${app.axesLines.dirty ? 'axesLines ' : ''}${app.headings.dirty ? 'headings ' : ''}${app.cells.dirty ? 'cells ' : ''}${app.cursor.dirty ? 'cursor ' : ''}`);
+    }
+
     debugTimeReset();
     app.gridLines.update();
     debugTimeCheck('[Update] gridLines');
@@ -92,7 +96,7 @@ export class Update {
       // only render quadrants when the viewport hasn't been dirty for a while
       if (timeStart > this.nextQuadrantRender) {
         if (app.quadrants.update(timeStart)) {
-          app.renderer.render(app.stage);
+          // app.renderer.render(app.stage);
         }
       }
     }
@@ -135,7 +139,7 @@ export class Update {
       // only render quadrants when the viewport hasn't been dirty for a while
       if (timeStart > this.nextQuadrantRender) {
         if (app.quadrants.update(timeStart)) {
-          app.renderer.render(app.stage);
+          // app.renderer.render(app.stage);
         }
       }
     }
