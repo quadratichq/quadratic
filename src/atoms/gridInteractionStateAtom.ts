@@ -1,12 +1,12 @@
 import { atom } from 'recoil';
-import CellReference from '../core/gridGL/types/cellReference';
+import { Coordinate } from '../core/gridGL/types/size';
 export interface GridInteractionState {
-  keyboardMovePosition: CellReference;
-  cursorPosition: CellReference;
+  keyboardMovePosition: Coordinate;
+  cursorPosition: Coordinate;
   showMultiCursor: boolean;
   multiCursorPosition: {
-    originPosition: CellReference;
-    terminalPosition: CellReference;
+    originPosition: Coordinate;
+    terminalPosition: Coordinate;
   };
   showInput: boolean;
   inputInitialValue: string;

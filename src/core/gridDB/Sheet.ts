@@ -6,30 +6,31 @@ import { GridRenderDependency } from './GridRenderDependency';
 import { GridOffsets } from './GridOffsets';
 import { CellAndFormat, GridSparse } from './GridSparse';
 import { Cell } from './gridTypes';
+import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../gridGL/types/size';
 
 export class Sheet {
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
-  dependency: GridRenderDependency;
-  dgraph: Map<[number, number], [number, number][]>;
+  render_dependency: GridRenderDependency;
+  cell_dependency: CellDependencyManager;
   onRebuild?: () => void;
 
   constructor() {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
-    this.dependency = new GridRenderDependency();
-    this.dgraph = new Map<[number, number], [number, number][]>();
+    this.render_dependency = new GridRenderDependency();
+    this.cell_dependency = new CellDependencyManager();
   }
 
   newFile(): void {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
-    this.dependency = new GridRenderDependency();
-    this.dgraph = new Map<[number, number], [number, number][]>();
+    this.render_dependency = new GridRenderDependency();
+    this.cell_dependency = new CellDependencyManager();
     this.onRebuild?.();
   }
 
@@ -37,10 +38,8 @@ export class Sheet {
     this.gridOffsets.populate(sheet.rows, sheet.columns);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
-    this.dependency.load(sheet.dependency);
-
-    // todo
-    // this.dgraph = new Map(Object.entries(JSON.parse(sheet.dgraph)));
+    this.render_dependency.load(sheet.render_dependency);
+    this.cell_dependency.loadFromString(sheet.cell_dependency);
     this.onRebuild?.();
   }
 
@@ -52,8 +51,8 @@ export class Sheet {
       cells,
       formats,
       borders: this.borders.getArray(),
-      dependency: this.dependency.save(),
-      dgraph: JSON.stringify(Object.fromEntries(this.dgraph)),
+      render_dependency: this.render_dependency.save(),
+      cell_dependency: this.cell_dependency.exportToString(),
       version: GRID_FILE_VERSION,
     };
   }
@@ -64,7 +63,11 @@ export class Sheet {
 
   /** finds grid bounds based on GridSparse, GridBounds, and GridRenderDependency */
   getGridBounds(): Rectangle | undefined {
-    return intersects.rectangleUnion(this.grid.getGridBounds(), this.borders.getGridBounds(), this.dependency.getGridBounds());
+    return intersects.rectangleUnion(
+      this.grid.getGridBounds(),
+      this.borders.getGridBounds(),
+      this.render_dependency.getGridBounds()
+    );
   }
 
   getMinMax(): Coordinate[] | undefined {
@@ -94,7 +97,7 @@ export class Sheet {
     }
     return [
       { x: Math.min(gridRowMinMax.min, bordersRowMinMax.min), y: row },
-      { x: Math.max(gridRowMinMax.max, bordersRowMinMax.max), y: row }
+      { x: Math.max(gridRowMinMax.max, bordersRowMinMax.max), y: row },
     ];
   }
 

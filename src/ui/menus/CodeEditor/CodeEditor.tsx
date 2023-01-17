@@ -106,7 +106,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     selectedCell.value = '';
     selectedCell.python_code = editorContent;
 
-    updateCellAndDCells(props.sheet_controller, selectedCell);
+    updateCellAndDCells(selectedCell, props.sheet_controller);
   };
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {

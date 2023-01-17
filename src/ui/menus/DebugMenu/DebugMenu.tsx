@@ -9,7 +9,7 @@ interface Props {
 
 export default function DebugMenu(props: Props) {
   const { sheet } = props;
-  const { dgraph } = sheet;
+  const { cell_dependency: dgraph } = sheet;
 
   const cells = sheet.debugGetCells();
   let file_state: string;
