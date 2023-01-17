@@ -29,7 +29,7 @@ venv/*
 *.pyc
 .idea
 
-.env
+.env.local
 
 quadratic-core/target/*
 quadratic-api/node_modules/*

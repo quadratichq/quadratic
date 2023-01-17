@@ -68,6 +68,7 @@ export class GridSparse {
         this.cells.set(this.getKey(format.x, format.y), { format });
       }
     });
+    this.recalculateBounds();
   }
 
   clearFormat(formats: CellFormat[]): void {

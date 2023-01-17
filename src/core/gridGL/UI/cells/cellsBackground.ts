@@ -1,6 +1,6 @@
 import Color from 'color';
 import { Container, Sprite, Texture } from 'pixi.js';
-import { ICellsDraw } from './Cells';
+import { CellsDraw } from './Cells';
 
 export class CellsBackground extends Container {
   private visibleIndex = 0;
@@ -21,7 +21,7 @@ export class CellsBackground extends Container {
     return this.addChild(new Sprite(Texture.WHITE));
   }
 
-  draw(input: ICellsDraw): void {
+  draw(input: CellsDraw): void {
     if (input.format) {
       if (input.format.fillColor) {
         const sprite = this.getSprite();

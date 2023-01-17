@@ -8,7 +8,6 @@ export class CellRectangle {
   size: Rectangle;
   borders?: Border[];
 
-  // todo: the GridSparse call will be replaced by the rust controller call
   constructor(size: Rectangle, grid: GridSparse) {
     const cells: (CellAndFormat | undefined)[] = [];
     this.size = size;

@@ -13,7 +13,7 @@ import { Cells } from '../UI/cells/Cells';
 import { zoomInOut, zoomToFit } from '../helpers/zoom';
 import { Quadrants } from '../quadrants/Quadrants';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
-import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../../debugFlags';
+import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag, debugLockZoom } from '../../../debugFlags';
 import { Sheet } from '../../gridDB/Sheet';
 import { SheetController } from '../../transaction/sheetController';
 
@@ -120,7 +120,10 @@ export class PixiApp {
 
   private showCache(): void {
     if (debugShowCacheFlag && !this.quadrants.visible) {
-      (document.querySelector('.debug-show-cache-on') as HTMLSpanElement).innerHTML = 'CACHE';
+      const cacheOn = document.querySelector('.debug-show-cache-on');
+      if (cacheOn) {
+        (cacheOn as HTMLSpanElement).innerHTML = 'CACHE';
+      }
     }
     this.cells.changeVisibility(false);
     this.quadrants.visible = true;
@@ -176,6 +179,12 @@ export class PixiApp {
   };
 
   checkZoom(): void {
+    if (debugLockZoom) {
+      this.viewport.setZoom(debugLockZoom, true);
+      this.settings.setZoomState && this.settings.setZoomState(this.viewport.scale.x);
+      return;
+    }
+
     const zoom = this.settings.zoomState;
     if (zoom === Infinity) {
       zoomToFit(this.sheet, this.viewport);

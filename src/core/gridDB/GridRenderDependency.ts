@@ -1,3 +1,4 @@
+import { Rectangle } from 'pixi.js';
 import { Coordinate, coordinateEqual } from '../gridGL/types/size'
 
 export interface Dependency {
@@ -8,9 +9,36 @@ export interface Dependency {
 
 export class GridRenderDependency {
   private dependents: Map<string, Dependency> = new Map();
+  private minX = 0;
+  private maxX = 0;
+  private minY = 0;
+  private maxY = 0;
+  private isEmpty = true;
 
   clear(): void {
     this.dependents.clear();
+    this.minX = 0;
+    this.maxX = 0;
+    this.minY = 0;
+    this.maxY = 0;
+    this.isEmpty = true;
+  }
+
+  recalculateBounds(): void {
+    if (this.dependents.size === 0) {
+      this.clear();
+      return;
+    }
+    this.minX = Infinity;
+    this.maxX = -Infinity;
+    this.minY = Infinity;
+    this.maxY = -Infinity;
+    this.dependents.forEach((dependent) => {
+      this.minX = Math.min(this.minX, dependent.location.x);
+      this.maxX = Math.max(this.maxX, dependent.location.x);
+      this.minY = Math.min(this.minY, dependent.location.y);
+      this.maxY = Math.max(this.maxY, dependent.location.y);
+    });
   }
 
   private getKey(location: Coordinate): string {
@@ -37,6 +65,7 @@ export class GridRenderDependency {
       })
       this.dependents.set(cellKey, { ...originalDependency, renderThisCell: []});
     }
+    this.recalculateBounds();
     return changes;
   }
 
@@ -51,7 +80,6 @@ export class GridRenderDependency {
     const cellKey = this.getKey(cell);
     const originalDependency = this.dependents.get(cellKey);
     if (originalDependency) {
-
       // remove needToRender entries for cells that are no longer dependents
       originalDependency.renderThisCell.forEach(entry => {
         if (!renderThisCell.find(search => coordinateEqual(search, entry))) {
@@ -82,19 +110,21 @@ export class GridRenderDependency {
       });
       this.dependents.set(cellKey, { ...originalDependency, renderThisCell });
     } else {
-
       // add render entries for cells that are dependents
       renderThisCell.forEach(entry => {
-        const add = this.dependents.get(this.getKey(entry));
+        const key = this.getKey(entry);
+        const add = this.dependents.get(key);
         if (add) {
           add.renderThisCell.push(cell);
         } else {
-          this.dependents.set(this.getKey(entry), { location: entry, needToRender: [cell], renderThisCell: [] });
+          this.dependents.set(key, { location: entry, needToRender: [cell], renderThisCell: [] });
         }
         changes.push(cell);
       });
       this.dependents.set(cellKey, { location: cell, needToRender: [], renderThisCell });
     }
+
+    this.recalculateBounds();
     return changes;
   }
 
@@ -108,6 +138,20 @@ export class GridRenderDependency {
     if (entry) {
       return entry.needToRender;
     }
+  }
+
+  /** find all cell dependents that point to a cell that is inside the bounds */
+  getDependentsInBounds(fullBounds: Rectangle): Coordinate[] {
+    const coordinates: Coordinate[] = [];
+    this.dependents.forEach(dependent => {
+      const location = dependent.location;
+
+      // first check that the dependent is within the full bounds
+      if (location.x >= fullBounds.left && location.x <= fullBounds.right && location.y >= fullBounds.top && location.y <= fullBounds.bottom) {
+        coordinates.push(...dependent.renderThisCell);
+      }
+    });
+    return coordinates;
   }
 
   /**
@@ -129,5 +173,10 @@ export class GridRenderDependency {
   load(dependents: Dependency[]): void {
     this.dependents.clear();
     dependents.forEach(dependent => this.dependents.set(this.getKey(dependent.location), dependent));
+  }
+
+  getGridBounds(): Rectangle | undefined {
+    if (this.isEmpty) return;
+    return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
   }
 }

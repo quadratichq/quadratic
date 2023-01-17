@@ -2,7 +2,7 @@ import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { colors } from '../../../../theme/colors';
 import { Border } from '../../../gridDB/gridTypes';
 import { PixiApp } from '../../pixiApp/PixiApp';
-import { ICellsDraw } from './Cells';
+import { CellsDraw } from './Cells';
 import { drawBorder, drawCellBorder } from './drawBorder';
 
 export class CellsBorder extends Container {
@@ -51,8 +51,8 @@ export class CellsBorder extends Container {
     }
   };
 
-  draw(input: ICellsDraw): void {
-    const drawInputBorder = (input: ICellsDraw, tint: number, alpha: number): void => {
+  draw(input: CellsDraw): void {
+    const drawInputBorder = (input: CellsDraw, tint: number, alpha: number): void => {
       drawBorder({
         x: input.x,
         y: input.y,

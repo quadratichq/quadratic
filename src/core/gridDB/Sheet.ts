@@ -38,7 +38,9 @@ export class Sheet {
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
     this.dependency.load(sheet.dependency);
-    // this.dgraph = new Map(Object.entries(JSON.parse(sheet.dgraph))); // TODO: I do not think this works
+
+    // todo
+    // this.dgraph = new Map(Object.entries(JSON.parse(sheet.dgraph)));
     this.onRebuild?.();
   }
 
@@ -60,8 +62,9 @@ export class Sheet {
     return this.grid.get(x, y);
   }
 
+  /** finds grid bounds based on GridSparse, GridBounds, and GridRenderDependency */
   getGridBounds(): Rectangle | undefined {
-    return intersects.rectangleUnion(this.grid.getGridBounds(), this.borders.getGridBounds());
+    return intersects.rectangleUnion(this.grid.getGridBounds(), this.borders.getGridBounds(), this.dependency.getGridBounds());
   }
 
   getMinMax(): Coordinate[] | undefined {
