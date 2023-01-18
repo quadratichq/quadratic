@@ -5,6 +5,7 @@ import { CellTypes } from '../core/gridDB/gridTypes';
 export interface EditorInteractionState {
   showCellTypeMenu: boolean;
   showCodeEditor: boolean;
+  showCommandPalette: boolean;
   selectedCell: CellReference;
   mode: CellTypes;
 }
@@ -12,6 +13,7 @@ export interface EditorInteractionState {
 export const editorInteractionStateDefault: EditorInteractionState = {
   showCellTypeMenu: false,
   showCodeEditor: false,
+  showCommandPalette: false,
   selectedCell: { x: 0, y: 0 },
   mode: 'TEXT',
 };

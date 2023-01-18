@@ -7,6 +7,7 @@ export const onDoubleClickCanvas = (
   sheet: Sheet,
   interactionState: GridInteractionState,
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>,
+  editorInteractionState: EditorInteractionState,
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>
 ) => {
   // Get the double clicked cell, check if it is already set
@@ -26,6 +27,7 @@ export const onDoubleClickCanvas = (
     } else {
       // Open code editor, or move code editor if already open.
       setEditorInteractionState({
+        showCommandPalette: false,
         showCellTypeMenu: false,
         showCodeEditor: true,
         selectedCell: { x: x, y: y },
