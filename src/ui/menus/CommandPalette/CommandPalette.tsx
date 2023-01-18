@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
+  Checkbox,
+  Dialog,
+  Modal,
   Divider,
   IconButton,
   InputBase,
@@ -8,43 +11,173 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  ListItemSecondaryAction,
   Typography,
   Paper,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import {
+  Search,
+  BorderAll,
+  BorderOuter,
+  BorderTop,
+  BorderRight,
+  BorderLeft,
+  BorderBottom,
+  BorderInner,
+  BorderHorizontal,
+  BorderVertical,
+  FormatBold,
+  FormatItalic,
+  FormatColorText,
+  FormatAlignCenter,
+  FormatAlignLeft,
+  FormatAlignRight,
+  BorderClear,
+} from '@mui/icons-material';
 
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { CellTypes } from '../../../core/gridDB/db';
+import { CellTypes } from '../../../core/gridDB/gridTypes';
 
 import './styles.css';
 import { focusGrid } from '../../../helpers/focusGrid';
 
 export interface QuadraticCommand {
-  key: number;
   name: string;
-  short: string;
-  slug: CellTypes;
-  description: string;
-  disabled: boolean;
+  action?: any; // @TODO action to run when selected
+  icon?: any;
+  disabled?: boolean | undefined | string;
+  comingSoon?: boolean | undefined;
+  shortcut?: string;
+  shortcutModifiers?: Array<'ctrl' | 'shift' | 'alt'>;
 }
 
 const QUADRATIC_COMMANDS = [
   {
-    key: 0,
-    name: 'Show Grid Lines',
-    short: 'Py',
-    slug: 'PYTHON',
-    description: '',
-    disabled: false,
+    name: 'Undo',
+    shortcut: 'Z',
+    shortcutModifiers: ['ctrl'],
   },
   {
-    key: 20,
-    name: 'Show Grid Header',
-    short: '=',
-    slug: 'FORMULA',
-    description: 'Familiar Excel-like formulas.',
-    disabled: true,
+    name: 'Redo',
+    shortcut: 'Z',
+    shortcutModifiers: ['ctrl', 'shift'],
+  },
+  {
+    name: 'Borders: Apply borders to all',
+    icon: BorderAll,
+  },
+  {
+    name: 'Borders: Apply outer borders',
+    icon: BorderOuter,
+  },
+  {
+    name: 'Borders: Apply inner borders',
+    icon: BorderInner,
+  },
+  {
+    name: 'Borders: Apply vertical borders',
+    icon: BorderVertical,
+  },
+  {
+    name: 'Borders: Apply horizontal borders',
+    icon: BorderHorizontal,
+  },
+  {
+    name: 'Borders: Apply left border',
+    icon: BorderLeft,
+  },
+  {
+    name: 'Borders: Apply right border',
+    icon: BorderRight,
+  },
+  {
+    name: 'Borders: Apply top border',
+    icon: BorderTop,
+  },
+  {
+    name: 'Borders: Apply bottom border',
+    icon: BorderBottom,
+  },
+  {
+    name: 'Borders: Clear all',
+    icon: BorderClear,
+  },
+  {
+    name: 'View: Show row and column headings',
+    icon: (props: any) => (
+      <Checkbox
+        edge="start"
+        checked={props.checked}
+        tabIndex={-1}
+        disableRipple
+        inputProps={{ 'aria-labelledby': '@TODO' }}
+        {...props}
+      />
+    ),
+  },
+  {
+    name: 'View: Show axis',
+    icon: (props: any) => (
+      <Checkbox
+        edge="start"
+        checked={props.checked}
+        tabIndex={-1}
+        disableRipple
+        inputProps={{ 'aria-labelledby': '@TODO' }}
+        {...props}
+      />
+    ),
+  },
+  {
+    name: 'Import: CSV',
+    comingSoon: true,
+  },
+  {
+    name: 'Import: Excel',
+    comingSoon: true,
+  },
+  {
+    name: 'Text: Toggle bold',
+    icon: FormatBold,
+    comingSoon: true,
+  },
+  {
+    name: 'Text: Toggle italic',
+    icon: FormatItalic,
+    comingSoon: true,
+  },
+  {
+    name: 'Text: Change color',
+    icon: FormatColorText,
+    comingSoon: true,
+  },
+  {
+    name: 'Text: Wrap text',
+    comingSoon: true,
+  },
+  {
+    name: 'Text: Wrap text overflow',
+    comingSoon: true,
+  },
+  {
+    name: 'Text: Wrap text',
+    comingSoon: true,
+  },
+  {
+    name: 'Text: Align left',
+    icon: FormatAlignLeft,
+    comingSoon: true,
+  },
+  {
+    name: 'Text: Align center',
+    icon: FormatAlignCenter,
+    comingSoon: true,
+  },
+  {
+    name: 'Text: Align right',
+    icon: FormatAlignRight,
+    comingSoon: true,
   },
 ] as QuadraticCommand[];
 
@@ -52,21 +185,12 @@ export const CommandPalette = () => {
   // Interaction State hook
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
+  const [isHidden, setIsHidden] = React.useState<boolean>(false);
   const [value, setValue] = React.useState<string>('');
-  const [selected_value, setSelectedValue] = React.useState<CellTypes | undefined>('PYTHON');
-  const [filtered_cell_type_list, setFilteredCellTypeList] = React.useState<any>(QUADRATIC_COMMANDS);
-
-  const update_filter = (value: string) => {
-    const filtered_cell_type_list = QUADRATIC_COMMANDS.filter((cell_type) => {
-      return cell_type.slug.includes(value.toUpperCase());
-    });
-
-    const selected_value = filtered_cell_type_list[0]?.slug;
-
-    setSelectedValue(selected_value);
-    setFilteredCellTypeList(filtered_cell_type_list);
-    setValue(value);
-  };
+  const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
+  const filteredList = QUADRATIC_COMMANDS.filter((item) => {
+    return value ? item.name.toLowerCase().includes(value) : true;
+  });
 
   const close = () => {
     setEditorInteractionState({
@@ -74,26 +198,48 @@ export const CommandPalette = () => {
       showCellTypeMenu: false,
     });
     setValue('');
-    update_filter('');
+    // update_filter('');
     focusGrid();
+    // setIsHidden(true);
   };
 
-  const openEditor = (mode = null) => {
-    setEditorInteractionState({
-      ...editorInteractionState,
-      ...{
-        showCodeEditor: true,
-        showCellTypeMenu: false,
-        mode: mode || selected_value || 'PYTHON',
-      },
-    });
-  };
+  // Scroll navigated elements into view
+  useEffect(() => {
+    const el = document.querySelector(`[data-command-bar-list-item-index='${selectedIndex}']`);
+    if (el) {
+      // @TODO refine this for keying up through the list
+      el.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedIndex]);
+
+  // const onKeyDown = useCallback(
+  //   (e: KeyboardEvent) => {
+  //     console.log(e);
+  //     if ((e.metaKey || e.ctrlKey) && e.code === 'KeyP') {
+  //       e.preventDefault();
+  //       e.stopPropagation();
+  //       setIsHidden(!isHidden);
+  //     }
+  //   },
+  //   [isHidden]
+  // );
+  // useEffect(() => {
+  //   document.addEventListener('keydown', onKeyDown);
+  //   return () => window.removeEventListener('keydown', onKeyDown);
+  // }, [isHidden, onKeyDown]);
+
+  if (isHidden) {
+    return null;
+  }
 
   return (
-    <Paper id="CellTypeMenuID" elevation={12} className="container">
+    <Paper id="CellTypeMenuID" elevation={12} className="container" style={{ width: 450 }}>
       <div>
         <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
-          <SearchIcon />
+          <Search />
         </IconButton>
 
         <InputBase
@@ -106,45 +252,61 @@ export const CommandPalette = () => {
             if (e.key === 'Escape') {
               close();
             } else if (e.key === 'Enter') {
-              openEditor();
+              // Do thing....
               // @TODO VScode supports n/p for going up down, should we?
-            } else if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) {
+            } else if (e.key === 'ArrowDown') {
               e.preventDefault();
               e.stopPropagation();
-              // handleChangeSelected('down');
-            } else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'p')) {
+              setSelectedIndex(selectedIndex === filteredList.length - 1 ? 0 : selectedIndex + 1);
+            } else if (e.key === 'ArrowUp') {
               e.preventDefault();
               e.stopPropagation();
+              setSelectedIndex(selectedIndex === 0 ? filteredList.length - 1 : selectedIndex - 1);
               // handleChangeSelected('up');
             }
           }}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setValue(event.target.value);
+          }}
         />
-        {/* <TextField
-        id="CommandPaletteInputID"
-        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-          update_filter(event.target.value);
-        }}
-        
-        
-      /> */}
       </div>
-      <List dense={true} style={{ height: 350, width: 300 }}>
-        <Divider variant="fullWidth" />
-        {filtered_cell_type_list.map((e: any) => {
+      <List dense={true} style={{ height: '350px', overflow: 'scroll' }}>
+        {filteredList.map((e: any, i: number) => {
+          // Highlight the matching text in the results (if there's a current value)
+          let displayText = e.name;
+          if (value) {
+            const index = displayText.toLowerCase().indexOf(value);
+            const displayTextHighlight = displayText.slice(index, index + value.length);
+            displayText = (
+              <span
+                dangerouslySetInnerHTML={{
+                  __html: displayText.replace(displayTextHighlight, `<b>${displayTextHighlight}</b>`),
+                }}
+              />
+            );
+          }
           return (
             <ListItemButton
-              key={e.key}
-              selected={selected_value === e.slug}
-              disabled={e.disabled}
+              key={i}
+              data-command-bar-list-item-index={i}
+              selected={selectedIndex === i}
+              disabled={Boolean(e.disabled) || e.comingSoon}
               style={{ width: '100%' }}
               onClick={() => {
-                openEditor(e.slug);
+                console.log('Fire off action');
+                close();
               }}
             >
-              <ListItemIcon>
-                <Typography>{e.short}</Typography>
-              </ListItemIcon>
-              <ListItemText primary={e.name} secondary={e.description} />
+              {e.icon && <ListItemIcon>{React.createElement(e.icon)}</ListItemIcon>}
+              <ListItemText primary={displayText} inset={!e.icon} />
+              {e.comingSoon && (
+                <ListItemSecondaryAction style={{ fontSize: '13px' }}>Coming soon…</ListItemSecondaryAction>
+              )}
+              {e.shortcut && (
+                <ListItemSecondaryAction>
+                  {convertModifierKeyToSymbol(e.shortcutModifiers) + e.shortcut}
+                </ListItemSecondaryAction>
+              )}
             </ListItemButton>
           );
         })}
@@ -152,3 +314,23 @@ export const CommandPalette = () => {
     </Paper>
   );
 };
+
+// @TODO windows and make it work with other keyboard file
+// Maybe consider something like https://github.com/ueberdosis/keyboard-symbol#readme
+function convertModifierKeyToSymbol(modifiers: Array<string>) {
+  let out = '';
+
+  if (modifiers && modifiers.length > 0) {
+    modifiers.forEach((modifier) => {
+      if (modifier === 'ctrl') {
+        out = '⌘';
+      } else if (modifier === 'alt') {
+        out = '⌥';
+      } else if (modifier === 'shift') {
+        out = '⇧';
+      }
+    });
+  }
+
+  return out;
+}
