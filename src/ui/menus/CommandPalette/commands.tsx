@@ -21,7 +21,7 @@ import {
   FormatColorFill,
   FormatClear,
 } from '@mui/icons-material';
-import { KeyboardSymbols, IKeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 
 export interface QuadraticCommand {
   name: string;
