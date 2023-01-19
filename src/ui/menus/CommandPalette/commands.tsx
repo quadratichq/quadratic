@@ -28,9 +28,8 @@ export interface QuadraticCommand {
   action?: any; // @TODO action to run when selected
   icon?: any;
   disabled?: boolean | undefined;
-  // comingSoon?: boolean | undefined;
   shortcut?: string;
-  shortcutModifiers?: Array<keyof IKeyboardSymbols>;
+  shortcutModifiers?: Array<string>;
 }
 
 // @TODO iterate over commands and apply aria-label and checked state
