@@ -38,6 +38,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const y = editorInteractionState.selectedCell.y;
   const cell = useMemo(() => props.sheet_controller.sheet.getCell(x, y), [x, y, props.sheet_controller.sheet]);
 
+  // Cell python_output
+  const [python_output, setPythonOutput] = useState<string | undefined>(cell?.cell?.python_output);
+
   // Editor Width State
   const [editorWidth, setEditorWidth] = useState<number>(
     window.innerWidth * 0.35 // default to 35% of the window width
@@ -50,6 +53,13 @@ export const CodeEditor = (props: CodeEditorProps) => {
     }
   }, [cell]);
 
+  // When selected cell changes updated python output
+  useEffect(() => {
+    if (selectedCell) {
+      setPythonOutput(selectedCell?.python_output);
+    }
+  }, [selectedCell]);
+
   const closeEditor = () => {
     setInteractionState({
       ...editorInteractionState,
@@ -57,6 +67,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     });
     setEditorContent('');
     setSelectedCell(undefined);
+    setPythonOutput(undefined);
     focusGrid();
   };
 
@@ -99,14 +110,17 @@ export const CodeEditor = (props: CodeEditorProps) => {
     }
   }, [selectedCell, editorInteractionState, props.sheet_controller.sheet]);
 
-  const saveAndRunCell = () => {
+  const saveAndRunCell = async () => {
     if (!selectedCell) return;
 
     selectedCell.type = 'PYTHON';
     selectedCell.value = '';
     selectedCell.python_code = editorContent;
 
-    updateCellAndDCells(selectedCell, props.sheet_controller);
+    await updateCellAndDCells(selectedCell, props.sheet_controller);
+
+    const updated_cell = props.sheet_controller.sheet.getCell(x, y)?.cell;
+    setPythonOutput(updated_cell?.python_output);
   };
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -285,7 +299,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
               label="OUTPUT"
               multiline
               rows={7}
-              value={selectedCell.python_output || ''}
+              value={python_output || ''}
               style={{
                 width: '100%',
               }}
