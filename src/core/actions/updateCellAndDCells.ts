@@ -62,21 +62,22 @@ export const updateCellAndDCells = async (starting_cell: Cell, sheet_controller:
       });
 
     // clear old array cells created by this cell
-    // if (cell.array_cells) {
-    //   const old_array_cells = cell.array_cells.map((cell) => {
-    //     return { x: cell[0], y: cell[1] };
-    //   });
-    //   old_array_cells.unshift(); // remove this cell
+    // TODO: this should really only delete non overlap of new cells
+    if (cell.array_cells) {
+      const old_array_cells = cell.array_cells.map((cell) => {
+        return { x: cell[0], y: cell[1] };
+      });
+      old_array_cells.unshift(); // remove this cell
 
-    //   // delete old array cells
-    //   old_array_cells.forEach((cell) => {
-    //     sheet_controller.execute_statement({
-    //       type: 'SET_CELL',
-    //       data: { position: [cell.x, cell.y], value: undefined },
-    //     });
-    //   });
-    //   updatedCells.push(...old_array_cells);
-    // }
+      // delete old array cells
+      old_array_cells.forEach((cell) => {
+        sheet_controller.execute_statement({
+          type: 'SET_CELL',
+          data: { position: [cell.x, cell.y], value: undefined },
+        });
+      });
+      updatedCells.push(...old_array_cells);
+    }
 
     if (cell.type === 'PYTHON') {
       // run cell and format results
