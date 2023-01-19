@@ -46,7 +46,6 @@ export const CommandPalette = () => {
   useEffect(() => {
     const el = document.querySelector(`[data-command-bar-list-item-index='${selectedIndex}']`);
     if (el) {
-      // @TODO refine this for keying up through the list
       el.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',
@@ -85,10 +84,11 @@ export const CommandPalette = () => {
             if (e.key === 'Escape') {
               close();
             } else if (e.key === 'Enter') {
-              // Do thing....
-              console.log('Fire action: ', filteredList[selectedIndex].name);
-              close();
-              // @TODO VScode supports alt+n/p for going up down, should we?
+              // @TODO run associated action
+              if (!filteredList[selectedIndex].disabled) {
+                console.log('Fire action: ', filteredList[selectedIndex].name);
+                close();
+              }
             } else if (e.key === 'ArrowDown') {
               e.preventDefault();
               e.stopPropagation();
@@ -107,7 +107,7 @@ export const CommandPalette = () => {
       </div>
       <Divider />
       <div style={{ height: '300px', overflow: 'scroll' }}>
-        <List dense={true}>
+        <List dense={true} disablePadding>
           {filteredList.length ? (
             filteredList.map(({ disabled, icon, name, shortcut, shortcutModifiers }: QuadraticCommand, i: number) => {
               // Highlight the matching text in the results (if there's a current value)
@@ -125,9 +125,8 @@ export const CommandPalette = () => {
               }
 
               return (
-                <ListItem disablePadding key={name}>
+                <ListItem disablePadding key={name} data-command-bar-list-item-index={i}>
                   <ListItemButton
-                    data-command-bar-list-item-index={i}
                     selected={selectedIndex === i}
                     disabled={disabled}
                     onClick={() => {
