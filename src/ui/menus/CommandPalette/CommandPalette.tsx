@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { ReactElement, useEffect } from 'react';
 import {
   Divider,
   IconButton,
@@ -109,9 +109,9 @@ export const CommandPalette = () => {
       <div style={{ height: '300px', overflow: 'scroll' }}>
         <List dense={true}>
           {filteredList.length ? (
-            filteredList.map((e: any, i: number) => {
+            filteredList.map(({ disabled, icon, name, shortcut, shortcutModifiers }: QuadraticCommand, i: number) => {
               // Highlight the matching text in the results (if there's a current value)
-              let displayText = e.name;
+              let displayText: string | ReactElement = name;
               if (value) {
                 const index = displayText.toLowerCase().indexOf(value);
                 const displayTextHighlight = displayText.slice(index, index + value.length);
@@ -125,27 +125,28 @@ export const CommandPalette = () => {
               }
 
               return (
-                <ListItem disablePadding key={e.name}>
+                <ListItem disablePadding key={name}>
                   <ListItemButton
                     data-command-bar-list-item-index={i}
                     selected={selectedIndex === i}
-                    disabled={e.disabled}
+                    disabled={disabled}
                     onClick={() => {
-                      console.log('Fire action: ', e.name);
+                      console.log('Fire action: ', name);
                       close();
                     }}
                   >
-                    {e.icon ? (
+                    {icon ? (
                       <>
-                        <ListItemIcon>{e.icon}</ListItemIcon>
+                        <ListItemIcon>{icon}</ListItemIcon>
                         <ListItemText primary={displayText} />
                       </>
                     ) : (
-                      <ListItemText primary={displayText} inset={!e.icon} />
+                      <ListItemText primary={displayText} inset={!icon} />
                     )}
-                    {e.shortcut && (
+                    {shortcut && (
                       <ListItemSecondaryAction style={{ fontSize: '14px', opacity: '.5' }}>
-                        {convertModifierKeyToSymbol(e.shortcutModifiers) + e.shortcut}
+                        {shortcutModifiers ? shortcutModifiers : ''}
+                        {shortcut}
                       </ListItemSecondaryAction>
                     )}
                   </ListItemButton>
@@ -164,25 +165,3 @@ export const CommandPalette = () => {
     </Paper>
   );
 };
-
-// @TODO windows and make it work with other keyboard file
-// Maybe consider something like https://github.com/ueberdosis/keyboard-symbol#readme
-// Should generalize this for use in other menus
-function convertModifierKeyToSymbol(modifiers: Array<string>) {
-  let out = '';
-
-  if (modifiers && modifiers.length > 0) {
-    modifiers.forEach((modifier) => {
-      // @TODO if is windows/mac
-      if (modifier === 'ctrl') {
-        out = '⌘';
-      } else if (modifier === 'alt') {
-        out = '⌥';
-      } else if (modifier === 'shift') {
-        out = '⇧';
-      }
-    });
-  }
-
-  return out;
-}

@@ -21,6 +21,7 @@ import {
   FormatColorFill,
   FormatClear,
 } from '@mui/icons-material';
+import { KeyboardSymbols, IKeyboardSymbols } from '../../../helpers/keyboardSymbols';
 
 export interface QuadraticCommand {
   name: string;
@@ -29,9 +30,7 @@ export interface QuadraticCommand {
   disabled?: boolean | undefined;
   // comingSoon?: boolean | undefined;
   shortcut?: string;
-  shortcutModifiers?: Array<'ctrl' | 'shift' | 'alt'>;
-
-  // type: "icon" | "toggle" | "text";
+  shortcutModifiers?: Array<keyof IKeyboardSymbols>;
 }
 
 // @TODO iterate over commands and apply aria-label and checked state
@@ -43,28 +42,28 @@ export const commands = [
   {
     name: 'Copy',
     shortcut: 'C',
-    shortcutModifiers: ['ctrl'],
+    shortcutModifiers: [KeyboardSymbols.Command],
   },
   {
     name: 'Paste',
     shortcut: 'V',
-    shortcutModifiers: ['ctrl'],
+    shortcutModifiers: [KeyboardSymbols.Command],
   },
   {
     name: 'Cut',
     shortcut: 'X',
-    shortcutModifiers: ['ctrl'],
+    shortcutModifiers: [KeyboardSymbols.Command],
     disabled: true,
   },
   {
     name: 'Undo',
     shortcut: 'Z',
-    shortcutModifiers: ['ctrl'],
+    shortcutModifiers: [KeyboardSymbols.Command],
   },
   {
     name: 'Redo',
     shortcut: 'Z',
-    shortcutModifiers: ['ctrl', 'shift'],
+    shortcutModifiers: [KeyboardSymbols.Command, KeyboardSymbols.Shift],
   },
 
   {
@@ -140,17 +139,17 @@ export const commands = [
   {
     name: 'View: Zoom to fit',
     shortcut: '1',
-    shortcutModifiers: ['shift'],
+    shortcutModifiers: [KeyboardSymbols.Shift],
   },
   {
     name: 'View: Zoom in',
     shortcut: '+',
-    shortcutModifiers: ['ctrl'],
+    shortcutModifiers: [KeyboardSymbols.Command],
   },
   {
     name: 'View: Zoom out',
     shortcut: '−',
-    shortcutModifiers: ['ctrl'],
+    shortcutModifiers: [KeyboardSymbols.Command],
   },
   {
     name: 'View: Zoom to 50%',
@@ -158,7 +157,7 @@ export const commands = [
   {
     name: 'View: Zoom to 100%',
     shortcut: '0',
-    shortcutModifiers: ['ctrl'],
+    shortcutModifiers: [KeyboardSymbols.Command],
   },
   {
     name: 'View: Zoom to 200%',
