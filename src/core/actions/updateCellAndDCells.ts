@@ -31,8 +31,6 @@ export const updateCellAndDCells = async (starting_cell: Cell, sheet_controller:
       seen.push(string_id);
     }
 
-    console.log('cells to update: ', cells_to_update.length, ' cells: ', cells_to_update[0]);
-
     // get next cell to update
     const ref_current_cell = cells_to_update.shift();
     if (ref_current_cell === undefined) break;
