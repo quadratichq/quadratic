@@ -5,11 +5,15 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./quadratic-client
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '14.x'
+          node-version: "14.x"
       - name: Install dependencies
         run: npm ci
       - name: Install Playwright Browsers

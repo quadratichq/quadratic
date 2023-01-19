@@ -4,11 +4,14 @@ on: push
 jobs:
   prettier:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./quadratic-client
 
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '17'
-          cache: 'npm'
+          node-version: "17"
+          cache: "npm"
       - run: npx prettier --check src/*

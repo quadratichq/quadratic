@@ -3,6 +3,7 @@ frontend:
   phases:
     preBuild:
       commands:
+        - cd quadratic-client
         - npm install
     build:
       commands:
@@ -10,7 +11,7 @@ frontend:
   artifacts:
     baseDirectory: build
     files:
-      - '**/*'
+      - "**/*"
   cache:
     paths:
       - node_modules/**/*
