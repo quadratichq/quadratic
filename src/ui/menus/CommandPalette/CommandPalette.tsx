@@ -69,7 +69,7 @@ export const CommandPalette = () => {
   const searchlabel = 'Search menus and commands…';
 
   return (
-    <Paper id="CellTypeMenuID" elevation={12} className="container" style={{ width: 450 }}>
+    <Paper elevation={12} className="container" style={{ width: 450 }}>
       <div style={{ padding: '2px 4px', display: 'flex', alignItems: 'center' }}>
         <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
           <Search />

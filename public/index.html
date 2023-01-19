@@ -53,10 +53,17 @@
   </style>
   <script>
     // Prevent window zooming on Chrome
+    // https://developers.google.com/web/updates/2019/02/scrolling-intervention
+    // https://github.com/facebook/react/issues/14856
+    //
+    // Without this, you see fixed screen elements like the top and bottom
+    // toolbars pan around as the user pans around.
     window.addEventListener(
       'wheel',
       (e) => {
-        if (e.target.localName !== 'textarea') {
+        // If we're panning the canvas, preventDefault. Otherwise, allow
+        // scrolling for things like the CommandPalette which use `overflow: scroll`
+        if (e.target.localName === 'canvas') {
           e.preventDefault();
         }
       },
