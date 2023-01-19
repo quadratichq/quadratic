@@ -68,7 +68,35 @@ export const CommandPalette = () => {
   const searchlabel = 'Search menus and commands…';
 
   return (
-    <Paper elevation={12} className="container" style={{ width: 450 }}>
+    <Paper
+      component="form"
+      elevation={12}
+      className="container"
+      style={{ width: 450 }}
+      onKeyUp={(e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          close();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          e.stopPropagation();
+          setSelectedIndex(selectedIndex === filteredList.length - 1 ? 0 : selectedIndex + 1);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          e.stopPropagation();
+          setSelectedIndex(selectedIndex === 0 ? filteredList.length - 1 : selectedIndex - 1);
+        }
+      }}
+      onSubmit={(e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (filteredList[selectedIndex].disabled) {
+          return;
+        }
+
+        console.log('Fire action: ', filteredList[selectedIndex].name);
+        close();
+      }}
+    >
       <div style={{ padding: '2px 4px', display: 'flex', alignItems: 'center' }}>
         <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
           <Search />
@@ -80,25 +108,6 @@ export const CommandPalette = () => {
           inputProps={{ 'aria-label': searchlabel }}
           autoFocus
           value={value}
-          onKeyUp={(e) => {
-            if (e.key === 'Escape') {
-              close();
-            } else if (e.key === 'Enter') {
-              // @TODO run associated action
-              if (!filteredList[selectedIndex].disabled) {
-                console.log('Fire action: ', filteredList[selectedIndex].name);
-                close();
-              }
-            } else if (e.key === 'ArrowDown') {
-              e.preventDefault();
-              e.stopPropagation();
-              setSelectedIndex(selectedIndex === filteredList.length - 1 ? 0 : selectedIndex + 1);
-            } else if (e.key === 'ArrowUp') {
-              e.preventDefault();
-              e.stopPropagation();
-              setSelectedIndex(selectedIndex === 0 ? filteredList.length - 1 : selectedIndex - 1);
-            }
-          }}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             setSelectedIndex(0);
             setValue(event.target.value);
