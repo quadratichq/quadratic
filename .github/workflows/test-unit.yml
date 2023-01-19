@@ -14,5 +14,6 @@ jobs:
         with:
           node-version: "17"
           cache: "npm"
+          cache-dependency-path: quadratic-client/package-lock.json
       - run: npm install
       - run: npm run test-unit
