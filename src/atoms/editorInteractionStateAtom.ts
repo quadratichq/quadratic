@@ -1,12 +1,12 @@
 import { atom } from 'recoil';
-import CellReference from '../core/gridGL/types/cellReference';
+import { Coordinate } from '../core/gridGL/types/size';
 import { CellTypes } from '../core/gridDB/gridTypes';
 
 export interface EditorInteractionState {
   showCellTypeMenu: boolean;
   showCodeEditor: boolean;
   showCommandPalette: boolean;
-  selectedCell: CellReference;
+  selectedCell: Coordinate;
   mode: CellTypes;
 }
 

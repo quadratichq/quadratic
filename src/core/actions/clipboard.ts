@@ -1,8 +1,8 @@
-import CellReference from '../gridGL/types/cellReference';
+import { Coordinate } from '../gridGL/types/size';
 import { Cell } from '../gridDB/gridTypes';
 import { SheetController } from '../transaction/sheetController';
 
-export const pasteFromClipboard = (sheet_controller: SheetController, pasteToCell: CellReference) => {
+export const pasteFromClipboard = (sheet_controller: SheetController, pasteToCell: Coordinate) => {
   // get contents from clipboard
   navigator.clipboard.readText().then((text) => {
     let cell_x: number = pasteToCell.x;
@@ -10,7 +10,7 @@ export const pasteFromClipboard = (sheet_controller: SheetController, pasteToCel
 
     // build api payload
     let cells_to_write: Cell[] = [];
-    let cells_to_delete: CellReference[] = [];
+    let cells_to_delete: Coordinate[] = [];
 
     let str_rows: string[] = text.split('\n');
 
@@ -69,11 +69,7 @@ export const pasteFromClipboard = (sheet_controller: SheetController, pasteToCel
   });
 };
 
-export const copyToClipboard = async (
-  sheet_controller: SheetController,
-  cell0: CellReference,
-  cell1: CellReference
-) => {
+export const copyToClipboard = async (sheet_controller: SheetController, cell0: Coordinate, cell1: Coordinate) => {
   // write selected cells to clipboard
 
   const cWidth = Math.abs(cell1.x - cell0.x) + 1;
