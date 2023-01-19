@@ -31,17 +31,3 @@ export const KeyboardSymbols: IKeyboardSymbols = {
   Control: isMac ? '⌃' : 'Ctrl',
   Alt: isMac ? '⌥' : 'Alt',
 };
-
-/*
-export const getKeyboardModifierFromEvent = (event: KeyboardEvent): String => {
-  if (event.altKey) {
-    return KEYBOARD_MODIFIERS[KeyboardModifier.ALT];
-  } else if (event.metaKey || event.ctrlKey) {
-    return KEYBOARD_MODIFIERS[KeyboardModifier.CTRL]
-  } else if (event.shiftKey) {
-    return KEYBOARD_MODIFIERS[KeyboardModifier.SHIFT]
-  }else {
-    return "";
-  }
-}
-*/
