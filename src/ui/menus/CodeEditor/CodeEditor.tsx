@@ -39,8 +39,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const y = editorInteractionState.selectedCell.y;
   const cell = useMemo(() => props.sheet_controller.sheet.getCellCopy(x, y), [x, y, props.sheet_controller.sheet]);
 
-  // TODO: BUG WHERE EDITOR CONTENT IS NOT UPDATED WHEN SAME CELL IS
-
   // Cell python_output
   const [python_output, setPythonOutput] = useState<string | undefined>(cell?.python_output);
 
