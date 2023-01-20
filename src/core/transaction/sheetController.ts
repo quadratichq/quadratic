@@ -5,9 +5,10 @@ import { StatementRunner } from './runners/runner';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 
 export class SheetController {
-  app?: PixiApp;
+  app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
   sheet: Sheet;
   transaction_in_progress: Transaction | undefined;
+  transaction_in_progress_reverse: Transaction | undefined;
   undo_stack: Transaction[];
   redo_stack: Transaction[];
 
@@ -21,6 +22,7 @@ export class SheetController {
     this.undo_stack = [];
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
+    this.transaction_in_progress_reverse = undefined;
   }
 
   // starting a transaction is the only way to execute statements
@@ -37,39 +39,42 @@ export class SheetController {
     // transaction_in_progress represents the stack of commands needed
     // to undo the transaction currently being executed.
     this.transaction_in_progress = { statements: [] };
+    this.transaction_in_progress_reverse = { statements: [] };
   }
 
   public execute_statement(statement: Statement): void {
-    if (!this.transaction_in_progress) {
+    if (!this.transaction_in_progress || !this.transaction_in_progress_reverse) {
       throw new Error('No transaction in progress.');
     }
+
+    this.transaction_in_progress.statements.push(statement);
 
     // run statement and add reverse statement to transaction_in_progress
     const reverse_statement = StatementRunner(this.sheet, statement, this.app);
 
-    this.transaction_in_progress.statements.push(reverse_statement);
+    this.transaction_in_progress_reverse.statements.push(reverse_statement);
   }
 
   public end_transaction(add_to_undo_stack = true, clear_redo_stack = true): Transaction {
-    if (!this.transaction_in_progress) {
+    if (!this.transaction_in_progress || !this.transaction_in_progress_reverse) {
       throw new Error('No transaction in progress.');
     }
 
     // add transaction_in_progress to undo stack
-    if (add_to_undo_stack) this.undo_stack.push(this.transaction_in_progress);
+    if (add_to_undo_stack) this.undo_stack.push(this.transaction_in_progress_reverse);
 
     // if this Transaction is not from undo/redo. Clear redo stack.
     if (clear_redo_stack) this.redo_stack = [];
 
-    const previous_transaction = this.transaction_in_progress;
-
     // clear the transaction
+    const reverse_transaction = { ...this.transaction_in_progress_reverse };
     this.transaction_in_progress = undefined;
+    this.transaction_in_progress_reverse = undefined;
 
     // TODO: This is a good place to do things like mark Quadrants as dirty, save the file, etc.
     // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
 
-    return previous_transaction;
+    return reverse_transaction;
   }
 
   public predefined_transaction(statements: Statement[]): Transaction {
@@ -100,7 +105,7 @@ export class SheetController {
     // add reverse transaction to redo stack
     if (!this.has_undo()) return;
 
-    if (this.transaction_in_progress) throw new Error('Transaction in progress.');
+    if (this.transaction_in_progress || this.transaction_in_progress_reverse) return;
 
     // pop transaction off undo stack
     const transaction = this.undo_stack.pop();
@@ -134,7 +139,7 @@ export class SheetController {
     // add reverse transaction to undo stack
     if (!this.has_redo()) return;
 
-    if (this.transaction_in_progress) throw new Error('Transaction in progress.');
+    if (this.transaction_in_progress || this.transaction_in_progress_reverse) return;
 
     // pop transaction off redo stack
     const transaction = this.redo_stack.pop();
@@ -162,9 +167,32 @@ export class SheetController {
     this.undo_stack = [];
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
+    this.transaction_in_progress_reverse = undefined;
   }
 
   public setApp(app: PixiApp): void {
     this.app = app;
+  }
+
+  public logUndoStack(): void {
+    let print_string = 'Undo Stack:\n';
+    this.undo_stack.forEach((transaction) => {
+      print_string += '\tTransaction:\n';
+      transaction.statements.forEach((statement) => {
+        print_string += `\t\t${JSON.stringify(statement)}\n`;
+      });
+    });
+    console.log(print_string);
+  }
+
+  public logRedoStack(): void {
+    let print_string = 'Redo Stack:\n';
+    this.redo_stack.forEach((transaction) => {
+      print_string += '\tTransaction:\n';
+      transaction.statements.forEach((statement) => {
+        print_string += `\t\t${JSON.stringify(statement)}\n`;
+      });
+    });
+    console.log(print_string);
   }
 }

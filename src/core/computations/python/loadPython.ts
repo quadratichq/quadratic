@@ -10,6 +10,21 @@ declare global {
   }
 }
 
+export async function setupPython(pyodide: any) {
+  await pyodide.registerJsModule('GetCellsDB', GetCellsDB);
+  await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
+
+  // define a global py function called run_python used to run code from cells
+  if (typeof window === 'undefined') {
+    // Node environment (jest tests)
+    await pyodide.runPython(define_run_python);
+  } else {
+    // Browser environment
+    const python_code = await (await fetch(define_run_python)).text();
+    await window.pyodide.runPython(python_code);
+  }
+}
+
 export async function loadPython() {
   window.pyodide = await window.loadPyodide({
     // redirect Pyodide output to console
@@ -21,10 +36,5 @@ export async function loadPython() {
     },
   });
 
-  await window.pyodide.registerJsModule('GetCellsDB', GetCellsDB);
-  await window.pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
-
-  // define a global py function called run_python used to run code from cells
-  const python_code = await (await fetch(define_run_python)).text();
-  await window.pyodide.runPython(python_code);
+  setupPython(window.pyodide);
 }
