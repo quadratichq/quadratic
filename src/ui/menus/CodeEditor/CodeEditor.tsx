@@ -22,6 +22,7 @@ interface CodeEditorProps {
 
 export const CodeEditor = (props: CodeEditorProps) => {
   const { editorInteractionState } = props;
+  const { showCodeEditor } = editorInteractionState;
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -81,6 +82,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   // When cell changes
   useEffect(() => {
+    if (!showCodeEditor) return;
+
     const x = editorInteractionState.selectedCell.x;
     const y = editorInteractionState.selectedCell.y;
 
@@ -110,7 +113,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
       } as Cell);
       setEditorContent('');
     }
-  }, [selectedCell, editorInteractionState, props.sheet_controller.sheet]);
+  }, [selectedCell, editorInteractionState, props.sheet_controller.sheet, showCodeEditor]);
 
   const saveAndRunCell = async () => {
     if (!selectedCell) return;
