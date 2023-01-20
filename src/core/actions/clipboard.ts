@@ -90,10 +90,10 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
         clipboardString += '\t';
       }
 
-      const cell = sheet_controller.sheet.getCell(cell_x, cell_y);
+      const cell = sheet_controller.sheet.getCellCopy(cell_x, cell_y);
 
       if (cell) {
-        clipboardString += cell.cell?.value || '';
+        clipboardString += cell?.value || '';
       }
     }
   }

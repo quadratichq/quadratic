@@ -32,7 +32,7 @@ export const CellInput = (props: CellInputProps) => {
   if (!viewport || !container) return null;
 
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.current.x, cellLocation.current.y);
-  const cell = sheetController.sheet.getCell(cellLocation.current.x, cellLocation.current.y);
+  const cell = sheetController.sheet.getCellCopy(cellLocation.current.x, cellLocation.current.y);
 
   // Function used to move and scale the Input with the Grid
   function updateInputCSSTransform() {

@@ -41,13 +41,20 @@ export const updateCellAndDCells = async (
     if (ref_current_cell === undefined) break;
 
     // get cell from db or starting_cell if it is the starting cell passed in to this function
-    let cell: Cell | undefined;
+    let cell = sheet_controller.sheet.getCellCopy(ref_current_cell[0], ref_current_cell[1]);
+    let old_array_cells: Coordinate[] = [];
+
     if (ref_current_cell[0] === starting_cell.x && ref_current_cell[1] === starting_cell.y) {
-      // if the ref_cell_to_update is the starting_cell, we need to used the passed in version
-      // because it may contain changes that are not yet in the DB.
-      cell = starting_cell;
-    } else {
-      cell = sheet_controller.sheet.getCell(ref_current_cell[0], ref_current_cell[1])?.cell;
+      // if the ref_cell_to_update is the starting_cell
+      // then we need to update the cell with data from the starting_cell
+      if (cell !== undefined) {
+        old_array_cells =
+          cell.array_cells?.map((cell) => {
+            return { x: cell[0], y: cell[1] };
+          }) || [];
+        old_array_cells.unshift(); // remove this cell
+      }
+      cell = { ...starting_cell };
     }
 
     if (cell === undefined) continue;
@@ -64,24 +71,7 @@ export const updateCellAndDCells = async (
         });
       });
 
-    // clear old array cells created by this cell
-    // TODO: this should really only delete non overlap of new cells
-    if (cell.array_cells) {
-      const old_array_cells = cell.array_cells.map((cell) => {
-        return { x: cell[0], y: cell[1] };
-      });
-      old_array_cells.unshift(); // remove this cell
-
-      // delete old array cells
-      old_array_cells.forEach((cell) => {
-        sheet_controller.execute_statement({
-          type: 'SET_CELL',
-          data: { position: [cell.x, cell.y], value: undefined },
-        });
-      });
-      updatedCells.push(...old_array_cells);
-    }
-
+    let array_cells_to_output: Cell[] = [];
     if (cell.type === 'PYTHON') {
       // run cell and format results
       let result = await runPython(cell.python_code || '', pyodide);
@@ -109,8 +99,6 @@ export const updateCellAndDCells = async (
           });
         });
       }
-
-      let array_cells_to_output: Cell[] = [];
 
       // if array output
       if (result.array_output) {
@@ -197,6 +185,19 @@ export const updateCellAndDCells = async (
         data: { position: [cell.x, cell.y], value: cell },
       });
     }
+
+    // for old array cells not in new array cells, delete them
+    let array_cells_to_delete = old_array_cells.filter(
+      (old_cell) => !array_cells_to_output.find((new_cell) => new_cell.x === old_cell.x && new_cell.y === old_cell.y)
+    );
+
+    // delete old array cells
+    array_cells_to_delete.forEach((cell) => {
+      sheet_controller.execute_statement({
+        type: 'SET_CELL',
+        data: { position: [cell.x, cell.y], value: undefined },
+      });
+    });
 
     // if this cell updates other cells add them to the list to update
     let deps = sheet_controller.sheet.cell_dependency.getDependencies([cell.x, cell.y]);

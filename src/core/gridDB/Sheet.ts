@@ -57,8 +57,10 @@ export class Sheet {
     };
   }
 
-  getCell(x: number, y: number): CellAndFormat | undefined {
-    return this.grid.get(x, y);
+  getCellCopy(x: number, y: number): Cell | undefined {
+    const cell = this.grid.get(x, y);
+    if (!cell || !cell.cell) return;
+    return { ...cell.cell };
   }
 
   /** finds grid bounds based on GridSparse, GridBounds, and GridRenderDependency */

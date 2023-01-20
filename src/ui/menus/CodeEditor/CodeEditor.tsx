@@ -36,10 +36,12 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // Monitor selected cell for changes
   const x = editorInteractionState.selectedCell.x;
   const y = editorInteractionState.selectedCell.y;
-  const cell = useMemo(() => props.sheet_controller.sheet.getCell(x, y), [x, y, props.sheet_controller.sheet]);
+  const cell = useMemo(() => props.sheet_controller.sheet.getCellCopy(x, y), [x, y, props.sheet_controller.sheet]);
+
+  // TODO: BUG WHERE EDITOR CONTENT IS NOT UPDATED WHEN SAME CELL IS
 
   // Cell python_output
-  const [python_output, setPythonOutput] = useState<string | undefined>(cell?.cell?.python_output);
+  const [python_output, setPythonOutput] = useState<string | undefined>(cell?.python_output);
 
   // Editor Width State
   const [editorWidth, setEditorWidth] = useState<number>(
@@ -49,7 +51,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
     if (cell) {
-      setSelectedCell(cell.cell);
+      setSelectedCell(cell);
     }
   }, [cell]);
 
@@ -93,7 +95,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     editorRef.current?.focus();
     editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
 
-    const cell = props.sheet_controller.sheet.getCell(x, y)?.cell;
+    const cell = props.sheet_controller.sheet.getCellCopy(x, y);
     if (cell) {
       // load cell content
       setSelectedCell(cell);
@@ -119,7 +121,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
     await updateCellAndDCells(selectedCell, props.sheet_controller);
 
-    const updated_cell = props.sheet_controller.sheet.getCell(x, y)?.cell;
+    const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
     setPythonOutput(updated_cell?.python_output);
   };
 
