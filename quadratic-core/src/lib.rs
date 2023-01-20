@@ -2,11 +2,12 @@
 
 use wasm_bindgen::prelude::*;
 
+#[macro_use]
+pub mod util;
 pub mod codestore;
 pub mod dgraph;
 pub mod formulas;
 pub mod grid;
-pub mod util;
 
 #[cfg(test)]
 mod tests;

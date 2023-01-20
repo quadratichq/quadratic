@@ -1,3 +1,7 @@
+use itertools::Itertools;
+use std::fmt;
+
+/// Returns a column's name from its number.
 pub fn column_name(mut n: i64) -> String {
     let mut digits = vec![];
     let signum = n.signum();
@@ -45,6 +49,33 @@ pub fn column_from_name(mut s: &str) -> Option<i64> {
         }
         Some(ret)
     }
+}
+
+/// Returns a human-friendly list of things, joined at the end by the given
+/// conjuction.
+pub fn join_with_conjunction(conjunction: &str, items: &[impl fmt::Display]) -> String {
+    match items {
+        [] => format!("(none)"),
+        [a] => format!("{}", a),
+        [a, b] => format!("{} {} {}", a, conjunction, b),
+        [all_but_last @ .., z] => {
+            let mut ret = all_but_last.iter().map(|x| format!("{}, ", x)).join("");
+            ret.push_str(conjunction);
+            ret.push_str(&format!(" {}", z));
+            ret
+        }
+    }
+}
+
+/// Implements `std::format::Display` for a type using arguments to `write!()`.
+macro_rules! impl_display {
+    ( for $typename:ty, $( $fmt_arg:expr ),+ $(,)? ) => {
+        impl std::fmt::Display for $typename {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, $( $fmt_arg ),+ )
+            }
+        }
+    };
 }
 
 #[cfg(test)]
@@ -106,6 +137,7 @@ mod tests {
 
         // Test fun stuff
         assert_eq!("QUADRATIC", column_name(2722458231478));
+        assert_eq!("ZQUADRATIC", column_name(-2722458231478));
         assert_eq!("QUICKBROWNFOX", column_name(1064218308993582274));
     }
 
