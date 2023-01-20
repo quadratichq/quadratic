@@ -6,6 +6,7 @@ use lexer::Token;
 mod errors;
 mod ast;
 mod cell_ref;
+mod functions;
 mod grid_proxy;
 mod lexer;
 mod parser;
