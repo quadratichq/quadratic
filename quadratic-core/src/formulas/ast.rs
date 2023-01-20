@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -86,15 +87,10 @@ impl AstNode {
     fn eval(&self, grid: &impl GridProxy, pos: Pos) -> FormulaResult {
         let value = match &self.inner {
             AstNodeContents::FunctionCall { func, args } => {
-                match func.inner.to_ascii_lowercase().as_str() {
-                    "sum" => {
-                        let sum = args
-                            .iter()
-                            .map(|arg| arg.eval(grid, pos)?.to_number())
-                            .try_fold(0.0, |sum, next| FormulaResult::Ok(sum + next?))?;
-                        Value::String(sum.to_string())
-                    }
-                    _ => return Err(FormulaErrorMsg::BadFunctionName.with_span(func.span)),
+                let args = args.iter().map(|arg| arg.eval(grid, pos)).try_collect()?;
+                match functions::function_from_name(&func.inner) {
+                    Some(f) => f(args)?,
+                    None => return Err(FormulaErrorMsg::BadFunctionName.with_span(func.span)),
                 }
             }
 
@@ -113,7 +109,7 @@ impl AstNode {
 
             AstNodeContents::String(s) => Value::String(s.clone()),
 
-            AstNodeContents::Number(n) => Value::String(n.to_string()),
+            AstNodeContents::Number(n) => Value::Number(*n),
         };
 
         Ok(Spanned {
