@@ -4,7 +4,7 @@ import { intersects } from '../gridGL/helpers/intersects';
 import { GridBorders } from './GridBorders';
 import { GridRenderDependency } from './GridRenderDependency';
 import { GridOffsets } from './GridOffsets';
-import { CellAndFormat, GridSparse } from './GridSparse';
+import { GridSparse } from './GridSparse';
 import { Cell } from './gridTypes';
 import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../gridGL/types/size';
