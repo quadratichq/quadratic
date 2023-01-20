@@ -47,6 +47,7 @@ pub enum FormulaErrorMsg {
         expected: Cow<'static, str>,
         got: Option<Cow<'static, str>>,
     },
+    BadArgumentCount,
     BadFunctionName,
     BadCellReference,
     BadNumber,
@@ -78,15 +79,19 @@ impl fmt::Display for FormulaErrorMsg {
                 Some(got) => write!(f, "Expected {expected}, got {got}"),
                 None => write!(f, "Expected {expected}"),
             },
+            Self::BadArgumentCount => {
+                // TODO: give a nicer error message that says what the arguments
+                // should be
+                write!(f, "Bad argument count")
+            }
+            Self::BadFunctionName => {
+                write!(f, "There is no function with this name")
+            }
             Self::BadCellReference => {
                 write!(f, "Bad cell reference")
             }
             Self::BadNumber => {
                 write!(f, "Bad numeric literal")
-            }
-
-            Self::BadFunctionName => {
-                write!(f, "There is no function with this name")
             }
 
             Self::CircularReference => {
