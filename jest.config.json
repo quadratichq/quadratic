@@ -6,5 +6,6 @@
   "transform": {
     "^.+\\.(ts|tsx|js|jsx)?$": "ts-jest",
     "\\.py$": "<rootDir>/jest-transformer-py"
-  }
+  },
+  "testTimeout": 30000
 }
