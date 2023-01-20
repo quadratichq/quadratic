@@ -14,9 +14,13 @@ export async function runPython(python_code: string, pyodide: any = undefined): 
 
   if (pyodide_obj === undefined) {
     if (typeof window !== 'undefined') {
-      // Browser environment
+      // Browser environment, get pyodide from window
       pyodide_obj = window.pyodide;
     }
+  }
+
+  if (pyodide_obj === undefined) {
+    throw new Error('Pyodide not found');
   }
 
   const output = await pyodide_obj.globals.get('run_python')(python_code);
