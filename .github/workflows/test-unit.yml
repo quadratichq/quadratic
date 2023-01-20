@@ -12,4 +12,4 @@ jobs:
           node-version: '18'
           cache: 'npm'
       - run: npm install
-      - run: npm run test-unit
+      - run: npm run test:unit:ci
