@@ -116,8 +116,12 @@ fn test_gc_simulate_user_actions() {
     grid.transact(|t| {
         // eval formula
         let form = Formula::new_sum(&[Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 }]);
-        let r_cell = form.eval(t.cells(), Pos { x: 1, y: 0 }).unwrap();
-        let r_expected = Cell::Text((30).to_string());
+        let r_cell = form
+            .eval(t.cells(), Pos { x: 1, y: 0 })
+            .unwrap()
+            .inner
+            .to_string();
+        let r_expected = 30.to_string();
         assert_eq!(r_expected, r_cell);
 
         // Command to save formula on B1 of "=A1+A2" in R1C1 form "=RC[-1]+R[1]C[-1]"
@@ -130,7 +134,7 @@ fn test_gc_simulate_user_actions() {
         ))?;
 
         // set result value, and update dep graph
-        t.exec(Command::SetCell(Pos { x: 1, y: 0 }, r_cell))?;
+        t.exec(Command::SetCell(Pos { x: 1, y: 0 }, Cell::Text(r_cell)))?;
         t.exec(Command::AddCellDependencies(
             Pos { x: 1, y: 0 },
             vec![Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 }],
