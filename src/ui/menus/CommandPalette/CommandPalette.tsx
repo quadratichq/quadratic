@@ -1,4 +1,4 @@
-import React, { ReactElement, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   Divider,
   IconButton,
@@ -12,14 +12,12 @@ import {
   Paper,
 } from '@mui/material';
 import { Search } from '@mui/icons-material';
-
 import { useRecoilState } from 'recoil';
+import fuzzysort from 'fuzzysort';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-
 import './styles.css';
 import { focusGrid } from '../../../helpers/focusGrid';
-
-import { commands, QuadraticCommand } from './commands';
+import { commands, IQuadraticCommand } from './commands';
 
 export const CommandPalette = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -27,9 +25,10 @@ export const CommandPalette = () => {
 
   const [value, setValue] = React.useState<string>('');
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
-  const filteredList: Array<QuadraticCommand> = commands.filter((command) => {
-    return value ? command.name.toLowerCase().includes(value) : true;
-  });
+
+  // If needed, this could be optimized by turning commands into an object and
+  // doing a lookup of commands by their names
+  const results: Fuzzysort.KeyResults<IQuadraticCommand> = fuzzysort.go(value, commands, { key: 'name', all: true });
 
   const close = () => {
     setEditorInteractionState({
@@ -79,21 +78,21 @@ export const CommandPalette = () => {
         } else if (e.key === 'ArrowDown') {
           e.preventDefault();
           e.stopPropagation();
-          setSelectedIndex(selectedIndex === filteredList.length - 1 ? 0 : selectedIndex + 1);
+          setSelectedIndex(selectedIndex === results.length - 1 ? 0 : selectedIndex + 1);
         } else if (e.key === 'ArrowUp') {
           e.preventDefault();
           e.stopPropagation();
-          setSelectedIndex(selectedIndex === 0 ? filteredList.length - 1 : selectedIndex - 1);
+          setSelectedIndex(selectedIndex === 0 ? results.length - 1 : selectedIndex - 1);
         }
       }}
       onSubmit={(e: React.FormEvent) => {
         e.preventDefault();
 
-        if (filteredList[selectedIndex].disabled) {
+        if (results[selectedIndex].obj.disabled) {
           return;
         }
 
-        console.log('Fire action: ', filteredList[selectedIndex].name);
+        console.log('Fire action: ', results[selectedIndex].obj.name);
         close();
       }}
     >
@@ -117,21 +116,17 @@ export const CommandPalette = () => {
       <Divider />
       <div style={{ height: '300px', overflow: 'scroll' }}>
         <List dense={true} disablePadding>
-          {filteredList.length ? (
-            filteredList.map(({ disabled, icon, name, shortcut, shortcutModifiers }: QuadraticCommand, i: number) => {
-              // Highlight the matching text in the results (if there's a current value)
-              let displayText: string | ReactElement = name;
-              if (value) {
-                const index = displayText.toLowerCase().indexOf(value);
-                const displayTextHighlight = displayText.slice(index, index + value.length);
-                displayText = (
-                  <span
-                    dangerouslySetInnerHTML={{
-                      __html: displayText.replace(displayTextHighlight, `<b>${displayTextHighlight}</b>`),
-                    }}
-                  />
-                );
-              }
+          {results.length ? (
+            results.map((result: Fuzzysort.KeyResult<IQuadraticCommand>, i: number) => {
+              const {
+                obj: { disabled, icon, name, shortcut, shortcutModifiers },
+              } = result;
+
+              // If there's no active search value, don't try running
+              // `fuzzysort.highlight` as it will crash. Not sure if this is
+              // a bug, but when we pass the `{ all: true }` option and get
+              // all results by default, we can't run the highlight
+              const displayText = value ? fuzzysort.highlight(result, (m, i) => <b key={i}>{m}</b>) : name;
 
               return (
                 <ListItem disablePadding key={name} data-command-bar-list-item-index={i}>

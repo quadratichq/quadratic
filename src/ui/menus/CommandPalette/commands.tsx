@@ -23,7 +23,7 @@ import {
 } from '@mui/icons-material';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 
-export interface QuadraticCommand {
+export interface IQuadraticCommand {
   name: string;
   action?: any; // @TODO action to run when selected
   icon?: any;
@@ -75,39 +75,39 @@ export const commands = [
     name: 'File: Open local',
   },
   {
-    name: 'Borders: Apply borders to all',
+    name: 'Borders: Apply to all',
     icon: <BorderAll />,
   },
   {
-    name: 'Borders: Apply outer borders',
+    name: 'Borders: Apply outer',
     icon: <BorderOuter />,
   },
   {
-    name: 'Borders: Apply inner borders',
+    name: 'Borders: Apply inner',
     icon: <BorderInner />,
   },
   {
-    name: 'Borders: Apply vertical borders',
+    name: 'Borders: Apply vertical',
     icon: <BorderVertical />,
   },
   {
-    name: 'Borders: Apply horizontal borders',
+    name: 'Borders: Apply horizontal',
     icon: <BorderHorizontal />,
   },
   {
-    name: 'Borders: Apply left border',
+    name: 'Borders: Apply left',
     icon: <BorderLeft />,
   },
   {
-    name: 'Borders: Apply right border',
+    name: 'Borders: Apply right',
     icon: <BorderRight />,
   },
   {
-    name: 'Borders: Apply top border',
+    name: 'Borders: Apply top',
     icon: <BorderTop />,
   },
   {
-    name: 'Borders: Apply bottom border',
+    name: 'Borders: Apply bottom',
     icon: <BorderBottom />,
   },
   {
@@ -238,4 +238,4 @@ export const commands = [
     icon: <FormatClear />,
     disabled: true,
   },
-] as QuadraticCommand[];
+] as IQuadraticCommand[];
