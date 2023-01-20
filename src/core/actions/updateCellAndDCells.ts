@@ -5,7 +5,12 @@ import { Coordinate } from '../gridGL/types/size';
 import { localFiles } from '../gridDB/localFiles';
 import { SheetController } from '../transaction/sheetController';
 
-export const updateCellAndDCells = async (starting_cell: Cell, sheet_controller: SheetController, app?: PixiApp) => {
+export const updateCellAndDCells = async (
+  starting_cell: Cell,
+  sheet_controller: SheetController,
+  app?: PixiApp,
+  pyodide?: any
+) => {
   // start transaction
   sheet_controller.start_transaction();
 
@@ -79,7 +84,7 @@ export const updateCellAndDCells = async (starting_cell: Cell, sheet_controller:
 
     if (cell.type === 'PYTHON') {
       // run cell and format results
-      let result = await runPython(cell.python_code || '');
+      let result = await runPython(cell.python_code || '', pyodide);
       let consoleOut = [result.input_python_stack_trace, result.input_python_std_out].join('\n');
 
       if (consoleOut[0] === '\n') consoleOut = consoleOut.substring(1);
@@ -208,5 +213,6 @@ export const updateCellAndDCells = async (starting_cell: Cell, sheet_controller:
   app?.quadrants.quadrantChanged({ cells: updatedCells });
 
   // TODO: move this to sheetController so we can better control when it is called?
-  localFiles.saveLastLocal(sheet_controller.sheet.export_file());
+  // if in browser instead of inside a node test
+  if (typeof window !== 'undefined') localFiles.saveLastLocal(sheet_controller.sheet.export_file());
 };

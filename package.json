@@ -52,7 +52,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test-all": "concurrently \"npm run test-unit\" \"npm run test-e2e\" \"npm run test-python\"",
-    "test-unit": "react-scripts test",
+    "test-unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watchAll",
     "test-e2e": "playwright test --workers=1",
     "test-e2e-debug": "playwright test --debug",
     "test-python": "python3 tests-python/test.py",
@@ -89,6 +89,7 @@
     "electron": "^15.3.0",
     "electron-is-dev": "^2.0.0",
     "prettier": "^2.8.0",
+    "pyodide": "^0.22.0",
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
     "wait-on": "^6.0.1"

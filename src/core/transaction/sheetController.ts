@@ -5,7 +5,7 @@ import { StatementRunner } from './runners/runner';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 
 export class SheetController {
-  app?: PixiApp;
+  app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
   sheet: Sheet;
   transaction_in_progress: Transaction | undefined;
   undo_stack: Transaction[];
