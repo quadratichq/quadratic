@@ -30,8 +30,8 @@ pub fn function_from_name(s: &str) -> Option<fn(Vec<Spanned<Value>>) -> FormulaR
         ))),
 
         // Mathematical operators
-        "+" | "sum" => sum,
-        "-" => minus,
+        "+" | "sum" => |args| sum(&args).map(Value::Number),
+        "-" => |args| minus(&args).map(Value::Number),
         "*" | "product" => fixed_arg_count!(2, |[a, b]| Ok(Value::Number(
             a.to_number()? * b.to_number()?
         ))),
@@ -66,30 +66,48 @@ pub fn function_from_name(s: &str) -> Option<fn(Vec<Spanned<Value>>) -> FormulaR
             Ok(if cond.to_bool()? { t.inner } else { f.inner })
         }),
 
-        // Other functions
+        // Statistics functions
+        // TODO: many of these have strange behavior when given zero arguments
+        "average" => |args| Ok(Value::Number(sum(&args)? / args.len() as f64)),
+        "count" => |args| Ok(Value::Number(args.len() as f64)),
+        "min" => |args| {
+            Ok(Value::Number(
+                args.into_iter().try_fold(f64::INFINITY, |ret, next| {
+                    FormulaResult::Ok(f64::min(ret, next.to_number()?))
+                })?,
+            ))
+        },
+        "max" => |args| {
+            Ok(Value::Number(
+                args.into_iter().try_fold(-f64::INFINITY, |ret, next| {
+                    FormulaResult::Ok(f64::max(ret, next.to_number()?))
+                })?,
+            ))
+        },
+
+        // String functions
         "&" | "concat" => |args| Ok(Value::String(args.into_iter().join(""))),
 
         _ => return None,
     })
 }
 
-fn sum(args: Vec<Spanned<Value>>) -> FormulaResult<Value> {
-    Ok(Value::Number(
-        args.into_iter()
-            .try_fold(0.0, |sum, next| FormulaResult::Ok(sum + next.to_number()?))?,
-    ))
+fn sum(args: &[Spanned<Value>]) -> FormulaResult<f64> {
+    Ok(args
+        .into_iter()
+        .try_fold(0.0, |sum, next| FormulaResult::Ok(sum + next.to_number()?))?)
 }
 
-fn minus(args: Vec<Spanned<Value>>) -> FormulaResult<Value> {
+fn minus(args: &[Spanned<Value>]) -> FormulaResult<f64> {
     if args.len() == 0 {
-        Ok(Value::Number(0.0))
+        Ok(0.0)
     } else if args.len() == 1 {
-        Ok(Value::Number(-args[0].to_number()?))
+        Ok(-args[0].to_number()?)
     } else {
         let mut ret = args[0].to_number()?;
         for arg in &args[1..] {
             ret -= arg.to_number()?;
         }
-        Ok(Value::Number(ret))
+        Ok(ret)
     }
 }
