@@ -39,8 +39,6 @@ export class GridRenderDependency {
       this.minY = Math.min(this.minY, dependent.location.y);
       this.maxY = Math.max(this.maxY, dependent.location.y);
     });
-    // todo: this is wrong...walk through it and figure out what's going on
-    console.log(this.dependents)
   }
 
   private getKey(location: Coordinate): string {
@@ -147,13 +145,13 @@ export class GridRenderDependency {
   }
 
   /** find all cell dependents that point to a cell that is inside the bounds */
-  getDependentsInBounds(fullBounds: Rectangle): Coordinate[] {
+  getDependentsInBounds(bounds: Rectangle): Coordinate[] {
     const coordinates: Coordinate[] = [];
     this.dependents.forEach(dependent => {
       const location = dependent.location;
 
       // first check that the dependent is within the full bounds
-      if (location.x >= fullBounds.left && location.x <= fullBounds.right && location.y >= fullBounds.top && location.y <= fullBounds.bottom) {
+      if (location.x >= bounds.left && location.x <= bounds.right && location.y >= bounds.top && location.y <= bounds.bottom) {
         coordinates.push(...dependent.needToRender);
       }
     });

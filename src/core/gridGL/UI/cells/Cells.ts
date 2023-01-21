@@ -149,19 +149,20 @@ export class Cells extends Container {
 
   /**
    * Draws all items within the visible bounds
-   * @param bounds visible bounds
+   * @param boundsWithData visible bounds without cells outside of gridSparse bounds
+   * @param  bounds visible bounds with cells outside of gridSparse bounds
    * @param cellRectangle data for entries within the visible bounds
    * @param ignoreInput if false then don't draw input location (as it's handled by the DOM)
    * @returns a Rectangle of the content bounds (not including empty area), or undefined if nothing is drawn
    */
   drawBounds(options: {
+    boundsWithData: Rectangle;
     bounds: Rectangle;
-    fullBounds: Rectangle;
     cellRectangle: CellRectangle;
     ignoreInput?: boolean;
     isQuadrant?: boolean;
   }): Rectangle | undefined {
-    const { bounds, fullBounds, cellRectangle, ignoreInput, isQuadrant } = options;
+    const { boundsWithData, bounds, cellRectangle, ignoreInput, isQuadrant } = options;
     const renderedCells = new Set<string>();
 
     const { gridOffsets, render_dependency, grid } = this.app.sheet;
@@ -180,16 +181,16 @@ export class Cells extends Container {
         : undefined;
 
     // keeps track of screen position
-    const xStart = gridOffsets.getColumnPlacement(bounds.left).x;
-    const yStart = gridOffsets.getRowPlacement(bounds.top).y;
+    const xStart = gridOffsets.getColumnPlacement(boundsWithData.left).x;
+    const yStart = gridOffsets.getRowPlacement(boundsWithData.top).y;
     let y = yStart;
     let content: Rectangle | undefined;
 
     // iterate through the rows and columns
-    for (let row = bounds.top; row <= bounds.bottom; row++) {
+    for (let row = boundsWithData.top; row <= boundsWithData.bottom; row++) {
       let x = xStart;
       const height = gridOffsets.getRowHeight(row);
-      for (let column = bounds.left; column <= bounds.right; column++) {
+      for (let column = boundsWithData.left; column <= boundsWithData.right; column++) {
         const width = gridOffsets.getColumnWidth(column);
         const entry = cellRectangle.get(column, row);
 
@@ -206,7 +207,7 @@ export class Cells extends Container {
     }
 
     // check for dependencies across entire bounds
-    const dependentCells = render_dependency.getDependentsInBounds(fullBounds);
+    const dependentCells = render_dependency.getDependentsInBounds(bounds);
     if (dependentCells.length) {
       dependentCells.forEach((coordinate) => {
         const key = `${coordinate.x},${coordinate.y}`;
@@ -308,9 +309,9 @@ export class Cells extends Container {
     const { grid, borders } = this.app.sheet;
 
     // draw cells
-    const bounds = grid.getBounds(fullBounds);
-    const cellRectangle = grid.getCells(bounds);
-    const rectCells = this.drawBounds({ bounds, fullBounds, cellRectangle, isQuadrant });
+    const { bounds, boundsWithData } = grid.getBounds(fullBounds);
+    const cellRectangle = grid.getCells(boundsWithData);
+    const rectCells = this.drawBounds({ bounds, boundsWithData, cellRectangle, isQuadrant });
 
     // draw borders
     const borderBounds = borders.getBounds(fullBounds);
