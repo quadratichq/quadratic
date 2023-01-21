@@ -1,42 +1,63 @@
-import { Checkbox as MUICheckbox } from '@mui/material';
-import {
-  BorderAll,
-  BorderOuter,
-  BorderTop,
-  BorderRight,
-  BorderLeft,
-  BorderBottom,
-  BorderInner,
-  BorderHorizontal,
-  BorderVertical,
-  FormatBold,
-  FormatItalic,
-  FormatColorText,
-  FormatAlignCenter,
-  FormatAlignLeft,
-  FormatAlignRight,
-  BorderClear,
-  OpenInNew,
-  FormatUnderlined,
-  FormatColorFill,
-  FormatClear,
-} from '@mui/icons-material';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import React, { ReactElement } from 'react';
+import fuzzysort from 'fuzzysort';
+import { CPLIViewShowAxis } from './ListItems/View';
+import { CPLIHelpViewDocs, CPLIHelpReportProblem } from './ListItems/Help';
+import { CommandPaletteListItemDynamicProps } from './CommandPaletteListItem';
 
-export interface IQuadraticCommand {
-  name: string;
-  action?: any; // @TODO action to run when selected
-  icon?: any;
-  disabled?: boolean | undefined;
-  shortcut?: string;
-  shortcutModifiers?: Array<string>;
+interface ICommand {
+  label: string;
+  Component: Function;
 }
 
-// @TODO iterate over commands and apply aria-label and checked state
-const Checkbox = () => (
-  <MUICheckbox sx={{ p: 0 }} checked={true} tabIndex={-1} disableRipple inputProps={{ 'aria-labelledby': '@TODO' }} />
-);
+const commands: Array<ICommand> = [
+  {
+    label: 'View: Show axis',
+    Component: CPLIViewShowAxis,
+  },
+  {
+    label: 'Help: View the docs',
+    Component: CPLIHelpViewDocs,
+  },
+  {
+    label: 'Help: Report a problem',
+    Component: CPLIHelpReportProblem,
+  },
+];
 
+export const getCommandPaletteListItems = (props: {
+  sheetController: any;
+  app: any;
+  closeCommandPalette: Function;
+  activeSearchValue: string;
+  selectedListItemIndex: number;
+}): Array<ReactElement<CommandPaletteListItemDynamicProps>> => {
+  const { activeSearchValue, ...rest } = props;
+
+  // If there's no active search query, return everything
+  if (!activeSearchValue) {
+    return commands.map(({ label, Component }, i) => (
+      <Component {...rest} key={label} listItemIndex={i} label={label} />
+    ));
+  }
+
+  // Otherwise, perform a fuzzysort search and pass along the info to each
+  // component for rendering
+  let out: any = [];
+  let listItemIndex = 0;
+  commands.forEach(({ label, Component }, i) => {
+    const result = fuzzysort.single(activeSearchValue, label);
+    if (result) {
+      out.push(
+        <Component {...rest} key={label} listItemIndex={listItemIndex} label={label} fuzzysortResult={result} />
+      );
+      listItemIndex++;
+    }
+  });
+
+  return out;
+};
+
+/* @TODO make these into individual components
 export const commands = [
   {
     name: 'Copy',
@@ -121,6 +142,17 @@ export const commands = [
   {
     name: 'View: Show axis',
     icon: <Checkbox />,
+    // component: (props) =>
+    // <CommandPaletteListItem
+    //   name="View: Show axis"
+    //   icon=
+    //   result;
+    //   activeSearchQuery: string;
+    //   listItemIndex: number;
+    //   selectedListItemIndex: number;
+    //   closeCommandBar: Function;
+    //   action:>
+    // <ViewShowAxis {...props} />,
   },
   {
     name: 'View: Show grid lines',
@@ -239,3 +271,4 @@ export const commands = [
     disabled: true,
   },
 ] as IQuadraticCommand[];
+*/

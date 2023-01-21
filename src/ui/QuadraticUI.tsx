@@ -40,7 +40,7 @@ export default function QuadraticUI(props: Props) {
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
       <TopBar app={app} sheetController={sheetController} />
-      <CommandPalette />
+      <CommandPalette app={app} sheetController={sheetController} />
 
       <div
         style={{
