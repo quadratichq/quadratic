@@ -1,16 +1,14 @@
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { ZoomIn, ZoomOut } from '@mui/icons-material';
-import { CommandPaletteListItemDynamicProps } from '../CommandPaletteListItem';
+import { ComposableCommandPaletteListItemProps } from '../CommandPaletteListItem';
 import { zoomIn, zoomOut, zoomToFit, zoomTo100 } from '../../../../core/gridGL/helpers/zoom';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 
-export const CPLIZoomIn = (props: CommandPaletteListItemDynamicProps) => {
+export const CPLIZoomIn = (props: ComposableCommandPaletteListItemProps) => {
   const { sheetController, app, ...rest } = props;
   return (
     <CommandPaletteListItem
       {...rest}
       action={() => {
-        // @ts-ignore
         zoomIn(app.viewport);
       }}
       shortcut="+"
@@ -19,13 +17,12 @@ export const CPLIZoomIn = (props: CommandPaletteListItemDynamicProps) => {
   );
 };
 
-export const CPLIZoomOut = (props: CommandPaletteListItemDynamicProps) => {
+export const CPLIZoomOut = (props: ComposableCommandPaletteListItemProps) => {
   const { sheetController, app, ...rest } = props;
   return (
     <CommandPaletteListItem
       {...rest}
       action={() => {
-        // @ts-ignore
         zoomOut(app.viewport);
       }}
       shortcut="−"
@@ -34,13 +31,12 @@ export const CPLIZoomOut = (props: CommandPaletteListItemDynamicProps) => {
   );
 };
 
-export const CPLIZoomTo100 = (props: CommandPaletteListItemDynamicProps) => {
+export const CPLIZoomTo100 = (props: ComposableCommandPaletteListItemProps) => {
   const { sheetController, app, ...rest } = props;
   return (
     <CommandPaletteListItem
       {...rest}
       action={() => {
-        // @ts-ignore
         zoomTo100(app.viewport);
       }}
       shortcut="0"
@@ -49,13 +45,12 @@ export const CPLIZoomTo100 = (props: CommandPaletteListItemDynamicProps) => {
   );
 };
 
-export const CPLIZoomToFit = (props: CommandPaletteListItemDynamicProps) => {
+export const CPLIZoomToFit = (props: ComposableCommandPaletteListItemProps) => {
   const { sheetController, app, ...rest } = props;
   return (
     <CommandPaletteListItem
       {...rest}
       action={() => {
-        // @ts-ignore
         zoomToFit(sheetController.sheet, app.viewport);
       }}
       shortcut="1"

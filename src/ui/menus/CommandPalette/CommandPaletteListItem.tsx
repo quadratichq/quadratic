@@ -6,14 +6,12 @@ import { SheetController } from '../../../core/transaction/sheetController';
 
 // Added dynamically to every CommandPaletteListItem by components higher in the tree
 export interface CommandPaletteListItemDynamicProps {
-  label: string;
-  listItemIndex: number;
   action: Function;
-  selectedListItemIndex: number;
   closeCommandPalette: Function;
   fuzzysortResult?: Fuzzysort.Result;
-  app?: PixiApp;
-  sheetController?: SheetController;
+  label: string;
+  listItemIndex: number;
+  selectedListItemIndex: number;
 }
 
 // Added statically in the individual file of each CommandPaletteListItem
@@ -26,6 +24,12 @@ export interface CommandPaletteListItemStaticProps {
 
 // All props this component needs
 interface CommandPaletteListItemProps extends CommandPaletteListItemDynamicProps, CommandPaletteListItemStaticProps {}
+
+// Composable middle component gets app and sheet which it doesn't pass to CommandPaletteListItemProps
+export interface ComposableCommandPaletteListItemProps extends CommandPaletteListItemProps {
+  app: PixiApp;
+  sheetController: SheetController;
+}
 
 export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
   const {
