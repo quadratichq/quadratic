@@ -1,6 +1,8 @@
 import { ListItem, ListItemButton, ListItemText, ListItemSecondaryAction, ListItemIcon } from '@mui/material';
 import fuzzysort from 'fuzzysort';
 import { ReactElement } from 'react';
+import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../core/transaction/sheetController';
 
 // Added dynamically to every CommandPaletteListItem by components higher in the tree
 export interface CommandPaletteListItemDynamicProps {
@@ -10,6 +12,8 @@ export interface CommandPaletteListItemDynamicProps {
   selectedListItemIndex: number;
   closeCommandPalette: Function;
   fuzzysortResult?: Fuzzysort.Result;
+  app?: PixiApp;
+  sheetController?: SheetController;
 }
 
 // Added statically in the individual file of each CommandPaletteListItem
