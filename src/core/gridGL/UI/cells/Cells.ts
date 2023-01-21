@@ -64,13 +64,13 @@ export class Cells extends Container {
     const labels = this.labels.getVisible();
 
     const { quadrants } = this.app;
-    const { dependency, gridOffsets } = this.app.sheet;
+    const { render_dependency, gridOffsets } = this.app.sheet;
     const changes: Coordinate[] = [];
 
-    labels.forEach(label => {
+    labels.forEach((label) => {
       if (!label.location) return;
       if (!label.overflowLeft && !label.overflowRight) {
-        dependency.empty(label.location);
+        render_dependency.empty(label.location);
       } else {
         const dependents: Coordinate[] = [];
 
@@ -96,7 +96,7 @@ export class Cells extends Container {
           } while (x > label.overflowLeft);
         }
 
-        changes.push(...dependency.update(label.location, dependents));
+        changes.push(...render_dependency.update(label.location, dependents));
       }
     });
 
@@ -164,7 +164,7 @@ export class Cells extends Container {
     const { bounds, fullBounds, cellRectangle, ignoreInput, isQuadrant } = options;
     const renderedCells = new Set<string>();
 
-    const { gridOffsets, dependency, grid } = this.app.sheet;
+    const { gridOffsets, render_dependency, grid } = this.app.sheet;
     this.labels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
@@ -206,9 +206,9 @@ export class Cells extends Container {
     }
 
     // check for dependencies across entire bounds
-    const dependentCells = dependency.getDependentsInBounds(fullBounds);
+    const dependentCells = render_dependency.getDependentsInBounds(fullBounds);
     if (dependentCells.length) {
-      dependentCells.forEach(coordinate => {
+      dependentCells.forEach((coordinate) => {
         const key = `${coordinate.x},${coordinate.y}`;
         if (renderedCells.has(key)) return;
         renderedCells.add(key);
@@ -222,7 +222,6 @@ export class Cells extends Container {
       });
     }
 
-
     this.labels.update();
 
     // only calculate overflow when rendering quadrants so it's only done one time
@@ -232,7 +231,7 @@ export class Cells extends Container {
   }
 
   drawMultipleBounds(cellRectangles: CellRectangle[]): void {
-    const { gridOffsets, dependency, grid } = this.app.sheet;
+    const { gridOffsets, render_dependency, grid } = this.app.sheet;
     this.labels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
@@ -243,13 +242,12 @@ export class Cells extends Container {
     const renderedCells = new Set<string>();
     let content: Rectangle | undefined;
 
-    const input =
-      this.app.settings.interactionState.showInput
-        ? {
-            column: this.app.settings.interactionState.cursorPosition.x,
-            row: this.app.settings.interactionState.cursorPosition.y,
-          }
-        : undefined;
+    const input = this.app.settings.interactionState.showInput
+      ? {
+          column: this.app.settings.interactionState.cursorPosition.x,
+          row: this.app.settings.interactionState.cursorPosition.y,
+        }
+      : undefined;
 
     for (const cellRectangle of cellRectangles) {
       const bounds = cellRectangle.size;
@@ -284,12 +282,11 @@ export class Cells extends Container {
       }
 
       // render cell dependencies
-      const dependentCells = dependency.getDependentsInBounds(bounds);
+      const dependentCells = render_dependency.getDependentsInBounds(bounds);
       if (dependentCells.length) {
-
         // need this to access content variable:
         // eslint-disable-next-line no-loop-func
-        dependentCells.forEach(coordinate => {
+        dependentCells.forEach((coordinate) => {
           const key = `${coordinate.x},${coordinate.y}`;
           if (renderedCells.has(key)) return;
           renderedCells.add(key);
@@ -326,7 +323,7 @@ export class Cells extends Container {
     if (isQuadrant && debugShowQuadrantBoxes && finalBounds) {
       this.debug.clear();
       this.debug.beginFill(debugGetColor(), 0.25);
-      this.debug.drawShape(finalBounds)
+      this.debug.drawShape(finalBounds);
       this.debug.endFill();
     }
 

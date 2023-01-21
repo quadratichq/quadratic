@@ -14,7 +14,7 @@ export const QuadraticAuth = () => {
   } = useAuth0();
 
   // Auth0 is Optional
-  if (process.env.REACT_APP_AUTH0_DOMAIN) {
+  if (process.env.REACT_APP_AUTH0_DOMAIN && process.env.REACT_APP_AUTH0_DOMAIN !== 'none') {
     if (Auth0IsLoading) {
       return <QuadraticLoading></QuadraticLoading>;
     }

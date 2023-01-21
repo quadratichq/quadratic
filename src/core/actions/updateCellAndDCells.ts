@@ -5,7 +5,12 @@ import { Coordinate } from '../gridGL/types/size';
 import { localFiles } from '../gridDB/localFiles';
 import { SheetController } from '../transaction/sheetController';
 
-export const updateCellAndDCells = async (sheet_controller: SheetController, starting_cell: Cell, app?: PixiApp) => {
+export const updateCellAndDCells = async (
+  starting_cell: Cell,
+  sheet_controller: SheetController,
+  app?: PixiApp,
+  pyodide?: any
+) => {
   // start transaction
   sheet_controller.start_transaction();
 
@@ -32,48 +37,44 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, sta
     }
 
     // get next cell to update
-    const ref_cell_to_update = cells_to_update.shift();
-    if (ref_cell_to_update === undefined) break;
+    const ref_current_cell = cells_to_update.shift();
+    if (ref_current_cell === undefined) break;
 
     // get cell from db or starting_cell if it is the starting cell passed in to this function
-    let cell: Cell | undefined;
-    if (ref_cell_to_update[0] === starting_cell.x && ref_cell_to_update[1] === starting_cell.y) {
-      // if the ref_cell_to_update is the starting_cell, we need to used the passed in version
-      // because it may contain code changes that are not yet in the DB.
-      cell = starting_cell;
-    } else {
-      cell = sheet_controller.sheet.getCell(ref_cell_to_update[0], ref_cell_to_update[1])?.cell;
+    let cell = sheet_controller.sheet.getCellCopy(ref_current_cell[0], ref_current_cell[1]);
+    let old_array_cells: Coordinate[] = [];
+
+    if (ref_current_cell[0] === starting_cell.x && ref_current_cell[1] === starting_cell.y) {
+      // if the ref_cell_to_update is the starting_cell
+      // then we need to update the cell with data from the starting_cell
+      if (cell !== undefined) {
+        old_array_cells =
+          cell.array_cells?.map((cell) => {
+            return { x: cell[0], y: cell[1] };
+          }) || [];
+        old_array_cells.unshift(); // remove this cell
+      }
+      cell = { ...starting_cell };
     }
 
     if (cell === undefined) continue;
 
     // remove old deps from graph
     if (cell.dependent_cells)
-      sheet_controller.execute_statement({
-        type: 'SET_CELL_DEPENDENCIES',
-        data: { position: [cell.x, cell.y], dependencies: null },
-      });
-
-    // clear old array cells created by this cell
-    if (cell.array_cells) {
-      const old_array_cells = cell.array_cells.map((cell) => {
-        return { x: cell[0], y: cell[1] };
-      });
-      old_array_cells.unshift(); // remove this cell
-
-      // delete old array cells
-      old_array_cells.forEach((cell) => {
+      cell.dependent_cells.forEach((dcell) => {
         sheet_controller.execute_statement({
-          type: 'SET_CELL',
-          data: { position: [cell.x, cell.y], value: undefined },
+          type: 'REMOVE_CELL_DEPENDENCY',
+          data: {
+            position: dcell,
+            updates: ref_current_cell,
+          },
         });
       });
-      updatedCells.push(...old_array_cells);
-    }
 
+    let array_cells_to_output: Cell[] = [];
     if (cell.type === 'PYTHON') {
       // run cell and format results
-      let result = await runPython(cell.python_code || '');
+      let result = await runPython(cell.python_code || '', pyodide);
       let consoleOut = [result.input_python_stack_trace, result.input_python_std_out].join('\n');
 
       if (consoleOut[0] === '\n') consoleOut = consoleOut.substring(1);
@@ -88,13 +89,16 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, sta
       // add new cell deps to graph
       if (result.cells_accessed.length) {
         // add new deps to graph
-        sheet_controller.execute_statement({
-          type: 'SET_CELL_DEPENDENCIES',
-          data: { position: [cell.x, cell.y], dependencies: result.cells_accessed },
+        result.cells_accessed.forEach((cell_accessed) => {
+          sheet_controller.execute_statement({
+            type: 'ADD_CELL_DEPENDENCY',
+            data: {
+              position: cell_accessed,
+              updates: ref_current_cell,
+            },
+          });
         });
       }
-
-      let array_cells_to_output: Cell[] = [];
 
       // if array output
       if (result.array_output) {
@@ -106,8 +110,8 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, sta
             for (const cell of row) {
               if (cell !== undefined)
                 array_cells_to_output.push({
-                  x: ref_cell_to_update[0] + x_offset,
-                  y: ref_cell_to_update[1] + y_offset,
+                  x: ref_current_cell[0] + x_offset,
+                  y: ref_current_cell[1] + y_offset,
                   type: 'COMPUTED',
                   value: cell.toString(),
                   last_modified: new Date().toISOString(),
@@ -121,8 +125,8 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, sta
           let y_offset = 0;
           for (const cell of result.array_output) {
             array_cells_to_output.push({
-              x: ref_cell_to_update[0],
-              y: ref_cell_to_update[1] + y_offset,
+              x: ref_current_cell[0],
+              y: ref_current_cell[1] + y_offset,
               type: 'COMPUTED',
               value: cell.toString(),
               last_modified: new Date().toISOString(),
@@ -138,7 +142,7 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, sta
         // if any updated cells have other cells depending on them, add to list to update
         for (const array_cell of array_cells_to_output) {
           // add array cells to list to update
-          let deps = sheet_controller.sheet.dgraph.get([array_cell.x, array_cell.y]);
+          let deps = sheet_controller.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
 
           if (deps) cells_to_update.push(...deps);
         }
@@ -171,10 +175,32 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, sta
           data: { position: [cell.x, cell.y], value: cell },
         });
       }
+    } else {
+      // not python cell
+
+      // update current cell
+      cell.last_modified = new Date().toISOString();
+      sheet_controller.execute_statement({
+        type: 'SET_CELL',
+        data: { position: [cell.x, cell.y], value: cell },
+      });
     }
 
+    // for old array cells not in new array cells, delete them
+    let array_cells_to_delete = old_array_cells.filter(
+      (old_cell) => !array_cells_to_output.find((new_cell) => new_cell.x === old_cell.x && new_cell.y === old_cell.y)
+    );
+
+    // delete old array cells
+    array_cells_to_delete.forEach((cell) => {
+      sheet_controller.execute_statement({
+        type: 'SET_CELL',
+        data: { position: [cell.x, cell.y], value: undefined },
+      });
+    });
+
     // if this cell updates other cells add them to the list to update
-    let deps = sheet_controller.sheet.dgraph.get([cell.x, cell.y]);
+    let deps = sheet_controller.sheet.cell_dependency.getDependencies([cell.x, cell.y]);
 
     if (deps) cells_to_update.push(...deps);
   }
@@ -188,5 +214,6 @@ export const updateCellAndDCells = async (sheet_controller: SheetController, sta
   app?.quadrants.quadrantChanged({ cells: updatedCells });
 
   // TODO: move this to sheetController so we can better control when it is called?
-  localFiles.saveLastLocal(sheet_controller.sheet.export_file());
+  // if in browser instead of inside a node test
+  if (typeof window !== 'undefined') localFiles.saveLastLocal(sheet_controller.sheet.export_file());
 };

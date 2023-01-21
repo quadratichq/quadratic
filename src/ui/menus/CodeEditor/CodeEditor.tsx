@@ -22,6 +22,7 @@ interface CodeEditorProps {
 
 export const CodeEditor = (props: CodeEditorProps) => {
   const { editorInteractionState } = props;
+  const { showCodeEditor } = editorInteractionState;
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -36,7 +37,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // Monitor selected cell for changes
   const x = editorInteractionState.selectedCell.x;
   const y = editorInteractionState.selectedCell.y;
-  const cell = useMemo(() => props.sheet_controller.sheet.getCell(x, y), [x, y, props.sheet_controller.sheet]);
+  const cell = useMemo(() => props.sheet_controller.sheet.getCellCopy(x, y), [x, y, props.sheet_controller.sheet]);
+
+  // Cell python_output
+  const [python_output, setPythonOutput] = useState<string | undefined>(cell?.python_output);
 
   // Editor Width State
   const [editorWidth, setEditorWidth] = useState<number>(
@@ -46,9 +50,16 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
     if (cell) {
-      setSelectedCell(cell.cell);
+      setSelectedCell(cell);
     }
   }, [cell]);
+
+  // When selected cell changes updated python output
+  useEffect(() => {
+    if (selectedCell) {
+      setPythonOutput(selectedCell?.python_output);
+    }
+  }, [selectedCell]);
 
   const closeEditor = () => {
     setInteractionState({
@@ -57,6 +68,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     });
     setEditorContent('');
     setSelectedCell(undefined);
+    setPythonOutput(undefined);
     focusGrid();
   };
 
@@ -68,6 +80,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   // When cell changes
   useEffect(() => {
+    if (!showCodeEditor) return;
+
     const x = editorInteractionState.selectedCell.x;
     const y = editorInteractionState.selectedCell.y;
 
@@ -82,7 +96,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     editorRef.current?.focus();
     editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
 
-    const cell = props.sheet_controller.sheet.getCell(x, y)?.cell;
+    const cell = props.sheet_controller.sheet.getCellCopy(x, y);
     if (cell) {
       // load cell content
       setSelectedCell(cell);
@@ -97,16 +111,19 @@ export const CodeEditor = (props: CodeEditorProps) => {
       } as Cell);
       setEditorContent('');
     }
-  }, [selectedCell, editorInteractionState, props.sheet_controller.sheet]);
+  }, [selectedCell, editorInteractionState, props.sheet_controller.sheet, showCodeEditor]);
 
-  const saveAndRunCell = () => {
+  const saveAndRunCell = async () => {
     if (!selectedCell) return;
 
     selectedCell.type = 'PYTHON';
     selectedCell.value = '';
     selectedCell.python_code = editorContent;
 
-    updateCellAndDCells(props.sheet_controller, selectedCell);
+    await updateCellAndDCells(selectedCell, props.sheet_controller);
+
+    const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
+    setPythonOutput(updated_cell?.python_output);
   };
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -285,7 +302,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
               label="OUTPUT"
               multiline
               rows={7}
-              value={selectedCell.python_output || ''}
+              value={python_output || ''}
               style={{
                 width: '100%',
               }}
