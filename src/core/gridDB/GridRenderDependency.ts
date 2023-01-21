@@ -39,6 +39,8 @@ export class GridRenderDependency {
       this.minY = Math.min(this.minY, dependent.location.y);
       this.maxY = Math.max(this.maxY, dependent.location.y);
     });
+    // todo: this is wrong...walk through it and figure out what's going on
+    console.log(this.dependents)
   }
 
   private getKey(location: Coordinate): string {
@@ -51,7 +53,7 @@ export class GridRenderDependency {
     const originalDependency = this.dependents.get(cellKey);
     if (originalDependency) {
 
-      // remove all needToRender for related cells
+      // remove all cells that expect to renderThisCell
       originalDependency.renderThisCell.forEach(renderLocation => {
         const renderKey = this.getKey(renderLocation);
         const renderDependency = this.dependents.get(renderKey);
@@ -79,7 +81,10 @@ export class GridRenderDependency {
     const changes: Coordinate[] = [];
     const cellKey = this.getKey(cell);
     const originalDependency = this.dependents.get(cellKey);
+
+    // update an existing dependency for that cell
     if (originalDependency) {
+
       // remove needToRender entries for cells that are no longer dependents
       originalDependency.renderThisCell.forEach(entry => {
         if (!renderThisCell.find(search => coordinateEqual(search, entry))) {
@@ -99,11 +104,12 @@ export class GridRenderDependency {
       // add render entries for cells that are new dependents
       renderThisCell.forEach(entry => {
         if (!originalDependency.renderThisCell.find(search => coordinateEqual(search, entry))) {
-          const add = this.dependents.get(this.getKey(entry));
+          const keyEntry = this.getKey(entry);
+          const add = this.dependents.get(keyEntry);
           if (add) {
-            add.renderThisCell.push(cell);
+            add.needToRender.push(cell);
           } else {
-            this.dependents.set(this.getKey(entry), { location: entry, needToRender: [cell], renderThisCell: [] });
+            this.dependents.set(keyEntry, { location: entry, needToRender: [cell], renderThisCell: [] });
           }
           changes.push(entry);
         }
@@ -112,12 +118,12 @@ export class GridRenderDependency {
     } else {
       // add render entries for cells that are dependents
       renderThisCell.forEach(entry => {
-        const key = this.getKey(entry);
-        const add = this.dependents.get(key);
+        const entryKey = this.getKey(entry);
+        const add = this.dependents.get(entryKey);
         if (add) {
-          add.renderThisCell.push(cell);
+          add.needToRender.push(cell);
         } else {
-          this.dependents.set(key, { location: entry, needToRender: [cell], renderThisCell: [] });
+          this.dependents.set(entryKey, { location: entry, needToRender: [cell], renderThisCell: [] });
         }
         changes.push(cell);
       });
@@ -148,7 +154,7 @@ export class GridRenderDependency {
 
       // first check that the dependent is within the full bounds
       if (location.x >= fullBounds.left && location.x <= fullBounds.right && location.y >= fullBounds.top && location.y <= fullBounds.bottom) {
-        coordinates.push(...dependent.renderThisCell);
+        coordinates.push(...dependent.needToRender);
       }
     });
     return coordinates;
