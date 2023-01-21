@@ -22,15 +22,6 @@ export const ZoomDropdown = () => {
     >
       <MenuItem
         onClick={() => {
-          setZoomState(Infinity);
-          focusGrid();
-        }}
-      >
-        <KeyboardShortcut text="Zoom to fit" shortcut="1" modifier={KeyboardSymbols.Shift} />
-      </MenuItem>
-      <MenuDivider></MenuDivider>
-      <MenuItem
-        onClick={() => {
           setZoomState((zoomState) => zoomState * 2);
           focusGrid();
         }}
@@ -46,6 +37,14 @@ export const ZoomDropdown = () => {
         <KeyboardShortcut text="Zoom out" shortcut="−" modifier={KeyboardSymbols.Command} />
       </MenuItem>
       <MenuDivider></MenuDivider>
+      <MenuItem
+        onClick={() => {
+          setZoomState(Infinity);
+          focusGrid();
+        }}
+      >
+        <KeyboardShortcut text="Zoom to fit" shortcut="1" modifier={KeyboardSymbols.Shift} />
+      </MenuItem>
       <MenuItem
         onClick={() => {
           setZoomState(0.5);

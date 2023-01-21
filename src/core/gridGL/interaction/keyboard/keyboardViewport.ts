@@ -1,6 +1,6 @@
 import { Viewport } from 'pixi-viewport';
 import { Sheet } from '../../../gridDB/Sheet';
-import { zoomInOut, zoomToFit } from '../../helpers/zoom';
+import { zoomIn, zoomOut, zoomTo100, zoomToFit } from '../../helpers/zoom';
 
 export function keyboardViewport(options: {
   event: KeyboardEvent;
@@ -31,12 +31,12 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.code === 'Equal') {
-    zoomInOut(viewport, viewport.scale.x * 2);
+    zoomIn(viewport);
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.code === 'Minus') {
-    zoomInOut(viewport, viewport.scale.x * 0.5);
+    zoomOut(viewport);
     return true;
   }
 
@@ -46,8 +46,7 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.code === 'Digit0') {
-    zoomInOut(viewport, 1);
-    event.preventDefault();
+    zoomTo100(viewport);
     return true;
   }
 

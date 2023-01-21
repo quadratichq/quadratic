@@ -2,6 +2,7 @@ import React, { ReactElement } from 'react';
 import fuzzysort from 'fuzzysort';
 import { CPLIViewShowAxis } from './ListItems/View';
 import { CPLIHelpViewDocs, CPLIHelpReportProblem } from './ListItems/Help';
+import { CPLIZoomIn, CPLIZoomOut, CPLIZoomToFit, CPLIZoomTo100 } from './ListItems/Zoom';
 import { CommandPaletteListItemDynamicProps } from './CommandPaletteListItem';
 
 interface ICommand {
@@ -21,6 +22,22 @@ const commands: Array<ICommand> = [
   {
     label: 'Help: Report a problem',
     Component: CPLIHelpReportProblem,
+  },
+  {
+    label: 'View: Zoom in',
+    Component: CPLIZoomIn,
+  },
+  {
+    label: 'View: Zoom out',
+    Component: CPLIZoomOut,
+  },
+  {
+    label: 'View: Zoom to fit',
+    Component: CPLIZoomToFit,
+  },
+  {
+    label: 'View: Zoom to 100%',
+    Component: CPLIZoomTo100,
   },
 ];
 
@@ -166,29 +183,10 @@ export const commands = [
     name: 'View: Show debug menu',
     icon: <Checkbox />,
   },
-  // Make sure the zoom commands are in the same order as they are in the menu
-  {
-    name: 'View: Zoom to fit',
-    shortcut: '1',
-    shortcutModifiers: [KeyboardSymbols.Shift],
-  },
-  {
-    name: 'View: Zoom in',
-    shortcut: '+',
-    shortcutModifiers: [KeyboardSymbols.Command],
-  },
-  {
-    name: 'View: Zoom out',
-    shortcut: '−',
-    shortcutModifiers: [KeyboardSymbols.Command],
-  },
-  {
-    name: 'View: Zoom to 50%',
-  },
+  // Make sure the zoom commands are in the same order as they are in the menu  
   {
     name: 'View: Zoom to 100%',
-    shortcut: '0',
-    shortcutModifiers: [KeyboardSymbols.Command],
+    
   },
   {
     name: 'View: Zoom to 200%',

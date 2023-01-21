@@ -43,6 +43,18 @@ export function zoomInOut(viewport: Viewport, scale: number): void {
   });
 }
 
+export function zoomIn(viewport: Viewport) {
+  zoomInOut(viewport, viewport.scale.x * 2);
+}
+
+export function zoomOut(viewport: Viewport) {
+  zoomInOut(viewport, viewport.scale.x * 0.5);
+}
+
+export function zoomTo100(viewport: Viewport) {
+  zoomInOut(viewport, 1);
+}
+
 // from https://stackoverflow.com/a/42799104
 export function nearestPowerOf2(n: number): number {
   return 1 << (31 - Math.clz32(n));
