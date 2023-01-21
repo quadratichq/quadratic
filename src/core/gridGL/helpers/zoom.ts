@@ -43,7 +43,18 @@ export function zoomInOut(viewport: Viewport, scale: number): void {
   });
 }
 
-// from https://stackoverflow.com/a/42799104
-export function nearestPowerOf2(n: number): number {
-  return 1 << (31 - Math.clz32(n));
+// from https://www.geeksforgeeks.org/smallest-power-of-2-greater-than-or-equal-to-n/
+export function nextPowerOf2(n: number): number {
+  let count = 0;
+
+  // First n in the below condition
+  // is for the case where n is 0
+  if (n && !(n & (n - 1))) {
+    return n;
+  }
+  while( n !== 0) {
+      n >>= 1;
+      count += 1;
+  }
+  return 1 << count;
 }

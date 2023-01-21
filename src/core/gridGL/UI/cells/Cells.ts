@@ -1,10 +1,8 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
-import { debugShowQuadrantBoxes } from '../../../../debugFlags';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
 import { CellAndFormat } from '../../../gridDB/GridSparse';
 import { Cell, CellFormat } from '../../../gridDB/gridTypes';
-import { debugGetColor } from '../../helpers/debugColors';
 import { intersects } from '../../helpers/intersects';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { Coordinate } from '../../types/size';
@@ -318,17 +316,7 @@ export class Cells extends Container {
     const bordersList = borders.getBorders(borderBounds);
     const rectBorders = this.cellsBorder.drawBorders(bordersList);
 
-    const finalBounds = intersects.rectangleUnion(rectCells, rectBorders);
-
-    // debug boxes
-    if (isQuadrant && debugShowQuadrantBoxes && finalBounds) {
-      this.debug.clear();
-      this.debug.beginFill(debugGetColor(), 0.25);
-      this.debug.drawShape(finalBounds);
-      this.debug.endFill();
-    }
-
-    return fullBounds;
+    return intersects.rectangleUnion(rectCells, rectBorders);
   }
 
   changeVisibility(visible: boolean): void {

@@ -1,6 +1,6 @@
-import { Container, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
+import { BitmapText, Container, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite, Text } from 'pixi.js';
 import { debugShowCacheInfo, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
-import { nearestPowerOf2 } from '../helpers/zoom';
+import { nextPowerOf2 } from '../helpers/zoom';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS, QUADRANT_SCALE, QUADRANT_TEXTURE_SIZE } from './quadrantConstants';
@@ -18,6 +18,7 @@ export class Quadrant extends Container {
   private app: PixiApp;
   private subquadrants: SubQuadrant[];
   private _dirty = true;
+  private debugColor?: number;
   visibleRectangle!: Rectangle;
   location: Coordinate;
 
@@ -140,8 +141,8 @@ export class Quadrant extends Container {
 
           // get the Sprite and resize the texture if needed
           const size = Math.max(
-            nearestPowerOf2(reducedDrawingRectangle.width),
-            nearestPowerOf2(reducedDrawingRectangle.height)
+            nextPowerOf2(reducedDrawingRectangle.width),
+            nextPowerOf2(reducedDrawingRectangle.height)
           );
           const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, size);
 
@@ -173,5 +174,26 @@ export class Quadrant extends Container {
 
   debugTextureCount(): number {
     return this.children.reduce((count, child) => count + (child.visible ? 1 : 0), 0);
+  }
+
+  debugDraw(): void {
+    if (this.debugColor === undefined) {
+      this.debugColor = Math.floor(Math.random() * 0xffffff);
+    }
+    this.app.debug.lineStyle({ color: 0, width: 1 });
+    this.app.debug.beginFill(0xff0000, 0.1).drawShape(this.visibleRectangle).endFill();
+    if (this.subquadrants.length) {
+      const text = this.app.debug.addChild(new BitmapText(`${this.location.x}, ${this.location.y}`, { fontName: 'OpenSans' }))
+      text.position.set(this.subquadrants[0].x, this.subquadrants[0].y);
+      this.subquadrants.forEach(subquadrant => {
+        this.app.debug
+          .beginFill(this.debugColor, 0.5)
+          .drawRect(subquadrant.x, subquadrant.y, subquadrant.width, subquadrant.height)
+          .endFill();
+        const text = this.app.debug.addChild(new BitmapText(`${subquadrant.subQuadrantX}, ${subquadrant.subQuadrantY} [${this.location.x}, ${this.location.y}]`, { fontName: 'OpenSans' }));
+        text.tint = 0xff0000;
+        text.position.set(subquadrant.x + subquadrant.width - text.width, subquadrant.y);
+      });
+    }
   }
 }

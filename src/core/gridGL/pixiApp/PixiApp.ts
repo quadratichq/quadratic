@@ -82,6 +82,9 @@ export class PixiApp {
     // this holds the viewport's contents so it can be reused in Quadrants
     this.viewportContents = this.viewport.addChild(new Container());
 
+    // useful for debugging at viewport locations
+    this.debug = this.viewportContents.addChild(new Graphics());
+
     this.gridLines = this.viewportContents.addChild(new GridLines(this));
     this.axesLines = this.viewportContents.addChild(new AxesLines(this));
     this.cells = this.viewportContents.addChild(new Cells(this));
@@ -94,9 +97,6 @@ export class PixiApp {
 
     this.cursor = this.viewportContents.addChild(new Cursor(this));
     this.headings = this.viewportContents.addChild(new GridHeadings(this));
-
-    // useful for debugging at viewport locations
-    this.debug = this.viewportContents.addChild(new Graphics());
 
     this.settings = new PixiAppSettings(this);
 

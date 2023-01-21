@@ -68,7 +68,7 @@ export class Update {
     if (rendererDirty) {
       app.viewport.dirty = false;
 
-      // forces the temporary replacement cells to render instead of the cache or cells
+      // forces the temporary replacement cells to render instead of the cache or cells (used for debugging only)
       if (debugShowCellsForDirtyQuadrants) {
         app.quadrants.visible = false;
         const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
@@ -84,7 +84,9 @@ export class Update {
           app.cells.drawMultipleBounds(cellRectangles);
         }
       }
+      debugTimeReset();
       app.renderer.render(app.stage);
+      debugTimeCheck('[Update] render');
       this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
       debugTimeCheck('[Update] render', 10);
       debugRendererLight(true);
