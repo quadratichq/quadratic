@@ -215,8 +215,7 @@ export class Cells extends Container {
         if (entry) {
           const position = gridOffsets.getCell(coordinate.x, coordinate.y);
           const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
-          const rect = this.renderCell({ entry, ...position, isInput });
-          content = content ? intersects.rectangleUnion(content, rect) : rect;
+          this.renderCell({ entry, ...position, isInput });
         }
       });
     }

@@ -104,6 +104,7 @@ export class Quadrants extends Container {
         this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle)
       );
     }
+
     return false;
   }
 
