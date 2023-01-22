@@ -39,9 +39,18 @@ function rectangleUnion(rectangle1?: Rectangle, rectangle2?: Rectangle, rectangl
   }
 }
 
+function rectangleClip(rectangle: Rectangle, clip: Rectangle): Rectangle {
+  const xStart = Math.max(rectangle.x, clip.x);
+  const yStart = Math.max(rectangle.y, clip.y);
+  const xEnd = Math.min(rectangle.right, clip.right);
+  const yEnd = Math.min(rectangle.bottom, clip.bottom);
+  return new Rectangle(xStart, yStart, xEnd - xStart, yEnd - yStart);
+}
+
 export const intersects = {
   rectanglePoint,
   rectangleRectangle,
   lineLineOneDimension,
   rectangleUnion,
+  rectangleClip,
 };

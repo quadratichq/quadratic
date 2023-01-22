@@ -17,7 +17,7 @@ export class GridSparse {
   private maxX = 0;
   private minY = 0;
   private maxY = 0;
-  private isEmpty = true;
+  isEmpty = true;
   cells = new Map<string, CellAndFormat>();
 
   constructor(gridOffsets: GridOffsets) {
@@ -183,7 +183,7 @@ export class GridSparse {
     return cells;
   }
 
-  getBounds(bounds: Rectangle): { bounds: Rectangle, boundsWithData: Rectangle } {
+  getBounds(bounds: Rectangle): { bounds: Rectangle, boundsWithData: Rectangle | undefined } {
     const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
     const columnStart = columnStartIndex.index > this.minX ? columnStartIndex.index : this.minX;
     const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
@@ -196,7 +196,7 @@ export class GridSparse {
 
     return {
       bounds: new Rectangle(columnStartIndex.index, rowStartIndex.index, columnEndIndex.index - columnStartIndex.index, rowEndIndex.index - rowStartIndex.index),
-      boundsWithData: new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart),
+      boundsWithData: this.isEmpty ? undefined : new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart),
     }
   }
 

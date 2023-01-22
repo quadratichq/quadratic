@@ -68,7 +68,7 @@ export class GridOffsets {
       for (let x = column; x < 0; x++) {
         position -= this.getColumnWidth(x);
       }
-      return { x: position, width: this.getColumnWidth(column) };
+      return { x: position, width: this.getColumnWidth(column) - 1 };
     }
   }
 
@@ -91,7 +91,7 @@ export class GridOffsets {
       for (let x = column; x < column + width; x++) {
         position += this.getColumnWidth(x);
       }
-      return { xStart, xEnd: position };
+      return { xStart, xEnd: position - 1 };
     }
 
     // calculate starting from -column to 0 to find xStart; xEnd is found in that iteration, or calculated directly if column + width is positive
@@ -116,7 +116,7 @@ export class GridOffsets {
         }
         position -= this.getColumnWidth(x);
       }
-      return { xStart: position, xEnd: xEnd as number };
+      return { xStart: position, xEnd: (xEnd as number) - 1 };
     }
   }
 
@@ -136,7 +136,7 @@ export class GridOffsets {
       for (let y = row; y < 0; y++) {
         position -= this.getRowHeight(y);
       }
-      return { y: position, height: this.getRowHeight(row) };
+      return { y: position, height: this.getRowHeight(row) - 1 };
     }
   }
 
@@ -280,7 +280,7 @@ export class GridOffsets {
   getScreenRectangle(column: number, row: number, width: number, height: number): Rectangle {
     const { xStart, xEnd } = this.getColumnsStartEnd(column, width);
     const { yStart, yEnd } = this.getRowsStartEnd(row, height);
-    return new Rectangle(xStart, yStart, xEnd - xStart, yEnd - yStart);
+    return new Rectangle(xStart, yStart, xEnd - xStart - 1, yEnd - yStart - 1);
   }
 
   /**
@@ -294,7 +294,7 @@ export class GridOffsets {
   getCellRectangle(x: number, y: number, width: number, height: number): Rectangle {
     const { column: columnStart, row: rowStart } = this.getRowColumnFromWorld(x, y);
     const { column: columnEnd, row: rowEnd } = this.getRowColumnFromWorld(x + width, y + height);
-    return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
+    return new Rectangle(columnStart, rowStart, columnEnd - columnStart - 1, rowEnd - rowStart - 1);
   }
 
   delete(options: { rows: number[]; columns: number[] }): void {

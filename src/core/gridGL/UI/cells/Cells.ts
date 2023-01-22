@@ -1,4 +1,4 @@
-import { Container, Graphics, Rectangle } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
 import { CellAndFormat } from '../../../gridDB/GridSparse';
@@ -30,7 +30,6 @@ export interface CellsDraw {
 
 export class Cells extends Container {
   private app: PixiApp;
-  private debug: Graphics;
   private cellsArray: CellsArray;
   private cellsBorder: CellsBorder;
   private labels: CellsLabels;
@@ -42,8 +41,6 @@ export class Cells extends Container {
   constructor(app: PixiApp) {
     super();
     this.app = app;
-
-    this.debug = this.addChild(new Graphics());
 
     // this is added directly in pixiApp to control z-index (instead of using pixi's sortable children)
     this.cellsBackground = new CellsBackground();
@@ -207,6 +204,7 @@ export class Cells extends Container {
     // check for dependencies across entire bounds
     const dependentCells = render_dependency.getDependentsInBounds(bounds);
     if (dependentCells.length) {
+      const clipRectangle = gridOffsets.getScreenRectangle(bounds.x, bounds.y, bounds.right, bounds.bottom);
       dependentCells.forEach((coordinate) => {
         const key = `${coordinate.x},${coordinate.y}`;
         if (renderedCells.has(key)) return;
@@ -216,7 +214,10 @@ export class Cells extends Container {
           const position = gridOffsets.getCell(coordinate.x, coordinate.y);
           const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
           const rendered = this.renderCell({ entry, ...position, isInput });
-          content = content ? intersects.rectangleUnion(content, rendered) : rendered;
+          if (rendered) {
+            const clipped = intersects.rectangleClip(rendered, clipRectangle);
+            content = content ? intersects.rectangleUnion(content, clipped) : clipped;
+          }
         }
       });
     }
@@ -308,8 +309,12 @@ export class Cells extends Container {
 
     // draw cells
     const { bounds, boundsWithData } = grid.getBounds(fullBounds);
-    const cellRectangle = grid.getCells(boundsWithData);
-    const rectCells = this.drawBounds({ bounds, boundsWithData, cellRectangle, isQuadrant });
+
+    let rectCells: Rectangle | undefined;
+    if (boundsWithData) {
+      const cellRectangle = grid.getCells(boundsWithData);
+      rectCells = this.drawBounds({ bounds, boundsWithData, cellRectangle, isQuadrant });
+    }
 
     // draw borders
     const borderBounds = borders.getBounds(fullBounds);
