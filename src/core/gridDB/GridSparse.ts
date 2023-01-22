@@ -206,7 +206,7 @@ export class GridSparse {
   }
 
   /** finds the minimum and maximum location for content in a row */
-  getRowMinMax(row: number): MinMax {
+  getRowMinMax(row: number): MinMax | undefined {
     let min = Infinity;
     let max = -Infinity;
     for (let x = this.minX; x <= this.maxX; x++) {
@@ -221,6 +221,7 @@ export class GridSparse {
         break;
       }
     }
+    if (min === Infinity) return;
     return { min, max };
   }
 
