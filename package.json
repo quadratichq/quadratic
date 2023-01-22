@@ -61,7 +61,7 @@
     "test": "",
     "prettier": "prettier --write src",
     "eject": "react-scripts eject",
-    "dev": "concurrently -k \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "dev": "concurrently \"BROWSER=none npm start\" \"electron .\"",
     "electron": "electron ."
   },
   "eslintConfig": {
