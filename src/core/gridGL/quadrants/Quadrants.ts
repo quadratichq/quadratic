@@ -1,9 +1,8 @@
-import { Container, Rectangle, Text } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 import {
   debugShowCacheFlag,
   debugShowCacheInfo,
   debugShowCellsForDirtyQuadrants,
-  debugShowQuadrantBoxes,
   debugSkipQuadrantRendering,
 } from '../../../debugFlags';
 import { CellRectangle } from '../../gridDB/CellRectangle';
@@ -52,11 +51,14 @@ export class Quadrants extends Container {
     if (!bounds?.width && !bounds?.height) return;
 
     // iterate through visible grid bounds and prepare quadrants
-    for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
-      for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
-        const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
-        const quadrant = this.addChild(new Quadrant(this.app, quadrantX, quadrantY));
-        this.quadrants.set(`${quadrantX},${quadrantY}`, quadrant);
+    const yStart = Math.floor(bounds.top / QUADRANT_ROWS);
+    const yEnd = Math.floor(bounds.bottom / QUADRANT_ROWS);
+    const xStart = Math.floor(bounds.left / QUADRANT_COLUMNS);
+    const xEnd = Math.floor(bounds.right / QUADRANT_COLUMNS);
+    for (let y = yStart; y <= yEnd; y++) {
+      for (let x = xStart; x <= xEnd; x++) {
+        const quadrant = this.addChild(new Quadrant(this.app, x, y));
+        this.quadrants.set(`${x},${y}`, quadrant);
       }
     }
     if (debugShowCacheInfo) {
@@ -94,11 +96,6 @@ export class Quadrants extends Container {
         (document.querySelector('.debug-show-cache-count') as HTMLSpanElement).innerHTML = `Quadrants: ${
           this.children.length - dirtyCount
         }/${this.children.length}`;
-      }
-      if (debugShowQuadrantBoxes) {
-        this.app.debug.clear();
-        this.app.debug.removeChildren();
-        this.quadrants.forEach(quadrant => quadrant.debugDraw());
       }
       return (
         this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle)

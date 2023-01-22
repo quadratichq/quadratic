@@ -1,5 +1,5 @@
 import { BitmapText, Container, Graphics, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite, Text, Texture } from 'pixi.js';
-import { debugShowCacheInfo, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
+import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
 import { nextPowerOf2 } from '../helpers/zoom';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
@@ -22,11 +22,14 @@ export class Quadrant extends Container {
   visibleRectangle!: Rectangle;
   location: Coordinate;
 
+  private testGraphics: Graphics;
+
   constructor(app: PixiApp, quadrantX: number, quadrantY: number) {
     super();
     this.app = app;
     this.location = { x: quadrantX, y: quadrantY };
     this.subquadrants = [];
+    this.testGraphics = this.addChild(new Graphics());
     this.reposition();
   }
 
@@ -104,7 +107,7 @@ export class Quadrant extends Container {
     if (!this.dirty) return;
     this.clear();
     const app = this.app;
-    // if (this.location.x === -1 && this.location.y === 1) debugger;
+    // if (this.location.x === -1 && this.location.y === 0) debugger;
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
     const screenRectangle = app.sheet.gridOffsets.getScreenRectangle(
@@ -113,7 +116,13 @@ export class Quadrant extends Container {
       QUADRANT_COLUMNS - 1,
       QUADRANT_ROWS - 1
     );
-
+    if (debugShowQuadrantBoxes) {
+      this.testGraphics
+        .clear()
+        .beginFill(Math.floor(Math.random() * 0xffffff), 0.25)
+        .drawRect(screenRectangle.x, screenRectangle.y, screenRectangle.width, screenRectangle.height)
+        .endFill();
+    }
     // number of subquadrants necessary (should be equal to 1 unless heading size has changed)
     const xCount = Math.ceil(screenRectangle.width / QUADRANT_TEXTURE_SIZE);
     const yCount = Math.ceil(screenRectangle.height / QUADRANT_TEXTURE_SIZE);
@@ -144,11 +153,6 @@ export class Quadrant extends Container {
             nextPowerOf2(Math.min(subQuadrantWidth * QUADRANT_SCALE, reducedDrawingRectangle.width * QUADRANT_SCALE)),
             nextPowerOf2(Math.min(subQuadrantHeight  * QUADRANT_SCALE, reducedDrawingRectangle.height * QUADRANT_SCALE))
           );
-          if (size > QUADRANT_TEXTURE_SIZE) {
-            console.log(subQuadrantWidth, subQuadrantHeight)
-            console.log(reducedDrawingRectangle.width, reducedDrawingRectangle.height)
-            debugger
-          }
           const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, size);
 
           if (debugShowSubCacheInfo) {
@@ -162,6 +166,12 @@ export class Quadrant extends Container {
           app.renderer.render(container, { renderTexture: subQuadrant.texture, transform, clear: true });
           app.cleanUpAfterQuadrantRendering();
           subQuadrant.position.set(reducedDrawingRectangle.left, reducedDrawingRectangle.top);
+
+          if (debugShowQuadrantBoxes) {
+            this.testGraphics
+              .lineStyle({ color: 0, width: 5 })
+              .drawRect(reducedDrawingRectangle.x, reducedDrawingRectangle.y, reducedDrawingRectangle.width, reducedDrawingRectangle.height)
+          }
         }
       }
     }
@@ -191,7 +201,6 @@ export class Quadrant extends Container {
       const text = this.app.debug.addChild(new BitmapText(`${this.location.x}, ${this.location.y}`, { fontName: 'OpenSans' }))
       text.position.set(this.subquadrants[0].x, this.subquadrants[0].y);
       this.subquadrants.forEach(subquadrant => {
-        console.log(subquadrant.width, subquadrant.height)
         this.app.debug
           .beginFill(this.debugColor, 0.5)
           .drawRect(subquadrant.x, subquadrant.y, subquadrant.texture.width, subquadrant.texture.height)
