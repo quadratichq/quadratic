@@ -96,16 +96,16 @@ export const CellInput = (props: CellInputProps) => {
           ]);
       } else {
         // create cell with value at input location
-        await updateCellAndDCells(
-          {
+        await updateCellAndDCells({
+          starting_cell: {
             x: cellLocation.current.x,
             y: cellLocation.current.y,
             type: 'TEXT',
             value: value || '',
           },
           sheetController,
-          app
-        );
+          app,
+        });
         // sheetController.predefined_transaction([
         //   {
         //     type: 'SET_CELL',

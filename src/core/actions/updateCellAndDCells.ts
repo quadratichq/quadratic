@@ -5,14 +5,18 @@ import { Coordinate } from '../gridGL/types/size';
 import { localFiles } from '../gridDB/localFiles';
 import { SheetController } from '../transaction/sheetController';
 
-export const updateCellAndDCells = async (
-  starting_cell: Cell,
-  sheet_controller: SheetController,
-  app?: PixiApp,
-  pyodide?: any
-) => {
+interface ArgsType {
+  starting_cell: Cell;
+  sheetController: SheetController;
+  app?: PixiApp;
+  pyodide?: any;
+}
+
+export const updateCellAndDCells = async (args: ArgsType) => {
+  const { starting_cell, sheetController, app, pyodide } = args;
+
   // start transaction
-  sheet_controller.start_transaction();
+  sheetController.start_transaction();
 
   // keep track of cells that have been updated so we can update the quadrant cache
   const updatedCells: Coordinate[] = [];
@@ -41,7 +45,7 @@ export const updateCellAndDCells = async (
     if (ref_current_cell === undefined) break;
 
     // get cell from db or starting_cell if it is the starting cell passed in to this function
-    let cell = sheet_controller.sheet.getCellCopy(ref_current_cell[0], ref_current_cell[1]);
+    let cell = sheetController.sheet.getCellCopy(ref_current_cell[0], ref_current_cell[1]);
     let old_array_cells: Coordinate[] = [];
 
     if (ref_current_cell[0] === starting_cell.x && ref_current_cell[1] === starting_cell.y) {
@@ -62,7 +66,7 @@ export const updateCellAndDCells = async (
     // remove old deps from graph
     if (cell.dependent_cells)
       cell.dependent_cells.forEach((dcell) => {
-        sheet_controller.execute_statement({
+        sheetController.execute_statement({
           type: 'REMOVE_CELL_DEPENDENCY',
           data: {
             position: dcell,
@@ -90,7 +94,7 @@ export const updateCellAndDCells = async (
       if (result.cells_accessed.length) {
         // add new deps to graph
         result.cells_accessed.forEach((cell_accessed) => {
-          sheet_controller.execute_statement({
+          sheetController.execute_statement({
             type: 'ADD_CELL_DEPENDENCY',
             data: {
               position: cell_accessed,
@@ -142,7 +146,7 @@ export const updateCellAndDCells = async (
         // if any updated cells have other cells depending on them, add to list to update
         for (const array_cell of array_cells_to_output) {
           // add array cells to list to update
-          let deps = sheet_controller.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
+          let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
 
           if (deps) cells_to_update.push(...deps);
         }
@@ -153,7 +157,7 @@ export const updateCellAndDCells = async (
         cell.last_modified = new Date().toISOString();
 
         array_cells_to_output.forEach((cell) => {
-          sheet_controller.execute_statement({
+          sheetController.execute_statement({
             type: 'SET_CELL',
             data: { position: [cell.x, cell.y], value: cell },
           });
@@ -170,7 +174,7 @@ export const updateCellAndDCells = async (
         cell.dependent_cells = result.cells_accessed;
 
         cell.last_modified = new Date().toISOString();
-        sheet_controller.execute_statement({
+        sheetController.execute_statement({
           type: 'SET_CELL',
           data: { position: [cell.x, cell.y], value: cell },
         });
@@ -180,7 +184,7 @@ export const updateCellAndDCells = async (
 
       // update current cell
       cell.last_modified = new Date().toISOString();
-      sheet_controller.execute_statement({
+      sheetController.execute_statement({
         type: 'SET_CELL',
         data: { position: [cell.x, cell.y], value: cell },
       });
@@ -193,27 +197,27 @@ export const updateCellAndDCells = async (
 
     // delete old array cells
     array_cells_to_delete.forEach((cell) => {
-      sheet_controller.execute_statement({
+      sheetController.execute_statement({
         type: 'SET_CELL',
         data: { position: [cell.x, cell.y], value: undefined },
       });
     });
 
     // if this cell updates other cells add them to the list to update
-    let deps = sheet_controller.sheet.cell_dependency.getDependencies([cell.x, cell.y]);
+    let deps = sheetController.sheet.cell_dependency.getDependencies([cell.x, cell.y]);
 
     if (deps) cells_to_update.push(...deps);
   }
 
   // Officially end the transaction
-  sheet_controller.end_transaction();
+  sheetController.end_transaction();
 
   // Pass updatedCells to the app so it can update the Grid Quadrants which changed.
   // TODO: move this to sheetController so it happens automatically with every transaction?
-  // Maybe sheet_controller.end_transaction() should return a list of cells which updated in the transaction?
+  // Maybe sheetController.end_transaction() should return a list of cells which updated in the transaction?
   app?.quadrants.quadrantChanged({ cells: updatedCells });
 
   // TODO: move this to sheetController so we can better control when it is called?
   // if in browser instead of inside a node test
-  if (typeof window !== 'undefined') localFiles.saveLastLocal(sheet_controller.sheet.export_file());
+  if (typeof window !== 'undefined') localFiles.saveLastLocal(sheetController.sheet.export_file());
 };
