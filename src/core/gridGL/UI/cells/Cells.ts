@@ -226,7 +226,6 @@ export class Cells extends Container {
     const rendered = this.labels.update();
     if (rendered) {
       const clipped = intersects.rectangleClip(rendered, clipRectangle);
-      console.log(rendered, clipped, clipRectangle)
       content = content ? intersects.rectangleUnion(content, clipped) : clipped;
     }
 
