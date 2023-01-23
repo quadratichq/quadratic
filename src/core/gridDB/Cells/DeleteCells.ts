@@ -1,4 +1,5 @@
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
+import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../transaction/sheetController';
 
 interface DeleteCellsArgs {
@@ -8,13 +9,20 @@ interface DeleteCellsArgs {
   y1: number;
   sheetController: SheetController;
   pyodide?: any;
+  app?: PixiApp;
 }
 
 export const DeleteCells = async (args: DeleteCellsArgs) => {
-  const { x0, y0, x1, y1, sheetController, pyodide } = args;
+  const { x0, y0, x1, y1, sheetController, pyodide, app } = args;
 
   const cells_to_delete = sheetController.sheet.grid.getNakedCells(x0, y0, x1, y1);
 
   // delete cells
-  await updateCellAndDCells({ starting_cells: cells_to_delete, sheetController, pyodide, delete_starting_cells: true });
+  await updateCellAndDCells({
+    starting_cells: cells_to_delete,
+    sheetController,
+    pyodide,
+    delete_starting_cells: true,
+    app,
+  });
 };

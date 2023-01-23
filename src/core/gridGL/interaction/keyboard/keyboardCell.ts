@@ -43,6 +43,7 @@ export function keyboardCell(options: {
         x1: interactionState.multiCursorPosition.terminalPosition.x,
         y1: interactionState.multiCursorPosition.terminalPosition.y,
         sheetController: sheet_controller,
+        app,
       });
     } else {
       // delete a single cell
@@ -52,6 +53,7 @@ export function keyboardCell(options: {
         x1: interactionState.multiCursorPosition.originPosition.x,
         y1: interactionState.multiCursorPosition.originPosition.y,
         sheetController: sheet_controller,
+        app,
       });
     }
 

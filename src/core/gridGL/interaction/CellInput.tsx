@@ -92,6 +92,7 @@ export const CellInput = (props: CellInputProps) => {
             x1: cellLocation.current.x,
             y1: cellLocation.current.y,
             sheetController,
+            app,
           });
       } else {
         // create cell with value at input location
