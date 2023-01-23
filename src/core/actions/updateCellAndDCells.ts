@@ -23,17 +23,17 @@ export const updateCellAndDCells = async (
   // update cells, starting with the current cell
   while (cells_to_update.length > 0) {
     // dedupe cells_to_update
-    let seen = Array<string>();
+    let seen = new Set();
     for (let i = 0; i < cells_to_update.length; null) {
       let string_id = cells_to_update[i].join(',');
 
-      if (seen.includes(string_id)) {
+      if (seen.has(string_id)) {
         cells_to_update.splice(i, 1);
       } else {
         i++;
       }
 
-      seen.push(string_id);
+      seen.add(string_id);
     }
 
     // get next cell to update
