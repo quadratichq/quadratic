@@ -31,8 +31,8 @@ test('SheetController - cell update when being deleted', async () => {
     python_code: 'c(0,0) * 2',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cell: cell_0_0, sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cell: cell_0_1, sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc, pyodide });
 
   const cell_after = sc.sheet.grid.getCell(0, 1);
   expect(cell_after?.value).toBe('20');
@@ -45,21 +45,18 @@ test('SheetController - cell update when being deleted', async () => {
     type: 'TEXT',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cell: cell_0_0_update, sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc, pyodide });
 
   const cell_after_update = sc.sheet.grid.getCell(0, 1);
   expect(cell_after_update?.value).toBe('40');
 
   // test deleting cell 0,0 update
-  sc.predefined_transaction([
-    {
-      type: 'SET_CELL',
-      data: {
-        position: [0, 0],
-        value: undefined,
-      },
-    },
-  ]);
+  await updateCellAndDCells({
+    starting_cells: [{ ...cell_0_0 }],
+    sheetController: sc,
+    pyodide,
+    delete_starting_cells: true,
+  });
 
   const cell_after_delete_dependency = sc.sheet.grid.getCell(0, 1);
   expect(cell_after_delete_dependency?.value).toBe('');
@@ -109,11 +106,11 @@ test('SheetController - cell bulk update when deleting a range of cells', async 
     python_code: 'c(0,3) * 2',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cell: cell_0_0, sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cell: cell_1_0, sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cell: cell_1_1, sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cell: cell_1_2, sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cell: cell_1_3, sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_1_0], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_1_1], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_1_2], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_1_3], sheetController: sc, pyodide });
 
   const cell_after_1_0 = sc.sheet.grid.getCell(1, 0);
   expect(cell_after_1_0?.value).toBe('4');
@@ -125,39 +122,17 @@ test('SheetController - cell bulk update when deleting a range of cells', async 
   expect(cell_after_1_3?.value).toBe('16');
 
   // try deleting cell bulk cells
-  sc.predefined_transaction([
-    {
-      type: 'SET_CELL',
-      data: {
-        position: [0, 0],
-        value: undefined,
-      },
-    },
-    {
-      type: 'SET_CELL',
-      data: {
-        position: [1, 0],
-        value: undefined,
-      },
-    },
-    {
-      type: 'SET_CELL',
-      data: {
-        position: [2, 0],
-        value: undefined,
-      },
-    },
-    {
-      type: 'SET_CELL',
-      data: {
-        position: [3, 0],
-        value: undefined,
-      },
-    },
-  ]);
+  const cells_to_delete = sc.sheet.grid.getNakedCells(0, 0, 0, 3);
+  await updateCellAndDCells({
+    starting_cells: cells_to_delete,
+    sheetController: sc,
+    pyodide,
+    delete_starting_cells: true,
+  });
 
   // validate that all cells are now None after deletion
   const cells_after_delete_dependency = sc.sheet.grid.getNakedCells(1, 0, 1, 3);
+  expect(cells_after_delete_dependency.length).toBe(4);
   cells_after_delete_dependency.forEach((cell) => {
     expect(cell.value).toBe('');
   });

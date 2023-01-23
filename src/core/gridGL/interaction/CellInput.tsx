@@ -6,6 +6,7 @@ import { PixiApp } from '../pixiApp/PixiApp';
 import { localFiles } from '../../gridDB/localFiles';
 import { SheetController } from '../../transaction/sheetController';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
+import { DeleteCells } from '../../gridDB/Cells/DeleteCells';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -85,24 +86,24 @@ export const CellInput = (props: CellInputProps) => {
       if (value === '') {
         // delete cell if input is empty, and wasn't empty before
         if (cell !== undefined)
-          sheetController.predefined_transaction([
-            {
-              type: 'SET_CELL',
-              data: {
-                position: [cellLocation.current.x, cellLocation.current.y],
-                value: undefined,
-              },
-            },
-          ]);
+          DeleteCells({
+            x0: cellLocation.current.x,
+            y0: cellLocation.current.y,
+            x1: cellLocation.current.x,
+            y1: cellLocation.current.y,
+            sheetController,
+          });
       } else {
         // create cell with value at input location
         await updateCellAndDCells({
-          starting_cell: {
-            x: cellLocation.current.x,
-            y: cellLocation.current.y,
-            type: 'TEXT',
-            value: value || '',
-          },
+          starting_cells: [
+            {
+              x: cellLocation.current.x,
+              y: cellLocation.current.y,
+              type: 'TEXT',
+              value: value || '',
+            },
+          ],
           sheetController,
           app,
         });
