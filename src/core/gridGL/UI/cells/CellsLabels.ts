@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
 import { CELL_TEXT_MARGIN_LEFT } from '../../../../constants/gridConstants';
@@ -41,8 +41,16 @@ export class CellsLabels extends Container {
     }
   }
 
-  // add labels to headings using cached labels
-  update() {
+  /**
+   * add labels to headings using cached labels
+   * @returns the visual bounds only if isQuadrant is defined (otherwise not worth the .width/.height call)
+   */
+  update(): Rectangle | undefined {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
     // keep current children to use as the cache
     this.children.forEach((child) => (child.visible = false));
 
@@ -69,6 +77,10 @@ export class CellsLabels extends Container {
           } else {
             label.overflowRight = undefined;
           }
+          minX = Math.min(label.x, minX);
+          maxX = Math.max(label.x + width, maxX);
+          minY = Math.min(label.y, minY);
+          maxY = Math.max(label.y + label.height, maxY);
         }
         available.splice(index, 1);
       }
@@ -99,7 +111,16 @@ export class CellsLabels extends Container {
           label.overflowRight = undefined;
         }
       }
+      if (data.isQuadrant) {
+        minX = Math.min(label.x, minX);
+        maxX = Math.max(label.x + label.width, maxX);
+        minY = Math.min(label.y, minY);
+        maxY = Math.max(label.y + label.height, maxY);
+      }
     });
+    if (minX !== Infinity) {
+      return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+    }
   }
 
   get(): CellLabel[] {

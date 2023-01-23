@@ -48,7 +48,7 @@ export class Quadrants extends Container {
     const borderBounds = borders.getGridBounds();
     const bounds = intersects.rectangleUnion(gridBounds, borderBounds);
 
-    if (!bounds?.width && !bounds?.height) return;
+    if (!bounds) return;
 
     // iterate through visible grid bounds and prepare quadrants
     const yStart = Math.floor(bounds.top / QUADRANT_ROWS);

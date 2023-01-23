@@ -56,7 +56,7 @@ describe('gridOffsets', () => {
     expect(gridOffsets.getRowHeight(3)).toBe(15);
   });
 
-  it('gets the start and end of a range of columns (positive)', () => {
+  it('gets the start and end of a range of columns (positive to positive)', () => {
     gridOffsets.populate(
       [
         { id: 1, size: 5 },
@@ -67,10 +67,10 @@ describe('gridOffsets', () => {
     );
     const { xStart, xEnd } = gridOffsets.getColumnsStartEnd(0, 5);
     expect(xStart).toBe(0);
-    expect(xEnd).toBe(CELL_WIDTH + 5 + 6 + 7 + CELL_WIDTH);
+    expect(xEnd).toBe(CELL_WIDTH + 5 + 6 + 7 + CELL_WIDTH - 1);
   });
 
-  it('gets the start and end of a range of columns (negative) to 0', () => {
+  it('gets the start and end of a range of columns (negative to 0)', () => {
     gridOffsets.populate(
       [
         { id: -1, size: 5 },
@@ -80,8 +80,22 @@ describe('gridOffsets', () => {
       []
     );
     const { xStart, xEnd } = gridOffsets.getColumnsStartEnd(-5, 5);
-    expect(xStart).toBe(-(CELL_WIDTH + 5 + 6 + 7 + CELL_WIDTH));
-    expect(xEnd).toBe(0);
+    expect(xStart).toBe(-(5 + 6 + 7 + CELL_WIDTH * 2));
+    expect(xEnd).toBe(-1);
+  });
+
+  it('gets the start and end of a range of columns (negative to negative)', () => {
+    gridOffsets.populate(
+      [
+        { id: -1, size: 5 },
+        { id: -2, size: 6 },
+        { id: -3, size: 7 },
+      ],
+      []
+    );
+    const { xStart, xEnd } = gridOffsets.getColumnsStartEnd(-5, 3);
+    expect(xStart).toBe(-(CELL_WIDTH * 2 + 5 + 6 + 7));
+    expect(xEnd).toBe(-5 - 1);
   });
 
   it('gets the start and end of a range of columns (negative) to < 0', () => {
@@ -95,7 +109,7 @@ describe('gridOffsets', () => {
     );
     const { xStart, xEnd } = gridOffsets.getColumnsStartEnd(-5, 4);
     expect(xStart).toBe(-(CELL_WIDTH + CELL_WIDTH + 7 + 6 + 5));
-    expect(xEnd).toBe(-5);
+    expect(xEnd).toBe(-1);
   });
 
   it('gets the start and end of a range of columns (negative) to > 0', () => {
@@ -110,7 +124,20 @@ describe('gridOffsets', () => {
     );
     const { xStart, xEnd } = gridOffsets.getColumnsStartEnd(-5, 7);
     expect(xStart).toBe(-(CELL_WIDTH + CELL_WIDTH + 7 + 6 + 5));
-    expect(xEnd).toBe(4 + CELL_WIDTH);
+    expect(xEnd).toBe(4 + CELL_WIDTH - 1);
+  });
+
+  it('gets the start and end of a range of columns (rows to negative)', () => {
+    gridOffsets.populate([],
+      [
+        { id: -1, size: 5 },
+        { id: -2, size: 6 },
+        { id: -3, size: 7 },
+      ]
+    );
+    const { yStart, yEnd } = gridOffsets.getRowsStartEnd(-5, 3);
+    expect(yStart).toBe(-(CELL_HEIGHT * 2 + 5 + 6 + 7));
+    expect(yEnd).toBe(-5 - 1);
   });
 
   it('gets the start and end of a range of row (positive)', () => {
@@ -124,7 +151,7 @@ describe('gridOffsets', () => {
     );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(0, 5);
     expect(yStart).toBe(0);
-    expect(yEnd).toBe(CELL_HEIGHT + 5 + 6 + 7 + CELL_HEIGHT);
+    expect(yEnd).toBe(CELL_HEIGHT + 5 + 6 + 7 + CELL_HEIGHT - 1);
   });
 
   it('gets the start and end of a range of rows (negative) to 0', () => {
@@ -138,7 +165,7 @@ describe('gridOffsets', () => {
     );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(-5, 5);
     expect(yStart).toBe(-(CELL_HEIGHT + 5 + 6 + 7 + CELL_HEIGHT));
-    expect(yEnd).toBe(0);
+    expect(yEnd).toBe(-1);
   });
 
   it('gets the start and end of a range of rows (negative) to < 0', () => {
@@ -152,7 +179,7 @@ describe('gridOffsets', () => {
     );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(-5, 4);
     expect(yStart).toBe(-(CELL_HEIGHT + CELL_HEIGHT + 7 + 6 + 5));
-    expect(yEnd).toBe(-5);
+    expect(yEnd).toBe(-1);
   });
 
   it('gets the start and end of a range of rows (negative) to > 0', () => {
@@ -167,6 +194,6 @@ describe('gridOffsets', () => {
     );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(-5, 7);
     expect(yStart).toBe(-(CELL_HEIGHT + CELL_HEIGHT + 7 + 6 + 5));
-    expect(yEnd).toBe(4 + CELL_HEIGHT);
+    expect(yEnd).toBe(4 + CELL_HEIGHT - 1);
   });
 });
