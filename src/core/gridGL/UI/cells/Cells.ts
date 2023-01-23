@@ -201,10 +201,11 @@ export class Cells extends Container {
       y += height;
     }
 
+    const clipRectangle = gridOffsets.getScreenRectangle(bounds.x, bounds.y, bounds.right, bounds.bottom);
+
     // check for dependencies across entire bounds
     const dependentCells = render_dependency.getDependentsInBounds(bounds);
     if (dependentCells.length) {
-      const clipRectangle = gridOffsets.getScreenRectangle(bounds.x, bounds.y, bounds.right, bounds.bottom);
       dependentCells.forEach((coordinate) => {
         const key = `${coordinate.x},${coordinate.y}`;
         if (renderedCells.has(key)) return;
@@ -222,7 +223,12 @@ export class Cells extends Container {
       });
     }
 
-    this.labels.update();
+    const rendered = this.labels.update();
+    if (rendered) {
+      const clipped = intersects.rectangleClip(rendered, clipRectangle);
+      console.log(rendered, clipped, clipRectangle)
+      content = content ? intersects.rectangleUnion(content, clipped) : clipped;
+    }
 
     // only calculate overflow when rendering quadrants so it's only done one time
     if (isQuadrant) this.handleOverflow();
