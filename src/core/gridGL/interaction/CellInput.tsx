@@ -106,20 +106,6 @@ export const CellInput = (props: CellInputProps) => {
           sheetController,
           app,
         });
-        // sheetController.predefined_transaction([
-        //   {
-        //     type: 'SET_CELL',
-        //     data: {
-        //       position: [cellLocation.current.x, cellLocation.current.y],
-        //       value: {
-        //         x: cellLocation.current.x,
-        //         y: cellLocation.current.y,
-        //         type: 'TEXT',
-        //         value: value || '',
-        //       },
-        //     },
-        //   },
-        // ]);
       }
       app?.quadrants.quadrantChanged({ cells: [cellLocation.current] });
       localFiles.saveLastLocal(sheetController.sheet.export_file());
@@ -183,7 +169,6 @@ export const CellInput = (props: CellInputProps) => {
         fontFamily: 'OpenSans',
         fontSize: '14px',
         letterSpacing: '0.07px',
-        // margin: '-7px -10px 0 0',
       }}
       value={value}
       onChange={(event) => {
