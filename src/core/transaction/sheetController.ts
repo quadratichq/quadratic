@@ -26,7 +26,6 @@ export class SheetController {
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
-    this.clipboard = undefined;
   }
 
   // starting a transaction is the only way to execute statements
@@ -167,20 +166,11 @@ export class SheetController {
     if (this.app) this.app.rebuild();
   }
 
-  public setClipboard(cells: Cell[]): void {
-    this.clipboard = cells;
-  }
-
-  public getClipboard(): Cell[] | undefined {
-    return this.clipboard;
-  }
-
   public clear(): void {
     this.undo_stack = [];
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
-    this.clipboard = undefined;
   }
 
   public setApp(app: PixiApp): void {
