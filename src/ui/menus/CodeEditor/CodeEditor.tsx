@@ -120,7 +120,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
     selectedCell.value = '';
     selectedCell.python_code = editorContent;
 
-    await updateCellAndDCells(selectedCell, props.sheet_controller);
+    await updateCellAndDCells({
+      starting_cells: [selectedCell],
+      sheetController: props.sheet_controller,
+      app: props.sheet_controller.app,
+    });
 
     const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
     setPythonOutput(updated_cell?.python_output);

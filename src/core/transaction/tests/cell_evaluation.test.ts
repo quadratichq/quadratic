@@ -23,7 +23,7 @@ test('SheetController - code run correctly', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells(cell, sc, undefined, pyodide);
+  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc, pyodide });
 
   const cell_after = sc.sheet.grid.getCell(54, 54);
 
@@ -46,7 +46,7 @@ test('SheetController - array output undo redo', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells(cell, sc, undefined, pyodide);
+  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc, pyodide });
 
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 10);
   expect(after_code_run_cells[0]?.value).toBe('1');
@@ -98,7 +98,7 @@ test('SheetController - array output length change', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells(cell, sc, undefined, pyodide);
+  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc, pyodide });
 
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
   expect(after_code_run_cells[0]?.value).toBe('1');
@@ -125,7 +125,7 @@ test('SheetController - array output length change', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells(cell_update_1, sc, undefined, pyodide);
+  await updateCellAndDCells({ starting_cells: [cell_update_1], sheetController: sc, pyodide });
 
   const after_update_1 = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
   expect(after_update_1.length).toBe(5);
