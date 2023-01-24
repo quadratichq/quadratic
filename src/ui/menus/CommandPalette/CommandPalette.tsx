@@ -3,11 +3,11 @@ import { Divider, IconButton, InputBase, List, ListItem, ListItemButton, ListIte
 import { Search } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import './styles.css';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
+import './styles.css';
 
 interface Props {
   app: PixiApp;

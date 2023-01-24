@@ -1,12 +1,12 @@
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { OpenInNew } from '@mui/icons-material';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
-import { ComposableCommandPaletteListItemProps } from '../CommandPaletteListItem';
+import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
     label: 'Help: View the docs',
-    Component: (props: ComposableCommandPaletteListItemProps) => (
+    Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
         icon={<OpenInNew />}
@@ -18,7 +18,7 @@ const ListItems = [
   },
   {
     label: 'Help: Report a problem',
-    Component: (props: ComposableCommandPaletteListItemProps) => (
+    Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
         icon={<OpenInNew />}

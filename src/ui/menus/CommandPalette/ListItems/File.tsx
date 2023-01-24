@@ -1,4 +1,4 @@
-import { ComposableCommandPaletteListItemProps } from '../CommandPaletteListItem';
+import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { newGridFile, openGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
 import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
@@ -6,7 +6,7 @@ import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
 const ListItems = [
   {
     label: 'File: New',
-    Component: (props: ComposableCommandPaletteListItemProps) => (
+    Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
         action={() => {
@@ -17,7 +17,7 @@ const ListItems = [
   },
   {
     label: 'File: Save local copy',
-    Component: (props: ComposableCommandPaletteListItemProps) => (
+    Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
         action={() => {
@@ -28,7 +28,7 @@ const ListItems = [
   },
   {
     label: 'File: Open local',
-    Component: (props: ComposableCommandPaletteListItemProps) => (
+    Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
         action={() => {

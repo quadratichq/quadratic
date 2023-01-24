@@ -4,18 +4,22 @@ import { ReactElement } from 'react';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
 
-// Added dynamically to every CommandPaletteListItem by components higher in the tree
-export interface CommandPaletteListItemDynamicProps {
-  action: Function;
+// Props generated in the root CommandPalette and passed to every CommandPaletteListItem
+export interface CommandPaletteListItemSharedProps {
   closeCommandPalette: Function;
   fuzzysortResult?: Fuzzysort.Result;
   label: string;
   listItemIndex: number;
   selectedListItemIndex: number;
+
+  // @TODO these don't need to be passed to <CommandPaletteListItem>
+  app: PixiApp;
+  sheetController: SheetController;
 }
 
-// Added statically in the individual file of each CommandPaletteListItem
-export interface CommandPaletteListItemStaticProps {
+// Contextual props added to each individual <CommandPaletteListItem>
+interface CommandPaletteListItemUniqueProps {
+  action: Function;
   disabled?: boolean;
   icon?: ReactElement;
   shortcut?: string;
@@ -23,13 +27,7 @@ export interface CommandPaletteListItemStaticProps {
 }
 
 // All props this component needs
-interface CommandPaletteListItemProps extends CommandPaletteListItemDynamicProps, CommandPaletteListItemStaticProps {}
-
-// Composable middle component gets app and sheet which it doesn't pass to CommandPaletteListItemProps
-export interface ComposableCommandPaletteListItemProps extends CommandPaletteListItemProps {
-  app: PixiApp;
-  sheetController: SheetController;
-}
+interface CommandPaletteListItemProps extends CommandPaletteListItemSharedProps, CommandPaletteListItemUniqueProps {}
 
 export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
   const {

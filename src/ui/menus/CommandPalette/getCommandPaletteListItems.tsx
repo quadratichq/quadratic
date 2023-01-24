@@ -1,13 +1,13 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import fuzzysort from 'fuzzysort';
 import HelpListItems from './ListItems/Help';
 import ViewListItems from './ListItems/View';
 import FileListItems from './ListItems/File';
-import { CommandPaletteListItemDynamicProps } from './CommandPaletteListItem';
+import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 
 interface ICommand {
   label: string;
-  Component: Function;
+  Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
 }
 
 const commands: Array<ICommand> = [...FileListItems, ...ViewListItems, ...HelpListItems];
@@ -18,7 +18,7 @@ export const getCommandPaletteListItems = (props: {
   closeCommandPalette: Function;
   activeSearchValue: string;
   selectedListItemIndex: number;
-}): Array<ReactElement<CommandPaletteListItemDynamicProps>> => {
+}): Array<JSX.Element> => {
   const { activeSearchValue, ...rest } = props;
 
   // If there's no active search query, return everything
