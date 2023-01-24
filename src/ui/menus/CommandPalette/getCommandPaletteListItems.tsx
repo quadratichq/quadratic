@@ -1,8 +1,8 @@
 import React, { ReactElement } from 'react';
 import fuzzysort from 'fuzzysort';
-import { CPLIViewShowAxis } from './ListItems/View';
-import { CPLIHelpViewDocs, CPLIHelpReportProblem } from './ListItems/Help';
-import { CPLIZoomIn, CPLIZoomOut, CPLIZoomToFit, CPLIZoomTo100 } from './ListItems/Zoom';
+import HelpListItems from './ListItems/Help';
+import ViewListItems from './ListItems/View';
+import FileListItems from './ListItems/File';
 import { CommandPaletteListItemDynamicProps } from './CommandPaletteListItem';
 
 interface ICommand {
@@ -10,36 +10,7 @@ interface ICommand {
   Component: Function;
 }
 
-const commands: Array<ICommand> = [
-  {
-    label: 'View: Show axis',
-    Component: CPLIViewShowAxis,
-  },
-  {
-    label: 'Help: View the docs',
-    Component: CPLIHelpViewDocs,
-  },
-  {
-    label: 'Help: Report a problem',
-    Component: CPLIHelpReportProblem,
-  },
-  {
-    label: 'View: Zoom in',
-    Component: CPLIZoomIn,
-  },
-  {
-    label: 'View: Zoom out',
-    Component: CPLIZoomOut,
-  },
-  {
-    label: 'View: Zoom to fit',
-    Component: CPLIZoomToFit,
-  },
-  {
-    label: 'View: Zoom to 100%',
-    Component: CPLIZoomTo100,
-  },
-];
+const commands: Array<ICommand> = [...HelpListItems, ...ViewListItems, ...FileListItems];
 
 export const getCommandPaletteListItems = (props: {
   sheetController: any;
@@ -103,15 +74,7 @@ export const commands = [
     shortcutModifiers: [KeyboardSymbols.Command, KeyboardSymbols.Shift],
   },
 
-  {
-    name: 'File: New',
-  },
-  {
-    name: 'File: Save local copy',
-  },
-  {
-    name: 'File: Open local',
-  },
+  
   {
     name: 'Borders: Apply to all',
     icon: <BorderAll />,
