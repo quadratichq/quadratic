@@ -3,6 +3,7 @@ import { Transaction } from './transaction';
 import { Statement } from './statement';
 import { StatementRunner } from './runners/runner';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { Cell } from '../gridDB/gridTypes';
 
 export class SheetController {
   app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
@@ -11,6 +12,8 @@ export class SheetController {
   transaction_in_progress_reverse: Transaction | undefined;
   undo_stack: Transaction[];
   redo_stack: Transaction[];
+
+  clipboard: Cell[] | undefined;
 
   constructor(sheet?: Sheet) {
     if (sheet === undefined) {
@@ -23,6 +26,7 @@ export class SheetController {
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
+    this.clipboard = undefined;
   }
 
   // starting a transaction is the only way to execute statements
@@ -163,11 +167,20 @@ export class SheetController {
     if (this.app) this.app.rebuild();
   }
 
+  public setClipboard(cells: Cell[]): void {
+    this.clipboard = cells;
+  }
+
+  public getClipboard(): Cell[] | undefined {
+    return this.clipboard;
+  }
+
   public clear(): void {
     this.undo_stack = [];
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
+    this.clipboard = undefined;
   }
 
   public setApp(app: PixiApp): void {

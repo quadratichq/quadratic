@@ -1,5 +1,5 @@
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
-import { copyToClipboard, pasteFromClipboard } from '../../../actions/clipboard';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../actions/clipboard';
 import { SheetController } from '../../../transaction/sheetController';
 
 export function keyboardClipboard(
@@ -7,6 +7,7 @@ export function keyboardClipboard(
   interactionState: GridInteractionState,
   sheet_controller: SheetController
 ): boolean {
+  // Command + V
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyV') {
     pasteFromClipboard(sheet_controller, {
       x: interactionState.cursorPosition.x,
@@ -18,6 +19,22 @@ export function keyboardClipboard(
   // Command + C
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyC') {
     copyToClipboard(
+      sheet_controller,
+      {
+        x: interactionState.multiCursorPosition.originPosition.x,
+        y: interactionState.multiCursorPosition.originPosition.y,
+      },
+      {
+        x: interactionState.multiCursorPosition.terminalPosition.x,
+        y: interactionState.multiCursorPosition.terminalPosition.y,
+      }
+    );
+    return true;
+  }
+
+  // Command + X
+  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyX') {
+    cutToClipboard(
       sheet_controller,
       {
         x: interactionState.multiCursorPosition.originPosition.x,
