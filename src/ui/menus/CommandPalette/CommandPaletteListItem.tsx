@@ -34,7 +34,7 @@ export interface ComposableCommandPaletteListItemProps extends CommandPaletteLis
 export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
   const {
     selectedListItemIndex,
-    // closeCommandPalette,
+    closeCommandPalette,
     listItemIndex,
     action,
     disabled,
@@ -50,15 +50,17 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
   const displayText = fuzzysortResult ? fuzzysort.highlight(fuzzysortResult, (m, i) => <b key={i}>{m}</b>) : label;
 
   return (
-    <ListItem disablePadding key={label} data-command-bar-list-item-index={listItemIndex}>
+    <ListItem disablePadding key={label}>
       <ListItemButton
-        selected={listItemIndex === selectedListItemIndex}
+        // FYI: this is used to anitmate scroll through list items and trigger click on ENTER
+        data-command-bar-list-item-index={listItemIndex}
         disabled={disabled}
         onClick={() => {
           console.log('Fire action: ', label);
           action();
-          // closeCommandPalette();
+          closeCommandPalette();
         }}
+        selected={listItemIndex === selectedListItemIndex}
       >
         {icon ? (
           <>

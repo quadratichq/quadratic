@@ -65,6 +65,7 @@ export const CommandPalette = (props: Props) => {
     activeSearchValue: activeSearchValue,
     selectedListItemIndex: selectedListItemIndex,
   });
+
   const searchlabel = 'Search menus and commands…';
 
   return (
@@ -88,13 +89,10 @@ export const CommandPalette = (props: Props) => {
       }}
       onSubmit={(e: React.FormEvent) => {
         e.preventDefault();
-        alert("Enter doesn't work yet");
-        // if (results[selectedListItemIndex].obj.disabled) {
-        //   return;
-        // }
-
-        // console.log('Fire action: ', results[selectedListItemIndex].obj.name);
-        // closeCommandPalette();
+        const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
+        if (el !== undefined) {
+          (el as HTMLElement).click();
+        }
       }}
     >
       <div style={{ padding: '2px 4px', display: 'flex', alignItems: 'center' }}>
