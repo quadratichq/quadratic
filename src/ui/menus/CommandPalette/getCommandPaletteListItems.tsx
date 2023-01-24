@@ -10,7 +10,7 @@ interface ICommand {
   Component: Function;
 }
 
-const commands: Array<ICommand> = [...HelpListItems, ...ViewListItems, ...FileListItems];
+const commands: Array<ICommand> = [...FileListItems, ...ViewListItems, ...HelpListItems];
 
 export const getCommandPaletteListItems = (props: {
   sheetController: any;
