@@ -10,7 +10,6 @@ const ListItems = [
     label: 'View: Show row and column headings',
     Component: (props: any) => {
       const settings = useGridSettings();
-
       return (
         <CommandPaletteListItem
           {...props}
@@ -26,7 +25,6 @@ const ListItems = [
     label: 'View: Show axis',
     Component: (props: any) => {
       const settings = useGridSettings();
-
       return (
         <CommandPaletteListItem
           {...props}
@@ -42,13 +40,27 @@ const ListItems = [
     label: 'View: Show grid lines',
     Component: (props: any) => {
       const settings = useGridSettings();
-
       return (
         <CommandPaletteListItem
           {...props}
           icon={<CommandPaletteListItemCheckbox checked={settings.showGridLines} />}
           action={() => {
             settings.setShowGridLines(!settings.showGridLines);
+          }}
+        />
+      );
+    },
+  },
+  {
+    label: 'View: Show cell type outlines',
+    Component: (props: any) => {
+      const settings = useGridSettings();
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<CommandPaletteListItemCheckbox checked={settings.showCellTypeOutlines} />}
+          action={() => {
+            settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
           }}
         />
       );
