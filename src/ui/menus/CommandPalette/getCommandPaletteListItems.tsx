@@ -3,6 +3,7 @@ import fuzzysort from 'fuzzysort';
 import HelpListItems from './ListItems/Help';
 import ViewListItems from './ListItems/View';
 import FileListItems from './ListItems/File';
+import BordersListItems from './ListItems/Borders';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 
 interface ICommand {
@@ -10,7 +11,7 @@ interface ICommand {
   Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
 }
 
-const commands: Array<ICommand> = [...FileListItems, ...ViewListItems, ...HelpListItems];
+const commands: Array<ICommand> = [...FileListItems, ...ViewListItems, ...BordersListItems, ...HelpListItems];
 
 export const getCommandPaletteListItems = (props: {
   sheetController: any;
@@ -73,95 +74,12 @@ export const commands = [
     shortcut: 'Z',
     shortcutModifiers: [KeyboardSymbols.Command, KeyboardSymbols.Shift],
   },
-
   
-  {
-    name: 'Borders: Apply to all',
-    icon: <BorderAll />,
-  },
-  {
-    name: 'Borders: Apply outer',
-    icon: <BorderOuter />,
-  },
-  {
-    name: 'Borders: Apply inner',
-    icon: <BorderInner />,
-  },
-  {
-    name: 'Borders: Apply vertical',
-    icon: <BorderVertical />,
-  },
-  {
-    name: 'Borders: Apply horizontal',
-    icon: <BorderHorizontal />,
-  },
-  {
-    name: 'Borders: Apply left',
-    icon: <BorderLeft />,
-  },
-  {
-    name: 'Borders: Apply right',
-    icon: <BorderRight />,
-  },
-  {
-    name: 'Borders: Apply top',
-    icon: <BorderTop />,
-  },
-  {
-    name: 'Borders: Apply bottom',
-    icon: <BorderBottom />,
-  },
-  {
-    name: 'Borders: Clear all',
-    icon: <BorderClear />,
-  },
-  {
-    name: 'View: Show row and column headings',
-    icon: <Checkbox />,
-  },
-  {
-    name: 'View: Show axis',
-    icon: <Checkbox />,
-    // component: (props) =>
-    // <CommandPaletteListItem
-    //   name="View: Show axis"
-    //   icon=
-    //   result;
-    //   activeSearchQuery: string;
-    //   listItemIndex: number;
-    //   selectedListItemIndex: number;
-    //   closeCommandBar: Function;
-    //   action:>
-    // <ViewShowAxis {...props} />,
-  },
-  {
-    name: 'View: Show grid lines',
-    icon: <Checkbox />,
-  },
-  {
-    name: 'View: Show cell type outlines',
-    icon: <Checkbox />,
-  },
   {
     name: 'View: Show debug menu',
     icon: <Checkbox />,
   },
   // Make sure the zoom commands are in the same order as they are in the menu  
-  {
-    name: 'View: Zoom to 100%',
-    
-  },
-  {
-    name: 'View: Zoom to 200%',
-  },
-  {
-    name: 'Help: View the docs',
-    icon: <OpenInNew />,
-  },
-  {
-    name: 'Help: Report a problem',
-    icon: <OpenInNew />,
-  },
   {
     name: 'Import: CSV',
     disabled: true,
