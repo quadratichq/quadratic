@@ -1,6 +1,8 @@
 import { Box, Typography, Button, Tooltip, AvatarGroup, Avatar } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 // import { Avatar, AvatarGroup } from '@mui/material';
+import { useRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { colors } from '../../../theme/colors';
@@ -14,6 +16,7 @@ import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { useAuth0 } from '@auth0/auth0-react';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 
 interface IProps {
   app: PixiApp;
@@ -21,6 +24,7 @@ interface IProps {
 }
 
 export const TopBar = (props: IProps) => {
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { localFilename } = useLocalFiles();
   const { user } = useAuth0();
 
@@ -123,12 +127,31 @@ export const TopBar = (props: IProps) => {
                 </Avatar>
               </AvatarGroup>
             )}
+            <Button
+              style={{
+                color: colors.darkGray,
+                borderColor: colors.darkGray,
+                paddingTop: '1px',
+                paddingBottom: '1px',
+              }}
+              variant="outlined"
+              size="small"
+              onClick={() => {
+                setEditorInteractionState({
+                  ...editorInteractionState,
+                  showCommandPalette: true,
+                });
+              }}
+            >
+              Search <span style={{ marginLeft: '16px', opacity: '.5' }}>{KeyboardSymbols.Command}P</span>
+            </Button>
             <Tooltip title="Coming soon" arrow>
               <Button
                 style={{
                   color: colors.darkGray,
                   borderColor: colors.darkGray,
-                  padding: '1px 4px',
+                  paddingTop: '1px',
+                  paddingBottom: '1px',
                 }}
                 variant="outlined"
                 size="small"
