@@ -1,7 +1,8 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { copyToClipboard, pasteFromClipboard } from '../../../../core/actions/clipboard';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../core/actions/clipboard';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { ContentCopy, ContentPaste, ContentCut } from '@mui/icons-material';
 
 const ListItems = [
   {
@@ -35,6 +36,32 @@ const ListItems = [
     },
   },
   {
+    label: 'Cut',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      return (
+        <CommandPaletteListItem
+          {...props}
+          action={() => {
+            cutToClipboard(
+              props.sheetController,
+              {
+                x: props.interactionState.multiCursorPosition.originPosition.x,
+                y: props.interactionState.multiCursorPosition.originPosition.y,
+              },
+              {
+                x: props.interactionState.multiCursorPosition.terminalPosition.x,
+                y: props.interactionState.multiCursorPosition.terminalPosition.y,
+              }
+            );
+          }}
+          icon={<ContentCut />}
+          shortcut="X"
+          shortcutModifiers={[KeyboardSymbols.Command]}
+        />
+      );
+    },
+  },
+  {
     label: 'Copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
@@ -47,6 +74,7 @@ const ListItems = [
               props.interactionState.multiCursorPosition.terminalPosition
             );
           }}
+          icon={<ContentCopy />}
           shortcut="C"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
@@ -62,6 +90,7 @@ const ListItems = [
           action={() => {
             pasteFromClipboard(props.sheetController, props.interactionState.cursorPosition);
           }}
+          icon={<ContentPaste />}
           shortcut="V"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
