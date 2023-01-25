@@ -3,6 +3,7 @@ import fuzzysort from 'fuzzysort';
 import { ReactElement } from 'react';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
+import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 
 // Props generated in the root CommandPalette and passed to every CommandPaletteListItem
 export interface CommandPaletteListItemSharedProps {
@@ -14,6 +15,7 @@ export interface CommandPaletteListItemSharedProps {
 
   // @TODO these don't need to be passed to <CommandPaletteListItem>
   app: PixiApp;
+  interactionState: GridInteractionState;
   sheetController: SheetController;
 }
 

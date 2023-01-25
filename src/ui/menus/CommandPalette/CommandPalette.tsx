@@ -3,6 +3,7 @@ import { Divider, IconButton, InputBase, List, ListItem, ListItemButton, ListIte
 import { Search } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export const CommandPalette = (props: Props) => {
+  const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCommandPalette } = editorInteractionState;
 
@@ -61,6 +63,7 @@ export const CommandPalette = (props: Props) => {
   const ListItems = getCommandPaletteListItems({
     sheetController: props.sheetController,
     app: props.app,
+    interactionState,
     closeCommandPalette,
     activeSearchValue: activeSearchValue,
     selectedListItemIndex: selectedListItemIndex,

@@ -4,18 +4,27 @@ import HelpListItems from './ListItems/Help';
 import ViewListItems from './ListItems/View';
 import FileListItems from './ListItems/File';
 import BordersListItems from './ListItems/Borders';
+import EditListItems from './ListItems/Edit';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
+import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 
 interface ICommand {
   label: string;
   Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
 }
 
-const commands: Array<ICommand> = [...FileListItems, ...ViewListItems, ...BordersListItems, ...HelpListItems];
+const commands: Array<ICommand> = [
+  ...EditListItems,
+  ...FileListItems,
+  ...ViewListItems,
+  ...BordersListItems,
+  ...HelpListItems,
+];
 
 export const getCommandPaletteListItems = (props: {
   sheetController: any;
   app: any;
+  interactionState: GridInteractionState;
   closeCommandPalette: Function;
   activeSearchValue: string;
   selectedListItemIndex: number;
