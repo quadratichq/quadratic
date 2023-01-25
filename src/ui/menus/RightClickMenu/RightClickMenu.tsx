@@ -23,20 +23,6 @@ interface RightClickMenuProps {
 export const RightClickMenu = (props: RightClickMenuProps) => {
   return (
     <>
-      <div
-        style={{
-          position: 'absolute',
-          top: '0',
-          left: '0',
-          width: '100%',
-          height: '100%',
-          zIndex: '1000',
-          display: props.state === 'open' ? 'block' : 'none',
-        }}
-        onClick={(event) => {
-          props.onClose({ reason: 'blur' });
-        }}
-      ></div>
       <ControlledMenu
         state={props.state}
         anchorPoint={props.anchorPoint}

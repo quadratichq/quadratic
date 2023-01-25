@@ -91,11 +91,6 @@ export class PointerDown {
         return;
     }
 
-    // otherwise ignore right click
-    else if (rightClick) {
-      return;
-    }
-
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
