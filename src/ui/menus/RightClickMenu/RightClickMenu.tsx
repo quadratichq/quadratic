@@ -1,7 +1,7 @@
 import { ControlledMenu, MenuItem } from '@szhsin/react-menu';
 import { MenuState, MenuCloseEvent } from '@szhsin/react-menu/types';
 
-import { copyToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { SheetController } from '../../../core/transaction/sheetController';
 
@@ -45,6 +45,17 @@ export const RightClickMenu = (props: RightClickMenuProps) => {
           zIndex: '10000',
         }}
       >
+        <MenuItem
+          onClick={() => {
+            cutToClipboard(
+              props.sheet_controller,
+              props.interactionState.multiCursorPosition.originPosition,
+              props.interactionState.multiCursorPosition.terminalPosition
+            );
+          }}
+        >
+          Cut
+        </MenuItem>
         <MenuItem
           onClick={() => {
             copyToClipboard(
