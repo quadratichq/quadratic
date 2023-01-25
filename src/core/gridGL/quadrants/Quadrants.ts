@@ -48,14 +48,17 @@ export class Quadrants extends Container {
     const borderBounds = borders.getGridBounds();
     const bounds = intersects.rectangleUnion(gridBounds, borderBounds);
 
-    if (!bounds?.width && !bounds?.height) return;
+    if (!bounds) return;
 
     // iterate through visible grid bounds and prepare quadrants
-    for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
-      for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
-        const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
-        const quadrant = this.addChild(new Quadrant(this.app, quadrantX, quadrantY));
-        this.quadrants.set(`${quadrantX},${quadrantY}`, quadrant);
+    const yStart = Math.floor(bounds.top / QUADRANT_ROWS);
+    const yEnd = Math.floor(bounds.bottom / QUADRANT_ROWS);
+    const xStart = Math.floor(bounds.left / QUADRANT_COLUMNS);
+    const xEnd = Math.floor(bounds.right / QUADRANT_COLUMNS);
+    for (let y = yStart; y <= yEnd; y++) {
+      for (let x = xStart; x <= xEnd; x++) {
+        const quadrant = this.addChild(new Quadrant(this.app, x, y));
+        this.quadrants.set(`${x},${y}`, quadrant);
       }
     }
     if (debugShowCacheInfo) {
@@ -98,6 +101,7 @@ export class Quadrants extends Container {
         this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle)
       );
     }
+
     return false;
   }
 

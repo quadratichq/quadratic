@@ -17,7 +17,7 @@ export class GridSparse {
   private maxX = 0;
   private minY = 0;
   private maxY = 0;
-  private isEmpty = true;
+  isEmpty = true;
   cells = new Map<string, CellAndFormat>();
 
   constructor(gridOffsets: GridOffsets) {
@@ -183,7 +183,7 @@ export class GridSparse {
     return cells;
   }
 
-  getBounds(bounds: Rectangle): Rectangle {
+  getBounds(bounds: Rectangle): { bounds: Rectangle, boundsWithData: Rectangle | undefined } {
     const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
     const columnStart = columnStartIndex.index > this.minX ? columnStartIndex.index : this.minX;
     const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
@@ -194,7 +194,10 @@ export class GridSparse {
     const rowEndIndex = this.gridOffsets.getRowIndex(bounds.bottom);
     const rowEnd = rowEndIndex.index < this.maxY ? rowEndIndex.index : this.maxY;
 
-    return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
+    return {
+      bounds: new Rectangle(columnStartIndex.index, rowStartIndex.index, columnEndIndex.index - columnStartIndex.index, rowEndIndex.index - rowStartIndex.index),
+      boundsWithData: this.isEmpty ? undefined : new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart),
+    }
   }
 
   getGridBounds(): Rectangle | undefined {
@@ -203,7 +206,7 @@ export class GridSparse {
   }
 
   /** finds the minimum and maximum location for content in a row */
-  getRowMinMax(row: number): MinMax {
+  getRowMinMax(row: number): MinMax | undefined {
     let min = Infinity;
     let max = -Infinity;
     for (let x = this.minX; x <= this.maxX; x++) {
@@ -218,6 +221,7 @@ export class GridSparse {
         break;
       }
     }
+    if (min === Infinity) return;
     return { min, max };
   }
 

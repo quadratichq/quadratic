@@ -6,12 +6,7 @@ import { localFiles } from '../../gridDB/localFiles';
 
 const CopyCell = (cell: Cell | undefined): Cell | undefined => {
   if (cell === undefined) return undefined;
-  return {
-    x: cell.x,
-    y: cell.y,
-    value: cell.value,
-    type: cell.type,
-  };
+  return { ...cell };
 };
 
 export const SetCellRunner = (sheet: Sheet, statement: Statement, app?: PixiApp): Statement => {

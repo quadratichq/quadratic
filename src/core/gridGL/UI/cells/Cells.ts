@@ -1,10 +1,8 @@
-import { Container, Graphics, Rectangle } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
-import { debugShowQuadrantBoxes } from '../../../../debugFlags';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
 import { CellAndFormat } from '../../../gridDB/GridSparse';
 import { Cell, CellFormat } from '../../../gridDB/gridTypes';
-import { debugGetColor } from '../../helpers/debugColors';
 import { intersects } from '../../helpers/intersects';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { Coordinate } from '../../types/size';
@@ -32,7 +30,6 @@ export interface CellsDraw {
 
 export class Cells extends Container {
   private app: PixiApp;
-  private debug: Graphics;
   private cellsArray: CellsArray;
   private cellsBorder: CellsBorder;
   private labels: CellsLabels;
@@ -44,8 +41,6 @@ export class Cells extends Container {
   constructor(app: PixiApp) {
     super();
     this.app = app;
-
-    this.debug = this.addChild(new Graphics());
 
     // this is added directly in pixiApp to control z-index (instead of using pixi's sortable children)
     this.cellsBackground = new CellsBackground();
@@ -149,19 +144,20 @@ export class Cells extends Container {
 
   /**
    * Draws all items within the visible bounds
-   * @param bounds visible bounds
+   * @param boundsWithData visible bounds without cells outside of gridSparse bounds
+   * @param  bounds visible bounds with cells outside of gridSparse bounds
    * @param cellRectangle data for entries within the visible bounds
    * @param ignoreInput if false then don't draw input location (as it's handled by the DOM)
    * @returns a Rectangle of the content bounds (not including empty area), or undefined if nothing is drawn
    */
   drawBounds(options: {
+    boundsWithData: Rectangle;
     bounds: Rectangle;
-    fullBounds: Rectangle;
     cellRectangle: CellRectangle;
     ignoreInput?: boolean;
     isQuadrant?: boolean;
   }): Rectangle | undefined {
-    const { bounds, fullBounds, cellRectangle, ignoreInput, isQuadrant } = options;
+    const { boundsWithData, bounds, cellRectangle, ignoreInput, isQuadrant } = options;
     const renderedCells = new Set<string>();
 
     const { gridOffsets, render_dependency, grid } = this.app.sheet;
@@ -180,16 +176,16 @@ export class Cells extends Container {
         : undefined;
 
     // keeps track of screen position
-    const xStart = gridOffsets.getColumnPlacement(bounds.left).x;
-    const yStart = gridOffsets.getRowPlacement(bounds.top).y;
+    const xStart = gridOffsets.getColumnPlacement(boundsWithData.left).x;
+    const yStart = gridOffsets.getRowPlacement(boundsWithData.top).y;
     let y = yStart;
     let content: Rectangle | undefined;
 
     // iterate through the rows and columns
-    for (let row = bounds.top; row <= bounds.bottom; row++) {
+    for (let row = boundsWithData.top; row <= boundsWithData.bottom; row++) {
       let x = xStart;
       const height = gridOffsets.getRowHeight(row);
-      for (let column = bounds.left; column <= bounds.right; column++) {
+      for (let column = boundsWithData.left; column <= boundsWithData.right; column++) {
         const width = gridOffsets.getColumnWidth(column);
         const entry = cellRectangle.get(column, row);
 
@@ -205,8 +201,10 @@ export class Cells extends Container {
       y += height;
     }
 
+    const clipRectangle = gridOffsets.getScreenRectangle(bounds.x, bounds.y, bounds.right, bounds.bottom);
+
     // check for dependencies across entire bounds
-    const dependentCells = render_dependency.getDependentsInBounds(fullBounds);
+    const dependentCells = render_dependency.getDependentsInBounds(bounds);
     if (dependentCells.length) {
       dependentCells.forEach((coordinate) => {
         const key = `${coordinate.x},${coordinate.y}`;
@@ -216,13 +214,20 @@ export class Cells extends Container {
         if (entry) {
           const position = gridOffsets.getCell(coordinate.x, coordinate.y);
           const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
-          const rect = this.renderCell({ entry, ...position, isInput });
-          content = content ? intersects.rectangleUnion(content, rect) : rect;
+          const rendered = this.renderCell({ entry, ...position, isInput });
+          if (rendered) {
+            const clipped = intersects.rectangleClip(rendered, clipRectangle);
+            content = content ? intersects.rectangleUnion(content, clipped) : clipped;
+          }
         }
       });
     }
 
-    this.labels.update();
+    const rendered = this.labels.update();
+    if (rendered) {
+      const clipped = intersects.rectangleClip(rendered, clipRectangle);
+      content = content ? intersects.rectangleUnion(content, clipped) : clipped;
+    }
 
     // only calculate overflow when rendering quadrants so it's only done one time
     if (isQuadrant) this.handleOverflow();
@@ -308,26 +313,20 @@ export class Cells extends Container {
     const { grid, borders } = this.app.sheet;
 
     // draw cells
-    const bounds = grid.getBounds(fullBounds);
-    const cellRectangle = grid.getCells(bounds);
-    const rectCells = this.drawBounds({ bounds, fullBounds, cellRectangle, isQuadrant });
+    const { bounds, boundsWithData } = grid.getBounds(fullBounds);
+
+    let rectCells: Rectangle | undefined;
+    if (boundsWithData) {
+      const cellRectangle = grid.getCells(boundsWithData);
+      rectCells = this.drawBounds({ bounds, boundsWithData, cellRectangle, isQuadrant });
+    }
 
     // draw borders
     const borderBounds = borders.getBounds(fullBounds);
     const bordersList = borders.getBorders(borderBounds);
     const rectBorders = this.cellsBorder.drawBorders(bordersList);
 
-    const finalBounds = intersects.rectangleUnion(rectCells, rectBorders);
-
-    // debug boxes
-    if (isQuadrant && debugShowQuadrantBoxes && finalBounds) {
-      this.debug.clear();
-      this.debug.beginFill(debugGetColor(), 0.25);
-      this.debug.drawShape(finalBounds);
-      this.debug.endFill();
-    }
-
-    return fullBounds;
+    return intersects.rectangleUnion(rectCells, rectBorders);
   }
 
   changeVisibility(visible: boolean): void {

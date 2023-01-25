@@ -13,7 +13,7 @@ export const onDoubleClickCanvas = (
   // Get the double clicked cell, check if it is already set
   const x = interactionState.cursorPosition.x;
   const y = interactionState.cursorPosition.y;
-  const cell = sheet.getCell(x, y)?.cell;
+  const cell = sheet.getCellCopy(x, y);
   if (cell) {
     // open single line, for TEXT and COMPUTED
     if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {

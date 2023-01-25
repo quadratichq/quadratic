@@ -1,5 +1,5 @@
-import { SheetController } from './sheetController';
-import { Cell } from '../gridDB/gridTypes';
+import { SheetController } from '../sheetController';
+import { Cell } from '../../gridDB/gridTypes';
 
 const createCell = (pos: [number, number], value: string): Cell => {
   return {
@@ -70,4 +70,48 @@ test('SheetController', () => {
 
   expect(sc.has_redo()).toBeFalsy();
   expect(sc.has_undo()).toBeTruthy();
+});
+
+test('SheetController - code is saved from undo to redo', () => {
+  const sc = new SheetController();
+
+  sc.start_transaction();
+
+  const cell = {
+    x: 14,
+    y: 34,
+    value: 'hello',
+    type: 'PYTHON',
+    python_code: "print('hello')\n'hello'",
+    python_output: 'hello',
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  sc.execute_statement({
+    type: 'SET_CELL',
+    data: {
+      position: [14, 34],
+      value: cell,
+    },
+  });
+
+  sc.end_transaction();
+
+  expect(sc.sheet.grid.getCell(14, 34)?.value).toBe('hello');
+  expect(sc.sheet.grid.getCell(14, 34)?.python_code).toBe("print('hello')\n'hello'");
+  expect(sc.sheet.grid.getCell(14, 34)?.python_output).toBe('hello');
+  expect(sc.sheet.grid.getCell(14, 34)?.last_modified).toBe('2023-01-19T19:12:21.745Z');
+  expect(sc.sheet.grid.getCell(14, 34)?.type).toBe('PYTHON');
+
+  sc.undo();
+
+  expect(sc.sheet.grid.getCell(14, 34)).toBeUndefined();
+
+  sc.redo();
+
+  expect(sc.sheet.grid.getCell(14, 34)?.value).toBe('hello');
+  expect(sc.sheet.grid.getCell(14, 34)?.python_code).toBe("print('hello')\n'hello'");
+  expect(sc.sheet.grid.getCell(14, 34)?.python_output).toBe('hello');
+  expect(sc.sheet.grid.getCell(14, 34)?.last_modified).toBe('2023-01-19T19:12:21.745Z');
+  expect(sc.sheet.grid.getCell(14, 34)?.type).toBe('PYTHON');
 });

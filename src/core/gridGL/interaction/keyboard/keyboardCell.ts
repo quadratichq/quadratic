@@ -1,5 +1,6 @@
 import { EditorInteractionState } from '../../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
+import { DeleteCells } from '../../../gridDB/Cells/DeleteCells';
 import { SheetController } from '../../../transaction/sheetController';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import isAlphaNumeric from './isAlphaNumeric';
@@ -37,35 +38,25 @@ export function keyboardCell(options: {
   if (event.key === 'Backspace') {
     // delete a range or a single cell, depending on if MultiCursor is active
     if (interactionState.showMultiCursor) {
-      // delete a range of cells
-      const cells_to_delete = sheet_controller.sheet.grid.getNakedCells(
-        interactionState.multiCursorPosition.originPosition.x,
-        interactionState.multiCursorPosition.originPosition.y,
-        interactionState.multiCursorPosition.terminalPosition.x,
-        interactionState.multiCursorPosition.terminalPosition.y
-      );
-
-      sheet_controller.start_transaction();
-      cells_to_delete.forEach((cell) => {
-        sheet_controller.execute_statement({
-          type: 'SET_CELL',
-          data: { position: [cell.x, cell.y], value: undefined },
-        });
+      DeleteCells({
+        x0: interactionState.multiCursorPosition.originPosition.x,
+        y0: interactionState.multiCursorPosition.originPosition.y,
+        x1: interactionState.multiCursorPosition.terminalPosition.x,
+        y1: interactionState.multiCursorPosition.terminalPosition.y,
+        sheetController: sheet_controller,
+        app,
       });
-      sheet_controller.end_transaction();
-      // TODO: Needs to update any dependent cells
     } else {
       // delete a single cell
-      sheet_controller.predefined_transaction([
-        {
-          type: 'SET_CELL',
-          data: { position: [interactionState.cursorPosition.x, interactionState.cursorPosition.y], value: undefined },
-        },
-      ]);
-      // TODO: Needs to update any dependent cells
+      DeleteCells({
+        x0: interactionState.multiCursorPosition.originPosition.x,
+        y0: interactionState.multiCursorPosition.originPosition.y,
+        x1: interactionState.multiCursorPosition.originPosition.x,
+        y1: interactionState.multiCursorPosition.originPosition.y,
+        sheetController: sheet_controller,
+        app,
+      });
     }
-
-    // todo: update dependency graph
 
     event.preventDefault();
   }
@@ -73,7 +64,7 @@ export function keyboardCell(options: {
   if (event.key === 'Enter') {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
-    const cell = sheet_controller.sheet.getCell(x, y)?.cell;
+    const cell = sheet_controller.sheet.getCellCopy(x, y);
     if (cell) {
       if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
         // open single line
@@ -109,7 +100,7 @@ export function keyboardCell(options: {
   if (event.key === '/' || event.key === '=') {
     const x = interactionState.cursorPosition.x;
     const y = interactionState.cursorPosition.y;
-    const cell = sheet_controller.sheet.getCell(x, y)?.cell;
+    const cell = sheet_controller.sheet.getCellCopy(x, y);
     if (cell) {
       if (cell.type === 'PYTHON') {
         // Open code editor, or move code editor if already open.

@@ -14,8 +14,6 @@ from io import StringIO
 from contextlib import redirect_stdout
 from decimal import Decimal, DecimalException
 
-micropip.install("autopep8")
-
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
 
@@ -253,7 +251,7 @@ async def run_python(code):
     try:
         # Capture STDOut to sout
         with redirect_stdout(sout):
-            output_value = await pyodide.eval_code_async(
+            output_value = await pyodide.code.eval_code_async(
                 attempt_fix_await(code), globals=globals
             )
 

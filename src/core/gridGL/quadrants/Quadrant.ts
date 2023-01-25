@@ -1,6 +1,5 @@
-import { Container, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
-import { debugShowCacheInfo, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
-import { nearestPowerOf2 } from '../helpers/zoom';
+import { BitmapText, Container, Graphics, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
+import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS, QUADRANT_SCALE, QUADRANT_TEXTURE_SIZE } from './quadrantConstants';
@@ -21,11 +20,14 @@ export class Quadrant extends Container {
   visibleRectangle!: Rectangle;
   location: Coordinate;
 
+  private testGraphics: Graphics;
+
   constructor(app: PixiApp, quadrantX: number, quadrantY: number) {
     super();
     this.app = app;
     this.location = { x: quadrantX, y: quadrantY };
     this.subquadrants = [];
+    this.testGraphics = this.addChild(new Graphics());
     this.reposition();
   }
 
@@ -36,8 +38,8 @@ export class Quadrant extends Container {
     this.visibleRectangle = this.app.sheet.gridOffsets.getScreenRectangle(
       columnStart,
       rowStart,
-      QUADRANT_COLUMNS - 2,
-      QUADRANT_ROWS - 2
+      QUADRANT_COLUMNS,
+      QUADRANT_ROWS
     );
 
     // reposition subQuadrants based on any deltas
@@ -64,7 +66,7 @@ export class Quadrant extends Container {
   }
 
   // creates/reuses a Sprite with an appropriately sized RenderTexture
-  private getSubQuadrant(subQuadrantX: number, subQuadrantY: number, size: number): SubQuadrant {
+  private getSubQuadrant(subQuadrantX: number, subQuadrantY: number, width: number, height: number): SubQuadrant {
     let sprite = this.subquadrants.find((child) => {
       const spriteQuadrant = child as SubQuadrant;
       if (spriteQuadrant.subQuadrantX === subQuadrantX && spriteQuadrant.subQuadrantY === subQuadrantY) {
@@ -74,15 +76,15 @@ export class Quadrant extends Container {
     }) as SubQuadrant;
     if (sprite) {
       // reuse existing sprite and resize texture if needed
-      if (sprite.texture.width !== size || sprite.texture.height !== size) {
-        sprite.texture.resize(size, size);
+      if (sprite.texture.width !== width || sprite.texture.height !== height) {
+        sprite.texture.resize(width, height);
       }
       sprite.visible = true;
     } else {
       // create and position a Sprite with the appropriately sized RenderTexture
       const texture = RenderTexture.create({
-        width: size,
-        height: size,
+        width,
+        height,
         resolution: window.devicePixelRatio,
         mipmap: MIPMAP_MODES.ON,
       });
@@ -103,7 +105,6 @@ export class Quadrant extends Container {
     if (!this.dirty) return;
     this.clear();
     const app = this.app;
-
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
     const screenRectangle = app.sheet.gridOffsets.getScreenRectangle(
@@ -112,13 +113,19 @@ export class Quadrant extends Container {
       QUADRANT_COLUMNS,
       QUADRANT_ROWS
     );
-
+    if (debugShowQuadrantBoxes) {
+      this.testGraphics
+        .clear()
+        .beginFill(Math.floor(Math.random() * 0xffffff), 0.25)
+        .drawRect(screenRectangle.x, screenRectangle.y, screenRectangle.width, screenRectangle.height)
+        .endFill();
+    }
     // number of subquadrants necessary (should be equal to 1 unless heading size has changed)
     const xCount = Math.ceil(screenRectangle.width / QUADRANT_TEXTURE_SIZE);
     const yCount = Math.ceil(screenRectangle.height / QUADRANT_TEXTURE_SIZE);
 
-    const subQuadrantWidth = screenRectangle.width / xCount;
-    const subQuadrantHeight = screenRectangle.height / yCount;
+    const subQuadrantWidth = (screenRectangle.width / xCount);
+    const subQuadrantHeight = (screenRectangle.height / yCount);
 
     for (let subQuadrantY = 0; subQuadrantY < yCount; subQuadrantY++) {
       for (let subQuadrantX = 0; subQuadrantX < xCount; subQuadrantX++) {
@@ -139,15 +146,17 @@ export class Quadrant extends Container {
           transform.scale(QUADRANT_SCALE, QUADRANT_SCALE);
 
           // get the Sprite and resize the texture if needed
-          const size = Math.max(
-            nearestPowerOf2(reducedDrawingRectangle.width),
-            nearestPowerOf2(reducedDrawingRectangle.height)
-          );
-          const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, size);
+          // const textureWidth = subQuadrantWidth * QUADRANT_SCALE;
+          // const textureHeight = subQuadrantHeight * QUADRANT_SCALE;
+
+          // todo: the above is incorrect but ensures it works somewhat
+          const textureWidth = Math.min(subQuadrantWidth * QUADRANT_SCALE, reducedDrawingRectangle.width * QUADRANT_SCALE);
+          const textureHeight = Math.min(subQuadrantHeight * QUADRANT_SCALE, reducedDrawingRectangle.height * QUADRANT_SCALE);
+          const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, textureWidth, textureHeight);
 
           if (debugShowSubCacheInfo) {
             console.log(
-              `[Quadrant] ${this.debugName()}.[${subQuadrantX},${subQuadrantY}] [${cellBounds.toString()} texture size: ${size}`
+              `[Quadrant] ${this.debugName()}.[${subQuadrantX},${subQuadrantY}] [${cellBounds.toString()} texture size: (${textureWidth}, ${textureHeight})`
             );
           }
 
@@ -156,6 +165,12 @@ export class Quadrant extends Container {
           app.renderer.render(container, { renderTexture: subQuadrant.texture, transform, clear: true });
           app.cleanUpAfterQuadrantRendering();
           subQuadrant.position.set(reducedDrawingRectangle.left, reducedDrawingRectangle.top);
+
+          if (debugShowQuadrantBoxes) {
+            this.testGraphics
+              .lineStyle({ color: 0, width: 5 })
+              .drawRect(subQuadrantX * subQuadrantWidth + reducedDrawingRectangle.x, subQuadrantX * subQuadrantWidth + reducedDrawingRectangle.y, textureWidth / QUADRANT_SCALE, textureHeight / QUADRANT_SCALE)
+          }
         }
       }
     }

@@ -6,6 +6,7 @@ import { PixiApp } from '../pixiApp/PixiApp';
 import { localFiles } from '../../gridDB/localFiles';
 import { SheetController } from '../../transaction/sheetController';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
+import { DeleteCells } from '../../gridDB/Cells/DeleteCells';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -32,7 +33,7 @@ export const CellInput = (props: CellInputProps) => {
   if (!viewport || !container) return null;
 
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.current.x, cellLocation.current.y);
-  const cell = sheetController.sheet.getCell(cellLocation.current.x, cellLocation.current.y);
+  const cell = sheetController.sheet.getCellCopy(cellLocation.current.x, cellLocation.current.y);
 
   // Function used to move and scale the Input with the Grid
   function updateInputCSSTransform() {
@@ -85,41 +86,28 @@ export const CellInput = (props: CellInputProps) => {
       if (value === '') {
         // delete cell if input is empty, and wasn't empty before
         if (cell !== undefined)
-          sheetController.predefined_transaction([
-            {
-              type: 'SET_CELL',
-              data: {
-                position: [cellLocation.current.x, cellLocation.current.y],
-                value: undefined,
-              },
-            },
-          ]);
+          DeleteCells({
+            x0: cellLocation.current.x,
+            y0: cellLocation.current.y,
+            x1: cellLocation.current.x,
+            y1: cellLocation.current.y,
+            sheetController,
+            app,
+          });
       } else {
         // create cell with value at input location
-        await updateCellAndDCells(
-          {
-            x: cellLocation.current.x,
-            y: cellLocation.current.y,
-            type: 'TEXT',
-            value: value || '',
-          },
+        await updateCellAndDCells({
+          starting_cells: [
+            {
+              x: cellLocation.current.x,
+              y: cellLocation.current.y,
+              type: 'TEXT',
+              value: value || '',
+            },
+          ],
           sheetController,
-          app
-        );
-        // sheetController.predefined_transaction([
-        //   {
-        //     type: 'SET_CELL',
-        //     data: {
-        //       position: [cellLocation.current.x, cellLocation.current.y],
-        //       value: {
-        //         x: cellLocation.current.x,
-        //         y: cellLocation.current.y,
-        //         type: 'TEXT',
-        //         value: value || '',
-        //       },
-        //     },
-        //   },
-        // ]);
+          app,
+        });
       }
       app?.quadrants.quadrantChanged({ cells: [cellLocation.current] });
       localFiles.saveLastLocal(sheetController.sheet.export_file());
@@ -183,7 +171,6 @@ export const CellInput = (props: CellInputProps) => {
         fontFamily: 'OpenSans',
         fontSize: '14px',
         letterSpacing: '0.07px',
-        // margin: '-7px -10px 0 0',
       }}
       value={value}
       onChange={(event) => {

@@ -68,7 +68,7 @@ export class GridOffsets {
       for (let x = column; x < 0; x++) {
         position -= this.getColumnWidth(x);
       }
-      return { x: position, width: this.getColumnWidth(column) };
+      return { x: position, width: this.getColumnWidth(column) - 1 };
     }
   }
 
@@ -91,7 +91,7 @@ export class GridOffsets {
       for (let x = column; x < column + width; x++) {
         position += this.getColumnWidth(x);
       }
-      return { xStart, xEnd: position };
+      return { xStart, xEnd: position - 1 };
     }
 
     // calculate starting from -column to 0 to find xStart; xEnd is found in that iteration, or calculated directly if column + width is positive
@@ -100,6 +100,9 @@ export class GridOffsets {
 
       // if the column ends at 0 then xEnd = 0
       if (column + width === 0) {
+        for (let x = -1; x >= column; x--) {
+          position -= this.getColumnWidth(x);
+        }
         xEnd = 0;
       }
 
@@ -107,16 +110,22 @@ export class GridOffsets {
       else if (column + width > 0) {
         const placement = this.getColumnPlacement(column + width);
         xEnd = placement.x;
+        for (let x = -1; x >= column; x--) {
+          position -= this.getColumnWidth(x);
+        }
+        xStart = position;
       }
 
       // iterate starting from the -column until we hit -1 to find xStart
-      for (let x = -1; x >= column; x--) {
-        if (x === column + width - 1) {
-          xEnd = position;
+      else if (xEnd === undefined) {
+        for (let x = -1; x >= column; x--) {
+          if (x === column + width) {
+            xEnd = position;
+          }
+          position -= this.getColumnWidth(x);
         }
-        position -= this.getColumnWidth(x);
       }
-      return { xStart: position, xEnd: xEnd as number };
+      return { xStart: position, xEnd: (xEnd as number) - 1 };
     }
   }
 
@@ -136,7 +145,7 @@ export class GridOffsets {
       for (let y = row; y < 0; y++) {
         position -= this.getRowHeight(y);
       }
-      return { y: position, height: this.getRowHeight(row) };
+      return { y: position, height: this.getRowHeight(row) - 1 };
     }
   }
 
@@ -159,7 +168,7 @@ export class GridOffsets {
       for (let y = row; y < row + height; y++) {
         position += this.getRowHeight(y);
       }
-      return { yStart, yEnd: position };
+      return { yStart, yEnd: position - 1 };
     }
 
     // calculate starting from -row to 0 to find yStart; yEnd is found in that iteration, or calculated directly if row + height is positive
@@ -169,22 +178,32 @@ export class GridOffsets {
       // if the row ends at 0 then yEnd = 0
       if (row + height === 0) {
         yEnd = 0;
+        for (let y = -1; y >= row; y--) {
+          position -= this.getRowHeight(y);
+        }
+        yStart = position;
       }
 
       // if the row ends at a positive number then yEnd is calculated directly
       else if (row + height > 0) {
         const placement = this.getRowPlacement(row + height);
         yEnd = placement.y;
+        for (let y = -1; y >= row; y--) {
+          position -= this.getRowHeight(y);
+        }
+        yStart = position;
       }
 
       // iterate starting from the -row until we hit -1 to find yStart
-      for (let y = -1; y >= row; y--) {
-        if (y === row + height - 1) {
-          yEnd = position;
+      else if (yEnd === undefined) {
+        for (let y = -1; y >= row; y--) {
+          if (y === row + height) {
+            yEnd = position;
+          }
+          position -= this.getRowHeight(y);
         }
-        position -= this.getRowHeight(y);
       }
-      return { yStart: position, yEnd: yEnd as number };
+      return { yStart: position, yEnd: (yEnd as number) - 1 };
     }
   }
 
@@ -280,7 +299,7 @@ export class GridOffsets {
   getScreenRectangle(column: number, row: number, width: number, height: number): Rectangle {
     const { xStart, xEnd } = this.getColumnsStartEnd(column, width);
     const { yStart, yEnd } = this.getRowsStartEnd(row, height);
-    return new Rectangle(xStart, yStart, xEnd - xStart, yEnd - yStart);
+    return new Rectangle(xStart, yStart, xEnd - xStart - 1, yEnd - yStart - 1);
   }
 
   /**
@@ -294,7 +313,7 @@ export class GridOffsets {
   getCellRectangle(x: number, y: number, width: number, height: number): Rectangle {
     const { column: columnStart, row: rowStart } = this.getRowColumnFromWorld(x, y);
     const { column: columnEnd, row: rowEnd } = this.getRowColumnFromWorld(x + width, y + height);
-    return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
+    return new Rectangle(columnStart, rowStart, columnEnd - columnStart - 1, rowEnd - rowStart - 1);
   }
 
   delete(options: { rows: number[]; columns: number[] }): void {
