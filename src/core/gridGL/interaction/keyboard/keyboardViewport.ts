@@ -21,15 +21,6 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if (event.code === 'Escape') {
-    if (editorInteractionState.showCommandPalette) {
-      setEditorInteractionState({
-        ...editorInteractionState,
-        showCommandPalette: !editorInteractionState.showCommandPalette,
-      });
-    }
-  }
-
   if ((event.metaKey || event.ctrlKey) && event.code === 'Equal') {
     zoomIn(viewport);
     return true;

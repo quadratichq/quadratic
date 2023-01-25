@@ -1,5 +1,15 @@
 import React, { useEffect } from 'react';
-import { Divider, IconButton, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
+import {
+  Dialog,
+  Divider,
+  IconButton,
+  InputBase,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Paper,
+} from '@mui/material';
 import { Search } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -72,63 +82,62 @@ export const CommandPalette = (props: Props) => {
   const searchlabel = 'Search menus and commands…';
 
   return (
-    <Paper
-      component="form"
-      elevation={12}
-      className="container"
-      style={{ width: 450 }}
-      onKeyUp={(e: React.KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          closeCommandPalette();
-        } else if (e.key === 'ArrowDown') {
+    <Dialog open={true} onClose={closeCommandPalette} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
+      <Paper
+        component="form"
+        elevation={12}
+        className="containerz"
+        onKeyUp={(e: React.KeyboardEvent) => {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            e.stopPropagation();
+            setSelectedListItemIndex(selectedListItemIndex === ListItems.length - 1 ? 0 : selectedListItemIndex + 1);
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            e.stopPropagation();
+            setSelectedListItemIndex(selectedListItemIndex === 0 ? ListItems.length - 1 : selectedListItemIndex - 1);
+          }
+        }}
+        onSubmit={(e: React.FormEvent) => {
           e.preventDefault();
-          e.stopPropagation();
-          setSelectedListItemIndex(selectedListItemIndex === ListItems.length - 1 ? 0 : selectedListItemIndex + 1);
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          e.stopPropagation();
-          setSelectedListItemIndex(selectedListItemIndex === 0 ? ListItems.length - 1 : selectedListItemIndex - 1);
-        }
-      }}
-      onSubmit={(e: React.FormEvent) => {
-        e.preventDefault();
-        const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
-        if (el !== undefined) {
-          (el as HTMLElement).click();
-        }
-      }}
-    >
-      <div style={{ padding: '2px 4px', display: 'flex', alignItems: 'center' }}>
-        <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
-          <Search />
-        </IconButton>
+          const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
+          if (el !== undefined) {
+            (el as HTMLElement).click();
+          }
+        }}
+      >
+        <div style={{ padding: '2px 4px', display: 'flex', alignItems: 'center' }}>
+          <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
+            <Search />
+          </IconButton>
 
-        <InputBase
-          sx={{ flex: 1 }}
-          placeholder={searchlabel}
-          inputProps={{ 'aria-label': searchlabel }}
-          autoFocus
-          value={activeSearchValue}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setSelectedListItemIndex(0);
-            setActiveSearchValue(event.target.value);
-          }}
-        />
-      </div>
-      <Divider />
-      <div style={{ height: '300px', overflow: 'scroll' }}>
-        <List dense={true} disablePadding>
-          {ListItems.length ? (
-            ListItems
-          ) : (
-            <ListItem disablePadding>
-              <ListItemButton disabled>
-                <ListItemText inset primary="No matches" />
-              </ListItemButton>
-            </ListItem>
-          )}
-        </List>
-      </div>
-    </Paper>
+          <InputBase
+            sx={{ flex: 1 }}
+            placeholder={searchlabel}
+            inputProps={{ 'aria-label': searchlabel }}
+            autoFocus
+            value={activeSearchValue}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setSelectedListItemIndex(0);
+              setActiveSearchValue(event.target.value);
+            }}
+          />
+        </div>
+        <Divider />
+        <div style={{ height: '300px', overflow: 'scroll' }}>
+          <List dense={true} disablePadding>
+            {ListItems.length ? (
+              ListItems
+            ) : (
+              <ListItem disablePadding>
+                <ListItemButton disabled>
+                  <ListItemText inset primary="No matches" />
+                </ListItemButton>
+              </ListItem>
+            )}
+          </List>
+        </div>
+      </Paper>
+    </Dialog>
   );
 };
