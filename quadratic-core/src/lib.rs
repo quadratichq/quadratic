@@ -4,15 +4,12 @@ use wasm_bindgen::prelude::*;
 
 #[macro_use]
 pub mod util;
-pub mod codestore;
-pub mod dgraph;
+mod cell;
 pub mod formulas;
-pub mod grid;
+mod position;
 
-#[cfg(test)]
-mod tests;
-
-pub use grid::*;
+pub use cell::{Cell, CellTypes, JsCell};
+pub use position::Pos;
 
 pub const QUADRANT_SIZE: u64 = 16;
 
@@ -28,28 +25,4 @@ extern "C" {
 pub fn hello() {
     // say hello, when loaded successfully
     log("[WASM/Rust] quadratic-core ready")
-}
-
-#[test]
-fn test_ser() {
-    let mut grid = Grid::new();
-    for i in 0..36 {
-        let x = i % 6;
-        let y = i / 6;
-        if (x / 3 + y / 2) % 2 == 1 {
-            grid.set_cell(Pos { x, y }, Cell::Int(100 + 10 * y + x));
-        }
-    }
-    println!("{:?}", grid);
-    dbg!(&grid);
-    println!();
-    println!();
-    println!();
-    for y in 0..6 {
-        for x in 0..6 {
-            print!("{:?},", grid.get_cell(Pos { x, y }));
-        }
-        println!();
-    }
-    // panic!()
 }
