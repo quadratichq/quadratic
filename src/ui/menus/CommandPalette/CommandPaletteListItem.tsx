@@ -13,7 +13,10 @@ export interface CommandPaletteListItemSharedProps {
   listItemIndex: number;
   selectedListItemIndex: number;
 
-  // @TODO these don't need to be passed to <CommandPaletteListItem>
+  // NOTE: possible optimiziation here.
+  // Props are passed dynamically to subcomponent, e.g. <CommandPaletteListItem {...props}>
+  // but these aren’t needed in that component but are in the intermediary one
+  // for capturing stateful values when needed.
   app: PixiApp;
   interactionState: GridInteractionState;
   sheetController: SheetController;
