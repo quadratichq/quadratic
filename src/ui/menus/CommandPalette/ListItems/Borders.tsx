@@ -1,7 +1,6 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { useBorders, ChangeBorder } from '../../TopBar/SubMenus/useBorders';
-import { BorderType } from '../../../../core/gridDB/gridTypes';
 import {
   BorderAll,
   BorderClear,
@@ -14,7 +13,8 @@ import {
   BorderTop,
   BorderBottom,
 } from '@mui/icons-material';
-import { BorderDashed, BorderDouble, BorderDotted, BorderThin, BorderThick, BorderMedium } from '../../../icons';
+// import { BorderType } from '../../../../core/gridDB/gridTypes';
+// import { BorderDashed, BorderDouble, BorderDotted, BorderThin, BorderThick, BorderMedium } from '../../../icons';
 
 const ListItems = [
   // Convenience to generate all the border component variations
@@ -76,14 +76,15 @@ const ListItems = [
       );
     },
   },
-  ...[
-    { label: 'Borders: Style thin', icon: <BorderThin />, changeBordersArgs: { type: BorderType.line1 } },
-    { label: 'Borders: Style medium', icon: <BorderMedium />, changeBordersArgs: { type: BorderType.line2 } },
-    { label: 'Borders: Style thick', icon: <BorderThick />, changeBordersArgs: { type: BorderType.line3 } },
-    { label: 'Borders: Style dashed', icon: <BorderDashed />, changeBordersArgs: { type: BorderType.dashed } },
-    { label: 'Borders: Style dotted', icon: <BorderDotted />, changeBordersArgs: { type: BorderType.dotted } },
-    { label: 'Borders: Style double', icon: <BorderDouble />, changeBordersArgs: { type: BorderType.double } },
-  ].map(generateListItem),
+  // We can uncomment these once we figure out how border styles will work
+  // ...[
+  //   { label: 'Borders: Style thin', icon: <BorderThin />, changeBordersArgs: { type: BorderType.line1 } },
+  //   { label: 'Borders: Style medium', icon: <BorderMedium />, changeBordersArgs: { type: BorderType.line2 } },
+  //   { label: 'Borders: Style thick', icon: <BorderThick />, changeBordersArgs: { type: BorderType.line3 } },
+  //   { label: 'Borders: Style dashed', icon: <BorderDashed />, changeBordersArgs: { type: BorderType.dashed } },
+  //   { label: 'Borders: Style dotted', icon: <BorderDotted />, changeBordersArgs: { type: BorderType.dotted } },
+  //   { label: 'Borders: Style double', icon: <BorderDouble />, changeBordersArgs: { type: BorderType.double } },
+  // ].map(generateListItem),
 ];
 
 function generateListItem({
