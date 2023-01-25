@@ -1,10 +1,39 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { copyToClipboard, pasteFromClipboard } from '../../../../core/actions/clipboard';
-import { ContentCopy, ContentPaste } from '@mui/icons-material';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 
 const ListItems = [
+  {
+    label: 'Undo',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      return (
+        <CommandPaletteListItem
+          {...props}
+          action={() => {
+            props.sheetController.undo();
+          }}
+          shortcut="Z"
+          shortcutModifiers={[KeyboardSymbols.Command]}
+        />
+      );
+    },
+  },
+  {
+    label: 'Redo',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      return (
+        <CommandPaletteListItem
+          {...props}
+          action={() => {
+            props.sheetController.redo();
+          }}
+          shortcut="Z"
+          shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
+        />
+      );
+    },
+  },
   {
     label: 'Copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
@@ -18,7 +47,6 @@ const ListItems = [
               props.interactionState.multiCursorPosition.terminalPosition
             );
           }}
-          icon={<ContentCopy />}
           shortcut="C"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
@@ -34,7 +62,6 @@ const ListItems = [
           action={() => {
             pasteFromClipboard(props.sheetController, props.interactionState.cursorPosition);
           }}
-          icon={<ContentPaste />}
           shortcut="V"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />

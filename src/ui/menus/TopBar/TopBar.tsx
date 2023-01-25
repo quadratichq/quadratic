@@ -143,7 +143,7 @@ export const TopBar = (props: IProps) => {
                 });
               }}
             >
-              Search <span style={{ marginLeft: '16px', opacity: '.5' }}>{KeyboardSymbols.Command}P</span>
+              Actions <span style={{ marginLeft: '8px', opacity: '.5' }}>{KeyboardSymbols.Command}P</span>
             </Button>
             <Tooltip title="Coming soon" arrow>
               <Button
