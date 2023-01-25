@@ -18,7 +18,6 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
-import './styles.css';
 
 interface Props {
   app: PixiApp;

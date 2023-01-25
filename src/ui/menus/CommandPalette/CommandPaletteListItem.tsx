@@ -48,8 +48,6 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
     fuzzysortResult,
   } = props;
 
-  // If there's no active search value, don't run `fuzzysort.highlight`.
-  // It will crash.
   const displayText = fuzzysortResult ? fuzzysort.highlight(fuzzysortResult, (m, i) => <b key={i}>{m}</b>) : label;
 
   return (
@@ -65,14 +63,9 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
         }}
         selected={listItemIndex === selectedListItemIndex}
       >
-        {icon ? (
-          <>
-            <ListItemIcon>{icon}</ListItemIcon>
-            <ListItemText primary={displayText} />
-          </>
-        ) : (
-          <ListItemText primary={displayText} inset={!icon} />
-        )}
+        {icon && <ListItemIcon>{icon}</ListItemIcon>}
+        <ListItemText primary={displayText} inset={icon ? false : true} />
+
         {shortcut && (
           <ListItemSecondaryAction style={{ fontSize: '14px', opacity: '.5' }}>
             {shortcutModifiers ? shortcutModifiers : ''}

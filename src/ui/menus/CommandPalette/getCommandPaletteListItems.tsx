@@ -3,16 +3,23 @@ import fuzzysort from 'fuzzysort';
 import HelpListItems from './ListItems/Help';
 import ViewListItems from './ListItems/View';
 import FileListItems from './ListItems/File';
+import EditListItems from './ListItems/Edit';
 import BordersListItems from './ListItems/Borders';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 
-interface ICommand {
+interface Commands {
   label: string;
   Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
 }
 
-const commands: Array<ICommand> = [...FileListItems, ...ViewListItems, ...BordersListItems, ...HelpListItems];
+const commands: Array<Commands> = [
+  ...FileListItems,
+  ...EditListItems,
+  ...ViewListItems,
+  ...BordersListItems,
+  ...HelpListItems,
+];
 
 export const getCommandPaletteListItems = (props: {
   sheetController: any;
