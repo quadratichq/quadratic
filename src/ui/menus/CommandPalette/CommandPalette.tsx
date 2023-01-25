@@ -105,8 +105,8 @@ export const CommandPalette = (props: Props) => {
           }
         }}
       >
-        <div style={{ padding: '2px 4px', display: 'flex', alignItems: 'center' }}>
-          <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
+        <div style={{ padding: '4px 8px', display: 'flex', alignItems: 'center' }}>
+          <IconButton type="button" sx={{ p: '8px', mr: '8px' }} aria-label="search">
             <Search />
           </IconButton>
 
@@ -123,7 +123,7 @@ export const CommandPalette = (props: Props) => {
           />
         </div>
         <Divider />
-        <div style={{ height: '300px', overflow: 'scroll' }}>
+        <div style={{ height: '240px', overflow: 'scroll' }}>
           <List dense={true} disablePadding>
             {ListItems.length ? (
               ListItems

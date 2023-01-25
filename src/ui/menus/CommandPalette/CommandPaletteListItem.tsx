@@ -49,6 +49,7 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
   } = props;
 
   const displayText = fuzzysortResult ? fuzzysort.highlight(fuzzysortResult, (m, i) => <b key={i}>{m}</b>) : label;
+  const iconTextSpacing = '40px';
 
   return (
     <ListItem disablePadding key={label}>
@@ -57,14 +58,17 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
         data-command-bar-list-item-index={listItemIndex}
         disabled={disabled}
         onClick={() => {
-          console.log('Fire action: ', label);
           action();
           closeCommandPalette();
         }}
         selected={listItemIndex === selectedListItemIndex}
       >
-        {icon && <ListItemIcon>{icon}</ListItemIcon>}
-        <ListItemText primary={displayText} inset={icon ? false : true} />
+        {icon && <ListItemIcon sx={{ minWidth: iconTextSpacing }}>{icon}</ListItemIcon>}
+        <ListItemText
+          primary={displayText}
+          inset={icon ? false : true}
+          sx={icon ? {} : { paddingLeft: iconTextSpacing }}
+        />
 
         {shortcut && (
           <ListItemSecondaryAction style={{ fontSize: '14px', opacity: '.5' }}>
