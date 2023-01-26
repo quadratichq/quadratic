@@ -11,11 +11,11 @@ import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
 import ContextMenu from '../../ui/menus/RightClickMenu';
 import { SheetController } from '../transaction/sheetController';
-import { FormatFloatingMenu } from '../../ui/menus/FloatingMenu/FormatFloatingMenu';
+import { FloatingFormatMenu } from '../../ui/menus/FloatingMenu/FloatingFormatMenu';
 
 interface IProps {
   sheetController: SheetController;
-  app?: PixiApp;
+  app: PixiApp;
 }
 
 export default function QuadraticGrid(props: IProps) {
@@ -95,14 +95,13 @@ export default function QuadraticGrid(props: IProps) {
         app={props.app}
         sheetController={props.sheetController}
       />
-      <FormatFloatingMenu
+      <FloatingFormatMenu
         interactionState={interactionState}
         setInteractionState={setInteractionState}
         container={container}
         app={props.app}
         sheetController={props.sheetController}
-        contextMenuState={rightClickMenuState}
-      ></FormatFloatingMenu>
+      ></FloatingFormatMenu>
       <ContextMenu
         sheet_controller={props.sheetController}
         state={rightClickMenuState}

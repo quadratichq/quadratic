@@ -16,7 +16,7 @@ import {
   BorderClear,
 } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ColorResult } from 'react-color';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../../atoms/gridInteractionStateAtom';
@@ -157,83 +157,74 @@ export function useGetBorderMenu(props: Props): JSX.Element {
   };
 
   return (
-    <SubMenu
-      label={
-        <Fragment>
-          <BorderAll style={menuItemIconStyles}></BorderAll>
-          <span>Border</span>
-        </Fragment>
-      }
-    >
-      <div className="borderMenu">
-        <div className="borderMenuLines">
-          <div className="borderMenuLine">
-            <BorderSelectionButton type={BorderSelection.all} title="All borders" label={<BorderAll />} />
-            <BorderSelectionButton
-              type={BorderSelection.inner}
-              title="Inner borders"
-              label={<BorderInner />}
-              disabled={!multiCursor}
-            />
-            <BorderSelectionButton type={BorderSelection.outer} title="Outer borders" label={<BorderOuter />} />
-            <BorderSelectionButton
-              type={BorderSelection.horizontal}
-              title="Horizontal borders"
-              label={<BorderHorizontal />}
-              disabled={!multiCursor}
-            />
-            <BorderSelectionButton
-              type={BorderSelection.vertical}
-              title="Vertical borders"
-              label={<BorderVertical />}
-              disabled={!multiCursor}
-            />
-          </div>
-          <div className="borderMenuLine">
-            <BorderSelectionButton type={BorderSelection.left} title="Left border" label={<BorderLeft />} />
-            <BorderSelectionButton type={BorderSelection.top} title="Top border" label={<BorderTop />} />
-            <BorderSelectionButton type={BorderSelection.right} title="Right border" label={<BorderRight />} />
-            <BorderSelectionButton type={BorderSelection.bottom} title="Bottom border" label={<BorderBottom />} />
-            <BorderSelectionButton type={BorderSelection.clear} title="Clear borders" label={<BorderClear />} />
-          </div>
+    <div className="borderMenu">
+      <div className="borderMenuLines">
+        <div className="borderMenuLine">
+          <BorderSelectionButton type={BorderSelection.all} title="All borders" label={<BorderAll />} />
+          <BorderSelectionButton
+            type={BorderSelection.inner}
+            title="Inner borders"
+            label={<BorderInner />}
+            disabled={!multiCursor}
+          />
+          <BorderSelectionButton type={BorderSelection.outer} title="Outer borders" label={<BorderOuter />} />
+          <BorderSelectionButton
+            type={BorderSelection.horizontal}
+            title="Horizontal borders"
+            label={<BorderHorizontal />}
+            disabled={!multiCursor}
+          />
+          <BorderSelectionButton
+            type={BorderSelection.vertical}
+            title="Vertical borders"
+            label={<BorderVertical />}
+            disabled={!multiCursor}
+          />
         </div>
-        <div className="borderMenuFormatting">
-          <SubMenu
-            className="borderSubmenu"
-            id="FillBorderColorMenuID"
-            menuStyles={{
-              padding: '0px',
-            }}
-            label={<BorderColor style={{ ...menuItemIconStyles, color }}></BorderColor>}
-          >
-            <QColorPicker onChangeComplete={handleChangeBorderColor}></QColorPicker>
-          </SubMenu>
-          <SubMenu
-            id="BorderLineStyleMenuID"
-            className="borderSubmenu"
-            label={<LineStyle style={menuItemIconStyles}></LineStyle>}
-          >
-            <MenuItem onClick={(e) => handleChangeBorderType(e)}>
-              <div className="lineStyleBorder normalBorder"></div>
-            </MenuItem>
-            <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.line2)}>
-              <div className="lineStyleBorder doubleBorder"></div>
-            </MenuItem>
-            <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.line3)}>
-              <div className="lineStyleBorder tripleBorder"></div>
-            </MenuItem>
-            <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.dashed)}>
-              <div className="lineStyleBorder dashedBorder"></div>
-            </MenuItem>
-            <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.dotted)}>
-              <div className="lineStyleBorder dottedBorder"></div>
-            </MenuItem>
-            <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.double)}>
-              <div className="lineStyleBorder twoLineBorder"></div>
-            </MenuItem>
-          </SubMenu>
+        <div className="borderMenuLine">
+          <BorderSelectionButton type={BorderSelection.left} title="Left border" label={<BorderLeft />} />
+          <BorderSelectionButton type={BorderSelection.top} title="Top border" label={<BorderTop />} />
+          <BorderSelectionButton type={BorderSelection.right} title="Right border" label={<BorderRight />} />
+          <BorderSelectionButton type={BorderSelection.bottom} title="Bottom border" label={<BorderBottom />} />
+          <BorderSelectionButton type={BorderSelection.clear} title="Clear borders" label={<BorderClear />} />
         </div>
       </div>
-    </SubMenu>
+      <div className="borderMenuFormatting">
+        <SubMenu
+          className="borderSubmenu"
+          id="FillBorderColorMenuID"
+          menuStyles={{
+            padding: '0px',
+          }}
+          label={<BorderColor style={{ ...menuItemIconStyles, color }}></BorderColor>}
+        >
+          <QColorPicker onChangeComplete={handleChangeBorderColor}></QColorPicker>
+        </SubMenu>
+        <SubMenu
+          id="BorderLineStyleMenuID"
+          className="borderSubmenu"
+          label={<LineStyle style={menuItemIconStyles}></LineStyle>}
+        >
+          <MenuItem onClick={(e) => handleChangeBorderType(e)}>
+            <div className="lineStyleBorder normalBorder"></div>
+          </MenuItem>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.line2)}>
+            <div className="lineStyleBorder doubleBorder"></div>
+          </MenuItem>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.line3)}>
+            <div className="lineStyleBorder tripleBorder"></div>
+          </MenuItem>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.dashed)}>
+            <div className="lineStyleBorder dashedBorder"></div>
+          </MenuItem>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.dotted)}>
+            <div className="lineStyleBorder dottedBorder"></div>
+          </MenuItem>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.double)}>
+            <div className="lineStyleBorder twoLineBorder"></div>
+          </MenuItem>
+        </SubMenu>
+      </div>
+    </div>
   );
 }

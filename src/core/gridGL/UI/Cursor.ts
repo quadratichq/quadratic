@@ -1,4 +1,4 @@
-import { Circle, Graphics, Rectangle } from 'pixi.js';
+import { Graphics, Rectangle } from 'pixi.js';
 import { colors } from '../../../theme/colors';
 import { PixiApp } from '../pixiApp/PixiApp';
 

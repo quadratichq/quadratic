@@ -2,25 +2,36 @@ import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
-import { Divider, IconButton, Toolbar } from '@mui/material';
+import { Divider, IconButton, MenuItem, Toolbar } from '@mui/material';
 import { BorderAll, FormatBold, FormatClear, FormatColorFill, FormatItalic } from '@mui/icons-material';
 import { colors } from '../../../theme/colors';
-import { MenuState } from '@szhsin/react-menu';
+import { Menu } from '@szhsin/react-menu';
+import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
+import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
+import { useBorders } from '../TopBar/SubMenus/useBorders';
+import { QColorPicker } from '../../components/qColorPicker';
 
-interface FormatFloatingMenuProps {
+interface Props {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
-  app?: PixiApp;
+  app: PixiApp;
   sheetController: SheetController;
-  contextMenuState: MenuState | undefined;
 }
 
-export const FormatFloatingMenu = (props: FormatFloatingMenuProps) => {
-  const { interactionState, app, container, sheetController, contextMenuState } = props;
+export const FloatingFormatMenu = (props: Props) => {
+  const { interactionState, app, container, sheetController } = props;
   const viewport = app?.viewport;
 
   const menuDiv = useRef<HTMLDivElement>(null);
+  const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
+  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(sheetController, props.app);
+  const { clearBorders } = useBorders(sheetController.sheet, props.app);
+
+  const handleClearFormatting = useCallback(() => {
+    clearFormatting();
+    clearBorders();
+  }, [clearFormatting, clearBorders]);
 
   // Function used to move and scale the Input with the Grid
   const updateInputCSSTransform = useCallback(() => {
@@ -69,8 +80,6 @@ export const FormatFloatingMenu = (props: FormatFloatingMenuProps) => {
 
     if (!interactionState.showMultiCursor) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
 
-    if (contextMenuState === 'open') if (menuDiv.current) menuDiv.current.style.visibility = 'visible';
-
     return transform;
   }, [
     app,
@@ -80,7 +89,6 @@ export const FormatFloatingMenu = (props: FormatFloatingMenuProps) => {
     interactionState.showMultiCursor,
     interactionState.multiCursorPosition,
     sheetController.sheet.gridOffsets,
-    contextMenuState,
   ]);
 
   useEffect(() => {
@@ -112,7 +120,7 @@ export const FormatFloatingMenu = (props: FormatFloatingMenuProps) => {
         left: '0',
         transformOrigin: '0 0',
         transform,
-        pointerEvents: 'none',
+        pointerEvents: 'auto',
         zIndex: 9,
         backgroundColor: 'white',
         border: `1px solid ${colors.mediumGray}`,
@@ -129,15 +137,23 @@ export const FormatFloatingMenu = (props: FormatFloatingMenuProps) => {
           minHeight: '0px',
         }}
       >
-        <IconButton>
-          <FormatColorFill fontSize={iconSize}></FormatColorFill>
-        </IconButton>
-        <IconButton>
-          <BorderAll fontSize={iconSize} />
-        </IconButton>
-        <IconButton>
+        <Menu menuButton={<IconButton>{<FormatColorFill fontSize={iconSize}></FormatColorFill>}</IconButton>}>
+          <QColorPicker onChangeComplete={changeFillColor} />
+          <MenuItem onClick={removeFillColor}>Clear</MenuItem>
+        </Menu>
+        <Menu
+          menuButton={
+            <IconButton>
+              <BorderAll fontSize={iconSize} />
+            </IconButton>
+          }
+        >
+          {borders}
+        </Menu>
+        <IconButton onClick={handleClearFormatting}>
           <FormatClear fontSize={iconSize} />
         </IconButton>
+
         <Divider
           orientation="vertical"
           flexItem
