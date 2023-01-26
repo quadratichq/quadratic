@@ -5,21 +5,18 @@ import { PixiApp } from '../pixiApp/PixiApp';
 const CURSOR_THICKNESS = 1.5;
 const FILL_ALPHA = 0.1;
 const INDICATOR_SIZE = 8;
-const FORMAT_INDICATOR_SIZE = 4;
 const INDICATOR_PADDING = 1;
 const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 
 export class Cursor extends Graphics {
   private app: PixiApp;
   indicator: Rectangle;
-  format_indicator: Circle;
   dirty = true;
 
   constructor(app: PixiApp) {
     super();
     this.app = app;
     this.indicator = new Rectangle();
-    this.format_indicator = new Circle();
   }
 
   private drawCursor(): void {
@@ -36,10 +33,6 @@ export class Cursor extends Graphics {
       alignment: 0,
     });
 
-    // draw format indicator
-    const formatIndicatorSize = Math.max(FORMAT_INDICATOR_SIZE / viewport.scale.x, 2);
-    this.format_indicator.radius = this.format_indicator.radius = formatIndicatorSize;
-
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
     this.indicator.width = this.indicator.height = indicatorSize;
@@ -55,13 +48,11 @@ export class Cursor extends Graphics {
     }
 
     // draw cursor
-    // this.moveTo(x + formatIndicatorOffset, y);
     this.moveTo(x, y);
     this.lineTo(x + width, y);
     this.lineTo(x + width, y + height - indicatorOffset);
     this.moveTo(x + width - indicatorOffset, y + height);
     this.lineTo(x, y + height);
-    // this.lineTo(x, y + formatIndicatorOffset);
     this.lineTo(x, y);
   }
 
@@ -102,12 +93,6 @@ export class Cursor extends Graphics {
       this.indicator.y = y - indicatorSize / 2;
       this.lineStyle(0);
       this.beginFill(colors.cursorCell).drawShape(this.indicator).endFill();
-
-      // draw format indicator
-      this.format_indicator.x = startCell.x;
-      this.format_indicator.y = startCell.y;
-      this.lineStyle(0);
-      this.beginFill(colors.cursorCell).drawShape(this.format_indicator).endFill();
     }
   }
 

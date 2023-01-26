@@ -11,7 +11,7 @@ import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
 import ContextMenu from '../../ui/menus/RightClickMenu';
 import { SheetController } from '../transaction/sheetController';
-import { HandyMenu } from './interaction/HandyMenu';
+import { FormatFloatingMenu } from '../../ui/menus/FloatingMenu/FormatFloatingMenu';
 
 interface IProps {
   sheetController: SheetController;
@@ -95,13 +95,14 @@ export default function QuadraticGrid(props: IProps) {
         app={props.app}
         sheetController={props.sheetController}
       />
-      <HandyMenu
+      <FormatFloatingMenu
         interactionState={interactionState}
         setInteractionState={setInteractionState}
         container={container}
         app={props.app}
         sheetController={props.sheetController}
-      ></HandyMenu>
+        contextMenuState={rightClickMenuState}
+      ></FormatFloatingMenu>
       <ContextMenu
         sheet_controller={props.sheetController}
         state={rightClickMenuState}

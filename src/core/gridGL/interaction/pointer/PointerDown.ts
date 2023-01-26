@@ -67,17 +67,6 @@ export class PointerDown {
       return;
     }
 
-    if (intersects.circlePoint(this.app.cursor.format_indicator, world)) {
-      if (!setInteractionState) {
-        throw new Error('Expected setInteractionState to be defined');
-      }
-      setInteractionState({
-        ...interactionState,
-        showHandyMenu: true,
-      });
-      return;
-    }
-
     this.positionRaw = world;
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
 
@@ -138,7 +127,6 @@ export class PointerDown {
             terminalPosition: new Point(termX, termY),
           },
           showMultiCursor: true,
-          showHandyMenu: false,
         });
         cursor.dirty = true;
       }
@@ -164,7 +152,6 @@ export class PointerDown {
       cursorPosition: { x: column, y: row },
       multiCursorPosition: previousPosition,
       showMultiCursor: false,
-      showHandyMenu: false,
     });
     cursor.dirty = true;
     this.pointerMoved = false;
@@ -186,39 +173,21 @@ export class PointerDown {
     }
 
     // cursor intersects edges
-    if (
-      !this.active ||
-      !this.position ||
-      !this.previousPosition ||
-      !this.positionRaw ||
-      !settings.setInteractionState
-    ) {
-      if (
-        Math.abs(this.app.cursor.format_indicator.x - world.x) < 3 ||
-        Math.abs(this.app.cursor.format_indicator.y - world.y) < 3
-      ) {
-        this.app.canvas.style.cursor = 'grab';
-      }
+    // if (
+    //   !this.active ||
+    //   !this.position ||
+    //   !this.previousPosition ||
+    //   !this.positionRaw ||
+    //   !settings.setInteractionState
+    // ) {
+    //   if (
+    //     Math.abs(this.app.cursor.format_indicator.x - world.x) < 3 ||
+    //     Math.abs(this.app.cursor.format_indicator.y - world.y) < 3
+    //   ) {
+    //     this.app.canvas.style.cursor = 'grab';
+    //   }
 
-      // if (intersects.rectanglePoint(this.app.cursor.getBounds(), world)) {
-      //   this.app.canvas.style.cursor = 'grab';
-      // }
-      // return;
-    }
-
-    // cursor intersects format indicator
-    if (
-      !this.active ||
-      !this.position ||
-      !this.previousPosition ||
-      !this.positionRaw ||
-      !settings.setInteractionState
-    ) {
-      if (intersects.circlePoint(this.app.cursor.format_indicator, world)) {
-        this.app.canvas.style.cursor = 'context-menu';
-      }
-      // return;
-    }
+    // }
 
     // cursor intersects indicator
     if (
@@ -248,7 +217,6 @@ export class PointerDown {
           terminalPosition: { x: this.position.x, y: this.position.y },
         },
         showMultiCursor: false,
-        showHandyMenu: false,
         showInput: false,
         inputInitialValue: '',
       });
@@ -281,7 +249,6 @@ export class PointerDown {
             terminalPosition: { x: termX, y: termY },
           },
           showMultiCursor: true,
-          showHandyMenu: false,
           showInput: false,
           inputInitialValue: '',
         });

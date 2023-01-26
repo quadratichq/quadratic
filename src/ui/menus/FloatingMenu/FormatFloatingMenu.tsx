@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { PixiApp } from '../pixiApp/PixiApp';
-import { SheetController } from '../../transaction/sheetController';
+import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../core/transaction/sheetController';
 import { Divider, IconButton, Toolbar } from '@mui/material';
 import { BorderAll, FormatBold, FormatClear, FormatColorFill, FormatItalic } from '@mui/icons-material';
 import { colors } from '../../../theme/colors';
+import { MenuState } from '@szhsin/react-menu';
 
-interface HandyMenuProps {
+interface FormatFloatingMenuProps {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
   app?: PixiApp;
   sheetController: SheetController;
+  contextMenuState: MenuState | undefined;
 }
 
-export const HandyMenu = (props: HandyMenuProps) => {
-  const { interactionState, app, container, sheetController } = props;
+export const FormatFloatingMenu = (props: FormatFloatingMenuProps) => {
+  const { interactionState, app, container, sheetController, contextMenuState } = props;
   const viewport = app?.viewport;
 
   const menuDiv = useRef<HTMLDivElement>(null);
@@ -65,8 +67,9 @@ export const HandyMenu = (props: HandyMenuProps) => {
       if (menuDiv.current) menuDiv.current.style.visibility = 'visible';
     }
 
-    if (!interactionState.showMultiCursor && !interactionState.showHandyMenu)
-      if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+    if (!interactionState.showMultiCursor) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+
+    if (contextMenuState === 'open') if (menuDiv.current) menuDiv.current.style.visibility = 'visible';
 
     return transform;
   }, [
@@ -76,8 +79,8 @@ export const HandyMenu = (props: HandyMenuProps) => {
     interactionState.cursorPosition,
     interactionState.showMultiCursor,
     interactionState.multiCursorPosition,
-    interactionState.showHandyMenu,
     sheetController.sheet.gridOffsets,
+    contextMenuState,
   ]);
 
   useEffect(() => {
