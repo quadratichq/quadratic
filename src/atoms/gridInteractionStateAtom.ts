@@ -4,6 +4,7 @@ export interface GridInteractionState {
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
   showMultiCursor: boolean;
+  showHandyMenu: boolean;
   multiCursorPosition: {
     originPosition: Coordinate;
     terminalPosition: Coordinate;
@@ -16,6 +17,7 @@ export const gridInteractionStateDefault: GridInteractionState = {
   keyboardMovePosition: { x: 0, y: 0 },
   cursorPosition: { x: 0, y: 0 },
   showMultiCursor: false,
+  showHandyMenu: false,
   multiCursorPosition: {
     originPosition: { x: 0, y: 0 },
     terminalPosition: { x: 0, y: 0 },

@@ -9,8 +9,9 @@ import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
-import RightClickMenu from '../../ui/menus/RightClickMenu';
+import ContextMenu from '../../ui/menus/RightClickMenu';
 import { SheetController } from '../transaction/sheetController';
+import { HandyMenu } from './interaction/HandyMenu';
 
 interface IProps {
   sheetController: SheetController;
@@ -94,7 +95,14 @@ export default function QuadraticGrid(props: IProps) {
         app={props.app}
         sheetController={props.sheetController}
       />
-      <RightClickMenu
+      <HandyMenu
+        interactionState={interactionState}
+        setInteractionState={setInteractionState}
+        container={container}
+        app={props.app}
+        sheetController={props.sheetController}
+      ></HandyMenu>
+      <ContextMenu
         sheet_controller={props.sheetController}
         state={rightClickMenuState}
         anchorPoint={rightClickPoint}

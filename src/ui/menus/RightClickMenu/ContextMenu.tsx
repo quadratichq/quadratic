@@ -9,7 +9,7 @@ interface EventHandler<E> {
   (event: E): void;
 }
 
-interface RightClickMenuProps {
+interface ContextMenuProps {
   state: MenuState | undefined;
   anchorPoint: {
     x: number;
@@ -20,7 +20,7 @@ interface RightClickMenuProps {
   sheet_controller: SheetController;
 }
 
-export const RightClickMenu = (props: RightClickMenuProps) => {
+export const ContextMenu = (props: ContextMenuProps) => {
   return (
     <>
       <div

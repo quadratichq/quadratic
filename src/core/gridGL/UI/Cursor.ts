@@ -1,21 +1,25 @@
-import { Graphics, Rectangle } from 'pixi.js';
+import { Circle, Graphics, Rectangle } from 'pixi.js';
 import { colors } from '../../../theme/colors';
 import { PixiApp } from '../pixiApp/PixiApp';
 
 const CURSOR_THICKNESS = 1.5;
 const FILL_ALPHA = 0.1;
 const INDICATOR_SIZE = 8;
+const FORMAT_INDICATOR_SIZE = 4;
 const INDICATOR_PADDING = 1;
+const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 
 export class Cursor extends Graphics {
   private app: PixiApp;
   indicator: Rectangle;
+  format_indicator: Circle;
   dirty = true;
 
   constructor(app: PixiApp) {
     super();
     this.app = app;
     this.indicator = new Rectangle();
+    this.format_indicator = new Circle();
   }
 
   private drawCursor(): void {
@@ -32,33 +36,45 @@ export class Cursor extends Graphics {
       alignment: 0,
     });
 
+    // draw format indicator
+    const formatIndicatorSize = Math.max(FORMAT_INDICATOR_SIZE / viewport.scale.x, 2);
+    this.format_indicator.radius = this.format_indicator.radius = formatIndicatorSize;
+
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
     this.indicator.width = this.indicator.height = indicatorSize;
+
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
     const terminalPosition = settings.interactionState.multiCursorPosition.terminalPosition;
     const cursorPosition = settings.interactionState.cursorPosition;
-    let offset = 0;
+    let indicatorOffset = 0;
+    // let formatIndicatorOffset = 0;
     if (!multiCursor || (terminalPosition.x === cursorPosition.x && terminalPosition.y === cursorPosition.y)) {
-      offset = indicatorSize / 2 + indicatorPadding;
+      indicatorOffset = indicatorSize / 2 + indicatorPadding;
+      // formatIndicatorOffset = formatIndicatorSize / 2 + indicatorPadding * 3;
     }
+
+    // draw cursor
+    // this.moveTo(x + formatIndicatorOffset, y);
     this.moveTo(x, y);
     this.lineTo(x + width, y);
-    this.lineTo(x + width, y + height - offset);
-    this.moveTo(x + width - offset, y + height);
+    this.lineTo(x + width, y + height - indicatorOffset);
+    this.moveTo(x + width - indicatorOffset, y + height);
     this.lineTo(x, y + height);
+    // this.lineTo(x, y + formatIndicatorOffset);
     this.lineTo(x, y);
   }
 
   private drawMultiCursor(): void {
     const { settings, viewport } = this.app;
     const { gridOffsets } = this.app.sheet;
+    let startCell: { x: number; y: number; width: number; height: number };
     let endCell: { x: number; y: number; width: number; height: number };
     if (settings.interactionState.showMultiCursor) {
       const multiCursor = settings.interactionState.multiCursorPosition;
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
       this.beginFill(colors.cursorCell, FILL_ALPHA);
-      const startCell = gridOffsets.getCell(multiCursor.originPosition.x, multiCursor.originPosition.y);
+      startCell = gridOffsets.getCell(multiCursor.originPosition.x, multiCursor.originPosition.y);
       endCell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
       this.drawRect(
         startCell.x,
@@ -67,22 +83,32 @@ export class Cursor extends Graphics {
         endCell.y + endCell.height - startCell.y
       );
     } else {
+      startCell = gridOffsets.getCell(
+        settings.interactionState.cursorPosition.x,
+        settings.interactionState.cursorPosition.y
+      );
       endCell = gridOffsets.getCell(
         settings.interactionState.cursorPosition.x,
         settings.interactionState.cursorPosition.y
       );
     }
 
-    // draw cursor indicator
-    const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
-    const x = endCell.x + endCell.width;
-    const y = endCell.y + endCell.height;
-    this.indicator.x = x - indicatorSize / 2;
-    this.indicator.y = y - indicatorSize / 2;
-    this.lineStyle(0);
-    this.beginFill(colors.cursorCell)
-      .drawShape(this.indicator)
-      .endFill();
+    if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
+      // draw cursor indicator
+      const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
+      const x = endCell.x + endCell.width;
+      const y = endCell.y + endCell.height;
+      this.indicator.x = x - indicatorSize / 2;
+      this.indicator.y = y - indicatorSize / 2;
+      this.lineStyle(0);
+      this.beginFill(colors.cursorCell).drawShape(this.indicator).endFill();
+
+      // draw format indicator
+      this.format_indicator.x = startCell.x;
+      this.format_indicator.y = startCell.y;
+      this.lineStyle(0);
+      this.beginFill(colors.cursorCell).drawShape(this.format_indicator).endFill();
+    }
   }
 
   private drawCodeCursor(): void {

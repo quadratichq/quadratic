@@ -36,10 +36,7 @@ export class PointerDown {
       const cell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
       endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
     } else {
-      const cell = gridOffsets.getCell(
-        interactionState.cursorPosition.x,
-        interactionState.cursorPosition.y
-      );
+      const cell = gridOffsets.getCell(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
       endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
     }
     return endCell;
@@ -67,6 +64,17 @@ export class PointerDown {
         originPosition: new Point(originX, originY),
         terminalPosition: new Point(column, row),
       };
+      return;
+    }
+
+    if (intersects.circlePoint(this.app.cursor.format_indicator, world)) {
+      if (!setInteractionState) {
+        throw new Error('Expected setInteractionState to be defined');
+      }
+      setInteractionState({
+        ...interactionState,
+        showHandyMenu: true,
+      });
       return;
     }
 
@@ -130,6 +138,7 @@ export class PointerDown {
             terminalPosition: new Point(termX, termY),
           },
           showMultiCursor: true,
+          showHandyMenu: false,
         });
         cursor.dirty = true;
       }
@@ -155,6 +164,7 @@ export class PointerDown {
       cursorPosition: { x: column, y: row },
       multiCursorPosition: previousPosition,
       showMultiCursor: false,
+      showHandyMenu: false,
     });
     cursor.dirty = true;
     this.pointerMoved = false;
@@ -175,9 +185,51 @@ export class PointerDown {
       }
     }
 
-    if (!this.active || !this.position || !this.previousPosition || !this.positionRaw || !settings.setInteractionState) {
+    // cursor intersects edges
+    if (
+      !this.active ||
+      !this.position ||
+      !this.previousPosition ||
+      !this.positionRaw ||
+      !settings.setInteractionState
+    ) {
+      if (
+        Math.abs(this.app.cursor.format_indicator.x - world.x) < 3 ||
+        Math.abs(this.app.cursor.format_indicator.y - world.y) < 3
+      ) {
+        this.app.canvas.style.cursor = 'grab';
+      }
+
+      // if (intersects.rectanglePoint(this.app.cursor.getBounds(), world)) {
+      //   this.app.canvas.style.cursor = 'grab';
+      // }
+      // return;
+    }
+
+    // cursor intersects format indicator
+    if (
+      !this.active ||
+      !this.position ||
+      !this.previousPosition ||
+      !this.positionRaw ||
+      !settings.setInteractionState
+    ) {
+      if (intersects.circlePoint(this.app.cursor.format_indicator, world)) {
+        this.app.canvas.style.cursor = 'context-menu';
+      }
+      // return;
+    }
+
+    // cursor intersects indicator
+    if (
+      !this.active ||
+      !this.position ||
+      !this.previousPosition ||
+      !this.positionRaw ||
+      !settings.setInteractionState
+    ) {
       if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
-        this.app.canvas.style.cursor = 'crosshair';
+        this.app.canvas.style.cursor = 'cell';
       }
       return;
     }
@@ -196,6 +248,7 @@ export class PointerDown {
           terminalPosition: { x: this.position.x, y: this.position.y },
         },
         showMultiCursor: false,
+        showHandyMenu: false,
         showInput: false,
         inputInitialValue: '',
       });
@@ -228,6 +281,7 @@ export class PointerDown {
             terminalPosition: { x: termX, y: termY },
           },
           showMultiCursor: true,
+          showHandyMenu: false,
           showInput: false,
           inputInitialValue: '',
         });
