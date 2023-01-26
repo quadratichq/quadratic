@@ -123,7 +123,7 @@ export const CommandPalette = (props: Props) => {
           />
         </div>
         <Divider />
-        <div style={{ height: '240px', overflow: 'scroll' }}>
+        <div style={{ height: '3300px', overflow: 'scroll' }}>
           <List dense={true} disablePadding>
             {ListItems.length ? (
               ListItems
