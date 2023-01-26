@@ -37,6 +37,7 @@
     "monaco-editor": "^0.31.1",
     "pixi-viewport": "^4.37.0",
     "pixi.js": "^6.5.1",
+    "quadratic-core": "file:quadratic-core/pkg",
     "react": "^17.0.2",
     "react-color": "^2.19.3",
     "react-device-detect": "^2.2.2",
@@ -51,6 +52,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:wasm": "cd quadratic-core && wasm-pack build --target web --out-dir pkg",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\" \"npm run test:python\"",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:unit:dev": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watchAll",
@@ -58,6 +60,7 @@
     "test:e2e": "playwright test --workers=1",
     "test:e2e:debug": "playwright test --debug",
     "test:python": "python3 tests-python/test.py",
+    "test:wasm": "cd quadratic-core && cargo test --workspace",
     "test": "",
     "prettier": "prettier --write src",
     "eject": "react-scripts eject",

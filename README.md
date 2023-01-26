@@ -14,11 +14,11 @@ Take your data and do something useful with it as quickly and easily as possible
 
 We have a hosted version of the `main` branch available online.
 
-**Try it out! --> https://app.quadratichq.com**
+**Try it out! --> <https://app.quadratichq.com>**
 
 ## Community
 
-Join the conversation on our Discord channel -> https://discord.gg/quadratic
+Join the conversation on our Discord channel -> <https://discord.gg/quadratic>
 
 ## Documentation
 
@@ -52,6 +52,8 @@ Install Dependencies `npm install`
 
 Run Web `npm start`
 
+Build Rust `npm run build:wasm`
+
 Run Electron `npm run dev`
 
 # Development Progress and Roadmap
@@ -81,6 +83,6 @@ There are more example files are located in the `examples` folder in this repo.
 
 You can download them and then open them in Quadratic via File > Open Grid
 
-## Quadratic is Hiring!
+## Quadratic is Hiring
 
 Check out our open roles -> [careers.quadratichq.com](https://careers.quadratichq.com)

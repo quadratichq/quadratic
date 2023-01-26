@@ -1,4 +1,4 @@
-# Quadratic Contribution Guide 
+# Quadratic Contribution Guide
 
 Thank you for considering contributing to the data science spreadsheet :sparkles:
 
@@ -10,11 +10,12 @@ In this guide, you will get an overview of the contribution workflow from openin
 
 Make sure you can run Quadratic locally from the source.
 
-Install Dependencies `npm install`
+1. Install npm, [rustup](https://www.rust-lang.org/tools/install), and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+2. Run `rustup target add wasm32-unknown-unknown`
 
-Run Web `npm start`
+To run the web app: `npm start`
 
-Run Electron `npm run dev`
+To run the Electron app: `npm run dev`
 
 If you have any problems getting the project to run locally, please create an issue to document the problem. See "Create an issue" below.
 
@@ -36,7 +37,7 @@ When reporting a bug, please provide:
 
 #### Solve an issue
 
-Scan through our [existing issues](https://github.com/quadratichq/quadratic/issues) to find one that interests you. You can narrow down the search using `labels` as filters. See [Labels](/contributing/how-to-use-labels.md) for more information. 
+Scan through our [existing issues](https://github.com/quadratichq/quadratic/issues) to find one that interests you. You can narrow down the search using `labels` as filters. See [Labels](/contributing/how-to-use-labels.md) for more information.
 
 #### How to contribute code
 
@@ -60,8 +61,8 @@ When you're finished with your changes:
 
 We review all PRs quickly, so we will give you feedback in short order!
 
-### Your PR is merged!
+### Your PR is merged
 
-Congratulations :tada::tada: Quadratic is better because of you :sparkles:. 
+Congratulations :tada::tada: Quadratic is better because of you :sparkles:.
 
 Once your PR is merged, contributors will be publicly visible on the GitHub Page.
