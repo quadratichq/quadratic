@@ -144,10 +144,10 @@ export const HandyMenu = (props: HandyMenuProps) => {
             marginRight: '10px',
           }}
         />
-        <IconButton>
+        <IconButton disabled={true}>
           <FormatBold fontSize={iconSize} />
         </IconButton>
-        <IconButton>
+        <IconButton disabled={true}>
           <FormatItalic fontSize={iconSize} />
         </IconButton>
       </Toolbar>
