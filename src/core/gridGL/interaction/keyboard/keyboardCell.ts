@@ -10,6 +10,7 @@ export function keyboardCell(options: {
   event: React.KeyboardEvent<HTMLElement>;
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
+  editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   app?: PixiApp;
 }): boolean {
@@ -77,6 +78,7 @@ export function keyboardCell(options: {
       } else {
         // Open code editor, or move code editor if already open.
         setEditorInteractionState({
+          showCommandPalette: false,
           showCellTypeMenu: false,
           showCodeEditor: true,
           selectedCell: { x: x, y: y },
@@ -103,6 +105,7 @@ export function keyboardCell(options: {
       if (cell.type === 'PYTHON') {
         // Open code editor, or move code editor if already open.
         setEditorInteractionState({
+          showCommandPalette: false,
           showCellTypeMenu: false,
           showCodeEditor: true,
           selectedCell: { x: x, y: y },
@@ -121,6 +124,7 @@ export function keyboardCell(options: {
     } else {
       // Open cell type menu, close editor.
       setEditorInteractionState({
+        showCommandPalette: false,
         showCellTypeMenu: true,
         showCodeEditor: false,
         selectedCell: { x: x, y: y },

@@ -8,7 +8,7 @@ interface Props {
 }
 
 export const NewFile = (props: Props): JSX.Element => {
-  const [filename, setFilename] = useState("");
+  const [filename, setFilename] = useState('');
 
   return (
     <Dialog open={props.open} onClose={() => props.handleClose()}>

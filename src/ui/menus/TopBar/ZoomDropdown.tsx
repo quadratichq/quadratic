@@ -6,6 +6,7 @@ import { colors } from '../../../theme/colors';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { KeyboardShortcut } from '../KeyboardShortcut';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 
 export const ZoomDropdown = () => {
   const [zoomState, setZoomState] = useRecoilState(zoomStateAtom);
@@ -21,20 +22,11 @@ export const ZoomDropdown = () => {
     >
       <MenuItem
         onClick={() => {
-          setZoomState(Infinity);
-          focusGrid();
-        }}
-      >
-        <KeyboardShortcut text="Zoom to fit" shortcut="1" shift={true} />
-      </MenuItem>
-      <MenuDivider></MenuDivider>
-      <MenuItem
-        onClick={() => {
           setZoomState((zoomState) => zoomState * 2);
           focusGrid();
         }}
       >
-        <KeyboardShortcut text="Zoom in" shortcut="+" ctrl={true} />
+        <KeyboardShortcut text="Zoom in" shortcut="+" modifier={KeyboardSymbols.Command} />
       </MenuItem>
       <MenuItem
         onClick={() => {
@@ -42,9 +34,17 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        <KeyboardShortcut text="Zoom out" shortcut="−" ctrl={true} />
+        <KeyboardShortcut text="Zoom out" shortcut="−" modifier={KeyboardSymbols.Command} />
       </MenuItem>
       <MenuDivider></MenuDivider>
+      <MenuItem
+        onClick={() => {
+          setZoomState(Infinity);
+          focusGrid();
+        }}
+      >
+        <KeyboardShortcut text="Zoom to fit" shortcut="1" modifier={KeyboardSymbols.Shift} />
+      </MenuItem>
       <MenuItem
         onClick={() => {
           setZoomState(0.5);
@@ -59,7 +59,7 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        <KeyboardShortcut text="Zoom to 100%" shortcut="0" ctrl={true} />
+        <KeyboardShortcut text="Zoom to 100%" shortcut="0" modifier={KeyboardSymbols.Command} />
       </MenuItem>
       <MenuItem
         onClick={() => {
