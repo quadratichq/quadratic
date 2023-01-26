@@ -58,7 +58,7 @@ export class GridBorders {
     this.maxX = -Infinity;
     this.minY = Infinity;
     this.maxY = -Infinity;
-    this.borders.forEach(border => {
+    this.borders.forEach((border) => {
       this.minX = Math.min(this.minX, border.x);
       this.maxX = Math.max(this.maxX, border.x);
       this.minY = Math.min(this.minY, border.y);

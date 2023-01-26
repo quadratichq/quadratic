@@ -10,7 +10,7 @@ export type LocalFilesLoadEvent = string;
 export const LOCAL_FILES_LIST_EVENT = 'grid-list-event';
 export type LocalFilesListEvent = string[];
 
-const DEFAULT_FILENAME = "new_grid_file.grid";
+const DEFAULT_FILENAME = 'new_grid_file.grid';
 
 class LocalFiles {
   filename?: string;
@@ -108,7 +108,7 @@ class LocalFiles {
 
   saveLastLocal(data: GridFileSchema): void {
     if (!this.filename) {
-      throw new Error("Expected filename to be defined in saveLastLocal");
+      throw new Error('Expected filename to be defined in saveLastLocal');
     } else {
       localForage.setItem(this.getFilename(this.filename), data);
     }

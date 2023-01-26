@@ -124,8 +124,8 @@ export class Quadrant extends Container {
     const xCount = Math.ceil(screenRectangle.width / QUADRANT_TEXTURE_SIZE);
     const yCount = Math.ceil(screenRectangle.height / QUADRANT_TEXTURE_SIZE);
 
-    const subQuadrantWidth = (screenRectangle.width / xCount);
-    const subQuadrantHeight = (screenRectangle.height / yCount);
+    const subQuadrantWidth = screenRectangle.width / xCount;
+    const subQuadrantHeight = screenRectangle.height / yCount;
 
     for (let subQuadrantY = 0; subQuadrantY < yCount; subQuadrantY++) {
       for (let subQuadrantX = 0; subQuadrantX < xCount; subQuadrantX++) {
@@ -150,8 +150,14 @@ export class Quadrant extends Container {
           // const textureHeight = subQuadrantHeight * QUADRANT_SCALE;
 
           // todo: the above is incorrect but ensures it works somewhat
-          const textureWidth = Math.min(subQuadrantWidth * QUADRANT_SCALE, reducedDrawingRectangle.width * QUADRANT_SCALE);
-          const textureHeight = Math.min(subQuadrantHeight * QUADRANT_SCALE, reducedDrawingRectangle.height * QUADRANT_SCALE);
+          const textureWidth = Math.min(
+            subQuadrantWidth * QUADRANT_SCALE,
+            reducedDrawingRectangle.width * QUADRANT_SCALE
+          );
+          const textureHeight = Math.min(
+            subQuadrantHeight * QUADRANT_SCALE,
+            reducedDrawingRectangle.height * QUADRANT_SCALE
+          );
           const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, textureWidth, textureHeight);
 
           if (debugShowSubCacheInfo) {
@@ -169,7 +175,12 @@ export class Quadrant extends Container {
           if (debugShowQuadrantBoxes) {
             this.testGraphics
               .lineStyle({ color: 0, width: 5 })
-              .drawRect(subQuadrantX * subQuadrantWidth + reducedDrawingRectangle.x, subQuadrantX * subQuadrantWidth + reducedDrawingRectangle.y, textureWidth / QUADRANT_SCALE, textureHeight / QUADRANT_SCALE)
+              .drawRect(
+                subQuadrantX * subQuadrantWidth + reducedDrawingRectangle.x,
+                subQuadrantX * subQuadrantWidth + reducedDrawingRectangle.y,
+                textureWidth / QUADRANT_SCALE,
+                textureHeight / QUADRANT_SCALE
+              );
           }
         }
       }

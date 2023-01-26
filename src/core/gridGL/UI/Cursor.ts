@@ -80,9 +80,7 @@ export class Cursor extends Graphics {
     this.indicator.x = x - indicatorSize / 2;
     this.indicator.y = y - indicatorSize / 2;
     this.lineStyle(0);
-    this.beginFill(colors.cursorCell)
-      .drawShape(this.indicator)
-      .endFill();
+    this.beginFill(colors.cursorCell).drawShape(this.indicator).endFill();
   }
 
   private drawCodeCursor(): void {
