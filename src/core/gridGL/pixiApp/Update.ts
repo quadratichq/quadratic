@@ -50,7 +50,11 @@ export class Update {
       app.cursor.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
-      console.log(`dirty: ${app.viewport.dirty ? 'viewport ' : ''}${app.gridLines.dirty ? 'gridLines ' : ''}${app.axesLines.dirty ? 'axesLines ' : ''}${app.headings.dirty ? 'headings ' : ''}${app.cells.dirty ? 'cells ' : ''}${app.cursor.dirty ? 'cursor ' : ''}`);
+      console.log(
+        `dirty: ${app.viewport.dirty ? 'viewport ' : ''}${app.gridLines.dirty ? 'gridLines ' : ''}${
+          app.axesLines.dirty ? 'axesLines ' : ''
+        }${app.headings.dirty ? 'headings ' : ''}${app.cells.dirty ? 'cells ' : ''}${app.cursor.dirty ? 'cursor ' : ''}`
+      );
     }
 
     debugTimeReset();

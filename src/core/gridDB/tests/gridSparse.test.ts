@@ -28,10 +28,12 @@ describe('gridSparse', () => {
 
   it('populates cells with 1 cell of data (positive)', () => {
     const gridSparse = new GridSparse(gridOffsets);
-    gridSparse.populate([{
-      x: 1,
-      y: 2,
-    } as Cell]);
+    gridSparse.populate([
+      {
+        x: 1,
+        y: 2,
+      } as Cell,
+    ]);
 
     const { boundsWithData } = gridSparse.getBounds(new Rectangle(-1000, -2000, 2000, 4000));
 
@@ -53,10 +55,12 @@ describe('gridSparse', () => {
 
   it('populates cells with 1 cell of data (negative)', () => {
     const gridSparse = new GridSparse(gridOffsets);
-    gridSparse.populate([{
-      x: -1,
-      y: -2,
-    } as Cell]);
+    gridSparse.populate([
+      {
+        x: -1,
+        y: -2,
+      } as Cell,
+    ]);
 
     const { boundsWithData } = gridSparse.getBounds(new Rectangle(-1000, -2000, 2000, 4000));
 
@@ -86,7 +90,7 @@ describe('gridSparse', () => {
       {
         x: 1,
         y: 2,
-      } as Cell
+      } as Cell,
     ]);
 
     const { boundsWithData } = gridSparse.getBounds(new Rectangle(-1000, -2000, 2000, 4000));
@@ -110,10 +114,15 @@ describe('gridSparse', () => {
 
   it('populates cells with 1 cell of format data (positive)', () => {
     const gridSparse = new GridSparse(gridOffsets);
-    gridSparse.populate([], [{
-      x: 1,
-      y: 2,
-    } as Cell]);
+    gridSparse.populate(
+      [],
+      [
+        {
+          x: 1,
+          y: 2,
+        } as Cell,
+      ]
+    );
 
     const { boundsWithData } = gridSparse.getBounds(new Rectangle(-1000, -2000, 2000, 4000));
 
@@ -134,10 +143,15 @@ describe('gridSparse', () => {
   });
 
   it('populates cells with 1 cell of format data (negative)', () => {
-    gridSparse.populate([], [{
-      x: -1,
-      y: -2,
-    } as Cell]);
+    gridSparse.populate(
+      [],
+      [
+        {
+          x: -1,
+          y: -2,
+        } as Cell,
+      ]
+    );
 
     const { boundsWithData } = gridSparse.getBounds(new Rectangle(-1000, -2000, 2000, 4000));
 
@@ -156,20 +170,22 @@ describe('gridSparse', () => {
     expect(gridSparse.getCell(0, 0)).toBeUndefined();
     expect(gridSparse.getFormat(-1, -2)).toBeDefined();
     expect(gridSparse.getFormat(0, 0)).toBeUndefined();
-
   });
 
   it('populates cells with multiple cells of format data', () => {
-    gridSparse.populate([], [
-      {
-        x: -1,
-        y: -2,
-      } as Cell,
-      {
-        x: 1,
-        y: 2,
-      } as Cell
-    ]);
+    gridSparse.populate(
+      [],
+      [
+        {
+          x: -1,
+          y: -2,
+        } as Cell,
+        {
+          x: 1,
+          y: 2,
+        } as Cell,
+      ]
+    );
 
     const { boundsWithData } = gridSparse.getBounds(new Rectangle(-1000, -2000, 2000, 4000));
 
@@ -204,8 +220,8 @@ describe('gridSparse', () => {
       } as Cell,
       {
         x: -5,
-        y: 2
-      } as Cell
+        y: 2,
+      } as Cell,
     ]);
 
     const minMax = gridSparse.getRowMinMax(2);
@@ -226,8 +242,8 @@ describe('gridSparse', () => {
       } as Cell,
       {
         x: 2,
-        y: -5
-      } as Cell
+        y: -5,
+      } as Cell,
     ]);
 
     const minMax = gridSparse.getColumnMinMax(2);
@@ -248,8 +264,8 @@ describe('gridSparse', () => {
       } as Cell,
       {
         x: 2,
-        y: -5
-      } as Cell
+        y: -5,
+      } as Cell,
     ]);
     const cells = gridSparse.getAllCells();
     expect(cells.length).toBe(3);
@@ -257,32 +273,35 @@ describe('gridSparse', () => {
 
   it('gets arrays', () => {
     const gridSparse = new GridSparse(gridOffsets);
-    gridSparse.populate([
-      {
-        x: 2,
-        y: 1,
-      } as Cell,
-      {
-        x: 2,
-        y: 5,
-      } as Cell,
-      {
-        x: 2,
-        y: -5
-      } as Cell
-    ], [
-      {
-        x: 2,
-        y: 1,
-      } as CellFormat,
-      {
-        x: 2,
-        y: 5,
-      } as CellFormat
-    ]);
+    gridSparse.populate(
+      [
+        {
+          x: 2,
+          y: 1,
+        } as Cell,
+        {
+          x: 2,
+          y: 5,
+        } as Cell,
+        {
+          x: 2,
+          y: -5,
+        } as Cell,
+      ],
+      [
+        {
+          x: 2,
+          y: 1,
+        } as CellFormat,
+        {
+          x: 2,
+          y: 5,
+        } as CellFormat,
+      ]
+    );
     const arrays = gridSparse.getArrays();
-    expect(arrays.cells.length).toBe(3)
-    expect(arrays.formats.length).toBe(2)
+    expect(arrays.cells.length).toBe(3);
+    expect(arrays.formats.length).toBe(2);
   });
 
   it('updates cells', () => {
@@ -291,81 +310,84 @@ describe('gridSparse', () => {
       {
         x: 2,
         y: 1,
-        value: "1",
+        value: '1',
       } as Cell,
       {
         x: 2,
         y: 5,
-        value: "2",
+        value: '2',
       } as Cell,
       {
         x: 2,
         y: -5,
-        value: "3",
-      } as Cell
+        value: '3',
+      } as Cell,
     ]);
     gridSparse.updateCells([
       {
         x: 2,
         y: 1,
-        value: "5",
+        value: '5',
       } as Cell,
       {
         x: 2,
         y: -5,
-        value: "6"
+        value: '6',
       } as Cell,
       {
         x: -10,
         y: -11,
-        value: "8"
+        value: '8',
       } as Cell,
     ]);
-    expect(gridSparse.getCell(2, 1)?.value).toBe("5");
-    expect(gridSparse.getCell(2, -5)?.value).toBe("6");
-    expect(gridSparse.getCell(-10, -11)?.value).toBe("8");
-    expect(gridSparse.getCell(2, 5)?.value).toBe("2");
+    expect(gridSparse.getCell(2, 1)?.value).toBe('5');
+    expect(gridSparse.getCell(2, -5)?.value).toBe('6');
+    expect(gridSparse.getCell(-10, -11)?.value).toBe('8');
+    expect(gridSparse.getCell(2, 5)?.value).toBe('2');
   });
 
   it('updates formats', () => {
     const gridSparse = new GridSparse(gridOffsets);
-    gridSparse.populate([], [
-      {
-        x: 2,
-        y: 1,
-        fillColor: "1",
-      } as CellFormat,
-      {
-        x: 2,
-        y: 5,
-        fillColor: "2",
-      } as CellFormat,
-      {
-        x: 2,
-        y: -5,
-        fillColor: "3",
-      } as CellFormat
-    ]);
+    gridSparse.populate(
+      [],
+      [
+        {
+          x: 2,
+          y: 1,
+          fillColor: '1',
+        } as CellFormat,
+        {
+          x: 2,
+          y: 5,
+          fillColor: '2',
+        } as CellFormat,
+        {
+          x: 2,
+          y: -5,
+          fillColor: '3',
+        } as CellFormat,
+      ]
+    );
     gridSparse.updateFormat([
       {
         x: 2,
         y: 1,
-        fillColor: "5",
+        fillColor: '5',
       } as CellFormat,
       {
         x: 2,
         y: -5,
-        fillColor: "6"
+        fillColor: '6',
       } as CellFormat,
       {
         x: -10,
         y: -11,
-        fillColor: "8"
+        fillColor: '8',
       } as CellFormat,
     ]);
-    expect(gridSparse.getFormat(2, 1)?.fillColor).toBe("5");
-    expect(gridSparse.getFormat(2, -5)?.fillColor).toBe("6");
-    expect(gridSparse.getFormat(-10, -11)?.fillColor).toBe("8");
-    expect(gridSparse.getFormat(2, 5)?.fillColor).toBe("2");
+    expect(gridSparse.getFormat(2, 1)?.fillColor).toBe('5');
+    expect(gridSparse.getFormat(2, -5)?.fillColor).toBe('6');
+    expect(gridSparse.getFormat(-10, -11)?.fillColor).toBe('8');
+    expect(gridSparse.getFormat(2, 5)?.fillColor).toBe('2');
   });
 });

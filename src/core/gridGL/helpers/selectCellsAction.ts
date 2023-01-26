@@ -39,7 +39,7 @@ export function selectAllCells(options: {
 }
 
 export function selectColumns(options: {
-  sheet: Sheet,
+  sheet: Sheet;
   setInteractionState: (value: GridInteractionState) => void;
   interactionState: GridInteractionState;
   viewport?: Viewport;

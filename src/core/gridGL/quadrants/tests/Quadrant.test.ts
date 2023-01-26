@@ -4,7 +4,6 @@ import { Quadrant } from '../Quadrant';
 import { QUADRANT_SCALE } from '../quadrantConstants';
 
 describe('Quadrant', () => {
-
   beforeAll(() => {
     (global as any).window = { devicePixelRatio: 2 };
   });
@@ -19,18 +18,18 @@ describe('Quadrant', () => {
       renderer: {
         render: () => {
           rendered = true;
-        }
+        },
       },
       sheet: {
         gridOffsets: {
           getScreenRectangle: () => rectangle,
-        }
+        },
       },
       cells: {
-        drawCells: () => reducedDrawingRectangle
-      }
+        drawCells: () => reducedDrawingRectangle,
+      },
     } as any as PixiApp;
-  }
+  };
 
   it('creates a Quadrant', () => {
     const visibleRectangle = new Rectangle(0, 0, 100, 100);

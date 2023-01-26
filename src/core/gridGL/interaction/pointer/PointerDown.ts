@@ -36,10 +36,7 @@ export class PointerDown {
       const cell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
       endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
     } else {
-      const cell = gridOffsets.getCell(
-        interactionState.cursorPosition.x,
-        interactionState.cursorPosition.y
-      );
+      const cell = gridOffsets.getCell(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
       endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
     }
     return endCell;
@@ -175,7 +172,13 @@ export class PointerDown {
       }
     }
 
-    if (!this.active || !this.position || !this.previousPosition || !this.positionRaw || !settings.setInteractionState) {
+    if (
+      !this.active ||
+      !this.position ||
+      !this.previousPosition ||
+      !this.positionRaw ||
+      !settings.setInteractionState
+    ) {
       if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
         this.app.canvas.style.cursor = 'crosshair';
       }
