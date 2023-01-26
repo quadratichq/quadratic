@@ -193,6 +193,8 @@ export const CellInput = (props: CellInputProps) => {
           closeInput({ x: 0, y: -1 });
         } else if (event.key === 'ArrowDown') {
           closeInput({ x: 0, y: 1 });
+        } else if ((event.metaKey || event.ctrlKey) && event.code === 'KeyP') {
+          event.preventDefault();
         }
       }}
     ></input>
