@@ -16,7 +16,7 @@ interface QuadrantChanged {
   row?: number;
   column?: number;
   cells?: Coordinate[];
-  range?: { start: Coordinate, end: Coordinate };
+  range?: { start: Coordinate; end: Coordinate };
 }
 
 // Parent for all quadrants - renders the cache in loop
@@ -129,7 +129,7 @@ export class Quadrants extends Container {
       // reposition quadrants below the row
       for (let y = options.row + QUADRANT_ROWS; y <= bounds.bottom; y += QUADRANT_ROWS) {
         for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
-        const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
+          const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
           const quadrant = this.getQuadrant(quadrantX, quadrantY);
           quadrant.reposition();
         }
@@ -155,7 +155,7 @@ export class Quadrants extends Container {
     // set quadrant of list of cells dirty
     if (options.cells) {
       const quadrants = new Set<string>();
-      options.cells.forEach(coordinate => {
+      options.cells.forEach((coordinate) => {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(coordinate.x, coordinate.y);
         const key = `${quadrantX},${quadrantY}`;
         if (!quadrants.has(key)) {

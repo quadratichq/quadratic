@@ -183,7 +183,7 @@ export class GridSparse {
     return cells;
   }
 
-  getBounds(bounds: Rectangle): { bounds: Rectangle, boundsWithData: Rectangle | undefined } {
+  getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
     const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
     const columnStart = columnStartIndex.index > this.minX ? columnStartIndex.index : this.minX;
     const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
@@ -195,9 +195,16 @@ export class GridSparse {
     const rowEnd = rowEndIndex.index < this.maxY ? rowEndIndex.index : this.maxY;
 
     return {
-      bounds: new Rectangle(columnStartIndex.index, rowStartIndex.index, columnEndIndex.index - columnStartIndex.index, rowEndIndex.index - rowStartIndex.index),
-      boundsWithData: this.isEmpty ? undefined : new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart),
-    }
+      bounds: new Rectangle(
+        columnStartIndex.index,
+        rowStartIndex.index,
+        columnEndIndex.index - columnStartIndex.index,
+        rowEndIndex.index - rowStartIndex.index
+      ),
+      boundsWithData: this.isEmpty
+        ? undefined
+        : new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart),
+    };
   }
 
   getGridBounds(): Rectangle | undefined {

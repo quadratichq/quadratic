@@ -128,7 +128,8 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of columns (rows to negative)', () => {
-    gridOffsets.populate([],
+    gridOffsets.populate(
+      [],
       [
         { id: -1, size: 5 },
         { id: -2, size: 6 },
