@@ -9,6 +9,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { isMobileOnly } from 'react-device-detect';
 import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
 import { Sheet } from '../../../core/gridDB/Sheet';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 
 interface Props {
   sheet: Sheet;
@@ -16,6 +17,7 @@ interface Props {
 
 export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
   // Generate string describing cursor location
@@ -77,8 +79,10 @@ export const BottomBar = (props: Props) => {
         <span
           style={{ cursor: 'pointer' }}
           onClick={() => {
-            // copy cell position
-            navigator.clipboard.writeText(cursorPositionString);
+            setEditorInteractionState({
+              ...editorInteractionState,
+              showGoToMenu: true,
+            });
             // Set focus back to Grid
             focusGrid();
           }}

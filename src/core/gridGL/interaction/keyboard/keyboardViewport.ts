@@ -21,6 +21,14 @@ export function keyboardViewport(options: {
     return true;
   }
 
+  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyG') {
+    setEditorInteractionState({
+      ...editorInteractionState,
+      showGoToMenu: !editorInteractionState.showGoToMenu,
+    });
+    return true;
+  }
+
   if ((event.metaKey || event.ctrlKey) && event.code === 'Equal') {
     zoomIn(viewport);
     return true;

@@ -58,6 +58,7 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
         data-command-bar-list-item-index={listItemIndex}
         disabled={disabled}
         onClick={() => {
+          // FIXME: something here not working...
           action();
           closeCommandPalette();
         }}
