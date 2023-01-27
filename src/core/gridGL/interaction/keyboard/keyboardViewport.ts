@@ -16,6 +16,7 @@ export function keyboardViewport(options: {
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyP') {
     setEditorInteractionState({
       ...editorInteractionState,
+      showGoToMenu: false,
       showCommandPalette: !editorInteractionState.showCommandPalette,
     });
     return true;
@@ -24,6 +25,7 @@ export function keyboardViewport(options: {
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyG') {
     setEditorInteractionState({
       ...editorInteractionState,
+      showCommandPalette: false,
       showGoToMenu: !editorInteractionState.showGoToMenu,
     });
     return true;
