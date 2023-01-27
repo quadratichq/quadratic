@@ -125,6 +125,7 @@ export const FloatingFormatMenu = (props: Props) => {
         transformOrigin: '0 0',
         transform,
         pointerEvents: 'auto',
+        visibility: 'hidden',
         // zIndex: 9,
         // backgroundColor: 'white',
         // border: `1px solid ${colors.mediumGray}`,
