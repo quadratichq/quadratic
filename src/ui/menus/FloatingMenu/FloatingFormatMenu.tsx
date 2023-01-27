@@ -2,9 +2,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
-import { Divider, IconButton, MenuItem, Toolbar } from '@mui/material';
+import { Divider, IconButton, MenuItem, Paper, Toolbar } from '@mui/material';
 import { BorderAll, FormatBold, FormatClear, FormatColorFill, FormatItalic } from '@mui/icons-material';
-import { colors } from '../../../theme/colors';
 import { Menu } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
@@ -58,6 +57,20 @@ export const FloatingFormatMenu = (props: Props) => {
     let x = cell_offset_scaled.x + container.offsetLeft - 20;
     let y = cell_offset_scaled.y + container.offsetTop - menuHeight - 20;
 
+    // Hide if zoomed out too much
+    if (viewport.scale.x < 0.1) {
+      if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+    } else {
+      if (menuDiv.current) menuDiv.current.style.visibility = 'visible';
+    }
+
+    // Hide if not showing multi cursor
+    if (!interactionState.showMultiCursor) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+
+    // Hide if multi cursor is off screen
+    if (x < container.offsetLeft - 150) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+    if (y < container.offsetTop - 150) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+
     // if ouside of viewport keep it inside
     if (x < container.offsetLeft + 35) {
       x = container.offsetLeft + 35;
@@ -68,17 +81,8 @@ export const FloatingFormatMenu = (props: Props) => {
 
     // Generate transform CSS
     const transform = 'translate(' + [x, y].join('px,') + 'px) ';
-
     // // Update input css matrix
     if (menuDiv.current) menuDiv.current.style.transform = transform;
-
-    if (viewport.scale.x < 0.1) {
-      if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
-    } else {
-      if (menuDiv.current) menuDiv.current.style.visibility = 'visible';
-    }
-
-    if (!interactionState.showMultiCursor) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
 
     return transform;
   }, [
@@ -111,7 +115,7 @@ export const FloatingFormatMenu = (props: Props) => {
   const iconSize = 'small';
 
   return (
-    <div
+    <Paper
       ref={menuDiv}
       style={{
         display: 'block',
@@ -121,13 +125,14 @@ export const FloatingFormatMenu = (props: Props) => {
         transformOrigin: '0 0',
         transform,
         pointerEvents: 'auto',
-        zIndex: 9,
-        backgroundColor: 'white',
-        border: `1px solid ${colors.mediumGray}`,
-        borderRadius: '5px',
+        // zIndex: 9,
+        // backgroundColor: 'white',
+        // border: `1px solid ${colors.mediumGray}`,
+        // borderRadius: '5px',
         // drop shadow
-        boxShadow: `0px 0px 10px 0px ${colors.mediumGray}`,
+        // boxShadow: `0px 0px 10px 0px ${colors.mediumGray}`,
       }}
+      elevation={4}
     >
       <Toolbar
         style={{
@@ -170,6 +175,6 @@ export const FloatingFormatMenu = (props: Props) => {
           <FormatItalic fontSize={iconSize} />
         </IconButton>
       </Toolbar>
-    </div>
+    </Paper>
   );
 };
