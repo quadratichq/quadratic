@@ -65,19 +65,31 @@ export const FloatingFormatMenu = (props: Props) => {
     }
 
     // Hide if not showing multi cursor
+    // console.log('pointer down ', app?.input?.pointerDown?.active);
     if (!interactionState.showMultiCursor) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
 
-    // Hide if multi cursor is off screen
-    if (x < container.offsetLeft - 150) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
-    if (y < container.offsetTop - 150) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+    // Hide if currently selecting
+    if (app?.input?.pointerDown?.active) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+
+    // Hide FloatingFormatMenu if multi cursor is off screen
+    const terminal_pos = sheetController.sheet.gridOffsets.getCell(
+      interactionState.multiCursorPosition.terminalPosition.x,
+      interactionState.multiCursorPosition.terminalPosition.y
+    );
+    let multiselect_offset = viewport.toScreen(
+      terminal_pos.x + terminal_pos.width,
+      terminal_pos.y + terminal_pos.height
+    );
+    if (multiselect_offset.x < 0 || multiselect_offset.y < 0)
+      if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
 
     // if ouside of viewport keep it inside
     if (x < container.offsetLeft + 35) {
       x = container.offsetLeft + 35;
-    }
+    } // left
     if (y < container.offsetTop + 35) {
       y = container.offsetTop + 35;
-    }
+    } // top
 
     // Generate transform CSS
     const transform = 'translate(' + [x, y].join('px,') + 'px) ';
@@ -99,10 +111,12 @@ export const FloatingFormatMenu = (props: Props) => {
     if (!viewport) return;
     viewport.on('moved', updateInputCSSTransform);
     viewport.on('moved-end', updateInputCSSTransform);
+    document.addEventListener('pointerup', updateInputCSSTransform);
 
     return () => {
       viewport.removeListener('moved', updateInputCSSTransform);
       viewport.removeListener('moved-end', updateInputCSSTransform);
+      document.removeEventListener('pointerup', updateInputCSSTransform);
     };
   }, [viewport, updateInputCSSTransform]);
 
@@ -175,6 +189,38 @@ export const FloatingFormatMenu = (props: Props) => {
         <IconButton disabled={true}>
           <FormatItalic fontSize={iconSize} />
         </IconButton>
+        {/* 
+        <Divider
+          orientation="vertical"
+          flexItem
+          style={{
+            // add padding left and right
+            paddingLeft: '10px',
+            marginRight: '10px',
+          }}
+        />
+        <IconButton disabled={true}>
+          <FormatAlignLeft fontSize={iconSize} />
+        </IconButton>
+        <IconButton disabled={true}>
+          <FormatAlignCenter fontSize={iconSize} />
+        </IconButton>
+        <IconButton disabled={true}>
+          <FormatAlignRight fontSize={iconSize} />
+        </IconButton>
+
+        <Divider
+          orientation="vertical"
+          flexItem
+          style={{
+            // add padding left and right
+            paddingLeft: '10px',
+            // marginRight: '10px',
+          }}
+        />
+        <Button style={{ color: colors.mediumGray }} disabled>
+          <span style={{ fontSize: '1rem' }}>123</span>
+        </Button> */}
       </Toolbar>
     </Paper>
   );

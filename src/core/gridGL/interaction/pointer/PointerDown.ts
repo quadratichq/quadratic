@@ -10,7 +10,7 @@ const MINIMUM_MOVE_POSITION = 5;
 
 export class PointerDown {
   private app: PixiApp;
-  private active = false;
+  active = false;
 
   private positionRaw?: Point;
   private position?: Point;
