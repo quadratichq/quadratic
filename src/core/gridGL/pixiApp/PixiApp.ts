@@ -176,6 +176,11 @@ export class PixiApp {
     this.canvas.height = this.renderer.resolution * height;
     this.renderer.resize(width, height);
     this.viewport.resize(width, height);
+    this.gridLines.dirty = true;
+    this.axesLines.dirty = true;
+    this.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.cells.dirty = true;
   };
 
   checkZoom(): void {
