@@ -85,15 +85,15 @@ export class PixiApp {
     // useful for debugging at viewport locations
     this.debug = this.viewportContents.addChild(new Graphics());
 
+    this.quadrants = this.viewportContents.addChild(new Quadrants(this));
+    this.quadrants.visible = false;
+
     this.gridLines = this.viewportContents.addChild(new GridLines(this));
     this.axesLines = this.viewportContents.addChild(new AxesLines(this));
     this.cells = this.viewportContents.addChild(new Cells(this));
 
     // ensure the cell's background color is drawn first
     this.viewportContents.addChildAt(this.cells.cellsBackground, 0);
-
-    this.quadrants = this.viewportContents.addChild(new Quadrants(this));
-    this.quadrants.visible = false;
 
     this.cursor = this.viewportContents.addChild(new Cursor(this));
     this.headings = this.viewportContents.addChild(new GridHeadings(this));

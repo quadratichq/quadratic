@@ -4,7 +4,6 @@ import { Sheet } from '../../../gridDB/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { intersects } from '../../helpers/intersects';
 
 const MINIMUM_MOVE_POSITION = 5;
 
