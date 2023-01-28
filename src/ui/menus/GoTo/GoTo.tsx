@@ -17,21 +17,7 @@ export const GoTo = (props: Props) => {
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showGoToMenu } = editorInteractionState;
-  // const { showCommandPalette } = editorInteractionState;
-  // `(${interactionState.cursorPosition.x}, ${interactionState.cursorPosition.y})`
   const [value, setValue] = React.useState<string>('');
-
-  // Fn that closes the command palette and gets passed down to individual ListItems
-  // const closeCommandPalette = () => {
-  //   setEditorInteractionState({
-  //     ...editorInteractionState,
-  //     showCellTypeMenu: false,
-  //     showCommandPalette: false,
-  //   });
-  //   setActiveSearchValue('');
-  //   setSelectedListItemIndex(0);
-  //   focusGrid();
-  // };
 
   // Cleanup to initial state when component is closed
   useEffect(() => {
@@ -53,14 +39,14 @@ export const GoTo = (props: Props) => {
     setValue('');
   };
 
-  let coordinates = [[interactionState.cursorPosition.x, interactionState.cursorPosition.y]];
-  if (value) {
-    coordinates = getCoordinatesFromInput(value);
-  }
+  const parsedCoordinates = getCoordinatesFromInput(value);
+  const isValidInput = parsedCoordinates.length > 0;
+  const coordinates = isValidInput
+    ? parsedCoordinates
+    : [[interactionState.cursorPosition.x, interactionState.cursorPosition.y]];
 
   const onSelect = (e: any) => {
     e.preventDefault();
-    console.log(coordinates);
     const [[x, y], coor2] = coordinates;
 
     setInteractionState({
@@ -90,26 +76,8 @@ export const GoTo = (props: Props) => {
           autoFocus
           value={value}
           fullWidth
-          onKeyPress={(e: any) => {
-            if (e.key === 'Enter') {
-              return;
-            }
-            // Don't allow sequential delimeters, e.g. `,` and `:`
-            if ((e.key === ',' || e.key === ':') && (value.endsWith(',') || value.endsWith(':'))) {
-              e.preventDefault();
-            }
-            // Don't allow the first character to be a delimeter
-            if (value.length === 0 && (e.key === ',' || e.key === ':')) {
-              e.preventDefault();
-            }
-            // Only allow input for denoting cell ranges, e.g. `0-9`, `,` and `:`
-            if (/[^,:\d]/.test(e.key)) {
-              e.preventDefault();
-            }
-          }}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setValue(e.target.value);
-            return;
           }}
         />
 
@@ -119,20 +87,16 @@ export const GoTo = (props: Props) => {
           <ListItem disablePadding secondaryAction={<East fontSize="small" color="disabled" />}>
             <ListItemButton selected onSelect={onSelect}>
               <ListItemText
-                primary={
-                  value
-                    ? `Go to ${coordinates.length === 1 ? 'cell' : 'range'}: ${coordinates
-                        .map((r) => `(${r})`)
-                        .join(' – ')}`
-                    : `Go to current cell: (${interactionState.cursorPosition.x}, ${interactionState.cursorPosition.y})`
-                }
+                primary={`Go to ${value && isValidInput ? '' : 'current'} ${
+                  coordinates.length === 1 ? 'cell' : 'range'
+                }: ${coordinates.map(([x, y]) => `(${x}, ${y})`).join(' – ')}`}
               />
             </ListItemButton>
           </ListItem>
 
           <Divider />
           <ListItem disabled>
-            <ListItemText primary="Specify a cell — 0,0 — or a range — 0,0:5,5" />
+            <ListItemText primary="Specify a cell – 0 0 — or a range — 0 0 -5 -5" />
           </ListItem>
         </List>
       </Paper>
@@ -141,33 +105,33 @@ export const GoTo = (props: Props) => {
 };
 
 /**
- * Takes the input (which, thanks to the keyPress event, should be guaranteed
- * to be of a specific format) and returns a set of coordinates.
+ * Takes the input and returns an array with coordinates (if input is valid).
  * Minimum: 1 set of x/y coordinates, e.g. [[0,1]]
  * Maximum: 2 sets of x/y coordinates, e.g. [[0,1], [1,5]]
  *
  * TODO write unit tests for this
  */
-function getCoordinatesFromInput(str: string): [[number, number]] | [[number, number], [number, number]] {
+function getCoordinatesFromInput(str: string) {
+  // @ts-expect-error
   let out = [];
 
-  const [range1, range2] = str.split(':');
-  let [x1, y1] = range1.split(',');
-  if (x1) {
-    out.push([Number(x1), y1 === undefined ? 0 : Number(y1)]);
+  const matches = str.match(/-?\d+/g);
+
+  // 0 matches
+  if (!matches) {
+    // @ts-expect-error
+    return out;
   }
 
-  if (range2 !== undefined) {
-    let [x2, y2] = range2.split(',');
+  // 1 or 2 matches
+  const [x1, y1, x2, y2] = matches.map((str) => Number(str));
+  out.push([x1, y1 === undefined ? 0 : y1]);
 
-    const [[x1, y1]] = out;
-    if (x2 === '') {
-      out.push([x1 + 1, y1 + 1]);
-    } else {
-      out.push([Number(x2), y2 ? Number(y2) : y1 + 1]);
-    }
+  // 3 or 4 matches
+  if (Number.isInteger(x2)) {
+    out.push([x2, y2 === undefined ? y1 + 1 : y2]);
   }
 
-  // @ts-expect-error
+  // Return match(es)
   return out;
 }
