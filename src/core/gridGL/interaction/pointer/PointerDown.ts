@@ -10,7 +10,7 @@ const MINIMUM_MOVE_POSITION = 5;
 
 export class PointerDown {
   private app: PixiApp;
-  private active = false;
+  active = false;
 
   private positionRaw?: Point;
   private position?: Point;
@@ -172,6 +172,24 @@ export class PointerDown {
       }
     }
 
+    // cursor intersects edges
+    // if (
+    //   !this.active ||
+    //   !this.position ||
+    //   !this.previousPosition ||
+    //   !this.positionRaw ||
+    //   !settings.setInteractionState
+    // ) {
+    //   if (
+    //     Math.abs(this.app.cursor.format_indicator.x - world.x) < 3 ||
+    //     Math.abs(this.app.cursor.format_indicator.y - world.y) < 3
+    //   ) {
+    //     this.app.canvas.style.cursor = 'grab';
+    //   }
+
+    // }
+
+    // cursor intersects indicator
     if (
       !this.active ||
       !this.position ||
@@ -180,7 +198,7 @@ export class PointerDown {
       !settings.setInteractionState
     ) {
       if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
-        this.app.canvas.style.cursor = 'crosshair';
+        this.app.canvas.style.cursor = 'cell';
       }
       return;
     }

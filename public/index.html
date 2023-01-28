@@ -55,6 +55,9 @@
     
     Disable inertial scroll
     https://stackoverflow.com/questions/28103125/disable-inertia-scroll-for-single-page-webapp
+
+    Disable two finger scroll to go back (overscroll-behavior-x: contain;)
+    https://stackoverflow.com/questions/15829172/stop-chrome-back-forward-two-finger-swipe
   -->
   <script>
     window.addEventListener(
@@ -74,6 +77,7 @@
     #root,
     .App {
       height: 100%;
+      overscroll-behavior-x: contain;
     }
     body {
       overflow: hidden;
