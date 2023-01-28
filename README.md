@@ -62,6 +62,7 @@ _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 - [x] Open and Save files locally
 - [x] Python (WASM)
 - [x] Pandas Support
+- [ ] Excel Formula Support
 - [ ] Moving cells and resizing columns (issue [#138](https://github.com/quadratichq/quadratic/pull/138))
 - [ ] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
 - [ ] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
