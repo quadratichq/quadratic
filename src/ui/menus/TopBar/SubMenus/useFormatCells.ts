@@ -10,12 +10,16 @@ interface IResults {
   changeFillColor: (rgb: ColorResult) => void;
   removeFillColor: () => void;
   clearFormatting: () => void;
+  changeBold: (bold: boolean) => void;
+  changeItalics: (italics: boolean) => void;
+  changeTextColor: (rgb: ColorResult) => void;
+  removeTextColor: () => void;
 }
 
 type CellFormatNoPosition = Exclude<CellFormat, 'x' | 'y'>;
 
-export const useFormatCells = (sheet_controller: SheetController, app?: PixiApp): IResults => {
-  const { start, end } = useGetSelection();
+export const useFormatCells = (sheet_controller: SheetController, app: PixiApp): IResults => {
+  const { start, end } = useGetSelection(app);
 
   const onFormat = (updatedFormat: CellFormatNoPosition): void => {
     const formats: CellFormat[] = [];
@@ -77,9 +81,29 @@ export const useFormatCells = (sheet_controller: SheetController, app?: PixiApp)
     localFiles.saveLastLocal(sheet_controller.sheet.export_file());
   };
 
+  const changeBold = (bold: boolean): void => {
+    onFormat({ bold });
+  };
+
+  const changeItalics = (italics: boolean): void => {
+    onFormat({ italics });
+  }
+
+  const changeTextColor = (rgb: ColorResult): void => {
+    onFormat({ textColor: convertReactColorToString(rgb) });
+  };
+
+  const removeTextColor = (): void => {
+    onFormat({ textColor: undefined });
+  };
+
   return {
     changeFillColor,
     removeFillColor,
     clearFormatting,
+    changeBold,
+    changeItalics,
+    changeTextColor,
+    removeTextColor,
   };
 };

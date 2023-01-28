@@ -35,7 +35,7 @@ interface IProps {
 }
 
 export const FormatMenu = (props: IProps) => {
-  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(props.sheet_controller, props.app);
+  const { changeFillColor, removeFillColor, clearFormatting, changeBold } = useFormatCells(props.sheet_controller, props.app);
   const { clearBorders } = useBorders(props.sheet_controller.sheet, props.app);
 
   // focus canvas after the format menu closes
@@ -65,18 +65,19 @@ export const FormatMenu = (props: IProps) => {
         </Tooltip>
       }
     >
-      <MenuItem disabled>
+      <MenuItem type="checkbox" checked={true}>
         <FormatBold style={menuItemIconDisabledStyles}></FormatBold> Bold
       </MenuItem>
-      <MenuItem disabled>
+      <MenuItem type="checkbox">
         <FormatItalic style={menuItemIconDisabledStyles}></FormatItalic> Italic
       </MenuItem>
-      <MenuItem disabled>
+      <MenuItem className="menuItemIndent">
         <FormatColorText style={menuItemIconDisabledStyles}></FormatColorText> Text color
       </MenuItem>
 
       <MenuDivider />
       <SubMenu
+        className="menuItemIndent"
         label={
           <Fragment>
             <ReadMore style={menuItemIconStyles}></ReadMore>
@@ -84,24 +85,25 @@ export const FormatMenu = (props: IProps) => {
           </Fragment>
         }
       >
-        <MenuItem disabled>Overflow</MenuItem>
-        <MenuItem disabled>Wrap</MenuItem>
-        <MenuItem disabled>Clip</MenuItem>
+        <MenuItem type="checkbox">Overflow</MenuItem>
+        <MenuItem type="checkbox">Wrap</MenuItem>
+        <MenuItem type="checkbox">Clip</MenuItem>
       </SubMenu>
 
       <MenuDivider />
-      <MenuItem disabled>
+      <MenuItem type="checkbox">
         <FormatAlignLeft style={menuItemIconDisabledStyles}></FormatAlignLeft> Left
       </MenuItem>
-      <MenuItem disabled>
+      <MenuItem type="checkbox">
         <FormatAlignCenter style={menuItemIconDisabledStyles}></FormatAlignCenter> Center
       </MenuItem>
-      <MenuItem disabled>
+      <MenuItem type="checkbox">
         <FormatAlignRight style={menuItemIconDisabledStyles}></FormatAlignRight> Right
       </MenuItem>
 
       <MenuDivider />
       <SubMenu
+        className="menuItemIndent"
         id="FillColorMenuID"
         menuStyles={{
           padding: '0px',
@@ -117,6 +119,7 @@ export const FormatMenu = (props: IProps) => {
       </SubMenu>
 
       <SubMenu
+        className="menuItemIndent"
         label={
           <Fragment>
             <BorderAll style={menuItemIconStyles}></BorderAll>
@@ -128,7 +131,7 @@ export const FormatMenu = (props: IProps) => {
       </SubMenu>
 
       <MenuDivider />
-      <MenuItem onClick={handleClearFormatting}>
+      <MenuItem onClick={handleClearFormatting} className="menuItemIndent">
         <FormatClear style={menuItemIconStyles}></FormatClear>
         Clear formatting
       </MenuItem>
