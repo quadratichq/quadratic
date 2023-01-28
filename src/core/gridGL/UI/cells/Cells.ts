@@ -132,7 +132,7 @@ export class Cells extends Container {
           });
         }
       }
-      if (entry.cell?.array_cells) {
+      if (this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
         this.cellsArray.draw(entry.cell.array_cells, x, y, width, height);
       }
 
