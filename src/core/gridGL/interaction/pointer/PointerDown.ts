@@ -49,23 +49,23 @@ export class PointerDown {
     const { interactionState, setInteractionState } = settings;
     const { gridOffsets } = this.sheet;
 
-    // handle dragging from the corner
-    if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
-      const cursorPosition = interactionState.cursorPosition;
-      const end = this.getEndCell();
-      const { column, row } = gridOffsets.getRowColumnFromWorld(end.x, end.y);
-      const originX = cursorPosition.x < column ? cursorPosition.x : column;
-      const originY = cursorPosition.y < row ? cursorPosition.y : row;
-      this.active = true;
-      this.position = new Point(originX, originY);
-      this.positionRaw = end;
-      this.pointerMoved = true;
-      this.previousPosition = {
-        originPosition: new Point(originX, originY),
-        terminalPosition: new Point(column, row),
-      };
-      return;
-    }
+    // handle dragging from the corner (disabled for now)
+    // if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
+    //   const cursorPosition = interactionState.cursorPosition;
+    //   const end = this.getEndCell();
+    //   const { column, row } = gridOffsets.getRowColumnFromWorld(end.x, end.y);
+    //   const originX = cursorPosition.x < column ? cursorPosition.x : column;
+    //   const originY = cursorPosition.y < row ? cursorPosition.y : row;
+    //   this.active = true;
+    //   this.position = new Point(originX, originY);
+    //   this.positionRaw = end;
+    //   this.pointerMoved = true;
+    //   this.previousPosition = {
+    //     originPosition: new Point(originX, originY),
+    //     terminalPosition: new Point(column, row),
+    //   };
+    //   return;
+    // }
 
     this.positionRaw = world;
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
@@ -189,7 +189,7 @@ export class PointerDown {
 
     // }
 
-    // cursor intersects indicator
+    // cursor intersects bottom-corner indicator (disabled for now)
     if (
       !this.active ||
       !this.position ||
@@ -197,9 +197,9 @@ export class PointerDown {
       !this.positionRaw ||
       !settings.setInteractionState
     ) {
-      if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
-        this.app.canvas.style.cursor = 'cell';
-      }
+      // if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
+      //   this.app.canvas.style.cursor = 'cell';
+      // }
       return;
     }
 
