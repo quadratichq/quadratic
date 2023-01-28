@@ -201,7 +201,7 @@ export class Cells extends Container {
       y += height;
     }
 
-    const clipRectangle = gridOffsets.getScreenRectangle(bounds.x, bounds.y, bounds.right, bounds.bottom);
+    const clipRectangle = gridOffsets.getScreenRectangle(bounds.x, bounds.y, bounds.width, bounds.height);
 
     // check for dependencies across entire bounds
     const dependentCells = render_dependency.getDependentsInBounds(bounds);
