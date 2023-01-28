@@ -2,6 +2,7 @@ import { Container, Rectangle } from 'pixi.js';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
 import { CELL_TEXT_MARGIN_LEFT } from '../../../../constants/gridConstants';
+import { CellFormat } from '../../../gridDB/gridTypes';
 
 interface LabelData {
   text: string;
@@ -10,6 +11,7 @@ interface LabelData {
   location?: Coordinate;
   isQuadrant?: boolean;
   expectedWidth: number;
+  format?: CellFormat;
 }
 
 export class CellsLabels extends Container {

@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { Coordinate } from '../../../../core/gridGL/types/size';
 import { Sheet } from '../../../../core/gridDB/Sheet';
+import { CellFormat } from '../../../../core/gridDB/gridTypes';
+import { FORMAT_SELECTION_EVENT } from './useFormatCells';
 
-export type MultipleBoolean = true | false | "some";
+export type MultipleBoolean = true | false | "multiple";
 export type MultipleString = string | "multiple";
 
 interface MultipleFormat {
@@ -20,24 +22,97 @@ interface GetSelection {
   format: MultipleFormat;
 }
 
-const setFormat = (format: MultipleFormat, sheet: Sheet): void => {
+const setFormat = (cells: CellFormat[]): MultipleFormat => {
+  let bold: MultipleBoolean | undefined;
+  let italics: MultipleBoolean | undefined;
+  let textColor: string | undefined | "multiple";
 
+  cells.forEach(cell => {
+    if (cell.bold === true) {
+      if (bold !== "multiple") {
+        if (bold === false) {
+          bold = "multiple";
+        } else {
+          bold = true;
+        }
+      }
+    } else if (cell.bold === false) {
+      if (bold === true) {
+        bold = "multiple";
+      }
+      bold = cell.bold;
+    }
+
+    if (cell.italics === true) {
+      if (italics !== "multiple") {
+        if (italics === false) {
+          italics = "multiple";
+        } else {
+          italics = true;
+        }
+      }
+    } else if (cell.italics === false) {
+      if (italics === true) {
+        italics = "multiple";
+      }
+      italics = cell.italics;
+    }
+
+    if (cell.textColor) {
+      if (textColor !== "multiple") {
+        if (textColor === undefined) {
+          textColor = cell.textColor;
+        } else if (textColor !== cell.textColor) {
+          textColor = "multiple";
+        }
+      }
+    } else if (textColor !== cell.textColor) {
+      textColor = "multiple";
+    }
+  });
+
+  return {
+    bold: bold ?? false,
+    italics: italics ?? false,
+    textColor,
+  }
 };
 
 export const useGetSelection = (sheet: Sheet): GetSelection => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const multiCursor = interactionState.showMultiCursor;
 
+  // used to trigger a new format calculation after a format change (see useFormatCells.ts)
+  const [trigger, setTrigger] = useState(0);
+  const setTriggerCallback = useCallback(() => {
+    setTrigger(trigger => trigger + 1);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener(FORMAT_SELECTION_EVENT, setTriggerCallback);
+
+    return () => {
+      window.removeEventListener(FORMAT_SELECTION_EVENT, setTriggerCallback);
+    }
+  }, [setTriggerCallback]);
+
   return useMemo(() => {
-    let start: Coordinate, end: Coordinate, format: MultipleFormat = { bold: false, italics: false, textColor: undefined };
+    let start: Coordinate, end: Coordinate, format: MultipleFormat;
     if (multiCursor) {
       start = interactionState.multiCursorPosition.originPosition;
       end = interactionState.multiCursorPosition.terminalPosition;
-      setFormat(format, sheet.grid.getNakedCells(start.x, start.y, end.x, end.y));
+      format = setFormat(sheet.grid.getNakedFormat(start.x, start.y, end.x, end.y));
     } else {
       start = interactionState.cursorPosition;
       end = interactionState.cursorPosition;
+      const cellFormat = sheet.grid.getFormat(start.x, start.y);
+      if (cellFormat) {
+        format = setFormat([cellFormat]);
+      } else {
+        format = setFormat([]);
+      }
     }
     return { start, end, multiCursor, format };
-  }, [interactionState.multiCursorPosition, interactionState.cursorPosition, multiCursor]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [multiCursor, interactionState.multiCursorPosition.originPosition, interactionState.multiCursorPosition.terminalPosition, interactionState.cursorPosition, sheet.grid, trigger]);
 };

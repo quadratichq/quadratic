@@ -28,6 +28,7 @@ import './formatMenuStyles.scss';
 
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../../core/transaction/sheetController';
+import { useGetSelection } from '../useGetSelection';
 
 interface IProps {
   app: PixiApp;
@@ -35,6 +36,7 @@ interface IProps {
 }
 
 export const FormatMenu = (props: IProps) => {
+  const { format } = useGetSelection(props.sheet_controller.sheet);
   const { changeFillColor, removeFillColor, clearFormatting, changeBold } = useFormatCells(props.sheet_controller, props.app);
   const { clearBorders } = useBorders(props.sheet_controller.sheet, props.app);
 
@@ -65,7 +67,7 @@ export const FormatMenu = (props: IProps) => {
         </Tooltip>
       }
     >
-      <MenuItem type="checkbox" checked={true}>
+      <MenuItem type="checkbox" checked={format.bold === true} onClick={() => changeBold(!(format.bold === true))}>
         <FormatBold style={menuItemIconDisabledStyles}></FormatBold> Bold
       </MenuItem>
       <MenuItem type="checkbox">

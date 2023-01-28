@@ -6,6 +6,8 @@ import { SheetController } from '../../../../core/transaction/sheetController';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { useGetSelection } from './useGetSelection';
 
+export const FORMAT_SELECTION_EVENT = "formatSelectionEvent";
+
 interface IResults {
   changeFillColor: (rgb: ColorResult) => void;
   removeFillColor: () => void;
@@ -19,7 +21,7 @@ interface IResults {
 type CellFormatNoPosition = Exclude<CellFormat, 'x' | 'y'>;
 
 export const useFormatCells = (sheet_controller: SheetController, app: PixiApp): IResults => {
-  const { start, end } = useGetSelection(app);
+  const { start, end } = useGetSelection(sheet_controller.sheet);
 
   const onFormat = (updatedFormat: CellFormatNoPosition): void => {
     const formats: CellFormat[] = [];
@@ -45,6 +47,9 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
 
     app?.quadrants.quadrantChanged({ range: { start, end } });
     localFiles.saveLastLocal(sheet_controller.sheet.export_file());
+
+    // triggers an even to indicate selection's format change (see useGetSelection.ts)
+    window.dispatchEvent(new CustomEvent(FORMAT_SELECTION_EVENT));
   };
 
   const changeFillColor = (color: ColorResult): void => {

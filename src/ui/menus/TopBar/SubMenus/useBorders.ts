@@ -23,7 +23,7 @@ interface IResults {
 }
 
 export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
-  const { start, end, multiCursor } = useGetSelection();
+  const { start, end, multiCursor } = useGetSelection(sheet);
   const { sheet_controller } = app;
 
   const changeBorders = (options: ChangeBorder): void => {

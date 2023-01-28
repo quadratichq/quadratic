@@ -183,6 +183,19 @@ export class GridSparse {
     return cells;
   }
 
+  getNakedFormat(x0: number, y0: number, x1: number, y1: number): CellFormat[] {
+    const cells: CellFormat[] = [];
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const cell = this.cells.get(this.getKey(x, y));
+        if (cell?.format) {
+          cells.push(cell.format);
+        }
+      }
+    }
+    return cells;
+  }
+
   getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
     const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
     const columnStart = columnStartIndex.index > this.minX ? columnStartIndex.index : this.minX;
