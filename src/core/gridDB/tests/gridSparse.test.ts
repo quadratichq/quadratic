@@ -6,7 +6,6 @@ import { Cell, CellFormat } from '../gridTypes';
 
 describe('gridSparse', () => {
   const gridOffsets = new GridOffsets();
-  let gridSparse: GridSparse;
 
   it('creates an empty gridSparse', () => {
     const gridSparse = new GridSparse(gridOffsets);
@@ -143,6 +142,7 @@ describe('gridSparse', () => {
   });
 
   it('populates cells with 1 cell of format data (negative)', () => {
+    const gridSparse = new GridSparse(gridOffsets);
     gridSparse.populate(
       [],
       [
@@ -173,6 +173,7 @@ describe('gridSparse', () => {
   });
 
   it('populates cells with multiple cells of format data', () => {
+    const gridSparse = new GridSparse(gridOffsets);
     gridSparse.populate(
       [],
       [
