@@ -45,6 +45,14 @@ export class CellsLabels extends Container {
     }
   }
 
+  private compareLabelData(label: CellLabel, data: LabelData): boolean {
+    const isSame = (a?: boolean, b?: boolean): boolean => {
+      return (!a && !b) || (a && b) ? true : false;
+    };
+
+    return label.originalText === data.text && isSame(label.format?.bold, data.format?.bold) && isSame(label.format?.italics, data.format?.italics);
+  }
+
   /**
    * add labels to headings using cached labels
    * @returns the visual bounds only if isQuadrant is defined (otherwise not worth the .width/.height call)
@@ -63,7 +71,7 @@ export class CellsLabels extends Container {
 
     // reuse existing labels that have the same text
     this.labelData.forEach((data) => {
-      const index = available.findIndex((label) => label.originalText === data.text);
+      const index = available.findIndex((label) => this.compareLabelData(label, data));
       if (index === -1) {
         leftovers.push(data);
       } else {
@@ -100,7 +108,7 @@ export class CellsLabels extends Container {
 
       // otherwise create new labels
       else {
-        label = this.addChild(new CellLabel());
+        label = this.addChild(new CellLabel(data.format));
       }
       label.position.set(data.x, data.y);
       label.text = data.text;

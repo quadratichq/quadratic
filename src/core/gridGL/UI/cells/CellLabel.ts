@@ -1,5 +1,6 @@
 import { Coordinate } from '../../types/size';
 import { BitmapTextClip } from '../../pixiOverride/BitmapTextClip';
+import { CellFormat } from '../../../gridDB/gridTypes';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -11,14 +12,19 @@ export class CellLabel extends BitmapTextClip {
   overflowRight?: number;
   overflowLeft?: number;
   originalText?: string;
+  format?: CellFormat;
 
-  constructor() {
+  constructor(format?: CellFormat) {
+    const bold = format?.bold ? 'Bold' : '';
+    const italics = format?.italics ? 'Italics' : '';
+    const fontName = `OpenSans${bold || italics ? '-' : ''}${bold}${italics}`;
     super('', {
-      fontName: 'OpenSans',
+      fontName,
       fontSize,
       tint: 0,
       align: 'left',
     });
+    this.format = format;
   }
 
   set text(text: string) {
