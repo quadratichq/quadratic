@@ -11,7 +11,7 @@ export type MultipleString = string | "multiple";
 
 interface MultipleFormat {
   bold: MultipleBoolean;
-  italics: MultipleBoolean;
+  italic: MultipleBoolean;
   textColor: string | undefined | "multiple";
 }
 
@@ -24,7 +24,7 @@ interface GetSelection {
 
 const setFormat = (cells: CellFormat[]): MultipleFormat => {
   let bold: MultipleBoolean | undefined;
-  let italics: MultipleBoolean | undefined;
+  let italic: MultipleBoolean | undefined;
   let textColor: string | undefined | "multiple";
 
   cells.forEach(cell => {
@@ -43,19 +43,19 @@ const setFormat = (cells: CellFormat[]): MultipleFormat => {
       bold = cell.bold;
     }
 
-    if (cell.italics === true) {
-      if (italics !== "multiple") {
-        if (italics === false) {
-          italics = "multiple";
+    if (cell.italic === true) {
+      if (italic !== "multiple") {
+        if (italic === false) {
+          italic = "multiple";
         } else {
-          italics = true;
+          italic = true;
         }
       }
-    } else if (cell.italics === false) {
-      if (italics === true) {
-        italics = "multiple";
+    } else if (cell.italic === false) {
+      if (italic === true) {
+        italic = "multiple";
       }
-      italics = cell.italics;
+      italic = cell.italic;
     }
 
     if (cell.textColor) {
@@ -73,7 +73,7 @@ const setFormat = (cells: CellFormat[]): MultipleFormat => {
 
   return {
     bold: bold ?? false,
-    italics: italics ?? false,
+    italic: italic ?? false,
     textColor,
   }
 };
@@ -113,6 +113,8 @@ export const useGetSelection = (sheet: Sheet): GetSelection => {
       }
     }
     return { start, end, multiCursor, format };
+
+  // this is needed for trigger to cause a useMemo change
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [multiCursor, interactionState.multiCursorPosition.originPosition, interactionState.multiCursorPosition.terminalPosition, interactionState.cursorPosition, sheet.grid, trigger]);
 };

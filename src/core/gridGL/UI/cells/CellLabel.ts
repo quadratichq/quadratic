@@ -15,15 +15,20 @@ export class CellLabel extends BitmapTextClip {
   format?: CellFormat;
 
   constructor(format?: CellFormat) {
-    const bold = format?.bold ? 'Bold' : '';
-    const italics = format?.italics ? 'Italics' : '';
-    const fontName = `OpenSans${bold || italics ? '-' : ''}${bold}${italics}`;
     super('', {
-      fontName,
+      fontName: "OpenSans",
       fontSize,
       tint: 0,
       align: 'left',
     });
+    this.setFormat(format);
+  }
+
+  setFormat(format?: CellFormat): void {
+    const bold = format?.bold ? 'Bold' : '';
+    const italic = format?.italic ? 'Italic' : '';
+    const fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
+    this.fontName = fontName;
     this.format = format;
   }
 

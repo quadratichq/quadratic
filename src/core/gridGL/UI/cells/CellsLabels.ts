@@ -49,8 +49,7 @@ export class CellsLabels extends Container {
     const isSame = (a?: boolean, b?: boolean): boolean => {
       return (!a && !b) || (a && b) ? true : false;
     };
-
-    return label.originalText === data.text && isSame(label.format?.bold, data.format?.bold) && isSame(label.format?.italics, data.format?.italics);
+    return label.originalText === data.text && isSame(label.format?.bold, data.format?.bold) && isSame(label.format?.italic, data.format?.italic);
   }
 
   /**
@@ -104,6 +103,7 @@ export class CellsLabels extends Container {
       if (i < available.length) {
         label = available[i];
         label.visible = true;
+        label.setFormat(data.format);
       }
 
       // otherwise create new labels

@@ -13,7 +13,7 @@ interface IResults {
   removeFillColor: () => void;
   clearFormatting: () => void;
   changeBold: (bold: boolean) => void;
-  changeItalics: (italics: boolean) => void;
+  changeItalic: (italic: boolean) => void;
   changeTextColor: (rgb: ColorResult) => void;
   removeTextColor: () => void;
 }
@@ -45,7 +45,10 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     });
     sheet_controller.end_transaction();
 
-    app?.quadrants.quadrantChanged({ range: { start, end } });
+    if (app) {
+      app.quadrants.quadrantChanged({ range: { start, end } });
+      app.cells.dirty = true;
+    }
     localFiles.saveLastLocal(sheet_controller.sheet.export_file());
 
     // triggers an even to indicate selection's format change (see useGetSelection.ts)
@@ -90,8 +93,8 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     onFormat({ bold });
   };
 
-  const changeItalics = (italics: boolean): void => {
-    onFormat({ italics });
+  const changeItalic = (italic: boolean): void => {
+    onFormat({ italic });
   }
 
   const changeTextColor = (rgb: ColorResult): void => {
@@ -107,7 +110,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     removeFillColor,
     clearFormatting,
     changeBold,
-    changeItalics,
+    changeItalic,
     changeTextColor,
     removeTextColor,
   };

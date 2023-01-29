@@ -37,7 +37,7 @@ interface IProps {
 
 export const FormatMenu = (props: IProps) => {
   const { format } = useGetSelection(props.sheet_controller.sheet);
-  const { changeFillColor, removeFillColor, clearFormatting, changeBold } = useFormatCells(props.sheet_controller, props.app);
+  const { changeFillColor, removeFillColor, clearFormatting, changeBold, changeItalic } = useFormatCells(props.sheet_controller, props.app);
   const { clearBorders } = useBorders(props.sheet_controller.sheet, props.app);
 
   // focus canvas after the format menu closes
@@ -70,7 +70,7 @@ export const FormatMenu = (props: IProps) => {
       <MenuItem type="checkbox" checked={format.bold === true} onClick={() => changeBold(!(format.bold === true))}>
         <FormatBold style={menuItemIconDisabledStyles}></FormatBold> Bold
       </MenuItem>
-      <MenuItem type="checkbox">
+      <MenuItem type="checkbox" checked={format.italic === true} onClick={() => changeItalic(!(format.italic === true))}>
         <FormatItalic style={menuItemIconDisabledStyles}></FormatItalic> Italic
       </MenuItem>
       <MenuItem className="menuItemIndent">

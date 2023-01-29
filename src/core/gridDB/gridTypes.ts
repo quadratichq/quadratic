@@ -35,7 +35,7 @@ export interface CellFormat {
   y?: number;
   fillColor?: string;
   bold?: boolean;
-  italics?: boolean;
+  italic?: boolean;
   textColor?: string;
   wrapping?: CellWrapping;  // default is overflow
   alignment?: CellAlignment;  // default is left
