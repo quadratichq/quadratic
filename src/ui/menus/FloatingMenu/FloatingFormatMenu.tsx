@@ -9,6 +9,7 @@ import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu
 import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { useBorders } from '../TopBar/SubMenus/useBorders';
 import { QColorPicker } from '../../components/qColorPicker';
+import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -24,7 +25,8 @@ export const FloatingFormatMenu = (props: Props) => {
 
   const menuDiv = useRef<HTMLDivElement>(null);
   const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
-  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(sheetController, props.app);
+  const { changeFillColor, removeFillColor, clearFormatting, changeBold, changeItalic } = useFormatCells(sheetController, props.app);
+  const { format } = useGetSelection(sheetController.sheet);
   const { clearBorders } = useBorders(sheetController.sheet, props.app);
 
   const handleClearFormatting = useCallback(() => {
@@ -93,7 +95,7 @@ export const FloatingFormatMenu = (props: Props) => {
 
     // Generate transform CSS
     const transform = 'translate(' + [x, y].join('px,') + 'px) ';
-    // // Update input css matrix
+    // Update input css matrix
     if (menuDiv.current) menuDiv.current.style.transform = transform;
 
     return transform;
@@ -183,13 +185,13 @@ export const FloatingFormatMenu = (props: Props) => {
             marginRight: '10px',
           }}
         />
-        <IconButton disabled={true}>
+        <IconButton onClick={() => changeBold(!format.bold)}>
           <FormatBold fontSize={iconSize} />
         </IconButton>
-        <IconButton disabled={true}>
+        <IconButton onClick={() => changeItalic(!format.italic)}>
           <FormatItalic fontSize={iconSize} />
         </IconButton>
-        {/* 
+        {/*
         <Divider
           orientation="vertical"
           flexItem
