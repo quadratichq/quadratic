@@ -90,8 +90,9 @@ export class Cells extends Container {
             column--;
           } while (x > label.overflowLeft);
         }
-
-        changes.push(...render_dependency.update(label.location, dependents));
+        const dependencies = render_dependency.update(label.location, dependents);
+        this.app.quadrants.quadrantChanged({ cells: dependents });
+        changes.push(...dependencies);
       }
     });
 
