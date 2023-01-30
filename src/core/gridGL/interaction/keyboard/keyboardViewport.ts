@@ -22,7 +22,7 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyG') {
+  if ((event.metaKey || event.ctrlKey) && (event.code === 'KeyG' || event.code === 'KeyJ')) {
     setEditorInteractionState({
       ...editorInteractionState,
       showCommandPalette: false,
