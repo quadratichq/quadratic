@@ -20,3 +20,6 @@ export const GetCellsDB = async (
 export const GetCellsDBSetSheet = (value: Sheet): void => {
   sheet = value;
 };
+
+//@ts-ignore
+window.GetCellsDB = GetCellsDB;

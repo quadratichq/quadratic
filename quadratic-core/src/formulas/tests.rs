@@ -1,10 +1,13 @@
+use async_trait::async_trait;
+
 use super::*;
 
 /// `GridProxy` implementation that just panics whenever a cell is accessed.
 #[derive(Debug, Default, Copy, Clone)]
 struct PanicGridMock;
+#[async_trait(?Send)]
 impl GridProxy for PanicGridMock {
-    fn get(&self, _pos: Pos) -> Option<String> {
+    async fn get(&mut self, _pos: Pos) -> Option<String> {
         panic!("no cell should be accessed")
     }
 }
@@ -15,8 +18,9 @@ fn test_formula_cell_ref() {
 
     #[derive(Debug, Default, Copy, Clone)]
     struct GridMock;
+    #[async_trait(?Send)]
     impl GridProxy for GridMock {
-        fn get(&self, pos: Pos) -> Option<String> {
+        async fn get(&mut self, pos: Pos) -> Option<String> {
             // The formula was parsed at C4, but we'll be evaluating it from Z0
             // so adjust the cell coordinates accordingly.
             Some(match (pos.x, pos.y) {
@@ -32,12 +36,16 @@ fn test_formula_cell_ref() {
 
     assert_eq!(
         FormulaErrorMsg::CircularReference,
-        form.eval(&GridMock, Pos::new(3, 4),).unwrap_err().msg,
+        form.eval_blocking(&mut GridMock, Pos::new(3, 4))
+            .unwrap_err()
+            .msg,
     );
 
     assert_eq!(
         "11111".to_string(),
-        form.eval(&GridMock, Pos::new(0, 0),).unwrap().to_string(),
+        form.eval_blocking(&mut GridMock, Pos::new(0, 0))
+            .unwrap()
+            .to_string(),
     );
 }
 
@@ -47,7 +55,7 @@ fn test_formula_math_operators() {
 
     assert_eq!(
         (1 * -6 + -2 - 1 * (-3_i32).pow(2_u32.pow(3))).to_string(),
-        form.eval(&PanicGridMock, Pos::new(0, 0))
+        form.eval_blocking(&mut PanicGridMock, Pos::new(0, 0))
             .unwrap()
             .to_string(),
     );
@@ -59,7 +67,7 @@ fn test_formula_concat() {
 
     assert_eq!(
         "Hello, 14000605 worlds!".to_string(),
-        form.eval(&PanicGridMock, Pos::new(0, 0))
+        form.eval_blocking(&mut PanicGridMock, Pos::new(0, 0))
             .unwrap()
             .to_string(),
     );
@@ -71,8 +79,9 @@ fn test_formula_if() {
 
     #[derive(Debug, Default, Copy, Clone)]
     struct GridMock;
+    #[async_trait(?Send)]
     impl GridProxy for GridMock {
-        fn get(&self, pos: Pos) -> Option<String> {
+        async fn get(&mut self, pos: Pos) -> Option<String> {
             Some(match (pos.x, pos.y) {
                 (0, 1) => "2".to_string(),
                 (1, 1) => "16".to_string(),
@@ -83,10 +92,14 @@ fn test_formula_if() {
 
     assert_eq!(
         "yep".to_string(),
-        form.eval(&GridMock, Pos::new(0, 0)).unwrap().to_string(),
+        form.eval_blocking(&mut GridMock, Pos::new(0, 0))
+            .unwrap()
+            .to_string(),
     );
     assert_eq!(
         "nope".to_string(),
-        form.eval(&GridMock, Pos::new(1, 0)).unwrap().to_string(),
+        form.eval_blocking(&mut GridMock, Pos::new(1, 0))
+            .unwrap()
+            .to_string(),
     );
 }

@@ -1,4 +1,4 @@
-use itertools::Itertools;
+use futures::future::{FutureExt, LocalBoxFuture};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -78,23 +78,48 @@ impl Formula {
         }
     }
 
-    pub fn eval(&self, grid: &impl GridProxy, pos: Pos) -> FormulaResult {
-        self.ast.eval(grid, pos)
+    /// Evaluates a formula, blocking on async calls.
+    ///
+    /// Use this when the grid proxy isn't actually doing anything async.
+    pub fn eval_blocking(&self, grid: &mut impl GridProxy, pos: Pos) -> FormulaResult {
+        pollster::block_on(self.eval(grid, pos))
+    }
+
+    /// Evaluates a formula.
+    pub async fn eval(&self, grid: &mut impl GridProxy, pos: Pos) -> FormulaResult {
+        self.ast.eval(grid, pos).await
     }
 }
 
 impl AstNode {
-    fn eval(&self, grid: &impl GridProxy, pos: Pos) -> FormulaResult {
+    fn eval<'a>(
+        &'a self,
+        grid: &'a mut impl GridProxy,
+        pos: Pos,
+    ) -> LocalBoxFuture<'a, FormulaResult<Spanned<Value>>> {
+        // See this link for why we need to box here:
+        // https://rust-lang.github.io/async-book/07_workarounds/04_recursion.html
+        async move { self.eval_inner(grid, pos).await }.boxed_local()
+    }
+
+    async fn eval_inner(
+        &self,
+        grid: &mut impl GridProxy,
+        pos: Pos,
+    ) -> FormulaResult<Spanned<Value>> {
         let value = match &self.inner {
             AstNodeContents::FunctionCall { func, args } => {
-                let args = args.iter().map(|arg| arg.eval(grid, pos)).try_collect()?;
+                let mut arg_values = vec![];
+                for arg in args {
+                    arg_values.push(arg.eval(grid, pos).await?);
+                }
                 match functions::function_from_name(&func.inner) {
-                    Some(f) => f(args)?,
+                    Some(f) => f(arg_values)?,
                     None => return Err(FormulaErrorMsg::BadFunctionName.with_span(func.span)),
                 }
             }
 
-            AstNodeContents::Paren(expr) => expr.eval(grid, pos)?.inner,
+            AstNodeContents::Paren(expr) => expr.eval(grid, pos).await?.inner,
 
             AstNodeContents::CellRef(CellRef { x, y }) => {
                 let ref_pos = Pos {
@@ -104,7 +129,7 @@ impl AstNode {
                 if ref_pos == pos {
                     return Err(FormulaErrorMsg::CircularReference.with_span(self.span));
                 }
-                Value::String(grid.get(ref_pos).clone().unwrap_or_default())
+                Value::String(grid.get(ref_pos).await.unwrap_or_default())
             }
 
             AstNodeContents::String(s) => Value::String(s.clone()),
