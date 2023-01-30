@@ -43,24 +43,44 @@
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
   </body>
+
+  <!--
+    The combination of these two things (<script> & <style>) appear to be
+    what makes possible the expected effect of panning and zooming (especially
+    with pinch to zoom on a trackpad) on the grid without experiencing weird
+    zoom or intertial panning effects.
+
+    Prevent window zooming on Chrome
+    https://stackoverflow.com/questions/61114830/how-to-prevent-native-browser-default-pinch-to-zoom-behavior
+    
+    Disable inertial scroll
+    https://stackoverflow.com/questions/28103125/disable-inertia-scroll-for-single-page-webapp
+
+    Disable two finger scroll to go back (overscroll-behavior-x: contain;)
+    https://stackoverflow.com/questions/15829172/stop-chrome-back-forward-two-finger-swipe
+  -->
+  <script>
+    window.addEventListener(
+      'wheel',
+      (e) => {
+        if (e.ctrlKey) {
+          e.preventDefault();
+          return;
+        }
+      },
+      { passive: false }
+    );
+  </script>
   <style>
     html,
     body,
     #root,
     .App {
       height: 100%;
+      overscroll-behavior-x: contain;
+    }
+    body {
+      overflow: hidden;
     }
   </style>
-  <script>
-    // Prevent window zooming on Chrome
-    window.addEventListener(
-      'wheel',
-      (e) => {
-        if (e.target.localName !== 'textarea') {
-          e.preventDefault();
-        }
-      },
-      { passive: false }
-    );
-  </script>
 </html>

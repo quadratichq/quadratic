@@ -13,6 +13,7 @@ import {
   FormatColorFill,
   FormatClear,
   ReadMore,
+  BorderAll,
 } from '@mui/icons-material';
 import { PaletteOutlined } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
@@ -115,7 +116,16 @@ export const FormatMenu = (props: IProps) => {
         <MenuItem onClick={removeFillColor}>Clear</MenuItem>
       </SubMenu>
 
-      {borders}
+      <SubMenu
+        label={
+          <Fragment>
+            <BorderAll style={menuItemIconStyles}></BorderAll>
+            <span>Border</span>
+          </Fragment>
+        }
+      >
+        {borders}
+      </SubMenu>
 
       <MenuDivider />
       <MenuItem onClick={handleClearFormatting}>

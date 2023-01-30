@@ -5,6 +5,8 @@ import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 import { HeadingSize } from '../../../gridDB/useHeadings';
 
+const MINIMUM_COLUMN_SIZE = 20;
+
 export class PointerHeading {
   private app: PixiApp;
   private active = false;
@@ -121,7 +123,7 @@ export class PointerHeading {
       return false;
     } else if (gridOffsets.headingResizing) {
       if (gridOffsets.headingResizing.column !== undefined) {
-        const size = Math.max(0, world.x - gridOffsets.headingResizing.start);
+        const size = Math.max(MINIMUM_COLUMN_SIZE, world.x - gridOffsets.headingResizing.start);
         if (size !== gridOffsets.headingResizing.width) {
           gridOffsets.headingResizing.width = size;
           cells.dirty = true;

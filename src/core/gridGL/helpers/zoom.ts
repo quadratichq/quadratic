@@ -42,3 +42,15 @@ export function zoomInOut(viewport: Viewport, scale: number): void {
     scale,
   });
 }
+
+export function zoomIn(viewport: Viewport) {
+  zoomInOut(viewport, viewport.scale.x * 2);
+}
+
+export function zoomOut(viewport: Viewport) {
+  zoomInOut(viewport, viewport.scale.x * 0.5);
+}
+
+export function zoomTo100(viewport: Viewport) {
+  zoomInOut(viewport, 1);
+}

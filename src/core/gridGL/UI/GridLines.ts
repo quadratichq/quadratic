@@ -44,7 +44,7 @@ export class GridLines extends Graphics {
     let column = index;
     const offset = bounds.left - position;
     let size = 0;
-    for (let x = bounds.left; x <= bounds.right; x += size) {
+    for (let x = bounds.left; x <= bounds.right + size - 1; x += size) {
       // don't draw grid lines when hidden
       if (size !== 0) {
         this.moveTo(x - offset, bounds.top);

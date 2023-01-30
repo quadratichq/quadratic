@@ -9,12 +9,13 @@ import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
-import RightClickMenu from '../../ui/menus/RightClickMenu';
+import ContextMenu from '../../ui/menus/RightClickMenu';
 import { SheetController } from '../transaction/sheetController';
+import { FloatingFormatMenu } from '../../ui/menus/FloatingMenu/FloatingFormatMenu';
 
 interface IProps {
   sheetController: SheetController;
-  app?: PixiApp;
+  app: PixiApp;
 }
 
 export default function QuadraticGrid(props: IProps) {
@@ -94,7 +95,14 @@ export default function QuadraticGrid(props: IProps) {
         app={props.app}
         sheetController={props.sheetController}
       />
-      <RightClickMenu
+      <FloatingFormatMenu
+        interactionState={interactionState}
+        setInteractionState={setInteractionState}
+        container={container}
+        app={props.app}
+        sheetController={props.sheetController}
+      ></FloatingFormatMenu>
+      <ContextMenu
         sheet_controller={props.sheetController}
         state={rightClickMenuState}
         anchorPoint={rightClickPoint}

@@ -90,8 +90,9 @@ export class Cells extends Container {
             column--;
           } while (x > label.overflowLeft);
         }
-
-        changes.push(...render_dependency.update(label.location, dependents));
+        const dependencies = render_dependency.update(label.location, dependents);
+        this.app.quadrants.quadrantChanged({ cells: dependents });
+        changes.push(...dependencies);
       }
     });
 
@@ -132,7 +133,7 @@ export class Cells extends Container {
           });
         }
       }
-      if (entry.cell?.array_cells) {
+      if (this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
         this.cellsArray.draw(entry.cell.array_cells, x, y, width, height);
       }
 
@@ -201,7 +202,7 @@ export class Cells extends Container {
       y += height;
     }
 
-    const clipRectangle = gridOffsets.getScreenRectangle(bounds.x, bounds.y, bounds.right, bounds.bottom);
+    const clipRectangle = gridOffsets.getScreenRectangle(bounds.x, bounds.y, bounds.width, bounds.height);
 
     // check for dependencies across entire bounds
     const dependentCells = render_dependency.getDependentsInBounds(bounds);

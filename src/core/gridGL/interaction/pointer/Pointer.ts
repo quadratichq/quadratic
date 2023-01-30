@@ -6,7 +6,7 @@ import { PointerDown } from './PointerDown';
 export class Pointer {
   private app: PixiApp;
   private headingResize: PointerHeading;
-  private pointerDown: PointerDown;
+  pointerDown: PointerDown;
 
   constructor(app: PixiApp) {
     this.app = app;
