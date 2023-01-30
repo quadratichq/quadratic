@@ -44,7 +44,6 @@ export const GoTo = (props: Props) => {
   const onSelect = (e: any) => {
     e.preventDefault();
     const [[x, y], range] = coordinates;
-    console.log('Go to:', x, y, range ? range[0] + ' ' + range[1] : '');
 
     setInteractionState({
       ...interactionState,
