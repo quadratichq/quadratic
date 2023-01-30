@@ -7,6 +7,8 @@ import EditListItems from './ListItems/Edit';
 import BordersListItems from './ListItems/Borders';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { SheetController } from '../../../core/transaction/sheetController';
+import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 
 interface Commands {
   label: string;
@@ -22,8 +24,8 @@ const commands: Array<Commands> = [
 ];
 
 export const getCommandPaletteListItems = (props: {
-  sheetController: any;
-  app: any;
+  sheetController: SheetController;
+  app: PixiApp;
   interactionState: GridInteractionState;
   closeCommandPalette: Function;
   activeSearchValue: string;
