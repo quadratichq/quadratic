@@ -47,6 +47,16 @@ export const BottomBar = (props: Props) => {
     updateCellData();
   }, [interactionState, selectedCell, props.sheet]);
 
+  const handleShowGoToMenu = () => {
+    setEditorInteractionState({
+      ...editorInteractionState,
+      showGoToMenu: true,
+    });
+
+    // Set focus back to Grid
+    focusGrid();
+  };
+
   return (
     <div
       onContextMenu={(event) => {
@@ -76,32 +86,14 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
-        <span
-          style={{ cursor: 'pointer' }}
-          onClick={() => {
-            setEditorInteractionState({
-              ...editorInteractionState,
-              showGoToMenu: true,
-            });
-            // Set focus back to Grid
-            focusGrid();
-          }}
-        >
+        <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
           Cursor: {cursorPositionString}
         </span>
         {selectedCell?.last_modified && (
           <span>You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}</span>
         )}
         {interactionState.showMultiCursor && (
-          <span
-            style={{ cursor: 'pointer' }}
-            onClick={() => {
-              // copy multiCursor position
-              navigator.clipboard.writeText(multiCursorPositionString);
-              // Set focus back to Grid
-              focusGrid();
-            }}
-          >
+          <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
             Selection: {multiCursorPositionString}
           </span>
         )}
