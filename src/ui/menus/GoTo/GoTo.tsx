@@ -103,8 +103,8 @@ export const GoTo = (props: Props) => {
 /**a
  * Takes user input and returns an array of coordinates, with the second set of
  * coordinates being optional.
- * Defaults to (0, 0): e.g. `[[0,0], []]`
- * Supports a 2nd set of coordinates: e.g. `[[0,0], [2,3]]
+ * Defaults to (0, 0): e.g. `[[0,0]]`
+ * Supports a 2nd set of coordinates when input is valid: e.g. `[[0,0], [2,3]]
  *
  * TODO write unit tests for this
  */
