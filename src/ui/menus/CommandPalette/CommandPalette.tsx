@@ -34,11 +34,11 @@ export const CommandPalette = (props: Props) => {
 
   // Fn that closes the command palette and gets passed down to individual ListItems
   const closeCommandPalette = () => {
-    setEditorInteractionState({
-      ...editorInteractionState,
+    setEditorInteractionState((state) => ({
+      ...state,
       showCellTypeMenu: false,
       showCommandPalette: false,
-    });
+    }));
     setActiveSearchValue('');
     setSelectedListItemIndex(0);
     focusGrid();
