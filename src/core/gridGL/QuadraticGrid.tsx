@@ -90,6 +90,7 @@ export default function QuadraticGrid(props: IProps) {
     >
       <CellInput
         interactionState={interactionState}
+        editorInteractionState={editorInteractionState}
         setInteractionState={setInteractionState}
         container={container}
         app={props.app}
