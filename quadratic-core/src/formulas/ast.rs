@@ -1,5 +1,6 @@
 use futures::future::{FutureExt, LocalBoxFuture};
 use serde::{Deserialize, Serialize};
+use smallvec::smallvec;
 use std::fmt;
 
 use super::*;
@@ -46,6 +47,34 @@ impl fmt::Display for AstNodeContents {
             AstNodeContents::CellRef(cellref) => write!(f, "{cellref}"),
             AstNodeContents::String(s) => write!(f, "{s:?}"),
             AstNodeContents::Number(n) => write!(f, "{n:?}"),
+        }
+    }
+}
+impl AstNodeContents {
+    fn type_string(&self) -> &'static str {
+        match self {
+            AstNodeContents::FunctionCall { func, .. } => match func.inner.as_str() {
+                "=" | "==" | "<>" | "!=" | "<" | ">" | "<=" | ">=" => "comparison",
+                s if s.chars().all(|c| c.is_alphanumeric() || c == '_') => "function call",
+                _ => "expression",
+            },
+            AstNodeContents::Paren(contents) => contents.inner.type_string(),
+            AstNodeContents::CellRef(_) => "cell reference",
+            AstNodeContents::String(_) => "string literal",
+            AstNodeContents::Number(_) => "numeric literal",
+        }
+    }
+}
+impl Spanned<AstNodeContents> {
+    pub fn to_cell_ref(&self) -> FormulaResult<CellRef> {
+        match &self.inner {
+            AstNodeContents::CellRef(cellref) => Ok(*cellref),
+            AstNodeContents::Paren(contents) => contents.to_cell_ref(),
+            _ => Err(FormulaErrorMsg::Expected {
+                expected: "cell reference".into(),
+                got: Some(self.inner.type_string().into()),
+            }
+            .with_span(self.span)),
         }
     }
 }
@@ -108,6 +137,34 @@ impl AstNode {
         pos: Pos,
     ) -> FormulaResult<Spanned<Value>> {
         let value = match &self.inner {
+            // Cell range
+            AstNodeContents::FunctionCall { func, args } if func.inner == ":" => {
+                if args.len() != 2 {
+                    internal_error!("invalid arguments to cell range operator");
+                }
+                let corner1 = args[0].to_cell_ref()?.resolve_from(pos);
+                let corner2 = args[1].to_cell_ref()?.resolve_from(pos);
+
+                let x1 = std::cmp::min(corner1.x, corner2.x);
+                let y1 = std::cmp::min(corner1.y, corner2.y);
+
+                let x2 = std::cmp::max(corner1.x, corner2.x);
+                let y2 = std::cmp::max(corner1.y, corner2.y);
+
+                let mut array = vec![];
+                for y in y1..=y2 {
+                    let mut row = smallvec![];
+                    for x in x1..=x2 {
+                        let string = grid.get(Pos { x, y }).await.unwrap_or_default();
+                        row.push(Value::String(string));
+                    }
+                    array.push(row);
+                }
+
+                Value::Array(array)
+            }
+
+            // Other operator/function
             AstNodeContents::FunctionCall { func, args } => {
                 let mut arg_values = vec![];
                 for arg in args {
