@@ -110,6 +110,10 @@ class LocalFiles {
   }
 
   saveLastLocal(data: GridFileSchema, timeout: number = DEFAULT_DEBOUNCE_TIMER): void {
+    // Saving a file is debounced so this function will not execute more than once per DEFAULT_DEBOUNCE_TIMER.
+    // The last function call is the one that is actually executed.
+    // If you need to save immediately, call async `saveLocal`.
+  
     const that = this;
     if (!this.filename) {
       throw new Error('Expected filename to be defined in saveLastLocal');
