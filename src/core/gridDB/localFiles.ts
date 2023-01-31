@@ -11,6 +11,9 @@ export const LOCAL_FILES_LIST_EVENT = 'grid-list-event';
 export type LocalFilesListEvent = string[];
 
 const DEFAULT_FILENAME = 'new_grid_file.grid';
+const DEFAULT_DEBOUNCE_TIMER = 1000;
+
+let saveFileDebounceTimeoutId: NodeJS.Timeout;
 
 class LocalFiles {
   filename?: string;
@@ -106,11 +109,17 @@ class LocalFiles {
     this.addToFileList(filename, data);
   }
 
-  saveLastLocal(data: GridFileSchema): void {
+  saveLastLocal(data: GridFileSchema, timeout: number = DEFAULT_DEBOUNCE_TIMER): void {
+    // Saving a file is debounced so this function will not execute more than once per DEFAULT_DEBOUNCE_TIMER.
+    // The last function call is the one that is actually executed.
+    // If you need to save immediately, call async `saveLocal`.
+  
+    const that = this;
     if (!this.filename) {
       throw new Error('Expected filename to be defined in saveLastLocal');
     } else {
-      localForage.setItem(this.getFilename(this.filename), data);
+      clearTimeout(saveFileDebounceTimeoutId);
+      saveFileDebounceTimeoutId = setTimeout(() => localForage.setItem(that.getFilename(that.filename!), data), timeout);
     }
   }
 
