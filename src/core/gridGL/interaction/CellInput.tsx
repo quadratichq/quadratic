@@ -7,9 +7,11 @@ import { localFiles } from '../../gridDB/localFiles';
 import { SheetController } from '../../transaction/sheetController';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { DeleteCells } from '../../gridDB/Cells/DeleteCells';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
+  editorInteractionState: EditorInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
   app?: PixiApp;
@@ -17,7 +19,7 @@ interface CellInputProps {
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { interactionState, setInteractionState, app, container, sheetController } = props;
+  const { interactionState, editorInteractionState, setInteractionState, app, container, sheetController } = props;
   const viewport = app?.viewport;
 
   const [value, setValue] = useState<string | undefined>(undefined);
@@ -34,6 +36,14 @@ export const CellInput = (props: CellInputProps) => {
 
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.current.x, cellLocation.current.y);
   const cell = sheetController.sheet.getCellCopy(cellLocation.current.x, cellLocation.current.y);
+
+  // If the cell is open in the code editor, don't show the input
+  if (
+    editorInteractionState.showCodeEditor &&
+    editorInteractionState.selectedCell.x === cellLocation.current.x &&
+    editorInteractionState.selectedCell.y === cellLocation.current.y
+  )
+    return null;
 
   // Function used to move and scale the Input with the Grid
   function updateInputCSSTransform() {
