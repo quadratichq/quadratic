@@ -13,7 +13,7 @@ export type LocalFilesListEvent = string[];
 const DEFAULT_FILENAME = 'new_grid_file.grid';
 const DEFAULT_DEBOUNCE_TIMER = 1000;
 
-let saveFileDebounceTimeoutId: null | ReturnType<typeof setTimeout> = null;
+let saveFileDebounceTimeoutId: ReturnType<typeof setTimeout>;
 
 class LocalFiles {
   filename?: string;
@@ -118,7 +118,7 @@ class LocalFiles {
     if (!this.filename) {
       throw new Error('Expected filename to be defined in saveLastLocal');
     } else {
-      if (saveFileDebounceTimeoutId) clearTimeout(saveFileDebounceTimeoutId);
+      clearTimeout(saveFileDebounceTimeoutId);
       saveFileDebounceTimeoutId = setTimeout(
         () => localForage.setItem(that.getFilename(that.filename!), data),
         timeout
