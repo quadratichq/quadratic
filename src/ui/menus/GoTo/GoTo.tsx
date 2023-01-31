@@ -9,6 +9,7 @@ import { SheetController } from '../../../core/transaction/sheetController';
 import { East } from '@mui/icons-material';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 import { Coordinate } from '../../../core/gridGL/types/size';
+import { ensureVisible } from '../../../core/gridGL/interaction/ensureVisible';
 
 interface Props {
   app: PixiApp;
@@ -34,10 +35,10 @@ export const GoTo = (props: Props) => {
   }
 
   const closeMenu = () => {
-    setEditorInteractionState({
-      ...editorInteractionState,
+    setEditorInteractionState((state) => ({
+      ...state,
       showGoToMenu: false,
-    });
+    }));
     setValue('');
   };
 
@@ -45,37 +46,45 @@ export const GoTo = (props: Props) => {
 
   const onSelect = (e: any) => {
     e.preventDefault();
-    const [coors1, coors2] = coordinates;
+    const [coor1, coor2] = coordinates;
 
-    if (coors2) {
-      // GoTo range
+    // GoTo Cell
+    let newInteractionState = {
+      ...interactionState,
+      cursorPosition: coor1,
+      keyboardMovePosition: coor1,
+      multiCursorPosition: {
+        originPosition: coor1,
+        terminalPosition: coor1,
+      },
+      showMultiCursor: false,
+    };
+
+    // GoTo range
+    if (coor2) {
       // User has given us two arbitrary points. We need to figure out the
       // upper left to bottom right coordinates of a rectangle between those coordinates
-      const originPosition: Coordinate = { x: Math.min(coors1.x, coors2.x), y: Math.min(coors1.y, coors2.y) };
-      const terminalPosition: Coordinate = { x: Math.max(coors1.x, coors2.x), y: Math.max(coors1.y, coors2.y) };
+      const originPosition: Coordinate = { x: Math.min(coor1.x, coor2.x), y: Math.min(coor1.y, coor2.y) };
+      const terminalPosition: Coordinate = { x: Math.max(coor1.x, coor2.x), y: Math.max(coor1.y, coor2.y) };
 
-      setInteractionState({
-        ...interactionState,
+      newInteractionState = {
+        ...newInteractionState,
+        keyboardMovePosition: originPosition,
         cursorPosition: originPosition,
         multiCursorPosition: {
           originPosition,
           terminalPosition,
         },
         showMultiCursor: true,
-      });
-    } else {
-      // GoTo Cell
-      setInteractionState({
-        ...interactionState,
-        cursorPosition: coors1,
-        multiCursorPosition: {
-          originPosition: coors1,
-          terminalPosition: coors1,
-        },
-        showMultiCursor: false,
-      });
+      };
     }
 
+    setInteractionState(newInteractionState);
+    ensureVisible({
+      interactionState: newInteractionState,
+      app: props.app,
+      sheet: props.sheetController.sheet,
+    });
     closeMenu();
     focusGrid();
   };
