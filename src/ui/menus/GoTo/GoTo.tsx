@@ -7,6 +7,8 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { East } from '@mui/icons-material';
+import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
+import { Coordinate } from '../../../core/gridGL/types/size';
 
 interface Props {
   app: PixiApp;
@@ -39,27 +41,41 @@ export const GoTo = (props: Props) => {
     setValue('');
   };
 
-  const coordinates = getCoordinatesFromInput(value);
+  const coordinates = getCoordinatesFromUserInput(value);
 
   const onSelect = (e: any) => {
     e.preventDefault();
-    const [[x, y], range] = coordinates;
+    const [coors1, coors2] = coordinates;
 
-    setInteractionState({
-      ...interactionState,
-      ...(range
-        ? {
-            cursorPosition: { x, y },
-            multiCursorPosition: {
-              originPosition: { x, y },
-              terminalPosition: { x: range[0], y: range[1] },
-            },
-            showMultiCursor: true,
-          }
-        : {
-            cursorPosition: { x, y },
-          }),
-    });
+    if (coors2) {
+      // GoTo range
+      // User has given us two arbitrary points. We need to figure out the
+      // upper left to bottom right coordinates of a rectangle between those coordinates
+      const originPosition: Coordinate = { x: Math.min(coors1.x, coors2.x), y: Math.min(coors1.y, coors2.y) };
+      const terminalPosition: Coordinate = { x: Math.max(coors1.x, coors2.x), y: Math.max(coors1.y, coors2.y) };
+
+      setInteractionState({
+        ...interactionState,
+        cursorPosition: originPosition,
+        multiCursorPosition: {
+          originPosition,
+          terminalPosition,
+        },
+        showMultiCursor: true,
+      });
+    } else {
+      // GoTo Cell
+      setInteractionState({
+        ...interactionState,
+        cursorPosition: coors1,
+        multiCursorPosition: {
+          originPosition: coors1,
+          terminalPosition: coors1,
+        },
+        showMultiCursor: false,
+      });
+    }
+
     closeMenu();
     focusGrid();
   };
@@ -84,8 +100,8 @@ export const GoTo = (props: Props) => {
             <ListItemButton selected onSelect={onSelect}>
               <ListItemText
                 primary={`Go to ${coordinates.length === 1 ? 'cell' : 'range'}: ${coordinates
-                  .map(([x, y]) => `(${x}, ${y})`)
-                  .join(' – ')}`}
+                  .map(({ x, y }) => `(${x}, ${y})`)
+                  .join(', ')}`}
               />
             </ListItemButton>
           </ListItem>
@@ -99,37 +115,3 @@ export const GoTo = (props: Props) => {
     </Dialog>
   );
 };
-
-/**a
- * Takes user input and returns an array of coordinates, with the second set of
- * coordinates being optional.
- * Defaults to (0, 0): e.g. `[[0,0]]`
- * Supports a 2nd set of coordinates when input is valid: e.g. `[[0,0], [2,3]]
- *
- * TODO write unit tests for this
- */
-function getCoordinatesFromInput(str: string): number[][] {
-  let out = [[0, 0]];
-
-  const matches = str.match(/-?\d+/g);
-
-  // 0 matches
-  if (!matches) {
-    return out;
-  }
-
-  // 1 or 2 matches
-  const [x1, y1, x2, y2] = matches.map((str) => Number(str));
-  out[0][0] = x1;
-  if (y1) {
-    out[0][1] = y1;
-  }
-
-  // 3 or 4 matches
-  if (Number.isInteger(x2)) {
-    out.push([x2, y2 === undefined ? y1 + 1 : y2]);
-  }
-
-  // Return match(es)
-  return out;
-}
