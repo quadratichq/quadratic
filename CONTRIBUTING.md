@@ -12,6 +12,8 @@ Make sure you can run Quadratic locally from the source.
 
 1. Install npm, [rustup](https://www.rust-lang.org/tools/install), and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 2. Run `rustup target add wasm32-unknown-unknown`
+3. Build the Rust/WASM `npm run build:wasm`
+4. run `npm install`
 
 To run the web app: `npm start`
 
