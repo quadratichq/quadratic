@@ -103,3 +103,28 @@ fn test_formula_if() {
             .to_string(),
     );
 }
+
+#[test]
+fn test_formula_average() {
+    let form = parse_formula("AVERAGE(3, A1:C3)", Pos::new(-1, -1)).unwrap();
+
+    #[derive(Debug, Default, Copy, Clone)]
+    struct GridMock;
+    #[async_trait(?Send)]
+    impl GridProxy for GridMock {
+        async fn get(&mut self, pos: Pos) -> Option<String> {
+            if (1..=3).contains(&pos.x) && (1..=3).contains(&pos.y) {
+                Some((pos.x * 3 + pos.y).to_string()) // 4 ... 12
+            } else {
+                panic!("cell {pos} shouldn't be accessed")
+            }
+        }
+    }
+
+    assert_eq!(
+        "7.5".to_string(),
+        form.eval_blocking(&mut GridMock, Pos::new(-1, -1))
+            .unwrap()
+            .to_string(),
+    );
+}

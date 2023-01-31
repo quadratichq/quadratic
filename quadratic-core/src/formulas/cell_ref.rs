@@ -6,6 +6,7 @@ use std::str::FromStr;
 
 use super::Pos;
 
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum RangeRef {
     RowRange(CellRefCoord, CellRefCoord),
     ColRange(CellRefCoord, CellRefCoord),

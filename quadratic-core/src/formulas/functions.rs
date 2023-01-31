@@ -30,9 +30,15 @@ pub fn function_from_name(s: &str) -> Option<fn(Vec<Spanned<Value>>) -> FormulaR
         ))),
 
         // Mathematical operators
-        "+" | "sum" => |args| sum(&args).map(Value::Number),
-        "-" => |args| minus(&args).map(Value::Number),
-        "*" | "product" => fixed_arg_count!(2, |[a, b]| Ok(Value::Number(
+        "sum" => |args| sum(&args).map(Value::Number),
+        "+" => fixed_arg_count!(2, |[a, b]| Ok(Value::Number(
+            a.to_number()? + b.to_number()?
+        ))),
+        "-" => fixed_arg_count!(2, |[a, b]| Ok(Value::Number(
+            a.to_number()? - b.to_number()?
+        ))),
+        "product" => |args| product(&args).map(Value::Number),
+        "*" => fixed_arg_count!(2, |[a, b]| Ok(Value::Number(
             a.to_number()? * b.to_number()?
         ))),
         "/" => fixed_arg_count!(2, |[a, b]| Ok(Value::Number(
@@ -48,18 +54,18 @@ pub fn function_from_name(s: &str) -> Option<fn(Vec<Spanned<Value>>) -> FormulaR
         "false" => fixed_arg_count!(0, |_| Ok(Value::Bool(false))),
         "not" => fixed_arg_count!(1, |[a]| Ok(Value::Bool(!a.to_bool()?))),
         "and" => |args| {
-            args.into_iter()
-                .try_fold(true, |ret, next| FormulaResult::Ok(ret & next.to_bool()?))
+            flat_iter_bools(&args)
+                .try_fold(true, |ret, next| FormulaResult::Ok(ret & next?))
                 .map(Value::Bool)
         },
         "or" => |args| {
-            args.into_iter()
-                .try_fold(false, |ret, next| FormulaResult::Ok(ret | next.to_bool()?))
+            flat_iter_bools(&args)
+                .try_fold(false, |ret, next| FormulaResult::Ok(ret | next?))
                 .map(Value::Bool)
         },
         "xor" => |args| {
-            args.into_iter()
-                .try_fold(false, |ret, next| FormulaResult::Ok(ret ^ next.to_bool()?))
+            flat_iter_bools(&args)
+                .try_fold(false, |ret, next| FormulaResult::Ok(ret ^ next?))
                 .map(Value::Bool)
         },
         "if" => fixed_arg_count!(3, |[cond, t, f]| {
@@ -68,46 +74,60 @@ pub fn function_from_name(s: &str) -> Option<fn(Vec<Spanned<Value>>) -> FormulaR
 
         // Statistics functions
         // TODO: many of these have strange behavior when given zero arguments
-        "average" => |args| Ok(Value::Number(sum(&args)? / args.len() as f64)),
-        "count" => |args| Ok(Value::Number(args.len() as f64)),
+        "average" => |args| Ok(Value::Number(sum(&args)? / count(&args) as f64)),
+        "count" => |args| Ok(Value::Number(count(&args) as f64)),
         "min" => |args| {
             Ok(Value::Number(
-                args.into_iter().try_fold(f64::INFINITY, |ret, next| {
-                    FormulaResult::Ok(f64::min(ret, next.to_number()?))
+                flat_iter_numbers(&args).try_fold(f64::INFINITY, |ret, next| {
+                    FormulaResult::Ok(f64::min(ret, next?))
                 })?,
             ))
         },
         "max" => |args| {
             Ok(Value::Number(
-                args.into_iter().try_fold(-f64::INFINITY, |ret, next| {
-                    FormulaResult::Ok(f64::max(ret, next.to_number()?))
+                flat_iter_numbers(&args).try_fold(-f64::INFINITY, |ret, next| {
+                    FormulaResult::Ok(f64::max(ret, next?))
                 })?,
             ))
         },
 
         // String functions
-        "&" | "concat" => |args| Ok(Value::String(args.into_iter().join(""))),
+        "&" => fixed_arg_count!(2, |[left, right]| Ok(Value::String(
+            left.to_string() + &right.to_string()
+        ))),
+        "concat" => |args| {
+            Ok(Value::String(
+                flat_iter_strings(&args)
+                    .try_fold(String::new(), |ret, next| FormulaResult::Ok(ret + &next?))?,
+            ))
+        },
 
         _ => return None,
     })
 }
 
 fn sum(args: &[Spanned<Value>]) -> FormulaResult<f64> {
-    Ok(args
-        .into_iter()
-        .try_fold(0.0, |sum, next| FormulaResult::Ok(sum + next.to_number()?))?)
+    flat_iter_numbers(args).try_fold(0.0, |sum, next| FormulaResult::Ok(sum + next?))
+}
+fn product(args: &[Spanned<Value>]) -> FormulaResult<f64> {
+    flat_iter_numbers(args).try_fold(1.0, |prod, next| FormulaResult::Ok(prod * next?))
+}
+fn count(args: &[Spanned<Value>]) -> usize {
+    args.iter().map(|v| v.inner.count()).sum()
 }
 
-fn minus(args: &[Spanned<Value>]) -> FormulaResult<f64> {
-    if args.len() == 0 {
-        Ok(0.0)
-    } else if args.len() == 1 {
-        Ok(-args[0].to_number()?)
-    } else {
-        let mut ret = args[0].to_number()?;
-        for arg in &args[1..] {
-            ret -= arg.to_number()?;
-        }
-        Ok(ret)
-    }
+fn flat_iter_numbers<'a>(
+    args: &'a [Spanned<Value>],
+) -> impl 'a + Iterator<Item = FormulaResult<f64>> {
+    args.iter().map(|v| v.to_numbers()).flatten_ok()
+}
+fn flat_iter_bools<'a>(
+    args: &'a [Spanned<Value>],
+) -> impl 'a + Iterator<Item = FormulaResult<bool>> {
+    args.iter().map(|v| v.to_bools()).flatten_ok()
+}
+fn flat_iter_strings<'a>(
+    args: &'a [Spanned<Value>],
+) -> impl 'a + Iterator<Item = FormulaResult<String>> {
+    args.iter().map(|v| v.to_strings()).flatten_ok()
 }
