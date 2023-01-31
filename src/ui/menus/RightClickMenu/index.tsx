@@ -1,2 +1,2 @@
-import { RightClickMenu } from './RightClickMenu';
-export default RightClickMenu;
+import { ContextMenu } from './ContextMenu';
+export default ContextMenu;

@@ -21,7 +21,7 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "src",
+    "src", "setupPixiTests.ts",
   ],
   "exclude": [
     "node_modules/*"

@@ -1,4 +1,4 @@
-import { BitmapText, Container, Graphics, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
+import { Container, Graphics, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
 import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowSubCacheInfo, debugShowTime } from '../../../debugFlags';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';

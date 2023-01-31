@@ -4,13 +4,12 @@ import { Sheet } from '../../../gridDB/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { intersects } from '../../helpers/intersects';
 
 const MINIMUM_MOVE_POSITION = 5;
 
 export class PointerDown {
   private app: PixiApp;
-  private active = false;
+  active = false;
 
   private positionRaw?: Point;
   private position?: Point;
@@ -49,23 +48,23 @@ export class PointerDown {
     const { interactionState, setInteractionState } = settings;
     const { gridOffsets } = this.sheet;
 
-    // handle dragging from the corner
-    if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
-      const cursorPosition = interactionState.cursorPosition;
-      const end = this.getEndCell();
-      const { column, row } = gridOffsets.getRowColumnFromWorld(end.x, end.y);
-      const originX = cursorPosition.x < column ? cursorPosition.x : column;
-      const originY = cursorPosition.y < row ? cursorPosition.y : row;
-      this.active = true;
-      this.position = new Point(originX, originY);
-      this.positionRaw = end;
-      this.pointerMoved = true;
-      this.previousPosition = {
-        originPosition: new Point(originX, originY),
-        terminalPosition: new Point(column, row),
-      };
-      return;
-    }
+    // handle dragging from the corner (disabled for now)
+    // if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
+    //   const cursorPosition = interactionState.cursorPosition;
+    //   const end = this.getEndCell();
+    //   const { column, row } = gridOffsets.getRowColumnFromWorld(end.x, end.y);
+    //   const originX = cursorPosition.x < column ? cursorPosition.x : column;
+    //   const originY = cursorPosition.y < row ? cursorPosition.y : row;
+    //   this.active = true;
+    //   this.position = new Point(originX, originY);
+    //   this.positionRaw = end;
+    //   this.pointerMoved = true;
+    //   this.previousPosition = {
+    //     originPosition: new Point(originX, originY),
+    //     terminalPosition: new Point(column, row),
+    //   };
+    //   return;
+    // }
 
     this.positionRaw = world;
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
@@ -172,6 +171,24 @@ export class PointerDown {
       }
     }
 
+    // cursor intersects edges
+    // if (
+    //   !this.active ||
+    //   !this.position ||
+    //   !this.previousPosition ||
+    //   !this.positionRaw ||
+    //   !settings.setInteractionState
+    // ) {
+    //   if (
+    //     Math.abs(this.app.cursor.format_indicator.x - world.x) < 3 ||
+    //     Math.abs(this.app.cursor.format_indicator.y - world.y) < 3
+    //   ) {
+    //     this.app.canvas.style.cursor = 'grab';
+    //   }
+
+    // }
+
+    // cursor intersects bottom-corner indicator (disabled for now)
     if (
       !this.active ||
       !this.position ||
@@ -179,9 +196,9 @@ export class PointerDown {
       !this.positionRaw ||
       !settings.setInteractionState
     ) {
-      if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
-        this.app.canvas.style.cursor = 'crosshair';
-      }
+      // if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
+      //   this.app.canvas.style.cursor = 'cell';
+      // }
       return;
     }
 

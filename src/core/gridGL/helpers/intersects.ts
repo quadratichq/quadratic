@@ -7,6 +7,10 @@ function rectanglePoint(rectangle: PIXI.Rectangle, point: PIXI.Point): boolean {
   );
 }
 
+function circlePoint(circle: PIXI.Circle, point: PIXI.Point): boolean {
+  return Math.sqrt((point.x - circle.x) ** 2 + (point.y - circle.y) ** 2) <= circle.radius;
+}
+
 function rectangleRectangle(rectangle1: PIXI.Rectangle, rectangle2: PIXI.Rectangle): boolean {
   return (
     rectangle1.left < rectangle2.right &&
@@ -49,6 +53,7 @@ function rectangleClip(rectangle: Rectangle, clip: Rectangle): Rectangle {
 
 export const intersects = {
   rectanglePoint,
+  circlePoint,
   rectangleRectangle,
   lineLineOneDimension,
   rectangleUnion,

@@ -2,7 +2,7 @@
   "bail": 1,
   "verbose": true,
   "preset": "ts-jest",
-  "testPathIgnorePatterns": ["<rootDir>/tests-e2e/*", "gridOffsets.test.ts", "Quadrant.test.ts", "gridSparse.test.ts"],
+  "testPathIgnorePatterns": ["<rootDir>/tests-e2e/*"],
   "transform": {
     "^.+\\.(ts|tsx|js|jsx)?$": "ts-jest",
     "\\.py$": "<rootDir>/jest-transformer-py"

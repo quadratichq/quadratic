@@ -34,6 +34,7 @@ export class PixiAppSettings {
     this.app.axesLines.dirty = true;
     this.app.headings.dirty = true;
     this.app.cells.dirty = true;
+    this.app.quadrants.build();
   };
 
   updateInteractionState(
