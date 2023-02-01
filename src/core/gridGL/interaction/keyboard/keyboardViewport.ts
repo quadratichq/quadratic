@@ -11,7 +11,7 @@ export function keyboardViewport(options: {
 }): boolean {
   const { event, sheet, viewport, editorInteractionState, setEditorInteractionState } = options;
 
-  if (!viewport) return false;
+  if (!viewport || event.altKey) return false;
 
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyP') {
     setEditorInteractionState({
