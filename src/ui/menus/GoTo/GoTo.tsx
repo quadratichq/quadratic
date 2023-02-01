@@ -10,6 +10,7 @@ import { East } from '@mui/icons-material';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 import { Coordinate } from '../../../core/gridGL/types/size';
 import { ensureVisible } from '../../../core/gridGL/interaction/ensureVisible';
+import '../../components/dialog-menu.css';
 
 interface Props {
   app: PixiApp;
