@@ -30,7 +30,7 @@ export const GoTo = (props: Props) => {
     };
   }, [showGoToMenu]);
 
-  // Hide the CommandPalette when applicable
+  // Hide the menu when applicable
   if (!showGoToMenu) {
     return null;
   }
