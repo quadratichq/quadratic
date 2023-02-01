@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { SyntheticEvent, useEffect } from 'react';
 import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -10,7 +10,7 @@ import { East } from '@mui/icons-material';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 import { Coordinate } from '../../../core/gridGL/types/size';
 import { ensureVisible } from '../../../core/gridGL/interaction/ensureVisible';
-import '../../components/dialog-menu.css';
+import './styles.css';
 
 interface Props {
   app: PixiApp;
@@ -45,7 +45,7 @@ export const GoTo = (props: Props) => {
 
   const coordinates = getCoordinatesFromUserInput(value);
 
-  const onSelect = (e: any) => {
+  const onSelect = (e: React.FormEvent | SyntheticEvent) => {
     e.preventDefault();
     const [coor1, coor2] = coordinates;
 

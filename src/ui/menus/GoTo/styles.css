@@ -1,0 +1,5 @@
+/* Any command palette style menu should show up in a fixed position at the top */
+.MuiDialog-container {
+  align-items: flex-start;
+  padding-top: 48px;
+}
