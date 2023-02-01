@@ -2,7 +2,9 @@ import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../core/actions/clipboard';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { ContentCopy, ContentPaste, ContentCut } from '@mui/icons-material';
+import { ContentCopy, ContentPaste, ContentCut, East } from '@mui/icons-material';
+import { useRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 
 const ListItems = [
   {
@@ -92,6 +94,27 @@ const ListItems = [
           }}
           icon={<ContentPaste />}
           shortcut="V"
+          shortcutModifiers={[KeyboardSymbols.Command]}
+        />
+      );
+    },
+  },
+  {
+    label: 'Go to',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+
+      return (
+        <CommandPaletteListItem
+          {...props}
+          action={() => {
+            setEditorInteractionState({
+              ...editorInteractionState,
+              showGoToMenu: true,
+            });
+          }}
+          icon={<East />}
+          shortcut="G"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
       );

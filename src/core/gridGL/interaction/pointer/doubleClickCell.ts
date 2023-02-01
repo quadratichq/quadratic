@@ -17,7 +17,7 @@ export function doubleClickCell(options: { cell?: Cell; app: PixiApp }): void {
     } else {
       // Open code editor, or move code editor if already open.
       settings.setEditorInteractionState({
-        showCommandPalette: false,
+        ...settings.editorInteractionState,
         showCellTypeMenu: false,
         showCodeEditor: true,
         selectedCell: { x: cell.x, y: cell.y },

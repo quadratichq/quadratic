@@ -27,7 +27,7 @@ export const onDoubleClickCanvas = (
     } else {
       // Open code editor, or move code editor if already open.
       setEditorInteractionState({
-        showCommandPalette: false,
+        ...editorInteractionState,
         showCellTypeMenu: false,
         showCodeEditor: true,
         selectedCell: { x: x, y: y },

@@ -1,4 +1,4 @@
-import { EditorInteractionState } from '../../../../atoms/editorInteractionStateAtom';
+import { EditorInteractionState, editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
 import { DeleteCells } from '../../../gridDB/Cells/DeleteCells';
 import { SheetController } from '../../../transaction/sheetController';
@@ -14,7 +14,15 @@ export function keyboardCell(options: {
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   app?: PixiApp;
 }): boolean {
-  const { event, interactionState, setInteractionState, setEditorInteractionState, app, sheet_controller } = options;
+  const {
+    event,
+    editorInteractionState,
+    interactionState,
+    setInteractionState,
+    setEditorInteractionState,
+    app,
+    sheet_controller,
+  } = options;
   if (!app) return false;
 
   if (event.key === 'Tab') {
@@ -78,7 +86,7 @@ export function keyboardCell(options: {
       } else {
         // Open code editor, or move code editor if already open.
         setEditorInteractionState({
-          showCommandPalette: false,
+          ...editorInteractionState,
           showCellTypeMenu: false,
           showCodeEditor: true,
           selectedCell: { x: x, y: y },
@@ -105,7 +113,7 @@ export function keyboardCell(options: {
       if (cell.type === 'PYTHON') {
         // Open code editor, or move code editor if already open.
         setEditorInteractionState({
-          showCommandPalette: false,
+          ...editorInteractionState,
           showCellTypeMenu: false,
           showCodeEditor: true,
           selectedCell: { x: x, y: y },
@@ -124,7 +132,7 @@ export function keyboardCell(options: {
     } else {
       // Open cell type menu, close editor.
       setEditorInteractionState({
-        showCommandPalette: false,
+        ...editorInteractionState,
         showCellTypeMenu: true,
         showCodeEditor: false,
         selectedCell: { x: x, y: y },
