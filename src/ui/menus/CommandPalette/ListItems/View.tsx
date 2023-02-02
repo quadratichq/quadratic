@@ -94,6 +94,8 @@ const ListItems = [
           action={() => {
             toggleApplicationUI();
           }}
+          shortcut="\"
+          shortcutModifiers={[KeyboardSymbols.Command]}
         />
       );
     },
