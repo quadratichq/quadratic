@@ -1,5 +1,4 @@
 import TopBar from '../ui/menus/TopBar';
-import CellTypeMenu from '../ui/menus/CellTypeMenu/';
 import CodeEditor from '../ui/menus/CodeEditor';
 import DebugMenu from './menus/DebugMenu/DebugMenu';
 import useLocalStorage from '../hooks/useLocalStorage';
@@ -37,7 +36,6 @@ export default function QuadraticUI(props: Props) {
         flexDirection: 'column',
       }}
     >
-      {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
       <TopBar app={app} sheetController={sheetController} />
       <CommandPalette app={app} sheetController={sheetController} />

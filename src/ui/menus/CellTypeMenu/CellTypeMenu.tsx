@@ -1,162 +1,166 @@
-import React from 'react';
-import {
-  Divider,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-  Card,
-  CardContent,
-  Dialog,
-  Paper,
-} from '@mui/material';
-import TextField from '@mui/material/TextField';
-import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { CellTypes } from '../../../core/gridDB/gridTypes';
+import { useCallback, useEffect, useRef } from 'react';
+import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../core/transaction/sheetController';
+import { Divider, IconButton, MenuItem, Paper, Toolbar } from '@mui/material';
+import { BorderAll, FormatBold, FormatClear, FormatColorFill, FormatItalic } from '@mui/icons-material';
+import { Menu } from '@szhsin/react-menu';
+import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
+import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
+import { useBorders } from '../TopBar/SubMenus/useBorders';
+import { QColorPicker } from '../../components/qColorPicker';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 
-import './styles.css';
-import { focusGrid } from '../../../helpers/focusGrid';
-
-export interface CellTypeMenuItem {
-  key: number;
-  name: string;
-  short: string;
-  slug: CellTypes;
-  description: string;
-  disabled: boolean;
+interface Props {
+  interactionState: GridInteractionState;
+  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
+  editorInteractionState: EditorInteractionState;
+  container?: HTMLDivElement;
+  app: PixiApp;
+  sheetController: SheetController;
 }
 
-const CELL_TYPE_OPTIONS = [
-  {
-    key: 0,
-    name: 'Python',
-    short: 'Py',
-    slug: 'PYTHON',
-    description: 'Write Python to quickly compute with data.',
-    disabled: false,
-  },
-  {
-    key: 20,
-    name: 'Formula',
-    short: '=',
-    slug: 'FORMULA',
-    description: 'Familiar Excel-like formulas.',
-    disabled: false,
-  },
-  {
-    key: 30,
-    name: 'JavaScript',
-    short: 'Js',
-    slug: 'JAVASCRIPT',
-    description: 'Write JavaScript to quickly compute with data.',
-    disabled: true,
-  },
-  {
-    key: 40,
-    name: 'SQL Query',
-    short: 'DB',
-    slug: 'SQL',
-    description: 'Query your data using SQL.',
-    disabled: true,
-  },
-] as CellTypeMenuItem[];
+export const CellTypeMenu = (props: Props) => {
+  const { interactionState, app, container, sheetController, editorInteractionState } = props;
+  const viewport = app?.viewport;
 
-export default function CellTypeMenu() {
-  // Interaction State hook
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const menuDiv = useRef<HTMLDivElement>(null);
+  const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
+  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(sheetController, props.app);
+  const { clearBorders } = useBorders(sheetController.sheet, props.app);
 
-  const [value, setValue] = React.useState<string>('');
-  const [selected_value, setSelectedValue] = React.useState<CellTypes | undefined>('PYTHON');
-  const [filtered_cell_type_list, setFilteredCellTypeList] = React.useState<any>(CELL_TYPE_OPTIONS);
+  const handleClearFormatting = useCallback(() => {
+    clearFormatting();
+    clearBorders();
+  }, [clearFormatting, clearBorders]);
 
-  const update_filter = (value: string) => {
-    const filtered_cell_type_list = CELL_TYPE_OPTIONS.filter((cell_type) => {
-      return cell_type.slug.includes(value.toUpperCase());
-    });
+  // Function used to move and scale the Input with the Grid
+  const updateInputCSSTransform = useCallback(() => {
+    if (!app || !viewport || !container) return '';
+    if (!menuDiv.current) return '';
 
-    const selected_value = filtered_cell_type_list[0]?.slug;
+    // Calculate position of input based on cell
+    const cell_offsets = sheetController.sheet.gridOffsets.getCell(
+      Math.min(
+        interactionState.cursorPosition.x,
+        interactionState.multiCursorPosition.originPosition.x,
+        interactionState.multiCursorPosition.terminalPosition.x
+      ),
+      Math.min(
+        interactionState.cursorPosition.y,
+        interactionState.multiCursorPosition.originPosition.y,
+        interactionState.multiCursorPosition.terminalPosition.y
+      )
+    );
+    let cell_offset_scaled = viewport.toScreen(cell_offsets.x, cell_offsets.y);
 
-    setSelectedValue(selected_value);
-    setFilteredCellTypeList(filtered_cell_type_list);
-    setValue(value);
-  };
+    const menuHeight = menuDiv.current?.clientHeight || 0;
+    // const menuwidth = menuDiv.current?.clientWidth || 0;
 
-  const close = () => {
-    setEditorInteractionState({
-      ...editorInteractionState,
-      showCellTypeMenu: false,
-    });
-    setValue('');
-    update_filter('');
-    focusGrid();
-  };
+    let x = cell_offset_scaled.x + container.offsetLeft - 20;
+    let y = cell_offset_scaled.y + container.offsetTop - menuHeight - 20;
 
-  const openEditor = (mode = null) => {
-    setEditorInteractionState({
-      ...editorInteractionState,
-      ...{
-        showCodeEditor: true,
-        showCellTypeMenu: false,
-        mode: mode || selected_value || 'PYTHON',
-      },
-    });
-  };
+    // Hide if zoomed out too much
+    if (viewport.scale.x < 0.1) {
+      menuDiv.current.style.visibility = 'hidden';
+    } else {
+      menuDiv.current.style.visibility = 'visible';
+    }
+
+    // Hide if not showing multi cursor
+    // console.log('pointer down ', app?.input?.pointerDown?.active);
+    // if (!interactionState.showMultiCursor) menuDiv.current.style.visibility = 'hidden';
+
+    // Hide if currently selecting
+    // if (app?.input?.pointerDown?.active) menuDiv.current.style.visibility = 'hidden';
+
+    // Hide FloatingFormatMenu if multi cursor is off screen
+    const terminal_pos = sheetController.sheet.gridOffsets.getCell(
+      interactionState.multiCursorPosition.terminalPosition.x,
+      interactionState.multiCursorPosition.terminalPosition.y
+    );
+    let multiselect_offset = viewport.toScreen(
+      terminal_pos.x + terminal_pos.width,
+      terminal_pos.y + terminal_pos.height
+    );
+    if (multiselect_offset.x < 0 || multiselect_offset.y < 0) menuDiv.current.style.visibility = 'hidden';
+
+    // if ouside of viewport keep it inside
+    if (x < container.offsetLeft + 35) {
+      x = container.offsetLeft + 35;
+    } // left
+    if (y < container.offsetTop + 35) {
+      y = container.offsetTop + 35;
+    } // top
+
+    // Generate transform CSS
+    const transform = 'translate(' + [x, y].join('px,') + 'px) ';
+    // // Update input css matrix
+    menuDiv.current.style.transform = transform;
+
+    if (viewport.dirty) menuDiv.current.style.pointerEvents = 'none';
+    else menuDiv.current.style.pointerEvents = 'auto';
+
+    return transform;
+  }, [
+    app,
+    viewport,
+    container,
+    interactionState.cursorPosition,
+    interactionState.showMultiCursor,
+    interactionState.multiCursorPosition,
+    sheetController.sheet.gridOffsets,
+  ]);
+
+  useEffect(() => {
+    if (!viewport) return;
+    viewport.on('moved', updateInputCSSTransform);
+    viewport.on('moved-end', updateInputCSSTransform);
+    document.addEventListener('pointerup', updateInputCSSTransform);
+
+    return () => {
+      viewport.removeListener('moved', updateInputCSSTransform);
+      viewport.removeListener('moved-end', updateInputCSSTransform);
+      document.removeEventListener('pointerup', updateInputCSSTransform);
+    };
+  }, [viewport, updateInputCSSTransform]);
+
+  // If we don't have a viewport, we can't continue.
+  if (!viewport || !container) return null;
+
+  if (!editorInteractionState.showCellTypeMenu) return null;
+
+  // set input's initial position correctly
+  const transform = updateInputCSSTransform();
+
+  const iconSize = 'small';
 
   return (
-    <Dialog open={true} onClose={close} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
-      <Paper
-        id="CellTypeMenuID"
-        elevation={12}
-        component="form"
-        onSubmit={(e: React.FormEvent) => {
-          e.preventDefault();
-        }}
-      >
-        <TextField
-          id="CellTypeMenuInputID"
-          value={value}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            update_filter(event.target.value);
-          }}
-          onKeyUp={(event) => {
-            if (event.key === 'Escape') {
-              close();
-            }
-            if (event.key === 'Enter') {
-              openEditor();
-            }
-          }}
-          fullWidth
-          variant="standard"
-          label="Select Cell Type"
-          autoFocus
-        />
-        <List dense={true} style={{ height: 350, width: 300 }}>
-          <ListItem></ListItem>
-          <Divider variant="fullWidth" />
-          {filtered_cell_type_list.map((e: any) => {
-            return (
-              <ListItemButton
-                key={e.key}
-                selected={selected_value === e.slug}
-                disabled={e.disabled}
-                style={{ width: '100%' }}
-                onClick={() => {
-                  openEditor(e.slug);
-                }}
-              >
-                <ListItemIcon>
-                  <Typography>{e.short}</Typography>
-                </ListItemIcon>
-                <ListItemText primary={e.name} secondary={e.description} />
-              </ListItemButton>
-            );
-          })}
-        </List>
-      </Paper>
-    </Dialog>
+    <Paper
+      ref={menuDiv}
+      style={{
+        display: 'block',
+        position: 'absolute',
+        top: '0',
+        left: '0',
+        transformOrigin: '0 0',
+        transform,
+        pointerEvents: 'auto',
+        // visibility: 'hidden',
+        // zIndex: 9,
+        // backgroundColor: 'white',
+        // border: `1px solid ${colors.mediumGray}`,
+        // borderRadius: '5px',
+        // drop shadow
+        // boxShadow: `0px 0px 10px 0px ${colors.mediumGray}`,
+      }}
+      elevation={4}
+    >
+      <span>Select Cell Type</span>
+      <br></br>
+      <span>Python</span>
+      <br></br>
+      <span>Formula</span>
+    </Paper>
   );
-}
+};

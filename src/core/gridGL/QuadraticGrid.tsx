@@ -12,6 +12,7 @@ import { CellInput } from './interaction/CellInput';
 import ContextMenu from '../../ui/menus/RightClickMenu';
 import { SheetController } from '../transaction/sheetController';
 import { FloatingFormatMenu } from '../../ui/menus/FloatingMenu/FloatingFormatMenu';
+import { CellTypeMenu } from '../../ui/menus/CellTypeMenu/CellTypeMenu';
 
 interface IProps {
   sheetController: SheetController;
@@ -103,6 +104,14 @@ export default function QuadraticGrid(props: IProps) {
         app={props.app}
         sheetController={props.sheetController}
       ></FloatingFormatMenu>
+      <CellTypeMenu
+        interactionState={interactionState}
+        setInteractionState={setInteractionState}
+        editorInteractionState={editorInteractionState}
+        container={container}
+        app={props.app}
+        sheetController={props.sheetController}
+      ></CellTypeMenu>
       <ContextMenu
         sheet_controller={props.sheetController}
         state={rightClickMenuState}
