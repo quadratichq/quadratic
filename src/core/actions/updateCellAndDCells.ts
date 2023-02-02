@@ -4,6 +4,7 @@ import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../gridGL/types/size';
 import { localFiles } from '../gridDB/localFiles';
 import { SheetController } from '../transaction/sheetController';
+import { runFormula } from '../computations/formulas/runFormula';
 
 interface ArgsType {
   starting_cells: Cell[];
@@ -196,6 +197,38 @@ export const updateCellAndDCells = async (args: ArgsType) => {
             data: { position: [cell.x, cell.y], value: cell },
           });
         }
+      } else if (cell.type === 'FORMULA') {
+        const result = await runFormula(cell.formula_code || '', { x: cell.x, y: cell.y });
+
+        if (result.success) {
+          cell.value = result.output_value || '';
+        }
+
+        // add new cell deps to graph
+        if (result.cells_accessed.length) {
+          // add new deps to graph
+          result.cells_accessed.forEach((cell_accessed) => {
+            sheetController.execute_statement({
+              type: 'ADD_CELL_DEPENDENCY',
+              data: {
+                position: cell_accessed,
+                updates: ref_current_cell,
+              },
+            });
+          });
+        }
+
+        // no array cells, because this was not an array return
+        cell.array_cells = [];
+
+        // update current cell
+        cell.dependent_cells = result.cells_accessed;
+
+        cell.last_modified = new Date().toISOString();
+        sheetController.execute_statement({
+          type: 'SET_CELL',
+          data: { position: [cell.x, cell.y], value: cell },
+        });
       } else {
         // not python cell
 

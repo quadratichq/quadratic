@@ -9,6 +9,8 @@ import {
   Typography,
   Card,
   CardContent,
+  Dialog,
+  Paper,
 } from '@mui/material';
 import TextField from '@mui/material/TextField';
 import { useRecoilState } from 'recoil';
@@ -28,14 +30,6 @@ export interface CellTypeMenuItem {
 }
 
 const CELL_TYPE_OPTIONS = [
-  // {
-  //   key: 0,
-  //   name: 'Text',
-  //   short: 'Aa',
-  //   slug: 'TEXT',
-  //   description: 'Input any text or numerical data.',
-  //   disabled: true,
-  // },
   {
     key: 0,
     name: 'Python',
@@ -50,7 +44,7 @@ const CELL_TYPE_OPTIONS = [
     short: '=',
     slug: 'FORMULA',
     description: 'Familiar Excel-like formulas.',
-    disabled: true,
+    disabled: false,
   },
   {
     key: 30,
@@ -112,8 +106,15 @@ export default function CellTypeMenu() {
   };
 
   return (
-    <Card id="CellTypeMenuID" elevation={1} className="container">
-      <CardContent>
+    <Dialog open={true} onClose={close} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
+      <Paper
+        id="CellTypeMenuID"
+        elevation={12}
+        component="form"
+        onSubmit={(e: React.FormEvent) => {
+          e.preventDefault();
+        }}
+      >
         <TextField
           id="CellTypeMenuInputID"
           value={value}
@@ -155,7 +156,7 @@ export default function CellTypeMenu() {
             );
           })}
         </List>
-      </CardContent>
-    </Card>
+      </Paper>
+    </Dialog>
   );
 }
