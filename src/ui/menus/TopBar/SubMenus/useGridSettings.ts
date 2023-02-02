@@ -24,7 +24,10 @@ interface GridSettingsReturn {
   setShowHeadings: (value: boolean) => void;
   setShowGridLines: (value: boolean) => void;
   setShowCellTypeOutlines: (value: boolean) => void;
-  setShowZenMode: (value: boolean) => void;
+
+  // Return fn to derive state from other values
+  hideApplicationUI: () => boolean;
+  toggleApplicationUI: () => void;
 }
 
 export const useGridSettings = (): GridSettingsReturn => {
@@ -86,19 +89,29 @@ export const useGridSettings = (): GridSettingsReturn => {
     [settings, setSettings, emitGridSettingsEvent]
   );
 
-  const setShowZenMode = useCallback(
-    (value: boolean) => {
-      setSettings({
-        ...settings,
-        showGridAxes: !value,
-        showHeadings: !value,
-        showGridLines: !value,
-        showCellTypeOutlines: !value,
-      });
-      emitGridSettingsEvent();
-    },
-    [settings, setSettings, emitGridSettingsEvent]
-  );
+  const hideApplicationUI = useCallback(() => {
+    return !(settings.showHeadings || settings.showGridAxes || settings.showGridLines || settings.showCellTypeOutlines);
+  }, [settings]);
 
-  return { ...settings, setShowGridAxes, setShowHeadings, setShowGridLines, setShowCellTypeOutlines, setShowZenMode };
+  const toggleApplicationUI = useCallback(() => {
+    const isHidden = hideApplicationUI();
+
+    setSettings({
+      showGridAxes: isHidden,
+      showHeadings: isHidden,
+      showGridLines: isHidden,
+      showCellTypeOutlines: isHidden,
+    });
+    emitGridSettingsEvent();
+  }, [setSettings, hideApplicationUI, emitGridSettingsEvent]);
+
+  return {
+    ...settings,
+    setShowGridAxes,
+    setShowHeadings,
+    setShowGridLines,
+    setShowCellTypeOutlines,
+    hideApplicationUI,
+    toggleApplicationUI,
+  };
 };

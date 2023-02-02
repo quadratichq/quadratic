@@ -127,38 +127,43 @@ export const QuadraticMenu = (props: Props) => {
           <MenuItem disabled>Excel (coming soon)</MenuItem>
         </SubMenu>
         <SubMenu label="View">
-          <MenuHeader>UI</MenuHeader>
           <MenuItem
             type="checkbox"
             checked={settings.showHeadings}
             onClick={() => settings.setShowHeadings(!settings.showHeadings)}
           >
-            Show Headings
+            Show row and column headings
           </MenuItem>
-          <MenuHeader>Grid</MenuHeader>
           <MenuItem
             type="checkbox"
             checked={settings.showGridAxes}
             onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}
           >
-            Show Axis
+            Show grid axis
           </MenuItem>
           <MenuItem
             type="checkbox"
             checked={settings.showGridLines}
             onClick={() => settings.setShowGridLines(!settings.showGridLines)}
           >
-            Show Grid Lines
+            Show grid lines
           </MenuItem>
           <MenuItem
             type="checkbox"
             checked={settings.showCellTypeOutlines}
             onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}
           >
-            Show Cell Type Outlines
+            Show cell type outlines
           </MenuItem>
           <MenuDivider />
-          <MenuHeader>Debug</MenuHeader>
+          <MenuItem
+            type="checkbox"
+            checked={settings.hideApplicationUI()}
+            onClick={() => settings.toggleApplicationUI()}
+          >
+            Hide application UI
+          </MenuItem>
+          <MenuDivider />
           <MenuItem
             type="checkbox"
             checked={showDebugMenu}
@@ -166,7 +171,7 @@ export const QuadraticMenu = (props: Props) => {
               setShowDebugMenu(!showDebugMenu);
             }}
           >
-            Show DebugMenu
+            Show debug menu
           </MenuItem>
         </SubMenu>
 

@@ -67,16 +67,16 @@ const ListItems = [
     },
   },
   {
-    label: 'View: Zen mode',
+    label: 'View: Hide application UI',
     Component: (props: any) => {
-      const { showHeadings, showGridAxes, showGridLines, showCellTypeOutlines, setShowZenMode } = useGridSettings();
-      const isInZenMode = !(showHeadings || showGridAxes || showGridLines || showCellTypeOutlines);
+      const { hideApplicationUI, toggleApplicationUI } = useGridSettings();
+      const checked = hideApplicationUI();
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<CommandPaletteListItemCheckbox checked={isInZenMode} />}
+          icon={<CommandPaletteListItemCheckbox checked={checked} />}
           action={() => {
-            setShowZenMode(!isInZenMode);
+            toggleApplicationUI();
           }}
         />
       );
