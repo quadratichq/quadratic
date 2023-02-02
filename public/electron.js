@@ -1,7 +1,55 @@
+require('update-electron-app');
+
 const path = require('path');
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, autoUpdater, BrowserWindow, dialog, ipcMain } = require('electron');
 const isDev = require('electron-is-dev');
+
+const server = 'https://quadratichq.com';
+const url = `${server}/update/${process.platform}/${app.getVersion()}`;
+const CHECK_FOR_UPDATES_FROM_FEED_INTERVAL = // in milliseconds
+  1000 * // milliseconds per second
+  60 * // seconds per minute
+  10; // check every 10 minutes
+
+autoUpdater.setFeedURL({ url });
+
+setInterval(() => {
+  autoUpdater.checkForUpdates();
+}, CHECK_FOR_UPDATES_FROM_FEED_INTERVAL);
+
+autoUpdater.on('update-available', (_event, releaseNotes, releaseName) => {
+  const dialogOpts = {
+    type: 'info',
+    buttons: ['Ok'],
+    title: 'Application Update',
+    message: process.platform === 'win32' ? releaseNotes : releaseName,
+    detail: 'A new version is available and is downloading in the background...',
+  };
+
+  dialog.showMessageBox(dialogOpts).then((returnValue) => {
+    if (returnValue.response === 0) autoUpdater.quitAndInstall();
+  });
+});
+
+autoUpdater.on('update-downloaded', (_event, releaseNotes, releaseName) => {
+  const dialogOpts = {
+    type: 'info',
+    buttons: ['Restart', 'Later'],
+    title: 'Application Update',
+    message: process.platform === 'win32' ? releaseNotes : releaseName,
+    detail: 'A new version has been downloaded. Restart the application to apply the updates.',
+  };
+
+  dialog.showMessageBox(dialogOpts).then((returnValue) => {
+    if (returnValue.response === 0) autoUpdater.quitAndInstall();
+  });
+});
+
+autoUpdater.on('error', (message) => {
+  console.error('There was a problem updating the application');
+  console.error(message);
+});
 
 function createWindow() {
   // Create the browser window.
