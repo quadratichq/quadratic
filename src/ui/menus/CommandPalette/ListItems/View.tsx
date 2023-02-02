@@ -67,6 +67,22 @@ const ListItems = [
     },
   },
   {
+    label: 'View: Zen mode',
+    Component: (props: any) => {
+      const { showHeadings, showGridAxes, showGridLines, showCellTypeOutlines, setShowZenMode } = useGridSettings();
+      const isInZenMode = !(showHeadings || showGridAxes || showGridLines || showCellTypeOutlines);
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<CommandPaletteListItemCheckbox checked={isInZenMode} />}
+          action={() => {
+            setShowZenMode(!isInZenMode);
+          }}
+        />
+      );
+    },
+  },
+  {
     label: 'View: Zoom in',
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem

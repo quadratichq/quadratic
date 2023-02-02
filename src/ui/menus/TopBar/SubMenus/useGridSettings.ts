@@ -24,6 +24,7 @@ interface GridSettingsReturn {
   setShowHeadings: (value: boolean) => void;
   setShowGridLines: (value: boolean) => void;
   setShowCellTypeOutlines: (value: boolean) => void;
+  setShowZenMode: (value: boolean) => void;
 }
 
 export const useGridSettings = (): GridSettingsReturn => {
@@ -85,5 +86,19 @@ export const useGridSettings = (): GridSettingsReturn => {
     [settings, setSettings, emitGridSettingsEvent]
   );
 
-  return { ...settings, setShowGridAxes, setShowHeadings, setShowGridLines, setShowCellTypeOutlines };
+  const setShowZenMode = useCallback(
+    (value: boolean) => {
+      setSettings({
+        ...settings,
+        showGridAxes: !value,
+        showHeadings: !value,
+        showGridLines: !value,
+        showCellTypeOutlines: !value,
+      });
+      emitGridSettingsEvent();
+    },
+    [settings, setSettings, emitGridSettingsEvent]
+  );
+
+  return { ...settings, setShowGridAxes, setShowHeadings, setShowGridLines, setShowCellTypeOutlines, setShowZenMode };
 };
