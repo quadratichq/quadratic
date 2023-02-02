@@ -32,6 +32,7 @@ interface GridSettingsReturn {
 
 export const useGridSettings = (): GridSettingsReturn => {
   const [settings, setSettings] = useLocalStorage('gridSettings', defaultGridSettings);
+  const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
 
   const emitGridSettingsEvent = useCallback(() => {
     window.dispatchEvent(new Event('grid-settings'));
@@ -90,20 +91,32 @@ export const useGridSettings = (): GridSettingsReturn => {
   );
 
   const hideApplicationUI = useCallback(() => {
-    return !(settings.showHeadings || settings.showGridAxes || settings.showGridLines || settings.showCellTypeOutlines);
+    return !(
+      settings.showHeadings ||
+      settings.showGridAxes ||
+      settings.showGridLines ||
+      settings.showCellTypeOutlines ||
+      showDebugMenu
+    );
   }, [settings]);
 
   const toggleApplicationUI = useCallback(() => {
     const isHidden = hideApplicationUI();
-
     setSettings({
       showGridAxes: isHidden,
       showHeadings: isHidden,
       showGridLines: isHidden,
       showCellTypeOutlines: isHidden,
     });
+
+    // Don't show the debug menu when you unhide the UI.
+    // Only hide it if it's visible when the user toggles "Hide UI"
+    if (!isHidden && showDebugMenu) {
+      setShowDebugMenu(false);
+    }
+
     emitGridSettingsEvent();
-  }, [setSettings, hideApplicationUI, emitGridSettingsEvent]);
+  }, [setSettings, hideApplicationUI, emitGridSettingsEvent, showDebugMenu, setShowDebugMenu]);
 
   return {
     ...settings,

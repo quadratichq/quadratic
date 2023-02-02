@@ -4,6 +4,7 @@ import { CommandPaletteListItemCheckbox } from '../CommandPaletteListItemCheckbo
 import { zoomIn, zoomOut, zoomToFit, zoomTo100 } from '../../../../core/gridGL/helpers/zoom';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
+import useLocalStorage from '../../../../hooks/useLocalStorage';
 
 const ListItems = [
   {
@@ -61,6 +62,21 @@ const ListItems = [
           icon={<CommandPaletteListItemCheckbox checked={settings.showCellTypeOutlines} />}
           action={() => {
             settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
+          }}
+        />
+      );
+    },
+  },
+  {
+    label: 'View: Show debug menu',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<CommandPaletteListItemCheckbox checked={showDebugMenu} />}
+          action={() => {
+            setShowDebugMenu(!showDebugMenu);
           }}
         />
       );
