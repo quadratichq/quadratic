@@ -3,13 +3,11 @@ import { useLoading } from '../../contexts/LoadingContext';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
-import { useMenuState } from '@szhsin/react-menu';
 import { PixiApp } from './pixiApp/PixiApp';
 import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/ensureVisible';
 import { CellInput } from './interaction/CellInput';
-import ContextMenu from '../../ui/menus/RightClickMenu';
 import { SheetController } from '../transaction/sheetController';
 import { FloatingFormatMenu } from '../../ui/menus/FloatingMenu/FloatingFormatMenu';
 
@@ -57,8 +55,7 @@ export default function QuadraticGrid(props: IProps) {
   }, [props.app?.settings, zoomState, setZoomState]);
 
   // Right click menu
-  const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } = useMenuState();
-  const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
+  const [hasHiddenContextMenu, setHasHiddenContextMenu] = useState(false);
 
   const { onKeyDown } = useKeyboard({
     sheetController: props.sheetController,
@@ -83,8 +80,17 @@ export default function QuadraticGrid(props: IProps) {
       }}
       onContextMenu={(event) => {
         event.preventDefault();
-        setRightClickPoint({ x: event.clientX, y: event.clientY });
-        toggleRightClickMenu(true);
+
+        if (!hasHiddenContextMenu) {
+          console.log('Fire context menu');
+          setHasHiddenContextMenu(true);
+        }
+      }}
+      onClick={(event) => {
+        console.log('fired');
+        if (hasHiddenContextMenu) {
+          setHasHiddenContextMenu(false);
+        }
       }}
       onKeyDown={onKeyDown}
     >
@@ -102,14 +108,8 @@ export default function QuadraticGrid(props: IProps) {
         container={container}
         app={props.app}
         sheetController={props.sheetController}
+        hasHiddenContextMenu={hasHiddenContextMenu}
       ></FloatingFormatMenu>
-      <ContextMenu
-        sheet_controller={props.sheetController}
-        state={rightClickMenuState}
-        anchorPoint={rightClickPoint}
-        onClose={() => toggleRightClickMenu(false)}
-        interactionState={interactionState}
-      />
     </div>
   );
 }
