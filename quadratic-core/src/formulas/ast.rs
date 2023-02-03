@@ -171,7 +171,10 @@ impl AstNode {
                     arg_values.push(arg.eval(grid, pos).await?);
                 }
                 match functions::function_from_name(&func.inner) {
-                    Some(f) => f(arg_values)?,
+                    Some(f) => f(Spanned {
+                        span: self.span,
+                        inner: arg_values,
+                    })?,
                     None => return Err(FormulaErrorMsg::BadFunctionName.with_span(func.span)),
                 }
             }

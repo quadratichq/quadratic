@@ -47,6 +47,10 @@ pub enum FormulaErrorMsg {
         expected: Cow<'static, str>,
         got: Option<Cow<'static, str>>,
     },
+    ArraySizeMismatch {
+        expected: (usize, usize),
+        got: (usize, usize),
+    },
     BadArgumentCount,
     BadFunctionName,
     BadCellReference,
@@ -79,6 +83,9 @@ impl fmt::Display for FormulaErrorMsg {
                 Some(got) => write!(f, "Expected {expected}, got {got}"),
                 None => write!(f, "Expected {expected}"),
             },
+            Self::ArraySizeMismatch { expected, got } => {
+                write!(f, "Array size mismatch: expected {expected:?}, got {got:?}")
+            }
             Self::BadArgumentCount => {
                 // TODO: give a nicer error message that says what the arguments
                 // should be
@@ -140,7 +147,8 @@ impl<T: Into<FormulaErrorMsg>> From<T> for FormulaError {
 ///
 /// Prefer internal_error!(); be careful not to call this and then throw away
 /// the error it returns, because in debug mode in Rust code it will still
-/// panic.
+/// panic. For example, use `.ok_or_else(|| internal_error_value!(...))` rather
+/// than `.ok_or(internal_error_value!(...))`.
 macro_rules! internal_error_value {
     // Don't allocate a new String for &'static str literals.
     ( $msg:expr ) => {{
