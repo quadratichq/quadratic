@@ -33,3 +33,6 @@ venv/*
 
 quadratic-core/target/*
 quadratic-api/node_modules/*
+
+electron-builder.yml
+/dist

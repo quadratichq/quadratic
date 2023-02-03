@@ -58,7 +58,7 @@ export class CellDependencyManager {
 
   // load from string
   loadFromString(dependencies: string | undefined): void {
-    if (dependencies === undefined) {
+    if (!dependencies) {
       this.dependencies = new Map();
     } else {
       this.dependencies = new Map(

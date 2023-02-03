@@ -1,22 +1,22 @@
-import { Box, Typography, Button, Tooltip, AvatarGroup, Avatar } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
+import { Avatar, AvatarGroup, Box, Button, Tooltip, Typography } from '@mui/material';
 // import { Avatar, AvatarGroup } from '@mui/material';
+import { useAuth0 } from '@auth0/auth0-react';
+import { isMobileOnly } from 'react-device-detect';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
+import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../core/transaction/sheetController';
+import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';
+import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
+import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { ZoomDropdown } from './ZoomDropdown';
-import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { isMobileOnly } from 'react-device-detect';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
-import { useLocalFiles } from '../../../hooks/useLocalFiles';
-import { SheetController } from '../../../core/transaction/sheetController';
-import { useAuth0 } from '@auth0/auth0-react';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 
 interface IProps {
   app: PixiApp;
