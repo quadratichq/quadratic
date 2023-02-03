@@ -11,5 +11,5 @@ html,
 
 @font-face {
   font-family: 'OpenSans';
-  src: url('/public/fonts/opensans/OpenSans.ttf');
+  src: url('../public/fonts/opensans/OpenSans.ttf');
 }
