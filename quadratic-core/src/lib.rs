@@ -13,7 +13,7 @@ pub mod formulas;
 mod position;
 
 pub use cell::{Cell, CellTypes, JsCell};
-use formulas::GridProxy;
+use formulas::{GridProxy, Value};
 pub use position::Pos;
 
 pub const QUADRANT_SIZE: u64 = 16;
@@ -43,6 +43,7 @@ struct JsFormulaResult {
     pub error_span: Option<[usize; 2]>,
     pub error_msg: Option<String>,
     pub output_value: Option<String>,
+    pub array_output: Option<Vec<Vec<String>>>,
 }
 
 #[wasm_bindgen]
@@ -63,19 +64,35 @@ pub async fn eval_formula(formula_string: &str, x: f64, y: f64) -> JsValue {
         .collect_vec();
 
     let result = match formula_result {
-        Ok(formula_output) => JsFormulaResult {
-            cells_accessed,
-            success: true,
-            error_span: None,
-            error_msg: None,
-            output_value: Some(formula_output.to_string()),
-        },
+        Ok(formula_output) => {
+            let mut output_value = None;
+            let mut array_output = None;
+            match formula_output.inner {
+                Value::Array(a) => {
+                    array_output = Some(
+                        a.iter()
+                            .map(|row| row.iter().map(|cell| cell.to_string()).collect())
+                            .collect(),
+                    )
+                }
+                non_array_value => output_value = Some(non_array_value.to_string()),
+            };
+            JsFormulaResult {
+                cells_accessed,
+                success: true,
+                error_span: None,
+                error_msg: None,
+                output_value,
+                array_output,
+            }
+        }
         Err(error) => JsFormulaResult {
             cells_accessed,
             success: false,
             error_span: error.span.map(|span| [span.start, span.end]),
             error_msg: Some(error.msg.to_string()),
             output_value: None,
+            array_output: None,
         },
     };
 

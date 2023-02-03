@@ -4,4 +4,5 @@ export interface runFormulaReturnType {
     error_span: [number, number] | null;
     error_msg: string | null;
     output_value: string | null;
+    array_output: string[][] | null;
 }
