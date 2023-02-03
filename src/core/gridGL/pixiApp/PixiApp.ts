@@ -1,6 +1,5 @@
 import { Renderer, Container, Graphics } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
-import { isMobileOnly } from 'react-device-detect';
 import { PixiAppSettings } from './PixiAppSettings';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { Update } from './Update';
@@ -71,7 +70,7 @@ export class PixiApp {
     this.stage.addChild(this.viewport);
     this.viewport
       .drag({
-        pressDrag: isMobileOnly, // enable drag on mobile, no where else
+        pressDrag: true, // enable drag on mobile, no where else
         keyToPress: ['Space'],
       })
       .decelerate()
