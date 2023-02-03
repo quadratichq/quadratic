@@ -70,7 +70,10 @@ export class PixiApp {
     this.viewport = new Viewport({ interaction: this.renderer.plugins.interaction });
     this.stage.addChild(this.viewport);
     this.viewport
-      .drag({ pressDrag: isMobileOnly }) // enable drag on mobile, no where else
+      .drag({
+        pressDrag: isMobileOnly, // enable drag on mobile, no where else
+        keyToPress: ['Space'],
+      })
       .decelerate()
       .pinch()
       .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 })
