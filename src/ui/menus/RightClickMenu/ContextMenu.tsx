@@ -4,6 +4,8 @@ import { MenuState, MenuCloseEvent } from '@szhsin/react-menu/types';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { SheetController } from '../../../core/transaction/sheetController';
+import { KeyboardShortcut } from '../KeyboardShortcut';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 
 interface EventHandler<E> {
   (event: E): void;
@@ -54,7 +56,7 @@ export const ContextMenu = (props: ContextMenuProps) => {
             );
           }}
         >
-          Cut
+          <KeyboardShortcut text="Cut" shortcut="X" modifier={KeyboardSymbols.Command} />
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -65,14 +67,14 @@ export const ContextMenu = (props: ContextMenuProps) => {
             );
           }}
         >
-          Copy
+          <KeyboardShortcut text="Copy" shortcut="C" modifier={KeyboardSymbols.Command} />
         </MenuItem>
         <MenuItem
           onClick={() => {
             pasteFromClipboard(props.sheet_controller, props.interactionState.cursorPosition);
           }}
         >
-          Paste
+          <KeyboardShortcut text="Paste" shortcut="V" modifier={KeyboardSymbols.Command} />
         </MenuItem>
       </ControlledMenu>
     </>
