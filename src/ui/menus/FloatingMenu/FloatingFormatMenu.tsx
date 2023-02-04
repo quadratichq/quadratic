@@ -202,7 +202,7 @@ export const FloatingFormatMenu = (props: Props) => {
         >
           {borders}
         </Menu>
-        <Hint title="Clear formatting" shortcut={KeyboardSymbols.Command + 'T'}>
+        <Hint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
           <IconButton onClick={handleClearFormatting}>
             <FormatClear fontSize={iconSize} />
           </IconButton>

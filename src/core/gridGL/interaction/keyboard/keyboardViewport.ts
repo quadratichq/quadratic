@@ -8,8 +8,9 @@ export function keyboardViewport(options: {
   viewport?: Viewport;
   editorInteractionState: any;
   setEditorInteractionState: Function;
+  clearAllFormatting: Function;
 }): boolean {
-  const { event, sheet, viewport, editorInteractionState, setEditorInteractionState } = options;
+  const { clearAllFormatting, event, sheet, viewport, editorInteractionState, setEditorInteractionState } = options;
 
   if (!viewport || event.altKey) return false;
 
@@ -19,6 +20,10 @@ export function keyboardViewport(options: {
       showGoToMenu: false,
       showCommandPalette: !editorInteractionState.showCommandPalette,
     });
+    return true;
+  }
+  if ((event.metaKey || event.ctrlKey) && event.code === 'Backslash') {
+    clearAllFormatting();
     return true;
   }
 
