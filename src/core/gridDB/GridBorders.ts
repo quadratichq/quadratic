@@ -2,6 +2,7 @@ import { Rectangle } from 'pixi.js';
 import { Coordinate, MinMax } from '../gridGL/types/size';
 import { GridOffsets } from './GridOffsets';
 import { Border } from './gridTypes';
+import { Quadrants } from '../gridGL/quadrants/Quadrants';
 
 export class GridBorders {
   private gridOffsets: GridOffsets;
@@ -12,12 +13,16 @@ export class GridBorders {
   private isEmpty = true;
   borders = new Map<string, Border>();
 
+  // tracks which quadrants need to render based on GridBorders data
+  quadrants: Set<string> = new Set();
+
   constructor(gridOffsets: GridOffsets) {
     this.gridOffsets = gridOffsets;
   }
 
   empty() {
     this.borders.clear();
+    this.quadrants.clear();
     this.minX = 0;
     this.maxX = 0;
     this.minY = 0;
@@ -36,12 +41,14 @@ export class GridBorders {
     }
     this.isEmpty = false;
     this.borders.clear();
+    this.quadrants.clear();
     this.minX = Infinity;
     this.minY = Infinity;
     this.maxX = -Infinity;
     this.maxY = -Infinity;
     borders?.forEach((border) => {
       this.borders.set(this.getKey(border.x, border.y), border);
+      this.quadrants.add(Quadrants.getKey(border.x, border.y));
       this.minX = Math.min(this.minX, border.x);
       this.maxX = Math.max(this.maxX, border.x);
       this.minY = Math.min(this.minY, border.y);
@@ -79,6 +86,7 @@ export class GridBorders {
   update(borders: Border[]): void {
     borders.forEach((border) => {
       this.borders.set(this.getKey(border.x, border.y), border);
+      this.quadrants.add(Quadrants.getKey(border.x, border.y));
     });
     this.recalculateBounds();
   }
@@ -152,5 +160,9 @@ export class GridBorders {
 
   getArray(): Border[] {
     return Array.from(this.borders, ([_, border]) => border);
+  }
+
+  hasQuadrant(x: number, y: number): boolean {
+    return this.quadrants.has(`${x},${y}`);
   }
 }

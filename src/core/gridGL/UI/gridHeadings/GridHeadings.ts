@@ -354,9 +354,7 @@ export class GridHeadings extends Container {
   update() {
     if (!this.dirty) return;
     this.dirty = false;
-
     const { selectedColumns, selectedRows } = this.createSelectedArrays();
-
     this.labels.clear();
     this.selectedColumns = selectedColumns;
     this.selectedRows = selectedRows;
