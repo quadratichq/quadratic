@@ -59,7 +59,14 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
         event.preventDefault();
       }
     },
-    [app?.viewport, interactionState, sheetController.sheet, editorInteractionState, setEditorInteractionState]
+    [
+      app?.viewport,
+      interactionState,
+      sheetController.sheet,
+      editorInteractionState,
+      setEditorInteractionState,
+      clearAllFormatting,
+    ]
   );
 
   useEffect(() => {
