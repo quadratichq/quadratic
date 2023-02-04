@@ -82,12 +82,10 @@ export default function QuadraticGrid(props: IProps) {
         event.preventDefault();
 
         if (!hasHiddenContextMenu) {
-          console.log('Fire context menu');
           setHasHiddenContextMenu(true);
         }
       }}
       onClick={(event) => {
-        console.log('fired');
         if (hasHiddenContextMenu) {
           setHasHiddenContextMenu(false);
         }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
-import { Divider, IconButton, MenuItem, Paper, Toolbar, Tooltip } from '@mui/material';
+import { Divider, IconButton, Paper, Toolbar, Tooltip } from '@mui/material';
 import {
   BorderAll,
   ContentCopy,
@@ -13,7 +13,8 @@ import {
   FormatColorFill,
   FormatItalic,
 } from '@mui/icons-material';
-import { Menu } from '@szhsin/react-menu';
+import { Menu, MenuItem, MenuButton } from '@szhsin/react-menu';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { useBorders } from '../TopBar/SubMenus/useBorders';
@@ -175,11 +176,13 @@ export const FloatingFormatMenu = (props: Props) => {
       >
         <Menu
           menuButton={
-            <Hint title="Fill color">
-              <IconButton>
-                <FormatColorFill fontSize={iconSize}></FormatColorFill>
-              </IconButton>
-            </Hint>
+            <div>
+              <Hint title="Fill color">
+                <IconButton>
+                  <FormatColorFill fontSize={iconSize}></FormatColorFill>
+                </IconButton>
+              </Hint>
+            </div>
           }
         >
           <QColorPicker onChangeComplete={changeFillColor} />
@@ -188,16 +191,17 @@ export const FloatingFormatMenu = (props: Props) => {
 
         <Menu
           menuButton={
-            <Hint title="Borders">
-              <IconButton>
-                <BorderAll fontSize={iconSize} />
-              </IconButton>
-            </Hint>
+            <div>
+              <Hint title="Borders">
+                <IconButton>
+                  <BorderAll fontSize={iconSize} />
+                </IconButton>
+              </Hint>
+            </div>
           }
         >
           {borders}
         </Menu>
-
         <Hint title="Clear formatting" shortcut={KeyboardSymbols.Command + 'T'}>
           <IconButton onClick={handleClearFormatting}>
             <FormatClear fontSize={iconSize} />
@@ -207,17 +211,43 @@ export const FloatingFormatMenu = (props: Props) => {
         <MenuDivider />
 
         <Hint title="Cut" shortcut={KeyboardSymbols.Command + 'X'}>
-          <IconButton>
+          <IconButton
+            onClick={() => {
+              cutToClipboard(
+                props.sheetController,
+                {
+                  x: props.interactionState.multiCursorPosition.originPosition.x,
+                  y: props.interactionState.multiCursorPosition.originPosition.y,
+                },
+                {
+                  x: props.interactionState.multiCursorPosition.terminalPosition.x,
+                  y: props.interactionState.multiCursorPosition.terminalPosition.y,
+                }
+              );
+            }}
+          >
             <ContentCut fontSize={iconSize} />
           </IconButton>
         </Hint>
         <Hint title="Copy" shortcut={KeyboardSymbols.Command + 'C'}>
-          <IconButton>
+          <IconButton
+            onClick={() => {
+              copyToClipboard(
+                props.sheetController,
+                props.interactionState.multiCursorPosition.originPosition,
+                props.interactionState.multiCursorPosition.terminalPosition
+              );
+            }}
+          >
             <ContentCopy fontSize={iconSize} />
           </IconButton>
         </Hint>
         <Hint title="Paste" shortcut={KeyboardSymbols.Command + 'P'}>
-          <IconButton>
+          <IconButton
+            onClick={() => {
+              pasteFromClipboard(props.sheetController, props.interactionState.cursorPosition);
+            }}
+          >
             <ContentPaste fontSize={iconSize} />
           </IconButton>
         </Hint>
@@ -230,6 +260,7 @@ export const FloatingFormatMenu = (props: Props) => {
         <IconButton disabled={true}>
           <FormatItalic fontSize={iconSize} />
         </IconButton>
+
         {/* 
         <Divider
           orientation="vertical"
