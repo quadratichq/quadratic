@@ -16,6 +16,9 @@ import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
 import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag, debugLockZoom } from '../../../debugFlags';
 import { Sheet } from '../../gridDB/Sheet';
 import { SheetController } from '../../transaction/sheetController';
+import { HEADING_SIZE } from '../../../constants/gridConstants';
+import { editorInteractionStateDefault } from '../../../atoms/editorInteractionStateAtom';
+import { gridInteractionStateDefault } from '../../../atoms/gridInteractionStateAtom';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -100,7 +103,7 @@ export class PixiApp {
 
     this.settings = new PixiAppSettings(this);
 
-    if (this.settings.showHeadings) this.viewport.position.set(20, 20);
+    this.reset();
 
     this.viewport.on('zoomed', () => {
       this.viewportChanged();
@@ -138,6 +141,10 @@ export class PixiApp {
     this.cells.changeVisibility(true);
     this.quadrants.visible = false;
     this.cacheIsVisible = false;
+  }
+
+  setViewportDirty(): void {
+    this.viewport.dirty = true;
   }
 
   viewportChanged = (): void => {
@@ -239,4 +246,15 @@ export class PixiApp {
     this.cells.dirty = true;
     this.quadrants.build();
   };
+
+  reset(): void {
+    this.viewport.scale.set(1);
+    if (this.settings.showHeadings) {
+      this.viewport.position.set(HEADING_SIZE, HEADING_SIZE);
+    } else {
+      this.viewport.position.set(0, 0);
+    }
+    this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
+    this.settings.setInteractionState?.(gridInteractionStateDefault);
+  }
 }

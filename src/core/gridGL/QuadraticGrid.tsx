@@ -7,7 +7,7 @@ import { useMenuState } from '@szhsin/react-menu';
 import { PixiApp } from './pixiApp/PixiApp';
 import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
-import { ensureVisible } from './interaction/ensureVisible';
+import { ensureVisible } from './interaction/viewportHelper';
 import { CellInput } from './interaction/CellInput';
 import ContextMenu from '../../ui/menus/RightClickMenu';
 import { SheetController } from '../transaction/sheetController';
@@ -90,6 +90,7 @@ export default function QuadraticGrid(props: IProps) {
     >
       <CellInput
         interactionState={interactionState}
+        editorInteractionState={editorInteractionState}
         setInteractionState={setInteractionState}
         container={container}
         app={props.app}

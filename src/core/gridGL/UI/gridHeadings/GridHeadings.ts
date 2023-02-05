@@ -354,9 +354,7 @@ export class GridHeadings extends Container {
   update() {
     if (!this.dirty) return;
     this.dirty = false;
-
     const { selectedColumns, selectedRows } = this.createSelectedArrays();
-
     this.labels.clear();
     this.selectedColumns = selectedColumns;
     this.selectedRows = selectedRows;
@@ -368,6 +366,7 @@ export class GridHeadings extends Container {
       this.rowRect = undefined;
       this.columnRect = undefined;
       this.headingSize = { width: 0, height: 0 };
+      this.app.setViewportDirty();
       return;
     }
     this.visible = true;

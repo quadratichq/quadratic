@@ -82,5 +82,13 @@
     body {
       overflow: hidden;
     }
+    /* Disable two finger swipe back
+       https://stackoverflow.com/questions/15829172/stop-chrome-back-forward-two-finger-swipe */
+    html {
+      overscroll-behavior-x: none;
+    }
+    body {
+      overscroll-behavior-x: none;
+    }
   </style>
 </html>

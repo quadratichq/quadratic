@@ -75,7 +75,7 @@ export class Cells extends Container {
           let x = 0;
           do {
             dependents.push({ x: column, y: label.location.y });
-            x += gridOffsets.getColumnPlacement(column).width;
+            x += gridOffsets.getColumnWidth(column);
             column++;
           } while (x < label.overflowRight);
         }
@@ -86,12 +86,12 @@ export class Cells extends Container {
           let x = 0;
           do {
             dependents.push({ x: column, y: label.location.y });
-            x -= gridOffsets.getColumnPlacement(column).width;
+            x -= gridOffsets.getColumnWidth(column);
             column--;
           } while (x > label.overflowLeft);
         }
-
-        changes.push(...render_dependency.update(label.location, dependents));
+        const dependencies = render_dependency.update(label.location, dependents);
+        changes.push(...dependencies);
       }
     });
 
@@ -143,6 +143,14 @@ export class Cells extends Container {
     }
   }
 
+  private clear(): void {
+    this.labels.clear();
+    this.cellsMarkers.clear();
+    this.cellsArray.clear();
+    this.cellsBackground.clear();
+    this.cellsBorder.clear();
+  }
+
   /**
    * Draws all items within the visible bounds
    * @param boundsWithData visible bounds without cells outside of gridSparse bounds
@@ -151,7 +159,7 @@ export class Cells extends Container {
    * @param ignoreInput if false then don't draw input location (as it's handled by the DOM)
    * @returns a Rectangle of the content bounds (not including empty area), or undefined if nothing is drawn
    */
-  drawBounds(options: {
+  private drawBounds(options: {
     boundsWithData: Rectangle;
     bounds: Rectangle;
     cellRectangle: CellRectangle;
@@ -162,11 +170,7 @@ export class Cells extends Container {
     const renderedCells = new Set<string>();
 
     const { gridOffsets, render_dependency, grid } = this.app.sheet;
-    this.labels.clear();
-    this.cellsMarkers.clear();
-    this.cellsArray.clear();
-    this.cellsBackground.clear();
-    this.cellsBorder.clear();
+    this.clear();
 
     const input =
       !ignoreInput && this.app.settings.interactionState.showInput
@@ -177,6 +181,7 @@ export class Cells extends Container {
         : undefined;
 
     // keeps track of screen position
+
     const xStart = gridOffsets.getColumnPlacement(boundsWithData.left).x;
     const yStart = gridOffsets.getRowPlacement(boundsWithData.top).y;
     let y = yStart;
@@ -191,12 +196,14 @@ export class Cells extends Container {
         const entry = cellRectangle.get(column, row);
 
         // don't render input (unless ignoreInput === true)
-        renderedCells.add(`${column},${row}`);
         const isInput = input && input.column === column && input.row === row;
 
         const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, isInput });
         content = content ? intersects.rectangleUnion(content, rendered) : rendered;
         x += width;
+
+        // ensure we only render each cell once
+        renderedCells.add(`${column},${row}`);
       }
       x = xStart;
       y += height;
@@ -320,6 +327,8 @@ export class Cells extends Container {
     if (boundsWithData) {
       const cellRectangle = grid.getCells(boundsWithData);
       rectCells = this.drawBounds({ bounds, boundsWithData, cellRectangle, isQuadrant });
+    } else {
+      this.clear();
     }
 
     // draw borders

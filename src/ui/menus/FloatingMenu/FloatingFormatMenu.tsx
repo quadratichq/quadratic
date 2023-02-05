@@ -37,6 +37,7 @@ export const FloatingFormatMenu = (props: Props) => {
   // Function used to move and scale the Input with the Grid
   const updateInputCSSTransform = useCallback(() => {
     if (!app || !viewport || !container) return '';
+    if (!menuDiv.current) return '';
 
     // Calculate position of input based on cell
     const cell_offsets = sheetController.sheet.gridOffsets.getCell(
@@ -61,17 +62,17 @@ export const FloatingFormatMenu = (props: Props) => {
 
     // Hide if zoomed out too much
     if (viewport.scale.x < 0.1) {
-      if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+      menuDiv.current.style.visibility = 'hidden';
     } else {
-      if (menuDiv.current) menuDiv.current.style.visibility = 'visible';
+      menuDiv.current.style.visibility = 'visible';
     }
 
     // Hide if not showing multi cursor
     // console.log('pointer down ', app?.input?.pointerDown?.active);
-    if (!interactionState.showMultiCursor) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+    if (!interactionState.showMultiCursor) menuDiv.current.style.visibility = 'hidden';
 
     // Hide if currently selecting
-    if (app?.input?.pointerDown?.active) if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+    if (app?.input?.pointerDown?.active) menuDiv.current.style.visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheetController.sheet.gridOffsets.getCell(
@@ -82,8 +83,7 @@ export const FloatingFormatMenu = (props: Props) => {
       terminal_pos.x + terminal_pos.width,
       terminal_pos.y + terminal_pos.height
     );
-    if (multiselect_offset.x < 0 || multiselect_offset.y < 0)
-      if (menuDiv.current) menuDiv.current.style.visibility = 'hidden';
+    if (multiselect_offset.x < 0 || multiselect_offset.y < 0) menuDiv.current.style.visibility = 'hidden';
 
     // if ouside of viewport keep it inside
     if (x < container.offsetLeft + 35) {
@@ -95,8 +95,11 @@ export const FloatingFormatMenu = (props: Props) => {
 
     // Generate transform CSS
     const transform = 'translate(' + [x, y].join('px,') + 'px) ';
-    // Update input css matrix
-    if (menuDiv.current) menuDiv.current.style.transform = transform;
+    // // Update input css matrix
+    menuDiv.current.style.transform = transform;
+
+    if (viewport.dirty) menuDiv.current.style.pointerEvents = 'none';
+    else menuDiv.current.style.pointerEvents = 'auto';
 
     return transform;
   }, [

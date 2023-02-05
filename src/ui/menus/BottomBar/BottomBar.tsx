@@ -9,6 +9,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { isMobileOnly } from 'react-device-detect';
 import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
 import { Sheet } from '../../../core/gridDB/Sheet';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 
 interface Props {
   sheet: Sheet;
@@ -16,6 +17,7 @@ interface Props {
 
 export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
   // Generate string describing cursor location
@@ -44,6 +46,16 @@ export const BottomBar = (props: Props) => {
     };
     updateCellData();
   }, [interactionState, selectedCell, props.sheet]);
+
+  const handleShowGoToMenu = () => {
+    setEditorInteractionState({
+      ...editorInteractionState,
+      showGoToMenu: true,
+    });
+
+    // Set focus back to Grid
+    focusGrid();
+  };
 
   return (
     <div
@@ -74,30 +86,14 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
-        <span
-          style={{ cursor: 'pointer' }}
-          onClick={() => {
-            // copy cell position
-            navigator.clipboard.writeText(cursorPositionString);
-            // Set focus back to Grid
-            focusGrid();
-          }}
-        >
+        <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
           Cursor: {cursorPositionString}
         </span>
         {selectedCell?.last_modified && (
           <span>You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}</span>
         )}
         {interactionState.showMultiCursor && (
-          <span
-            style={{ cursor: 'pointer' }}
-            onClick={() => {
-              // copy multiCursor position
-              navigator.clipboard.writeText(multiCursorPositionString);
-              // Set focus back to Grid
-              focusGrid();
-            }}
-          >
+          <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
             Selection: {multiCursorPositionString}
           </span>
         )}
