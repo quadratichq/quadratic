@@ -134,7 +134,7 @@ export class Quadrants extends Container {
       }
 
       // reposition quadrants below the row
-      for (let y = options.row + QUADRANT_ROWS; y <= bounds.bottom; y += QUADRANT_ROWS) {
+      for (let y = options.row + 1; y <= bounds.bottom; y += QUADRANT_ROWS) {
         for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
           const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
           const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
@@ -151,10 +151,10 @@ export class Quadrants extends Container {
 
       // reposition quadrants to the right of the column
       for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
-        for (let x = options.column + QUADRANT_COLUMNS; x <= bounds.right; x += QUADRANT_COLUMNS) {
+        for (let x = options.column + 1; x <= bounds.right; x += QUADRANT_COLUMNS) {
           const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
           const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
-          quadrant?.reposition();
+          quadrant?.reposition(true);
         }
       }
     }

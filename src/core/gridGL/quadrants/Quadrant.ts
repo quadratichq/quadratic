@@ -17,6 +17,8 @@ export class Quadrant extends Container {
   private app: PixiApp;
   private subquadrants: SubQuadrant[];
   private _dirty = true;
+  private overflowLeft = false;
+
   visibleRectangle!: Rectangle;
   location: Coordinate;
 
@@ -31,7 +33,7 @@ export class Quadrant extends Container {
     this.reposition();
   }
 
-  reposition() {
+  reposition(horizontal?: boolean) {
     const oldRectangle = this.visibleRectangle;
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
@@ -52,6 +54,11 @@ export class Quadrant extends Container {
           child.y += deltaY;
         });
       }
+    }
+
+    // if there is an overflow into this quadrant, then we need to redraw the quadrant when we get the chance
+    if (horizontal && this.overflowLeft) {
+      this.dirty = true;
     }
   }
 
@@ -139,27 +146,23 @@ export class Quadrant extends Container {
 
         // draw quadrant and return the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
         const reducedDrawingRectangle = app.cells.drawCells(cellBounds, true);
-
         if (reducedDrawingRectangle) {
+          // adjust the texture placement so we only render boundary cells for subquadrants once (the second time will be outside the texture)
+          const trimLeft = reducedDrawingRectangle.left < cellBounds.left ? cellBounds.left - reducedDrawingRectangle.left : 0;
+          const trimRight = reducedDrawingRectangle.right > cellBounds.right ? reducedDrawingRectangle.right - cellBounds.right : 0;
+          const trimTop = reducedDrawingRectangle.top < cellBounds.top ? cellBounds.top - reducedDrawingRectangle.top : 0;
+          const trimBottom = reducedDrawingRectangle.bottom > cellBounds.bottom ? reducedDrawingRectangle.bottom - cellBounds.bottom : 0;
+
+          const textureWidth = (reducedDrawingRectangle.width - trimLeft - trimRight) * QUADRANT_SCALE;
+          const textureHeight = (reducedDrawingRectangle.height - trimTop - trimBottom) * QUADRANT_SCALE;
+          const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, textureWidth, textureHeight);
+
+          this.overflowLeft = !!trimLeft;
+
           // prepare a transform to translate the world to the start of the content for this subQuadrant, and properly scale it
           const transform = new Matrix();
-          transform.translate(-reducedDrawingRectangle.left, -reducedDrawingRectangle.top);
+          transform.translate(-reducedDrawingRectangle.left - trimLeft, -reducedDrawingRectangle.top - trimTop);
           transform.scale(QUADRANT_SCALE, QUADRANT_SCALE);
-
-          // get the Sprite and resize the texture if needed
-          // const textureWidth = subQuadrantWidth * QUADRANT_SCALE;
-          // const textureHeight = subQuadrantHeight * QUADRANT_SCALE;
-
-          // todo: the above is incorrect but ensures it works somewhat
-          const textureWidth = Math.min(
-            subQuadrantWidth * QUADRANT_SCALE,
-            reducedDrawingRectangle.width * QUADRANT_SCALE
-          );
-          const textureHeight = Math.min(
-            subQuadrantHeight * QUADRANT_SCALE,
-            reducedDrawingRectangle.height * QUADRANT_SCALE
-          );
-          const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, textureWidth, textureHeight);
 
           if (debugShowSubCacheInfo) {
             console.log(
@@ -171,14 +174,14 @@ export class Quadrant extends Container {
           const container = app.prepareForQuadrantRendering();
           app.renderer.render(container, { renderTexture: subQuadrant.texture, transform, clear: true });
           app.cleanUpAfterQuadrantRendering();
-          subQuadrant.position.set(reducedDrawingRectangle.left, reducedDrawingRectangle.top);
+          subQuadrant.position.set(reducedDrawingRectangle.left + trimLeft, reducedDrawingRectangle.top + trimTop);
 
           if (debugShowQuadrantBoxes) {
             this.testGraphics
               .lineStyle({ color: 0, width: 5 })
               .drawRect(
-                subQuadrantX * subQuadrantWidth + reducedDrawingRectangle.x,
-                subQuadrantX * subQuadrantWidth + reducedDrawingRectangle.y,
+                reducedDrawingRectangle.x + trimLeft,
+                reducedDrawingRectangle.y + trimTop,
                 textureWidth / QUADRANT_SCALE,
                 textureHeight / QUADRANT_SCALE
               );
