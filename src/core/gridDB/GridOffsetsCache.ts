@@ -11,6 +11,7 @@ export class GridOffsetsCache {
 
   constructor(gridOffsets: GridOffsets) {
     this.gridOffsets = gridOffsets;
+    this.clear();
   }
 
   clear() {
@@ -97,9 +98,10 @@ export class GridOffsetsCache {
   getColumnIndex(x: number): { index: number; position: number } {
     if (x >= 0) {
       let index = 0;
-      let position = 0;
-      let nextWidth = this.gridOffsets.getColumnWidth(0);
-      while (position + nextWidth < x) {
+      while (this.columnCache[index + 1] < x) index++;
+      let position = this.columnCache[index];
+      let nextWidth = this.gridOffsets.getColumnWidth(index);
+      while (position + nextWidth <= x) {
         position += nextWidth;
         index++;
         nextWidth = this.gridOffsets.getColumnWidth(index);
@@ -107,15 +109,113 @@ export class GridOffsetsCache {
       return { index, position };
     } else {
       let index = 0;
-      let position = 0;
+      while (this.columnNegativeCache[index + 1] > x) index++;
+      let position = this.columnNegativeCache[index];
       while (position > x) {
-        index--;
-        position -= this.gridOffsets.getColumnWidth(index);
+        index++;
+        position -= this.gridOffsets.getColumnWidth(-index);
       }
-      return { index, position };
+      return { index: -index, position };
     }
   }
 
+  getRowPlacement(row: number): { y: number, height: number } {
+    let position = 0;
+    if (row === 0) {
+      return { y: 0, height: this.gridOffsets.getRowHeight(0) };
+    }
+
+    if (row > 0) {
+
+      // use cache if available
+      const closestIndex = Math.floor(row / GRID_OFFSETS_CACHE_SIZE);
+      if (this.rowCache.length > closestIndex) {
+        position = this.rowCache[closestIndex];
+        for (let y = closestIndex * GRID_OFFSETS_CACHE_SIZE; y < row; y++) {
+
+          // add to cache when needed
+          if (y % GRID_OFFSETS_CACHE_SIZE === 0) {
+            this.rowCache[y / GRID_OFFSETS_CACHE_SIZE] = position;
+          }
+
+          position += this.gridOffsets.getRowHeight(y);
+        }
+      }
+
+      // otherwise calculate the cache as you iterate
+      else {
+        for (let y = 0; y < row; y++) {
+
+          // add to cache when needed
+          if (y % GRID_OFFSETS_CACHE_SIZE === 0) {
+            this.rowCache[y / GRID_OFFSETS_CACHE_SIZE] = position;
+          }
+
+          position += this.gridOffsets.getRowHeight(y);
+        }
+      }
+
+      return { y: position, height: this.gridOffsets.getRowHeight(row) };
+    }
+
+    // calculate in the negative
+    else {
+
+      // use cache if available
+      const closestIndex = Math.floor(-row / GRID_OFFSETS_CACHE_SIZE);
+      if (this.rowNegativeCache.length > closestIndex) {
+        position = this.columnNegativeCache[closestIndex];
+        for (let y = -closestIndex * GRID_OFFSETS_CACHE_SIZE; y >= row; y--) {
+          // add to cache when needed
+          if (-y % GRID_OFFSETS_CACHE_SIZE === 0) {
+            this.rowNegativeCache[-y / GRID_OFFSETS_CACHE_SIZE] = position;
+          }
+          if (y !== 0) {
+            position -= this.gridOffsets.getRowHeight(y);
+          }
+        }
+      }
+
+      // otherwise calculate the cache as you iterate
+      else {
+        for (let y = -1; y >= row; y--) {
+          // add to cache when needed
+          if (-y % GRID_OFFSETS_CACHE_SIZE === 0) {
+            this.rowNegativeCache[-y / GRID_OFFSETS_CACHE_SIZE] = position;
+          }
+
+          if (y !== 0) {
+            position -= this.gridOffsets.getRowHeight(y);
+          }
+        }
+      }
+      return { y: position, height: this.gridOffsets.getRowHeight(row) - 1 };
+    }
+  }
+
+  getRowIndex(y: number): { index: number; position: number } {
+    if (y >= 0) {
+      let index = 0;
+      while (this.rowCache[index + 1] < y) index++;
+      let position = this.rowCache[index];
+      let nextHeight = this.gridOffsets.getRowHeight(index);
+      while (position + nextHeight <= y) {
+        position += nextHeight;
+        index++;
+        nextHeight = this.gridOffsets.getRowHeight(index);
+      }
+      return { index, position };
+    } else {
+      let index = 0;
+      while (this.rowNegativeCache[index + 1] > y) index++;
+      let position = this.rowNegativeCache[index];
+      while (position > y) {
+        index++;
+        position -= this.gridOffsets.getRowHeight(-index);
+      }
+      return { index: -index, position };
+    }
+  }
 
   debugSize(): void {
     console.log({

@@ -1,4 +1,5 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
+import { QUADRANT_COLUMNS, QUADRANT_ROWS } from '../../gridGL/quadrants/quadrantConstants';
 import { GridOffsets, HeadingResizing } from '../GridOffsets';
 
 describe('gridOffsets', () => {
@@ -259,7 +260,7 @@ describe('gridOffsets', () => {
   });
 
   it('getScreenRectangle the bounds for the rectangle (0 to positive)', () => {
-    const rectangle = gridOffsets.getScreenRectangle(0, 0, 9, 10)
+    const rectangle = gridOffsets.getScreenRectangle(0, 0, 9, 10);
     expect(rectangle.left).toBe(0);
     expect(rectangle.top).toBe(0);
     expect(rectangle.right).toBe(9 * CELL_WIDTH - 1);
@@ -267,7 +268,7 @@ describe('gridOffsets', () => {
   });
 
   it('getScreenRectangle the bounds for the rectangle (positive to positive)', () => {
-    const rectangle = gridOffsets.getScreenRectangle(1, 2, 9, 10)
+    const rectangle = gridOffsets.getScreenRectangle(1, 2, 9, 10);
     expect(rectangle.left).toBe(CELL_WIDTH);
     expect(rectangle.top).toBe(2 * CELL_HEIGHT);
     expect(rectangle.right).toBe(9 * CELL_WIDTH + CELL_WIDTH - 1);
@@ -275,10 +276,36 @@ describe('gridOffsets', () => {
   });
 
   it('getScreenRectangle the bounds for the rectangle (negative to negative)', () => {
-    const rectangle = gridOffsets.getScreenRectangle(-9, -10, 5, 6)
+    const rectangle = gridOffsets.getScreenRectangle(-9, -10, 5, 6);
     expect(rectangle.left).toBe(-9 * CELL_WIDTH);
     expect(rectangle.top).toBe(-10 * CELL_HEIGHT);
     expect(rectangle.right).toBe(-4 * CELL_WIDTH - 1);
     expect(rectangle.bottom).toBe(-4 * CELL_HEIGHT - 1);
+  });
+
+  it('ensure that getScreenRectangle and getColumnIndex return the same value (negative)', () => {
+    const rectangle = gridOffsets.getScreenRectangle(-9, -10, 5, 6);
+    expect(gridOffsets.getColumnIndex(rectangle.left).index).toBe(-9);
+    expect(gridOffsets.getRowIndex(rectangle.top).index).toBe(-10);
+    expect(gridOffsets.getColumnIndex(rectangle.right).index).toBe(-9 + 5 - 1);
+    expect(gridOffsets.getRowIndex(rectangle.bottom).index).toBe(-10 + 6 - 1);
+
+    // check the cache
+    expect(gridOffsets.getColumnIndex(rectangle.left).index).toBe(-9);
+    expect(gridOffsets.getRowIndex(rectangle.top).index).toBe(-10);
+    expect(gridOffsets.getColumnIndex(rectangle.right).index).toBe(-9 + 5 - 1);
+    expect(gridOffsets.getRowIndex(rectangle.bottom).index).toBe(-10 + 6 - 1);
+  });
+
+  it('ensure that getScreenRectangle and getColumnIndex return the same value (positive)', () => {
+    const rectangle = gridOffsets.getScreenRectangle(20, 0, QUADRANT_COLUMNS, QUADRANT_ROWS);
+    expect(rectangle.width).toBe(CELL_WIDTH * QUADRANT_COLUMNS - 1);
+    expect(rectangle.height).toBe(CELL_HEIGHT * QUADRANT_ROWS - 1);
+    expect(gridOffsets.getColumnIndex(rectangle.left).index).toBe(20);
+    expect(gridOffsets.getRowIndex(rectangle.top).index).toBe(0);
+
+    // check the cache
+    expect(gridOffsets.getColumnIndex(rectangle.left).index).toBe(20);
+    expect(gridOffsets.getRowIndex(rectangle.top).index).toBe(0);
   });
 });

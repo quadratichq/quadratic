@@ -113,6 +113,7 @@ export class Quadrant extends Container {
       QUADRANT_COLUMNS,
       QUADRANT_ROWS
     );
+
     if (debugShowQuadrantBoxes) {
       this.testGraphics
         .clear()

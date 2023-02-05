@@ -73,47 +73,9 @@ export class GridOffsets {
    * @returns bounding start and end values
    */
   getColumnsStartEnd(column: number, width: number): { xStart: number; xEnd: number } {
-    let position = 0;
-
-    // calculate starting from 0 to column to find xStart and xEnd
-    if (column >= 0) {
-      const start = this.gridOffsetsCache.getColumnPlacement(column);
-      const end = this.gridOffsetsCache.getColumnPlacement(column + width);
-      return { xStart: start.x, xEnd: end.x - 1 };
-    }
-
-    // calculate starting from -column to 0 to find xStart; xEnd is found in that iteration, or calculated directly if column + width is positive
-    else {
-      let xEnd: number | undefined;
-
-      // if the column ends at 0 then xEnd = 0
-      if (column + width === 0) {
-        for (let x = -1; x >= column; x--) {
-          position -= this.getColumnWidth(x);
-        }
-        xEnd = 0;
-      }
-
-      // if the column ends at a positive number then xEnd is calculated directly
-      else if (column + width > 0) {
-        const placement = this.getColumnPlacement(column + width);
-        xEnd = placement.x;
-        for (let x = -1; x >= column; x--) {
-          position -= this.getColumnWidth(x);
-        }
-      }
-
-      // iterate starting from the -column until we hit -1 to find xStart
-      else if (xEnd === undefined) {
-        for (let x = -1; x >= column; x--) {
-          if (x === column + width - 1) {
-            xEnd = position;
-          }
-          position -= this.getColumnWidth(x);
-        }
-      }
-      return { xStart: position, xEnd: (xEnd as number) - 1 };
-    }
+    const start = this.gridOffsetsCache.getColumnPlacement(column);
+    const end = this.gridOffsetsCache.getColumnPlacement(column + width);
+    return { xStart: start.x, xEnd: end.x - 1 };
   }
 
   /**
@@ -122,24 +84,7 @@ export class GridOffsets {
    * @returns y position and height of column
    */
   getRowPlacement(row: number): { y: number; height: number } {
-    let position = 0;
-
-    if (row === 0) {
-      return { y: 0, height: this.getRowHeight(0) };
-    }
-
-    if (row > 0) {
-
-      for (let y = 0; y < row; y++) {
-        position += this.getRowHeight(y);
-      }
-      return { y: position, height: this.getRowHeight(row) };
-    } else {
-      for (let y = row; y < 0; y++) {
-        position -= this.getRowHeight(y);
-      }
-      return { y: position, height: this.getRowHeight(row) - 1 };
-    }
+    return this.gridOffsetsCache.getRowPlacement(row);
   }
 
   /**
@@ -149,55 +94,9 @@ export class GridOffsets {
    * @returns bounding start and end values
    */
   getRowsStartEnd(row: number, height: number): { yStart: number; yEnd: number } {
-    let position = 0;
-    let yStart: number;
-
-    // calculate starting from 0 to row to find yStart and yEnd
-    if (row >= 0) {
-      for (let y = 0; y < row; y++) {
-        position += this.getRowHeight(y);
-      }
-      yStart = position;
-      for (let y = row; y < row + height; y++) {
-        position += this.getRowHeight(y);
-      }
-      return { yStart, yEnd: position - 1 };
-    }
-
-    // calculate starting from -row to 0 to find yStart; yEnd is found in that iteration, or calculated directly if row + height is positive
-    else {
-      let yEnd: number | undefined;
-
-      // if the row ends at 0 then yEnd = 0
-      if (row + height === 0) {
-        for (let y = -1; y >= row; y--) {
-          position -= this.getRowHeight(y);
-        }
-        yStart = position;
-        yEnd = 0;
-      }
-
-      // if the row ends at a positive number then yEnd is calculated directly
-      else if (row + height > 0) {
-        const placement = this.getRowPlacement(row + height);
-        yEnd = placement.y;
-        for (let y = -1; y >= row; y--) {
-          position -= this.getRowHeight(y);
-        }
-        yStart = position;
-      }
-
-      // iterate starting from the -row until we hit -1 to find yStart
-      else if (yEnd === undefined) {
-        for (let y = -1; y >= row; y--) {
-          if (y === row + height - 1) {
-            yEnd = position;
-          }
-          position -= this.getRowHeight(y);
-        }
-      }
-      return { yStart: position, yEnd: (yEnd as number) - 1 };
-    }
+    const start = this.gridOffsetsCache.getRowPlacement(row);
+    const end = this.gridOffsetsCache.getRowPlacement(row + height);
+    return { yStart: start.y, yEnd: end.y - 1 };
   }
 
   /**
@@ -215,25 +114,7 @@ export class GridOffsets {
    * @returns row and y-position of that row
    */
   getRowIndex(y: number): { index: number; position: number } {
-    if (y >= 0) {
-      let index = 0;
-      let position = 0;
-      let nextHeight = this.getRowHeight(0);
-      while (position + nextHeight < y) {
-        position += nextHeight;
-        index++;
-        nextHeight = this.getRowHeight(index);
-      }
-      return { index, position };
-    } else {
-      let index = 0;
-      let position = 0;
-      while (position > y) {
-        index--;
-        position -= this.getRowHeight(index);
-      }
-      return { index, position };
-    }
+    return this.gridOffsetsCache.getRowIndex(y);
   }
 
   /**
