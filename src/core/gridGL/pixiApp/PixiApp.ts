@@ -143,6 +143,10 @@ export class PixiApp {
     this.cacheIsVisible = false;
   }
 
+  setViewportDirty(): void {
+    this.viewport.dirty = true;
+  }
+
   viewportChanged = (): void => {
     this.viewport.dirty = true;
     this.gridLines.dirty = true;

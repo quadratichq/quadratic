@@ -366,7 +366,7 @@ export class GridHeadings extends Container {
       this.rowRect = undefined;
       this.columnRect = undefined;
       this.headingSize = { width: 0, height: 0 };
-      this.app.viewportChanged();
+      this.app.setViewportDirty();
       return;
     }
     this.visible = true;
