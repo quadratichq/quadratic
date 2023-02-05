@@ -142,6 +142,14 @@ export class Cells extends Container {
     }
   }
 
+  private clear(): void {
+    this.labels.clear();
+    this.cellsMarkers.clear();
+    this.cellsArray.clear();
+    this.cellsBackground.clear();
+    this.cellsBorder.clear();
+  }
+
   /**
    * Draws all items within the visible bounds
    * @param boundsWithData visible bounds without cells outside of gridSparse bounds
@@ -161,11 +169,7 @@ export class Cells extends Container {
     const renderedCells = new Set<string>();
 
     const { gridOffsets, render_dependency, grid } = this.app.sheet;
-    this.labels.clear();
-    this.cellsMarkers.clear();
-    this.cellsArray.clear();
-    this.cellsBackground.clear();
-    this.cellsBorder.clear();
+    this.clear();
 
     const input =
       !ignoreInput && this.app.settings.interactionState.showInput
@@ -322,6 +326,8 @@ export class Cells extends Container {
     if (boundsWithData) {
       const cellRectangle = grid.getCells(boundsWithData);
       rectCells = this.drawBounds({ bounds, boundsWithData, cellRectangle, isQuadrant });
+    } else {
+      this.clear();
     }
 
     // draw borders
