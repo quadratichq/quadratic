@@ -182,10 +182,8 @@ export class GridOffsets {
   }
 
   debugRowsColumns(): { rows: Heading[]; columns: Heading[] } {
-    const rows: Heading[] = [];
-    this.rows.forEach(row => rows.push(row));
-    const columns: Heading[] = [];
-    this.columns.forEach(column => columns.push(column));
+    const rows = this.getRowsArray();
+    const columns = this.getColumnsArray();
     return { rows, columns };
   }
 
@@ -194,10 +192,14 @@ export class GridOffsets {
   }
 
   getColumnsArray(): Heading[] {
-    return Object.values(this.columns);
+    const columns: Heading[] = [];
+    this.columns.forEach(column => columns.push(column));
+    return columns;
   }
 
   getRowsArray(): Heading[] {
-    return Object.values(this.rows);
+    const rows: Heading[] = [];
+    this.rows.forEach(row => rows.push(row));
+    return rows;
   }
 }

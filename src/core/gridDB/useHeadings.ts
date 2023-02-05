@@ -4,10 +4,10 @@ import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
 import { Coordinate } from '../gridGL/types/size';
 import { HeadingResizing } from './GridOffsets';
-import { Sheet } from './Sheet';
+import { SheetController } from '../transaction/sheetController';
 
 interface Props {
-  sheet: Sheet;
+  sheetController: SheetController;
 }
 
 export interface HeadingSize {
@@ -52,28 +52,28 @@ export const useHeadings = (props: Props) => {
         };
       }
       if (change) {
-        props.sheet.gridOffsets.update(change);
+        props.sheetController.sheet.gridOffsets.update(change);
       }
     },
-    [props.sheet]
+    [props.sheetController.sheet]
   );
 
   const clearCellSizes = useCallback(() => {
     const { start, end } = getStartEnd();
     const columns: number[] = [];
     for (let x = start.x; x <= end.x; x++) {
-      props.sheet.gridOffsets.update({ column: x, size: CELL_WIDTH });
+      props.sheetController.sheet.gridOffsets.update({ column: x, size: CELL_WIDTH });
       columns.push(x);
     }
     const rows: number[] = [];
     for (let y = start.y; y <= end.y; y++) {
-      props.sheet.gridOffsets.update({ row: y, size: CELL_HEIGHT });
+      props.sheetController.sheet.gridOffsets.update({ row: y, size: CELL_HEIGHT });
       rows.push(y);
     }
     if (rows.length || columns.length) {
-      props.sheet.gridOffsets.delete({ rows, columns });
+      props.sheetController.sheet.gridOffsets.delete({ rows, columns });
     }
-  }, [props.sheet, getStartEnd]);
+  }, [props.sheetController.sheet, getStartEnd]);
 
   return {
     updateHeadings,

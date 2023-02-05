@@ -1,7 +1,8 @@
 import localForage from 'localforage';
+import debounce from 'lodash.debounce';
 import { debugShowFileIO } from '../../debugFlags';
 import { GridFileSchema } from '../actions/gridFile/GridFileSchema';
-
+import { isEqualStringArrays } from '../../helpers/isEqual';
 const LAST_FILES = 'last-file-queue';
 const FILENAME_PREFIX = 'file-';
 
@@ -11,9 +12,7 @@ export const LOCAL_FILES_LIST_EVENT = 'grid-list-event';
 export type LocalFilesListEvent = string[];
 
 const DEFAULT_FILENAME = 'new_grid_file.grid';
-const DEFAULT_DEBOUNCE_TIMER = 1000;
-
-let saveFileDebounceTimeoutId: ReturnType<typeof setTimeout>;
+const DEFAULT_DEBOUNCE_TIMER = 250;
 
 class LocalFiles {
   filename?: string;
@@ -34,6 +33,7 @@ class LocalFiles {
 
   async initialize(): Promise<void> {
     this.fileList = ((await localForage.getItem(LAST_FILES)) as string[]) ?? [];
+    console.log(this.fileList)
     this.emitListEvent(this.fileList);
   }
 
@@ -60,21 +60,24 @@ class LocalFiles {
   }
 
   private async addToFileList(filename: string, data: GridFileSchema): Promise<void> {
-    let lastFiles = (await localForage.getItem(LAST_FILES)) as string[];
-    if (lastFiles) {
-      lastFiles = lastFiles.filter((file) => file !== filename);
+    const lastFiles = (await localForage.getItem(LAST_FILES)) as string[];
+    let updatedLastFiles = [...lastFiles];
+    if (updatedLastFiles) {
+      updatedLastFiles = lastFiles.filter((file) => file !== filename);
     } else {
-      lastFiles = [];
+      updatedLastFiles = [];
     }
-    lastFiles.unshift(filename);
-    localForage.setItem(LAST_FILES, lastFiles);
-    this.emitListEvent(lastFiles);
-    if (debugShowFileIO) {
-      console.log(
-        `[localFile] Saving ${filename} (${new TextEncoder()
-          .encode(JSON.stringify(data))
-          .length.toLocaleString()} bytes) and adding to lastFiles (${lastFiles.length} files in lastFiles)`
-      );
+    updatedLastFiles.unshift(filename);
+    if (!isEqualStringArrays(lastFiles, updatedLastFiles)) {
+      localForage.setItem(LAST_FILES, updatedLastFiles);
+      this.emitListEvent(updatedLastFiles);
+      if (debugShowFileIO) {
+        console.log(
+          `[localFile] Saving ${filename} (${new TextEncoder()
+            .encode(JSON.stringify(data))
+            .length.toLocaleString()} bytes) and adding to lastFiles (${updatedLastFiles.length} files in lastFiles)`
+        );
+      }
     }
   }
 
@@ -113,16 +116,21 @@ class LocalFiles {
     // Saving a file is debounced so this function will not execute more than once per DEFAULT_DEBOUNCE_TIMER.
     // The last function call is the one that is actually executed.
     // If you need to save immediately, call async `saveLocal`.
-
-    const that = this;
     if (!this.filename) {
       throw new Error('Expected filename to be defined in saveLastLocal');
     } else {
-      clearTimeout(saveFileDebounceTimeoutId);
-      saveFileDebounceTimeoutId = setTimeout(
-        () => localForage.setItem(that.getFilename(that.filename!), data),
-        timeout
-      );
+      const filename = this.getFilename(this.filename);
+      debounce(() => {
+        localForage.setItem(filename, data);
+        if (debugShowFileIO) {
+          console.log(
+            `[localFile] Saving ${filename} (${new TextEncoder()
+              .encode(JSON.stringify(data))
+              .length.toLocaleString()} bytes))`
+          );
+        }
+      },
+        timeout, { leading: true });
     }
   }
 
