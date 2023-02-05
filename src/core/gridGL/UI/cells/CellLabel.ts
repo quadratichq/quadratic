@@ -1,6 +1,7 @@
 import { Coordinate } from '../../types/size';
 import { BitmapTextClip } from '../../pixiOverride/BitmapTextClip';
 import { CellFormat } from '../../../gridDB/gridTypes';
+import { convertColorStringToTint } from "../../../../helpers/convertColor";
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -30,6 +31,8 @@ export class CellLabel extends BitmapTextClip {
     const fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
     this.fontName = fontName;
     this.format = format;
+    const textColor = this.format?.textColor;
+    this.tint = textColor ? convertColorStringToTint(textColor) : 0;
   }
 
   set text(text: string) {

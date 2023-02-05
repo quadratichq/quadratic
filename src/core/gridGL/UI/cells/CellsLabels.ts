@@ -50,7 +50,11 @@ export class CellsLabels extends Container {
     const isSame = (a?: boolean, b?: boolean): boolean => {
       return (!a && !b) || (a && b) ? true : false;
     };
-    return label.originalText === data.text && isSame(label.format?.bold, data.format?.bold) && isSame(label.format?.italic, data.format?.italic);
+
+    return label.originalText === data.text
+      && isSame(label.format?.bold, data.format?.bold)
+      && isSame(label.format?.italic, data.format?.italic)
+      && label.format?.textColor === data.format?.textColor;
   }
 
   /**

@@ -37,7 +37,15 @@ interface IProps {
 
 export const FormatMenu = (props: IProps) => {
   const { format } = useGetSelection(props.sheet_controller.sheet);
-  const { changeFillColor, removeFillColor, clearFormatting, changeBold, changeItalic } = useFormatCells(props.sheet_controller, props.app);
+  const {
+    changeFillColor,
+    removeFillColor,
+    clearFormatting,
+    changeBold,
+    changeItalic,
+    changeTextColor,
+    removeTextColor
+  } = useFormatCells(props.sheet_controller, props.app);
   const { clearBorders } = useBorders(props.sheet_controller.sheet, props.app);
 
   // focus canvas after the format menu closes
@@ -73,9 +81,25 @@ export const FormatMenu = (props: IProps) => {
       <MenuItem type="checkbox" checked={format.italic === true} onClick={() => changeItalic(!(format.italic === true))}>
         <FormatItalic style={menuItemIconDisabledStyles}></FormatItalic> Italic
       </MenuItem>
-      <MenuItem className="menuItemIndent">
+      <SubMenu
+        className="menuItemIndent"
+        id="TextColorMenuID"
+        menuStyles={{
+          padding: '0px',
+        }}
+        label={
+          <>
+            <FormatColorText style={menuItemIconDisabledStyles}></FormatColorText> Text color
+          </>
+        }
+      >
+        <QColorPicker onChangeComplete={changeTextColor} />
+        <MenuItem onClick={removeTextColor}>Clear</MenuItem>
+      </SubMenu>
+
+      {/* <MenuItem className="menuItemIndent">
         <FormatColorText style={menuItemIconDisabledStyles}></FormatColorText> Text color
-      </MenuItem>
+      </MenuItem> */}
 
       <MenuDivider />
       <SubMenu

@@ -32,7 +32,7 @@ export class Cells extends Container {
   private app: PixiApp;
   private cellsArray: CellsArray;
   private cellsBorder: CellsBorder;
-  private labels: CellsLabels;
+  private cellLabels: CellsLabels;
   private cellsMarkers: CellsMarkers;
 
   cellsBackground: CellsBackground;
@@ -47,7 +47,7 @@ export class Cells extends Container {
 
     this.cellsArray = this.addChild(new CellsArray(app));
     this.cellsBorder = this.addChild(new CellsBorder(app));
-    this.labels = this.addChild(new CellsLabels());
+    this.cellLabels = this.addChild(new CellsLabels());
     this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
@@ -56,7 +56,7 @@ export class Cells extends Container {
    * note: this will not remove dependencies for cells that have been deleted but had dependencies
    */
   private handleOverflow(): void {
-    const labels = this.labels.getVisible();
+    const labels = this.cellLabels.getVisible();
 
     const { quadrants } = this.app;
     const { render_dependency, gridOffsets } = this.app.sheet;
@@ -122,7 +122,7 @@ export class Cells extends Container {
           if (entry.cell?.type === 'PYTHON') {
             this.cellsMarkers.add(x, y, 'CodeIcon');
           }
-          this.labels.add({
+          this.cellLabels.add({
             x: x + CELL_TEXT_MARGIN_LEFT,
             y: y + CELL_TEXT_MARGIN_TOP,
             text: entry.cell.value,
@@ -144,7 +144,7 @@ export class Cells extends Container {
   }
 
   private clear(): void {
-    this.labels.clear();
+    this.cellLabels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
     this.cellsBackground.clear();
@@ -231,7 +231,7 @@ export class Cells extends Container {
       });
     }
 
-    const rendered = this.labels.update();
+    const rendered = this.cellLabels.update();
     if (rendered) {
       const clipped = intersects.rectangleClip(rendered, clipRectangle);
       content = content ? intersects.rectangleUnion(content, clipped) : clipped;
@@ -245,7 +245,7 @@ export class Cells extends Container {
 
   drawMultipleBounds(cellRectangles: CellRectangle[]): void {
     const { gridOffsets, render_dependency, grid } = this.app.sheet;
-    this.labels.clear();
+    this.cellLabels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
     this.cellsBackground.clear();
@@ -314,7 +314,7 @@ export class Cells extends Container {
       }
     }
 
-    this.labels.update();
+    this.cellLabels.update();
   }
 
   drawCells(fullBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
@@ -355,7 +355,6 @@ export class Cells extends Container {
   debugShowCachedCounts(): void {
     this.cellsArray.debugShowCachedCounts();
     this.cellsBorder.debugShowCachedCounts();
-    // this.labels.debugShowCachedCount();
     this.cellsMarkers.debugShowCachedCounts();
     this.cellsBackground.debugShowCachedCounts();
   }
