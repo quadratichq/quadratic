@@ -308,4 +308,11 @@ describe('gridOffsets', () => {
     expect(gridOffsets.getColumnIndex(rectangle.left).index).toBe(20);
     expect(gridOffsets.getRowIndex(rectangle.top).index).toBe(0);
   });
+
+  it('gets columnIndex for large index', () => {
+    expect(gridOffsets.getColumnIndex(1000000).index).toBe(1000000 / CELL_WIDTH);
+    expect(gridOffsets.getColumnIndex(1000000).position).toBe(1000000);
+    expect(gridOffsets.getColumnIndex(1000005).index).toBe(1000000 / CELL_WIDTH);
+    expect(gridOffsets.getColumnIndex(1000005).position).toBe(1000000);
+  });
 });

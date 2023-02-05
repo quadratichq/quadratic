@@ -16,6 +16,7 @@ import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
 import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag, debugLockZoom } from '../../../debugFlags';
 import { Sheet } from '../../gridDB/Sheet';
 import { SheetController } from '../../transaction/sheetController';
+import { HEADING_SIZE } from '../../../constants/gridConstants';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -100,7 +101,7 @@ export class PixiApp {
 
     this.settings = new PixiAppSettings(this);
 
-    if (this.settings.showHeadings) this.viewport.position.set(20, 20);
+    if (this.settings.showHeadings) this.viewport.position.set(HEADING_SIZE, HEADING_SIZE);
 
     this.viewport.on('zoomed', () => {
       this.viewportChanged();

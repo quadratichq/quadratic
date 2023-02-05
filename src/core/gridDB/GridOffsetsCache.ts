@@ -97,9 +97,10 @@ export class GridOffsetsCache {
 
   getColumnIndex(x: number): { index: number; position: number } {
     if (x >= 0) {
-      let index = 0;
-      while (this.columnCache[index + 1] < x) index++;
-      let position = this.columnCache[index];
+      let cacheIndex = 0;
+      while (this.columnCache[cacheIndex + 1] < x) cacheIndex++;
+      let position = this.columnCache[cacheIndex];
+      let index = cacheIndex * GRID_OFFSETS_CACHE_SIZE;
       let nextWidth = this.gridOffsets.getColumnWidth(index);
       while (position + nextWidth <= x) {
         position += nextWidth;
@@ -108,9 +109,10 @@ export class GridOffsetsCache {
       }
       return { index, position };
     } else {
-      let index = 0;
-      while (this.columnNegativeCache[index + 1] > x) index++;
-      let position = this.columnNegativeCache[index];
+      let cacheIndex = 0;
+      while (this.columnNegativeCache[cacheIndex + 1] > x) cacheIndex++;
+      let position = this.columnNegativeCache[cacheIndex];
+      let index = cacheIndex * GRID_OFFSETS_CACHE_SIZE;
       while (position > x) {
         index++;
         position -= this.gridOffsets.getColumnWidth(-index);
@@ -195,9 +197,10 @@ export class GridOffsetsCache {
 
   getRowIndex(y: number): { index: number; position: number } {
     if (y >= 0) {
-      let index = 0;
-      while (this.rowCache[index + 1] < y) index++;
-      let position = this.rowCache[index];
+      let cacheIndex = 0;
+      while (this.rowCache[cacheIndex + 1] < y) cacheIndex++;
+      let position = this.rowCache[cacheIndex];
+      let index = cacheIndex * GRID_OFFSETS_CACHE_SIZE;
       let nextHeight = this.gridOffsets.getRowHeight(index);
       while (position + nextHeight <= y) {
         position += nextHeight;
@@ -206,9 +209,10 @@ export class GridOffsetsCache {
       }
       return { index, position };
     } else {
-      let index = 0;
-      while (this.rowNegativeCache[index + 1] > y) index++;
-      let position = this.rowNegativeCache[index];
+      let cacheIndex = 0;
+      while (this.rowNegativeCache[cacheIndex + 1] > y) cacheIndex++;
+      let position = this.rowNegativeCache[cacheIndex];
+      let index = cacheIndex * GRID_OFFSETS_CACHE_SIZE;
       while (position > y) {
         index++;
         position -= this.gridOffsets.getRowHeight(-index);
