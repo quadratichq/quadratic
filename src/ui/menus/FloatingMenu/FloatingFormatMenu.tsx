@@ -3,7 +3,7 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { Divider, IconButton, MenuItem, Paper, Toolbar } from '@mui/material';
-import { BorderAll, FormatBold, FormatClear, FormatColorFill, FormatItalic } from '@mui/icons-material';
+import { BorderAll, FormatBold, FormatClear, FormatColorFill, FormatColorText, FormatItalic } from '@mui/icons-material';
 import { Menu } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
@@ -25,7 +25,15 @@ export const FloatingFormatMenu = (props: Props) => {
 
   const menuDiv = useRef<HTMLDivElement>(null);
   const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
-  const { changeFillColor, removeFillColor, clearFormatting, changeBold, changeItalic } = useFormatCells(sheetController, props.app);
+  const {
+    changeFillColor,
+    removeFillColor,
+    clearFormatting,
+    changeBold,
+    changeItalic,
+    changeTextColor,
+    removeTextColor,
+  } = useFormatCells(sheetController, props.app);
   const { format } = useGetSelection(sheetController.sheet);
   const { clearBorders } = useBorders(sheetController.sheet, props.app);
 
@@ -165,6 +173,10 @@ export const FloatingFormatMenu = (props: Props) => {
         <Menu menuButton={<IconButton>{<FormatColorFill fontSize={iconSize}></FormatColorFill>}</IconButton>}>
           <QColorPicker onChangeComplete={changeFillColor} />
           <MenuItem onClick={removeFillColor}>Clear</MenuItem>
+        </Menu>
+        <Menu menuButton={<IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>}>
+          <QColorPicker onChangeComplete={changeTextColor} />
+          <MenuItem onClick={removeTextColor}>Clear</MenuItem>
         </Menu>
         <Menu
           menuButton={
