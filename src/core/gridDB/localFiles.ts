@@ -3,6 +3,7 @@ import debounce from 'lodash.debounce';
 import { debugShowFileIO } from '../../debugFlags';
 import { GridFileSchema } from '../actions/gridFile/GridFileSchema';
 import { isEqualStringArrays } from '../../helpers/isEqual';
+
 const LAST_FILES = 'last-file-queue';
 const FILENAME_PREFIX = 'file-';
 
@@ -12,11 +13,12 @@ export const LOCAL_FILES_LIST_EVENT = 'grid-list-event';
 export type LocalFilesListEvent = string[];
 
 const DEFAULT_FILENAME = 'new_grid_file.grid';
-const DEFAULT_DEBOUNCE_TIMER = 250;
+const DEFAULT_DEBOUNCE_TIMER = 150;
 
 class LocalFiles {
   filename?: string;
   fileList: string[] = [];
+  private lastSavedData?: GridFileSchema;
 
   constructor() {
     localForage.config({ name: 'Quadratic', version: 1 });
@@ -33,7 +35,6 @@ class LocalFiles {
 
   async initialize(): Promise<void> {
     this.fileList = ((await localForage.getItem(LAST_FILES)) as string[]) ?? [];
-    console.log(this.fileList)
     this.emitListEvent(this.fileList);
   }
 
@@ -112,25 +113,30 @@ class LocalFiles {
     this.addToFileList(filename, data);
   }
 
-  saveLastLocal(data: GridFileSchema, timeout: number = DEFAULT_DEBOUNCE_TIMER): void {
+  private saveFile = debounce((): void => {
+    console.log('saving file...')
+    if (!this.filename || !this.lastSavedData) return;
+    const filename = this.getFilename(this.filename);
+    localForage.setItem(filename, this.lastSavedData);
+    if (debugShowFileIO) {
+      console.log(
+        `[localFile] Saving ${filename} (${new TextEncoder()
+          .encode(JSON.stringify(this.lastSavedData))
+          .length.toLocaleString()} bytes)`
+      );
+    }
+    this.lastSavedData = undefined;
+  }, DEFAULT_DEBOUNCE_TIMER);
+
+  saveLastLocal(data: GridFileSchema): void {
     // Saving a file is debounced so this function will not execute more than once per DEFAULT_DEBOUNCE_TIMER.
     // The last function call is the one that is actually executed.
     // If you need to save immediately, call async `saveLocal`.
     if (!this.filename) {
       throw new Error('Expected filename to be defined in saveLastLocal');
     } else {
-      const filename = this.getFilename(this.filename);
-      debounce(() => {
-        localForage.setItem(filename, data);
-        if (debugShowFileIO) {
-          console.log(
-            `[localFile] Saving ${filename} (${new TextEncoder()
-              .encode(JSON.stringify(data))
-              .length.toLocaleString()} bytes))`
-          );
-        }
-      },
-        timeout, { leading: true });
+      this.lastSavedData = data;
+      this.saveFile();
     }
   }
 
