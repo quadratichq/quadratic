@@ -17,6 +17,7 @@ export class GridLines extends Graphics {
       this.dirty = false;
       if (!this.app.settings.showGridLines) {
         this.visible = false;
+        this.app.viewportChanged();
         return;
       }
 

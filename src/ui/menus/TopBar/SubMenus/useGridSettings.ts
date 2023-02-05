@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 
 export interface GridSettings {
@@ -29,9 +29,11 @@ interface GridSettingsReturn {
 export const useGridSettings = (): GridSettingsReturn => {
   const [settings, setSettings] = useLocalStorage('gridSettings', defaultGridSettings);
 
-  const emitGridSettingsEvent = useCallback(() => {
-    window.dispatchEvent(new Event('grid-settings'));
-  }, []);
+  useEffect(() => {
+    if (settings) {
+      window.dispatchEvent(new Event('grid-settings'));
+    }
+  }, [settings]);
 
   const setShowGridAxes = useCallback(
     (value: boolean) => {
@@ -40,10 +42,9 @@ export const useGridSettings = (): GridSettingsReturn => {
           ...settings,
           showGridAxes: value,
         });
-        emitGridSettingsEvent();
       }
     },
-    [settings, setSettings, emitGridSettingsEvent]
+    [settings, setSettings]
   );
 
   const setShowHeadings = useCallback(
@@ -53,10 +54,9 @@ export const useGridSettings = (): GridSettingsReturn => {
           ...settings,
           showHeadings: value,
         });
-        emitGridSettingsEvent();
       }
     },
-    [settings, setSettings, emitGridSettingsEvent]
+    [settings, setSettings]
   );
 
   const setShowGridLines = useCallback(
@@ -66,10 +66,9 @@ export const useGridSettings = (): GridSettingsReturn => {
           ...settings,
           showGridLines: value,
         });
-        emitGridSettingsEvent();
       }
     },
-    [settings, setSettings, emitGridSettingsEvent]
+    [settings, setSettings]
   );
 
   const setShowCellTypeOutlines = useCallback(
@@ -79,10 +78,9 @@ export const useGridSettings = (): GridSettingsReturn => {
           ...settings,
           showCellTypeOutlines: value,
         });
-        emitGridSettingsEvent();
       }
     },
-    [settings, setSettings, emitGridSettingsEvent]
+    [settings, setSettings]
   );
 
   return { ...settings, setShowGridAxes, setShowHeadings, setShowGridLines, setShowCellTypeOutlines };
