@@ -114,7 +114,6 @@ class LocalFiles {
   }
 
   private saveFile = debounce((): void => {
-    console.log('saving file...')
     if (!this.filename || !this.lastSavedData) return;
     const filename = this.getFilename(this.filename);
     localForage.setItem(filename, this.lastSavedData);

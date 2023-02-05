@@ -4,6 +4,7 @@ import HelpListItems from './ListItems/Help';
 import ViewListItems from './ListItems/View';
 import FileListItems from './ListItems/File';
 import EditListItems from './ListItems/Edit';
+import FormatListItems from './ListItems/Format';
 import BordersListItems from './ListItems/Borders';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
@@ -20,6 +21,7 @@ const commands: Array<Commands> = [
   ...EditListItems,
   ...ViewListItems,
   ...BordersListItems,
+  ...FormatListItems,
   ...HelpListItems,
 ];
 

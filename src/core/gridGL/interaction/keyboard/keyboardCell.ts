@@ -1,4 +1,4 @@
-import { EditorInteractionState, editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
+import { EditorInteractionState } from '../../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
 import { DeleteCells } from '../../../gridDB/Cells/DeleteCells';
 import { SheetController } from '../../../transaction/sheetController';
