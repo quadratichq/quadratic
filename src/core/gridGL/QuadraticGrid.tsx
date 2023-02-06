@@ -55,7 +55,7 @@ export default function QuadraticGrid(props: IProps) {
   }, [props.app?.settings, zoomState, setZoomState]);
 
   // Right click menu
-  const [hasHiddenContextMenu, setHasHiddenContextMenu] = useState(false);
+  const [showContextMenu, setShowContextMenu] = useState(false);
 
   const { onKeyDown } = useKeyboard({
     sheetController: props.sheetController,
@@ -80,14 +80,16 @@ export default function QuadraticGrid(props: IProps) {
       }}
       onContextMenu={(event) => {
         event.preventDefault();
-
-        if (!hasHiddenContextMenu) {
-          setHasHiddenContextMenu(true);
+        // If it's not already visibile, show the context menu
+        if (!showContextMenu) {
+          setShowContextMenu(true);
         }
       }}
-      onClick={(event) => {
-        if (hasHiddenContextMenu) {
-          setHasHiddenContextMenu(false);
+      onClick={(e) => {
+        // <FloatingFormatMenu> prevents events from bubbling up to here, so
+        // we always hide the context menu if it's open
+        if (showContextMenu) {
+          setShowContextMenu(false);
         }
       }}
       onKeyDown={onKeyDown}
@@ -106,7 +108,7 @@ export default function QuadraticGrid(props: IProps) {
         container={container}
         app={props.app}
         sheetController={props.sheetController}
-        hasHiddenContextMenu={hasHiddenContextMenu}
+        showContextMenu={showContextMenu}
       ></FloatingFormatMenu>
     </div>
   );

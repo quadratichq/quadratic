@@ -13,7 +13,7 @@ import {
   FormatColorFill,
   FormatItalic,
 } from '@mui/icons-material';
-import { Menu, MenuItem, MenuButton } from '@szhsin/react-menu';
+import { Menu, MenuItem } from '@szhsin/react-menu';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
@@ -27,11 +27,11 @@ interface Props {
   container?: HTMLDivElement;
   app: PixiApp;
   sheetController: SheetController;
-  hasHiddenContextMenu: boolean;
+  showContextMenu: boolean;
 }
 
 export const FloatingFormatMenu = (props: Props) => {
-  const { interactionState, app, container, sheetController, hasHiddenContextMenu } = props;
+  const { interactionState, app, container, sheetController, showContextMenu } = props;
   const viewport = app?.viewport;
 
   const menuDiv = useRef<HTMLDivElement>(null);
@@ -70,22 +70,21 @@ export const FloatingFormatMenu = (props: Props) => {
     let x = cell_offset_scaled.x + container.offsetLeft - 20;
     let y = cell_offset_scaled.y + container.offsetTop - menuHeight - 20;
 
+    /**
+     * Control menu visibility
+     */
+    let visibility = 'visible';
+
     // Hide if zoomed out too much
     if (viewport.scale.x < 0.1) {
-      menuDiv.current.style.visibility = 'hidden';
-    } else {
-      menuDiv.current.style.visibility = 'visible';
+      visibility = 'hidden';
     }
 
-    // Hide if not showing multi cursor
-    // console.log('pointer down ', app?.input?.pointerDown?.active);
-    if (!interactionState.showMultiCursor) menuDiv.current.style.visibility = 'hidden';
-
-    // Show if right-click is active
-    if (hasHiddenContextMenu) menuDiv.current.style.visibility = 'visible';
+    // Hide if it's not 1) a multicursor or, 2) an active right click
+    if (!(interactionState.showMultiCursor || showContextMenu)) visibility = 'hidden';
 
     // Hide if currently selecting
-    if (app?.input?.pointerDown?.active) menuDiv.current.style.visibility = 'hidden';
+    if (app?.input?.pointerDown?.active) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheetController.sheet.gridOffsets.getCell(
@@ -96,7 +95,14 @@ export const FloatingFormatMenu = (props: Props) => {
       terminal_pos.x + terminal_pos.width,
       terminal_pos.y + terminal_pos.height
     );
-    if (multiselect_offset.x < 0 || multiselect_offset.y < 0) menuDiv.current.style.visibility = 'hidden';
+    if (multiselect_offset.x < 0 || multiselect_offset.y < 0) visibility = 'hidden';
+
+    // Apply visibility
+    menuDiv.current.style.visibility = visibility;
+
+    /**
+     * Menu positioning
+     */
 
     // if ouside of viewport keep it inside
     if (x < container.offsetLeft + 35) {
@@ -108,11 +114,8 @@ export const FloatingFormatMenu = (props: Props) => {
 
     // Generate transform CSS
     const transform = 'translate(' + [x, y].join('px,') + 'px) ';
-    // // Update input css matrix
+    // Update input css matrix
     menuDiv.current.style.transform = transform;
-
-    if (viewport.dirty) menuDiv.current.style.pointerEvents = 'none';
-    else menuDiv.current.style.pointerEvents = 'auto';
 
     return transform;
   }, [
@@ -123,7 +126,7 @@ export const FloatingFormatMenu = (props: Props) => {
     interactionState.showMultiCursor,
     interactionState.multiCursorPosition,
     sheetController.sheet.gridOffsets,
-    hasHiddenContextMenu,
+    showContextMenu,
   ]);
 
   useEffect(() => {
@@ -167,6 +170,9 @@ export const FloatingFormatMenu = (props: Props) => {
         // boxShadow: `0px 0px 10px 0px ${colors.mediumGray}`,
       }}
       elevation={4}
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
     >
       <Toolbar
         style={{
