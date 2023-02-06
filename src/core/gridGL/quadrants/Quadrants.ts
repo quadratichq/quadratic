@@ -28,7 +28,6 @@ export class Quadrants extends Container {
   constructor(app: PixiApp) {
     super();
     this.app = app;
-    this.cullable = true;
     this.quadrants = new Map<string, Quadrant>();
   }
 
@@ -37,6 +36,10 @@ export class Quadrants extends Container {
       x: Math.floor(x / QUADRANT_COLUMNS),
       y: Math.floor(y / QUADRANT_ROWS),
     };
+  }
+
+  static getKey(x: number, y: number): string {
+    return `${Math.floor(x / QUADRANT_COLUMNS)},${Math.floor(y / QUADRANT_ROWS)}`;
   }
 
   build(): void {
@@ -57,8 +60,10 @@ export class Quadrants extends Container {
     const xEnd = Math.floor(bounds.right / QUADRANT_COLUMNS);
     for (let y = yStart; y <= yEnd; y++) {
       for (let x = xStart; x <= xEnd; x++) {
-        const quadrant = this.addChild(new Quadrant(this.app, x, y));
-        this.quadrants.set(`${x},${y}`, quadrant);
+        if (this.app.sheet.hasQuadrant(x, y)) {
+          const quadrant = this.addChild(new Quadrant(this.app, x, y));
+          this.quadrants.set(`${x},${y}`, quadrant);
+        }
       }
     }
     if (debugShowCacheInfo) {
@@ -86,6 +91,7 @@ export class Quadrants extends Container {
         if (dirtyCount === 0 && !this.complete) {
           this.complete = true;
           this.debugCacheStats();
+          this.app.sheet.gridOffsets.debugCache();
         }
       } else {
         firstDirty.update();
@@ -105,9 +111,10 @@ export class Quadrants extends Container {
     return false;
   }
 
-  private getQuadrant(row: number, column: number): Quadrant {
+  private getQuadrant(row: number, column: number, create: boolean): Quadrant | undefined {
     let quadrant = this.quadrants.get(`${row},${column}`);
     if (quadrant) return quadrant;
+    if (!create) return;
     quadrant = this.addChild(new Quadrant(this.app, row, column));
     this.quadrants.set(`${row},${column}`, quadrant);
     this.complete = false;
@@ -122,32 +129,32 @@ export class Quadrants extends Container {
     if (options.row !== undefined) {
       for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, options.row);
-        const quadrant = this.getQuadrant(quadrantX, quadrantY);
-        quadrant.dirty = true;
+        const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
+        if (quadrant) quadrant.dirty = true;
       }
 
       // reposition quadrants below the row
-      for (let y = options.row + QUADRANT_ROWS; y <= bounds.bottom; y += QUADRANT_ROWS) {
+      for (let y = options.row + 1; y <= bounds.bottom; y += QUADRANT_ROWS) {
         for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
           const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
-          const quadrant = this.getQuadrant(quadrantX, quadrantY);
-          quadrant.reposition();
+          const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
+          quadrant?.reposition();
         }
       }
     }
     if (options.column !== undefined) {
       for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(options.column, y);
-        const quadrant = this.getQuadrant(quadrantX, quadrantY);
-        quadrant.dirty = true;
+        const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
+        if (quadrant) quadrant.dirty = true;
       }
 
       // reposition quadrants to the right of the column
       for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
-        for (let x = options.column + QUADRANT_COLUMNS; x <= bounds.right; x += QUADRANT_COLUMNS) {
+        for (let x = options.column + 1; x <= bounds.right; x += QUADRANT_COLUMNS) {
           const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
-          const quadrant = this.getQuadrant(quadrantX, quadrantY);
-          quadrant.reposition();
+          const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
+          quadrant?.reposition(true);
         }
       }
     }
@@ -159,8 +166,8 @@ export class Quadrants extends Container {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(coordinate.x, coordinate.y);
         const key = `${quadrantX},${quadrantY}`;
         if (!quadrants.has(key)) {
-          const quadrant = this.getQuadrant(quadrantX, quadrantY);
-          quadrant.dirty = true;
+          const quadrant = this.getQuadrant(quadrantX, quadrantY, true);
+          if (quadrant) quadrant.dirty = true;
           quadrants.add(key);
         }
       });
@@ -175,8 +182,8 @@ export class Quadrants extends Container {
           const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
           const key = `${quadrantX},${quadrantY}`;
           if (!quadrants.has(key)) {
-            const quadrant = this.getQuadrant(quadrantX, quadrantY);
-            quadrant.dirty = true;
+            const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
+            if (quadrant) quadrant.dirty = true;
             quadrants.add(key);
           }
         }

@@ -120,7 +120,7 @@ export class GridRenderDependency {
         } else {
           this.dependents.set(entryKey, { location: entry, needToRender: [cell], renderThisCell: [] });
         }
-        changes.push(cell);
+        changes.push(entry);
       });
       this.dependents.set(cellKey, { location: cell, needToRender: [], renderThisCell });
     }

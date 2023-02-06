@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
-import { Divider, IconButton, Paper, Toolbar, Tooltip } from '@mui/material';
+import { Divider, IconButton, MenuItem, Paper, Toolbar } from '@mui/material';
 import {
   BorderAll,
   ContentCopy,
@@ -11,15 +11,17 @@ import {
   FormatBold,
   FormatClear,
   FormatColorFill,
+  FormatColorText,
   FormatItalic,
 } from '@mui/icons-material';
-import { Menu, MenuItem } from '@szhsin/react-menu';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
+import { Menu } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { useBorders } from '../TopBar/SubMenus/useBorders';
 import { QColorPicker } from '../../components/qColorPicker';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -36,7 +38,16 @@ export const FloatingFormatMenu = (props: Props) => {
 
   const menuDiv = useRef<HTMLDivElement>(null);
   const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
-  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(sheetController, props.app);
+  const {
+    changeFillColor,
+    removeFillColor,
+    clearFormatting,
+    changeBold,
+    changeItalic,
+    changeTextColor,
+    removeTextColor,
+  } = useFormatCells(sheetController, props.app);
+  const { format } = useGetSelection(sheetController.sheet);
   const { clearBorders } = useBorders(sheetController.sheet, props.app);
 
   const handleClearFormatting = useCallback(() => {
@@ -194,7 +205,10 @@ export const FloatingFormatMenu = (props: Props) => {
           <QColorPicker onChangeComplete={changeFillColor} />
           <MenuItem onClick={removeFillColor}>Clear</MenuItem>
         </Menu>
-
+        <Menu menuButton={<IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>}>
+          <QColorPicker onChangeComplete={changeTextColor} />
+          <MenuItem onClick={removeTextColor}>Clear</MenuItem>
+        </Menu>
         <Menu
           menuButton={
             <div>
@@ -260,14 +274,13 @@ export const FloatingFormatMenu = (props: Props) => {
 
         <MenuDivider />
 
-        <IconButton disabled={true}>
+        <IconButton onClick={() => changeBold(!format.bold)}>
           <FormatBold fontSize={iconSize} />
         </IconButton>
-        <IconButton disabled={true}>
+        <IconButton onClick={() => changeItalic(!format.italic)}>
           <FormatItalic fontSize={iconSize} />
         </IconButton>
-
-        {/* 
+        {/*
         <Divider
           orientation="vertical"
           flexItem

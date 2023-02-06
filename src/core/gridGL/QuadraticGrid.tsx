@@ -6,7 +6,7 @@ import { useRecoilState } from 'recoil';
 import { PixiApp } from './pixiApp/PixiApp';
 import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
-import { ensureVisible } from './interaction/ensureVisible';
+import { ensureVisible } from './interaction/viewportHelper';
 import { CellInput } from './interaction/CellInput';
 import { SheetController } from '../transaction/sheetController';
 import { FloatingFormatMenu } from '../../ui/menus/FloatingMenu/FloatingFormatMenu';

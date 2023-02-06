@@ -17,6 +17,7 @@ export class GridLines extends Graphics {
       this.dirty = false;
       if (!this.app.settings.showGridLines) {
         this.visible = false;
+        this.app.setViewportDirty();
         return;
       }
 
@@ -61,7 +62,7 @@ export class GridLines extends Graphics {
     let row = index;
     const offset = bounds.top - position;
     let size = 0;
-    for (let y = bounds.top; y <= bounds.bottom; y += size) {
+    for (let y = bounds.top; y <= bounds.bottom + size - 1; y += size) {
       // don't draw grid lines when hidden
       if (size !== 0) {
         this.moveTo(bounds.left, y - offset);
