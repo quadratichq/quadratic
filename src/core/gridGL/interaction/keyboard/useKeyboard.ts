@@ -18,7 +18,7 @@ interface IProps {
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  app?: PixiApp;
+  app: PixiApp;
   sheetController: SheetController;
 }
 
@@ -33,9 +33,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     app,
     sheetController,
   } = props;
-  // @ts-expect-error
   const { clearFormatting } = useFormatCells(sheetController, app);
-  // @ts-expect-error
   const { clearBorders } = useBorders(sheetController.sheet, app);
   const clearAllFormatting = useCallback(() => {
     clearFormatting();
