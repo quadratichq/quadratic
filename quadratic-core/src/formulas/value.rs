@@ -9,7 +9,14 @@ pub enum Value {
     Number(f64),
     Bool(bool),
     Array(Vec<SmallVec<[Value; 1]>>),
+    // TODO: remove this or replace it with a more generic error type
     MissingErr,
+}
+
+impl Default for Value {
+    fn default() -> Self {
+        Value::String(String::new())
+    }
 }
 
 impl fmt::Display for Value {
@@ -47,6 +54,15 @@ impl Value {
             Value::MissingErr => 0,
 
             Value::String(_) | Value::Number(_) | Value::Bool(_) => 1,
+        }
+    }
+
+    /// Returns the size `(rows, columns)` of the array if this is an array
+    /// value, or `None` otherwsie.
+    pub fn array_size(&self) -> Option<(usize, usize)> {
+        match self {
+            Value::Array(a) => Some((a.len(), a.get(0).unwrap_or(&smallvec![]).len())),
+            _ => None,
         }
     }
 }
@@ -122,6 +138,24 @@ impl Spanned<Value> {
             }
 
             Value::MissingErr => Ok(smallvec![]),
+        }
+    }
+
+    /// Returns the value from an array if this is an array value, or the single
+    /// value itself otherwise. If the array index is out of bounds, returns an
+    /// internal error.
+    pub fn get_array_value(&self, row: usize, col: usize) -> FormulaResult<Spanned<Value>> {
+        match &self.inner {
+            Value::Array(a) => Ok(Spanned {
+                span: self.span,
+                inner: a
+                    .get(row)
+                    .and_then(|row| row.get(col))
+                    .ok_or_else(|| internal_error_value!("array value index out of bounds"))?
+                    .clone(),
+            }),
+
+            _ => Ok(self.clone()),
         }
     }
 }
