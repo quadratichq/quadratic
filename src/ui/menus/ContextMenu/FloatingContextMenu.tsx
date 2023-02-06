@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
-import { Divider, IconButton, MenuItem, Paper, Toolbar, Tooltip } from '@mui/material';
+import { Divider, IconButton, MenuItem, Paper, Toolbar } from '@mui/material';
 import {
   BorderAll,
   ContentCopy,
@@ -22,6 +22,7 @@ import { QColorPicker } from '../../components/qColorPicker';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
+import { TooltipHint } from '../../components/TooltipHint';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -185,7 +186,7 @@ export const FloatingContextMenu = (props: Props) => {
           minHeight: '0px',
         }}
       >
-        <Hint title="Cut" shortcut={KeyboardSymbols.Command + 'X'}>
+        <TooltipHint title="Cut" shortcut={KeyboardSymbols.Command + 'X'}>
           <IconButton
             onClick={() => {
               cutToClipboard(
@@ -203,8 +204,8 @@ export const FloatingContextMenu = (props: Props) => {
           >
             <ContentCut fontSize={iconSize} />
           </IconButton>
-        </Hint>
-        <Hint title="Copy" shortcut={KeyboardSymbols.Command + 'C'}>
+        </TooltipHint>
+        <TooltipHint title="Copy" shortcut={KeyboardSymbols.Command + 'C'}>
           <IconButton
             onClick={() => {
               copyToClipboard(
@@ -216,8 +217,8 @@ export const FloatingContextMenu = (props: Props) => {
           >
             <ContentCopy fontSize={iconSize} />
           </IconButton>
-        </Hint>
-        <Hint title="Paste" shortcut={KeyboardSymbols.Command + 'P'}>
+        </TooltipHint>
+        <TooltipHint title="Paste" shortcut={KeyboardSymbols.Command + 'P'}>
           <IconButton
             onClick={() => {
               pasteFromClipboard(props.sheetController, props.interactionState.cursorPosition);
@@ -225,32 +226,32 @@ export const FloatingContextMenu = (props: Props) => {
           >
             <ContentPaste fontSize={iconSize} />
           </IconButton>
-        </Hint>
+        </TooltipHint>
 
         <MenuDivider />
 
-        <Hint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
+        <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
           <IconButton onClick={() => changeBold(!format.bold)}>
             <FormatBold fontSize={iconSize} />
           </IconButton>
-        </Hint>
+        </TooltipHint>
 
-        <Hint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
+        <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
           <IconButton onClick={() => changeItalic(!format.italic)}>
             <FormatItalic fontSize={iconSize} />
           </IconButton>
-        </Hint>
+        </TooltipHint>
 
         <MenuDivider />
 
         <Menu
           menuButton={
             <div>
-              <Hint title="Fill color">
+              <TooltipHint title="Fill color">
                 <IconButton>
                   <FormatColorFill fontSize={iconSize}></FormatColorFill>
                 </IconButton>
-              </Hint>
+              </TooltipHint>
             </div>
           }
         >
@@ -259,9 +260,11 @@ export const FloatingContextMenu = (props: Props) => {
         </Menu>
         <Menu
           menuButton={
-            <Hint title="Text color">
-              <IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
-            </Hint>
+            <div>
+              <TooltipHint title="Text color">
+                <IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
+              </TooltipHint>
+            </div>
           }
         >
           <QColorPicker onChangeComplete={changeTextColor} />
@@ -270,21 +273,21 @@ export const FloatingContextMenu = (props: Props) => {
         <Menu
           menuButton={
             <div>
-              <Hint title="Borders">
+              <TooltipHint title="Borders">
                 <IconButton>
                   <BorderAll fontSize={iconSize} />
                 </IconButton>
-              </Hint>
+              </TooltipHint>
             </div>
           }
         >
           {borders}
         </Menu>
-        <Hint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
+        <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
           <IconButton onClick={handleClearFormatting}>
             <FormatClear fontSize={iconSize} />
           </IconButton>
-        </Hint>
+        </TooltipHint>
 
         {/*
         <Divider
@@ -322,22 +325,6 @@ export const FloatingContextMenu = (props: Props) => {
     </Paper>
   );
 };
-
-function Hint({ title, shortcut, children }: { title: string; shortcut?: string; children: JSX.Element }) {
-  return (
-    <Tooltip
-      arrow
-      placement="top"
-      title={
-        <>
-          {title} {shortcut && <span style={{ opacity: '.625' }}>({shortcut})</span>}
-        </>
-      }
-    >
-      {children}
-    </Tooltip>
-  );
-}
 
 function MenuDivider() {
   return (
