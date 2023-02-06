@@ -14,3 +14,4 @@ export async function runFormula(formula_code: string, pos: Coordinate): Promise
   const output = await eval_formula(formula_code, pos.x, pos.y);
 
   return output as runFormulaReturnType;
+}
