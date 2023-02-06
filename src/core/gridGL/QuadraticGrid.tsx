@@ -9,7 +9,7 @@ import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/viewportHelper';
 import { CellInput } from './interaction/CellInput';
 import { SheetController } from '../transaction/sheetController';
-import { FloatingFormatMenu } from '../../ui/menus/FloatingMenu/FloatingFormatMenu';
+import { FloatingContextMenu } from '../../ui/menus/ContextMenu/FloatingContextMenu';
 
 interface IProps {
   sheetController: SheetController;
@@ -102,14 +102,14 @@ export default function QuadraticGrid(props: IProps) {
         app={props.app}
         sheetController={props.sheetController}
       />
-      <FloatingFormatMenu
+      <FloatingContextMenu
         interactionState={interactionState}
         setInteractionState={setInteractionState}
         container={container}
         app={props.app}
         sheetController={props.sheetController}
         showContextMenu={showContextMenu}
-      ></FloatingFormatMenu>
+      ></FloatingContextMenu>
     </div>
   );
 }

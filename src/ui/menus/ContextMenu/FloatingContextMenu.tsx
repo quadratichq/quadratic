@@ -32,7 +32,7 @@ interface Props {
   showContextMenu: boolean;
 }
 
-export const FloatingFormatMenu = (props: Props) => {
+export const FloatingContextMenu = (props: Props) => {
   const { interactionState, app, container, sheetController, showContextMenu } = props;
   const viewport = app?.viewport;
 
@@ -173,12 +173,6 @@ export const FloatingFormatMenu = (props: Props) => {
         transform,
         pointerEvents: 'auto',
         visibility: 'hidden',
-        // zIndex: 9,
-        // backgroundColor: 'white',
-        // border: `1px solid ${colors.mediumGray}`,
-        // borderRadius: '5px',
-        // drop shadow
-        // boxShadow: `0px 0px 10px 0px ${colors.mediumGray}`,
       }}
       elevation={4}
       onClick={(e) => {
@@ -205,7 +199,13 @@ export const FloatingFormatMenu = (props: Props) => {
           <QColorPicker onChangeComplete={changeFillColor} />
           <MenuItem onClick={removeFillColor}>Clear</MenuItem>
         </Menu>
-        <Menu menuButton={<IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>}>
+        <Menu
+          menuButton={
+            <Hint title="Text color">
+              <IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
+            </Hint>
+          }
+        >
           <QColorPicker onChangeComplete={changeTextColor} />
           <MenuItem onClick={removeTextColor}>Clear</MenuItem>
         </Menu>
@@ -274,12 +274,17 @@ export const FloatingFormatMenu = (props: Props) => {
 
         <MenuDivider />
 
-        <IconButton onClick={() => changeBold(!format.bold)}>
-          <FormatBold fontSize={iconSize} />
-        </IconButton>
-        <IconButton onClick={() => changeItalic(!format.italic)}>
-          <FormatItalic fontSize={iconSize} />
-        </IconButton>
+        <Hint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
+          <IconButton onClick={() => changeBold(!format.bold)}>
+            <FormatBold fontSize={iconSize} />
+          </IconButton>
+        </Hint>
+
+        <Hint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
+          <IconButton onClick={() => changeItalic(!format.italic)}>
+            <FormatItalic fontSize={iconSize} />
+          </IconButton>
+        </Hint>
         {/*
         <Divider
           orientation="vertical"
