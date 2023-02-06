@@ -33,6 +33,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     app,
     sheetController,
   } = props;
+  // @ts-expect-error
   const { clearFormatting } = useFormatCells(sheetController, app);
   // @ts-expect-error
   const { clearBorders } = useBorders(sheetController.sheet, app);
