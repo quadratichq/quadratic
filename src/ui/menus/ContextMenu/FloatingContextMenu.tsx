@@ -185,51 +185,6 @@ export const FloatingContextMenu = (props: Props) => {
           minHeight: '0px',
         }}
       >
-        <Menu
-          menuButton={
-            <div>
-              <Hint title="Fill color">
-                <IconButton>
-                  <FormatColorFill fontSize={iconSize}></FormatColorFill>
-                </IconButton>
-              </Hint>
-            </div>
-          }
-        >
-          <QColorPicker onChangeComplete={changeFillColor} />
-          <MenuItem onClick={removeFillColor}>Clear</MenuItem>
-        </Menu>
-        <Menu
-          menuButton={
-            <Hint title="Text color">
-              <IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
-            </Hint>
-          }
-        >
-          <QColorPicker onChangeComplete={changeTextColor} />
-          <MenuItem onClick={removeTextColor}>Clear</MenuItem>
-        </Menu>
-        <Menu
-          menuButton={
-            <div>
-              <Hint title="Borders">
-                <IconButton>
-                  <BorderAll fontSize={iconSize} />
-                </IconButton>
-              </Hint>
-            </div>
-          }
-        >
-          {borders}
-        </Menu>
-        <Hint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton onClick={handleClearFormatting}>
-            <FormatClear fontSize={iconSize} />
-          </IconButton>
-        </Hint>
-
-        <MenuDivider />
-
         <Hint title="Cut" shortcut={KeyboardSymbols.Command + 'X'}>
           <IconButton
             onClick={() => {
@@ -285,6 +240,52 @@ export const FloatingContextMenu = (props: Props) => {
             <FormatItalic fontSize={iconSize} />
           </IconButton>
         </Hint>
+
+        <MenuDivider />
+
+        <Menu
+          menuButton={
+            <div>
+              <Hint title="Fill color">
+                <IconButton>
+                  <FormatColorFill fontSize={iconSize}></FormatColorFill>
+                </IconButton>
+              </Hint>
+            </div>
+          }
+        >
+          <QColorPicker onChangeComplete={changeFillColor} />
+          <MenuItem onClick={removeFillColor}>Clear</MenuItem>
+        </Menu>
+        <Menu
+          menuButton={
+            <Hint title="Text color">
+              <IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
+            </Hint>
+          }
+        >
+          <QColorPicker onChangeComplete={changeTextColor} />
+          <MenuItem onClick={removeTextColor}>Clear</MenuItem>
+        </Menu>
+        <Menu
+          menuButton={
+            <div>
+              <Hint title="Borders">
+                <IconButton>
+                  <BorderAll fontSize={iconSize} />
+                </IconButton>
+              </Hint>
+            </div>
+          }
+        >
+          {borders}
+        </Menu>
+        <Hint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
+          <IconButton onClick={handleClearFormatting}>
+            <FormatClear fontSize={iconSize} />
+          </IconButton>
+        </Hint>
+
         {/*
         <Divider
           orientation="vertical"
