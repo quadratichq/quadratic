@@ -2,6 +2,7 @@ import { Container, Rectangle } from 'pixi.js';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
 import { CELL_TEXT_MARGIN_LEFT } from '../../../../constants/gridConstants';
+import { CellFormat } from '../../../gridDB/gridTypes';
 
 interface LabelData {
   text: string;
@@ -10,6 +11,7 @@ interface LabelData {
   location?: Coordinate;
   isQuadrant?: boolean;
   expectedWidth: number;
+  format?: CellFormat;
 }
 
 export class CellsLabels extends Container {
@@ -17,6 +19,7 @@ export class CellsLabels extends Container {
 
   clear() {
     this.labelData = [];
+    this.children.forEach(child => (child.visible = false));
   }
 
   add(label: LabelData): void {
@@ -43,6 +46,17 @@ export class CellsLabels extends Container {
     }
   }
 
+  private compareLabelData(label: CellLabel, data: LabelData): boolean {
+    const isSame = (a?: boolean, b?: boolean): boolean => {
+      return (!a && !b) || (a && b) ? true : false;
+    };
+
+    return label.originalText === data.text
+      && isSame(label.format?.bold, data.format?.bold)
+      && isSame(label.format?.italic, data.format?.italic)
+      && label.format?.textColor === data.format?.textColor;
+  }
+
   /**
    * add labels to headings using cached labels
    * @returns the visual bounds only if isQuadrant is defined (otherwise not worth the .width/.height call)
@@ -61,7 +75,7 @@ export class CellsLabels extends Container {
 
     // reuse existing labels that have the same text
     this.labelData.forEach((data) => {
-      const index = available.findIndex((label) => label.originalText === data.text);
+      const index = available.findIndex((label) => this.compareLabelData(label, data));
       if (index === -1) {
         leftovers.push(data);
       } else {
@@ -94,11 +108,12 @@ export class CellsLabels extends Container {
       if (i < available.length) {
         label = available[i];
         label.visible = true;
+        label.setFormat(data.format);
       }
 
       // otherwise create new labels
       else {
-        label = this.addChild(new CellLabel());
+        label = this.addChild(new CellLabel(data.format));
       }
       label.position.set(data.x, data.y);
       label.text = data.text;

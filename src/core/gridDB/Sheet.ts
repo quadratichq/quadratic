@@ -35,7 +35,7 @@ export class Sheet {
   }
 
   load_file(sheet: GridFileSchema): void {
-    this.gridOffsets.populate(sheet.rows, sheet.columns);
+    this.gridOffsets.populate(sheet.columns, sheet.rows);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
     this.render_dependency.load(sheet.render_dependency);
@@ -123,6 +123,10 @@ export class Sheet {
       { x: column, y: Math.min(gridColumnMinMax.min, bordersColumnMinMax.min) },
       { x: column, y: Math.max(gridColumnMinMax.max, bordersColumnMinMax.max) },
     ];
+  }
+
+  hasQuadrant(x: number, y: number): boolean {
+    return this.grid.hasQuadrant(x, y) || this.borders.hasQuadrant(x, y);
   }
 
   debugGetCells(): Cell[] {

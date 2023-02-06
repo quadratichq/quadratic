@@ -32,7 +32,7 @@ export class Cells extends Container {
   private app: PixiApp;
   private cellsArray: CellsArray;
   private cellsBorder: CellsBorder;
-  private labels: CellsLabels;
+  private cellLabels: CellsLabels;
   private cellsMarkers: CellsMarkers;
 
   cellsBackground: CellsBackground;
@@ -47,7 +47,7 @@ export class Cells extends Container {
 
     this.cellsArray = this.addChild(new CellsArray(app));
     this.cellsBorder = this.addChild(new CellsBorder(app));
-    this.labels = this.addChild(new CellsLabels());
+    this.cellLabels = this.addChild(new CellsLabels());
     this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
@@ -56,7 +56,7 @@ export class Cells extends Container {
    * note: this will not remove dependencies for cells that have been deleted but had dependencies
    */
   private handleOverflow(): void {
-    const labels = this.labels.getVisible();
+    const labels = this.cellLabels.getVisible();
 
     const { quadrants } = this.app;
     const { render_dependency, gridOffsets } = this.app.sheet;
@@ -75,7 +75,7 @@ export class Cells extends Container {
           let x = 0;
           do {
             dependents.push({ x: column, y: label.location.y });
-            x += gridOffsets.getColumnPlacement(column).width;
+            x += gridOffsets.getColumnWidth(column);
             column++;
           } while (x < label.overflowRight);
         }
@@ -86,12 +86,11 @@ export class Cells extends Container {
           let x = 0;
           do {
             dependents.push({ x: column, y: label.location.y });
-            x -= gridOffsets.getColumnPlacement(column).width;
+            x -= gridOffsets.getColumnWidth(column);
             column--;
           } while (x > label.overflowLeft);
         }
         const dependencies = render_dependency.update(label.location, dependents);
-        this.app.quadrants.quadrantChanged({ cells: dependents });
         changes.push(...dependencies);
       }
     });
@@ -125,13 +124,14 @@ export class Cells extends Container {
           } else if (entry.cell?.type === 'FORMULA') {
             this.cellsMarkers.add(x, y, 'FormulaIcon');
           }
-          this.labels.add({
+          this.cellLabels.add({
             x: x + CELL_TEXT_MARGIN_LEFT,
             y: y + CELL_TEXT_MARGIN_TOP,
             text: entry.cell.value,
             isQuadrant,
             expectedWidth: width - CELL_TEXT_MARGIN_LEFT * 2,
             location: isQuadrant ? { x: entry.cell.x, y: entry.cell.y } : undefined,
+            format: entry.format,
           });
         }
       }
@@ -145,6 +145,14 @@ export class Cells extends Container {
     }
   }
 
+  private clear(): void {
+    this.cellLabels.clear();
+    this.cellsMarkers.clear();
+    this.cellsArray.clear();
+    this.cellsBackground.clear();
+    this.cellsBorder.clear();
+  }
+
   /**
    * Draws all items within the visible bounds
    * @param boundsWithData visible bounds without cells outside of gridSparse bounds
@@ -153,7 +161,7 @@ export class Cells extends Container {
    * @param ignoreInput if false then don't draw input location (as it's handled by the DOM)
    * @returns a Rectangle of the content bounds (not including empty area), or undefined if nothing is drawn
    */
-  drawBounds(options: {
+  private drawBounds(options: {
     boundsWithData: Rectangle;
     bounds: Rectangle;
     cellRectangle: CellRectangle;
@@ -164,11 +172,7 @@ export class Cells extends Container {
     const renderedCells = new Set<string>();
 
     const { gridOffsets, render_dependency, grid } = this.app.sheet;
-    this.labels.clear();
-    this.cellsMarkers.clear();
-    this.cellsArray.clear();
-    this.cellsBackground.clear();
-    this.cellsBorder.clear();
+    this.clear();
 
     const input =
       !ignoreInput && this.app.settings.interactionState.showInput
@@ -179,6 +183,7 @@ export class Cells extends Container {
         : undefined;
 
     // keeps track of screen position
+
     const xStart = gridOffsets.getColumnPlacement(boundsWithData.left).x;
     const yStart = gridOffsets.getRowPlacement(boundsWithData.top).y;
     let y = yStart;
@@ -193,12 +198,14 @@ export class Cells extends Container {
         const entry = cellRectangle.get(column, row);
 
         // don't render input (unless ignoreInput === true)
-        renderedCells.add(`${column},${row}`);
         const isInput = input && input.column === column && input.row === row;
 
         const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, isInput });
         content = content ? intersects.rectangleUnion(content, rendered) : rendered;
         x += width;
+
+        // ensure we only render each cell once
+        renderedCells.add(`${column},${row}`);
       }
       x = xStart;
       y += height;
@@ -226,7 +233,7 @@ export class Cells extends Container {
       });
     }
 
-    const rendered = this.labels.update();
+    const rendered = this.cellLabels.update();
     if (rendered) {
       const clipped = intersects.rectangleClip(rendered, clipRectangle);
       content = content ? intersects.rectangleUnion(content, clipped) : clipped;
@@ -240,7 +247,7 @@ export class Cells extends Container {
 
   drawMultipleBounds(cellRectangles: CellRectangle[]): void {
     const { gridOffsets, render_dependency, grid } = this.app.sheet;
-    this.labels.clear();
+    this.cellLabels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
     this.cellsBackground.clear();
@@ -309,7 +316,7 @@ export class Cells extends Container {
       }
     }
 
-    this.labels.update();
+    this.cellLabels.update();
   }
 
   drawCells(fullBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
@@ -322,6 +329,8 @@ export class Cells extends Container {
     if (boundsWithData) {
       const cellRectangle = grid.getCells(boundsWithData);
       rectCells = this.drawBounds({ bounds, boundsWithData, cellRectangle, isQuadrant });
+    } else {
+      this.clear();
     }
 
     // draw borders
@@ -348,7 +357,6 @@ export class Cells extends Container {
   debugShowCachedCounts(): void {
     this.cellsArray.debugShowCachedCounts();
     this.cellsBorder.debugShowCachedCounts();
-    // this.labels.debugShowCachedCount();
     this.cellsMarkers.debugShowCachedCounts();
     this.cellsBackground.debugShowCachedCounts();
   }

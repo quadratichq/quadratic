@@ -26,10 +26,19 @@ export interface Heading {
   size?: number;
 }
 
+export type CellWrapping = "wrap" | "clip"; // default is overflow
+
+export type CellAlignment = "right" | "center"; // default is left
+
 export interface CellFormat {
   x?: number;
   y?: number;
   fillColor?: string;
+  bold?: boolean;
+  italic?: boolean;
+  textColor?: string;
+  wrapping?: CellWrapping;  // default is overflow
+  alignment?: CellAlignment;  // default is left
 }
 
 export enum BorderType {

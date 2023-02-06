@@ -4,6 +4,7 @@ import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
 import { Cell, CellFormat } from './gridTypes';
 import { MinMax } from '../gridGL/types/size';
+import { Quadrants } from '../gridGL/quadrants/Quadrants';
 
 export interface CellAndFormat {
   cell?: Cell;
@@ -20,6 +21,9 @@ export class GridSparse {
   isEmpty = true;
   cells = new Map<string, CellAndFormat>();
 
+  // tracks which quadrants need to render based on GridSparse data
+  quadrants = new Set<string>();
+
   constructor(gridOffsets: GridOffsets) {
     this.gridOffsets = gridOffsets;
   }
@@ -31,6 +35,7 @@ export class GridSparse {
         update.cell = cell;
       } else {
         this.cells.set(this.getKey(cell.x, cell.y), { cell });
+        this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
       }
     });
     this.recalculateBounds();
@@ -102,6 +107,7 @@ export class GridSparse {
 
   empty() {
     this.cells.clear();
+    this.quadrants.clear();
     this.minX = 0;
     this.maxX = 0;
     this.minY = 0;
@@ -120,12 +126,14 @@ export class GridSparse {
     }
     this.isEmpty = false;
     this.cells.clear();
+    this.quadrants.clear();
     this.minX = Infinity;
     this.maxX = -Infinity;
     this.minY = Infinity;
     this.maxY = -Infinity;
     cells?.forEach((cell) => {
       this.cells.set(this.getKey(cell.x, cell.y), { cell });
+      this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
       this.minX = Math.min(this.minX, cell.x);
       this.maxX = Math.max(this.maxX, cell.x);
       this.minY = Math.min(this.minY, cell.y);
@@ -177,6 +185,19 @@ export class GridSparse {
         const cell = this.cells.get(this.getKey(x, y));
         if (cell?.cell) {
           cells.push(cell.cell);
+        }
+      }
+    }
+    return cells;
+  }
+
+  getNakedFormat(x0: number, y0: number, x1: number, y1: number): CellFormat[] {
+    const cells: CellFormat[] = [];
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const cell = this.cells.get(this.getKey(x, y));
+        if (cell?.format) {
+          cells.push(cell.format);
         }
       }
     }
@@ -272,5 +293,9 @@ export class GridSparse {
         return [];
       }),
     };
+  }
+
+  hasQuadrant(x: number, y: number): boolean {
+    return this.quadrants.has(`${x},${y}`);
   }
 }

@@ -3,12 +3,13 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { Divider, IconButton, MenuItem, Paper, Toolbar } from '@mui/material';
-import { BorderAll, FormatBold, FormatClear, FormatColorFill, FormatItalic } from '@mui/icons-material';
+import { BorderAll, FormatBold, FormatClear, FormatColorFill, FormatColorText, FormatItalic } from '@mui/icons-material';
 import { Menu } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { useBorders } from '../TopBar/SubMenus/useBorders';
 import { QColorPicker } from '../../components/qColorPicker';
+import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -24,7 +25,16 @@ export const FloatingFormatMenu = (props: Props) => {
 
   const menuDiv = useRef<HTMLDivElement>(null);
   const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
-  const { changeFillColor, removeFillColor, clearFormatting } = useFormatCells(sheetController, props.app);
+  const {
+    changeFillColor,
+    removeFillColor,
+    clearFormatting,
+    changeBold,
+    changeItalic,
+    changeTextColor,
+    removeTextColor,
+  } = useFormatCells(sheetController, props.app);
+  const { format } = useGetSelection(sheetController.sheet);
   const { clearBorders } = useBorders(sheetController.sheet, props.app);
 
   const handleClearFormatting = useCallback(() => {
@@ -164,6 +174,10 @@ export const FloatingFormatMenu = (props: Props) => {
           <QColorPicker onChangeComplete={changeFillColor} />
           <MenuItem onClick={removeFillColor}>Clear</MenuItem>
         </Menu>
+        <Menu menuButton={<IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>}>
+          <QColorPicker onChangeComplete={changeTextColor} />
+          <MenuItem onClick={removeTextColor}>Clear</MenuItem>
+        </Menu>
         <Menu
           menuButton={
             <IconButton>
@@ -186,13 +200,13 @@ export const FloatingFormatMenu = (props: Props) => {
             marginRight: '10px',
           }}
         />
-        <IconButton disabled={true}>
+        <IconButton onClick={() => changeBold(!format.bold)}>
           <FormatBold fontSize={iconSize} />
         </IconButton>
-        <IconButton disabled={true}>
+        <IconButton onClick={() => changeItalic(!format.italic)}>
           <FormatItalic fontSize={iconSize} />
         </IconButton>
-        {/* 
+        {/*
         <Divider
           orientation="vertical"
           flexItem

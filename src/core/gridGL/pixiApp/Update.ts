@@ -92,7 +92,6 @@ export class Update {
       app.renderer.render(app.stage);
       debugTimeCheck('[Update] render');
       this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
-      debugTimeCheck('[Update] render', 10);
       debugRendererLight(true);
       debugShowChildren(app.stage, 'stage');
       debugShowCachedCounts(app);
@@ -101,9 +100,7 @@ export class Update {
 
       // only render quadrants when the viewport hasn't been dirty for a while
       if (timeStart > this.nextQuadrantRender) {
-        if (app.quadrants.update(timeStart)) {
-          // app.renderer.render(app.stage);
-        }
+        app.quadrants.update(timeStart);
       }
     }
 
@@ -144,9 +141,7 @@ export class Update {
     } else {
       // only render quadrants when the viewport hasn't been dirty for a while
       if (timeStart > this.nextQuadrantRender) {
-        if (app.quadrants.update(timeStart)) {
-          // app.renderer.render(app.stage);
-        }
+        app.quadrants.update(timeStart);
       }
     }
 

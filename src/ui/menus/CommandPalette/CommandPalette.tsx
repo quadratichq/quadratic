@@ -18,6 +18,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
+import './styles.css';
 
 interface Props {
   app: PixiApp;
@@ -34,11 +35,11 @@ export const CommandPalette = (props: Props) => {
 
   // Fn that closes the command palette and gets passed down to individual ListItems
   const closeCommandPalette = () => {
-    setEditorInteractionState({
-      ...editorInteractionState,
+    setEditorInteractionState((state) => ({
+      ...state,
       showCellTypeMenu: false,
       showCommandPalette: false,
-    });
+    }));
     setActiveSearchValue('');
     setSelectedListItemIndex(0);
     focusGrid();
@@ -49,7 +50,6 @@ export const CommandPalette = (props: Props) => {
     const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
     if (el) {
       el.scrollIntoView({
-        behavior: 'smooth',
         block: 'nearest',
       });
     }

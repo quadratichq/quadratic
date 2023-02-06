@@ -7,6 +7,7 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../core/gridGL/QuadraticGrid';
 import CommandPalette from './menus/CommandPalette';
+import GoTo from './menus/GoTo';
 import { useEffect, useState } from 'react';
 import { PixiApp } from '../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../core/transaction/sheetController';
@@ -39,6 +40,7 @@ export default function QuadraticUI(props: Props) {
       {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
       <TopBar app={app} sheetController={sheetController} />
       <CommandPalette app={app} sheetController={sheetController} />
+      <GoTo app={app} sheetController={sheetController} />
 
       <div
         style={{

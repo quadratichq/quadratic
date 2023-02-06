@@ -1,4 +1,5 @@
 import { Sheet } from '../../gridDB/Sheet';
+import { localFiles } from '../../gridDB/localFiles';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Statement } from '../statement';
 
@@ -28,6 +29,7 @@ export const SetHeadingSizeRunner = (sheet: Sheet, statement: Statement, app?: P
     app.headings.dirty = true;
     if (heading_size.column !== undefined) app.quadrants.quadrantChanged({ column: heading_size.column });
     else if (heading_size.row !== undefined) app.quadrants.quadrantChanged({ row: heading_size.row });
+    localFiles.saveLastLocal(sheet.export_file());
   }
 
   // return reverse statement

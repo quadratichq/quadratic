@@ -6,16 +6,22 @@ import { SheetController } from '../../../../core/transaction/sheetController';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { useGetSelection } from './useGetSelection';
 
+export const FORMAT_SELECTION_EVENT = "formatSelectionEvent";
+
 interface IResults {
   changeFillColor: (rgb: ColorResult) => void;
   removeFillColor: () => void;
   clearFormatting: () => void;
+  changeBold: (bold: boolean) => void;
+  changeItalic: (italic: boolean) => void;
+  changeTextColor: (rgb: ColorResult) => void;
+  removeTextColor: () => void;
 }
 
 type CellFormatNoPosition = Exclude<CellFormat, 'x' | 'y'>;
 
-export const useFormatCells = (sheet_controller: SheetController, app?: PixiApp): IResults => {
-  const { start, end } = useGetSelection();
+export const useFormatCells = (sheet_controller: SheetController, app: PixiApp): IResults => {
+  const { start, end } = useGetSelection(sheet_controller.sheet);
 
   const onFormat = (updatedFormat: CellFormatNoPosition): void => {
     const formats: CellFormat[] = [];
@@ -39,8 +45,14 @@ export const useFormatCells = (sheet_controller: SheetController, app?: PixiApp)
     });
     sheet_controller.end_transaction();
 
-    app?.quadrants.quadrantChanged({ range: { start, end } });
+    if (app) {
+      app.quadrants.quadrantChanged({ range: { start, end } });
+      app.cells.dirty = true;
+    }
     localFiles.saveLastLocal(sheet_controller.sheet.export_file());
+
+    // triggers an even to indicate selection's format change (see useGetSelection.ts)
+    window.dispatchEvent(new CustomEvent(FORMAT_SELECTION_EVENT));
   };
 
   const changeFillColor = (color: ColorResult): void => {
@@ -77,9 +89,29 @@ export const useFormatCells = (sheet_controller: SheetController, app?: PixiApp)
     localFiles.saveLastLocal(sheet_controller.sheet.export_file());
   };
 
+  const changeBold = (bold: boolean): void => {
+    onFormat({ bold });
+  };
+
+  const changeItalic = (italic: boolean): void => {
+    onFormat({ italic });
+  }
+
+  const changeTextColor = (rgb: ColorResult): void => {
+    onFormat({ textColor: convertReactColorToString(rgb) });
+  };
+
+  const removeTextColor = (): void => {
+    onFormat({ textColor: undefined });
+  };
+
   return {
     changeFillColor,
     removeFillColor,
     clearFormatting,
+    changeBold,
+    changeItalic,
+    changeTextColor,
+    removeTextColor,
   };
 };
