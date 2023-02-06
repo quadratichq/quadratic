@@ -6,10 +6,10 @@ export const FormulaLanguageConfig = {
   tokenizer: {
     root: [[/[a-zA-Z_$][\w$]*/, { cases: { '@keywords': 'keyword', '@default': 'variable' } }]],
     comment: [
-      [/[^\/*]+/, 'comment'],
+      [/[^/*]+/, 'comment'],
       [/\/\*/, 'comment', '@push'],
       ['\\*/', 'comment', '@pop'],
-      [/[\/*]/, 'comment'],
+      [/[/*]/, 'comment'],
     ],
     string: [
       [/[^\\"]+/, 'string'],
