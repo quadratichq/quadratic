@@ -317,7 +317,7 @@ export const FloatingFormatMenu = (props: Props) => {
   );
 };
 
-function Hint({ title, shortcut, children }: { title: string; shortcut?: string; children: any }) {
+function Hint({ title, shortcut, children }: { title: string; shortcut?: string; children: JSX.Element }) {
   return (
     <Tooltip
       arrow
