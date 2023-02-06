@@ -6,6 +6,7 @@ frontend:
         - npm install
     build:
       commands:
+        - npm run build:wasm
         - npm run build
   artifacts:
     baseDirectory: build
