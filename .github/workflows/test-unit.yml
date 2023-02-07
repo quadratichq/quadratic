@@ -2,7 +2,7 @@ name: Unit Tests
 on: push
 
 jobs:
-  build_test:
+  test_unit:
     runs-on: ubuntu-latest-4-cores
 
     steps:
@@ -12,4 +12,5 @@ jobs:
           node-version: '18'
           cache: 'npm'
       - run: npm install
+      - run: npm run build:wasm:nodejs
       - run: npm run test:unit:ci

@@ -55,6 +55,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "build:wasm": "cd quadratic-core && wasm-pack build --target web --out-dir pkg",
+    "build:wasm:nodejs": "cd quadratic-core && wasm-pack build --target nodejs --out-dir pkg",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\" \"npm run test:python\"",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:unit:dev": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watchAll",

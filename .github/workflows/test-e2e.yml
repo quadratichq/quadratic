@@ -2,7 +2,7 @@ name: E2E Tests
 on: push
 
 jobs:
-  test:
+  test_e2e:
     timeout-minutes: 60
     runs-on: macos-latest
     steps:

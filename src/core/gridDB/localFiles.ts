@@ -129,6 +129,9 @@ class LocalFiles {
   }, DEFAULT_DEBOUNCE_TIMER);
 
   saveLastLocal(data: GridFileSchema): void {
+    // don't save on NodeJS (for testing)
+    if (typeof window === 'undefined') return;
+
     // Saving a file is debounced so this function will not execute more than once per DEFAULT_DEBOUNCE_TIMER.
     // The last function call is the one that is actually executed.
     // If you need to save immediately, call async `saveLocal`.

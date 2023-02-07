@@ -2,7 +2,6 @@ import { SheetController } from '../sheetController';
 import { Cell } from '../../gridDB/gridTypes';
 import { setupPython } from '../../computations/python/loadPython';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
-import init from 'quadratic-core';
 
 // Setup Pyodide before tests
 let pyodide: any;
@@ -10,7 +9,6 @@ beforeAll(async () => {
   const { loadPyodide } = require('pyodide');
   pyodide = await loadPyodide();
   await setupPython(pyodide);
-  await init();
 });
 
 test('SheetController - code run correctly', async () => {

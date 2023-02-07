@@ -270,8 +270,4 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   // TODO: move this to sheetController so it happens automatically with every transaction?
   // Maybe sheetController.end_transaction() should return a list of cells which updated in the transaction?
   app?.quadrants.quadrantChanged({ cells: updatedCells });
-
-  // TODO: move this to sheetController so we can better control when it is called?
-  // if in browser instead of inside a node test
-  if (typeof window !== 'undefined') localFiles.saveLastLocal(sheetController.sheet.export_file());
 };
