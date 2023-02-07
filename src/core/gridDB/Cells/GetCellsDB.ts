@@ -21,5 +21,5 @@ export const GetCellsDBSetSheet = (value: Sheet): void => {
   sheet = value;
 };
 
-//@ts-ignore
-window.GetCellsDB = GetCellsDB;
+//@ts-expect-error
+if (typeof window !== 'undefined') window.GetCellsDB = GetCellsDB;
