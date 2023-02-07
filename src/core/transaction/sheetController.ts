@@ -3,6 +3,7 @@ import { Transaction } from './transaction';
 import { Statement } from './statement';
 import { StatementRunner } from './runners/runner';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { localFiles } from '../gridDB/localFiles';
 
 export class SheetController {
   app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
@@ -73,6 +74,7 @@ export class SheetController {
 
     // TODO: This is a good place to do things like mark Quadrants as dirty, save the file, etc.
     // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
+    localFiles.saveLastLocal(this.sheet.export_file());
 
     return reverse_transaction;
   }

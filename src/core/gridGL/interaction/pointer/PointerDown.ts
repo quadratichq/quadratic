@@ -87,11 +87,6 @@ export class PointerDown {
         return;
     }
 
-    // otherwise ignore right click
-    else if (rightClick) {
-      return;
-    }
-
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
@@ -100,6 +95,10 @@ export class PointerDown {
         column === this.previousPosition.originPosition.x &&
         row === this.previousPosition.originPosition.y
       ) {
+        // ignore right click
+        if (rightClick) {
+          return;
+        }
         doubleClickCell({ cell: this.sheet.grid.getCell(column, row), app: this.app });
         this.active = false;
         event.preventDefault();

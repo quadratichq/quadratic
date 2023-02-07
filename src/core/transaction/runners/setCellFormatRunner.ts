@@ -2,15 +2,10 @@ import { Sheet } from '../../gridDB/Sheet';
 import { Statement } from '../statement';
 import { CellFormat } from '../../gridDB/gridTypes';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { localFiles } from '../../gridDB/localFiles';
 
 const CopyCellFormat = (format: CellFormat | undefined): CellFormat | undefined => {
   if (format === undefined) return undefined;
-  return {
-    x: format.x,
-    y: format.y,
-    fillColor: format.fillColor,
-  };
+  return { ...format };
 };
 
 export const SetCellFormatRunner = (sheet: Sheet, statement: Statement, app?: PixiApp): Statement => {
@@ -26,7 +21,6 @@ export const SetCellFormatRunner = (sheet: Sheet, statement: Statement, app?: Pi
     if (app) {
       app.quadrants.quadrantChanged({ cells: [{ x: position[0], y: position[1] }] });
       app.cells.dirty = true;
-      localFiles.saveLastLocal(sheet.export_file());
     }
     return {
       type: 'SET_CELL_FORMAT',
@@ -42,7 +36,6 @@ export const SetCellFormatRunner = (sheet: Sheet, statement: Statement, app?: Pi
     if (app) {
       app.quadrants.quadrantChanged({ cells: [{ x: position[0], y: position[1] }] });
       app.cells.dirty = true;
-      localFiles.saveLastLocal(sheet.export_file());
     }
     return {
       type: 'SET_CELL_FORMAT',
