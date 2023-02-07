@@ -21,20 +21,18 @@ export class GridOffsetsCache {
     this.rowNegativeCache = [0];
   }
 
-  getColumnPlacement(column: number): { x: number, width: number } {
+  getColumnPlacement(column: number): { x: number; width: number } {
     let position = 0;
     if (column === 0) {
       return { x: 0, width: this.gridOffsets.getColumnWidth(0) };
     }
 
     if (column > 0) {
-
       // use cache if available
       const closestIndex = Math.floor(column / GRID_OFFSETS_CACHE_SIZE);
       if (this.columnCache.length > closestIndex) {
         position = this.columnCache[closestIndex];
         for (let x = closestIndex * GRID_OFFSETS_CACHE_SIZE; x < column; x++) {
-
           // add to cache when needed
           if (x % GRID_OFFSETS_CACHE_SIZE === 0) {
             this.columnCache[x / GRID_OFFSETS_CACHE_SIZE] = position;
@@ -47,7 +45,6 @@ export class GridOffsetsCache {
       // otherwise calculate the cache as you iterate
       else {
         for (let x = 0; x < column; x++) {
-
           // add to cache when needed
           if (x % GRID_OFFSETS_CACHE_SIZE === 0) {
             this.columnCache[x / GRID_OFFSETS_CACHE_SIZE] = position;
@@ -62,7 +59,6 @@ export class GridOffsetsCache {
 
     // calculate in the negative
     else {
-
       // use cache if available
       const closestIndex = Math.floor(-column / GRID_OFFSETS_CACHE_SIZE);
       if (this.columnNegativeCache.length > closestIndex) {
@@ -91,7 +87,7 @@ export class GridOffsetsCache {
           }
         }
       }
-      return { x: position, width: this.gridOffsets.getColumnWidth(column) - 1 };
+      return { x: position, width: this.gridOffsets.getColumnWidth(column) };
     }
   }
 
@@ -121,20 +117,18 @@ export class GridOffsetsCache {
     }
   }
 
-  getRowPlacement(row: number): { y: number, height: number } {
+  getRowPlacement(row: number): { y: number; height: number } {
     let position = 0;
     if (row === 0) {
       return { y: 0, height: this.gridOffsets.getRowHeight(0) };
     }
 
     if (row > 0) {
-
       // use cache if available
       const closestIndex = Math.floor(row / GRID_OFFSETS_CACHE_SIZE);
       if (this.rowCache.length > closestIndex) {
         position = this.rowCache[closestIndex];
         for (let y = closestIndex * GRID_OFFSETS_CACHE_SIZE; y < row; y++) {
-
           // add to cache when needed
           if (y % GRID_OFFSETS_CACHE_SIZE === 0) {
             this.rowCache[y / GRID_OFFSETS_CACHE_SIZE] = position;
@@ -147,7 +141,6 @@ export class GridOffsetsCache {
       // otherwise calculate the cache as you iterate
       else {
         for (let y = 0; y < row; y++) {
-
           // add to cache when needed
           if (y % GRID_OFFSETS_CACHE_SIZE === 0) {
             this.rowCache[y / GRID_OFFSETS_CACHE_SIZE] = position;
@@ -162,7 +155,6 @@ export class GridOffsetsCache {
 
     // calculate in the negative
     else {
-
       // use cache if available
       const closestIndex = Math.floor(-row / GRID_OFFSETS_CACHE_SIZE);
       if (this.rowNegativeCache.length > closestIndex) {
@@ -191,7 +183,7 @@ export class GridOffsetsCache {
           }
         }
       }
-      return { y: position, height: this.gridOffsets.getRowHeight(row) - 1 };
+      return { y: position, height: this.gridOffsets.getRowHeight(row) };
     }
   }
 
