@@ -20,7 +20,7 @@ export const NumberFormatMenu = () => {
   return (
     <Menu
       menuButton={
-        <Tooltip title="Number format" arrow>
+        <Tooltip title="Number format" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
           <Button style={{ color: colors.darkGray }}>
             <span style={{ fontSize: '1rem' }}>123</span>
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>

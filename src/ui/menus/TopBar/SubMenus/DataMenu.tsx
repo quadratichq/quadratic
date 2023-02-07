@@ -14,7 +14,7 @@ export const DataMenu = () => {
   return (
     <Menu
       menuButton={
-        <Tooltip title="Data" arrow>
+        <Tooltip title="Data" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
           <Button style={{ color: colors.darkGray }}>
             <DataObjectOutlined style={topBarIconStyles}></DataObjectOutlined>
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
