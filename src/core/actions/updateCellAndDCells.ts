@@ -2,7 +2,6 @@ import { Cell } from '../gridDB/gridTypes';
 import { runPython } from '../computations/python/runPython';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../gridGL/types/size';
-import { localFiles } from '../gridDB/localFiles';
 import { SheetController } from '../transaction/sheetController';
 import { runFormula } from '../computations/formulas/runFormula';
 
