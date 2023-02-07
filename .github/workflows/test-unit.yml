@@ -11,6 +11,18 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+
+      - name: Update local toolchain
+        run: |
+          rustup update
+          rustup component add clippy
+          rustup install nightly
+      - name: Toolchain info
+        run: |
+          cargo --version --verbose
+          rustc --version
+          cargo clippy --version
+
       - run: npm install
       - run: npm run build:wasm:nodejs
       - run: npm run test:unit:ci
