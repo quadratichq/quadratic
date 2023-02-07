@@ -193,13 +193,13 @@ export class GridOffsets {
 
   getColumnsArray(): Heading[] {
     const columns: Heading[] = [];
-    this.columns.forEach(column => columns.push(column));
+    this.columns.forEach((column) => columns.push(column));
     return columns;
   }
 
   getRowsArray(): Heading[] {
     const rows: Heading[] = [];
-    this.rows.forEach(row => rows.push(row));
+    this.rows.forEach((row) => rows.push(row));
     return rows;
   }
 }

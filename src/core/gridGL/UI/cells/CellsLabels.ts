@@ -19,7 +19,7 @@ export class CellsLabels extends Container {
 
   clear() {
     this.labelData = [];
-    this.children.forEach(child => (child.visible = false));
+    this.children.forEach((child) => (child.visible = false));
   }
 
   add(label: LabelData): void {
@@ -51,10 +51,12 @@ export class CellsLabels extends Container {
       return (!a && !b) || (a && b) ? true : false;
     };
 
-    return label.originalText === data.text
-      && isSame(label.format?.bold, data.format?.bold)
-      && isSame(label.format?.italic, data.format?.italic)
-      && label.format?.textColor === data.format?.textColor;
+    return (
+      label.originalText === data.text &&
+      isSame(label.format?.bold, data.format?.bold) &&
+      isSame(label.format?.italic, data.format?.italic) &&
+      label.format?.textColor === data.format?.textColor
+    );
   }
 
   /**

@@ -26,9 +26,9 @@ export interface Heading {
   size?: number;
 }
 
-export type CellWrapping = "wrap" | "clip"; // default is overflow
+export type CellWrapping = 'wrap' | 'clip'; // default is overflow
 
-export type CellAlignment = "right" | "center"; // default is left
+export type CellAlignment = 'right' | 'center'; // default is left
 
 export interface CellFormat {
   x?: number;
@@ -37,8 +37,8 @@ export interface CellFormat {
   bold?: boolean;
   italic?: boolean;
   textColor?: string;
-  wrapping?: CellWrapping;  // default is overflow
-  alignment?: CellAlignment;  // default is left
+  wrapping?: CellWrapping; // default is overflow
+  alignment?: CellAlignment; // default is left
 }
 
 export enum BorderType {

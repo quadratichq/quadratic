@@ -1,7 +1,7 @@
 import { Coordinate } from '../../types/size';
 import { BitmapTextClip } from '../../pixiOverride/BitmapTextClip';
 import { CellFormat } from '../../../gridDB/gridTypes';
-import { convertColorStringToTint } from "../../../../helpers/convertColor";
+import { convertColorStringToTint } from '../../../../helpers/convertColor';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -17,7 +17,7 @@ export class CellLabel extends BitmapTextClip {
 
   constructor(format?: CellFormat) {
     super('', {
-      fontName: "OpenSans",
+      fontName: 'OpenSans',
       fontSize,
       tint: 0,
       align: 'left',
