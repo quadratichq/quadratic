@@ -148,10 +148,14 @@ export class Quadrant extends Container {
         const reducedDrawingRectangle = app.cells.drawCells(cellBounds, true);
         if (reducedDrawingRectangle) {
           // adjust the texture placement so we only render boundary cells for subquadrants once (the second time will be outside the texture)
-          const trimLeft = reducedDrawingRectangle.left < cellBounds.left ? cellBounds.left - reducedDrawingRectangle.left : 0;
-          const trimRight = reducedDrawingRectangle.right > cellBounds.right ? reducedDrawingRectangle.right - cellBounds.right : 0;
-          const trimTop = reducedDrawingRectangle.top < cellBounds.top ? cellBounds.top - reducedDrawingRectangle.top : 0;
-          const trimBottom = reducedDrawingRectangle.bottom > cellBounds.bottom ? reducedDrawingRectangle.bottom - cellBounds.bottom : 0;
+          const trimLeft =
+            reducedDrawingRectangle.left < cellBounds.left ? cellBounds.left - reducedDrawingRectangle.left : 0;
+          const trimRight =
+            reducedDrawingRectangle.right > cellBounds.right ? reducedDrawingRectangle.right - cellBounds.right : 0;
+          const trimTop =
+            reducedDrawingRectangle.top < cellBounds.top ? cellBounds.top - reducedDrawingRectangle.top : 0;
+          const trimBottom =
+            reducedDrawingRectangle.bottom > cellBounds.bottom ? reducedDrawingRectangle.bottom - cellBounds.bottom : 0;
 
           const textureWidth = (reducedDrawingRectangle.width - trimLeft - trimRight) * QUADRANT_SCALE;
           const textureHeight = (reducedDrawingRectangle.height - trimTop - trimBottom) * QUADRANT_SCALE;

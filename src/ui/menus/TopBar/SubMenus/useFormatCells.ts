@@ -6,7 +6,7 @@ import { SheetController } from '../../../../core/transaction/sheetController';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { useGetSelection } from './useGetSelection';
 
-export const FORMAT_SELECTION_EVENT = "formatSelectionEvent";
+export const FORMAT_SELECTION_EVENT = 'formatSelectionEvent';
 
 interface IResults {
   changeFillColor: (rgb: ColorResult) => void;
@@ -95,7 +95,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
 
   const changeItalic = (italic: boolean): void => {
     onFormat({ italic });
-  }
+  };
 
   const changeTextColor = (rgb: ColorResult): void => {
     onFormat({ textColor: convertReactColorToString(rgb) });

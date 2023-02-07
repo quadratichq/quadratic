@@ -45,7 +45,7 @@ export function ensureVisible(options: { app?: PixiApp; interactionState: GridIn
  * @param [options.center] cell coordinate to center viewport
  * @param [options.topLeft] cell coordinate to place at topLeft of viewport (adjusting for ruler if needed)
  */
-export function moveViewport(options: { app?: PixiApp; center?: Coordinate, topLeft?: Coordinate }): void {
+export function moveViewport(options: { app?: PixiApp; center?: Coordinate; topLeft?: Coordinate }): void {
   const { app, center, topLeft } = options;
   if (!app || (!center && !topLeft)) return;
 
