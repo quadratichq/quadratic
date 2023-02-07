@@ -6,13 +6,13 @@ import { Sheet } from '../../../../core/gridDB/Sheet';
 import { CellFormat } from '../../../../core/gridDB/gridTypes';
 import { FORMAT_SELECTION_EVENT } from './useFormatCells';
 
-export type MultipleBoolean = true | false | "multiple";
-export type MultipleString = string | "multiple";
+export type MultipleBoolean = true | false | 'multiple';
+export type MultipleString = string | 'multiple';
 
-interface MultipleFormat {
+export interface MultipleFormat {
   bold: MultipleBoolean;
   italic: MultipleBoolean;
-  textColor: string | undefined | "multiple";
+  textColor: string | undefined | 'multiple';
 }
 
 interface GetSelection {
@@ -25,49 +25,49 @@ interface GetSelection {
 const setFormat = (cells: CellFormat[]): MultipleFormat => {
   let bold: MultipleBoolean | undefined;
   let italic: MultipleBoolean | undefined;
-  let textColor: string | undefined | "multiple";
+  let textColor: string | undefined | 'multiple';
 
-  cells.forEach(cell => {
+  cells.forEach((cell) => {
     if (cell.bold === true) {
-      if (bold !== "multiple") {
+      if (bold !== 'multiple') {
         if (bold === false) {
-          bold = "multiple";
+          bold = 'multiple';
         } else {
           bold = true;
         }
       }
     } else if (cell.bold === false) {
       if (bold === true) {
-        bold = "multiple";
+        bold = 'multiple';
       }
       bold = cell.bold;
     }
 
     if (cell.italic === true) {
-      if (italic !== "multiple") {
+      if (italic !== 'multiple') {
         if (italic === false) {
-          italic = "multiple";
+          italic = 'multiple';
         } else {
           italic = true;
         }
       }
     } else if (cell.italic === false) {
       if (italic === true) {
-        italic = "multiple";
+        italic = 'multiple';
       }
       italic = cell.italic;
     }
 
     if (cell.textColor) {
-      if (textColor !== "multiple") {
+      if (textColor !== 'multiple') {
         if (textColor === undefined) {
           textColor = cell.textColor;
         } else if (textColor !== cell.textColor) {
-          textColor = "multiple";
+          textColor = 'multiple';
         }
       }
     } else if (textColor !== cell.textColor) {
-      textColor = "multiple";
+      textColor = 'multiple';
     }
   });
 
@@ -75,7 +75,7 @@ const setFormat = (cells: CellFormat[]): MultipleFormat => {
     bold: bold ?? false,
     italic: italic ?? false,
     textColor,
-  }
+  };
 };
 
 export const useGetSelection = (sheet: Sheet): GetSelection => {
@@ -85,7 +85,7 @@ export const useGetSelection = (sheet: Sheet): GetSelection => {
   // used to trigger a new format calculation after a format change (see useFormatCells.ts)
   const [trigger, setTrigger] = useState(0);
   const setTriggerCallback = useCallback(() => {
-    setTrigger(trigger => trigger + 1);
+    setTrigger((trigger) => trigger + 1);
   }, []);
 
   useEffect(() => {
@@ -93,7 +93,7 @@ export const useGetSelection = (sheet: Sheet): GetSelection => {
 
     return () => {
       window.removeEventListener(FORMAT_SELECTION_EVENT, setTriggerCallback);
-    }
+    };
   }, [setTriggerCallback]);
 
   return useMemo(() => {
@@ -114,7 +114,14 @@ export const useGetSelection = (sheet: Sheet): GetSelection => {
     }
     return { start, end, multiCursor, format };
 
-  // this is needed for trigger to cause a useMemo change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [multiCursor, interactionState.multiCursorPosition.originPosition, interactionState.multiCursorPosition.terminalPosition, interactionState.cursorPosition, sheet.grid, trigger]);
+    // this is needed for trigger to cause a useMemo change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    multiCursor,
+    interactionState.multiCursorPosition.originPosition,
+    interactionState.multiCursorPosition.terminalPosition,
+    interactionState.cursorPosition,
+    sheet.grid,
+    trigger,
+  ]);
 };

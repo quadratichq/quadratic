@@ -12,6 +12,7 @@ import { SheetController } from '../../../transaction/sheetController';
 import { keyboardUndoRedo } from './keyboardUndoRedo';
 import { useBorders } from '../../../../ui/menus/TopBar/SubMenus/useBorders';
 import { useFormatCells } from '../../../../ui/menus/TopBar/SubMenus/useFormatCells';
+import { useGetSelection } from '../../../../ui/menus/TopBar/SubMenus/useGetSelection';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -33,7 +34,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     app,
     sheetController,
   } = props;
-  const { clearFormatting } = useFormatCells(sheetController, app);
+  const { format } = useGetSelection(sheetController.sheet);
+  const { clearFormatting, changeBold, changeItalic } = useFormatCells(sheetController, app);
   const { clearBorders } = useBorders(sheetController.sheet, app);
   const clearAllFormatting = useCallback(() => {
     clearFormatting();
@@ -52,6 +54,9 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           viewport: app?.viewport,
           sheet: sheetController.sheet,
           clearAllFormatting,
+          changeBold,
+          changeItalic,
+          format,
         })
       ) {
         event.stopPropagation();
@@ -65,6 +70,9 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       editorInteractionState,
       setEditorInteractionState,
       clearAllFormatting,
+      changeBold,
+      changeItalic,
+      format,
     ]
   );
 

@@ -2,20 +2,24 @@ import { useFormatCells } from '../../TopBar/SubMenus/useFormatCells';
 import { useGetSelection } from '../../TopBar/SubMenus/useGetSelection';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { CommandPaletteListItemCheckbox } from '../CommandPaletteListItemCheckbox';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { FormatBold, FormatItalic } from '@mui/icons-material';
 
 const ListItems = [
   {
     label: 'Format: Bold',
     Component: (props: any) => {
-      const selection = useGetSelection(props.sheetController.sheet)
+      const selection = useGetSelection(props.sheetController.sheet);
       const format = useFormatCells(props.sheetController, props.app);
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<CommandPaletteListItemCheckbox checked={!!selection.format?.bold} />}
+          icon={<FormatBold />}
           action={() => {
-            format.changeBold(!selection.format?.bold)
+            format.changeBold(!selection.format?.bold);
           }}
+          shortcut="B"
+          shortcutModifiers={KeyboardSymbols.Command}
         />
       );
     },
@@ -23,15 +27,17 @@ const ListItems = [
   {
     label: 'Format: Italic',
     Component: (props: any) => {
-      const selection = useGetSelection(props.sheetController.sheet)
+      const selection = useGetSelection(props.sheetController.sheet);
       const format = useFormatCells(props.sheetController, props.app);
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<CommandPaletteListItemCheckbox checked={!!selection.format?.italic} />}
+          icon={<FormatItalic />}
           action={() => {
-            format.changeItalic(!selection.format?.italic)
+            format.changeItalic(!selection.format?.italic);
           }}
+          shortcut="I"
+          shortcutModifiers={KeyboardSymbols.Command}
         />
       );
     },
