@@ -36,5 +36,5 @@ export async function loadPython() {
     },
   });
 
-  setupPython(window.pyodide);
+  await setupPython(window.pyodide);
 }

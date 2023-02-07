@@ -3,15 +3,13 @@ import { useLoading } from '../../contexts/LoadingContext';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
-import { useMenuState } from '@szhsin/react-menu';
 import { PixiApp } from './pixiApp/PixiApp';
 import { zoomStateAtom } from '../../atoms/zoomStateAtom';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/viewportHelper';
 import { CellInput } from './interaction/CellInput';
-import ContextMenu from '../../ui/menus/RightClickMenu';
 import { SheetController } from '../transaction/sheetController';
-import { FloatingFormatMenu } from '../../ui/menus/FloatingMenu/FloatingFormatMenu';
+import { FloatingContextMenu } from '../../ui/menus/ContextMenu/FloatingContextMenu';
 
 interface IProps {
   sheetController: SheetController;
@@ -57,8 +55,7 @@ export default function QuadraticGrid(props: IProps) {
   }, [props.app?.settings, zoomState, setZoomState]);
 
   // Right click menu
-  const { state: rightClickMenuState, toggleMenu: toggleRightClickMenu } = useMenuState();
-  const [rightClickPoint, setRightClickPoint] = useState({ x: 0, y: 0 });
+  const [showContextMenu, setShowContextMenu] = useState(false);
 
   const { onKeyDown } = useKeyboard({
     sheetController: props.sheetController,
@@ -83,8 +80,17 @@ export default function QuadraticGrid(props: IProps) {
       }}
       onContextMenu={(event) => {
         event.preventDefault();
-        setRightClickPoint({ x: event.clientX, y: event.clientY });
-        toggleRightClickMenu(true);
+        // If it's not already visibile, show the context menu
+        if (!showContextMenu) {
+          setShowContextMenu(true);
+        }
+      }}
+      onClick={(e) => {
+        // <FloatingFormatMenu> prevents events from bubbling up to here, so
+        // we always hide the context menu if it's open
+        if (showContextMenu) {
+          setShowContextMenu(false);
+        }
       }}
       onKeyDown={onKeyDown}
     >
@@ -96,20 +102,14 @@ export default function QuadraticGrid(props: IProps) {
         app={props.app}
         sheetController={props.sheetController}
       />
-      <FloatingFormatMenu
+      <FloatingContextMenu
         interactionState={interactionState}
         setInteractionState={setInteractionState}
         container={container}
         app={props.app}
         sheetController={props.sheetController}
-      ></FloatingFormatMenu>
-      <ContextMenu
-        sheet_controller={props.sheetController}
-        state={rightClickMenuState}
-        anchorPoint={rightClickPoint}
-        onClose={() => toggleRightClickMenu(false)}
-        interactionState={interactionState}
-      />
+        showContextMenu={showContextMenu}
+      ></FloatingContextMenu>
     </div>
   );
 }

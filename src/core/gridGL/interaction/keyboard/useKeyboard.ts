@@ -10,13 +10,15 @@ import { PixiApp } from '../../pixiApp/PixiApp';
 import { keyboardViewport } from './keyboardViewport';
 import { SheetController } from '../../../transaction/sheetController';
 import { keyboardUndoRedo } from './keyboardUndoRedo';
+import { useBorders } from '../../../../ui/menus/TopBar/SubMenus/useBorders';
+import { useFormatCells } from '../../../../ui/menus/TopBar/SubMenus/useFormatCells';
 
 interface IProps {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  app?: PixiApp;
+  app: PixiApp;
   sheetController: SheetController;
 }
 
@@ -31,6 +33,12 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     app,
     sheetController,
   } = props;
+  const { clearFormatting } = useFormatCells(sheetController, app);
+  const { clearBorders } = useBorders(sheetController.sheet, app);
+  const clearAllFormatting = useCallback(() => {
+    clearFormatting();
+    clearBorders();
+  }, [clearBorders, clearFormatting]);
 
   const keyDownWindow = useCallback(
     (event: KeyboardEvent): void => {
@@ -43,13 +51,21 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           setEditorInteractionState,
           viewport: app?.viewport,
           sheet: sheetController.sheet,
+          clearAllFormatting,
         })
       ) {
         event.stopPropagation();
         event.preventDefault();
       }
     },
-    [app?.viewport, interactionState, sheetController.sheet, editorInteractionState, setEditorInteractionState]
+    [
+      app?.viewport,
+      interactionState,
+      sheetController.sheet,
+      editorInteractionState,
+      setEditorInteractionState,
+      clearAllFormatting,
+    ]
   );
 
   useEffect(() => {

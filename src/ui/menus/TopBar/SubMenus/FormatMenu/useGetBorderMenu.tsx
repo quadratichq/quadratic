@@ -149,7 +149,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
           }
         }}
       >
-        <Tooltip title={props.title} arrow>
+        <Tooltip title={props.title} arrow disableInteractive>
           {props.label}
         </Tooltip>
       </div>

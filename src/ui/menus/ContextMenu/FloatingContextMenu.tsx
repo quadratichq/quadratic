@@ -3,13 +3,26 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { Divider, IconButton, MenuItem, Paper, Toolbar } from '@mui/material';
-import { BorderAll, FormatBold, FormatClear, FormatColorFill, FormatColorText, FormatItalic } from '@mui/icons-material';
+import {
+  BorderAll,
+  ContentCopy,
+  ContentCut,
+  ContentPaste,
+  FormatBold,
+  FormatClear,
+  FormatColorFill,
+  FormatColorText,
+  FormatItalic,
+} from '@mui/icons-material';
 import { Menu } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { useBorders } from '../TopBar/SubMenus/useBorders';
 import { QColorPicker } from '../../components/qColorPicker';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
+import { TooltipHint } from '../../components/TooltipHint';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -17,10 +30,11 @@ interface Props {
   container?: HTMLDivElement;
   app: PixiApp;
   sheetController: SheetController;
+  showContextMenu: boolean;
 }
 
-export const FloatingFormatMenu = (props: Props) => {
-  const { interactionState, app, container, sheetController } = props;
+export const FloatingContextMenu = (props: Props) => {
+  const { interactionState, app, container, sheetController, showContextMenu } = props;
   const viewport = app?.viewport;
 
   const menuDiv = useRef<HTMLDivElement>(null);
@@ -68,19 +82,21 @@ export const FloatingFormatMenu = (props: Props) => {
     let x = cell_offset_scaled.x + container.offsetLeft - 20;
     let y = cell_offset_scaled.y + container.offsetTop - menuHeight - 20;
 
+    /**
+     * Control menu visibility
+     */
+    let visibility = 'visible';
+
     // Hide if zoomed out too much
     if (viewport.scale.x < 0.1) {
-      menuDiv.current.style.visibility = 'hidden';
-    } else {
-      menuDiv.current.style.visibility = 'visible';
+      visibility = 'hidden';
     }
 
-    // Hide if not showing multi cursor
-    // console.log('pointer down ', app?.input?.pointerDown?.active);
-    if (!interactionState.showMultiCursor) menuDiv.current.style.visibility = 'hidden';
+    // Hide if it's not 1) a multicursor or, 2) an active right click
+    if (!(interactionState.showMultiCursor || showContextMenu)) visibility = 'hidden';
 
     // Hide if currently selecting
-    if (app?.input?.pointerDown?.active) menuDiv.current.style.visibility = 'hidden';
+    if (app?.input?.pointerDown?.active) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheetController.sheet.gridOffsets.getCell(
@@ -91,7 +107,14 @@ export const FloatingFormatMenu = (props: Props) => {
       terminal_pos.x + terminal_pos.width,
       terminal_pos.y + terminal_pos.height
     );
-    if (multiselect_offset.x < 0 || multiselect_offset.y < 0) menuDiv.current.style.visibility = 'hidden';
+    if (multiselect_offset.x < 0 || multiselect_offset.y < 0) visibility = 'hidden';
+
+    // Apply visibility
+    menuDiv.current.style.visibility = visibility;
+
+    /**
+     * Menu positioning
+     */
 
     // if ouside of viewport keep it inside
     if (x < container.offsetLeft + 35) {
@@ -103,11 +126,8 @@ export const FloatingFormatMenu = (props: Props) => {
 
     // Generate transform CSS
     const transform = 'translate(' + [x, y].join('px,') + 'px) ';
-    // // Update input css matrix
+    // Update input css matrix
     menuDiv.current.style.transform = transform;
-
-    if (viewport.dirty) menuDiv.current.style.pointerEvents = 'none';
-    else menuDiv.current.style.pointerEvents = 'auto';
 
     return transform;
   }, [
@@ -118,6 +138,7 @@ export const FloatingFormatMenu = (props: Props) => {
     interactionState.showMultiCursor,
     interactionState.multiCursorPosition,
     sheetController.sheet.gridOffsets,
+    showContextMenu,
   ]);
 
   useEffect(() => {
@@ -153,59 +174,121 @@ export const FloatingFormatMenu = (props: Props) => {
         transform,
         pointerEvents: 'auto',
         visibility: 'hidden',
-        // zIndex: 9,
-        // backgroundColor: 'white',
-        // border: `1px solid ${colors.mediumGray}`,
-        // borderRadius: '5px',
-        // drop shadow
-        // boxShadow: `0px 0px 10px 0px ${colors.mediumGray}`,
       }}
       elevation={4}
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
     >
       <Toolbar
         style={{
-          padding: '0px',
-          paddingLeft: '5px',
-          paddingRight: '5px',
+          padding: '0 6px',
           minHeight: '0px',
         }}
       >
-        <Menu menuButton={<IconButton>{<FormatColorFill fontSize={iconSize}></FormatColorFill>}</IconButton>}>
+        <TooltipHint title="Cut" shortcut={KeyboardSymbols.Command + 'X'}>
+          <IconButton
+            onClick={() => {
+              cutToClipboard(
+                props.sheetController,
+                {
+                  x: props.interactionState.multiCursorPosition.originPosition.x,
+                  y: props.interactionState.multiCursorPosition.originPosition.y,
+                },
+                {
+                  x: props.interactionState.multiCursorPosition.terminalPosition.x,
+                  y: props.interactionState.multiCursorPosition.terminalPosition.y,
+                }
+              );
+            }}
+          >
+            <ContentCut fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+        <TooltipHint title="Copy" shortcut={KeyboardSymbols.Command + 'C'}>
+          <IconButton
+            onClick={() => {
+              copyToClipboard(
+                props.sheetController,
+                props.interactionState.multiCursorPosition.originPosition,
+                props.interactionState.multiCursorPosition.terminalPosition
+              );
+            }}
+          >
+            <ContentCopy fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+        <TooltipHint title="Paste" shortcut={KeyboardSymbols.Command + 'P'}>
+          <IconButton
+            onClick={() => {
+              pasteFromClipboard(props.sheetController, props.interactionState.cursorPosition);
+            }}
+          >
+            <ContentPaste fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <MenuDivider />
+
+        <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
+          <IconButton onClick={() => changeBold(!format.bold)}>
+            <FormatBold fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
+          <IconButton onClick={() => changeItalic(!format.italic)}>
+            <FormatItalic fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <MenuDivider />
+
+        <Menu
+          menuButton={
+            <div>
+              <TooltipHint title="Fill color">
+                <IconButton>
+                  <FormatColorFill fontSize={iconSize}></FormatColorFill>
+                </IconButton>
+              </TooltipHint>
+            </div>
+          }
+        >
           <QColorPicker onChangeComplete={changeFillColor} />
           <MenuItem onClick={removeFillColor}>Clear</MenuItem>
         </Menu>
-        <Menu menuButton={<IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>}>
+        <Menu
+          menuButton={
+            <div>
+              <TooltipHint title="Text color">
+                <IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
+              </TooltipHint>
+            </div>
+          }
+        >
           <QColorPicker onChangeComplete={changeTextColor} />
           <MenuItem onClick={removeTextColor}>Clear</MenuItem>
         </Menu>
         <Menu
           menuButton={
-            <IconButton>
-              <BorderAll fontSize={iconSize} />
-            </IconButton>
+            <div>
+              <TooltipHint title="Borders">
+                <IconButton>
+                  <BorderAll fontSize={iconSize} />
+                </IconButton>
+              </TooltipHint>
+            </div>
           }
         >
           {borders}
         </Menu>
-        <IconButton onClick={handleClearFormatting}>
-          <FormatClear fontSize={iconSize} />
-        </IconButton>
+        <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
+          <IconButton onClick={handleClearFormatting}>
+            <FormatClear fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
 
-        <Divider
-          orientation="vertical"
-          flexItem
-          style={{
-            // add padding left and right
-            paddingLeft: '10px',
-            marginRight: '10px',
-          }}
-        />
-        <IconButton onClick={() => changeBold(!format.bold)}>
-          <FormatBold fontSize={iconSize} />
-        </IconButton>
-        <IconButton onClick={() => changeItalic(!format.italic)}>
-          <FormatItalic fontSize={iconSize} />
-        </IconButton>
         {/*
         <Divider
           orientation="vertical"
@@ -242,3 +325,17 @@ export const FloatingFormatMenu = (props: Props) => {
     </Paper>
   );
 };
+
+function MenuDivider() {
+  return (
+    <Divider
+      orientation="vertical"
+      flexItem
+      style={{
+        // add padding left and right
+        paddingLeft: '10px',
+        marginRight: '10px',
+      }}
+    />
+  );
+}
