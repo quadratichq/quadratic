@@ -241,6 +241,18 @@ export const FloatingContextMenu = (props: Props) => {
             <FormatItalic fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
+        <Menu
+          menuButton={
+            <div>
+              <TooltipHint title="Text color">
+                <IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
+              </TooltipHint>
+            </div>
+          }
+        >
+          <QColorPicker onChangeComplete={changeTextColor} />
+          <MenuItem onClick={removeTextColor}>Clear</MenuItem>
+        </Menu>
 
         <MenuDivider />
 
@@ -261,18 +273,6 @@ export const FloatingContextMenu = (props: Props) => {
         <Menu
           menuButton={
             <div>
-              <TooltipHint title="Text color">
-                <IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
-              </TooltipHint>
-            </div>
-          }
-        >
-          <QColorPicker onChangeComplete={changeTextColor} />
-          <MenuItem onClick={removeTextColor}>Clear</MenuItem>
-        </Menu>
-        <Menu
-          menuButton={
-            <div>
               <TooltipHint title="Borders">
                 <IconButton>
                   <BorderAll fontSize={iconSize} />
@@ -283,6 +283,7 @@ export const FloatingContextMenu = (props: Props) => {
         >
           {borders}
         </Menu>
+        <MenuDivider />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
           <IconButton onClick={handleClearFormatting}>
             <FormatClear fontSize={iconSize} />
@@ -333,8 +334,8 @@ function MenuDivider() {
       flexItem
       style={{
         // add padding left and right
-        paddingLeft: '10px',
-        marginRight: '10px',
+        paddingLeft: '4px',
+        marginRight: '4px',
       }}
     />
   );

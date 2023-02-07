@@ -8,7 +8,7 @@ export interface IKeyboardShortcut {
 export const KeyboardShortcut = ({ modifier = '', shortcut, text, icon }: IKeyboardShortcut): JSX.Element => {
   return (
     <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
-      <div style={{ minWidth: '140px', display: 'flex', alignItems: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
         {icon && icon}
         {text}
       </div>
