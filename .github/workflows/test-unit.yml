@@ -12,7 +12,7 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Update local toolchain
+      - name: Update local rust toolchain
         run: |
           rustup update
           rustup component add clippy
@@ -22,6 +22,9 @@ jobs:
           cargo --version --verbose
           rustc --version
           cargo clippy --version
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - run: npm install
       - run: npm run build:wasm:nodejs
