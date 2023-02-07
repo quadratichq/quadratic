@@ -21,8 +21,8 @@ describe('gridSparse', () => {
     expect(bounds.top).toBe(-2000 / CELL_HEIGHT);
 
     // -1 b/c it starts at 0
-    // expect(bounds.right).toBe(1000 / CELL_WIDTH - 1);
-    // expect(bounds.bottom).toBe(2000 / CELL_HEIGHT - 1);
+    expect(bounds.right).toBe(1000 / CELL_WIDTH - 1);
+    expect(bounds.bottom).toBe(2000 / CELL_HEIGHT - 1);
   });
 
   it('populates cells with 1 cell of data (positive)', () => {
