@@ -1,4 +1,5 @@
 import { Viewport } from 'pixi-viewport';
+import { MultipleFormat } from '../../../../ui/menus/TopBar/SubMenus/useGetSelection';
 import { Sheet } from '../../../gridDB/Sheet';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit } from '../../helpers/zoom';
 
@@ -9,8 +10,21 @@ export function keyboardViewport(options: {
   editorInteractionState: any;
   setEditorInteractionState: Function;
   clearAllFormatting: Function;
+  changeBold: Function;
+  changeItalic: Function;
+  format: MultipleFormat;
 }): boolean {
-  const { clearAllFormatting, event, sheet, viewport, editorInteractionState, setEditorInteractionState } = options;
+  const {
+    changeBold,
+    changeItalic,
+    clearAllFormatting,
+    event,
+    format,
+    sheet,
+    viewport,
+    editorInteractionState,
+    setEditorInteractionState,
+  } = options;
 
   if (!viewport || event.altKey) return false;
 
@@ -24,6 +38,16 @@ export function keyboardViewport(options: {
   }
   if ((event.metaKey || event.ctrlKey) && event.code === 'Backslash') {
     clearAllFormatting();
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyB') {
+    changeBold(!(format.bold === true));
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyI') {
+    changeItalic(!(format.italic === true));
     return true;
   }
 
