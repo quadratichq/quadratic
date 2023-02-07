@@ -2,7 +2,6 @@ import { Sheet } from '../../gridDB/Sheet';
 import { Statement } from '../statement';
 import { Cell } from '../../gridDB/gridTypes';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { localFiles } from '../../gridDB/localFiles';
 
 const CopyCell = (cell: Cell | undefined): Cell | undefined => {
   if (cell === undefined) return undefined;
@@ -21,7 +20,6 @@ export const SetCellRunner = (sheet: Sheet, statement: Statement, app?: PixiApp)
     if (app) {
       app.quadrants.quadrantChanged({ cells: [{ x: position[0], y: position[1] }] });
       app.cells.dirty = true;
-      localFiles.saveLastLocal(sheet.export_file());
     }
     return {
       type: 'SET_CELL',
@@ -37,7 +35,6 @@ export const SetCellRunner = (sheet: Sheet, statement: Statement, app?: PixiApp)
     if (app) {
       app.quadrants.quadrantChanged({ cells: [{ x: position[0], y: position[1] }] });
       app.cells.dirty = true;
-      localFiles.saveLastLocal(sheet.export_file());
     }
     return {
       type: 'SET_CELL',
