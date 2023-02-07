@@ -61,10 +61,11 @@ class LocalFiles {
   }
 
   private async addToFileList(filename: string, data: GridFileSchema): Promise<void> {
-    const lastFiles = (await localForage.getItem(LAST_FILES)) as string[];
-    if (!lastFiles) return;
+    let lastFiles = (await localForage.getItem(LAST_FILES)) as string[];
+    if (!lastFiles) lastFiles = [];
+
     let updatedLastFiles = [...lastFiles];
-    if (updatedLastFiles) {
+    if (updatedLastFiles.length > 0) {
       updatedLastFiles = lastFiles.filter((file) => file !== filename);
     } else {
       updatedLastFiles = [];
