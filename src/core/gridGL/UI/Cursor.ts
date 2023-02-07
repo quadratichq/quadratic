@@ -13,10 +13,16 @@ export class Cursor extends Graphics {
   indicator: Rectangle;
   dirty = true;
 
+  startCell: { x: number; y: number; width: number; height: number };
+  endCell: { x: number; y: number; width: number; height: number };
+
   constructor(app: PixiApp) {
     super();
     this.app = app;
     this.indicator = new Rectangle();
+
+    this.startCell = { x: 0, y: 0, width: 0, height: 0 };
+    this.endCell = { x: 0, y: 0, width: 0, height: 0 };
   }
 
   private drawCursor(): void {
@@ -54,38 +60,40 @@ export class Cursor extends Graphics {
   }
 
   private drawMultiCursor(): void {
-    const { settings, viewport } = this.app;
+    const { settings } = this.app;
     const { gridOffsets } = this.app.sheet;
-    let startCell: { x: number; y: number; width: number; height: number };
-    let endCell: { x: number; y: number; width: number; height: number };
+
     if (settings.interactionState.showMultiCursor) {
       const multiCursor = settings.interactionState.multiCursorPosition;
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
       this.beginFill(colors.cursorCell, FILL_ALPHA);
-      startCell = gridOffsets.getCell(multiCursor.originPosition.x, multiCursor.originPosition.y);
-      endCell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
+      this.startCell = gridOffsets.getCell(multiCursor.originPosition.x, multiCursor.originPosition.y);
+      this.endCell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
       this.drawRect(
-        startCell.x,
-        startCell.y,
-        endCell.x + endCell.width - startCell.x,
-        endCell.y + endCell.height - startCell.y
+        this.startCell.x,
+        this.startCell.y,
+        this.endCell.x + this.endCell.width - this.startCell.x,
+        this.endCell.y + this.endCell.height - this.startCell.y
       );
     } else {
-      startCell = gridOffsets.getCell(
+      this.startCell = gridOffsets.getCell(
         settings.interactionState.cursorPosition.x,
         settings.interactionState.cursorPosition.y
       );
-      endCell = gridOffsets.getCell(
+      this.endCell = gridOffsets.getCell(
         settings.interactionState.cursorPosition.x,
         settings.interactionState.cursorPosition.y
       );
     }
+  }
 
+  private drawCursorIndicator(): void {
+    const { viewport } = this.app;
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
       // draw cursor indicator
       const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
-      const x = endCell.x + endCell.width;
-      const y = endCell.y + endCell.height;
+      const x = this.endCell.x + this.endCell.width;
+      const y = this.endCell.y + this.endCell.height;
       this.indicator.x = x - indicatorSize / 2;
       this.indicator.y = y - indicatorSize / 2;
       this.lineStyle(0);
@@ -98,13 +106,19 @@ export class Cursor extends Graphics {
     if (editorInteractionState.showCodeEditor) {
       const cell = editorInteractionState.selectedCell;
       const { x, y, width, height } = this.app.sheet.gridOffsets.getCell(cell.x, cell.y);
-      const color = editorInteractionState.mode === 'PYTHON' ? colors.cellColorUserPython : colors.independence;
+      const color =
+        editorInteractionState.mode === 'PYTHON'
+          ? colors.cellColorUserPython
+          : editorInteractionState.mode === 'FORMULA'
+          ? colors.highlightYellow
+          : colors.independence;
       this.lineStyle({
-        width: CURSOR_THICKNESS,
+        width: CURSOR_THICKNESS * 1.5,
         color,
-        alignment: 0,
+        alignment: 0.5,
       });
-      this.drawRect(x, y, width - CURSOR_THICKNESS, height - CURSOR_THICKNESS);
+
+      this.drawRect(x, y, width, height);
     }
   }
 
@@ -115,6 +129,7 @@ export class Cursor extends Graphics {
       this.drawCursor();
       this.drawMultiCursor();
       this.drawCodeCursor();
+      this.drawCursorIndicator();
     }
   }
 }

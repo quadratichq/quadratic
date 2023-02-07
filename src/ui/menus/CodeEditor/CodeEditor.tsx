@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
-import { QuadraticEditorTheme } from '../../../theme/quadraticEditorTheme';
+import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import TextField from '@mui/material/TextField';
 import { Cell } from '../../../core/gridDB/gridTypes';
 import './CodeEditor.css';
@@ -12,6 +12,7 @@ import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
+import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -22,9 +23,10 @@ interface CodeEditorProps {
 
 export const CodeEditor = (props: CodeEditorProps) => {
   const { editorInteractionState } = props;
-  const { showCodeEditor } = editorInteractionState;
+  const { showCodeEditor, mode: editor_mode } = editorInteractionState;
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
 
   const [editorContent, setEditorContent] = useState<string | undefined>('');
 
@@ -46,6 +48,16 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [editorWidth, setEditorWidth] = useState<number>(
     window.innerWidth * 0.35 // default to 35% of the window width
   );
+
+  // When changing mode
+  // useEffect(() => {
+
+  //   if (!monacoRef.current || !editorRef.current) return;
+  //   const monaco = monacoRef.current;
+  //   const editor = editorRef.current;
+
+  //   // monaco.editor.setModelLanguage(editor.getModel(), 'formula');
+  // }, [editor_mode, cell]);
 
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
@@ -100,7 +112,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
     if (cell) {
       // load cell content
       setSelectedCell(cell);
-      setEditorContent(cell.python_code);
+      if (editor_mode === 'PYTHON') {
+        setEditorContent(cell?.python_code);
+      } else if (editor_mode === 'FORMULA') {
+        setEditorContent(cell?.formula_code);
+      }
     } else {
       // create blank cell
       setSelectedCell({
@@ -111,14 +127,18 @@ export const CodeEditor = (props: CodeEditorProps) => {
       } as Cell);
       setEditorContent('');
     }
-  }, [selectedCell, editorInteractionState, props.sheet_controller.sheet, showCodeEditor]);
+  }, [selectedCell, editorInteractionState, props.sheet_controller.sheet, showCodeEditor, editor_mode]);
 
   const saveAndRunCell = async () => {
     if (!selectedCell) return;
 
-    selectedCell.type = 'PYTHON';
+    selectedCell.type = editor_mode;
     selectedCell.value = '';
-    selectedCell.python_code = editorContent;
+    if (editor_mode === 'PYTHON') {
+      selectedCell.python_code = editorContent;
+    } else if (editor_mode === 'FORMULA') {
+      selectedCell.formula_code = editorContent;
+    }
 
     await updateCellAndDCells({
       starting_cells: [selectedCell],
@@ -132,11 +152,16 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
 
     editor.focus();
 
     monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
     monaco.editor.setTheme('quadratic');
+
+    monaco.languages.register({ id: 'formula' });
+    monaco.languages.setMonarchTokensProvider('formula', FormulaLanguageConfig);
+    monaco.languages.registerCompletionItemProvider('formula', FormulaCompletionProvider);
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -278,7 +303,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
           <Editor
             height="100%"
             width="100%"
-            defaultLanguage={'python'}
+            language={editor_mode === 'PYTHON' ? 'python' : editor_mode === 'FORMULA' ? 'formula' : 'plaintext'}
             value={editorContent}
             onChange={(value) => {
               setEditorContent(value);

@@ -61,10 +61,11 @@ class LocalFiles {
   }
 
   private async addToFileList(filename: string, data: GridFileSchema): Promise<void> {
-    const lastFiles = (await localForage.getItem(LAST_FILES)) as string[];
-    if (!lastFiles) return;
+    let lastFiles = (await localForage.getItem(LAST_FILES)) as string[];
+    if (!lastFiles) lastFiles = [];
+
     let updatedLastFiles = [...lastFiles];
-    if (updatedLastFiles) {
+    if (updatedLastFiles.length > 0) {
       updatedLastFiles = lastFiles.filter((file) => file !== filename);
     } else {
       updatedLastFiles = [];
@@ -129,6 +130,9 @@ class LocalFiles {
   }, DEFAULT_DEBOUNCE_TIMER);
 
   saveLastLocal(data: GridFileSchema): void {
+    // don't save on NodeJS (for testing)
+    if (typeof window === 'undefined') return;
+
     // Saving a file is debounced so this function will not execute more than once per DEFAULT_DEBOUNCE_TIMER.
     // The last function call is the one that is actually executed.
     // If you need to save immediately, call async `saveLocal`.

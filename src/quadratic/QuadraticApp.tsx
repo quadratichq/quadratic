@@ -12,6 +12,7 @@ import { debugSkipPythonLoad } from '../debugFlags';
 import { GetCellsDBSetSheet } from '../core/gridDB/Cells/GetCellsDB';
 import { localFiles } from '../core/gridDB/localFiles';
 import { SheetController } from '../core/transaction/sheetController';
+import init, { hello } from 'quadratic-core';
 
 export const QuadraticApp = () => {
   const { loading, incrementLoadingCount } = useLoading();
@@ -31,6 +32,11 @@ export const QuadraticApp = () => {
         incrementLoadingCount();
       }
       loadAssets().then(() => {
+        incrementLoadingCount();
+      });
+      // load Rust wasm
+      init().then(() => {
+        hello(); // let Rust say hello to console
         incrementLoadingCount();
       });
       localFiles.initialize().then(() => {

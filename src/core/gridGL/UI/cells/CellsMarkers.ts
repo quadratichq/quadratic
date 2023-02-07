@@ -1,7 +1,7 @@
-import { Container, BitmapText } from 'pixi.js';
+import { Container, BitmapText, Sprite } from 'pixi.js';
 import { colors } from '../../../../theme/colors';
 
-export type CellsMarkerTypes = 'CodeIcon';
+export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'ErrorIcon';
 
 export class CellsMarkers extends Container {
   private visibleIndex = 0;
@@ -12,7 +12,7 @@ export class CellsMarkers extends Container {
   }
 
   add(x: number, y: number, type: CellsMarkerTypes): void {
-    let child: BitmapText;
+    let child: BitmapText | Sprite;
     if (type === 'CodeIcon') {
       if (this.visibleIndex < this.children.length) {
         child = this.children[this.visibleIndex] as BitmapText;
@@ -23,6 +23,19 @@ export class CellsMarkers extends Container {
         this.addChild(child);
       }
       child.position.set(x + 1, y - 0.5);
+      child.visible = true;
+    } else if (type === 'FormulaIcon') {
+      if (this.visibleIndex < this.children.length) {
+        child = this.children[this.visibleIndex] as Sprite;
+        this.visibleIndex++;
+      } else {
+        child = this.addChild(Sprite.from('images/formula-fx-icon.png'));
+        child.tint = colors.highlightYellow;
+        child.height = 4;
+        child.width = 4;
+        this.addChild(child);
+      }
+      child.position.set(x + 1.25, y + 1);
       child.visible = true;
     }
   }

@@ -80,5 +80,10 @@ export function keyboardViewport(options: {
     return true;
   }
 
+  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyS') {
+    // don't do anything on Command+S
+    return true;
+  }
+
   return false;
 }

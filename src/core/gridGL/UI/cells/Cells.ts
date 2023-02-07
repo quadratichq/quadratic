@@ -121,6 +121,8 @@ export class Cells extends Container {
         if (entry.cell) {
           if (entry.cell?.type === 'PYTHON') {
             this.cellsMarkers.add(x, y, 'CodeIcon');
+          } else if (entry.cell?.type === 'FORMULA') {
+            this.cellsMarkers.add(x, y, 'FormulaIcon');
           }
           this.cellLabels.add({
             x: x + CELL_TEXT_MARGIN_LEFT,

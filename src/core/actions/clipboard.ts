@@ -26,12 +26,10 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
         let cells_to_update: Cell[] = [];
         json.copiedCells.forEach((cell: Cell) => {
           cells_to_update.push({
-            x: cell.x + x_offset,
+            ...cell, // take old cell
+            x: cell.x + x_offset, // transpose it to new location
             y: cell.y + y_offset,
-            type: cell.type,
-            value: cell.value,
-            python_code: cell.python_code,
-            last_modified: new Date().toISOString(),
+            last_modified: new Date().toISOString(), // update last_modified
           });
         });
 
@@ -149,13 +147,7 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
 
       if (cell) {
         clipboardString += cell?.value || '';
-        copiedCells.push({
-          x: cell.x,
-          y: cell.y,
-          type: cell.type,
-          value: cell.value,
-          python_code: cell.python_code,
-        });
+        copiedCells.push({ ...cell });
       }
     }
   }

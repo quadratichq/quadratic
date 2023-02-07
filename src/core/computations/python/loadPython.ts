@@ -29,10 +29,10 @@ export async function loadPython() {
   window.pyodide = await window.loadPyodide({
     // redirect Pyodide output to console
     stdout: (l: string) => {
-      console.log('[WASMPython]', l);
+      console.log('[WASM/Python]', l);
     },
     stderr: (e: string) => {
-      console.log('[WASMPython stdoerr]', e);
+      console.log('[WASM/Python stdoerr]', e);
     },
   });
 

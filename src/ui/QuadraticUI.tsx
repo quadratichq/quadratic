@@ -1,5 +1,4 @@
 import TopBar from '../ui/menus/TopBar';
-import CellTypeMenu from '../ui/menus/CellTypeMenu/';
 import CodeEditor from '../ui/menus/CodeEditor';
 import DebugMenu from './menus/DebugMenu/DebugMenu';
 import useLocalStorage from '../hooks/useLocalStorage';
@@ -12,6 +11,7 @@ import GoTo from './menus/GoTo';
 import { useEffect, useState } from 'react';
 import { PixiApp } from '../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../core/transaction/sheetController';
+import CellTypeMenu from './menus/CellTypeMenu';
 
 interface Props {
   sheetController: SheetController;

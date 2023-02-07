@@ -2,7 +2,7 @@ name: Python Tests
 on: push
 
 jobs:
-  build_test:
+  test_python:
     runs-on: ubuntu-latest
 
     steps:

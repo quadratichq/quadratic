@@ -9,6 +9,7 @@ import {
   Typography,
   Card,
   CardContent,
+  Dialog,
 } from '@mui/material';
 import TextField from '@mui/material/TextField';
 import { useRecoilState } from 'recoil';
@@ -28,14 +29,6 @@ export interface CellTypeMenuItem {
 }
 
 const CELL_TYPE_OPTIONS = [
-  // {
-  //   key: 0,
-  //   name: 'Text',
-  //   short: 'Aa',
-  //   slug: 'TEXT',
-  //   description: 'Input any text or numerical data.',
-  //   disabled: true,
-  // },
   {
     key: 0,
     name: 'Python',
@@ -49,8 +42,8 @@ const CELL_TYPE_OPTIONS = [
     name: 'Formula',
     short: '=',
     slug: 'FORMULA',
-    description: 'Familiar Excel-like formulas.',
-    disabled: true,
+    description: 'Spreadsheet formulas.',
+    disabled: false,
   },
   {
     key: 30,
@@ -112,50 +105,56 @@ export default function CellTypeMenu() {
   };
 
   return (
-    <Card id="CellTypeMenuID" elevation={1} className="container">
-      <CardContent>
-        <TextField
-          id="CellTypeMenuInputID"
-          value={value}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            update_filter(event.target.value);
-          }}
-          onKeyUp={(event) => {
-            if (event.key === 'Escape') {
-              close();
-            }
-            if (event.key === 'Enter') {
-              openEditor();
-            }
-          }}
-          fullWidth
-          variant="standard"
-          label="Select Cell Type"
-          autoFocus
-        />
-        <List dense={true} style={{ height: 350, width: 300 }}>
-          <ListItem></ListItem>
-          <Divider variant="fullWidth" />
-          {filtered_cell_type_list.map((e: any) => {
-            return (
-              <ListItemButton
-                key={e.key}
-                selected={selected_value === e.slug}
-                disabled={e.disabled}
-                style={{ width: '100%' }}
-                onClick={() => {
-                  openEditor(e.slug);
-                }}
-              >
-                <ListItemIcon>
-                  <Typography>{e.short}</Typography>
-                </ListItemIcon>
-                <ListItemText primary={e.name} secondary={e.description} />
-              </ListItemButton>
-            );
-          })}
-        </List>
-      </CardContent>
-    </Card>
+    <Dialog open={true} onClose={close} BackdropProps={{ invisible: true }}>
+      <Card
+        id="CellTypeMenuID"
+        elevation={1}
+        // className="container"
+      >
+        <CardContent>
+          <TextField
+            id="CellTypeMenuInputID"
+            value={value}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              update_filter(event.target.value);
+            }}
+            onKeyUp={(event) => {
+              if (event.key === 'Escape') {
+                close();
+              }
+              if (event.key === 'Enter') {
+                openEditor();
+              }
+            }}
+            fullWidth
+            variant="standard"
+            label="Select Cell Type"
+            autoFocus
+          />
+          <List dense={true} style={{ height: 350, width: 300 }}>
+            <ListItem></ListItem>
+            <Divider variant="fullWidth" />
+            {filtered_cell_type_list.map((e: any) => {
+              return (
+                <ListItemButton
+                  key={e.key}
+                  selected={selected_value === e.slug}
+                  disabled={e.disabled}
+                  style={{ width: '100%' }}
+                  onClick={(event) => {
+                    openEditor(e.slug);
+                  }}
+                >
+                  <ListItemIcon>
+                    <Typography>{e.short}</Typography>
+                  </ListItemIcon>
+                  <ListItemText primary={e.name} secondary={e.description} />
+                </ListItemButton>
+              );
+            })}
+          </List>
+        </CardContent>
+      </Card>
+    </Dialog>
   );
 }
