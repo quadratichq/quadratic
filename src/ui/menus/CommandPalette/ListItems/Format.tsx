@@ -1,7 +1,6 @@
 import { useFormatCells } from '../../TopBar/SubMenus/useFormatCells';
 import { useGetSelection } from '../../TopBar/SubMenus/useGetSelection';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { CommandPaletteListItemCheckbox } from '../CommandPaletteListItemCheckbox';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { FormatBold, FormatItalic } from '@mui/icons-material';
 

@@ -29,6 +29,8 @@ import './formatMenuStyles.scss';
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../../core/transaction/sheetController';
 import { useGetSelection } from '../useGetSelection';
+import { KeyboardShortcut } from '../../../KeyboardShortcut';
+import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';
 
 interface IProps {
   app: PixiApp;
@@ -44,7 +46,7 @@ export const FormatMenu = (props: IProps) => {
     changeBold,
     changeItalic,
     changeTextColor,
-    removeTextColor
+    removeTextColor,
   } = useFormatCells(props.sheet_controller, props.app);
   const { clearBorders } = useBorders(props.sheet_controller.sheet, props.app);
 
@@ -76,10 +78,24 @@ export const FormatMenu = (props: IProps) => {
       }
     >
       <MenuItem type="checkbox" checked={format.bold === true} onClick={() => changeBold(!(format.bold === true))}>
-        <FormatBold style={menuItemIconDisabledStyles}></FormatBold> Bold
+        <KeyboardShortcut
+          text="Bold"
+          shortcut="B"
+          modifier={KeyboardSymbols.Command}
+          icon={<FormatBold style={menuItemIconStyles} />}
+        />
       </MenuItem>
-      <MenuItem type="checkbox" checked={format.italic === true} onClick={() => changeItalic(!(format.italic === true))}>
-        <FormatItalic style={menuItemIconDisabledStyles}></FormatItalic> Italic
+      <MenuItem
+        type="checkbox"
+        checked={format.italic === true}
+        onClick={() => changeItalic(!(format.italic === true))}
+      >
+        <KeyboardShortcut
+          text="Italic"
+          shortcut="I"
+          modifier={KeyboardSymbols.Command}
+          icon={<FormatItalic style={menuItemIconStyles} />}
+        />
       </MenuItem>
       <SubMenu
         className="menuItemIndent"
@@ -89,7 +105,7 @@ export const FormatMenu = (props: IProps) => {
         }}
         label={
           <>
-            <FormatColorText style={menuItemIconDisabledStyles}></FormatColorText> Text color
+            <FormatColorText style={menuItemIconStyles}></FormatColorText> Text color
           </>
         }
       >
