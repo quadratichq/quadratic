@@ -42,7 +42,7 @@ const CELL_TYPE_OPTIONS = [
     name: 'Formula',
     short: '=',
     slug: 'FORMULA',
-    description: 'Familiar Excel-like formulas.',
+    description: 'Spreadsheet formulas.',
     disabled: false,
   },
   {
