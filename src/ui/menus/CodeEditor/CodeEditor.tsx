@@ -12,7 +12,7 @@ import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
-import { FormulaLanguageConfig } from './FormulaLanguageModel';
+import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -161,6 +161,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
     monaco.languages.register({ id: 'formula' });
     monaco.languages.setMonarchTokensProvider('formula', FormulaLanguageConfig);
+    monaco.languages.registerCompletionItemProvider('formula', FormulaCompletionProvider);
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -302,7 +303,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
           <Editor
             height="100%"
             width="100%"
-            defaultLanguage={'python'}
+            language={editor_mode === 'PYTHON' ? 'python' : editor_mode === 'FORMULA' ? 'formula' : 'plaintext'}
             value={editorContent}
             onChange={(value) => {
               setEditorContent(value);
