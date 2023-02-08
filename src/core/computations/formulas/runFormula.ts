@@ -1,4 +1,5 @@
 import { eval_formula } from 'quadratic-core';
+import { GetCellsDB } from '../../gridDB/Cells/GetCellsDB';
 import { Coordinate } from '../../gridGL/types/size';
 
 export interface runFormulaReturnType {
@@ -11,7 +12,7 @@ export interface runFormulaReturnType {
 }
 
 export async function runFormula(formula_code: string, pos: Coordinate): Promise<runFormulaReturnType> {
-  const output = await eval_formula(formula_code, pos.x, pos.y);
+  const output = await eval_formula(formula_code, pos.x, pos.y, GetCellsDB);
 
   return output as runFormulaReturnType;
 }
