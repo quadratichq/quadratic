@@ -94,18 +94,15 @@ export const FormatMenu = (props: IProps) => {
         />
       </MenuItem>
       <SubMenu
+        className="color-picker-submenu"
         id="TextColorMenuID"
-        menuStyles={{
-          padding: '0px',
-        }}
         label={
           <>
             <FormatColorText style={menuItemIconStyles}></FormatColorText> Text color
           </>
         }
       >
-        <QColorPicker onChangeComplete={changeTextColor} />
-        <MenuItem onClick={removeTextColor}>Clear</MenuItem>
+        <QColorPicker onChangeComplete={changeTextColor} onClear={removeTextColor} />
       </SubMenu>
 
       {/* <MenuItem >
@@ -142,18 +139,15 @@ export const FormatMenu = (props: IProps) => {
 
       <MenuDivider />
       <SubMenu
+        className="color-picker-submenu"
         id="FillColorMenuID"
-        menuStyles={{
-          padding: '0px',
-        }}
         label={
           <>
             <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill color
           </>
         }
       >
-        <QColorPicker onChangeComplete={changeFillColor} />
-        <MenuItem onClick={removeFillColor}>Clear</MenuItem>
+        <QColorPicker onChangeComplete={changeFillColor} onClear={removeFillColor} />
       </SubMenu>
 
       <SubMenu

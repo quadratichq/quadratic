@@ -1,5 +1,40 @@
-#FillColorMenuID > div > div {
+.color-picker-submenu .szh-menu {
+  padding: 4px;
+}
+.color-picker-submenu .szh-menu > div > div {
   box-shadow: none !important;
+}
+.color-picker-clear {
+  display: flex;
+  margin-bottom: 5px;
+  justify-content: center;
+  font-size: 0.875rem;
+}
+.color-picker-clear span {
+  text-indent: 20px;
+  position: relative;
+  cursor: pointer;
+}
+.color-picker-clear span:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: #fff;
+  border: 1px solid #eee;
+  height: 15px;
+  width: 15px;
+  overflow: hidden;
+}
+.color-picker-clear span:after {
+  content: '';
+  width: 2px;
+  height: calc(100% + 2px);
+  position: absolute;
+  top: 1px;
+  left: 0;
+  background: red;
+  transform: rotate(45deg) translate(4px, -6px);
 }
 
 .lineStyleBorder {
@@ -44,15 +79,27 @@
 
 .compact-picker {
   width: 160px !important;
-  margin-right: 5px;
-  margin-left: 5px;
 
   /* hides custom RBG input on color picker */
   .flexbox-fix {
     display: none !important;
   }
 
-  div span:last-of-type div {
-    border: 1px solid #eee;
+  div span div {
+    position: relative;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  div span div:before {
+    content: '';
+    box-shadow: inset 0 0 0 1px rgba(0 0 0 / 10%);
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+  }
+  div span div[style*='box-shadow'] {
+    box-shadow: 0 0 0 2px black;
   }
 }

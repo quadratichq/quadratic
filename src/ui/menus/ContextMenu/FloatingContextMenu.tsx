@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
-import { Divider, IconButton, MenuItem, Paper, Toolbar } from '@mui/material';
+import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import {
   BorderAll,
   ContentCopy,
@@ -251,12 +251,12 @@ export const FloatingContextMenu = (props: Props) => {
           }
         >
           <QColorPicker onChangeComplete={changeTextColor} />
-          <MenuItem onClick={removeTextColor}>Clear</MenuItem>
         </Menu>
 
         <MenuDivider />
 
         <Menu
+          className="color-picker-submenu"
           menuButton={
             <div>
               <TooltipHint title="Fill color">
@@ -267,8 +267,19 @@ export const FloatingContextMenu = (props: Props) => {
             </div>
           }
         >
-          <QColorPicker onChangeComplete={changeFillColor} />
-          <MenuItem onClick={removeFillColor}>Clear</MenuItem>
+          <QColorPicker onChangeComplete={changeFillColor} onClear={removeFillColor} />
+        </Menu>
+        <Menu
+          className="color-picker-submenu"
+          menuButton={
+            <div>
+              <TooltipHint title="Text color">
+                <IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
+              </TooltipHint>
+            </div>
+          }
+        >
+          <QColorPicker onChangeComplete={changeTextColor} onClear={removeTextColor} />
         </Menu>
         <Menu
           menuButton={
