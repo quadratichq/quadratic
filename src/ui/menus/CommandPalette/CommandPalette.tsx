@@ -1,16 +1,5 @@
 import React, { useEffect } from 'react';
-import {
-  Dialog,
-  Divider,
-  IconButton,
-  InputBase,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  Paper,
-} from '@mui/material';
-import { Search } from '@mui/icons-material';
+import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
@@ -18,7 +7,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
-import './styles.css';
+import '../../styles/floating-dialog.css';
 
 interface Props {
   app: PixiApp;
@@ -27,8 +16,8 @@ interface Props {
 
 export const CommandPalette = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { showCommandPalette } = editorInteractionState;
 
   const [activeSearchValue, setActiveSearchValue] = React.useState<string>('');
   const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
@@ -40,8 +29,6 @@ export const CommandPalette = (props: Props) => {
       showCellTypeMenu: false,
       showCommandPalette: false,
     }));
-    setActiveSearchValue('');
-    setSelectedListItemIndex(0);
     focusGrid();
   };
 
@@ -54,19 +41,6 @@ export const CommandPalette = (props: Props) => {
       });
     }
   }, [selectedListItemIndex]);
-
-  // Cleanup to initial state when component is closed
-  useEffect(() => {
-    return () => {
-      setActiveSearchValue('');
-      setSelectedListItemIndex(0);
-    };
-  }, [showCommandPalette]);
-
-  // Hide the CommandPalette when applicable
-  if (!showCommandPalette) {
-    return null;
-  }
 
   // Otherwise, define vars and render the lsit
   const ListItems = getCommandPaletteListItems({
@@ -104,32 +78,27 @@ export const CommandPalette = (props: Props) => {
           }
         }}
       >
-        <div style={{ padding: '4px 8px', display: 'flex', alignItems: 'center' }}>
-          <IconButton type="button" sx={{ p: '8px', mr: '8px' }} aria-label="search">
-            <Search />
-          </IconButton>
+        <InputBase
+          sx={{ width: '100%', padding: '8px 16px' }}
+          placeholder={searchlabel}
+          inputProps={{ 'aria-label': searchlabel }}
+          autoFocus
+          value={activeSearchValue}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setSelectedListItemIndex(0);
+            setActiveSearchValue(event.target.value);
+          }}
+        />
 
-          <InputBase
-            sx={{ flex: 1 }}
-            placeholder={searchlabel}
-            inputProps={{ 'aria-label': searchlabel }}
-            autoFocus
-            value={activeSearchValue}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setSelectedListItemIndex(0);
-              setActiveSearchValue(event.target.value);
-            }}
-          />
-        </div>
         <Divider />
-        <div style={{ height: '330px', overflow: 'scroll' }}>
+        <div style={{ maxHeight: '330px', overflow: 'scroll' }}>
           <List dense={true} disablePadding>
             {ListItems.length ? (
               ListItems
             ) : (
               <ListItem disablePadding>
                 <ListItemButton disabled>
-                  <ListItemText inset primary="No matches" />
+                  <ListItemText primary="No matches" />
                 </ListItemButton>
               </ListItem>
             )}

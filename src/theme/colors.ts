@@ -18,5 +18,6 @@ export const colors = {
   quadraticThird: '#CB8999',
   quadraticForth: '#FFC800',
   quadraticFifth: '#5D576B',
-  colorPython: '#8c1a6a',
+  python: '#8c1a6a',
+  formula: '#FFC800',
 };
