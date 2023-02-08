@@ -76,7 +76,12 @@ export class PixiApp {
       .drag({ pressDrag: isMobileOnly }) // enable drag on mobile, no where else
       .decelerate()
       .pinch()
-      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 })
+      .wheel({
+        trackpadPinch: true,
+        wheelZoom: false,
+        percent: 1.5,
+        keyToPress: ['ControlRight', 'ControlLeft', 'MetaLeft', 'MetaRight'],
+      })
       .clampZoom({
         minScale: 0.01,
         maxScale: 10,
