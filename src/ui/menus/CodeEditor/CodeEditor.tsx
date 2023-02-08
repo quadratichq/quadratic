@@ -13,6 +13,7 @@ import { EditorInteractionState, editorInteractionStateAtom } from '../../../ato
 import { SheetController } from '../../../core/transaction/sheetController';
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
 import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
+import { cellEvaluationReturnType } from '../../../core/computations/types';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -41,8 +42,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const y = editorInteractionState.selectedCell.y;
   const cell = useMemo(() => props.sheet_controller.sheet.getCellCopy(x, y), [x, y, props.sheet_controller.sheet]);
 
-  // Cell python_output
-  const [python_output, setPythonOutput] = useState<string | undefined>(cell?.python_output);
+  // Cell evaluation result
+  const [evalResult, setEvalResult] = useState<cellEvaluationReturnType | undefined>(cell?.evaluation_result);
 
   // Editor Width State
   const [editorWidth, setEditorWidth] = useState<number>(
@@ -69,7 +70,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // When selected cell changes updated python output
   useEffect(() => {
     if (selectedCell) {
-      setPythonOutput(selectedCell?.python_output);
+      setEvalResult(selectedCell?.evaluation_result);
     }
   }, [selectedCell]);
 
@@ -80,7 +81,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     });
     setEditorContent('');
     setSelectedCell(undefined);
-    setPythonOutput(undefined);
+    setEvalResult(undefined);
     focusGrid();
   };
 
@@ -147,7 +148,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     });
 
     const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
-    setPythonOutput(updated_cell?.python_output);
+    setEvalResult(updated_cell?.evaluation_result);
   };
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -184,6 +185,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
       closeEditor();
     }
   };
+
+  let consoleOut = [evalResult?.std_err, evalResult?.std_out].join('\n');
+  if (consoleOut[0] === '\n') consoleOut = consoleOut.substring(1);
 
   if (selectedCell !== undefined && editorInteractionState.showCodeEditor)
     return (
@@ -323,7 +327,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
             }}
           />
         </div>
-        {editorInteractionState.mode === 'PYTHON' && (
+        {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
           <div style={{ margin: '15px' }}>
             <TextField
               disabled
@@ -331,7 +335,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
               label="OUTPUT"
               multiline
               rows={7}
-              value={python_output || ''}
+              value={consoleOut}
               style={{
                 width: '100%',
               }}

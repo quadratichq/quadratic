@@ -83,7 +83,7 @@ test('SheetController - code is saved from undo to redo', () => {
     value: 'hello',
     type: 'PYTHON',
     python_code: "print('hello')\n'hello'",
-    python_output: 'hello',
+    evaluation_result: { std_out: 'hello' },
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
@@ -99,7 +99,7 @@ test('SheetController - code is saved from undo to redo', () => {
 
   expect(sc.sheet.grid.getCell(14, 34)?.value).toBe('hello');
   expect(sc.sheet.grid.getCell(14, 34)?.python_code).toBe("print('hello')\n'hello'");
-  expect(sc.sheet.grid.getCell(14, 34)?.python_output).toBe('hello');
+  expect(sc.sheet.grid.getCell(14, 34)?.evaluation_result?.std_out).toBe('hello');
   expect(sc.sheet.grid.getCell(14, 34)?.last_modified).toBe('2023-01-19T19:12:21.745Z');
   expect(sc.sheet.grid.getCell(14, 34)?.type).toBe('PYTHON');
 
@@ -111,7 +111,7 @@ test('SheetController - code is saved from undo to redo', () => {
 
   expect(sc.sheet.grid.getCell(14, 34)?.value).toBe('hello');
   expect(sc.sheet.grid.getCell(14, 34)?.python_code).toBe("print('hello')\n'hello'");
-  expect(sc.sheet.grid.getCell(14, 34)?.python_output).toBe('hello');
+  expect(sc.sheet.grid.getCell(14, 34)?.evaluation_result?.std_out).toBe('hello');
   expect(sc.sheet.grid.getCell(14, 34)?.last_modified).toBe('2023-01-19T19:12:21.745Z');
   expect(sc.sheet.grid.getCell(14, 34)?.type).toBe('PYTHON');
 });

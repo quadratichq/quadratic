@@ -37,7 +37,7 @@ class TestTesting(IsolatedAsyncioTestCase):
 
         # NOTE: this approach bypasses the entire env of Pyodide.
         # We should make the run_python e2e tests run via playwright
-        self.assertEqual(result.get("input_python_evaluation_success"), False)
+        self.assertEqual(result.get("success"), False)
 
     def test_attempt_fix_await(self):
         self.assertEqual(attempt_fix_await("1 + 1"), "1 + 1")

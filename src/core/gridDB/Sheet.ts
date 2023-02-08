@@ -58,9 +58,13 @@ export class Sheet {
   }
 
   getCellCopy(x: number, y: number): Cell | undefined {
+    // proper deep copy of a cell
     const cell = this.grid.get(x, y);
     if (!cell || !cell.cell) return;
-    return { ...cell.cell };
+    return {
+      ...cell.cell,
+      evaluation_result: cell.cell.evaluation_result ? { ...cell.cell.evaluation_result } : undefined, // copy eval result
+    };
   }
 
   /** finds grid bounds based on GridSparse, GridBounds, and GridRenderDependency */

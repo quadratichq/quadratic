@@ -1,3 +1,5 @@
+import { cellEvaluationReturnType } from '../computations/types';
+
 export type CellTypes = 'TEXT' | 'FORMULA' | 'JAVASCRIPT' | 'PYTHON' | 'SQL' | 'COMPUTED';
 
 export interface Cell {
@@ -7,16 +9,12 @@ export interface Cell {
   value: string;
 
   dependent_cells?: [number, number][];
-
-  python_code?: string;
-  python_output?: string;
-
   array_cells?: [number, number][]; // list of output array cells created by this cell
 
-  // not implemented yet
+  python_code?: string;
   formula_code?: string;
-  js_code?: string;
-  sql_code?: string;
+
+  evaluation_result?: cellEvaluationReturnType;
 
   last_modified?: string;
 }
