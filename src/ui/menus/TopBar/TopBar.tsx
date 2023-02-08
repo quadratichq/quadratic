@@ -67,7 +67,7 @@ export const TopBar = (props: IProps) => {
           <>
             <DataMenu></DataMenu>
             <FormatMenu app={props.app} sheet_controller={props.sheetController} />
-            <NumberFormatMenu></NumberFormatMenu>
+            <NumberFormatMenu app={props.app} sheet_controller={props.sheetController}></NumberFormatMenu>
           </>
         )}
       </Box>

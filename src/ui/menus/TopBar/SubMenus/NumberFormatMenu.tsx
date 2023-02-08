@@ -7,6 +7,9 @@ import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
 
 import { colors } from '../../../../theme/colors';
+import { useFormatCells } from './useFormatCells';
+import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../../core/transaction/sheetController';
 
 const numberExStyle = {
   color: colors.darkGray,
@@ -16,7 +19,22 @@ const numberExStyle = {
   width: '100%',
 } as CSSProperties;
 
-export const NumberFormatMenu = () => {
+interface IProps {
+  app: PixiApp;
+  sheet_controller: SheetController;
+}
+
+export const NumberFormatMenu = (props: IProps) => {
+  const {
+    textFormatIncreaseDecimalPlaces,
+    textFormatDecreaseDecimalPlaces,
+    textFormatSetCurrency,
+    textFormatSetPercentage,
+    textFormatSetNumber,
+    textFormatSetDate,
+    textFormatSetExponential,
+  } = useFormatCells(props.sheet_controller, props.app);
+
   return (
     <Menu
       menuButton={
@@ -39,13 +57,28 @@ export const NumberFormatMenu = () => {
         Plain text
       </MenuItem>
       <MenuDivider></MenuDivider>
-      <MenuItem disabled type="checkbox" checked={false}>
+      <MenuItem
+        onClick={() => {
+          textFormatIncreaseDecimalPlaces();
+        }}
+      >
+        Increase Decimals <span style={numberExStyle}>9.99+</span>
+      </MenuItem>
+      <MenuItem
+        onClick={() => {
+          textFormatDecreaseDecimalPlaces();
+        }}
+      >
+        Decrease Decimals <span style={numberExStyle}>9.99-</span>
+      </MenuItem>
+      <MenuDivider></MenuDivider>
+      <MenuItem type="checkbox" checked={false} onClick={() => textFormatSetNumber()}>
         Number <span style={numberExStyle}>9,999.99</span>
       </MenuItem>
-      <MenuItem disabled type="checkbox" checked={false}>
+      <MenuItem type="checkbox" checked={false} onClick={() => textFormatSetPercentage()}>
         Percent <span style={numberExStyle}>99.99%</span>
       </MenuItem>
-      <MenuItem disabled type="checkbox" checked={false}>
+      <MenuItem type="checkbox" checked={false} onClick={() => textFormatSetExponential()}>
         Scientific <span style={numberExStyle}>6.02E+23</span>
       </MenuItem>
       <MenuDivider></MenuDivider>
@@ -55,11 +88,11 @@ export const NumberFormatMenu = () => {
       <MenuItem disabled type="checkbox" checked={false}>
         Financial <span style={numberExStyle}>(9,999.99)</span>
       </MenuItem>
-      <MenuItem disabled type="checkbox" checked={false}>
+      <MenuItem type="checkbox" checked={false} onClick={() => textFormatSetCurrency()}>
         Currency <span style={numberExStyle}>$9,999.99</span>
       </MenuItem>
       <MenuDivider></MenuDivider>
-      <MenuItem disabled type="checkbox" checked={false}>
+      <MenuItem type="checkbox" checked={false} onClick={() => textFormatSetDate()}>
         Date <span style={numberExStyle}>1/1/2022</span>
       </MenuItem>
       <MenuItem disabled type="checkbox" checked={false}>
