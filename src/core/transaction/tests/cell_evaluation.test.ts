@@ -2,6 +2,7 @@ import { SheetController } from '../sheetController';
 import { Cell } from '../../gridDB/gridTypes';
 import { setupPython } from '../../computations/python/loadPython';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
+import { GetCellsDBSetSheet } from '../../gridDB/Cells/GetCellsDB';
 
 // Setup Pyodide before tests
 let pyodide: any;
@@ -202,8 +203,9 @@ test('SheetController - array output length change', async () => {
   });
 });
 
-test('SheetController - test formula', async () => {
+test('SheetController - test array formula', async () => {
   const sc = new SheetController();
+  GetCellsDBSetSheet(sc.sheet);
 
   const cell_0_0 = {
     x: 0,
@@ -238,26 +240,20 @@ test('SheetController - test formula', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cells: [cell_0_2], sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cells: [cell_1_0], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0, cell_0_1, cell_0_2, cell_1_0], sheetController: sc, pyodide });
 
-  const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 4);
-
-  console.log('made it here');
-
-  // expect(after_code_run_cells[0]?.value).toBe('4');
-  // console.log(after_code_run_cells[0]);
-  // expect(after_code_run_cells[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
-  // expect(after_code_run_cells[0]?.evaluation_result?.std_out).toBe('');
-  // expect(after_code_run_cells[0]?.last_modified).toBeDefined();
-  // expect(after_code_run_cells[0]?.type).toBe('PYTHON');
-  // expect(after_code_run_cells[0]?.array_cells?.length).toBe(10);
-  // expect(after_code_run_cells.length).toBe(10);
-  // after_code_run_cells.forEach((cell, index) => {
-  //   expect(cell.value).toEqual((index + 1).toString());
-  //   if (index === 0) return;
-  //   expect(cell.type).toEqual('COMPUTED');
-  // });
+  const after_code_run_cells = sc.sheet.grid.getNakedCells(1, 0, 1, 2);
+  expect(after_code_run_cells[0]?.value).toBe('2');
+  expect(after_code_run_cells[0]?.python_code).toBeUndefined();
+  expect(after_code_run_cells[0]?.formula_code).toBe('Z0:Z2 * 2');
+  expect(after_code_run_cells[0]?.evaluation_result?.std_out).toBeUndefined();
+  expect(after_code_run_cells[0]?.last_modified).toBeDefined();
+  expect(after_code_run_cells[0]?.type).toBe('FORMULA');
+  expect(after_code_run_cells[0]?.array_cells?.length).toBe(3);
+  expect(after_code_run_cells.length).toBe(3);
+  after_code_run_cells.forEach((cell, index) => {
+    expect(cell.value).toEqual(((index + 1) * 2).toString());
+    if (index === 0) return;
+    expect(cell.type).toEqual('COMPUTED');
+  });
 });
