@@ -10,16 +10,6 @@ export const QColorPicker = (props: IProps) => {
     <>
       <CompactPicker
         onChangeComplete={props.onChangeComplete}
-        styles={{
-          default: {
-            compact: {
-              // padding: '8px',
-            },
-            clear: {
-              background: 'red',
-            },
-          },
-        }}
         colors={[
           '#F9D2CE' /* first row of colors */,
           '#FFEAC8',
