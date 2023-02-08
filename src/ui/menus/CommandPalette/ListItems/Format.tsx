@@ -2,7 +2,8 @@ import { useFormatCells } from '../../TopBar/SubMenus/useFormatCells';
 import { useGetSelection } from '../../TopBar/SubMenus/useGetSelection';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { FormatBold, FormatItalic } from '@mui/icons-material';
+import { FormatBold, FormatClear, FormatItalic } from '@mui/icons-material';
+import { useBorders } from '../../TopBar/SubMenus/useBorders';
 
 const ListItems = [
   {
@@ -36,6 +37,25 @@ const ListItems = [
             format.changeItalic(!selection.format?.italic);
           }}
           shortcut="I"
+          shortcutModifiers={KeyboardSymbols.Command}
+        />
+      );
+    },
+  },
+  {
+    label: 'Format: Clear all',
+    Component: (props: any) => {
+      const { clearFormatting } = useFormatCells(props.sheetController, props.app);
+      const { clearBorders } = useBorders(props.sheetController.sheet, props.app);
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<FormatClear />}
+          action={() => {
+            clearFormatting();
+            clearBorders();
+          }}
+          shortcut="\"
           shortcutModifiers={KeyboardSymbols.Command}
         />
       );
