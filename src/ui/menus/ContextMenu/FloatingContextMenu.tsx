@@ -122,6 +122,10 @@ export const FloatingContextMenu = (props: Props) => {
     // Update input css matrix
     menuDiv.current.style.transform = transform;
 
+    // Disable pointer events while the viewport is moving
+    if (viewport.dirty) menuDiv.current.style.pointerEvents = 'none';
+    else menuDiv.current.style.pointerEvents = 'auto';
+
     return transform;
   }, [
     app,
