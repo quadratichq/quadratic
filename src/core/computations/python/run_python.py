@@ -304,7 +304,7 @@ async def run_python(code):
             "array_output": array_output,
             "cells_accessed": cells_accessed,
             "input_python_std_out": sout.getvalue(),
-            "input_python_evaluation_success": True,
+            "success": True,
             "input_python_stack_trace": None,
             "formatted_code": autopep8.fix_code(
                 code, options={"ignore": ["E402"]}
@@ -316,7 +316,7 @@ async def run_python(code):
         "array_output": None,
         "cells_accessed": cells_accessed,
         "input_python_std_out": sout.getvalue(),
-        "input_python_evaluation_success": False,
+        "success": False,
         "input_python_stack_trace": "{} on line {}: {}".format(
             error_class, line_number, detail
         ),

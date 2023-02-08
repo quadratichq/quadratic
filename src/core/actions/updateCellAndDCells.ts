@@ -1,9 +1,8 @@
 import { Cell } from '../gridDB/gridTypes';
-import { runPython } from '../computations/python/runPython';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../gridGL/types/size';
 import { SheetController } from '../transaction/sheetController';
-import { runFormula } from '../computations/formulas/runFormula';
+import { runCellComputation } from '../computations/runCellComputation';
 
 interface ArgsType {
   starting_cells: Cell[];
@@ -91,18 +90,16 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       });
     } else {
       // We are evaluating a cell
-      if (cell.type === 'PYTHON') {
+      if (cell.type === 'PYTHON' || cell.type === 'FORMULA') {
         // run cell and format results
-        let result = await runPython(cell.python_code || '', pyodide);
-        let consoleOut = [result.input_python_stack_trace, result.input_python_std_out].join('\n');
-
-        if (consoleOut[0] === '\n') consoleOut = consoleOut.substring(1);
+        // let result = await runPython(cell.python_code || '', pyodide);
+        let result = await runCellComputation(cell, pyodide);
+        cell.evaluation_result = result;
 
         // collect output
-        cell.python_output = consoleOut;
-        if (result.input_python_evaluation_success) {
+        if (result.success) {
           cell.value = result.output_value || '';
-          cell.python_code = result.formatted_code;
+          if (cell.type === 'PYTHON') cell.python_code = result.formatted_code;
         } else {
           cell.value = ''; // clear value if python code fails
         }
@@ -122,7 +119,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
         }
 
         // if array output
-        if (result.array_output) {
+        if (result.array_output !== undefined && result.array_output.length > 0) {
           if (result.array_output[0][0] !== undefined && typeof result.array_output[0] !== 'string') {
             // 2d array
             let y_offset = 0;
@@ -196,38 +193,6 @@ export const updateCellAndDCells = async (args: ArgsType) => {
             data: { position: [cell.x, cell.y], value: cell },
           });
         }
-      } else if (cell.type === 'FORMULA') {
-        const result = await runFormula(cell.formula_code || '', { x: cell.x, y: cell.y });
-
-        if (result.success) {
-          cell.value = result.output_value || '';
-        }
-
-        // add new cell deps to graph
-        if (result.cells_accessed.length) {
-          // add new deps to graph
-          result.cells_accessed.forEach((cell_accessed) => {
-            sheetController.execute_statement({
-              type: 'ADD_CELL_DEPENDENCY',
-              data: {
-                position: cell_accessed,
-                updates: ref_current_cell,
-              },
-            });
-          });
-        }
-
-        // no array cells, because this was not an array return
-        cell.array_cells = [];
-
-        // update current cell
-        cell.dependent_cells = result.cells_accessed;
-
-        cell.last_modified = new Date().toISOString();
-        sheetController.execute_statement({
-          type: 'SET_CELL',
-          data: { position: [cell.x, cell.y], value: cell },
-        });
       } else {
         // not python cell
 

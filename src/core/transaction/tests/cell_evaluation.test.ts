@@ -29,7 +29,7 @@ test('SheetController - code run correctly', async () => {
 
   expect(cell_after?.value).toBe('world');
   expect(cell_after?.python_code).toBe("print('hello')\n'world'\n");
-  expect(cell_after?.python_output).toBe('hello\n');
+  expect(cell_after?.evaluation_result?.std_out).toBe('hello\n');
   expect(cell_after?.last_modified).toBeDefined();
   expect(cell_after?.type).toBe('PYTHON');
 });
@@ -51,7 +51,7 @@ test('SheetController - array output undo redo', async () => {
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 10);
   expect(after_code_run_cells[0]?.value).toBe('1');
   expect(after_code_run_cells[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
-  expect(after_code_run_cells[0]?.python_output).toBe('');
+  expect(after_code_run_cells[0]?.evaluation_result?.std_out).toBe('');
   expect(after_code_run_cells[0]?.last_modified).toBeDefined();
   expect(after_code_run_cells[0]?.type).toBe('PYTHON');
   expect(after_code_run_cells[0]?.array_cells).toBeDefined();
@@ -74,7 +74,7 @@ test('SheetController - array output undo redo', async () => {
   expect(after_redo_cells.length).toBe(10);
   expect(after_redo_cells[0]?.value).toBe('1');
   expect(after_redo_cells[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
-  expect(after_redo_cells[0]?.python_output).toBe('');
+  expect(after_redo_cells[0]?.evaluation_result?.std_out).toBe('');
   expect(after_redo_cells[0]?.last_modified).toBeDefined();
   expect(after_redo_cells[0]?.type).toBe('PYTHON');
   expect(after_redo_cells[0]?.array_cells).toBeDefined();
@@ -103,7 +103,7 @@ test('SheetController - array output length change', async () => {
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
   expect(after_code_run_cells[0]?.value).toBe('1');
   expect(after_code_run_cells[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
-  expect(after_code_run_cells[0]?.python_output).toBe('');
+  expect(after_code_run_cells[0]?.evaluation_result?.std_out).toBe('');
   expect(after_code_run_cells[0]?.last_modified).toBeDefined();
   expect(after_code_run_cells[0]?.type).toBe('PYTHON');
   expect(after_code_run_cells[0]?.array_cells?.length).toBe(10);
@@ -132,7 +132,7 @@ test('SheetController - array output length change', async () => {
   expect(sc.sheet.grid.getNakedCells(0, 5, 0, 20).length).toBe(0); // check that the old cells are gone
   expect(after_update_1[0]?.value).toBe('1new'); // verify code cell is set properly
   expect(after_update_1[0]?.python_code).toBe('["1new", "2new", "3new", "4new", "5new"]\n');
-  expect(after_update_1[0]?.python_output).toBe('');
+  expect(after_update_1[0]?.evaluation_result?.std_out).toBe('');
   expect(after_update_1[0]?.last_modified).toBeDefined();
   expect(after_update_1[0]?.type).toBe('PYTHON');
   expect(after_update_1[0]?.array_cells?.length).toBe(5);
@@ -148,7 +148,7 @@ test('SheetController - array output length change', async () => {
   const after_undo_1 = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
   expect(after_undo_1[0]?.value).toBe('1');
   expect(after_undo_1[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
-  expect(after_undo_1[0]?.python_output).toBe('');
+  expect(after_undo_1[0]?.evaluation_result?.std_out).toBe('');
   expect(after_undo_1[0]?.last_modified).toBeDefined();
   expect(after_undo_1[0]?.type).toBe('PYTHON');
   expect(after_undo_1[0]?.array_cells?.length).toBe(10);
@@ -171,7 +171,7 @@ test('SheetController - array output length change', async () => {
   const after_redo_1 = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
   expect(after_redo_1[0]?.value).toBe('1');
   expect(after_redo_1[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
-  expect(after_redo_1[0]?.python_output).toBe('');
+  expect(after_redo_1[0]?.evaluation_result?.std_out).toBe('');
   expect(after_redo_1[0]?.last_modified).toBeDefined();
   expect(after_redo_1[0]?.type).toBe('PYTHON');
   expect(after_redo_1[0]?.array_cells?.length).toBe(10);
@@ -191,7 +191,7 @@ test('SheetController - array output length change', async () => {
   expect(sc.sheet.grid.getNakedCells(0, 5, 0, 20).length).toBe(0); // check that the old cells are gone
   expect(after_redo_2[0]?.value).toBe('1new'); // verify code cell is set properly
   expect(after_redo_2[0]?.python_code).toBe('["1new", "2new", "3new", "4new", "5new"]\n');
-  expect(after_redo_2[0]?.python_output).toBe('');
+  expect(after_redo_2[0]?.evaluation_result?.std_out).toBe('');
   expect(after_redo_2[0]?.last_modified).toBeDefined();
   expect(after_redo_2[0]?.type).toBe('PYTHON');
   expect(after_redo_2[0]?.array_cells?.length).toBe(5);
@@ -200,4 +200,64 @@ test('SheetController - array output length change', async () => {
     if (index === 0) return;
     expect(cell.type).toEqual('COMPUTED');
   });
+});
+
+test('SheetController - test formula', async () => {
+  const sc = new SheetController();
+
+  const cell_0_0 = {
+    x: 0,
+    y: 0,
+    value: '1',
+    type: 'TEXT',
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  const cell_0_1 = {
+    x: 0,
+    y: 1,
+    value: '2',
+    type: 'TEXT',
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  const cell_0_2 = {
+    x: 0,
+    y: 2,
+    value: '3',
+    type: 'TEXT',
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  const cell_1_0 = {
+    x: 1,
+    y: 0,
+    value: '',
+    type: 'FORMULA',
+    formula_code: 'Z0:Z2 * 2',
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_2], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_1_0], sheetController: sc, pyodide });
+
+  const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 4);
+
+  console.log('made it here');
+
+  // expect(after_code_run_cells[0]?.value).toBe('4');
+  // console.log(after_code_run_cells[0]);
+  // expect(after_code_run_cells[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
+  // expect(after_code_run_cells[0]?.evaluation_result?.std_out).toBe('');
+  // expect(after_code_run_cells[0]?.last_modified).toBeDefined();
+  // expect(after_code_run_cells[0]?.type).toBe('PYTHON');
+  // expect(after_code_run_cells[0]?.array_cells?.length).toBe(10);
+  // expect(after_code_run_cells.length).toBe(10);
+  // after_code_run_cells.forEach((cell, index) => {
+  //   expect(cell.value).toEqual((index + 1).toString());
+  //   if (index === 0) return;
+  //   expect(cell.type).toEqual('COMPUTED');
+  // });
 });

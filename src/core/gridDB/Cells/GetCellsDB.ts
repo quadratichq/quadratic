@@ -22,4 +22,4 @@ export const GetCellsDBSetSheet = (value: Sheet): void => {
 };
 
 //@ts-expect-error
-if (typeof window !== 'undefined') window.GetCellsDB = GetCellsDB;
+if (typeof window !== 'undefined') window.GetCellsDB = GetCellsDB; // browser

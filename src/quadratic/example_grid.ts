@@ -45,7 +45,6 @@ export const example_grid: GridFileSchema = {
       python_code:
         'print("Hello world!")\n# The last python statement is returned\n# as the cell value.\n"Double click to see the code in an existing cell"\n',
       last_modified: '2022-07-06T17:32:12.049Z',
-      python_output: 'Hello world!\n',
       array_cells: [],
       dependent_cells: [],
     },
@@ -57,7 +56,6 @@ export const example_grid: GridFileSchema = {
       python_code:
         '# Reference a cell with c(x, y)\n# You can see the selected cell coordinates\n# in the bottom left bar.\nprint(c(3, 9))\n\n"Reference other cells"\n',
       last_modified: '2022-07-06T17:18:52.853Z',
-      python_output: 'Ex Data\n',
       array_cells: [],
       dependent_cells: [[3, 9]],
     },
@@ -90,7 +88,6 @@ export const example_grid: GridFileSchema = {
       python_code:
         '# Returns the first 500 powers of 2\n# Try changing 2 to a larger number to see how\n# fast Quadratic is.\n# Pinch to zoom out and see the whole result.\nresult = []\nfor i in range(500):\n    result.append(2**i)\n',
       last_modified: '2022-07-06T17:30:08.174Z',
-      python_output: '',
       array_cells: [
         [0, 15],
         [0, 16],
@@ -4248,7 +4245,6 @@ export const example_grid: GridFileSchema = {
       value: '2',
       python_code: 'c(3, 11) * c(3, 10)\n',
       last_modified: '2022-07-06T17:10:41.480Z',
-      python_output: '',
       array_cells: [],
       dependent_cells: [
         [3, 11],
@@ -4262,7 +4258,6 @@ export const example_grid: GridFileSchema = {
       value: 'True',
       python_code: 'c(3, 11) == c(3, 10) + 1\n',
       last_modified: '2022-07-06T17:10:46.924Z',
-      python_output: '',
       array_cells: [],
       dependent_cells: [
         [3, 11],
@@ -4319,7 +4314,6 @@ export const example_grid: GridFileSchema = {
       python_code:
         "import pandas as pd\nimport numpy as np\n\n# using numpy's randint\npd.DataFrame(np.random.randint(\n    0,\n    10,\n    size=(15, 4),\n))\n",
       last_modified: '2022-07-06T17:17:47.046Z',
-      python_output: '',
       array_cells: [
         [5, 8],
         [6, 8],
@@ -4496,7 +4490,6 @@ export const example_grid: GridFileSchema = {
       python_code:
         "df = getCells((5, 8), (8, 22))\n\ndf = df.astype('int64')\n\n# Multiply DF by 2 and return it to the grid\ndf * 2\n",
       last_modified: '2022-07-06T17:18:16.572Z',
-      python_output: '',
       array_cells: [
         [5, 25],
         [6, 25],
@@ -5380,7 +5373,6 @@ export const example_grid: GridFileSchema = {
         // eslint-disable-next-line
         'from pprint import pprint\nimport pandas as pd\nimport json\nimport js\n\nsymbol = c(10, 8)\n\nstock_financials = await js.fetch(\'https://api.polygon.io/vX/reference/financials?ticker={}&apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL\'.format(symbol), {\n    "method": "GET",\n    "headers": {"Content-Type": "application/json"}\n})\nstock_financials_json = json.loads(await stock_financials.text())\nincome_statement = stock_financials_json["results"][0]["financials"]["income_statement"]\nrevenue = income_statement["revenues"]["value"]\n\n\nmarket_data = await js.fetch(\'https://api.polygon.io/v3/reference/tickers/{}?apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL\'.format(symbol), {\n    "method": "GET",\n    "headers": {"Content-Type": "application/json"}\n})\nmarket_data_json = json.loads(await market_data.text())["results"]\nmarket_cap = market_data_json["market_cap"]\nname = market_data_json["name"]\n\nresult = pd.DataFrame([[\n    name[:20],\n    "${:,}".format(int(revenue)),\n    "${:.2e}".format(market_cap),\n    "{:,.2f}".format(market_cap / revenue),\n]], columns=["Full Name", "Revenue", "Market Cap", "Mulitple"])\n',
       last_modified: '2022-07-06T17:30:45.195Z',
-      python_output: '',
       array_cells: [
         [10, 9],
         [11, 9],
@@ -5422,7 +5414,6 @@ export const example_grid: GridFileSchema = {
       python_code:
         '# Run this cell again to generate a new fake person\n\nimport micropip\n\nawait micropip.install("faker")\n\nfrom faker import Faker\nfake = Faker()\n\n[\n    [\n        "Name"[:13],\n        "Birthday",\n        "SSN",\n        "Phone",\n        "Address"\n    ],\n    [\n        fake.name(),\n        str(fake.date_of_birth()),\n        fake.ssn(),\n        fake.phone_number()[:13],\n        fake.address()\n    ]\n]\n',
       last_modified: '2022-07-06T17:31:20.458Z',
-      python_output: '',
       array_cells: [
         [10, 14],
         [11, 14],
