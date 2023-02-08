@@ -5,7 +5,7 @@ import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 
 const CopyCellFormat = (format: CellFormat | undefined): CellFormat | undefined => {
   if (format === undefined) return undefined;
-  return { ...format };
+  return { ...format, textFormat: format.textFormat !== undefined ? { ...format.textFormat } : undefined }; // deep copy the textFormat
 };
 
 export const SetCellFormatRunner = (sheet: Sheet, statement: Statement, app?: PixiApp): Statement => {

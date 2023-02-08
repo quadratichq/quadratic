@@ -1,5 +1,6 @@
 import { Container, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
+import { CellTextFormatter } from '../../../formatting/cellTextFormatter';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
 import { CellAndFormat } from '../../../gridDB/GridSparse';
 import { Cell, CellFormat } from '../../../gridDB/gridTypes';
@@ -127,7 +128,7 @@ export class Cells extends Container {
           this.cellLabels.add({
             x: x + CELL_TEXT_MARGIN_LEFT,
             y: y + CELL_TEXT_MARGIN_TOP,
-            text: entry.cell.value,
+            text: CellTextFormatter(entry.cell, entry.format),
             isQuadrant,
             expectedWidth: width - CELL_TEXT_MARGIN_LEFT * 2,
             location: isQuadrant ? { x: entry.cell.x, y: entry.cell.y } : undefined,
