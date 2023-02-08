@@ -11,7 +11,9 @@ export const GetCellsDB = async (
   p1_x = Infinity,
   p1_y = Infinity
 ): Promise<Cell[]> => {
+  console.log([p0_x, p0_y, p1_x, p1_y]);
   if (sheet) {
+    console.log(sheet.grid.getNakedCells(p0_x, p0_y, p1_x, p1_y));
     return sheet.grid.getNakedCells(p0_x, p0_y, p1_x, p1_y);
   }
   throw new Error('Expected `sheet` to be defined in GetCellsDB');
@@ -20,6 +22,3 @@ export const GetCellsDB = async (
 export const GetCellsDBSetSheet = (value: Sheet): void => {
   sheet = value;
 };
-
-//@ts-expect-error
-if (typeof window !== 'undefined') window.GetCellsDB = GetCellsDB; // browser

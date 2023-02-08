@@ -24,10 +24,6 @@ extern "C" {
     // `log(..)`
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str);
-
-    // - `catch` = catch JS exceptions and turn them into Rust `Err`
-    #[wasm_bindgen(catch, js_name = "GetCellsDB", js_namespace = window)]
-    async fn get_cells_db(p0_x: i64, p0_y: i64, p1_x: i64, p1_y: i64) -> Result<JsValue, JsValue>;
 }
 
 #[wasm_bindgen]
@@ -47,8 +43,13 @@ struct JsFormulaResult {
 }
 
 #[wasm_bindgen]
-pub async fn eval_formula(formula_string: &str, x: f64, y: f64) -> JsValue {
-    let mut grid_proxy = JsGridProxy::default();
+pub async fn eval_formula(
+    formula_string: &str,
+    x: f64,
+    y: f64,
+    grid_accessor_fn: js_sys::Function,
+) -> JsValue {
+    let mut grid_proxy = JsGridProxy::new(grid_accessor_fn);
     let x = x as i64;
     let y = y as i64;
     let pos = Pos { x, y };
@@ -99,15 +100,34 @@ pub async fn eval_formula(formula_string: &str, x: f64, y: f64) -> JsValue {
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 struct JsGridProxy {
-    pub cells_accessed: HashSet<Pos>,
+    grid_accessor_fn: js_sys::Function,
+    cells_accessed: HashSet<Pos>,
+}
+impl JsGridProxy {
+    fn new(grid_accessor_fn: js_sys::Function) -> Self {
+        Self {
+            grid_accessor_fn,
+            cells_accessed: HashSet::new(),
+        }
+    }
 }
 #[async_trait(?Send)]
 impl GridProxy for JsGridProxy {
     async fn get(&mut self, pos: Pos) -> Option<String> {
+        let js_this = JsValue::UNDEFINED;
+
         self.cells_accessed.insert(pos);
-        let cell_value_array = get_cells_db(pos.x, pos.y, pos.x, pos.y).await.ok()?;
+        let cell_value_array = self
+            .grid_accessor_fn
+            .bind2(&js_this, &pos.x.into(), &pos.y.into()) // Upper-left corner
+            .call2(&js_this, &pos.x.into(), &pos.y.into()) // Lower-right corner
+            .map(js_sys::Promise::from)
+            .map(wasm_bindgen_futures::JsFuture::from)
+            .ok()?
+            .await
+            .ok()?;
         let cell_value = js_sys::Reflect::get(&cell_value_array, &0.into()).ok()?;
         let cell_string = js_sys::Reflect::get(&cell_value, &"value".into()).ok()?;
         cell_string.as_string()
