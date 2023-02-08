@@ -270,18 +270,6 @@ export const FloatingContextMenu = (props: Props) => {
           <QColorPicker onChangeComplete={changeFillColor} onClear={removeFillColor} />
         </Menu>
         <Menu
-          className="color-picker-submenu"
-          menuButton={
-            <div>
-              <TooltipHint title="Text color">
-                <IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
-              </TooltipHint>
-            </div>
-          }
-        >
-          <QColorPicker onChangeComplete={changeTextColor} onClear={removeTextColor} />
-        </Menu>
-        <Menu
           menuButton={
             <div>
               <TooltipHint title="Borders">
