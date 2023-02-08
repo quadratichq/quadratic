@@ -39,15 +39,8 @@ export const FloatingContextMenu = (props: Props) => {
 
   const menuDiv = useRef<HTMLDivElement>(null);
   const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
-  const {
-    changeFillColor,
-    removeFillColor,
-    clearFormatting,
-    changeBold,
-    changeItalic,
-    changeTextColor,
-    removeTextColor,
-  } = useFormatCells(sheetController, props.app);
+  const { changeFillColor, removeFillColor, clearFormatting, changeBold, changeItalic, changeTextColor } =
+    useFormatCells(sheetController, props.app);
   const { format } = useGetSelection(sheetController.sheet);
   const { clearBorders } = useBorders(sheetController.sheet, props.app);
 

@@ -2,7 +2,7 @@ import { ColorChangeHandler, CompactPicker } from 'react-color';
 
 interface IProps {
   onChangeComplete: ColorChangeHandler | undefined;
-  onClear: () => void;
+  onClear?: () => void;
 }
 
 export const QColorPicker = (props: IProps) => {
@@ -61,9 +61,11 @@ export const QColorPicker = (props: IProps) => {
           '#ffffff',
         ]}
       />
-      <div className="color-picker-clear">
-        <span onClick={props.onClear}>Clear</span>
-      </div>
+      {props.onClear && (
+        <div className="color-picker-clear">
+          <span onClick={props.onClear}>Clear</span>
+        </div>
+      )}
     </>
   );
 };
