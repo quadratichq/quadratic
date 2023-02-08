@@ -250,7 +250,7 @@ export const FloatingContextMenu = (props: Props) => {
             </div>
           }
         >
-          <QColorPicker onChangeComplete={changeTextColor} />
+          <QColorPicker onChangeComplete={changeTextColor} onClear={removeFillColor} />
         </Menu>
 
         <MenuDivider />

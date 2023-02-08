@@ -2,7 +2,7 @@ import { ColorChangeHandler, CompactPicker } from 'react-color';
 
 interface IProps {
   onChangeComplete: ColorChangeHandler | undefined;
-  onClear?: any;
+  onClear: () => void;
 }
 
 export const QColorPicker = (props: IProps) => {
