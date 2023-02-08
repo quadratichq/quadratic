@@ -6,20 +6,20 @@ import { Menu, MenuItem, MenuDivider, SubMenu, MenuChangeEvent } from '@szhsin/r
 import {
   FormatBold,
   FormatItalic,
-  FormatAlignLeft,
-  FormatAlignRight,
-  FormatAlignCenter,
+  // FormatAlignLeft,
+  // FormatAlignRight,
+  // FormatAlignCenter,
   FormatColorText,
   FormatColorFill,
   FormatClear,
-  ReadMore,
+  // ReadMore,
   BorderAll,
 } from '@mui/icons-material';
 import { PaletteOutlined } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
 import { colors } from '../../../../../theme/colors';
-import { menuItemIconStyles, menuItemIconDisabledStyles, topBarIconStyles } from '../menuStyles';
+import { menuItemIconStyles, topBarIconStyles } from '../menuStyles';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { useFormatCells } from '../useFormatCells';
 import { useGetBorderMenu } from './useGetBorderMenu';
@@ -69,7 +69,7 @@ export const FormatMenu = (props: IProps) => {
     <Menu
       onMenuChange={onMenuChange}
       menuButton={
-        <Tooltip title="Format" arrow>
+        <Tooltip title="Format" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
           <Button style={{ color: colors.darkGray }}>
             <PaletteOutlined style={topBarIconStyles}></PaletteOutlined>
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
@@ -77,7 +77,7 @@ export const FormatMenu = (props: IProps) => {
         </Tooltip>
       }
     >
-      <MenuItem type="checkbox" checked={format.bold === true} onClick={() => changeBold(!(format.bold === true))}>
+      <MenuItem onClick={() => changeBold(!(format.bold === true))}>
         <KeyboardShortcut
           text="Bold"
           shortcut="B"
@@ -85,11 +85,7 @@ export const FormatMenu = (props: IProps) => {
           icon={<FormatBold style={menuItemIconStyles} />}
         />
       </MenuItem>
-      <MenuItem
-        type="checkbox"
-        checked={format.italic === true}
-        onClick={() => changeItalic(!(format.italic === true))}
-      >
+      <MenuItem onClick={() => changeItalic(!(format.italic === true))}>
         <KeyboardShortcut
           text="Italic"
           shortcut="I"
@@ -98,28 +94,25 @@ export const FormatMenu = (props: IProps) => {
         />
       </MenuItem>
       <SubMenu
-        className="menuItemIndent"
+        className="color-picker-submenu"
         id="TextColorMenuID"
-        menuStyles={{
-          padding: '0px',
-        }}
         label={
           <>
             <FormatColorText style={menuItemIconStyles}></FormatColorText> Text color
           </>
         }
       >
-        <QColorPicker onChangeComplete={changeTextColor} />
-        <MenuItem onClick={removeTextColor}>Clear</MenuItem>
+        <QColorPicker onChangeComplete={changeTextColor} onClear={removeTextColor} />
       </SubMenu>
 
-      {/* <MenuItem className="menuItemIndent">
-        <FormatColorText style={menuItemIconDisabledStyles}></FormatColorText> Text color
+      {/* <MenuItem >
+        <FormatColorText></FormatColorText> Text color
       </MenuItem> */}
 
+      {/*
       <MenuDivider />
       <SubMenu
-        className="menuItemIndent"
+        
         label={
           <Fragment>
             <ReadMore style={menuItemIconStyles}></ReadMore>
@@ -132,36 +125,32 @@ export const FormatMenu = (props: IProps) => {
         <MenuItem type="checkbox">Clip</MenuItem>
       </SubMenu>
 
+      
       <MenuDivider />
       <MenuItem type="checkbox">
-        <FormatAlignLeft style={menuItemIconDisabledStyles}></FormatAlignLeft> Left
+        <FormatAlignLeft></FormatAlignLeft> Left
       </MenuItem>
       <MenuItem type="checkbox">
-        <FormatAlignCenter style={menuItemIconDisabledStyles}></FormatAlignCenter> Center
+        <FormatAlignCenter></FormatAlignCenter> Center
       </MenuItem>
       <MenuItem type="checkbox">
-        <FormatAlignRight style={menuItemIconDisabledStyles}></FormatAlignRight> Right
-      </MenuItem>
+        <FormatAlignRight></FormatAlignRight> Right
+      </MenuItem>*/}
 
       <MenuDivider />
       <SubMenu
-        className="menuItemIndent"
+        className="color-picker-submenu"
         id="FillColorMenuID"
-        menuStyles={{
-          padding: '0px',
-        }}
         label={
           <>
             <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill color
           </>
         }
       >
-        <QColorPicker onChangeComplete={changeFillColor} />
-        <MenuItem onClick={removeFillColor}>Clear</MenuItem>
+        <QColorPicker onChangeComplete={changeFillColor} onClear={removeFillColor} />
       </SubMenu>
 
       <SubMenu
-        className="menuItemIndent"
         label={
           <Fragment>
             <BorderAll style={menuItemIconStyles}></BorderAll>
@@ -173,9 +162,13 @@ export const FormatMenu = (props: IProps) => {
       </SubMenu>
 
       <MenuDivider />
-      <MenuItem onClick={handleClearFormatting} className="menuItemIndent">
-        <FormatClear style={menuItemIconStyles}></FormatClear>
-        Clear formatting
+      <MenuItem onClick={handleClearFormatting}>
+        <KeyboardShortcut
+          text="Clear formatting"
+          shortcut="\"
+          modifier={KeyboardSymbols.Command}
+          icon={<FormatClear style={menuItemIconStyles} />}
+        />
       </MenuItem>
     </Menu>
   );
