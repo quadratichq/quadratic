@@ -191,14 +191,14 @@ export function useGetBorderMenu(props: Props): JSX.Element {
       </div>
       <div className="borderMenuFormatting">
         <SubMenu
-          className="borderSubmenu"
+          className="borderSubmenu color-picker-submenu"
           id="FillBorderColorMenuID"
           menuStyles={{
             padding: '0px',
           }}
           label={<BorderColor style={{ ...menuItemIconStyles, color }}></BorderColor>}
         >
-          <QColorPicker onChangeComplete={handleChangeBorderColor}></QColorPicker>
+          <QColorPicker onChangeComplete={handleChangeBorderColor} />
         </SubMenu>
         <SubMenu
           id="BorderLineStyleMenuID"

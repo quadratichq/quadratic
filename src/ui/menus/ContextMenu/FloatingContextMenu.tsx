@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
-import { Divider, IconButton, MenuItem, Paper, Toolbar } from '@mui/material';
+import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import {
   BorderAll,
   ContentCopy,
@@ -39,15 +39,8 @@ export const FloatingContextMenu = (props: Props) => {
 
   const menuDiv = useRef<HTMLDivElement>(null);
   const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
-  const {
-    changeFillColor,
-    removeFillColor,
-    clearFormatting,
-    changeBold,
-    changeItalic,
-    changeTextColor,
-    removeTextColor,
-  } = useFormatCells(sheetController, props.app);
+  const { changeFillColor, removeFillColor, clearFormatting, changeBold, changeItalic, changeTextColor } =
+    useFormatCells(sheetController, props.app);
   const { format } = useGetSelection(sheetController.sheet);
   const { clearBorders } = useBorders(sheetController.sheet, props.app);
 
@@ -250,13 +243,13 @@ export const FloatingContextMenu = (props: Props) => {
             </div>
           }
         >
-          <QColorPicker onChangeComplete={changeTextColor} />
-          <MenuItem onClick={removeTextColor}>Clear</MenuItem>
+          <QColorPicker onChangeComplete={changeTextColor} onClear={removeFillColor} />
         </Menu>
 
         <MenuDivider />
 
         <Menu
+          className="color-picker-submenu"
           menuButton={
             <div>
               <TooltipHint title="Fill color">
@@ -267,8 +260,7 @@ export const FloatingContextMenu = (props: Props) => {
             </div>
           }
         >
-          <QColorPicker onChangeComplete={changeFillColor} />
-          <MenuItem onClick={removeFillColor}>Clear</MenuItem>
+          <QColorPicker onChangeComplete={changeFillColor} onClear={removeFillColor} />
         </Menu>
         <Menu
           menuButton={
