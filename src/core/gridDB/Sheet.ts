@@ -58,6 +58,7 @@ export class Sheet {
   }
 
   getCellCopy(x: number, y: number): Cell | undefined {
+    // proper deep copy of a cell
     const cell = this.grid.get(x, y);
     if (!cell || !cell.cell) return;
     return {
