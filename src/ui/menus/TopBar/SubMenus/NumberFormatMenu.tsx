@@ -10,14 +10,19 @@ import { colors } from '../../../../theme/colors';
 import { useFormatCells } from './useFormatCells';
 import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../core/transaction/sheetController';
+import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
+import { topBarIconStyles } from './menuStyles';
 
 const numberExStyle = {
   color: colors.darkGray,
   display: 'inline-block',
   fontFamily: 'monospace',
   textAlign: 'right',
-  width: '100%',
+  paddingTop: '0.4rem',
+  height: '2rem',
 } as CSSProperties;
+
+const menuItemStyle = { justifyContent: 'space-between' } as CSSProperties;
 
 interface IProps {
   app: PixiApp;
@@ -39,73 +44,49 @@ export const NumberFormatMenu = (props: IProps) => {
       menuButton={
         <Tooltip title="Number format" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
           <Button style={{ color: colors.darkGray }}>
-            <span style={{ fontSize: '1rem' }}>123</span>
+            <Icon123 style={{ ...topBarIconStyles, width: 36, height: 36 }}></Icon123>
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
           </Button>
         </Tooltip>
       }
       menuStyles={{ minWidth: '18rem' }}
     >
-      <MenuHeader>Coming soon</MenuHeader>
-      <MenuDivider></MenuDivider>
-      <MenuHeader>Number format</MenuHeader>
-      <MenuItem disabled type="checkbox" checked={true}>
-        Automatic
+      <MenuItem styles={menuItemStyle}>
+        Plain text <span style={numberExStyle}>Abc</span>
       </MenuItem>
-      <MenuItem disabled type="checkbox" checked={false}>
-        Plain text
-      </MenuItem>
-      <MenuDivider></MenuDivider>
       <MenuItem
+        styles={menuItemStyle}
         onClick={() => {
           textFormatIncreaseDecimalPlaces();
         }}
       >
-        Increase Decimals <span style={numberExStyle}>9.99+</span>
+        Increase Decimals{' '}
+        <span style={numberExStyle}>
+          <DecimalIncrease />
+        </span>
       </MenuItem>
       <MenuItem
+        styles={menuItemStyle}
         onClick={() => {
           textFormatDecreaseDecimalPlaces();
         }}
       >
-        Decrease Decimals <span style={numberExStyle}>9.99-</span>
+        Decrease Decimals{' '}
+        <span style={numberExStyle}>
+          <DecimalDecrease />
+        </span>
       </MenuItem>
-      <MenuDivider></MenuDivider>
-      <MenuItem type="checkbox" checked={false} onClick={() => textFormatSetNumber()}>
+      <MenuItem styles={menuItemStyle} onClick={() => textFormatSetNumber()}>
         Number <span style={numberExStyle}>9,999.99</span>
       </MenuItem>
-      <MenuItem type="checkbox" checked={false} onClick={() => textFormatSetPercentage()}>
-        Percent <span style={numberExStyle}>99.99%</span>
-      </MenuItem>
-      <MenuItem type="checkbox" checked={false} onClick={() => textFormatSetExponential()}>
-        Scientific <span style={numberExStyle}>6.02E+23</span>
-      </MenuItem>
-      <MenuDivider></MenuDivider>
-      <MenuItem disabled type="checkbox" checked={false}>
-        Accounting <span style={numberExStyle}>$(9,999.99)</span>
-      </MenuItem>
-      <MenuItem disabled type="checkbox" checked={false}>
-        Financial <span style={numberExStyle}>(9,999.99)</span>
-      </MenuItem>
-      <MenuItem type="checkbox" checked={false} onClick={() => textFormatSetCurrency()}>
+      <MenuItem styles={menuItemStyle} onClick={() => textFormatSetCurrency()}>
         Currency <span style={numberExStyle}>$9,999.99</span>
       </MenuItem>
-      <MenuDivider></MenuDivider>
-      <MenuItem disabled type="checkbox" checked={false}>
-        Date <span style={numberExStyle}>1/1/2022</span>
+      <MenuItem styles={menuItemStyle} onClick={() => textFormatSetPercentage()}>
+        Percent <span style={numberExStyle}>99.99%</span>
       </MenuItem>
-      <MenuItem disabled type="checkbox" checked={false}>
-        Time <span style={numberExStyle}>12:59 PM</span>
-      </MenuItem>
-      {/* <MenuItem disabled type="checkbox" checked={false}>
-        Datetime <span style={numberExStyle}>01/01/2022 12:59 PM</span>
-      </MenuItem> */}
-      <MenuItem disabled type="checkbox" checked={false}>
-        Duration <span style={numberExStyle}>5h 45m 6s</span>
-      </MenuItem>
-      <MenuDivider></MenuDivider>
-      <MenuItem disabled type="checkbox" checked={false}>
-        Custom
+      <MenuItem styles={menuItemStyle} onClick={() => textFormatSetExponential()}>
+        Scientific <span style={numberExStyle}>6.02E+23</span>
       </MenuItem>
     </Menu>
   );

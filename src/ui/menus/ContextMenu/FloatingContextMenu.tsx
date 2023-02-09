@@ -4,6 +4,7 @@ import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import {
+  AttachMoneyOutlined,
   BorderAll,
   ContentCopy,
   ContentCut,
@@ -13,6 +14,8 @@ import {
   FormatColorFill,
   FormatColorText,
   FormatItalic,
+  Percent,
+  PercentOutlined,
 } from '@mui/icons-material';
 import { Menu } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
@@ -23,6 +26,7 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
 import { TooltipHint } from '../../components/TooltipHint';
+import { DecimalDecrease, DecimalIncrease } from '../../icons';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -39,8 +43,18 @@ export const FloatingContextMenu = (props: Props) => {
 
   const menuDiv = useRef<HTMLDivElement>(null);
   const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
-  const { changeFillColor, removeFillColor, clearFormatting, changeBold, changeItalic, changeTextColor } =
-    useFormatCells(sheetController, props.app);
+  const {
+    changeFillColor,
+    removeFillColor,
+    clearFormatting,
+    changeBold,
+    changeItalic,
+    changeTextColor,
+    textFormatDecreaseDecimalPlaces,
+    textFormatIncreaseDecimalPlaces,
+    textFormatSetCurrency,
+    textFormatSetPercentage,
+  } = useFormatCells(sheetController, props.app);
   const { format } = useGetSelection(sheetController.sheet);
   const { clearBorders } = useBorders(sheetController.sheet, props.app);
 
@@ -279,6 +293,33 @@ export const FloatingContextMenu = (props: Props) => {
         >
           {borders}
         </Menu>
+
+        <MenuDivider />
+
+        <TooltipHint title="Format as currency">
+          <IconButton onClick={() => textFormatSetCurrency()}>
+            <AttachMoneyOutlined fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <TooltipHint title="Format as percent">
+          <IconButton onClick={() => textFormatSetPercentage()}>
+            <Percent fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <TooltipHint title="Decrease decimal places">
+          <IconButton onClick={() => textFormatDecreaseDecimalPlaces()}>
+            <DecimalDecrease fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <TooltipHint title="Increase decimal places">
+          <IconButton onClick={() => textFormatIncreaseDecimalPlaces()}>
+            <DecimalIncrease fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
         <MenuDivider />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
           <IconButton onClick={handleClearFormatting}>
