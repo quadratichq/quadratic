@@ -95,6 +95,9 @@ export class Cursor extends Graphics {
 
   private drawCursorIndicator(): void {
     const { viewport } = this.app;
+    const { editorInteractionState } = this.app.settings;
+    const editor_selected_cell = editorInteractionState.selectedCell;
+    const cell = this.app.settings.interactionState.cursorPosition;
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
       // draw cursor indicator
       const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
@@ -103,7 +106,20 @@ export class Cursor extends Graphics {
       this.indicator.x = x - indicatorSize / 2;
       this.indicator.y = y - indicatorSize / 2;
       this.lineStyle(0);
-      this.beginFill(colors.cursorCell).drawShape(this.indicator).endFill();
+      // have cursor color match code editor mode
+      let color = colors.cursorCell;
+      if (
+        editorInteractionState.showCodeEditor &&
+        editor_selected_cell.x === cell.x &&
+        editor_selected_cell.y === cell.y
+      )
+        color =
+          editorInteractionState.mode === 'PYTHON'
+            ? colors.cellColorUserPython
+            : editorInteractionState.mode === 'FORMULA'
+            ? colors.cellColorUserFormula
+            : colors.cursorCell;
+      this.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
 
