@@ -264,17 +264,13 @@ export const CodeEditor = (props: CodeEditorProps) => {
               padding: '0 .5rem',
             }}
           >
-            {
-              // @ts-ignore
-              editor_mode === 'PYTHON' ? (
-                <Python sx={{ color: colors.languagePython }} fontSize="small" />
-              ) : // @ts-ignore
-              editor_mode === 'FORMULA' ? (
-                <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
-              ) : (
-                <Subject />
-              )
-            }
+            {editor_mode === 'PYTHON' ? (
+              <Python sx={{ color: colors.languagePython }} fontSize="small" />
+            ) : editor_mode === 'FORMULA' ? (
+              <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
+            ) : (
+              <Subject />
+            )}
             <span
               style={{
                 color: 'black',
@@ -284,29 +280,12 @@ export const CodeEditor = (props: CodeEditorProps) => {
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-            {/* <Button
-              id="QuadraticCodeEditorRunButtonID"
-              style={
-                {
-                  // color: colors.darkGray,
-                  // padding: '2px 4px',
-                  // lineHeight: '1',
-                }
-              }
-              color="info"
-              startIcon={<PlayArrow />}
-              onClick={() => {
-                saveAndRunCell();
-              }}
-            >
-              Run
-            </Button> */}
             <TooltipHint title="Run" shortcut={`${KeyboardSymbols.Command}↵`}>
               <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
                 <PlayArrow />
               </IconButton>
             </TooltipHint>
-            <TooltipHint title="Close" shortcut={`ESC`}>
+            <TooltipHint title="Close" shortcut="ESC">
               <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
                 <Close />
               </IconButton>
