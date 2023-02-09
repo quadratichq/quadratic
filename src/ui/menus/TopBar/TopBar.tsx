@@ -130,15 +130,15 @@ export const TopBar = (props: IProps) => {
               </AvatarGroup>
             )}
             <TooltipHint title="Search" shortcut={KeyboardSymbols.Command + 'P'}>
-              <IconButton>
-                <Search
-                  onClick={() => {
-                    setEditorInteractionState({
-                      ...editorInteractionState,
-                      showCommandPalette: true,
-                    });
-                  }}
-                />
+              <IconButton
+                onClick={() => {
+                  setEditorInteractionState({
+                    ...editorInteractionState,
+                    showCommandPalette: true,
+                  });
+                }}
+              >
+                <Search />
               </IconButton>
             </TooltipHint>
             <Tooltip title="Coming soon" arrow>
