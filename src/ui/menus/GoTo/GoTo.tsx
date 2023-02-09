@@ -1,4 +1,4 @@
-import React, { SyntheticEvent, useEffect } from 'react';
+import React, { SyntheticEvent } from 'react';
 import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -10,7 +10,7 @@ import { East } from '@mui/icons-material';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 import { Coordinate } from '../../../core/gridGL/types/size';
 import { moveViewport } from '../../../core/gridGL/interaction/viewportHelper';
-import './styles.css';
+import '../../styles/floating-dialog.css';
 
 interface Props {
   app: PixiApp;
@@ -23,24 +23,11 @@ export const GoTo = (props: Props) => {
   const { showGoToMenu } = editorInteractionState;
   const [value, setValue] = React.useState<string>('');
 
-  // Cleanup to initial state when component is closed
-  useEffect(() => {
-    return () => {
-      setValue('');
-    };
-  }, [showGoToMenu]);
-
-  // Hide the menu when applicable
-  if (!showGoToMenu) {
-    return null;
-  }
-
   const closeMenu = () => {
     setEditorInteractionState((state) => ({
       ...state,
       showGoToMenu: false,
     }));
-    setValue('');
   };
 
   const coordinates = getCoordinatesFromUserInput(value);
@@ -93,10 +80,11 @@ export const GoTo = (props: Props) => {
     <Dialog open={showGoToMenu} onClose={closeMenu} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
       <Paper component="form" elevation={12} onSubmit={onSelect}>
         <InputBase
-          sx={{ flex: 1, display: 'flex', p: '8px 16px' }}
+          sx={{ width: '100%', padding: '8px 16px' }}
           autoFocus
           value={value}
           fullWidth
+          placeholder="Enter a cell “0, 0” or range “0, 0, -5, -5”"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setValue(e.target.value);
           }}
@@ -113,11 +101,6 @@ export const GoTo = (props: Props) => {
                   .join(', ')}`}
               />
             </ListItemButton>
-          </ListItem>
-
-          <Divider />
-          <ListItem disabled>
-            <ListItemText primary="Specify a cell “0, 0” or a range “0, 0, -5, -5”" />
           </ListItem>
         </List>
       </Paper>

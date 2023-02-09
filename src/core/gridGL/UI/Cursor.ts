@@ -28,10 +28,16 @@ export class Cursor extends Graphics {
   private drawCursor(): void {
     const { settings, viewport } = this.app;
     const { gridOffsets } = this.app.sheet;
+    const { editorInteractionState } = this.app.settings;
     const cell = settings.interactionState.cursorPosition;
     const multiCursor = settings.interactionState.showMultiCursor;
     const { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
     const color = colors.cursorCell;
+    const editor_selected_cell = editorInteractionState.selectedCell;
+
+    // hide cursor if code editor is open and CodeCursor is in the same cell
+    if (editorInteractionState.showCodeEditor && editor_selected_cell.x === cell.x && editor_selected_cell.y === cell.y)
+      return;
 
     this.lineStyle({
       width: CURSOR_THICKNESS,
@@ -89,6 +95,9 @@ export class Cursor extends Graphics {
 
   private drawCursorIndicator(): void {
     const { viewport } = this.app;
+    const { editorInteractionState } = this.app.settings;
+    const editor_selected_cell = editorInteractionState.selectedCell;
+    const cell = this.app.settings.interactionState.cursorPosition;
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
       // draw cursor indicator
       const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
@@ -97,7 +106,20 @@ export class Cursor extends Graphics {
       this.indicator.x = x - indicatorSize / 2;
       this.indicator.y = y - indicatorSize / 2;
       this.lineStyle(0);
-      this.beginFill(colors.cursorCell).drawShape(this.indicator).endFill();
+      // have cursor color match code editor mode
+      let color = colors.cursorCell;
+      if (
+        editorInteractionState.showCodeEditor &&
+        editor_selected_cell.x === cell.x &&
+        editor_selected_cell.y === cell.y
+      )
+        color =
+          editorInteractionState.mode === 'PYTHON'
+            ? colors.cellColorUserPython
+            : editorInteractionState.mode === 'FORMULA'
+            ? colors.cellColorUserFormula
+            : colors.cursorCell;
+      this.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
 
@@ -110,7 +132,7 @@ export class Cursor extends Graphics {
         editorInteractionState.mode === 'PYTHON'
           ? colors.cellColorUserPython
           : editorInteractionState.mode === 'FORMULA'
-          ? colors.highlightYellow
+          ? colors.cellColorUserFormula
           : colors.independence;
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,
