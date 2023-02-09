@@ -30,20 +30,9 @@ export interface CellTypeOption {
 
 const CELL_TYPE_OPTIONS = [
   {
-    name: 'Python',
-    mode: 'PYTHON',
-    icon: <Python sx={{ color: colors.python }} />,
-    description: (
-      <>
-        Fetch, script, and compute with data. Includes the power of Pandas and Micropip.{' '}
-        <LinkNewTab href="https://docs.quadratichq.com/reference/python-cell-reference">Learn more</LinkNewTab>.
-      </>
-    ),
-  },
-  {
     name: 'Formula',
     mode: 'FORMULA',
-    icon: <Formula sx={{ color: colors.formula }} />,
+    icon: <Formula sx={{ color: colors.languageFormula }} />,
     description: (
       <>
         Use classic spreadsheet logic including math (
@@ -58,17 +47,28 @@ const CELL_TYPE_OPTIONS = [
     ),
   },
   {
-    name: 'JavaScript',
-    mode: 'JAVASCRIPT',
-    icon: <JavaScript color="disabled" />,
-    description: 'Coming soon: the world’s most used programming language.',
-    disabled: true,
+    name: 'Python',
+    mode: 'PYTHON',
+    icon: <Python sx={{ color: colors.languagePython }} />,
+    description: (
+      <>
+        Fetch, script, and compute with data. Includes the power of Pandas and Micropip.{' '}
+        <LinkNewTab href="https://docs.quadratichq.com/reference/python-cell-reference">Learn more</LinkNewTab>.
+      </>
+    ),
   },
   {
     name: 'SQL Query',
     mode: 'SQL',
     icon: <Sql color="disabled" />,
     description: 'Coming soon: import data with queries.',
+    disabled: true,
+  },
+  {
+    name: 'JavaScript',
+    mode: 'JAVASCRIPT',
+    icon: <JavaScript color="disabled" />,
+    description: 'Coming soon: the world’s most used programming language.',
     disabled: true,
   },
 ] as CellTypeOption[];

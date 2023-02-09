@@ -110,7 +110,7 @@ export class Cursor extends Graphics {
         editorInteractionState.mode === 'PYTHON'
           ? colors.cellColorUserPython
           : editorInteractionState.mode === 'FORMULA'
-          ? colors.highlightYellow
+          ? colors.cellColorUserFormula
           : colors.independence;
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,

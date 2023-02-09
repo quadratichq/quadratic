@@ -267,10 +267,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
             {
               // @ts-ignore
               editor_mode === 'PYTHON' ? (
-                <Python sx={{ color: colors.python }} fontSize="small" />
+                <Python sx={{ color: colors.languagePython }} fontSize="small" />
               ) : // @ts-ignore
               editor_mode === 'FORMULA' ? (
-                <Formula sx={{ color: colors.formula }} fontSize="small" />
+                <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
               ) : (
                 <Subject />
               )
