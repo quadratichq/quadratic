@@ -6,17 +6,15 @@ import { CloudDownloadOutlined, StorageOutlined, DataObjectOutlined } from '@mui
 
 import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
-
-import { menuItemIconStyles, topBarIconStyles } from './menuStyles';
-import { colors } from '../../../../theme/colors';
+import { MenuLineItem } from '../MenuLineItem';
 
 export const DataMenu = () => {
   return (
     <Menu
       menuButton={
         <Tooltip title="Data" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
-          <Button style={{ color: colors.darkGray }}>
-            <DataObjectOutlined style={topBarIconStyles}></DataObjectOutlined>
+          <Button style={{ color: 'inherit' }}>
+            <DataObjectOutlined fontSize="small"></DataObjectOutlined>
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
           </Button>
         </Tooltip>
@@ -24,11 +22,10 @@ export const DataMenu = () => {
     >
       <MenuHeader>Connect Data</MenuHeader>
       <MenuItem disabled>
-        <CloudDownloadOutlined style={menuItemIconStyles}></CloudDownloadOutlined>
-        SaaS (Quadratic Cloud only)
+        <MenuLineItem primary="SaaS (Quadratic Cloud only)" Icon={CloudDownloadOutlined} />
       </MenuItem>
       <MenuItem disabled>
-        <StorageOutlined style={menuItemIconStyles}></StorageOutlined> Database (coming soon)
+        <MenuLineItem primary="Database (coming soon)" Icon={StorageOutlined} />
       </MenuItem>
     </Menu>
   );
