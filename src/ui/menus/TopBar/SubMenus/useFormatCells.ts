@@ -22,7 +22,6 @@ interface IResults {
   textFormatSetCurrency: () => void;
   textFormatSetPercentage: () => void;
   textFormatSetNumber: () => void;
-  textFormatSetDate: () => void;
   textFormatSetExponential: () => void;
 }
 
@@ -153,10 +152,6 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     onFormat({ textFormat: { type: 'NUMBER' } });
   };
 
-  const textFormatSetDate = (): void => {
-    onFormat({ textFormat: { type: 'DATE', format: 'MM/dd/yyyy' } });
-  };
-
   const textFormatSetExponential = (): void => {
     onFormat({ textFormat: { type: 'EXPONENTIAL' } });
   };
@@ -174,7 +169,6 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     textFormatSetCurrency,
     textFormatSetPercentage,
     textFormatSetNumber,
-    textFormatSetDate,
     textFormatSetExponential,
   };
 };

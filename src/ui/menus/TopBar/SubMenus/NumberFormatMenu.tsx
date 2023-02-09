@@ -31,7 +31,6 @@ export const NumberFormatMenu = (props: IProps) => {
     textFormatSetCurrency,
     textFormatSetPercentage,
     textFormatSetNumber,
-    textFormatSetDate,
     textFormatSetExponential,
   } = useFormatCells(props.sheet_controller, props.app);
 
@@ -92,7 +91,7 @@ export const NumberFormatMenu = (props: IProps) => {
         Currency <span style={numberExStyle}>$9,999.99</span>
       </MenuItem>
       <MenuDivider></MenuDivider>
-      <MenuItem type="checkbox" checked={false} onClick={() => textFormatSetDate()}>
+      <MenuItem disabled type="checkbox" checked={false}>
         Date <span style={numberExStyle}>1/1/2022</span>
       </MenuItem>
       <MenuItem disabled type="checkbox" checked={false}>

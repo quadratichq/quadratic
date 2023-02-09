@@ -8,16 +8,11 @@ export type CellTextFormat =
   | {
       type: 'CURRENCY';
       symbol?: string;
-      display: 'ACCOUNTING' | 'FINANCIAL' | 'CURRENCY';
+      display: 'CURRENCY';
       decimalPlaces?: number;
     }
   | {
       type: 'PERCENTAGE';
-      decimalPlaces?: number;
-    }
-  | {
-      type: 'DATE';
-      format: string;
       decimalPlaces?: number;
     }
   | {
