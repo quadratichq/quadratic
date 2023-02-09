@@ -52,7 +52,7 @@ const CELL_TYPE_OPTIONS = [
     icon: <Python sx={{ color: colors.languagePython }} />,
     description: (
       <>
-        Fetch, script, and compute with data. Includes the power of Pandas and Micropip.{' '}
+        Script, fetch, and compute with your data. Includes the power of Pandas, NumPy, and SciPy.{' '}
         <LinkNewTab href="https://docs.quadratichq.com/reference/python-cell-reference">Learn more</LinkNewTab>.
       </>
     ),
