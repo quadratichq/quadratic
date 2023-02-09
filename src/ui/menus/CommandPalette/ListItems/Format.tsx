@@ -28,12 +28,13 @@ const ListItems = [
   {
     label: 'Format: Style as plain text',
     Component: (props: any) => {
+      const { textFormatClear } = useFormatCells(props.sheetController, props.app);
       return (
         <CommandPaletteListItem
           {...props}
           icon={<AbcOutlined />}
           action={() => {
-            // TODO
+            textFormatClear();
           }}
         />
       );

@@ -20,6 +20,7 @@ export const NumberFormatMenu = (props: IProps) => {
   const {
     textFormatIncreaseDecimalPlaces,
     textFormatDecreaseDecimalPlaces,
+    textFormatClear,
     textFormatSetCurrency,
     textFormatSetPercentage,
     textFormatSetNumber,
@@ -37,7 +38,7 @@ export const NumberFormatMenu = (props: IProps) => {
         </Tooltip>
       }
     >
-      <MenuItem>
+      <MenuItem onClick={() => textFormatClear()}>
         <MenuLineItem primary="Plain text" secondary={<code>Abc</code>} Icon={AbcOutlined} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetNumber()}>
