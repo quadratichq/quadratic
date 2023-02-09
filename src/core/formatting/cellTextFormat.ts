@@ -7,8 +7,8 @@ export type CellTextFormat =
     }
   | {
       type: 'CURRENCY';
-      symbol?: string;
       display: 'CURRENCY';
+      symbol?: string;
       decimalPlaces?: number;
     }
   | {
