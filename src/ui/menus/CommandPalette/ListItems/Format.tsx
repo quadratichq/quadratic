@@ -1,47 +1,11 @@
 import { useFormatCells } from '../../TopBar/SubMenus/useFormatCells';
-import { useGetSelection } from '../../TopBar/SubMenus/useGetSelection';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { FormatBold, FormatClear, FormatItalic } from '@mui/icons-material';
+import { AbcOutlined, AttachMoney, FormatClear, Functions, Percent } from '@mui/icons-material';
 import { useBorders } from '../../TopBar/SubMenus/useBorders';
+import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 
 const ListItems = [
-  {
-    label: 'Format: Bold',
-    Component: (props: any) => {
-      const selection = useGetSelection(props.sheetController.sheet);
-      const format = useFormatCells(props.sheetController, props.app);
-      return (
-        <CommandPaletteListItem
-          {...props}
-          icon={<FormatBold />}
-          action={() => {
-            format.changeBold(!selection.format?.bold);
-          }}
-          shortcut="B"
-          shortcutModifiers={KeyboardSymbols.Command}
-        />
-      );
-    },
-  },
-  {
-    label: 'Format: Italic',
-    Component: (props: any) => {
-      const selection = useGetSelection(props.sheetController.sheet);
-      const format = useFormatCells(props.sheetController, props.app);
-      return (
-        <CommandPaletteListItem
-          {...props}
-          icon={<FormatItalic />}
-          action={() => {
-            format.changeItalic(!selection.format?.italic);
-          }}
-          shortcut="I"
-          shortcutModifiers={KeyboardSymbols.Command}
-        />
-      );
-    },
-  },
   {
     label: 'Format: Clear all',
     Component: (props: any) => {
@@ -59,6 +23,62 @@ const ListItems = [
           shortcutModifiers={KeyboardSymbols.Command}
         />
       );
+    },
+  },
+  {
+    label: 'Format: Style as plain text',
+    Component: (props: any) => {
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<AbcOutlined />}
+          action={() => {
+            // TODO
+          }}
+        />
+      );
+    },
+  },
+  {
+    label: 'Format: Style as number',
+    Component: (props: any) => {
+      const { textFormatSetNumber } = useFormatCells(props.sheetController, props.app);
+      return <CommandPaletteListItem {...props} icon={<Icon123 />} action={textFormatSetNumber} />;
+    },
+  },
+  {
+    label: 'Format: Style as currency',
+    Component: (props: any) => {
+      const { textFormatSetCurrency } = useFormatCells(props.sheetController, props.app);
+      return <CommandPaletteListItem {...props} icon={<AttachMoney />} action={textFormatSetCurrency} />;
+    },
+  },
+  {
+    label: 'Format: Style as percentage',
+    Component: (props: any) => {
+      const { textFormatSetPercentage } = useFormatCells(props.sheetController, props.app);
+      return <CommandPaletteListItem {...props} icon={<Percent />} action={textFormatSetPercentage} />;
+    },
+  },
+  {
+    label: 'Format: Style as scientific',
+    Component: (props: any) => {
+      const { textFormatSetExponential } = useFormatCells(props.sheetController, props.app);
+      return <CommandPaletteListItem {...props} icon={<Functions />} action={textFormatSetExponential} />;
+    },
+  },
+  {
+    label: 'Format: Increase decimal place',
+    Component: (props: any) => {
+      const { textFormatIncreaseDecimalPlaces } = useFormatCells(props.sheetController, props.app);
+      return <CommandPaletteListItem {...props} icon={<DecimalIncrease />} action={textFormatIncreaseDecimalPlaces} />;
+    },
+  },
+  {
+    label: 'Format: Decrease decimal place',
+    Component: (props: any) => {
+      const { textFormatDecreaseDecimalPlaces } = useFormatCells(props.sheetController, props.app);
+      return <CommandPaletteListItem {...props} icon={<DecimalDecrease />} action={textFormatDecreaseDecimalPlaces} />;
     },
   },
 ];
