@@ -28,10 +28,16 @@ export class Cursor extends Graphics {
   private drawCursor(): void {
     const { settings, viewport } = this.app;
     const { gridOffsets } = this.app.sheet;
+    const { editorInteractionState } = this.app.settings;
     const cell = settings.interactionState.cursorPosition;
     const multiCursor = settings.interactionState.showMultiCursor;
     const { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
     const color = colors.cursorCell;
+    const editor_selected_cell = editorInteractionState.selectedCell;
+
+    // hide cursor if code editor is open and CodeCursor is in the same cell
+    if (editorInteractionState.showCodeEditor && editor_selected_cell.x === cell.x && editor_selected_cell.y === cell.y)
+      return;
 
     this.lineStyle({
       width: CURSOR_THICKNESS,
