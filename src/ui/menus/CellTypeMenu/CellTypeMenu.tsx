@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Divider,
   List,
@@ -6,155 +6,194 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Typography,
-  Card,
-  CardContent,
   Dialog,
+  Paper,
+  InputBase,
+  Link,
 } from '@mui/material';
-import TextField from '@mui/material/TextField';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { CellTypes } from '../../../core/gridDB/gridTypes';
 
-import './styles.css';
+import '../../styles/floating-dialog.css';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { Python, Formula, JavaScript, Sql } from '../../icons';
+import { colors } from '../../../theme/colors';
 
-export interface CellTypeMenuItem {
-  key: number;
+export interface CellTypeOption {
   name: string;
-  short: string;
-  slug: CellTypes;
-  description: string;
-  disabled: boolean;
+  mode: CellTypes;
+  icon: any;
+  description: string | JSX.Element;
+  disabled?: boolean;
 }
 
 const CELL_TYPE_OPTIONS = [
   {
-    key: 0,
-    name: 'Python',
-    short: 'Py',
-    slug: 'PYTHON',
-    description: 'Write Python to quickly compute with data.',
-    disabled: false,
-  },
-  {
-    key: 20,
     name: 'Formula',
-    short: '=',
-    slug: 'FORMULA',
-    description: 'Spreadsheet formulas.',
-    disabled: false,
+    mode: 'FORMULA',
+    icon: <Formula sx={{ color: colors.languageFormula }} />,
+    description: (
+      <>
+        Use classic spreadsheet logic including math (
+        {['*', '+', '-', '/'].map((s) => (
+          <>
+            <code>{s}</code>{' '}
+          </>
+        ))}
+        ) and formulas like <code>SUM</code>, <code>IF</code>, and <code>AVERAGE</code>.{' '}
+        <LinkNewTab href="https://docs.quadratichq.com/">Learn more</LinkNewTab>.
+      </>
+    ),
   },
   {
-    key: 30,
-    name: 'JavaScript',
-    short: 'Js',
-    slug: 'JAVASCRIPT',
-    description: 'Write JavaScript to quickly compute with data.',
-    disabled: true,
+    name: 'Python',
+    mode: 'PYTHON',
+    icon: <Python sx={{ color: colors.languagePython }} />,
+    description: (
+      <>
+        Script, fetch, and compute with your data. Includes the power of Pandas, NumPy, and SciPy.{' '}
+        <LinkNewTab href="https://docs.quadratichq.com/reference/python-cell-reference">Learn more</LinkNewTab>.
+      </>
+    ),
   },
   {
-    key: 40,
     name: 'SQL Query',
-    short: 'DB',
-    slug: 'SQL',
-    description: 'Query your data using SQL.',
+    mode: 'SQL',
+    icon: <Sql color="disabled" />,
+    description: 'Coming soon: import data with queries.',
     disabled: true,
   },
-] as CellTypeMenuItem[];
+  {
+    name: 'JavaScript',
+    mode: 'JAVASCRIPT',
+    icon: <JavaScript color="disabled" />,
+    description: 'Coming soon: the world’s most used programming language.',
+    disabled: true,
+  },
+] as CellTypeOption[];
 
 export default function CellTypeMenu() {
-  // Interaction State hook
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-
   const [value, setValue] = React.useState<string>('');
-  const [selected_value, setSelectedValue] = React.useState<CellTypes | undefined>('PYTHON');
-  const [filtered_cell_type_list, setFilteredCellTypeList] = React.useState<any>(CELL_TYPE_OPTIONS);
+  const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
+  const searchlabel = 'Choose a cell type…';
+  const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value));
 
-  const update_filter = (value: string) => {
-    const filtered_cell_type_list = CELL_TYPE_OPTIONS.filter((cell_type) => {
-      return cell_type.slug.includes(value.toUpperCase());
-    });
-
-    const selected_value = filtered_cell_type_list[0]?.slug;
-
-    setSelectedValue(selected_value);
-    setFilteredCellTypeList(filtered_cell_type_list);
-    setValue(value);
-  };
-
-  const close = () => {
+  const close = useCallback(() => {
     setEditorInteractionState({
       ...editorInteractionState,
       showCellTypeMenu: false,
     });
-    setValue('');
-    update_filter('');
     focusGrid();
-  };
+  }, [editorInteractionState, setEditorInteractionState]);
 
-  const openEditor = (mode = null) => {
-    setEditorInteractionState({
-      ...editorInteractionState,
-      ...{
-        showCodeEditor: true,
-        showCellTypeMenu: false,
-        mode: mode || selected_value || 'PYTHON',
-      },
-    });
-  };
+  const openEditor = useCallback(
+    (mode: CellTypes) => {
+      setEditorInteractionState({
+        ...editorInteractionState,
+        ...{
+          showCodeEditor: true,
+          showCellTypeMenu: false,
+          mode,
+        },
+      });
+    },
+    [editorInteractionState, setEditorInteractionState]
+  );
 
   return (
-    <Dialog open={true} onClose={close} BackdropProps={{ invisible: true }}>
-      <Card
+    <Dialog open={true} onClose={close} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
+      <Paper
         id="CellTypeMenuID"
-        elevation={1}
-        // className="container"
+        component="form"
+        elevation={12}
+        onKeyUp={(e: React.KeyboardEvent) => {
+          // Don't bother if there's nothing to key up/down through
+          if (options.length <= 1) {
+            return;
+          }
+
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            e.stopPropagation();
+            let newIndex = selectedIndex;
+            while (newIndex === selectedIndex || options[newIndex]?.disabled) {
+              newIndex = newIndex < options.length - 1 ? newIndex + 1 : 0;
+            }
+            setSelectedIndex(newIndex);
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            e.stopPropagation();
+            let newIndex = selectedIndex;
+            while (newIndex === selectedIndex || options[newIndex]?.disabled) {
+              newIndex = newIndex === 0 ? options.length - 1 : newIndex - 1;
+            }
+            setSelectedIndex(newIndex);
+          }
+        }}
+        onSubmit={(e: React.FormEvent) => {
+          e.preventDefault();
+          if (!options[selectedIndex]?.disabled) {
+            openEditor(options[selectedIndex].mode);
+          }
+        }}
       >
-        <CardContent>
-          <TextField
-            id="CellTypeMenuInputID"
-            value={value}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              update_filter(event.target.value);
-            }}
-            onKeyUp={(event) => {
-              if (event.key === 'Escape') {
-                close();
-              }
-              if (event.key === 'Enter') {
-                openEditor();
-              }
-            }}
-            fullWidth
-            variant="standard"
-            label="Select Cell Type"
-            autoFocus
-          />
-          <List dense={true} style={{ height: 350, width: 300 }}>
-            <ListItem></ListItem>
-            <Divider variant="fullWidth" />
-            {filtered_cell_type_list.map((e: any) => {
-              return (
-                <ListItemButton
-                  key={e.key}
-                  selected={selected_value === e.slug}
-                  disabled={e.disabled}
-                  style={{ width: '100%' }}
-                  onClick={(event) => {
-                    openEditor(e.slug);
-                  }}
-                >
-                  <ListItemIcon>
-                    <Typography>{e.short}</Typography>
-                  </ListItemIcon>
-                  <ListItemText primary={e.name} secondary={e.description} />
-                </ListItemButton>
-              );
-            })}
-          </List>
-        </CardContent>
-      </Card>
+        <InputBase
+          id="CellTypeMenuInputID"
+          sx={{ width: '100%', padding: '8px 16px' }}
+          placeholder={searchlabel}
+          inputProps={{ 'aria-label': searchlabel }}
+          autoFocus
+          autoComplete="off"
+          value={value}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setSelectedIndex(0);
+            setValue(event.target.value);
+          }}
+        />
+
+        <Divider />
+
+        <List dense={true} disablePadding>
+          {options.length ? (
+            options.map(({ name, disabled, description, mode, icon }, i) => (
+              <ListItemButton
+                key={i}
+                disabled={disabled}
+                onClick={() => {
+                  openEditor(mode);
+                }}
+                selected={selectedIndex === i && !disabled}
+              >
+                <ListItemIcon>{icon}</ListItemIcon>
+                <ListItemText primary={name} secondary={description} />
+              </ListItemButton>
+            ))
+          ) : (
+            <ListItem disablePadding>
+              <ListItemButton disabled>
+                <ListItemText primary="No matches" />
+              </ListItemButton>
+            </ListItem>
+          )}
+        </List>
+      </Paper>
     </Dialog>
+  );
+}
+
+function LinkNewTab({ href, children }: { href: string; children: string }) {
+  return (
+    <Link
+      href={href}
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+      target="_blank"
+      rel="noopener"
+    >
+      {children}
+    </Link>
   );
 }

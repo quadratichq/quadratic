@@ -3,3 +3,11 @@
   align-items: flex-start !important;
   padding-top: 48px;
 }
+
+.MuiListItemIcon-root {
+  min-width: 40px !important;
+}
+
+.MuiListItemText-root.MuiListItemText-inset {
+  padding-left: 40px;
+}
