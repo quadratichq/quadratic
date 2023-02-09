@@ -15,7 +15,6 @@ import {
   FormatColorText,
   FormatItalic,
   Percent,
-  PercentOutlined,
 } from '@mui/icons-material';
 import { Menu } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
