@@ -1,8 +1,9 @@
 import { Coordinate } from '../gridGL/types/size';
-import { Cell } from '../gridDB/gridTypes';
+import { Cell, CellFormat } from '../gridDB/gridTypes';
 import { SheetController } from '../transaction/sheetController';
 import { updateCellAndDCells } from './updateCellAndDCells';
 import { DeleteCells } from '../gridDB/Cells/DeleteCells';
+import { CellAndFormat } from '../gridDB/GridSparse';
 
 const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell: Coordinate) => {
   try {
@@ -24,19 +25,48 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
         const y_offset = pasteToCell.y - json.cell0.y;
 
         let cells_to_update: Cell[] = [];
-        json.copiedCells.forEach((cell: Cell) => {
-          cells_to_update.push({
-            ...cell, // take old cell
-            x: cell.x + x_offset, // transpose it to new location
-            y: cell.y + y_offset,
-            last_modified: new Date().toISOString(), // update last_modified
-          });
+        let formats_to_update: CellFormat[] = [];
+        json.copiedCells.forEach((cell_and_format: CellAndFormat) => {
+          const cell = cell_and_format.cell;
+          const format = cell_and_format.format;
+          if (cell)
+            cells_to_update.push({
+              ...cell, // take old cell
+              x: cell.x + x_offset, // transpose it to new location
+              y: cell.y + y_offset,
+              last_modified: new Date().toISOString(), // update last_modified
+            });
+          if (format && format.x !== undefined && format.y !== undefined)
+            formats_to_update.push({
+              ...format, // take old format
+              x: format.x + x_offset, // transpose it to new location
+              y: format.y + y_offset,
+            });
         });
 
+        // Start Transaction
+        sheet_controller.start_transaction();
+
+        // update cells
         await updateCellAndDCells({
           starting_cells: cells_to_update,
           sheetController: sheet_controller,
+          create_transaction: false,
         });
+
+        // update formats
+        formats_to_update.forEach((format) => {
+          if (format.x !== undefined && format.y !== undefined)
+            sheet_controller.execute_statement({
+              type: 'SET_CELL_FORMAT',
+              data: {
+                position: [format.x, format.y],
+                value: format,
+              },
+            });
+        });
+
+        sheet_controller.end_transaction();
 
         return true; // successful don't continue
       }
@@ -128,7 +158,7 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
   const cHeight = Math.abs(cell1.y - cell0.y) + 1;
 
   let clipboardString = '';
-  let copiedCells: Cell[] = [];
+  let copiedCells: CellAndFormat[] = [];
 
   for (let offset_y = 0; offset_y < cHeight; offset_y++) {
     if (offset_y > 0) {
@@ -143,11 +173,11 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
         clipboardString += '\t';
       }
 
-      const cell = sheet_controller.sheet.getCellCopy(cell_x, cell_y);
+      const cell_and_format = sheet_controller.sheet.getCellAndFormatCopy(cell_x, cell_y);
 
-      if (cell) {
-        clipboardString += cell?.value || '';
-        copiedCells.push({ ...cell });
+      if (cell_and_format) {
+        clipboardString += cell_and_format?.cell?.value || '';
+        copiedCells.push({ ...cell_and_format });
       }
     }
   }

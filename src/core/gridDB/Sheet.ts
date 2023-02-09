@@ -4,8 +4,8 @@ import { intersects } from '../gridGL/helpers/intersects';
 import { GridBorders } from './GridBorders';
 import { GridRenderDependency } from './GridRenderDependency';
 import { GridOffsets } from './GridOffsets';
-import { GridSparse } from './GridSparse';
-import { Cell } from './gridTypes';
+import { CellAndFormat, GridSparse } from './GridSparse';
+import { Cell, CellFormat } from './gridTypes';
 import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../gridGL/types/size';
 
@@ -57,13 +57,35 @@ export class Sheet {
     };
   }
 
+  private copyCell(cell: Cell | undefined): Cell | undefined {
+    if (!cell) return undefined;
+    return {
+      ...cell,
+      evaluation_result: cell.evaluation_result ? { ...cell.evaluation_result } : undefined,
+    };
+  }
+
+  private copyFormat(format: CellFormat | undefined): CellFormat | undefined {
+    if (!format) return undefined;
+    return {
+      ...format,
+      textFormat: format.textFormat ? { ...format.textFormat } : undefined,
+    };
+  }
+
   getCellCopy(x: number, y: number): Cell | undefined {
     // proper deep copy of a cell
     const cell = this.grid.get(x, y);
     if (!cell || !cell.cell) return;
+    return this.copyCell(cell.cell);
+  }
+
+  getCellAndFormatCopy(x: number, y: number): CellAndFormat | undefined {
+    const cell = this.grid.get(x, y);
+    if (!cell) return;
     return {
-      ...cell.cell,
-      evaluation_result: cell.cell.evaluation_result ? { ...cell.cell.evaluation_result } : undefined, // copy eval result
+      cell: this.copyCell(cell.cell),
+      format: this.copyFormat(cell.format),
     };
   }
 
