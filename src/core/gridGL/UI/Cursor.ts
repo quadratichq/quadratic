@@ -35,16 +35,6 @@ export class Cursor extends Graphics {
     const color = colors.cursorCell;
     const editor_selected_cell = editorInteractionState.selectedCell;
 
-    // hide cursor if code editor is open and CodeCursor is in the same cell
-    if (editorInteractionState.showCodeEditor && editor_selected_cell.x === cell.x && editor_selected_cell.y === cell.y)
-      return;
-
-    this.lineStyle({
-      width: CURSOR_THICKNESS,
-      color,
-      alignment: 0,
-    });
-
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
     this.indicator.width = this.indicator.height = indicatorSize;
@@ -55,6 +45,16 @@ export class Cursor extends Graphics {
     if (!multiCursor || (terminalPosition.x === cursorPosition.x && terminalPosition.y === cursorPosition.y)) {
       indicatorOffset = indicatorSize / 2 + indicatorPadding;
     }
+
+    // hide cursor if code editor is open and CodeCursor is in the same cell
+    if (editorInteractionState.showCodeEditor && editor_selected_cell.x === cell.x && editor_selected_cell.y === cell.y)
+      return;
+
+    this.lineStyle({
+      width: CURSOR_THICKNESS,
+      color,
+      alignment: 0,
+    });
 
     // draw cursor
     this.moveTo(x, y);
@@ -95,10 +95,12 @@ export class Cursor extends Graphics {
 
   private drawCursorIndicator(): void {
     const { viewport } = this.app;
-    const { editorInteractionState } = this.app.settings;
-    const editor_selected_cell = editorInteractionState.selectedCell;
-    const cell = this.app.settings.interactionState.cursorPosition;
+
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
+      const { editorInteractionState } = this.app.settings;
+      const editor_selected_cell = editorInteractionState.selectedCell;
+      const cell = this.app.settings.interactionState.cursorPosition;
+
       // draw cursor indicator
       const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
       const x = this.endCell.x + this.endCell.width;
