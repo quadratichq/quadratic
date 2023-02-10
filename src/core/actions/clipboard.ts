@@ -1,9 +1,17 @@
 import { Coordinate } from '../gridGL/types/size';
-import { Cell, CellFormat } from '../gridDB/gridTypes';
+import { Border, Cell, CellFormat } from '../gridDB/gridTypes';
 import { SheetController } from '../transaction/sheetController';
 import { updateCellAndDCells } from './updateCellAndDCells';
 import { DeleteCells } from '../gridDB/Cells/DeleteCells';
 import { CellAndFormat } from '../gridDB/GridSparse';
+import { Rectangle } from 'pixi.js';
+
+const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.0';
+
+interface ClipboardData {
+  cells: CellAndFormat[];
+  borders: Border[];
+}
 
 const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell: Coordinate) => {
   try {
@@ -20,15 +28,20 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
       // parse json from text
       let json = JSON.parse(item_text);
 
-      if (json.type === 'quadratic/clipboard') {
+      if (json.type === CLIPBOARD_FORMAT_VERSION) {
         const x_offset = pasteToCell.x - json.cell0.x;
         const y_offset = pasteToCell.y - json.cell0.y;
 
         let cells_to_update: Cell[] = [];
         let formats_to_update: CellFormat[] = [];
-        json.copiedCells.forEach((cell_and_format: CellAndFormat) => {
-          const cell = cell_and_format.cell;
-          const format = cell_and_format.format;
+        let borders_to_update: Border[] = [];
+
+        // Get Cell and Format data from clipboard
+        json.data.cells.forEach((cellAndFormat: CellAndFormat) => {
+          const cell = cellAndFormat.cell;
+          const format = cellAndFormat.format;
+
+          // transpose cells
           if (cell)
             cells_to_update.push({
               ...cell, // take old cell
@@ -36,6 +49,8 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
               y: cell.y + y_offset,
               last_modified: new Date().toISOString(), // update last_modified
             });
+
+          // transpose format
           if (format && format.x !== undefined && format.y !== undefined)
             formats_to_update.push({
               ...format, // take old format
@@ -44,8 +59,23 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
             });
         });
 
+        // Get Border data from clipboard
+        json.data.borders.forEach((border: Border) => {
+          // transpose borders
+          if (border)
+            borders_to_update.push({
+              ...border, // take old border
+              x: border.x + x_offset, // transpose it to new location
+              y: border.y + y_offset,
+            });
+        });
+
         // Start Transaction
         sheet_controller.start_transaction();
+
+        // TODO: delete cells that will be overwritten
+        // TODO: delete formats that will be overwritten
+        // TODO: delete borders that will be overwritten
 
         // update cells
         await updateCellAndDCells({
@@ -64,6 +94,17 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
                 value: format,
               },
             });
+        });
+
+        // update borders
+        borders_to_update.forEach((border) => {
+          sheet_controller.execute_statement({
+            type: 'SET_BORDER',
+            data: {
+              position: [border.x, border.y],
+              border,
+            },
+          });
         });
 
         sheet_controller.end_transaction();
@@ -158,8 +199,12 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
   const cHeight = Math.abs(cell1.y - cell0.y) + 1;
 
   let clipboardString = '';
-  let copiedCells: CellAndFormat[] = [];
+  let clipboard_data: ClipboardData = {
+    cells: [],
+    borders: [],
+  };
 
+  // Add cells and formats to clipboard_data
   for (let offset_y = 0; offset_y < cHeight; offset_y++) {
     if (offset_y > 0) {
       clipboardString += '\n';
@@ -173,18 +218,37 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
         clipboardString += '\t';
       }
 
-      const cell_and_format = sheet_controller.sheet.getCellAndFormatCopy(cell_x, cell_y);
+      const cellAndFormat = sheet_controller.sheet.getCellAndFormatCopy(cell_x, cell_y);
 
-      if (cell_and_format) {
-        clipboardString += cell_and_format?.cell?.value || '';
-        copiedCells.push({ ...cell_and_format });
+      if (cellAndFormat) {
+        clipboardString += cellAndFormat?.cell?.value || '';
+        clipboard_data.cells.push(cellAndFormat);
       }
     }
   }
 
+  // Add borders to clipboard_data
+  clipboard_data.borders = sheet_controller.sheet.borders.getBorders(new Rectangle(cell0.x, cell0.y, cWidth, cHeight));
+
+  // remove borders that are outside the selection
+  clipboard_data.borders = clipboard_data.borders.map((border) => {
+    let border_copy = { ...border };
+    // filter out horizontal borders that are after the right edge of the selection
+    if (border.horizontal !== undefined && border.x > cell0.x + cWidth - 1) delete border_copy.horizontal;
+
+    // filter out vertical borders that are after the bottom edge of the selection
+    if (border.vertical !== undefined && border.y > cell0.y + cHeight - 1) delete border_copy.vertical;
+
+    return border_copy;
+  });
+  // clear empty border objects
+  clipboard_data.borders = clipboard_data.borders.filter((border) => {
+    return border.horizontal !== undefined || border.vertical !== undefined;
+  });
+
   const quadraticString = JSON.stringify({
-    type: 'quadratic/clipboard',
-    copiedCells,
+    type: CLIPBOARD_FORMAT_VERSION,
+    data: clipboard_data,
     cell0,
     cell1,
   });
