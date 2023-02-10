@@ -24,6 +24,7 @@ macro_rules! array_mapped {
 pub fn function_from_name(
     s: &str,
 ) -> Option<fn(Spanned<Vec<Spanned<Value>>>) -> FormulaResult<Value>> {
+    // When adding new functions, also update the code editor completions list.
     Some(match s.to_ascii_lowercase().as_str() {
         // Comparison operators
         "=" | "==" => array_mapped!(|[a, b]| Ok(Value::Bool(a.to_string() == b.to_string()))),
