@@ -73,7 +73,7 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if (event.shiftKey && event.code === 'Digit1') {
+  if ((event.metaKey || event.ctrlKey) && event.code === 'Digit9') {
     zoomToFit(sheet, viewport);
     return true;
   }

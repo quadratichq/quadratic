@@ -43,7 +43,7 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        <MenuLineItem primary="Zoom to fit" secondary={KeyboardSymbols.Shift + '1'} />
+        <MenuLineItem primary="Zoom to fit" secondary={KeyboardSymbols.Command + '9'} />
       </MenuItem>
       <MenuItem
         onClick={() => {
