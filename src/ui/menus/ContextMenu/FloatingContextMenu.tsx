@@ -371,9 +371,7 @@ function MenuDivider() {
       flexItem
       style={{
         // Style these to stand in contrast against with the vertical column lines
-        margin: '10px 6px',
-        borderStyle: 'dotted',
-        borderWidth: '1px',
+        margin: '6px 6px',
       }}
     />
   );
