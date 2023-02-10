@@ -1,6 +1,4 @@
-import { Box, Typography, Button, Tooltip, AvatarGroup, Avatar, IconButton } from '@mui/material';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-// import { Avatar, AvatarGroup } from '@mui/material';
+import { Box, Typography, AvatarGroup, Avatar, IconButton } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -93,12 +91,12 @@ export const TopBar = (props: IProps) => {
         ) : (
           <>
             <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-              Personal &nbsp;
+              Local &nbsp;
             </Typography>
             <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
               / {localFilename}
             </Typography>
-            <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown>
+            {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
           </>
         )}
       </Box>
@@ -141,7 +139,7 @@ export const TopBar = (props: IProps) => {
                 <Search />
               </IconButton>
             </TooltipHint>
-            <Tooltip title="Coming soon" arrow>
+            {/* <Tooltip title="Coming soon" arrow>
               <Button
                 style={{
                   color: colors.darkGray,
@@ -154,7 +152,7 @@ export const TopBar = (props: IProps) => {
               >
                 Share
               </Button>
-            </Tooltip>
+            </Tooltip> */}
           </>
         )}
         <ZoomDropdown></ZoomDropdown>
