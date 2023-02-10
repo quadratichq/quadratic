@@ -1,4 +1,4 @@
-import { Container, BitmapText, Sprite } from 'pixi.js';
+import { Container, Sprite } from 'pixi.js';
 import { colors } from '../../../../theme/colors';
 
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'ErrorIcon';
@@ -12,17 +12,19 @@ export class CellsMarkers extends Container {
   }
 
   add(x: number, y: number, type: CellsMarkerTypes): void {
-    let child: BitmapText | Sprite;
+    let child: Sprite;
     if (type === 'CodeIcon') {
       if (this.visibleIndex < this.children.length) {
-        child = this.children[this.visibleIndex] as BitmapText;
+        child = this.children[this.visibleIndex] as Sprite;
         this.visibleIndex++;
       } else {
-        child = this.addChild(new BitmapText('</>', { fontName: 'OpenSans', fontSize: 4 }));
+        child = this.addChild(Sprite.from('images/python-icon.png'));
         child.tint = colors.cellColorUserPython;
+        child.height = 4;
+        child.width = 4;
         this.addChild(child);
       }
-      child.position.set(x + 1, y - 0.5);
+      child.position.set(x + 1, y + 0.5);
       child.visible = true;
     } else if (type === 'FormulaIcon') {
       if (this.visibleIndex < this.children.length) {
