@@ -1,4 +1,5 @@
 import { ColorResult } from 'react-color';
+import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../core/formatting/cellTextFormat';
 import { CellFormat } from '../../../../core/gridDB/gridTypes';
 import { localFiles } from '../../../../core/gridDB/localFiles';
 import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
@@ -16,6 +17,13 @@ interface IResults {
   changeItalic: (italic: boolean) => void;
   changeTextColor: (rgb: ColorResult) => void;
   removeTextColor: () => void;
+  textFormatIncreaseDecimalPlaces: () => void;
+  textFormatDecreaseDecimalPlaces: () => void;
+  textFormatClear: () => void;
+  textFormatSetCurrency: () => void;
+  textFormatSetPercentage: () => void;
+  textFormatSetNumber: () => void;
+  textFormatSetExponential: () => void;
 }
 
 type CellFormatNoPosition = Exclude<CellFormat, 'x' | 'y'>;
@@ -23,11 +31,31 @@ type CellFormatNoPosition = Exclude<CellFormat, 'x' | 'y'>;
 export const useFormatCells = (sheet_controller: SheetController, app: PixiApp): IResults => {
   const { start, end } = useGetSelection(sheet_controller.sheet);
 
-  const onFormat = (updatedFormat: CellFormatNoPosition): void => {
+  const onFormat = (updatedFormat: CellFormatNoPosition, deltaNumberOfDecimalPlaces?: number): void => {
     const formats: CellFormat[] = [];
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
-        const format = sheet_controller.sheet.grid.getFormat(x, y) ?? { x, y };
+        let format = sheet_controller.sheet.grid.getFormat(x, y) ?? { x, y };
+
+        // if we are changing the number of decimal places
+        if (deltaNumberOfDecimalPlaces) {
+          if (format.textFormat === undefined) {
+            format.textFormat = {
+              type: 'NUMBER',
+              decimalPlaces: DEFAULT_NUMBER_OF_DECIMAL_PLACES + deltaNumberOfDecimalPlaces,
+            };
+          } else {
+            format.textFormat = {
+              ...format.textFormat,
+              decimalPlaces:
+                (format.textFormat.decimalPlaces ?? DEFAULT_NUMBER_OF_DECIMAL_PLACES) + deltaNumberOfDecimalPlaces,
+            };
+          }
+          if ((format.textFormat.decimalPlaces ?? false) < 0) {
+            format.textFormat.decimalPlaces = 0;
+          }
+        }
+
         formats.push({ ...format, ...updatedFormat });
       }
     }
@@ -105,6 +133,34 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     onFormat({ textColor: undefined });
   };
 
+  const textFormatIncreaseDecimalPlaces = (): void => {
+    onFormat({}, 1);
+  };
+
+  const textFormatDecreaseDecimalPlaces = (): void => {
+    onFormat({}, -1);
+  };
+
+  const textFormatSetCurrency = (): void => {
+    onFormat({ textFormat: { type: 'CURRENCY', display: 'CURRENCY', symbol: 'USD' } });
+  };
+
+  const textFormatSetPercentage = (): void => {
+    onFormat({ textFormat: { type: 'PERCENTAGE' } });
+  };
+
+  const textFormatSetNumber = (): void => {
+    onFormat({ textFormat: { type: 'NUMBER' } });
+  };
+
+  const textFormatSetExponential = (): void => {
+    onFormat({ textFormat: { type: 'EXPONENTIAL' } });
+  };
+
+  const textFormatClear = (): void => {
+    onFormat({ textFormat: undefined });
+  };
+
   return {
     changeFillColor,
     removeFillColor,
@@ -113,5 +169,12 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     changeItalic,
     changeTextColor,
     removeTextColor,
+    textFormatIncreaseDecimalPlaces,
+    textFormatDecreaseDecimalPlaces,
+    textFormatClear,
+    textFormatSetCurrency,
+    textFormatSetPercentage,
+    textFormatSetNumber,
+    textFormatSetExponential,
   };
 };

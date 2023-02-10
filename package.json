@@ -37,6 +37,7 @@
     "localforage": "^1.10.0",
     "lodash.debounce": "^4.0.8",
     "monaco-editor": "^0.31.1",
+    "numerable": "^0.3.15",
     "pixi-viewport": "^4.37.0",
     "pixi.js": "^6.5.1",
     "quadratic-core": "file:quadratic-core/pkg",

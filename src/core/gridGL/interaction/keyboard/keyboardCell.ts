@@ -143,7 +143,7 @@ export function keyboardCell(options: {
   }
 
   // if key is a letter number or space start taking input
-  if (isAlphaNumeric(event.key) || event.key === ' ') {
+  if (isAlphaNumeric(event.key) || event.key === ' ' || event.key === '.') {
     setInteractionState({
       ...interactionState,
       ...{

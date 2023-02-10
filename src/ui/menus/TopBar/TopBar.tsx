@@ -38,7 +38,7 @@ export const TopBar = (props: IProps) => {
       }}
       style={{
         backgroundColor: 'rgba(255, 255, 255)',
-        color: '#212121',
+        color: colors.darkGray,
         //@ts-expect-error
         WebkitAppRegion: 'drag', // this allows the window to be dragged in Electron
         paddingLeft: isElectron() ? '4.5rem' : '2rem',
@@ -69,7 +69,7 @@ export const TopBar = (props: IProps) => {
           <>
             <DataMenu></DataMenu>
             <FormatMenu app={props.app} sheet_controller={props.sheetController} />
-            <NumberFormatMenu></NumberFormatMenu>
+            <NumberFormatMenu app={props.app} sheet_controller={props.sheetController}></NumberFormatMenu>
           </>
         )}
       </Box>
