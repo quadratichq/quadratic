@@ -129,12 +129,12 @@ export const BottomBar = (props: Props) => {
         <span
           style={{
             color: '#ffffff',
-            backgroundColor: colors.quadraticThird,
+            backgroundColor: colors.quadraticSecondary,
             padding: '2px 5px 2px 5px',
             borderRadius: '2px',
           }}
         >
-          ALPHA
+          BETA
         </span>
       </Box>
     </div>
