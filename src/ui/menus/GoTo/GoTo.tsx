@@ -9,7 +9,7 @@ import { SheetController } from '../../../core/transaction/sheetController';
 import { East } from '@mui/icons-material';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 import { Coordinate } from '../../../core/gridGL/types/size';
-import { moveViewport } from '../../../core/gridGL/interaction/viewportHelper';
+import { isVisible, moveViewport } from '../../../core/gridGL/interaction/viewportHelper';
 import '../../styles/floating-dialog.css';
 
 interface Props {
@@ -68,10 +68,23 @@ export const GoTo = (props: Props) => {
     }
 
     setInteractionState(newInteractionState);
-    moveViewport({
-      app: props.app,
-      topLeft: newInteractionState.cursorPosition,
-    });
+    if (coor1.x === 0 && coor1.y === 0 && !coor2)
+      moveViewport({
+        app: props.app,
+        topLeft: newInteractionState.cursorPosition,
+      });
+    else if (
+      !isVisible({
+        app: props.app,
+        interactionState: newInteractionState,
+        sheet: props.sheetController.sheet,
+      })
+    )
+      moveViewport({
+        app: props.app,
+        center: newInteractionState.cursorPosition,
+      });
+
     closeMenu();
     focusGrid();
   };

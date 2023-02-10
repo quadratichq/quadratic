@@ -12,7 +12,7 @@ export const defaultGridSettings: GridSettings = {
   showGridAxes: true,
   showHeadings: true,
   showGridLines: true,
-  showCellTypeOutlines: true,
+  showCellTypeOutlines: false,
 };
 
 interface GridSettingsReturn {
@@ -27,7 +27,7 @@ interface GridSettingsReturn {
 }
 
 export const useGridSettings = (): GridSettingsReturn => {
-  const [settings, setSettings] = useLocalStorage('gridSettings', defaultGridSettings);
+  const [settings, setSettings] = useLocalStorage('viewSettings', defaultGridSettings);
 
   useEffect(() => {
     if (settings) {

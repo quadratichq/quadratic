@@ -10,13 +10,14 @@ interface ArgsType {
   app?: PixiApp;
   pyodide?: any;
   delete_starting_cells?: boolean;
+  create_transaction?: boolean;
 }
 
 export const updateCellAndDCells = async (args: ArgsType) => {
-  const { starting_cells, sheetController, app, pyodide, delete_starting_cells } = args;
+  const { starting_cells, sheetController, app, pyodide, delete_starting_cells, create_transaction } = args;
 
   // start transaction
-  sheetController.start_transaction();
+  if (create_transaction ?? true) sheetController.start_transaction();
 
   // keep track of cells that have been updated so we can update the quadrant cache
   const updatedCells: Coordinate[] = [];
@@ -228,7 +229,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   }
 
   // Officially end the transaction
-  sheetController.end_transaction();
+  if (create_transaction ?? true) sheetController.end_transaction();
 
   // Pass updatedCells to the app so it can update the Grid Quadrants which changed.
   // TODO: move this to sheetController so it happens automatically with every transaction?

@@ -4,10 +4,9 @@ import { Sheet } from '../../gridDB/Sheet';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 
-// Ensures the cursor is always visible
-export function ensureVisible(options: { app?: PixiApp; interactionState: GridInteractionState; sheet: Sheet }): void {
+export function isVisible(options: { app: PixiApp; interactionState: GridInteractionState; sheet: Sheet }) {
+  // returns true if the cursor is visible in the viewport
   const { interactionState, app, sheet } = options;
-  if (!app) return;
   const { viewport, headings } = app;
   const { gridOffsets } = sheet;
   const headingSize = headings.headingSize;
@@ -15,25 +14,32 @@ export function ensureVisible(options: { app?: PixiApp; interactionState: GridIn
   const column = interactionState.keyboardMovePosition.x;
   const row = interactionState.keyboardMovePosition.y;
   const cell = gridOffsets.getCell(column, row);
-  let dirty = false;
+  let is_off_screen = false;
 
   if (cell.x + headingSize.width < viewport.left) {
     viewport.left = cell.x - headingSize.width / viewport.scale.x;
-    dirty = true;
+    is_off_screen = true;
   } else if (cell.x + cell.width > viewport.right) {
     viewport.right = cell.x + cell.width;
-    dirty = true;
+    is_off_screen = true;
   }
 
   if (cell.y < viewport.top + headingSize.height / viewport.scale.y) {
     viewport.top = cell.y - headingSize.height / viewport.scale.y;
-    dirty = true;
+    is_off_screen = true;
   } else if (cell.y + cell.height > viewport.bottom) {
     viewport.bottom = cell.y + cell.height;
-    dirty = true;
+    is_off_screen = true;
   }
 
-  if (dirty) {
+  return !is_off_screen;
+}
+
+// Ensures the cursor is always visible
+export function ensureVisible(options: { app: PixiApp; interactionState: GridInteractionState; sheet: Sheet }): void {
+  const { interactionState, app, sheet } = options;
+
+  if (!isVisible({ app, interactionState, sheet })) {
     app.viewportChanged();
   }
 }
@@ -45,9 +51,9 @@ export function ensureVisible(options: { app?: PixiApp; interactionState: GridIn
  * @param [options.center] cell coordinate to center viewport
  * @param [options.topLeft] cell coordinate to place at topLeft of viewport (adjusting for ruler if needed)
  */
-export function moveViewport(options: { app?: PixiApp; center?: Coordinate; topLeft?: Coordinate }): void {
+export function moveViewport(options: { app: PixiApp; center?: Coordinate; topLeft?: Coordinate }): void {
   const { app, center, topLeft } = options;
-  if (!app || (!center && !topLeft)) return;
+  if (!center && !topLeft) return;
 
   if (center) {
     const cell = app.sheet.gridOffsets.getCell(center.x, center.y);

@@ -1,11 +1,11 @@
 import { Rectangle } from 'pixi.js';
-import { GridFileSchema, GRID_FILE_VERSION } from '../actions/gridFile/GridFileSchema';
+import { GridFileSchemaV1 } from '../actions/gridFile/GridFileSchema';
 import { intersects } from '../gridGL/helpers/intersects';
 import { GridBorders } from './GridBorders';
 import { GridRenderDependency } from './GridRenderDependency';
 import { GridOffsets } from './GridOffsets';
-import { GridSparse } from './GridSparse';
-import { Cell } from './gridTypes';
+import { CellAndFormat, GridSparse } from './GridSparse';
+import { Cell, CellFormat } from './gridTypes';
 import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../gridGL/types/size';
 
@@ -34,7 +34,7 @@ export class Sheet {
     this.onRebuild?.();
   }
 
-  load_file(sheet: GridFileSchema): void {
+  load_file(sheet: GridFileSchemaV1): void {
     this.gridOffsets.populate(sheet.columns, sheet.rows);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
@@ -43,7 +43,7 @@ export class Sheet {
     this.onRebuild?.();
   }
 
-  export_file(): GridFileSchema {
+  export_file(): GridFileSchemaV1 {
     const { cells, formats } = this.grid.getArrays();
     return {
       columns: this.gridOffsets.getColumnsArray(),
@@ -53,7 +53,22 @@ export class Sheet {
       borders: this.borders.getArray(),
       render_dependency: this.render_dependency.save(),
       cell_dependency: this.cell_dependency.exportToString(),
-      version: GRID_FILE_VERSION,
+    };
+  }
+
+  private copyCell(cell: Cell | undefined): Cell | undefined {
+    if (!cell) return undefined;
+    return {
+      ...cell,
+      evaluation_result: cell.evaluation_result ? { ...cell.evaluation_result } : undefined,
+    };
+  }
+
+  private copyFormat(format: CellFormat | undefined): CellFormat | undefined {
+    if (!format) return undefined;
+    return {
+      ...format,
+      textFormat: format.textFormat ? { ...format.textFormat } : undefined,
     };
   }
 
@@ -61,9 +76,15 @@ export class Sheet {
     // proper deep copy of a cell
     const cell = this.grid.get(x, y);
     if (!cell || !cell.cell) return;
+    return this.copyCell(cell.cell);
+  }
+
+  getCellAndFormatCopy(x: number, y: number): CellAndFormat | undefined {
+    const cell = this.grid.get(x, y);
+    if (!cell) return;
     return {
-      ...cell.cell,
-      evaluation_result: cell.cell.evaluation_result ? { ...cell.cell.evaluation_result } : undefined, // copy eval result
+      cell: this.copyCell(cell.cell),
+      format: this.copyFormat(cell.format),
     };
   }
 

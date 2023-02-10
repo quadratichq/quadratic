@@ -101,8 +101,8 @@ const ListItems = [
         action={() => {
           zoomToFit(props.sheetController.sheet, props.app.viewport);
         }}
-        shortcut="1"
-        shortcutModifiers={[KeyboardSymbols.Shift]}
+        shortcut="9"
+        shortcutModifiers={[KeyboardSymbols.Command]}
       />
     ),
   },
