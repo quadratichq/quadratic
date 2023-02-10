@@ -12,7 +12,7 @@ export const FORMAT_SELECTION_EVENT = 'formatSelectionEvent';
 interface IResults {
   changeFillColor: (rgb: ColorResult) => void;
   removeFillColor: () => void;
-  clearFormatting: () => void;
+  clearFormatting: (args?: { create_transaction?: boolean }) => void;
   changeBold: (bold: boolean) => void;
   changeItalic: (italic: boolean) => void;
   changeTextColor: (rgb: ColorResult) => void;
@@ -91,7 +91,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     onFormat({ fillColor: undefined });
   };
 
-  const clearFormatting = (): void => {
+  const clearFormatting = (args?: { create_transaction?: boolean }): void => {
     const formats: CellFormat[] = [];
     for (let y = start.y; y <= end.y; y++) {
       for (let x = start.x; x <= end.x; x++) {
@@ -100,7 +100,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
       }
     }
     // transaction to clear cell formats
-    sheet_controller.start_transaction();
+    args?.create_transaction ?? sheet_controller.start_transaction();
     formats.forEach((format) => {
       if (format.x !== undefined && format.y !== undefined)
         sheet_controller.execute_statement({
@@ -111,7 +111,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
           },
         });
     });
-    sheet_controller.end_transaction();
+    args?.create_transaction ?? sheet_controller.end_transaction();
 
     app?.quadrants.quadrantChanged({ range: { start, end } });
     localFiles.saveLastLocal(sheet_controller.sheet.export_file());
