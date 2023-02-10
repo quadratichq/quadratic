@@ -24,7 +24,7 @@ export class PixiAppSettings {
   }
 
   private getSettings = (): void => {
-    const settings = localStorage.getItem('gridSettings');
+    const settings = localStorage.getItem('viewSettings');
     if (settings) {
       this.settings = JSON.parse(settings) as GridSettings;
     } else {
