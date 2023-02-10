@@ -192,7 +192,7 @@ export const FloatingContextMenu = (props: Props) => {
     >
       <Toolbar
         style={{
-          padding: '0 6px',
+          padding: '2px 4px',
           minHeight: '0px',
         }}
       >
@@ -252,6 +252,7 @@ export const FloatingContextMenu = (props: Props) => {
           </IconButton>
         </TooltipHint>
         <Menu
+          className="color-picker-submenu"
           menuButton={
             <div>
               <TooltipHint title="Text color">
@@ -369,9 +370,7 @@ function MenuDivider() {
       orientation="vertical"
       flexItem
       style={{
-        // add padding left and right
-        paddingLeft: '4px',
-        marginRight: '4px',
+        margin: '6px',
       }}
     />
   );
