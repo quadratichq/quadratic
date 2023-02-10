@@ -370,8 +370,7 @@ function MenuDivider() {
       orientation="vertical"
       flexItem
       style={{
-        // Style these to stand in contrast against with the vertical column lines
-        margin: '6px 6px',
+        margin: '6px',
       }}
     />
   );
