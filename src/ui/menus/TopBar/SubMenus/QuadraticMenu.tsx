@@ -97,7 +97,12 @@ export const QuadraticMenu = (props: Props) => {
               </MenuItem>
             ))}
           </SubMenu>
-          {fileList.length ? <MenuDivider /> : null}
+          {fileList.length ? (
+            <>
+              <MenuDivider />
+              <MenuHeader>Recent Files</MenuHeader>
+            </>
+          ) : null}
           {fileList.length
             ? fileList.map((entry) => (
                 <MenuItem key={entry} onClick={() => openLocalGridFile(entry, sheetController)}>
