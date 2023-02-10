@@ -9,7 +9,7 @@ import { SheetController } from '../../../core/transaction/sheetController';
 import { East } from '@mui/icons-material';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 import { Coordinate } from '../../../core/gridGL/types/size';
-import { ensureVisible, isVisible, moveViewport } from '../../../core/gridGL/interaction/viewportHelper';
+import { isVisible, moveViewport } from '../../../core/gridGL/interaction/viewportHelper';
 import '../../styles/floating-dialog.css';
 
 interface Props {
