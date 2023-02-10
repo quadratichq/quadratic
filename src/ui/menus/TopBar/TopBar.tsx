@@ -17,6 +17,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Search } from '@mui/icons-material';
+import { focusGrid } from '../../../helpers/focusGrid';
 
 interface IProps {
   app: PixiApp;
@@ -134,6 +135,7 @@ export const TopBar = (props: IProps) => {
                     ...editorInteractionState,
                     showCommandPalette: true,
                   });
+                  focusGrid();
                 }}
               >
                 <Search />

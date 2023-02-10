@@ -291,4 +291,7 @@ export const cutToClipboard = async (sheet_controller: SheetController, cell0: C
     sheetController: sheet_controller,
     app: sheet_controller.app,
   });
+
+  // TODO: also delete cell formats
+  // TODO: also delete borders
 };
