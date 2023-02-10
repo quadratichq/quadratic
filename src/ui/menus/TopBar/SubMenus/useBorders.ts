@@ -19,7 +19,7 @@ export interface ChangeBorder {
 
 interface IResults {
   changeBorders: (options: ChangeBorder) => void;
-  clearBorders: () => void;
+  clearBorders: (args?: { create_transaction?: boolean }) => void;
 }
 
 export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
@@ -130,7 +130,7 @@ export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
     }
   };
 
-  const clearBorders = (): void => {
+  const clearBorders = (args?: { create_transaction?: boolean }): void => {
     const borderUpdate: Border[] = [];
     const borderDelete: Coordinate[] = [];
     for (let y = start.y; y <= end.y; y++) {
@@ -163,7 +163,7 @@ export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
     }
 
     // create transaction to update borders
-    sheet_controller.start_transaction();
+    args?.create_transaction ?? sheet_controller.start_transaction();
     if (borderDelete.length) {
       borderDelete.forEach((border_coord) => {
         sheet_controller.execute_statement({
@@ -186,7 +186,7 @@ export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
         });
       });
     }
-    sheet_controller.end_transaction();
+    args?.create_transaction ?? sheet_controller.end_transaction();
 
     app.cells.dirty = true;
     app.quadrants.quadrantChanged({ range: { start, end } });

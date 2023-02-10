@@ -21,7 +21,6 @@ import { Tooltip } from '@mui/material';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { useFormatCells } from '../useFormatCells';
 import { useGetBorderMenu } from './useGetBorderMenu';
-import { useBorders } from '../useBorders';
 import './formatMenuStyles.scss';
 
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
@@ -29,6 +28,7 @@ import { SheetController } from '../../../../../core/transaction/sheetController
 import { useGetSelection } from '../useGetSelection';
 import { MenuLineItem } from '../../MenuLineItem';
 import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';
+import { useClearAllFormatting } from '../useClearAllFormatting';
 
 interface IProps {
   app: PixiApp;
@@ -37,16 +37,8 @@ interface IProps {
 
 export const FormatMenu = (props: IProps) => {
   const { format } = useGetSelection(props.sheet_controller.sheet);
-  const {
-    changeFillColor,
-    removeFillColor,
-    clearFormatting,
-    changeBold,
-    changeItalic,
-    changeTextColor,
-    removeTextColor,
-  } = useFormatCells(props.sheet_controller, props.app);
-  const { clearBorders } = useBorders(props.sheet_controller.sheet, props.app);
+  const { changeFillColor, removeFillColor, changeBold, changeItalic, changeTextColor, removeTextColor } =
+    useFormatCells(props.sheet_controller, props.app);
 
   // focus canvas after the format menu closes
   const onMenuChange = useCallback(
@@ -58,10 +50,7 @@ export const FormatMenu = (props: IProps) => {
 
   const borders = useGetBorderMenu({ sheet: props.sheet_controller.sheet, app: props.app });
 
-  const handleClearFormatting = useCallback(() => {
-    clearFormatting();
-    clearBorders();
-  }, [clearFormatting, clearBorders]);
+  const { clearAllFormatting } = useClearAllFormatting(props.sheet_controller, props.app);
 
   return (
     <Menu
@@ -133,7 +122,11 @@ export const FormatMenu = (props: IProps) => {
       <SubMenu label={<MenuLineItem primary="Border" Icon={BorderAll} />}>{borders}</SubMenu>
 
       <MenuDivider />
-      <MenuItem onClick={handleClearFormatting}>
+      <MenuItem
+        onClick={() => {
+          clearAllFormatting();
+        }}
+      >
         <MenuLineItem primary="Clear formatting" secondary={KeyboardSymbols.Command + '\\'} Icon={FormatClear} />
       </MenuItem>
     </Menu>
