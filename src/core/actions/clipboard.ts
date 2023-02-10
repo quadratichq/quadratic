@@ -59,15 +59,17 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
             });
         });
 
-        // Get Border data from clipboard
+        // border data
         json.data.borders.forEach((border: Border) => {
           // transpose borders
-          if (border)
-            borders_to_update.push({
-              ...border, // take old border
-              x: border.x + x_offset, // transpose it to new location
-              y: border.y + y_offset,
-            });
+          // combine with existing borders
+          const existingBorder = sheet_controller.sheet.borders.get(border.x + x_offset, border.y + y_offset);
+          borders_to_update.push({
+            ...existingBorder,
+            ...border, // take old border
+            x: border.x + x_offset, // transpose it to new location
+            y: border.y + y_offset,
+          });
         });
 
         // Start Transaction
