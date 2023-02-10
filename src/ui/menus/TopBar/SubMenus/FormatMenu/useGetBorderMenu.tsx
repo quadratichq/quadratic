@@ -1,5 +1,4 @@
 import { ClickEvent, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
-import { menuItemIconStyles } from '../menuStyles';
 import { BorderType } from '../../../../../core/gridDB/gridTypes';
 import {
   BorderColor,
@@ -196,14 +195,14 @@ export function useGetBorderMenu(props: Props): JSX.Element {
           menuStyles={{
             padding: '0px',
           }}
-          label={<BorderColor style={{ ...menuItemIconStyles, color }}></BorderColor>}
+          label={<BorderColor style={{ marginRight: '0.25rem' }}></BorderColor>}
         >
           <QColorPicker onChangeComplete={handleChangeBorderColor} />
         </SubMenu>
         <SubMenu
           id="BorderLineStyleMenuID"
           className="borderSubmenu"
-          label={<LineStyle style={menuItemIconStyles}></LineStyle>}
+          label={<LineStyle style={{ marginRight: '0.25rem' }}></LineStyle>}
         >
           <MenuItem onClick={(e) => handleChangeBorderType(e)}>
             <div className="lineStyleBorder normalBorder"></div>

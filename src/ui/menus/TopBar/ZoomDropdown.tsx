@@ -5,7 +5,7 @@ import { zoomStateAtom } from '../../../atoms/zoomStateAtom';
 import { colors } from '../../../theme/colors';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-import { KeyboardShortcut } from '../KeyboardShortcut';
+import { MenuLineItem } from './MenuLineItem';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 
 export const ZoomDropdown = () => {
@@ -26,7 +26,7 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        <KeyboardShortcut text="Zoom in" shortcut="+" modifier={KeyboardSymbols.Command} />
+        <MenuLineItem primary="Zoom in" secondary={KeyboardSymbols.Command + '+'} />
       </MenuItem>
       <MenuItem
         onClick={() => {
@@ -34,7 +34,7 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        <KeyboardShortcut text="Zoom out" shortcut="−" modifier={KeyboardSymbols.Command} />
+        <MenuLineItem primary="Zoom out" secondary={KeyboardSymbols.Command + '−'} />
       </MenuItem>
       <MenuDivider></MenuDivider>
       <MenuItem
@@ -43,7 +43,7 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        <KeyboardShortcut text="Zoom to fit" shortcut="1" modifier={KeyboardSymbols.Shift} />
+        <MenuLineItem primary="Zoom to fit" secondary={KeyboardSymbols.Shift + '1'} />
       </MenuItem>
       <MenuItem
         onClick={() => {
@@ -59,7 +59,7 @@ export const ZoomDropdown = () => {
           focusGrid();
         }}
       >
-        <KeyboardShortcut text="Zoom to 100%" shortcut="0" modifier={KeyboardSymbols.Command} />
+        <MenuLineItem primary="Zoom to 100%" secondary={KeyboardSymbols.Command + '0'} />
       </MenuItem>
       <MenuItem
         onClick={() => {

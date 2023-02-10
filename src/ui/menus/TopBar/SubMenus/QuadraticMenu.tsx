@@ -4,13 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
-import {
-  MenuBookOutlined,
-  FileOpenOutlined,
-  SaveOutlined,
-  BugReportOutlined,
-  CreateOutlined,
-} from '@mui/icons-material';
 import { isMobileOnly } from 'react-device-detect';
 import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
@@ -25,9 +18,7 @@ import {
   openGridFile,
   openLocalGridFile,
 } from '../../../../core/actions/gridFile/OpenGridFile';
-import { menuItemIconStyles } from './menuStyles';
 
-import { colors } from '../../../../theme/colors';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { useLocalFiles } from '../../../../hooks/useLocalFiles';
 import { SheetController } from '../../../../core/transaction/sheetController';
@@ -86,7 +77,7 @@ export const QuadraticMenu = (props: Props) => {
       <Menu
         menuButton={
           <Tooltip title="Main menu" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
-            <Button style={{ color: colors.darkGray }}>
+            <Button style={{ color: 'inherit' }}>
               <img src="favicon.ico" height="22px" alt="Quadratic Icon" />
               <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
             </Button>
@@ -95,17 +86,11 @@ export const QuadraticMenu = (props: Props) => {
       >
         <MenuHeader>Quadratic</MenuHeader>
         <SubMenu label="File">
-          <MenuItem onClick={() => setNewFileOpen(true)}>
-            <CreateOutlined style={menuItemIconStyles} /> New Grid
-          </MenuItem>
-          <MenuItem onClick={() => SaveGridFile(sheet, true)}>
-            <SaveOutlined style={menuItemIconStyles}></SaveOutlined> Save Grid
-          </MenuItem>
-          <MenuItem onClick={() => openGridFile(sheetController)}>
-            <FileOpenOutlined style={menuItemIconStyles} /> Open Grid
-          </MenuItem>
+          <MenuItem onClick={() => setNewFileOpen(true)}>New grid</MenuItem>
+          <MenuItem onClick={() => SaveGridFile(sheet, true)}>Save grid</MenuItem>
+          <MenuItem onClick={() => openGridFile(sheetController)}>Open grid</MenuItem>
           <MenuDivider />
-          <SubMenu label="Sample Files">
+          <SubMenu label="Sample files">
             {examples.map((filename) => (
               <MenuItem key={`sample-${filename}`} onClick={() => openExampleGridFile(filename, sheetController)}>
                 {filename}
@@ -122,43 +107,39 @@ export const QuadraticMenu = (props: Props) => {
             : null}
         </SubMenu>
         <SubMenu label="Import">
-          <MenuHeader>Import</MenuHeader>
           <MenuItem disabled>CSV (coming soon)</MenuItem>
           <MenuItem disabled>Excel (coming soon)</MenuItem>
         </SubMenu>
         <SubMenu label="View">
-          <MenuHeader>UI</MenuHeader>
           <MenuItem
             type="checkbox"
             checked={settings.showHeadings}
             onClick={() => settings.setShowHeadings(!settings.showHeadings)}
           >
-            Show Headings
+            Show row and column headings
           </MenuItem>
-          <MenuHeader>Grid</MenuHeader>
           <MenuItem
             type="checkbox"
             checked={settings.showGridAxes}
             onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}
           >
-            Show Axis
+            Show axis
           </MenuItem>
           <MenuItem
             type="checkbox"
             checked={settings.showGridLines}
             onClick={() => settings.setShowGridLines(!settings.showGridLines)}
           >
-            Show Grid Lines
+            Show grid lines
           </MenuItem>
           <MenuItem
             type="checkbox"
             checked={settings.showCellTypeOutlines}
             onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}
           >
-            Show Cell Type Outlines
+            Show cell type outlines
           </MenuItem>
           <MenuDivider />
-          <MenuHeader>Debug</MenuHeader>
           <MenuItem
             type="checkbox"
             checked={showDebugMenu}
@@ -166,7 +147,7 @@ export const QuadraticMenu = (props: Props) => {
               setShowDebugMenu(!showDebugMenu);
             }}
           >
-            Show DebugMenu
+            Show debug menu
           </MenuItem>
         </SubMenu>
 
@@ -178,12 +159,8 @@ export const QuadraticMenu = (props: Props) => {
         )}
 
         <SubMenu label="Help">
-          <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>
-            <MenuBookOutlined style={menuItemIconStyles}></MenuBookOutlined> Read the docs
-          </MenuItem>
-          <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>
-            <BugReportOutlined style={menuItemIconStyles}></BugReportOutlined> Report a problem
-          </MenuItem>
+          <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>Read the docs</MenuItem>
+          <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>Report a problem</MenuItem>
         </SubMenu>
       </Menu>
       <NewFile open={newFileOpen} handleClose={createNewFile} />

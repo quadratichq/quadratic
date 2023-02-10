@@ -19,6 +19,7 @@ interface IResults {
   removeTextColor: () => void;
   textFormatIncreaseDecimalPlaces: () => void;
   textFormatDecreaseDecimalPlaces: () => void;
+  textFormatClear: () => void;
   textFormatSetCurrency: () => void;
   textFormatSetPercentage: () => void;
   textFormatSetNumber: () => void;
@@ -156,6 +157,10 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     onFormat({ textFormat: { type: 'EXPONENTIAL' } });
   };
 
+  const textFormatClear = (): void => {
+    onFormat({ textFormat: undefined });
+  };
+
   return {
     changeFillColor,
     removeFillColor,
@@ -166,6 +171,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     removeTextColor,
     textFormatIncreaseDecimalPlaces,
     textFormatDecreaseDecimalPlaces,
+    textFormatClear,
     textFormatSetCurrency,
     textFormatSetPercentage,
     textFormatSetNumber,
