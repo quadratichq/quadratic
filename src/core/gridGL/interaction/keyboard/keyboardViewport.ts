@@ -2,13 +2,14 @@ import { Viewport } from 'pixi-viewport';
 import { MultipleFormat } from '../../../../ui/menus/TopBar/SubMenus/useGetSelection';
 import { Sheet } from '../../../gridDB/Sheet';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit } from '../../helpers/zoom';
+import { EditorInteractionState } from '../../../../atoms/editorInteractionStateAtom';
 
 export function keyboardViewport(options: {
   event: KeyboardEvent;
   sheet: Sheet;
   viewport?: Viewport;
-  editorInteractionState: any;
-  setEditorInteractionState: Function;
+  editorInteractionState: EditorInteractionState;
+  setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   clearAllFormatting: Function;
   changeBold: Function;
   changeItalic: Function;
@@ -31,6 +32,7 @@ export function keyboardViewport(options: {
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyP') {
     setEditorInteractionState({
       ...editorInteractionState,
+      showCellTypeMenu: false,
       showGoToMenu: false,
       showCommandPalette: !editorInteractionState.showCommandPalette,
     });
@@ -54,6 +56,7 @@ export function keyboardViewport(options: {
   if ((event.metaKey || event.ctrlKey) && (event.code === 'KeyG' || event.code === 'KeyJ')) {
     setEditorInteractionState({
       ...editorInteractionState,
+      showCellTypeMenu: false,
       showCommandPalette: false,
       showGoToMenu: !editorInteractionState.showGoToMenu,
     });

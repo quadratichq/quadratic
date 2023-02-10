@@ -1,4 +1,4 @@
-import { Box, Typography, Button, Tooltip, AvatarGroup, Avatar } from '@mui/material';
+import { Box, Typography, Button, Tooltip, AvatarGroup, Avatar, IconButton } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 // import { Avatar, AvatarGroup } from '@mui/material';
 import { useRecoilState } from 'recoil';
@@ -17,6 +17,8 @@ import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../core/transaction/sheetController';
 import { useAuth0 } from '@auth0/auth0-react';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import { TooltipHint } from '../../components/TooltipHint';
+import { Search } from '@mui/icons-material';
 
 interface IProps {
   app: PixiApp;
@@ -36,7 +38,7 @@ export const TopBar = (props: IProps) => {
       }}
       style={{
         backgroundColor: 'rgba(255, 255, 255)',
-        color: '#212121',
+        color: colors.darkGray,
         //@ts-expect-error
         WebkitAppRegion: 'drag', // this allows the window to be dragged in Electron
         paddingLeft: isElectron() ? '4.5rem' : '2rem',
@@ -67,7 +69,7 @@ export const TopBar = (props: IProps) => {
           <>
             <DataMenu></DataMenu>
             <FormatMenu app={props.app} sheet_controller={props.sheetController} />
-            <NumberFormatMenu></NumberFormatMenu>
+            <NumberFormatMenu app={props.app} sheet_controller={props.sheetController}></NumberFormatMenu>
           </>
         )}
       </Box>
@@ -127,24 +129,18 @@ export const TopBar = (props: IProps) => {
                 </Avatar>
               </AvatarGroup>
             )}
-            <Button
-              style={{
-                color: colors.darkGray,
-                borderColor: colors.darkGray,
-                paddingTop: '1px',
-                paddingBottom: '1px',
-              }}
-              variant="outlined"
-              size="small"
-              onClick={() => {
-                setEditorInteractionState({
-                  ...editorInteractionState,
-                  showCommandPalette: true,
-                });
-              }}
-            >
-              Actions <span style={{ marginLeft: '8px', opacity: '.5' }}>{KeyboardSymbols.Command}P</span>
-            </Button>
+            <TooltipHint title="Search" shortcut={KeyboardSymbols.Command + 'P'}>
+              <IconButton
+                onClick={() => {
+                  setEditorInteractionState({
+                    ...editorInteractionState,
+                    showCommandPalette: true,
+                  });
+                }}
+              >
+                <Search />
+              </IconButton>
+            </TooltipHint>
             <Tooltip title="Coming soon" arrow>
               <Button
                 style={{

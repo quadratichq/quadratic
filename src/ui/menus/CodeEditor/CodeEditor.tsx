@@ -6,7 +6,7 @@ import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import TextField from '@mui/material/TextField';
 import { Cell } from '../../../core/gridDB/gridTypes';
 import './CodeEditor.css';
-import { Button } from '@mui/material';
+import { IconButton } from '@mui/material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -14,6 +14,10 @@ import { SheetController } from '../../../core/transaction/sheetController';
 import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
 import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
 import { cellEvaluationReturnType } from '../../../core/computations/types';
+import { Close, PlayArrow, Subject } from '@mui/icons-material';
+import { Formula, Python } from '../../icons';
+import { TooltipHint } from '../../components/TooltipHint';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -243,60 +247,50 @@ export const CodeEditor = (props: CodeEditorProps) => {
         <div
           style={{
             color: colors.darkGray,
-            fontSize: '0.8em',
+            fontSize: '0.875rem',
             display: 'flex',
-            flexDirection: 'row',
             justifyContent: 'space-between',
             marginBottom: '2px',
-            userSelect: 'none',
+            padding: '.25rem .5rem',
+            borderBottom: `1px solid ${colors.mediumGray}`,
           }}
         >
-          <Button
-            id="QuadraticCodeEditorCloseButtonID"
-            style={{
-              color: colors.darkGray,
-              borderColor: colors.darkGray,
-              padding: '1px 4px',
-            }}
-            variant="text"
-            size="small"
-            onClick={closeEditor}
-          >
-            Close
-          </Button>
           <div
             style={{
               display: 'flex',
               justifyContent: 'center',
-              flexDirection: 'column',
-              paddingLeft: '3px',
-              paddingRight: '3px',
+              alignItems: 'center',
+              gap: '.5rem',
+              padding: '0 .5rem',
             }}
           >
+            {editor_mode === 'PYTHON' ? (
+              <Python sx={{ color: colors.languagePython }} fontSize="small" />
+            ) : editor_mode === 'FORMULA' ? (
+              <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
+            ) : (
+              <Subject />
+            )}
             <span
               style={{
                 color: 'black',
               }}
             >
-              CELL ({selectedCell.x}, {selectedCell.y}) {selectedCell.type}
+              Cell ({selectedCell.x}, {selectedCell.y}) - {capitalize(selectedCell.type)}
             </span>
           </div>
-          <Button
-            id="QuadraticCodeEditorRunButtonID"
-            style={{
-              color: colors.darkGray,
-              borderColor: colors.darkGray,
-              padding: '1px 4px',
-              // lineHeight: '1',
-            }}
-            variant="text"
-            size="small"
-            onClick={() => {
-              saveAndRunCell();
-            }}
-          >
-            Run
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+            <TooltipHint title="Run" shortcut={`${KeyboardSymbols.Command}↵`}>
+              <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
+                <PlayArrow />
+              </IconButton>
+            </TooltipHint>
+            <TooltipHint title="Close" shortcut="ESC">
+              <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
+                <Close />
+              </IconButton>
+            </TooltipHint>
+          </div>
         </div>
         <div
           style={{
@@ -353,3 +347,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
     );
   return <></>;
 };
+
+function capitalize(str: string) {
+  const normalized = str.toLowerCase();
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}

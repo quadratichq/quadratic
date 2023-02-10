@@ -30,7 +30,7 @@ export class CellsMarkers extends Container {
         this.visibleIndex++;
       } else {
         child = this.addChild(Sprite.from('images/formula-fx-icon.png'));
-        child.tint = colors.highlightYellow;
+        child.tint = colors.cellColorUserFormula;
         child.height = 4;
         child.width = 4;
         this.addChild(child);

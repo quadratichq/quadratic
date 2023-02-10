@@ -1,4 +1,5 @@
 import { cellEvaluationReturnType } from '../computations/types';
+import { CellTextFormat } from '../formatting/cellTextFormat';
 
 export type CellTypes = 'TEXT' | 'FORMULA' | 'JAVASCRIPT' | 'PYTHON' | 'SQL' | 'COMPUTED';
 
@@ -37,6 +38,7 @@ export interface CellFormat {
   textColor?: string;
   wrapping?: CellWrapping; // default is overflow
   alignment?: CellAlignment; // default is left
+  textFormat?: CellTextFormat;
 }
 
 export enum BorderType {

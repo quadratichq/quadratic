@@ -9,3 +9,8 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
+
+/* Override third-party default to inherit from document defaults */
+.szh-menu {
+  color: inherit !important;
+}

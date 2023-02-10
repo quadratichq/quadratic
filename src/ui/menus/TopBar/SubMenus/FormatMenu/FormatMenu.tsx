@@ -1,4 +1,4 @@
-import { Fragment, useCallback } from 'react';
+import { useCallback } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, MenuDivider, SubMenu, MenuChangeEvent } from '@szhsin/react-menu';
@@ -18,8 +18,6 @@ import {
 import { PaletteOutlined } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
-import { colors } from '../../../../../theme/colors';
-import { menuItemIconStyles, topBarIconStyles } from '../menuStyles';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { useFormatCells } from '../useFormatCells';
 import { useGetBorderMenu } from './useGetBorderMenu';
@@ -29,7 +27,7 @@ import './formatMenuStyles.scss';
 import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../../core/transaction/sheetController';
 import { useGetSelection } from '../useGetSelection';
-import { KeyboardShortcut } from '../../../KeyboardShortcut';
+import { MenuLineItem } from '../../MenuLineItem';
 import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';
 
 interface IProps {
@@ -70,37 +68,23 @@ export const FormatMenu = (props: IProps) => {
       onMenuChange={onMenuChange}
       menuButton={
         <Tooltip title="Format" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
-          <Button style={{ color: colors.darkGray }}>
-            <PaletteOutlined style={topBarIconStyles}></PaletteOutlined>
+          <Button style={{ color: 'inherit' }}>
+            <PaletteOutlined fontSize="small"></PaletteOutlined>
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
           </Button>
         </Tooltip>
       }
     >
       <MenuItem onClick={() => changeBold(!(format.bold === true))}>
-        <KeyboardShortcut
-          text="Bold"
-          shortcut="B"
-          modifier={KeyboardSymbols.Command}
-          icon={<FormatBold style={menuItemIconStyles} />}
-        />
+        <MenuLineItem primary="Bold" secondary={KeyboardSymbols.Command + 'B'} Icon={FormatBold} />
       </MenuItem>
       <MenuItem onClick={() => changeItalic(!(format.italic === true))}>
-        <KeyboardShortcut
-          text="Italic"
-          shortcut="I"
-          modifier={KeyboardSymbols.Command}
-          icon={<FormatItalic style={menuItemIconStyles} />}
-        />
+        <MenuLineItem primary="Italic" secondary={KeyboardSymbols.Command + 'I'} Icon={FormatItalic} />
       </MenuItem>
       <SubMenu
         className="color-picker-submenu"
         id="TextColorMenuID"
-        label={
-          <>
-            <FormatColorText style={menuItemIconStyles}></FormatColorText> Text color
-          </>
-        }
+        label={<MenuLineItem primary="Text color" Icon={FormatColorText} />}
       >
         <QColorPicker onChangeComplete={changeTextColor} onClear={removeTextColor} />
       </SubMenu>
@@ -141,34 +125,16 @@ export const FormatMenu = (props: IProps) => {
       <SubMenu
         className="color-picker-submenu"
         id="FillColorMenuID"
-        label={
-          <>
-            <FormatColorFill style={menuItemIconStyles}></FormatColorFill> Fill color
-          </>
-        }
+        label={<MenuLineItem primary="Fill color" Icon={FormatColorFill} />}
       >
         <QColorPicker onChangeComplete={changeFillColor} onClear={removeFillColor} />
       </SubMenu>
 
-      <SubMenu
-        label={
-          <Fragment>
-            <BorderAll style={menuItemIconStyles}></BorderAll>
-            <span>Border</span>
-          </Fragment>
-        }
-      >
-        {borders}
-      </SubMenu>
+      <SubMenu label={<MenuLineItem primary="Border" Icon={BorderAll} />}>{borders}</SubMenu>
 
       <MenuDivider />
       <MenuItem onClick={handleClearFormatting}>
-        <KeyboardShortcut
-          text="Clear formatting"
-          shortcut="\"
-          modifier={KeyboardSymbols.Command}
-          icon={<FormatClear style={menuItemIconStyles} />}
-        />
+        <MenuLineItem primary="Clear formatting" secondary={KeyboardSymbols.Command + '\\'} Icon={FormatClear} />
       </MenuItem>
     </Menu>
   );
