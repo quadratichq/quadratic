@@ -1,4 +1,4 @@
-import { GridFileSchema } from './GridFileSchema';
+import { GridFileSchemaV1 } from './GridFileSchema';
 import { localFiles } from '../../gridDB/localFiles';
 import { SheetController } from '../../transaction/sheetController';
 
@@ -43,7 +43,7 @@ export const openGridFile = async (sheetController: SheetController): Promise<vo
   // take file input selection from user
   const fileToLoad = await openFileMenuAsync();
   const result = await readFileAsync(fileToLoad);
-  const gridFileJSON = JSON.parse(result) as GridFileSchema;
+  const gridFileJSON = JSON.parse(result) as GridFileSchemaV1;
   sheetController.sheet.load_file(gridFileJSON);
   sheetController.clear();
   localFiles.loadedExternalFile(fileToLoad.name, gridFileJSON);
@@ -63,7 +63,7 @@ export const openLocalGridFile = async (filename: string, sheetController: Sheet
 
 export const openExampleGridFile = async (filename: string, sheetController: SheetController): Promise<void> => {
   const file = await fetch(`/examples/${filename}`);
-  const gridFileJSON = (await file.json()) as GridFileSchema;
+  const gridFileJSON = (await file.json()) as GridFileSchemaV1;
   sheetController.sheet.load_file(gridFileJSON);
   localFiles.loadedExternalFile(filename, gridFileJSON);
   sheetController.clear();

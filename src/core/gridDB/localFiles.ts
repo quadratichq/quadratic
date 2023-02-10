@@ -1,7 +1,7 @@
 import localForage from 'localforage';
 import debounce from 'lodash.debounce';
 import { debugShowFileIO } from '../../debugFlags';
-import { GridFileSchema } from '../actions/gridFile/GridFileSchema';
+import { GridFileSchemaV1 } from '../actions/gridFile/GridFileSchema';
 import { isEqualStringArrays } from '../../helpers/isEqual';
 
 const LAST_FILES = 'last-file-queue';
@@ -18,7 +18,7 @@ const DEFAULT_DEBOUNCE_TIMER = 150;
 class LocalFiles {
   filename?: string;
   fileList: string[] = [];
-  private lastSavedData?: GridFileSchema;
+  private lastSavedData?: GridFileSchemaV1;
 
   constructor() {
     localForage.config({ name: 'Quadratic', version: 1 });
@@ -60,7 +60,7 @@ class LocalFiles {
     }
   }
 
-  private async addToFileList(filename: string, data: GridFileSchema): Promise<void> {
+  private async addToFileList(filename: string, data: GridFileSchemaV1): Promise<void> {
     let lastFiles = (await localForage.getItem(LAST_FILES)) as string[];
     if (!lastFiles) lastFiles = [];
 
@@ -84,20 +84,20 @@ class LocalFiles {
     }
   }
 
-  async loadLocal(filename: string): Promise<GridFileSchema | undefined> {
+  async loadLocal(filename: string): Promise<GridFileSchemaV1 | undefined> {
     if (this.fileList.includes(filename)) {
       const data = await localForage.getItem(this.getFilename(filename));
       if (data) {
         this.emitLoadEvent(filename);
-        this.addToFileList(filename, data as GridFileSchema);
-        return data as GridFileSchema;
+        this.addToFileList(filename, data as GridFileSchemaV1);
+        return data as GridFileSchemaV1;
       }
     } else {
       throw new Error('Expected filename to be in lastFiles in loadLocal');
     }
   }
 
-  async loadLocalLastFile(): Promise<GridFileSchema | undefined> {
+  async loadLocalLastFile(): Promise<GridFileSchemaV1 | undefined> {
     if (this.fileList.length) {
       if (debugShowFileIO) {
         console.log(
@@ -106,11 +106,11 @@ class LocalFiles {
       }
       const file = await localForage.getItem(this.getFilename(this.fileList[0] as string));
       this.emitLoadEvent(this.fileList[0]);
-      return file as GridFileSchema;
+      return file as GridFileSchemaV1;
     }
   }
 
-  async saveLocal(filename: string, data: GridFileSchema): Promise<void> {
+  async saveLocal(filename: string, data: GridFileSchemaV1): Promise<void> {
     await localForage.setItem(this.getFilename(filename), data);
     this.addToFileList(filename, data);
   }
@@ -129,7 +129,7 @@ class LocalFiles {
     this.lastSavedData = undefined;
   }, DEFAULT_DEBOUNCE_TIMER);
 
-  saveLastLocal(data: GridFileSchema): void {
+  saveLastLocal(data: GridFileSchemaV1): void {
     // don't save on NodeJS (for testing)
     if (typeof window === 'undefined') return;
 
@@ -144,7 +144,7 @@ class LocalFiles {
     }
   }
 
-  async loadedExternalFile(filename: string, data: GridFileSchema): Promise<void> {
+  async loadedExternalFile(filename: string, data: GridFileSchemaV1): Promise<void> {
     this.filename = filename;
     this.emitLoadEvent(filename);
     await this.saveLocal(filename, data);

@@ -1,13 +1,12 @@
-import { GridFileSchema, GRID_FILE_VERSION } from '../core/actions/gridFile/GridFileSchema';
+import { GridFileSchemaV1 } from '../core/actions/gridFile/GridFileSchema';
 
-export const example_grid: GridFileSchema = {
+export const example_grid: GridFileSchemaV1 = {
   columns: [],
   rows: [],
   borders: [],
   formats: [],
   cell_dependency: '',
   render_dependency: [],
-  version: GRID_FILE_VERSION,
   cells: [
     {
       x: 0,
