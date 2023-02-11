@@ -1,5 +1,6 @@
 /**
  * Turns a positive column number into A1 notation
+ * based on https://www.labnol.org/convert-column-a1-notation-210601
  * @param column
  * @returns
  */
