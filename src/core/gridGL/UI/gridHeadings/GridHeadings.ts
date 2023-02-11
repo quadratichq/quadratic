@@ -402,7 +402,7 @@ export class GridHeadings extends Container {
   // whether the point is on the heading gridLine (with tolerance)
   intersectsHeadingGridLine(
     world: Point
-  ): { start: number; end: number, column?: number; row?: number; width?: number; height?: number } | undefined {
+  ): { start: number; end: number; column?: number; row?: number; width?: number; height?: number } | undefined {
     const tolerance = GRID_HEADING_RESIZE_TOLERANCE / this.app.viewport.scale.x;
     if (!this.columnRect || !this.rowRect) return;
     const { gridOffsets } = this.app.sheet;

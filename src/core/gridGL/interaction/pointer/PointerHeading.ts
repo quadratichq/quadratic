@@ -144,7 +144,7 @@ export class PointerHeading {
         if (headingResizing.column >= 0) {
           size = Math.max(MINIMUM_COLUMN_SIZE, world.x - headingResizing.start);
         } else {
-          size = Math.max(MINIMUM_COLUMN_SIZE, headingResizing.end - world.x)
+          size = Math.max(MINIMUM_COLUMN_SIZE, headingResizing.end - world.x);
         }
         if (size !== headingResizing.width) {
           headingResizing.width = size;
