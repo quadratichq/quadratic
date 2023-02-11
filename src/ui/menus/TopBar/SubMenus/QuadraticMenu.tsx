@@ -87,29 +87,26 @@ export const QuadraticMenu = (props: Props) => {
         <MenuHeader>Quadratic</MenuHeader>
         <SubMenu label="File">
           <MenuItem onClick={() => setNewFileOpen(true)}>New grid</MenuItem>
-          <MenuItem onClick={() => SaveGridFile(sheet, true)}>Save grid</MenuItem>
-          <MenuItem onClick={() => openGridFile(sheetController)}>Open grid</MenuItem>
           <MenuDivider />
-          <SubMenu label="Sample files">
+          <MenuItem onClick={() => SaveGridFile(sheet, true)}>Save local copy</MenuItem>
+          <MenuDivider />
+          <MenuItem onClick={() => openGridFile(sheetController)}>Open local</MenuItem>
+          <SubMenu label="Open sample">
             {examples.map((filename) => (
               <MenuItem key={`sample-${filename}`} onClick={() => openExampleGridFile(filename, sheetController)}>
                 {filename}
               </MenuItem>
             ))}
           </SubMenu>
-          {fileList.length ? (
-            <>
-              <MenuDivider />
-              <MenuHeader>Recent Files</MenuHeader>
-            </>
-          ) : null}
-          {fileList.length
-            ? fileList.map((entry) => (
+          {fileList.length && (
+            <SubMenu label="Open recent">
+              {fileList.map((entry) => (
                 <MenuItem key={entry} onClick={() => openLocalGridFile(entry, sheetController)}>
                   {entry}
                 </MenuItem>
-              ))
-            : null}
+              ))}
+            </SubMenu>
+          )}
         </SubMenu>
         <SubMenu label="Import">
           <MenuItem disabled>CSV (coming soon)</MenuItem>

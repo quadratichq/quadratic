@@ -2,22 +2,20 @@ import { useFormatCells } from '../../TopBar/SubMenus/useFormatCells';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { AbcOutlined, AttachMoney, FormatClear, Functions, Percent } from '@mui/icons-material';
-import { useBorders } from '../../TopBar/SubMenus/useBorders';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
+import { useClearAllFormatting } from '../../TopBar/SubMenus/useClearAllFormatting';
 
 const ListItems = [
   {
     label: 'Format: Clear all',
     Component: (props: any) => {
-      const { clearFormatting } = useFormatCells(props.sheetController, props.app);
-      const { clearBorders } = useBorders(props.sheetController.sheet, props.app);
+      const { clearAllFormatting } = useClearAllFormatting(props.sheetController, props.app);
       return (
         <CommandPaletteListItem
           {...props}
           icon={<FormatClear />}
           action={() => {
-            clearFormatting();
-            clearBorders();
+            clearAllFormatting();
           }}
           shortcut="\"
           shortcutModifiers={KeyboardSymbols.Command}

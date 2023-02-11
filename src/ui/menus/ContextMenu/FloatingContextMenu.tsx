@@ -19,13 +19,13 @@ import {
 import { Menu } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
-import { useBorders } from '../TopBar/SubMenus/useBorders';
 import { QColorPicker } from '../../components/qColorPicker';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
 import { TooltipHint } from '../../components/TooltipHint';
 import { DecimalDecrease, DecimalIncrease } from '../../icons';
+import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -45,7 +45,6 @@ export const FloatingContextMenu = (props: Props) => {
   const {
     changeFillColor,
     removeFillColor,
-    clearFormatting,
     changeBold,
     changeItalic,
     changeTextColor,
@@ -55,12 +54,7 @@ export const FloatingContextMenu = (props: Props) => {
     textFormatSetPercentage,
   } = useFormatCells(sheetController, props.app);
   const { format } = useGetSelection(sheetController.sheet);
-  const { clearBorders } = useBorders(sheetController.sheet, props.app);
-
-  const handleClearFormatting = useCallback(() => {
-    clearFormatting();
-    clearBorders();
-  }, [clearFormatting, clearBorders]);
+  const { clearAllFormatting } = useClearAllFormatting(sheetController, props.app);
 
   // Function used to move and scale the Input with the Grid
   const updateInputCSSTransform = useCallback(() => {
@@ -322,7 +316,7 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDivider />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton onClick={handleClearFormatting}>
+          <IconButton onClick={() => clearAllFormatting()}>
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>

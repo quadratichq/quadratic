@@ -10,9 +10,9 @@ import { PixiApp } from '../../pixiApp/PixiApp';
 import { keyboardViewport } from './keyboardViewport';
 import { SheetController } from '../../../transaction/sheetController';
 import { keyboardUndoRedo } from './keyboardUndoRedo';
-import { useBorders } from '../../../../ui/menus/TopBar/SubMenus/useBorders';
 import { useFormatCells } from '../../../../ui/menus/TopBar/SubMenus/useFormatCells';
 import { useGetSelection } from '../../../../ui/menus/TopBar/SubMenus/useGetSelection';
+import { useClearAllFormatting } from '../../../../ui/menus/TopBar/SubMenus/useClearAllFormatting';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -35,12 +35,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     sheetController,
   } = props;
   const { format } = useGetSelection(sheetController.sheet);
-  const { clearFormatting, changeBold, changeItalic } = useFormatCells(sheetController, app);
-  const { clearBorders } = useBorders(sheetController.sheet, app);
-  const clearAllFormatting = useCallback(() => {
-    clearFormatting();
-    clearBorders();
-  }, [clearBorders, clearFormatting]);
+  const { changeBold, changeItalic } = useFormatCells(sheetController, app);
+  const { clearAllFormatting } = useClearAllFormatting(sheetController, app);
 
   const keyDownWindow = useCallback(
     (event: KeyboardEvent): void => {
