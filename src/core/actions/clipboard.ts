@@ -5,6 +5,8 @@ import { updateCellAndDCells } from './updateCellAndDCells';
 import { DeleteCells } from '../gridDB/Cells/DeleteCells';
 import { CellAndFormat } from '../gridDB/GridSparse';
 import { Rectangle } from 'pixi.js';
+import { clearFormattingAction } from './clearFormattingAction';
+import { clearBordersAction } from './clearBordersAction';
 
 const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.0';
 
@@ -284,6 +286,8 @@ export const cutToClipboard = async (sheet_controller: SheetController, cell0: C
   // copy selected cells to clipboard
   await copyToClipboard(sheet_controller, cell0, cell1);
 
+  sheet_controller.start_transaction();
+
   // delete selected cells
   await DeleteCells({
     x0: cell0.x,
@@ -292,8 +296,14 @@ export const cutToClipboard = async (sheet_controller: SheetController, cell0: C
     y1: cell1.y,
     sheetController: sheet_controller,
     app: sheet_controller.app,
+    create_transaction: false,
   });
 
-  // TODO: also delete cell formats
-  // TODO: also delete borders
+  //  delete cell formats
+  clearFormattingAction({ sheet_controller, start: cell0, end: cell1, create_transaction: false });
+
+  // delete borders
+  clearBordersAction({ sheet_controller, start: cell0, end: cell1, create_transaction: false });
+
+  sheet_controller.end_transaction();
 };

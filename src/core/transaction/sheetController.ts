@@ -4,6 +4,8 @@ import { Statement } from './statement';
 import { StatementRunner } from './runners/runner';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { localFiles } from '../gridDB/localFiles';
+import * as Sentry from '@sentry/browser';
+import { debug } from '../../debugFlags';
 
 export class SheetController {
   app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
@@ -33,7 +35,13 @@ export class SheetController {
 
   public start_transaction(): void {
     if (this.transaction_in_progress) {
-      throw new Error('Transaction already in progress.');
+      // during debug mode, throw an error
+      // otherwise, capture the error and continue
+      if (debug) throw new Error('Transaction already in progress.');
+      else Sentry.captureException('Transaction already in progress.');
+
+      // attempt to recover and continue
+      this.end_transaction();
     }
 
     // set transaction in progress to a new Transaction
