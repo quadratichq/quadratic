@@ -19,6 +19,7 @@ export class GridHeadingsLabels extends Container {
 
   clear() {
     this.labelData = [];
+    this.children.forEach((child) => (child.visible = false));
   }
 
   add(label: LabelData): void {

@@ -13,6 +13,8 @@ export class AxesLines extends Graphics {
   update() {
     if (this.dirty) {
       this.dirty = false;
+      this.clear();
+
       if (!this.app.settings.showGridAxes) {
         this.visible = false;
         this.app.setViewportDirty();
@@ -20,7 +22,6 @@ export class AxesLines extends Graphics {
       }
 
       this.visible = true;
-      this.clear();
       this.lineStyle(10, 0x000000, 0.35, 0, true);
       const viewport = this.app.viewport;
       if (0 >= viewport.left && 0 <= viewport.right) {

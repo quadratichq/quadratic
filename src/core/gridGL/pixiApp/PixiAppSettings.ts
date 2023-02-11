@@ -6,6 +6,7 @@ import { PixiApp } from './PixiApp';
 export class PixiAppSettings {
   private app: PixiApp;
   private settings!: GridSettings;
+  private lastSettings?: GridSettings;
   interactionState = gridInteractionStateDefault;
   setInteractionState?: (value: GridInteractionState) => void;
   editorInteractionState = editorInteractionStateDefault;
@@ -34,7 +35,12 @@ export class PixiAppSettings {
     this.app.axesLines.dirty = true;
     this.app.headings.dirty = true;
     this.app.cells.dirty = true;
-    this.app.quadrants.build();
+
+    // only rebuild quadrants if showCellTypeOutlines change
+    if (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) {
+      this.app.quadrants.build();
+    }
+    this.lastSettings = this.settings;
   };
 
   updateInteractionState(
