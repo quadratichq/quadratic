@@ -23,7 +23,7 @@ export function getColumnA1Notation(column: number): string {
   if (column === 0) return 'Z';
   if (column < 0) return `Z${translateNumberToA1Notation(-column)}`;
   return translateNumberToA1Notation(column);
-};
+}
 
 export function getRowA1Notation(row: number): string {
   if (row > 0) return row.toString();
