@@ -34,6 +34,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const monacoRef = useRef<Monaco | null>(null);
 
   const [editorContent, setEditorContent] = useState<string | undefined>('');
+  const [didMount, setDidMount] = useState(false);
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -164,9 +165,14 @@ export const CodeEditor = (props: CodeEditorProps) => {
     monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
     monaco.editor.setTheme('quadratic');
 
+    if (didMount) return;
+    // Only register language once
+
     monaco.languages.register({ id: 'formula' });
     monaco.languages.setMonarchTokensProvider('formula', FormulaLanguageConfig);
     monaco.languages.registerCompletionItemProvider('formula', FormulaCompletionProvider);
+
+    setDidMount(true);
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
