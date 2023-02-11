@@ -14,8 +14,8 @@ describe('A1 notation translation', () => {
 
   it('gets row (positive)', () => {
     expect(getRowA1Notation(0)).toBe('N');
-    expect(getRowA1Notation(1)).toBe(1);
-    expect(getRowA1Notation(100)).toBe(100);
+    expect(getRowA1Notation(1)).toBe('1');
+    expect(getRowA1Notation(100)).toBe('100');
   });
 
   it('gets row (negative)', () => {
