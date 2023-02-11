@@ -1,4 +1,4 @@
-import { Container, Sprite } from 'pixi.js';
+import { Container, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../../../theme/colors';
 
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'ErrorIcon';
@@ -13,32 +13,24 @@ export class CellsMarkers extends Container {
 
   add(x: number, y: number, type: CellsMarkerTypes): void {
     let child: Sprite;
+    if (this.visibleIndex < this.children.length) {
+      child = this.children[this.visibleIndex] as Sprite;
+      child.visible = true;
+      this.visibleIndex++;
+    } else {
+      child = this.addChild(new Sprite());
+      child.height = 4;
+      child.width = 4;
+    }
+
     if (type === 'CodeIcon') {
-      if (this.visibleIndex < this.children.length) {
-        child = this.children[this.visibleIndex] as Sprite;
-        this.visibleIndex++;
-      } else {
-        child = this.addChild(Sprite.from('images/python-icon.png'));
-        child.tint = colors.cellColorUserPython;
-        child.height = 4;
-        child.width = 4;
-        this.addChild(child);
-      }
+      child.texture = Texture.from('images/python-icon.png');
+      child.tint = colors.cellColorUserPython;
       child.position.set(x + 1, y + 0.5);
-      child.visible = true;
     } else if (type === 'FormulaIcon') {
-      if (this.visibleIndex < this.children.length) {
-        child = this.children[this.visibleIndex] as Sprite;
-        this.visibleIndex++;
-      } else {
-        child = this.addChild(Sprite.from('images/formula-fx-icon.png'));
-        child.tint = colors.cellColorUserFormula;
-        child.height = 4;
-        child.width = 4;
-        this.addChild(child);
-      }
+      child.texture = Texture.from('images/formula-fx-icon.png');
+      child.tint = colors.cellColorUserFormula;
       child.position.set(x + 1.25, y + 1);
-      child.visible = true;
     }
   }
 
