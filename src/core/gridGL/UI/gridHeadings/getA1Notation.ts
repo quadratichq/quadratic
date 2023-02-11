@@ -28,6 +28,6 @@ export function getColumnA1Notation(column: number): string {
 
 export function getRowA1Notation(row: number): string {
   if (row > 0) return row.toString();
-  if (row === 0) return 'N';
-  return `N${-row}`;
+  if (row === 0) return '0';
+  return `n${-row}`;
 }
