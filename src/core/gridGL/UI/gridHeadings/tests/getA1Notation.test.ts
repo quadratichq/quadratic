@@ -13,13 +13,13 @@ describe('A1 notation translation', () => {
   });
 
   it('gets row (positive)', () => {
-    expect(getRowA1Notation(0)).toBe('N');
+    expect(getRowA1Notation(0)).toBe('0');
     expect(getRowA1Notation(1)).toBe('1');
     expect(getRowA1Notation(100)).toBe('100');
   });
 
   it('gets row (negative)', () => {
-    expect(getRowA1Notation(-1)).toBe('N1');
-    expect(getRowA1Notation(-100)).toBe('N100');
+    expect(getRowA1Notation(-1)).toBe('n1');
+    expect(getRowA1Notation(-100)).toBe('n100');
   });
 });
