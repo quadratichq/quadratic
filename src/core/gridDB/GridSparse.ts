@@ -38,6 +38,9 @@ export class GridSparse {
         this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
       }
     });
+    if (cells.length) {
+      this.isEmpty = false;
+    }
     this.recalculateBounds();
   }
 
