@@ -8,6 +8,7 @@ export interface HeadingResizing {
   x: number;
   y: number;
   start: number;
+  end: number;
   column?: number;
   row?: number;
   width?: number;

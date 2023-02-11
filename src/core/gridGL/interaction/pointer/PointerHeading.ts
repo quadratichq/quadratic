@@ -16,6 +16,20 @@ export class PointerHeading {
     this.app = app;
   }
 
+  handleEscape(): boolean {
+    if (this.active) {
+      this.active = false;
+      this.sheet.gridOffsets.headingResizing = undefined;
+      this.app.cells.dirty = true;
+      this.app.gridLines.dirty = true;
+      this.app.cursor.dirty = true;
+      this.app.headings.dirty = true;
+      this.app.setViewportDirty();
+      return true;
+    }
+    return false;
+  }
+
   get sheet() {
     return this.app.sheet;
   }
@@ -42,10 +56,12 @@ export class PointerHeading {
     if (intersects) {
       const headingResize = headings.intersectsHeadingGridLine(world);
       if (headingResize) {
+        this.app.setViewportDirty();
         gridOffsets.headingResizing = {
           x: world.x,
           y: world.y,
           start: headingResize.start,
+          end: headingResize.end,
           row: headingResize.row,
           column: headingResize.column,
           width: headingResize.width,
@@ -122,25 +138,36 @@ export class PointerHeading {
     if (!this.active) {
       return false;
     } else if (gridOffsets.headingResizing) {
-      if (gridOffsets.headingResizing.column !== undefined) {
-        const size = Math.max(MINIMUM_COLUMN_SIZE, world.x - gridOffsets.headingResizing.start);
-        if (size !== gridOffsets.headingResizing.width) {
-          gridOffsets.headingResizing.width = size;
-          cells.dirty = true;
-          gridLines.dirty = true;
-          cursor.dirty = true;
-          headings.dirty = true;
-          this.app.quadrants.quadrantChanged({ column: gridOffsets.headingResizing.column });
+      const { headingResizing } = gridOffsets;
+      if (headingResizing.column !== undefined) {
+        let size: number;
+        if (headingResizing.column >= 0) {
+          size = Math.max(MINIMUM_COLUMN_SIZE, world.x - headingResizing.start);
+        } else {
+          size = Math.max(MINIMUM_COLUMN_SIZE, headingResizing.end - world.x)
         }
-      } else if (gridOffsets.headingResizing.row !== undefined) {
-        const size = Math.max(0, world.y - gridOffsets.headingResizing.start);
-        if (size !== gridOffsets.headingResizing.height) {
-          gridOffsets.headingResizing.height = size;
+        if (size !== headingResizing.width) {
+          headingResizing.width = size;
           cells.dirty = true;
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
-          this.app.quadrants.quadrantChanged({ row: gridOffsets.headingResizing.row });
+          this.app.quadrants.quadrantChanged({ column: headingResizing.column });
+        }
+      } else if (headingResizing.row !== undefined) {
+        let size: number;
+        if (headingResizing.row >= 0) {
+          size = Math.max(MINIMUM_COLUMN_SIZE, world.y - headingResizing.start);
+        } else {
+          size = Math.max(MINIMUM_COLUMN_SIZE, headingResizing.end - world.y);
+        }
+        if (size !== headingResizing.height) {
+          headingResizing.height = size;
+          cells.dirty = true;
+          gridLines.dirty = true;
+          cursor.dirty = true;
+          headings.dirty = true;
+          this.app.quadrants.quadrantChanged({ row: headingResizing.row });
         }
       }
     }

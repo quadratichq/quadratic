@@ -43,4 +43,8 @@ export class Pointer {
   private pointerUp = (): void => {
     this.headingResize.pointerUp() || this.pointerDown.pointerUp();
   };
+
+  handleEscape(): boolean {
+    return this.headingResize.handleEscape();
+  }
 }

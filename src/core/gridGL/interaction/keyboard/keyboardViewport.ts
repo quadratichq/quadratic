@@ -3,6 +3,7 @@ import { MultipleFormat } from '../../../../ui/menus/TopBar/SubMenus/useGetSelec
 import { Sheet } from '../../../gridDB/Sheet';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit } from '../../helpers/zoom';
 import { EditorInteractionState } from '../../../../atoms/editorInteractionStateAtom';
+import { Pointer } from '../pointer/Pointer';
 
 export function keyboardViewport(options: {
   event: KeyboardEvent;
@@ -14,6 +15,7 @@ export function keyboardViewport(options: {
   changeBold: Function;
   changeItalic: Function;
   format: MultipleFormat;
+  pointer: Pointer;
 }): boolean {
   const {
     changeBold,
@@ -25,6 +27,7 @@ export function keyboardViewport(options: {
     viewport,
     editorInteractionState,
     setEditorInteractionState,
+    pointer,
   } = options;
 
   if (!viewport || event.altKey) return false;
@@ -86,6 +89,12 @@ export function keyboardViewport(options: {
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyS') {
     // don't do anything on Command+S
     return true;
+  }
+
+  if (event.code === 'Escape') {
+    if (pointer.handleEscape()) {
+      return true;
+    }
   }
 
   return false;

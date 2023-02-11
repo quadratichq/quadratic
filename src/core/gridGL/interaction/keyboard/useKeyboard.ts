@@ -53,23 +53,14 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           changeBold,
           changeItalic,
           format,
+          pointer: app.input,
         })
       ) {
         event.stopPropagation();
         event.preventDefault();
       }
     },
-    [
-      app?.viewport,
-      interactionState,
-      sheetController.sheet,
-      editorInteractionState,
-      setEditorInteractionState,
-      clearAllFormatting,
-      changeBold,
-      changeItalic,
-      format,
-    ]
+    [interactionState.showInput, editorInteractionState, setEditorInteractionState, app?.viewport, app.input, sheetController.sheet, clearAllFormatting, changeBold, changeItalic, format]
   );
 
   useEffect(() => {
