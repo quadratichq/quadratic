@@ -81,4 +81,8 @@ export class PixiAppSettings {
   get showCellTypeOutlines(): boolean {
     return this.settings.showCellTypeOutlines;
   }
+
+  get showA1Notation(): boolean {
+    return this.settings.showA1Notation;
+  }
 }

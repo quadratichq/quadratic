@@ -141,6 +141,13 @@ export const QuadraticMenu = (props: Props) => {
           >
             Show cell type outlines
           </MenuItem>
+          <MenuItem
+            type="checkbox"
+            checked={settings.showA1Notation}
+            onClick={() => settings.setShowA1Notation(!settings.showA1Notation)}
+          >
+            Show A1 notation on headings
+          </MenuItem>
           <MenuDivider />
           <MenuItem
             type="checkbox"

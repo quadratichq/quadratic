@@ -6,6 +6,7 @@ import { Size } from '../../types/size';
 import { intersects } from '../../helpers/intersects';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { GridHeadingsLabels } from './GridHeadingsLabels';
+import { getColumnA1Notation, getRowA1Notation } from './getA1Notation';
 
 // Constants for headers
 export const LABEL_MAXIMUM_WIDTH_PERCENT = 0.7;
@@ -104,6 +105,7 @@ export class GridHeadings extends Container {
     if (!this.characterSize) return;
     const { viewport } = this.app;
     const { gridOffsets } = this.app.sheet;
+    const showA1Notation = this.app.settings.showA1Notation;
     const cellWidth = CELL_WIDTH / viewport.scale.x;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
@@ -201,7 +203,8 @@ export class GridHeadings extends Container {
             intersects.lineLineOneDimension(xSelectedEndLine1D.start, xSelectedEndLine1D.end, left, right)
           )
         ) {
-          this.labels.add({ text: column.toString(), x: xPosition, y });
+          const text = showA1Notation ? getColumnA1Notation(column) : column.toString();
+          this.labels.add({ text, x: xPosition, y });
         }
       }
       column++;
@@ -212,6 +215,7 @@ export class GridHeadings extends Container {
     if (!this.characterSize) return;
     const { viewport } = this.app;
     const { gridOffsets } = this.app.sheet;
+    const showA1Notation = this.app.settings.showA1Notation;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
     const bounds = viewport.getVisibleBounds();
@@ -311,11 +315,8 @@ export class GridHeadings extends Container {
             intersects.lineLineOneDimension(ySelectedEndLine1D.start, ySelectedEndLine1D.end, top, bottom)
           )
         ) {
-          this.labels.add({
-            text: row.toString(),
-            x: x + ROW_DIGIT_OFFSET.x,
-            y: yPosition + ROW_DIGIT_OFFSET.y,
-          });
+          const text = showA1Notation ? getRowA1Notation(row) : row.toString();
+          this.labels.add({ text, x: x + ROW_DIGIT_OFFSET.x, y: yPosition + ROW_DIGIT_OFFSET.y });
         }
       }
       row++;

@@ -67,6 +67,21 @@ const ListItems = [
     },
   },
   {
+    label: 'View: Show A1 notation on headings',
+    Component: (props: any) => {
+      const settings = useGridSettings();
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<CommandPaletteListItemCheckbox checked={settings.showA1Notation} />}
+          action={() => {
+            settings.setShowA1Notation(!settings.showA1Notation);
+          }}
+        />
+      );
+    },
+  },
+  {
     label: 'View: Zoom in',
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
