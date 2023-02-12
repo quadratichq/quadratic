@@ -163,11 +163,15 @@ export class GridRenderDependency {
 
   load(dependents: Dependency[]): void {
     this.dependents.clear();
+    this.bounds.clear();
 
     // todo: this can be removed once we move past older files
     if (!dependents) return;
 
-    dependents.forEach((dependent) => this.dependents.set(this.getKey(dependent.location), dependent));
+    dependents.forEach((dependent) => {
+      this.dependents.set(this.getKey(dependent.location), dependent);
+      this.bounds.addCoordinate(dependent.location);
+    });
   }
 
   getGridBounds(): Rectangle | undefined {
