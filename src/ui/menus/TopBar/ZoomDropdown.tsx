@@ -28,7 +28,7 @@ export const ZoomDropdown = (props: Props) => {
   return (
     <Menu
       menuButton={
-        <Button style={{ color: colors.darkGray }}>
+        <Button style={{ color: colors.darkGray, width: '4rem' }}>
           {zoom === Infinity ? 100 : Math.round(zoom * 100)}%
           <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
         </Button>
