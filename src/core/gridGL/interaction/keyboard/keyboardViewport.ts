@@ -92,9 +92,9 @@ export function keyboardViewport(options: {
   }
 
   if (event.code === 'Escape') {
-    if (pointer.handleEscape()) {
-      return true;
-    }
+    // if (pointer.handleEscape()) {
+    //   return true;
+    // }
   }
 
   return false;
