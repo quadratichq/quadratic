@@ -1,3 +1,4 @@
+import { Point } from 'pixi.js';
 import { debug, debugShowCellsForDirtyQuadrants, debugShowFPS, debugShowWhyRendering } from '../../../debugFlags';
 import {
   debugRendererLight,
@@ -15,6 +16,8 @@ export class Update {
   private raf?: number;
   private fps?: FPS;
   private nextQuadrantRender = 0;
+  private lastViewportPosition: Point = new Point();
+  private lastViewportScale = 1;
 
   constructor(app: PixiApp) {
     this.pixiApp = app;
@@ -36,10 +39,28 @@ export class Update {
     }
   }
 
+  private updateViewport(): void {
+    const { viewport } = this.pixiApp;
+    let dirty = false;
+    if (this.lastViewportScale !== viewport.scale.x) {
+      this.lastViewportScale = viewport.scale.x;
+      dirty = true;
+      window.dispatchEvent(new CustomEvent<number>('zoom-event', { detail: viewport.scale.x }));
+    }
+    if (this.lastViewportPosition.x !== viewport.x || this.lastViewportPosition.y !== viewport.y) {
+      this.lastViewportPosition.x = viewport.x;
+      this.lastViewportPosition.y = viewport.y;
+      dirty = true;
+    }
+    if (dirty) this.pixiApp.viewportChanged();
+  }
+
   // update loop w/debug checks
   private updateDebug = (timeStart: number): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
+
+    this.updateViewport();
 
     const rendererDirty =
       app.viewport.dirty ||
@@ -112,6 +133,8 @@ export class Update {
   private update = (timeStart: number): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
+
+    this.updateViewport();
 
     const rendererDirty =
       app.viewport.dirty ||

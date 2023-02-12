@@ -11,8 +11,6 @@ export class PixiAppSettings {
   setInteractionState?: (value: GridInteractionState) => void;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: (value: EditorInteractionState) => void;
-  zoomState = 100;
-  setZoomState?: (value: number) => void;
 
   constructor(app: PixiApp) {
     this.app = app;
@@ -61,12 +59,6 @@ export class PixiAppSettings {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
     this.app.cursor.dirty = true;
-  }
-
-  updateZoom(zoom: number, setZoomState: (value: number) => void): void {
-    this.zoomState = zoom;
-    this.setZoomState = setZoomState;
-    this.app.checkZoom();
   }
 
   get showGridLines(): boolean {

@@ -157,7 +157,7 @@ export const TopBar = (props: IProps) => {
             </Tooltip> */}
           </>
         )}
-        <ZoomDropdown></ZoomDropdown>
+        <ZoomDropdown app={props.app} />
       </Box>
     </div>
   );

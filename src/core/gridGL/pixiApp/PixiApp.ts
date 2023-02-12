@@ -13,7 +13,7 @@ import { Cells } from '../UI/cells/Cells';
 import { zoomInOut, zoomToFit } from '../helpers/zoom';
 import { Quadrants } from '../quadrants/Quadrants';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
-import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag, debugLockZoom } from '../../../debugFlags';
+import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../../debugFlags';
 import { Sheet } from '../../gridDB/Sheet';
 import { SheetController } from '../../transaction/sheetController';
 import { HEADING_SIZE } from '../../../constants/gridConstants';
@@ -105,12 +105,6 @@ export class PixiApp {
 
     this.reset();
 
-    this.viewport.on('zoomed', () => {
-      this.viewportChanged();
-      this.settings.setZoomState && this.settings.setZoomState(this.viewport.scale.x);
-    });
-    this.viewport.on('moved', this.viewportChanged);
-
     this.input = new Pointer(this);
     this.update = new Update(this);
 
@@ -190,20 +184,12 @@ export class PixiApp {
     this.cells.dirty = true;
   };
 
-  checkZoom(): void {
-    if (debugLockZoom) {
-      this.viewport.setZoom(debugLockZoom, true);
-      this.settings.setZoomState && this.settings.setZoomState(this.viewport.scale.x);
-      return;
-    }
+  setZoomState(value: number): void {
+    zoomInOut(this.viewport, value);
+  }
 
-    const zoom = this.settings.zoomState;
-    if (zoom === Infinity) {
-      zoomToFit(this.sheet, this.viewport);
-    } else if (zoom !== this.viewport.scale.x) {
-      zoomInOut(this.viewport, zoom);
-      this.viewportChanged();
-    }
+  setZoomToFit(): void {
+    zoomToFit(this.sheet, this.viewport);
   }
 
   // called before and after a quadrant render
