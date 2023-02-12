@@ -13,7 +13,7 @@ export const defaultGridSettings: GridSettings = {
   showGridAxes: true,
   showHeadings: true,
   showGridLines: true,
-  showCellTypeOutlines: false,
+  showCellTypeOutlines: true,
   showA1Notation: false,
 };
 
