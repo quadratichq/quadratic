@@ -1,4 +1,5 @@
 import { ColorResult } from 'react-color';
+import { clearFormattingAction } from '../../../../core/actions/clearFormattingAction';
 import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../core/formatting/cellTextFormat';
 import { CellFormat } from '../../../../core/gridDB/gridTypes';
 import { localFiles } from '../../../../core/gridDB/localFiles';
@@ -92,29 +93,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
   };
 
   const clearFormatting = (args?: { create_transaction?: boolean }): void => {
-    const formats: CellFormat[] = [];
-    for (let y = start.y; y <= end.y; y++) {
-      for (let x = start.x; x <= end.x; x++) {
-        const format = sheet_controller.sheet.grid.getFormat(x, y) ?? { x, y };
-        formats.push({ ...format });
-      }
-    }
-    // transaction to clear cell formats
-    args?.create_transaction ?? sheet_controller.start_transaction();
-    formats.forEach((format) => {
-      if (format.x !== undefined && format.y !== undefined)
-        sheet_controller.execute_statement({
-          type: 'SET_CELL_FORMAT',
-          data: {
-            position: [format.x, format.y],
-            value: undefined, // set to undefined to clear formatting
-          },
-        });
-    });
-    args?.create_transaction ?? sheet_controller.end_transaction();
-
-    app?.quadrants.quadrantChanged({ range: { start, end } });
-    localFiles.saveLastLocal(sheet_controller.sheet.export_file());
+    clearFormattingAction({ sheet_controller, start, end, create_transaction: args?.create_transaction });
   };
 
   const changeBold = (bold: boolean): void => {

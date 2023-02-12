@@ -10,10 +10,11 @@ interface DeleteCellsArgs {
   sheetController: SheetController;
   pyodide?: any;
   app?: PixiApp;
+  create_transaction?: boolean;
 }
 
 export const DeleteCells = async (args: DeleteCellsArgs) => {
-  const { x0, y0, x1, y1, sheetController, pyodide, app } = args;
+  const { x0, y0, x1, y1, sheetController, pyodide, app, create_transaction } = args;
 
   const cells_to_delete = sheetController.sheet.grid.getNakedCells(x0, y0, x1, y1);
 
@@ -24,5 +25,6 @@ export const DeleteCells = async (args: DeleteCellsArgs) => {
     pyodide,
     delete_starting_cells: true,
     app,
+    create_transaction,
   });
 };
