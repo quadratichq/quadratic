@@ -130,7 +130,7 @@ export const FloatingContextMenu = (props: Props) => {
     menuDiv.current.style.transform = transform;
 
     // Disable pointer events while the viewport is moving
-    if (viewport.dirty) {
+    if (viewport.moving) {
       menuDiv.current.style.pointerEvents = 'none';
       // make sure when we are setting pointer event to none
       // that we check again soon to see if the viewport is done moving
