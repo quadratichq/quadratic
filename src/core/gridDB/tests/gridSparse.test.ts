@@ -10,7 +10,7 @@ describe('gridSparse', () => {
   it('creates an empty gridSparse', () => {
     const gridSparse = new GridSparse(gridOffsets);
     gridSparse.populate();
-    expect(gridSparse.isEmpty).toBe(true);
+    expect(gridSparse.empty).toBe(true);
     expect(gridSparse.get(0, 0)).toBeUndefined();
 
     const { bounds, boundsWithData } = gridSparse.getBounds(new Rectangle(-1000, -2000, 2000, 4000));
@@ -225,7 +225,7 @@ describe('gridSparse', () => {
       } as Cell,
     ]);
 
-    const minMax = gridSparse.getRowMinMax(2);
+    const minMax = gridSparse.getRowMinMax(2, false);
     expect(minMax?.min).toBe(-5);
     expect(minMax?.max).toBe(5);
   });
@@ -247,7 +247,7 @@ describe('gridSparse', () => {
       } as Cell,
     ]);
 
-    const minMax = gridSparse.getColumnMinMax(2);
+    const minMax = gridSparse.getColumnMinMax(2, false);
     expect(minMax?.min).toBe(-5);
     expect(minMax?.max).toBe(5);
   });

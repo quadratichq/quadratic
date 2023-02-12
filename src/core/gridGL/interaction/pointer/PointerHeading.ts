@@ -1,5 +1,5 @@
 import { InteractivePointerEvent, Point } from 'pixi.js';
-import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCellsAction';
+import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';

@@ -30,8 +30,8 @@ export type CellWrapping = 'wrap' | 'clip'; // default is overflow
 export type CellAlignment = 'right' | 'center'; // default is left
 
 export interface CellFormat {
-  x?: number;
-  y?: number;
+  x: number;
+  y: number;
   fillColor?: string;
   bold?: boolean;
   italic?: boolean;

@@ -1,7 +1,7 @@
 import { Viewport } from 'pixi-viewport';
 import { GridInteractionState } from '../../../../atoms/gridInteractionStateAtom';
 import { Sheet } from '../../../gridDB/Sheet';
-import { selectAllCells } from '../../helpers/selectCellsAction';
+import { selectAllCells } from '../../helpers/selectCells';
 
 export function keyboardSelect(options: {
   event: React.KeyboardEvent<HTMLElement>;

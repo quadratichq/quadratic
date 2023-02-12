@@ -14,11 +14,11 @@ export function selectAllCells(options: {
   const { sheet } = options;
   let bounds: Coordinate[] | undefined;
   if (options.row !== undefined) {
-    bounds = sheet.getGridRowMinMax(options.row);
+    bounds = sheet.getGridRowMinMax(options.row, true);
   } else if (options.column !== undefined) {
-    bounds = sheet.getGridColumnMinMax(options.column);
+    bounds = sheet.getGridColumnMinMax(options.column, true);
   } else {
-    bounds = sheet.getMinMax();
+    bounds = sheet.getMinMax(true);
   }
   if (!bounds) return;
   const cursorPosition = { x: bounds[0].x, y: bounds[0].y };
@@ -52,7 +52,7 @@ export function selectColumns(options: {
     maxX = -Infinity,
     maxY = -Infinity;
   for (let x = options.start; x <= options.end; x++) {
-    const bounds = sheet.getGridColumnMinMax(x);
+    const bounds = sheet.getGridColumnMinMax(x, true);
     if (bounds) {
       minX = Math.min(minX, bounds[0].x);
       maxX = Math.max(maxX, bounds[1].x);
@@ -89,7 +89,7 @@ export async function selectRows(options: {
     maxX = -Infinity,
     maxY = -Infinity;
   for (let y = options.start; y <= options.end; y++) {
-    const bounds = sheet.getGridRowMinMax(y);
+    const bounds = sheet.getGridRowMinMax(y, true);
     if (bounds) {
       minX = Math.min(minX, bounds[0].x);
       maxX = Math.max(maxX, bounds[bounds.length - 1].x);

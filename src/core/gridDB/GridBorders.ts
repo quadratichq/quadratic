@@ -3,14 +3,11 @@ import { Coordinate, MinMax } from '../gridGL/types/size';
 import { GridOffsets } from './GridOffsets';
 import { Border } from './gridTypes';
 import { Quadrants } from '../gridGL/quadrants/Quadrants';
+import { Bounds } from './Bounds';
 
 export class GridBorders {
   private gridOffsets: GridOffsets;
-  private minX = 0;
-  private maxX = 0;
-  private minY = 0;
-  private maxY = 0;
-  private isEmpty = true;
+  private bounds = new Bounds();
   borders = new Map<string, Border>();
 
   // tracks which quadrants need to render based on GridBorders data
@@ -23,11 +20,7 @@ export class GridBorders {
   empty() {
     this.borders.clear();
     this.quadrants.clear();
-    this.minX = 0;
-    this.maxX = 0;
-    this.minY = 0;
-    this.maxY = 0;
-    this.isEmpty = true;
+    this.bounds.clear();
   }
 
   private getKey(x?: number, y?: number): string {
@@ -35,47 +28,29 @@ export class GridBorders {
   }
 
   populate(borders?: Border[]) {
-    if (!borders?.length) {
-      this.empty();
-      return;
-    }
-    this.isEmpty = false;
+    this.empty();
+    if (!borders?.length) return;
     this.borders.clear();
     this.quadrants.clear();
-    this.minX = Infinity;
-    this.minY = Infinity;
-    this.maxX = -Infinity;
-    this.maxY = -Infinity;
     borders?.forEach((border) => {
       this.borders.set(this.getKey(border.x, border.y), border);
       this.quadrants.add(Quadrants.getKey(border.x, border.y));
-      this.minX = Math.min(this.minX, border.x);
-      this.maxX = Math.max(this.maxX, border.x);
-      this.minY = Math.min(this.minY, border.y);
-      this.maxY = Math.max(this.maxY, border.y);
+      this.bounds.add(border.x, border.y);
     });
   }
 
   recalculateBounds(): void {
-    if (this.borders.size === 0) {
-      this.empty();
-      return;
-    }
-    this.minX = Infinity;
-    this.maxX = -Infinity;
-    this.minY = Infinity;
-    this.maxY = -Infinity;
+    this.bounds.clear();
+    if (this.borders.size === 0) return;
     this.borders.forEach((border) => {
-      this.minX = Math.min(this.minX, border.x);
-      this.maxX = Math.max(this.maxX, border.x);
-      this.minY = Math.min(this.minY, border.y);
-      this.maxY = Math.max(this.maxY, border.y);
+      this.bounds.add(border.x, border.y);
     });
   }
 
   get(x: number, y: number): Border | undefined {
-    if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
-    return this.borders.get(this.getKey(x, y));
+    if (this.bounds.contains(x, y)) {
+      return this.borders.get(this.getKey(x, y));
+    }
   }
 
   clear(coordinates: Coordinate[]): void {
@@ -87,50 +62,53 @@ export class GridBorders {
     borders.forEach((border) => {
       this.borders.set(this.getKey(border.x, border.y), border);
       this.quadrants.add(Quadrants.getKey(border.x, border.y));
+      this.bounds.add(border.x, border.y);
     });
-    this.recalculateBounds();
   }
 
   getBorders(bounds: Rectangle): Border[] {
     const borders: Border[] = [];
     for (let y = bounds.top; y <= bounds.bottom; y++) {
       for (let x = bounds.left; x <= bounds.right; x++) {
-        const border = this.borders.get(this.getKey(x, y));
-        if (border) borders.push(border);
+        if (this.bounds.contains(x, y)) {
+          const border = this.borders.get(this.getKey(x, y));
+          if (border) borders.push(border);
+        }
       }
     }
     return borders;
   }
 
   getBounds(bounds: Rectangle): Rectangle {
+    const { minX, minY, maxX, maxY } = this.bounds;
     const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
-    const columnStart = columnStartIndex.index > this.minX ? columnStartIndex.index : this.minX;
+    const columnStart = columnStartIndex.index > minX ? columnStartIndex.index : minX;
     const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
-    const columnEnd = columnEndIndex.index < this.maxX ? columnEndIndex.index : this.maxX;
+    const columnEnd = columnEndIndex.index < maxX ? columnEndIndex.index : maxX;
 
     const rowStartIndex = this.gridOffsets.getRowIndex(bounds.top);
-    const rowStart = rowStartIndex.index > this.minY ? rowStartIndex.index : this.minY;
+    const rowStart = rowStartIndex.index > minY ? rowStartIndex.index : minY;
     const rowEndIndex = this.gridOffsets.getRowIndex(bounds.bottom);
-    const rowEnd = rowEndIndex.index < this.maxY ? rowEndIndex.index : this.maxY;
+    const rowEnd = rowEndIndex.index < maxY ? rowEndIndex.index : maxY;
 
     return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
   }
 
   getGridBounds(): Rectangle | undefined {
-    if (this.isEmpty) return;
-    return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
+    return this.bounds.toRectangle();
   }
 
   getRowMinMax(row: number): MinMax {
+    const { minX, maxX } = this.bounds;
     let min = Infinity;
     let max = -Infinity;
-    for (let x = this.minX; x <= this.maxX; x++) {
+    for (let x = minX; x <= maxX; x++) {
       if (this.get(x, row)) {
         min = x;
         break;
       }
     }
-    for (let x = this.maxX; x >= this.minX; x--) {
+    for (let x = maxX; x >= minX; x--) {
       if (this.get(x, row)) {
         max = x;
         break;
@@ -140,15 +118,16 @@ export class GridBorders {
   }
 
   getColumnMinMax(column: number): MinMax | undefined {
+    const { minY, maxY } = this.bounds;
     let min = Infinity;
     let max = -Infinity;
-    for (let y = this.minY; y <= this.maxY; y++) {
+    for (let y = minY; y <= maxY; y++) {
       if (this.get(column, y)) {
         min = y;
         break;
       }
     }
-    for (let y = this.maxY; y >= this.minY; y--) {
+    for (let y = maxY; y >= minY; y--) {
       if (this.get(column, y)) {
         max = y;
         break;

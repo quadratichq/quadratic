@@ -48,7 +48,7 @@ export default function DebugMenu(props: Props) {
       </Button>
       <Button
         onClick={() => {
-          sheet.grid.empty();
+          sheet.grid.clear();
           dgraph.clear();
         }}
       >

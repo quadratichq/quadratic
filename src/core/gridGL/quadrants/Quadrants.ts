@@ -47,7 +47,7 @@ export class Quadrants extends Container {
     this.quadrants.clear();
 
     const { grid, borders } = this.app.sheet;
-    const gridBounds = grid.getGridBounds();
+    const gridBounds = grid.getGridBounds(false);
     const borderBounds = borders.getGridBounds();
     const bounds = intersects.rectangleUnion(gridBounds, borderBounds);
 
@@ -123,7 +123,7 @@ export class Quadrants extends Container {
 
   /** marks quadrants dirty based on what has changed */
   quadrantChanged(options: QuadrantChanged): void {
-    const bounds = this.app.sheet.grid.getGridBounds();
+    const bounds = this.app.sheet.grid.getGridBounds(false);
     if (!bounds) return;
 
     if (options.row !== undefined) {

@@ -5,6 +5,7 @@ import { GridOffsets } from './GridOffsets';
 import { Cell, CellFormat } from './gridTypes';
 import { MinMax } from '../gridGL/types/size';
 import { Quadrants } from '../gridGL/quadrants/Quadrants';
+import { Bounds } from './Bounds';
 
 export interface CellAndFormat {
   cell?: Cell;
@@ -14,11 +15,9 @@ export interface CellAndFormat {
 /** Stores all cells and format locations */
 export class GridSparse {
   private gridOffsets: GridOffsets;
-  private minX = 0;
-  private maxX = 0;
-  private minY = 0;
-  private maxY = 0;
-  isEmpty = true;
+  private cellBounds = new Bounds();
+  private formatBounds = new Bounds();
+  private cellFormatBounds = new Bounds();
   cells = new Map<string, CellAndFormat>();
 
   // tracks which quadrants need to render based on GridSparse data
@@ -38,33 +37,23 @@ export class GridSparse {
         this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
       }
     });
-    if (cells.length) {
-      this.isEmpty = false;
-    }
     this.recalculateBounds();
   }
 
   recalculateBounds(): void {
-    if (this.cells.size === 0) {
-      this.empty();
-      return;
-    }
-    this.minX = Infinity;
-    this.maxX = -Infinity;
-    this.minY = Infinity;
-    this.maxY = -Infinity;
+    this.cellBounds.clear();
+    this.cellFormatBounds.clear();
+    this.formatBounds.clear();
+    if (this.cells.size === 0) return;
     this.cells.forEach((cell) => {
-      const x = cell.cell?.x ?? cell.format?.x;
-      const y = cell.cell?.y ?? cell.format?.y;
-      if (x === undefined || y === undefined) {
-        throw new Error('Expected CellAndFormat to have defined cell or format');
-      } else {
-        this.minX = Math.min(this.minX, x);
-        this.maxX = Math.max(this.maxX, x);
-        this.minY = Math.min(this.minY, y);
-        this.maxY = Math.max(this.maxY, y);
+      if (cell.cell) {
+        this.cellBounds.add(cell.cell.x, cell.cell.y);
+        this.cellBounds.add(cell.cell.x, cell.cell.y);
+      } else if (cell.format) {
+        this.formatBounds.add(cell.format.x, cell.format.y);
       }
     });
+    this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
   }
 
   updateFormat(formats: CellFormat[]): void {
@@ -75,11 +64,9 @@ export class GridSparse {
       } else {
         this.cells.set(this.getKey(format.x, format.y), { format });
       }
+      this.formatBounds.add(format.x, format.y);
+      this.cellFormatBounds.add(format.x, format.y);
     });
-    if (formats.length) {
-      this.isEmpty = false;
-    }
-    this.recalculateBounds();
   }
 
   clearFormat(formats: CellFormat[]): void {
@@ -111,14 +98,16 @@ export class GridSparse {
     this.recalculateBounds();
   }
 
-  empty() {
+  get empty(): boolean {
+    return this.cellFormatBounds.empty;
+  }
+
+  clear() {
     this.cells.clear();
     this.quadrants.clear();
-    this.minX = 0;
-    this.maxX = 0;
-    this.minY = 0;
-    this.maxY = 0;
-    this.isEmpty = true;
+    this.cellBounds.clear();
+    this.formatBounds.clear();
+    this.cellFormatBounds.clear();
   }
 
   private getKey(x?: number, y?: number): string {
@@ -126,24 +115,12 @@ export class GridSparse {
   }
 
   populate(cells?: Cell[], formats?: CellFormat[]) {
-    if (!cells?.length && !formats?.length) {
-      this.empty();
-      return;
-    }
-    this.isEmpty = false;
-    this.cells.clear();
-    this.quadrants.clear();
-    this.minX = Infinity;
-    this.maxX = -Infinity;
-    this.minY = Infinity;
-    this.maxY = -Infinity;
+    this.clear();
+    if (!cells?.length && !formats?.length) return;
     cells?.forEach((cell) => {
       this.cells.set(this.getKey(cell.x, cell.y), { cell });
       this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
-      this.minX = Math.min(this.minX, cell.x);
-      this.maxX = Math.max(this.maxX, cell.x);
-      this.minY = Math.min(this.minY, cell.y);
-      this.maxY = Math.max(this.maxY, cell.y);
+      this.cellBounds.add(cell.x, cell.y)
     });
     formats?.forEach((format) => {
       const key = this.getKey(format.x, format.y);
@@ -153,31 +130,27 @@ export class GridSparse {
       } else {
         this.cells.set(key, { format });
       }
-      if (format.x !== undefined) {
-        this.minX = Math.min(this.minX, format.x);
-        this.maxX = Math.max(this.maxX, format.x);
-      }
-      if (format.y !== undefined) {
-        this.minY = Math.min(this.minY, format.y);
-        this.maxY = Math.max(this.maxY, format.y);
-      }
+      this.formatBounds.add(format.x, format.y);
     });
+    this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
   }
 
   get(x: number, y: number): CellAndFormat | undefined {
-    if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
-    return this.cells.get(this.getKey(x, y));
+    if (this.cellFormatBounds.contains(x, y)) {
+      return this.cells.get(this.getKey(x, y));
+    }
   }
 
   getCell(x: number, y: number): Cell | undefined {
-    // if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
-    // I am not sure were the min and max are coming from, but they are not updated when calling updateCells
-    return this.cells.get(this.getKey(x, y))?.cell;
+    if (this.cellBounds.contains(x, y)) {
+      return this.cells.get(this.getKey(x, y))?.cell;
+    }
   }
 
   getFormat(x: number, y: number): CellFormat | undefined {
-    if (x < this.minX || x > this.maxX || y < this.minY || y > this.maxY) return;
-    return this.cells.get(this.getKey(x, y))?.format;
+    if (this.formatBounds.contains(x, y)) {
+      return this.cells.get(this.getKey(x, y))?.format;
+    }
   }
 
   getCells(rectangle: Rectangle): CellRectangle {
@@ -186,40 +159,37 @@ export class GridSparse {
 
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
     const cells: Cell[] = [];
-    for (let y = y0; y <= y1; y++) {
-      for (let x = x0; x <= x1; x++) {
-        const cell = this.cells.get(this.getKey(x, y));
-        if (cell?.cell) {
-          cells.push(cell.cell);
-        }
+    this.cells.forEach(cell => {
+      if (cell.cell && cell.cell.x >= x0 && cell.cell.x <= x1 && cell.cell.y >= y0 && cell.cell.y <= y1) {
+        cells.push(cell.cell);
       }
-    }
+    });
     return cells;
   }
 
   getNakedFormat(x0: number, y0: number, x1: number, y1: number): CellFormat[] {
     const cells: CellFormat[] = [];
-    for (let y = y0; y <= y1; y++) {
-      for (let x = x0; x <= x1; x++) {
-        const cell = this.cells.get(this.getKey(x, y));
-        if (cell?.format) {
+    this.cells.forEach(cell => {
+      if (cell.format) {
+        if (cell.format.x >= x0 && cell.format.x <= x1 && cell.format.y >= y0 && cell.format.y <= y1) {
           cells.push(cell.format);
         }
       }
-    }
+    });
     return cells;
   }
 
   getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
+    const { minX, minY, maxX, maxY, empty } = this.cellFormatBounds;
     const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
-    const columnStart = columnStartIndex.index > this.minX ? columnStartIndex.index : this.minX;
+    const columnStart = columnStartIndex.index > minX ? columnStartIndex.index : minX;
     const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
-    const columnEnd = columnEndIndex.index < this.maxX ? columnEndIndex.index : this.maxX;
+    const columnEnd = columnEndIndex.index < maxX ? columnEndIndex.index : maxX;
 
     const rowStartIndex = this.gridOffsets.getRowIndex(bounds.top);
-    const rowStart = rowStartIndex.index > this.minY ? rowStartIndex.index : this.minY;
+    const rowStart = rowStartIndex.index > minY ? rowStartIndex.index : minY;
     const rowEndIndex = this.gridOffsets.getRowIndex(bounds.bottom);
-    const rowEnd = rowEndIndex.index < this.maxY ? rowEndIndex.index : this.maxY;
+    const rowEnd = rowEndIndex.index < maxY ? rowEndIndex.index : maxY;
 
     return {
       bounds: new Rectangle(
@@ -228,29 +198,35 @@ export class GridSparse {
         columnEndIndex.index - columnStartIndex.index,
         rowEndIndex.index - rowStartIndex.index
       ),
-      boundsWithData: this.isEmpty
+      boundsWithData: empty
         ? undefined
         : new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart),
     };
   }
 
-  getGridBounds(): Rectangle | undefined {
-    if (this.isEmpty) return;
-    return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
+  getGridBounds(onlyData: boolean): Rectangle | undefined {
+    if (onlyData) {
+      return this.cellBounds.toRectangle();
+    }
+    return this.cellFormatBounds.toRectangle();
   }
 
   /** finds the minimum and maximum location for content in a row */
-  getRowMinMax(row: number): MinMax | undefined {
+  getRowMinMax(row: number, onlyData: boolean): MinMax | undefined {
+    const { minX, maxX, empty } = this.cellFormatBounds;
+    if (empty) return;
     let min = Infinity;
     let max = -Infinity;
-    for (let x = this.minX; x <= this.maxX; x++) {
-      if (this.get(x, row)) {
+    for (let x = minX; x <= maxX; x++) {
+      const entry = this.get(x, row);
+      if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
         min = x;
         break;
       }
     }
-    for (let x = this.maxX; x >= this.minX; x--) {
-      if (this.get(x, row)) {
+    for (let x = maxX; x >= minX; x--) {
+      const entry = this.get(x, row);
+      if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
         max = x;
         break;
       }
@@ -260,17 +236,21 @@ export class GridSparse {
   }
 
   /**finds the minimum and maximum location for content in a column */
-  getColumnMinMax(column: number): MinMax | undefined {
+  getColumnMinMax(column: number, onlyData: boolean): MinMax | undefined {
+    const { minY, maxY, empty } = this.cellFormatBounds;
+    if (empty) return;
     let min = Infinity;
     let max = -Infinity;
-    for (let y = this.minY; y <= this.maxY; y++) {
-      if (this.get(column, y)) {
+    for (let y = minY; y <= maxY; y++) {
+      const entry = this.get(column, y);
+      if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
         min = y;
         break;
       }
     }
-    for (let y = this.maxY; y >= this.minY; y--) {
-      if (this.get(column, y)) {
+    for (let y = maxY; y >= minY; y--) {
+      const entry = this.get(column, y);
+      if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
         max = y;
         break;
       }
@@ -288,7 +268,7 @@ export class GridSparse {
   }
 
   getArrays(): { cells: Cell[]; formats: CellFormat[] } {
-    const array = Array.from(this.cells, ([name, value]) => value);
+    const array = Array.from(this.cells, ([_, value]) => value);
     return {
       cells: array.flatMap((entry) => {
         if (entry.cell) return [entry.cell];

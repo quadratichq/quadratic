@@ -89,16 +89,19 @@ export class Sheet {
   }
 
   /** finds grid bounds based on GridSparse, GridBounds, and GridRenderDependency */
-  getGridBounds(): Rectangle | undefined {
+  getGridBounds(onlyData: boolean): Rectangle | undefined {
+    if (onlyData) {
+      return this.grid.getGridBounds(true);
+    }
     return intersects.rectangleUnion(
-      this.grid.getGridBounds(),
+      this.grid.getGridBounds(false),
       this.borders.getGridBounds(),
       this.render_dependency.getGridBounds()
     );
   }
 
-  getMinMax(): Coordinate[] | undefined {
-    const bounds = this.getGridBounds();
+  getMinMax(onlyData: boolean): Coordinate[] | undefined {
+    const bounds = this.getGridBounds(onlyData);
     if (!bounds) return;
     return [
       { x: bounds.left, y: bounds.top },
@@ -106,8 +109,15 @@ export class Sheet {
     ];
   }
 
-  getGridRowMinMax(row: number): Coordinate[] | undefined {
-    const gridRowMinMax = this.grid.getRowMinMax(row);
+  getGridRowMinMax(row: number, onlyData: boolean): Coordinate[] | undefined {
+    const gridRowMinMax = this.grid.getRowMinMax(row, onlyData);
+    if (onlyData) {
+      if (!gridRowMinMax) return;
+      return [
+        { x: gridRowMinMax.min, y: row },
+        { x: gridRowMinMax.max, y: row },
+      ];
+    }
     const bordersRowMinMax = this.borders.getRowMinMax(row);
     if (!gridRowMinMax && !bordersRowMinMax) return;
     if (!gridRowMinMax) {
@@ -128,8 +138,15 @@ export class Sheet {
     ];
   }
 
-  getGridColumnMinMax(column: number): Coordinate[] | undefined {
-    const gridColumnMinMax = this.grid.getColumnMinMax(column);
+  getGridColumnMinMax(column: number, onlyData: boolean): Coordinate[] | undefined {
+    const gridColumnMinMax = this.grid.getColumnMinMax(column, onlyData);
+    if (onlyData) {
+      if (!gridColumnMinMax) return;
+      return [
+        { x: column, y: gridColumnMinMax.min },
+        { x: column, y: gridColumnMinMax.max }
+      ];
+    }
     const bordersColumnMinMax = this.borders.getColumnMinMax(column);
     if (!gridColumnMinMax && !bordersColumnMinMax) return;
     if (!gridColumnMinMax) {

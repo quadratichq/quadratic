@@ -1,5 +1,6 @@
 import { Rectangle } from 'pixi.js';
 import { Coordinate, coordinateEqual } from '../gridGL/types/size';
+import { Bounds } from './Bounds';
 
 export interface Dependency {
   location: Coordinate;
@@ -9,35 +10,18 @@ export interface Dependency {
 
 export class GridRenderDependency {
   private dependents: Map<string, Dependency> = new Map();
-  private minX = 0;
-  private maxX = 0;
-  private minY = 0;
-  private maxY = 0;
-  private isEmpty = true;
+  private bounds = new Bounds();
 
   clear(): void {
     this.dependents.clear();
-    this.minX = 0;
-    this.maxX = 0;
-    this.minY = 0;
-    this.maxY = 0;
-    this.isEmpty = true;
+    this.bounds.clear();
   }
 
   recalculateBounds(): void {
-    if (this.dependents.size === 0) {
-      this.clear();
-      return;
-    }
-    this.minX = Infinity;
-    this.maxX = -Infinity;
-    this.minY = Infinity;
-    this.maxY = -Infinity;
+    this.bounds.clear();
+    if (this.dependents.size === 0) return;
     this.dependents.forEach((dependent) => {
-      this.minX = Math.min(this.minX, dependent.location.x);
-      this.maxX = Math.max(this.maxX, dependent.location.x);
-      this.minY = Math.min(this.minY, dependent.location.y);
-      this.maxY = Math.max(this.maxY, dependent.location.y);
+      this.bounds.addCoordinate(dependent.location);
     });
   }
 
@@ -135,6 +119,7 @@ export class GridRenderDependency {
    * @returns
    */
   getDependents(cell: Coordinate): Coordinate[] | undefined {
+    if (!this.bounds.containsCoordinate(cell)) return;
     const entry = this.dependents.get(this.getKey(cell));
     if (entry) {
       return entry.needToRender;
@@ -186,7 +171,6 @@ export class GridRenderDependency {
   }
 
   getGridBounds(): Rectangle | undefined {
-    if (this.isEmpty) return;
-    return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
+    return this.bounds.toRectangle();
   }
 }

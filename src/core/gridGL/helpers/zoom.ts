@@ -4,7 +4,7 @@ import { Sheet } from '../../gridDB/Sheet';
 import { ZOOM_ANIMATION_TIME_MS } from '../../../constants/gridConstants';
 
 export function zoomToFit(sheet: Sheet, viewport: Viewport): void {
-  const gridBounds = sheet.getGridBounds();
+  const gridBounds = sheet.getGridBounds(false);
   if (gridBounds) {
     const screenRectangle = sheet.gridOffsets.getScreenRectangle(
       gridBounds.x,

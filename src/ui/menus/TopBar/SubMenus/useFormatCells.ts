@@ -27,7 +27,7 @@ interface IResults {
   textFormatSetExponential: () => void;
 }
 
-type CellFormatNoPosition = Exclude<CellFormat, 'x' | 'y'>;
+type CellFormatNoPosition = Omit<CellFormat, 'x' | 'y'>;
 
 export const useFormatCells = (sheet_controller: SheetController, app: PixiApp): IResults => {
   const { start, end } = useGetSelection(sheet_controller.sheet);
@@ -52,7 +52,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
                 (format.textFormat.decimalPlaces ?? DEFAULT_NUMBER_OF_DECIMAL_PLACES) + deltaNumberOfDecimalPlaces,
             };
           }
-          if ((format.textFormat.decimalPlaces ?? false) < 0) {
+          if ((format.textFormat.decimalPlaces ?? 0) < 0) {
             format.textFormat.decimalPlaces = 0;
           }
         }
