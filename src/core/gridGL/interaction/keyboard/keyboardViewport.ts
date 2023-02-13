@@ -27,7 +27,7 @@ export function keyboardViewport(options: {
     viewport,
     editorInteractionState,
     setEditorInteractionState,
-    pointer,
+    // pointer,
   } = options;
 
   if (!viewport || event.altKey) return false;
