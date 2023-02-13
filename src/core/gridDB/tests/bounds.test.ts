@@ -34,7 +34,6 @@ describe('bounds', () => {
     expect(bounds.contains(0, 0)).toBe(true);
     expect(bounds.contains(-1, -2)).toBe(true);
     expect(bounds.contains(1, 2)).toBe(false);
-
   });
 
   it('copies bounds', () => {

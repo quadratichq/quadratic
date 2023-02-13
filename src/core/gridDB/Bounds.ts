@@ -43,9 +43,9 @@ export class Bounds {
    */
   mergeInto(...boundsList: Bounds[]): void {
     if (boundsList.length === 0) return;
-    if (boundsList.filter(bounds => !bounds.empty).length === 0) return;
+    if (boundsList.filter((bounds) => !bounds.empty).length === 0) return;
     this.empty = false;
-    boundsList.forEach(bounds => {
+    boundsList.forEach((bounds) => {
       this.minX = Math.min(this.minX, bounds.minX);
       this.minY = Math.min(this.minY, bounds.minY);
       this.maxX = Math.max(this.maxX, bounds.maxX);

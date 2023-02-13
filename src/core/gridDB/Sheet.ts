@@ -144,7 +144,7 @@ export class Sheet {
       if (!gridColumnMinMax) return;
       return [
         { x: column, y: gridColumnMinMax.min },
-        { x: column, y: gridColumnMinMax.max }
+        { x: column, y: gridColumnMinMax.max },
       ];
     }
     const bordersColumnMinMax = this.borders.getColumnMinMax(column);

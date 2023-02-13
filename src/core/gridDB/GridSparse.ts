@@ -120,7 +120,7 @@ export class GridSparse {
     cells?.forEach((cell) => {
       this.cells.set(this.getKey(cell.x, cell.y), { cell });
       this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
-      this.cellBounds.add(cell.x, cell.y)
+      this.cellBounds.add(cell.x, cell.y);
     });
     formats?.forEach((format) => {
       const key = this.getKey(format.x, format.y);
@@ -159,7 +159,7 @@ export class GridSparse {
 
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
     const cells: Cell[] = [];
-    this.cells.forEach(cell => {
+    this.cells.forEach((cell) => {
       if (cell.cell && cell.cell.x >= x0 && cell.cell.x <= x1 && cell.cell.y >= y0 && cell.cell.y <= y1) {
         cells.push(cell.cell);
       }
@@ -169,7 +169,7 @@ export class GridSparse {
 
   getNakedFormat(x0: number, y0: number, x1: number, y1: number): CellFormat[] {
     const cells: CellFormat[] = [];
-    this.cells.forEach(cell => {
+    this.cells.forEach((cell) => {
       if (cell.format) {
         if (cell.format.x >= x0 && cell.format.x <= x1 && cell.format.y >= y0 && cell.format.y <= y1) {
           cells.push(cell.format);
