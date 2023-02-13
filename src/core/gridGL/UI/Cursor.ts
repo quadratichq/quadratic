@@ -2,7 +2,7 @@ import { Graphics, Rectangle } from 'pixi.js';
 import { colors } from '../../../theme/colors';
 import { PixiApp } from '../pixiApp/PixiApp';
 
-const CURSOR_THICKNESS = 1.5;
+const CURSOR_THICKNESS = 1.25;
 const FILL_ALPHA = 0.1;
 const INDICATOR_SIZE = 8;
 const INDICATOR_PADDING = 1;

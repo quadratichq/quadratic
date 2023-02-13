@@ -4,6 +4,7 @@ export const colors = {
   cellColorUserText: 0x8ecb89,
   cellColorUserPython: 0x3776ab,
   cellColorUserFormula: 0x8c1a6a,
+  cellColorError: 0xf25f5c,
   cursorCell: 0x6cd4ff,
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,
@@ -20,4 +21,5 @@ export const colors = {
   quadraticFifth: '#5d576b',
   languagePython: '#3776ab',
   languageFormula: '#8c1a6a',
+  error: '#f25f5c',
 };
