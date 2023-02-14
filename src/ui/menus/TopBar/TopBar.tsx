@@ -15,7 +15,7 @@ import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
-import { ManageSearch, Search } from '@mui/icons-material';
+import { ManageSearch } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
 
