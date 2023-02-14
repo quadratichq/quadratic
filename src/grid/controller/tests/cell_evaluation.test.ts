@@ -155,7 +155,7 @@ test('SheetController - array output length change', async () => {
   expect(after_undo_1[0]?.array_cells?.length).toBe(10);
   expect(after_undo_1.length).toBe(10);
   after_undo_1.forEach((cell, index) => {
-    expect(cell.value).toEqual((index + 1).toString());
+    expect(cell.value).toEqual((cell.y + 1).toString());
     if (index === 0) return;
     expect(cell.type).toEqual('COMPUTED');
   });
@@ -178,7 +178,7 @@ test('SheetController - array output length change', async () => {
   expect(after_redo_1[0]?.array_cells?.length).toBe(10);
   expect(after_redo_1.length).toBe(10);
   after_redo_1.forEach((cell, index) => {
-    expect(cell.value).toEqual((index + 1).toString());
+    expect(cell.value).toEqual((cell.y + 1).toString());
     if (index === 0) return;
     expect(cell.type).toEqual('COMPUTED');
   });
@@ -197,7 +197,7 @@ test('SheetController - array output length change', async () => {
   expect(after_redo_2[0]?.type).toBe('PYTHON');
   expect(after_redo_2[0]?.array_cells?.length).toBe(5);
   after_redo_2.forEach((cell, index) => {
-    expect(cell.value).toEqual((index + 1).toString() + 'new');
+    expect(cell.value).toEqual((cell.y + 1).toString() + 'new');
     if (index === 0) return;
     expect(cell.type).toEqual('COMPUTED');
   });
@@ -252,7 +252,7 @@ test('SheetController - test array formula', async () => {
   expect(after_code_run_cells[0]?.array_cells?.length).toBe(3);
   expect(after_code_run_cells.length).toBe(3);
   after_code_run_cells.forEach((cell, index) => {
-    expect(cell.value).toEqual(((index + 1) * 2).toString());
+    expect(cell.value).toEqual(((cell.y + 1) * 2).toString());
     if (index === 0) return;
     expect(cell.type).toEqual('COMPUTED');
   });
