@@ -1,4 +1,4 @@
-import { Box, Typography, AvatarGroup, Avatar, IconButton, Switch } from '@mui/material';
+import { Box, Typography, IconButton, Switch } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -13,7 +13,6 @@ import { isMobileOnly } from 'react-device-detect';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { useAuth0 } from '@auth0/auth0-react';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Search } from '@mui/icons-material';
@@ -29,7 +28,7 @@ export const TopBar = (props: IProps) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { localFilename } = useLocalFiles();
   const settings = useGridSettings();
-  const { user } = useAuth0();
+  // const { user } = useAuth0();
 
   return (
     <div
@@ -113,7 +112,7 @@ export const TopBar = (props: IProps) => {
       >
         {!isMobileOnly && (
           <>
-            {user !== undefined && (
+            {/* {user !== undefined && (
               <AvatarGroup>
                 <Avatar
                   sx={{
@@ -128,7 +127,7 @@ export const TopBar = (props: IProps) => {
                   {user?.name && user?.name[0]}
                 </Avatar>
               </AvatarGroup>
-            )}
+            )} */}
             <TooltipHint title="Show cell type outlines">
               <Switch
                 color="secondary"
