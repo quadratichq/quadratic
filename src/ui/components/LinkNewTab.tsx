@@ -1,7 +1,11 @@
 import { Link } from '@mui/material';
 
-export function LinkNewTab(props: { href: string; children: React.ReactNode }) {
-  const { href, children, ...rest } = props;
+interface LinkNewTabProps {
+  children: React.ReactNode;
+  href: string;
+}
+
+export function LinkNewTab({ href, children, ...rest }: LinkNewTabProps) {
   return (
     <Link {...rest} href={href} target="_blank" rel="noopener">
       {children}

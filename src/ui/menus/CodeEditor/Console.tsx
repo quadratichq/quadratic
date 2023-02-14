@@ -4,14 +4,14 @@ import { cellEvaluationReturnType } from '../../../grid/computations/types';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { colors } from '../../../theme/colors';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 
-export function Console({
-  evalResult,
-  editorMode,
-}: {
+interface ConsoleProps {
+  editorMode: EditorInteractionState['mode'];
   evalResult: cellEvaluationReturnType | undefined;
-  editorMode: string;
-}) {
+}
+
+export function Console({ evalResult, editorMode }: ConsoleProps) {
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);

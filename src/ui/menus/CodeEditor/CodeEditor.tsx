@@ -4,7 +4,6 @@ import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { Cell } from '../../../grid/sheet/gridTypes';
-import './CodeEditor.css';
 import { IconButton } from '@mui/material';
 import { Console } from './Console';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -18,6 +17,7 @@ import { Close, PlayArrow, Subject } from '@mui/icons-material';
 import { Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import { ResizeControl } from './ResizeControl';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -322,46 +322,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
     </div>
   );
 };
-
-function ResizeControl({ setState, position }: { setState: Function; position: 'TOP' | 'LEFT' }) {
-  return (
-    <div
-      className={`resize-control resize-control--position-${position}`}
-      data-position={position}
-      style={{
-        // @ts-expect-error typescript doesn't like us setting CSS custom properties
-        '--resize-control-highlight': colors.quadraticPrimary,
-        '--resize-control-background': colors.mediumGray,
-      }}
-      onMouseDown={(e) => {
-        // set drag style via class
-        const target = e.currentTarget;
-        target.classList.add('resize-control--is-dragging');
-
-        function mousemove(event_mousemove: globalThis.MouseEvent) {
-          setState(
-            position === 'LEFT'
-              ? window.innerWidth - event_mousemove.x
-              : // 22 is a bit of a magic number.
-                // It's the height of the bottom bar, which is 1.5rem + 1px border
-                window.innerHeight - event_mousemove.y - 23
-          );
-        }
-
-        function mouseup() {
-          window.removeEventListener('mousemove', mousemove);
-          window.removeEventListener('mouseup', mouseup);
-
-          // revert to non-drag style
-          target.classList.remove('resize-control--is-dragging');
-        }
-
-        window.addEventListener('mousemove', mousemove);
-        window.addEventListener('mouseup', mouseup);
-      }}
-    ></div>
-  );
-}
 
 function capitalize(str: string) {
   const normalized = str.toLowerCase();
