@@ -48,17 +48,10 @@ Quadratic has no environment to configure. The grid runs entirely in the browser
 
 ### Run Quadratic Locally
 
-Setup Rust
-
-```
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source "$HOME/.cargo/env"
-curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-```
-
-Build Rust `npm run build:wasm`
-
-Install Dependencies `npm install`
+1. Install npm, [rustup](https://www.rust-lang.org/tools/install), and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+2. Run `rustup target add wasm32-unknown-unknown`
+3. Build the Rust/WASM `npm run build:wasm`
+4. run `npm install`
 
 Run Web `npm start`
 
