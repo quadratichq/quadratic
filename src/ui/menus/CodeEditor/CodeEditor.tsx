@@ -447,7 +447,7 @@ function ResizeControl({ setState, position }: { setState: Function; position: '
       className={`resize-control resize-control--position-${position}`}
       data-position={position}
       style={{
-        // @ts-expect-error
+        // @ts-expect-error typescript doesn't like us setting CSS custom properties
         '--resize-control-highlight': colors.quadraticPrimary,
         '--resize-control-background': colors.mediumGray,
       }}
