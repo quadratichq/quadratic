@@ -15,7 +15,7 @@ import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
-import { Search } from '@mui/icons-material';
+import { ManageSearch, Search } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
 
@@ -130,7 +130,6 @@ export const TopBar = (props: IProps) => {
             )} */}
             <TooltipHint title="Show cell type outlines">
               <Switch
-                color="secondary"
                 checked={settings.showCellTypeOutlines}
                 onChange={() => {
                   settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
@@ -139,7 +138,7 @@ export const TopBar = (props: IProps) => {
                 size="small"
               />
             </TooltipHint>
-            <TooltipHint title="Command Palette" shortcut={KeyboardSymbols.Command + 'P'}>
+            <TooltipHint title="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
               <IconButton
                 onClick={() => {
                   setEditorInteractionState({
@@ -149,7 +148,7 @@ export const TopBar = (props: IProps) => {
                   focusGrid();
                 }}
               >
-                <Search />
+                <ManageSearch />
               </IconButton>
             </TooltipHint>
             {/* <Tooltip title="Coming soon" arrow>
