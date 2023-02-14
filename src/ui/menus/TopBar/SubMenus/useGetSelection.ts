@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
-import { Coordinate } from '../../../../core/gridGL/types/size';
-import { Sheet } from '../../../../core/gridDB/Sheet';
-import { CellFormat } from '../../../../core/gridDB/gridTypes';
+import { Coordinate } from '../../../../gridGL/types/size';
+import { Sheet } from '../../../../grid/sheet/Sheet';
+import { CellFormat } from '../../../../grid/sheet/gridTypes';
 import { FORMAT_SELECTION_EVENT } from './useFormatCells';
 
 export type MultipleBoolean = true | false | 'multiple';

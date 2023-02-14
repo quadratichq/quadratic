@@ -4,8 +4,8 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../core/transaction/sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../grid/controller/sheetController';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 import '../../styles/floating-dialog.css';
 

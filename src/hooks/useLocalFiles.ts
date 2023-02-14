@@ -5,7 +5,7 @@ import {
   LocalFilesLoadEvent,
   LOCAL_FILES_LIST_EVENT,
   LOCAL_FILES_LOAD_EVENT,
-} from '../core/gridDB/localFiles';
+} from '../grid/sheet/localFiles';
 
 interface LocalFiles {
   localFilename?: string;

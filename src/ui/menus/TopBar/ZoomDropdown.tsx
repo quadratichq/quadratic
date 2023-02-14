@@ -5,7 +5,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { MenuLineItem } from './MenuLineItem';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { useCallback, useState } from 'react';
 import useEventListener from '../../../hooks/useEventListener';
 

@@ -1,8 +1,8 @@
-import { clearBordersAction } from '../../../../core/actions/clearBordersAction';
-import { Border, BorderType } from '../../../../core/gridDB/gridTypes';
-import { localFiles } from '../../../../core/gridDB/localFiles';
-import { Sheet } from '../../../../core/gridDB/Sheet';
-import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
+import { clearBordersAction } from '../../../../grid/actions/clearBordersAction';
+import { Border, BorderType } from '../../../../grid/sheet/gridTypes';
+import { localFiles } from '../../../../grid/sheet/localFiles';
+import { Sheet } from '../../../../grid/sheet/Sheet';
+import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { useGetSelection } from './useGetSelection';
 
 export interface ChangeBorder {
