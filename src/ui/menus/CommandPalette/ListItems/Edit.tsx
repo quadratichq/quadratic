@@ -2,7 +2,7 @@ import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { ContentCopy, ContentPaste, ContentCut, East, UndoOutlined } from '@mui/icons-material';
+import { ContentCopy, ContentPaste, ContentCut, East } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { Undo, Redo } from '@mui/icons-material';

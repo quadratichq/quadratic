@@ -1,8 +1,9 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { newGridFile, openGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
-import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
-import { UnarchiveOutlined, NoteAddOutlined, SaveAlt } from '@mui/icons-material';
+import { newGridFile, openGridFile } from '../../../../grid/actions/gridFile/OpenGridFile';
+import { SaveGridFile } from '../../../../grid/actions/gridFile/SaveGridFile';
+import { NoteAddOutlined, UploadFileOutlined } from '@mui/icons-material';
+import { SaveFileOutlined } from '../../../icons';
 
 const ListItems = [
   {
@@ -22,7 +23,7 @@ const ListItems = [
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
-        icon={<SaveAlt />}
+        icon={<SaveFileOutlined />}
         action={() => {
           SaveGridFile(props.sheetController.sheet, true);
         }}
@@ -34,7 +35,7 @@ const ListItems = [
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
-        icon={<UnarchiveOutlined />}
+        icon={<UploadFileOutlined />}
         action={() => {
           openGridFile(props.sheetController);
         }}
