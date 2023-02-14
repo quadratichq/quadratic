@@ -3,12 +3,12 @@ import { colors } from '../../../theme/colors';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { useEffect, useState } from 'react';
-import { Cell } from '../../../core/gridDB/gridTypes';
+import { Cell } from '../../../grid/sheet/gridTypes';
 import { formatDistance } from 'date-fns';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { isMobileOnly } from 'react-device-detect';
 import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
-import { Sheet } from '../../../core/gridDB/Sheet';
+import { Sheet } from '../../../grid/sheet/Sheet';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 
 interface Props {
@@ -65,6 +65,7 @@ export const BottomBar = (props: Props) => {
       }}
       style={{
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        borderTop: `1px solid ${colors.mediumGray}`,
         color: colors.darkGray,
         bottom: 0,
         width: '100%',

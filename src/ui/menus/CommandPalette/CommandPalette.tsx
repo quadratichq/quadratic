@@ -4,8 +4,8 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../core/transaction/sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../grid/controller/sheetController';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 import '../../styles/floating-dialog.css';
 
@@ -91,7 +91,7 @@ export const CommandPalette = (props: Props) => {
         />
 
         <Divider />
-        <div style={{ maxHeight: '330px', overflow: 'scroll' }}>
+        <div style={{ maxHeight: '330px', overflowY: 'scroll', paddingBottom: '5px' }}>
           <List dense={true} disablePadding>
             {ListItems.length ? (
               ListItems

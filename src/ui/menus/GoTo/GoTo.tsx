@@ -4,12 +4,12 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../core/transaction/sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../grid/controller/sheetController';
 import { East } from '@mui/icons-material';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
-import { Coordinate } from '../../../core/gridGL/types/size';
-import { isVisible, moveViewport } from '../../../core/gridGL/interaction/viewportHelper';
+import { Coordinate } from '../../../gridGL/types/size';
+import { isVisible, moveViewport } from '../../../gridGL/interaction/viewportHelper';
 import '../../styles/floating-dialog.css';
 
 interface Props {

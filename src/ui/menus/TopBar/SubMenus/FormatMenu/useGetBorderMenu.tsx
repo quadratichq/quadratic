@@ -1,5 +1,5 @@
 import { ClickEvent, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
-import { BorderType } from '../../../../../core/gridDB/gridTypes';
+import { BorderType } from '../../../../../grid/sheet/gridTypes';
 import {
   BorderColor,
   LineStyle,
@@ -23,8 +23,8 @@ import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
 import { colors } from '../../../../../theme/colors';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
-import { Sheet } from '../../../../../core/gridDB/Sheet';
-import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
+import { Sheet } from '../../../../../grid/sheet/Sheet';
+import { PixiApp } from '../../../../../gridGL/pixiApp/PixiApp';
 import { QColorPicker } from '../../../../components/qColorPicker';
 
 interface Props extends SubMenuProps {

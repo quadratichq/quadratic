@@ -1,4 +1,4 @@
-import { Box, Typography, AvatarGroup, Avatar, IconButton, Switch } from '@mui/material';
+import { Box, Typography, IconButton, Switch } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -10,13 +10,12 @@ import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isMobileOnly } from 'react-device-detect';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { useLocalFiles } from '../../../hooks/useLocalFiles';
-import { SheetController } from '../../../core/transaction/sheetController';
-import { useAuth0 } from '@auth0/auth0-react';
+import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
-import { Search } from '@mui/icons-material';
+import { ManageSearch, Search } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
 
@@ -29,7 +28,7 @@ export const TopBar = (props: IProps) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { localFilename } = useLocalFiles();
   const settings = useGridSettings();
-  const { user } = useAuth0();
+  // const { user } = useAuth0();
 
   return (
     <div
@@ -109,23 +108,11 @@ export const TopBar = (props: IProps) => {
           alignItems: 'center',
           justifyContent: 'flex-end',
           gap: '1rem',
-          width: '20rem',
         }}
       >
         {!isMobileOnly && (
           <>
-            <TooltipHint title="Show cell type outlines">
-              <Switch
-                color="secondary"
-                checked={settings.showCellTypeOutlines}
-                onChange={() => {
-                  settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
-                  focusGrid();
-                }}
-                size="small"
-              />
-            </TooltipHint>
-            {user !== undefined && (
+            {/* {user !== undefined && (
               <AvatarGroup>
                 <Avatar
                   sx={{
@@ -140,8 +127,18 @@ export const TopBar = (props: IProps) => {
                   {user?.name && user?.name[0]}
                 </Avatar>
               </AvatarGroup>
-            )}
-            <TooltipHint title="Command Palette" shortcut={KeyboardSymbols.Command + 'P'}>
+            )} */}
+            <TooltipHint title="Show cell type outlines">
+              <Switch
+                checked={settings.showCellTypeOutlines}
+                onChange={() => {
+                  settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
+                  focusGrid();
+                }}
+                size="small"
+              />
+            </TooltipHint>
+            <TooltipHint title="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
               <IconButton
                 onClick={() => {
                   setEditorInteractionState({
@@ -151,7 +148,7 @@ export const TopBar = (props: IProps) => {
                   focusGrid();
                 }}
               >
-                <Search />
+                <ManageSearch />
               </IconButton>
             </TooltipHint>
             {/* <Tooltip title="Coming soon" arrow>

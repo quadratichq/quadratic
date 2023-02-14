@@ -1,10 +1,10 @@
 import { ColorResult } from 'react-color';
-import { clearFormattingAction } from '../../../../core/actions/clearFormattingAction';
-import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../core/formatting/cellTextFormat';
-import { CellFormat } from '../../../../core/gridDB/gridTypes';
-import { localFiles } from '../../../../core/gridDB/localFiles';
-import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../../core/transaction/sheetController';
+import { clearFormattingAction } from '../../../../grid/actions/clearFormattingAction';
+import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
+import { CellFormat } from '../../../../grid/sheet/gridTypes';
+import { localFiles } from '../../../../grid/sheet/localFiles';
+import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../../grid/controller/sheetController';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { useGetSelection } from './useGetSelection';
 

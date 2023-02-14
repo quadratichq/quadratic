@@ -1,7 +1,7 @@
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItemCheckbox } from '../CommandPaletteListItemCheckbox';
-import { zoomIn, zoomOut, zoomToFit, zoomTo100 } from '../../../../core/gridGL/helpers/zoom';
+import { zoomIn, zoomOut, zoomToFit, zoomTo100 } from '../../../../gridGL/helpers/zoom';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
 

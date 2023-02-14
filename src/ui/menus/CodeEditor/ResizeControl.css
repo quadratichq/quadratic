@@ -1,0 +1,62 @@
+/* Shared styles for the 1px line */
+.resize-control {
+  background-color: var(--resize-control-background);
+  z-index: 10;
+}
+
+/* Vertical control, left side */
+.resize-control--position-LEFT {
+  width: 1px;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: -1px;
+  cursor: col-resize;
+}
+
+/* Horizontal control, top side */
+.resize-control--position-TOP {
+  position: relative;
+  width: 100%;
+  height: 1px;
+  cursor: row-resize;
+}
+
+/* Effect upon hover/drag */
+.resize-control:before {
+  content: '';
+  transition: 0.2s ease background-color 0ms;
+}
+.resize-control--position-LEFT:before {
+  position: absolute;
+  width: 5px;
+  height: 100%;
+  left: -2px;
+  top: 0;
+}
+.resize-control--position-TOP:before {
+  position: absolute;
+  width: 100%;
+  height: 5px;
+  top: -2px;
+  left: 0;
+}
+.resize-control--is-dragging:before,
+.resize-control:hover:before {
+  background-color: var(--resize-control-highlight);
+  z-index: 100;
+  /* Delay the transition effect so it only appears when the user shows intent */
+  transition: 0.2s ease background-color 300ms;
+}
+
+/* When control is being dragged, applies styles to body to prevent text
+   selection and try to keep correct cursor displayed */
+body:has(.resize-control--is-dragging) {
+  user-select: none;
+}
+body:has(.resize-control--is-dragging.resize-control--position-LEFT) {
+  cursor: col-resize !important;
+}
+body:has(.resize-control--is-dragging.resize-control--position-TOP) {
+  cursor: row-resize !important;
+}
