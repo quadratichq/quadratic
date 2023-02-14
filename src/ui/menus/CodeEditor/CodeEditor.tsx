@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback, ReactElement } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
@@ -413,7 +413,7 @@ function LinkNewTab({ href, children }: { href: string; children: React.ReactNod
   );
 }
 
-function TabPanel(props: any) {
+function TabPanel(props: { children: ReactElement; value: number; index: number }) {
   const { children, value, index, ...other } = props;
 
   return (
