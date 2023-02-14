@@ -141,7 +141,7 @@ export const TopBar = (props: IProps) => {
                 </Avatar>
               </AvatarGroup>
             )}
-            <TooltipHint title="Search" shortcut={KeyboardSymbols.Command + 'P'}>
+            <TooltipHint title="Command Palette" shortcut={KeyboardSymbols.Command + 'P'}>
               <IconButton
                 onClick={() => {
                   setEditorInteractionState({
