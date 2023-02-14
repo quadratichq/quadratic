@@ -138,7 +138,7 @@ export const TopBar = (props: IProps) => {
                 size="small"
               />
             </TooltipHint>
-            <TooltipHint title="Quick actions" shortcut={KeyboardSymbols.Command + 'P'}>
+            <TooltipHint title="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
               <IconButton
                 onClick={() => {
                   setEditorInteractionState({
