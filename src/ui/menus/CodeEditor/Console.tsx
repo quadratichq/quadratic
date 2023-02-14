@@ -49,6 +49,10 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
             onCut={preventDefault}
             onPaste={preventDefault}
             style={{ outline: 'none' }}
+            // Disable Grammarly
+            data-gramm="false"
+            data-gramm_editor="false"
+            data-enable-grammarly="false"
           >
             {hasOutput && (
               <>
