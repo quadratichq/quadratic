@@ -25,7 +25,7 @@ sys.modules["pyodide"] = mock_pyodide
 sys.modules["micropip"] = mock_micropip
 
 # add path to import run_python
-sys.path.insert(1, "src/core/computations/python")
+sys.path.insert(1, "src/grid/computations/python")
 
 from run_python import run_python, attempt_fix_await
 

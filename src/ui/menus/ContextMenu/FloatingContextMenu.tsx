@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../core/transaction/sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../grid/controller/sheetController';
 import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import {
   AttachMoneyOutlined,
@@ -22,7 +22,7 @@ import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { QColorPicker } from '../../components/qColorPicker';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../core/actions/clipboard';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../grid/actions/clipboard';
 import { TooltipHint } from '../../components/TooltipHint';
 import { DecimalDecrease, DecimalIncrease } from '../../icons';
 import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting';
@@ -38,7 +38,7 @@ interface Props {
 
 export const FloatingContextMenu = (props: Props) => {
   const { interactionState, app, container, sheetController, showContextMenu } = props;
-  const viewport = app?.viewport;
+  const viewport = app.viewport;
 
   const menuDiv = useRef<HTMLDivElement>(null);
   const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
@@ -57,7 +57,7 @@ export const FloatingContextMenu = (props: Props) => {
   const { clearAllFormatting } = useClearAllFormatting(sheetController, props.app);
 
   // Function used to move and scale the Input with the Grid
-  const updateInputCSSTransform = useCallback(() => {
+  const updateContextMenuCSSTransform = useCallback(() => {
     if (!app || !viewport || !container) return '';
     if (!menuDiv.current) return '';
 
@@ -130,8 +130,12 @@ export const FloatingContextMenu = (props: Props) => {
     menuDiv.current.style.transform = transform;
 
     // Disable pointer events while the viewport is moving
-    if (viewport.dirty) menuDiv.current.style.pointerEvents = 'none';
-    else menuDiv.current.style.pointerEvents = 'auto';
+    if (viewport.moving) {
+      menuDiv.current.style.pointerEvents = 'none';
+      // make sure when we are setting pointer event to none
+      // that we check again soon to see if the viewport is done moving
+      setTimeout(updateContextMenuCSSTransform, 100);
+    } else menuDiv.current.style.pointerEvents = 'auto';
 
     return transform;
   }, [
@@ -147,22 +151,22 @@ export const FloatingContextMenu = (props: Props) => {
 
   useEffect(() => {
     if (!viewport) return;
-    viewport.on('moved', updateInputCSSTransform);
-    viewport.on('moved-end', updateInputCSSTransform);
-    document.addEventListener('pointerup', updateInputCSSTransform);
+    viewport.on('moved', updateContextMenuCSSTransform);
+    viewport.on('moved-end', updateContextMenuCSSTransform);
+    document.addEventListener('pointerup', updateContextMenuCSSTransform);
 
     return () => {
-      viewport.removeListener('moved', updateInputCSSTransform);
-      viewport.removeListener('moved-end', updateInputCSSTransform);
-      document.removeEventListener('pointerup', updateInputCSSTransform);
+      viewport.removeListener('moved', updateContextMenuCSSTransform);
+      viewport.removeListener('moved-end', updateContextMenuCSSTransform);
+      document.removeEventListener('pointerup', updateContextMenuCSSTransform);
     };
-  }, [viewport, updateInputCSSTransform]);
+  }, [viewport, updateContextMenuCSSTransform]);
 
   // If we don't have a viewport, we can't continue.
   if (!viewport || !container) return null;
 
   // set input's initial position correctly
-  const transform = updateInputCSSTransform();
+  const transform = updateContextMenuCSSTransform();
 
   const iconSize = 'small';
 

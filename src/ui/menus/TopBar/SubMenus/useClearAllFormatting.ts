@@ -1,5 +1,5 @@
-import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../../core/transaction/sheetController';
+import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../../grid/controller/sheetController';
 import { useBorders } from './useBorders';
 import { useFormatCells } from './useFormatCells';
 

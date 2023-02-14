@@ -9,8 +9,8 @@ import BordersListItems from './ListItems/Borders';
 import TextListItems from './ListItems/Text';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { SheetController } from '../../../core/transaction/sheetController';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../grid/controller/sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 
 interface Commands {
   label: string;

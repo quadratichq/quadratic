@@ -1,9 +1,10 @@
 import { ColorResult } from 'react-color';
-import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../core/formatting/cellTextFormat';
-import { CellFormat } from '../../../../core/gridDB/gridTypes';
-import { localFiles } from '../../../../core/gridDB/localFiles';
-import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../../core/transaction/sheetController';
+import { clearFormattingAction } from '../../../../grid/actions/clearFormattingAction';
+import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
+import { CellFormat } from '../../../../grid/sheet/gridTypes';
+import { localFiles } from '../../../../grid/sheet/localFiles';
+import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../../grid/controller/sheetController';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { useGetSelection } from './useGetSelection';
 
@@ -26,7 +27,7 @@ interface IResults {
   textFormatSetExponential: () => void;
 }
 
-type CellFormatNoPosition = Exclude<CellFormat, 'x' | 'y'>;
+type CellFormatNoPosition = Omit<CellFormat, 'x' | 'y'>;
 
 export const useFormatCells = (sheet_controller: SheetController, app: PixiApp): IResults => {
   const { start, end } = useGetSelection(sheet_controller.sheet);
@@ -51,7 +52,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
                 (format.textFormat.decimalPlaces ?? DEFAULT_NUMBER_OF_DECIMAL_PLACES) + deltaNumberOfDecimalPlaces,
             };
           }
-          if ((format.textFormat.decimalPlaces ?? false) < 0) {
+          if ((format.textFormat.decimalPlaces ?? 0) < 0) {
             format.textFormat.decimalPlaces = 0;
           }
         }
@@ -92,29 +93,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
   };
 
   const clearFormatting = (args?: { create_transaction?: boolean }): void => {
-    const formats: CellFormat[] = [];
-    for (let y = start.y; y <= end.y; y++) {
-      for (let x = start.x; x <= end.x; x++) {
-        const format = sheet_controller.sheet.grid.getFormat(x, y) ?? { x, y };
-        formats.push({ ...format });
-      }
-    }
-    // transaction to clear cell formats
-    args?.create_transaction ?? sheet_controller.start_transaction();
-    formats.forEach((format) => {
-      if (format.x !== undefined && format.y !== undefined)
-        sheet_controller.execute_statement({
-          type: 'SET_CELL_FORMAT',
-          data: {
-            position: [format.x, format.y],
-            value: undefined, // set to undefined to clear formatting
-          },
-        });
-    });
-    args?.create_transaction ?? sheet_controller.end_transaction();
-
-    app?.quadrants.quadrantChanged({ range: { start, end } });
-    localFiles.saveLastLocal(sheet_controller.sheet.export_file());
+    clearFormattingAction({ sheet_controller, start, end, create_transaction: args?.create_transaction });
   };
 
   const changeBold = (bold: boolean): void => {

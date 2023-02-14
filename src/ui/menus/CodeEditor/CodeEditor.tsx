@@ -4,16 +4,16 @@ import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import TextField from '@mui/material/TextField';
-import { Cell } from '../../../core/gridDB/gridTypes';
+import { Cell } from '../../../grid/sheet/gridTypes';
 import './CodeEditor.css';
 import { IconButton } from '@mui/material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../../core/transaction/sheetController';
-import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
+import { SheetController } from '../../../grid/controller/sheetController';
+import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
 import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
-import { cellEvaluationReturnType } from '../../../core/computations/types';
+import { cellEvaluationReturnType } from '../../../grid/computations/types';
 import { Close, PlayArrow, Subject } from '@mui/icons-material';
 import { Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -34,6 +34,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const monacoRef = useRef<Monaco | null>(null);
 
   const [editorContent, setEditorContent] = useState<string | undefined>('');
+  const [didMount, setDidMount] = useState(false);
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -164,9 +165,14 @@ export const CodeEditor = (props: CodeEditorProps) => {
     monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
     monaco.editor.setTheme('quadratic');
 
+    if (didMount) return;
+    // Only register language once
+
     monaco.languages.register({ id: 'formula' });
     monaco.languages.setMonarchTokensProvider('formula', FormulaLanguageConfig);
     monaco.languages.registerCompletionItemProvider('formula', FormulaCompletionProvider);
+
+    setDidMount(true);
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {

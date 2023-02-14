@@ -1,5 +1,5 @@
 import { atom } from 'recoil';
-import { Coordinate } from '../core/gridGL/types/size';
+import { Coordinate } from '../gridGL/types/size';
 export interface GridInteractionState {
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;

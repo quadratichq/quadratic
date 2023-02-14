@@ -6,13 +6,15 @@ export interface GridSettings {
   showHeadings: boolean;
   showGridLines: boolean;
   showCellTypeOutlines: boolean;
+  showA1Notation: boolean;
 }
 
 export const defaultGridSettings: GridSettings = {
   showGridAxes: true,
   showHeadings: true,
   showGridLines: true,
-  showCellTypeOutlines: false,
+  showCellTypeOutlines: true,
+  showA1Notation: false,
 };
 
 interface GridSettingsReturn {
@@ -20,10 +22,12 @@ interface GridSettingsReturn {
   showHeadings: boolean;
   showGridLines: boolean;
   showCellTypeOutlines: boolean;
+  showA1Notation: boolean;
   setShowGridAxes: (value: boolean) => void;
   setShowHeadings: (value: boolean) => void;
   setShowGridLines: (value: boolean) => void;
   setShowCellTypeOutlines: (value: boolean) => void;
+  setShowA1Notation: (value: boolean) => void;
 }
 
 export const useGridSettings = (): GridSettingsReturn => {
@@ -83,5 +87,24 @@ export const useGridSettings = (): GridSettingsReturn => {
     [settings, setSettings]
   );
 
-  return { ...settings, setShowGridAxes, setShowHeadings, setShowGridLines, setShowCellTypeOutlines };
+  const setShowA1Notation = useCallback(
+    (value: boolean) => {
+      if (value !== settings.showA1Notation) {
+        setSettings({
+          ...settings,
+          showA1Notation: value,
+        });
+      }
+    },
+    [settings, setSettings]
+  );
+
+  return {
+    ...settings,
+    setShowGridAxes,
+    setShowHeadings,
+    setShowGridLines,
+    setShowCellTypeOutlines,
+    setShowA1Notation,
+  };
 };

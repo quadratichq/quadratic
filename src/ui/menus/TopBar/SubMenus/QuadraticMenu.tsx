@@ -11,17 +11,17 @@ import { useAuth0 } from '@auth0/auth0-react';
 import '@szhsin/react-menu/dist/index.css';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
-import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
+import { SaveGridFile } from '../../../../grid/actions/gridFile/SaveGridFile';
 import {
   newGridFile,
   openExampleGridFile,
   openGridFile,
   openLocalGridFile,
-} from '../../../../core/actions/gridFile/OpenGridFile';
+} from '../../../../grid/actions/gridFile/OpenGridFile';
 
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { useLocalFiles } from '../../../../hooks/useLocalFiles';
-import { SheetController } from '../../../../core/transaction/sheetController';
+import { SheetController } from '../../../../grid/controller/sheetController';
 import { NewFile } from './newFile/NewFile';
 
 interface Props {
@@ -140,6 +140,13 @@ export const QuadraticMenu = (props: Props) => {
             onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}
           >
             Show cell type outlines
+          </MenuItem>
+          <MenuItem
+            type="checkbox"
+            checked={settings.showA1Notation}
+            onClick={() => settings.setShowA1Notation(!settings.showA1Notation)}
+          >
+            Show A1 notation on headings
           </MenuItem>
           <MenuDivider />
           <MenuItem

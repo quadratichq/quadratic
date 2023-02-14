@@ -1,6 +1,6 @@
 import { atom } from 'recoil';
-import { Coordinate } from '../core/gridGL/types/size';
-import { CellTypes } from '../core/gridDB/gridTypes';
+import { Coordinate } from '../gridGL/types/size';
+import { CellTypes } from '../grid/sheet/gridTypes';
 
 export interface EditorInteractionState {
   showCellTypeMenu: boolean;
