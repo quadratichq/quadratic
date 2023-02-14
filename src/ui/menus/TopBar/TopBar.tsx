@@ -109,22 +109,10 @@ export const TopBar = (props: IProps) => {
           alignItems: 'center',
           justifyContent: 'flex-end',
           gap: '1rem',
-          width: '20rem',
         }}
       >
         {!isMobileOnly && (
           <>
-            <TooltipHint title="Show cell type outlines">
-              <Switch
-                color="secondary"
-                checked={settings.showCellTypeOutlines}
-                onChange={() => {
-                  settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
-                  focusGrid();
-                }}
-                size="small"
-              />
-            </TooltipHint>
             {user !== undefined && (
               <AvatarGroup>
                 <Avatar
@@ -141,6 +129,17 @@ export const TopBar = (props: IProps) => {
                 </Avatar>
               </AvatarGroup>
             )}
+            <TooltipHint title="Show cell type outlines">
+              <Switch
+                color="secondary"
+                checked={settings.showCellTypeOutlines}
+                onChange={() => {
+                  settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
+                  focusGrid();
+                }}
+                size="small"
+              />
+            </TooltipHint>
             <TooltipHint title="Command Palette" shortcut={KeyboardSymbols.Command + 'P'}>
               <IconButton
                 onClick={() => {
