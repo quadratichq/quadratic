@@ -9,17 +9,16 @@ import {
   Dialog,
   Paper,
   InputBase,
-  Link,
   Chip,
 } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { CellTypes } from '../../../grid/sheet/gridTypes';
-
 import '../../styles/floating-dialog.css';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { Python, Formula, JavaScript, Sql } from '../../icons';
 import { colors } from '../../../theme/colors';
+import { LinkNewTab } from '../../components/LinkNewTab';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 
 export interface CellTypeOption {
@@ -38,7 +37,7 @@ const CELL_TYPE_OPTIONS = [
     description: (
       <>
         Classic spreadsheet logic like <code>SUM</code>, <code>AVERAGE</code>,{' '}
-        <LinkNewTab href={DOCUMENTATION_FORMULAS_URL}>and more</LinkNewTab>.
+        <LinkNewTabWrapper href={DOCUMENTATION_FORMULAS_URL}>and more</LinkNewTabWrapper>.
       </>
     ),
   },
@@ -48,7 +47,8 @@ const CELL_TYPE_OPTIONS = [
     icon: <Python sx={{ color: colors.languagePython }} />,
     description: (
       <>
-        Script with Pandas, NumPy, SciPy, Micropip, <LinkNewTab href={DOCUMENTATION_PYTHON_URL}>and more</LinkNewTab>.
+        Script with Pandas, NumPy, SciPy, Micropip,{' '}
+        <LinkNewTabWrapper href={DOCUMENTATION_PYTHON_URL}>and more</LinkNewTabWrapper>.
       </>
     ),
   },
@@ -185,17 +185,13 @@ export default function CellTypeMenu() {
   );
 }
 
-function LinkNewTab({ href, children }: { href: string; children: string }) {
+function LinkNewTabWrapper(props: any) {
   return (
-    <Link
-      href={href}
-      onClick={(e) => {
+    <LinkNewTab
+      {...props}
+      onClick={(e: React.SyntheticEvent) => {
         e.stopPropagation();
       }}
-      target="_blank"
-      rel="noopener"
-    >
-      {children}
-    </Link>
+    />
   );
 }

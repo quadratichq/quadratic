@@ -1,12 +1,12 @@
-import React, { useRef, useState, useEffect, useMemo, useCallback, ReactElement } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { Cell } from '../../../grid/sheet/gridTypes';
 import './CodeEditor.css';
-import { Box, IconButton, Link, Tab, Tabs } from '@mui/material';
-import { red } from '@mui/material/colors';
+import { IconButton } from '@mui/material';
+import { Console } from './Console';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -18,7 +18,6 @@ import { Close, PlayArrow, Subject } from '@mui/icons-material';
 import { Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -323,123 +322,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
     </div>
   );
 };
-
-function Console({ evalResult, editorMode }: { evalResult: cellEvaluationReturnType | undefined; editorMode: string }) {
-  const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
-  const { std_err = '', std_out = '' } = evalResult || {};
-  let hasOutput = Boolean(std_err.length || std_out.length);
-  const preventDefault = useCallback((e: React.SyntheticEvent) => {
-    e.preventDefault();
-  }, []);
-  return (
-    <>
-      <Box>
-        <Tabs
-          value={activeTabIndex}
-          onChange={(e: React.SyntheticEvent, newValue: number) => {
-            setActiveTabIndex(newValue);
-          }}
-          aria-label="Console"
-          style={{ minHeight: '32px' }}
-        >
-          <Tab style={{ minHeight: '32px' }} label="Output" id="console-tab-0" aria-controls="console-tabpanel-0"></Tab>
-          <Tab style={{ minHeight: '32px' }} label="About" id="console-tab-1" aria-controls="console-tabpanel-1"></Tab>
-        </Tabs>
-      </Box>
-      <div style={{ overflow: 'scroll', flex: '2' }}>
-        <TabPanel value={activeTabIndex} index={0}>
-          <div
-            contentEditable="true"
-            suppressContentEditableWarning={true}
-            spellCheck={false}
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.code === 'KeyA') {
-                // Allow select all text, but nothing else
-              } else {
-                preventDefault(e);
-              }
-            }}
-            onCut={preventDefault}
-            onPaste={preventDefault}
-            style={{ outline: 'none' }}
-          >
-            {hasOutput && (
-              <>
-                {std_err && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: red[700] }}>
-                    ERROR: {std_err}
-                  </span>
-                )}
-                {std_out}
-              </>
-            )}
-          </div>
-        </TabPanel>
-        <TabPanel value={activeTabIndex} index={1}>
-          {editorMode === 'PYTHON' ? (
-            <>
-              <p>Quadratic allows you to leverage the power of Python to fetch, script, and compute cell data.</p>
-              <p>
-                <LinkNewTab href="https://pandas.pydata.org/">Pandas</LinkNewTab>,{' '}
-                <LinkNewTab href="https://numpy.org/">NumPy</LinkNewTab>, and{' '}
-                <LinkNewTab href="https://scipy.org/">SciPy</LinkNewTab> libraries are included by default.{' '}
-                <LinkNewTab href="https://github.com/pyodide/micropip">Micropip</LinkNewTab> is also available for
-                installing any third-party libraries you need.
-              </p>
-              <p>
-                <LinkNewTab href={DOCUMENTATION_PYTHON_URL}>Check out the docs</LinkNewTab> to learn more about using
-                Python.
-              </p>
-            </>
-          ) : (
-            <>
-              <p>
-                <LinkNewTab href={DOCUMENTATION_FORMULAS_URL}>Check out the docs</LinkNewTab> to learn more about using
-                Formulas.
-              </p>
-            </>
-          )}
-        </TabPanel>
-      </div>
-    </>
-  );
-}
-
-function LinkNewTab({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link href={href} target="_blank" rel="noopener">
-      {children}
-    </Link>
-  );
-}
-
-function TabPanel(props: { children: ReactElement; value: number; index: number }) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`console-tabpanel-${index}`}
-      aria-labelledby={`console-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <pre
-          style={{
-            fontFamily: 'monospace',
-            fontSize: '.875rem',
-            padding: '0 1rem',
-            lineHeight: '1.3',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {children}
-        </pre>
-      )}
-    </div>
-  );
-}
 
 function ResizeControl({ setState, position }: { setState: Function; position: 'TOP' | 'LEFT' }) {
   return (
