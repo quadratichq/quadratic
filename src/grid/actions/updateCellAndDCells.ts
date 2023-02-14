@@ -215,10 +215,11 @@ export const updateCellAndDCells = async (args: ArgsType) => {
     );
 
     // delete old array cells
-    array_cells_to_delete.forEach((cell) => {
+    array_cells_to_delete.forEach((aCell) => {
+      if (aCell.x === cell?.x && aCell.y === cell?.y) return; // don't delete the cell we just updated (it's in array_cells_to_output)
       sheetController.execute_statement({
         type: 'SET_CELL',
-        data: { position: [cell.x, cell.y], value: undefined },
+        data: { position: [aCell.x, aCell.y], value: undefined },
       });
     });
 

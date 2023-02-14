@@ -61,7 +61,7 @@ export class SheetController {
     // run statement and add reverse statement to transaction_in_progress
     const reverse_statement = StatementRunner(this.sheet, statement, this.app);
 
-    this.transaction_in_progress_reverse.statements.push(reverse_statement);
+    this.transaction_in_progress_reverse.statements.unshift(reverse_statement);
   }
 
   public end_transaction(add_to_undo_stack = true, clear_redo_stack = true): Transaction {
