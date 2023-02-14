@@ -442,34 +442,19 @@ function TabPanel(props: { children: ReactElement; value: number; index: number 
 }
 
 function ResizeControl({ setState, position }: { setState: Function; position: 'TOP' | 'LEFT' }) {
-  const cursor = position === 'LEFT' ? 'col-resize' : 'row-resize';
-
   return (
     <div
+      className={`resize-control resize-control--position-${position}`}
+      data-position={position}
       style={{
-        ...(position === 'LEFT'
-          ? {
-              width: '5px',
-              height: '100%',
-              borderWidth: '0 0 0 1px',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-            }
-          : { position: 'relative', width: '100%', height: '5px', borderWidth: '1px 0 0 0' }),
-        cursor,
-        borderStyle: 'solid',
-        zIndex: '10',
-        borderColor: colors.mediumGray,
+        // @ts-expect-error
+        '--resize-control-highlight': colors.quadraticPrimary,
+        '--resize-control-background': colors.mediumGray,
       }}
       onMouseDown={(e) => {
-        // Prevents selecting text as mouse moves around screen
-        document.documentElement.style.userSelect = 'none';
-        document.body.style.cursor = cursor;
-
-        // set drag style
+        // set drag style via class
         const target = e.currentTarget;
-        target.style.boxShadow = `inset 0 0 0 2px ${colors.quadraticPrimary}`;
+        target.classList.add('resize-control--is-dragging');
 
         function mousemove(event_mousemove: globalThis.MouseEvent) {
           setState(
@@ -485,10 +470,8 @@ function ResizeControl({ setState, position }: { setState: Function; position: '
           window.removeEventListener('mousemove', mousemove);
           window.removeEventListener('mouseup', mouseup);
 
-          // revert to non drag style
-          target.style.boxShadow = 'none';
-          document.documentElement.style.userSelect = 'initial';
-          document.body.style.cursor = '';
+          // revert to non-drag style
+          target.classList.remove('resize-control--is-dragging');
         }
 
         window.addEventListener('mousemove', mousemove);
