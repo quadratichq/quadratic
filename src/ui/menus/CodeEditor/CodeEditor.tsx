@@ -18,6 +18,7 @@ import { Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
+import { useGridSettings } from '../TopBar/SubMenus/useGridSettings';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -32,6 +33,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
+
+  const settings = useGridSettings();
 
   const [editorContent, setEditorContent] = useState<string | undefined>('');
   const [didMount, setDidMount] = useState(false);
@@ -58,15 +61,16 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // Console height state
   const [consoleHeight, setConsoleHeight] = useState<number>(200);
 
-  // When changing mode
-  // useEffect(() => {
-
-  //   if (!monacoRef.current || !editorRef.current) return;
-  //   const monaco = monacoRef.current;
-  //   const editor = editorRef.current;
-
-  //   // monaco.editor.setModelLanguage(editor.getModel(), 'formula');
-  // }, [editorMode, cell]);
+  // When changing cell
+  useEffect(() => {
+    // TODO: This is a hack to get the A1 notation to show up in the formula editor
+    if (editorInteractionState.showCodeEditor)
+      if (cell?.type === 'FORMULA') {
+        settings.setShowA1Notation(true);
+      } else if (cell?.type === 'PYTHON') {
+        settings.setShowA1Notation(false);
+      }
+  }, [cell, settings, editorInteractionState.showCodeEditor]);
 
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
@@ -91,6 +95,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     setSelectedCell(undefined);
     setEvalResult(undefined);
     focusGrid();
+    settings.setShowA1Notation(false);
   };
 
   useEffect(() => {
