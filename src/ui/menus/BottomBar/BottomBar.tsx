@@ -65,6 +65,7 @@ export const BottomBar = (props: Props) => {
       }}
       style={{
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        borderTop: `1px solid ${colors.mediumGray}`,
         color: colors.darkGray,
         bottom: 0,
         width: '100%',

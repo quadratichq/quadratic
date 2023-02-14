@@ -10,6 +10,7 @@ import {
   Paper,
   InputBase,
   Link,
+  Chip,
 } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -19,6 +20,7 @@ import '../../styles/floating-dialog.css';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { Python, Formula, JavaScript, Sql } from '../../icons';
 import { colors } from '../../../theme/colors';
+import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 
 export interface CellTypeOption {
   name: string;
@@ -35,14 +37,8 @@ const CELL_TYPE_OPTIONS = [
     icon: <Formula sx={{ color: colors.languageFormula }} />,
     description: (
       <>
-        Use classic spreadsheet logic including math (
-        {['*', '+', '-', '/'].map((s) => (
-          <>
-            <code>{s}</code>{' '}
-          </>
-        ))}
-        ) and formulas like <code>SUM</code>, <code>IF</code>, and <code>AVERAGE</code>.{' '}
-        <LinkNewTab href="https://docs.quadratichq.com/">Learn more</LinkNewTab>.
+        Classic spreadsheet logic like <code>SUM</code>, <code>AVERAGE</code>,{' '}
+        <LinkNewTab href={DOCUMENTATION_FORMULAS_URL}>and more</LinkNewTab>.
       </>
     ),
   },
@@ -52,8 +48,7 @@ const CELL_TYPE_OPTIONS = [
     icon: <Python sx={{ color: colors.languagePython }} />,
     description: (
       <>
-        Script, fetch, and compute with your data. Includes the power of Pandas, NumPy, and SciPy.{' '}
-        <LinkNewTab href="https://docs.quadratichq.com/reference/python-cell-reference">Learn more</LinkNewTab>.
+        Script with Pandas, NumPy, SciPy, Micropip, <LinkNewTab href={DOCUMENTATION_PYTHON_URL}>and more</LinkNewTab>.
       </>
     ),
   },
@@ -61,14 +56,14 @@ const CELL_TYPE_OPTIONS = [
     name: 'SQL Query',
     mode: 'SQL',
     icon: <Sql color="disabled" />,
-    description: 'Coming soon: import data with queries.',
+    description: 'Import your data with queries.',
     disabled: true,
   },
   {
     name: 'JavaScript',
     mode: 'JAVASCRIPT',
     icon: <JavaScript color="disabled" />,
-    description: 'Coming soon: the world’s most used programming language.',
+    description: 'The world’s most popular programming language.',
     disabled: true,
   },
 ] as CellTypeOption[];
@@ -167,7 +162,14 @@ export default function CellTypeMenu() {
                 selected={selectedIndex === i && !disabled}
               >
                 <ListItemIcon>{icon}</ListItemIcon>
-                <ListItemText primary={name} secondary={description} />
+                <ListItemText
+                  primary={
+                    <>
+                      {name} {disabled && <Chip label="Coming soon" size="small" />}
+                    </>
+                  }
+                  secondary={description}
+                />
               </ListItemButton>
             ))
           ) : (
