@@ -50,6 +50,7 @@ export default function QuadraticUI(props: Props) {
           height: '100%',
           display: 'flex',
           overflow: 'hidden',
+          position: 'relative',
         }}
       >
         <QuadraticGrid sheetController={sheetController} app={app} />
