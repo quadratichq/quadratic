@@ -1,4 +1,4 @@
-import { GridFileSchemaV1 } from '../core/actions/gridFile/GridFileSchema';
+import { GridFileSchemaV1 } from '../grid/actions/gridFile/GridFileSchema';
 
 export const example_grid: GridFileSchemaV1 = {
   columns: [],

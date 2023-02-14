@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { CellTypes } from '../../../core/gridDB/gridTypes';
+import { CellTypes } from '../../../grid/sheet/gridTypes';
 
 import '../../styles/floating-dialog.css';
 import { focusGrid } from '../../../helpers/focusGrid';

@@ -1,7 +1,7 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { newGridFile, openGridFile } from '../../../../core/actions/gridFile/OpenGridFile';
-import { SaveGridFile } from '../../../../core/actions/gridFile/SaveGridFile';
+import { newGridFile, openGridFile } from '../../../../grid/actions/gridFile/OpenGridFile';
+import { SaveGridFile } from '../../../../grid/actions/gridFile/SaveGridFile';
 
 const ListItems = [
   {

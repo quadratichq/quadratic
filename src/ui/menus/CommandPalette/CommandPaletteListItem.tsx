@@ -1,8 +1,8 @@
 import { ListItem, ListItemButton, ListItemText, ListItemSecondaryAction, ListItemIcon } from '@mui/material';
 import fuzzysort from 'fuzzysort';
 import { ReactElement } from 'react';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../core/transaction/sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../grid/controller/sheetController';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 
 // Props generated in the root CommandPalette and passed to every CommandPaletteListItem

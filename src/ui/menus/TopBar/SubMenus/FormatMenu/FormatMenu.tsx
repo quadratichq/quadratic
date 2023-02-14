@@ -23,8 +23,8 @@ import { useFormatCells } from '../useFormatCells';
 import { useGetBorderMenu } from './useGetBorderMenu';
 import './formatMenuStyles.scss';
 
-import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../../../core/transaction/sheetController';
+import { PixiApp } from '../../../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../../../grid/controller/sheetController';
 import { useGetSelection } from '../useGetSelection';
 import { MenuLineItem } from '../../MenuLineItem';
 import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';

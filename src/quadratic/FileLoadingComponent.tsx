@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { Sheet } from '../core/gridDB/Sheet';
+import { Sheet } from '../grid/sheet/Sheet';
 import { example_grid } from './example_grid';
 import { getURLParameter } from '../helpers/getURL';
 import { debugShowFileIO } from '../debugFlags';
-import { localFiles } from '../core/gridDB/localFiles';
+import { localFiles } from '../grid/sheet/localFiles';
 
 const EXAMPLE_FILE_FILENAME = 'example.grid';
 

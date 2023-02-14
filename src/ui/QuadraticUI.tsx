@@ -5,12 +5,12 @@ import useLocalStorage from '../hooks/useLocalStorage';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import BottomBar from './menus/BottomBar';
-import QuadraticGrid from '../core/gridGL/QuadraticGrid';
+import QuadraticGrid from '../gridGL/QuadraticGrid';
 import CommandPalette from './menus/CommandPalette';
 import GoTo from './menus/GoTo';
 import { useEffect, useState } from 'react';
-import { PixiApp } from '../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../core/transaction/sheetController';
+import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../grid/controller/sheetController';
 import CellTypeMenu from './menus/CellTypeMenu';
 
 interface Props {
