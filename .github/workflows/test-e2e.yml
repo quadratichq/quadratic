@@ -4,7 +4,7 @@ on: push
 jobs:
   test_e2e:
     timeout-minutes: 60
-    runs-on: ubuntu-latest-8-cores
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v2
