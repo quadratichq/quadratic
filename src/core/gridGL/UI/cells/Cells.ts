@@ -1,5 +1,6 @@
 import { Container, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../../constants/gridConstants';
+import { colors } from '../../../../theme/colors';
 import { CellTextFormatter } from '../../../formatting/cellTextFormatter';
 import { CellRectangle } from '../../../gridDB/CellRectangle';
 import { CellAndFormat } from '../../../gridDB/GridSparse';
@@ -117,24 +118,42 @@ export class Cells extends Container {
 
       // only render if there is cell data or cell formatting
       if (!isInput && (entry.cell || entry.format)) {
-        this.cellsBorder.draw({ ...entry, x, y, width, height });
         this.cellsBackground.draw({ ...entry, x, y, width, height });
         if (entry.cell) {
-          if (entry.cell?.type === 'PYTHON') {
-            this.cellsMarkers.add(x, y, 'CodeIcon');
-          } else if (entry.cell?.type === 'FORMULA') {
-            this.cellsMarkers.add(x, y, 'FormulaIcon');
+          const error = entry.cell.evaluation_result?.success === false;
+
+          // show cell error icon
+          if (error) {
+            this.cellsMarkers.add(x, y, 'ErrorIcon');
+          }
+
+          // show cell type icons
+          if (this.app.settings.showCellTypeOutlines)
+            if (entry.cell?.type === 'PYTHON') {
+              // show cell type icon
+              this.cellsMarkers.add(x, y, 'CodeIcon', error);
+            } else if (entry.cell?.type === 'FORMULA') {
+              this.cellsMarkers.add(x, y, 'FormulaIcon', error);
+            }
+
+          // show cell text
+          let cell_text = CellTextFormatter(entry.cell, entry.format);
+          let cell_format = entry.format;
+          if (error) {
+            cell_text = '  ERROR';
+            cell_format = { x: entry.cell.x, y: entry.cell.y, textColor: colors.error, italic: true };
           }
           this.cellLabels.add({
             x: x + CELL_TEXT_MARGIN_LEFT,
             y: y + CELL_TEXT_MARGIN_TOP,
-            text: CellTextFormatter(entry.cell, entry.format),
+            text: cell_text,
             isQuadrant,
             expectedWidth: width - CELL_TEXT_MARGIN_LEFT * 2,
             location: isQuadrant ? { x: entry.cell.x, y: entry.cell.y } : undefined,
-            format: entry.format,
+            format: cell_format,
           });
         }
+        this.cellsBorder.draw({ ...entry, x, y, width, height });
       }
       if (this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
         this.cellsArray.draw(entry.cell.array_cells, x, y, width, height);

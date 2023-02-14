@@ -11,7 +11,7 @@ export class CellsMarkers extends Container {
     this.visibleIndex = 0;
   }
 
-  add(x: number, y: number, type: CellsMarkerTypes): void {
+  add(x: number, y: number, type: CellsMarkerTypes, white?: boolean): void {
     let child: Sprite;
     if (this.visibleIndex < this.children.length) {
       child = this.children[this.visibleIndex] as Sprite;
@@ -24,14 +24,23 @@ export class CellsMarkers extends Container {
     }
 
     if (type === 'CodeIcon') {
+      child.position.set(x + 1.5, y + 1.5);
       child.texture = Texture.from('images/python-icon.png');
       child.tint = colors.cellColorUserPython;
-      child.position.set(x + 1, y + 0.5);
+      child.width = child.height = 4;
     } else if (type === 'FormulaIcon') {
+      child.position.set(x + 1.5, y + 1.5);
       child.texture = Texture.from('images/formula-fx-icon.png');
       child.tint = colors.cellColorUserFormula;
-      child.position.set(x + 1.25, y + 1);
+      child.width = child.height = 4;
+    } else if (type === 'ErrorIcon') {
+      child.position.set(x, y);
+      child.texture = Texture.from('images/error-icon.png');
+      child.tint = colors.cellColorError;
+      child.width = child.height = 12;
     }
+
+    if (white) child.tint = 0xffffff;
   }
 
   debugShowCachedCounts(): void {

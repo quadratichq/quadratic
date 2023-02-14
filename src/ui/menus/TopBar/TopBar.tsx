@@ -1,4 +1,4 @@
-import { Box, Typography, AvatarGroup, Avatar, IconButton } from '@mui/material';
+import { Box, Typography, AvatarGroup, Avatar, IconButton, Switch } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -18,6 +18,7 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Search } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { useGridSettings } from './SubMenus/useGridSettings';
 
 interface IProps {
   app: PixiApp;
@@ -27,6 +28,7 @@ interface IProps {
 export const TopBar = (props: IProps) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { localFilename } = useLocalFiles();
+  const settings = useGridSettings();
   const { user } = useAuth0();
 
   return (
@@ -112,6 +114,17 @@ export const TopBar = (props: IProps) => {
       >
         {!isMobileOnly && (
           <>
+            <TooltipHint title="Show cell type outlines">
+              <Switch
+                color="secondary"
+                checked={settings.showCellTypeOutlines}
+                onChange={() => {
+                  settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
+                  focusGrid();
+                }}
+                size="small"
+              />
+            </TooltipHint>
             {user !== undefined && (
               <AvatarGroup>
                 <Avatar
@@ -128,7 +141,7 @@ export const TopBar = (props: IProps) => {
                 </Avatar>
               </AvatarGroup>
             )}
-            <TooltipHint title="Search" shortcut={KeyboardSymbols.Command + 'P'}>
+            <TooltipHint title="Command Palette" shortcut={KeyboardSymbols.Command + 'P'}>
               <IconButton
                 onClick={() => {
                   setEditorInteractionState({
