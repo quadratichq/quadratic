@@ -2,14 +2,30 @@ name: Unit Tests
 on: push
 
 jobs:
-  build_test:
-    runs-on: ubuntu-latest
+  test_unit:
+    runs-on: ubuntu-latest-8-cores
 
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '17'
+          node-version: '18'
           cache: 'npm'
+
+      - name: Update local rust toolchain
+        run: |
+          rustup update
+          rustup component add clippy
+          rustup install nightly
+      - name: Toolchain info
+        run: |
+          cargo --version --verbose
+          rustc --version
+          cargo clippy --version
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
       - run: npm install
-      - run: npm run test-unit
+      - run: npm run build:wasm:nodejs
+      - run: npm run test:unit:ci

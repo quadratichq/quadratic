@@ -1,0 +1,359 @@
+use super::*;
+
+/// Operator precedence table.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum OpPrecedence {
+    Comparison,
+    Concat,
+    Bitshift,
+    AddSub,
+    MulDiv,
+    Pow,
+    Range,
+    CellRange,
+    Prefix,
+    Suffix,
+    Atom,
+}
+impl Default for OpPrecedence {
+    fn default() -> Self {
+        Self::lowest()
+    }
+}
+impl OpPrecedence {
+    /// Returns the lowest precedence level.
+    pub const fn lowest() -> Self {
+        Self::Comparison
+    }
+    /// Returns the next-highest precedence level. Panics if given
+    /// `OpPrecedence::Atom`.
+    pub fn next(self) -> Self {
+        match self {
+            Self::Comparison => Self::Concat,
+            Self::Concat => Self::Bitshift,
+            Self::Bitshift => Self::AddSub,
+            Self::AddSub => Self::MulDiv,
+            Self::MulDiv => Self::Pow,
+            Self::Pow => Self::Range,
+            Self::Range => Self::CellRange,
+            Self::CellRange => Self::Prefix,
+            Self::Prefix => Self::Suffix,
+            Self::Suffix => Self::Atom,
+            Self::Atom => panic!("tried to get operator precedence level beyond {:?}", self),
+        }
+    }
+
+    /// Returns a list of binary operators at this precedence level.
+    pub fn binary_ops(self) -> &'static [Token] {
+        use Token::*;
+        match self {
+            Self::Comparison => &[Eql, Neq, Lt, Gt, Lte, Gte],
+            Self::Concat => &[Concat],
+            Self::Bitshift => &[ShiftLeft, ShiftRight],
+            Self::AddSub => &[Plus, Minus],
+            Self::MulDiv => &[Mult, Div],
+            Self::Pow => &[Power],
+            Self::Range => &[RangeOp],
+            Self::CellRange => &[CellRangeOp],
+            Self::Prefix => &[],
+            Self::Suffix => &[],
+            Self::Atom => &[],
+        }
+    }
+
+    /// Returns a list of unary prefix operators at this precedence level.
+    pub fn prefix_ops(self) -> &'static [Token] {
+        use Token::*;
+        match self {
+            Self::Prefix => &[Plus, Minus],
+            _ => &[],
+        }
+    }
+
+    /// Returns a list of unary suffix operators at this precedence level.
+    pub fn suffix_ops(self) -> &'static [Token] {
+        use Token::*;
+        match self {
+            Self::Suffix => &[Percent],
+            _ => &[],
+        }
+    }
+
+    /// Returns whether the binary operators at this precedence level are
+    /// right-associative.
+    pub fn is_right_associative(self) -> bool {
+        match self {
+            OpPrecedence::Pow => true,
+            _ => false,
+        }
+    }
+}
+
+/// Matches an expression.
+#[derive(Debug, Copy, Clone)]
+pub struct Expression;
+impl_display!(for Expression, "expression");
+impl SyntaxRule for Expression {
+    type Output = ast::AstNode;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        ExpressionWithPrecedence::default().prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+        p.parse(ExpressionWithPrecedence::default())
+    }
+}
+
+/// Matches an expression with the given precedence level.
+#[derive(Debug, Default, Copy, Clone)]
+struct ExpressionWithPrecedence(pub OpPrecedence);
+impl_display!(for ExpressionWithPrecedence, "expression");
+impl SyntaxRule for ExpressionWithPrecedence {
+    type Output = ast::AstNode;
+
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        if let Some(t) = p.next() {
+            // There are so many tokens that might match, it's more reliable to
+            // just match all of them.
+            match t {
+                Token::LParen => true,
+
+                Token::LBracket | Token::LBrace => false,
+                Token::RParen | Token::RBracket | Token::RBrace => false,
+
+                Token::ArgSep => false,
+
+                Token::Eql | Token::Neq | Token::Lt | Token::Gt | Token::Lte | Token::Gte => false,
+
+                Token::Plus | Token::Minus => true,
+
+                Token::Mult
+                | Token::Div
+                | Token::Power
+                | Token::ShiftLeft
+                | Token::ShiftRight
+                | Token::Concat
+                | Token::RangeOp
+                | Token::Percent
+                | Token::CellRangeOp => false,
+
+                Token::Comment | Token::UnterminatedBlockComment => false,
+
+                Token::FunctionCall
+                | Token::StringLiteral
+                | Token::UnterminatedStringLiteral
+                | Token::NumericLiteral
+                | Token::CellRef => true,
+
+                Token::Whitespace => false,
+                Token::Unknown => false,
+            }
+        } else {
+            false
+        }
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+        // Consume an expression at the given precedence level, which may
+        // consist of expressions with higher precedence.
+        match self.0 {
+            OpPrecedence::Atom => parse_one_of!(
+                p,
+                [
+                    FunctionCall.map(Some),
+                    StringLiteral.map(Some),
+                    NumericLiteral.map(Some),
+                    CellReference.map(Some),
+                    ParenExpression.map(Some),
+                    Epsilon.map(|_| None),
+                ],
+            )
+            .transpose()
+            .unwrap_or_else(|| p.expected(self)),
+
+            prec if !prec.binary_ops().is_empty() => parse_binary_ops_expr(p, prec),
+            prec if !prec.prefix_ops().is_empty() => parse_prefix_ops(p, prec),
+            prec if !prec.suffix_ops().is_empty() => parse_suffix_ops(p, prec),
+            prec => internal_error!("don't know what to do for precedence {:?}", prec),
+        }
+    }
+}
+
+/// Parses an expression with any number of binary operators at a specific
+/// precedence level.
+fn parse_binary_ops_expr(
+    p: &mut Parser<'_>,
+    precedence: OpPrecedence,
+) -> FormulaResult<ast::AstNode> {
+    let recursive_expression = ExpressionWithPrecedence(precedence.next());
+
+    let allowed_ops = precedence.binary_ops();
+
+    // First, just make a list of operators and expressions. `ops.len()` should
+    // always be equal to `exprs.len() - 1`.
+    let mut ops: Vec<Spanned<String>> = vec![];
+    let mut exprs: Vec<ast::AstNode> = vec![p.parse(recursive_expression)?];
+    while let Some(tok) = p.peek_next() {
+        if allowed_ops.contains(&tok) {
+            p.next();
+            ops.push(Spanned {
+                span: p.span(),
+                inner: p.token_str().to_string(),
+            });
+            exprs.push(p.parse(recursive_expression)?);
+            continue;
+        } else {
+            break;
+        }
+    }
+
+    let mut ret: ast::AstNode;
+    if precedence.is_right_associative() {
+        // Take out the last/rightmost expression; that's the deepest AST node.
+        ret = exprs.pop().unwrap();
+        // Pair up the remaining operators and expressions, and make a new AST
+        // node using the previous iteration as the right-hand side of the
+        // expression.
+        for (lhs, op) in exprs.into_iter().zip(ops).rev() {
+            ret = AstNode {
+                span: Span::merge(lhs.span, ret.span),
+                inner: ast::AstNodeContents::FunctionCall {
+                    func: op,
+                    args: vec![lhs, ret],
+                },
+            };
+        }
+    } else {
+        // Take out the first/leftmost expression; that's the deepest AST node.
+        let mut exprs_iter = exprs.into_iter();
+        ret = exprs_iter.next().unwrap();
+        // Pair up the remaining operators and expressions, and make a new AST
+        // node using the previous iteration as the left-hand side of the
+        // expression.
+        for (op, rhs) in ops.into_iter().zip(exprs_iter) {
+            ret = AstNode {
+                span: Span::merge(ret.span, rhs.span),
+                inner: ast::AstNodeContents::FunctionCall {
+                    func: op,
+                    args: vec![ret, rhs],
+                },
+            };
+        }
+    }
+    Ok(ret)
+}
+
+/// Parses an expression with any number of prefix operators.
+fn parse_prefix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> FormulaResult<ast::AstNode> {
+    let allowed_ops = precedence.prefix_ops();
+
+    // Build a list of operators in the order that they appear in the source
+    // code.
+    let mut ops: Vec<Spanned<String>> = vec![];
+    while let Some(tok) = p.peek_next() {
+        if allowed_ops.contains(&tok) {
+            p.next();
+            ops.push(Spanned {
+                span: p.span(),
+                inner: p.token_str().to_string(),
+            });
+            continue;
+        } else {
+            break;
+        }
+    }
+    let mut ret = p.parse(ExpressionWithPrecedence(precedence.next()))?;
+    // Now pop the operators off the list from right to left.
+    for op in ops {
+        ret = AstNode {
+            span: Span::merge(op.span, ret.span),
+            inner: ast::AstNodeContents::FunctionCall {
+                func: op,
+                args: vec![ret],
+            },
+        };
+    }
+    Ok(ret)
+}
+
+/// Parses an expression with any number of suffix operators.
+fn parse_suffix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> FormulaResult<ast::AstNode> {
+    let allowed_ops = precedence.suffix_ops();
+
+    // Parse the initial expression.
+    let mut ret = p.parse(ExpressionWithPrecedence(precedence.next()))?;
+
+    // Repeatedly try to consume a suffix.
+    while let Some(tok) = p.peek_next() {
+        if allowed_ops.contains(&tok) {
+            p.next();
+            let op = Spanned {
+                span: p.span(),
+                inner: p.token_str().to_string(),
+            };
+            ret = AstNode {
+                span: Span::merge(ret.span, op.span),
+                inner: ast::AstNodeContents::FunctionCall {
+                    func: op,
+                    args: vec![ret],
+                },
+            }
+        } else {
+            break;
+        }
+    }
+    Ok(ret)
+}
+
+/// Matches a function call.
+#[derive(Debug, Copy, Clone)]
+pub struct FunctionCall;
+impl_display!(for FunctionCall, "function call");
+impl SyntaxRule for FunctionCall {
+    type Output = ast::AstNode;
+
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        p.next() == Some(Token::FunctionCall)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+        p.parse(Token::FunctionCall)?;
+        let Some(func_str) = p.token_str().strip_suffix('(') else {
+            internal_error!("function call missing left paren");
+        };
+        let func = Spanned {
+            span: p.span(),
+            inner: func_str.to_string(),
+        };
+        p.prev();
+
+        let spanned_args = p.parse(List {
+            inner: Expression,
+            sep: Token::ArgSep,
+            start: Token::FunctionCall,
+            end: Token::RParen,
+            sep_name: "comma",
+        })?;
+        let args = spanned_args.inner;
+
+        Ok(AstNode {
+            span: Span::merge(func.span, spanned_args.span),
+            inner: ast::AstNodeContents::FunctionCall { func, args },
+        })
+    }
+}
+
+/// Matches a pair of parentheses containing an expression.
+#[derive(Debug, Copy, Clone)]
+pub struct ParenExpression;
+impl_display!(for ParenExpression, "{}", Surround::paren(Expression));
+impl SyntaxRule for ParenExpression {
+    type Output = ast::AstNode;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        Surround::paren(Expression).prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+        p.parse(Surround::paren(
+            Expression.map(|expr| ast::AstNodeContents::Paren(Box::new(expr))),
+        ))
+    }
+}

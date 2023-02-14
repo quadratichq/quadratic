@@ -28,3 +28,10 @@ yarn-error.log*
 venv/*
 *.pyc
 .idea
+
+.env
+.env.local
+
+# Generated Rust files
+quadratic-core/target/
+quadratic-api/node_modules/

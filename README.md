@@ -14,11 +14,11 @@ Take your data and do something useful with it as quickly and easily as possible
 
 We have a hosted version of the `main` branch available online.
 
-**Try it out! --> https://app.quadratichq.com**
+**Try it out! --> <https://app.quadratichq.com>**
 
 ## Community
 
-Join the conversation on our Discord channel -> https://discord.gg/quadratic
+Join the conversation on our Discord channel -> <https://discord.gg/quadratic>
 
 ## Documentation
 
@@ -48,7 +48,10 @@ Quadratic has no environment to configure. The grid runs entirely in the browser
 
 ### Run Quadratic Locally
 
-Install Dependencies `npm install`
+1. Install npm, [rustup](https://www.rust-lang.org/tools/install), and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+2. Run `rustup target add wasm32-unknown-unknown`
+3. Build the Rust/WASM `npm run build:wasm`
+4. run `npm install`
 
 Run Web `npm start`
 
@@ -82,6 +85,6 @@ There are more example files are located in the `examples` folder in this repo.
 
 You can download them and then open them in Quadratic via File > Open Grid
 
-## Quadratic is Hiring!
+## Quadratic is Hiring
 
 Check out our open roles -> [careers.quadratichq.com](https://careers.quadratichq.com)

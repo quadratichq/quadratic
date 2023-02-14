@@ -2,7 +2,7 @@ name: Python Tests
 on: push
 
 jobs:
-  build_test:
+  test_python:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,4 +17,4 @@ jobs:
           cache: 'pip'
       - run: pip install -r requirements.txt
       - run: npm install
-      - run: npm run test-python
+      - run: npm run test:python

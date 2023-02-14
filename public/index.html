@@ -4,12 +4,9 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta content="True" name="HandheldFriendly" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
     <meta name="theme-color" content="#FFFFFF" />
-    <meta name="description" content="Quadratic Data Grid" />
+    <meta name="description" content="Data Science Spreadsheet" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <!--
       manifest.json provides metadata used when your web app is installed on a
@@ -28,14 +25,8 @@
     <title>Quadratic</title>
 
     <!-- TODO: move these files to repo -->
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
-    />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/icon?family=Material+Icons"
-    />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
     <script src="%PUBLIC_URL%/pyodide/pyodide.js"></script>
   </head>
   <body>
@@ -52,24 +43,52 @@
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
   </body>
+
+  <!--
+    The combination of these two things (<script> & <style>) appear to be
+    what makes possible the expected effect of panning and zooming (especially
+    with pinch to zoom on a trackpad) on the grid without experiencing weird
+    zoom or intertial panning effects.
+
+    Prevent window zooming on Chrome
+    https://stackoverflow.com/questions/61114830/how-to-prevent-native-browser-default-pinch-to-zoom-behavior
+    
+    Disable inertial scroll
+    https://stackoverflow.com/questions/28103125/disable-inertia-scroll-for-single-page-webapp
+
+    Disable two finger scroll to go back (overscroll-behavior-x: contain;)
+    https://stackoverflow.com/questions/15829172/stop-chrome-back-forward-two-finger-swipe
+  -->
+  <script>
+    window.addEventListener(
+      'wheel',
+      (e) => {
+        if (e.ctrlKey) {
+          e.preventDefault();
+          return;
+        }
+      },
+      { passive: false }
+    );
+  </script>
   <style>
     html,
     body,
     #root,
     .App {
       height: 100%;
+      overscroll-behavior-x: contain;
+    }
+    body {
+      overflow: hidden;
+    }
+    /* Disable two finger swipe back
+       https://stackoverflow.com/questions/15829172/stop-chrome-back-forward-two-finger-swipe */
+    html {
+      overscroll-behavior-x: none;
+    }
+    body {
+      overscroll-behavior-x: none;
     }
   </style>
-  <script>
-    // Prevent window zooming on Chrome
-    window.addEventListener(
-      'wheel',
-      (e) => {
-        if (e.target.localName !== 'textarea') {
-          e.preventDefault();
-        }
-      },
-      { passive: false }
-    );
-  </script>
 </html>

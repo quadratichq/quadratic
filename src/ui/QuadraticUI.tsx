@@ -1,17 +1,33 @@
-import * as React from 'react';
 import TopBar from '../ui/menus/TopBar';
-import CellTypeMenu from '../ui/menus/CellTypeMenu/';
 import CodeEditor from '../ui/menus/CodeEditor';
 import DebugMenu from './menus/DebugMenu/DebugMenu';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import BottomBar from './menus/BottomBar';
-import QuadraticGrid from '../core/gridGL/QuadraticGrid';
+import QuadraticGrid from '../gridGL/QuadraticGrid';
+import CommandPalette from './menus/CommandPalette';
+import GoTo from './menus/GoTo';
+import { useEffect, useState } from 'react';
+import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../grid/controller/sheetController';
+import CellTypeMenu from './menus/CellTypeMenu';
 
-export default function QuadraticUI() {
+interface Props {
+  sheetController: SheetController;
+}
+
+export default function QuadraticUI(props: Props) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+
+  const [app] = useState(() => new PixiApp(props.sheetController));
+
+  const { sheetController } = props;
+
+  useEffect(() => {
+    sheetController.setApp(app);
+  }, [sheetController, app]);
 
   return (
     <div
@@ -23,8 +39,10 @@ export default function QuadraticUI() {
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
-      {showDebugMenu && <DebugMenu />}
-      <TopBar />
+      {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
+      <TopBar app={app} sheetController={sheetController} />
+      {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
+      {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
 
       <div
         style={{
@@ -34,11 +52,11 @@ export default function QuadraticUI() {
           overflow: 'hidden',
         }}
       >
-        <QuadraticGrid />
-        <CodeEditor editorInteractionState={editorInteractionState}></CodeEditor>
+        <QuadraticGrid sheetController={sheetController} app={app} />
+        <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
 
-      <BottomBar />
+      <BottomBar sheet={sheetController.sheet} />
     </div>
   );
 }

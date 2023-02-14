@@ -1,19 +1,34 @@
-import { Box, Typography, Button, Tooltip, AvatarGroup, Avatar } from '@mui/material';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-
+import { Box, Typography, AvatarGroup, Avatar, IconButton, Switch } from '@mui/material';
+import { useRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { FormatMenu } from './SubMenus/FormatMenu';
+import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { colors } from '../../../theme/colors';
-
 import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isMobileOnly } from 'react-device-detect';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { useLocalFiles } from '../../../hooks/useLocalFiles';
+import { SheetController } from '../../../grid/controller/sheetController';
 import { useAuth0 } from '@auth0/auth0-react';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import { TooltipHint } from '../../components/TooltipHint';
+import { Search } from '@mui/icons-material';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { useGridSettings } from './SubMenus/useGridSettings';
 
-export const TopBar = () => {
+interface IProps {
+  app: PixiApp;
+  sheetController: SheetController;
+}
+
+export const TopBar = (props: IProps) => {
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const { localFilename } = useLocalFiles();
+  const settings = useGridSettings();
   const { user } = useAuth0();
 
   return (
@@ -24,7 +39,7 @@ export const TopBar = () => {
       }}
       style={{
         backgroundColor: 'rgba(255, 255, 255)',
-        color: '#212121',
+        color: colors.darkGray,
         //@ts-expect-error
         WebkitAppRegion: 'drag', // this allows the window to be dragged in Electron
         paddingLeft: isElectron() ? '4.5rem' : '2rem',
@@ -50,12 +65,12 @@ export const TopBar = () => {
           width: '15rem',
         }}
       >
-        <QuadraticMenu></QuadraticMenu>
+        <QuadraticMenu sheetController={props.sheetController} />
         {!isMobileOnly && (
           <>
             <DataMenu></DataMenu>
-            <FormatMenu></FormatMenu>
-            <NumberFormatMenu></NumberFormatMenu>
+            <FormatMenu app={props.app} sheet_controller={props.sheetController} />
+            <NumberFormatMenu app={props.app} sheet_controller={props.sheetController}></NumberFormatMenu>
           </>
         )}
       </Box>
@@ -79,12 +94,12 @@ export const TopBar = () => {
         ) : (
           <>
             <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-              Personal &nbsp;
+              Local &nbsp;
             </Typography>
             <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-              / Untitled.grid
+              / {localFilename}
             </Typography>
-            <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown>
+            {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
           </>
         )}
       </Box>
@@ -99,36 +114,63 @@ export const TopBar = () => {
       >
         {!isMobileOnly && (
           <>
-            <AvatarGroup>
-              <Avatar
-                sx={{
-                  bgcolor: colors.quadraticSecondary,
-                  width: 24,
-                  height: 24,
-                  fontSize: '0.8rem',
+            <TooltipHint title="Show cell type outlines">
+              <Switch
+                color="secondary"
+                checked={settings.showCellTypeOutlines}
+                onChange={() => {
+                  settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
+                  focusGrid();
                 }}
-                alt={user?.name}
-                src={user?.picture}
+                size="small"
+              />
+            </TooltipHint>
+            {user !== undefined && (
+              <AvatarGroup>
+                <Avatar
+                  sx={{
+                    bgcolor: colors.quadraticSecondary,
+                    width: 24,
+                    height: 24,
+                    fontSize: '0.8rem',
+                  }}
+                  alt={user?.name}
+                  src={user?.picture}
+                >
+                  {user?.name && user?.name[0]}
+                </Avatar>
+              </AvatarGroup>
+            )}
+            <TooltipHint title="Command Palette" shortcut={KeyboardSymbols.Command + 'P'}>
+              <IconButton
+                onClick={() => {
+                  setEditorInteractionState({
+                    ...editorInteractionState,
+                    showCommandPalette: true,
+                  });
+                  focusGrid();
+                }}
               >
-                {user?.name && user?.name[0]}
-              </Avatar>
-            </AvatarGroup>
-            <Tooltip title="Coming soon" arrow>
+                <Search />
+              </IconButton>
+            </TooltipHint>
+            {/* <Tooltip title="Coming soon" arrow>
               <Button
                 style={{
                   color: colors.darkGray,
                   borderColor: colors.darkGray,
-                  padding: '1px 4px',
+                  paddingTop: '1px',
+                  paddingBottom: '1px',
                 }}
                 variant="outlined"
                 size="small"
               >
                 Share
               </Button>
-            </Tooltip>
+            </Tooltip> */}
           </>
         )}
-        <ZoomDropdown></ZoomDropdown>
+        <ZoomDropdown app={props.app} />
       </Box>
     </div>
   );

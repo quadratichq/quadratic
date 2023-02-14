@@ -20,11 +20,7 @@ function createWindow() {
 
   // and load the index.html of the app.
   // win.loadFile("index.html");
-  win.loadURL(
-    isDev
-      ? 'http://localhost:3000'
-      : `file://${path.join(__dirname, '../build/index.html')}`
-  );
+  win.loadURL(isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, '../build/index.html')}`);
   // Open the DevTools.
   if (isDev) {
     win.webContents.openDevTools({ mode: 'detach' });
@@ -55,5 +51,11 @@ app.on('activate', () => {
 ipcMain.on('maximize-current-window', (event) => {
   const webContents = event.sender;
   const win = BrowserWindow.fromWebContents(webContents);
-  win.maximize();
+
+  // Toggle maximize
+  if (!win.isMaximized()) {
+    win.maximize();
+  } else {
+    win.unmaximize();
+  }
 });

@@ -2,7 +2,7 @@ name: Prettier Check
 on: push
 
 jobs:
-  prettier:
+  check_prettier:
     runs-on: ubuntu-latest
 
     steps:

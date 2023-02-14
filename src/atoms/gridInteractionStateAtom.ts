@@ -1,28 +1,30 @@
 import { atom } from 'recoil';
-import CellReference from '../core/gridGL/types/cellReference';
+import { Coordinate } from '../gridGL/types/size';
 export interface GridInteractionState {
-  keyboardMovePosition: CellReference;
-  cursorPosition: CellReference;
+  keyboardMovePosition: Coordinate;
+  cursorPosition: Coordinate;
   showMultiCursor: boolean;
   multiCursorPosition: {
-    originPosition: CellReference;
-    terminalPosition: CellReference;
+    originPosition: Coordinate;
+    terminalPosition: Coordinate;
   };
   showInput: boolean;
   inputInitialValue: string;
 }
 
+export const gridInteractionStateDefault: GridInteractionState = {
+  keyboardMovePosition: { x: 0, y: 0 },
+  cursorPosition: { x: 0, y: 0 },
+  showMultiCursor: false,
+  multiCursorPosition: {
+    originPosition: { x: 0, y: 0 },
+    terminalPosition: { x: 0, y: 0 },
+  },
+  showInput: false,
+  inputInitialValue: '',
+};
+
 export const gridInteractionStateAtom = atom({
   key: 'gridInteractionState', // unique ID (with respect to other atoms/selectors)
-  default: {
-    keyboardMovePosition: { x: 0, y: 0 },
-    cursorPosition: { x: 0, y: 0 },
-    showMultiCursor: false,
-    multiCursorPosition: {
-      originPosition: { x: 0, y: 0 },
-      terminalPosition: { x: 0, y: 0 },
-    },
-    showInput: false,
-    inputInitialValue: '',
-  } as GridInteractionState,
+  default: gridInteractionStateDefault,
 });

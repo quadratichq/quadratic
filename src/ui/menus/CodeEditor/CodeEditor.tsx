@@ -1,31 +1,40 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
-import { QuadraticEditorTheme } from '../../../theme/quadraticEditorTheme';
-import { GetCellsDB } from '../../../core/gridDB/Cells/GetCellsDB';
+import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import TextField from '@mui/material/TextField';
-import { Cell } from '../../../core/gridDB/db';
+import { Cell } from '../../../grid/sheet/gridTypes';
 import './CodeEditor.css';
-import { Button } from '@mui/material';
-import { updateCellAndDCells } from '../../../core/actions/updateCellAndDCells';
+import { IconButton } from '@mui/material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { SheetController } from '../../../grid/controller/sheetController';
+import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
+import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
+import { cellEvaluationReturnType } from '../../../grid/computations/types';
+import { Close, PlayArrow, Subject } from '@mui/icons-material';
+import { Formula, Python } from '../../icons';
+import { TooltipHint } from '../../components/TooltipHint';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
 interface CodeEditorProps {
   editorInteractionState: EditorInteractionState;
+  sheet_controller: SheetController;
 }
 
 export const CodeEditor = (props: CodeEditorProps) => {
   const { editorInteractionState } = props;
+  const { showCodeEditor, mode: editor_mode } = editorInteractionState;
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
 
   const [editorContent, setEditorContent] = useState<string | undefined>('');
+  const [didMount, setDidMount] = useState(false);
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -36,19 +45,39 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // Monitor selected cell for changes
   const x = editorInteractionState.selectedCell.x;
   const y = editorInteractionState.selectedCell.y;
-  const cells = useLiveQuery(() => GetCellsDB(x, y, x, y), [x, y]);
+  const cell = useMemo(() => props.sheet_controller.sheet.getCellCopy(x, y), [x, y, props.sheet_controller.sheet]);
+
+  // Cell evaluation result
+  const [evalResult, setEvalResult] = useState<cellEvaluationReturnType | undefined>(cell?.evaluation_result);
 
   // Editor Width State
   const [editorWidth, setEditorWidth] = useState<number>(
     window.innerWidth * 0.35 // default to 35% of the window width
   );
 
+  // When changing mode
+  // useEffect(() => {
+
+  //   if (!monacoRef.current || !editorRef.current) return;
+  //   const monaco = monacoRef.current;
+  //   const editor = editorRef.current;
+
+  //   // monaco.editor.setModelLanguage(editor.getModel(), 'formula');
+  // }, [editor_mode, cell]);
+
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
-    if (cells?.length) {
-      setSelectedCell(cells[0]);
+    if (cell) {
+      setSelectedCell(cell);
     }
-  }, [cells]);
+  }, [cell]);
+
+  // When selected cell changes updated python output
+  useEffect(() => {
+    if (selectedCell) {
+      setEvalResult(selectedCell?.evaluation_result);
+    }
+  }, [selectedCell]);
 
   const closeEditor = () => {
     setInteractionState({
@@ -57,6 +86,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     });
     setEditorContent('');
     setSelectedCell(undefined);
+    setEvalResult(undefined);
     focusGrid();
   };
 
@@ -68,6 +98,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   // When cell changes
   useEffect(() => {
+    if (!showCodeEditor) return;
+
     const x = editorInteractionState.selectedCell.x;
     const y = editorInteractionState.selectedCell.y;
 
@@ -76,61 +108,85 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
     // save previous cell, if it is defined and has changed
     // This code causes a timing bug.
-    // if (selectedCell?.python_code !== editorContent) saveSelectedCell();
+    // if (selectedCell?.python_code !== editorContent) saveAndRunCell();
 
     // focus editor on cell change
     editorRef.current?.focus();
     editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
 
-    GetCellsDB(Number(x), Number(y), Number(x), Number(y)).then((cells) => {
-      if (cells?.length && cells[0] !== undefined) {
-        // load cell content
-        setSelectedCell(cells[0]);
-        setEditorContent(cells[0].python_code);
-      } else {
-        // create blank cell
-        setSelectedCell({
-          x: Number(x),
-          y: Number(y),
-          type: editorInteractionState.mode,
-          value: '',
-        } as Cell);
-        setEditorContent('');
+    const cell = props.sheet_controller.sheet.getCellCopy(x, y);
+    if (cell) {
+      // load cell content
+      setSelectedCell(cell);
+      if (editor_mode === 'PYTHON') {
+        setEditorContent(cell?.python_code);
+      } else if (editor_mode === 'FORMULA') {
+        setEditorContent(cell?.formula_code);
       }
-    });
-  });
+    } else {
+      // create blank cell
+      setSelectedCell({
+        x: Number(x),
+        y: Number(y),
+        type: editorInteractionState.mode,
+        value: '',
+      } as Cell);
+      setEditorContent('');
+    }
+  }, [selectedCell, editorInteractionState, props.sheet_controller.sheet, showCodeEditor, editor_mode]);
 
-  const saveSelectedCell = () => {
+  const saveAndRunCell = async () => {
     if (!selectedCell) return;
 
-    selectedCell.type = 'PYTHON';
+    selectedCell.type = editor_mode;
     selectedCell.value = '';
-    selectedCell.python_code = editorContent;
+    if (editor_mode === 'PYTHON') {
+      selectedCell.python_code = editorContent;
+    } else if (editor_mode === 'FORMULA') {
+      selectedCell.formula_code = editorContent;
+    }
 
-    updateCellAndDCells(selectedCell);
+    await updateCellAndDCells({
+      starting_cells: [selectedCell],
+      sheetController: props.sheet_controller,
+      app: props.sheet_controller.app,
+    });
+
+    const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
+    setEvalResult(updated_cell?.evaluation_result);
   };
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
 
     editor.focus();
 
     monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
     monaco.editor.setTheme('quadratic');
+
+    if (didMount) return;
+    // Only register language once
+
+    monaco.languages.register({ id: 'formula' });
+    monaco.languages.setMonarchTokensProvider('formula', FormulaLanguageConfig);
+    monaco.languages.registerCompletionItemProvider('formula', FormulaCompletionProvider);
+
+    setDidMount(true);
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Command + S
     if ((event.metaKey || event.ctrlKey) && event.key === 's') {
       event.preventDefault();
-      saveSelectedCell();
+      saveAndRunCell();
     }
 
     // Command + Enter
     if ((event.metaKey || event.ctrlKey) && event.code === 'Enter') {
       event.preventDefault();
       event.stopPropagation();
-      saveSelectedCell();
+      saveAndRunCell();
     }
 
     // Esc
@@ -139,6 +195,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
       closeEditor();
     }
   };
+
+  let consoleOut = [evalResult?.std_err, evalResult?.std_out].join('\n');
+  if (consoleOut[0] === '\n') consoleOut = consoleOut.substring(1);
 
   if (selectedCell !== undefined && editorInteractionState.showCodeEditor)
     return (
@@ -194,60 +253,50 @@ export const CodeEditor = (props: CodeEditorProps) => {
         <div
           style={{
             color: colors.darkGray,
-            fontSize: '0.8em',
+            fontSize: '0.875rem',
             display: 'flex',
-            flexDirection: 'row',
             justifyContent: 'space-between',
             marginBottom: '2px',
-            userSelect: 'none',
+            padding: '.25rem .5rem',
+            borderBottom: `1px solid ${colors.mediumGray}`,
           }}
         >
-          <Button
-            id="QuadraticCodeEditorCloseButtonID"
-            style={{
-              color: colors.darkGray,
-              borderColor: colors.darkGray,
-              padding: '1px 4px',
-            }}
-            variant="text"
-            size="small"
-            onClick={closeEditor}
-          >
-            Close
-          </Button>
           <div
             style={{
               display: 'flex',
               justifyContent: 'center',
-              flexDirection: 'column',
-              paddingLeft: '3px',
-              paddingRight: '3px',
+              alignItems: 'center',
+              gap: '.5rem',
+              padding: '0 .5rem',
             }}
           >
+            {editor_mode === 'PYTHON' ? (
+              <Python sx={{ color: colors.languagePython }} fontSize="small" />
+            ) : editor_mode === 'FORMULA' ? (
+              <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
+            ) : (
+              <Subject />
+            )}
             <span
               style={{
                 color: 'black',
               }}
             >
-              CELL ({selectedCell.x}, {selectedCell.y}) {selectedCell.type}
+              Cell ({selectedCell.x}, {selectedCell.y}) - {capitalize(selectedCell.type)}
             </span>
           </div>
-          <Button
-            id="QuadraticCodeEditorRunButtonID"
-            style={{
-              color: colors.darkGray,
-              borderColor: colors.darkGray,
-              padding: '1px 4px',
-              // lineHeight: '1',
-            }}
-            variant="text"
-            size="small"
-            onClick={() => {
-              saveSelectedCell();
-            }}
-          >
-            Run
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+            <TooltipHint title="Run" shortcut={`${KeyboardSymbols.Command}↵`}>
+              <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
+                <PlayArrow />
+              </IconButton>
+            </TooltipHint>
+            <TooltipHint title="Close" shortcut="ESC">
+              <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
+                <Close />
+              </IconButton>
+            </TooltipHint>
+          </div>
         </div>
         <div
           style={{
@@ -258,7 +307,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
           <Editor
             height="100%"
             width="100%"
-            defaultLanguage={'python'}
+            language={editor_mode === 'PYTHON' ? 'python' : editor_mode === 'FORMULA' ? 'formula' : 'plaintext'}
             value={editorContent}
             onChange={(value) => {
               setEditorContent(value);
@@ -278,7 +327,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
             }}
           />
         </div>
-        {editorInteractionState.mode === 'PYTHON' && (
+        {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
           <div style={{ margin: '15px' }}>
             <TextField
               disabled
@@ -286,7 +335,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
               label="OUTPUT"
               multiline
               rows={7}
-              value={selectedCell.python_output || ''}
+              value={consoleOut}
               style={{
                 width: '100%',
               }}
@@ -304,3 +353,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
     );
   return <></>;
 };
+
+function capitalize(str: string) {
+  const normalized = str.toLowerCase();
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
