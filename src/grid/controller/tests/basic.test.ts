@@ -115,3 +115,70 @@ test('SheetController - code is saved from undo to redo', () => {
   expect(sc.sheet.grid.getCell(14, 34)?.last_modified).toBe('2023-01-19T19:12:21.745Z');
   expect(sc.sheet.grid.getCell(14, 34)?.type).toBe('PYTHON');
 });
+
+test('SheetController - multiple values set to cell in same transaction', () => {
+  const sc = new SheetController();
+
+  sc.start_transaction();
+
+  const cell = {
+    x: 0,
+    y: 0,
+    value: 'hello',
+    type: 'TEXT',
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  sc.execute_statement({
+    type: 'SET_CELL',
+    data: {
+      position: [0, 0],
+      value: cell,
+    },
+  });
+
+  sc.end_transaction();
+
+  const result_cell_1 = sc.sheet.grid.getCell(0, 0);
+
+  expect(result_cell_1?.value).toBe('hello');
+  expect(result_cell_1?.type).toBe('TEXT');
+  expect(result_cell_1?.python_code).toBeUndefined();
+  expect(result_cell_1?.evaluation_result).toBeUndefined();
+  expect(result_cell_1?.last_modified).toBe('2023-01-19T19:12:21.745Z');
+
+  sc.start_transaction();
+  sc.execute_statement({
+    type: 'SET_CELL',
+    data: {
+      position: [0, 0],
+      value: undefined,
+    },
+  });
+  sc.execute_statement({
+    type: 'SET_CELL',
+    data: {
+      position: [0, 0],
+      value: { ...cell, value: 'hello2' },
+    },
+  });
+  sc.end_transaction();
+
+  expect(sc.sheet.grid.getCell(0, 0)?.value).toBe('hello2');
+
+  sc.undo();
+
+  expect(sc.sheet.grid.getCell(0, 0)?.value).toBe('hello');
+
+  sc.undo();
+
+  expect(sc.sheet.grid.getCell(0, 0)).toBeUndefined();
+
+  sc.redo();
+
+  expect(sc.sheet.grid.getCell(0, 0)?.value).toBe('hello');
+
+  sc.redo();
+
+  expect(sc.sheet.grid.getCell(0, 0)?.value).toBe('hello2');
+});
