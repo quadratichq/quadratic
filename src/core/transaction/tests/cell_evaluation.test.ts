@@ -29,7 +29,7 @@ test('SheetController - code run correctly', async () => {
   const cell_after = sc.sheet.grid.getCell(54, 54);
 
   expect(cell_after?.value).toBe('world');
-  expect(cell_after?.python_code).toBe("print('hello')\n'world'\n");
+  expect(cell_after?.python_code).toBe("print('hello')\n'world'");
   expect(cell_after?.evaluation_result?.std_out).toBe('hello\n');
   expect(cell_after?.last_modified).toBeDefined();
   expect(cell_after?.type).toBe('PYTHON');
@@ -51,7 +51,7 @@ test('SheetController - array output undo redo', async () => {
 
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 10);
   expect(after_code_run_cells[0]?.value).toBe('1');
-  expect(after_code_run_cells[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
+  expect(after_code_run_cells[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]');
   expect(after_code_run_cells[0]?.evaluation_result?.std_out).toBe('');
   expect(after_code_run_cells[0]?.last_modified).toBeDefined();
   expect(after_code_run_cells[0]?.type).toBe('PYTHON');
@@ -74,7 +74,7 @@ test('SheetController - array output undo redo', async () => {
   const after_redo_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 10);
   expect(after_redo_cells.length).toBe(10);
   expect(after_redo_cells[0]?.value).toBe('1');
-  expect(after_redo_cells[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
+  expect(after_redo_cells[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]');
   expect(after_redo_cells[0]?.evaluation_result?.std_out).toBe('');
   expect(after_redo_cells[0]?.last_modified).toBeDefined();
   expect(after_redo_cells[0]?.type).toBe('PYTHON');
@@ -103,7 +103,7 @@ test('SheetController - array output length change', async () => {
 
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
   expect(after_code_run_cells[0]?.value).toBe('1');
-  expect(after_code_run_cells[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
+  expect(after_code_run_cells[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]');
   expect(after_code_run_cells[0]?.evaluation_result?.std_out).toBe('');
   expect(after_code_run_cells[0]?.last_modified).toBeDefined();
   expect(after_code_run_cells[0]?.type).toBe('PYTHON');
@@ -132,7 +132,7 @@ test('SheetController - array output length change', async () => {
   expect(after_update_1.length).toBe(5);
   expect(sc.sheet.grid.getNakedCells(0, 5, 0, 20).length).toBe(0); // check that the old cells are gone
   expect(after_update_1[0]?.value).toBe('1new'); // verify code cell is set properly
-  expect(after_update_1[0]?.python_code).toBe('["1new", "2new", "3new", "4new", "5new"]\n');
+  expect(after_update_1[0]?.python_code).toBe('["1new", "2new", "3new", "4new", "5new"]');
   expect(after_update_1[0]?.evaluation_result?.std_out).toBe('');
   expect(after_update_1[0]?.last_modified).toBeDefined();
   expect(after_update_1[0]?.type).toBe('PYTHON');
@@ -148,7 +148,7 @@ test('SheetController - array output length change', async () => {
 
   const after_undo_1 = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
   expect(after_undo_1[0]?.value).toBe('1');
-  expect(after_undo_1[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
+  expect(after_undo_1[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]');
   expect(after_undo_1[0]?.evaluation_result?.std_out).toBe('');
   expect(after_undo_1[0]?.last_modified).toBeDefined();
   expect(after_undo_1[0]?.type).toBe('PYTHON');
@@ -171,7 +171,7 @@ test('SheetController - array output length change', async () => {
 
   const after_redo_1 = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
   expect(after_redo_1[0]?.value).toBe('1');
-  expect(after_redo_1[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
+  expect(after_redo_1[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]');
   expect(after_redo_1[0]?.evaluation_result?.std_out).toBe('');
   expect(after_redo_1[0]?.last_modified).toBeDefined();
   expect(after_redo_1[0]?.type).toBe('PYTHON');
@@ -191,7 +191,7 @@ test('SheetController - array output length change', async () => {
   expect(after_redo_2.length).toBe(5);
   expect(sc.sheet.grid.getNakedCells(0, 5, 0, 20).length).toBe(0); // check that the old cells are gone
   expect(after_redo_2[0]?.value).toBe('1new'); // verify code cell is set properly
-  expect(after_redo_2[0]?.python_code).toBe('["1new", "2new", "3new", "4new", "5new"]\n');
+  expect(after_redo_2[0]?.python_code).toBe('["1new", "2new", "3new", "4new", "5new"]');
   expect(after_redo_2[0]?.evaluation_result?.std_out).toBe('');
   expect(after_redo_2[0]?.last_modified).toBeDefined();
   expect(after_redo_2[0]?.type).toBe('PYTHON');
