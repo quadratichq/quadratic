@@ -61,16 +61,16 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // Console height state
   const [consoleHeight, setConsoleHeight] = useState<number>(200);
 
-  // When changing cell
+  // TODO: This is a hack to show A1 notation while editing a Formula.
   useEffect(() => {
-    // TODO: This is a hack to get the A1 notation to show up in the formula editor
-    if (editorInteractionState.showCodeEditor)
-      if (cell?.type === 'FORMULA') {
+    if (editorInteractionState.showCodeEditor) {
+      if (selectedCell?.type === 'FORMULA') {
         settings.setShowA1Notation(true);
-      } else if (cell?.type === 'PYTHON') {
+      } else if (selectedCell?.type === 'PYTHON') {
         settings.setShowA1Notation(false);
       }
-  }, [cell, settings, editorInteractionState.showCodeEditor]);
+    }
+  }, [selectedCell, settings, editorInteractionState.showCodeEditor]);
 
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
