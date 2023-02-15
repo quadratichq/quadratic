@@ -28,3 +28,9 @@ html,
   font-family: 'OpenSans-BoldItalic';
   src: url('/public/fonts/opensans/OpenSans-BoldItalic.ttf');
 }
+
+/* Override default MUI dialog actions container so buttons align with content */
+.MuiDialogActions-root {
+  padding-left: 16px;
+  padding-right: 16px;
+}

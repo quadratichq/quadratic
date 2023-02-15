@@ -4,7 +4,15 @@ import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { Cell } from '../../../grid/sheet/gridTypes';
-import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, IconButton } from '@mui/material';
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
+} from '@mui/material';
 import { Console } from './Console';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
@@ -284,15 +292,16 @@ export const CodeEditor = (props: CodeEditorProps) => {
           <span
             style={{
               color: 'black',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
             }}
           >
-            Cell ({selectedCell.x}, {selectedCell.y}) - {capitalize(selectedCell.type)}{' '}
+            Cell ({selectedCell.x}, {selectedCell.y}) - {capitalize(selectedCell.type)}
             {hasUnsavedChanges && (
-              <TooltipHint title="Unsaved changes">
-                <FiberManualRecord fontSize="small" color="warning" sx={{ fontSize: '.8125rem' }} />
+              <TooltipHint title="Your changes haven’t been saved or run">
+                <FiberManualRecord
+                  fontSize="small"
+                  color="warning"
+                  sx={{ fontSize: '.75rem', position: 'relative', top: '2px', left: '6px' }}
+                />
               </TooltipHint>
             )}
           </span>
@@ -303,13 +312,17 @@ export const CodeEditor = (props: CodeEditorProps) => {
               <PlayArrow />
             </IconButton>
           </TooltipHint>
-
-          <CloseButton
-            onClick={() => {
-              closeEditor();
-            }}
-            hasUnsavedChanges={hasUnsavedChanges}
-          />
+          <TooltipHint title="Close" shortcut="ESC">
+            <IconButton
+              id="QuadraticCodeEditorCloseButtonID"
+              size="small"
+              onClick={() => {
+                closeEditor();
+              }}
+            >
+              <Close />
+            </IconButton>
+          </TooltipHint>
         </div>
       </div>
 
@@ -365,30 +378,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
   );
 };
 
-function CloseButton({ hasUnsavedChanges, onClick }: any) {
-  const [isHovered, setIsHovered] = useState(false);
-  return (
-    <TooltipHint title="Close" shortcut="ESC">
-      <IconButton
-        id="QuadraticCodeEditorCloseButtonID"
-        size="small"
-        onClick={onClick}
-        onMouseOver={() => {
-          setIsHovered(true);
-        }}
-        onMouseOut={() => {
-          setIsHovered(false);
-        }}
-      >
-        <Close sx={{ opacity: isHovered ? 1 : hasUnsavedChanges ? 1 : 1 }} />
-        {hasUnsavedChanges && !isHovered && false && (
-          <FiberManualRecord fontSize="small" color="warning" sx={{ fontSize: '1.125rem', position: 'absolute' }} />
-        )}
-      </IconButton>
-    </TooltipHint>
-  );
-}
-
 export default function SaveChangesAlert({
   onCancel,
   onSave,
@@ -406,9 +395,10 @@ export default function SaveChangesAlert({
       aria-describedby="save-changes-description"
       maxWidth="sm"
     >
+      <DialogTitle>Do you want to save your changes?</DialogTitle>
       <DialogContent>
         <DialogContentText id="save-changes-description">
-          Do you want to save your changes? They will be lost if you don’t.
+          Your changes will be lost if you don’t save and run them.
         </DialogContentText>
       </DialogContent>
       <DialogActions>
