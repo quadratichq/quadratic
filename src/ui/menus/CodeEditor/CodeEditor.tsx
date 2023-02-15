@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { Console } from './Console';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
@@ -27,17 +27,22 @@ import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
 import { useGridSettings } from '../TopBar/SubMenus/useGridSettings';
+import { moveViewport } from '../../../gridGL/interaction/viewportHelper';
+import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
 interface CodeEditorProps {
+  app: PixiApp;
   editorInteractionState: EditorInteractionState;
   sheet_controller: SheetController;
 }
 
 export const CodeEditor = (props: CodeEditorProps) => {
-  const { editorInteractionState } = props;
+  const { editorInteractionState, app } = props;
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
+  const [gridInteractionState, setGridInteractionState] = useRecoilState(gridInteractionStateAtom);
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -311,7 +316,30 @@ export const CodeEditor = (props: CodeEditorProps) => {
               color: 'black',
             }}
           >
-            Cell ({selectedCell.x}, {selectedCell.y}) - {capitalize(selectedCell.type)}
+            <span
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                const { cursorPosition } = gridInteractionState;
+                const { selectedCell } = editorInteractionState;
+
+                // If the grid's active cursor is somewhere other than the
+                // editor's selected cell, move cursor back to that cell
+                if (cursorPosition.x !== selectedCell.x || cursorPosition.y !== selectedCell.y) {
+                  setGridInteractionState({
+                    ...gridInteractionState,
+                    cursorPosition: selectedCell,
+                  });
+                }
+
+                moveViewport({
+                  app,
+                  center: selectedCell,
+                });
+              }}
+            >
+              Cell ({selectedCell.x}, {selectedCell.y})
+            </span>{' '}
+            - {capitalize(selectedCell.type)}
             {hasUnsavedChanges && (
               <TooltipHint title="Your changes haven’t been saved or run">
                 <FiberManualRecord
