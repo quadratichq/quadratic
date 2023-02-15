@@ -99,8 +99,8 @@ export const Sql = (props: SvgIconProps) => (
 export const SaveFileOutlined = (props: SvgIconProps) => (
   <SvgIcon {...props}>
     <path
-      fill-rule="evenodd"
-      clip-rule="evenodd"
+      fillRule="evenodd"
+      clipRule="evenodd"
       d="M4.588 21.413C4.97933 21.8043 5.45 22 6 22H18C18.55 22 19.021 21.8043 19.413 21.413C19.8043 21.021 20 20.55 20 20V8L14 2H6C5.45 2 4.97933 2.19567 4.588 2.587C4.196 2.979 4 3.45 4 4V20C4 20.55 4.196 21.021 4.588 21.413ZM13 4V9H18V20H6V4H13ZM13 11H11L11 15.175L9.4 13.575L8 15L12 19L16 15L14.575 13.6L13 15.175L13 11Z"
     />
   </SvgIcon>

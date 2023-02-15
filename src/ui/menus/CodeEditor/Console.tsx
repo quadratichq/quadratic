@@ -84,6 +84,8 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
             </>
           ) : (
             <>
+              <p>Quadratic allows you to use the familiar spreadsheet formula language.</p>
+              <p>Negative cells are referenced like `ZAn2`. This is referencing cell -1, -2. Letter case matters.</p>
               <p>
                 <LinkNewTab href={DOCUMENTATION_FORMULAS_URL}>Check out the docs</LinkNewTab> to learn more about using
                 Formulas.
