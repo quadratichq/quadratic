@@ -1,20 +1,10 @@
 import { CellDependencyManager } from './CellDependencyManager';
 
-test('test QuadraticDependencyGraph', () => {
+test('QuadraticDependencyGraph', () => {
   let dg = new CellDependencyManager();
-});
 
-//   dg.add_dependency_to_graph(
-//     [1, 3],
-//     [
-//       [1, 2],
-//       [1, 1],
-//     ]
-//   );
-//   expect(dg.get_children_cells([1, 3])).toStrictEqual([
-//     [1, 2],
-//     [1, 1],
-//   ]);
+  dg.addDependency([1, 3], [1, 2]);
+});
 
 //   dg.add_dependency_to_graph([1, 4], [[1, 3]]);
 //   expect(dg.get_children_cells([1, 4])).toStrictEqual([

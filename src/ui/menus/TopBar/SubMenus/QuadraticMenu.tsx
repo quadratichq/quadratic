@@ -141,13 +141,16 @@ export const QuadraticMenu = (props: Props) => {
           >
             Show cell type outlines
           </MenuItem>
+          {/* 
+          Commented out because the editor switches this state automatically when the user
+          is editing a formula.
           <MenuItem
             type="checkbox"
             checked={settings.showA1Notation}
             onClick={() => settings.setShowA1Notation(!settings.showA1Notation)}
           >
             Show A1 notation on headings
-          </MenuItem>
+          </MenuItem> */}
           <MenuDivider />
           <MenuItem
             type="checkbox"
