@@ -103,7 +103,7 @@
     "@playwright/test": "^1.22.2",
     "@types/lodash.debounce": "^4.0.7",
     "concurrently": "^6.3.0",
-    "electron": "^15.3.0",
+    "electron": "^23.0.0",
     "electron-is-dev": "^2.0.0",
     "fs-extra": "^11.1.0",
     "msdf-bmfont-xml": "^2.7.0",

@@ -109,6 +109,10 @@ export const TopBar = (props: IProps) => {
           justifyContent: 'flex-end',
           gap: '1rem',
         }}
+        style={{
+          //@ts-expect-error
+          WebkitAppRegion: 'no-drag',
+        }}
       >
         {!isMobileOnly && (
           <>
