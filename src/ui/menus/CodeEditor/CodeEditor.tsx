@@ -69,6 +69,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
       } else if (selectedCell?.type === 'PYTHON') {
         settings.setShowA1Notation(false);
       }
+    } else if (settings.showA1Notation) {
+      settings.setShowA1Notation(false);
     }
   }, [selectedCell, settings, editorInteractionState.showCodeEditor]);
 
@@ -95,7 +97,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
     setSelectedCell(undefined);
     setEvalResult(undefined);
     focusGrid();
-    settings.setShowA1Notation(false);
   };
 
   useEffect(() => {
