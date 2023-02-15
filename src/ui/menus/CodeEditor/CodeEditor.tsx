@@ -69,11 +69,13 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // Save changes alert state
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState<boolean>(false);
 
-  // TODO David fix the one case where this won't work
   const hasUnsavedChanges =
-    editorMode === 'PYTHON'
+    // new cell and no content
+    !(cell === undefined && !editorContent) &&
+    // existing cell and content has changed
+    (editorMode === 'PYTHON'
       ? selectedCell?.python_code !== editorContent
-      : selectedCell?.formula_code !== editorContent;
+      : selectedCell?.formula_code !== editorContent);
 
   // When changing mode
   // useEffect(() => {
@@ -387,8 +389,23 @@ export default function SaveChangesAlert({
   onSave: (e: React.SyntheticEvent) => void;
   onDiscard: (e: React.SyntheticEvent) => void;
 }) {
+  const DialogRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // focus on dialog when it opens
+    if (DialogRef.current) {
+      DialogRef.current.focus();
+    }
+
+    // focus on grid when dialog closes
+    return () => {
+      focusGrid();
+    };
+  }, []);
+
   return (
     <Dialog
+      ref={DialogRef}
       open={true}
       onClose={onCancel}
       aria-labelledby="save-changes-title"
@@ -403,7 +420,7 @@ export default function SaveChangesAlert({
       </DialogContent>
       <DialogActions>
         <Button onClick={onDiscard} color="error" sx={{ marginRight: 'auto' }}>
-          Don’t save
+          Discard changes
         </Button>
         <Button onClick={onCancel} color="inherit">
           Cancel
