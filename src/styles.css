@@ -31,6 +31,6 @@ html,
 
 /* Override default MUI dialog actions container so buttons align with content */
 .MuiDialogActions-root {
-  padding-left: 16px;
-  padding-right: 16px;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
 }
