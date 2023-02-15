@@ -4,7 +4,7 @@ import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { Cell } from '../../../grid/sheet/gridTypes';
-import { IconButton } from '@mui/material';
+import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, IconButton } from '@mui/material';
 import { Console } from './Console';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useSetRecoilState } from 'recoil';
@@ -13,7 +13,7 @@ import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
 import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
 import { cellEvaluationReturnType } from '../../../grid/computations/types';
-import { Close, PlayArrow, Subject } from '@mui/icons-material';
+import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
 import { Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
@@ -58,6 +58,15 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // Console height state
   const [consoleHeight, setConsoleHeight] = useState<number>(200);
 
+  // Save changes alert state
+  const [showSaveChangesAlert, setShowSaveChangesAlert] = useState<boolean>(false);
+
+  // TODO David fix the one case where this won't work
+  const hasUnsavedChanges =
+    editorMode === 'PYTHON'
+      ? selectedCell?.python_code !== editorContent
+      : selectedCell?.formula_code !== editorContent;
+
   // When changing mode
   // useEffect(() => {
 
@@ -82,7 +91,15 @@ export const CodeEditor = (props: CodeEditorProps) => {
     }
   }, [selectedCell]);
 
-  const closeEditor = () => {
+  const closeEditor = ({ skipUnsavedChangesCheck } = { skipUnsavedChangesCheck: false }) => {
+    // If there are unsaved changes and we haven't been told to explicitly skip
+    // checking for unsaved changes, ask the user what they want to do
+    if (hasUnsavedChanges && !skipUnsavedChangesCheck) {
+      setShowSaveChangesAlert(true);
+      return;
+    }
+
+    setShowSaveChangesAlert(false);
     setInteractionState({
       ...editorInteractionState,
       ...{ showCodeEditor: false },
@@ -220,6 +237,21 @@ export const CodeEditor = (props: CodeEditorProps) => {
       }}
       onKeyDownCapture={onKeyDownEditor}
     >
+      {showSaveChangesAlert && (
+        <SaveChangesAlert
+          onCancel={() => {
+            setShowSaveChangesAlert(!showSaveChangesAlert);
+          }}
+          onSave={() => {
+            saveAndRunCell();
+            closeEditor({ skipUnsavedChangesCheck: true });
+          }}
+          onDiscard={() => {
+            closeEditor({ skipUnsavedChangesCheck: true });
+          }}
+        />
+      )}
+
       <ResizeControl setState={setEditorWidth} position="LEFT" />
 
       {/* Editor Header */}
@@ -252,22 +284,32 @@ export const CodeEditor = (props: CodeEditorProps) => {
           <span
             style={{
               color: 'black',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
             }}
           >
-            Cell ({selectedCell.x}, {selectedCell.y}) - {capitalize(selectedCell.type)}
+            Cell ({selectedCell.x}, {selectedCell.y}) - {capitalize(selectedCell.type)}{' '}
+            {hasUnsavedChanges && (
+              <TooltipHint title="Unsaved changes">
+                <FiberManualRecord fontSize="small" color="warning" sx={{ fontSize: '.8125rem' }} />
+              </TooltipHint>
+            )}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-          <TooltipHint title="Run" shortcut={`${KeyboardSymbols.Command}↵`}>
+          <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
             <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
               <PlayArrow />
             </IconButton>
           </TooltipHint>
-          <TooltipHint title="Close" shortcut="ESC">
-            <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
-              <Close />
-            </IconButton>
-          </TooltipHint>
+
+          <CloseButton
+            onClick={() => {
+              closeEditor();
+            }}
+            hasUnsavedChanges={hasUnsavedChanges}
+          />
         </div>
       </div>
 
@@ -322,6 +364,67 @@ export const CodeEditor = (props: CodeEditorProps) => {
     </div>
   );
 };
+
+function CloseButton({ hasUnsavedChanges, onClick }: any) {
+  const [isHovered, setIsHovered] = useState(false);
+  return (
+    <TooltipHint title="Close" shortcut="ESC">
+      <IconButton
+        id="QuadraticCodeEditorCloseButtonID"
+        size="small"
+        onClick={onClick}
+        onMouseOver={() => {
+          setIsHovered(true);
+        }}
+        onMouseOut={() => {
+          setIsHovered(false);
+        }}
+      >
+        <Close sx={{ opacity: isHovered ? 1 : hasUnsavedChanges ? 1 : 1 }} />
+        {hasUnsavedChanges && !isHovered && false && (
+          <FiberManualRecord fontSize="small" color="warning" sx={{ fontSize: '1.125rem', position: 'absolute' }} />
+        )}
+      </IconButton>
+    </TooltipHint>
+  );
+}
+
+export default function SaveChangesAlert({
+  onCancel,
+  onSave,
+  onDiscard,
+}: {
+  onCancel: (e: React.SyntheticEvent) => void;
+  onSave: (e: React.SyntheticEvent) => void;
+  onDiscard: (e: React.SyntheticEvent) => void;
+}) {
+  return (
+    <Dialog
+      open={true}
+      onClose={onCancel}
+      aria-labelledby="save-changes-title"
+      aria-describedby="save-changes-description"
+      maxWidth="sm"
+    >
+      <DialogContent>
+        <DialogContentText id="save-changes-description">
+          Do you want to save your changes? They will be lost if you don’t.
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onDiscard} color="error" sx={{ marginRight: 'auto' }}>
+          Don’t save
+        </Button>
+        <Button onClick={onCancel} color="inherit">
+          Cancel
+        </Button>
+        <Button onClick={onSave} autoFocus>
+          Save & run
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 function capitalize(str: string) {
   const normalized = str.toLowerCase();
