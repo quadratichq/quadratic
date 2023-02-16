@@ -1,6 +1,7 @@
 import { GridFileSchemaV1 } from '../grid/actions/gridFile/GridFileSchema';
 
 export const example_grid: GridFileSchemaV1 = {
+  version: '1.0',
   columns: [],
   rows: [],
   borders: [],

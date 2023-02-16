@@ -44,7 +44,7 @@ export class CellsArray extends Container {
 
     drawBorder({
       tint: colors.cellColorUserPython,
-      alpha: 0.25,
+      alpha: 0.5,
       x,
       y,
       width: xEnd - x,
@@ -56,19 +56,19 @@ export class CellsArray extends Container {
       right: true,
     });
 
-    drawBorder({
-      tint: colors.cellColorUserPython,
-      alpha: 0.25,
-      x,
-      y,
-      width,
-      height,
-      getSprite: this.getSprite,
-      top: true,
-      left: true,
-      bottom: true,
-      right: true,
-    });
+    // drawBorder({
+    //   tint: colors.cellColorUserPython,
+    //   alpha: 0.25,
+    //   x,
+    //   y,
+    //   width,
+    //   height,
+    //   getSprite: this.getSprite,
+    //   top: true,
+    //   left: true,
+    //   bottom: true,
+    //   right: true,
+    // });
   }
 
   debugShowCachedCounts(): void {
