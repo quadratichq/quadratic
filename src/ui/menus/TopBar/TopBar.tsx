@@ -1,4 +1,4 @@
-import { Box, Typography, IconButton, Switch } from '@mui/material';
+import { Box, Typography, IconButton } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -18,6 +18,7 @@ import { TooltipHint } from '../../components/TooltipHint';
 import { ManageSearch } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
+import { CodeOutlinesOff, CodeOutlinesOn } from '../../icons';
 
 interface IProps {
   app: PixiApp;
@@ -132,15 +133,15 @@ export const TopBar = (props: IProps) => {
                 </Avatar>
               </AvatarGroup>
             )} */}
-            <TooltipHint title="Show cell type outlines">
-              <Switch
-                checked={settings.showCellTypeOutlines}
-                onChange={() => {
+            <TooltipHint title={`${settings.showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
+              <IconButton
+                onClick={() => {
                   settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
                   focusGrid();
                 }}
-                size="small"
-              />
+              >
+                {settings.showCellTypeOutlines ? <CodeOutlinesOn /> : <CodeOutlinesOff />}
+              </IconButton>
             </TooltipHint>
             <TooltipHint title="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
               <IconButton
