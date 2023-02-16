@@ -14,4 +14,5 @@ export interface GridFileSchemaV1 {
   borders: Border[];
   render_dependency: Dependency[];
   cell_dependency: string;
+  version: '1.0';
 }
