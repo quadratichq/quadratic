@@ -69,7 +69,7 @@ export const example_grid: GridFileSchemaV1 = {
       x: 0,
       y: 12,
       type: 'TEXT',
-      value: 'Cell eqality',
+      value: 'Cell equality',
       last_modified: '2022-07-06T17:06:52.342Z',
     },
     {
