@@ -117,7 +117,7 @@ export class PointerHeading {
     if (headingResize) {
       canvas.style.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
     } else {
-      canvas.style.cursor = headings.intersectsHeadings(world) ? 'pointer' : 'auto';
+      canvas.style.cursor = headings.intersectsHeadings(world) ? 'pointer' : 'unset';
     }
     if (!this.active) {
       return false;

@@ -39,6 +39,9 @@ export default function QuadraticGrid(props: IProps) {
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
   useEffect(() => {
     props.app?.settings.updateInteractionState(interactionState, setInteractionState);
+
+    // TODO something here to prevent if it was the pan mode that changed
+
     ensureVisible({
       sheet: props.sheetController.sheet,
       app: props.app,
@@ -80,13 +83,45 @@ export default function QuadraticGrid(props: IProps) {
         outline: 'none',
         overflow: 'hidden',
         WebkitTapHighlightColor: 'transparent',
+        cursor:
+          interactionState.panMode === 'ENABLED'
+            ? 'grab'
+            : interactionState.panMode === 'DRAGGING'
+            ? 'grabbing'
+            : 'unset',
       }}
       onContextMenu={(event) => {
         event.preventDefault();
         setRightClickPoint({ x: event.clientX, y: event.clientY });
         toggleRightClickMenu(true);
       }}
-      onKeyDown={onKeyDown}
+      onMouseDown={(e) => {
+        if (interactionState.panMode === 'ENABLED') {
+          setInteractionState({ ...interactionState, panMode: 'DRAGGING' });
+        }
+      }}
+      onMouseUp={(e) => {
+        if (interactionState.panMode === 'DRAGGING') {
+          setInteractionState({ ...interactionState, panMode: 'ENABLED' });
+        }
+      }}
+      onKeyDown={(e) => {
+        if (e.code === 'Space' && interactionState.panMode === 'DISABLED') {
+          setInteractionState({
+            ...interactionState,
+            panMode: 'ENABLED',
+          });
+        }
+        onKeyDown(e);
+      }}
+      onKeyUp={(e) => {
+        if (e.code === 'Space' && interactionState.panMode !== 'DISABLED') {
+          setInteractionState({
+            ...interactionState,
+            panMode: 'DISABLED',
+          });
+        }
+      }}
     >
       <CellInput
         interactionState={interactionState}

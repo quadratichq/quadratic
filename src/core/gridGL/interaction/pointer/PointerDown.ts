@@ -43,6 +43,7 @@ export class PointerDown {
 
   pointerDown(world: Point, event: PointerEvent): void {
     if (isMobile) return;
+    if (this.app.settings.interactionState.panMode !== 'DISABLED') return;
 
     const { settings, cursor } = this.app;
     const { interactionState, setInteractionState } = settings;
@@ -157,6 +158,8 @@ export class PointerDown {
   }
 
   pointerMove(world: Point): void {
+    if (this.app.settings.interactionState.panMode !== 'DISABLED') return;
+
     const { viewport, settings, cursor } = this.app;
     const { gridOffsets } = this.sheet;
 
@@ -209,6 +212,7 @@ export class PointerDown {
     if (column === this.position.x && row === this.position.y) {
       // hide multi cursor when only selecting one cell
       settings.setInteractionState({
+        ...settings.interactionState,
         keyboardMovePosition: { x: this.position.x, y: this.position.y },
         cursorPosition: { x: this.position.x, y: this.position.y },
         multiCursorPosition: {
@@ -239,8 +243,10 @@ export class PointerDown {
       // only set state if changed
       // this reduces the number of hooks fired
       if (hasMoved) {
+        console.log('fired');
         // update multiCursor
         settings.setInteractionState({
+          ...settings.interactionState,
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
           multiCursorPosition: {
