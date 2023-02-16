@@ -156,7 +156,7 @@ export class Cells extends Container {
         this.cellsBorder.draw({ ...entry, x, y, width, height });
       }
       if (this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
-        this.cellsArray.draw(entry.cell.array_cells, x, y, width, height);
+        this.cellsArray.draw(entry.cell.array_cells, x, y, width, height, entry.cell.type);
       }
 
       if (hasContent) {

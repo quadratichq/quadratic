@@ -53,6 +53,7 @@ export class Sheet {
       borders: this.borders.getArray(),
       render_dependency: this.render_dependency.save(),
       cell_dependency: this.cell_dependency.exportToString(),
+      version: '1.0',
     };
   }
 
