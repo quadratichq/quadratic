@@ -34,6 +34,7 @@
     "date-fns": "^2.28.0",
     "fontfaceobserver": "^2.3.0",
     "fuzzysort": "^2.0.4",
+    "html-entities": "^2.3.3",
     "localforage": "^1.10.0",
     "lodash.debounce": "^4.0.8",
     "monaco-editor": "^0.31.1",

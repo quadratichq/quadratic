@@ -7,6 +7,7 @@ import { CellAndFormat } from '../sheet/GridSparse';
 import { Rectangle } from 'pixi.js';
 import { clearFormattingAction } from './clearFormattingAction';
 import { clearBordersAction } from './clearBordersAction';
+import { decode } from 'html-entities';
 
 const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.0';
 
@@ -24,8 +25,11 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
       const item_blob = await item.getType('text/html');
       let item_text = await item_blob.text();
 
-      // strip html tags
-      item_text = item_text.replace(/(<([^>]+)>)/gi, '');
+      //regex to find first <meta charset="utf-8"> and remove meta tag
+      item_text = item_text.replace(/<meta charset="utf-8">/, '');
+
+      // decode html entities
+      item_text = decode(item_text);
 
       // parse json from text
       let json = JSON.parse(item_text);
