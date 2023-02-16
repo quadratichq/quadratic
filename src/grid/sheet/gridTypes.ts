@@ -62,29 +62,3 @@ export interface Border {
   horizontal?: BorderDirection;
   vertical?: BorderDirection;
 }
-
-// export interface Grid {
-//   id: number;
-//   dgraph_json?: string;
-// }
-
-// export class QDexie extends Dexie {
-//   cells!: Table<Cell>;
-//   qgrid!: Table<Grid>;
-//   columns!: Table<Heading>;
-//   rows!: Table<Heading>;
-//   format!: Table<CellFormat>;
-//   borders!: Table<Border>;
-
-//   constructor() {
-//     super('quadratic_grid1');
-//     this.version(27).stores({
-//       cells: '[x+y],[y+x]',
-//       qgrid: '&id',
-//       columns: '&id',
-//       rows: '&id',
-//       format: '[x+y]',
-//       borders: '[x+y]',
-//     });
-//   }
-// }
