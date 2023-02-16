@@ -24,11 +24,11 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
       const item_blob = await item.getType('text/html');
       let item_text = await item_blob.text();
 
-      // strip html tags
-      item_text = item_text.replace(/(<([^>]+)>)/gi, '');
+      //regex to find first <meta charset="utf-8"> and remove meta tag
+      item_text = item_text.replace(/<meta charset="utf-8">/, '');
 
       // parse json from text
-      let json = JSON.parse(item_text);
+      let json = JSON.parse(atob(item_text));
 
       if (json.type === CLIPBOARD_FORMAT_VERSION) {
         const x_offset = pasteToCell.x - json.cell0.x;
@@ -250,12 +250,14 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
     return border.horizontal !== undefined || border.vertical !== undefined;
   });
 
-  const quadraticString = JSON.stringify({
-    type: CLIPBOARD_FORMAT_VERSION,
-    data: clipboard_data,
-    cell0,
-    cell1,
-  });
+  const quadraticString = btoa(
+    JSON.stringify({
+      type: CLIPBOARD_FORMAT_VERSION,
+      data: clipboard_data,
+      cell0,
+      cell1,
+    })
+  );
 
   // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
   if (navigator.clipboard && window.ClipboardItem) {

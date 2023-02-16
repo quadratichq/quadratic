@@ -62,16 +62,15 @@ export function keyboardPosition(options: {
 
     // move arrow normally
     else {
+      const newPos = { x: interactionState.cursorPosition.x + deltaX, y: interactionState.cursorPosition.y + deltaY };
       newInteractionState = {
         ...interactionState,
-        keyboardMovePosition: {
-          x: interactionState.cursorPosition.x + deltaX,
-          y: interactionState.cursorPosition.y + deltaY,
-        },
+        keyboardMovePosition: newPos,
         showMultiCursor: false,
-        cursorPosition: {
-          x: interactionState.cursorPosition.x + deltaX,
-          y: interactionState.cursorPosition.y + deltaY,
+        cursorPosition: newPos,
+        multiCursorPosition: {
+          originPosition: newPos,
+          terminalPosition: newPos,
         },
       };
       setInteractionState(newInteractionState);
