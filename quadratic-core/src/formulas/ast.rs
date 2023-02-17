@@ -80,33 +80,6 @@ impl Spanned<AstNodeContents> {
 }
 
 impl Formula {
-    /// Returns a formula that sums some cells.
-    ///
-    /// TODO: remove this. it's just here for testing
-    pub fn new_sum(cells: &[Pos]) -> Self {
-        Self {
-            ast: AstNode {
-                span: Span::empty(0),
-                inner: AstNodeContents::FunctionCall {
-                    func: Spanned {
-                        span: Span::empty(0),
-                        inner: "SUM".to_string(),
-                    },
-                    args: cells
-                        .iter()
-                        .map(|&Pos { x, y }| AstNode {
-                            span: Span::empty(0),
-                            inner: AstNodeContents::CellRef(CellRef {
-                                x: CellRefCoord::Absolute(x),
-                                y: CellRefCoord::Absolute(y),
-                            }),
-                        })
-                        .collect(),
-                },
-            },
-        }
-    }
-
     /// Evaluates a formula, blocking on async calls.
     ///
     /// Use this when the grid proxy isn't actually doing anything async.
