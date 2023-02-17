@@ -31,6 +31,7 @@ interface Props {
 const examples = [
   'python.grid',
   // 'airports_large.grid',
+  'open_ai.grid',
   'airports_distance.grid',
   'expenses.grid',
   'monte_carlo_simulation.grid',
