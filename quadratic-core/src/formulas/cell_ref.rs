@@ -54,6 +54,14 @@ impl fmt::Display for CellRef {
     }
 }
 impl CellRef {
+    /// Constructs an absolute cell reference.
+    pub fn absolute(pos: Pos) -> Self {
+        Self {
+            x: CellRefCoord::Absolute(pos.x),
+            y: CellRefCoord::Absolute(pos.y),
+        }
+    }
+
     /// Resolves the reference to a absolute coordinates, given the cell
     /// coordinate where evaluation is taking place.
     pub fn resolve_from(self, base: Pos) -> Pos {

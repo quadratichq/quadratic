@@ -60,6 +60,26 @@ fn test_formula_cell_ref() {
 }
 
 #[test]
+fn test_formula_circular_array_ref() {
+    let form = parse_formula("$A$0:$B$4", Pos::new(0, 0)).unwrap();
+
+    make_stateless_grid_mock!(|pos| {
+        if pos == (Pos { x: 1, y: 2 }) {
+            panic!("cell {pos} shouldn't be accessed")
+        } else {
+            None
+        }
+    });
+
+    assert_eq!(
+        FormulaErrorMsg::CircularReference,
+        form.eval_blocking(&mut GridMock, Pos::new(1, 2))
+            .unwrap_err()
+            .msg,
+    )
+}
+
+#[test]
 fn test_formula_math_operators() {
     assert_eq!(
         (1 * -6 + -2 - 1 * (-3_i32).pow(2_u32.pow(3))).to_string(),
