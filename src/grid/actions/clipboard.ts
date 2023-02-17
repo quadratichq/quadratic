@@ -24,11 +24,18 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
       const item_blob = await item.getType('text/html');
       let item_text = await item_blob.text();
 
-      //regex to find first <meta charset="utf-8"> and remove meta tag
-      item_text = item_text.replace(/<meta charset="utf-8">/, '');
+      console.log('item_text', item_text);
+
+      // regex to match `--(quadratic)${quadraticString}(/quadratic)--` and extract quadraticString
+      const regex = /<span data-metadata="<--\(quadratic\)(.*)\(\/quadratic\)-->"><\/span>/g;
+      const match = regex.exec(item_text);
+
+      console.log('match', match);
+
+      if (!match?.length) return false;
 
       // parse json from text
-      let json = JSON.parse(atob(item_text));
+      let json = JSON.parse(atob(match[1]));
 
       if (json.type === CLIPBOARD_FORMAT_VERSION) {
         const x_offset = pasteToCell.x - json.cell0.x;
@@ -259,13 +266,17 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
     })
   );
 
+  const clipboardHTMLString = `<span data-metadata="<--(quadratic)${quadraticString}(/quadratic)-->"></span><span>${clipboardString
+    .replaceAll('\n', '<br>')
+    .replaceAll('\t', '<tr>')}</span>`;
+
   // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
   if (navigator.clipboard && window.ClipboardItem) {
     // browser support clipboard apinavigator.clipboard
     navigator.clipboard.write([
       new ClipboardItem({
         //@ts-ignore
-        'text/html': new Blob([quadraticString], { type: 'text/html' }),
+        'text/html': new Blob([clipboardHTMLString], { type: 'text/html' }),
         //@ts-ignore
         'text/plain': new Blob([clipboardString], { type: 'text/plain' }),
       }),
