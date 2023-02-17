@@ -30,8 +30,8 @@ interface Props {
 
 const examples = [
   'python.grid',
-  'airports_large.grid',
-  'airport_distance.grid',
+  // 'airports_large.grid',
+  'airports_distance.grid',
   'expenses.grid',
   'monte_carlo_simulation.grid',
   'startup_portfolio.grid',
