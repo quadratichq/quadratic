@@ -3,6 +3,20 @@ use smallvec::smallvec;
 
 use super::*;
 
+macro_rules! make_stateless_grid_mock {
+    ($function_body:expr) => {
+        #[derive(Debug, Default, Copy, Clone)]
+        struct GridMock;
+        #[async_trait(?Send)]
+        impl GridProxy for GridMock {
+            async fn get(&mut self, pos: Pos) -> Option<String> {
+                let f: fn(Pos) -> Option<String> = $function_body;
+                f(pos)
+            }
+        }
+    };
+}
+
 /// `GridProxy` implementation that just panics whenever a cell is accessed.
 #[derive(Debug, Default, Copy, Clone)]
 struct PanicGridMock;
@@ -17,24 +31,18 @@ impl GridProxy for PanicGridMock {
 fn test_formula_cell_ref() {
     let form = parse_formula("SUM($C$4, $A0, D$n6, A0, ZB2)", Pos::new(3, 4)).unwrap();
 
-    #[derive(Debug, Default, Copy, Clone)]
-    struct GridMock;
-    #[async_trait(?Send)]
-    impl GridProxy for GridMock {
-        async fn get(&mut self, pos: Pos) -> Option<String> {
-            // The formula was parsed at C4, but we'll be evaluating it from Z0
-            // so adjust the cell coordinates accordingly.
-            Some(match (pos.x, pos.y) {
-                (3, 4) => "1".to_string(),       // $C$4 -> C4
-                (1, -4) => "10".to_string(),     // $A0  -> An4
-                (1, -6) => "100".to_string(),    // D$n6 -> An6
-                (-2, -4) => "1000".to_string(),  // A0   -> ZBn4
-                (-5, -2) => "10000".to_string(), // ZB2  -> ZEn2
-                _ => panic!("cell {pos} shouldn't be accessed"),
-            })
-        }
-    }
+    make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
+        // The formula was parsed at C4, but we'll be evaluating it from A2 so
+        // adjust the cell coordinates accordingly.
+        (3, 4) => "1".to_string(),      // $C$4 -> C4
+        (1, -2) => "10".to_string(),    // $A0  -> An2
+        (2, -6) => "100".to_string(),   // D$n6 -> Bn6
+        (-1, -2) => "1000".to_string(), // A0   -> ZAn2
+        (-4, 0) => "10000".to_string(), // ZB2  -> ZD0
+        _ => panic!("cell {pos} shouldn't be accessed"),
+    }));
 
+    // Evaluate at C4, causing a circular reference.
     assert_eq!(
         FormulaErrorMsg::CircularReference,
         form.eval_blocking(&mut GridMock, Pos::new(3, 4))
@@ -42,12 +50,33 @@ fn test_formula_cell_ref() {
             .msg,
     );
 
+    // Evaluate at A2
     assert_eq!(
         "11111".to_string(),
-        form.eval_blocking(&mut GridMock, Pos::new(0, 0))
+        form.eval_blocking(&mut GridMock, Pos::new(1, 2))
             .unwrap()
             .to_string(),
     );
+}
+
+#[test]
+fn test_formula_circular_array_ref() {
+    let form = parse_formula("$A$0:$B$4", Pos::new(0, 0)).unwrap();
+
+    make_stateless_grid_mock!(|pos| {
+        if pos == (Pos { x: 1, y: 2 }) {
+            panic!("cell {pos} shouldn't be accessed")
+        } else {
+            None
+        }
+    });
+
+    assert_eq!(
+        FormulaErrorMsg::CircularReference,
+        form.eval_blocking(&mut GridMock, Pos::new(1, 2))
+            .unwrap_err()
+            .msg,
+    )
 }
 
 #[test]
@@ -70,18 +99,11 @@ fn test_formula_concat() {
 fn test_formula_if() {
     let form = parse_formula("IF(Z1=2, 'yep', 'nope')", Pos::new(0, 0)).unwrap();
 
-    #[derive(Debug, Default, Copy, Clone)]
-    struct GridMock;
-    #[async_trait(?Send)]
-    impl GridProxy for GridMock {
-        async fn get(&mut self, pos: Pos) -> Option<String> {
-            Some(match (pos.x, pos.y) {
-                (0, 1) => "2".to_string(),
-                (1, 1) => "16".to_string(),
-                _ => panic!("cell {pos} shouldn't be accessed"),
-            })
-        }
-    }
+    make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
+        (0, 1) => "2".to_string(),
+        (1, 1) => "16".to_string(),
+        _ => panic!("cell {pos} shouldn't be accessed"),
+    }));
 
     assert_eq!(
         "yep".to_string(),
@@ -101,18 +123,13 @@ fn test_formula_if() {
 fn test_formula_average() {
     let form = parse_formula("AVERAGE(3, A1:C3)", Pos::new(-1, -1)).unwrap();
 
-    #[derive(Debug, Default, Copy, Clone)]
-    struct GridMock;
-    #[async_trait(?Send)]
-    impl GridProxy for GridMock {
-        async fn get(&mut self, pos: Pos) -> Option<String> {
-            if (1..=3).contains(&pos.x) && (1..=3).contains(&pos.y) {
-                Some((pos.x * 3 + pos.y).to_string()) // 4 ... 12
-            } else {
-                panic!("cell {pos} shouldn't be accessed")
-            }
+    make_stateless_grid_mock!(|pos| {
+        if (1..=3).contains(&pos.x) && (1..=3).contains(&pos.y) {
+            Some((pos.x * 3 + pos.y).to_string()) // 4 ... 12
+        } else {
+            panic!("cell {pos} shouldn't be accessed")
         }
-    }
+    });
 
     assert_eq!(
         "7.5".to_string(),
@@ -124,14 +141,7 @@ fn test_formula_average() {
 
 #[test]
 fn test_formula_array_op() {
-    #[derive(Debug, Default, Copy, Clone)]
-    struct GridMock;
-    #[async_trait(?Send)]
-    impl GridProxy for GridMock {
-        async fn get(&mut self, pos: Pos) -> Option<String> {
-            Some((pos.x * 10 + pos.y).to_string())
-        }
-    }
+    make_stateless_grid_mock!(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
     let mut g = GridMock;
 
