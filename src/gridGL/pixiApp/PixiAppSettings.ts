@@ -58,6 +58,7 @@ export class PixiAppSettings {
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
+    this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
   }
 
@@ -75,6 +76,9 @@ export class PixiAppSettings {
   }
 
   get showA1Notation(): boolean {
+    if (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === "FORMULA") {
+      return true;
+    }
     return this.settings.showA1Notation;
   }
 }
