@@ -76,7 +76,7 @@ export class PixiAppSettings {
   }
 
   get showA1Notation(): boolean {
-    if (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === "FORMULA") {
+    if (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === 'FORMULA') {
       return true;
     }
     return this.settings.showA1Notation;
