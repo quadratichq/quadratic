@@ -56,7 +56,7 @@ export const debugNeverShowCache = debug && false;
 export const debugSkipQuadrantRendering = debug && false;
 
 // show quadrant colored boxes around rendered range
-export const debugShowQuadrantBoxes = debug && false;
+export const debugShowQuadrantBoxes = debug && true;
 
 // only render getCellsForDirtyQuadrants -- useful for testing the direct draw of multiple dirty quadrants
 export const debugShowCellsForDirtyQuadrants = debug && false;
