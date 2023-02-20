@@ -114,7 +114,7 @@ export class Cells extends Container {
       const cell = cellRectangle.get(coordinate.x, coordinate.y);
       const array = cell?.cell?.array_cells;
       if (!array) {
-        throw new Error("Expected to find array_cells in handleArrayCells");
+        throw new Error('Expected to find array_cells in handleArrayCells');
       }
       const cellsToRender = array.flatMap((array: [number, number]) => {
         if (!cell.cell) return [];
@@ -264,7 +264,10 @@ export class Cells extends Container {
     const clipRectangle = gridOffsets.getScreenRectangle(bounds.x, bounds.y, bounds.width, bounds.height);
 
     // check for dependencies across entire bounds
-    const dependentCells = [...render_dependency.getDependentsInBounds(bounds), ...array_dependency.getDependentsInBounds(bounds)];
+    const dependentCells = [
+      ...render_dependency.getDependentsInBounds(bounds),
+      ...array_dependency.getDependentsInBounds(bounds),
+    ];
     if (dependentCells.length) {
       dependentCells.forEach((coordinate) => {
         const key = `${coordinate.x},${coordinate.y}`;

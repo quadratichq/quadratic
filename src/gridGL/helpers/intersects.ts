@@ -25,12 +25,12 @@ function lineLineOneDimension(iStart: number, iEnd: number, jStart: number, jEnd
 }
 
 function rectangleUnion(...rectangles: (Rectangle | undefined)[]): Rectangle | undefined {
-  const nonEmpty = rectangles.filter(rectangle => !!rectangle);
+  const nonEmpty = rectangles.filter((rectangle) => !!rectangle);
   if (nonEmpty.length === 0) return;
-  const minX = Math.min(...nonEmpty.map(rectangle => (rectangle as Rectangle).left));
-  const maxX = Math.max(...nonEmpty.map(rectangle => (rectangle as Rectangle).right));
-  const minY = Math.min(...nonEmpty.map(rectangle => (rectangle as Rectangle).top));
-  const maxY = Math.max(...nonEmpty.map(rectangle => (rectangle as Rectangle).bottom));
+  const minX = Math.min(...nonEmpty.map((rectangle) => (rectangle as Rectangle).left));
+  const maxX = Math.max(...nonEmpty.map((rectangle) => (rectangle as Rectangle).right));
+  const minY = Math.min(...nonEmpty.map((rectangle) => (rectangle as Rectangle).top));
+  const maxY = Math.max(...nonEmpty.map((rectangle) => (rectangle as Rectangle).bottom));
   return new Rectangle(minX, minY, maxX - minX, maxY - minY);
 }
 
@@ -40,7 +40,7 @@ function rectangleUnion(...rectangles: (Rectangle | undefined)[]): Rectangle | u
  * @param clip
  * @returns the clipped rectangle or undefined if there is no overlap between rectangle and clip
  */
-function rectangleClip(rectangle: Rectangle, clip: Rectangle): Rectangle | undefined{
+function rectangleClip(rectangle: Rectangle, clip: Rectangle): Rectangle | undefined {
   if (!rectangleRectangle(rectangle, clip)) return;
   const xStart = Math.max(rectangle.left, clip.left);
   const yStart = Math.max(rectangle.top, clip.top);

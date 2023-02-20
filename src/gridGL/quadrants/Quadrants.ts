@@ -170,7 +170,7 @@ export class Quadrants extends Container {
         const quadrant = this.getQuadrant(quadrantX, quadrantY, true);
         if (quadrant) quadrant.dirty = true;
         quadrants.add(key);
-    });
+      });
     }
 
     // set range of cells dirty
