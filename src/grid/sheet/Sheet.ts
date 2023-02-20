@@ -13,8 +13,16 @@ export class Sheet {
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
+
+  // visual dependency for overflowing cells
   render_dependency: GridRenderDependency;
+
+  // visual dependency for drawing array lines
+  array_dependency: GridRenderDependency;
+
+  // cell calculation dependency
   cell_dependency: CellDependencyManager;
+
   onRebuild?: () => void;
 
   constructor() {
@@ -22,6 +30,7 @@ export class Sheet {
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
     this.render_dependency = new GridRenderDependency();
+    this.array_dependency = new GridRenderDependency();
     this.cell_dependency = new CellDependencyManager();
   }
 

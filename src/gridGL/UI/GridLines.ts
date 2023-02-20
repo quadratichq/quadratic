@@ -15,6 +15,8 @@ export class GridLines extends Graphics {
   update() {
     if (this.dirty) {
       this.dirty = false;
+      this.clear();
+
       if (!this.app.settings.showGridLines) {
         this.visible = false;
         this.app.setViewportDirty();
@@ -30,7 +32,6 @@ export class GridLines extends Graphics {
 
       this.alpha = gridAlpha;
       this.visible = true;
-      this.clear();
 
       this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
       const bounds = this.app.viewport.getVisibleBounds();

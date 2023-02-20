@@ -124,6 +124,7 @@ describe('gridOffsets', () => {
     expect(gridRenderDependency.getDependents({ x: 3, y: 2 })?.length).toBe(1);
     expect(gridRenderDependency.getDependents({ x: 4, y: 2 })?.length).toBe(undefined);
     expect(gridRenderDependency.getChangedCells({ x: 1, y: 2 })?.length).toBe(2);
+    expect(gridRenderDependency.getDependents({ x: 2, y: 2 })).toEqual([{ x: 1, y: 2 }]);
   });
 
   it('gets dependency within bounds', () => {
