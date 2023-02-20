@@ -120,7 +120,6 @@ export class Quadrants extends Container {
     quadrant = this.addChild(new Quadrant(this.app, row, column));
     this.quadrants.set(`${row},${column}`, quadrant);
     this.complete = false;
-    console.log('quadrant', row, column, 'created')
     return quadrant;
   }
 

@@ -276,10 +276,7 @@ export class Cells extends Container {
           const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
           const rendered = this.renderCell({ entry, ...position, isInput, isQuadrant });
           if (rendered) {
-            const clipped = intersects.rectangleClip(rendered, clipRectangle);
-            if (clipped) {
-              content = content ? intersects.rectangleUnion(content, clipped) : clipped;
-            }
+            content = content ? intersects.rectangleUnion(content, rendered) : rendered;
           }
         }
       });
