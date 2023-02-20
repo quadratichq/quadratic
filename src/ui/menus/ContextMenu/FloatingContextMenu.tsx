@@ -22,7 +22,7 @@ import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { QColorPicker } from '../../components/qColorPicker';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../grid/actions/clipboard';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../grid/actions/clipboard/clipboard';
 import { TooltipHint } from '../../components/TooltipHint';
 import { DecimalDecrease, DecimalIncrease } from '../../icons';
 import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting';
