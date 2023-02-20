@@ -24,8 +24,6 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
       const item_blob = await item.getType('text/html');
       let item_text = await item_blob.text();
 
-      console.log('item_text', item_text);
-
       // regex to match `--(quadratic)${quadraticString}(/quadratic)--` and extract quadraticString
       const regex = /<span data-metadata="<--\(quadratic\)(.*)\(\/quadratic\)-->"><\/span>/g;
       const match = regex.exec(item_text);
