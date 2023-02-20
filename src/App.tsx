@@ -15,7 +15,6 @@ export default function App() {
   if (!isWASMSupported || !isWebGLSupported()) {
     Sentry.captureEvent({
       message: 'Browser does not support WebGL or WASM',
-      level: Sentry.Severity.Info,
     });
 
     return <BrowserNotSupported></BrowserNotSupported>;
