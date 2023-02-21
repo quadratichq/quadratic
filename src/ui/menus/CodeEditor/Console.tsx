@@ -40,14 +40,12 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
             suppressContentEditableWarning={true}
             spellCheck={false}
             onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.code === 'KeyA') {
-                // Allow select all text, but nothing else
+              if (((e.metaKey || e.ctrlKey) && e.code === 'KeyA') || ((e.metaKey || e.ctrlKey) && e.code === 'KeyC')) {
+                // Allow a few commands, but nothing else
               } else {
                 preventDefault(e);
               }
             }}
-            onCut={preventDefault}
-            onPaste={preventDefault}
             style={{ outline: 'none' }}
             // Disable Grammarly
             data-gramm="false"
