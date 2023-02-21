@@ -29,13 +29,14 @@ interface Props {
 }
 
 const examples = [
+  'default.grid',
   'python.grid',
-  // 'airports_large.grid',
+  'startup_portfolio.grid',
   'open_ai.grid',
+  'monte_carlo_simulation.grid',
   'airports_distance.grid',
   'expenses.grid',
-  'monte_carlo_simulation.grid',
-  'startup_portfolio.grid',
+  // 'airports_large.grid',
 ];
 
 export const QuadraticMenu = (props: Props) => {

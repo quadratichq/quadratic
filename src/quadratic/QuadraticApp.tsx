@@ -55,7 +55,7 @@ export const QuadraticApp = () => {
       {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
       <AnalyticsProvider></AnalyticsProvider>
       {/* Welcome Component loads appropriate sheet */}
-      {!loading && <FileLoadingComponent sheet={sheet} />}
+      {!loading && <FileLoadingComponent sheetController={sheet_controller} />}
       {/* Provider of All React UI Components */}
       {!loading && <QuadraticUI sheetController={sheet_controller} />}
       {/* Loading screen */}
