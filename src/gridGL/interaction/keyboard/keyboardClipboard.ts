@@ -1,5 +1,5 @@
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../grid/actions/clipboard';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../grid/controller/sheetController';
 
 export function keyboardClipboard(

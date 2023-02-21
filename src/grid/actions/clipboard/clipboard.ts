@@ -1,14 +1,14 @@
-import { Coordinate } from '../../gridGL/types/size';
-import { Border, Cell, CellFormat } from '../sheet/gridTypes';
-import { SheetController } from '../controller/sheetController';
-import { updateCellAndDCells } from './updateCellAndDCells';
-import { DeleteCells } from '../sheet/Cells/DeleteCells';
-import { CellAndFormat } from '../sheet/GridSparse';
+import { Coordinate } from '../../../gridGL/types/size';
+import { Border, Cell, CellFormat } from '../../sheet/gridTypes';
+import { SheetController } from '../../controller/sheetController';
+import { updateCellAndDCells } from '../updateCellAndDCells';
+import { DeleteCells } from '../../sheet/Cells/DeleteCells';
+import { CellAndFormat } from '../../sheet/GridSparse';
 import { Rectangle } from 'pixi.js';
-import { clearFormattingAction } from './clearFormattingAction';
-import { clearBordersAction } from './clearBordersAction';
+import { clearFormattingAction } from '../clearFormattingAction';
+import { clearBordersAction } from '../clearBordersAction';
 
-const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.0';
+const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.1';
 
 interface ClipboardData {
   cells: CellAndFormat[];
@@ -24,11 +24,14 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
       const item_blob = await item.getType('text/html');
       let item_text = await item_blob.text();
 
-      //regex to find first <meta charset="utf-8"> and remove meta tag
-      item_text = item_text.replace(/<meta charset="utf-8">/, '');
+      // regex to match `--(quadratic)${quadraticString}(/quadratic)--` and extract quadraticString
+      const regex = /<span data-metadata="<--\(quadratic\)(.*)\(\/quadratic\)-->"><\/span>/g;
+      const match = regex.exec(item_text);
+
+      if (!match?.length) return false;
 
       // parse json from text
-      let json = JSON.parse(atob(item_text));
+      let json = JSON.parse(atob(match[1]));
 
       if (json.type === CLIPBOARD_FORMAT_VERSION) {
         const x_offset = pasteToCell.x - json.cell0.x;
@@ -115,6 +118,8 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
 
         return true; // successful don't continue
       }
+
+      return false; // unsuccessful
     }
     return false; // unsuccessful
   } catch {
@@ -196,14 +201,12 @@ export const pasteFromClipboard = async (sheet_controller: SheetController, past
   }
 };
 
-export const copyToClipboard = async (sheet_controller: SheetController, cell0: Coordinate, cell1: Coordinate) => {
-  // write selected cells to clipboard
-
+export const generateClipboardStrings = (sheet_controller: SheetController, cell0: Coordinate, cell1: Coordinate) => {
   const cWidth = Math.abs(cell1.x - cell0.x) + 1;
   const cHeight = Math.abs(cell1.y - cell0.y) + 1;
 
-  let clipboardString = '';
-  let clipboard_data: ClipboardData = {
+  let plainTextClipboardString = '';
+  let quadraticClipboardString: ClipboardData = {
     cells: [],
     borders: [],
   };
@@ -211,7 +214,7 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
   // Add cells and formats to clipboard_data
   for (let offset_y = 0; offset_y < cHeight; offset_y++) {
     if (offset_y > 0) {
-      clipboardString += '\n';
+      plainTextClipboardString += '\n';
     }
 
     for (let offset_x = 0; offset_x < cWidth; offset_x++) {
@@ -219,23 +222,30 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
       let cell_y = cell0.y + offset_y;
 
       if (offset_x > 0) {
-        clipboardString += '\t';
+        plainTextClipboardString += '\t';
       }
 
       const cellAndFormat = sheet_controller.sheet.getCellAndFormatCopy(cell_x, cell_y);
 
       if (cellAndFormat) {
-        clipboardString += cellAndFormat?.cell?.value || '';
-        clipboard_data.cells.push(cellAndFormat);
+        plainTextClipboardString += cellAndFormat?.cell?.value || '';
+        quadraticClipboardString.cells.push(cellAndFormat);
       }
     }
   }
 
+  // create a html table string from the plain text csv string
+  let htmlClipboardString = `<table><tbody><tr><td>${plainTextClipboardString
+    .replace(/\n/g, '</td></tr><tr><td>')
+    .replace(/\t/g, '</td><td>')}</td></tr></tbody></table>`;
+
   // Add borders to clipboard_data
-  clipboard_data.borders = sheet_controller.sheet.borders.getBorders(new Rectangle(cell0.x, cell0.y, cWidth, cHeight));
+  quadraticClipboardString.borders = sheet_controller.sheet.borders.getBorders(
+    new Rectangle(cell0.x, cell0.y, cWidth, cHeight)
+  );
 
   // remove borders that are outside the selection
-  clipboard_data.borders = clipboard_data.borders.map((border) => {
+  quadraticClipboardString.borders = quadraticClipboardString.borders.map((border) => {
     let border_copy = { ...border };
     // filter out horizontal borders that are after the right edge of the selection
     if (border.horizontal !== undefined && border.x > cell0.x + cWidth - 1) delete border_copy.horizontal;
@@ -246,18 +256,35 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
     return border_copy;
   });
   // clear empty border objects
-  clipboard_data.borders = clipboard_data.borders.filter((border) => {
+  quadraticClipboardString.borders = quadraticClipboardString.borders.filter((border) => {
     return border.horizontal !== undefined || border.vertical !== undefined;
   });
+
+  return {
+    plainTextClipboardString,
+    htmlClipboardString,
+    quadraticClipboardString,
+  };
+};
+
+export const copyToClipboard = async (sheet_controller: SheetController, cell0: Coordinate, cell1: Coordinate) => {
+  // write selected cells to clipboard
+  const { plainTextClipboardString, htmlClipboardString, quadraticClipboardString } = generateClipboardStrings(
+    sheet_controller,
+    cell0,
+    cell1
+  );
 
   const quadraticString = btoa(
     JSON.stringify({
       type: CLIPBOARD_FORMAT_VERSION,
-      data: clipboard_data,
+      data: quadraticClipboardString,
       cell0,
       cell1,
     })
   );
+
+  const clipboardHTMLString = `<span data-metadata="<--(quadratic)${quadraticString}(/quadratic)-->"></span>${htmlClipboardString}`;
 
   // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
   if (navigator.clipboard && window.ClipboardItem) {
@@ -265,15 +292,15 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
     navigator.clipboard.write([
       new ClipboardItem({
         //@ts-ignore
-        'text/html': new Blob([quadraticString], { type: 'text/html' }),
+        'text/html': new Blob([clipboardHTMLString], { type: 'text/html' }),
         //@ts-ignore
-        'text/plain': new Blob([clipboardString], { type: 'text/plain' }),
+        'text/plain': new Blob([plainTextClipboardString], { type: 'text/plain' }),
       }),
     ]);
   } else {
     // fallback to textarea
     const textarea = document.createElement('textarea');
-    textarea.value = clipboardString;
+    textarea.value = plainTextClipboardString;
     textarea.style.position = 'fixed';
     textarea.style.opacity = '0';
     document.body.appendChild(textarea);

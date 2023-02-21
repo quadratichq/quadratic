@@ -10,5 +10,7 @@ use crate::Pos;
 /// `?Send` is necessary because `JsValue` can't be sent between threads.
 #[async_trait(?Send)]
 pub trait GridProxy {
+    /// Fetches the contents of the cell at `pos`, not checking whether it
+    /// results in a circular reference.
     async fn get(&mut self, pos: Pos) -> Option<String>;
 }

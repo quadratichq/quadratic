@@ -37,6 +37,9 @@ export class Cells extends Container {
   private cellLabels: CellsLabels;
   private cellsMarkers: CellsMarkers;
 
+  // track the cells that have arrays to update the visual dependency (used only after rendering a quadrant)
+  private trackCellsWithArrays: Coordinate[] = [];
+
   cellsBackground: CellsBackground;
   dirty = true;
 
@@ -100,6 +103,27 @@ export class Cells extends Container {
     // mark quadrants of changed cells dirty
     if (changes.length) {
       quadrants.quadrantChanged({ cells: changes });
+    }
+  }
+
+  /** update visual dependency to ensure array boxes are drawn when zooming in */
+  private handleArrayCells(cellRectangle: CellRectangle): void {
+    const { array_dependency } = this.app.sheet;
+
+    for (const coordinate of this.trackCellsWithArrays) {
+      const cell = cellRectangle.get(coordinate.x, coordinate.y);
+      const array = cell?.cell?.array_cells;
+      if (!array) {
+        throw new Error('Expected to find array_cells in handleArrayCells');
+      }
+      const cellsToRender = array.flatMap((array: [number, number]) => {
+        if (!cell.cell) return [];
+        if (array[0] !== cell.cell.x || array[1] !== cell.cell.y) {
+          return [{ x: array[0], y: array[1] }];
+        }
+        return [];
+      });
+      array_dependency.update(coordinate, cellsToRender);
     }
   }
 
@@ -171,6 +195,7 @@ export class Cells extends Container {
     this.cellsArray.clear();
     this.cellsBackground.clear();
     this.cellsBorder.clear();
+    this.trackCellsWithArrays = [];
   }
 
   /**
@@ -191,7 +216,7 @@ export class Cells extends Container {
     const { boundsWithData, bounds, cellRectangle, ignoreInput, isQuadrant } = options;
     const renderedCells = new Set<string>();
 
-    const { gridOffsets, render_dependency, grid } = this.app.sheet;
+    const { gridOffsets, render_dependency, array_dependency, grid } = this.app.sheet;
     this.clear();
 
     const input =
@@ -203,7 +228,6 @@ export class Cells extends Container {
         : undefined;
 
     // keeps track of screen position
-
     const xStart = gridOffsets.getColumnPlacement(boundsWithData.left).x;
     const yStart = gridOffsets.getRowPlacement(boundsWithData.top).y;
     let y = yStart;
@@ -221,6 +245,12 @@ export class Cells extends Container {
         const isInput = input && input.column === column && input.row === row;
 
         const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, isInput });
+
+        // track cells with arrays to add visual dependencies
+        if (entry && this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
+          this.trackCellsWithArrays.push({ x: entry.cell.x, y: entry.cell.y });
+        }
+
         content = content ? intersects.rectangleUnion(content, rendered) : rendered;
         x += width;
 
@@ -234,7 +264,10 @@ export class Cells extends Container {
     const clipRectangle = gridOffsets.getScreenRectangle(bounds.x, bounds.y, bounds.width, bounds.height);
 
     // check for dependencies across entire bounds
-    const dependentCells = render_dependency.getDependentsInBounds(bounds);
+    const dependentCells = [
+      ...render_dependency.getDependentsInBounds(bounds),
+      ...array_dependency.getDependentsInBounds(bounds),
+    ];
     if (dependentCells.length) {
       dependentCells.forEach((coordinate) => {
         const key = `${coordinate.x},${coordinate.y}`;
@@ -260,7 +293,10 @@ export class Cells extends Container {
     }
 
     // only calculate overflow when rendering quadrants so it's only done one time
-    if (isQuadrant) this.handleOverflow();
+    if (isQuadrant) {
+      this.handleOverflow();
+      this.handleArrayCells(cellRectangle);
+    }
 
     return content;
   }

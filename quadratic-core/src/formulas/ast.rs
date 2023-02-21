@@ -155,8 +155,8 @@ impl AstNode {
                 for y in y1..=y2 {
                     let mut row = smallvec![];
                     for x in x1..=x2 {
-                        let string = grid.get(Pos { x, y }).await.unwrap_or_default();
-                        row.push(Value::String(string));
+                        let cell_ref = CellRef::absolute(Pos { x, y });
+                        row.push(self.get_cell(grid, pos, cell_ref).await?);
                     }
                     array.push(row);
                 }
@@ -181,16 +181,7 @@ impl AstNode {
 
             AstNodeContents::Paren(expr) => expr.eval(grid, pos).await?.inner,
 
-            AstNodeContents::CellRef(CellRef { x, y }) => {
-                let ref_pos = Pos {
-                    x: x.resolve_from(pos.x),
-                    y: y.resolve_from(pos.y),
-                };
-                if ref_pos == pos {
-                    return Err(FormulaErrorMsg::CircularReference.with_span(self.span));
-                }
-                Value::String(grid.get(ref_pos).await.unwrap_or_default())
-            }
+            AstNodeContents::CellRef(cell_ref) => self.get_cell(grid, pos, *cell_ref).await?,
 
             AstNodeContents::String(s) => Value::String(s.clone()),
 
@@ -201,5 +192,20 @@ impl AstNode {
             span: self.span,
             inner: value,
         })
+    }
+
+    /// Fetches the contents of the cell at `ref_pos` evaluated at `base_pos`,
+    /// or returns an error in the case of a circular reference.
+    async fn get_cell(
+        &self,
+        grid: &mut impl GridProxy,
+        base_pos: Pos,
+        ref_pos: CellRef,
+    ) -> FormulaResult<Value> {
+        let ref_pos = ref_pos.resolve_from(base_pos);
+        if ref_pos == base_pos {
+            return Err(FormulaErrorMsg::CircularReference.with_span(self.span));
+        }
+        Ok(Value::String(grid.get(ref_pos).await.unwrap_or_default()))
     }
 }
