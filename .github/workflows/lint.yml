@@ -2,10 +2,8 @@ name: Lint Check
 on: push
 
 jobs:
-  call-setup:
-    uses: ./.github/workflows/setup.yml
-
   lint:
+    uses: ./.github/workflows/setup.yml
     runs-on: ubuntu-latest-4-cores
 
     steps:
