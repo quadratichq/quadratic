@@ -265,21 +265,48 @@ test('SheetController - test DataFrame resizing', async () => {
   const cell_0_0 = {
     x: 0,
     y: 0,
-    value: '',
-    type: 'PYTHON',
-    python_code: `import pandas as pd
-pd.DataFrame({'A': [1, 2, 3, 4, 5], 'B': [1, 2, 3, 4, 5]})`,
+    value: '10',
+    type: 'TEXT',
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
   await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc, pyodide });
 
-  const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 1, 4);
-  // expect(after_code_run_cells.length).toBe(3);
+  const cell_0_1 = {
+    x: 0,
+    y: 1,
+    value: '10',
+    type: 'PYTHON',
+    python_code: `result = []
+repeat = int(c(0,0))
+for x in range(0, repeat):
+  result.append(x + repeat)`,
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc, pyodide });
+
+  // Now resize the dataframe
+  const cell_0_0_update = {
+    x: 0,
+    y: 0,
+    value: '5',
+    type: 'TEXT',
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc, pyodide });
+
+  // Validate the dataframe is resized
+
+  // TODO: validate the code cell is set properly
+
+  const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 10);
+  expect(after_code_run_cells.length).toBe(5);
   after_code_run_cells.forEach((cell, index) => {
     console.log(cell);
-    // expect(cell.value).toEqual(((cell.y + 1) * 2).toString());
+    expect(cell.value).toEqual((cell.y + 5).toString());
     if (index === 0) return;
-    // expect(cell.type).toEqual('COMPUTED');
+    expect(cell.type).toEqual('COMPUTED');
   });
 });
