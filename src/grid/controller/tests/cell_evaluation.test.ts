@@ -257,3 +257,29 @@ test('SheetController - test array formula', async () => {
     expect(cell.type).toEqual('COMPUTED');
   });
 });
+
+test('SheetController - test DataFrame resizing', async () => {
+  const sc = new SheetController();
+  GetCellsDBSetSheet(sc.sheet);
+
+  const cell_0_0 = {
+    x: 0,
+    y: 0,
+    value: '',
+    type: 'PYTHON',
+    python_code: `import pandas as pd
+pd.DataFrame({'A': [1, 2, 3, 4, 5], 'B': [1, 2, 3, 4, 5]})`,
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc, pyodide });
+
+  const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 1, 4);
+  // expect(after_code_run_cells.length).toBe(3);
+  after_code_run_cells.forEach((cell, index) => {
+    console.log(cell);
+    // expect(cell.value).toEqual(((cell.y + 1) * 2).toString());
+    if (index === 0) return;
+    // expect(cell.type).toEqual('COMPUTED');
+  });
+});
