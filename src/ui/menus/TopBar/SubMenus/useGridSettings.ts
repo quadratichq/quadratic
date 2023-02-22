@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 
 export interface GridSettings {
@@ -6,6 +6,7 @@ export interface GridSettings {
   showHeadings: boolean;
   showGridLines: boolean;
   showCellTypeOutlines: boolean;
+  showA1Notation: boolean;
 }
 
 export const defaultGridSettings: GridSettings = {
@@ -13,6 +14,7 @@ export const defaultGridSettings: GridSettings = {
   showHeadings: true,
   showGridLines: true,
   showCellTypeOutlines: true,
+  showA1Notation: false,
 };
 
 interface GridSettingsReturn {
@@ -20,23 +22,22 @@ interface GridSettingsReturn {
   showHeadings: boolean;
   showGridLines: boolean;
   showCellTypeOutlines: boolean;
+  showA1Notation: boolean;
   setShowGridAxes: (value: boolean) => void;
   setShowHeadings: (value: boolean) => void;
   setShowGridLines: (value: boolean) => void;
   setShowCellTypeOutlines: (value: boolean) => void;
-
-  // Return fn to derive state from other values
-  hideApplicationUI: () => boolean;
-  toggleApplicationUI: () => void;
+  setShowA1Notation: (value: boolean) => void;
 }
 
 export const useGridSettings = (): GridSettingsReturn => {
-  const [settings, setSettings] = useLocalStorage('gridSettings', defaultGridSettings);
-  const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
+  const [settings, setSettings] = useLocalStorage('viewSettings', defaultGridSettings);
 
-  const emitGridSettingsEvent = useCallback(() => {
-    window.dispatchEvent(new Event('grid-settings'));
-  }, []);
+  useEffect(() => {
+    if (settings) {
+      window.dispatchEvent(new Event('grid-settings'));
+    }
+  }, [settings]);
 
   const setShowGridAxes = useCallback(
     (value: boolean) => {
@@ -45,10 +46,9 @@ export const useGridSettings = (): GridSettingsReturn => {
           ...settings,
           showGridAxes: value,
         });
-        emitGridSettingsEvent();
       }
     },
-    [settings, setSettings, emitGridSettingsEvent]
+    [settings, setSettings]
   );
 
   const setShowHeadings = useCallback(
@@ -58,10 +58,9 @@ export const useGridSettings = (): GridSettingsReturn => {
           ...settings,
           showHeadings: value,
         });
-        emitGridSettingsEvent();
       }
     },
-    [settings, setSettings, emitGridSettingsEvent]
+    [settings, setSettings]
   );
 
   const setShowGridLines = useCallback(
@@ -71,10 +70,9 @@ export const useGridSettings = (): GridSettingsReturn => {
           ...settings,
           showGridLines: value,
         });
-        emitGridSettingsEvent();
       }
     },
-    [settings, setSettings, emitGridSettingsEvent]
+    [settings, setSettings]
   );
 
   const setShowCellTypeOutlines = useCallback(
@@ -84,39 +82,22 @@ export const useGridSettings = (): GridSettingsReturn => {
           ...settings,
           showCellTypeOutlines: value,
         });
-        emitGridSettingsEvent();
       }
     },
-    [settings, setSettings, emitGridSettingsEvent]
+    [settings, setSettings]
   );
 
-  const hideApplicationUI = useCallback(() => {
-    return !(
-      settings.showHeadings ||
-      settings.showGridAxes ||
-      settings.showGridLines ||
-      settings.showCellTypeOutlines ||
-      showDebugMenu
-    );
-  }, [settings]);
-
-  const toggleApplicationUI = useCallback(() => {
-    const isHidden = hideApplicationUI();
-    setSettings({
-      showGridAxes: isHidden,
-      showHeadings: isHidden,
-      showGridLines: isHidden,
-      showCellTypeOutlines: isHidden,
-    });
-
-    // Don't show the debug menu when you unhide the UI.
-    // Only hide it if it's visible when the user toggles "Hide UI"
-    if (!isHidden && showDebugMenu) {
-      setShowDebugMenu(false);
-    }
-
-    emitGridSettingsEvent();
-  }, [setSettings, hideApplicationUI, emitGridSettingsEvent, showDebugMenu, setShowDebugMenu]);
+  const setShowA1Notation = useCallback(
+    (value: boolean) => {
+      if (value !== settings.showA1Notation) {
+        setSettings({
+          ...settings,
+          showA1Notation: value,
+        });
+      }
+    },
+    [settings, setSettings]
+  );
 
   return {
     ...settings,
@@ -124,7 +105,6 @@ export const useGridSettings = (): GridSettingsReturn => {
     setShowHeadings,
     setShowGridLines,
     setShowCellTypeOutlines,
-    hideApplicationUI,
-    toggleApplicationUI,
+    setShowA1Notation,
   };
 };

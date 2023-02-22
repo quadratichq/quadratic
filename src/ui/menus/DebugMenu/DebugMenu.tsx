@@ -1,7 +1,7 @@
 import { colors } from '../../../theme/colors';
 import TextField from '@mui/material/TextField';
 import { Button } from '@mui/material';
-import { Sheet } from '../../../core/gridDB/Sheet';
+import { Sheet } from '../../../grid/sheet/Sheet';
 
 interface Props {
   sheet: Sheet;
@@ -48,7 +48,7 @@ export default function DebugMenu(props: Props) {
       </Button>
       <Button
         onClick={() => {
-          sheet.grid.empty();
+          sheet.grid.clear();
           dgraph.clear();
         }}
       >

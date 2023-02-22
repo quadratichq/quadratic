@@ -1,16 +1,16 @@
-import React, { SyntheticEvent, useEffect } from 'react';
+import React, { SyntheticEvent } from 'react';
 import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../core/transaction/sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../grid/controller/sheetController';
 import { East } from '@mui/icons-material';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
-import { Coordinate } from '../../../core/gridGL/types/size';
-import { ensureVisible } from '../../../core/gridGL/interaction/ensureVisible';
-import './styles.css';
+import { Coordinate } from '../../../gridGL/types/size';
+import { isVisible, moveViewport } from '../../../gridGL/interaction/viewportHelper';
+import '../../styles/floating-dialog.css';
 
 interface Props {
   app: PixiApp;
@@ -23,24 +23,11 @@ export const GoTo = (props: Props) => {
   const { showGoToMenu } = editorInteractionState;
   const [value, setValue] = React.useState<string>('');
 
-  // Cleanup to initial state when component is closed
-  useEffect(() => {
-    return () => {
-      setValue('');
-    };
-  }, [showGoToMenu]);
-
-  // Hide the menu when applicable
-  if (!showGoToMenu) {
-    return null;
-  }
-
   const closeMenu = () => {
     setEditorInteractionState((state) => ({
       ...state,
       showGoToMenu: false,
     }));
-    setValue('');
   };
 
   const coordinates = getCoordinatesFromUserInput(value);
@@ -81,11 +68,23 @@ export const GoTo = (props: Props) => {
     }
 
     setInteractionState(newInteractionState);
-    ensureVisible({
-      interactionState: newInteractionState,
-      app: props.app,
-      sheet: props.sheetController.sheet,
-    });
+    if (coor1.x === 0 && coor1.y === 0 && !coor2)
+      moveViewport({
+        app: props.app,
+        topLeft: newInteractionState.cursorPosition,
+      });
+    else if (
+      !isVisible({
+        app: props.app,
+        interactionState: newInteractionState,
+        sheet: props.sheetController.sheet,
+      })
+    )
+      moveViewport({
+        app: props.app,
+        center: newInteractionState.cursorPosition,
+      });
+
     closeMenu();
     focusGrid();
   };
@@ -94,10 +93,11 @@ export const GoTo = (props: Props) => {
     <Dialog open={showGoToMenu} onClose={closeMenu} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
       <Paper component="form" elevation={12} onSubmit={onSelect}>
         <InputBase
-          sx={{ flex: 1, display: 'flex', p: '8px 16px' }}
+          sx={{ width: '100%', padding: '8px 16px' }}
           autoFocus
           value={value}
           fullWidth
+          placeholder="Enter a cell “0, 0” or range “0, 0, -5, -5”"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setValue(e.target.value);
           }}
@@ -107,18 +107,13 @@ export const GoTo = (props: Props) => {
 
         <List dense={true} disablePadding>
           <ListItem disablePadding secondaryAction={<East fontSize="small" color="disabled" />}>
-            <ListItemButton selected onSelect={onSelect}>
+            <ListItemButton selected onClick={onSelect}>
               <ListItemText
                 primary={`Go to ${coordinates.length === 1 ? 'cell' : 'range'}: ${coordinates
                   .map(({ x, y }) => `(${x}, ${y})`)
                   .join(', ')}`}
               />
             </ListItemButton>
-          </ListItem>
-
-          <Divider />
-          <ListItem disabled>
-            <ListItemText primary="Specify a cell “0, 0” or a range “0, 0, -5, -5”" />
           </ListItem>
         </List>
       </Paper>

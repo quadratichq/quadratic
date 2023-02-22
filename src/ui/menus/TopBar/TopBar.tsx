@@ -1,6 +1,4 @@
-import { Box, Typography, Button, Tooltip, AvatarGroup, Avatar } from '@mui/material';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-// import { Avatar, AvatarGroup } from '@mui/material';
+import { Box, Typography, IconButton, Switch } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -12,11 +10,14 @@ import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isMobileOnly } from 'react-device-detect';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { useLocalFiles } from '../../../hooks/useLocalFiles';
-import { SheetController } from '../../../core/transaction/sheetController';
-import { useAuth0 } from '@auth0/auth0-react';
+import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import { TooltipHint } from '../../components/TooltipHint';
+import { ManageSearch } from '@mui/icons-material';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { useGridSettings } from './SubMenus/useGridSettings';
 
 interface IProps {
   app: PixiApp;
@@ -26,7 +27,8 @@ interface IProps {
 export const TopBar = (props: IProps) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { localFilename } = useLocalFiles();
-  const { user } = useAuth0();
+  const settings = useGridSettings();
+  // const { user } = useAuth0();
 
   return (
     <div
@@ -36,7 +38,7 @@ export const TopBar = (props: IProps) => {
       }}
       style={{
         backgroundColor: 'rgba(255, 255, 255)',
-        color: '#212121',
+        color: colors.darkGray,
         //@ts-expect-error
         WebkitAppRegion: 'drag', // this allows the window to be dragged in Electron
         paddingLeft: isElectron() ? '4.5rem' : '2rem',
@@ -67,7 +69,7 @@ export const TopBar = (props: IProps) => {
           <>
             <DataMenu></DataMenu>
             <FormatMenu app={props.app} sheet_controller={props.sheetController} />
-            <NumberFormatMenu></NumberFormatMenu>
+            <NumberFormatMenu app={props.app} sheet_controller={props.sheetController}></NumberFormatMenu>
           </>
         )}
       </Box>
@@ -91,12 +93,12 @@ export const TopBar = (props: IProps) => {
         ) : (
           <>
             <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-              Personal &nbsp;
+              Local &nbsp;
             </Typography>
             <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
               / {localFilename}
             </Typography>
-            <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown>
+            {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
           </>
         )}
       </Box>
@@ -106,12 +108,15 @@ export const TopBar = (props: IProps) => {
           alignItems: 'center',
           justifyContent: 'flex-end',
           gap: '1rem',
-          width: '20rem',
+        }}
+        style={{
+          //@ts-expect-error
+          WebkitAppRegion: 'no-drag',
         }}
       >
         {!isMobileOnly && (
           <>
-            {user !== undefined && (
+            {/* {user !== undefined && (
               <AvatarGroup>
                 <Avatar
                   sx={{
@@ -126,26 +131,31 @@ export const TopBar = (props: IProps) => {
                   {user?.name && user?.name[0]}
                 </Avatar>
               </AvatarGroup>
-            )}
-            <Button
-              style={{
-                color: colors.darkGray,
-                borderColor: colors.darkGray,
-                paddingTop: '1px',
-                paddingBottom: '1px',
-              }}
-              variant="outlined"
-              size="small"
-              onClick={() => {
-                setEditorInteractionState({
-                  ...editorInteractionState,
-                  showCommandPalette: true,
-                });
-              }}
-            >
-              Actions <span style={{ marginLeft: '8px', opacity: '.5' }}>{KeyboardSymbols.Command}P</span>
-            </Button>
-            <Tooltip title="Coming soon" arrow>
+            )} */}
+            <TooltipHint title="Show cell type outlines">
+              <Switch
+                checked={settings.showCellTypeOutlines}
+                onChange={() => {
+                  settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
+                  focusGrid();
+                }}
+                size="small"
+              />
+            </TooltipHint>
+            <TooltipHint title="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
+              <IconButton
+                onClick={() => {
+                  setEditorInteractionState({
+                    ...editorInteractionState,
+                    showCommandPalette: true,
+                  });
+                  focusGrid();
+                }}
+              >
+                <ManageSearch />
+              </IconButton>
+            </TooltipHint>
+            {/* <Tooltip title="Coming soon" arrow>
               <Button
                 style={{
                   color: colors.darkGray,
@@ -158,10 +168,10 @@ export const TopBar = (props: IProps) => {
               >
                 Share
               </Button>
-            </Tooltip>
+            </Tooltip> */}
           </>
         )}
-        <ZoomDropdown></ZoomDropdown>
+        <ZoomDropdown app={props.app} />
       </Box>
     </div>
   );

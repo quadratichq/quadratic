@@ -1,5 +1,4 @@
 {
-  "bail": 1,
   "verbose": true,
   "preset": "ts-jest",
   "testPathIgnorePatterns": ["<rootDir>/tests-e2e/*"],

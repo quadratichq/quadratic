@@ -4,11 +4,13 @@ import HelpListItems from './ListItems/Help';
 import ViewListItems from './ListItems/View';
 import FileListItems from './ListItems/File';
 import EditListItems from './ListItems/Edit';
+import FormatListItems from './ListItems/Format';
 import BordersListItems from './ListItems/Borders';
+import TextListItems from './ListItems/Text';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { SheetController } from '../../../core/transaction/sheetController';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../grid/controller/sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 
 interface Commands {
   label: string;
@@ -20,6 +22,8 @@ const commands: Array<Commands> = [
   ...EditListItems,
   ...ViewListItems,
   ...BordersListItems,
+  ...TextListItems,
+  ...FormatListItems,
   ...HelpListItems,
 ];
 

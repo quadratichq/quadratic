@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -35,9 +35,12 @@
     "fontfaceobserver": "^2.3.0",
     "fuzzysort": "^2.0.4",
     "localforage": "^1.10.0",
+    "lodash.debounce": "^4.0.8",
     "monaco-editor": "^0.31.1",
+    "numerable": "^0.3.15",
     "pixi-viewport": "^4.37.0",
     "pixi.js": "^6.5.1",
+    "quadratic-core": "file:quadratic-core/pkg",
     "react": "^17.0.2",
     "react-color": "^2.19.3",
     "react-device-detect": "^2.2.2",
@@ -52,24 +55,34 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:wasm": "cd quadratic-core && wasm-pack build --target web --out-dir pkg",
+    "build:wasm:nodejs": "cd quadratic-core && wasm-pack build --target nodejs --out-dir pkg",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\" \"npm run test:python\"",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:unit:dev": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watchAll",
-    "test:unit:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --ci",
+    "test:unit:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --ci --runInBand",
     "test:e2e": "playwright test --workers=1",
     "test:e2e:debug": "playwright test --debug",
     "test:python": "python3 tests-python/test.py",
+    "test:wasm": "cd quadratic-core && cargo test --workspace",
     "test": "",
-    "prettier": "prettier --write src",
     "eject": "react-scripts eject",
     "dev": "concurrently \"BROWSER=none npm start\" \"electron .\"",
-    "electron": "electron ."
+    "electron": "electron .",
+    "lint:ts": "tsc --noemit",
+    "lint:eslint": "eslint --ext .ts,.tsx src",
+    "lint:prettier": "prettier --check src",
+    "lint:prettier:write": "prettier --write src"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": "error"
+    }
   },
   "eslintIgnore": [
     "node_modules/*"
@@ -88,10 +101,13 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.22.2",
+    "@types/lodash.debounce": "^4.0.7",
     "concurrently": "^6.3.0",
-    "electron": "^15.3.0",
+    "electron": "^23.0.0",
     "electron-is-dev": "^2.0.0",
-    "prettier": "^2.8.0",
+    "fs-extra": "^11.1.0",
+    "msdf-bmfont-xml": "^2.7.0",
+    "prettier": "2.8.3",
     "pyodide": "^0.22.0",
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
