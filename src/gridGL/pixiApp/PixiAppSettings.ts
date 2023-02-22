@@ -35,7 +35,10 @@ export class PixiAppSettings {
     this.app.cells.dirty = true;
 
     // only rebuild quadrants if showCellTypeOutlines change
-    if (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) {
+    if (
+      (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
+      (this.lastSettings && this.lastSettings.showUI !== this.settings.showUI)
+    ) {
       this.app.quadrants.build();
     }
     this.lastSettings = this.settings;
