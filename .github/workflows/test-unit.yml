@@ -3,7 +3,7 @@ on: push
 
 jobs:
   test_unit:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-latest-4-cores
 
     steps:
       - uses: actions/checkout@v2
