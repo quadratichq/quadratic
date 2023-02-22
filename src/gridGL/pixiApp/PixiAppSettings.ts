@@ -63,16 +63,16 @@ export class PixiAppSettings {
   }
 
   get showGridLines(): boolean {
-    return this.settings.showGridLines;
+    return this.settings.showUI && this.settings.showGridLines;
   }
   get showGridAxes(): boolean {
-    return this.settings.showGridAxes;
+    return this.settings.showUI && this.settings.showGridAxes;
   }
   get showHeadings(): boolean {
-    return this.settings.showHeadings;
+    return this.settings.showUI && this.settings.showHeadings;
   }
   get showCellTypeOutlines(): boolean {
-    return this.settings.showCellTypeOutlines;
+    return this.settings.showUI && this.settings.showCellTypeOutlines;
   }
 
   get showA1Notation(): boolean {

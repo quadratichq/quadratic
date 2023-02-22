@@ -13,6 +13,7 @@ import { keyboardUndoRedo } from './keyboardUndoRedo';
 import { useFormatCells } from '../../../ui/menus/TopBar/SubMenus/useFormatCells';
 import { useGetSelection } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';
 import { useClearAllFormatting } from '../../../ui/menus/TopBar/SubMenus/useClearAllFormatting';
+import { useGridSettings } from '../../../ui/menus/TopBar/SubMenus/useGridSettings';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -37,6 +38,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { format } = useGetSelection(sheetController.sheet);
   const { changeBold, changeItalic } = useFormatCells(sheetController, app);
   const { clearAllFormatting } = useClearAllFormatting(sheetController, app);
+  const { showUI, setShowUI } = useGridSettings();
 
   const keyDownWindow = useCallback(
     (event: KeyboardEvent): void => {
@@ -54,6 +56,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           changeItalic,
           format,
           pointer: app.input,
+          showUI,
+          setShowUI,
         })
       ) {
         event.stopPropagation();
@@ -71,6 +75,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       changeBold,
       changeItalic,
       format,
+      showUI,
+      setShowUI,
     ]
   );
 

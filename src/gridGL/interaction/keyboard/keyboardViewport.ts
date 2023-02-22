@@ -16,6 +16,8 @@ export function keyboardViewport(options: {
   changeItalic: Function;
   format: MultipleFormat;
   pointer: Pointer;
+  showUI: boolean;
+  setShowUI: Function;
 }): boolean {
   const {
     changeBold,
@@ -27,7 +29,8 @@ export function keyboardViewport(options: {
     viewport,
     editorInteractionState,
     setEditorInteractionState,
-    // pointer,
+    showUI,
+    setShowUI,
   } = options;
 
   if (!viewport || event.altKey) return false;
@@ -41,8 +44,14 @@ export function keyboardViewport(options: {
     });
     return true;
   }
-  if ((event.metaKey || event.ctrlKey) && event.code === 'Backslash') {
+
+  if ((event.metaKey || event.ctrlKey) && event.code === 'Slash') {
     clearAllFormatting();
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.code === 'Backslash') {
+    setShowUI(!showUI);
     return true;
   }
 

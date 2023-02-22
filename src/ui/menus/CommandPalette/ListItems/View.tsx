@@ -100,16 +100,15 @@ const ListItems = [
     },
   },
   {
-    label: 'View: Hide application UI',
+    label: 'View: Show/Hide UI',
     Component: (props: any) => {
-      const { hideApplicationUI, toggleApplicationUI } = useGridSettings();
-      const checked = hideApplicationUI();
+      const { showUI, setShowUI } = useGridSettings();
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<CommandPaletteListItemCheckbox checked={checked} />}
+          icon={<CommandPaletteListItemCheckbox checked={showUI} />}
           action={() => {
-            toggleApplicationUI();
+            setShowUI(!showUI);
           }}
           shortcut="\"
           shortcutModifiers={[KeyboardSymbols.Command]}

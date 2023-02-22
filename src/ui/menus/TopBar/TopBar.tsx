@@ -135,6 +135,7 @@ export const TopBar = (props: IProps) => {
             <TooltipHint title="Show cell type outlines">
               <Switch
                 checked={settings.showCellTypeOutlines}
+                disabled={!settings.showUI}
                 onChange={() => {
                   settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
                   focusGrid();
