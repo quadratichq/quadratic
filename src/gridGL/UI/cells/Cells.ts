@@ -277,10 +277,9 @@ export class Cells extends Container {
         if (entry) {
           const position = gridOffsets.getCell(coordinate.x, coordinate.y);
           const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
-          const rendered = this.renderCell({ entry, ...position, isInput });
+          const rendered = this.renderCell({ entry, ...position, isInput, isQuadrant });
           if (rendered) {
-            const clipped = intersects.rectangleClip(rendered, clipRectangle);
-            content = content ? intersects.rectangleUnion(content, clipped) : clipped;
+            content = content ? intersects.rectangleUnion(content, rendered) : rendered;
           }
         }
       });
@@ -376,13 +375,18 @@ export class Cells extends Container {
   }
 
   drawCells(fullBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
-    const { grid, borders } = this.app.sheet;
+    const { grid, borders, render_dependency, array_dependency } = this.app.sheet;
 
-    // draw cells
+    // find bounds with gridSparse data
     const { bounds, boundsWithData } = grid.getBounds(fullBounds);
 
+    // find bounds with dependency data (this ensures that cells render when only dependency exist in fullBounds)
+    const renderDependencyBounds = render_dependency.getBounds(fullBounds);
+    const arrayDependencyBounds = array_dependency.getBounds(fullBounds);
+    const fullBoundsWithData = intersects.rectangleUnion(boundsWithData, renderDependencyBounds, arrayDependencyBounds);
+
     let rectCells: Rectangle | undefined;
-    if (boundsWithData) {
+    if (boundsWithData && fullBoundsWithData) {
       const cellRectangle = grid.getCells(boundsWithData);
       rectCells = this.drawBounds({ bounds, boundsWithData, cellRectangle, isQuadrant });
     } else {

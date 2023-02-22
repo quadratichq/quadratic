@@ -1,6 +1,8 @@
 import { Rectangle } from 'pixi.js';
 import { Coordinate, coordinateEqual } from '../../gridGL/types/size';
 import { Bounds } from './Bounds';
+import { Quadrants } from '../../gridGL/quadrants/Quadrants';
+import { intersects } from '../../gridGL/helpers/intersects';
 
 export interface Dependency {
   location: Coordinate;
@@ -12,6 +14,9 @@ export class GridRenderDependency {
   private dependents: Map<string, Dependency> = new Map();
   private bounds = new Bounds();
 
+  // tracks which quadrants need to render based on GridSparse data
+  quadrants = new Set<string>();
+
   clear(): void {
     this.dependents.clear();
     this.bounds.clear();
@@ -19,9 +24,11 @@ export class GridRenderDependency {
 
   recalculateBounds(): void {
     this.bounds.clear();
+    this.quadrants.clear();
     if (this.dependents.size === 0) return;
     this.dependents.forEach((dependent) => {
       this.bounds.addCoordinate(dependent.location);
+      this.quadrants.add(Quadrants.getKey(dependent.location.x, dependent.location.y));
     });
   }
 
@@ -176,5 +183,16 @@ export class GridRenderDependency {
 
   getGridBounds(): Rectangle | undefined {
     return this.bounds.toRectangle();
+  }
+
+  getBounds(bounds: Rectangle): Rectangle | undefined {
+    const gridBounds = this.getGridBounds();
+    if (gridBounds) {
+      return intersects.rectangleClip(gridBounds, bounds);
+    }
+  }
+
+  hasQuadrant(x: number, y: number): boolean {
+    return this.quadrants.has(Quadrants.getKey(x, y));
   }
 }
