@@ -3,8 +3,6 @@ on: workflow_call
 
 jobs:
   setup_quadratic:
-    runs-on: ubuntu-latest-4-cores
-
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
