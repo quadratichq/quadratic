@@ -3,6 +3,7 @@ import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
 import { CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
 import { CellFormat } from '../../../grid/sheet/gridTypes';
+import { Bounds } from '../../../grid/sheet/Bounds';
 
 interface LabelData {
   text: string;
@@ -59,15 +60,49 @@ export class CellsLabels extends Container {
     );
   }
 
+  updateLabel(label: CellLabel, data: LabelData, bounds: Bounds): void {
+    label.visible = true;
+    if (label.text !== data.text) label.text = data.text;
+
+    if (data.format?.alignment === 'right') {
+      label.position.set(data.x + data.expectedWidth - label.width, data.y);
+    } else if (data.format?.alignment === 'center') {
+      console.warn("center is not yet supported");
+    } else {
+      label.position.set(data.x, data.y);
+    }
+    this.checkForClipping(label, data);
+
+    // track overflowed widths
+    if (data.isQuadrant) {
+      label.location = data.location;
+      const width = label.width;
+
+      if (data.expectedWidth) {
+        label.location = data.location;
+        if (label.textWidth > data.expectedWidth) {
+          label.overflowRight = label.textWidth - data.expectedWidth;
+        } else {
+          label.overflowRight = undefined;
+        }
+      }
+
+      // todo: check for right overflow here
+      if (width > data.expectedWidth) {
+        label.overflowRight = width - data.expectedWidth;
+      } else {
+        label.overflowRight = undefined;
+      }
+      bounds.addRectangle(new Rectangle(label.x, label.y, width, label.height));
+    }
+  }
+
   /**
    * add labels to headings using cached labels
    * @returns the visual bounds only if isQuadrant is defined (otherwise not worth the .width/.height call)
    */
   update(): Rectangle | undefined {
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
+    const bounds = new Bounds();
 
     // keep current children to use as the cache
     this.children.forEach((child) => (child.visible = false));
@@ -81,25 +116,7 @@ export class CellsLabels extends Container {
       if (index === -1) {
         leftovers.push(data);
       } else {
-        const label = available[index];
-        label.position.set(data.x, data.y);
-        label.visible = true;
-        this.checkForClipping(label, data);
-
-        // track overflowed widths
-        if (data.isQuadrant) {
-          label.location = data.location;
-          const width = label.width;
-          if (width > data.expectedWidth) {
-            label.overflowRight = width - data.expectedWidth;
-          } else {
-            label.overflowRight = undefined;
-          }
-          minX = Math.min(label.x, minX);
-          maxX = Math.max(label.x + width, maxX);
-          minY = Math.min(label.y, minY);
-          maxY = Math.max(label.y + label.height, maxY);
-        }
+        this.updateLabel(available[index], data, bounds);
         available.splice(index, 1);
       }
     });
@@ -108,37 +125,18 @@ export class CellsLabels extends Container {
     leftovers.forEach((data, i) => {
       let label: CellLabel;
       if (i < available.length) {
-        label = available[i];
-        label.visible = true;
-        label.setFormat(data.format);
+        this.updateLabel(available[i], data, bounds);
       }
 
       // otherwise create new labels
       else {
         label = this.addChild(new CellLabel(data.format));
-      }
-      label.position.set(data.x, data.y);
-      label.text = data.text;
-      this.checkForClipping(label, data);
-
-      // track overflowed widths
-      if (data.expectedWidth) {
-        label.location = data.location;
-        if (label.textWidth > data.expectedWidth) {
-          label.overflowRight = label.textWidth - data.expectedWidth;
-        } else {
-          label.overflowRight = undefined;
-        }
-      }
-      if (data.isQuadrant) {
-        minX = Math.min(label.x, minX);
-        maxX = Math.max(label.x + label.width, maxX);
-        minY = Math.min(label.y, minY);
-        maxY = Math.max(label.y + label.height, maxY);
+        this.updateLabel(label, data, bounds);
       }
     });
-    if (minX !== Infinity) {
-      return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+
+    if (!bounds.empty) {
+      return bounds.toRectangle();
     }
   }
 
