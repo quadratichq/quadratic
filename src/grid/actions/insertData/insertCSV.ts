@@ -15,8 +15,6 @@ export const InsertCSV = (props: {
 
   Papa.parse(file, {
     complete: function (results) {
-      console.log('Async parse results:', results);
-
       const cellsToInsert: Cell[] = [];
 
       results.data.forEach((row, rowIndex) => {

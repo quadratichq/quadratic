@@ -1,8 +1,11 @@
 import { useState, DragEvent, useRef } from 'react';
+import { useRecoilState } from 'recoil';
 import { InsertCSV } from '../../grid/actions/insertData/insertCSV';
 import { SheetController } from '../../grid/controller/sheetController';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
+import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
+import debounce from 'lodash.debounce';
 
 interface Props {
   sheetController: SheetController;
@@ -14,6 +17,25 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
   // drag state
   const [dragActive, setDragActive] = useState(false);
   const divRef = useRef<HTMLDivElement>(null);
+  const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
+
+  const moveCursor = debounce((e: DragEvent<HTMLDivElement>): void => {
+    const clientBoudingRect = divRef?.current?.getBoundingClientRect();
+    const world = app.viewport.toWorld(
+      e.pageX - (clientBoudingRect?.left || 0),
+      e.pageY - (clientBoudingRect?.top || 0)
+    );
+    const { column, row } = props.sheetController.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
+    setInteractionState({
+      ...interactionState,
+      cursorPosition: { x: column, y: row },
+      keyboardMovePosition: { x: column, y: row },
+      multiCursorPosition: {
+        originPosition: { x: column, y: row },
+        terminalPosition: { x: column, y: row },
+      },
+    });
+  }, 50);
 
   // handle drag events
   const handleDrag = function (e: DragEvent<HTMLDivElement>) {
@@ -21,6 +43,8 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
+
+      moveCursor(e);
     } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
