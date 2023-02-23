@@ -62,11 +62,16 @@ export class CellsLabels extends Container {
 
   updateLabel(label: CellLabel, data: LabelData, bounds: Bounds): void {
     label.visible = true;
-    if (label.text !== data.text) label.text = data.text;
+    if (label.text !== data.text) {
+      label.text = data.text;
+    }
 
-    if (data.format?.alignment === 'right') {
+    let alignment = Number.isNaN(parseFloat(data.text)) ? 'left' : 'right';
+    if (data.format?.alignment === 'right') alignment = 'right';
+    else if (data.format?.alignment === 'center') alignment = 'center';
+    if (alignment === 'right') {
       label.position.set(data.x + data.expectedWidth - label.width, data.y);
-    } else if (data.format?.alignment === 'center') {
+    } else if (alignment === 'center') {
       console.warn("center is not yet supported");
     } else {
       label.position.set(data.x, data.y);

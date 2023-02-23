@@ -41,6 +41,9 @@ export class CellLabel extends BitmapTextClip {
     this.originalText = text;
     this.dirty = true;
   }
+  get text() {
+    return this._text;
+  }
 
   setClip(width?: number): void {
     const newMaxWidth = width ?? 0;
