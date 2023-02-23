@@ -24,12 +24,12 @@ export class CellsMarkers extends Container {
     }
 
     if (type === 'CodeIcon') {
-      child.position.set(x + 1.5, y + 1.5);
+      child.position.set(x + 1.25, y + 1.25);
       child.texture = Texture.from('images/python-icon.png');
       child.tint = colors.cellColorUserPython;
       child.width = child.height = 4;
     } else if (type === 'FormulaIcon') {
-      child.position.set(x + 1.5, y + 1.5);
+      child.position.set(x + 1.25, y + 1.25);
       child.texture = Texture.from('images/formula-fx-icon.png');
       child.tint = colors.cellColorUserFormula;
       child.width = child.height = 4;
