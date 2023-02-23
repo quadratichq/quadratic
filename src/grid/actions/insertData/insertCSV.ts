@@ -6,7 +6,7 @@ import * as Papa from 'papaparse';
 import { updateCellAndDCells } from '../updateCellAndDCells';
 import { Cell } from '../../sheet/gridTypes';
 
-export const InsertCSV = async (props: {
+export const InsertCSV = (props: {
   file: File;
   insertAtCellLocation: Coordinate;
   sheetController: SheetController;
@@ -23,7 +23,7 @@ export const InsertCSV = async (props: {
         //@ts-expect-error
         row.forEach((cell, cellIndex) => {
           cellsToInsert.push({
-            value: cell,
+            value: cell.trim(),
             type: 'TEXT',
             x: props.insertAtCellLocation.x + cellIndex,
             y: props.insertAtCellLocation.y + rowIndex,

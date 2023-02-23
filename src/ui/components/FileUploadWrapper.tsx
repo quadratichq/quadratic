@@ -42,7 +42,7 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
         );
         const { column, row } = props.sheetController.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
 
-        await InsertCSV({
+        InsertCSV({
           sheetController: props.sheetController,
           file: file,
           insertAtCellLocation: { x: column, y: row } as Coordinate,
