@@ -61,6 +61,17 @@ export const openLocalGridFile = async (filename: string, sheetController: Sheet
   }
 };
 
+export const openGridFileFromUrl = async (url: string, sheetController: SheetController): Promise<void> => {
+  const file = await fetch(`filename`);
+  const gridFileJSON = (await file.json()) as GridFileSchemaV1;
+  // todo - check if file is valid
+  sheetController.sheet.load_file(gridFileJSON);
+  localFiles.loadedExternalFile('test', gridFileJSON);
+  sheetController.clear();
+  sheetController.app?.rebuild();
+  sheetController.app?.reset();
+};
+
 export const openExampleGridFile = async (filename: string, sheetController: SheetController): Promise<void> => {
   const file = await fetch(`/examples/${filename}`);
   const gridFileJSON = (await file.json()) as GridFileSchemaV1;
