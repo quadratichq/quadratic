@@ -38,7 +38,6 @@
     "lodash.debounce": "^4.0.8",
     "monaco-editor": "^0.31.1",
     "numerable": "^0.3.15",
-    "papaparse": "^5.3.2",
     "pixi-viewport": "^4.37.0",
     "pixi.js": "^6.5.1",
     "quadratic-core": "file:quadratic-core/pkg",
@@ -103,7 +102,6 @@
   "devDependencies": {
     "@playwright/test": "^1.22.2",
     "@types/lodash.debounce": "^4.0.7",
-    "@types/papaparse": "^5.3.7",
     "concurrently": "^6.3.0",
     "electron": "^23.0.0",
     "electron-is-dev": "^2.0.0",
