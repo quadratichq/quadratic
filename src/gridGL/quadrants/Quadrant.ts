@@ -140,8 +140,8 @@ export class Quadrant extends Container {
         const cellBounds = new Rectangle(
           screenRectangle.x + subQuadrantX * subQuadrantWidth,
           screenRectangle.y + subQuadrantY * subQuadrantHeight,
-          subQuadrantWidth,
-          subQuadrantHeight
+          subQuadrantWidth + 1,
+          subQuadrantHeight + 1
         );
 
         // draw quadrant and return the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)

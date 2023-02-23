@@ -46,10 +46,12 @@ export class Quadrants extends Container {
     this.removeChildren();
     this.quadrants.clear();
 
-    const { grid, borders } = this.app.sheet;
+    const { grid, borders, render_dependency, array_dependency } = this.app.sheet;
     const gridBounds = grid.getGridBounds(false);
     const borderBounds = borders.getGridBounds();
-    const bounds = intersects.rectangleUnion(gridBounds, borderBounds);
+    const renderDependencyBounds = render_dependency.getGridBounds();
+    const arrayDependencyBounds = array_dependency.getGridBounds();
+    const bounds = intersects.rectangleUnion(gridBounds, borderBounds, renderDependencyBounds, arrayDependencyBounds);
 
     if (!bounds) return;
 
@@ -165,11 +167,9 @@ export class Quadrants extends Container {
       options.cells.forEach((coordinate) => {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(coordinate.x, coordinate.y);
         const key = `${quadrantX},${quadrantY}`;
-        if (!quadrants.has(key)) {
-          const quadrant = this.getQuadrant(quadrantX, quadrantY, true);
-          if (quadrant) quadrant.dirty = true;
-          quadrants.add(key);
-        }
+        const quadrant = this.getQuadrant(quadrantX, quadrantY, true);
+        if (quadrant) quadrant.dirty = true;
+        quadrants.add(key);
       });
     }
 

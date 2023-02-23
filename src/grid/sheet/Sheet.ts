@@ -178,7 +178,12 @@ export class Sheet {
   }
 
   hasQuadrant(x: number, y: number): boolean {
-    return this.grid.hasQuadrant(x, y) || this.borders.hasQuadrant(x, y);
+    return (
+      this.grid.hasQuadrant(x, y) ||
+      this.borders.hasQuadrant(x, y) ||
+      this.render_dependency.hasQuadrant(x, y) ||
+      this.array_dependency.hasQuadrant(x, y)
+    );
   }
 
   debugGetCells(): Cell[] {

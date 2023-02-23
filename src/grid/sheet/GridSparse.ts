@@ -282,6 +282,6 @@ export class GridSparse {
   }
 
   hasQuadrant(x: number, y: number): boolean {
-    return this.quadrants.has(`${x},${y}`);
+    return this.quadrants.has(Quadrants.getKey(x, y));
   }
 }
