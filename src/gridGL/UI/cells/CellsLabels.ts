@@ -92,11 +92,17 @@ export class CellsLabels extends Container {
         }
       }
 
-      // todo: check for right overflow here
       if (width > data.expectedWidth) {
-        label.overflowRight = width - data.expectedWidth;
+        if (alignment === 'left') {
+          label.overflowRight = width - data.expectedWidth;
+          label.overflowLeft = undefined;
+        } else if (alignment === 'right') {
+          label.overflowLeft = width - data.expectedWidth;
+          label.overflowRight = undefined;
+        }
       } else {
         label.overflowRight = undefined;
+        label.overflowLeft = undefined;
       }
       bounds.addRectangle(new Rectangle(label.x, label.y, width, label.height));
     }
