@@ -286,6 +286,23 @@ for x in range(0, repeat):
 
   await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc, pyodide });
 
+  // Validate the dataframe is sized
+  const code_cell_first_run = sc.sheet.grid.getNakedCells(0, 1, 0, 1)[0];
+  expect(code_cell_first_run?.value).toBe('10');
+  expect(code_cell_first_run?.array_cells?.length).toBe(10);
+  expect(code_cell_first_run?.array_cells).toEqual([
+    [0, 1],
+    [0, 2],
+    [0, 3],
+    [0, 4],
+    [0, 5],
+    [0, 6],
+    [0, 7],
+    [0, 8],
+    [0, 9],
+    [0, 10],
+  ]);
+
   // Now resize the dataframe
   const cell_0_0_update = {
     x: 0,
@@ -298,15 +315,72 @@ for x in range(0, repeat):
   await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc, pyodide });
 
   // Validate the dataframe is resized
+  const code_cell_after_run = sc.sheet.grid.getNakedCells(0, 1, 0, 1)[0];
+  expect(code_cell_after_run?.value).toBe('5');
+  expect(code_cell_after_run?.array_cells?.length).toBe(5);
+  expect(code_cell_after_run?.array_cells).toEqual([
+    [0, 1],
+    [0, 2],
+    [0, 3],
+    [0, 4],
+    [0, 5],
+  ]);
 
-  // TODO: validate the code cell is set properly
-
-  const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 10);
+  // validate the dataframe is resized and old data is cleared
+  const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 1, 0, 10);
   expect(after_code_run_cells.length).toBe(5);
   after_code_run_cells.forEach((cell, index) => {
-    console.log(cell);
-    expect(cell.value).toEqual((cell.y + 5).toString());
+    expect(cell.value).toEqual((cell.y - 1 + 5).toString());
     if (index === 0) return;
     expect(cell.type).toEqual('COMPUTED');
   });
+});
+
+test('SheetController - test deleted array cells update dependent cells', async () => {
+  const sc = new SheetController();
+  GetCellsDBSetSheet(sc.sheet);
+
+  const cell_1_2_dependent = {
+    x: 1,
+    y: 2,
+    value: '10',
+    type: 'PYTHON',
+    python_code: `c(0,2) + 100`,
+  } as Cell;
+
+  await updateCellAndDCells({ starting_cells: [cell_1_2_dependent], sheetController: sc, pyodide });
+
+  const cell_0_0 = {
+    x: 0,
+    y: 0,
+    value: '',
+    type: 'PYTHON',
+    python_code: `[1,2,3,4,5,6,7,8,9,10]`,
+  } as Cell;
+
+  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc, pyodide });
+
+  // validate that the dependent cell is updated
+  const after_code_run_cell = sc.sheet.grid.getNakedCells(1, 2, 1, 2);
+  expect(after_code_run_cell.length).toBe(1);
+  expect(after_code_run_cell[0]?.value).toBe('103');
+
+  // Now shorten the array output
+  const cell_0_0_update = {
+    x: 0,
+    y: 0,
+    value: '',
+    type: 'PYTHON',
+    python_code: `[1,2]`,
+  } as Cell;
+
+  await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc, pyodide });
+
+  // validate that the dependent cell is updated
+  const after_code_run_cell_update = sc.sheet.grid.getNakedCells(1, 2, 1, 2);
+  expect(after_code_run_cell_update.length).toBe(1);
+  expect(after_code_run_cell_update[0]?.evaluation_result?.success).toBe(false);
+  expect(after_code_run_cell_update[0]?.evaluation_result?.std_err).toBe(
+    "TypeError on line 1: unsupported operand type(s) for +: 'NoneType' and 'int'"
+  );
 });
