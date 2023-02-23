@@ -93,7 +93,7 @@ export class Cells extends Container {
             dependents.push({ x: column, y: label.location.y });
             x -= gridOffsets.getColumnWidth(column);
             column--;
-          } while (x > label.overflowLeft);
+          } while (x > -label.overflowLeft);
         }
         const dependencies = render_dependency.update(label.location, dependents);
         changes.push(...dependencies);
@@ -241,21 +241,24 @@ export class Cells extends Container {
         const width = gridOffsets.getColumnWidth(column);
         const entry = cellRectangle.get(column, row);
 
-        // don't render input (unless ignoreInput === true)
-        const isInput = input && input.column === column && input.row === row;
+        // render each cell only once
+        const key = `${column},${row}`;
+        if (!renderedCells.has(key)) {
+          renderedCells.add(key);
 
-        const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, isInput });
+          // don't render input (unless ignoreInput === true)
+          const isInput = input && input.column === column && input.row === row;
 
-        // track cells with arrays to add visual dependencies
-        if (entry && this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
-          this.trackCellsWithArrays.push({ x: entry.cell.x, y: entry.cell.y });
+          const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, isInput });
+
+          // track cells with arrays to add visual dependencies
+          if (entry && this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
+            this.trackCellsWithArrays.push({ x: entry.cell.x, y: entry.cell.y });
+          }
+
+          content = content ? intersects.rectangleUnion(content, rendered) : rendered;
         }
-
-        content = content ? intersects.rectangleUnion(content, rendered) : rendered;
         x += width;
-
-        // ensure we only render each cell once
-        renderedCells.add(`${column},${row}`);
       }
       x = xStart;
       y += height;
@@ -271,15 +274,16 @@ export class Cells extends Container {
     if (dependentCells.length) {
       dependentCells.forEach((coordinate) => {
         const key = `${coordinate.x},${coordinate.y}`;
-        if (renderedCells.has(key)) return;
-        renderedCells.add(key);
-        const entry = grid.get(coordinate.x, coordinate.y);
-        if (entry) {
-          const position = gridOffsets.getCell(coordinate.x, coordinate.y);
-          const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
-          const rendered = this.renderCell({ entry, ...position, isInput, isQuadrant });
-          if (rendered) {
-            content = content ? intersects.rectangleUnion(content, rendered) : rendered;
+        if (!renderedCells.has(key)) {
+          renderedCells.add(key);
+          const entry = grid.get(coordinate.x, coordinate.y);
+          if (entry) {
+            const position = gridOffsets.getCell(coordinate.x, coordinate.y);
+            const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
+            const rendered = this.renderCell({ entry, ...position, isInput, isQuadrant });
+            if (rendered) {
+              content = content ? intersects.rectangleUnion(content, rendered) : rendered;
+            }
           }
         }
       });

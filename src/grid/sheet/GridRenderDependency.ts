@@ -135,7 +135,7 @@ export class GridRenderDependency {
 
   /** find all cell dependents that point to a cell that is inside the bounds */
   getDependentsInBounds(bounds: Rectangle): Coordinate[] {
-    const coordinates: Coordinate[] = [];
+    const coordinates = new Set<Coordinate>();
     this.dependents.forEach((dependent) => {
       const location = dependent.location;
 
@@ -146,10 +146,10 @@ export class GridRenderDependency {
         location.y >= bounds.top &&
         location.y <= bounds.bottom
       ) {
-        coordinates.push(...dependent.needToRender);
+        dependent.needToRender.forEach(coordinate => coordinates.add(coordinate));
       }
     });
-    return coordinates;
+    return Array.from(coordinates);
   }
 
   /**
