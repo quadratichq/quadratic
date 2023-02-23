@@ -1,4 +1,4 @@
-import { useState, DragEvent } from 'react';
+import { useState, DragEvent, useRef } from 'react';
 import { InsertCSV } from '../../grid/actions/insertData/insertCSV';
 import { SheetController } from '../../grid/controller/sheetController';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
@@ -13,6 +13,7 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
   const { app } = props;
   // drag state
   const [dragActive, setDragActive] = useState(false);
+  const divRef = useRef<HTMLDivElement>(null);
 
   // handle drag events
   const handleDrag = function (e: DragEvent<HTMLDivElement>) {
@@ -34,9 +35,11 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.type === 'text/csv') {
-        console.log('process csv file');
-        console.log('event: ', e);
-        const world = app.viewport.toWorld(e.screenX, e.screenY);
+        const clientBoudingRect = divRef?.current?.getBoundingClientRect();
+        const world = app.viewport.toWorld(
+          e.pageX - (clientBoudingRect?.left || 0),
+          e.pageY - (clientBoudingRect?.top || 0)
+        );
         const { column, row } = props.sheetController.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
 
         await InsertCSV({
@@ -44,14 +47,12 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
           file: file,
           insertAtCellLocation: { x: column, y: row } as Coordinate,
         });
-      } else {
-        console.log('non-csv file abort');
       }
     }
   };
 
   return (
-    <div onDragEnter={handleDrag} style={{ flex: 1 }}>
+    <div ref={divRef} onDragEnter={handleDrag} style={{ flex: 1 }}>
       {props.children}
       {dragActive && (
         <div
