@@ -200,6 +200,14 @@ fn test_formula_array_op() {
     );
 }
 
+/// Regression test for quadratic#253
+#[test]
+fn test_hyphen_after_cell_ref() {
+    make_stateless_grid_mock!(|_| Some("30".to_string()));
+    assert_eq!("25", eval_to_string(&mut GridMock, "Z1 - 5"));
+    assert_eq!("25", eval_to_string(&mut GridMock, "Z1-5"));
+}
+
 fn eval_to_string(grid: &mut impl GridProxy, s: &str) -> String {
     eval(grid, s).unwrap().to_string()
 }

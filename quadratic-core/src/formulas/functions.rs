@@ -39,8 +39,18 @@ pub fn pure_function_from_name(
 
         // Mathematical operators
         "sum" => |args| sum(&args.inner).map(Value::Number),
-        "+" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? + b.to_number()?))),
-        "-" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? - b.to_number()?))),
+        "+" => |args| match args.inner.len() {
+            1 => array_map(args, |[a]| Ok(Value::Number(a.to_number()?))),
+            _ => array_map(args, |[a, b]| {
+                Ok(Value::Number(a.to_number()? + b.to_number()?))
+            }),
+        },
+        "-" => |args| match args.inner.len() {
+            1 => array_map(args, |[a]| Ok(Value::Number(-a.to_number()?))),
+            _ => array_map(args, |[a, b]| {
+                Ok(Value::Number(a.to_number()? - b.to_number()?))
+            }),
+        },
         "product" => |args| product(&args.inner).map(Value::Number),
         "*" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? * b.to_number()?))),
         "/" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? / b.to_number()?))),
