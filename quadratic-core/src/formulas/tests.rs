@@ -28,6 +28,25 @@ impl GridProxy for PanicGridMock {
 }
 
 #[test]
+fn test_formula_indirect() {
+    let form = parse_formula("CELL(3, 5)", Pos::new(1, 2)).unwrap();
+
+    make_stateless_grid_mock!(|pos| Some((pos.x * 10 + pos.y).to_string()));
+
+    assert_eq!(
+        FormulaErrorMsg::CircularReference,
+        form.eval_blocking(&mut GridMock, Pos::new(3, 5))
+            .unwrap_err()
+            .msg,
+    );
+
+    assert_eq!(
+        (3 * 10 + 5).to_string(),
+        eval_to_string(&mut GridMock, "CELL(3, 5)"),
+    );
+}
+
+#[test]
 fn test_formula_cell_ref() {
     let form = parse_formula("SUM($C$4, $A0, D$n6, A0, ZB2)", Pos::new(3, 4)).unwrap();
 

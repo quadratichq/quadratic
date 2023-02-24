@@ -92,7 +92,9 @@ impl Spanned<Value> {
             .with_span(self.span)),
         }
     }
-
+    pub fn to_integer(&self) -> FormulaResult<i64> {
+        Ok(self.to_number()?.round() as i64)
+    }
     pub fn to_bool(&self) -> FormulaResult<bool> {
         match &self.inner {
             Value::Bool(b) => Ok(*b),
