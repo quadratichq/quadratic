@@ -17,7 +17,7 @@ const ListItems = [
           action={() => {
             clearAllFormatting();
           }}
-          shortcut="/"
+          shortcut="\"
           shortcutModifiers={KeyboardSymbols.Command}
         />
       );

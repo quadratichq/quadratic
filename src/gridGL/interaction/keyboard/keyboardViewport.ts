@@ -45,12 +45,12 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'Slash') {
+  if ((event.metaKey || event.ctrlKey) && event.code === 'Backslash') {
     clearAllFormatting();
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'Backslash') {
+  if ((event.metaKey || event.ctrlKey) && event.code === 'Slash') {
     setShowUI(!showUI);
     return true;
   }
