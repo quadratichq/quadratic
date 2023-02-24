@@ -1,6 +1,5 @@
 import { ClickEvent, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
-import { menuItemIconStyles } from '../menuStyles';
-import { BorderType } from '../../../../../core/gridDB/gridTypes';
+import { BorderType } from '../../../../../grid/sheet/gridTypes';
 import {
   BorderColor,
   LineStyle,
@@ -24,8 +23,8 @@ import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
 import { colors } from '../../../../../theme/colors';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
-import { Sheet } from '../../../../../core/gridDB/Sheet';
-import { PixiApp } from '../../../../../core/gridGL/pixiApp/PixiApp';
+import { Sheet } from '../../../../../grid/sheet/Sheet';
+import { PixiApp } from '../../../../../gridGL/pixiApp/PixiApp';
 import { QColorPicker } from '../../../../components/qColorPicker';
 
 interface Props extends SubMenuProps {
@@ -149,7 +148,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
           }
         }}
       >
-        <Tooltip title={props.title} arrow>
+        <Tooltip title={props.title} arrow disableInteractive>
           {props.label}
         </Tooltip>
       </div>
@@ -191,19 +190,19 @@ export function useGetBorderMenu(props: Props): JSX.Element {
       </div>
       <div className="borderMenuFormatting">
         <SubMenu
-          className="borderSubmenu"
+          className="borderSubmenu color-picker-submenu"
           id="FillBorderColorMenuID"
           menuStyles={{
             padding: '0px',
           }}
-          label={<BorderColor style={{ ...menuItemIconStyles, color }}></BorderColor>}
+          label={<BorderColor style={{ marginRight: '0.25rem' }}></BorderColor>}
         >
-          <QColorPicker onChangeComplete={handleChangeBorderColor}></QColorPicker>
+          <QColorPicker onChangeComplete={handleChangeBorderColor} />
         </SubMenu>
         <SubMenu
           id="BorderLineStyleMenuID"
           className="borderSubmenu"
-          label={<LineStyle style={menuItemIconStyles}></LineStyle>}
+          label={<LineStyle style={{ marginRight: '0.25rem' }}></LineStyle>}
         >
           <MenuItem onClick={(e) => handleChangeBorderType(e)}>
             <div className="lineStyleBorder normalBorder"></div>

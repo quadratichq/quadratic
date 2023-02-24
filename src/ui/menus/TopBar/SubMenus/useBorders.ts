@@ -1,8 +1,8 @@
-import { Border, BorderType } from '../../../../core/gridDB/gridTypes';
-import { localFiles } from '../../../../core/gridDB/localFiles';
-import { Sheet } from '../../../../core/gridDB/Sheet';
-import { PixiApp } from '../../../../core/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '../../../../core/gridGL/types/size';
+import { clearBordersAction } from '../../../../grid/actions/clearBordersAction';
+import { Border, BorderType } from '../../../../grid/sheet/gridTypes';
+import { localFiles } from '../../../../grid/sheet/localFiles';
+import { Sheet } from '../../../../grid/sheet/Sheet';
+import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { useGetSelection } from './useGetSelection';
 
 export interface ChangeBorder {
@@ -19,11 +19,11 @@ export interface ChangeBorder {
 
 interface IResults {
   changeBorders: (options: ChangeBorder) => void;
-  clearBorders: () => void;
+  clearBorders: (args?: { create_transaction?: boolean }) => void;
 }
 
 export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
-  const { start, end, multiCursor } = useGetSelection();
+  const { start, end, multiCursor } = useGetSelection(sheet);
   const { sheet_controller } = app;
 
   const changeBorders = (options: ChangeBorder): void => {
@@ -130,68 +130,8 @@ export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
     }
   };
 
-  const clearBorders = (): void => {
-    const borderUpdate: Border[] = [];
-    const borderDelete: Coordinate[] = [];
-    for (let y = start.y; y <= end.y; y++) {
-      for (let x = start.x; x <= end.x; x++) {
-        const border = sheet.borders.get(x, y);
-        if (border) {
-          borderDelete.push({ x, y });
-        }
-        if (x === end.x) {
-          const border = sheet.borders.get(x + 1, y);
-          if (border?.vertical) {
-            if (!border.horizontal) {
-              borderDelete.push({ x: x + 1, y });
-            } else {
-              borderUpdate.push({ ...border, vertical: undefined });
-            }
-          }
-        }
-        if (y === end.y) {
-          const border = sheet.borders.get(x, y + 1);
-          if (border?.horizontal) {
-            if (!border.vertical) {
-              borderDelete.push({ x, y: y + 1 });
-            } else {
-              borderUpdate.push({ ...border, horizontal: undefined });
-            }
-          }
-        }
-      }
-    }
-
-    // create transaction to update borders
-    sheet_controller.start_transaction();
-    if (borderDelete.length) {
-      borderDelete.forEach((border_coord) => {
-        sheet_controller.execute_statement({
-          type: 'SET_BORDER',
-          data: {
-            position: [border_coord.x, border_coord.y],
-            border: undefined,
-          },
-        });
-      });
-    }
-    if (borderUpdate.length) {
-      borderUpdate.forEach((border) => {
-        sheet_controller.execute_statement({
-          type: 'SET_BORDER',
-          data: {
-            position: [border.x, border.y],
-            border: border,
-          },
-        });
-      });
-    }
-    sheet_controller.end_transaction();
-
-    app.cells.dirty = true;
-    app.quadrants.quadrantChanged({ range: { start, end } });
-
-    localFiles.saveLastLocal(sheet.export_file());
+  const clearBorders = (args?: { create_transaction?: boolean }): void => {
+    clearBordersAction({ sheet_controller, start, end, create_transaction: args?.create_transaction });
   };
 
   return {

@@ -14,11 +14,11 @@ Take your data and do something useful with it as quickly and easily as possible
 
 We have a hosted version of the `main` branch available online.
 
-**Try it out! --> https://app.quadratichq.com**
+**Try it out! --> <https://app.quadratichq.com>**
 
 ## Community
 
-Join the conversation on our Discord channel -> https://discord.gg/quadratic
+Join the conversation on our Discord channel -> <https://discord.gg/quadratic>
 
 ## Documentation
 
@@ -48,7 +48,10 @@ Quadratic has no environment to configure. The grid runs entirely in the browser
 
 ### Run Quadratic Locally
 
-Install Dependencies `npm install`
+1. Install npm, [rustup](https://www.rust-lang.org/tools/install), and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+2. Run `rustup target add wasm32-unknown-unknown`
+3. Build the Rust/WASM `npm run build:wasm`
+4. run `npm install`
 
 Run Web `npm start`
 
@@ -60,14 +63,12 @@ _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 
 - [x] WebGL Grid (pinch and zoom grid)
 - [x] Open and Save files locally
-- [x] Python (WASM)
-- [x] Pandas Support
-- [ ] Moving cells and resizing columns (issue [#138](https://github.com/quadratichq/quadratic/pull/138))
-- [ ] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
-- [ ] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
-- [ ] Database Connection Support (issue [#35](https://github.com/quadratichq/quadratic/issues/35))
-- [ ] SQL Support (issue [#34](https://github.com/quadratichq/quadratic/issues/34))
-- [ ] Quadratic Cloud Beta
+- [x] Python, Pandas Support (WASM)
+- [x] Excel Formula Support (in progress)
+- [x] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
+- [x] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
+- [ ] SQL Database Connection Support 
+- [ ] Multiplayer Support
 
 **Feature request or bug report?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
 
@@ -81,6 +82,6 @@ There are more example files are located in the `examples` folder in this repo.
 
 You can download them and then open them in Quadratic via File > Open Grid
 
-## Quadratic is Hiring!
+## Quadratic is Hiring
 
 Check out our open roles -> [careers.quadratichq.com](https://careers.quadratichq.com)

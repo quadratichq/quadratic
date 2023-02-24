@@ -1,7 +1,7 @@
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItemCheckbox } from '../CommandPaletteListItemCheckbox';
-import { zoomIn, zoomOut, zoomToFit, zoomTo100 } from '../../../../core/gridGL/helpers/zoom';
+import { zoomIn, zoomOut, zoomToFit, zoomTo100 } from '../../../../gridGL/helpers/zoom';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
 
@@ -66,6 +66,23 @@ const ListItems = [
       );
     },
   },
+  // Commented out because the editor switches this state automatically when the user
+  // is editing a formula.
+  // {
+  //   label: 'View: Show A1 notation on headings',
+  //   Component: (props: any) => {
+  //     const settings = useGridSettings();
+  //     return (
+  //       <CommandPaletteListItem
+  //         {...props}
+  //         icon={<CommandPaletteListItemCheckbox checked={settings.showA1Notation} />}
+  //         action={() => {
+  //           settings.setShowA1Notation(!settings.showA1Notation);
+  //         }}
+  //       />
+  //     );
+  //   },
+  // },
   {
     label: 'View: Zoom in',
     Component: (props: CommandPaletteListItemSharedProps) => (
@@ -101,8 +118,8 @@ const ListItems = [
         action={() => {
           zoomToFit(props.sheetController.sheet, props.app.viewport);
         }}
-        shortcut="1"
-        shortcutModifiers={[KeyboardSymbols.Shift]}
+        shortcut="9"
+        shortcutModifiers={[KeyboardSymbols.Command]}
       />
     ),
   },

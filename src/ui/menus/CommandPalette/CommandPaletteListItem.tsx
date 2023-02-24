@@ -1,8 +1,8 @@
 import { ListItem, ListItemButton, ListItemText, ListItemSecondaryAction, ListItemIcon } from '@mui/material';
 import fuzzysort from 'fuzzysort';
 import { ReactElement } from 'react';
-import { PixiApp } from '../../../core/gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../core/transaction/sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../grid/controller/sheetController';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 
 // Props generated in the root CommandPalette and passed to every CommandPaletteListItem
@@ -49,7 +49,6 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
   } = props;
 
   const displayText = fuzzysortResult ? fuzzysort.highlight(fuzzysortResult, (m, i) => <b key={i}>{m}</b>) : label;
-  const iconTextSpacing = '40px';
 
   return (
     <ListItem disablePadding key={label}>
@@ -63,12 +62,8 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
         }}
         selected={listItemIndex === selectedListItemIndex}
       >
-        {icon && <ListItemIcon sx={{ minWidth: iconTextSpacing }}>{icon}</ListItemIcon>}
-        <ListItemText
-          primary={displayText}
-          inset={icon ? false : true}
-          sx={icon ? {} : { paddingLeft: iconTextSpacing }}
-        />
+        {icon && <ListItemIcon>{icon}</ListItemIcon>}
+        <ListItemText primary={displayText} inset={icon ? false : true} />
 
         {shortcut && (
           <ListItemSecondaryAction style={{ fontSize: '14px', opacity: '.5' }}>

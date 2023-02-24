@@ -36,9 +36,6 @@ export const debugShowCachedSpriteCounts = debug && false;
 // shows why renderer is rendering
 export const debugShowWhyRendering = debug && false;
 
-// locks zoom to percentage
-export const debugLockZoom = debug && false;
-
 // ----------------
 // Quadrant caching
 // ----------------

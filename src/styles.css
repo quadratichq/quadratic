@@ -13,3 +13,24 @@ html,
   font-family: 'OpenSans';
   src: url('/public/fonts/opensans/OpenSans.ttf');
 }
+
+@font-face {
+  font-family: 'OpenSans-Bold';
+  src: url('/public/fonts/opensans/OpenSans-Bold.ttf');
+}
+
+@font-face {
+  font-family: 'OpenSans-Italic';
+  src: url('/public/fonts/opensans/OpenSans-Italic.ttf');
+}
+
+@font-face {
+  font-family: 'OpenSans-BoldItalic';
+  src: url('/public/fonts/opensans/OpenSans-BoldItalic.ttf');
+}
+
+/* Override default MUI dialog actions container so buttons align with content */
+.MuiDialogActions-root {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}

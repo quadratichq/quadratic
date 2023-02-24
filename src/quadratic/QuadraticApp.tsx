@@ -3,15 +3,16 @@ import QuadraticUI from '../ui/QuadraticUI';
 import { RecoilRoot } from 'recoil';
 import { useLoading } from '../contexts/LoadingContext';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
-import { loadPython } from '../core/computations/python/loadPython';
+import { loadPython } from '../grid/computations/python/loadPython';
 import { FileLoadingComponent } from './FileLoadingComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
-import { loadAssets } from '../core/gridGL/loadAssets';
+import { loadAssets } from '../gridGL/loadAssets';
 import { isMobileOnly } from 'react-device-detect';
 import { debugSkipPythonLoad } from '../debugFlags';
-import { GetCellsDBSetSheet } from '../core/gridDB/Cells/GetCellsDB';
-import { localFiles } from '../core/gridDB/localFiles';
-import { SheetController } from '../core/transaction/sheetController';
+import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
+import { localFiles } from '../grid/sheet/localFiles';
+import { SheetController } from '../grid/controller/sheetController';
+import init, { hello } from 'quadratic-core';
 
 export const QuadraticApp = () => {
   const { loading, incrementLoadingCount } = useLoading();
@@ -33,6 +34,11 @@ export const QuadraticApp = () => {
       loadAssets().then(() => {
         incrementLoadingCount();
       });
+      // load Rust wasm
+      init().then(() => {
+        hello(); // let Rust say hello to console
+        incrementLoadingCount();
+      });
       localFiles.initialize().then(() => {
         incrementLoadingCount();
       });
@@ -49,7 +55,7 @@ export const QuadraticApp = () => {
       {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
       <AnalyticsProvider></AnalyticsProvider>
       {/* Welcome Component loads appropriate sheet */}
-      {!loading && <FileLoadingComponent sheet={sheet} />}
+      {!loading && <FileLoadingComponent sheetController={sheet_controller} />}
       {/* Provider of All React UI Components */}
       {!loading && <QuadraticUI sheetController={sheet_controller} />}
       {/* Loading screen */}

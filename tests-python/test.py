@@ -25,7 +25,7 @@ sys.modules["pyodide"] = mock_pyodide
 sys.modules["micropip"] = mock_micropip
 
 # add path to import run_python
-sys.path.insert(1, "src/core/computations/python")
+sys.path.insert(1, "src/grid/computations/python")
 
 from run_python import run_python, attempt_fix_await
 
@@ -37,7 +37,7 @@ class TestTesting(IsolatedAsyncioTestCase):
 
         # NOTE: this approach bypasses the entire env of Pyodide.
         # We should make the run_python e2e tests run via playwright
-        self.assertEqual(result.get("input_python_evaluation_success"), False)
+        self.assertEqual(result.get("success"), False)
 
     def test_attempt_fix_await(self):
         self.assertEqual(attempt_fix_await("1 + 1"), "1 + 1")
