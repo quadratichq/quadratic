@@ -99,7 +99,7 @@ const ListItems = [
   //   },
   // },
   {
-    label: 'View: Presentation Mode',
+    label: 'View: Presentation mode',
     Component: (props: any) => {
       const { presentationMode, setPresentationMode } = useGridSettings();
       return (
