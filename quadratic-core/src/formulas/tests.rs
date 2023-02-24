@@ -200,6 +200,12 @@ fn test_formula_array_op() {
     );
 }
 
+#[test]
+fn test_leading_equals() {
+    assert_eq!("7", eval_to_string(&mut PanicGridMock, "=3+4"));
+    assert_eq!("7", eval_to_string(&mut PanicGridMock, "= 3+4"));
+}
+
 /// Regression test for quadratic#253
 #[test]
 fn test_hyphen_after_cell_ref() {
