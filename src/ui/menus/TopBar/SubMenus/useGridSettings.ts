@@ -7,7 +7,7 @@ export interface GridSettings {
   showGridLines: boolean;
   showCellTypeOutlines: boolean;
   showA1Notation: boolean;
-  showUI: boolean;
+  presentationMode: boolean;
 }
 
 export const defaultGridSettings: GridSettings = {
@@ -16,7 +16,7 @@ export const defaultGridSettings: GridSettings = {
   showGridLines: true,
   showCellTypeOutlines: true,
   showA1Notation: false,
-  showUI: true,
+  presentationMode: false,
 };
 
 interface GridSettingsReturn {
@@ -25,13 +25,13 @@ interface GridSettingsReturn {
   showGridLines: boolean;
   showCellTypeOutlines: boolean;
   showA1Notation: boolean;
-  showUI: boolean;
+  presentationMode: boolean;
   setShowGridAxes: (value: boolean) => void;
   setShowHeadings: (value: boolean) => void;
   setShowGridLines: (value: boolean) => void;
   setShowCellTypeOutlines: (value: boolean) => void;
   setShowA1Notation: (value: boolean) => void;
-  setShowUI: (value: boolean) => void;
+  setPresentationMode: (value: boolean) => void;
 }
 
 export const useGridSettings = (): GridSettingsReturn => {
@@ -103,12 +103,12 @@ export const useGridSettings = (): GridSettingsReturn => {
     [settings, setSettings]
   );
 
-  const setShowUI = useCallback(
+  const setPresentationMode = useCallback(
     (value: boolean) => {
-      if (value !== settings.showUI) {
+      if (value !== settings.presentationMode) {
         setSettings({
           ...settings,
-          showUI: value,
+          presentationMode: value,
         });
       }
     },
@@ -122,6 +122,6 @@ export const useGridSettings = (): GridSettingsReturn => {
     setShowGridLines,
     setShowCellTypeOutlines,
     setShowA1Notation,
-    setShowUI,
+    setPresentationMode,
   };
 };

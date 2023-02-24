@@ -37,7 +37,7 @@ export class PixiAppSettings {
     // only rebuild quadrants if showCellTypeOutlines change
     if (
       (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
-      (this.lastSettings && this.lastSettings.showUI !== this.settings.showUI)
+      (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
     ) {
       this.app.quadrants.build();
     }
@@ -66,16 +66,16 @@ export class PixiAppSettings {
   }
 
   get showGridLines(): boolean {
-    return this.settings.showUI && this.settings.showGridLines;
+    return !this.settings.presentationMode && this.settings.showGridLines;
   }
   get showGridAxes(): boolean {
-    return this.settings.showUI && this.settings.showGridAxes;
+    return !this.settings.presentationMode && this.settings.showGridAxes;
   }
   get showHeadings(): boolean {
-    return this.settings.showUI && this.settings.showHeadings;
+    return !this.settings.presentationMode && this.settings.showHeadings;
   }
   get showCellTypeOutlines(): boolean {
-    return this.settings.showUI && this.settings.showCellTypeOutlines;
+    return !this.settings.presentationMode && this.settings.showCellTypeOutlines;
   }
 
   get showA1Notation(): boolean {

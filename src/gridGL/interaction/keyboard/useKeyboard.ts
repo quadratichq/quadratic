@@ -38,7 +38,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { format } = useGetSelection(sheetController.sheet);
   const { changeBold, changeItalic } = useFormatCells(sheetController, app);
   const { clearAllFormatting } = useClearAllFormatting(sheetController, app);
-  const { showUI, setShowUI } = useGridSettings();
+  const { presentationMode, setPresentationMode } = useGridSettings();
 
   const keyDownWindow = useCallback(
     (event: KeyboardEvent): void => {
@@ -56,8 +56,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           changeItalic,
           format,
           pointer: app.input,
-          showUI,
-          setShowUI,
+          presentationMode,
+          setPresentationMode,
         })
       ) {
         event.stopPropagation();
@@ -75,8 +75,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       changeBold,
       changeItalic,
       format,
-      showUI,
-      setShowUI,
+      presentationMode,
+      setPresentationMode,
     ]
   );
 

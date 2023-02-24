@@ -16,8 +16,8 @@ export function keyboardViewport(options: {
   changeItalic: Function;
   format: MultipleFormat;
   pointer: Pointer;
-  showUI: boolean;
-  setShowUI: Function;
+  presentationMode: boolean;
+  setPresentationMode: Function;
 }): boolean {
   const {
     changeBold,
@@ -29,8 +29,8 @@ export function keyboardViewport(options: {
     viewport,
     editorInteractionState,
     setEditorInteractionState,
-    showUI,
-    setShowUI,
+    presentationMode,
+    setPresentationMode,
   } = options;
 
   if (!viewport || event.altKey) return false;
@@ -51,7 +51,7 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.code === 'Period') {
-    setShowUI(!showUI);
+    setPresentationMode(!presentationMode);
     return true;
   }
 

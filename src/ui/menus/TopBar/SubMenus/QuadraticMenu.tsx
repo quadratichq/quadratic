@@ -144,8 +144,12 @@ export const QuadraticMenu = (props: Props) => {
             Show cell type outlines
           </MenuItem>
           <MenuDivider />
-          <MenuItem type="checkbox" checked={settings.showUI} onClick={() => settings.setShowUI(!settings.showUI)}>
-            Show/Hide UI
+          <MenuItem
+            type="checkbox"
+            checked={settings.presentationMode}
+            onClick={() => settings.setPresentationMode(!settings.presentationMode)}
+          >
+            Presentation mode
           </MenuItem>
           {/* 
           Commented out because the editor switches this state automatically when the user

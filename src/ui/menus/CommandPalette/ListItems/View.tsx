@@ -100,15 +100,15 @@ const ListItems = [
     },
   },
   {
-    label: 'View: Show/Hide UI',
+    label: 'View: Presentation Mode',
     Component: (props: any) => {
-      const { showUI, setShowUI } = useGridSettings();
+      const { presentationMode, setPresentationMode } = useGridSettings();
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<CommandPaletteListItemCheckbox checked={showUI} />}
+          icon={<CommandPaletteListItemCheckbox checked={presentationMode} />}
           action={() => {
-            setShowUI(!showUI);
+            setPresentationMode(!presentationMode);
           }}
           shortcut="."
           shortcutModifiers={[KeyboardSymbols.Command]}
