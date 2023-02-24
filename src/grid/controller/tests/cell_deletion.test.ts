@@ -169,7 +169,7 @@ test('SheetController - delete cell and array cells', async () => {
   });
 
   // delete cells
-  DeleteCells({
+  await DeleteCells({
     x0: 0,
     y0: 0,
     x1: 0,
