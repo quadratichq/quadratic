@@ -35,7 +35,7 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
         terminalPosition: { x: column, y: row },
       },
     });
-  }, 50);
+  }, 100);
 
   // handle drag events
   const handleDrag = function (e: DragEvent<HTMLDivElement>) {
