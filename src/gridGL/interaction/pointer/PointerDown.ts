@@ -4,6 +4,7 @@ import { Sheet } from '../../../grid/sheet/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
+import { PanMode } from '../../../atoms/gridInteractionStateAtom';
 
 const MINIMUM_MOVE_POSITION = 5;
 
@@ -43,7 +44,7 @@ export class PointerDown {
 
   pointerDown(world: Point, event: PointerEvent): void {
     if (isMobile) return;
-    if (this.app.settings.interactionState.panMode !== 'DISABLED') return;
+    if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
     const { settings, cursor } = this.app;
     const { interactionState, setInteractionState } = settings;
@@ -157,7 +158,7 @@ export class PointerDown {
   }
 
   pointerMove(world: Point): void {
-    if (this.app.settings.interactionState.panMode !== 'DISABLED') return;
+    if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
     const { viewport, settings, cursor } = this.app;
     const { gridOffsets } = this.sheet;

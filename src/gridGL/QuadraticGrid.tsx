@@ -9,6 +9,7 @@ import { ensureVisible } from './interaction/viewportHelper';
 import { CellInput } from './interaction/CellInput';
 import { SheetController } from '../grid/controller/sheetController';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
+import { PanMode } from '../atoms/gridInteractionStateAtom';
 
 interface IProps {
   sheetController: SheetController;
@@ -75,9 +76,9 @@ export default function QuadraticGrid(props: IProps) {
         overflow: 'hidden',
         WebkitTapHighlightColor: 'transparent',
         cursor:
-          interactionState.panMode === 'ENABLED'
+          interactionState.panMode === PanMode.Enabled
             ? 'grab'
-            : interactionState.panMode === 'DRAGGING'
+            : interactionState.panMode === PanMode.Dragging
             ? 'grabbing'
             : 'unset',
       }}
@@ -96,29 +97,29 @@ export default function QuadraticGrid(props: IProps) {
         }
       }}
       onMouseDown={(e) => {
-        if (interactionState.panMode === 'ENABLED') {
-          setInteractionState({ ...interactionState, panMode: 'DRAGGING' });
+        if (interactionState.panMode === PanMode.Enabled) {
+          setInteractionState({ ...interactionState, panMode: PanMode.Dragging });
         }
       }}
       onMouseUp={(e) => {
-        if (interactionState.panMode === 'DRAGGING') {
-          setInteractionState({ ...interactionState, panMode: 'ENABLED' });
+        if (interactionState.panMode === PanMode.Dragging) {
+          setInteractionState({ ...interactionState, panMode: PanMode.Enabled });
         }
       }}
       onKeyDown={(e) => {
-        if (e.code === 'Space' && interactionState.panMode === 'DISABLED') {
+        if (e.code === 'Space' && interactionState.panMode === PanMode.Disabled) {
           setInteractionState({
             ...interactionState,
-            panMode: 'ENABLED',
+            panMode: PanMode.Enabled,
           });
         }
         onKeyDown(e);
       }}
       onKeyUp={(e) => {
-        if (e.code === 'Space' && interactionState.panMode !== 'DISABLED') {
+        if (e.code === 'Space' && interactionState.panMode !== PanMode.Disabled) {
           setInteractionState({
             ...interactionState,
-            panMode: 'DISABLED',
+            panMode: PanMode.Disabled,
           });
         }
       }}
