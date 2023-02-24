@@ -2,7 +2,7 @@ import { Coordinate } from '../../../gridGL/types/size';
 import { Border, Cell, CellFormat } from '../../sheet/gridTypes';
 import { SheetController } from '../../controller/sheetController';
 import { updateCellAndDCells } from '../updateCellAndDCells';
-import { DeleteCells } from '../../sheet/Cells/DeleteCells';
+import { DeleteCells } from '../DeleteCells';
 import { CellAndFormat } from '../../sheet/GridSparse';
 import { Rectangle } from 'pixi.js';
 import { clearFormattingAction } from '../clearFormattingAction';

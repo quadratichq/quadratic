@@ -3,7 +3,7 @@ import { Cell } from '../../sheet/gridTypes';
 import { setupPython } from '../../computations/python/loadPython';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
-import { DeleteCells } from '../../sheet/Cells/DeleteCells';
+import { DeleteCells } from '../../actions/DeleteCells';
 
 // Setup Pyodide before tests
 let pyodide: any;
