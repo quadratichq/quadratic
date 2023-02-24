@@ -35,7 +35,7 @@ export function keyboardViewport(options: {
 
   if (!viewport || event.altKey) return false;
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyP') {
+  if ((event.metaKey || event.ctrlKey) && (event.code === 'KeyP' || event.code === 'KeyK' || event.code === 'Slash')) {
     setEditorInteractionState({
       ...editorInteractionState,
       showCellTypeMenu: false,
@@ -50,7 +50,7 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'Slash') {
+  if ((event.metaKey || event.ctrlKey) && event.code === 'Period') {
     setShowUI(!showUI);
     return true;
   }

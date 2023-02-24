@@ -100,7 +100,7 @@ const ListItems = [
     },
   },
   {
-    label: 'Show/Hide UI',
+    label: 'View: Show/Hide UI',
     Component: (props: any) => {
       const { showUI, setShowUI } = useGridSettings();
       return (
@@ -110,7 +110,7 @@ const ListItems = [
           action={() => {
             setShowUI(!showUI);
           }}
-          shortcut="/"
+          shortcut="."
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
       );
