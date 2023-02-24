@@ -4,7 +4,6 @@ import { CommandPaletteListItemCheckbox } from '../CommandPaletteListItemCheckbo
 import { zoomIn, zoomOut, zoomToFit, zoomTo100 } from '../../../../gridGL/helpers/zoom';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
-import useLocalStorage from '../../../../hooks/useLocalStorage';
 
 const ListItems = [
   {
@@ -84,21 +83,21 @@ const ListItems = [
   //     );
   //   },
   // },
-  {
-    label: 'View: Show debug menu',
-    Component: (props: CommandPaletteListItemSharedProps) => {
-      const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
-      return (
-        <CommandPaletteListItem
-          {...props}
-          icon={<CommandPaletteListItemCheckbox checked={showDebugMenu} />}
-          action={() => {
-            setShowDebugMenu(!showDebugMenu);
-          }}
-        />
-      );
-    },
-  },
+  // {
+  //   label: 'View: Show debug menu',
+  //   Component: (props: CommandPaletteListItemSharedProps) => {
+  //     const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
+  //     return (
+  //       <CommandPaletteListItem
+  //         {...props}
+  //         icon={<CommandPaletteListItemCheckbox checked={showDebugMenu} />}
+  //         action={() => {
+  //           setShowDebugMenu(!showDebugMenu);
+  //         }}
+  //       />
+  //     );
+  //   },
+  // },
   {
     label: 'View: Presentation Mode',
     Component: (props: any) => {
