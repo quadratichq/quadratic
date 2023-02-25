@@ -58,7 +58,7 @@ export const QuadraticMenu = (props: Props) => {
     // eslint-disable-next-line
   }, []);
 
-  const { fileList } = useLocalFiles();
+  const { fileList, localFilename } = useLocalFiles();
 
   const createNewFile = useCallback(
     (filename?: string) => {
@@ -90,7 +90,7 @@ export const QuadraticMenu = (props: Props) => {
         <SubMenu label="File">
           <MenuItem onClick={() => setNewFileOpen(true)}>New grid</MenuItem>
           <MenuDivider />
-          <MenuItem onClick={() => SaveGridFile(sheet, true)}>Save local copy</MenuItem>
+          <MenuItem onClick={() => SaveGridFile(sheet, true, localFilename)}>Save local copy</MenuItem>
           <MenuDivider />
           <MenuItem onClick={() => openGridFile(sheetController)}>Open local</MenuItem>
           <SubMenu label="Open sample">
