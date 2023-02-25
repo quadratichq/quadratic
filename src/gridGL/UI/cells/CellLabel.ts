@@ -46,8 +46,12 @@ export class CellLabel extends BitmapTextClip {
     return this._text;
   }
 
+  /**
+   * Changes the clip settings for the text -- only forces a redraw of the text if the clipOptions have changed
+   * @param options
+   * @returns
+   */
   setClip(options?: { clipLeft?: number, clipRight?: number }): void {
-    // only change the text if clip has changed
     if (!options && !this.lastClip) return;
     if (options && this.lastClip && options.clipLeft === this.lastClip.clipLeft && options.clipRight === this.lastClip.clipRight) return;
     this.clipLeft = options?.clipLeft;

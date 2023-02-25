@@ -29,7 +29,7 @@ export class CellsLabels extends Container {
   // checks to see if the label needs to be clipped based on other labels
   private checkForClipping(label: CellLabel, data: LabelData, alignment: CellAlignment): void {
     const getClipLeft = (): number | undefined => {
-      const start = label.x + data.expectedWidth - label.width;
+      const start = label.x + data.expectedWidth - label.textWidth;
       const end = label.x + data.expectedWidth;
       const neighboringLabels = this.labelData.filter(
         (search) => search !== data && search.y === data.y && search.x + search.expectedWidth >= start && search.x <= end
@@ -42,7 +42,7 @@ export class CellsLabels extends Container {
 
     const getClipRight = (): number | undefined => {
       const start = label.x + data.expectedWidth;
-      const end = start + (label.width - data.expectedWidth);
+      const end = start + (label.textWidth - data.expectedWidth);
       const neighboringLabels = this.labelData.filter(
         (search) => search.y === data.y && search.x >= start && search.x <= end
       );
@@ -91,9 +91,9 @@ export class CellsLabels extends Container {
     if (data.format?.alignment === 'right') alignment = 'right';
     else if (data.format?.alignment === 'center') alignment = 'center';
     if (alignment === 'right') {
-      label.position.set(data.x + data.expectedWidth - label.width, data.y);
+      label.position.set(data.x + data.expectedWidth - label.textWidth, data.y);
     } else if (alignment === 'center') {
-      label.position.set(data.x + data.expectedWidth / 2 - label.width / 2, data.y);
+      label.position.set(data.x + data.expectedWidth / 2 - label.textWidth / 2, data.y);
     } else {
       label.position.set(data.x, data.y);
     }
@@ -102,7 +102,7 @@ export class CellsLabels extends Container {
     // track overflowed widths
     if (data.isQuadrant) {
       label.location = data.location;
-      const width = label.width;
+      const width = label.textWidth;
 
       if (data.expectedWidth) {
         label.location = data.location;
