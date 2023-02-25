@@ -84,6 +84,9 @@ export class PixiApp {
         maxScale: 10,
       });
 
+    // hack to ensure pointermove works outside of canvas
+    this.viewport.off('pointerout');
+
     // this holds the viewport's contents so it can be reused in Quadrants
     this.viewportContents = this.viewport.addChild(new Container());
 
