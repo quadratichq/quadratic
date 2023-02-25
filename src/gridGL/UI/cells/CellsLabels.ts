@@ -157,6 +157,7 @@ export class CellsLabels extends Container {
     leftovers.forEach((data, i) => {
       let label: CellLabel;
       if (i < available.length) {
+        available[i].setFormat(data.format);
         this.updateLabel(available[i], data, bounds);
       }
 
