@@ -38,8 +38,11 @@ const pageMeshDataDefaultPageMeshData: PageMeshData[] = [];
 const pageMeshDataMSDFPageMeshData: PageMeshData[] = [];
 const charRenderDataPool: CharRenderData[] = [];
 
-// This clips the text for characters > maxWidth
+// This clips left and right
 export class BitmapTextClip extends BitmapText {
+  clipLeft: number | undefined;
+  clipRight: number | undefined;
+
   /** Renders text and updates it when needed. This should only be called if the BitmapFont is regenerated. */
   public updateText(): void {
     const data = BitmapFont.available[this._fontName];
@@ -121,25 +124,22 @@ export class BitmapTextClip extends BitmapText {
       maxLineHeight = Math.max(maxLineHeight, charData.yOffset + charData.texture.height);
       prevCharCode = charCode;
 
-      // todo: make this an option instead of a separate class
-      if (/*lastBreakPos !== -1 && */ maxWidth > 0 && pos.x > maxWidth) {
-        // ++spacesRemoved;
-        removeItems(chars, i, 1); //1 + lastBreakPos - spacesRemoved, 1 + i - lastBreakPos);
+      if (lastBreakPos !== -1 && maxWidth > 0 && pos.x > maxWidth)
+      {
+          ++spacesRemoved;
+          removeItems(chars, 1 + lastBreakPos - spacesRemoved, 1 + i - lastBreakPos);
+          i = lastBreakPos;
+          lastBreakPos = -1;
 
-        i = lastBreakPos;
-        lastBreakPos = -1;
+          lineWidths.push(lastBreakWidth);
+          lineSpaces.push(chars.length > 0 ? chars[chars.length - 1].prevSpaces : 0);
+          maxLineWidth = Math.max(maxLineWidth, lastBreakWidth);
+          line++;
 
-        lineWidths.push(lastBreakWidth);
-        lineSpaces.push(chars.length > 0 ? chars[chars.length - 1].prevSpaces : 0);
-        maxLineWidth = Math.max(maxLineWidth, lastBreakWidth);
-        line++;
-
-        pos.x = 0;
-        pos.y += data.lineHeight;
-        prevCharCode = null;
-        spaceCount = 0;
-
-        break;
+          pos.x = 0;
+          pos.y += data.lineHeight;
+          prevCharCode = null;
+          spaceCount = 0;
       }
     }
 
@@ -309,6 +309,10 @@ export class BitmapTextClip extends BitmapText {
 
       const textureFrame = texture.frame;
       const textureUvs = texture._uvs;
+
+      // handles clipping
+      if (this.clipRight && xPos + textureFrame.width * scale + this.x >= this.clipRight) continue;
+      if (this.clipLeft && xPos + this.x <= this.clipLeft) continue;
 
       const index = pageMesh.index++;
 

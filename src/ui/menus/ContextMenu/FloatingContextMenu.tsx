@@ -9,6 +9,9 @@ import {
   ContentCopy,
   ContentCut,
   ContentPaste,
+  FormatAlignCenter,
+  FormatAlignLeft,
+  FormatAlignRight,
   FormatBold,
   FormatClear,
   FormatColorFill,
@@ -48,6 +51,7 @@ export const FloatingContextMenu = (props: Props) => {
     changeBold,
     changeItalic,
     changeTextColor,
+    changeAlignment,
     textFormatDecreaseDecimalPlaces,
     textFormatIncreaseDecimalPlaces,
     textFormatSetCurrency,
@@ -261,6 +265,24 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <QColorPicker onChangeComplete={changeTextColor} onClear={removeFillColor} />
         </Menu>
+
+        <MenuDivider />
+
+        <TooltipHint title="Align left">
+          <IconButton onClick={() => changeAlignment('left')}>
+            <FormatAlignLeft fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+        <TooltipHint title="Align center">
+          <IconButton onClick={() => changeAlignment('center')}>
+            <FormatAlignCenter fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+        <TooltipHint title="Align right">
+          <IconButton onClick={() => changeAlignment('right')}>
+            <FormatAlignRight fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
 
         <MenuDivider />
 

@@ -14,6 +14,9 @@ import {
   FormatClear,
   // ReadMore,
   BorderAll,
+  FormatAlignLeft,
+  FormatAlignCenter,
+  FormatAlignRight,
 } from '@mui/icons-material';
 import { PaletteOutlined } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
@@ -37,7 +40,7 @@ interface IProps {
 
 export const FormatMenu = (props: IProps) => {
   const { format } = useGetSelection(props.sheet_controller.sheet);
-  const { changeFillColor, removeFillColor, changeBold, changeItalic, changeTextColor, removeTextColor } =
+  const { changeFillColor, removeFillColor, changeBold, changeItalic, changeTextColor, removeTextColor, changeAlignment } =
     useFormatCells(props.sheet_controller, props.app);
 
   // focus canvas after the format menu closes
@@ -85,7 +88,7 @@ export const FormatMenu = (props: IProps) => {
       {/*
       <MenuDivider />
       <SubMenu
-        
+
         label={
           <Fragment>
             <ReadMore style={menuItemIconStyles}></ReadMore>
@@ -98,17 +101,17 @@ export const FormatMenu = (props: IProps) => {
         <MenuItem type="checkbox">Clip</MenuItem>
       </SubMenu>
 
-      
+      */}
       <MenuDivider />
-      <MenuItem type="checkbox">
-        <FormatAlignLeft></FormatAlignLeft> Left
+      <MenuItem onClick={() => changeAlignment('left')}>
+        <MenuLineItem primary="Left" Icon={FormatAlignLeft} secondary="" />
       </MenuItem>
-      <MenuItem type="checkbox">
-        <FormatAlignCenter></FormatAlignCenter> Center
+      <MenuItem onClick={() => changeAlignment('center')}>
+        <MenuLineItem primary="Center" Icon={FormatAlignCenter} />
       </MenuItem>
-      <MenuItem type="checkbox">
-        <FormatAlignRight></FormatAlignRight> Right
-      </MenuItem>*/}
+      <MenuItem onClick={() => changeAlignment('right')}>
+        <MenuLineItem primary="Right" Icon={FormatAlignRight} />
+      </MenuItem>
 
       <MenuDivider />
       <SubMenu

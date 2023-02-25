@@ -1,7 +1,7 @@
 import { ColorResult } from 'react-color';
 import { clearFormattingAction } from '../../../../grid/actions/clearFormattingAction';
 import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
-import { CellFormat } from '../../../../grid/sheet/gridTypes';
+import { CellAlignment, CellFormat } from '../../../../grid/sheet/gridTypes';
 import { localFiles } from '../../../../grid/sheet/localFiles';
 import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../grid/controller/sheetController';
@@ -17,6 +17,7 @@ interface IResults {
   changeBold: (bold: boolean) => void;
   changeItalic: (italic: boolean) => void;
   changeTextColor: (rgb: ColorResult) => void;
+  changeAlignment: (alignment: CellAlignment) => void;
   removeTextColor: () => void;
   textFormatIncreaseDecimalPlaces: () => void;
   textFormatDecreaseDecimalPlaces: () => void;
@@ -140,6 +141,10 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     onFormat({ textFormat: undefined });
   };
 
+  const changeAlignment = (alignment: CellAlignment): void => {
+    onFormat({ alignment });
+  }
+
   return {
     changeFillColor,
     removeFillColor,
@@ -148,6 +153,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     changeItalic,
     changeTextColor,
     removeTextColor,
+    changeAlignment,
     textFormatIncreaseDecimalPlaces,
     textFormatDecreaseDecimalPlaces,
     textFormatClear,

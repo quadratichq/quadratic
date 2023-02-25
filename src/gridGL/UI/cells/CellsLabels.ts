@@ -1,7 +1,6 @@
 import { Container, Rectangle } from 'pixi.js';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
-import { CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
 import { CellAlignment, CellFormat } from '../../../grid/sheet/gridTypes';
 import { Bounds } from '../../../grid/sheet/Bounds';
 
@@ -29,40 +28,41 @@ export class CellsLabels extends Container {
 
   // checks to see if the label needs to be clipped based on other labels
   private checkForClipping(label: CellLabel, data: LabelData, alignment: CellAlignment): void {
-    label.setClip();
-    if (label.textWidth > data.expectedWidth) {
-      if (alignment === 'right') {
-
-        // todo: experiment to make this work
-        // todo: this was causing performance issues (BTW)
-        // todo: let team know that excel does not overflow numbers, only strings (which makes sense b/c clipping numbers makes them less accurate) -- see what they want to do
-
-        const start = label.x + data.expectedWidth;
-        const end = label.x + data.expectedWidth - label.width;
-        const neighboringLabels = this.labelData.filter(
-          (search) => search.y === data.y && search.x >= start && search.x <= end
-        );
-        if (neighboringLabels.length) {
-          const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
-          label.setClip(neighboringLabel.x - data.x - CELL_TEXT_MARGIN_LEFT * 2);
-        } else {
-          label.setClip();
-        }
-      } else if (alignment === 'center') {
-        console.warn('TODO: checkForClipping center');
-      } else {
-        const start = label.x + data.expectedWidth;
-        const end = start + (label.width - data.expectedWidth);
-        const neighboringLabels = this.labelData.filter(
-          (search) => search.y === data.y && search.x >= start && search.x <= end
-        );
-        if (neighboringLabels.length) {
-          const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
-          label.setClip(neighboringLabel.x - data.x - CELL_TEXT_MARGIN_LEFT * 2);
-        } else {
-          label.setClip();
-        }
+    const getClipLeft = (): number | undefined => {
+      const start = label.x + data.expectedWidth - label.width;
+      const end = label.x + data.expectedWidth;
+      const neighboringLabels = this.labelData.filter(
+        (search) => search !== data && search.y === data.y && search.x + search.expectedWidth >= start && search.x <= end
+      );
+      if (neighboringLabels.length) {
+        const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
+        return neighboringLabel.x + neighboringLabel.expectedWidth;
       }
+    };
+
+    const getClipRight = (): number | undefined => {
+      const start = label.x + data.expectedWidth;
+      const end = start + (label.width - data.expectedWidth);
+      const neighboringLabels = this.labelData.filter(
+        (search) => search.y === data.y && search.x >= start && search.x <= end
+      );
+      if (neighboringLabels.length) {
+        const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
+        return neighboringLabel.x;
+      }
+    };
+
+    if (label.textWidth > data.expectedWidth) {
+      let clipLeft: number | undefined, clipRight: number | undefined;
+      if (alignment === 'right') {
+        clipLeft = getClipLeft();
+      } else if (alignment === 'center') {
+        clipLeft = getClipLeft();
+        clipRight = getClipRight();
+      } else {
+        clipRight = getClipRight();
+      }
+      label.setClip({ clipLeft, clipRight });
     } else {
       label.setClip();
     }
@@ -93,7 +93,7 @@ export class CellsLabels extends Container {
     if (alignment === 'right') {
       label.position.set(data.x + data.expectedWidth - label.width, data.y);
     } else if (alignment === 'center') {
-      console.warn("center is not yet supported");
+      label.position.set(data.x + data.expectedWidth / 2 - label.width / 2, data.y);
     } else {
       label.position.set(data.x, data.y);
     }
