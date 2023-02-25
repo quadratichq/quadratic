@@ -44,7 +44,7 @@ export class CellsLabels extends Container {
       const start = label.x + data.expectedWidth;
       const end = start + (label.textWidth - data.expectedWidth);
       const neighboringLabels = this.labelData.filter(
-        (search) => search.y === data.y && search.x >= start && search.x <= end
+        (search) => search !== data && search.y === data.y && search.x >= start && search.x <= end
       );
       if (neighboringLabels.length) {
         const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
@@ -66,6 +66,36 @@ export class CellsLabels extends Container {
     } else {
       label.setClip();
     }
+  }
+
+  private checkForOverflow(options: { label: CellLabel, data: LabelData, alignment?: CellAlignment, bounds: Bounds }): void {
+    const { label, data, alignment, bounds } = options;
+
+    // track overflowed widths
+    label.location = data.location;
+    const width = label.textWidth;
+
+    if (width > data.expectedWidth) {
+      if (alignment === 'left' && !label.clipRight) {
+        label.overflowRight = width - data.expectedWidth;
+        label.overflowLeft = undefined;
+      } else if (alignment === 'right' && !label.clipLeft) {
+        label.overflowLeft = width - data.expectedWidth;
+        label.overflowRight = undefined;
+      } else if (alignment === 'center') {
+        const overflow = (width - data.expectedWidth) / 2;
+        if (!label.clipLeft) {
+          label.overflowLeft = overflow;
+        }
+        if (!label.clipRight) {
+          label.overflowRight = overflow;
+        }
+      }
+    } else {
+      label.overflowRight = undefined;
+      label.overflowLeft = undefined;
+    }
+    bounds.addRectangle(new Rectangle(label.x, label.y, width, label.height));
   }
 
   private compareLabelData(label: CellLabel, data: LabelData): boolean {
@@ -98,35 +128,7 @@ export class CellsLabels extends Container {
       label.position.set(data.x, data.y);
     }
     this.checkForClipping(label, data, alignment);
-
-    // track overflowed widths
-    if (data.isQuadrant) {
-      label.location = data.location;
-      const width = label.textWidth;
-
-      if (data.expectedWidth) {
-        label.location = data.location;
-        if (label.textWidth > data.expectedWidth) {
-          label.overflowRight = label.textWidth - data.expectedWidth;
-        } else {
-          label.overflowRight = undefined;
-        }
-      }
-
-      if (width > data.expectedWidth) {
-        if (alignment === 'left') {
-          label.overflowRight = width - data.expectedWidth;
-          label.overflowLeft = undefined;
-        } else if (alignment === 'right') {
-          label.overflowLeft = width - data.expectedWidth;
-          label.overflowRight = undefined;
-        }
-      } else {
-        label.overflowRight = undefined;
-        label.overflowLeft = undefined;
-      }
-      bounds.addRectangle(new Rectangle(label.x, label.y, width, label.height));
-    }
+    this.checkForOverflow({ label, data, alignment, bounds });
   }
 
   /**

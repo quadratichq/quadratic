@@ -310,7 +310,7 @@ export class BitmapTextClip extends BitmapText {
       const textureFrame = texture.frame;
       const textureUvs = texture._uvs;
 
-      // handles clipping
+      // don't render letters that are outside the clips
       if (this.clipRight && xPos + textureFrame.width * scale + this.x >= this.clipRight) continue;
       if (this.clipLeft && xPos + this.x <= this.clipLeft) continue;
 
