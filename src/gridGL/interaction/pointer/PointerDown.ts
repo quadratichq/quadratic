@@ -243,7 +243,6 @@ export class PointerDown {
       // only set state if changed
       // this reduces the number of hooks fired
       if (hasMoved) {
-        console.log('fired');
         // update multiCursor
         settings.setInteractionState({
           ...settings.interactionState,
