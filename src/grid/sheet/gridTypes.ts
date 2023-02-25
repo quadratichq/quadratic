@@ -27,7 +27,7 @@ export interface Heading {
 
 export type CellWrapping = 'wrap' | 'clip'; // default is overflow
 
-export type CellAlignment = 'right' | 'center'; // default is left
+export type CellAlignment = 'left' | 'right' | 'center'; // default is left
 
 export interface CellFormat {
   x: number;

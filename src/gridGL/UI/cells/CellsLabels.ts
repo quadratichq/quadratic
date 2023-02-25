@@ -2,7 +2,7 @@ import { Container, Rectangle } from 'pixi.js';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
 import { CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
-import { CellFormat } from '../../../grid/sheet/gridTypes';
+import { CellAlignment, CellFormat } from '../../../grid/sheet/gridTypes';
 import { Bounds } from '../../../grid/sheet/Bounds';
 
 interface LabelData {
@@ -28,19 +28,40 @@ export class CellsLabels extends Container {
   }
 
   // checks to see if the label needs to be clipped based on other labels
-  private checkForClipping(label: CellLabel, data: LabelData): void {
+  private checkForClipping(label: CellLabel, data: LabelData, alignment: CellAlignment): void {
     label.setClip();
     if (label.textWidth > data.expectedWidth) {
-      const start = label.x + data.expectedWidth;
-      const end = start + (label.width - data.expectedWidth);
-      const neighboringLabels = this.labelData.filter(
-        (search) => search.y === data.y && search.x >= start && search.x <= end
-      );
-      if (neighboringLabels.length) {
-        const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
-        label.setClip(neighboringLabel.x - data.x - CELL_TEXT_MARGIN_LEFT * 2);
+      if (alignment === 'right') {
+
+        // todo: experiment to make this work
+        // todo: this was causing performance issues (BTW)
+        // todo: let team know that excel does not overflow numbers, only strings (which makes sense b/c clipping numbers makes them less accurate) -- see what they want to do
+
+        const start = label.x + data.expectedWidth;
+        const end = label.x + data.expectedWidth - label.width;
+        const neighboringLabels = this.labelData.filter(
+          (search) => search.y === data.y && search.x >= start && search.x <= end
+        );
+        if (neighboringLabels.length) {
+          const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
+          label.setClip(neighboringLabel.x - data.x - CELL_TEXT_MARGIN_LEFT * 2);
+        } else {
+          label.setClip();
+        }
+      } else if (alignment === 'center') {
+        console.warn('TODO: checkForClipping center');
       } else {
-        label.setClip();
+        const start = label.x + data.expectedWidth;
+        const end = start + (label.width - data.expectedWidth);
+        const neighboringLabels = this.labelData.filter(
+          (search) => search.y === data.y && search.x >= start && search.x <= end
+        );
+        if (neighboringLabels.length) {
+          const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
+          label.setClip(neighboringLabel.x - data.x - CELL_TEXT_MARGIN_LEFT * 2);
+        } else {
+          label.setClip();
+        }
       }
     } else {
       label.setClip();
@@ -66,7 +87,7 @@ export class CellsLabels extends Container {
       label.text = data.text;
     }
 
-    let alignment = Number.isNaN(parseFloat(data.text)) ? 'left' : 'right';
+    let alignment: CellAlignment = Number.isNaN(parseFloat(data.text)) ? 'left' : 'right';
     if (data.format?.alignment === 'right') alignment = 'right';
     else if (data.format?.alignment === 'center') alignment = 'center';
     if (alignment === 'right') {
@@ -76,7 +97,7 @@ export class CellsLabels extends Container {
     } else {
       label.position.set(data.x, data.y);
     }
-    this.checkForClipping(label, data);
+    this.checkForClipping(label, data, alignment);
 
     // track overflowed widths
     if (data.isQuadrant) {
