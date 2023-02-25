@@ -2,9 +2,9 @@ import { atom } from 'recoil';
 import { Coordinate } from '../gridGL/types/size';
 
 export enum PanMode {
-  Disabled,
-  Enabled,
-  Dragging,
+  Disabled = 'DISABLED',
+  Enabled = 'ENABLED',
+  Dragging = 'DRAGGING',
 }
 
 export interface GridInteractionState {
