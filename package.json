@@ -60,7 +60,7 @@
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\" \"npm run test:python\"",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:unit:dev": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watchAll",
-    "test:unit:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --ci",
+    "test:unit:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --ci --maxWorkers=3",
     "test:e2e": "playwright test --workers=1",
     "test:e2e:debug": "playwright test --debug",
     "test:python": "python3 tests-python/test.py",
