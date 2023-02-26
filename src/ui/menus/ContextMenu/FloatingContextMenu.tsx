@@ -188,64 +188,14 @@ export const FloatingContextMenu = (props: Props) => {
         e.stopPropagation();
       }}
     >
-      <Toolbar
-        style={{
-          padding: '2px 4px',
-          minHeight: '0px',
-        }}
-      >
-        <TooltipHint title="Cut" shortcut={KeyboardSymbols.Command + 'X'}>
-          <IconButton
-            onClick={() => {
-              cutToClipboard(
-                props.sheetController,
-                {
-                  x: props.interactionState.multiCursorPosition.originPosition.x,
-                  y: props.interactionState.multiCursorPosition.originPosition.y,
-                },
-                {
-                  x: props.interactionState.multiCursorPosition.terminalPosition.x,
-                  y: props.interactionState.multiCursorPosition.terminalPosition.y,
-                }
-              );
-            }}
-          >
-            <ContentCut fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
-        <TooltipHint title="Copy" shortcut={KeyboardSymbols.Command + 'C'}>
-          <IconButton
-            onClick={() => {
-              copyToClipboard(
-                props.sheetController,
-                props.interactionState.multiCursorPosition.originPosition,
-                props.interactionState.multiCursorPosition.terminalPosition
-              );
-            }}
-          >
-            <ContentCopy fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
-        <TooltipHint title="Paste" shortcut={KeyboardSymbols.Command + 'P'}>
-          <IconButton
-            onClick={() => {
-              pasteFromClipboard(props.sheetController, props.interactionState.cursorPosition);
-            }}
-          >
-            <ContentPaste fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
-
-        <MenuDivider />
-
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton onClick={() => changeBold(!format.bold)}>
+          <IconButton size="small" onClick={() => changeBold(!format.bold)}>
             <FormatBold fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton onClick={() => changeItalic(!format.italic)}>
+          <IconButton size="small" onClick={() => changeItalic(!format.italic)}>
             <FormatItalic fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -254,7 +204,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Text color">
-                <IconButton>{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
+                <IconButton size="small">{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
               </TooltipHint>
             </div>
           }
@@ -269,7 +219,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Fill color">
-                <IconButton>
+                <IconButton size="small">
                   <FormatColorFill fontSize={iconSize}></FormatColorFill>
                 </IconButton>
               </TooltipHint>
@@ -282,7 +232,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Borders">
-                <IconButton>
+                <IconButton size="small">
                   <BorderAll fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -295,32 +245,32 @@ export const FloatingContextMenu = (props: Props) => {
         <MenuDivider />
 
         <TooltipHint title="Format as currency">
-          <IconButton onClick={() => textFormatSetCurrency()}>
+          <IconButton size="small" onClick={() => textFormatSetCurrency()}>
             <AttachMoneyOutlined fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as percent">
-          <IconButton onClick={() => textFormatSetPercentage()}>
+          <IconButton size="small" onClick={() => textFormatSetPercentage()}>
             <Percent fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Decrease decimal places">
-          <IconButton onClick={() => textFormatDecreaseDecimalPlaces()}>
+          <IconButton size="small" onClick={() => textFormatDecreaseDecimalPlaces()}>
             <DecimalDecrease fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Increase decimal places">
-          <IconButton onClick={() => textFormatIncreaseDecimalPlaces()}>
+          <IconButton size="small" onClick={() => textFormatIncreaseDecimalPlaces()}>
             <DecimalIncrease fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <MenuDivider />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton onClick={() => clearAllFormatting()}>
+          <IconButton size="small" onClick={() => clearAllFormatting()}>
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -368,7 +318,7 @@ function MenuDivider() {
       orientation="vertical"
       flexItem
       style={{
-        margin: '6px',
+        margin: '4px',
       }}
     />
   );
