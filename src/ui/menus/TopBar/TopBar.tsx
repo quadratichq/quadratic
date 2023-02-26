@@ -61,7 +61,6 @@ export const TopBar = (props: IProps) => {
           WebkitAppRegion: 'no-drag',
           display: 'flex',
           alignItems: 'center',
-          width: '15rem',
         }}
       >
         <QuadraticMenu sheetController={props.sheetController} />
