@@ -14,7 +14,13 @@ export class CellsBackground extends Container {
   private quadrants = new QuadrantsSort<CellBackgroundSprite>();
   private cache: CellBackgroundSprite[] = [];
 
-  clear() {
+  empty(): void {
+    this.background.forEach(entry => this.cache.push(entry));
+    this.background.clear();
+    this.quadrants.empty();
+  }
+
+  private clear(): void {
     this.children.forEach((child) => (child.visible = false));
   }
 

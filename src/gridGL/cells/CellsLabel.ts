@@ -9,14 +9,24 @@ export class CellsLabel extends Container {
   private quadrants = new QuadrantsSort<CellLabel>();
   private cache: CellLabel[] = [];
 
-  clear(): void {
+  /** removes all cell labels */
+  empty(): void {
+    this.labels.forEach((label: CellLabel) => this.cache.push(label));
+    this.labels.clear();
+    this.quadrants.empty();
+  }
+
+  /** hides all labels */
+  private clear(): void {
     this.children.forEach((child) => (child.visible = false));
   }
 
   remove(location: Coordinate) {
-    const label = this.labels.get(`${location.x},${location.y}`);
+    const key = `${location.x},${location.y}`;
+    const label = this.labels.get(key);
     if (label) {
       this.removeChild(label);
+      this.labels.delete(key);
       this.quadrants.remove(location);
     }
   }
@@ -30,7 +40,8 @@ export class CellsLabel extends Container {
     format?: CellFormat;
   }): void {
     const { text, x, y, location, format } = options;
-    let label = this.labels.get(`${location.x},${location.y}`);
+    const key = `${location.x},${location.y}`;
+    let label = this.labels.get(key);
     if (label) {
       if (label.text !== options.text) {
         label.text = text;
@@ -39,12 +50,11 @@ export class CellsLabel extends Container {
     } else {
       if (this.cache.length) {
         label = this.cache.pop() as CellLabel;
-        if (label.text !== options.text) {
-          label.text = text;
-        }
+        label.text = text;
       } else {
         label = this.addChild(new CellLabel(text, location, format));
       }
+      this.labels.set(key, label);
       this.quadrants.add(location, label);
     }
     label.position.set(x, y);

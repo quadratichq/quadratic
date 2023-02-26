@@ -9,6 +9,10 @@ interface QuadrantsSortBase {
 export class QuadrantsSort<T extends QuadrantsSortBase> {
   private quadrants = new Map<string, T[]>();
 
+  empty(): void {
+    this.quadrants.clear();
+  }
+
   add(location: Coordinate, entry: T): void {
     const key = getQuadrantKey(location.x, location.y);
     let quadrant = this.quadrants.get(key);

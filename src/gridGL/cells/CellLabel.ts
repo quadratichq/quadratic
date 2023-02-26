@@ -10,10 +10,8 @@ const fontSize = 14;
 
 export class CellLabel extends BitmapTextClip {
   location: Coordinate;
-  overflowRight?: number;
-  overflowLeft?: number;
   originalText?: string;
-  format?: CellFormat;
+  dependents: Coordinate[] = [];
 
   constructor(text: string, location: Coordinate, format?: CellFormat) {
     super(text, {
@@ -31,15 +29,23 @@ export class CellLabel extends BitmapTextClip {
     const italic = format?.italic ? 'Italic' : '';
     const fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
     this.fontName = fontName;
-    this.format = format;
-    const textColor = this.format?.textColor;
+    const textColor = format?.textColor;
     this.tint = textColor ? convertColorStringToTint(textColor) : 0;
   }
 
   set text(text: string) {
-    text = String(text === null || text === undefined ? '' : text);
+    if (text === this.originalText) return;
     this._text = text;
     this.originalText = text;
     this.dirty = true;
+  }
+  get text() {
+    return this._text;
+  }
+
+  updateText(): void {
+    super.updateText();
+
+    // todo: this is where dependents go
   }
 }
