@@ -4,6 +4,7 @@ import { newGridFile, openGridFile } from '../../../../grid/actions/gridFile/Ope
 import { SaveGridFile } from '../../../../grid/actions/gridFile/SaveGridFile';
 import { NoteAddOutlined, UploadFileOutlined } from '@mui/icons-material';
 import { SaveFileOutlined } from '../../../icons';
+import { useLocalFiles } from '../../../../hooks/useLocalFiles';
 
 const ListItems = [
   {
@@ -20,15 +21,18 @@ const ListItems = [
   },
   {
     label: 'File: Save local copy',
-    Component: (props: CommandPaletteListItemSharedProps) => (
-      <CommandPaletteListItem
-        {...props}
-        icon={<SaveFileOutlined />}
-        action={() => {
-          SaveGridFile(props.sheetController.sheet, true);
-        }}
-      />
-    ),
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const { localFilename } = useLocalFiles();
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<SaveFileOutlined />}
+          action={() => {
+            SaveGridFile(props.sheetController.sheet, true, localFilename);
+          }}
+        />
+      );
+    },
   },
   {
     label: 'File: Open local',
