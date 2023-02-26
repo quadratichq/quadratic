@@ -73,7 +73,7 @@ export class PixiApp {
     this.stage.addChild(this.viewport);
     this.viewport
       .drag({
-        pressDrag: true, // enable drag on mobile, no where else
+        pressDrag: true,
         keyToPress: ['Space'],
       })
       .decelerate()
