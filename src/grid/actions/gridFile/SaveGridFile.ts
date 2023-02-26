@@ -16,11 +16,11 @@ function downloadFile(filename: string, data: string) {
   }
 }
 
-export const SaveGridFile = async (sheet: Sheet, autoDownload = false) => {
+export const SaveGridFile = async (sheet: Sheet, autoDownload = false, localFilename = 'quadraticFile.grid') => {
   const file_j = sheet.export_file();
 
   //  auto download file
-  if (autoDownload) downloadFile('quadraticFile.grid', JSON.stringify(file_j));
+  if (autoDownload) downloadFile(localFilename, JSON.stringify(file_j));
 
   return file_j;
 };
