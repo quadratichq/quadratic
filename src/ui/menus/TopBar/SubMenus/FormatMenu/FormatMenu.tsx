@@ -40,8 +40,15 @@ interface IProps {
 
 export const FormatMenu = (props: IProps) => {
   const { format } = useGetSelection(props.sheet_controller.sheet);
-  const { changeFillColor, removeFillColor, changeBold, changeItalic, changeTextColor, removeTextColor, changeAlignment } =
-    useFormatCells(props.sheet_controller, props.app);
+  const {
+    changeFillColor,
+    removeFillColor,
+    changeBold,
+    changeItalic,
+    changeTextColor,
+    removeTextColor,
+    changeAlignment,
+  } = useFormatCells(props.sheet_controller, props.app);
 
   // focus canvas after the format menu closes
   const onMenuChange = useCallback(

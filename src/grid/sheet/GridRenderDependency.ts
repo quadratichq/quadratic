@@ -146,7 +146,7 @@ export class GridRenderDependency {
         location.y >= bounds.top &&
         location.y <= bounds.bottom
       ) {
-        dependent.needToRender.forEach(coordinate => coordinates.add(coordinate));
+        dependent.needToRender.forEach((coordinate) => coordinates.add(coordinate));
       }
     });
     return Array.from(coordinates);

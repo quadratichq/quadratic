@@ -143,7 +143,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
 
   const changeAlignment = (alignment: CellAlignment): void => {
     onFormat({ alignment });
-  }
+  };
 
   return {
     changeFillColor,

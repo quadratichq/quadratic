@@ -1,7 +1,16 @@
 import { useFormatCells } from '../../TopBar/SubMenus/useFormatCells';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { AbcOutlined, AttachMoney, FormatAlignCenter, FormatAlignLeft, FormatAlignRight, FormatClear, Functions, Percent } from '@mui/icons-material';
+import {
+  AbcOutlined,
+  AttachMoney,
+  FormatAlignCenter,
+  FormatAlignLeft,
+  FormatAlignRight,
+  FormatClear,
+  Functions,
+  Percent,
+} from '@mui/icons-material';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import { useClearAllFormatting } from '../../TopBar/SubMenus/useClearAllFormatting';
 
@@ -91,7 +100,9 @@ const ListItems = [
     label: 'Format: Align Center',
     Component: (props: any) => {
       const { changeAlignment } = useFormatCells(props.sheetController, props.app);
-      return <CommandPaletteListItem {...props} icon={<FormatAlignCenter />} action={() => changeAlignment('center')} />;
+      return (
+        <CommandPaletteListItem {...props} icon={<FormatAlignCenter />} action={() => changeAlignment('center')} />
+      );
     },
   },
   {

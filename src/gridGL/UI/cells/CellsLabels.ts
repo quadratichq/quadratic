@@ -32,7 +32,8 @@ export class CellsLabels extends Container {
       const start = label.x + data.expectedWidth - label.textWidth;
       const end = label.x + data.expectedWidth;
       const neighboringLabels = this.labelData.filter(
-        (search) => search !== data && search.y === data.y && search.x + search.expectedWidth >= start && search.x <= end
+        (search) =>
+          search !== data && search.y === data.y && search.x + search.expectedWidth >= start && search.x <= end
       );
       if (neighboringLabels.length) {
         const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
@@ -68,7 +69,12 @@ export class CellsLabels extends Container {
     }
   }
 
-  private checkForOverflow(options: { label: CellLabel, data: LabelData, alignment?: CellAlignment, bounds: Bounds }): void {
+  private checkForOverflow(options: {
+    label: CellLabel;
+    data: LabelData;
+    alignment?: CellAlignment;
+    bounds: Bounds;
+  }): void {
     const { label, data, alignment, bounds } = options;
 
     // track overflowed widths

@@ -14,7 +14,7 @@ export class CellLabel extends BitmapTextClip {
   overflowLeft?: number;
   originalText?: string;
   format?: CellFormat;
-  private lastClip: { clipLeft?: number, clipRight?: number } | undefined;
+  private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
 
   constructor(format?: CellFormat) {
     super('', {
@@ -51,9 +51,15 @@ export class CellLabel extends BitmapTextClip {
    * @param options
    * @returns
    */
-  setClip(options?: { clipLeft?: number, clipRight?: number }): void {
+  setClip(options?: { clipLeft?: number; clipRight?: number }): void {
     if (!options && !this.lastClip) return;
-    if (options && this.lastClip && options.clipLeft === this.lastClip.clipLeft && options.clipRight === this.lastClip.clipRight) return;
+    if (
+      options &&
+      this.lastClip &&
+      options.clipLeft === this.lastClip.clipLeft &&
+      options.clipRight === this.lastClip.clipRight
+    )
+      return;
     this.clipLeft = options?.clipLeft;
     this.clipRight = options?.clipRight;
     this.lastClip = options;
