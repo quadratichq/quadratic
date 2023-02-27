@@ -77,7 +77,7 @@ export default function QuadraticGrid(props: IProps) {
       setInteractionState({ ...interactionState, panMode: spaceIsDown ? PanMode.Enabled : PanMode.Disabled });
     }
   };
-  const onKeyDown = (e: any) => {
+  const onKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.code === 'Space') {
       setSpaceIsDown(true);
       if (interactionState.panMode === PanMode.Disabled) {
@@ -88,7 +88,7 @@ export default function QuadraticGrid(props: IProps) {
       }
     }
   };
-  const onKeyUp = (e: any) => {
+  const onKeyUp = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.code === 'Space') {
       setSpaceIsDown(false);
       if (interactionState.panMode !== PanMode.Disabled && !mouseIsDown) {
