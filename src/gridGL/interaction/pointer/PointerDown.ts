@@ -1,5 +1,5 @@
 import { Point } from 'pixi.js';
-import { isMobile } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../../../constants/app';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
@@ -43,7 +43,7 @@ export class PointerDown {
   }
 
   pointerDown(world: Point, event: PointerEvent): void {
-    if (isMobile) return;
+    if (IS_READONLY_MODE) return;
     if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
     const { settings, cursor } = this.app;

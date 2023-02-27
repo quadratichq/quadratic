@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
-import { isMobileOnly } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../../../../constants/app';
 import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
 
@@ -50,9 +50,9 @@ export const QuadraticMenu = (props: Props) => {
 
   const { isAuthenticated, user, logout } = useAuth0();
 
-  // On Mobile set Headers to not visible by default
+  // For readonly, set Headers to not visible by default
   useEffect(() => {
-    if (isMobileOnly) {
+    if (IS_READONLY_MODE) {
       settings.setShowHeadings(false);
     }
     // eslint-disable-next-line

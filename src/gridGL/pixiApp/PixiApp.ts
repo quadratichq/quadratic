@@ -18,7 +18,7 @@ import { SheetController } from '../../grid/controller/sheetController';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
-import { isMobileOnly } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../../constants/app';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -75,7 +75,7 @@ export class PixiApp {
     this.viewport
       .drag({
         pressDrag: true,
-        ...(isMobileOnly ? {} : { keyToPress: ['Space'] }),
+        ...(IS_READONLY_MODE ? {} : { keyToPress: ['Space'] }),
       })
       .decelerate()
       .pinch()
