@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLoading } from '../contexts/LoadingContext';
-import { GridInteractionState, gridInteractionStateAtom } from '../atoms/gridInteractionStateAtom';
+import { gridInteractionStateAtom } from '../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
 import { PixiApp } from './pixiApp/PixiApp';
@@ -63,11 +63,42 @@ export default function QuadraticGrid(props: IProps) {
   const [showContextMenu, setShowContextMenu] = useState(false);
 
   // Pan mode
-  const { onMouseDown, onMouseUp, onKeyDown, onKeyUp } = usePanMode({
-    panMode: interactionState.panMode,
-    interactionState,
-    setInteractionState,
-  });
+  const [mouseIsDown, setMouseIsDown] = useState(false);
+  const [spaceIsDown, setSpaceIsDown] = useState(false);
+  const onMouseDown = () => {
+    setMouseIsDown(true);
+    if (interactionState.panMode === PanMode.Enabled) {
+      setInteractionState({ ...interactionState, panMode: PanMode.Dragging });
+    }
+  };
+  const onMouseUp = () => {
+    setMouseIsDown(false);
+    if (interactionState.panMode !== PanMode.Disabled) {
+      setInteractionState({ ...interactionState, panMode: spaceIsDown ? PanMode.Enabled : PanMode.Disabled });
+    }
+  };
+  const onKeyDown = (e: any) => {
+    if (e.code === 'Space') {
+      setSpaceIsDown(true);
+      if (interactionState.panMode === PanMode.Disabled) {
+        setInteractionState({
+          ...interactionState,
+          panMode: PanMode.Enabled,
+        });
+      }
+    }
+  };
+  const onKeyUp = (e: any) => {
+    if (e.code === 'Space') {
+      setSpaceIsDown(false);
+      if (interactionState.panMode !== PanMode.Disabled && !mouseIsDown) {
+        setInteractionState({
+          ...interactionState,
+          panMode: PanMode.Disabled,
+        });
+      }
+    }
+  };
 
   const { onKeyDown: onKeyDownFromUseKeyboard } = useKeyboard({
     sheetController: props.sheetController,
@@ -77,6 +108,16 @@ export default function QuadraticGrid(props: IProps) {
     setEditorInteractionState,
     app: props.app,
   });
+
+  useLayoutEffect(() => {
+    if (interactionState.panMode === PanMode.Enabled) {
+      document.body.style.setProperty('cursor', 'grab', 'important');
+    } else if (interactionState.panMode === PanMode.Dragging) {
+      document.body.style.setProperty('cursor', 'grabbing', 'important');
+    } else {
+      document.body.style.setProperty('cursor', '');
+    }
+  }, [interactionState.panMode]);
 
   if (loading) return null;
 
@@ -89,12 +130,12 @@ export default function QuadraticGrid(props: IProps) {
         outline: 'none',
         overflow: 'hidden',
         WebkitTapHighlightColor: 'transparent',
-        cursor:
-          interactionState.panMode === PanMode.Enabled
-            ? 'grab'
-            : interactionState.panMode === PanMode.Dragging
-            ? 'grabbing'
-            : 'unset',
+        // cursor:
+        //   interactionState.panMode === PanMode.Enabled
+        //     ? 'grab'
+        //     : interactionState.panMode === PanMode.Dragging
+        //     ? 'grabbing'
+        //     : 'unset',
       }}
       onContextMenu={(event) => {
         event.preventDefault();
@@ -136,62 +177,4 @@ export default function QuadraticGrid(props: IProps) {
       ></FloatingContextMenu>
     </div>
   );
-}
-
-function usePanMode({
-  panMode,
-  interactionState,
-  setInteractionState,
-}: {
-  panMode: PanMode;
-  interactionState: GridInteractionState;
-  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
-}) {
-  const [mouseIsDown, setMouseIsDown] = useState(false);
-  const [spaceIsDown, setSpaceIsDown] = useState(false);
-
-  const onMouseDown = () => {
-    setMouseIsDown(true);
-    if (panMode === PanMode.Enabled) {
-      setInteractionState({ ...interactionState, panMode: PanMode.Dragging });
-    }
-  };
-
-  const onMouseUp = () => {
-    setMouseIsDown(false);
-    if (panMode !== PanMode.Disabled) {
-      setInteractionState({ ...interactionState, panMode: spaceIsDown ? PanMode.Enabled : PanMode.Disabled });
-    }
-  };
-
-  const onKeyDown = (e: any) => {
-    if (e.code === 'Space') {
-      setSpaceIsDown(true);
-      if (panMode === PanMode.Disabled) {
-        setInteractionState({
-          ...interactionState,
-          panMode: PanMode.Enabled,
-        });
-      }
-    }
-  };
-
-  const onKeyUp = (e: any) => {
-    if (e.code === 'Space') {
-      setSpaceIsDown(false);
-      if (interactionState.panMode !== PanMode.Disabled && !mouseIsDown) {
-        setInteractionState({
-          ...interactionState,
-          panMode: PanMode.Disabled,
-        });
-      }
-    }
-  };
-
-  return {
-    onMouseDown,
-    onMouseUp,
-    onKeyDown,
-    onKeyUp,
-  };
 }
