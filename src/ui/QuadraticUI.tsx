@@ -32,7 +32,10 @@ export default function QuadraticUI(props: Props) {
     sheetController.setApp(app);
   }, [sheetController, app]);
 
-  const showChrome = !presentationMode;
+  // Resize the canvas when user goes in/out of presentation mode
+  useEffect(() => {
+    app.resize();
+  }, [presentationMode, app]);
 
   return (
     <div
@@ -45,7 +48,7 @@ export default function QuadraticUI(props: Props) {
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
-      {showChrome && <TopBar app={app} sheetController={sheetController} />}
+      {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
       {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
 
@@ -62,8 +65,8 @@ export default function QuadraticUI(props: Props) {
         <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
 
-      {showChrome && <BottomBar sheet={sheetController.sheet} />}
-      {!showChrome && <PresentationModeHint />}
+      {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
+      {presentationMode && <PresentationModeHint />}
     </div>
   );
 }
