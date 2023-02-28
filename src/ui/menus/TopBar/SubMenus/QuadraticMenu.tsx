@@ -130,7 +130,11 @@ export const QuadraticMenu = (props: Props) => {
               sheetController.redo();
             }}
           >
-            <MenuLineItem primary="Redo" secondary={KeyboardSymbols.Command + ' Shift Z'} Icon={Undo}></MenuLineItem>
+            <MenuLineItem
+              primary="Redo"
+              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z'}
+              Icon={Undo}
+            ></MenuLineItem>
           </MenuItem>
           <MenuDivider />
           <MenuItem
