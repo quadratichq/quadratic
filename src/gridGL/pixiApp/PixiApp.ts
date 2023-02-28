@@ -1,6 +1,5 @@
 import { Renderer, Container, Graphics } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
-import { isMobileOnly } from 'react-device-detect';
 import { PixiAppSettings } from './PixiAppSettings';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { Update } from './Update';
@@ -19,6 +18,7 @@ import { SheetController } from '../../grid/controller/sheetController';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
+import { IS_READONLY_MODE } from '../../constants/app';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -73,7 +73,10 @@ export class PixiApp {
     this.viewport = new Viewport({ interaction: this.renderer.plugins.interaction });
     this.stage.addChild(this.viewport);
     this.viewport
-      .drag({ pressDrag: isMobileOnly }) // enable drag on mobile, no where else
+      .drag({
+        pressDrag: true,
+        ...(IS_READONLY_MODE ? {} : { keyToPress: ['Space'] }),
+      })
       .decelerate()
       .pinch()
       .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 })
@@ -81,6 +84,9 @@ export class PixiApp {
         minScale: 0.01,
         maxScale: 10,
       });
+
+    // hack to ensure pointermove works outside of canvas
+    this.viewport.off('pointerout');
 
     // this holds the viewport's contents so it can be reused in Quadrants
     this.viewportContents = this.viewport.addChild(new Container());
