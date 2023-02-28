@@ -23,6 +23,9 @@ import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { useLocalFiles } from '../../../../hooks/useLocalFiles';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { NewFile } from './newFile/NewFile';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
+import { useRecoilValue } from 'recoil';
+import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 
 interface Props {
   sheetController: SheetController;
@@ -43,6 +46,7 @@ export const QuadraticMenu = (props: Props) => {
   const { sheetController } = props;
   const { sheet } = sheetController;
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
+  const interactionState = useRecoilValue(gridInteractionStateAtom);
 
   const settings = useGridSettings();
 
@@ -111,12 +115,56 @@ export const QuadraticMenu = (props: Props) => {
           )}
         </SubMenu>
         <SubMenu label="Edit">
-          <MenuItem>Undo</MenuItem>
-          <MenuItem>Redo</MenuItem>
+          <MenuItem
+            onClick={() => {
+              sheetController.undo();
+            }}
+          >
+            Undo
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              sheetController.redo();
+            }}
+          >
+            Redo
+          </MenuItem>
           <MenuDivider />
-          <MenuItem>Cut</MenuItem>
-          <MenuItem>Copy</MenuItem>
-          <MenuItem>Paste</MenuItem>
+          <MenuItem
+            onClick={() => {
+              cutToClipboard(
+                sheetController,
+                {
+                  x: interactionState.multiCursorPosition.originPosition.x,
+                  y: interactionState.multiCursorPosition.originPosition.y,
+                },
+                {
+                  x: interactionState.multiCursorPosition.terminalPosition.x,
+                  y: interactionState.multiCursorPosition.terminalPosition.y,
+                }
+              );
+            }}
+          >
+            Cut
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              copyToClipboard(
+                props.sheetController,
+                interactionState.multiCursorPosition.originPosition,
+                interactionState.multiCursorPosition.terminalPosition
+              );
+            }}
+          >
+            Copy
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              pasteFromClipboard(props.sheetController, interactionState.cursorPosition);
+            }}
+          >
+            Paste
+          </MenuItem>
         </SubMenu>
         <SubMenu label="Import">
           <MenuItem disabled>CSV (coming soon)</MenuItem>
