@@ -12,6 +12,8 @@ import { useEffect, useState } from 'react';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../grid/controller/sheetController';
 import CellTypeMenu from './menus/CellTypeMenu';
+import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
+import PresentationModeHint from './components/PresentationModeHint';
 
 interface Props {
   sheetController: SheetController;
@@ -20,6 +22,7 @@ interface Props {
 export default function QuadraticUI(props: Props) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const { presentationMode } = useGridSettings();
 
   const [app] = useState(() => new PixiApp(props.sheetController));
 
@@ -28,6 +31,11 @@ export default function QuadraticUI(props: Props) {
   useEffect(() => {
     sheetController.setApp(app);
   }, [sheetController, app]);
+
+  // Resize the canvas when user goes in/out of presentation mode
+  useEffect(() => {
+    app.resize();
+  }, [presentationMode, app]);
 
   return (
     <div
@@ -40,7 +48,7 @@ export default function QuadraticUI(props: Props) {
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
-      <TopBar app={app} sheetController={sheetController} />
+      {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
       {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
 
@@ -57,7 +65,8 @@ export default function QuadraticUI(props: Props) {
         <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
 
-      <BottomBar sheet={sheetController.sheet} />
+      {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
+      {presentationMode && <PresentationModeHint />}
     </div>
   );
 }
