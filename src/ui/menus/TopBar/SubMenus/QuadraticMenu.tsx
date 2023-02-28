@@ -26,6 +26,9 @@ import { NewFile } from './newFile/NewFile';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { useRecoilValue } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { MenuLineItem } from '../MenuLineItem';
+import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
 
 interface Props {
   sheetController: SheetController;
@@ -120,14 +123,14 @@ export const QuadraticMenu = (props: Props) => {
               sheetController.undo();
             }}
           >
-            Undo
+            <MenuLineItem primary="Undo" secondary={KeyboardSymbols.Command + 'Z'} Icon={Undo}></MenuLineItem>
           </MenuItem>
           <MenuItem
             onClick={() => {
               sheetController.redo();
             }}
           >
-            Redo
+            <MenuLineItem primary="Redo" secondary={KeyboardSymbols.Command + ' Shift Z'} Icon={Undo}></MenuLineItem>
           </MenuItem>
           <MenuDivider />
           <MenuItem
@@ -145,7 +148,7 @@ export const QuadraticMenu = (props: Props) => {
               );
             }}
           >
-            Cut
+            <MenuLineItem primary="Cut" secondary={KeyboardSymbols.Command + 'X'} Icon={ContentCut}></MenuLineItem>
           </MenuItem>
           <MenuItem
             onClick={() => {
@@ -156,14 +159,14 @@ export const QuadraticMenu = (props: Props) => {
               );
             }}
           >
-            Copy
+            <MenuLineItem primary="Copy" secondary={KeyboardSymbols.Command + 'C'} Icon={ContentCopy}></MenuLineItem>
           </MenuItem>
           <MenuItem
             onClick={() => {
               pasteFromClipboard(props.sheetController, interactionState.cursorPosition);
             }}
           >
-            Paste
+            <MenuLineItem primary="Paste" secondary={KeyboardSymbols.Command + 'V'} Icon={ContentPaste}></MenuLineItem>
           </MenuItem>
         </SubMenu>
         <SubMenu label="Import">
