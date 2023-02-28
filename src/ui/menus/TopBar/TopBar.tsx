@@ -61,7 +61,6 @@ export const TopBar = (props: IProps) => {
           WebkitAppRegion: 'no-drag',
           display: 'flex',
           alignItems: 'center',
-          width: '15rem',
         }}
       >
         <QuadraticMenu sheetController={props.sheetController} />
@@ -74,14 +73,14 @@ export const TopBar = (props: IProps) => {
         )}
       </Box>
 
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          userSelect: 'none',
-        }}
-      >
-        {IS_READONLY_MODE ? (
+      {IS_READONLY_MODE ? (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            userSelect: 'none',
+          }}
+        >
           <Typography
             variant="body2"
             fontFamily={'sans-serif'}
@@ -90,18 +89,25 @@ export const TopBar = (props: IProps) => {
           >
             Read Only
           </Typography>
-        ) : (
-          <>
-            <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-              Local &nbsp;
-            </Typography>
-            <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-              / {localFilename}
-            </Typography>
-            {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
-          </>
-        )}
-      </Box>
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            userSelect: 'none',
+            visibility: { sm: 'hidden', xs: 'hidden', md: 'visible' },
+          }}
+        >
+          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
+            Local &nbsp;
+          </Typography>
+          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
+            / {localFilename}
+          </Typography>
+          {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
+        </Box>
+      )}
       <Box
         sx={{
           display: 'flex',
