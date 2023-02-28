@@ -1,4 +1,5 @@
-import { Box, Typography, IconButton } from '@mui/material';
+import { Box, Typography, IconButton, Switch } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -18,8 +19,6 @@ import { TooltipHint } from '../../components/TooltipHint';
 import { ManageSearch } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
-import { styled } from '@mui/material/styles';
-import Switch from '@mui/material/Switch';
 
 interface IProps {
   app: PixiApp;

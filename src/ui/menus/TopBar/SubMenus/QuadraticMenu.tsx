@@ -141,7 +141,7 @@ export const QuadraticMenu = (props: Props) => {
             checked={settings.showCellTypeOutlines}
             onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}
           >
-            Show cell type outlines
+            Show code cell outlines
           </MenuItem>
           <MenuDivider />
           <MenuItem
