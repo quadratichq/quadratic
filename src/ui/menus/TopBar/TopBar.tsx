@@ -9,7 +9,7 @@ import { DataMenu } from './SubMenus/DataMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { isMobileOnly } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../../../constants/app';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
@@ -62,11 +62,10 @@ export const TopBar = (props: IProps) => {
           WebkitAppRegion: 'no-drag',
           display: 'flex',
           alignItems: 'center',
-          width: '15rem',
         }}
       >
         <QuadraticMenu sheetController={props.sheetController} />
-        {!isMobileOnly && (
+        {!IS_READONLY_MODE && (
           <>
             <DataMenu></DataMenu>
             <FormatMenu app={props.app} sheet_controller={props.sheetController} />
@@ -75,14 +74,14 @@ export const TopBar = (props: IProps) => {
         )}
       </Box>
 
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          userSelect: 'none',
-        }}
-      >
-        {isMobileOnly ? (
+      {IS_READONLY_MODE ? (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            userSelect: 'none',
+          }}
+        >
           <Typography
             variant="body2"
             fontFamily={'sans-serif'}
@@ -91,18 +90,25 @@ export const TopBar = (props: IProps) => {
           >
             Read Only
           </Typography>
-        ) : (
-          <>
-            <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-              Local &nbsp;
-            </Typography>
-            <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-              / {localFilename}
-            </Typography>
-            {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
-          </>
-        )}
-      </Box>
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            userSelect: 'none',
+            visibility: { sm: 'hidden', xs: 'hidden', md: 'visible' },
+          }}
+        >
+          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
+            Local &nbsp;
+          </Typography>
+          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
+            / {localFilename}
+          </Typography>
+          {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
+        </Box>
+      )}
       <Box
         sx={{
           display: 'flex',
@@ -115,7 +121,7 @@ export const TopBar = (props: IProps) => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        {!isMobileOnly && (
+        {!IS_READONLY_MODE && (
           <>
             {/* {user !== undefined && (
               <AvatarGroup>

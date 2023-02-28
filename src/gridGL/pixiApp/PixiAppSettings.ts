@@ -35,7 +35,10 @@ export class PixiAppSettings {
     this.app.cells.dirty = true;
 
     // only rebuild quadrants if showCellTypeOutlines change
-    if (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) {
+    if (
+      (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
+      (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
+    ) {
       this.app.quadrants.build();
     }
     this.lastSettings = this.settings;
@@ -58,23 +61,27 @@ export class PixiAppSettings {
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
+    this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
   }
 
   get showGridLines(): boolean {
-    return this.settings.showGridLines;
+    return !this.settings.presentationMode && this.settings.showGridLines;
   }
   get showGridAxes(): boolean {
-    return this.settings.showGridAxes;
+    return !this.settings.presentationMode && this.settings.showGridAxes;
   }
   get showHeadings(): boolean {
-    return this.settings.showHeadings;
+    return !this.settings.presentationMode && this.settings.showHeadings;
   }
   get showCellTypeOutlines(): boolean {
-    return this.settings.showCellTypeOutlines;
+    return !this.settings.presentationMode && this.settings.showCellTypeOutlines;
   }
 
   get showA1Notation(): boolean {
+    if (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === 'FORMULA') {
+      return true;
+    }
     return this.settings.showA1Notation;
   }
 }

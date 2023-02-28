@@ -6,7 +6,7 @@ import { PixiApp } from '../pixiApp/PixiApp';
 import { localFiles } from '../../grid/sheet/localFiles';
 import { SheetController } from '../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
-import { DeleteCells } from '../../grid/sheet/Cells/DeleteCells';
+import { DeleteCells } from '../../grid/actions/DeleteCells';
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
 
 interface CellInputProps {
@@ -205,6 +205,9 @@ export const CellInput = (props: CellInputProps) => {
           closeInput({ x: 0, y: 1 });
         } else if ((event.metaKey || event.ctrlKey) && event.code === 'KeyP') {
           event.preventDefault();
+        } else if (event.code === 'Space') {
+          // Don't propagate so panning mode doesn't get triggered
+          event.stopPropagation();
         }
       }}
     ></input>

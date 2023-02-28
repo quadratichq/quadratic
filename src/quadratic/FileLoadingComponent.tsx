@@ -1,44 +1,34 @@
 import { useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { Sheet } from '../grid/sheet/Sheet';
-import { example_grid } from './example_grid';
-import { getURLParameter } from '../helpers/getURL';
 import { debugShowFileIO } from '../debugFlags';
 import { localFiles } from '../grid/sheet/localFiles';
+import { openExampleGridFile } from '../grid/actions/gridFile/OpenGridFile';
+import { SheetController } from '../grid/controller/sheetController';
 
-const EXAMPLE_FILE_FILENAME = 'example.grid';
+const EXAMPLE_FILE_FILENAME = 'default.grid';
 
 interface Props {
-  sheet: Sheet;
+  sheetController: SheetController;
 }
 
 export const FileLoadingComponent = (props: Props): JSX.Element | null => {
   const [firstTime, setFirstTime] = useLocalStorage('firstTime', true);
 
   useEffect(() => {
-    if (getURLParameter('example')) {
-      if (debugShowFileIO) {
-        console.log(`[WelcomeComponent] Loading example file b/c ?example=1`);
-      }
-      props.sheet.load_file(example_grid);
-      localFiles.saveLocal(EXAMPLE_FILE_FILENAME, props.sheet.export_file());
-      return;
-    }
-
     localFiles.loadLocalLastFile().then((data) => {
       if (data) {
-        props.sheet.load_file(data);
+        props.sheetController.sheet.load_file(data);
       } else if (firstTime) {
         if (debugShowFileIO) {
           console.log(`[WelcomeComponent] Loading example file b/c this is the first time`);
         }
-        props.sheet.load_file(example_grid);
-        localFiles.loadedExternalFile(EXAMPLE_FILE_FILENAME, props.sheet.export_file());
+        openExampleGridFile(EXAMPLE_FILE_FILENAME, props.sheetController);
+        setFirstTime(false);
       } else {
         localFiles.newFile();
       }
     });
-  }, [firstTime, setFirstTime, props.sheet]);
+  }, [firstTime, setFirstTime, props.sheetController]);
 
   return null;
 };

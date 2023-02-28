@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
-import { isMobileOnly } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../../../../constants/app';
 import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
 
@@ -29,12 +29,14 @@ interface Props {
 }
 
 const examples = [
+  'default.grid',
   'python.grid',
-  'airports_large.grid',
-  'airport_distance.grid',
-  'expenses.grid',
-  'monte_carlo_simulation.grid',
   'startup_portfolio.grid',
+  'open_ai.grid',
+  'monte_carlo_simulation.grid',
+  'airports_distance.grid',
+  'expenses.grid',
+  // 'airports_large.grid',
 ];
 
 export const QuadraticMenu = (props: Props) => {
@@ -48,15 +50,15 @@ export const QuadraticMenu = (props: Props) => {
 
   const { isAuthenticated, user, logout } = useAuth0();
 
-  // On Mobile set Headers to not visible by default
+  // For readonly, set Headers to not visible by default
   useEffect(() => {
-    if (isMobileOnly) {
+    if (IS_READONLY_MODE) {
       settings.setShowHeadings(false);
     }
     // eslint-disable-next-line
   }, []);
 
-  const { fileList } = useLocalFiles();
+  const { fileList, localFilename } = useLocalFiles();
 
   const createNewFile = useCallback(
     (filename?: string) => {
@@ -88,7 +90,7 @@ export const QuadraticMenu = (props: Props) => {
         <SubMenu label="File">
           <MenuItem onClick={() => setNewFileOpen(true)}>New grid</MenuItem>
           <MenuDivider />
-          <MenuItem onClick={() => SaveGridFile(sheet, true)}>Save local copy</MenuItem>
+          <MenuItem onClick={() => SaveGridFile(sheet, true, localFilename)}>Save local copy</MenuItem>
           <MenuDivider />
           <MenuItem onClick={() => openGridFile(sheetController)}>Open local</MenuItem>
           <SubMenu label="Open sample">
@@ -125,7 +127,7 @@ export const QuadraticMenu = (props: Props) => {
             checked={settings.showGridAxes}
             onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}
           >
-            Show axis
+            Show grid axis
           </MenuItem>
           <MenuItem
             type="checkbox"
@@ -140,6 +142,14 @@ export const QuadraticMenu = (props: Props) => {
             onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}
           >
             Show cell type outlines
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            type="checkbox"
+            checked={settings.presentationMode}
+            onClick={() => settings.setPresentationMode(!settings.presentationMode)}
+          >
+            Presentation mode
           </MenuItem>
           {/* 
           Commented out because the editor switches this state automatically when the user

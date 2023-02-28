@@ -3,13 +3,13 @@ on: push
 
 jobs:
   test_unit:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-latest-4-cores
 
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '18'
+          node-version: '19'
           cache: 'npm'
 
       - name: Update local rust toolchain
@@ -26,6 +26,6 @@ jobs:
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-      - run: npm install
       - run: npm run build:wasm:nodejs
+      - run: npm install
       - run: npm run test:unit:ci

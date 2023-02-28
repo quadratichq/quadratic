@@ -3,7 +3,7 @@ import { Cell } from '../../sheet/gridTypes';
 import { setupPython } from '../../computations/python/loadPython';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
-import { DeleteCells } from '../../sheet/Cells/DeleteCells';
+import { DeleteCells } from '../../actions/DeleteCells';
 
 // Setup Pyodide before tests
 let pyodide: any;
@@ -169,7 +169,7 @@ test('SheetController - delete cell and array cells', async () => {
   });
 
   // delete cells
-  DeleteCells({
+  await DeleteCells({
     x0: 0,
     y0: 0,
     x1: 0,

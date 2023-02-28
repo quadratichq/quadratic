@@ -4,6 +4,7 @@ import { zoomToFit } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 import { HeadingSize } from '../../../grid/sheet/useHeadings';
+import { PanMode } from '../../../atoms/gridInteractionStateAtom';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
@@ -127,13 +128,16 @@ export class PointerHeading {
   }
 
   pointerMove(world: Point): boolean {
-    const { canvas, headings, cells, gridLines, cursor } = this.app;
+    const { canvas, headings, cells, gridLines, cursor, settings } = this.app;
     const { gridOffsets } = this.sheet;
-    const headingResize = headings.intersectsHeadingGridLine(world);
-    if (headingResize) {
-      canvas.style.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
-    } else {
-      canvas.style.cursor = headings.intersectsHeadings(world) ? 'pointer' : 'auto';
+    // Only style the heading resize cursor if panning mode is disabled
+    if (settings.interactionState.panMode === PanMode.Disabled) {
+      const headingResize = headings.intersectsHeadingGridLine(world);
+      if (headingResize) {
+        canvas.style.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
+      } else {
+        canvas.style.cursor = headings.intersectsHeadings(world) ? 'pointer' : 'unset';
+      }
     }
     if (!this.active) {
       return false;
