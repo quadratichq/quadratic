@@ -29,12 +29,14 @@ interface Props {
 }
 
 const examples = [
+  'default.grid',
   'python.grid',
-  'airports_large.grid',
-  'airport_distance.grid',
-  'expenses.grid',
-  'monte_carlo_simulation.grid',
   'startup_portfolio.grid',
+  'open_ai.grid',
+  'monte_carlo_simulation.grid',
+  'airports_distance.grid',
+  'expenses.grid',
+  // 'airports_large.grid',
 ];
 
 export const QuadraticMenu = (props: Props) => {
@@ -56,7 +58,7 @@ export const QuadraticMenu = (props: Props) => {
     // eslint-disable-next-line
   }, []);
 
-  const { fileList } = useLocalFiles();
+  const { fileList, localFilename } = useLocalFiles();
 
   const createNewFile = useCallback(
     (filename?: string) => {
@@ -88,7 +90,7 @@ export const QuadraticMenu = (props: Props) => {
         <SubMenu label="File">
           <MenuItem onClick={() => setNewFileOpen(true)}>New grid</MenuItem>
           <MenuDivider />
-          <MenuItem onClick={() => SaveGridFile(sheet, true)}>Save local copy</MenuItem>
+          <MenuItem onClick={() => SaveGridFile(sheet, true, localFilename)}>Save local copy</MenuItem>
           <MenuDivider />
           <MenuItem onClick={() => openGridFile(sheetController)}>Open local</MenuItem>
           <SubMenu label="Open sample">
@@ -125,7 +127,7 @@ export const QuadraticMenu = (props: Props) => {
             checked={settings.showGridAxes}
             onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}
           >
-            Show axis
+            Show grid axis
           </MenuItem>
           <MenuItem
             type="checkbox"
@@ -141,13 +143,24 @@ export const QuadraticMenu = (props: Props) => {
           >
             Show cell type outlines
           </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            type="checkbox"
+            checked={settings.presentationMode}
+            onClick={() => settings.setPresentationMode(!settings.presentationMode)}
+          >
+            Presentation mode
+          </MenuItem>
+          {/* 
+          Commented out because the editor switches this state automatically when the user
+          is editing a formula.
           <MenuItem
             type="checkbox"
             checked={settings.showA1Notation}
             onClick={() => settings.setShowA1Notation(!settings.showA1Notation)}
           >
             Show A1 notation on headings
-          </MenuItem>
+          </MenuItem> */}
           <MenuDivider />
           <MenuItem
             type="checkbox"

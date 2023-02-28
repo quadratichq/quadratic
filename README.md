@@ -8,7 +8,7 @@ Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to
 
 Take your data and do something useful with it as quickly and easily as possible!
 
-![Screen Shot 2022-04-07 at 4 15 52 PM](https://user-images.githubusercontent.com/3479421/162328478-198f27d1-4ab8-4334-8420-b082e68edefc.png)
+<img width="1552" alt="Screenshot 2023-02-24 at 2 57 36 PM" src="https://user-images.githubusercontent.com/3479421/221301059-921ad96a-878e-4082-b3b9-e55a54185c5d.png">
 
 ## Online Demo
 
@@ -67,7 +67,7 @@ _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 - [x] Excel Formula Support (in progress)
 - [x] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
 - [x] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
-- [ ] SQL Database Connection Support 
+- [ ] SQL Database Connection Support
 - [ ] Multiplayer Support
 
 **Feature request or bug report?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
@@ -78,7 +78,7 @@ Want to learn more about how Quadratic works? Read the [How Quadratic Works](./d
 
 ## Examples
 
-There are more example files are located in the `examples` folder in this repo.
+There are more example files are in the application file menu. File > Open sample
 
 You can download them and then open them in Quadratic via File > Open Grid
 

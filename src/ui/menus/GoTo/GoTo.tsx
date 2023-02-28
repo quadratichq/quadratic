@@ -107,7 +107,7 @@ export const GoTo = (props: Props) => {
 
         <List dense={true} disablePadding>
           <ListItem disablePadding secondaryAction={<East fontSize="small" color="disabled" />}>
-            <ListItemButton selected onSelect={onSelect}>
+            <ListItemButton selected onClick={onSelect}>
               <ListItemText
                 primary={`Go to ${coordinates.length === 1 ? 'cell' : 'range'}: ${coordinates
                   .map(({ x, y }) => `(${x}, ${y})`)

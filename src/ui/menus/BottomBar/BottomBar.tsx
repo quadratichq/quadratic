@@ -90,13 +90,13 @@ export const BottomBar = (props: Props) => {
         <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
           Cursor: {cursorPositionString}
         </span>
-        {selectedCell?.last_modified && (
-          <span>You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}</span>
-        )}
         {interactionState.showMultiCursor && (
           <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
             Selection: {multiCursorPositionString}
           </span>
+        )}
+        {selectedCell?.last_modified && (
+          <span>You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}</span>
         )}
         {debugShowRenderer && (
           <span

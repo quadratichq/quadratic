@@ -71,13 +71,13 @@ export class CellsBorder extends Container {
     if (input.cell && this.app.settings.showCellTypeOutlines) {
       // Change outline color based on cell type
       if (input.cell.type === 'TEXT') {
-        drawInputBorder(input, colors.cellColorUserText, 0.75);
+        // drawInputBorder(input, colors.cellColorUserText, 0.75);
       } else if (input.cell.type === 'PYTHON') {
         drawInputBorder(input, colors.cellColorUserPython, 0.75);
       } else if (input.cell.type === 'FORMULA') {
         drawInputBorder(input, colors.cellColorUserFormula, 0.75);
       } else if (input.cell.type === 'COMPUTED') {
-        drawInputBorder(input, colors.independence, 0.75);
+        // drawInputBorder(input, colors.independence, 0.75);
       }
     }
   }

@@ -24,10 +24,10 @@ export const BrowserNotSupported = () => {
     >
       <Box sx={style}>
         <Typography id="modal-modal-title" variant="h6" component="h2">
-          Your Browser Does Not Support WebAssembly
+          Your browser does not support WebAssembly or WebGL.
         </Typography>
         <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-          We recommend using Google Chrome.
+          We recommend using the latest version of Google Chrome.
         </Typography>
       </Box>
     </Modal>

@@ -66,17 +66,51 @@ const ListItems = [
       );
     },
   },
+  // Commented out because the editor switches this state automatically when the user
+  // is editing a formula.
+  // {
+  //   label: 'View: Show A1 notation on headings',
+  //   Component: (props: any) => {
+  //     const settings = useGridSettings();
+  //     return (
+  //       <CommandPaletteListItem
+  //         {...props}
+  //         icon={<CommandPaletteListItemCheckbox checked={settings.showA1Notation} />}
+  //         action={() => {
+  //           settings.setShowA1Notation(!settings.showA1Notation);
+  //         }}
+  //       />
+  //     );
+  //   },
+  // },
+  // {
+  //   label: 'View: Show debug menu',
+  //   Component: (props: CommandPaletteListItemSharedProps) => {
+  //     const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
+  //     return (
+  //       <CommandPaletteListItem
+  //         {...props}
+  //         icon={<CommandPaletteListItemCheckbox checked={showDebugMenu} />}
+  //         action={() => {
+  //           setShowDebugMenu(!showDebugMenu);
+  //         }}
+  //       />
+  //     );
+  //   },
+  // },
   {
-    label: 'View: Show A1 notation on headings',
+    label: 'View: Presentation mode',
     Component: (props: any) => {
-      const settings = useGridSettings();
+      const { presentationMode, setPresentationMode } = useGridSettings();
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<CommandPaletteListItemCheckbox checked={settings.showA1Notation} />}
+          icon={<CommandPaletteListItemCheckbox checked={presentationMode} />}
           action={() => {
-            settings.setShowA1Notation(!settings.showA1Notation);
+            setPresentationMode(!presentationMode);
           }}
+          shortcut="."
+          shortcutModifiers={[KeyboardSymbols.Command]}
         />
       );
     },

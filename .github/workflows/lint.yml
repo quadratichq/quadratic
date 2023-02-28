@@ -1,15 +1,15 @@
-name: Unit Tests
+name: Lint Check
 on: push
 
 jobs:
-  test_unit:
-    runs-on: ubuntu-latest-4-cores
+  lint:
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '18'
+          node-version: '17'
           cache: 'npm'
 
       - name: Update local rust toolchain
@@ -26,6 +26,16 @@ jobs:
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-      - run: npm run build:wasm:nodejs
-      - run: npm install
-      - run: npm run test:unit:ci
+      - name: Build Quadratic
+        run: |
+          npm run build:wasm
+          npm install
+
+      - name: Run Prettier
+        run: npm run lint:prettier
+
+      - name: Run EsLint
+        run: npm run lint:eslint
+
+      - name: Run TypeScript
+        run: npm run lint:ts

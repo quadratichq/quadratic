@@ -1,6 +1,6 @@
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { DeleteCells } from '../../../grid/sheet/Cells/DeleteCells';
+import { DeleteCells } from '../../../grid/actions/DeleteCells';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import isAlphaNumeric from './isAlphaNumeric';

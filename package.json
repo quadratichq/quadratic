@@ -67,16 +67,23 @@
     "test:python": "python3 tests-python/test.py",
     "test:wasm": "cd quadratic-core && cargo test --workspace",
     "test": "",
-    "prettier": "prettier --write src",
     "eject": "react-scripts eject",
     "dev": "concurrently \"BROWSER=none npm start\" \"electron .\"",
-    "electron": "electron ."
+    "electron": "electron .",
+    "lint:ts": "tsc --noemit",
+    "lint:eslint": "eslint --ext .ts,.tsx src",
+    "lint:prettier": "prettier --check src",
+    "lint:prettier:write": "prettier --write src"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": "error"
+    }
   },
   "eslintIgnore": [
     "node_modules/*"
@@ -97,7 +104,7 @@
     "@playwright/test": "^1.22.2",
     "@types/lodash.debounce": "^4.0.7",
     "concurrently": "^6.3.0",
-    "electron": "^15.3.0",
+    "electron": "^23.0.0",
     "electron-is-dev": "^2.0.0",
     "fs-extra": "^11.1.0",
     "msdf-bmfont-xml": "^2.7.0",

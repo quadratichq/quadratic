@@ -15,7 +15,7 @@ import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
-import { ManageSearch, Search } from '@mui/icons-material';
+import { ManageSearch } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
 
@@ -61,7 +61,6 @@ export const TopBar = (props: IProps) => {
           WebkitAppRegion: 'no-drag',
           display: 'flex',
           alignItems: 'center',
-          width: '15rem',
         }}
       >
         <QuadraticMenu sheetController={props.sheetController} />
@@ -74,14 +73,14 @@ export const TopBar = (props: IProps) => {
         )}
       </Box>
 
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          userSelect: 'none',
-        }}
-      >
-        {isMobileOnly ? (
+      {isMobileOnly ? (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            userSelect: 'none',
+          }}
+        >
           <Typography
             variant="body2"
             fontFamily={'sans-serif'}
@@ -90,24 +89,35 @@ export const TopBar = (props: IProps) => {
           >
             Read Only
           </Typography>
-        ) : (
-          <>
-            <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-              Local &nbsp;
-            </Typography>
-            <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-              / {localFilename}
-            </Typography>
-            {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
-          </>
-        )}
-      </Box>
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            userSelect: 'none',
+            visibility: { sm: 'hidden', xs: 'hidden', md: 'visible' },
+          }}
+        >
+          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
+            Local &nbsp;
+          </Typography>
+          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
+            / {localFilename}
+          </Typography>
+          {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
+        </Box>
+      )}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-end',
           gap: '1rem',
+        }}
+        style={{
+          //@ts-expect-error
+          WebkitAppRegion: 'no-drag',
         }}
       >
         {!isMobileOnly && (

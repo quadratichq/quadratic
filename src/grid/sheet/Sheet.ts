@@ -13,8 +13,16 @@ export class Sheet {
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
+
+  // visual dependency for overflowing cells
   render_dependency: GridRenderDependency;
+
+  // visual dependency for drawing array lines
+  array_dependency: GridRenderDependency;
+
+  // cell calculation dependency
   cell_dependency: CellDependencyManager;
+
   onRebuild?: () => void;
 
   constructor() {
@@ -22,6 +30,7 @@ export class Sheet {
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
     this.render_dependency = new GridRenderDependency();
+    this.array_dependency = new GridRenderDependency();
     this.cell_dependency = new CellDependencyManager();
   }
 
@@ -53,6 +62,7 @@ export class Sheet {
       borders: this.borders.getArray(),
       render_dependency: this.render_dependency.save(),
       cell_dependency: this.cell_dependency.exportToString(),
+      version: '1.0',
     };
   }
 
@@ -168,7 +178,12 @@ export class Sheet {
   }
 
   hasQuadrant(x: number, y: number): boolean {
-    return this.grid.hasQuadrant(x, y) || this.borders.hasQuadrant(x, y);
+    return (
+      this.grid.hasQuadrant(x, y) ||
+      this.borders.hasQuadrant(x, y) ||
+      this.render_dependency.hasQuadrant(x, y) ||
+      this.array_dependency.hasQuadrant(x, y)
+    );
   }
 
   debugGetCells(): Cell[] {
