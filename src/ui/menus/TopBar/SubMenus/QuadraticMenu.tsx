@@ -110,6 +110,14 @@ export const QuadraticMenu = (props: Props) => {
             </SubMenu>
           )}
         </SubMenu>
+        <SubMenu label="Edit">
+          <MenuItem>Undo</MenuItem>
+          <MenuItem>Redo</MenuItem>
+          <MenuDivider />
+          <MenuItem>Cut</MenuItem>
+          <MenuItem>Copy</MenuItem>
+          <MenuItem>Paste</MenuItem>
+        </SubMenu>
         <SubMenu label="Import">
           <MenuItem disabled>CSV (coming soon)</MenuItem>
           <MenuItem disabled>Excel (coming soon)</MenuItem>

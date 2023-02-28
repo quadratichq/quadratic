@@ -6,9 +6,6 @@ import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import {
   AttachMoneyOutlined,
   BorderAll,
-  ContentCopy,
-  ContentCut,
-  ContentPaste,
   FormatBold,
   FormatClear,
   FormatColorFill,
@@ -22,7 +19,6 @@ import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { QColorPicker } from '../../components/qColorPicker';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../grid/actions/clipboard/clipboard';
 import { TooltipHint } from '../../components/TooltipHint';
 import { DecimalDecrease, DecimalIncrease } from '../../icons';
 import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting';
@@ -188,6 +184,12 @@ export const FloatingContextMenu = (props: Props) => {
         e.stopPropagation();
       }}
     >
+      <Toolbar
+        style={{
+          padding: '2px 4px',
+          minHeight: '0px',
+        }}
+      >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
           <IconButton size="small" onClick={() => changeBold(!format.bold)}>
             <FormatBold fontSize={iconSize} />
