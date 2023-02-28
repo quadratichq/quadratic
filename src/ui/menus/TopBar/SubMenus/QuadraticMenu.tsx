@@ -58,7 +58,7 @@ export const QuadraticMenu = (props: Props) => {
     // eslint-disable-next-line
   }, []);
 
-  const { fileList } = useLocalFiles();
+  const { fileList, localFilename } = useLocalFiles();
 
   const createNewFile = useCallback(
     (filename?: string) => {
@@ -90,7 +90,7 @@ export const QuadraticMenu = (props: Props) => {
         <SubMenu label="File">
           <MenuItem onClick={() => setNewFileOpen(true)}>New grid</MenuItem>
           <MenuDivider />
-          <MenuItem onClick={() => SaveGridFile(sheet, true)}>Save local copy</MenuItem>
+          <MenuItem onClick={() => SaveGridFile(sheet, true, localFilename)}>Save local copy</MenuItem>
           <MenuDivider />
           <MenuItem onClick={() => openGridFile(sheetController)}>Open local</MenuItem>
           <SubMenu label="Open sample">
@@ -127,7 +127,7 @@ export const QuadraticMenu = (props: Props) => {
             checked={settings.showGridAxes}
             onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}
           >
-            Show axis
+            Show grid axis
           </MenuItem>
           <MenuItem
             type="checkbox"
@@ -142,6 +142,14 @@ export const QuadraticMenu = (props: Props) => {
             onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}
           >
             Show cell type outlines
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            type="checkbox"
+            checked={settings.presentationMode}
+            onClick={() => settings.setPresentationMode(!settings.presentationMode)}
+          >
+            Presentation mode
           </MenuItem>
           {/* 
           Commented out because the editor switches this state automatically when the user
