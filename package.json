@@ -101,7 +101,7 @@
     ]
   },
   "devDependencies": {
-    "@playwright/test": "^1.22.2",
+    "@playwright/test": "^1.31.1",
     "@types/lodash.debounce": "^4.0.7",
     "concurrently": "^6.3.0",
     "electron": "^23.0.0",
