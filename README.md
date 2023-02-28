@@ -22,12 +22,7 @@ Join the conversation on our Discord channel -> <https://discord.gg/quadratic>
 
 ## Documentation
 
-All of our documentation is available at [docs.quadratichq.com](https://docs.quadratichq.com)
-
-- [Quick Start Guide](https://docs.quadratichq.com/quick-start)
-- [Python Cell Reference](https://docs.quadratichq.com/reference/python-cell-reference)
-- [Pandas DataFrames in Quadratic](https://docs.quadratichq.com/reference/python-cell-reference/pandas-dataframe)
-- [Development Updates](https://docs.quadratichq.com/development-updates)
+Read the documentation -> <https://docs.quadratichq.com>
 
 # What is Quadratic?
 
