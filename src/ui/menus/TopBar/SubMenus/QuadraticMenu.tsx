@@ -127,7 +127,7 @@ export const QuadraticMenu = (props: Props) => {
             checked={settings.showGridAxes}
             onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}
           >
-            Show axis
+            Show grid axis
           </MenuItem>
           <MenuItem
             type="checkbox"
@@ -142,6 +142,14 @@ export const QuadraticMenu = (props: Props) => {
             onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}
           >
             Show cell type outlines
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            type="checkbox"
+            checked={settings.presentationMode}
+            onClick={() => settings.setPresentationMode(!settings.presentationMode)}
+          >
+            Presentation mode
           </MenuItem>
           {/* 
           Commented out because the editor switches this state automatically when the user
