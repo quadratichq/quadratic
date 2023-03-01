@@ -31,7 +31,7 @@ const ListItems = [
     ),
   },
   {
-    label: 'File: Open local',
+    label: 'File: Open…',
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}

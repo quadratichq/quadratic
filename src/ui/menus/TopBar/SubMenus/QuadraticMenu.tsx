@@ -1,5 +1,4 @@
 import '@szhsin/react-menu/dist/index.css';
-
 import { useCallback, useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
@@ -7,35 +6,17 @@ import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-
 import { isMobileOnly } from 'react-device-detect';
 import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
-
-import '@szhsin/react-menu/dist/index.css';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
 import { SaveGridFile } from '../../../../grid/actions/gridFile/SaveGridFile';
-import {
-  newGridFile,
-  openExampleGridFile,
-  openGridFile,
-  openLocalGridFile,
-} from '../../../../grid/actions/gridFile/OpenGridFile';
-
+import { newGridFile, openGridFile } from '../../../../grid/actions/gridFile/OpenGridFile';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
-import { useLocalFiles } from '../../../../hooks/useLocalFiles';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { NewFile } from './newFile/NewFile';
 
 interface Props {
   sheetController: SheetController;
 }
-
-const examples = [
-  'python.grid',
-  'airports_large.grid',
-  'airport_distance.grid',
-  'expenses.grid',
-  'monte_carlo_simulation.grid',
-  'startup_portfolio.grid',
-];
 
 export const QuadraticMenu = (props: Props) => {
   const { sheetController } = props;
@@ -55,8 +36,6 @@ export const QuadraticMenu = (props: Props) => {
     }
     // eslint-disable-next-line
   }, []);
-
-  const { fileList } = useLocalFiles();
 
   const createNewFile = useCallback(
     (filename?: string) => {
@@ -86,27 +65,9 @@ export const QuadraticMenu = (props: Props) => {
       >
         <MenuHeader>Quadratic</MenuHeader>
         <SubMenu label="File">
-          <MenuItem onClick={() => setNewFileOpen(true)}>New grid</MenuItem>
-          <MenuDivider />
+          <MenuItem onClick={() => setNewFileOpen(true)}>New</MenuItem>
           <MenuItem onClick={() => SaveGridFile(sheet, true)}>Save local copy</MenuItem>
-          <MenuDivider />
-          <MenuItem onClick={() => openGridFile(sheetController)}>Open local</MenuItem>
-          <SubMenu label="Open sample">
-            {examples.map((filename) => (
-              <MenuItem key={`sample-${filename}`} onClick={() => openExampleGridFile(filename, sheetController)}>
-                {filename}
-              </MenuItem>
-            ))}
-          </SubMenu>
-          {fileList.length && (
-            <SubMenu label="Open recent">
-              {fileList.map((entry) => (
-                <MenuItem key={entry} onClick={() => openLocalGridFile(entry, sheetController)}>
-                  {entry}
-                </MenuItem>
-              ))}
-            </SubMenu>
-          )}
+          <MenuItem onClick={() => openGridFile(sheetController)}>Open…</MenuItem>
         </SubMenu>
         <SubMenu label="Import">
           <MenuItem disabled>CSV (coming soon)</MenuItem>
