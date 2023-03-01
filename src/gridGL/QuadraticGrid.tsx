@@ -16,6 +16,10 @@ interface IProps {
   app: PixiApp;
 }
 
+// Keep track of state of mouse/space for panning mode
+let mouseIsDown = false;
+let spaceIsDown = false;
+
 export default function QuadraticGrid(props: IProps) {
   const { loading } = useLoading();
 
@@ -63,23 +67,23 @@ export default function QuadraticGrid(props: IProps) {
   const [showContextMenu, setShowContextMenu] = useState(false);
 
   // Pan mode
-  const [mouseIsDown, setMouseIsDown] = useState(false);
-  const [spaceIsDown, setSpaceIsDown] = useState(false);
-  const onMouseDown = () => {
-    setMouseIsDown(true);
-    if (interactionState.panMode === PanMode.Enabled) {
-      setInteractionState({ ...interactionState, panMode: PanMode.Dragging });
-    }
-  };
   const onMouseUp = () => {
-    setMouseIsDown(false);
+    mouseIsDown = false;
     if (interactionState.panMode !== PanMode.Disabled) {
       setInteractionState({ ...interactionState, panMode: spaceIsDown ? PanMode.Enabled : PanMode.Disabled });
     }
+    window.removeEventListener('mouseup', onMouseUp);
+  };
+  const onMouseDown = () => {
+    mouseIsDown = true;
+    if (interactionState.panMode === PanMode.Enabled) {
+      setInteractionState({ ...interactionState, panMode: PanMode.Dragging });
+    }
+    window.addEventListener('mouseup', onMouseUp);
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.code === 'Space') {
-      setSpaceIsDown(true);
+      spaceIsDown = true;
       if (interactionState.panMode === PanMode.Disabled) {
         setInteractionState({
           ...interactionState,
@@ -90,7 +94,7 @@ export default function QuadraticGrid(props: IProps) {
   };
   const onKeyUp = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.code === 'Space') {
-      setSpaceIsDown(false);
+      spaceIsDown = false;
       if (interactionState.panMode !== PanMode.Disabled && !mouseIsDown) {
         setInteractionState({
           ...interactionState,
@@ -134,15 +138,14 @@ export default function QuadraticGrid(props: IProps) {
           setShowContextMenu(true);
         }
       }}
-      onClick={(e) => {
+      onMouseDown={() => {
         // <FloatingFormatMenu> prevents events from bubbling up to here, so
         // we always hide the context menu if it's open
         if (showContextMenu) {
           setShowContextMenu(false);
         }
+        onMouseDown();
       }}
-      onMouseDown={onMouseDown}
-      onMouseUp={onMouseUp}
       onKeyDown={(e) => {
         onKeyDown(e);
         onKeyDownFromUseKeyboard(e);

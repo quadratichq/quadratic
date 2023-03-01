@@ -175,7 +175,7 @@ export class PixiApp {
     this.destroyed = true;
   }
 
-  resize(): void {
+  resize = (): void => {
     if (!this.parent || this.destroyed) return;
     const width = this.parent.offsetWidth;
     const height = this.parent.offsetHeight;
@@ -188,7 +188,7 @@ export class PixiApp {
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cells.dirty = true;
-  }
+  };
 
   setZoomState(value: number): void {
     zoomInOut(this.viewport, value);
