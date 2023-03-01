@@ -58,8 +58,7 @@ const CodeOutlinesSwitch = styled(Switch)(({ theme }) => {
       opacity: 1,
     },
     '& .Mui-checked .MuiSwitch-thumb': {
-      background: '#1976d2',
-      opacity: 1,
+      background: theme.palette.primary.main,
     },
   };
 });
