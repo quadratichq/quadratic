@@ -9,7 +9,7 @@ import { DataMenu } from './SubMenus/DataMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { isMobileOnly } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../../../constants/app';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
@@ -64,7 +64,7 @@ export const TopBar = (props: IProps) => {
         }}
       >
         <QuadraticMenu sheetController={props.sheetController} />
-        {!isMobileOnly && (
+        {!IS_READONLY_MODE && (
           <>
             <DataMenu></DataMenu>
             <FormatMenu app={props.app} sheet_controller={props.sheetController} />
@@ -73,7 +73,7 @@ export const TopBar = (props: IProps) => {
         )}
       </Box>
 
-      {isMobileOnly ? (
+      {IS_READONLY_MODE ? (
         <Box
           sx={{
             display: 'flex',
@@ -120,7 +120,7 @@ export const TopBar = (props: IProps) => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        {!isMobileOnly && (
+        {!IS_READONLY_MODE && (
           <>
             {/* {user !== undefined && (
               <AvatarGroup>
