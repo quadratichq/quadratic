@@ -94,6 +94,9 @@ export const FloatingContextMenu = (props: Props) => {
     // Hide if currently selecting
     if (app?.input?.pointerDown?.active) visibility = 'hidden';
 
+    // Hide if in presentation mode
+    if (app.settings.presentationMode) visibility = 'hidden';
+
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheetController.sheet.gridOffsets.getCell(
       interactionState.multiCursorPosition.terminalPosition.x,
