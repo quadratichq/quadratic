@@ -23,6 +23,12 @@ import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { useLocalFiles } from '../../../../hooks/useLocalFiles';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { NewFile } from './newFile/NewFile';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
+import { useRecoilValue } from 'recoil';
+import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { MenuLineItem } from '../MenuLineItem';
+import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
 
 interface Props {
   sheetController: SheetController;
@@ -43,6 +49,7 @@ export const QuadraticMenu = (props: Props) => {
   const { sheetController } = props;
   const { sheet } = sheetController;
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
+  const interactionState = useRecoilValue(gridInteractionStateAtom);
 
   const settings = useGridSettings();
 
@@ -109,6 +116,62 @@ export const QuadraticMenu = (props: Props) => {
               ))}
             </SubMenu>
           )}
+        </SubMenu>
+        <SubMenu label="Edit">
+          <MenuItem
+            onClick={() => {
+              sheetController.undo();
+            }}
+          >
+            <MenuLineItem primary="Undo" secondary={KeyboardSymbols.Command + 'Z'} Icon={Undo}></MenuLineItem>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              sheetController.redo();
+            }}
+          >
+            <MenuLineItem
+              primary="Redo"
+              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z'}
+              Icon={Undo}
+            ></MenuLineItem>
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            onClick={() => {
+              cutToClipboard(
+                sheetController,
+                {
+                  x: interactionState.multiCursorPosition.originPosition.x,
+                  y: interactionState.multiCursorPosition.originPosition.y,
+                },
+                {
+                  x: interactionState.multiCursorPosition.terminalPosition.x,
+                  y: interactionState.multiCursorPosition.terminalPosition.y,
+                }
+              );
+            }}
+          >
+            <MenuLineItem primary="Cut" secondary={KeyboardSymbols.Command + 'X'} Icon={ContentCut}></MenuLineItem>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              copyToClipboard(
+                props.sheetController,
+                interactionState.multiCursorPosition.originPosition,
+                interactionState.multiCursorPosition.terminalPosition
+              );
+            }}
+          >
+            <MenuLineItem primary="Copy" secondary={KeyboardSymbols.Command + 'C'} Icon={ContentCopy}></MenuLineItem>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              pasteFromClipboard(props.sheetController, interactionState.cursorPosition);
+            }}
+          >
+            <MenuLineItem primary="Paste" secondary={KeyboardSymbols.Command + 'V'} Icon={ContentPaste}></MenuLineItem>
+          </MenuItem>
         </SubMenu>
         <SubMenu label="Import">
           <MenuItem disabled>CSV (coming soon)</MenuItem>
