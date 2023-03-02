@@ -42,13 +42,21 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     /// Constructs a parser for a file.
     pub fn new(source_str: &'a str, tokens: &'a [Spanned<Token>], loc: Pos) -> Self {
-        Self {
+        let mut ret = Self {
             source_str,
             tokens,
             cursor: None,
 
             loc,
+        };
+
+        // Skip leading `=`
+        ret.next();
+        if ret.token_str() != "=" {
+            // Oops, no leading `=` so go back
+            ret.cursor = None;
         }
+        ret
     }
 
     /// Returns the token at the cursor.
