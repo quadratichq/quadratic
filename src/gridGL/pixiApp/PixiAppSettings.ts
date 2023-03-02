@@ -77,6 +77,9 @@ export class PixiAppSettings {
   get showCellTypeOutlines(): boolean {
     return !this.settings.presentationMode && this.settings.showCellTypeOutlines;
   }
+  get presentationMode(): boolean {
+    return this.settings.presentationMode;
+  }
 
   get showA1Notation(): boolean {
     if (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === 'FORMULA') {

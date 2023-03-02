@@ -7,7 +7,7 @@ import { loadPython } from '../grid/computations/python/loadPython';
 import { FileLoadingComponent } from './FileLoadingComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../gridGL/loadAssets';
-import { isMobileOnly } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../constants/app';
 import { debugSkipPythonLoad } from '../debugFlags';
 import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import { localFiles } from '../grid/sheet/localFiles';
@@ -22,13 +22,11 @@ export const QuadraticApp = () => {
   // Loading Effect
   useEffect(() => {
     if (loading) {
-      if (!isMobileOnly && !debugSkipPythonLoad) {
-        // Load Python on desktop
+      if (!IS_READONLY_MODE && !debugSkipPythonLoad) {
         loadPython().then(() => {
           incrementLoadingCount();
         });
       } else {
-        // Don't load python on mobile
         incrementLoadingCount();
       }
       loadAssets().then(() => {

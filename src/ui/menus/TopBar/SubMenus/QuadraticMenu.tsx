@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
-import { isMobileOnly } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../../../../constants/app';
 import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
 
@@ -23,6 +23,12 @@ import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { useLocalFiles } from '../../../../hooks/useLocalFiles';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { NewFile } from './newFile/NewFile';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
+import { useRecoilValue } from 'recoil';
+import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { MenuLineItem } from '../MenuLineItem';
+import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
 
 interface Props {
   sheetController: SheetController;
@@ -43,6 +49,7 @@ export const QuadraticMenu = (props: Props) => {
   const { sheetController } = props;
   const { sheet } = sheetController;
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
+  const interactionState = useRecoilValue(gridInteractionStateAtom);
 
   const settings = useGridSettings();
 
@@ -50,9 +57,9 @@ export const QuadraticMenu = (props: Props) => {
 
   const { isAuthenticated, user, logout } = useAuth0();
 
-  // On Mobile set Headers to not visible by default
+  // For readonly, set Headers to not visible by default
   useEffect(() => {
-    if (isMobileOnly) {
+    if (IS_READONLY_MODE) {
       settings.setShowHeadings(false);
     }
     // eslint-disable-next-line
@@ -109,6 +116,62 @@ export const QuadraticMenu = (props: Props) => {
               ))}
             </SubMenu>
           )}
+        </SubMenu>
+        <SubMenu label="Edit">
+          <MenuItem
+            onClick={() => {
+              sheetController.undo();
+            }}
+          >
+            <MenuLineItem primary="Undo" secondary={KeyboardSymbols.Command + 'Z'} Icon={Undo}></MenuLineItem>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              sheetController.redo();
+            }}
+          >
+            <MenuLineItem
+              primary="Redo"
+              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z'}
+              Icon={Undo}
+            ></MenuLineItem>
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            onClick={() => {
+              cutToClipboard(
+                sheetController,
+                {
+                  x: interactionState.multiCursorPosition.originPosition.x,
+                  y: interactionState.multiCursorPosition.originPosition.y,
+                },
+                {
+                  x: interactionState.multiCursorPosition.terminalPosition.x,
+                  y: interactionState.multiCursorPosition.terminalPosition.y,
+                }
+              );
+            }}
+          >
+            <MenuLineItem primary="Cut" secondary={KeyboardSymbols.Command + 'X'} Icon={ContentCut}></MenuLineItem>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              copyToClipboard(
+                props.sheetController,
+                interactionState.multiCursorPosition.originPosition,
+                interactionState.multiCursorPosition.terminalPosition
+              );
+            }}
+          >
+            <MenuLineItem primary="Copy" secondary={KeyboardSymbols.Command + 'C'} Icon={ContentCopy}></MenuLineItem>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              pasteFromClipboard(props.sheetController, interactionState.cursorPosition);
+            }}
+          >
+            <MenuLineItem primary="Paste" secondary={KeyboardSymbols.Command + 'V'} Icon={ContentPaste}></MenuLineItem>
+          </MenuItem>
         </SubMenu>
         <SubMenu label="Import">
           <MenuItem disabled>CSV (coming soon)</MenuItem>
