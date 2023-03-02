@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLoading } from '../contexts/LoadingContext';
 import { gridInteractionStateAtom } from '../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
@@ -9,11 +9,16 @@ import { ensureVisible } from './interaction/viewportHelper';
 import { CellInput } from './interaction/CellInput';
 import { SheetController } from '../grid/controller/sheetController';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
+import { PanMode } from '../atoms/gridInteractionStateAtom';
 
 interface IProps {
   sheetController: SheetController;
   app: PixiApp;
 }
+
+// Keep track of state of mouse/space for panning mode
+let mouseIsDown = false;
+let spaceIsDown = false;
 
 export default function QuadraticGrid(props: IProps) {
   const { loading } = useLoading();
@@ -34,13 +39,23 @@ export default function QuadraticGrid(props: IProps) {
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
+  let prevPanModeRef = useRef(interactionState.panMode);
   useEffect(() => {
     props.app?.settings.updateInteractionState(interactionState, setInteractionState);
-    ensureVisible({
-      sheet: props.sheetController.sheet,
-      app: props.app,
-      interactionState,
-    });
+
+    // If we're not dealing with a change in pan mode, ensure the cursor stays
+    // visible on screen (if we did have a change in pan mode, the user is
+    // panning and we don't want to change the visibility of the screen when
+    // they’re done)
+    if (prevPanModeRef.current === interactionState.panMode) {
+      ensureVisible({
+        sheet: props.sheetController.sheet,
+        app: props.app,
+        interactionState,
+      });
+    }
+    // Store the previous state for our check above
+    prevPanModeRef.current = interactionState.panMode;
   }, [props.app, props.app?.settings, interactionState, setInteractionState, props.sheetController.sheet]);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -51,7 +66,45 @@ export default function QuadraticGrid(props: IProps) {
   // Right click menu
   const [showContextMenu, setShowContextMenu] = useState(false);
 
-  const { onKeyDown } = useKeyboard({
+  // Pan mode
+  const onMouseUp = () => {
+    mouseIsDown = false;
+    if (interactionState.panMode !== PanMode.Disabled) {
+      setInteractionState({ ...interactionState, panMode: spaceIsDown ? PanMode.Enabled : PanMode.Disabled });
+    }
+    window.removeEventListener('mouseup', onMouseUp);
+  };
+  const onMouseDown = () => {
+    mouseIsDown = true;
+    if (interactionState.panMode === PanMode.Enabled) {
+      setInteractionState({ ...interactionState, panMode: PanMode.Dragging });
+    }
+    window.addEventListener('mouseup', onMouseUp);
+  };
+  const onKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.code === 'Space') {
+      spaceIsDown = true;
+      if (interactionState.panMode === PanMode.Disabled) {
+        setInteractionState({
+          ...interactionState,
+          panMode: PanMode.Enabled,
+        });
+      }
+    }
+  };
+  const onKeyUp = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.code === 'Space') {
+      spaceIsDown = false;
+      if (interactionState.panMode !== PanMode.Disabled && !mouseIsDown) {
+        setInteractionState({
+          ...interactionState,
+          panMode: PanMode.Disabled,
+        });
+      }
+    }
+  };
+
+  const { onKeyDown: onKeyDownFromUseKeyboard } = useKeyboard({
     sheetController: props.sheetController,
     interactionState,
     setInteractionState,
@@ -71,6 +124,12 @@ export default function QuadraticGrid(props: IProps) {
         outline: 'none',
         overflow: 'hidden',
         WebkitTapHighlightColor: 'transparent',
+        cursor:
+          interactionState.panMode === PanMode.Enabled
+            ? 'grab'
+            : interactionState.panMode === PanMode.Dragging
+            ? 'grabbing'
+            : 'unset',
       }}
       onContextMenu={(event) => {
         event.preventDefault();
@@ -79,14 +138,19 @@ export default function QuadraticGrid(props: IProps) {
           setShowContextMenu(true);
         }
       }}
-      onClick={(e) => {
+      onMouseDown={() => {
         // <FloatingFormatMenu> prevents events from bubbling up to here, so
         // we always hide the context menu if it's open
         if (showContextMenu) {
           setShowContextMenu(false);
         }
+        onMouseDown();
       }}
-      onKeyDown={onKeyDown}
+      onKeyDown={(e) => {
+        onKeyDown(e);
+        onKeyDownFromUseKeyboard(e);
+      }}
+      onKeyUp={onKeyUp}
     >
       <CellInput
         interactionState={interactionState}

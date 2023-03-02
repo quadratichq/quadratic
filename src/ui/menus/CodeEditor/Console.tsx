@@ -1,5 +1,5 @@
 import { Box, Tabs, Tab } from '@mui/material';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { cellEvaluationReturnType } from '../../../grid/computations/types';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { colors } from '../../../theme/colors';
@@ -15,9 +15,7 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
-  const preventDefault = useCallback((e: React.SyntheticEvent) => {
-    e.preventDefault();
-  }, []);
+
   return (
     <>
       <Box>
@@ -40,14 +38,12 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
             suppressContentEditableWarning={true}
             spellCheck={false}
             onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.code === 'KeyA') {
-                // Allow select all text, but nothing else
+              if (((e.metaKey || e.ctrlKey) && e.code === 'KeyA') || ((e.metaKey || e.ctrlKey) && e.code === 'KeyC')) {
+                // Allow a few commands, but nothing else
               } else {
-                preventDefault(e);
+                e.preventDefault();
               }
             }}
-            onCut={preventDefault}
-            onPaste={preventDefault}
             style={{ outline: 'none' }}
             // Disable Grammarly
             data-gramm="false"

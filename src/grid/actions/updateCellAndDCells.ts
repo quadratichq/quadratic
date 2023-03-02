@@ -31,13 +31,11 @@ export const updateCellAndDCells = async (args: ArgsType) => {
     let seen = Array<string>();
     for (let i = 0; i < cells_to_update.length; null) {
       let string_id = cells_to_update[i].join(',');
-
       if (seen.includes(string_id)) {
         cells_to_update.splice(i, 1);
       } else {
         i++;
       }
-
       seen.push(string_id);
     }
 
@@ -49,17 +47,18 @@ export const updateCellAndDCells = async (args: ArgsType) => {
     let cell = sheetController.sheet.getCellCopy(ref_current_cell[0], ref_current_cell[1]);
     let old_array_cells: Coordinate[] = [];
 
+    // keep track of previous array cells for this cell
+    old_array_cells =
+      cell?.array_cells?.map((cell) => {
+        return { x: cell[0], y: cell[1] };
+      }) || [];
+    old_array_cells.unshift(); // remove this cell
+
     // ref_current_cell is in starting_cells
     if (starting_cells.some((c) => c.x === ref_current_cell[0] && c.y === ref_current_cell[1])) {
       // if the ref_cell_to_update is the starting_cell
       // then we need to update the cell with data from the starting_cell
-      if (cell !== undefined) {
-        old_array_cells =
-          cell.array_cells?.map((cell) => {
-            return { x: cell[0], y: cell[1] };
-          }) || [];
-        old_array_cells.unshift(); // remove this cell
-      }
+
       const passed_in_cell = starting_cells.find((c) => c.x === ref_current_cell[0] && c.y === ref_current_cell[1]);
       if (passed_in_cell === undefined) continue;
       cell = { ...passed_in_cell };
@@ -158,14 +157,6 @@ export const updateCellAndDCells = async (args: ArgsType) => {
           cell.value = would_override_og_cell?.value || '';
           array_cells_to_output.unshift(cell);
 
-          // if any updated cells have other cells depending on them, add to list to update
-          for (const array_cell of array_cells_to_output) {
-            // add array cells to list to update
-            let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
-
-            if (deps) cells_to_update.push(...deps);
-          }
-
           // keep track of array cells updated by this cell
           cell.array_cells = array_cells_to_output.map((a_cell) => [a_cell.x, a_cell.y]);
 
@@ -223,9 +214,20 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       });
     });
 
+    // if any updated cells have other cells depending on them, add to list to update
+    for (const array_cell of array_cells_to_output) {
+      let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
+      if (deps) cells_to_update.push(...deps);
+    }
+
+    // any deleted cells have other cells depending on them, add to list to update
+    for (const array_cell of array_cells_to_delete) {
+      let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
+      if (deps) cells_to_update.push(...deps);
+    }
+
     // if this cell updates other cells add them to the list to update
     let deps = sheetController.sheet.cell_dependency.getDependencies([cell.x, cell.y]);
-
     if (deps) cells_to_update.push(...deps);
   }
 
