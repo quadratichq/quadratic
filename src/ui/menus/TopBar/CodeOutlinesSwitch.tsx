@@ -48,11 +48,10 @@ const CodeOutlinesSwitch = styled(Switch)(({ theme }) => {
     '& .MuiSwitch-thumb': {
       transition: '150ms ease opacity',
       background: colors.darkGray,
-      opacity: 0.3, // 30% opacity, same as on on the track above
       boxShadow: 'none',
-      width: 14,
-      height: 14,
-      margin: 3,
+      width: 12,
+      height: 12,
+      margin: 4,
     },
     '&:hover .MuiSwitch-thumb': {
       opacity: 1,
