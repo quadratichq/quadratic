@@ -17,13 +17,13 @@ export const InsertCSV = (props: {
 
   let rowIndex = 0;
   Papa.parse(file, {
-    error: (error, file) => {
+    error: function (error, File) {
       props.reportError(error.name + ': ' + error.message);
     },
-    complete: () => {
+    complete: function () {
       props.sheetController.end_transaction();
     },
-    step: (row) => {
+    step: function (row) {
       const cellsToInsert: Cell[] = [];
 
       // results.data.forEach((row, rowIndex) => {
