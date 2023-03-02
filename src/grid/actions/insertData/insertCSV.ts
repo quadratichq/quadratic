@@ -10,16 +10,20 @@ export const InsertCSV = (props: {
   file: File;
   insertAtCellLocation: Coordinate;
   sheetController: SheetController;
+  reportError: (error: string) => void;
 }) => {
   const { file } = props;
   props.sheetController.start_transaction();
 
   let rowIndex = 0;
   Papa.parse(file, {
-    complete: function () {
+    error: (error, file) => {
+      props.reportError(error.name + ': ' + error.message);
+    },
+    complete: () => {
       props.sheetController.end_transaction();
     },
-    step: function (row) {
+    step: (row) => {
       const cellsToInsert: Cell[] = [];
 
       // results.data.forEach((row, rowIndex) => {

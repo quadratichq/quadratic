@@ -6,6 +6,7 @@ import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import debounce from 'lodash.debounce';
+import { Snackbar } from '@mui/material';
 
 interface Props {
   sheetController: SheetController;
@@ -18,6 +19,8 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
   const [dragActive, setDragActive] = useState(false);
   const divRef = useRef<HTMLDivElement>(null);
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
+
+  const [showErrorMessage, setShowErrorMessage] = useState(false);
 
   const moveCursor = debounce((e: DragEvent<HTMLDivElement>): void => {
     const clientBoudingRect = divRef?.current?.getBoundingClientRect();
@@ -50,6 +53,11 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
     }
   };
 
+  const importError = (error: string) => {
+    console.log(error);
+    setShowErrorMessage(true);
+  };
+
   // triggers when file is dropped
   const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -70,6 +78,7 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
           sheetController: props.sheetController,
           file: file,
           insertAtCellLocation: { x: column, y: row } as Coordinate,
+          reportError: importError,
         });
       }
     }
@@ -98,6 +107,15 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
           }}
         ></div>
       )}
+      <Snackbar
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        open={showErrorMessage}
+        onClose={() => {
+          setShowErrorMessage(false);
+        }}
+        autoHideDuration={5000}
+        message={`Error: processing CSV file.`}
+      />
     </div>
   );
 };
