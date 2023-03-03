@@ -173,10 +173,6 @@ export const QuadraticMenu = (props: Props) => {
             <MenuLineItem primary="Paste" secondary={KeyboardSymbols.Command + 'V'} Icon={ContentPaste}></MenuLineItem>
           </MenuItem>
         </SubMenu>
-        <SubMenu label="Import">
-          <MenuItem disabled>CSV (coming soon)</MenuItem>
-          <MenuItem disabled>Excel (coming soon)</MenuItem>
-        </SubMenu>
         <SubMenu label="View">
           <MenuItem
             type="checkbox"

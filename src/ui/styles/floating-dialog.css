@@ -11,3 +11,8 @@
 .MuiListItemText-root.MuiListItemText-inset {
   padding-left: 40px;
 }
+
+/* Move the snackbar up from the bottom a bit */
+.MuiSnackbar-anchorOriginBottomCenter {
+  bottom: 36px !important;
+}
