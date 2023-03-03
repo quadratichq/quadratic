@@ -4,7 +4,6 @@ import { Sheet } from '../../../grid/sheet/Sheet';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit } from '../../helpers/zoom';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { Pointer } from '../pointer/Pointer';
-import { focusGrid } from '../../../helpers/focusGrid';
 
 export function keyboardViewport(options: {
   event: KeyboardEvent;
@@ -39,7 +38,6 @@ export function keyboardViewport(options: {
       ...editorInteractionState,
       showFileMenu: !editorInteractionState.showFileMenu,
     });
-    focusGrid();
     return true;
   }
 

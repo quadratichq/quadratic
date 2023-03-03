@@ -1,14 +1,22 @@
-import { Add, Close, Delete, FileDownloadOutlined } from '@mui/icons-material';
+import {
+  AddCircleOutline,
+  Close,
+  DeleteOutline,
+  FileDownloadOutlined,
+  InsertDriveFileOutlined,
+} from '@mui/icons-material';
 import {
   Alert,
   AlertTitle,
-  Button,
+  Box,
   Divider,
   IconButton,
   List,
   ListItem,
   ListItemButton,
+  ListItemIcon,
   ListItemText,
+  Modal,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -18,6 +26,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { focusGrid } from '../../../helpers/focusGrid';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { TooltipHint } from '../../components/TooltipHint';
+import { useEffect } from 'react';
 
 interface FileMenuProps {
   app: any;
@@ -46,137 +55,135 @@ export function FileMenu(props: FileMenuProps) {
     { name: 'Untitled', modified: '2021-03-01T12:03:13.892Z' },
   ];
 
+  // Focus back to the grid when this unmounts
+  useEffect(() => {
+    return () => {
+      focusGrid();
+    };
+  });
+
+  const colStyles: React.CSSProperties = {
+    maxWidth: '40rem',
+    margin: `${theme.spacing(6)} auto`,
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+  };
+
   return (
-    <div
-      style={{
-        position: 'fixed',
-        width: '100%',
-        height: '100%',
-        top: '0',
-        left: '0',
-        right: '0',
-        bottom: '0',
-        background: '#fff',
-        zIndex: '100',
-        display: 'grid',
-        gridTemplateColumns: '50% 50%',
-        overflow: 'scroll',
+    <Modal
+      open={true}
+      onKeyDown={(e) => {
+        if (e.code === 'Escape') {
+          onClose();
+        }
+        console.log('fired');
       }}
     >
-      <img
-        src="/images/logo.svg"
-        width="17"
-        alt="Quadratic logo"
-        style={{ position: 'fixed', left: theme.spacing(2), top: theme.spacing(2) }}
-      />
-      <div style={{ position: 'fixed', right: theme.spacing(1), top: theme.spacing(1) }}>
-        <TooltipHint title="Close" shortcut={'ESC'}>
-          <IconButton onClick={onClose}>
-            <Close />
-          </IconButton>
-        </TooltipHint>
-      </div>
-
-      <div
+      <Box
         style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          maxWidth: '40rem',
-          margin: `0 auto`,
+          position: 'fixed',
+          width: '100%',
+          height: '100%',
+          top: '0',
+          left: '0',
+          right: '0',
+          bottom: '0',
+          background: '#fff',
+          zIndex: '100',
+          display: 'grid',
+          gridTemplateColumns: '50% 50%',
+          overflow: 'scroll',
         }}
       >
-        <div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginTop: theme.spacing(4),
-            }}
-          >
-            <Typography variant="h6">Files</Typography>
-            <Button
-              variant="text"
-              startIcon={<Add />}
-              onClick={() => {
-                // TODO create new file
-              }}
-            >
-              Create new
-            </Button>
-          </div>
+        <img
+          src="/images/logo.svg"
+          width="17"
+          alt="Quadratic logo"
+          style={{ position: 'fixed', left: theme.spacing(2), top: theme.spacing(2) }}
+        />
+        <div style={{ position: 'fixed', right: theme.spacing(1), top: theme.spacing(1) }}>
+          <TooltipHint title="Close" shortcut={'ESC'}>
+            <IconButton onClick={onClose}>
+              <Close />
+            </IconButton>
+          </TooltipHint>
+        </div>
 
-          <Divider sx={{ mt: theme.spacing(1), mb: theme.spacing(-1) }} />
-
-          <List>
-            {files.length ? (
-              files.map(({ name, modified }, i) => (
-                <>
-                  <ListItem
-                    key={i}
-                    secondaryAction={
-                      <div style={{ display: 'flex', alignItems: 'ceter', gap: '8px' }}>
-                        <IconButton
-                          onClick={() => {
-                            // TODO download file
-                          }}
-                        >
-                          <FileDownloadOutlined fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => {
-                            // TODO delete file from memory
-                          }}
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </div>
-                    }
-                    disablePadding
-                    style={{ borderBottom: `1px solid ${theme.palette.divider}` }}
-                  >
-                    <ListItemButton onClick={() => {}}>
-                      <ListItemText primary={name} secondary={timeAgo(new Date(modified))} />
-                    </ListItemButton>
-                  </ListItem>
-                </>
-              ))
-            ) : (
-              <>
+        <div style={colStyles}>
+          <div>
+            <Typography variant="h5">Your files</Typography>
+            <List>
+              <Divider />
+              <ListItem disablePadding>
+                <ListItemButton sx={{ py: theme.spacing(2) }}>
+                  <ListItemIcon>
+                    <AddCircleOutline color="primary" />
+                  </ListItemIcon>
+                  <ListItemText primary="Create file" primaryTypographyProps={{ color: 'primary' }} />
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+              {files.length ? (
+                files.map(({ name, modified }, i) => (
+                  <>
+                    <ListItem
+                      key={i}
+                      secondaryAction={
+                        <div style={{ display: 'flex', alignItems: 'ceter', gap: '8px' }}>
+                          <IconButton
+                            onClick={() => {
+                              // TODO download file
+                            }}
+                          >
+                            <FileDownloadOutlined />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => {
+                              // TODO delete file from memory
+                            }}
+                          >
+                            <DeleteOutline />
+                          </IconButton>
+                        </div>
+                      }
+                      disablePadding
+                    >
+                      <ListItemButton onClick={() => {}}>
+                        <ListItemIcon>
+                          <InsertDriveFileOutlined sx={{ color: theme.palette.text.primary }} />
+                        </ListItemIcon>
+                        <ListItemText primary={name} secondary={timeAgo(new Date(modified))} />
+                      </ListItemButton>
+                    </ListItem>
+                    {i < files.length - 1 && <Divider />}
+                  </>
+                ))
+              ) : (
                 <ListItem disabled>
                   <ListItemText primary="There are no files stored in memory." />
                 </ListItem>
-              </>
-            )}
-          </List>
-        </div>
-        <div>
-          <Alert severity="info">
-            <AlertTitle>Important note on files</AlertTitle>
-            Files are stored in memory. Make sure you save a local copy of any files you want to save.{' '}
-            <LinkNewTab href="#TODO-DOCS-LINK">Learn more</LinkNewTab>.
-          </Alert>
-        </div>
-      </div>
-      <div style={{ background: theme.palette.grey['50'] }}>
-        <div style={{ maxWidth: '40rem', margin: `0 auto`, position: 'relative' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginTop: theme.spacing(4),
-              paddingBottom: theme.spacing(0.5),
-            }}
-          >
-            <Typography variant="h6">Open file…</Typography>
+              )}
+            </List>
           </div>
-          <Divider sx={{ mt: theme.spacing(1), mb: theme.spacing(-1) }} />
-          <FileMenuTabs />
+          <div>
+            <Alert severity="info">
+              <AlertTitle>Important note on files</AlertTitle>
+              Files are stored in memory. Make sure you save a local copy of any files you want to save.{' '}
+              <LinkNewTab href="#TODO-DOCS-LINK">Learn more</LinkNewTab>.
+            </Alert>
+          </div>
         </div>
-      </div>
-    </div>
+        <div style={{ background: theme.palette.grey['50'] }}>
+          <div style={colStyles}>
+            <Typography variant="h5">Start a new file…</Typography>
+            <Divider sx={{ mt: theme.spacing(1) }} />
+            <FileMenuTabs />
+          </div>
+        </div>
+      </Box>
+    </Modal>
   );
 }
 

@@ -3,7 +3,7 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import { Button } from '@mui/material';
+import { Button, useTheme } from '@mui/material';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -23,7 +23,7 @@ function TabPanel(props: TabPanelProps) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ px: 0, py: 3 }}>
+        <Box sx={{ px: 0, py: 2 }}>
           <Typography>{children}</Typography>
         </Box>
       )}
@@ -40,6 +40,7 @@ function a11yProps(index: number) {
 
 export default function BasicTabs() {
   const [value, setValue] = React.useState(0);
+  const theme = useTheme();
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -51,20 +52,27 @@ export default function BasicTabs() {
         value={value}
         onChange={handleChange}
         aria-label="basic tabs example"
-        style={{ position: 'absolute', top: '-4px', right: '0' }}
+        style={{ position: 'absolute', top: theme.spacing(-1), right: '0' }}
       >
-        <Tab label="Examples" {...a11yProps(0)} />
-        <Tab label="Remote" {...a11yProps(1)} />
-        <Tab label="Local" {...a11yProps(2)} />
+        <Tab label="Blank" {...a11yProps(0)} />
+        <Tab label="Example" {...a11yProps(1)} />
+        <Tab label="Import" {...a11yProps(2)} />
+        <Tab label="URL" {...a11yProps(3)} />
       </Tabs>
       <TabPanel value={value} index={0}>
-        Examples
+        <Typography variant="body1" sx={{ mb: theme.spacing(2) }}>
+          Quadratic spreadsheets are an open `.grid` file format. They can be saved to your local computer for sharing
+          with others and re-opened here.
+        </Typography>
+        <Button variant="contained" disableElevation>
+          New file
+        </Button>
       </TabPanel>
       <TabPanel value={value} index={1}>
         Remote
       </TabPanel>
       <TabPanel value={value} index={2}>
-        <Typography variant="body1" mb={'12px'}>
+        <Typography variant="body1" sx={{ mb: theme.spacing(2) }}>
           Quadratic spreadsheets are an open `.grid` file format. They can be saved to your local computer for sharing
           with others and re-opened here.
         </Typography>
@@ -80,6 +88,9 @@ export default function BasicTabs() {
         >
           Select file & open
         </Button>
+      </TabPanel>
+      <TabPanel value={value} index={3}>
+        URL
       </TabPanel>
     </Box>
   );
