@@ -52,7 +52,7 @@ const ListItems = [
     },
   },
   {
-    label: 'View: Show cell type outlines',
+    label: 'View: Show code cell outlines',
     Component: (props: any) => {
       const settings = useGridSettings();
       return (
