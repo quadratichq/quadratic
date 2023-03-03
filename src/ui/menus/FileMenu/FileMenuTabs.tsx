@@ -3,7 +3,29 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import { Button, useTheme } from '@mui/material';
+import { Button, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme } from '@mui/material';
+import { openExampleGridFile } from '../../../grid/actions/gridFile/OpenGridFile';
+import { SheetController } from '../../../grid/controller/sheetController';
+import { InsertDriveFileOutlined } from '@mui/icons-material';
+
+// TODO work on descriptions
+const examples = [
+  { name: 'Basic', file: 'default.grid', description: 'Quick start' },
+  {
+    name: 'Using Python',
+    file: 'python.grid',
+    description: 'Basics of using Python like returning data to the grid and making API requests.',
+  },
+  { name: 'Airports (large)', file: 'airports_large.grid', description: 'Lorem ipsum santa dolor.' },
+  { name: 'Airports (distance)', file: 'airport_distance.grid', description: 'Lorem ipsum santa dolor.' },
+  { name: 'Expenses', file: 'expenses.grid', description: 'Example of spreadsheet-style budgeting.' },
+  {
+    name: 'Monte Carlo simulation',
+    file: 'monte_carlo_simulation.grid',
+    description: 'Working with large sets of data',
+  },
+  { name: 'Startup portfolio', file: 'startup_portfolio.grid', description: 'Lorem ipsum santa dolor.' },
+];
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -38,7 +60,13 @@ function a11yProps(index: number) {
   };
 }
 
-export default function BasicTabs() {
+interface FileMenuTabsProps {
+  sheetController: SheetController;
+  onClose: () => void;
+}
+
+export default function FileMenuTabs(props: FileMenuTabsProps) {
+  const { onClose, sheetController } = props;
   const [value, setValue] = React.useState(0);
   const theme = useTheme();
 
@@ -69,7 +97,26 @@ export default function BasicTabs() {
         </Button>
       </TabPanel>
       <TabPanel value={value} index={1}>
-        Remote
+        <List sx={{ mt: theme.spacing(-3) }}>
+          {examples.map(({ name, file, description }, i) => (
+            <>
+              <ListItem key={`sample-${file}`} disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    openExampleGridFile(file, sheetController);
+                    onClose();
+                  }}
+                >
+                  <ListItemIcon>
+                    <InsertDriveFileOutlined sx={{ color: theme.palette.text.primary }} />
+                  </ListItemIcon>
+                  <ListItemText primary={name} secondary={description} />
+                </ListItemButton>
+              </ListItem>
+              {i < examples.length - 1 && <Divider />}
+            </>
+          ))}
+        </List>
       </TabPanel>
       <TabPanel value={value} index={2}>
         <Typography variant="body1" sx={{ mb: theme.spacing(2) }}>
