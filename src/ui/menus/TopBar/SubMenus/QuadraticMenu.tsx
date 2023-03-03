@@ -9,16 +9,17 @@ import { useAuth0 } from '@auth0/auth0-react';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
 import { SaveGridFile } from '../../../../grid/actions/gridFile/SaveGridFile';
-import { newGridFile, openGridFile } from '../../../../grid/actions/gridFile/OpenGridFile';
+import { newGridFile } from '../../../../grid/actions/gridFile/OpenGridFile';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { NewFile } from './newFile/NewFile';
 import { MenuLineItem } from '../MenuLineItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
+import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 
 interface Props {
   sheetController: SheetController;
@@ -29,7 +30,7 @@ export const QuadraticMenu = (props: Props) => {
   const { sheet } = sheetController;
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
   const interactionState = useRecoilValue(gridInteractionStateAtom);
-
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
 
   const [newFileOpen, setNewFileOpen] = useState(false);
@@ -74,7 +75,14 @@ export const QuadraticMenu = (props: Props) => {
         <SubMenu label="File">
           <MenuItem onClick={() => setNewFileOpen(true)}>New</MenuItem>
           <MenuItem onClick={() => SaveGridFile(sheet, true)}>Save local copy</MenuItem>
-          <MenuItem onClick={() => openGridFile(sheetController)}>
+          <MenuItem
+            onClick={() => {
+              setEditorInteractionState({
+                ...editorInteractionState,
+                showFileMenu: true,
+              });
+            }}
+          >
             <MenuLineItem primary="Open…" secondary={KeyboardSymbols.Command + 'O'} />
           </MenuItem>
         </SubMenu>

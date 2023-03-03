@@ -45,7 +45,6 @@ export default function QuadraticUI(props: Props) {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        position: 'relative',
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
