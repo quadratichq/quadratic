@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use smallvec::SmallVec;
 
 use super::*;
 
@@ -17,11 +18,11 @@ macro_rules! constant_function {
 /// Constructs a thunk that calls `array_mapped()`.
 macro_rules! array_mapped {
     ($closure:expr) => {
-        |args| array_mapped(args.inner, $closure)
+        |args| array_map(args, $closure)
     };
 }
 
-pub fn function_from_name(
+pub fn pure_function_from_name(
     s: &str,
 ) -> Option<fn(Spanned<Vec<Spanned<Value>>>) -> FormulaResult<Value>> {
     // When adding new functions, also update the code editor completions list.
@@ -38,8 +39,18 @@ pub fn function_from_name(
 
         // Mathematical operators
         "sum" => |args| sum(&args.inner).map(Value::Number),
-        "+" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? + b.to_number()?))),
-        "-" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? - b.to_number()?))),
+        "+" => |args| match args.inner.len() {
+            1 => array_map(args, |[a]| Ok(Value::Number(a.to_number()?))),
+            _ => array_map(args, |[a, b]| {
+                Ok(Value::Number(a.to_number()? + b.to_number()?))
+            }),
+        },
+        "-" => |args| match args.inner.len() {
+            1 => array_map(args, |[a]| Ok(Value::Number(-a.to_number()?))),
+            _ => array_map(args, |[a, b]| {
+                Ok(Value::Number(a.to_number()? - b.to_number()?))
+            }),
+        },
         "product" => |args| product(&args.inner).map(Value::Number),
         "*" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? * b.to_number()?))),
         "/" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? / b.to_number()?))),
@@ -131,16 +142,48 @@ fn flat_iter_strings<'a>(
     args.iter().map(|v| v.to_strings()).flatten_ok()
 }
 
-/// Produces a function that takes a fixed argument count and can be mapped over
-/// arrays.
-fn array_mapped<const N: usize>(
-    args: Vec<Spanned<Value>>,
-    op: fn([Spanned<Value>; N]) -> FormulaResult<Value>,
+/// Maps a fixed-argument-count function over arguments that may be arrays.
+pub fn array_map<const N: usize>(
+    args: Spanned<Vec<Spanned<Value>>>,
+    mut op: impl FnMut([Spanned<Value>; N]) -> FormulaResult<Value>,
 ) -> FormulaResult<Value> {
+    let (args, array_size) = args_with_common_array_size(args)?;
+    match array_size {
+        // Compute the results. If any argument is not an array, pretend it's an
+        // array of one element repeated with the right size.
+        Some((rows, cols)) => {
+            let mut output_array = Vec::with_capacity(rows);
+            for row in 0..rows {
+                let mut output_row = SmallVec::with_capacity(cols);
+                for col in 0..cols {
+                    let output_value = op(args
+                        .iter()
+                        .map(|arg| arg.get_array_value(row, col))
+                        .collect::<FormulaResult<Vec<_>>>()?
+                        .try_into()
+                        .unwrap())?;
+                    output_row.push(output_value);
+                }
+                output_array.push(output_row);
+            }
+            Ok(Value::Array(output_array))
+        }
+
+        // No operands are arrays, so just do the operation once.
+        None => op(args),
+    }
+}
+
+/// Returns the common `(rows, cols)` of several arguments, or `None` if no
+/// arguments are arrays.
+pub fn args_with_common_array_size<const N: usize>(
+    args: Spanned<Vec<Spanned<Value>>>,
+) -> FormulaResult<([Spanned<Value>; N], Option<(usize, usize)>)> {
     // Check argument count.
     let args: [Spanned<Value>; N] = args
+        .inner
         .try_into()
-        .map_err(|_| FormulaErrorMsg::BadArgumentCount)?;
+        .map_err(|_| FormulaErrorMsg::BadArgumentCount.with_span(args.span))?;
 
     let mut array_sizes_iter = args
         .iter()
@@ -158,27 +201,8 @@ fn array_mapped<const N: usize>(
             }
         }
 
-        // Compute the results. If any argument is not an array, pretend it's an
-        // array of one element repeated with the right size.
-        let (rows, cols) = array_size;
-        Ok(Value::Array(
-            (0..rows)
-                .map(|row| {
-                    (0..cols)
-                        .map(|col| {
-                            op(args
-                                .iter()
-                                .map(|arg| arg.get_array_value(row, col))
-                                .collect::<FormulaResult<Vec<_>>>()?
-                                .try_into()
-                                .unwrap())
-                        })
-                        .try_collect()
-                })
-                .try_collect()?,
-        ))
+        Ok((args, Some(array_size)))
     } else {
-        // No operands are arrays, so just do the operation once.
-        op(args)
+        Ok((args, None))
     }
 }

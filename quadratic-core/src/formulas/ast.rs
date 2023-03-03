@@ -80,33 +80,6 @@ impl Spanned<AstNodeContents> {
 }
 
 impl Formula {
-    /// Returns a formula that sums some cells.
-    ///
-    /// TODO: remove this. it's just here for testing
-    pub fn new_sum(cells: &[Pos]) -> Self {
-        Self {
-            ast: AstNode {
-                span: Span::empty(0),
-                inner: AstNodeContents::FunctionCall {
-                    func: Spanned {
-                        span: Span::empty(0),
-                        inner: "SUM".to_string(),
-                    },
-                    args: cells
-                        .iter()
-                        .map(|&Pos { x, y }| AstNode {
-                            span: Span::empty(0),
-                            inner: AstNodeContents::CellRef(CellRef {
-                                x: CellRefCoord::Absolute(x),
-                                y: CellRefCoord::Absolute(y),
-                            }),
-                        })
-                        .collect(),
-                },
-            },
-        }
-    }
-
     /// Evaluates a formula, blocking on async calls.
     ///
     /// Use this when the grid proxy isn't actually doing anything async.
@@ -170,12 +143,17 @@ impl AstNode {
                 for arg in args {
                     arg_values.push(arg.eval(grid, pos).await?);
                 }
-                match functions::function_from_name(&func.inner) {
-                    Some(f) => f(Spanned {
-                        span: self.span,
-                        inner: arg_values,
-                    })?,
-                    None => return Err(FormulaErrorMsg::BadFunctionName.with_span(func.span)),
+                let spanned_arg_values = Spanned {
+                    span: self.span,
+                    inner: arg_values,
+                };
+
+                match func.inner.to_ascii_lowercase().as_str() {
+                    "cell" | "c" => self.array_mapped_get_cell(grid, pos, spanned_arg_values)?,
+                    _ => match functions::pure_function_from_name(&func.inner) {
+                        Some(f) => f(spanned_arg_values)?,
+                        None => return Err(FormulaErrorMsg::BadFunctionName.with_span(func.span)),
+                    },
                 }
             }
 
@@ -207,5 +185,25 @@ impl AstNode {
             return Err(FormulaErrorMsg::CircularReference.with_span(self.span));
         }
         Ok(Value::String(grid.get(ref_pos).await.unwrap_or_default()))
+    }
+
+    /// Fetches the contents of the cell at `(x, y)`, but fetches an array of cells
+    /// if either `x` or `y` is an array.
+    fn array_mapped_get_cell(
+        &self,
+        grid: &mut impl GridProxy,
+        base_pos: Pos,
+        args: Spanned<Vec<Spanned<Value>>>,
+    ) -> FormulaResult<Value> {
+        functions::array_map(args, move |[x, y]| {
+            let pos = Pos {
+                x: x.to_integer()?,
+                y: y.to_integer()?,
+            };
+            // Can't have this be async because it needs to mutate `grid` and
+            // Rust isn't happy about moving a mutable reference to `grid` into
+            // the closure.
+            pollster::block_on(self.get_cell(grid, base_pos, CellRef::absolute(pos)))
+        })
     }
 }
