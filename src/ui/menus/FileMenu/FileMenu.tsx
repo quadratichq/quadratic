@@ -13,9 +13,9 @@ import {
   useTheme,
 } from '@mui/material';
 import { useRecoilState } from 'recoil';
+import FileMenuTabs from './FileMenuTabs';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { TooltipHint } from '../../components/TooltipHint';
 
@@ -67,10 +67,10 @@ export function FileMenu(props: FileMenuProps) {
         src="/images/logo.svg"
         width="17"
         alt="Quadratic logo"
-        style={{ position: 'fixed', left: theme.spacing(1), top: theme.spacing(1) }}
+        style={{ position: 'fixed', left: theme.spacing(2), top: theme.spacing(2) }}
       />
       <div style={{ position: 'fixed', right: theme.spacing(1), top: theme.spacing(1) }}>
-        <TooltipHint title="Close file menu" shortcut={KeyboardSymbols.Command + 'O'}>
+        <TooltipHint title="Close" shortcut={'ESC'}>
           <IconButton onClick={onClose}>
             <Close />
           </IconButton>
@@ -83,7 +83,6 @@ export function FileMenu(props: FileMenuProps) {
           flexDirection: 'column',
           justifyContent: 'space-between',
           maxWidth: '40rem',
-          padding: theme.spacing(1, 0, 0, 0),
           margin: `0 auto`,
         }}
       >
@@ -96,7 +95,7 @@ export function FileMenu(props: FileMenuProps) {
               marginTop: theme.spacing(4),
             }}
           >
-            <Typography variant="h5">Files</Typography>
+            <Typography variant="h6">Files</Typography>
             <Button
               variant="text"
               startIcon={<Add />}
@@ -161,8 +160,20 @@ export function FileMenu(props: FileMenuProps) {
         </div>
       </div>
       <div style={{ background: theme.palette.grey['50'] }}>
-        <div style={{ maxWidth: '40rem', padding: theme.spacing(1, 0, 0, 0), margin: `0 auto` }}>
-          <Typography variant="h5">Open file…</Typography>
+        <div style={{ maxWidth: '40rem', margin: `0 auto`, position: 'relative' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: theme.spacing(4),
+              paddingBottom: theme.spacing(0.5),
+            }}
+          >
+            <Typography variant="h6">Open file…</Typography>
+          </div>
+          <Divider sx={{ mt: theme.spacing(1), mb: theme.spacing(-1) }} />
+          <FileMenuTabs />
         </div>
       </div>
     </div>
