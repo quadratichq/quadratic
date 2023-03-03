@@ -1,9 +1,12 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { newGridFile, openGridFile } from '../../../../grid/actions/gridFile/OpenGridFile';
+import { newGridFile } from '../../../../grid/actions/gridFile/OpenGridFile';
 import { SaveGridFile } from '../../../../grid/actions/gridFile/SaveGridFile';
 import { NoteAddOutlined, UploadFileOutlined } from '@mui/icons-material';
 import { SaveFileOutlined } from '../../../icons';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { useRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 
 const ListItems = [
   {
@@ -32,15 +35,23 @@ const ListItems = [
   },
   {
     label: 'File: Open…',
-    Component: (props: CommandPaletteListItemSharedProps) => (
-      <CommandPaletteListItem
-        {...props}
-        icon={<UploadFileOutlined />}
-        action={() => {
-          openGridFile(props.sheetController);
-        }}
-      />
-    ),
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<UploadFileOutlined />}
+          shortcut="O"
+          shortcutModifiers={[KeyboardSymbols.Command]}
+          action={() => {
+            setEditorInteractionState({
+              ...editorInteractionState,
+              showFileMenu: true,
+            });
+          }}
+        />
+      );
+    },
   },
 ];
 

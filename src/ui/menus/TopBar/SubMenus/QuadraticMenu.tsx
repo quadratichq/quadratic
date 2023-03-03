@@ -13,6 +13,8 @@ import { newGridFile, openGridFile } from '../../../../grid/actions/gridFile/Ope
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { NewFile } from './newFile/NewFile';
+import { MenuLineItem } from '../MenuLineItem';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 
 interface Props {
   sheetController: SheetController;
@@ -67,7 +69,9 @@ export const QuadraticMenu = (props: Props) => {
         <SubMenu label="File">
           <MenuItem onClick={() => setNewFileOpen(true)}>New</MenuItem>
           <MenuItem onClick={() => SaveGridFile(sheet, true)}>Save local copy</MenuItem>
-          <MenuItem onClick={() => openGridFile(sheetController)}>Open…</MenuItem>
+          <MenuItem onClick={() => openGridFile(sheetController)}>
+            <MenuLineItem primary="Open…" secondary={KeyboardSymbols.Command + 'O'} />
+          </MenuItem>
         </SubMenu>
         <SubMenu label="Import">
           <MenuItem disabled>CSV (coming soon)</MenuItem>

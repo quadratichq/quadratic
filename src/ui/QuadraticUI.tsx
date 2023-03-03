@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../grid/controller/sheetController';
 import CellTypeMenu from './menus/CellTypeMenu';
+import FileMenu from './menus/FileMenu';
 
 interface Props {
   sheetController: SheetController;
@@ -36,6 +37,7 @@ export default function QuadraticUI(props: Props) {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        position: 'relative',
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
@@ -43,6 +45,7 @@ export default function QuadraticUI(props: Props) {
       <TopBar app={app} sheetController={sheetController} />
       {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
+      {editorInteractionState.showFileMenu && <FileMenu app={app} sheetController={sheetController} />}
 
       <div
         style={{

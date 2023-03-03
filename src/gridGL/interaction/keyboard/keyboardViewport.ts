@@ -4,6 +4,7 @@ import { Sheet } from '../../../grid/sheet/Sheet';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit } from '../../helpers/zoom';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { Pointer } from '../pointer/Pointer';
+import { focusGrid } from '../../../helpers/focusGrid';
 
 export function keyboardViewport(options: {
   event: KeyboardEvent;
@@ -31,6 +32,16 @@ export function keyboardViewport(options: {
   } = options;
 
   if (!viewport || event.altKey) return false;
+
+  // Should come before other shortcuts (toggles open file view)
+  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyO') {
+    setEditorInteractionState({
+      ...editorInteractionState,
+      showFileMenu: !editorInteractionState.showFileMenu,
+    });
+    focusGrid();
+    return true;
+  }
 
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyP') {
     setEditorInteractionState({
