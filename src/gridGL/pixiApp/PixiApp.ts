@@ -18,7 +18,6 @@ import { SheetController } from '../../grid/controller/sheetController';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
-// import { FileUploadIndicator } from '../interaction/fileUpload/FileUploadIndicator';
 import { IS_READONLY_MODE } from '../../constants/app';
 
 export class PixiApp {
@@ -39,7 +38,6 @@ export class PixiApp {
   quadrants: Quadrants;
 
   input: Pointer;
-  // fileUploadIndicator: FileUploadIndicator;
   viewportContents: Container;
   settings: PixiAppSettings;
   renderer: Renderer;
@@ -115,7 +113,6 @@ export class PixiApp {
 
     this.input = new Pointer(this);
     this.update = new Update(this);
-    // this.fileUploadIndicator = new FileUploadIndicator(this);
 
     if (debugAlwaysShowCache) this.showCache();
 
