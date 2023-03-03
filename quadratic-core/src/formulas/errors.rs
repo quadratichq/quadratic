@@ -51,6 +51,7 @@ pub enum FormulaErrorMsg {
         expected: (usize, usize),
         got: (usize, usize),
     },
+    NonRectangularArray,
     BadArgumentCount,
     BadFunctionName,
     BadCellReference,
@@ -85,6 +86,9 @@ impl fmt::Display for FormulaErrorMsg {
             },
             Self::ArraySizeMismatch { expected, got } => {
                 write!(f, "Array size mismatch: expected {expected:?}, got {got:?}")
+            }
+            Self::NonRectangularArray => {
+                write!(f, "Array must be rectangular")
             }
             Self::BadArgumentCount => {
                 // TODO: give a nicer error message that says what the arguments

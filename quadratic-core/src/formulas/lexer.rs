@@ -130,8 +130,10 @@ pub enum Token {
     RBrace,
 
     // Separators
-    #[strum(to_string = "argument separator")]
+    #[strum(to_string = "argument separator (comma)")]
     ArgSep,
+    #[strum(to_string = "array row seperator (semicolon)")]
+    RowSep,
 
     // Comparison operators
     #[strum(to_string = "equals comparison")]
@@ -211,6 +213,7 @@ impl Token {
                 "]" => Self::RBracket,
                 "}" => Self::RBrace,
                 "," => Self::ArgSep,
+                ";" => Self::RowSep,
                 "=" | "==" => Self::Eql,
                 "<>" | "!=" => Self::Neq,
                 "<" => Self::Lt,

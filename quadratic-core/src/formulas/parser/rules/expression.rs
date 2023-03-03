@@ -117,11 +117,12 @@ impl SyntaxRule for ExpressionWithPrecedence {
             // just match all of them.
             match t {
                 Token::LParen => true,
+                Token::LBracket => false,
+                Token::LBrace => true,
 
-                Token::LBracket | Token::LBrace => false,
                 Token::RParen | Token::RBracket | Token::RBrace => false,
 
-                Token::ArgSep => false,
+                Token::ArgSep | Token::RowSep => false,
 
                 Token::Eql | Token::Neq | Token::Lt | Token::Gt | Token::Lte | Token::Gte => false,
 
@@ -162,6 +163,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
                     FunctionCall.map(Some),
                     StringLiteral.map(Some),
                     NumericLiteral.map(Some),
+                    ArrayLiteral.map(Some),
                     CellReference.map(Some),
                     ParenExpression.map(Some),
                     Epsilon.map(|_| None),
@@ -355,5 +357,55 @@ impl SyntaxRule for ParenExpression {
         p.parse(Surround::paren(
             Expression.map(|expr| ast::AstNodeContents::Paren(Box::new(expr))),
         ))
+    }
+}
+
+/// Matches an array literal.
+pub struct ArrayLiteral;
+impl_display!(for ArrayLiteral, "array literal, such as '{{1, 2; 3, 4}}'");
+impl SyntaxRule for ArrayLiteral {
+    type Output = AstNode;
+
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        p.next() == Some(Token::LBrace)
+    }
+
+    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+        let start_span = p.peek_next_span();
+
+        let mut rows = vec![vec![]];
+        p.parse(Token::LBrace)?;
+        loop {
+            rows.last_mut().unwrap().push(p.parse(Expression)?);
+            match p.next() {
+                Some(Token::ArgSep) => (),                // next cell within row
+                Some(Token::RowSep) => rows.push(vec![]), // start a new row
+                Some(Token::RBrace) => break,             // end of array
+                _ => {
+                    return Err(p.expected_err(crate::util::join_with_conjunction(
+                        "or",
+                        &[
+                            Token::ArgSep.to_string(),
+                            Token::RowSep.to_string(),
+                            Token::RBrace.to_string(),
+                        ],
+                    )))
+                }
+            }
+        }
+        if rows.last().unwrap().is_empty() && rows.len() > 1 {
+            rows.pop();
+        }
+
+        let end_span = p.span();
+
+        if !rows.iter().map(|row| row.len()).all_equal() {
+            return Err(FormulaErrorMsg::NonRectangularArray.with_span(end_span));
+        }
+
+        Ok(Spanned {
+            span: Span::merge(start_span, end_span),
+            inner: ast::AstNodeContents::Array(rows),
+        })
     }
 }
