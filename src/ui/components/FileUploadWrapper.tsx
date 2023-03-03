@@ -6,7 +6,7 @@ import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import debounce from 'lodash.debounce';
-import { Snackbar } from '@mui/material';
+import { QuadraticSnackBar } from './QuadraticSnackBar';
 
 interface Props {
   sheetController: SheetController;
@@ -20,7 +20,7 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
   const divRef = useRef<HTMLDivElement>(null);
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
 
-  const [showErrorMessage, setShowErrorMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
 
   const moveCursor = debounce((e: DragEvent<HTMLDivElement>): void => {
     const clientBoudingRect = divRef?.current?.getBoundingClientRect();
@@ -53,11 +53,6 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
     }
   };
 
-  const importError = (error: string) => {
-    console.log(error);
-    setShowErrorMessage(true);
-  };
-
   // triggers when file is dropped
   const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -66,7 +61,8 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      if (file.type === 'text/csv') {
+      console.log('file.type: ', file.type);
+      if (file.type === 'text/csv' || file.type === 'text/tab-separated-values') {
         const clientBoudingRect = divRef?.current?.getBoundingClientRect();
         const world = app.viewport.toWorld(
           e.pageX - (clientBoudingRect?.left || 0),
@@ -78,8 +74,10 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
           sheetController: props.sheetController,
           file: file,
           insertAtCellLocation: { x: column, y: row } as Coordinate,
-          reportError: importError,
+          reportError: setErrorMessage,
         });
+      } else {
+        setErrorMessage('File type not supported. Please upload a CSV file.');
       }
     }
   };
@@ -107,14 +105,12 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
           }}
         ></div>
       )}
-      <Snackbar
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        open={showErrorMessage}
+      <QuadraticSnackBar
+        open={errorMessage !== undefined}
         onClose={() => {
-          setShowErrorMessage(false);
+          setErrorMessage(undefined);
         }}
-        autoHideDuration={5000}
-        message={`Error: processing CSV file.`}
+        message={errorMessage}
       />
     </div>
   );

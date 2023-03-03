@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Snackbar } from '@mui/material';
 import { useGridSettings } from '../menus/TopBar/SubMenus/useGridSettings';
 import { KeyboardSymbols } from '../../helpers/keyboardSymbols';
+import { QuadraticSnackBar } from './QuadraticSnackBar';
 
 export default function PresentationModeHint() {
   const { presentationMode } = useGridSettings();
@@ -14,13 +14,11 @@ export default function PresentationModeHint() {
   }, [presentationMode]);
 
   return (
-    <Snackbar
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+    <QuadraticSnackBar
       open={open}
       onClose={() => {
         setOpen(false);
       }}
-      autoHideDuration={5000}
       message={`Press “${KeyboardSymbols.Command}.” to exit presentation mode.`}
     />
   );
