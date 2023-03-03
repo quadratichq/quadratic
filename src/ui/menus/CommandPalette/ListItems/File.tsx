@@ -7,6 +7,7 @@ import { SaveFileOutlined } from '../../../icons';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
+import { useLocalFiles } from '../../../../hooks/useLocalFiles';
 
 const ListItems = [
   {
@@ -23,15 +24,18 @@ const ListItems = [
   },
   {
     label: 'File: Save local copy',
-    Component: (props: CommandPaletteListItemSharedProps) => (
-      <CommandPaletteListItem
-        {...props}
-        icon={<SaveFileOutlined />}
-        action={() => {
-          SaveGridFile(props.sheetController.sheet, true);
-        }}
-      />
-    ),
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const { localFilename } = useLocalFiles();
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<SaveFileOutlined />}
+          action={() => {
+            SaveGridFile(props.sheetController.sheet, true, localFilename);
+          }}
+        />
+      );
+    },
   },
   {
     label: 'File: Open…',

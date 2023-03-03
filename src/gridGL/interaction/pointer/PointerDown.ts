@@ -1,9 +1,10 @@
 import { Point } from 'pixi.js';
-import { isMobile } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../../../constants/app';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
+import { PanMode } from '../../../atoms/gridInteractionStateAtom';
 
 const MINIMUM_MOVE_POSITION = 5;
 
@@ -42,7 +43,8 @@ export class PointerDown {
   }
 
   pointerDown(world: Point, event: PointerEvent): void {
-    if (isMobile) return;
+    if (IS_READONLY_MODE) return;
+    if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
     const { settings, cursor } = this.app;
     const { interactionState, setInteractionState } = settings;
@@ -156,6 +158,8 @@ export class PointerDown {
   }
 
   pointerMove(world: Point): void {
+    if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
+
     const { viewport, settings, cursor } = this.app;
     const { gridOffsets } = this.sheet;
 
@@ -208,6 +212,7 @@ export class PointerDown {
     if (column === this.position.x && row === this.position.y) {
       // hide multi cursor when only selecting one cell
       settings.setInteractionState({
+        ...settings.interactionState,
         keyboardMovePosition: { x: this.position.x, y: this.position.y },
         cursorPosition: { x: this.position.x, y: this.position.y },
         multiCursorPosition: {
@@ -240,6 +245,7 @@ export class PointerDown {
       if (hasMoved) {
         // update multiCursor
         settings.setInteractionState({
+          ...settings.interactionState,
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
           multiCursorPosition: {

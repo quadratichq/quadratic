@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
-import { isMobileOnly } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../../../../constants/app';
 import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
@@ -15,6 +15,10 @@ import { SheetController } from '../../../../grid/controller/sheetController';
 import { NewFile } from './newFile/NewFile';
 import { MenuLineItem } from '../MenuLineItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
+import { useRecoilValue } from 'recoil';
+import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
+import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
 
 interface Props {
   sheetController: SheetController;
@@ -24,6 +28,7 @@ export const QuadraticMenu = (props: Props) => {
   const { sheetController } = props;
   const { sheet } = sheetController;
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
+  const interactionState = useRecoilValue(gridInteractionStateAtom);
 
   const settings = useGridSettings();
 
@@ -31,9 +36,9 @@ export const QuadraticMenu = (props: Props) => {
 
   const { isAuthenticated, user, logout } = useAuth0();
 
-  // On Mobile set Headers to not visible by default
+  // For readonly, set Headers to not visible by default
   useEffect(() => {
-    if (isMobileOnly) {
+    if (IS_READONLY_MODE) {
       settings.setShowHeadings(false);
     }
     // eslint-disable-next-line
@@ -73,6 +78,62 @@ export const QuadraticMenu = (props: Props) => {
             <MenuLineItem primary="Open…" secondary={KeyboardSymbols.Command + 'O'} />
           </MenuItem>
         </SubMenu>
+        <SubMenu label="Edit">
+          <MenuItem
+            onClick={() => {
+              sheetController.undo();
+            }}
+          >
+            <MenuLineItem primary="Undo" secondary={KeyboardSymbols.Command + 'Z'} Icon={Undo}></MenuLineItem>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              sheetController.redo();
+            }}
+          >
+            <MenuLineItem
+              primary="Redo"
+              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z'}
+              Icon={Undo}
+            ></MenuLineItem>
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            onClick={() => {
+              cutToClipboard(
+                sheetController,
+                {
+                  x: interactionState.multiCursorPosition.originPosition.x,
+                  y: interactionState.multiCursorPosition.originPosition.y,
+                },
+                {
+                  x: interactionState.multiCursorPosition.terminalPosition.x,
+                  y: interactionState.multiCursorPosition.terminalPosition.y,
+                }
+              );
+            }}
+          >
+            <MenuLineItem primary="Cut" secondary={KeyboardSymbols.Command + 'X'} Icon={ContentCut}></MenuLineItem>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              copyToClipboard(
+                props.sheetController,
+                interactionState.multiCursorPosition.originPosition,
+                interactionState.multiCursorPosition.terminalPosition
+              );
+            }}
+          >
+            <MenuLineItem primary="Copy" secondary={KeyboardSymbols.Command + 'C'} Icon={ContentCopy}></MenuLineItem>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              pasteFromClipboard(props.sheetController, interactionState.cursorPosition);
+            }}
+          >
+            <MenuLineItem primary="Paste" secondary={KeyboardSymbols.Command + 'V'} Icon={ContentPaste}></MenuLineItem>
+          </MenuItem>
+        </SubMenu>
         <SubMenu label="Import">
           <MenuItem disabled>CSV (coming soon)</MenuItem>
           <MenuItem disabled>Excel (coming soon)</MenuItem>
@@ -90,7 +151,7 @@ export const QuadraticMenu = (props: Props) => {
             checked={settings.showGridAxes}
             onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}
           >
-            Show axis
+            Show grid axis
           </MenuItem>
           <MenuItem
             type="checkbox"
@@ -104,7 +165,15 @@ export const QuadraticMenu = (props: Props) => {
             checked={settings.showCellTypeOutlines}
             onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}
           >
-            Show cell type outlines
+            Show code cell outlines
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            type="checkbox"
+            checked={settings.presentationMode}
+            onClick={() => settings.setPresentationMode(!settings.presentationMode)}
+          >
+            Presentation mode
           </MenuItem>
           {/* 
           Commented out because the editor switches this state automatically when the user

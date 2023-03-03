@@ -1,14 +1,13 @@
 import { useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-
-import { example_grid } from './example_grid';
 import { getURLParameter } from '../helpers/getURL';
 import { debugShowFileIO } from '../debugFlags';
 import { localFiles } from '../grid/sheet/localFiles';
 import { openGridFileFromUrl } from '../grid/actions/gridFile/OpenGridFile';
+import { openExampleGridFile } from '../grid/actions/gridFile/OpenGridFile';
 import { SheetController } from '../grid/controller/sheetController';
 
-const EXAMPLE_FILE_FILENAME = 'example.grid';
+const EXAMPLE_FILE_FILENAME = 'default.grid';
 
 interface Props {
   sheetController: SheetController;
@@ -35,8 +34,8 @@ export const FileLoadingComponent = (props: Props): JSX.Element | null => {
         if (debugShowFileIO) {
           console.log(`[WelcomeComponent] Loading example file b/c this is the first time`);
         }
-        props.sheetController.sheet.load_file(example_grid);
-        localFiles.loadedExternalFile(EXAMPLE_FILE_FILENAME, props.sheetController.sheet.export_file());
+        openExampleGridFile(EXAMPLE_FILE_FILENAME, props.sheetController);
+        setFirstTime(false);
       } else {
         localFiles.newFile();
       }

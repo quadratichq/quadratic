@@ -37,19 +37,18 @@ const FUNCTION_CALL_PATTERN: &str = r#"[A-Za-z_][A-Za-z_\d]*\("#;
 ///               \d+       digits
 const A1_CELL_REFERENCE_PATTERN: &str = r#"\$?[A-Z]+\$?n?\d+"#;
 
-/// Floating-point or integer number.
+/// Floating-point or integer number, without leading sign.
 ///
-/// [+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?
-/// [+-]?                                      optional sign
-///      (           |     )                   EITHER
-///       \d+                                    integer part
-///          (\.\d*)?                            with an optional decimal
-///      (           |     )                   OR
-///                   \.\d+                      decimal part only
-///                         ([eE]        )?    optional exponent
-///                              [+-]?           with an optional sign
-///                                   \d+        followed by some digits
-const NUMERIC_LITERAL_PATTERN: &str = r#"[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"#;
+/// (\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?
+/// (           |     )                   EITHER
+///  \d+                                    integer part
+///     (\.\d*)?                            with an optional decimal
+/// (           |     )                   OR
+///              \.\d+                      decimal part only
+///                    ([eE]        )?    optional exponent
+///                         [+-]?           with an optional sign
+///                              \d+        followed by some digits
+const NUMERIC_LITERAL_PATTERN: &str = r#"(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"#;
 
 /// Single-quoted string. Note that like Rust strings, this can span multiple
 /// lines.
