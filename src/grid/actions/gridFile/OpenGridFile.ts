@@ -1,4 +1,4 @@
-export {}
+export {};
 /*
 import { GridFileSchemaV1 } from './GridFileSchema';
 import { localFiles } from '../../sheet/localFiles';

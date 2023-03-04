@@ -23,13 +23,7 @@ const ListItems = [
     label: 'File: Save local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { save } = useLocalFiles(props.sheetController);
-      return (
-        <CommandPaletteListItem
-          {...props}
-          icon={<SaveFileOutlined />}
-          action={save}
-        />
-      );
+      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={save} />;
     },
   },
   {

@@ -1,4 +1,4 @@
-export {}
+export {};
 
 /*
 import { Sheet } from '../../sheet/Sheet';
