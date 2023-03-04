@@ -29,10 +29,10 @@ interface LocalFiles {
 }
 
 function log(...s: string[]): void {
-  console.log(`[useLocalFiles] ${s[0]}`, ...s.slice(1));
+  if (debugShowFileIO) console.log(`[useLocalFiles] ${s[0]}`, ...s.slice(1));
 }
 
-let firstLoad = false;
+let afterFirstLoad = false;
 
 export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const { sheet } = sheetController;
@@ -147,8 +147,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
   useEffect(() => {
     // ensure this only runs once
-    if (firstLoad) return;
-    firstLoad = true;
+    if (afterFirstLoad) return;
+    afterFirstLoad = true;
 
     if (getURLParameter('clear') === '1') {
       localforage.clear();
@@ -159,19 +159,20 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     }
 
     localforage.config({ name: 'Quadratic', version: 1 });
-    if (debugShowFileIO) log('initialized localForage');
+    log('initialized localForage');
 
     localforage.getItem(INDEX).then((result: unknown) => {
+
       let hasIndex = false;
       if (result) {
         hasIndex = true;
         const index = result as LocalFile[];
         index.sort((a, b) => a.modified - b.modified);
         setIndex(index);
-        if (debugShowFileIO) log(`loaded index with ${index.length} files`);
+        log(`loaded index with ${index.length} files`);
       } else {
         setIndex([]);
-        if (debugShowFileIO) log('index not found');
+        log('index not found');
       }
       setLoaded(true);
       const file = getURLParameter('file');
