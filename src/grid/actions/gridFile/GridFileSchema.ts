@@ -1,4 +1,3 @@
-import { Dependency } from '../../sheet/GridRenderDependency';
 import { Border, Cell, CellFormat, Heading } from '../../sheet/gridTypes';
 
 export interface GridFileSchemaV1 {
@@ -12,7 +11,6 @@ export interface GridFileSchemaV1 {
   columns: Heading[];
   rows: Heading[];
   borders: Border[];
-  render_dependency: Dependency[];
   cell_dependency: string;
   version: '1.0';
 }
