@@ -187,7 +187,7 @@ export const FloatingContextMenu = (props: Props) => {
         visibility: 'hidden',
       }}
       elevation={4}
-      onClick={(e) => {
+      onMouseDown={(e) => {
         e.stopPropagation();
       }}
     >

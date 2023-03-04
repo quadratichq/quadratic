@@ -126,6 +126,7 @@ export class CellsLabels extends Container {
     let alignment: CellAlignment = Number.isNaN(parseFloat(data.text)) ? 'left' : 'right';
     if (data.format?.alignment === 'right') alignment = 'right';
     else if (data.format?.alignment === 'center') alignment = 'center';
+    else if (data.format?.alignment === 'left') alignment = 'left';
     if (alignment === 'right') {
       label.position.set(data.x + data.expectedWidth - label.textWidth, data.y);
     } else if (alignment === 'center') {
