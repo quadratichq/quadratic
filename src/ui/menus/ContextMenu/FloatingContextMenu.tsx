@@ -6,9 +6,6 @@ import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import {
   AttachMoneyOutlined,
   BorderAll,
-  ContentCopy,
-  ContentCut,
-  ContentPaste,
   FormatAlignCenter,
   FormatAlignLeft,
   FormatAlignRight,
@@ -25,7 +22,6 @@ import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { QColorPicker } from '../../components/qColorPicker';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../grid/actions/clipboard/clipboard';
 import { TooltipHint } from '../../components/TooltipHint';
 import { DecimalDecrease, DecimalIncrease } from '../../icons';
 import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting';
@@ -101,6 +97,9 @@ export const FloatingContextMenu = (props: Props) => {
 
     // Hide if currently selecting
     if (app?.input?.pointerDown?.active) visibility = 'hidden';
+
+    // Hide if in presentation mode
+    if (app.settings.presentationMode) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheetController.sheet.gridOffsets.getCell(
@@ -198,53 +197,6 @@ export const FloatingContextMenu = (props: Props) => {
           minHeight: '0px',
         }}
       >
-        <TooltipHint title="Cut" shortcut={KeyboardSymbols.Command + 'X'}>
-          <IconButton
-            size="small"
-            onClick={() => {
-              cutToClipboard(
-                props.sheetController,
-                {
-                  x: props.interactionState.multiCursorPosition.originPosition.x,
-                  y: props.interactionState.multiCursorPosition.originPosition.y,
-                },
-                {
-                  x: props.interactionState.multiCursorPosition.terminalPosition.x,
-                  y: props.interactionState.multiCursorPosition.terminalPosition.y,
-                }
-              );
-            }}
-          >
-            <ContentCut fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
-        <TooltipHint title="Copy" shortcut={KeyboardSymbols.Command + 'C'}>
-          <IconButton
-            size="small"
-            onClick={() => {
-              copyToClipboard(
-                props.sheetController,
-                props.interactionState.multiCursorPosition.originPosition,
-                props.interactionState.multiCursorPosition.terminalPosition
-              );
-            }}
-          >
-            <ContentCopy fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
-        <TooltipHint title="Paste" shortcut={KeyboardSymbols.Command + 'P'}>
-          <IconButton
-            size="small"
-            onClick={() => {
-              pasteFromClipboard(props.sheetController, props.interactionState.cursorPosition);
-            }}
-          >
-            <ContentPaste fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
-
-        <MenuDivider />
-
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
           <IconButton size="small" onClick={() => changeBold(!format.bold)}>
             <FormatBold fontSize={iconSize} />
@@ -345,7 +297,7 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDivider />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton size="small" onClick={() => clearAllFormatting()}>
+          <IconButton size="small" size="small" onClick={() => clearAllFormatting()}>
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>

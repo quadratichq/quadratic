@@ -16,6 +16,8 @@ export function keyboardViewport(options: {
   changeItalic: Function;
   format: MultipleFormat;
   pointer: Pointer;
+  presentationMode: boolean;
+  setPresentationMode: Function;
 }): boolean {
   const {
     changeBold,
@@ -27,12 +29,13 @@ export function keyboardViewport(options: {
     viewport,
     editorInteractionState,
     setEditorInteractionState,
-    // pointer,
+    presentationMode,
+    setPresentationMode,
   } = options;
 
   if (!viewport || event.altKey) return false;
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyP') {
+  if ((event.metaKey || event.ctrlKey) && (event.code === 'KeyP' || event.code === 'KeyK' || event.code === 'Slash')) {
     setEditorInteractionState({
       ...editorInteractionState,
       showCellTypeMenu: false,
@@ -41,8 +44,19 @@ export function keyboardViewport(options: {
     });
     return true;
   }
+
   if ((event.metaKey || event.ctrlKey) && event.code === 'Backslash') {
     clearAllFormatting();
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.code === 'Period') {
+    setPresentationMode(!presentationMode);
+    return true;
+  }
+
+  if (event.code === 'Escape') {
+    if (presentationMode) setPresentationMode(false);
     return true;
   }
 

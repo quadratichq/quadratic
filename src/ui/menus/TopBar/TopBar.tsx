@@ -1,4 +1,4 @@
-import { Box, Typography, IconButton, Switch } from '@mui/material';
+import { Box, Typography, IconButton } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -9,7 +9,7 @@ import { DataMenu } from './SubMenus/DataMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { isMobileOnly } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../../../constants/app';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
@@ -18,6 +18,7 @@ import { TooltipHint } from '../../components/TooltipHint';
 import { ManageSearch } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
+import CodeOutlinesSwitch from './CodeOutlinesSwitch';
 
 interface IProps {
   app: PixiApp;
@@ -64,7 +65,7 @@ export const TopBar = (props: IProps) => {
         }}
       >
         <QuadraticMenu sheetController={props.sheetController} />
-        {!isMobileOnly && (
+        {!IS_READONLY_MODE && (
           <>
             <DataMenu></DataMenu>
             <FormatMenu app={props.app} sheet_controller={props.sheetController} />
@@ -73,7 +74,7 @@ export const TopBar = (props: IProps) => {
         )}
       </Box>
 
-      {isMobileOnly ? (
+      {IS_READONLY_MODE ? (
         <Box
           sx={{
             display: 'flex',
@@ -120,7 +121,7 @@ export const TopBar = (props: IProps) => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        {!isMobileOnly && (
+        {!IS_READONLY_MODE && (
           <>
             {/* {user !== undefined && (
               <AvatarGroup>
@@ -138,14 +139,13 @@ export const TopBar = (props: IProps) => {
                 </Avatar>
               </AvatarGroup>
             )} */}
-            <TooltipHint title="Show cell type outlines">
-              <Switch
-                checked={settings.showCellTypeOutlines}
-                onChange={() => {
+            <TooltipHint title={`${settings.showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
+              <CodeOutlinesSwitch
+                onClick={() => {
                   settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
                   focusGrid();
                 }}
-                size="small"
+                checked={settings.showCellTypeOutlines}
               />
             </TooltipHint>
             <TooltipHint title="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>

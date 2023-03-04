@@ -52,7 +52,7 @@ const ListItems = [
     },
   },
   {
-    label: 'View: Show cell type outlines',
+    label: 'View: Show code cell outlines',
     Component: (props: any) => {
       const settings = useGridSettings();
       return (
@@ -83,6 +83,38 @@ const ListItems = [
   //     );
   //   },
   // },
+  // {
+  //   label: 'View: Show debug menu',
+  //   Component: (props: CommandPaletteListItemSharedProps) => {
+  //     const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
+  //     return (
+  //       <CommandPaletteListItem
+  //         {...props}
+  //         icon={<CommandPaletteListItemCheckbox checked={showDebugMenu} />}
+  //         action={() => {
+  //           setShowDebugMenu(!showDebugMenu);
+  //         }}
+  //       />
+  //     );
+  //   },
+  // },
+  {
+    label: 'View: Presentation mode',
+    Component: (props: any) => {
+      const { presentationMode, setPresentationMode } = useGridSettings();
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<CommandPaletteListItemCheckbox checked={presentationMode} />}
+          action={() => {
+            setPresentationMode(!presentationMode);
+          }}
+          shortcut="."
+          shortcutModifiers={[KeyboardSymbols.Command]}
+        />
+      );
+    },
+  },
   {
     label: 'View: Zoom in',
     Component: (props: CommandPaletteListItemSharedProps) => (

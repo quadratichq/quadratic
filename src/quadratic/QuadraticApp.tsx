@@ -7,28 +7,37 @@ import { loadPython } from '../grid/computations/python/loadPython';
 import { FileLoadingComponent } from './FileLoadingComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../gridGL/loadAssets';
-import { isMobileOnly } from 'react-device-detect';
+import { IS_READONLY_MODE } from '../constants/app';
 import { debugSkipPythonLoad } from '../debugFlags';
 import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import { localFiles } from '../grid/sheet/localFiles';
 import { SheetController } from '../grid/controller/sheetController';
 import init, { hello } from 'quadratic-core';
+import { useGridSettings } from '../ui/menus/TopBar/SubMenus/useGridSettings';
 
 export const QuadraticApp = () => {
   const { loading, incrementLoadingCount } = useLoading();
   const [sheet_controller] = useState<SheetController>(new SheetController());
   const sheet = sheet_controller.sheet;
+  const { setPresentationMode } = useGridSettings();
+  const [settingsReset, setSettingsReset] = useState(false);
+
+  // reset presentation mode when app starts
+  useEffect(() => {
+    if (!settingsReset) {
+      setPresentationMode(false);
+      setSettingsReset(true);
+    }
+  }, [setPresentationMode, settingsReset, setSettingsReset]);
 
   // Loading Effect
   useEffect(() => {
     if (loading) {
-      if (!isMobileOnly && !debugSkipPythonLoad) {
-        // Load Python on desktop
+      if (!IS_READONLY_MODE && !debugSkipPythonLoad) {
         loadPython().then(() => {
           incrementLoadingCount();
         });
       } else {
-        // Don't load python on mobile
         incrementLoadingCount();
       }
       loadAssets().then(() => {

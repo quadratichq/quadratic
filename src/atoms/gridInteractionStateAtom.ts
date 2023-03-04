@@ -1,6 +1,14 @@
 import { atom } from 'recoil';
 import { Coordinate } from '../gridGL/types/size';
+
+export enum PanMode {
+  Disabled = 'DISABLED',
+  Enabled = 'ENABLED',
+  Dragging = 'DRAGGING',
+}
+
 export interface GridInteractionState {
+  panMode: PanMode;
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
   showMultiCursor: boolean;
@@ -13,6 +21,7 @@ export interface GridInteractionState {
 }
 
 export const gridInteractionStateDefault: GridInteractionState = {
+  panMode: PanMode.Disabled,
   keyboardMovePosition: { x: 0, y: 0 },
   cursorPosition: { x: 0, y: 0 },
   showMultiCursor: false,
