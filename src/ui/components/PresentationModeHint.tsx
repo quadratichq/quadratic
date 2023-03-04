@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Snackbar } from '@mui/material';
 import { useGridSettings } from '../menus/TopBar/SubMenus/useGridSettings';
+import { QuadraticSnackBar } from './QuadraticSnackBar';
 
 export default function PresentationModeHint() {
   const { presentationMode } = useGridSettings();
@@ -13,13 +13,12 @@ export default function PresentationModeHint() {
   }, [presentationMode]);
 
   return (
-    <Snackbar
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+    <QuadraticSnackBar
       open={open}
       onClose={() => {
         setOpen(false);
       }}
-      autoHideDuration={5000}
+      autoHideDuration={4000}
       message={`Press "ESC" to exit presentation mode.`}
     />
   );
