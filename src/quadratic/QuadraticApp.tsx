@@ -12,11 +12,22 @@ import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import { localFiles } from '../grid/sheet/localFiles';
 import { SheetController } from '../grid/controller/sheetController';
 import init, { hello } from 'quadratic-core';
+import { useGridSettings } from '../ui/menus/TopBar/SubMenus/useGridSettings';
 
 export const QuadraticApp = () => {
   const { loading, incrementLoadingCount } = useLoading();
   const [sheet_controller] = useState<SheetController>(new SheetController());
   const sheet = sheet_controller.sheet;
+  const { setPresentationMode } = useGridSettings();
+  const [settingsReset, setSettingsReset] = useState(false);
+
+  // reset presentation mode when app starts
+  useEffect(() => {
+    if (!settingsReset) {
+      setPresentationMode(false);
+      setSettingsReset(true);
+    }
+  }, [setPresentationMode, settingsReset, setSettingsReset]);
 
   // Loading Effect
   useEffect(() => {
