@@ -15,7 +15,7 @@ import CellTypeMenu from './menus/CellTypeMenu';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
-import { CSVImportHelpMessage } from './overlays/CSVUploadHelpMessage';
+import { CSVImportHelpMessage } from './overlays/CSVImportHelpMessage';
 
 interface Props {
   sheetController: SheetController;
