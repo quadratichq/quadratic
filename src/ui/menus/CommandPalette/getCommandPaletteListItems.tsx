@@ -3,6 +3,7 @@ import fuzzysort from 'fuzzysort';
 import HelpListItems from './ListItems/Help';
 import ViewListItems from './ListItems/View';
 import FileListItems from './ListItems/File';
+import ImportListItems from './ListItems/Import';
 import EditListItems from './ListItems/Edit';
 import FormatListItems from './ListItems/Format';
 import BordersListItems from './ListItems/Borders';
@@ -21,6 +22,7 @@ const commands: Array<Commands> = [
   ...FileListItems,
   ...EditListItems,
   ...ViewListItems,
+  ...ImportListItems,
   ...BordersListItems,
   ...TextListItems,
   ...FormatListItems,

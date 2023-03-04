@@ -15,6 +15,7 @@ import CellTypeMenu from './menus/CellTypeMenu';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
+import { CSVImportHelpMessage } from './overlays/CSVUploadHelpMessage';
 
 interface Props {
   sheetController: SheetController;
@@ -67,6 +68,8 @@ export default function QuadraticUI(props: Props) {
         </FileUploadWrapper>
         <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
+
+      <CSVImportHelpMessage></CSVImportHelpMessage>
 
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
       {presentationMode && <PresentationModeHint />}

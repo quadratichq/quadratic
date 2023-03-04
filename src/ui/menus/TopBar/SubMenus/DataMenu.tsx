@@ -13,11 +13,12 @@ import {
 import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
 import { MenuLineItem } from '../MenuLineItem';
-import { QuadraticSnackBar } from '../../../components/QuadraticSnackBar';
-import { useState } from 'react';
+
+import { useSetRecoilState } from 'recoil';
+import { showCSVImportHelpAtom } from '../../../../atoms/showCSVImportHelpAtom';
 
 export const DataMenu = () => {
-  const [showCSVImportHelpMessage, setShowCSVImportHelpMessage] = useState(false);
+  const setShowCSVImportHelpMessage = useSetRecoilState(showCSVImportHelpAtom);
 
   return (
     <>
@@ -50,13 +51,6 @@ export const DataMenu = () => {
           <MenuLineItem primary="Database (coming soon)" Icon={StorageOutlined} />
         </MenuItem>
       </Menu>
-      <QuadraticSnackBar
-        open={showCSVImportHelpMessage}
-        onClose={() => {
-          setShowCSVImportHelpMessage(false);
-        }}
-        message="Drag and drop a CSV file on the grid to import it."
-      />
     </>
   );
 };
