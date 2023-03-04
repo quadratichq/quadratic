@@ -43,6 +43,8 @@ export function keyboardViewport(options: {
     });
     return true;
   }
+  // If file menu is open, don't accept any other shortcuts
+  if (editorInteractionState.showFileMenu) return false;
 
   if ((event.metaKey || event.ctrlKey) && (event.code === 'KeyP' || event.code === 'KeyK' || event.code === 'Slash')) {
     setEditorInteractionState({

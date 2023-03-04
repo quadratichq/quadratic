@@ -3,10 +3,21 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import { Button, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme } from '@mui/material';
+import {
+  Button,
+  Divider,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  TextField,
+  useTheme,
+} from '@mui/material';
 import { openExampleGridFile } from '../../../grid/actions/gridFile/OpenGridFile';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { InsertDriveFileOutlined } from '@mui/icons-material';
+import { LinkNewTab } from '../../components/LinkNewTab';
 
 // TODO work on descriptions
 const examples = [
@@ -120,11 +131,12 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
       </TabPanel>
       <TabPanel value={value} index={2}>
         <Typography variant="body1" sx={{ mb: theme.spacing(2) }}>
-          Quadratic spreadsheets are an open `.grid` file format. They can be saved to your local computer for sharing
-          with others and re-opened here.
+          Quadratic spreadsheets are an open `.grid` file format that can be saved to your local computer and re-opened
+          here.
         </Typography>
         <Button
-          variant="outlined"
+          disableElevation
+          variant="contained"
           onClick={() => {
             // TODO
             // trigger native file picker
@@ -135,9 +147,39 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
         >
           Select file & open
         </Button>
+        <Typography variant="body2" color="error" mt={theme.spacing(1)}>
+          The file you chose doesn’t appear to be a valid `.grid` file. Try again.
+        </Typography>
       </TabPanel>
       <TabPanel value={value} index={3}>
-        URL
+        <Typography gutterBottom>
+          You can store `.grid` files on remote file servers and open them for editing in Quadratic by using the `file`
+          parameter in the URL. For example:
+        </Typography>
+        <Typography gutterBottom>
+          <code>https://app.quadratichq.com?file=https://example.com/my-file.grid</code>
+        </Typography>
+        <Typography gutterBottom mt={theme.spacing(4)} mb={theme.spacing(1)}>
+          Or, paste a URL to a grid file below.
+        </Typography>
+        <TextField
+          id="url"
+          label="File URL"
+          variant="outlined"
+          placeholder="https://example.com/my-file.grid"
+          fullWidth
+          autoFocus
+        />
+        <Button variant="contained" disableElevation sx={{ mt: theme.spacing(1) }}>
+          Open File
+        </Button>
+        <Typography color="error" mt={theme.spacing(1)}>
+          Failed to import that file to Quadratic. Ensure{' '}
+          <LinkNewTab href="#TODO" color="inherit">
+            you can retrieve the remotely-hosted file
+          </LinkNewTab>{' '}
+          and try again.
+        </Typography>
       </TabPanel>
     </Box>
   );
