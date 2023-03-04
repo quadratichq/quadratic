@@ -100,8 +100,7 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
             right: '0px',
             bottom: '0px',
             left: '0px',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            opacity: '0.5',
+            opacity: '0',
           }}
         ></div>
       )}
