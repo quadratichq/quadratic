@@ -24,7 +24,7 @@ export const DataMenu = () => {
     <>
       <Menu
         menuButton={
-          <Tooltip title="Import data" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
+          <Tooltip title="Data import" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
             <Button style={{ color: 'inherit' }}>
               <DataObjectOutlined fontSize="small"></DataObjectOutlined>
               <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
@@ -32,7 +32,7 @@ export const DataMenu = () => {
           </Tooltip>
         }
       >
-        <MenuHeader>Import File</MenuHeader>
+        <MenuHeader>Import</MenuHeader>
         <MenuItem
           onClick={() => {
             setShowCSVImportHelpMessage(true);
@@ -43,9 +43,9 @@ export const DataMenu = () => {
         <MenuItem disabled>
           <MenuLineItem primary="Excel (coming soon)" Icon={InsertDriveFile} />
         </MenuItem>
-        <MenuHeader>Connect Data</MenuHeader>
+        <MenuHeader>Connect</MenuHeader>
         <MenuItem disabled>
-          <MenuLineItem primary="SaaS (Quadratic Cloud only)" Icon={CloudDownloadOutlined} />
+          <MenuLineItem primary="SaaS (coming soon)" Icon={CloudDownloadOutlined} />
         </MenuItem>
         <MenuItem disabled>
           <MenuLineItem primary="Database (coming soon)" Icon={StorageOutlined} />
