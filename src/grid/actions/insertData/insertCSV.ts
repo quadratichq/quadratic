@@ -26,9 +26,8 @@ export const InsertCSV = (props: {
     step: function (row) {
       const cellsToInsert: Cell[] = [];
 
-      // results.data.forEach((row, rowIndex) => {
       //@ts-expect-error
-      row.data.forEach((text, cellIndex) => {
+      row.data.forEach((text: string, cellIndex: number) => {
         cellsToInsert.push({
           value: text.trim(),
           type: 'TEXT',
@@ -38,7 +37,6 @@ export const InsertCSV = (props: {
         });
       });
       rowIndex++;
-      // });
 
       updateCellAndDCells({
         starting_cells: cellsToInsert,

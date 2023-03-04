@@ -61,7 +61,6 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      console.log('file.type: ', file.type);
       if (file.type === 'text/csv' || file.type === 'text/tab-separated-values') {
         const clientBoudingRect = divRef?.current?.getBoundingClientRect();
         const world = app.viewport.toWorld(
