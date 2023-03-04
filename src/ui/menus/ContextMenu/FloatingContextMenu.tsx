@@ -297,43 +297,11 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDivider />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton size="small" size="small" onClick={() => clearAllFormatting()}>
+          <IconButton size="small" onClick={() => clearAllFormatting()}>
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
-        {/*
-        <Divider
-          orientation="vertical"
-          flexItem
-          style={{
-            // add padding left and right
-            paddingLeft: '10px',
-            marginRight: '10px',
-          }}
-        />
-        <IconButton disabled={true}>
-          <FormatAlignLeft fontSize={iconSize} />
-        </IconButton>
-        <IconButton disabled={true}>
-          <FormatAlignCenter fontSize={iconSize} />
-        </IconButton>
-        <IconButton disabled={true}>
-          <FormatAlignRight fontSize={iconSize} />
-        </IconButton>
-
-        <Divider
-          orientation="vertical"
-          flexItem
-          style={{
-            // add padding left and right
-            paddingLeft: '10px',
-            // marginRight: '10px',
-          }}
-        />
-        <Button style={{ color: colors.mediumGray }} disabled>
-          <span style={{ fontSize: '1rem' }}>123</span>
-        </Button> */}
       </Toolbar>
     </Paper>
   );
