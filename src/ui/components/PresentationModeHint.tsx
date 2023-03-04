@@ -3,6 +3,7 @@ import { useGridSettings } from '../menus/TopBar/SubMenus/useGridSettings';
 import { KeyboardSymbols } from '../../helpers/keyboardSymbols';
 import { QuadraticSnackBar } from './QuadraticSnackBar';
 
+
 export default function PresentationModeHint() {
   const { presentationMode } = useGridSettings();
   const [open, setOpen] = useState<boolean>(false);
@@ -19,7 +20,8 @@ export default function PresentationModeHint() {
       onClose={() => {
         setOpen(false);
       }}
-      message={`Press “${KeyboardSymbols.Command}.” to exit presentation mode.`}
+      autoHideDuration={4000}
+      message={`Press "ESC" to exit presentation mode.`}
     />
   );
 }
