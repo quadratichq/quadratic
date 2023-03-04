@@ -1,13 +1,7 @@
 import { useFormatCells } from '../../TopBar/SubMenus/useFormatCells';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import {
-  AbcOutlined,
-  AttachMoney,
-  FormatClear,
-  Functions,
-  Percent,
-} from '@mui/icons-material';
+import { AbcOutlined, AttachMoney, FormatClear, Functions, Percent } from '@mui/icons-material';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import { useClearAllFormatting } from '../../TopBar/SubMenus/useClearAllFormatting';
 

@@ -301,7 +301,6 @@ export const FloatingContextMenu = (props: Props) => {
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
-
       </Toolbar>
     </Paper>
   );

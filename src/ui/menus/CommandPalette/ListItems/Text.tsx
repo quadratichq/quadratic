@@ -64,7 +64,6 @@ const ListItems = [
       return <CommandPaletteListItem {...props} icon={<FormatAlignRight />} action={() => changeAlignment('right')} />;
     },
   },
-
 ];
 
 export default ListItems;
