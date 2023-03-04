@@ -1,10 +1,10 @@
+export {};
+/*
 import { useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { getURLParameter } from '../helpers/getURL';
 import { debugShowFileIO } from '../debugFlags';
 import { localFiles } from '../grid/sheet/localFiles';
-import { openGridFileFromUrl } from '../grid/actions/gridFile/OpenGridFile';
-import { openExampleGridFile } from '../grid/actions/gridFile/OpenGridFile';
 import { SheetController } from '../grid/controller/sheetController';
 
 const EXAMPLE_FILE_FILENAME = 'default.grid';
@@ -44,3 +44,4 @@ export const FileLoadingComponent = (props: Props): JSX.Element | null => {
 
   return null;
 };
+*/

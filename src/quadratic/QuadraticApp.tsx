@@ -4,7 +4,6 @@ import { RecoilRoot } from 'recoil';
 import { useLoading } from '../contexts/LoadingContext';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { loadPython } from '../grid/computations/python/loadPython';
-import { FileLoadingComponent } from './FileLoadingComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../gridGL/loadAssets';
 import { IS_READONLY_MODE } from '../constants/app';
@@ -52,8 +51,6 @@ export const QuadraticApp = () => {
     <RecoilRoot>
       {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
       <AnalyticsProvider></AnalyticsProvider>
-      {/* Welcome Component loads appropriate sheet */}
-      {!loading && <FileLoadingComponent sheetController={sheet_controller} />}
       {/* Provider of All React UI Components */}
       {!loading && <QuadraticUI sheetController={sheet_controller} />}
       {/* Loading screen */}

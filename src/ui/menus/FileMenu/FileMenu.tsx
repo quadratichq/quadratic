@@ -28,17 +28,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { TooltipHint } from '../../components/TooltipHint';
 import { getStyles } from './FileMenuStyles';
-
-// TODO accomodate really long names with the two icons
-const files = [
-  { name: 'Untitled', modified: '2023-03-02T22:01:43.892Z' },
-  { name: 'Python', modified: '2023-03-01T12:03:13.892Z' },
-  {
-    name: 'my_file_name_here',
-    modified: '2023-01-02T15:22:43.892Z',
-  },
-  { name: 'Untitled', modified: '2021-03-01T12:03:13.892Z' },
-];
+import { useLocalFiles } from '../../../storage/useLocalFiles';
 
 interface FileMenuProps {
   app: any;
@@ -48,6 +38,8 @@ interface FileMenuProps {
 export function FileMenu(props: FileMenuProps) {
   const { sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const { fileList } = useLocalFiles(props.sheetController);
+
   const onClose = () => {
     setEditorInteractionState({
       ...editorInteractionState,
@@ -88,7 +80,7 @@ export function FileMenu(props: FileMenuProps) {
             <Typography variant="h5">Your files</Typography>
             <List>
               <Divider />
-              <ListItem disablePadding>
+              <ListItem key="create" disablePadding>
                 <ListItemButton sx={{ py: theme.spacing(2) }}>
                   <ListItemIcon>
                     <AddCircleOutline color="primary" />
@@ -97,7 +89,7 @@ export function FileMenu(props: FileMenuProps) {
                 </ListItemButton>
               </ListItem>
               <Divider />
-              {files.map(({ name, modified }, i) => (
+              {fileList.map(({ filename, modified, id }, i) => (
                 <>
                   <ListItem
                     key={i}
@@ -125,10 +117,10 @@ export function FileMenu(props: FileMenuProps) {
                       <ListItemIcon>
                         <InsertDriveFileOutlined sx={{ color: theme.palette.text.primary }} />
                       </ListItemIcon>
-                      <ListItemText primary={name} secondary={timeAgo(modified)} />
+                      <ListItemText primary={filename} secondary={timeAgo(modified)} />
                     </ListItemButton>
                   </ListItem>
-                  {i < files.length - 1 && <Divider />}
+                  {i < fileList.length - 1 && <Divider />}
                 </>
               ))}
             </List>
@@ -167,8 +159,8 @@ const DIVISIONS: { amount: number; name: Intl.RelativeTimeFormatUnit }[] = [
   { amount: 12, name: 'months' },
   { amount: Number.POSITIVE_INFINITY, name: 'years' },
 ];
-function timeAgo(dateIsoString: string) {
-  const date: Date = new Date(dateIsoString);
+function timeAgo(dateNumber: number) {
+  const date: Date = new Date(dateNumber);
 
   let duration = (date.getTime() - new Date().getTime()) / 1000;
 

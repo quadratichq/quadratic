@@ -1,3 +1,5 @@
+export {}
+/*
 import { GridFileSchemaV1 } from './GridFileSchema';
 import { localFiles } from '../../sheet/localFiles';
 import { SheetController } from '../../controller/sheetController';
@@ -90,3 +92,4 @@ export const newGridFile = (filename: string, sheetController: SheetController):
   sheetController.app?.rebuild();
   sheetController.app?.reset();
 };
+*/

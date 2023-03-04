@@ -1,4 +1,3 @@
-import * as React from 'react';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Typography from '@mui/material/Typography';
@@ -14,10 +13,11 @@ import {
   TextField,
   useTheme,
 } from '@mui/material';
-import { openExampleGridFile } from '../../../grid/actions/gridFile/OpenGridFile';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { InsertDriveFileOutlined } from '@mui/icons-material';
 import { LinkNewTab } from '../../components/LinkNewTab';
+import { useLocalFiles } from '../../../storage/useLocalFiles';
+import { ReactNode, SyntheticEvent, useCallback, useState } from 'react';
 
 // TODO work on descriptions
 const examples = [
@@ -39,7 +39,7 @@ const examples = [
 ];
 
 interface TabPanelProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
   index: number;
   value: number;
 }
@@ -78,12 +78,14 @@ interface FileMenuTabsProps {
 
 export default function FileMenuTabs(props: FileMenuTabsProps) {
   const { onClose, sheetController } = props;
-  const [value, setValue] = React.useState(0);
+  const [value, setValue] = useState(0);
   const theme = useTheme();
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const { loadSample } = useLocalFiles(sheetController);
+
+  const handleChange = useCallback((event: SyntheticEvent, newValue: number) => {
     setValue(newValue);
-  };
+  }, []);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -114,7 +116,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
               <ListItem key={`sample-${file}`} disablePadding>
                 <ListItemButton
                   onClick={() => {
-                    openExampleGridFile(file, sheetController);
+                    loadSample(file);
                     onClose();
                   }}
                 >

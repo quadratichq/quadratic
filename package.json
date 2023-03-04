@@ -28,6 +28,7 @@
     "@types/react": "^17.0.33",
     "@types/react-color": "^3.0.6",
     "@types/react-dom": "^17.0.10",
+    "@types/uuid": "^9.0.1",
     "ace-builds": "^1.4.13",
     "axios": "^0.24.0",
     "color": "^4.2.3",
@@ -49,6 +50,7 @@
     "recoil": "^0.6.0",
     "sass": "^1.56.2",
     "typescript": "^4.4.4",
+    "uuid": "^9.0.0",
     "web-vitals": "^1.0.1"
   },
   "main": "public/electron.js",

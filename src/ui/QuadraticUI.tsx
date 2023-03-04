@@ -15,6 +15,7 @@ import CellTypeMenu from './menus/CellTypeMenu';
 import FileMenu from './menus/FileMenu';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
+import { useLocalFiles } from '../storage/useLocalFiles';
 
 interface Props {
   sheetController: SheetController;
@@ -25,9 +26,10 @@ export default function QuadraticUI(props: Props) {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
 
-  const [app] = useState(() => new PixiApp(props.sheetController));
-
   const { sheetController } = props;
+
+  const { save } = useLocalFiles(props.sheetController);
+  const [app] = useState(() => new PixiApp(props.sheetController, save));
 
   useEffect(() => {
     sheetController.setApp(app);
