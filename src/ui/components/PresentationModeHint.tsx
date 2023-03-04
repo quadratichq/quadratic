@@ -20,7 +20,7 @@ export default function PresentationModeHint() {
         setOpen(false);
       }}
       autoHideDuration={5000}
-      message={`Press “Escape” to exit presentation mode.`}
+      message={`Press "ESC" to exit presentation mode.`}
     />
   );
 }
