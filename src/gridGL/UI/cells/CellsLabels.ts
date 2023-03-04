@@ -14,6 +14,11 @@ interface LabelData {
   format?: CellFormat;
 }
 
+// from https://stackoverflow.com/a/58550111
+function isStringANumber(s: string): boolean {
+  return s.trim() !== '' && !isNaN(s as any as number);
+}
+
 export class CellsLabels extends Container {
   private labelData: LabelData[] = [];
 
@@ -123,7 +128,7 @@ export class CellsLabels extends Container {
       label.text = data.text;
     }
 
-    let alignment: CellAlignment = Number.isNaN(parseFloat(data.text)) ? 'left' : 'right';
+    let alignment: CellAlignment = isStringANumber(data.text) ? 'right' : 'left';
     if (data.format?.alignment === 'right') alignment = 'right';
     else if (data.format?.alignment === 'center') alignment = 'center';
     else if (data.format?.alignment === 'left') alignment = 'left';
