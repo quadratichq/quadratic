@@ -12,8 +12,10 @@ import { useEffect, useState } from 'react';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../grid/controller/sheetController';
 import CellTypeMenu from './menus/CellTypeMenu';
+import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
+import { CSVImportHelpMessage } from './overlays/CSVImportHelpMessage';
 
 interface Props {
   sheetController: SheetController;
@@ -61,9 +63,13 @@ export default function QuadraticUI(props: Props) {
           position: 'relative',
         }}
       >
-        <QuadraticGrid sheetController={sheetController} app={app} />
+        <FileUploadWrapper sheetController={sheetController} app={app}>
+          <QuadraticGrid sheetController={sheetController} app={app} />
+        </FileUploadWrapper>
         <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
+
+      <CSVImportHelpMessage></CSVImportHelpMessage>
 
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
       {presentationMode && <PresentationModeHint />}

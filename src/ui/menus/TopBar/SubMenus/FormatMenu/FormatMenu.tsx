@@ -56,7 +56,7 @@ export const FormatMenu = (props: IProps) => {
     <Menu
       onMenuChange={onMenuChange}
       menuButton={
-        <Tooltip title="Format" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
+        <Tooltip title="Cell format" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
           <Button style={{ color: 'inherit' }}>
             <PaletteOutlined fontSize="small"></PaletteOutlined>
             <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
