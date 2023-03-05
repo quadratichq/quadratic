@@ -8,6 +8,7 @@ import { downloadFile } from './downloadFile';
 import { SheetController } from '../grid/controller/sheetController';
 import { useRecoilState } from 'recoil';
 import { fileAtom } from '../atoms/fileAtom';
+import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 
 const INDEX = 'index';
 const VERSION = '1.0';
@@ -38,6 +39,7 @@ function log(...s: string[]): void {
 
 export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const [fileState, setFileState] = useRecoilState(fileAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const { sheet } = sheetController;
   const [loaded, setLoaded] = useState(false);
@@ -209,9 +211,14 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         setFileState({ index: [], loaded: true });
         log('loading example file');
         loadSample('default.grid');
+      } else {
+        setEditorInteractionState({
+          ...editorInteractionState,
+          showFileMenu: true,
+        });
       }
     });
-  }, [loadSample, loadQuadraticFile, load, fileState.loaded, setFileState]);
+  }, [loadSample, loadQuadraticFile, load, fileState.loaded, setFileState, setEditorInteractionState, editorInteractionState]);
 
   const save = useCallback(async (): Promise<void> => {
     if (!fileState.lastFileContents) {
