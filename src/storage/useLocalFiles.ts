@@ -154,7 +154,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         return false;
       }
     },
-    [validateFile, fileState.index, saveFile, saveIndex, afterLoad]
+    [importQuadraticFile]
   );
 
   const loadSample = useCallback(

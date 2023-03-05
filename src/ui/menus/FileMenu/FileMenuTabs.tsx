@@ -200,13 +200,15 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
         <Button variant="contained" disableElevation sx={{ mt: theme.spacing(1) }} onClick={importURL}>
           Open File
         </Button>
-        {importURLError && <Typography color="error" mt={theme.spacing(1)}>
-          Failed to import that file to Quadratic. Ensure{' '}
-          <LinkNewTab href="#TODO" color="inherit">
-            you can retrieve the remotely-hosted file
-          </LinkNewTab>{' '}
-          and try again.
-        </Typography>}
+        {importURLError && (
+          <Typography color="error" mt={theme.spacing(1)}>
+            Failed to import that file to Quadratic. Ensure{' '}
+            <LinkNewTab href="#TODO" color="inherit">
+              you can retrieve the remotely-hosted file
+            </LinkNewTab>{' '}
+            and try again.
+          </Typography>
+        )}
       </TabPanel>
     </Box>
   );
