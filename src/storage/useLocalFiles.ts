@@ -29,6 +29,7 @@ interface LocalFiles {
   saveQuadraticFile: (autoDownload: boolean) => GridFileSchemaV1 | undefined;
   loadSample: (sample: string) => Promise<void>;
   renameFile: (filename: string) => Promise<void>;
+  importLocalFile: (file: File) => Promise<boolean>;
 }
 
 function log(...s: string[]): void {
@@ -124,24 +125,27 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     return true;
   }, []);
 
+  const importQuadraticFile = useCallback(async (gridFileJSON: GridFileSchemaV1): Promise<boolean> => {
+    if (validateFile(gridFileJSON)) {
+      const newFileIndex = { filename: gridFileJSON.filename, id: uuid(), modified: Date.now() };
+      const newFile = { ...gridFileJSON, ...newFileIndex };
+      await saveFile(newFile);
+      await saveIndex([newFile, ...fileState.index]);
+      afterLoad(newFile);
+      return true;
+    } else {
+      log(`${gridFileJSON.filename} (${gridFileJSON.id}) is an invalid Quadratic file`);
+      validateFile(gridFileJSON, true);
+      return false;
+    }
+  }, [afterLoad, fileState.index, saveFile, saveIndex, validateFile]);
+
   /** imports an external Quadratic file -- new id is always created */
   const loadQuadraticFile = useCallback(
     async (url: string): Promise<boolean> => {
       try {
         const file = await fetch(url);
-        const gridFileJSON = (await file.json()) as GridFileSchemaV1;
-        if (validateFile(gridFileJSON)) {
-          const newFileIndex = { filename: gridFileJSON.filename, id: uuid(), modified: Date.now() };
-          const newFile = { ...gridFileJSON, ...newFileIndex };
-          await saveFile(newFile);
-          await saveIndex([newFile, ...fileState.index]);
-          afterLoad(newFile);
-          return true;
-        } else {
-          log(`${gridFileJSON.filename} (${gridFileJSON.id}) is an invalid Quadratic file`);
-          validateFile(gridFileJSON, true);
-          return false;
-        }
+        return importQuadraticFile((await file.json()) as GridFileSchemaV1)
       } catch (e) {
         log('error while fetching file', e as string);
         return false;
@@ -301,6 +305,22 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     await saveFile({ ...fileState.lastFileContents, filename });
   }, [fileState.lastFileContents, saveFile]);
 
+  const importLocalFile = useCallback(async (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+    const reader = new FileReader()
+      reader.onload = event => {
+        const json = event.target?.result;
+        if (json) {
+          resolve(importQuadraticFile(JSON.parse(json as string) as GridFileSchemaV1));
+        }
+        resolve(false);
+      };
+      reader.onerror = error => resolve(false);
+      reader.readAsText(file);
+
+    })
+  }, [importQuadraticFile]);
+
   return {
     loaded,
     fileList: fileState.index,
@@ -312,5 +332,6 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     loadSample,
     newFile,
     renameFile,
+    importLocalFile,
   };
 };

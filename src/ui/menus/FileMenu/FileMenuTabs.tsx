@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Typography from '@mui/material/Typography';
@@ -18,7 +17,7 @@ import { SheetController } from '../../../grid/controller/sheetController';
 import { InsertDriveFileOutlined } from '@mui/icons-material';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { useLocalFiles } from '../../../storage/useLocalFiles';
-import { ReactNode, SyntheticEvent, useCallback, useState } from 'react';
+import { ChangeEvent, ReactNode, SyntheticEvent, useCallback, useRef, useState } from 'react';
 
 // TODO work on descriptions
 const examples = [
@@ -80,10 +79,19 @@ interface FileMenuTabsProps {
 export default function FileMenuTabs(props: FileMenuTabsProps) {
   const { onClose, sheetController } = props;
   const [value, setValue] = useState(0);
-  const [loadError /*, setLoadError*/] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const theme = useTheme();
+  const { loadSample, newFile, importLocalFile } = useLocalFiles(sheetController);
+  const importFileButton = useRef<HTMLInputElement | null>(null);
 
-  const { loadSample, newFile } = useLocalFiles(sheetController);
+  const importFile = useCallback(async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const loaded = await importLocalFile(file);
+      if (loaded) onClose();
+      else setLoadError(true);
+    }
+  }, [importLocalFile, onClose]);
 
   const handleChange = useCallback((event: SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -141,16 +149,11 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
           Quadratic spreadsheets are an open `.grid` file format that can be saved to your local computer and re-opened
           here.
         </Typography>
+        <input type='file' ref={importFileButton} style={{ display: 'none' }} accept=".grid" onChange={importFile} />
         <Button
           disableElevation
           variant="contained"
-          onClick={() => {
-            // TODO
-            // trigger native file picker
-            // process selected file
-            // if valid, load it into the grid and close this menu
-            // if not valid, display an error with help
-          }}
+          onClick={() => importFileButton.current?.click()}
         >
           Select file & open
         </Button>
