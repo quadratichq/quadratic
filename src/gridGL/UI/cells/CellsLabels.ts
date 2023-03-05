@@ -33,13 +33,17 @@ export class CellsLabels extends Container {
   private checkForClipping(label: CellLabel): void {
     const data = label.data;
     if (!data) {
-      throw new Error("Expected label.data to be defined in checkForClipping");
+      throw new Error('Expected label.data to be defined in checkForClipping');
     }
     const getClipLeft = (): number | undefined => {
       const start = label.x + data.expectedWidth - label.textWidth;
       // const end = start + (label.textWidth - data.expectedWidth);
       const neighboringLabels = this.labelData.filter(
-        (search) => search !== data && search.y === data.y && search.x + search.expectedWidth >= start && search.location.x < data.location.x
+        (search) =>
+          search !== data &&
+          search.y === data.y &&
+          search.x + search.expectedWidth >= start &&
+          search.location.x < data.location.x
       );
       if (neighboringLabels.length) {
         const neighboringLabel = neighboringLabels.sort((a, b) => b.location.x - a.location.x)[0];
@@ -75,10 +79,7 @@ export class CellsLabels extends Container {
     }
   }
 
-  private checkForOverflow(options: {
-    label: CellLabel;
-    bounds: Bounds;
-  }): void {
+  private checkForOverflow(options: { label: CellLabel; bounds: Bounds }): void {
     const { label, bounds } = options;
     const { data } = label;
     const { alignment } = data;
@@ -185,13 +186,13 @@ export class CellsLabels extends Container {
       }
     });
 
-    this.children.forEach(child => {
+    this.children.forEach((child) => {
       const label = child as CellLabel;
       if (label.visible) {
         this.checkForClipping(label);
         this.checkForOverflow({ label, bounds });
       }
-    })
+    });
 
     if (!bounds.empty) {
       return bounds.toRectangle();
