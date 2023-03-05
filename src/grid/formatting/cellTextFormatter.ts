@@ -1,9 +1,7 @@
 import { format as formatNumber } from 'numerable';
+import { isStringANumber } from '../../helpers/isStringANumber';
 import { Cell, CellFormat } from '../sheet/gridTypes';
 import { CellTextFormat, DEFAULT_NUMBER_OF_DECIMAL_PLACES } from './cellTextFormat';
-
-// function that checks if a string is a number
-const IsNumeric = (num: string) => /^-{0,1}\d*\.{0,1}\d+$/.test(num);
 
 const getDecimalPlacesString = (format: CellTextFormat, number_of_decimals: number) => {
   // returns a string of the format '.00' for the number of decimal places
@@ -22,13 +20,13 @@ export const CellTextFormatter = (cell: Cell, format: CellFormat | undefined) =>
   const decimal_string = getDecimalPlacesString(format.textFormat, number_of_decimals);
 
   try {
-    if (format.textFormat.type === 'CURRENCY' && IsNumeric(cell.value)) {
+    if (format.textFormat.type === 'CURRENCY' && isStringANumber(cell.value)) {
       return formatNumber(cell.value, `$0,0${decimal_string}`, { currency: format.textFormat.symbol });
-    } else if (format.textFormat.type === 'PERCENTAGE' && IsNumeric(cell.value)) {
+    } else if (format.textFormat.type === 'PERCENTAGE' && isStringANumber(cell.value)) {
       return formatNumber(Number(cell.value), `0,0${decimal_string}%`);
-    } else if (format.textFormat.type === 'NUMBER' && IsNumeric(cell.value)) {
+    } else if (format.textFormat.type === 'NUMBER' && isStringANumber(cell.value)) {
       return formatNumber(cell.value, `0,0${decimal_string}`);
-    } else if (format.textFormat.type === 'EXPONENTIAL' && IsNumeric(cell.value)) {
+    } else if (format.textFormat.type === 'EXPONENTIAL' && isStringANumber(cell.value)) {
       return Number(cell.value).toExponential(number_of_decimals);
     }
   } catch (e) {

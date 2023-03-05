@@ -3,6 +3,7 @@ import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
 import { CellAlignment, CellFormat } from '../../../grid/sheet/gridTypes';
 import { Bounds } from '../../../grid/sheet/Bounds';
+import { isStringANumber } from '../../../helpers/isStringANumber';
 
 interface LabelData {
   text: string;
@@ -12,11 +13,6 @@ interface LabelData {
   isQuadrant?: boolean;
   expectedWidth: number;
   format?: CellFormat;
-}
-
-// from https://stackoverflow.com/a/58550111
-function isStringANumber(s: string): boolean {
-  return s.trim() !== '' && !isNaN(s as any as number);
 }
 
 export class CellsLabels extends Container {
