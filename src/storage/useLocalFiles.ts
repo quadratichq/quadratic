@@ -28,6 +28,7 @@ interface LocalFiles {
   newFile: (filename?: string) => void;
   saveQuadraticFile: (autoDownload: boolean) => GridFileSchemaV1 | undefined;
   loadSample: (sample: string) => Promise<void>;
+  renameFile: (filename: string) => Promise<void>;
 }
 
 function log(...s: string[]): void {
@@ -295,6 +296,11 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     return fileState.lastFileContents?.filename;
   }, [fileState.lastFileContents?.filename]);
 
+  const renameFile = useCallback(async (filename: string): Promise<void> => {
+    if (!fileState.lastFileContents) throw new Error("Expected lastFileContents to be defined in renameFile");
+    await saveFile({ ...fileState.lastFileContents, filename });
+  }, [fileState.lastFileContents, saveFile]);
+
   return {
     loaded,
     fileList: fileState.index,
@@ -305,5 +311,6 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     saveQuadraticFile,
     loadSample,
     newFile,
+    renameFile,
   };
 };
