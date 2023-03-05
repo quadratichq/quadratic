@@ -171,6 +171,7 @@ export class Cells extends Container {
             x: x + CELL_TEXT_MARGIN_LEFT,
             y: y + CELL_TEXT_MARGIN_TOP,
             text: cell_text,
+            originalText: entry.cell.value,
             isQuadrant,
             expectedWidth: width - CELL_TEXT_MARGIN_LEFT * 2,
             location: isQuadrant ? { x: entry.cell.x, y: entry.cell.y } : undefined,

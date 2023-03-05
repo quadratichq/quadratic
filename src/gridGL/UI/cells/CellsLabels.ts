@@ -7,6 +7,7 @@ import { isStringANumber } from '../../../helpers/isStringANumber';
 
 interface LabelData {
   text: string;
+  originalText: string;
   x: number;
   y: number;
   location?: Coordinate;
@@ -124,7 +125,7 @@ export class CellsLabels extends Container {
       label.text = data.text;
     }
 
-    let alignment: CellAlignment = isStringANumber(data.text) ? 'right' : 'left';
+    let alignment: CellAlignment = isStringANumber(data.originalText) ? 'right' : 'left';
     if (data.format?.alignment === 'right') alignment = 'right';
     else if (data.format?.alignment === 'center') alignment = 'center';
     else if (data.format?.alignment === 'left') alignment = 'left';
