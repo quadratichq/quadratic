@@ -24,7 +24,7 @@ interface LocalFiles {
   currentFilename?: string;
   load: (id: string) => Promise<GridFileSchemaV1 | undefined>;
   save: () => Promise<void>;
-  loadQuadraticFile: (url: string, overwrite: boolean | undefined) => Promise<boolean | 'overwrite'>;
+  loadQuadraticFile: (url: string) => Promise<boolean>;
   newFile: (filename?: string) => void;
   saveQuadraticFile: (autoDownload: boolean) => GridFileSchemaV1 | undefined;
   loadSample: (sample: string) => Promise<void>;
@@ -45,9 +45,13 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       setFileState((state) => {
         return { ...state, lastFileContents: grid };
       });
-      sheetController.sheet.load_file(grid);
       sheetController.clear();
+      sheetController.sheet.load_file(grid);
       sheetController.app?.rebuild();
+      const searchParams = new URLSearchParams(window.location.search);
+      searchParams.set('local', grid.id);
+      const url = `${window.location.href.split('?')[0]}?${searchParams.toString()}`;
+      window.history.replaceState(undefined, '', url);
     },
     [setFileState, sheetController]
   );
@@ -72,8 +76,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   );
 
   const load = useCallback(
-    async (id: string): Promise<GridFileSchemaV1 | undefined> => {
-      if (!fileState.index || !fileState.index.find((entry) => entry.id === id)) {
+    async (id: string, index: LocalFile[] = fileState.index): Promise<GridFileSchemaV1 | undefined> => {
+      if (!fileState.index || !index.find((entry) => entry.id === id)) {
         throw new Error('Trying to load a local file that does not exist in the file index');
       }
       const result = await localforage.getItem(id);
@@ -119,23 +123,14 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     return true;
   }, []);
 
-  /**
-   * loads an external Quadratic file
-   * @param url of the file
-   * @param overwrite false = creates a new version of the imported file with a different id; true = overwrite; undefined = return 'overwrite'
-   */
+  /** imports an external Quadratic file -- new id is always created */
   const loadQuadraticFile = useCallback(
-    async (url: string, overwrite?: boolean): Promise<boolean | 'overwrite'> => {
+    async (url: string): Promise<boolean> => {
       try {
         const file = await fetch(url);
         const gridFileJSON = (await file.json()) as GridFileSchemaV1;
         if (validateFile(gridFileJSON)) {
-          // don't overwrite existing file unless user
-          if (overwrite === undefined && fileState.index.find((entry) => entry.id === gridFileJSON.id)) {
-            return 'overwrite';
-          }
-          const id = overwrite === false ? uuid() : gridFileJSON.id;
-          const newFileIndex = { filename: gridFileJSON.filename, id, modified: Date.now() };
+          const newFileIndex = { filename: gridFileJSON.filename, id: uuid(), modified: Date.now() };
           const newFile = { ...gridFileJSON, ...newFileIndex };
           await saveFile(newFile);
           await saveIndex([newFile, ...fileState.index]);
@@ -156,7 +151,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
   const loadSample = useCallback(
     async (sample: string): Promise<void> => {
-      await loadQuadraticFile(`/examples/${sample}`, false);
+      await loadQuadraticFile(`/examples/${sample}`);
     },
     [loadQuadraticFile]
   );
@@ -179,14 +174,16 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
     localforage.getItem(INDEX).then((result: unknown) => {
       let hasIndex = false;
+      let index: LocalFile[];
       if (result) {
         hasIndex = true;
-        const index = result as LocalFile[];
+        index = result as LocalFile[];
         index.sort((a, b) => a.modified - b.modified);
         setFileState({ index, loaded: true });
         log(`loaded index with ${index.length} files`);
       } else {
-        setFileState({ index: [], loaded: true });
+        index = [];
+        setFileState({ index, loaded: true });
         log('index not found');
       }
       setLoaded(true);
@@ -197,7 +194,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       }
       const local = getURLParameter('local');
       if (local) {
-        load(local);
+        load(local, index);
         return;
       }
       if (!hasIndex) {
@@ -206,7 +203,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         loadSample('default.grid');
       }
     });
-  }, [loadSample, loadQuadraticFile, load, fileState, setFileState]);
+  }, [loadSample, loadQuadraticFile, load, fileState.loaded, setFileState]);
 
   const save = useCallback(async (): Promise<void> => {
     if (!fileState.lastFileContents) {
