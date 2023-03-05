@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Typography from '@mui/material/Typography';
@@ -112,11 +113,11 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
       <TabPanel value={value} index={1}>
         <List sx={{ mt: theme.spacing(-3) }}>
           {examples.map(({ name, file, description }, i) => (
-            <>
+            <div key={i}>
               <ListItem key={`sample-${file}`} disablePadding>
                 <ListItemButton
-                  onClick={() => {
-                    loadSample(file);
+                  onClick={async () => {
+                    await loadSample(file);
                     onClose();
                   }}
                 >
@@ -127,7 +128,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
                 </ListItemButton>
               </ListItem>
               {i < examples.length - 1 && <Divider />}
-            </>
+            </div>
           ))}
         </List>
       </TabPanel>

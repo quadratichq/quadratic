@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect } from 'react';
 import {
   AddCircleOutline,
@@ -38,7 +39,7 @@ interface FileMenuProps {
 export function FileMenu(props: FileMenuProps) {
   const { sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { fileList } = useLocalFiles(props.sheetController);
+  const { fileList, load } = useLocalFiles(props.sheetController);
 
   const onClose = () => {
     setEditorInteractionState({
@@ -90,14 +91,16 @@ export function FileMenu(props: FileMenuProps) {
               </ListItem>
               <Divider />
               {fileList.map(({ filename, modified, id }, i) => (
-                <>
+                <div key={i}>
                   <ListItem
-                    key={i}
+                    onClick={() => {
+                      load(id);
+                      onClose();
+                    }}
                     secondaryAction={
                       <div style={styles.iconBtns}>
                         <IconButton
                           onClick={() => {
-                            // TODO download file
                           }}
                         >
                           <FileDownloadOutlined />
@@ -121,7 +124,7 @@ export function FileMenu(props: FileMenuProps) {
                     </ListItemButton>
                   </ListItem>
                   {i < fileList.length - 1 && <Divider />}
-                </>
+                </div>
               ))}
             </List>
           </div>
