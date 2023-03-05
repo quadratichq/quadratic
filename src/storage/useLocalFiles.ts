@@ -233,6 +233,15 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     }
   }, [save, sheetController.app]);
 
+  const createFilename = useCallback((filename?: string): string => {
+    if (filename) return filename;
+    const count = fileState.index.filter(entry => entry.filename.substring(0, 'Untitled'.length) === 'Untitled').length;
+    if (count) {
+      return `Untitled ${count + 1}`;
+    }
+    return 'Untitled';
+  }, [fileState.index]);
+
   const newFile = useCallback(
     async (filename?: string): Promise<void> => {
       // create file
@@ -247,7 +256,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         // todo: this goes away when alignment branch is merged
         render_dependency: [],
       };
-
+      filename = createFilename(filename);
       const created = Date.now();
       const newFile: GridFileSchemaV1 = {
         ...grid,
@@ -259,8 +268,9 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       };
       await saveFile(newFile);
       await saveIndex([{ filename: newFile.filename, id: newFile.id, modified: newFile.modified }, ...fileState.index]);
+      afterLoad(newFile);
     },
-    [fileState.index, saveFile, saveIndex]
+    [afterLoad, createFilename, fileState.index, saveFile, saveIndex]
   );
 
   const saveQuadraticFile = useCallback(

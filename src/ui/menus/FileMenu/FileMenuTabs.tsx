@@ -82,7 +82,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
   const [value, setValue] = useState(0);
   const theme = useTheme();
 
-  const { loadSample } = useLocalFiles(sheetController);
+  const { loadSample, newFile } = useLocalFiles(sheetController);
 
   const handleChange = useCallback((event: SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -106,7 +106,10 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
           Quadratic spreadsheets are an open `.grid` file format. They can be saved to your local computer for sharing
           with others and re-opened here.
         </Typography>
-        <Button variant="contained" disableElevation>
+        <Button variant="contained" disableElevation onClick={() => {
+          newFile();
+          onClose();
+        }}>
           New file
         </Button>
       </TabPanel>
