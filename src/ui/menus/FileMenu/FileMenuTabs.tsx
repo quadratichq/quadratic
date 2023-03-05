@@ -79,9 +79,11 @@ interface FileMenuTabsProps {
 export default function FileMenuTabs(props: FileMenuTabsProps) {
   const { onClose, sheetController } = props;
   const [value, setValue] = useState(0);
-  const [loadError, setLoadError] = useState(false);
+  const [importLocalError, setImportLocalError] = useState(false);
+  const [importURLError, setImportURLError] = useState(false);
+  const importURLInput = useRef<HTMLInputElement | null>(null);
   const theme = useTheme();
-  const { loadSample, newFile, importLocalFile } = useLocalFiles(sheetController);
+  const { loadSample, newFile, importLocalFile, loadQuadraticFile } = useLocalFiles(sheetController);
   const importFileButton = useRef<HTMLInputElement | null>(null);
 
   const importFile = useCallback(
@@ -90,11 +92,20 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
       if (file) {
         const loaded = await importLocalFile(file);
         if (loaded) onClose();
-        else setLoadError(true);
+        else setImportLocalError(true);
       }
     },
     [importLocalFile, onClose]
   );
+
+  const importURL = useCallback(async (): Promise<void> => {
+    const url = importURLInput.current?.value;
+    if (url) {
+      const loaded = await loadQuadraticFile(url);
+      if (loaded) onClose();
+      else setImportURLError(true);
+    }
+  }, [loadQuadraticFile, onClose]);
 
   const handleChange = useCallback((event: SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -160,7 +171,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
         <Button disableElevation variant="contained" onClick={() => importFileButton.current?.click()}>
           Select file & open
         </Button>
-        {loadError && (
+        {importLocalError && (
           <Typography variant="body2" color="error" mt={theme.spacing(1)}>
             The file you chose doesn’t appear to be a valid `.grid` file. Try again.
           </Typography>
@@ -178,6 +189,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
           Or, paste a URL to a grid file below.
         </Typography>
         <TextField
+          inputRef={importURLInput}
           id="url"
           label="File URL"
           variant="outlined"
@@ -185,16 +197,16 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
           fullWidth
           autoFocus
         />
-        <Button variant="contained" disableElevation sx={{ mt: theme.spacing(1) }}>
+        <Button variant="contained" disableElevation sx={{ mt: theme.spacing(1) }} onClick={importURL}>
           Open File
         </Button>
-        <Typography color="error" mt={theme.spacing(1)}>
+        {importURLError && <Typography color="error" mt={theme.spacing(1)}>
           Failed to import that file to Quadratic. Ensure{' '}
           <LinkNewTab href="#TODO" color="inherit">
             you can retrieve the remotely-hosted file
           </LinkNewTab>{' '}
           and try again.
-        </Typography>
+        </Typography>}
       </TabPanel>
     </Box>
   );
