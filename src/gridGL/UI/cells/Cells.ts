@@ -68,18 +68,18 @@ export class Cells extends Container {
     const changes: Coordinate[] = [];
 
     labels.forEach((label) => {
-      if (!label.location) return;
+      if (!label.data.location) return;
       if (!label.overflowLeft && !label.overflowRight) {
-        render_dependency.empty(label.location);
+        render_dependency.empty(label.data.location);
       } else {
         const dependents: Coordinate[] = [];
 
         // find cells that overflow to the right
         if (label.overflowRight) {
-          let column = label.location.x + 1;
+          let column = label.data.location.x + 1;
           let x = 0;
           do {
-            dependents.push({ x: column, y: label.location.y });
+            dependents.push({ x: column, y: label.data.location.y });
             x += gridOffsets.getColumnWidth(column);
             column++;
           } while (x < label.overflowRight);
@@ -87,15 +87,15 @@ export class Cells extends Container {
 
         // find cells that overflow to the left
         if (label.overflowLeft) {
-          let column = label.location.x - 1;
+          let column = label.data.location.x - 1;
           let x = 0;
           do {
-            dependents.push({ x: column, y: label.location.y });
+            dependents.push({ x: column, y: label.data.location.y });
             x -= gridOffsets.getColumnWidth(column);
             column--;
           } while (x > -label.overflowLeft);
         }
-        const dependencies = render_dependency.update(label.location, dependents);
+        const dependencies = render_dependency.update(label.data.location, dependents);
         changes.push(...dependencies);
       }
     });
@@ -174,7 +174,7 @@ export class Cells extends Container {
             originalText: entry.cell.value,
             isQuadrant,
             expectedWidth: width - CELL_TEXT_MARGIN_LEFT * 2,
-            location: isQuadrant ? { x: entry.cell.x, y: entry.cell.y } : undefined,
+            location: { x: entry.cell.x, y: entry.cell.y },
             format: cell_format,
           });
         }

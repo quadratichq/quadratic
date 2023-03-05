@@ -5,15 +5,16 @@ import { CellAlignment, CellFormat } from '../../../grid/sheet/gridTypes';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { isStringANumber } from '../../../helpers/isStringANumber';
 
-interface LabelData {
+export interface LabelData {
   text: string;
   originalText: string;
   x: number;
   y: number;
-  location?: Coordinate;
+  location: Coordinate;
   isQuadrant?: boolean;
   expectedWidth: number;
   format?: CellFormat;
+  alignment?: CellAlignment;
 }
 
 export class CellsLabels extends Container {
@@ -29,16 +30,19 @@ export class CellsLabels extends Container {
   }
 
   // checks to see if the label needs to be clipped based on other labels
-  private checkForClipping(label: CellLabel, data: LabelData, alignment: CellAlignment): void {
+  private checkForClipping(label: CellLabel): void {
+    const data = label.data;
+    if (!data) {
+      throw new Error("Expected label.data to be defined in checkForClipping");
+    }
     const getClipLeft = (): number | undefined => {
       const start = label.x + data.expectedWidth - label.textWidth;
-      const end = label.x + data.expectedWidth;
+      // const end = start + (label.textWidth - data.expectedWidth);
       const neighboringLabels = this.labelData.filter(
-        (search) =>
-          search !== data && search.y === data.y && search.x + search.expectedWidth >= start && search.x <= end
+        (search) => search !== data && search.y === data.y && search.x + search.expectedWidth >= start && search.location.x < data.location.x
       );
       if (neighboringLabels.length) {
-        const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
+        const neighboringLabel = neighboringLabels.sort((a, b) => b.location.x - a.location.x)[0];
         return neighboringLabel.x + neighboringLabel.expectedWidth;
       }
     };
@@ -50,16 +54,16 @@ export class CellsLabels extends Container {
         (search) => search !== data && search.y === data.y && search.x >= start && search.x <= end
       );
       if (neighboringLabels.length) {
-        const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
+        const neighboringLabel = neighboringLabels.sort((a, b) => a.location.x - b.location.x)[0];
         return neighboringLabel.x;
       }
     };
 
     if (label.textWidth > data.expectedWidth) {
       let clipLeft: number | undefined, clipRight: number | undefined;
-      if (alignment === 'right') {
+      if (data.alignment === 'right') {
         clipLeft = getClipLeft();
-      } else if (alignment === 'center') {
+      } else if (data.alignment === 'center') {
         clipLeft = getClipLeft();
         clipRight = getClipRight();
       } else {
@@ -73,14 +77,13 @@ export class CellsLabels extends Container {
 
   private checkForOverflow(options: {
     label: CellLabel;
-    data: LabelData;
-    alignment?: CellAlignment;
     bounds: Bounds;
   }): void {
-    const { label, data, alignment, bounds } = options;
+    const { label, bounds } = options;
+    const { data } = label;
+    const { alignment } = data;
 
     // track overflowed widths
-    label.location = data.location;
     const width = label.textWidth;
 
     if (width > data.expectedWidth) {
@@ -112,32 +115,36 @@ export class CellsLabels extends Container {
     };
 
     return (
-      label.originalText === data.text &&
-      isSame(label.format?.bold, data.format?.bold) &&
-      isSame(label.format?.italic, data.format?.italic) &&
-      label.format?.textColor === data.format?.textColor
+      label.data?.text === data.text &&
+      isSame(label.data?.format?.bold, data.format?.bold) &&
+      isSame(label.data?.format?.italic, data.format?.italic) &&
+      label.data?.format?.textColor === data.format?.textColor
     );
   }
 
-  updateLabel(label: CellLabel, data: LabelData, bounds: Bounds): void {
+  updateLabel(label: CellLabel, data: LabelData): void {
+    label.data = data;
     label.visible = true;
     if (label.text !== data.text) {
       label.text = data.text;
     }
 
-    let alignment: CellAlignment = isStringANumber(data.originalText) ? 'right' : 'left';
-    if (data.format?.alignment === 'right') alignment = 'right';
-    else if (data.format?.alignment === 'center') alignment = 'center';
-    else if (data.format?.alignment === 'left') alignment = 'left';
-    if (alignment === 'right') {
+    data.alignment = isStringANumber(data.originalText) ? 'right' : 'left';
+    if (data.format?.alignment === 'right') data.alignment = 'right';
+    else if (data.format?.alignment === 'center') data.alignment = 'center';
+    else if (data.format?.alignment === 'left') data.alignment = 'left';
+    if (data.alignment === 'right') {
       label.position.set(data.x + data.expectedWidth - label.textWidth, data.y);
-    } else if (alignment === 'center') {
+    } else if (data.alignment === 'center') {
       label.position.set(data.x + data.expectedWidth / 2 - label.textWidth / 2, data.y);
     } else {
       label.position.set(data.x, data.y);
     }
-    this.checkForClipping(label, data, alignment);
-    this.checkForOverflow({ label, data, alignment, bounds });
+
+    // this ensures that the text is redrawn during column resize (otherwise clipping will not work properly)
+    if (!label.lastPosition || !label.lastPosition.equals(label.position)) {
+      label.dirty = true;
+    }
   }
 
   /**
@@ -159,7 +166,7 @@ export class CellsLabels extends Container {
       if (index === -1) {
         leftovers.push(data);
       } else {
-        this.updateLabel(available[index], data, bounds);
+        this.updateLabel(available[index], data);
         available.splice(index, 1);
       }
     });
@@ -168,16 +175,23 @@ export class CellsLabels extends Container {
     leftovers.forEach((data, i) => {
       let label: CellLabel;
       if (i < available.length) {
-        available[i].setFormat(data.format);
-        this.updateLabel(available[i], data, bounds);
+        this.updateLabel(available[i], data);
       }
 
       // otherwise create new labels
       else {
-        label = this.addChild(new CellLabel(data.format));
-        this.updateLabel(label, data, bounds);
+        label = this.addChild(new CellLabel(data));
+        this.updateLabel(label, data);
       }
     });
+
+    this.children.forEach(child => {
+      const label = child as CellLabel;
+      if (label.visible) {
+        this.checkForClipping(label);
+        this.checkForOverflow({ label, bounds });
+      }
+    })
 
     if (!bounds.empty) {
       return bounds.toRectangle();

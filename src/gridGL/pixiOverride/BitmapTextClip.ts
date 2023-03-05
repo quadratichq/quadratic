@@ -310,8 +310,8 @@ export class BitmapTextClip extends BitmapText {
       const textureUvs = texture._uvs;
 
       // don't render letters that are outside the clips
-      if (this.clipRight && xPos + textureFrame.width * scale + this.x >= this.clipRight) continue;
-      if (this.clipLeft && xPos + this.x <= this.clipLeft) continue;
+      if (this.clipRight !== undefined && xPos + textureFrame.width * scale + this.x >= this.clipRight) continue;
+      if (this.clipLeft !== undefined && xPos + this.x <= this.clipLeft) continue;
 
       const index = pageMesh.index++;
 

@@ -1,7 +1,7 @@
-import { Coordinate } from '../../types/size';
 import { BitmapTextClip } from '../../pixiOverride/BitmapTextClip';
-import { CellFormat } from '../../../grid/sheet/gridTypes';
 import { convertColorStringToTint } from '../../../helpers/convertColor';
+import { LabelData } from './CellsLabels';
+import { Point } from 'pixi.js';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -9,37 +9,41 @@ import { convertColorStringToTint } from '../../../helpers/convertColor';
 const fontSize = 14;
 
 export class CellLabel extends BitmapTextClip {
-  location?: Coordinate;
   overflowRight?: number;
   overflowLeft?: number;
-  originalText?: string;
-  format?: CellFormat;
+  lastPosition?: Point;
+  data: LabelData;
   private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
 
-  constructor(format?: CellFormat) {
+  constructor(data: LabelData) {
     super('', {
       fontName: 'OpenSans',
       fontSize,
       tint: 0,
       align: 'left',
     });
-    this.setFormat(format);
+    this.data = data;
+    this.setFormat();
   }
 
-  setFormat(format?: CellFormat): void {
+  setData(data: LabelData): void {
+    this.data = data;
+    this.setFormat();
+  }
+
+  private setFormat(): void {
+    const format = this.data?.format;
     const bold = format?.bold ? 'Bold' : '';
     const italic = format?.italic ? 'Italic' : '';
     const fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
     this.fontName = fontName;
-    this.format = format;
-    const textColor = this.format?.textColor;
+    const textColor = format?.textColor;
     this.tint = textColor ? convertColorStringToTint(textColor) : 0;
   }
 
   set text(text: string) {
     text = String(text === null || text === undefined ? '' : text);
     this._text = text;
-    this.originalText = text;
     this.dirty = true;
   }
   get text() {
