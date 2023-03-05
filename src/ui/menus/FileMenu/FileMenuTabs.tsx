@@ -84,14 +84,17 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
   const { loadSample, newFile, importLocalFile } = useLocalFiles(sheetController);
   const importFileButton = useRef<HTMLInputElement | null>(null);
 
-  const importFile = useCallback(async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const loaded = await importLocalFile(file);
-      if (loaded) onClose();
-      else setLoadError(true);
-    }
-  }, [importLocalFile, onClose]);
+  const importFile = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const loaded = await importLocalFile(file);
+        if (loaded) onClose();
+        else setLoadError(true);
+      }
+    },
+    [importLocalFile, onClose]
+  );
 
   const handleChange = useCallback((event: SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -115,10 +118,14 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
           Quadratic spreadsheets are an open `.grid` file format. They can be saved to your local computer for sharing
           with others and re-opened here.
         </Typography>
-        <Button variant="contained" disableElevation onClick={() => {
-          newFile();
-          onClose();
-        }}>
+        <Button
+          variant="contained"
+          disableElevation
+          onClick={() => {
+            newFile();
+            onClose();
+          }}
+        >
           New file
         </Button>
       </TabPanel>
@@ -149,17 +156,15 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
           Quadratic spreadsheets are an open `.grid` file format that can be saved to your local computer and re-opened
           here.
         </Typography>
-        <input type='file' ref={importFileButton} style={{ display: 'none' }} accept=".grid" onChange={importFile} />
-        <Button
-          disableElevation
-          variant="contained"
-          onClick={() => importFileButton.current?.click()}
-        >
+        <input type="file" ref={importFileButton} style={{ display: 'none' }} accept=".grid" onChange={importFile} />
+        <Button disableElevation variant="contained" onClick={() => importFileButton.current?.click()}>
           Select file & open
         </Button>
-        {loadError && <Typography variant="body2" color="error" mt={theme.spacing(1)}>
-          The file you chose doesn’t appear to be a valid `.grid` file. Try again.
-        </Typography>}
+        {loadError && (
+          <Typography variant="body2" color="error" mt={theme.spacing(1)}>
+            The file you chose doesn’t appear to be a valid `.grid` file. Try again.
+          </Typography>
+        )}
       </TabPanel>
       <TabPanel value={value} index={3}>
         <Typography gutterBottom>
