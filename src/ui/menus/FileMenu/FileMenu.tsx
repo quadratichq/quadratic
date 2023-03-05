@@ -99,10 +99,7 @@ export function FileMenu(props: FileMenuProps) {
                     }}
                     secondaryAction={
                       <div style={styles.iconBtns}>
-                        <IconButton
-                          onClick={() => {
-                          }}
-                        >
+                        <IconButton onClick={() => {}}>
                           <FileDownloadOutlined />
                         </IconButton>
                         <IconButton
