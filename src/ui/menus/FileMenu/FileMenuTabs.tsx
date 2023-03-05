@@ -80,6 +80,7 @@ interface FileMenuTabsProps {
 export default function FileMenuTabs(props: FileMenuTabsProps) {
   const { onClose, sheetController } = props;
   const [value, setValue] = useState(0);
+  const [loadError /*, setLoadError*/] = useState(false);
   const theme = useTheme();
 
   const { loadSample, newFile } = useLocalFiles(sheetController);
@@ -153,9 +154,9 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
         >
           Select file & open
         </Button>
-        <Typography variant="body2" color="error" mt={theme.spacing(1)}>
+        {loadError && <Typography variant="body2" color="error" mt={theme.spacing(1)}>
           The file you chose doesn’t appear to be a valid `.grid` file. Try again.
-        </Typography>
+        </Typography>}
       </TabPanel>
       <TabPanel value={value} index={3}>
         <Typography gutterBottom>
