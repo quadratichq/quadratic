@@ -3,7 +3,6 @@ import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { Coordinate } from '../types/size';
 import { focusGrid } from '../../helpers/focusGrid';
 import { PixiApp } from '../pixiApp/PixiApp';
-import { localFiles } from '../../grid/sheet/localFiles';
 import { SheetController } from '../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
 import { DeleteCells } from '../../grid/actions/DeleteCells';
@@ -119,8 +118,8 @@ export const CellInput = (props: CellInputProps) => {
           app,
         });
       }
-      app?.quadrants.quadrantChanged({ cells: [cellLocation.current] });
-      localFiles.saveLastLocal(sheetController.sheet.export_file());
+      app.quadrants.quadrantChanged({ cells: [cellLocation.current] });
+      app.save();
     }
 
     // Update Grid Interaction state, reset input value state

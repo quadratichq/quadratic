@@ -1,6 +1,5 @@
 import { clearBordersAction } from '../../../../grid/actions/clearBordersAction';
 import { Border, BorderType } from '../../../../grid/sheet/gridTypes';
-import { localFiles } from '../../../../grid/sheet/localFiles';
 import { Sheet } from '../../../../grid/sheet/Sheet';
 import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { useGetSelection } from './useGetSelection';
@@ -125,8 +124,7 @@ export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
 
       app.cells.dirty = true;
       app.quadrants.quadrantChanged({ range: { start, end } });
-
-      localFiles.saveLastLocal(sheet.export_file());
+      app.save();
     }
   };
 

@@ -31,12 +31,6 @@ export default function QuadraticGrid(props: IProps) {
     if (props.app && container) props.app.attach(container);
   }, [props.app, container]);
 
-  useEffect(() => {
-    if (props.app) {
-      props.app.quadrants.build();
-    }
-  }, [props.sheetController.sheet, props.app]);
-
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
   let prevPanModeRef = useRef(interactionState.panMode);

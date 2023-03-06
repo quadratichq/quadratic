@@ -159,6 +159,10 @@ export class Quadrant extends Container {
 
           const textureWidth = (reducedDrawingRectangle.width - trimLeft - trimRight) * QUADRANT_SCALE;
           const textureHeight = (reducedDrawingRectangle.height - trimTop - trimBottom) * QUADRANT_SCALE;
+
+          // only create subQuadrants when there is content
+          if (textureWidth <= 0 || textureHeight <= 0) continue;
+
           const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, textureWidth, textureHeight);
 
           this.overflowLeft = !!trimLeft;

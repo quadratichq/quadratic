@@ -11,7 +11,7 @@ import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { IS_READONLY_MODE } from '../../../constants/app';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { useLocalFiles } from '../../../hooks/useLocalFiles';
+import { useLocalFiles } from '../../../storage/useLocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -27,7 +27,7 @@ interface IProps {
 
 export const TopBar = (props: IProps) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { localFilename } = useLocalFiles();
+  const { currentFilename } = useLocalFiles(props.sheetController);
   const settings = useGridSettings();
   // const { user } = useAuth0();
 
@@ -104,7 +104,7 @@ export const TopBar = (props: IProps) => {
             Local &nbsp;
           </Typography>
           <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-            / {localFilename}
+            / {currentFilename}
           </Typography>
           {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
         </Box>

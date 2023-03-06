@@ -2,7 +2,7 @@ import localForage from 'localforage';
 import debounce from 'lodash.debounce';
 import { debugShowFileIO } from '../../debugFlags';
 import { isEqualStringArrays } from '../../helpers/isEqual';
-import { GridFileSchemaV1 } from '../actions/gridFile/GridFileSchema';
+import { GridFileSchemaV1 } from '../../storage/GridFileSchema';
 
 const LAST_FILES = 'last-file-queue';
 const FILENAME_PREFIX = 'file-';

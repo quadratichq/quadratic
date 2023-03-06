@@ -8,8 +8,6 @@ import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
-import { SaveGridFile } from '../../../../grid/actions/gridFile/SaveGridFile';
-import { newGridFile } from '../../../../grid/actions/gridFile/OpenGridFile';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { NewFile } from './newFile/NewFile';
@@ -20,6 +18,7 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
+import { useLocalFiles } from '../../../../storage/useLocalFiles';
 
 interface Props {
   sheetController: SheetController;
@@ -27,13 +26,14 @@ interface Props {
 
 export const QuadraticMenu = (props: Props) => {
   const { sheetController } = props;
-  const { sheet } = sheetController;
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
   const interactionState = useRecoilValue(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
 
   const [newFileOpen, setNewFileOpen] = useState(false);
+
+  const { newFile, saveQuadraticFile: exportFile } = useLocalFiles(sheetController);
 
   const { isAuthenticated, user, logout } = useAuth0();
 
@@ -52,11 +52,11 @@ export const QuadraticMenu = (props: Props) => {
         if (!extension || extension !== 'grid') {
           filename += '.grid';
         }
-        newGridFile(filename, sheetController);
+        newFile(filename);
       }
       setNewFileOpen(false);
     },
-    [sheetController]
+    [newFile]
   );
 
   return (
@@ -74,7 +74,7 @@ export const QuadraticMenu = (props: Props) => {
         <MenuHeader>Quadratic</MenuHeader>
         <SubMenu label="File">
           <MenuItem onClick={() => setNewFileOpen(true)}>New</MenuItem>
-          <MenuItem onClick={() => SaveGridFile(sheet, true)}>Save local copy</MenuItem>
+          <MenuItem onClick={() => exportFile(true)}>Save local copy</MenuItem>
           <MenuItem
             onClick={() => {
               setEditorInteractionState({
@@ -179,7 +179,7 @@ export const QuadraticMenu = (props: Props) => {
           >
             Presentation mode
           </MenuItem>
-          {/* 
+          {/*
           Commented out because the editor switches this state automatically when the user
           is editing a formula.
           <MenuItem
