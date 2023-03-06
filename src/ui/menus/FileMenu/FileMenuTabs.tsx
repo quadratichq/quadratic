@@ -55,11 +55,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ px: 0, py: 2 }}>
-          <Typography>{children}</Typography>
-        </Box>
-      )}
+      {value === index && <Box sx={{ px: 0, py: 2 }}>{children}</Box>}
     </div>
   );
 }
@@ -185,7 +181,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
         <Typography gutterBottom>
           <code>https://app.quadratichq.com?file=https://example.com/my-file.grid</code>
         </Typography>
-        <Typography gutterBottom mt={theme.spacing(4)} mb={theme.spacing(1)}>
+        <Typography gutterBottom mt={theme.spacing(4)} mb={theme.spacing(2)}>
           Or, paste a URL to a grid file below.
         </Typography>
         <TextField
