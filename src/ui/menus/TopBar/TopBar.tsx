@@ -1,4 +1,5 @@
-import { Box, Typography, IconButton } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+import { Box, Typography, IconButton, InputBase } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -27,8 +28,26 @@ interface IProps {
 
 export const TopBar = (props: IProps) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFilename } = useLocalFiles(props.sheetController);
+  const { currentFilename, renameFile } = useLocalFiles(props.sheetController);
+  // @ts-ignore TODO why would currentFilename be possibly undefined?
+  const [uiFilename, setUiFilename] = useState<string>(currentFilename);
+  const [uiFilenameIsFocused, setUiFilenameIsFocused] = useState<boolean>(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const settings = useGridSettings();
+
+  // When the underlying file changes, change the UI filename to match
+  useEffect(() => {
+    // @ts-ignore
+    setUiFilename(currentFilename);
+  }, [currentFilename]);
+
+  // When user selects input, highlight it's contents
+  useEffect(() => {
+    if (uiFilenameIsFocused) {
+      // @ts-ignore
+      inputRef.current.setSelectionRange(0, inputRef.current.value.length);
+    }
+  }, [uiFilenameIsFocused]);
   // const { user } = useAuth0();
 
   return (
@@ -96,16 +115,68 @@ export const TopBar = (props: IProps) => {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            userSelect: 'none',
+            justifyContent: 'center',
+            flexGrow: '1',
             visibility: { sm: 'hidden', xs: 'hidden', md: 'visible' },
           }}
         >
-          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-            Local &nbsp;
-          </Typography>
-          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-            / {currentFilename}
-          </Typography>
+          {uiFilenameIsFocused ? (
+            <InputBase
+              onKeyUp={(e) => {
+                if (e.code === 'Enter') {
+                  inputRef.current?.blur();
+                  focusGrid();
+                }
+              }}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setUiFilename(e.target.value);
+              }}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                setUiFilenameIsFocused(false);
+                const value = e.target.value;
+
+                // Don't allow empty file names
+                if (value === '' || value.trim() === '') {
+                  // @ts-ignore
+                  setUiFilename(currentFilename);
+                  return;
+                }
+
+                renameFile(uiFilename);
+              }}
+              value={uiFilename}
+              inputRef={inputRef}
+              autoFocus
+              inputProps={{ style: { textAlign: 'center' } }}
+              sx={{ fontSize: '.875rem', color: colors.darkGray, width: '100%' }}
+            />
+          ) : (
+            <>
+              <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
+                Local /&nbsp;
+              </Typography>
+              <Typography
+                onClick={() => {
+                  setUiFilenameIsFocused(true);
+                }}
+                variant="body2"
+                fontFamily={'sans-serif'}
+                color={colors.darkGray}
+                style={{
+                  display: 'block',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  // this is a little bit of a magic number for now, but it
+                  // works and truncates at an appropriate, proportional size
+                  maxWidth: '25vw',
+                }}
+              >
+                {uiFilename}
+              </Typography>
+            </>
+          )}
+
           {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
         </Box>
       )}
