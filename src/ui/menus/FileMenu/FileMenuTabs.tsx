@@ -18,6 +18,7 @@ import { InsertDriveFileOutlined } from '@mui/icons-material';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { useLocalFiles } from '../../../storage/useLocalFiles';
 import { ChangeEvent, ReactNode, SyntheticEvent, useCallback, useRef, useState } from 'react';
+import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 
 // TODO work on descriptions
 const examples = [
@@ -117,13 +118,17 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
       >
         <Tab label="Blank" {...a11yProps(0)} />
         <Tab label="Example" {...a11yProps(1)} />
-        <Tab label="Import" {...a11yProps(2)} />
-        <Tab label="URL" {...a11yProps(3)} />
+        <Tab label="Local" {...a11yProps(2)} />
+        <Tab label="Remote" {...a11yProps(3)} />
       </Tabs>
       <TabPanel value={value} index={0}>
         <Typography variant="body1" sx={{ mb: theme.spacing(2) }}>
-          Quadratic spreadsheets are an open `.grid` file format. They can be saved to your local computer for sharing
-          with others and re-opened here.
+          Quadratic spreadsheets use an open <code>.grid</code> file format that be saved to your local computer, shared
+          with others, and re-opened here.{' '}
+          <LinkNewTab href={DOCUMENTATION_FILES_URL} color="inherit">
+            Learn more
+          </LinkNewTab>
+          .
         </Typography>
         <Button
           variant="contained"
@@ -133,11 +138,15 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
             onClose();
           }}
         >
-          New file
+          Create file
         </Button>
       </TabPanel>
       <TabPanel value={value} index={1}>
-        <List sx={{ mt: theme.spacing(-3) }}>
+        <Typography variant="body1" sx={{ mb: theme.spacing(2) }}>
+          Example files can help teach you how to use different features of Quadratic.
+        </Typography>
+        <Divider />
+        <List sx={{ mt: theme.spacing(-1) }}>
           {examples.map(({ name, file, description }, i) => (
             <div key={i}>
               <ListItem key={`sample-${file}`} disablePadding>
@@ -160,12 +169,11 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
       </TabPanel>
       <TabPanel value={value} index={2}>
         <Typography variant="body1" sx={{ mb: theme.spacing(2) }}>
-          Quadratic spreadsheets are an open `.grid` file format that can be saved to your local computer and re-opened
-          here.
+          Import a local <code>.grid</code> file from your computer into browser memory.
         </Typography>
         <input type="file" ref={importFileButton} style={{ display: 'none' }} accept=".grid" onChange={importFile} />
         <Button disableElevation variant="contained" onClick={() => importFileButton.current?.click()}>
-          Select file & open
+          Select file & import
         </Button>
         {importLocalError && (
           <Typography variant="body2" color="error" mt={theme.spacing(1)}>
@@ -175,14 +183,14 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
       </TabPanel>
       <TabPanel value={value} index={3}>
         <Typography gutterBottom>
-          You can store `.grid` files on remote file servers and open them for editing in Quadratic by using the `file`
+          Import a remote <code>.grid</code> file from a server into browser memory using the <code>file</code>{' '}
           parameter in the URL. For example:
         </Typography>
         <Typography gutterBottom>
           <code>https://app.quadratichq.com?file=https://example.com/my-file.grid</code>
         </Typography>
         <Typography gutterBottom mt={theme.spacing(4)} mb={theme.spacing(2)}>
-          Or, paste a URL to a grid file below.
+          Or, paste a URL to a <code>.grid</code> file to import it:
         </Typography>
         <TextField
           inputRef={importURLInput}
@@ -194,7 +202,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
           autoFocus
         />
         <Button variant="contained" disableElevation sx={{ mt: theme.spacing(1) }} onClick={importURL}>
-          Open File
+          Import file
         </Button>
         {importURLError && (
           <Typography color="error" mt={theme.spacing(1)}>
