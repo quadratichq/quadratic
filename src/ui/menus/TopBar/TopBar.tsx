@@ -133,12 +133,16 @@ export const TopBar = (props: IProps) => {
               }}
               onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                 setUiFilenameIsFocused(false);
-                const value = e.target.value;
 
                 // Don't allow empty file names
-                if (value === '' || value.trim() === '') {
+                if (uiFilename === '' || uiFilename.trim() === '') {
                   // @ts-ignore
                   setUiFilename(currentFilename);
+                  return;
+                }
+
+                // Don't do anything if the name didn't change
+                if (uiFilename === currentFilename) {
                   return;
                 }
 
