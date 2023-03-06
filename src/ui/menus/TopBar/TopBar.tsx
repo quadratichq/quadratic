@@ -88,7 +88,7 @@ export const TopBar = (props: IProps) => {
             color={colors.mediumGray}
             style={{ whiteSpace: 'nowrap', marginLeft: '1rem' }}
           >
-            Read Only
+            Read only
           </Typography>
         </Box>
       ) : (
