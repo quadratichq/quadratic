@@ -1,4 +1,5 @@
 use futures::future::{FutureExt, LocalBoxFuture};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
 use std::fmt;
@@ -25,6 +26,7 @@ pub enum AstNodeContents {
         args: Vec<AstNode>,
     },
     Paren(Box<AstNode>),
+    Array(Vec<Vec<AstNode>>),
     CellRef(CellRef),
     String(String),
     Number(f64),
@@ -44,6 +46,11 @@ impl fmt::Display for AstNodeContents {
                 Ok(())
             }
             AstNodeContents::Paren(contents) => write!(f, "({contents})"),
+            AstNodeContents::Array(a) => write!(
+                f,
+                "{{{}}}",
+                a.iter().map(|row| row.iter().join(", ")).join("; "),
+            ),
             AstNodeContents::CellRef(cellref) => write!(f, "{cellref}"),
             AstNodeContents::String(s) => write!(f, "{s:?}"),
             AstNodeContents::Number(n) => write!(f, "{n:?}"),
@@ -59,6 +66,7 @@ impl AstNodeContents {
                 _ => "expression",
             },
             AstNodeContents::Paren(contents) => contents.inner.type_string(),
+            AstNodeContents::Array(_) => "array literal",
             AstNodeContents::CellRef(_) => "cell reference",
             AstNodeContents::String(_) => "string literal",
             AstNodeContents::Number(_) => "numeric literal",
@@ -158,6 +166,18 @@ impl AstNode {
             }
 
             AstNodeContents::Paren(expr) => expr.eval(grid, pos).await?.inner,
+
+            AstNodeContents::Array(a) => {
+                let mut array_of_values = vec![];
+                for row in a {
+                    let mut row_of_values = smallvec![];
+                    for elem_expr in row {
+                        row_of_values.push(elem_expr.eval(grid, pos).await?.inner);
+                    }
+                    array_of_values.push(row_of_values);
+                }
+                Value::Array(array_of_values)
+            }
 
             AstNodeContents::CellRef(cell_ref) => self.get_cell(grid, pos, *cell_ref).await?,
 

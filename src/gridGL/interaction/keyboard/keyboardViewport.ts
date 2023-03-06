@@ -66,6 +66,11 @@ export function keyboardViewport(options: {
     return true;
   }
 
+  if (event.code === 'Escape') {
+    if (presentationMode) setPresentationMode(false);
+    return true;
+  }
+
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyB') {
     changeBold(!(format.bold === true));
     return true;

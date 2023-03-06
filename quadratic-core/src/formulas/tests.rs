@@ -201,6 +201,50 @@ fn test_formula_array_op() {
 }
 
 #[test]
+fn test_array_parsing() {
+    let f = |x| Value::Number(x as f64);
+    assert_eq!(
+        Value::Array(vec![
+            smallvec![f(11), f(12)],
+            smallvec![f(21), f(22)],
+            smallvec![f(31), f(32)],
+        ]),
+        eval(&mut PanicGridMock, "{11, 12; 21, 22; 31, 32}").unwrap(),
+    );
+
+    // Test stringification
+    assert_eq!(
+        "{11, 12; 21, 22; 31, 32}",
+        eval_to_string(&mut PanicGridMock, "{11,   12 ;21, 22;31,32}"),
+    );
+
+    // Single row
+    assert_eq!(
+        "{11, 12, 13}",
+        eval_to_string(&mut PanicGridMock, "{11, 12, 13}"),
+    );
+
+    // Single column
+    assert_eq!(
+        "{11; 12; 13}",
+        eval_to_string(&mut PanicGridMock, "{11; 12; 13}"),
+    );
+
+    // Mismatched rows
+    assert_eq!(
+        FormulaErrorMsg::NonRectangularArray,
+        eval(&mut PanicGridMock, "{1; 3, 4}").unwrap_err().msg,
+    );
+
+    // Empty array
+    assert!(eval(&mut PanicGridMock, "{}").is_err());
+    assert!(eval(&mut PanicGridMock, "{ }").is_err());
+
+    // Empty row
+    assert!(eval(&mut PanicGridMock, "{ ; }").is_err());
+}
+
+#[test]
 fn test_leading_equals() {
     assert_eq!("7", eval_to_string(&mut PanicGridMock, "=3+4"));
     assert_eq!("7", eval_to_string(&mut PanicGridMock, "= 3+4"));
@@ -218,8 +262,7 @@ fn eval_to_string(grid: &mut impl GridProxy, s: &str) -> String {
     eval(grid, s).unwrap().to_string()
 }
 fn eval(grid: &mut impl GridProxy, s: &str) -> FormulaResult<Value> {
-    parse_formula(s, Pos::ORIGIN)
-        .unwrap()
+    parse_formula(s, Pos::ORIGIN)?
         .eval_blocking(grid, Pos::ORIGIN)
         .map(|value| value.inner)
 }

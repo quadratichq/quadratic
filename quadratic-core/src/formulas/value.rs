@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use smallvec::{smallvec, SmallVec};
 use std::fmt;
 
@@ -26,7 +27,13 @@ impl fmt::Display for Value {
             Value::Number(n) => write!(f, "{n}"),
             Value::Bool(true) => write!(f, "TRUE"),
             Value::Bool(false) => write!(f, "FALSE"),
-            Value::Array(_) => write!(f, "[array]"),
+            Value::Array(rows) => {
+                write!(
+                    f,
+                    "{{{}}}",
+                    rows.iter().map(|row| row.iter().join(", ")).join("; "),
+                )
+            }
             Value::MissingErr => write!(f, "[missing]"),
         }
     }
