@@ -63,6 +63,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const saveIndex = useCallback(
     async (index: LocalFile[]): Promise<void> => {
       index = index.sort((a, b) => b.modified - a.modified);
+      console.warn('Stale state being set for `currentFileName`:', fileState.lastFileContents?.filename);
       setFileState({ ...fileState, index: index, loaded: true });
       await localforage.setItem(INDEX, index);
       log(`setting index with ${index.length} file${index.length > 1 ? 's' : ''}`);
@@ -320,6 +321,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   );
 
   const currentFilename = useMemo(() => {
+    console.warn('currentFilename', fileState.lastFileContents?.filename);
     return fileState.lastFileContents?.filename || '';
   }, [fileState.lastFileContents?.filename]);
 
