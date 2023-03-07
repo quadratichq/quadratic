@@ -40,7 +40,7 @@ interface FileMenuProps {
 export function FileMenu(props: FileMenuProps) {
   const { sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFileId, currentFilename, fileList, load } = useLocalFiles(props.sheetController);
+  const { currentFileId, currentFilename, deleteFile, fileList, load } = useLocalFiles(props.sheetController);
 
   const onClose = () => {
     setEditorInteractionState({
@@ -93,47 +93,64 @@ export function FileMenu(props: FileMenuProps) {
                 </ListItemButton>
               </ListItem>
               <Divider />
-              {fileList.map(({ filename, modified, id }, i) => (
-                <div key={i}>
-                  <ListItem
-                    onClick={() => {
-                      load(id);
-                      onClose();
-                    }}
-                    secondaryAction={
-                      <div style={styles.iconBtns}>
-                        <IconButton onClick={() => {}}>
-                          <FileDownloadOutlined />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => {
-                            // TODO delete file from memory
-                          }}
-                        >
-                          <DeleteOutline />
-                        </IconButton>
-                      </div>
-                    }
-                    disablePadding
-                  >
-                    <ListItemButton onClick={() => {}}>
-                      <ListItemIcon>
-                        <InsertDriveFileOutlined sx={{ color: theme.palette.text.primary }} />
-                      </ListItemIcon>
+              {fileList.map(({ filename, modified, id }, i) => {
+                const fileIsOpen = currentFileId === id;
+                return (
+                  <div key={i}>
+                    <ListItem
+                      onClick={() => {
+                        load(id);
+                        onClose();
+                      }}
+                      secondaryAction={
+                        <div style={styles.iconBtns}>
+                          {!fileIsOpen && (
+                            <TooltipHint title="Delete" enterDelay={1000}>
+                              <IconButton
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`Please confirm you want to delete the file “${filename}”`)) {
+                                    deleteFile(id);
+                                  }
+                                }}
+                              >
+                                <DeleteOutline />
+                              </IconButton>
+                            </TooltipHint>
+                          )}
+                          <TooltipHint title="Download" enterDelay={1000}>
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // TODO download file
+                              }}
+                            >
+                              <FileDownloadOutlined />
+                            </IconButton>
+                          </TooltipHint>
+                        </div>
+                      }
+                      disablePadding
+                    >
+                      <ListItemButton onClick={() => {}}>
+                        <ListItemIcon>
+                          <InsertDriveFileOutlined sx={{ color: theme.palette.text.primary }} />
+                        </ListItemIcon>
 
-                      <ListItemText
-                        primary={
-                          <>
-                            {filename} {currentFileId === id && <Chip label="Open" size="small" />}
-                          </>
-                        }
-                        secondary={timeAgo(modified)}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                  {i < fileList.length - 1 && <Divider />}
-                </div>
-              ))}
+                        <ListItemText
+                          primary={
+                            <>
+                              {filename} {fileIsOpen && <Chip label="Open" size="small" />}
+                            </>
+                          }
+                          secondary={timeAgo(modified)}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                    {i < fileList.length - 1 && <Divider />}
+                  </div>
+                );
+              })}
             </List>
           </div>
           <div>

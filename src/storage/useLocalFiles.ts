@@ -32,6 +32,7 @@ interface LocalFiles {
   loadSample: (sample: string) => Promise<void>;
   renameFile: (filename: string) => Promise<void>;
   importLocalFile: (file: File) => Promise<boolean>;
+  deleteFile: (id: string) => void;
 }
 
 function log(...s: string[]): void {
@@ -371,6 +372,17 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     [importQuadraticFile]
   );
 
+  const deleteFile = useCallback(
+    async (id: string) => {
+      if (!fileState.index || !fileState.index.find((entry) => entry.id === id)) {
+        throw new Error('Trying to load a local file that does not exist in the file index');
+      }
+      saveIndex(fileState.index.filter((entry) => entry.id !== id));
+      log(`deleted file (${id})`);
+    },
+    [fileState.index, saveIndex]
+  );
+
   return {
     loaded,
     fileList: fileState.index,
@@ -384,5 +396,6 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     newFile,
     renameFile,
     importLocalFile,
+    deleteFile,
   };
 };
