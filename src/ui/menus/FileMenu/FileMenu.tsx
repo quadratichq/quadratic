@@ -120,7 +120,7 @@ export function FileMenu(props: FileMenuProps) {
                               </IconButton>
                             </TooltipHint>
                           )}
-                          <TooltipHint title="Download" enterDelay={1000}>
+                          <TooltipHint title="Save local copy" enterDelay={1000}>
                             <IconButton
                               onClick={(e) => {
                                 e.stopPropagation();
