@@ -29,7 +29,6 @@ interface IProps {
 export const TopBar = (props: IProps) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { currentFilename, renameFile } = useLocalFiles(props.sheetController);
-  // @ts-ignore TODO why would currentFilename be possibly undefined?
   const [uiFilename, setUiFilename] = useState<string>(currentFilename);
   const [uiFilenameIsFocused, setUiFilenameIsFocused] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,14 +36,12 @@ export const TopBar = (props: IProps) => {
 
   // When the underlying file changes, change the UI filename to match
   useEffect(() => {
-    // @ts-ignore
     setUiFilename(currentFilename);
   }, [currentFilename]);
 
   // When user selects input, highlight it's contents
   useEffect(() => {
-    if (uiFilenameIsFocused) {
-      // @ts-ignore
+    if (uiFilenameIsFocused && inputRef.current) {
       inputRef.current.setSelectionRange(0, inputRef.current.value.length);
     }
   }, [uiFilenameIsFocused]);

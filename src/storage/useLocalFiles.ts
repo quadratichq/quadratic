@@ -22,7 +22,7 @@ export interface LocalFile {
 interface LocalFiles {
   loaded: boolean;
   fileList: LocalFile[];
-  currentFilename?: string;
+  currentFilename: string;
   load: (id: string) => Promise<GridFileSchemaV1 | undefined>;
   save: () => Promise<void>;
   loadQuadraticFile: (url: string) => Promise<boolean>;
@@ -218,7 +218,15 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         });
       }
     });
-  }, [loadSample, loadQuadraticFile, load, fileState.loaded, setFileState, setEditorInteractionState, editorInteractionState]);
+  }, [
+    loadSample,
+    loadQuadraticFile,
+    load,
+    fileState.loaded,
+    setFileState,
+    setEditorInteractionState,
+    editorInteractionState,
+  ]);
 
   const save = useCallback(async (): Promise<void> => {
     if (!fileState.lastFileContents) {
@@ -312,7 +320,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   );
 
   const currentFilename = useMemo(() => {
-    return fileState.lastFileContents?.filename;
+    return fileState.lastFileContents?.filename || '';
   }, [fileState.lastFileContents?.filename]);
 
   const renameFile = useCallback(
