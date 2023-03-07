@@ -72,11 +72,11 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
   const saveFile = useCallback(
     async (file: GridFileSchemaV1): Promise<void> => {
-      setFileState({ ...fileState, lastFileContents: file });
+      setFileState((oldFileState) => ({ ...oldFileState, lastFileContents: file }));
       await localforage.setItem(file.id, file);
       log(`Saved ${file.filename} (${file.id})`);
     },
-    [fileState, setFileState]
+    [setFileState]
   );
 
   const load = useCallback(
