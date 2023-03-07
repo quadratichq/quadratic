@@ -11,6 +11,7 @@ import {
   Alert,
   AlertTitle,
   Box,
+  Chip,
   Divider,
   IconButton,
   List,
@@ -39,7 +40,7 @@ interface FileMenuProps {
 export function FileMenu(props: FileMenuProps) {
   const { sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { fileList, load } = useLocalFiles(props.sheetController);
+  const { currentFileId, currentFilename, fileList, load } = useLocalFiles(props.sheetController);
 
   const onClose = () => {
     setEditorInteractionState({
@@ -68,13 +69,15 @@ export function FileMenu(props: FileMenuProps) {
     >
       <Box style={styles.container}>
         <img src="favicon.ico" width="22" alt="Quadratic logo" style={styles.logo} />
-        <div style={styles.closeBtn}>
-          <TooltipHint title="Close" shortcut={'ESC'}>
-            <IconButton onClick={onClose}>
-              <Close />
-            </IconButton>
-          </TooltipHint>
-        </div>
+        {currentFilename && (
+          <div style={styles.closeBtn}>
+            <TooltipHint title="Close" shortcut={'ESC'}>
+              <IconButton onClick={onClose}>
+                <Close />
+              </IconButton>
+            </TooltipHint>
+          </div>
+        )}
 
         <div style={styles.cols}>
           <div>
@@ -117,7 +120,15 @@ export function FileMenu(props: FileMenuProps) {
                       <ListItemIcon>
                         <InsertDriveFileOutlined sx={{ color: theme.palette.text.primary }} />
                       </ListItemIcon>
-                      <ListItemText primary={filename} secondary={timeAgo(modified)} />
+
+                      <ListItemText
+                        primary={
+                          <>
+                            {filename} {currentFileId === id && <Chip label="Open" size="small" />}
+                          </>
+                        }
+                        secondary={timeAgo(modified)}
+                      />
                     </ListItemButton>
                   </ListItem>
                   {i < fileList.length - 1 && <Divider />}

@@ -23,6 +23,7 @@ interface LocalFiles {
   loaded: boolean;
   fileList: LocalFile[];
   currentFilename: string;
+  currentFileId: string;
   load: (id: string) => Promise<GridFileSchemaV1 | undefined>;
   save: () => Promise<void>;
   loadQuadraticFile: (url: string) => Promise<boolean>;
@@ -323,6 +324,10 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     return fileState.lastFileContents?.filename || '';
   }, [fileState.lastFileContents?.filename]);
 
+  const currentFileId = useMemo(() => {
+    return fileState.lastFileContents?.id || '';
+  }, [fileState.lastFileContents?.id]);
+
   const renameFile = useCallback(
     async (filename: string): Promise<void> => {
       if (!fileState.lastFileContents) throw new Error('Expected lastFileContents to be defined in renameFile');
@@ -370,6 +375,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     loaded,
     fileList: fileState.index,
     currentFilename,
+    currentFileId,
     load,
     save,
     loadQuadraticFile,
