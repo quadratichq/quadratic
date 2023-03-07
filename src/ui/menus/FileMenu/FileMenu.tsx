@@ -105,6 +105,8 @@ export function FileMenu(props: FileMenuProps) {
                       secondaryAction={
                         <div style={styles.iconBtns}>
                           {!fileIsOpen && (
+                            // For now we only support deleting a file that's not open
+                            // one day we refactor things to support that
                             <TooltipHint title="Delete" enterDelay={1000}>
                               <IconButton
                                 onClick={(e) => {
