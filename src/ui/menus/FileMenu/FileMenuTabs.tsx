@@ -22,11 +22,15 @@ import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 
 // TODO work on descriptions
 const examples = [
-  { name: 'Basic', file: 'default.grid', description: 'Quick start' },
+  {
+    name: 'Quick start',
+    description: 'Intro to the basics of using Quadratic.',
+    file: 'default.grid',
+  },
   {
     name: 'Using Python',
     file: 'python.grid',
-    description: 'Basics of using Python like returning data to the grid and making API requests.',
+    description: 'Returning data to the grid, making API requests, and more.',
   },
   { name: 'Airports (large)', file: 'airports_large.grid', description: 'Lorem ipsum santa dolor.' },
   { name: 'Airports (distance)', file: 'airport_distance.grid', description: 'Lorem ipsum santa dolor.' },
