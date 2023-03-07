@@ -1,4 +1,5 @@
-import { Box, Typography, IconButton } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+import { Box, Typography, IconButton, InputBase } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -27,7 +28,9 @@ interface IProps {
 
 export const TopBar = (props: IProps) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFilename } = useLocalFiles(props.sheetController);
+  const { currentFilename, renameFile } = useLocalFiles(props.sheetController);
+  const [isRenaming, setIsRenaming] = useState<boolean>(false);
+
   const settings = useGridSettings();
   // const { user } = useAuth0();
 
@@ -96,16 +99,40 @@ export const TopBar = (props: IProps) => {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            userSelect: 'none',
+            justifyContent: 'center',
+            flexGrow: '1',
             visibility: { sm: 'hidden', xs: 'hidden', md: 'visible' },
           }}
         >
-          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-            Local &nbsp;
-          </Typography>
-          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-            / {currentFilename}
-          </Typography>
+          {isRenaming ? (
+            <FileRename setIsRenaming={setIsRenaming} currentFilename={currentFilename} renameFile={renameFile} />
+          ) : (
+            <>
+              <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
+                Local /&nbsp;
+              </Typography>
+              <Typography
+                onClick={() => {
+                  setIsRenaming(true);
+                }}
+                variant="body2"
+                fontFamily={'sans-serif'}
+                color={colors.darkGray}
+                style={{
+                  display: 'block',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  // this is a little bit of a magic number for now, but it
+                  // works and truncates at an appropriate, proportional size
+                  maxWidth: '25vw',
+                }}
+              >
+                {currentFilename}
+              </Typography>
+            </>
+          )}
+
           {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
         </Box>
       )}
@@ -182,3 +209,55 @@ export const TopBar = (props: IProps) => {
     </div>
   );
 };
+
+function FileRename({
+  currentFilename,
+  renameFile,
+  setIsRenaming,
+}: {
+  currentFilename: string;
+  renameFile: Function;
+  setIsRenaming: Function;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // When user selects input, highlight it's contents
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.setSelectionRange(0, inputRef.current.value.length);
+    }
+  }, []);
+
+  return (
+    <InputBase
+      onKeyUp={(e) => {
+        if (e.code === 'Enter') {
+          inputRef.current?.blur();
+          focusGrid();
+        }
+      }}
+      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+        setIsRenaming(false);
+        const value = inputRef.current?.value;
+
+        // Don't allow empty file names
+        if (value && (value === '' || value.trim() === '')) {
+          // @ts-ignore
+          return;
+        }
+
+        // Don't do anything if the name didn't change
+        if (value === currentFilename) {
+          return;
+        }
+
+        renameFile(value);
+      }}
+      defaultValue={currentFilename}
+      inputRef={inputRef}
+      autoFocus
+      inputProps={{ style: { textAlign: 'center' } }}
+      sx={{ fontSize: '.875rem', color: colors.darkGray, width: '100%' }}
+    />
+  );
+}

@@ -4,6 +4,7 @@ import { Theme } from '@mui/material';
 export function getStyles(theme: Theme): { [key: string]: React.CSSProperties } {
   return {
     container: {
+      outline: 'none',
       position: 'fixed',
       width: '100%',
       height: '100%',
@@ -20,7 +21,7 @@ export function getStyles(theme: Theme): { [key: string]: React.CSSProperties } 
     logo: {
       position: 'fixed',
       left: theme.spacing(2),
-      top: theme.spacing(2),
+      top: theme.spacing(1.25),
     },
     closeBtn: {
       position: 'fixed',

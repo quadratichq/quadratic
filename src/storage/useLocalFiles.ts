@@ -22,7 +22,7 @@ export interface LocalFile {
 interface LocalFiles {
   loaded: boolean;
   fileList: LocalFile[];
-  currentFilename?: string;
+  currentFilename: string;
   load: (id: string) => Promise<GridFileSchemaV1 | undefined>;
   save: () => Promise<void>;
   loadQuadraticFile: (url: string) => Promise<boolean>;
@@ -63,20 +63,20 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const saveIndex = useCallback(
     async (index: LocalFile[]): Promise<void> => {
       index = index.sort((a, b) => b.modified - a.modified);
-      setFileState({ ...fileState, index: index, loaded: true });
+      setFileState((oldFileState) => ({ ...oldFileState, index: index, loaded: true }));
       await localforage.setItem(INDEX, index);
       log(`setting index with ${index.length} file${index.length > 1 ? 's' : ''}`);
     },
-    [fileState, setFileState]
+    [setFileState]
   );
 
   const saveFile = useCallback(
     async (file: GridFileSchemaV1): Promise<void> => {
-      setFileState({ ...fileState, lastFileContents: file });
+      setFileState((oldFileState) => ({ ...oldFileState, lastFileContents: file }));
       await localforage.setItem(file.id, file);
       log(`Saved ${file.filename} (${file.id})`);
     },
-    [fileState, setFileState]
+    [setFileState]
   );
 
   const load = useCallback(
@@ -218,7 +218,15 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         });
       }
     });
-  }, [loadSample, loadQuadraticFile, load, fileState.loaded, setFileState, setEditorInteractionState, editorInteractionState]);
+  }, [
+    loadSample,
+    loadQuadraticFile,
+    load,
+    fileState.loaded,
+    setFileState,
+    setEditorInteractionState,
+    editorInteractionState,
+  ]);
 
   const save = useCallback(async (): Promise<void> => {
     if (!fileState.lastFileContents) {
@@ -312,15 +320,32 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   );
 
   const currentFilename = useMemo(() => {
-    return fileState.lastFileContents?.filename;
+    return fileState.lastFileContents?.filename || '';
   }, [fileState.lastFileContents?.filename]);
 
   const renameFile = useCallback(
     async (filename: string): Promise<void> => {
       if (!fileState.lastFileContents) throw new Error('Expected lastFileContents to be defined in renameFile');
       await saveFile({ ...fileState.lastFileContents, filename });
+      await saveIndex(
+        fileState.index.map((entry) => {
+          if (entry.id === fileState.lastFileContents?.id) {
+            return {
+              ...entry,
+              filename,
+            };
+          }
+          return entry;
+        })
+      );
+      log(
+        'Renamed file from `%s` to `%s` (%s)',
+        fileState.lastFileContents.filename,
+        filename,
+        fileState.lastFileContents?.id
+      );
     },
-    [fileState.lastFileContents, saveFile]
+    [fileState.lastFileContents, fileState.index, saveFile, saveIndex]
   );
 
   const importLocalFile = useCallback(
