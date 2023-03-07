@@ -29,22 +29,10 @@ interface IProps {
 export const TopBar = (props: IProps) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { currentFilename, renameFile } = useLocalFiles(props.sheetController);
-  const [uiFilename, setUiFilename] = useState<string>(currentFilename);
-  const [uiFilenameIsFocused, setUiFilenameIsFocused] = useState<boolean>(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [isRenaming, setIsRenaming] = useState<boolean>(false);
+  console.log('currentFilename', currentFilename);
+
   const settings = useGridSettings();
-
-  // When the underlying file changes, change the UI filename to match
-  useEffect(() => {
-    setUiFilename(currentFilename);
-  }, [currentFilename]);
-
-  // When user selects input, highlight it's contents
-  useEffect(() => {
-    if (uiFilenameIsFocused && inputRef.current) {
-      inputRef.current.setSelectionRange(0, inputRef.current.value.length);
-    }
-  }, [uiFilenameIsFocused]);
   // const { user } = useAuth0();
 
   return (
@@ -117,40 +105,8 @@ export const TopBar = (props: IProps) => {
             visibility: { sm: 'hidden', xs: 'hidden', md: 'visible' },
           }}
         >
-          {uiFilenameIsFocused ? (
-            <InputBase
-              onKeyUp={(e) => {
-                if (e.code === 'Enter') {
-                  inputRef.current?.blur();
-                  focusGrid();
-                }
-              }}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setUiFilename(e.target.value);
-              }}
-              onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                setUiFilenameIsFocused(false);
-
-                // Don't allow empty file names
-                if (uiFilename === '' || uiFilename.trim() === '') {
-                  // @ts-ignore
-                  setUiFilename(currentFilename);
-                  return;
-                }
-
-                // Don't do anything if the name didn't change
-                if (uiFilename === currentFilename) {
-                  return;
-                }
-
-                renameFile(uiFilename);
-              }}
-              value={uiFilename}
-              inputRef={inputRef}
-              autoFocus
-              inputProps={{ style: { textAlign: 'center' } }}
-              sx={{ fontSize: '.875rem', color: colors.darkGray, width: '100%' }}
-            />
+          {isRenaming ? (
+            <FileRename setIsRenaming={setIsRenaming} currentFilename={currentFilename} renameFile={renameFile} />
           ) : (
             <>
               <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
@@ -158,7 +114,7 @@ export const TopBar = (props: IProps) => {
               </Typography>
               <Typography
                 onClick={() => {
-                  setUiFilenameIsFocused(true);
+                  setIsRenaming(true);
                 }}
                 variant="body2"
                 fontFamily={'sans-serif'}
@@ -173,7 +129,7 @@ export const TopBar = (props: IProps) => {
                   maxWidth: '25vw',
                 }}
               >
-                {uiFilename}
+                {currentFilename}
               </Typography>
             </>
           )}
@@ -254,3 +210,55 @@ export const TopBar = (props: IProps) => {
     </div>
   );
 };
+
+function FileRename({
+  currentFilename,
+  renameFile,
+  setIsRenaming,
+}: {
+  currentFilename: string;
+  renameFile: Function;
+  setIsRenaming: Function;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // When user selects input, highlight it's contents
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.setSelectionRange(0, inputRef.current.value.length);
+    }
+  }, []);
+
+  return (
+    <InputBase
+      onKeyUp={(e) => {
+        if (e.code === 'Enter') {
+          inputRef.current?.blur();
+          focusGrid();
+        }
+      }}
+      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+        setIsRenaming(false);
+        const value = inputRef.current?.value;
+
+        // Don't allow empty file names
+        if (value && (value === '' || value.trim() === '')) {
+          // @ts-ignore
+          return;
+        }
+
+        // Don't do anything if the name didn't change
+        if (value === currentFilename) {
+          return;
+        }
+
+        renameFile(value);
+      }}
+      defaultValue={currentFilename}
+      inputRef={inputRef}
+      autoFocus
+      inputProps={{ style: { textAlign: 'center' } }}
+      sx={{ fontSize: '.875rem', color: colors.darkGray, width: '100%' }}
+    />
+  );
+}

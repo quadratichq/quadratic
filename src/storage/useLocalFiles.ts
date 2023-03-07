@@ -326,20 +326,24 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const renameFile = useCallback(
     async (filename: string): Promise<void> => {
       if (!fileState.lastFileContents) throw new Error('Expected lastFileContents to be defined in renameFile');
-      const oldFilename = fileState.lastFileContents.filename;
-      const currentFileId = fileState.lastFileContents.id;
       await saveFile({ ...fileState.lastFileContents, filename });
       await saveIndex(
-        fileState.index.map((file) => {
-          return currentFileId === file.id
-            ? {
-                ...file,
-                filename,
-              }
-            : file;
+        fileState.index.map((entry) => {
+          if (entry.id === fileState.lastFileContents?.id) {
+            return {
+              ...entry,
+              filename,
+            };
+          }
+          return entry;
         })
       );
-      log('Renamed file from `%s` to `%s` (%s)', oldFilename, filename, currentFileId);
+      log(
+        'Renamed file from `%s` to `%s` (%s)',
+        fileState.lastFileContents.filename,
+        filename,
+        fileState.lastFileContents?.id
+      );
     },
     [fileState.lastFileContents, fileState.index, saveFile, saveIndex]
   );
