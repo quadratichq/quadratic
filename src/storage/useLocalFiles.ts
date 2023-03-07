@@ -189,7 +189,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       if (result) {
         hasIndex = true;
         index = result as LocalFile[];
-        index.sort((a, b) => a.modified - b.modified);
+        index.sort((a, b) => b.modified - a.modified);
         setFileState({ index, loaded: true });
         log(`loaded index with ${index.length} files`);
       } else {
