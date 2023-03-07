@@ -30,7 +30,6 @@ export const TopBar = (props: IProps) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { currentFilename, renameFile } = useLocalFiles(props.sheetController);
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
-  console.log('currentFilename', currentFilename);
 
   const settings = useGridSettings();
   // const { user } = useAuth0();
