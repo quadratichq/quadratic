@@ -67,7 +67,7 @@ export function FileMenu(props: FileMenuProps) {
       }}
     >
       <Box style={styles.container}>
-        <img src="/images/logo.svg" width="17" alt="Quadratic logo" style={styles.logo} />
+        <img src="favicon.ico" width="22" alt="Quadratic logo" style={styles.logo} />
         <div style={styles.closeBtn}>
           <TooltipHint title="Close" shortcut={'ESC'}>
             <IconButton onClick={onClose}>
