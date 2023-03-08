@@ -40,6 +40,7 @@ import {
 import { useLocalFiles } from '../../../storage/useLocalFiles';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
+import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 
 interface FileMenuProps {
   app: PixiApp;
@@ -141,7 +142,7 @@ export function FileMenu(props: FileMenuProps) {
                               <IconButton
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // TODO download file
+                                  // download file
                                 }}
                               >
                                 <FileDownloadOutlined />
@@ -176,7 +177,7 @@ export function FileMenu(props: FileMenuProps) {
               <Alert severity="info">
                 <AlertTitle>Important note on files</AlertTitle>
                 Files are stored in browser memory. Always keep a local copy saved of any important files.{' '}
-                <LinkNewTab href="#TODO-DOCS-LINK">Learn more</LinkNewTab>.
+                <LinkNewTab href={DOCUMENTATION_FILES_URL}>Learn more</LinkNewTab>.
               </Alert>
             </div>
           </LayoutColLeft>
