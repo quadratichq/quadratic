@@ -241,8 +241,7 @@ function FileRename({
         const value = inputRef.current?.value;
 
         // Don't allow empty file names
-        if (value && (value === '' || value.trim() === '')) {
-          // @ts-ignore
+        if (value === '' || (value && value.trim() === '')) {
           return;
         }
 

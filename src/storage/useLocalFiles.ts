@@ -418,5 +418,12 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
 function stripExtension(str: string): string {
   const extension = '.grid';
-  return str.endsWith(extension) ? str.slice(0, str.length - extension.length) : str;
+  let out = str.endsWith(extension) ? str.slice(0, str.length - extension.length) : str;
+
+  // If stripped filename results in a file with no name, e.g. `.grid` -> ``
+  // give it a default filename
+  if (!out) {
+    out = 'Untitlted';
+  }
+  return out;
 }
