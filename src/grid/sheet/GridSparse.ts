@@ -25,9 +25,6 @@ export class GridSparse {
 
   constructor(gridOffsets: GridOffsets) {
     this.gridOffsets = gridOffsets;
-
-    //@ts-expect-error REMOVE THIS
-    window.grid = this;
   }
 
   updateCells(cells: Cell[]): void {
