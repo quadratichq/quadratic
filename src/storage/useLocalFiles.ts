@@ -158,10 +158,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         // If it's not an example file, overwrite the file's `filename` to match
         // the last path in the URL
         if (!url.startsWith('/examples/')) {
-          const filenameFromUrl = new URL(url).pathname.split('/').pop();
-          if (filenameFromUrl) {
-            file.filename = stripExtension(filenameFromUrl);
-          }
+          file.filename = massageFilename(new URL(url).pathname.split('/').pop());
         }
 
         return importQuadraticFile(file);
@@ -375,7 +372,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
           console.log(event);
           if (json) {
             const parsedFile = JSON.parse(json as string) as GridFileSchemaV1;
-            parsedFile.filename = stripExtension(file.name);
+            parsedFile.filename = massageFilename(file.name);
             resolve(importQuadraticFile(parsedFile));
           }
           resolve(false);
@@ -416,14 +413,13 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   };
 };
 
-function stripExtension(str: string): string {
-  const extension = '.grid';
-  let out = str.endsWith(extension) ? str.slice(0, str.length - extension.length) : str;
+function massageFilename(str: string | undefined): string {
+  let out = 'Untitled';
 
-  // If stripped filename results in a file with no name, e.g. `.grid` -> ``
-  // give it a default filename
-  if (!out) {
-    out = 'Untitlted';
+  if (typeof str !== 'string' || str.length === 0) {
+    return out;
   }
-  return out;
+
+  const extension = '.grid';
+  return str.endsWith(extension) ? str.slice(0, str.length - extension.length) : str;
 }

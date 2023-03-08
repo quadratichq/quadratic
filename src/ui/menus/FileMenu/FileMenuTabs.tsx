@@ -86,8 +86,8 @@ function a11yProps(index: number) {
 
 interface FileMenuTabsProps {
   sheetController: SheetController;
-  onClose: () => void;
-  onNewFile: () => void;
+  onClose: Function;
+  onNewFile: Function;
 }
 
 export default function FileMenuTabs(props: FileMenuTabsProps) {
@@ -105,7 +105,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
       const file = e.target.files?.[0];
       if (file) {
         const loaded = await importLocalFile(file);
-        if (loaded) onClose();
+        if (loaded) onClose({ reset: true });
         else setImportLocalError(true);
       }
     },
@@ -116,7 +116,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
     const url = importURLInput.current?.value;
     if (url) {
       const loaded = await loadQuadraticFile(url);
-      if (loaded) onClose();
+      if (loaded) onClose({ reset: true });
       else setImportURLError(true);
     }
   }, [loadQuadraticFile, onClose]);
@@ -142,7 +142,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
           </LinkNewTab>
           .
         </Typography>
-        <Button variant="contained" disableElevation onClick={onNewFile}>
+        <Button variant="contained" disableElevation onClick={() => onNewFile()}>
           Create file
         </Button>
       </TabPanel>
@@ -158,7 +158,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
                 <ListItemButton
                   onClick={async () => {
                     await loadSample(file);
-                    onClose();
+                    onClose({ reset: true });
                   }}
                 >
                   <ListItemIcon>

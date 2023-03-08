@@ -52,19 +52,21 @@ export function FileMenu(props: FileMenuProps) {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { currentFileId, currentFilename, deleteFile, fileList, load, newFile } = useLocalFiles(props.sheetController);
 
-  const onClose = () => {
+  const onClose = ({ reset } = { reset: false }) => {
     setEditorInteractionState({
       ...editorInteractionState,
       showFileMenu: false,
     });
+    if (reset) {
+      app.reset();
+    }
   };
   const theme = useTheme();
   const styles = getStyles(theme);
 
   const onNewFile = () => {
     newFile();
-    onClose();
-    app.reset();
+    onClose({ reset: true });
   };
 
   // Focus back to the grid when this unmounts
@@ -88,7 +90,7 @@ export function FileMenu(props: FileMenuProps) {
         {currentFilename && (
           <div style={styles.closeBtn}>
             <TooltipHint title="Close" shortcut={'ESC'}>
-              <IconButton onClick={onClose}>
+              <IconButton onClick={() => onClose()}>
                 <Close />
               </IconButton>
             </TooltipHint>
@@ -117,7 +119,7 @@ export function FileMenu(props: FileMenuProps) {
                       <ListItem
                         onClick={() => {
                           load(id);
-                          onClose();
+                          onClose({ reset: true });
                         }}
                         secondaryAction={
                           <div style={styles.iconBtns}>
