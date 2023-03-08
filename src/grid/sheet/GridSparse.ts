@@ -18,22 +18,25 @@ export class GridSparse {
   private cellBounds = new Bounds();
   private formatBounds = new Bounds();
   private cellFormatBounds = new Bounds();
-  cells = new Map<string, CellAndFormat>();
+  data = new Map<string, CellAndFormat>();
 
   // tracks which quadrants need to render based on GridSparse data
   quadrants = new Set<string>();
 
   constructor(gridOffsets: GridOffsets) {
     this.gridOffsets = gridOffsets;
+
+    //@ts-expect-error REMOVE THIS
+    window.grid = this;
   }
 
   updateCells(cells: Cell[]): void {
     cells.forEach((cell) => {
-      const update = this.cells.get(this.getKey(cell.x, cell.y));
+      const update = this.data.get(this.getKey(cell.x, cell.y));
       if (update) {
         update.cell = cell;
       } else {
-        this.cells.set(this.getKey(cell.x, cell.y), { cell });
+        this.data.set(this.getKey(cell.x, cell.y), { cell });
         this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
       }
     });
@@ -44,8 +47,8 @@ export class GridSparse {
     this.cellBounds.clear();
     this.cellFormatBounds.clear();
     this.formatBounds.clear();
-    if (this.cells.size === 0) return;
-    this.cells.forEach((cell) => {
+    if (this.data.size === 0) return;
+    this.data.forEach((cell) => {
       if (cell.cell) {
         this.cellBounds.add(cell.cell.x, cell.cell.y);
         this.cellBounds.add(cell.cell.x, cell.cell.y);
@@ -58,11 +61,11 @@ export class GridSparse {
 
   updateFormat(formats: CellFormat[]): void {
     formats.forEach((format) => {
-      const update = this.cells.get(this.getKey(format.x, format.y));
+      const update = this.data.get(this.getKey(format.x, format.y));
       if (update) {
         update.format = format;
       } else {
-        this.cells.set(this.getKey(format.x, format.y), { format });
+        this.data.set(this.getKey(format.x, format.y), { format });
       }
       this.formatBounds.add(format.x, format.y);
       this.cellFormatBounds.add(format.x, format.y);
@@ -72,11 +75,11 @@ export class GridSparse {
   clearFormat(formats: CellFormat[]): void {
     formats.forEach((format) => {
       const key = this.getKey(format.x, format.y);
-      const clear = this.cells.get(key);
+      const clear = this.data.get(key);
       if (clear) {
         delete clear.format;
         if (Object.keys(clear).length === 0) {
-          this.cells.delete(key);
+          this.data.delete(key);
         }
       }
     });
@@ -85,13 +88,13 @@ export class GridSparse {
 
   deleteCells(cells: Coordinate[]): void {
     cells.forEach((cell) => {
-      const candf = this.cells.get(this.getKey(cell.x, cell.y));
+      const candf = this.data.get(this.getKey(cell.x, cell.y));
       if (candf) {
         // Delete cell
         delete candf.cell;
         // If cell has no format, also delete the key
         if (candf.format === undefined) {
-          this.cells.delete(this.getKey(cell.x, cell.y));
+          this.data.delete(this.getKey(cell.x, cell.y));
         }
       }
     });
@@ -103,32 +106,32 @@ export class GridSparse {
   }
 
   clear() {
-    this.cells.clear();
+    this.data.clear();
     this.quadrants.clear();
     this.cellBounds.clear();
     this.formatBounds.clear();
     this.cellFormatBounds.clear();
   }
 
-  private getKey(x?: number, y?: number): string {
-    return `${x ?? ''},${y ?? ''}`;
+  private getKey(x: number, y: number): string {
+    return `${x},${y}`;
   }
 
   populate(cells?: Cell[], formats?: CellFormat[]) {
     this.clear();
     if (!cells?.length && !formats?.length) return;
     cells?.forEach((cell) => {
-      this.cells.set(this.getKey(cell.x, cell.y), { cell });
+      this.data.set(this.getKey(cell.x, cell.y), { cell });
       this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
       this.cellBounds.add(cell.x, cell.y);
     });
     formats?.forEach((format) => {
       const key = this.getKey(format.x, format.y);
-      const cell = this.cells.get(key);
+      const cell = this.data.get(key);
       if (cell) {
         cell.format = format;
       } else {
-        this.cells.set(key, { format });
+        this.data.set(key, { format });
       }
       this.formatBounds.add(format.x, format.y);
     });
@@ -137,19 +140,19 @@ export class GridSparse {
 
   get(x: number, y: number): CellAndFormat | undefined {
     if (this.cellFormatBounds.contains(x, y)) {
-      return this.cells.get(this.getKey(x, y));
+      return this.data.get(this.getKey(x, y));
     }
   }
 
   getCell(x: number, y: number): Cell | undefined {
     if (this.cellBounds.contains(x, y)) {
-      return this.cells.get(this.getKey(x, y))?.cell;
+      return this.data.get(this.getKey(x, y))?.cell;
     }
   }
 
   getFormat(x: number, y: number): CellFormat | undefined {
     if (this.formatBounds.contains(x, y)) {
-      return this.cells.get(this.getKey(x, y))?.format;
+      return this.data.get(this.getKey(x, y))?.format;
     }
   }
 
@@ -159,7 +162,7 @@ export class GridSparse {
 
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
     const cells: Cell[] = [];
-    this.cells.forEach((cell) => {
+    this.data.forEach((cell) => {
       if (cell.cell && cell.cell.x >= x0 && cell.cell.x <= x1 && cell.cell.y >= y0 && cell.cell.y <= y1) {
         cells.push(cell.cell);
       }
@@ -169,7 +172,7 @@ export class GridSparse {
 
   getNakedFormat(x0: number, y0: number, x1: number, y1: number): CellFormat[] {
     const cells: CellFormat[] = [];
-    this.cells.forEach((cell) => {
+    this.data.forEach((cell) => {
       if (cell.format) {
         if (cell.format.x >= x0 && cell.format.x <= x1 && cell.format.y >= y0 && cell.format.y <= y1) {
           cells.push(cell.format);
@@ -260,7 +263,7 @@ export class GridSparse {
   }
 
   getAllCells(): Cell[] {
-    const array = Array.from(this.cells, ([_, value]) => value);
+    const array = Array.from(this.data, ([_, value]) => value);
     return array.flatMap((entry) => {
       if (entry.cell) return [entry.cell];
       return [];
@@ -268,7 +271,7 @@ export class GridSparse {
   }
 
   getArrays(): { cells: Cell[]; formats: CellFormat[] } {
-    const array = Array.from(this.cells, ([_, value]) => value);
+    const array = Array.from(this.data, ([_, value]) => value);
     return {
       cells: array.flatMap((entry) => {
         if (entry.cell) return [entry.cell];

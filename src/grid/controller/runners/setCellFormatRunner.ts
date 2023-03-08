@@ -3,7 +3,7 @@ import { Statement } from '../statement';
 import { CellFormat } from '../../sheet/gridTypes';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 
-const CopyCellFormat = (format: CellFormat | undefined): CellFormat | undefined => {
+export const CopyCellFormat = (format: CellFormat | undefined): CellFormat | undefined => {
   if (format === undefined) return undefined;
   return { ...format, textFormat: format.textFormat !== undefined ? { ...format.textFormat } : undefined }; // deep copy the textFormat
 };
@@ -12,12 +12,12 @@ export const SetCellFormatRunner = (sheet: Sheet, statement: Statement, app?: Pi
   if (statement.type !== 'SET_CELL_FORMAT') throw new Error('Incorrect statement type.');
   // Applies the SET_CELL_FORMAT statement to the sheet and returns the reverse statement
   const { position, value: new_value } = statement.data;
-  const old_value = CopyCellFormat(sheet.grid.getFormat(position[0], position[1]));
+  const old_value = sheet.grid.get(position[0], position[1]);
 
   // if we are clearing formatting
   if (new_value === undefined) {
     // Clear the cell format
-    if (old_value !== undefined) sheet.grid.clearFormat([old_value]);
+    if (old_value?.format !== undefined) sheet.grid.clearFormat([old_value.format]);
     if (app) {
       app.quadrants.quadrantChanged({ cells: [{ x: position[0], y: position[1] }] });
       app.cells.dirty = true;
@@ -26,7 +26,7 @@ export const SetCellFormatRunner = (sheet: Sheet, statement: Statement, app?: Pi
       type: 'SET_CELL_FORMAT',
       data: {
         position,
-        value: old_value,
+        value: CopyCellFormat(old_value?.format),
       },
     } as Statement;
   } else {
@@ -41,7 +41,7 @@ export const SetCellFormatRunner = (sheet: Sheet, statement: Statement, app?: Pi
       type: 'SET_CELL_FORMAT',
       data: {
         position,
-        value: old_value,
+        value: CopyCellFormat(old_value?.format),
       },
     } as Statement;
   }
