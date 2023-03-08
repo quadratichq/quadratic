@@ -87,16 +87,17 @@ function a11yProps(index: number) {
 interface FileMenuTabsProps {
   sheetController: SheetController;
   onClose: () => void;
+  onNewFile: () => void;
 }
 
 export default function FileMenuTabs(props: FileMenuTabsProps) {
-  const { onClose, sheetController } = props;
+  const { onClose, onNewFile, sheetController } = props;
   const [value, setValue] = useState(0);
   const [importLocalError, setImportLocalError] = useState(false);
   const [importURLError, setImportURLError] = useState(false);
   const importURLInput = useRef<HTMLInputElement | null>(null);
   const theme = useTheme();
-  const { loadSample, newFile, importLocalFile, loadQuadraticFile } = useLocalFiles(sheetController);
+  const { loadSample, importLocalFile, loadQuadraticFile } = useLocalFiles(sheetController);
   const importFileButton = useRef<HTMLInputElement | null>(null);
 
   const importFile = useCallback(
@@ -141,14 +142,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
           </LinkNewTab>
           .
         </Typography>
-        <Button
-          variant="contained"
-          disableElevation
-          onClick={() => {
-            newFile();
-            onClose();
-          }}
-        >
+        <Button variant="contained" disableElevation onClick={onNewFile}>
           Create file
         </Button>
       </TabPanel>

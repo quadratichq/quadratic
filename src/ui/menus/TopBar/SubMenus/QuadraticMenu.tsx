@@ -1,5 +1,5 @@
 import '@szhsin/react-menu/dist/index.css';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
@@ -10,7 +10,6 @@ import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
 import { SheetController } from '../../../../grid/controller/sheetController';
-import { NewFile } from './newFile/NewFile';
 import { MenuLineItem } from '../MenuLineItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
@@ -19,19 +18,19 @@ import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionState
 import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useLocalFiles } from '../../../../storage/useLocalFiles';
+import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 
 interface Props {
   sheetController: SheetController;
+  app: PixiApp;
 }
 
 export const QuadraticMenu = (props: Props) => {
-  const { sheetController } = props;
+  const { app, sheetController } = props;
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
   const interactionState = useRecoilValue(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
-
-  const [newFileOpen, setNewFileOpen] = useState(false);
 
   const { newFile, saveQuadraticFile: exportFile } = useLocalFiles(sheetController);
 
@@ -44,20 +43,6 @@ export const QuadraticMenu = (props: Props) => {
     }
     // eslint-disable-next-line
   }, []);
-
-  const createNewFile = useCallback(
-    (filename?: string) => {
-      if (filename) {
-        const extension = filename.split('.').pop();
-        if (!extension || extension !== 'grid') {
-          filename += '.grid';
-        }
-        newFile(filename);
-      }
-      setNewFileOpen(false);
-    },
-    [newFile]
-  );
 
   return (
     <>
@@ -73,7 +58,14 @@ export const QuadraticMenu = (props: Props) => {
       >
         <MenuHeader>Quadratic</MenuHeader>
         <SubMenu label="File">
-          <MenuItem onClick={() => setNewFileOpen(true)}>New</MenuItem>
+          <MenuItem
+            onClick={() => {
+              newFile();
+              app.reset();
+            }}
+          >
+            New
+          </MenuItem>
           <MenuItem onClick={() => exportFile(true)}>Save local copy</MenuItem>
           <MenuItem
             onClick={() => {
@@ -213,7 +205,6 @@ export const QuadraticMenu = (props: Props) => {
           <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>Report a problem</MenuItem>
         </SubMenu>
       </Menu>
-      <NewFile open={newFileOpen} handleClose={createNewFile} />
     </>
   );
 };

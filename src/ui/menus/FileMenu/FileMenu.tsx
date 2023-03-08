@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import {
   AddCircleOutline,
   Close,
@@ -38,14 +38,16 @@ import {
   LayoutColRightWrapper,
 } from './FileMenuStyles';
 import { useLocalFiles } from '../../../storage/useLocalFiles';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../grid/controller/sheetController';
 
 interface FileMenuProps {
-  app: any;
-  sheetController: any;
+  app: PixiApp;
+  sheetController: SheetController;
 }
 
 export function FileMenu(props: FileMenuProps) {
-  const { sheetController } = props;
+  const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { currentFileId, currentFilename, deleteFile, fileList, load, newFile } = useLocalFiles(props.sheetController);
 
@@ -57,6 +59,12 @@ export function FileMenu(props: FileMenuProps) {
   };
   const theme = useTheme();
   const styles = getStyles(theme);
+
+  const onNewFile = () => {
+    newFile();
+    onClose();
+    app.reset();
+  };
 
   // Focus back to the grid when this unmounts
   useEffect(() => {
@@ -93,13 +101,7 @@ export function FileMenu(props: FileMenuProps) {
               <List>
                 <Divider />
                 <ListItem key="create" disablePadding>
-                  <ListItemButton
-                    sx={{ py: theme.spacing(2) }}
-                    onClick={() => {
-                      newFile();
-                      onClose();
-                    }}
-                  >
+                  <ListItemButton sx={{ py: theme.spacing(2) }} onClick={onNewFile}>
                     <ListItemIcon>
                       <AddCircleOutline color="primary" />
                     </ListItemIcon>
@@ -134,6 +136,7 @@ export function FileMenu(props: FileMenuProps) {
                                 </IconButton>
                               </TooltipHint>
                             )}
+                            {/* Comment this out for now
                             <TooltipHint title="Save local copy" enterDelay={1000}>
                               <IconButton
                                 onClick={(e) => {
@@ -143,7 +146,7 @@ export function FileMenu(props: FileMenuProps) {
                               >
                                 <FileDownloadOutlined />
                               </IconButton>
-                            </TooltipHint>
+                              </TooltipHint>*/}
                           </div>
                         }
                         disablePadding
@@ -182,7 +185,7 @@ export function FileMenu(props: FileMenuProps) {
           <LayoutColRight>
             <Typography variant="h5">Start a new file…</Typography>
             <Divider sx={{ mt: theme.spacing(1) }} />
-            <FileMenuTabs sheetController={sheetController} onClose={onClose} />
+            <FileMenuTabs sheetController={sheetController} onClose={onClose} onNewFile={onNewFile} />
           </LayoutColRight>
         </LayoutColRightWrapper>
       </LayoutContainer>

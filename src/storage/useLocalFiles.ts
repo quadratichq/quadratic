@@ -137,9 +137,10 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         await saveFile(newFile);
         await saveIndex([newFile, ...fileState.index]);
         afterLoad(newFile);
+        log(`import success: ${gridFileJSON.filename} (${gridFileJSON.id})`);
         return true;
       } else {
-        log(`${gridFileJSON.filename} (${gridFileJSON.id}) is an invalid Quadratic file`);
+        log(`import failed: ${gridFileJSON.filename} (${gridFileJSON.id}) is an invalid Quadratic file`);
         validateFile(gridFileJSON, true);
         return false;
       }
@@ -151,8 +152,19 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const loadQuadraticFile = useCallback(
     async (url: string): Promise<boolean> => {
       try {
-        const file = await fetch(url);
-        return importQuadraticFile((await file.json()) as GridFileSchemaV1);
+        const res = await fetch(url);
+        const file = (await res.json()) as GridFileSchemaV1;
+
+        // If it's not an example file, overwrite the file's `filename` to match
+        // the last path in the URL
+        if (!url.startsWith('/examples/')) {
+          const filenameFromUrl = new URL(url).pathname.split('/').pop();
+          if (filenameFromUrl) {
+            file.filename = stripExtension(filenameFromUrl);
+          }
+        }
+
+        return importQuadraticFile(file);
       } catch (e) {
         log('error while fetching file', e as string);
         return false;
@@ -360,8 +372,11 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         const reader = new FileReader();
         reader.onload = (event) => {
           const json = event.target?.result;
+          console.log(event);
           if (json) {
-            resolve(importQuadraticFile(JSON.parse(json as string) as GridFileSchemaV1));
+            const parsedFile = JSON.parse(json as string) as GridFileSchemaV1;
+            parsedFile.filename = stripExtension(file.name);
+            resolve(importQuadraticFile(parsedFile));
           }
           resolve(false);
         };
@@ -400,3 +415,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     deleteFile,
   };
 };
+
+function stripExtension(str: string): string {
+  const extension = '.grid';
+  return str.endsWith(extension) ? str.slice(0, str.length - extension.length) : str;
+}

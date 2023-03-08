@@ -23,5 +23,7 @@ export interface GridFileSchemaV1 extends GridFileData {
   modified: number;
   created: number;
   id: string;
+  // Note: this is used inside the app, but is overridden when a file is
+  // imported by either the file's name on disk or the name in the URL
   filename: string;
 }
