@@ -1,6 +1,6 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { UploadFileOutlined } from '@mui/icons-material';
+import { NoteAddOutlined, UploadFileOutlined } from '@mui/icons-material';
 import { SaveFileOutlined } from '../../../icons';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRecoilState } from 'recoil';
@@ -8,22 +8,18 @@ import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionS
 import { useLocalFiles } from '../../../../storage/useLocalFiles';
 
 const ListItems = [
-  // {
-  //   label: 'File: New',
-  //   Component: (props: CommandPaletteListItemSharedProps) => {
-  //     const { newFile } = useLocalFiles(props.sheetController);
-  //     <CommandPaletteListItem
-  //       {...props}
-  //       icon={<NoteAddOutlined />}
-  //       action={newFile}
-  //     />
-  //   },
-  // },
+  {
+    label: 'File: New',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const { newFile } = useLocalFiles(props.sheetController);
+      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={newFile} />;
+    },
+  },
   {
     label: 'File: Save local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { save } = useLocalFiles(props.sheetController);
-      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={save} />;
+      const { saveQuadraticFile } = useLocalFiles(props.sheetController);
+      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => saveQuadraticFile(true)} />;
     },
   },
   {
