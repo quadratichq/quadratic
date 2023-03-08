@@ -139,12 +139,14 @@ export default function QuadraticGrid(props: IProps) {
         }
       }}
       onMouseDown={() => {
-        // <FloatingFormatMenu> prevents events from bubbling up to here, so
+        onMouseDown();
+      }}
+      onClick={() => {
+        // <FloatingContextMenu> prevents events from bubbling up to here, so
         // we always hide the context menu if it's open
         if (showContextMenu) {
           setShowContextMenu(false);
         }
-        onMouseDown();
       }}
       onKeyDown={(e) => {
         onKeyDown(e);
