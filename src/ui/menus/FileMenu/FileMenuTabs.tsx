@@ -1,7 +1,4 @@
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
+import { styled } from '@mui/material/styles';
 import {
   Button,
   Divider,
@@ -12,6 +9,10 @@ import {
   ListItemText,
   TextField,
   useTheme,
+  Tab,
+  Tabs as TabsMUI,
+  Typography,
+  Box,
 } from '@mui/material';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { InsertDriveFileOutlined } from '@mui/icons-material';
@@ -65,6 +66,17 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+const Tabs = styled(TabsMUI)(({ theme }) => ({
+  borderBottom: `1px solid ${theme.palette.divider}`,
+
+  [theme.breakpoints.up('lg')]: {
+    borderBottom: 'none',
+    position: 'absolute',
+    top: theme.spacing(-1),
+    right: '0',
+  },
+}));
+
 function a11yProps(index: number) {
   return {
     id: `simple-tab-${index}`,
@@ -114,12 +126,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Tabs
-        value={value}
-        onChange={handleChange}
-        aria-label="basic tabs example"
-        style={{ position: 'absolute', top: theme.spacing(-1), right: '0' }}
-      >
+      <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
         <Tab label="Blank" {...a11yProps(0)} />
         <Tab label="Example" {...a11yProps(1)} />
         <Tab label="Local" {...a11yProps(2)} />

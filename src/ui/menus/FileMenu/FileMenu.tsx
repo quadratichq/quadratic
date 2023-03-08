@@ -29,7 +29,14 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { focusGrid } from '../../../helpers/focusGrid';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { TooltipHint } from '../../components/TooltipHint';
-import { getStyles } from './FileMenuStyles';
+import {
+  getStyles,
+  LayoutColLeft,
+  LayoutColRight,
+  LayoutContainer,
+  LayoutColLeftWrapper,
+  LayoutColRightWrapper,
+} from './FileMenuStyles';
 import { useLocalFiles } from '../../../storage/useLocalFiles';
 
 interface FileMenuProps {
@@ -67,7 +74,7 @@ export function FileMenu(props: FileMenuProps) {
         }
       }}
     >
-      <Box style={styles.container}>
+      <LayoutContainer>
         <img src="favicon.ico" width="22" alt="Quadratic logo" style={styles.logo} />
         {currentFilename && (
           <div style={styles.closeBtn}>
@@ -79,98 +86,100 @@ export function FileMenu(props: FileMenuProps) {
           </div>
         )}
 
-        <div style={styles.cols}>
-          <div>
-            <Typography variant="h5">Your files</Typography>
-            <List>
-              <Divider />
-              <ListItem key="create" disablePadding>
-                <ListItemButton sx={{ py: theme.spacing(2) }}>
-                  <ListItemIcon>
-                    <AddCircleOutline color="primary" />
-                  </ListItemIcon>
-                  <ListItemText primary="Create file" primaryTypographyProps={{ color: 'primary' }} />
-                </ListItemButton>
-              </ListItem>
-              <Divider />
-              {fileList.map(({ filename, modified, id }, i) => {
-                const fileIsOpen = currentFileId === id;
-                return (
-                  <div key={i}>
-                    <ListItem
-                      onClick={() => {
-                        load(id);
-                        onClose();
-                      }}
-                      secondaryAction={
-                        <div style={styles.iconBtns}>
-                          {!fileIsOpen && (
-                            // For now we only support deleting a file that's not open
-                            // one day we refactor things to support that
-                            <TooltipHint title="Delete" enterDelay={1000}>
+        <LayoutColLeftWrapper>
+          <LayoutColLeft>
+            <div>
+              <Typography variant="h5">Your files</Typography>
+              <List>
+                <Divider />
+                <ListItem key="create" disablePadding>
+                  <ListItemButton sx={{ py: theme.spacing(2) }}>
+                    <ListItemIcon>
+                      <AddCircleOutline color="primary" />
+                    </ListItemIcon>
+                    <ListItemText primary="Create file" primaryTypographyProps={{ color: 'primary' }} />
+                  </ListItemButton>
+                </ListItem>
+                <Divider />
+                {fileList.map(({ filename, modified, id }, i) => {
+                  const fileIsOpen = currentFileId === id;
+                  return (
+                    <div key={i}>
+                      <ListItem
+                        onClick={() => {
+                          load(id);
+                          onClose();
+                        }}
+                        secondaryAction={
+                          <div style={styles.iconBtns}>
+                            {!fileIsOpen && (
+                              // For now we only support deleting a file that's not open
+                              // one day we refactor things to support that
+                              <TooltipHint title="Delete" enterDelay={1000}>
+                                <IconButton
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm(`Please confirm you want to delete the file “${filename}”`)) {
+                                      deleteFile(id);
+                                    }
+                                  }}
+                                >
+                                  <DeleteOutline />
+                                </IconButton>
+                              </TooltipHint>
+                            )}
+                            <TooltipHint title="Save local copy" enterDelay={1000}>
                               <IconButton
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (window.confirm(`Please confirm you want to delete the file “${filename}”`)) {
-                                    deleteFile(id);
-                                  }
+                                  // TODO download file
                                 }}
                               >
-                                <DeleteOutline />
+                                <FileDownloadOutlined />
                               </IconButton>
                             </TooltipHint>
-                          )}
-                          <TooltipHint title="Save local copy" enterDelay={1000}>
-                            <IconButton
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // TODO download file
-                              }}
-                            >
-                              <FileDownloadOutlined />
-                            </IconButton>
-                          </TooltipHint>
-                        </div>
-                      }
-                      disablePadding
-                    >
-                      <ListItemButton onClick={() => {}}>
-                        <ListItemIcon>
-                          <InsertDriveFileOutlined sx={{ color: theme.palette.text.primary }} />
-                        </ListItemIcon>
+                          </div>
+                        }
+                        disablePadding
+                      >
+                        <ListItemButton onClick={() => {}}>
+                          <ListItemIcon>
+                            <InsertDriveFileOutlined sx={{ color: theme.palette.text.primary }} />
+                          </ListItemIcon>
 
-                        <ListItemText
-                          primary={
-                            <>
-                              {filename} {fileIsOpen && <Chip label="Open" size="small" />}
-                            </>
-                          }
-                          secondary={timeAgo(modified)}
-                        />
-                      </ListItemButton>
-                    </ListItem>
-                    {i < fileList.length - 1 && <Divider />}
-                  </div>
-                );
-              })}
-            </List>
-          </div>
-          <div>
-            <Alert severity="info">
-              <AlertTitle>Important note on files</AlertTitle>
-              Files are stored in browser memory. Always keep a local copy saved of any important files.{' '}
-              <LinkNewTab href="#TODO-DOCS-LINK">Learn more</LinkNewTab>.
-            </Alert>
-          </div>
-        </div>
-        <div style={{ background: theme.palette.grey['50'] }}>
-          <div style={styles.cols}>
+                          <ListItemText
+                            primary={
+                              <>
+                                {filename} {fileIsOpen && <Chip label="Open" size="small" />}
+                              </>
+                            }
+                            secondary={timeAgo(modified)}
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                      {i < fileList.length - 1 && <Divider />}
+                    </div>
+                  );
+                })}
+              </List>
+            </div>
+            <div>
+              <Alert severity="info">
+                <AlertTitle>Important note on files</AlertTitle>
+                Files are stored in browser memory. Always keep a local copy saved of any important files.{' '}
+                <LinkNewTab href="#TODO-DOCS-LINK">Learn more</LinkNewTab>.
+              </Alert>
+            </div>
+          </LayoutColLeft>
+        </LayoutColLeftWrapper>
+        <LayoutColRightWrapper>
+          <LayoutColRight>
             <Typography variant="h5">Start a new file…</Typography>
             <Divider sx={{ mt: theme.spacing(1) }} />
             <FileMenuTabs sheetController={sheetController} onClose={onClose} />
-          </div>
-        </div>
-      </Box>
+          </LayoutColRight>
+        </LayoutColRightWrapper>
+      </LayoutContainer>
     </Modal>
   );
 }
