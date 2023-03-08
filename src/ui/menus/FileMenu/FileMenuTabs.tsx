@@ -42,7 +42,7 @@ const examples = [
     description: 'Working with large sets of data',
   },
   { name: 'Startup portfolio', file: 'startup_portfolio.grid', description: 'Lorem ipsum santa dolor.' },
-];
+].map((item) => ({ ...item, name: item.name + ' (Example)' }));
 
 interface TabPanelProps {
   children?: ReactNode;

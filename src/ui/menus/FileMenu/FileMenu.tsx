@@ -47,7 +47,7 @@ interface FileMenuProps {
 export function FileMenu(props: FileMenuProps) {
   const { sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFileId, currentFilename, deleteFile, fileList, load } = useLocalFiles(props.sheetController);
+  const { currentFileId, currentFilename, deleteFile, fileList, load, newFile } = useLocalFiles(props.sheetController);
 
   const onClose = () => {
     setEditorInteractionState({
@@ -93,7 +93,13 @@ export function FileMenu(props: FileMenuProps) {
               <List>
                 <Divider />
                 <ListItem key="create" disablePadding>
-                  <ListItemButton sx={{ py: theme.spacing(2) }}>
+                  <ListItemButton
+                    sx={{ py: theme.spacing(2) }}
+                    onClick={() => {
+                      newFile();
+                      onClose();
+                    }}
+                  >
                     <ListItemIcon>
                       <AddCircleOutline color="primary" />
                     </ListItemIcon>

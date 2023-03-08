@@ -378,6 +378,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         throw new Error('Trying to load a local file that does not exist in the file index');
       }
       saveIndex(fileState.index.filter((entry) => entry.id !== id));
+      await localforage.removeItem(id);
       log(`deleted file (${id})`);
     },
     [fileState.index, saveIndex]
