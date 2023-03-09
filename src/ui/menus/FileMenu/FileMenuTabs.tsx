@@ -133,7 +133,6 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
   const handleChange = useCallback((event: SyntheticEvent, newValue: number) => {
     setValue(newValue);
   }, []);
-  console.log(isLoading);
 
   return (
     <Box sx={{ width: '100%' }}>
