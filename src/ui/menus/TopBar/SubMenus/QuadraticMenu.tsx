@@ -60,8 +60,8 @@ export const QuadraticMenu = (props: Props) => {
         <SubMenu label="File">
           <MenuItem
             onClick={() => {
-              newFile();
               app.reset();
+              newFile();
             }}
           >
             New

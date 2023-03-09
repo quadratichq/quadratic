@@ -29,7 +29,7 @@ interface LocalFiles {
   loadQuadraticFile: (url: string) => Promise<boolean>;
   newFile: (filename?: string) => void;
   saveQuadraticFile: (autoDownload: boolean) => GridFileSchemaV1 | undefined;
-  loadSample: (sample: string) => Promise<void>;
+  loadSample: (sample: string) => Promise<boolean>;
   renameFile: (filename: string) => Promise<void>;
   importLocalFile: (file: File) => Promise<boolean>;
   deleteFile: (id: string) => void;
@@ -171,8 +171,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   );
 
   const loadSample = useCallback(
-    async (sample: string): Promise<void> => {
-      await loadQuadraticFile(`/examples/${sample}`);
+    async (sample: string): Promise<boolean> => {
+      return await loadQuadraticFile(`/examples/${sample}`);
     },
     [loadQuadraticFile]
   );

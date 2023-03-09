@@ -6,6 +6,7 @@ export const TopBarLoading = () => {
     <div
       style={{
         position: 'absolute',
+        top: '0',
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
         //@ts-expect-error
         WebkitAppRegion: 'drag', // this allows the window to be dragged in Electron

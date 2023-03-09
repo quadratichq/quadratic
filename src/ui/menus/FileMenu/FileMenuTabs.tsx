@@ -13,6 +13,7 @@ import {
   Tabs as TabsMUI,
   Typography,
   Box,
+  Backdrop,
 } from '@mui/material';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { InsertDriveFileOutlined } from '@mui/icons-material';
@@ -20,6 +21,7 @@ import { LinkNewTab } from '../../components/LinkNewTab';
 import { useLocalFiles } from '../../../storage/useLocalFiles';
 import { ChangeEvent, ReactNode, SyntheticEvent, useCallback, useRef, useState } from 'react';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
+import { QuadraticLoading } from '../../loading/QuadraticLoading';
 
 // TODO work on descriptions
 const examples = [
@@ -93,11 +95,12 @@ interface FileMenuTabsProps {
 export default function FileMenuTabs(props: FileMenuTabsProps) {
   const { onClose, onNewFile, sheetController } = props;
   const [value, setValue] = useState(0);
-  const [importLocalError, setImportLocalError] = useState(false);
-  const [importURLError, setImportURLError] = useState(false);
+  const [importLocalError, setImportLocalError] = useState<boolean>(false);
+  const [importURLError, setImportURLError] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const importURLInput = useRef<HTMLInputElement | null>(null);
   const theme = useTheme();
-  const { loadSample, importLocalFile, loadQuadraticFile } = useLocalFiles(sheetController);
+  const { importLocalFile, loadQuadraticFile, loadSample } = useLocalFiles(sheetController);
   const importFileButton = useRef<HTMLInputElement | null>(null);
 
   const importFile = useCallback(
@@ -112,21 +115,38 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
     [importLocalFile, onClose]
   );
 
-  const importURL = useCallback(async (): Promise<void> => {
-    const url = importURLInput.current?.value;
-    if (url) {
-      const loaded = await loadQuadraticFile(url);
-      if (loaded) onClose({ reset: true });
-      else setImportURLError(true);
-    }
-  }, [loadQuadraticFile, onClose]);
+  const importURL = useCallback(
+    async (e): Promise<void> => {
+      e.preventDefault();
+      const url = importURLInput.current?.value;
+      if (url) {
+        setIsLoading(true);
+        const loaded = await loadQuadraticFile(url);
+        setIsLoading(false);
+        if (loaded) onClose({ reset: true });
+        else setImportURLError(true);
+      }
+    },
+    [loadQuadraticFile, onClose]
+  );
 
   const handleChange = useCallback((event: SyntheticEvent, newValue: number) => {
     setValue(newValue);
   }, []);
+  console.log(isLoading);
 
   return (
     <Box sx={{ width: '100%' }}>
+      <Backdrop
+        open={isLoading}
+        style={{
+          background: 'rgba(255,255,255,.95)',
+          zIndex: '1000',
+        }}
+      >
+        <QuadraticLoading />
+      </Backdrop>
+
       <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
         <Tab label="Blank" {...a11yProps(0)} />
         <Tab label="Example" {...a11yProps(1)} />
@@ -156,9 +176,19 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
             <div key={i}>
               <ListItem key={`sample-${file}`} disablePadding>
                 <ListItemButton
-                  onClick={async () => {
-                    await loadSample(file);
-                    onClose({ reset: true });
+                  onClick={() => {
+                    setIsLoading(true);
+                    loadSample(file)
+                      .then((loaded) => {
+                        setIsLoading(false);
+                        if (loaded) {
+                          onClose({ reset: true });
+                        }
+                      })
+                      .catch((e) => {
+                        console.error(e);
+                        setIsLoading(false);
+                      });
                   }}
                 >
                   <ListItemIcon>
@@ -182,7 +212,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
         </Button>
         {importLocalError && (
           <Typography variant="body2" color="error" mt={theme.spacing(1)}>
-            The file you chose doesn’t appear to be a valid `.grid` file. Try again.
+            The file you chose doesn’t appear to be a valid <code>.grid</code> file. Try again.
           </Typography>
         )}
       </TabPanel>
@@ -197,22 +227,24 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
         <Typography gutterBottom mt={theme.spacing(4)} mb={theme.spacing(2)}>
           Or, paste a URL to a <code>.grid</code> file to import it:
         </Typography>
-        <TextField
-          inputRef={importURLInput}
-          id="url"
-          label="File URL"
-          variant="outlined"
-          placeholder="https://example.com/my-file.grid"
-          fullWidth
-          autoFocus
-        />
-        <Button variant="contained" disableElevation sx={{ mt: theme.spacing(1) }} onClick={importURL}>
-          Import file
-        </Button>
+        <form onSubmit={importURL}>
+          <TextField
+            inputRef={importURLInput}
+            id="url"
+            label="File URL"
+            variant="outlined"
+            placeholder="https://example.com/my-file.grid"
+            fullWidth
+            autoFocus
+          />
+          <Button type="submit" variant="contained" disableElevation sx={{ mt: theme.spacing(1) }}>
+            Import file
+          </Button>
+        </form>
         {importURLError && (
           <Typography color="error" mt={theme.spacing(1)}>
             Failed to import that file to Quadratic. Ensure{' '}
-            <LinkNewTab href="#TODO" color="inherit">
+            <LinkNewTab href={DOCUMENTATION_FILES_URL} color="inherit">
               you can retrieve the remotely-hosted file
             </LinkNewTab>{' '}
             and try again.
