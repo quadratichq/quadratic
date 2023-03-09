@@ -53,13 +53,14 @@ export function FileMenu(props: FileMenuProps) {
   const { currentFileId, currentFilename, deleteFile, fileList, load, newFile } = useLocalFiles(props.sheetController);
 
   const onClose = ({ reset } = { reset: false }) => {
+    if (reset) {
+      app.reset();
+    }
+
     setEditorInteractionState({
       ...editorInteractionState,
       showFileMenu: false,
     });
-    if (reset) {
-      app.reset();
-    }
   };
   const theme = useTheme();
   const styles = getStyles(theme);
