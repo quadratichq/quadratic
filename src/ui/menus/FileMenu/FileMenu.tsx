@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useCallback, useEffect } from 'react';
+import { useCallback, useContext, useEffect } from 'react';
 import {
   AddCircleOutline,
   Close,
@@ -41,6 +41,7 @@ import { useLocalFiles } from '../../../storage/useLocalFiles';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
+import { AppContext } from '../../QuadraticUI';
 
 interface FileMenuProps {
   app: PixiApp;
@@ -52,7 +53,9 @@ export type onCloseFn = (arg?: { reset: boolean }) => void;
 export function FileMenu(props: FileMenuProps) {
   const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFileId, currentFilename, deleteFile, fileList, load, newFile } = useLocalFiles(props.sheetController);
+  const {
+    localFiles: { currentFileId, currentFilename, deleteFile, fileList, load, newFile },
+  } = useContext(AppContext);
 
   const onClose: onCloseFn = ({ reset } = { reset: false }) => {
     if (reset) {
@@ -191,7 +194,7 @@ export function FileMenu(props: FileMenuProps) {
           <LayoutColRight>
             <Typography variant="h5">Start a new file…</Typography>
             <Divider sx={{ mt: theme.spacing(1) }} />
-            <FileMenuTabs sheetController={sheetController} onClose={onClose} onNewFile={onNewFile} />
+            <FileMenuTabs onClose={onClose} onNewFile={onNewFile} />
           </LayoutColRight>
         </LayoutColRightWrapper>
       </LayoutContainer>

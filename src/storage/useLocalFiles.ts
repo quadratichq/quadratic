@@ -12,7 +12,6 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 
 const INDEX = 'index';
 const VERSION = '1.0';
-let hookLoaded = false;
 
 export interface LocalFile {
   filename: string;
@@ -20,7 +19,7 @@ export interface LocalFile {
   modified: number;
 }
 
-interface LocalFiles {
+export interface LocalFiles {
   loaded: boolean;
   fileList: LocalFile[];
   currentFilename: string;
@@ -41,11 +40,12 @@ function log(...s: string[]): void {
 }
 
 export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
+  const [hookLoaded, setHookLoaded] = useState<boolean>(false);
+  // Move this recoil state into the hook
   const [fileState, setFileState] = useRecoilState(fileAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-
-  const { sheet } = sheetController;
   const [loaded, setLoaded] = useState(false);
+  const { sheet } = sheetController;
 
   const afterLoad = useCallback(
     (grid: GridFileSchemaV1) => {
@@ -181,7 +181,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   useEffect(() => {
     // ensure this only runs once
     if (hookLoaded) return;
-    hookLoaded = true;
+    setHookLoaded(true);
 
     localforage.config({ name: 'Quadratic', version: 1 });
     log('initialized localForage');
@@ -239,6 +239,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     setFileState,
     setEditorInteractionState,
     editorInteractionState,
+    hookLoaded,
   ]);
 
   const save = useCallback(async (): Promise<void> => {

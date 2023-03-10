@@ -5,20 +5,25 @@ import { SaveFileOutlined } from '../../../icons';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { useLocalFiles } from '../../../../storage/useLocalFiles';
+import { useContext } from 'react';
+import { AppContext } from '../../../QuadraticUI';
 
 const ListItems = [
   {
     label: 'File: New',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { newFile } = useLocalFiles(props.sheetController);
+      const {
+        localFiles: { newFile },
+      } = useContext(AppContext);
       return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={newFile} />;
     },
   },
   {
     label: 'File: Save local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { saveQuadraticFile } = useLocalFiles(props.sheetController);
+      const {
+        localFiles: { saveQuadraticFile },
+      } = useContext(AppContext);
       return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => saveQuadraticFile(true)} />;
     },
   },

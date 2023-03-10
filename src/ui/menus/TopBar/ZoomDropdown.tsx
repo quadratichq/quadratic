@@ -5,15 +5,12 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { MenuLineItem } from './MenuLineItem';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { useCallback, useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
 import useEventListener from '../../../hooks/useEventListener';
+import { AppContext } from '../../QuadraticUI';
 
-interface Props {
-  app: PixiApp;
-}
-
-export const ZoomDropdown = (props: Props) => {
+export const ZoomDropdown = () => {
+  const { app } = useContext(AppContext);
   const [zoom, setZoom] = useState(1);
   const handleZoom = useCallback(
     (event: CustomEvent<number>) => {
@@ -25,10 +22,10 @@ export const ZoomDropdown = (props: Props) => {
 
   const setZoomState = useCallback(
     (value: number) => {
-      props.app.setZoomState(value);
+      app.setZoomState(value);
       focusGrid();
     },
-    [props.app]
+    [app]
   );
 
   return (
@@ -46,7 +43,7 @@ export const ZoomDropdown = (props: Props) => {
         <MenuLineItem primary="Zoom out" secondary={KeyboardSymbols.Command + '−'} />
       </MenuItem>
       <MenuDivider></MenuDivider>
-      <MenuItem onClick={() => props.app.setZoomToFit()}>
+      <MenuItem onClick={() => app.setZoomToFit()}>
         <MenuLineItem primary="Zoom to fit" secondary={KeyboardSymbols.Command + '9'} />
       </MenuItem>
       <MenuItem onClick={() => setZoomState(0.5)}>Zoom to 50%</MenuItem>

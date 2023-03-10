@@ -18,6 +18,16 @@ import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
 import { useLocalFiles } from '../storage/useLocalFiles';
 import { CSVImportHelpMessage } from './overlays/CSVImportHelpMessage';
+import { createContext } from 'react';
+import { LocalFiles } from '../storage/useLocalFiles';
+
+// TODO move into its own file...
+interface AppContextProps {
+  localFiles: LocalFiles;
+  app: PixiApp;
+  sheetController: SheetController;
+}
+export const AppContext = createContext<AppContextProps>({} as AppContextProps);
 
 interface Props {
   sheetController: SheetController;
@@ -30,8 +40,8 @@ export default function QuadraticUI(props: Props) {
 
   const { sheetController } = props;
 
-  const { save } = useLocalFiles(props.sheetController);
-  const [app] = useState(() => new PixiApp(props.sheetController, save));
+  const localFiles = useLocalFiles(props.sheetController);
+  const [app] = useState(() => new PixiApp(props.sheetController, localFiles.save));
 
   useEffect(() => {
     sheetController.setApp(app);
@@ -43,40 +53,42 @@ export default function QuadraticUI(props: Props) {
   }, [presentationMode, app]);
 
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
-      {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
-      {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
-      {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
-      {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
-      {editorInteractionState.showFileMenu && <FileMenu app={app} sheetController={sheetController} />}
-
+    <AppContext.Provider value={{ localFiles, app, sheetController }}>
       <div
         style={{
           width: '100%',
           height: '100%',
           display: 'flex',
-          overflow: 'hidden',
-          position: 'relative',
+          flexDirection: 'column',
         }}
       >
-        <FileUploadWrapper sheetController={sheetController} app={app}>
-          <QuadraticGrid sheetController={sheetController} app={app} />
-        </FileUploadWrapper>
-        <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
+        {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
+        {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
+        {!presentationMode && <TopBar />}
+        {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
+        {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
+        {editorInteractionState.showFileMenu && <FileMenu app={app} sheetController={sheetController} />}
+
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            overflow: 'hidden',
+            position: 'relative',
+          }}
+        >
+          <FileUploadWrapper sheetController={sheetController} app={app}>
+            <QuadraticGrid sheetController={sheetController} app={app} />
+          </FileUploadWrapper>
+          <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
+        </div>
+
+        <CSVImportHelpMessage></CSVImportHelpMessage>
+
+        {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
+        {presentationMode && <PresentationModeHint />}
       </div>
-
-      <CSVImportHelpMessage></CSVImportHelpMessage>
-
-      {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
-      {presentationMode && <PresentationModeHint />}
-    </div>
+    </AppContext.Provider>
   );
 }
