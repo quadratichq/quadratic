@@ -67,11 +67,8 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
             <>
               <p>Quadratic allows you to leverage the power of Python to fetch, script, and compute cell data.</p>
               <p>
-                <LinkNewTab href="https://pandas.pydata.org/">Pandas</LinkNewTab>,{' '}
-                <LinkNewTab href="https://numpy.org/">NumPy</LinkNewTab>, and{' '}
-                <LinkNewTab href="https://scipy.org/">SciPy</LinkNewTab> libraries are included by default.{' '}
-                <LinkNewTab href="https://github.com/pyodide/micropip">Micropip</LinkNewTab> is also available for
-                installing any third-party libraries you need.
+                Pandas, NumPy, and SciPy are included by default. Micropip is also available for installing any
+                third-party libraries you need.
               </p>
               <p>
                 <LinkNewTab href={DOCUMENTATION_PYTHON_URL}>Check out the docs</LinkNewTab> to learn more about using
