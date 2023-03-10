@@ -48,7 +48,7 @@ fn test_formula_indirect() {
 
 #[test]
 fn test_formula_cell_ref() {
-    let form = parse_formula("SUM($C$4, $A0, D$n6, A0, ZB2)", Pos::new(3, 4)).unwrap();
+    let form = parse_formula("SUM($C$4, $A0, D$n6, A0, nB2)", Pos::new(3, 4)).unwrap();
 
     make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
         // The formula was parsed at C4, but we'll be evaluating it from A2 so
@@ -56,8 +56,8 @@ fn test_formula_cell_ref() {
         (3, 4) => "1".to_string(),      // $C$4 -> C4
         (1, -2) => "10".to_string(),    // $A0  -> An2
         (2, -6) => "100".to_string(),   // D$n6 -> Bn6
-        (-1, -2) => "1000".to_string(), // A0   -> ZAn2
-        (-4, 0) => "10000".to_string(), // ZB2  -> ZD0
+        (-1, -2) => "1000".to_string(), // A0   -> nAn2
+        (-4, 0) => "10000".to_string(), // nB2  -> nD0
         _ => panic!("cell {pos} shouldn't be accessed"),
     }));
 
@@ -116,7 +116,7 @@ fn test_formula_concat() {
 
 #[test]
 fn test_formula_if() {
-    let form = parse_formula("IF(Z1=2, 'yep', 'nope')", Pos::new(0, 0)).unwrap();
+    let form = parse_formula("IF(n1=2, 'yep', 'nope')", Pos::new(0, 0)).unwrap();
 
     make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
         (0, 1) => "2".to_string(),
