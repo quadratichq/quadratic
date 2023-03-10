@@ -12,6 +12,7 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 
 const INDEX = 'index';
 const VERSION = '1.0';
+let hookLoaded = false;
 
 export interface LocalFile {
   filename: string;
@@ -27,7 +28,7 @@ interface LocalFiles {
   load: (id: string) => Promise<GridFileSchemaV1 | undefined>;
   save: () => Promise<void>;
   loadQuadraticFile: (url: string) => Promise<boolean>;
-  newFile: (filename?: string) => void;
+  newFile: (filename?: string) => Promise<void>;
   saveQuadraticFile: (autoDownload: boolean) => GridFileSchemaV1 | undefined;
   loadSample: (sample: string) => Promise<boolean>;
   renameFile: (filename: string) => Promise<void>;
@@ -179,7 +180,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
   useEffect(() => {
     // ensure this only runs once
-    if (fileState.loaded) return;
+    if (hookLoaded) return;
+    hookLoaded = true;
 
     localforage.config({ name: 'Quadratic', version: 1 });
     log('initialized localForage');

@@ -47,12 +47,14 @@ interface FileMenuProps {
   sheetController: SheetController;
 }
 
+export type onCloseFn = (arg?: { reset: boolean }) => void;
+
 export function FileMenu(props: FileMenuProps) {
   const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { currentFileId, currentFilename, deleteFile, fileList, load, newFile } = useLocalFiles(props.sheetController);
 
-  const onClose = ({ reset } = { reset: false }) => {
+  const onClose: onCloseFn = ({ reset } = { reset: false }) => {
     if (reset) {
       app.reset();
     }
@@ -65,8 +67,8 @@ export function FileMenu(props: FileMenuProps) {
   const theme = useTheme();
   const styles = getStyles(theme);
 
-  const onNewFile = () => {
-    newFile();
+  const onNewFile = async () => {
+    await newFile();
     onClose({ reset: true });
   };
 

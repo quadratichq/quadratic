@@ -22,6 +22,7 @@ import { useLocalFiles } from '../../../storage/useLocalFiles';
 import { ChangeEvent, ReactNode, SyntheticEvent, useCallback, useRef, useState } from 'react';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 import { QuadraticLoading } from '../../loading/QuadraticLoading';
+import { onCloseFn } from './FileMenu';
 
 // TODO work on descriptions
 const examples = [
@@ -88,8 +89,8 @@ function a11yProps(index: number) {
 
 interface FileMenuTabsProps {
   sheetController: SheetController;
-  onClose: Function;
-  onNewFile: Function;
+  onClose: onCloseFn;
+  onNewFile: () => void;
 }
 
 export default function FileMenuTabs(props: FileMenuTabsProps) {
@@ -161,7 +162,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
           </LinkNewTab>
           .
         </Typography>
-        <Button variant="contained" disableElevation onClick={() => onNewFile()}>
+        <Button variant="contained" disableElevation onClick={onNewFile}>
           Create file
         </Button>
       </TabPanel>
