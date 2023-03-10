@@ -25,7 +25,8 @@ macro_rules! array_mapped {
 pub fn pure_function_from_name(
     s: &str,
 ) -> Option<fn(Spanned<Vec<Spanned<Value>>>) -> FormulaResult<Value>> {
-    // When adding new functions, also update the code editor completions list.
+    // When adding new functions, also update the code editor completions list
+    // in `FormulaLanguageModel.ts`.
     Some(match s.to_ascii_lowercase().as_str() {
         // Comparison operators
         "=" | "==" => array_mapped!(|[a, b]| Ok(Value::Bool(a.to_string() == b.to_string()))),
@@ -38,7 +39,6 @@ pub fn pure_function_from_name(
         ">=" => array_mapped!(|[a, b]| Ok(Value::Bool(a.to_number()? >= b.to_number()?))),
 
         // Mathematical operators
-        "sum" => |args| sum(&args.inner).map(Value::Number),
         "+" => |args| match args.inner.len() {
             1 => array_map(args, |[a]| Ok(Value::Number(a.to_number()?))),
             _ => array_map(args, |[a, b]| {
@@ -51,13 +51,35 @@ pub fn pure_function_from_name(
                 Ok(Value::Number(a.to_number()? - b.to_number()?))
             }),
         },
-        "product" => |args| product(&args.inner).map(Value::Number),
         "*" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? * b.to_number()?))),
         "/" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? / b.to_number()?))),
         "^" | "**" => {
             array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()?.powf(b.to_number()?))))
         }
         "%" => array_mapped!(|[n]| Ok(Value::Number(n.to_number()? / 100.0))),
+
+        // Mathematics functions
+        "sum" => |args| sum(&args.inner).map(Value::Number),
+        "product" => |args| product(&args.inner).map(Value::Number),
+
+        // Statistics functions
+        // TODO: many of these have strange behavior when given zero arguments
+        "average" => |args| Ok(Value::Number(sum(&args.inner)? / count(&args.inner) as f64)),
+        "count" => |args| Ok(Value::Number(count(&args.inner) as f64)),
+        "min" => |args| {
+            Ok(Value::Number(
+                flat_iter_numbers(&args.inner).try_fold(f64::INFINITY, |ret, next| {
+                    FormulaResult::Ok(f64::min(ret, next?))
+                })?,
+            ))
+        },
+        "max" => |args| {
+            Ok(Value::Number(
+                flat_iter_numbers(&args.inner).try_fold(-f64::INFINITY, |ret, next| {
+                    FormulaResult::Ok(f64::max(ret, next?))
+                })?,
+            ))
+        },
 
         // Logic functions (non-short-circuiting)
         "true" => constant_function!(Ok(Value::Bool(true))),
@@ -81,25 +103,6 @@ pub fn pure_function_from_name(
         "if" => {
             array_mapped!(|[cond, t, f]| { Ok(if cond.to_bool()? { t.inner } else { f.inner }) })
         }
-
-        // Statistics functions
-        // TODO: many of these have strange behavior when given zero arguments
-        "average" => |args| Ok(Value::Number(sum(&args.inner)? / count(&args.inner) as f64)),
-        "count" => |args| Ok(Value::Number(count(&args.inner) as f64)),
-        "min" => |args| {
-            Ok(Value::Number(
-                flat_iter_numbers(&args.inner).try_fold(f64::INFINITY, |ret, next| {
-                    FormulaResult::Ok(f64::min(ret, next?))
-                })?,
-            ))
-        },
-        "max" => |args| {
-            Ok(Value::Number(
-                flat_iter_numbers(&args.inner).try_fold(-f64::INFINITY, |ret, next| {
-                    FormulaResult::Ok(f64::max(ret, next?))
-                })?,
-            ))
-        },
 
         // String functions
         "&" => {
