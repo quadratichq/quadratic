@@ -22,9 +22,9 @@ const ListItems = [
     label: 'File: Save local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
       const {
-        localFiles: { saveQuadraticFile },
+        localFiles: { downloadQuadraticFile },
       } = useContext(AppContext);
-      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => saveQuadraticFile(true)} />;
+      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => downloadQuadraticFile()} />;
     },
   },
   {
