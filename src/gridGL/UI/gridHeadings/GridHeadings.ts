@@ -402,7 +402,7 @@ export class GridHeadings extends Container {
   // whether the point is on the heading gridLine (with tolerance)
   intersectsHeadingGridLine(
     world: Point
-  ): { start: number; end: number; column?: number; row?: number; width?: number; height?: number } | undefined {
+  ): { start: number; column?: number; row?: number; width?: number; height?: number } | undefined {
     const tolerance = GRID_HEADING_RESIZE_TOLERANCE / this.app.viewport.scale.x;
     if (!this.columnRect || !this.rowRect) return;
     const { gridOffsets } = this.app.sheet;
@@ -410,11 +410,11 @@ export class GridHeadings extends Container {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
           if (line.column < 0) {
-            const start = gridOffsets.getColumnPlacement(line.column + 1);
-            return { start: start.x, end: start.x + start.width, column: line.column + 1, width: start.width };
+            const start = gridOffsets.getColumnPlacement(line.column);
+            return { start: start.x, column: line.column, width: start.width };
           } else {
             const start = gridOffsets.getColumnPlacement(line.column);
-            return { start: start.x, end: 0, column: line.column, width: line.width };
+            return { start: start.x, column: line.column, width: line.width };
           }
         }
       }
@@ -424,10 +424,10 @@ export class GridHeadings extends Container {
         if (Math.abs(world.y - line.y) < tolerance) {
           if (line.row < 0) {
             const start = gridOffsets.getRowPlacement(line.row + 1);
-            return { start: start.y, end: start.y + start.height, row: line.row + 1, height: start.height };
+            return { start: start.y, row: line.row + 1, height: start.height };
           } else {
             const start = gridOffsets.getRowPlacement(line.row);
-            return { start: start.y, end: 0, row: line.row, height: line.height };
+            return { start: start.y, row: line.row, height: line.height };
           }
         }
       }
