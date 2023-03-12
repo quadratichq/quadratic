@@ -19,6 +19,7 @@ import { HEADING_SIZE } from '../../constants/gridConstants';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../constants/app';
+import { Wheel } from '../pixiOverride/Wheel';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -75,15 +76,24 @@ export class PixiApp {
     this.viewport
       .drag({
         pressDrag: true,
+        wheel: false, // handled by Wheel plugin below
         ...(IS_READONLY_MODE ? {} : { keyToPress: ['Space'] }),
       })
       .decelerate()
       .pinch()
-      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 })
       .clampZoom({
         minScale: 0.01,
         maxScale: 10,
       });
+    this.viewport.plugins.add(
+      'wheel',
+      new Wheel(this.viewport, {
+        trackpadPinch: true,
+        wheelZoom: true,
+        percent: 1.5,
+        keyToPress: ['ControlKey', 'ControlLeft', 'ControlRight', 'MetaKey', 'MetaLeft', 'MetaRight'],
+      })
+    );
 
     // hack to ensure pointermove works outside of canvas
     this.viewport.off('pointerout');
