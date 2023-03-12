@@ -295,14 +295,9 @@ export class GridSparse {
    * @param withContent if true, will find the next column with content, if false, will find the next column without content
    * @returns the found column or the original column if nothing was found
    */
-  findNextColumn(options: {
-    xStart: number;
-    y: number
-    delta: 1 | -1;
-    withContent: boolean;
-  }): number {
+  findNextColumn(options: { xStart: number; y: number; delta: 1 | -1; withContent: boolean }): number {
     const { xStart, delta, y, withContent } = options;
-    const bounds = this.cellBounds
+    const bounds = this.cellBounds;
     if (!bounds) return xStart;
     let x = delta === 1 ? Math.max(xStart, bounds.minX) : Math.min(xStart, bounds.maxX);
 
@@ -326,14 +321,9 @@ export class GridSparse {
    * @param withContent if true, will find the next column with content, if false, will find the next column without content
    * @returns the found row or the original row if nothing was found
    */
-  findNextRow(options: {
-    yStart: number;
-    x: number
-    delta: 1 | -1;
-    withContent: boolean;
-  }): number {
+  findNextRow(options: { yStart: number; x: number; delta: 1 | -1; withContent: boolean }): number {
     const { yStart, delta, x, withContent } = options;
-    const bounds = this.cellBounds
+    const bounds = this.cellBounds;
     if (!bounds) return yStart;
     let y = delta === 1 ? Math.max(yStart, bounds.minY) : Math.min(yStart, bounds.maxY);
 

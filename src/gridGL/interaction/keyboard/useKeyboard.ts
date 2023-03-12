@@ -108,7 +108,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       return;
     }
 
-    if (keyboardCell({
+    if (
+      keyboardCell({
         sheet_controller: props.sheetController,
         event,
         interactionState,
