@@ -101,14 +101,14 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     )
       return;
 
+    if (keyboardPosition({ event, interactionState, setInteractionState, sheet: sheetController.sheet })) return;
+
     // Prevent these commands if "command" key is being pressed
     if (event.metaKey || event.ctrlKey) {
       return;
     }
 
-    if (
-      keyboardPosition({ event, interactionState, setInteractionState }) ||
-      keyboardCell({
+    if (keyboardCell({
         sheet_controller: props.sheetController,
         event,
         interactionState,
