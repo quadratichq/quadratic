@@ -134,7 +134,7 @@ export class Quadrants extends Container {
         const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
         if (quadrant) quadrant.dirty = true;
         const dependents = this.app.sheet.render_dependency.getDependents({ x, y: options.row });
-        dependents?.forEach(dependent => {
+        dependents?.forEach((dependent) => {
           const quadrant = this.getQuadrant(dependent.x, dependent.y, false);
           if (quadrant) quadrant.dirty = true;
         });
