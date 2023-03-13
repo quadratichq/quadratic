@@ -21,7 +21,7 @@ function translateNumberToA1Notation(column: number): string {
  * @returns
  */
 export function getColumnA1Notation(column: number): string {
-  if (column < 0) return `n${translateNumberToA1Notation(-column)}`;
+  if (column < 0) return `n${translateNumberToA1Notation(-column - 1)}`;
   return translateNumberToA1Notation(column);
 }
 
