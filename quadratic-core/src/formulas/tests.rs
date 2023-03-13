@@ -48,7 +48,7 @@ fn test_formula_indirect() {
 
 #[test]
 fn test_formula_cell_ref() {
-    let form = parse_formula("SUM($C$4, $A0, D$n6, A0, nB2)", Pos::new(3, 4)).unwrap();
+    let form = parse_formula("SUM($D$4, $B0, E$n6, B0, nB2)", Pos::new(3, 4)).unwrap();
 
     make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
         // The formula was parsed at C4, but we'll be evaluating it from A2 so
@@ -80,10 +80,10 @@ fn test_formula_cell_ref() {
 
 #[test]
 fn test_formula_circular_array_ref() {
-    let form = parse_formula("$A$0:$B$4", Pos::new(0, 0)).unwrap();
+    let form = parse_formula("$B$0:$C$4", Pos::new(0, 0)).unwrap();
 
     make_stateless_grid_mock!(|pos| {
-        if pos == (Pos { x: 1, y: 2 }) {
+        if pos == Pos::new(1, 2) {
             panic!("cell {pos} shouldn't be accessed")
         } else {
             None
@@ -116,7 +116,7 @@ fn test_formula_concat() {
 
 #[test]
 fn test_formula_if() {
-    let form = parse_formula("IF(n1=2, 'yep', 'nope')", Pos::new(0, 0)).unwrap();
+    let form = parse_formula("IF(A1=2, 'yep', 'nope')", Pos::new(0, 0)).unwrap();
 
     make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
         (0, 1) => "2".to_string(),
@@ -140,7 +140,7 @@ fn test_formula_if() {
 
 #[test]
 fn test_formula_average() {
-    let form = parse_formula("AVERAGE(3, A1:C3)", Pos::new(-1, -1)).unwrap();
+    let form = parse_formula("AVERAGE(3, B1:D3)", Pos::new(-1, -1)).unwrap();
 
     make_stateless_grid_mock!(|pos| {
         if (1..=3).contains(&pos.x) && (1..=3).contains(&pos.y) {
@@ -166,7 +166,7 @@ fn test_formula_array_op() {
 
     let f = |x| Value::Number(x as f64);
 
-    assert_eq!((11 * 31).to_string(), eval_to_string(&mut g, "A1 * C1"));
+    assert_eq!((11 * 31).to_string(), eval_to_string(&mut g, "B1 * D1"));
     assert_eq!(
         Value::Array(vec![
             smallvec![f(11 * 31), f(21 * 31)],
@@ -174,7 +174,7 @@ fn test_formula_array_op() {
             smallvec![f(13 * 31), f(23 * 31)],
             smallvec![f(14 * 31), f(24 * 31)],
         ]),
-        eval(&mut g, "A1:B4 * C1").unwrap(),
+        eval(&mut g, "B1:C4 * D1").unwrap(),
     );
     assert_eq!(
         Value::Array(vec![
@@ -183,7 +183,7 @@ fn test_formula_array_op() {
             smallvec![f(11 * 33), f(11 * 43)],
             smallvec![f(11 * 34), f(11 * 44)],
         ]),
-        eval(&mut g, "A1 * C1:D4").unwrap(),
+        eval(&mut g, "B1 * D1:E4").unwrap(),
     );
     assert_eq!(
         Value::Array(vec![
@@ -192,11 +192,11 @@ fn test_formula_array_op() {
             smallvec![f(13 * 33), f(23 * 43)],
             smallvec![f(14 * 34), f(24 * 44)],
         ]),
-        eval(&mut g, "A1:B4 * C1:D4").unwrap(),
+        eval(&mut g, "B1:C4 * D1:E4").unwrap(),
     );
     assert_eq!(
         "Array size mismatch: expected (4, 2), got (5, 2)",
-        eval(&mut g, "A1:B4 * C1:D5").unwrap_err().msg.to_string(),
+        eval(&mut g, "B1:C4 * D1:E5").unwrap_err().msg.to_string(),
     );
 }
 
