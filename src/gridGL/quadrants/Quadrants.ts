@@ -133,6 +133,11 @@ export class Quadrants extends Container {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, options.row);
         const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
         if (quadrant) quadrant.dirty = true;
+        const dependents = this.app.sheet.render_dependency.getDependents({ x, y: options.row });
+        dependents?.forEach((dependent) => {
+          const quadrant = this.getQuadrant(dependent.x, dependent.y, false);
+          if (quadrant) quadrant.dirty = true;
+        });
       }
 
       // reposition quadrants below the row
