@@ -47,6 +47,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       if (
         keyboardViewport({
           event,
+          interactionState,
           editorInteractionState,
           setEditorInteractionState,
           viewport: app?.viewport,
@@ -65,7 +66,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       }
     },
     [
-      interactionState.showInput,
+      interactionState,
       editorInteractionState,
       setEditorInteractionState,
       app?.viewport,
