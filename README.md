@@ -62,8 +62,10 @@ _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 - [x] Excel Formula Support (in progress)
 - [x] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
 - [x] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
-- [ ] SQL Database Connection Support
 - [ ] Multiplayer Support
+- [ ] Charts and Graphs
+- [ ] SQL Database Support
+- [ ] AI Auto Complete
 
 **Feature request or bug report?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
 
