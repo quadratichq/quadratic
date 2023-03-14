@@ -46,6 +46,9 @@ export const ZoomDropdown = (props: Props) => {
         <MenuLineItem primary="Zoom out" secondary={KeyboardSymbols.Command + '−'} />
       </MenuItem>
       <MenuDivider></MenuDivider>
+      <MenuItem onClick={() => props.app.setZoomToSelection()}>
+        <MenuLineItem primary="Zoom to selection" secondary={KeyboardSymbols.Command + '8'} />
+      </MenuItem>
       <MenuItem onClick={() => props.app.setZoomToFit()}>
         <MenuLineItem primary="Zoom to fit" secondary={KeyboardSymbols.Command + '9'} />
       </MenuItem>
