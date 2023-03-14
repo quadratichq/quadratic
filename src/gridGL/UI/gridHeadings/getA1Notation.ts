@@ -6,7 +6,7 @@
  */
 function translateNumberToA1Notation(column: number): string {
   const a1Notation: string[] = [];
-  const totalAlphabets = 'Z'.charCodeAt(0) - 'A'.charCodeAt(0);
+  const totalAlphabets = 'Z'.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
   let block = column;
   while (block >= 0) {
     a1Notation.unshift(String.fromCharCode((block % totalAlphabets) + 'A'.charCodeAt(0)));
