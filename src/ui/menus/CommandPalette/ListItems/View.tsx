@@ -1,7 +1,7 @@
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItemCheckbox } from '../CommandPaletteListItemCheckbox';
-import { zoomIn, zoomOut, zoomToFit, zoomTo100 } from '../../../../gridGL/helpers/zoom';
+import { zoomIn, zoomOut, zoomToFit, zoomTo100, zoomToSelection } from '../../../../gridGL/helpers/zoom';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
 
@@ -141,7 +141,19 @@ const ListItems = [
       />
     ),
   },
-
+  {
+    label: 'View: Zoom to selection',
+    Component: (props: CommandPaletteListItemSharedProps) => (
+      <CommandPaletteListItem
+        {...props}
+        action={() => {
+          zoomToSelection(props.interactionState, props.app.sheet, props.app.viewport);
+        }}
+        shortcut="8"
+        shortcutModifiers={[KeyboardSymbols.Command]}
+      />
+    ),
+  },
   {
     label: 'View: Zoom to fit',
     Component: (props: CommandPaletteListItemSharedProps) => (

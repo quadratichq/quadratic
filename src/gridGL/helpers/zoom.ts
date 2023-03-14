@@ -1,7 +1,8 @@
-import * as PIXI from 'pixi.js';
+import { Rectangle, Point } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { ZOOM_ANIMATION_TIME_MS } from '../../constants/gridConstants';
+import { ZOOM_ANIMATION_TIME_MS, ZOOM_BUFFER } from '../../constants/gridConstants';
+import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 
 export function zoomToFit(sheet: Sheet, viewport: Viewport): void {
   const gridBounds = sheet.getGridBounds(false);
@@ -14,14 +15,14 @@ export function zoomToFit(sheet: Sheet, viewport: Viewport): void {
     );
 
     // calc scale, and leave a little room on the top and sides
-    let scale = viewport.findFit(screenRectangle.width * 1.2, screenRectangle.height * 1.2);
+    let scale = viewport.findFit(screenRectangle.width * ZOOM_BUFFER, screenRectangle.height * ZOOM_BUFFER);
 
     // Don't zoom in more than a factor of 2
-    if (scale > 2.0) scale = 2;
+    if (scale > 2) scale = 2;
 
     viewport.animate({
       time: ZOOM_ANIMATION_TIME_MS,
-      position: new PIXI.Point(
+      position: new Point(
         screenRectangle.x + screenRectangle.width / 2,
         screenRectangle.y + screenRectangle.height / 2
       ),
@@ -30,7 +31,7 @@ export function zoomToFit(sheet: Sheet, viewport: Viewport): void {
   } else {
     viewport.animate({
       time: ZOOM_ANIMATION_TIME_MS,
-      position: new PIXI.Point(0, 0),
+      position: new Point(0, 0),
       scale: 1,
     });
   }
@@ -53,4 +54,31 @@ export function zoomOut(viewport: Viewport) {
 
 export function zoomTo100(viewport: Viewport) {
   zoomInOut(viewport, 1);
+}
+
+export function zoomToSelection(interactionState: GridInteractionState, sheet: Sheet, viewport: Viewport): void {
+  let screenRectangle: Rectangle;
+  if (interactionState.showMultiCursor) {
+    const cursor = interactionState.multiCursorPosition;
+    screenRectangle = sheet.gridOffsets.getScreenRectangle(
+      cursor.originPosition.x,
+      cursor.originPosition.y,
+      cursor.terminalPosition.x - cursor.originPosition.x,
+      cursor.terminalPosition.y - cursor.originPosition.y
+    );
+  } else {
+    const cursor = interactionState.cursorPosition;
+    screenRectangle = sheet.gridOffsets.getScreenRectangle(cursor.x, cursor.y, 1, 1);
+  }
+  // calc scale, and leave a little room on the top and sides
+  let scale = viewport.findFit(screenRectangle.width * ZOOM_BUFFER, screenRectangle.height * ZOOM_BUFFER);
+
+  // Don't zoom in more than a factor of 2
+  if (scale > 2) scale = 2;
+
+  viewport.animate({
+    time: ZOOM_ANIMATION_TIME_MS,
+    position: new Point(screenRectangle.x + screenRectangle.width / 2, screenRectangle.y + screenRectangle.height / 2),
+    scale,
+  });
 }
