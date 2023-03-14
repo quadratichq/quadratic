@@ -47,14 +47,16 @@ describe('A1 notation translation', () => {
     expect(getColumnA1Notation(-703)).toBe('nAAA');
     expect(getColumnA1Notation(-704)).toBe('nAAB');
 
+    // tests too big to be stored as integers are skipped
+
     // // Test 64 bit integer limits (±9,223,372,036,854,775,807)
-    expect(getColumnA1Notation(9223372036854775807)).toBe('CRPXNLSKVLJFHH');
-    expect(getColumnA1Notation(-9223372036854775808)).toBe('nCRPXNLSKVLJFHH');
+    // expect(getColumnA1Notation(9223372036854775807n)).toBe('CRPXNLSKVLJFHH');
+    // expect(getColumnA1Notation(-9223372036854775808n)).toBe('nCRPXNLSKVLJFHH');
 
     // test fun stuff
     expect(getColumnA1Notation(3719092809668)).toBe('QUADRATIC');
     expect(getColumnA1Notation(-3719092809669)).toBe('nQUADRATIC');
-    expect(getColumnA1Notation(1700658608758053877)).toBe('QUICKBROWNFOX');
+    // expect(getColumnA1Notation(1700658608758053877)).toBe('QUICKBROWNFOX');
   });
 
   it('gets row (positive)', () => {
