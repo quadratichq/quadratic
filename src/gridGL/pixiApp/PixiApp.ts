@@ -9,7 +9,7 @@ import { AxesLines } from '../UI/AxesLines';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { Cursor } from '../UI/Cursor';
 import { Cells } from '../UI/cells/Cells';
-import { zoomInOut, zoomToFit } from '../helpers/zoom';
+import { zoomInOut, zoomToFit, zoomToSelection } from '../helpers/zoom';
 import { Quadrants } from '../quadrants/Quadrants';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
 import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../debugFlags';
@@ -196,6 +196,10 @@ export class PixiApp {
 
   setZoomToFit(): void {
     zoomToFit(this.sheet, this.viewport);
+  }
+
+  setZoomToSelection(): void {
+    zoomToSelection(this.settings.interactionState, this.sheet, this.viewport);
   }
 
   // called before and after a quadrant render
