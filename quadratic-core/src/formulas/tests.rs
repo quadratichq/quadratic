@@ -258,10 +258,10 @@ fn test_hyphen_after_cell_ref() {
     assert_eq!("25", eval_to_string(&mut GridMock, "Z1-5"));
 }
 
-fn eval_to_string(grid: &mut impl GridProxy, s: &str) -> String {
+fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
     eval(grid, s).unwrap().to_string()
 }
-fn eval(grid: &mut impl GridProxy, s: &str) -> FormulaResult<Value> {
+fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
     parse_formula(s, Pos::ORIGIN)?
         .eval_blocking(grid, Pos::ORIGIN)
         .map(|value| value.inner)

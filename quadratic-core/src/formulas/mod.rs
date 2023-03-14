@@ -6,6 +6,7 @@ use lexer::Token;
 mod errors;
 mod ast;
 mod cell_ref;
+mod ctx;
 mod functions;
 mod grid_proxy;
 mod lexer;
@@ -15,6 +16,7 @@ mod value;
 
 pub use ast::Formula;
 pub use cell_ref::*;
+pub use ctx::Ctx;
 pub use errors::{FormulaError, FormulaErrorMsg};
 pub use grid_proxy::GridProxy;
 pub use parser::parse_formula;
