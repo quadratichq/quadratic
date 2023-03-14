@@ -17,7 +17,7 @@ export class PointerHeading {
   private headingResizeViewport = {
     change: 0,
     originalSize: 0,
-    viewportStart: 0
+    viewportStart: 0,
   };
 
   constructor(app: PixiApp) {
