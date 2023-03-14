@@ -50,7 +50,8 @@ export class GridSparse {
       if (cell.cell) {
         this.cellBounds.add(cell.cell.x, cell.cell.y);
         this.cellBounds.add(cell.cell.x, cell.cell.y);
-      } else if (cell.format) {
+      }
+      if (cell.format) {
         this.formatBounds.add(cell.format.x, cell.format.y);
       }
     });
