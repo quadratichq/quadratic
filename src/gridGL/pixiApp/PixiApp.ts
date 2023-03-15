@@ -9,7 +9,7 @@ import { AxesLines } from '../UI/AxesLines';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { Cursor } from '../UI/Cursor';
 import { Cells } from '../UI/cells/Cells';
-import { zoomInOut, zoomToFit } from '../helpers/zoom';
+import { zoomInOut, zoomToFit, zoomToSelection } from '../helpers/zoom';
 import { Quadrants } from '../quadrants/Quadrants';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
 import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../debugFlags';
@@ -19,6 +19,7 @@ import { HEADING_SIZE } from '../../constants/gridConstants';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../constants/app';
+import { Wheel } from '../pixiOverride/Wheel';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -75,15 +76,24 @@ export class PixiApp {
     this.viewport
       .drag({
         pressDrag: true,
+        wheel: false, // handled by Wheel plugin below
         ...(IS_READONLY_MODE ? {} : { keyToPress: ['Space'] }),
       })
       .decelerate()
       .pinch()
-      .wheel({ trackpadPinch: true, wheelZoom: false, percent: 1.5 })
       .clampZoom({
         minScale: 0.01,
         maxScale: 10,
       });
+    this.viewport.plugins.add(
+      'wheel',
+      new Wheel(this.viewport, {
+        trackpadPinch: true,
+        wheelZoom: true,
+        percent: 1.5,
+        keyToPress: ['ControlKey', 'ControlLeft', 'ControlRight', 'MetaKey', 'MetaLeft', 'MetaRight'],
+      })
+    );
 
     // hack to ensure pointermove works outside of canvas
     this.viewport.off('pointerout');
@@ -196,6 +206,10 @@ export class PixiApp {
 
   setZoomToFit(): void {
     zoomToFit(this.sheet, this.viewport);
+  }
+
+  setZoomToSelection(): void {
+    zoomToSelection(this.settings.interactionState, this.sheet, this.viewport);
   }
 
   // called before and after a quadrant render

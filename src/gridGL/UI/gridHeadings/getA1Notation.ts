@@ -6,8 +6,8 @@
  */
 function translateNumberToA1Notation(column: number): string {
   const a1Notation: string[] = [];
-  const totalAlphabets = 'Y'.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
-  let block = column - 1;
+  const totalAlphabets = 'Z'.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
+  let block = column;
   while (block >= 0) {
     a1Notation.unshift(String.fromCharCode((block % totalAlphabets) + 'A'.charCodeAt(0)));
     block = Math.floor(block / totalAlphabets) - 1;
@@ -21,8 +21,7 @@ function translateNumberToA1Notation(column: number): string {
  * @returns
  */
 export function getColumnA1Notation(column: number): string {
-  if (column === 0) return 'Z';
-  if (column < 0) return `Z${translateNumberToA1Notation(-column)}`;
+  if (column < 0) return `n${translateNumberToA1Notation(-column - 1)}`;
   return translateNumberToA1Notation(column);
 }
 

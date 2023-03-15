@@ -30,12 +30,12 @@ const FUNCTION_CALL_PATTERN: &str = r#"[A-Za-z_][A-Za-z_\d]*\("#;
 
 /// A1-style cell reference.
 ///
-/// \$?[A-Z]+\$?n?\d+
-/// \$?      \$?            optional `$`s
-///    [A-Z]+               letters
-///             n?          optional `n`
-///               \d+       digits
-const A1_CELL_REFERENCE_PATTERN: &str = r#"\$?[A-Z]+\$?n?\d+"#;
+/// \$?n?[A-Z]+\$?n?\d+
+/// \$?        \$?            optional `$`s
+///    n?         n?          optional `n`s
+///      [A-Z]+               letters
+///                 \d+       digits
+const A1_CELL_REFERENCE_PATTERN: &str = r#"\$?n?[A-Z]+\$?n?\d+"#;
 
 /// Floating-point or integer number, without leading sign.
 ///
