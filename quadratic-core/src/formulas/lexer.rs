@@ -6,7 +6,7 @@ use strum_macros::Display;
 
 use super::{Span, Spanned};
 
-pub fn tokenize<'a>(input_str: &'a str) -> impl 'a + Iterator<Item = Spanned<Token>> {
+pub fn tokenize(input_str: &str) -> impl '_ + Iterator<Item = Spanned<Token>> {
     let mut token_start = 0;
     std::iter::from_fn(move || {
         Token::consume_from_input(input_str, token_start).map(|(token, token_end)| {
@@ -265,7 +265,9 @@ impl Token {
                 // Match anything else.
                 s if FUNCTION_CALL_REGEX.is_match(s) => Self::FunctionCall,
                 s if STRING_LITERAL_REGEX.is_match(s) => Self::StringLiteral,
-                s if UNTERMINATED_STRING_LITERAL_REGEX.is_match(s) => Self::StringLiteral,
+                s if UNTERMINATED_STRING_LITERAL_REGEX.is_match(s) => {
+                    Self::UnterminatedStringLiteral
+                }
                 s if NUMERIC_LITERAL_REGEX.is_match(s) => Self::NumericLiteral,
                 s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRef,
                 s if s.trim().is_empty() => Self::Whitespace,

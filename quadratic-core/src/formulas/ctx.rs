@@ -11,7 +11,7 @@ pub struct Ctx<'ctx> {
 impl Ctx<'_> {
     /// Fetches the contents of the cell at `ref_pos` evaluated at `base_pos`,
     /// or returns an error in the case of a circular reference.
-    pub async fn get_cell(&mut self, ref_pos: CellRef, span: Span) -> FormulaResult<Value> {
+    pub async fn get_cell(&mut self, ref_pos: CellRef, span: Span) -> FormulaResult {
         let ref_pos = ref_pos.resolve_from(self.pos);
         if ref_pos == self.pos {
             return Err(FormulaErrorMsg::CircularReference.with_span(span));
@@ -26,7 +26,7 @@ impl Ctx<'_> {
     pub async fn array_mapped_get_cell(
         &mut self,
         args: Spanned<Vec<Spanned<Value>>>,
-    ) -> FormulaResult<Value> {
+    ) -> FormulaResult {
         self.array_map_async(args, |ctx, [x, y]| {
             async {
                 let pos = Pos {
@@ -48,8 +48,8 @@ impl Ctx<'_> {
     pub async fn array_map<const N: usize>(
         &mut self,
         args: Spanned<Vec<Spanned<Value>>>,
-        op: impl 'static + Copy + Fn(&mut Ctx<'_>, [Spanned<Value>; N]) -> FormulaResult<Value>,
-    ) -> FormulaResult<Value> {
+        op: impl 'static + Copy + Fn(&mut Ctx<'_>, [Spanned<Value>; N]) -> FormulaResult,
+    ) -> FormulaResult {
         self.array_map_async(args, move |ctx, args| {
             async move { op(ctx, args) }.boxed_local()
         })
@@ -60,13 +60,10 @@ impl Ctx<'_> {
     pub async fn array_map_async<const N: usize>(
         &mut self,
         args: Spanned<Vec<Spanned<Value>>>,
-        op: impl for<'a> Fn(
-            &'a mut Ctx<'_>,
-            [Spanned<Value>; N],
-        ) -> LocalBoxFuture<'a, FormulaResult<Value>>,
-    ) -> FormulaResult<Value> {
-        let (args, array_size) = args_with_common_array_size(args)?;
-        match array_size {
+        op: impl for<'a> Fn(&'a mut Ctx<'_>, [Spanned<Value>; N]) -> LocalBoxFuture<'a, FormulaResult>,
+    ) -> FormulaResult {
+        let ArrayArgs { args, common_size } = args_with_common_array_size(args)?;
+        match common_size {
             // Compute the results. If any argument is not an array, pretend it's an
             // array of one element repeated with the right size.
             Some((rows, cols)) => {
@@ -94,11 +91,16 @@ impl Ctx<'_> {
     }
 }
 
-/// Returns the common `(rows, cols)` of several arguments, or `None` if no
-/// arguments are arrays.
+struct ArrayArgs<const N: usize> {
+    args: [Spanned<Value>; N],
+    common_size: Option<(usize, usize)>,
+}
+
+/// Checkes the number of arguments and returns the common `(rows, cols)` of
+/// several, or `None` if no arguments are arrays.
 fn args_with_common_array_size<const N: usize>(
     args: Spanned<Vec<Spanned<Value>>>,
-) -> FormulaResult<([Spanned<Value>; N], Option<(usize, usize)>)> {
+) -> FormulaResult<ArrayArgs<N>> {
     // Check argument count.
     let args: [Spanned<Value>; N] = args
         .inner
@@ -109,6 +111,7 @@ fn args_with_common_array_size<const N: usize>(
         .iter()
         .filter_map(|arg| Some((arg.span, arg.inner.array_size()?)));
 
+    let common_size: Option<(usize, usize)>;
     if let Some((_span, array_size)) = array_sizes_iter.next() {
         // Check that all the arrays are the same size.
         for (error_span, other_array_size) in array_sizes_iter {
@@ -121,8 +124,10 @@ fn args_with_common_array_size<const N: usize>(
             }
         }
 
-        Ok((args, Some(array_size)))
+        common_size = Some(array_size);
     } else {
-        Ok((args, None))
+        common_size = None;
     }
+
+    Ok(ArrayArgs { args, common_size })
 }

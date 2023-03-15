@@ -1,4 +1,5 @@
-#![warn(rust_2018_idioms, clippy::if_then_some_else_none)]
+#![warn(rust_2018_idioms, clippy::semicolon_if_nothing_returned)]
+#![allow(clippy::diverging_sub_expression, clippy::match_like_matches_macro)]
 
 use async_trait::async_trait;
 use itertools::Itertools;
@@ -29,7 +30,7 @@ extern "C" {
 #[wasm_bindgen]
 pub fn hello() {
     // say hello, when loaded successfully
-    log("[WASM/Rust] quadratic-core ready")
+    log("[WASM/Rust] quadratic-core ready");
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -74,7 +75,7 @@ pub async fn eval_formula(
                         a.iter()
                             .map(|row| row.iter().map(|cell| cell.to_string()).collect())
                             .collect(),
-                    )
+                    );
                 }
                 non_array_value => output_value = Some(non_array_value.to_string()),
             };

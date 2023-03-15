@@ -261,7 +261,7 @@ fn test_hyphen_after_cell_ref() {
 fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
     eval(grid, s).unwrap().to_string()
 }
-fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
+fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult {
     parse_formula(s, Pos::ORIGIN)?
         .eval_blocking(grid, Pos::ORIGIN)
         .map(|value| value.inner)

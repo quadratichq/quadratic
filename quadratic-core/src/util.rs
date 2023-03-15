@@ -7,7 +7,7 @@ pub fn column_name(mut n: i64) -> String {
     let signum = n.signum();
     while n != 0 {
         n -= signum;
-        digits.push((n % 25).abs() as u8);
+        digits.push((n % 25).unsigned_abs() as u8);
         n /= 25;
     }
     if signum <= 0 {
@@ -55,13 +55,13 @@ pub fn column_from_name(mut s: &str) -> Option<i64> {
 /// conjuction.
 pub fn join_with_conjunction(conjunction: &str, items: &[impl fmt::Display]) -> String {
     match items {
-        [] => format!("(none)"),
-        [a] => format!("{}", a),
-        [a, b] => format!("{} {} {}", a, conjunction, b),
+        [] => "(none)".to_string(),
+        [a] => format!("{a}"),
+        [a, b] => format!("{a} {conjunction} {b}"),
         [all_but_last @ .., z] => {
-            let mut ret = all_but_last.iter().map(|x| format!("{}, ", x)).join("");
+            let mut ret = all_but_last.iter().map(|x| format!("{x}, ")).join("");
             ret.push_str(conjunction);
-            ret.push_str(&format!(" {}", z));
+            ret.push_str(&format!(" {z}"));
             ret
         }
     }

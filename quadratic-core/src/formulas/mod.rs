@@ -24,7 +24,7 @@ pub use span::{Span, Spanned};
 pub use value::Value;
 
 /// Result of a `FormulaError`.
-pub type FormulaResult<T = Spanned<Value>> = Result<T, FormulaError>;
+pub type FormulaResult<T = Value> = Result<T, FormulaError>;
 
 #[cfg(test)]
 mod tests;

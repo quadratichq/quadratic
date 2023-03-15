@@ -6,8 +6,8 @@ use super::*;
 /// This function leaks memory, so it should only be called during
 /// initialization.
 pub fn array_mapped<const N: usize>(
-    f: impl 'static + Send + Sync + Copy + Fn([Spanned<Value>; N]) -> FormulaResult<Value>,
-) -> FormulaFunctionEvalFn {
+    f: impl 'static + Send + Sync + Copy + Fn([Spanned<Value>; N]) -> FormulaResult,
+) -> FormulaFn {
     // Leak `f` so that the future returned from the closure can access `f`
     // forever.
     let f = &*Box::leak(Box::new(f));
@@ -20,8 +20,8 @@ pub fn array_mapped<const N: usize>(
 /// This function leaks memory, so it should only be called during
 /// initialization.
 pub fn pure_fn(
-    f: impl 'static + Send + Sync + Fn(Spanned<Vec<Spanned<Value>>>) -> FormulaResult<Value>,
-) -> FormulaFunctionEvalFn {
+    f: impl 'static + Send + Sync + Fn(Spanned<Vec<Spanned<Value>>>) -> FormulaResult,
+) -> FormulaFn {
     // Leak `f` so that the future returned from the closure can access `f`
     // forever.
     let f = &*Box::leak(Box::new(f));
@@ -33,7 +33,7 @@ pub fn pure_fn(
 ///
 /// This function leaks memory, so it should only be called during
 /// initialization.
-pub fn constant_fn(v: Value) -> FormulaFunctionEvalFn {
+pub fn constant_fn(v: Value) -> FormulaFn {
     pure_fn(move |args| {
         if !args.inner.is_empty() {
             return Err(FormulaErrorMsg::BadArgumentCount.with_span(args.span));
@@ -59,20 +59,16 @@ pub fn count(args: &[Spanned<Value>]) -> usize {
 }
 
 /// Iterates over arguments converted to numbers, with any arrays flattened.
-pub fn flat_iter_numbers<'a>(
-    args: &'a [Spanned<Value>],
-) -> impl 'a + Iterator<Item = FormulaResult<f64>> {
+pub fn flat_iter_numbers(args: &[Spanned<Value>]) -> impl '_ + Iterator<Item = FormulaResult<f64>> {
     args.iter().map(|v| v.to_numbers()).flatten_ok()
 }
 /// Iterates over arguments converted to booleans, with any arrays flattened.
-pub fn flat_iter_bools<'a>(
-    args: &'a [Spanned<Value>],
-) -> impl 'a + Iterator<Item = FormulaResult<bool>> {
+pub fn flat_iter_bools(args: &[Spanned<Value>]) -> impl '_ + Iterator<Item = FormulaResult<bool>> {
     args.iter().map(|v| v.to_bools()).flatten_ok()
 }
 /// Iterates over arguments converted to strings, with any arrays flattened.
-pub fn flat_iter_strings<'a>(
-    args: &'a [Spanned<Value>],
-) -> impl 'a + Iterator<Item = FormulaResult<String>> {
+pub fn flat_iter_strings(
+    args: &[Spanned<Value>],
+) -> impl '_ + Iterator<Item = FormulaResult<String>> {
     args.iter().map(|v| v.to_strings()).flatten_ok()
 }

@@ -35,11 +35,11 @@ impl fmt::Display for AstNodeContents {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             AstNodeContents::FunctionCall { func, args } => {
-                write!(f, "{}(", func)?;
+                write!(f, "{func}(")?;
                 if let Some(first) = args.first() {
-                    write!(f, "{}", first)?;
+                    write!(f, "{first}")?;
                     for arg in args.iter().skip(1) {
-                        write!(f, ", {}", arg)?;
+                        write!(f, ", {arg}")?;
                     }
                 }
                 write!(f, ")")?;
@@ -91,12 +91,16 @@ impl Formula {
     /// Evaluates a formula, blocking on async calls.
     ///
     /// Use this when the grid proxy isn't actually doing anything async.
-    pub fn eval_blocking(&self, grid: &mut dyn GridProxy, pos: Pos) -> FormulaResult {
+    pub fn eval_blocking(
+        &self,
+        grid: &mut dyn GridProxy,
+        pos: Pos,
+    ) -> FormulaResult<Spanned<Value>> {
         pollster::block_on(self.eval(grid, pos))
     }
 
     /// Evaluates a formula.
-    pub async fn eval(&self, grid: &mut dyn GridProxy, pos: Pos) -> FormulaResult {
+    pub async fn eval(&self, grid: &mut dyn GridProxy, pos: Pos) -> FormulaResult<Spanned<Value>> {
         self.ast.eval(&mut Ctx { grid, pos }).await
     }
 }

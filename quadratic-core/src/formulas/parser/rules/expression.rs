@@ -361,6 +361,7 @@ impl SyntaxRule for ParenExpression {
 }
 
 /// Matches an array literal.
+#[derive(Debug, Copy, Clone)]
 pub struct ArrayLiteral;
 impl_display!(for ArrayLiteral, "array literal, such as '{{1, 2; 3, 4}}'");
 impl SyntaxRule for ArrayLiteral {

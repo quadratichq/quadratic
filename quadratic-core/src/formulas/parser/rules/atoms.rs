@@ -70,6 +70,7 @@ impl SyntaxRule for NumericLiteral {
 }
 
 /// Matches a cell reference.
+#[derive(Debug, Copy, Clone)]
 pub struct CellReference;
 impl_display!(for CellReference, "cell reference, such as 'A6' or '$ZB$3'");
 impl SyntaxRule for CellReference {

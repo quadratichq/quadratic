@@ -36,28 +36,31 @@ lazy_static! {
     };
 }
 
-pub type FormulaFunctionEvalFn = Box<
+pub type FormulaFn = Box<
     dyn 'static
         + Send
         + Sync
         + for<'a> Fn(
             &'a mut Ctx<'_>,
             Spanned<Vec<Spanned<Value>>>,
-        ) -> LocalBoxFuture<'a, FormulaResult<Value>>,
+        ) -> LocalBoxFuture<'a, FormulaResult>,
 >;
+
+type NonVariadicPureFn<const N: usize> = fn([Spanned<Value>; N]) -> FormulaResult;
+type NonVariadicFn<const N: usize> = fn(&mut Ctx<'_>, [Spanned<Value>; N]) -> FormulaResult;
 
 pub struct FormulaFunction {
     pub name: &'static str,
     pub arg_completion: &'static str,
     pub usages: &'static [&'static str],
     pub doc: &'static str,
-    pub eval: FormulaFunctionEvalFn,
+    pub eval: FormulaFn,
 }
 impl FormulaFunction {
     fn variadic_operator<const N1: usize, const N2: usize>(
         name: &'static str,
-        eval_monadic: Option<fn(&mut Ctx<'_>, [Spanned<Value>; N1]) -> FormulaResult<Value>>,
-        eval_dyadic: Option<fn(&mut Ctx<'_>, [Spanned<Value>; N2]) -> FormulaResult<Value>>,
+        eval_monadic: Option<NonVariadicFn<N1>>,
+        eval_dyadic: Option<NonVariadicFn<N2>>,
     ) -> Self {
         FormulaFunction {
             name,
@@ -83,10 +86,7 @@ impl FormulaFunction {
         }
     }
 
-    fn operator<const N: usize>(
-        name: &'static str,
-        eval_fn: fn([Spanned<Value>; N]) -> FormulaResult<Value>,
-    ) -> Self {
+    fn operator<const N: usize>(name: &'static str, eval_fn: NonVariadicPureFn<N>) -> Self {
         Self {
             name,
             arg_completion: "",
