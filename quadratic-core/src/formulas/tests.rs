@@ -260,3 +260,63 @@ fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult {
         .eval_blocking(grid, Pos::ORIGIN)
         .map(|value| value.inner)
 }
+
+#[test]
+fn test_find_cell_references() {
+    use CellRefCoord::{Absolute, Relative};
+
+    // Evaluate at D4.
+    let base = pos![D4];
+    let refs = find_cell_references("SUM($C$4, $A0 : nQ7, :D$n6, A0:, ZB2)", base);
+    let mut iter = refs.iter().map(|r| r.inner);
+
+    // $C$4
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef::absolute(pos![C4]))),
+    );
+
+    // $A0:nQ7
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::CellRange(
+            CellRef {
+                x: Absolute(col![A]),
+                y: Relative(0 - base.y),
+            },
+            CellRef {
+                x: Relative(col![nQ] - base.x),
+                y: Relative(7 - base.y),
+            },
+        )),
+    );
+
+    // D$n6
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef {
+            x: Relative(col![D] - base.x),
+            y: Absolute(-6),
+        })),
+    );
+
+    // A0
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef {
+            x: Relative(col![A] - base.x),
+            y: Relative(0 - base.y),
+        })),
+    );
+
+    // ZB2
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef {
+            x: Relative(col![ZB] - base.x),
+            y: Relative(2 - base.y),
+        })),
+    );
+
+    assert_eq!(iter.next(), None);
+}

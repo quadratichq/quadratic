@@ -43,6 +43,7 @@ struct JsFormulaResult {
     pub array_output: Option<Vec<Vec<String>>>,
 }
 
+/// Evaluates a formula and returns a formula result.
 #[wasm_bindgen]
 pub async fn eval_formula(
     formula_string: &str,
@@ -101,6 +102,86 @@ pub async fn eval_formula(
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct JsFormulaParseResult {
+    pub parse_error_msg: Option<String>,
+    pub parse_error_span: Option<formulas::Span>,
+
+    pub cell_refs: Vec<JsCellRefSpan>,
+}
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+pub struct JsCellRefSpan {
+    pub span: formulas::Span,
+    pub cell_ref: formulas::RangeRef,
+}
+impl From<formulas::Spanned<formulas::RangeRef>> for JsCellRefSpan {
+    fn from(value: formulas::Spanned<formulas::RangeRef>) -> Self {
+        JsCellRefSpan {
+            span: value.span,
+            cell_ref: value.inner,
+        }
+    }
+}
+
+/// Parses a formula and returns a partial result.
+///
+/// Example output:
+/// ```json
+/// {
+///   "parse_error_msg": "Bad argument count",
+///   "parse_error_span": { "start": 12, "end": 46 },
+///   "cell_refs": [
+///     {
+///       "span": { "start": 1, "end": 4 },
+///       "cell_ref": {
+///         "Cell": {
+///           "x": { "Relative": 0 },
+///           "y": { "Absolute": 1 }
+///         }
+///       }
+///     },
+///     {
+///       "span": { "start": 15, "end": 25 },
+///       "cell_ref": {
+///         "CellRange": [
+///           {
+///             "x": { "Absolute": 0 },
+///             "y": { "Relative": -2 }
+///           },
+///           {
+///             "x": { "Absolute": 0 },
+///             "y": { "Relative": 2 }
+///           }
+///         ]
+///       }
+///     }
+///   ]
+/// }
+/// ```
+///
+/// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
+/// `parse_error_span`, `parse_error_msg` may still be present.
+#[wasm_bindgen]
+pub async fn parse_formula(formula_string: &str, x: f64, y: f64) -> JsValue {
+    let x = x as i64;
+    let y = y as i64;
+    let pos = Pos { x, y };
+
+    let parse_error = formulas::parse_formula(formula_string, pos).err();
+
+    let result = JsFormulaParseResult {
+        parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
+        parse_error_span: parse_error.and_then(|e| e.span),
+
+        cell_refs: formulas::find_cell_references(formula_string, pos)
+            .into_iter()
+            .map(|r| r.into())
+            .collect(),
+    };
+
+    serde_wasm_bindgen::to_value(&result).unwrap()
+}
+
 #[derive(Debug, Clone)]
 struct JsGridProxy {
     grid_accessor_fn: js_sys::Function,
@@ -132,5 +213,46 @@ impl GridProxy for JsGridProxy {
         let cell_value = js_sys::Reflect::get(&cell_value_array, &0.into()).ok()?;
         let cell_string = js_sys::Reflect::get(&cell_value, &"value".into()).ok()?;
         cell_string.as_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Run this test with `--nocapture` to generate the example for the
+    /// `parse_formula()` docs.
+    #[test]
+    fn example_parse_formula_output() {
+        use crate::formulas::{CellRef, CellRefCoord, RangeRef, Span};
+
+        let example_result = JsFormulaParseResult {
+            parse_error_msg: Some("Bad argument count".to_string()),
+            parse_error_span: Some(Span { start: 12, end: 46 }),
+            cell_refs: vec![
+                JsCellRefSpan {
+                    span: Span { start: 1, end: 4 },
+                    cell_ref: RangeRef::Cell(CellRef {
+                        x: CellRefCoord::Relative(0),
+                        y: CellRefCoord::Absolute(1),
+                    }),
+                },
+                JsCellRefSpan {
+                    span: Span { start: 15, end: 25 },
+                    cell_ref: RangeRef::CellRange(
+                        CellRef {
+                            x: CellRefCoord::Absolute(0),
+                            y: CellRefCoord::Relative(-2),
+                        },
+                        CellRef {
+                            x: CellRefCoord::Absolute(0),
+                            y: CellRefCoord::Relative(2),
+                        },
+                    ),
+                },
+            ],
+        };
+
+        println!("{}", serde_json::to_string_pretty(&example_result).unwrap());
     }
 }

@@ -190,7 +190,7 @@ pub enum Token {
     UnterminatedStringLiteral,
     #[strum(to_string = "numeric literal")]
     NumericLiteral,
-    #[strum(to_string = "RC-style cell reference")]
+    #[strum(to_string = "cell reference")]
     CellRef,
     #[strum(to_string = "whitespace")]
     Whitespace,
