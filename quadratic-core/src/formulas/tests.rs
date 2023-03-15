@@ -29,15 +29,13 @@ impl GridProxy for PanicGridMock {
 
 #[test]
 fn test_formula_indirect() {
-    let form = parse_formula("CELL(3, 5)", Pos::new(1, 2)).unwrap();
+    let form = parse_formula("CELL(3, 5)", pos![B2]).unwrap();
 
     make_stateless_grid_mock!(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
     assert_eq!(
         FormulaErrorMsg::CircularReference,
-        form.eval_blocking(&mut GridMock, Pos::new(3, 5))
-            .unwrap_err()
-            .msg,
+        form.eval_blocking(&mut GridMock, pos![D5]).unwrap_err().msg,
     );
 
     assert_eq!(
@@ -48,31 +46,29 @@ fn test_formula_indirect() {
 
 #[test]
 fn test_formula_cell_ref() {
-    let form = parse_formula("SUM($D$4, $B0, E$n6, B0, nB2)", Pos::new(3, 4)).unwrap();
+    let form = parse_formula("SUM($D$4, $B0, E$n6, B0, nB2)", pos![D4]).unwrap();
 
     make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
-        // The formula was parsed at C4, but we'll be evaluating it from A2 so
+        // The formula was parsed at D4, but we'll be evaluating it from B2 so
         // adjust the cell coordinates accordingly.
-        (3, 4) => "1".to_string(),      // $C$4 -> C4
-        (1, -2) => "10".to_string(),    // $A0  -> An2
-        (2, -6) => "100".to_string(),   // D$n6 -> Bn6
-        (-1, -2) => "1000".to_string(), // A0   -> nAn2
+        (3, 4) => "1".to_string(),      // $D$4 -> D4
+        (1, -2) => "10".to_string(),    // $B0  -> Bn2
+        (2, -6) => "100".to_string(),   // E$n6 -> Cn6
+        (-1, -2) => "1000".to_string(), // B0   -> nAn2
         (-4, 0) => "10000".to_string(), // nB2  -> nD0
         _ => panic!("cell {pos} shouldn't be accessed"),
     }));
 
-    // Evaluate at C4, causing a circular reference.
+    // Evaluate at D4, causing a circular reference.
     assert_eq!(
         FormulaErrorMsg::CircularReference,
-        form.eval_blocking(&mut GridMock, Pos::new(3, 4))
-            .unwrap_err()
-            .msg,
+        form.eval_blocking(&mut GridMock, pos![D4]).unwrap_err().msg,
     );
 
-    // Evaluate at A2
+    // Evaluate at B2
     assert_eq!(
         "11111".to_string(),
-        form.eval_blocking(&mut GridMock, Pos::new(1, 2))
+        form.eval_blocking(&mut GridMock, pos![B2])
             .unwrap()
             .to_string(),
     );
@@ -80,10 +76,10 @@ fn test_formula_cell_ref() {
 
 #[test]
 fn test_formula_circular_array_ref() {
-    let form = parse_formula("$B$0:$C$4", Pos::new(0, 0)).unwrap();
+    let form = parse_formula("$B$0:$C$4", pos![A0]).unwrap();
 
     make_stateless_grid_mock!(|pos| {
-        if pos == Pos::new(1, 2) {
+        if pos == pos![B2] {
             panic!("cell {pos} shouldn't be accessed")
         } else {
             None
@@ -92,9 +88,7 @@ fn test_formula_circular_array_ref() {
 
     assert_eq!(
         FormulaErrorMsg::CircularReference,
-        form.eval_blocking(&mut GridMock, Pos::new(1, 2))
-            .unwrap_err()
-            .msg,
+        form.eval_blocking(&mut GridMock, pos![B2]).unwrap_err().msg,
     )
 }
 
@@ -116,7 +110,7 @@ fn test_formula_concat() {
 
 #[test]
 fn test_formula_if() {
-    let form = parse_formula("IF(A1=2, 'yep', 'nope')", Pos::new(0, 0)).unwrap();
+    let form = parse_formula("IF(A1=2, 'yep', 'nope')", pos![A0]).unwrap();
 
     make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
         (0, 1) => "2".to_string(),
@@ -126,13 +120,13 @@ fn test_formula_if() {
 
     assert_eq!(
         "yep".to_string(),
-        form.eval_blocking(&mut GridMock, Pos::new(0, 0))
+        form.eval_blocking(&mut GridMock, pos![A0])
             .unwrap()
             .to_string(),
     );
     assert_eq!(
         "nope".to_string(),
-        form.eval_blocking(&mut GridMock, Pos::new(1, 0))
+        form.eval_blocking(&mut GridMock, pos![B0])
             .unwrap()
             .to_string(),
     );
@@ -140,7 +134,7 @@ fn test_formula_if() {
 
 #[test]
 fn test_formula_average() {
-    let form = parse_formula("AVERAGE(3, B1:D3)", Pos::new(-1, -1)).unwrap();
+    let form = parse_formula("AVERAGE(3, B1:D3)", pos![nAn1]).unwrap();
 
     make_stateless_grid_mock!(|pos| {
         if (1..=3).contains(&pos.x) && (1..=3).contains(&pos.y) {
@@ -152,7 +146,7 @@ fn test_formula_average() {
 
     assert_eq!(
         "7.5".to_string(),
-        form.eval_blocking(&mut GridMock, Pos::new(-1, -1))
+        form.eval_blocking(&mut GridMock, pos![nAn1])
             .unwrap()
             .to_string(),
     );
