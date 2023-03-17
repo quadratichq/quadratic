@@ -84,7 +84,7 @@ export class Quadrant extends Container {
     if (sprite) {
       // reuse existing sprite and resize texture if needed
       if (sprite.texture.width !== width || sprite.texture.height !== height) {
-        sprite.texture.resize(width, height);
+        sprite.texture.resize(width, height, true);
       }
       sprite.visible = true;
     } else {
