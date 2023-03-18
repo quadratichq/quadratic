@@ -14,7 +14,7 @@ import {
   Percent,
   MoreVert,
 } from '@mui/icons-material';
-import { Menu, MenuItem } from '@szhsin/react-menu';
+import { ControlledMenu, Menu, MenuItem, useMenuState } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { QColorPicker } from '../../components/qColorPicker';
@@ -37,6 +37,7 @@ export const FloatingContextMenu = (props: Props) => {
   const { interactionState, app, container, sheetController, showContextMenu } = props;
   const viewport = app.viewport;
 
+  const moreMenu = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
   const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
   const {
@@ -164,9 +165,10 @@ export const FloatingContextMenu = (props: Props) => {
 
   const saveAsPNG = useCallback(async () => {
     const blob = await app.copyAsPNG();
-    if (!blob) return;
+    if (!blob) {
+      throw new Error('Unable to copy as PNG');
+    }
     if (navigator.clipboard && window.ClipboardItem) {
-      // browser support clipboard apinavigator.clipboard
       navigator.clipboard.write([
         new ClipboardItem({
           //@ts-ignore
@@ -174,7 +176,8 @@ export const FloatingContextMenu = (props: Props) => {
         }),
       ]);
     }
-  }, [app]);
+    moreMenu.toggleMenu();
+  }, [app, moreMenu]);
 
   // If we don't have a viewport, we can't continue.
   if (!viewport || !container) return null;
@@ -328,9 +331,16 @@ export const FloatingContextMenu = (props: Props) => {
           <span style={{ fontSize: '1rem' }}>123</span>
         </Button> */}
         <MenuDivider />
-        <Menu menuButton={<MoreVert />}>
+        <TooltipHint title="More Commands">
+          <IconButton size="small" onClick={() => moreMenu.toggleMenu()}>
+            <MoreVert />
+          </IconButton>
+        </TooltipHint>
+        <ControlledMenu
+          state={moreMenu.state}
+        >
           <MenuItem onClick={saveAsPNG}>Copy selection as PNG</MenuItem>
-        </Menu>
+        </ControlledMenu>
       </Toolbar>
     </Paper>
   );

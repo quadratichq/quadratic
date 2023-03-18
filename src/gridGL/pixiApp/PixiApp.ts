@@ -265,6 +265,10 @@ export class PixiApp {
     this.settings.setInteractionState?.(gridInteractionStateDefault);
   }
 
+  forceUpdate(): void {
+    this.update.forceUpdate();
+  }
+
   async copyAsPNG(): Promise<Blob | null> {
     return await copyAsPNG(this);
   }
