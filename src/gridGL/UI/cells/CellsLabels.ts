@@ -119,7 +119,9 @@ export class CellsLabels extends Container {
       label.data?.text !== data.text ||
       !isSame(label.data?.format?.bold, data.format?.bold) ||
       !isSame(label.data?.format?.italic, data.format?.italic) ||
-      label.data?.format?.textColor !== data.format?.textColor) return false;
+      label.data?.format?.textColor !== data.format?.textColor
+    )
+      return false;
 
     const position = this.calculatePosition(label, data);
     if (!label.lastPosition || !label.lastPosition.equals(position)) return false;
