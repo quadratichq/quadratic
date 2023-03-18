@@ -71,6 +71,9 @@ class LocalFiles {
       updatedLastFiles = [];
     }
     updatedLastFiles.unshift(filename);
+    this.fileList = updatedLastFiles;
+    this.filename = filename;
+    this.lastSavedData = data as GridFileSchemaV1;
     if (!isEqualStringArrays(lastFiles, updatedLastFiles)) {
       localForage.setItem(LAST_FILES, updatedLastFiles);
       this.emitListEvent(updatedLastFiles);
@@ -106,6 +109,7 @@ class LocalFiles {
       }
       const file = await localForage.getItem(this.getFilename(this.fileList[0] as string));
       this.emitLoadEvent(this.fileList[0]);
+      this.addToFileList(this.fileList[0], file as GridFileSchemaV1);
       return file as GridFileSchemaV1;
     }
   }
