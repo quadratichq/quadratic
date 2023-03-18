@@ -26,7 +26,7 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
     row = interaction.cursorPosition.y;
     width = height = 1;
   }
-  console.log(column, row, width, height)
+  console.log(column, row, width, height);
   const rectangle = app.sheet.gridOffsets.getScreenRectangle(column, row, width, height);
 
   // captures bottom-right border size
@@ -35,7 +35,7 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
 
   renderer.resize(rectangle.width * resolution, rectangle.height * resolution);
   renderer.view.width = rectangle.width * resolution;
-  renderer.view.height = rectangle.height * resolution
+  renderer.view.height = rectangle.height * resolution;
   app.prepareForQuadrantRendering({ gridLines: true });
   app.cells.drawCells(rectangle, false);
   const transform = new Matrix();

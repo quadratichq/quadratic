@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { Divider, IconButton, Paper, Toolbar,  } from '@mui/material';
+import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import {
   AttachMoneyOutlined,
   BorderAll,
