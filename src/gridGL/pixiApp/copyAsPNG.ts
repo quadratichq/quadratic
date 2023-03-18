@@ -1,6 +1,5 @@
 import { Matrix, Renderer } from 'pixi.js';
 import { PixiApp } from './PixiApp';
-import { HEADING_SIZE } from '../../constants/gridConstants';
 
 const resolution = 2;
 const borderSize = 2;
@@ -39,9 +38,9 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   app.gridLines.draw(rectangle);
   app.cells.drawCells(rectangle, false);
   const transform = new Matrix();
-  transform.translate(-rectangle.x - HEADING_SIZE + borderSize, -rectangle.y - HEADING_SIZE + borderSize);
+  transform.translate(-rectangle.x + borderSize, -rectangle.y + borderSize);
   app.forceUpdate();
-  renderer.render(app.stage, { transform });
+  renderer.render(app.viewportContents, { transform });
   app.cleanUpAfterQuadrantRendering();
   return new Promise((resolve) => {
     renderer.view.toBlob((blob) => resolve(blob));

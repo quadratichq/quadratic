@@ -6,6 +6,7 @@ import { ContentCopy, ContentPaste, ContentCut, East } from '@mui/icons-material
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { Undo, Redo } from '@mui/icons-material';
+import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
 
 const ListItems = [
   {
@@ -98,6 +99,20 @@ const ListItems = [
           icon={<ContentPaste />}
           shortcut="V"
           shortcutModifiers={[KeyboardSymbols.Command]}
+        />
+      );
+    },
+  },
+  {
+    label: 'Copy Selection as PNG',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      return (
+        <CommandPaletteListItem
+          {...props}
+          action={() => copyAsPNG(props.app)}
+          icon={<ContentPaste />}
+          shortcut="C"
+          shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
         />
       );
     },

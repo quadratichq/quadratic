@@ -13,6 +13,7 @@ import {
   FormatItalic,
   Percent,
   MoreVert,
+  ContentCopy,
 } from '@mui/icons-material';
 import { ControlledMenu, Menu, MenuItem, useMenuState } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
@@ -23,6 +24,8 @@ import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
 import { TooltipHint } from '../../components/TooltipHint';
 import { DecimalDecrease, DecimalIncrease } from '../../icons';
 import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting';
+import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
+import { MenuLineItem } from '../TopBar/MenuLineItem';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -164,18 +167,7 @@ export const FloatingContextMenu = (props: Props) => {
   }, [viewport, updateContextMenuCSSTransform]);
 
   const saveAsPNG = useCallback(async () => {
-    const blob = await app.copyAsPNG();
-    if (!blob) {
-      throw new Error('Unable to copy as PNG');
-    }
-    if (navigator.clipboard && window.ClipboardItem) {
-      navigator.clipboard.write([
-        new ClipboardItem({
-          //@ts-ignore
-          'image/png': blob,
-        }),
-      ]);
-    }
+    await copySelectionToPNG(app);
     moreMenu.toggleMenu();
   }, [app, moreMenu]);
 
@@ -339,7 +331,9 @@ export const FloatingContextMenu = (props: Props) => {
         <ControlledMenu
           state={moreMenu.state}
         >
-          <MenuItem onClick={saveAsPNG}>Copy selection as PNG</MenuItem>
+          <MenuItem onClick={saveAsPNG}>
+            <MenuLineItem primary="Copy selection as PNG" secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'} Icon={ContentCopy}></MenuLineItem>
+          </MenuItem>
         </ControlledMenu>
       </Toolbar>
     </Paper>

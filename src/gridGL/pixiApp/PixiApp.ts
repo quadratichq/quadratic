@@ -20,7 +20,6 @@ import { editorInteractionStateDefault } from '../../atoms/editorInteractionStat
 import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../constants/app';
 import { Wheel } from '../pixiOverride/Wheel';
-import { copyAsPNG } from './copyAsPNG';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -267,9 +266,5 @@ export class PixiApp {
 
   forceUpdate(): void {
     this.update.forceUpdate();
-  }
-
-  async copyAsPNG(): Promise<Blob | null> {
-    return await copyAsPNG(this);
   }
 }
