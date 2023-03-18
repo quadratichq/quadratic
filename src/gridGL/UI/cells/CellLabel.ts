@@ -16,38 +16,44 @@ export class CellLabel extends BitmapTextClip {
   private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
 
   constructor(data: LabelData) {
-    super('', {
+    super(data.text, {
       fontName: 'OpenSans',
       fontSize,
       tint: 0,
       align: 'left',
     });
+    this.setFormat(data);
+
+    // needed for linting
     this.data = data;
-    this.setFormat();
   }
 
-  setData(data: LabelData): void {
-    this.data = data;
-    this.setFormat();
-  }
-
-  private setFormat(): void {
-    const format = this.data?.format;
+  private setFormat(data: LabelData): void {
+    const format = data?.format;
     const bold = format?.bold ? 'Bold' : '';
     const italic = format?.italic ? 'Italic' : '';
     const fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
-    this.fontName = fontName;
+    if (this.fontName !== fontName) this.fontName = fontName;
     const textColor = format?.textColor;
-    this.tint = textColor ? convertColorStringToTint(textColor) : 0;
+    const tint = textColor ? convertColorStringToTint(textColor) : 0;
+    if (this.tint !== tint) this.tint = tint;
+    this.data = data;
   }
 
   set text(text: string) {
     text = String(text === null || text === undefined ? '' : text);
-    this._text = text;
-    this.dirty = true;
+    if (text !== this._text) {
+      this._text = text;
+      this.dirty = true;
+    }
   }
   get text() {
     return this._text;
+  }
+
+  update(data: LabelData): void {
+    this.text = data.text;
+    this.setFormat(data);
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Point, Rectangle } from 'pixi.js';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
 import { CellAlignment, CellFormat } from '../../../grid/sheet/gridTypes';
@@ -115,36 +115,41 @@ export class CellsLabels extends Container {
       return (!a && !b) || (a && b) ? true : false;
     };
 
-    return (
-      label.data?.text === data.text &&
-      isSame(label.data?.format?.bold, data.format?.bold) &&
-      isSame(label.data?.format?.italic, data.format?.italic) &&
-      label.data?.format?.textColor === data.format?.textColor
-    );
+    if (
+      label.data?.text !== data.text ||
+      !isSame(label.data?.format?.bold, data.format?.bold) ||
+      !isSame(label.data?.format?.italic, data.format?.italic) ||
+      label.data?.format?.textColor !== data.format?.textColor) return false;
+
+    const position = this.calculatePosition(label, data);
+    if (!label.lastPosition || !label.lastPosition.equals(position)) return false;
+
+    return true;
   }
 
-  updateLabel(label: CellLabel, data: LabelData): void {
-    label.data = data;
-    label.visible = true;
-    if (label.text !== data.text) {
-      label.text = data.text;
-    }
-
+  private calculatePosition(label: CellLabel, data: LabelData): Point {
     data.alignment = isStringANumber(data.originalText) ? 'right' : 'left';
     if (data.format?.alignment === 'right') data.alignment = 'right';
     else if (data.format?.alignment === 'center') data.alignment = 'center';
     else if (data.format?.alignment === 'left') data.alignment = 'left';
     if (data.alignment === 'right') {
-      label.position.set(data.x + data.expectedWidth - label.textWidth, data.y);
+      return new Point(data.x + data.expectedWidth - label.textWidth, data.y);
     } else if (data.alignment === 'center') {
-      label.position.set(data.x + data.expectedWidth / 2 - label.textWidth / 2, data.y);
-    } else {
-      label.position.set(data.x, data.y);
+      return new Point(data.x + data.expectedWidth / 2 - label.textWidth / 2, data.y);
     }
+    return new Point(data.x, data.y);
+  }
+
+  updateLabel(label: CellLabel, data: LabelData): void {
+    label.update(data);
+    label.visible = true;
+
+    label.position = this.calculatePosition(label, data);
 
     // this ensures that the text is redrawn during column resize (otherwise clipping will not work properly)
     if (!label.lastPosition || !label.lastPosition.equals(label.position)) {
       label.dirty = true;
+      label.lastPosition = label.position.clone();
     }
   }
 
@@ -174,15 +179,15 @@ export class CellsLabels extends Container {
 
     // use existing labels but change the text
     leftovers.forEach((data, i) => {
-      let label: CellLabel;
       if (i < available.length) {
         this.updateLabel(available[i], data);
       }
 
       // otherwise create new labels
       else {
-        label = this.addChild(new CellLabel(data));
-        this.updateLabel(label, data);
+        const label = this.addChild(new CellLabel(data));
+        label.position = this.calculatePosition(label, data);
+        label.lastPosition = label.position.clone();
       }
     });
 
