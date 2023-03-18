@@ -1,13 +1,18 @@
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { copySelectionToPNG, copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../grid/actions/clipboard/clipboard';
+import {
+  copySelectionToPNG,
+  copyToClipboard,
+  cutToClipboard,
+  pasteFromClipboard,
+} from '../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardClipboard(props: {
-  event: React.KeyboardEvent<HTMLElement>,
-  interactionState: GridInteractionState,
-  sheet_controller: SheetController,
-  app: PixiApp,
+  event: React.KeyboardEvent<HTMLElement>;
+  interactionState: GridInteractionState;
+  sheet_controller: SheetController;
+  app: PixiApp;
 }): boolean {
   const { event, interactionState, sheet_controller, app } = props;
 

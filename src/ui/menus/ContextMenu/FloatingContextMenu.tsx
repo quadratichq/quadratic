@@ -328,11 +328,13 @@ export const FloatingContextMenu = (props: Props) => {
             <MoreVert />
           </IconButton>
         </TooltipHint>
-        <ControlledMenu
-          state={moreMenu.state}
-        >
+        <ControlledMenu state={moreMenu.state}>
           <MenuItem onClick={saveAsPNG}>
-            <MenuLineItem primary="Copy selection as PNG" secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'} Icon={ContentCopy}></MenuLineItem>
+            <MenuLineItem
+              primary="Copy selection as PNG"
+              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'}
+              Icon={ContentCopy}
+            ></MenuLineItem>
           </MenuItem>
         </ControlledMenu>
       </Toolbar>
