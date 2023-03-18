@@ -214,8 +214,8 @@ export class PixiApp {
   }
 
   // called before and after a quadrant render
-  prepareForQuadrantRendering(): Container {
-    this.gridLines.visible = false;
+  prepareForQuadrantRendering(options?: { gridLines: boolean }): Container {
+    this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;
     this.headings.visible = false;
@@ -265,7 +265,7 @@ export class PixiApp {
     this.settings.setInteractionState?.(gridInteractionStateDefault);
   }
 
-  copyAsPNG(): void {
-    copyAsPNG(this);
+  async copyAsPNG(): Promise<Blob | null> {
+    return await copyAsPNG(this);
   }
 }

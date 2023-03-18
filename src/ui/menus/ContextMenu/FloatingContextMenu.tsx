@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
+import { Divider, IconButton, Paper, Toolbar,  } from '@mui/material';
 import {
   AttachMoneyOutlined,
   BorderAll,
@@ -12,8 +12,9 @@ import {
   FormatColorText,
   FormatItalic,
   Percent,
+  MoreVert,
 } from '@mui/icons-material';
-import { Menu } from '@szhsin/react-menu';
+import { Menu, MenuItem } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { QColorPicker } from '../../components/qColorPicker';
@@ -160,6 +161,20 @@ export const FloatingContextMenu = (props: Props) => {
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
     };
   }, [viewport, updateContextMenuCSSTransform]);
+
+  const saveAsPNG = useCallback(async () => {
+    const blob = await app.copyAsPNG();
+    if (!blob) return;
+    if (navigator.clipboard && window.ClipboardItem) {
+      // browser support clipboard apinavigator.clipboard
+      navigator.clipboard.write([
+        new ClipboardItem({
+          //@ts-ignore
+          'image/png': blob,
+        }),
+      ]);
+    }
+  }, [app]);
 
   // If we don't have a viewport, we can't continue.
   if (!viewport || !container) return null;
@@ -312,6 +327,10 @@ export const FloatingContextMenu = (props: Props) => {
         <Button style={{ color: colors.mediumGray }} disabled>
           <span style={{ fontSize: '1rem' }}>123</span>
         </Button> */}
+        <MenuDivider />
+        <Menu menuButton={<MoreVert />}>
+          <MenuItem onClick={saveAsPNG}>Copy selection as PNG</MenuItem>
+        </Menu>
       </Toolbar>
     </Paper>
   );
