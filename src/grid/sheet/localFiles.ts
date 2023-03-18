@@ -73,7 +73,6 @@ class LocalFiles {
     updatedLastFiles.unshift(filename);
     this.fileList = updatedLastFiles;
     this.filename = filename;
-    this.lastSavedData = data as GridFileSchemaV1;
     if (!isEqualStringArrays(lastFiles, updatedLastFiles)) {
       localForage.setItem(LAST_FILES, updatedLastFiles);
       this.emitListEvent(updatedLastFiles);
