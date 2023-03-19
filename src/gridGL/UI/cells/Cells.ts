@@ -1,5 +1,5 @@
 import { Container, Rectangle } from 'pixi.js';
-import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../constants/gridConstants';
+import { CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
 import { colors } from '../../../theme/colors';
 import { CellTextFormatter } from '../../../grid/formatting/cellTextFormatter';
 import { CellRectangle } from '../../../grid/sheet/CellRectangle';
@@ -13,6 +13,7 @@ import { CellsBackground } from './cellsBackground';
 import { CellsBorder } from './CellsBorder';
 import { CellsLabels } from './CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
+import { CellsTypeBorder } from './CellsTypeBorder';
 
 export interface CellsBounds {
   minX: number;
@@ -33,6 +34,10 @@ export interface CellsDraw {
 export class Cells extends Container {
   private app: PixiApp;
   private cellsArray: CellsArray;
+
+  // used by CellsLabels
+  cellsTypeBorder: CellsTypeBorder;
+
   private cellsBorder: CellsBorder;
   private cellLabels: CellsLabels;
   private cellsMarkers: CellsMarkers;
@@ -40,7 +45,9 @@ export class Cells extends Container {
   // track the cells that have arrays to update the visual dependency (used only after rendering a quadrant)
   private trackCellsWithArrays: Coordinate[] = [];
 
+  // used by PixiApp to control z-index
   cellsBackground: CellsBackground;
+
   dirty = true;
 
   constructor(app: PixiApp) {
@@ -51,8 +58,9 @@ export class Cells extends Container {
     this.cellsBackground = new CellsBackground();
 
     this.cellsArray = this.addChild(new CellsArray(app));
+    this.cellsTypeBorder = this.addChild(new CellsTypeBorder(app));
     this.cellsBorder = this.addChild(new CellsBorder(app));
-    this.cellLabels = this.addChild(new CellsLabels());
+    this.cellLabels = this.addChild(new CellsLabels(app));
     this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
@@ -168,16 +176,19 @@ export class Cells extends Container {
             cell_format = { x: entry.cell.x, y: entry.cell.y, textColor: colors.error, italic: true };
           }
           this.cellLabels.add({
-            x: x + CELL_TEXT_MARGIN_LEFT,
-            y: y + CELL_TEXT_MARGIN_TOP,
+            x,
+            y,
+            width,
+            height,
             text: cell_text,
             isQuadrant,
             expectedWidth: width - CELL_TEXT_MARGIN_LEFT * 2,
             location: isQuadrant ? { x: entry.cell.x, y: entry.cell.y } : undefined,
             format: cell_format,
+            cell: entry.cell,
           });
+          // this.cellsBorder.draw({ ...entry, x, y, width, height });
         }
-        this.cellsBorder.draw({ ...entry, x, y, width, height });
       }
       if (this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
         this.cellsArray.draw(entry.cell.array_cells, x, y, width, height, entry.cell.type);
@@ -193,6 +204,7 @@ export class Cells extends Container {
     this.cellLabels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
+    this.cellsTypeBorder.clear();
     this.cellsBackground.clear();
     this.cellsBorder.clear();
     this.trackCellsWithArrays = [];
@@ -416,6 +428,7 @@ export class Cells extends Container {
 
   debugShowCachedCounts(): void {
     this.cellsArray.debugShowCachedCounts();
+    this.cellsTypeBorder.debugShowCachedCounts();
     this.cellsBorder.debugShowCachedCounts();
     this.cellsMarkers.debugShowCachedCounts();
     this.cellsBackground.debugShowCachedCounts();

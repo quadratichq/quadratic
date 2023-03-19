@@ -1,21 +1,31 @@
 import { Container, Rectangle } from 'pixi.js';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
-import { CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
-import { CellFormat } from '../../../grid/sheet/gridTypes';
+import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../constants/gridConstants';
+import { Cell, CellFormat } from '../../../grid/sheet/gridTypes';
+import { PixiApp } from '../../pixiApp/PixiApp';
 
-interface LabelData {
+export interface LabelData {
   text: string;
   x: number;
   y: number;
   location?: Coordinate;
   isQuadrant?: boolean;
   expectedWidth: number;
+  width: number;
+  height: number;
+  cell?: Cell;
   format?: CellFormat;
 }
 
 export class CellsLabels extends Container {
+  private app: PixiApp;
   private labelData: LabelData[] = [];
+
+  constructor(app: PixiApp) {
+    super();
+    this.app = app;
+  }
 
   clear() {
     this.labelData = [];
@@ -28,22 +38,27 @@ export class CellsLabels extends Container {
 
   // checks to see if the label needs to be clipped based on other labels
   private checkForClipping(label: CellLabel, data: LabelData): void {
+    const x = data.x + CELL_TEXT_MARGIN_LEFT;
+    const y = data.y + CELL_TEXT_MARGIN_TOP;
     label.setClip();
     if (label.textWidth > data.expectedWidth) {
       const start = label.x + data.expectedWidth;
       const end = start + (label.width - data.expectedWidth);
       const neighboringLabels = this.labelData.filter(
-        (search) => search.y === data.y && search.x >= start && search.x <= end
+        (search) => search.y === y && search.x >= start && search.x <= end
       );
       if (neighboringLabels.length) {
         const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
-        label.setClip(neighboringLabel.x - data.x - CELL_TEXT_MARGIN_LEFT * 2);
+        label.setClip(neighboringLabel.x - x - CELL_TEXT_MARGIN_LEFT * 2);
       } else {
         label.setClip();
       }
     } else {
       label.setClip();
     }
+    this.app.cells.cellsTypeBorder.draw(label, data);
+
+
   }
 
   private compareLabelData(label: CellLabel, data: LabelData): boolean {
@@ -82,7 +97,7 @@ export class CellsLabels extends Container {
         leftovers.push(data);
       } else {
         const label = available[index];
-        label.position.set(data.x, data.y);
+        label.position.set(data.x + CELL_TEXT_MARGIN_LEFT, data.y + CELL_TEXT_MARGIN_TOP);
         label.visible = true;
         this.checkForClipping(label, data);
 
@@ -117,7 +132,8 @@ export class CellsLabels extends Container {
       else {
         label = this.addChild(new CellLabel(data.format));
       }
-      label.position.set(data.x, data.y);
+
+      label.position.set(data.x + CELL_TEXT_MARGIN_LEFT, data.y + CELL_TEXT_MARGIN_TOP);
       label.text = data.text;
       this.checkForClipping(label, data);
 
@@ -137,6 +153,8 @@ export class CellsLabels extends Container {
         maxY = Math.max(label.y + label.height, maxY);
       }
     });
+
+
     if (minX !== Infinity) {
       return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
