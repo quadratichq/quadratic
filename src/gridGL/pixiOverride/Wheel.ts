@@ -294,10 +294,14 @@ export class Wheel extends Plugin {
       this.pinch(e);
     } else {
       const step = 1;
-
-      const deltas = [e.deltaX, e.deltaY];
-      const [deltaX, deltaY] = deltas;
-
+      let deltaX: number, deltaY: number;
+      if (e.shiftKey) {
+        deltaX = e.deltaY;
+        deltaY = e.deltaX;
+      } else {
+        deltaX = e.deltaX;
+        deltaY = e.deltaY;
+      }
       this.parent.x += deltaX * step * -1;
       this.parent.y += deltaY * step * -1;
       this.parent.emit('wheel-scroll', this.parent);
