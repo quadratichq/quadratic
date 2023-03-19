@@ -165,6 +165,7 @@ export const CellInput = (props: CellInputProps) => {
     <input
       autoFocus
       ref={textInput}
+      id="cell-input"
       spellCheck={false}
       style={{
         display: 'block',

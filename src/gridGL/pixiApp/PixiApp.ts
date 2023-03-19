@@ -37,6 +37,7 @@ export class PixiApp {
   headings: GridHeadings;
   cells: Cells;
   quadrants: Quadrants;
+  maskQuadrants: Graphics;
 
   input: Pointer;
   viewportContents: Container;
@@ -105,7 +106,8 @@ export class PixiApp {
     this.debug = this.viewportContents.addChild(new Graphics());
 
     this.quadrants = this.viewportContents.addChild(new Quadrants(this));
-    this.quadrants.visible = false;
+    this.maskQuadrants = this.viewportContents.addChild(new Graphics());
+    this.quadrants.visible = this.maskQuadrants.visible = false;
 
     this.gridLines = this.viewportContents.addChild(new GridLines(this));
     this.axesLines = this.viewportContents.addChild(new AxesLines(this));
@@ -131,6 +133,15 @@ export class PixiApp {
     console.log('[QuadraticGL] environment ready');
   }
 
+  private setMaskQuadrants(): boolean {
+    this.maskQuadrants.clear();
+    if (this.settings.interactionState.showInput) {
+      const input = document.querySelector('.cell-input') as HTMLDivElement;
+      if (!input) throw new Error("Expected input to be defined");
+    }
+    return false;
+  }
+
   private showCache(): void {
     if (debugShowCacheFlag && !this.quadrants.visible) {
       const cacheOn = document.querySelector('.debug-show-cache-on');
@@ -139,7 +150,7 @@ export class PixiApp {
       }
     }
     this.cells.changeVisibility(false);
-    this.quadrants.visible = true;
+    this.quadrants.visible = this.maskQuadrants.visible = true;
     this.cacheIsVisible = true;
   }
 
@@ -149,7 +160,7 @@ export class PixiApp {
     }
     this.cells.dirty = true;
     this.cells.changeVisibility(true);
-    this.quadrants.visible = false;
+    this.quadrants.visible = this.maskQuadrants.visible = false;
     this.cacheIsVisible = false;
   }
 
@@ -218,7 +229,7 @@ export class PixiApp {
     this.axesLines.visible = false;
     this.cursor.visible = false;
     this.headings.visible = false;
-    this.quadrants.visible = false;
+    this.quadrants.visible = this.maskQuadrants.visible = false;
     this.cells.changeVisibility(true);
     this.cells.dirty = true;
     return this.viewportContents;
@@ -229,7 +240,7 @@ export class PixiApp {
     this.axesLines.visible = true;
     this.cursor.visible = true;
     this.headings.visible = true;
-    this.quadrants.visible = this.cacheIsVisible;
+    this.quadrants.visible = this.maskQuadrants.visible = this.cacheIsVisible;
     this.cells.changeVisibility(!this.cacheIsVisible);
     if (!this.cacheIsVisible) this.cells.dirty = true;
   }

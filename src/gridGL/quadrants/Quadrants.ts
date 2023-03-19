@@ -23,11 +23,13 @@ interface QuadrantChanged {
 export class Quadrants extends Container {
   private app: PixiApp;
   private complete = false;
+  private quadrantChildren: Container;
   private quadrants: Map<string, Quadrant>;
 
   constructor(app: PixiApp) {
     super();
     this.app = app;
+    this.quadrantChildren = this.addChild(new Container());
     this.quadrants = new Map<string, Quadrant>();
   }
 
@@ -43,7 +45,7 @@ export class Quadrants extends Container {
   }
 
   build(): void {
-    this.removeChildren();
+    this.quadrantChildren.removeChildren();
     this.quadrants.clear();
 
     const { grid, borders, render_dependency, array_dependency } = this.app.sheet;
@@ -63,7 +65,7 @@ export class Quadrants extends Container {
     for (let y = yStart; y <= yEnd; y++) {
       for (let x = xStart; x <= xEnd; x++) {
         if (this.app.sheet.hasQuadrant(x, y)) {
-          const quadrant = this.addChild(new Quadrant(this.app, x, y));
+          const quadrant = this.quadrantChildren.addChild(new Quadrant(this.app, x, y));
           this.quadrants.set(`${x},${y}`, quadrant);
         }
       }
@@ -83,7 +85,7 @@ export class Quadrants extends Container {
    * 2. if no quadrant is visible, return the quadrant with the closest distance to the screen
    */
   private findNextDirty(): Quadrant | undefined {
-    const dirty = this.children.filter((child) => (child as Quadrant).dirty) as Quadrant[];
+    const dirty = this.quadrantChildren.children.filter((child) => (child as Quadrant).dirty) as Quadrant[];
     if (dirty.length === 0) return;
     const screen = this.app.viewport.getVisibleBounds();
     const ranking: number[] = [];
@@ -112,12 +114,13 @@ export class Quadrants extends Container {
    */
   update(timeStart: number): boolean {
     if (debugSkipQuadrantRendering) return false;
+    const children = this.quadrantChildren.children as Quadrant[];
 
     const nextDirty = this.findNextDirty();
     if (nextDirty) {
       if (debugShowCacheInfo) {
-        const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0) - 1;
-        nextDirty.update(timeStart, `${this.children.length - dirtyCount}/${this.children.length}`);
+        const dirtyCount = children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0) - 1;
+        nextDirty.update(timeStart, `${children.length - dirtyCount}/${children.length}`);
         if (dirtyCount === 0 && !this.complete) {
           this.complete = true;
           this.debugCacheStats();
@@ -128,10 +131,10 @@ export class Quadrants extends Container {
         this.complete = false;
       }
       if (debugShowCacheFlag) {
-        const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0);
+        const dirtyCount = children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0);
         (document.querySelector('.debug-show-cache-count') as HTMLSpanElement).innerHTML = `Quadrants: ${
-          this.children.length - dirtyCount
-        }/${this.children.length}`;
+          children.length - dirtyCount
+        }/${children.length}`;
       }
       return (
         this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), nextDirty.visibleRectangle)
