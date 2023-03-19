@@ -95,7 +95,7 @@ export class Quadrants extends Container {
    * clears portion of quadrants that are covered by input
    * @returns true if the quadrant mask was changed and renderer needs to render
    */
-  inputOverQuadrants(): boolean  {
+  inputOverQuadrants(): boolean {
     this.quadrantMask.clear();
     if (this.app.settings.interactionState.showInput) {
       const input = document.querySelector('#cell-input') as HTMLDivElement;
@@ -105,7 +105,7 @@ export class Quadrants extends Container {
           return true;
         }
         return false;
-      };
+      }
 
       const inputBounds = input.getBoundingClientRect();
       if (this.domRectEquals(inputBounds, this.lastInputOverQuadrant)) return false;
@@ -293,7 +293,10 @@ export class Quadrants extends Container {
   }
 
   private debugCacheStats(): void {
-    const textures = this.quadrantChildren.children.reduce((count, child) => count + (child as Quadrant).debugTextureCount(), 0);
+    const textures = this.quadrantChildren.children.reduce(
+      (count, child) => count + (child as Quadrant).debugTextureCount(),
+      0
+    );
     console.log(`[Quadrants] Rendered ${textures} quadrant textures.`);
   }
 }

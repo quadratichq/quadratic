@@ -77,7 +77,9 @@ export class Update {
       console.log(
         `dirty: ${app.viewport.dirty ? 'viewport ' : ''}${app.gridLines.dirty ? 'gridLines ' : ''}${
           app.axesLines.dirty ? 'axesLines ' : ''
-        }${app.headings.dirty ? 'headings ' : ''}${app.cells.dirty ? 'cells ' : ''}${app.cursor.dirty ? 'cursor ' : ''}${inputOverQuadrants ? 'inputOverQuadrants ' : ''}`
+        }${app.headings.dirty ? 'headings ' : ''}${app.cells.dirty ? 'cells ' : ''}${
+          app.cursor.dirty ? 'cursor ' : ''
+        }${inputOverQuadrants ? 'inputOverQuadrants ' : ''}`
       );
     }
 

@@ -57,7 +57,7 @@ function distanceTwoPoints(x1: number | Point, y1: number | Point, x2?: number, 
     if (x2 === undefined || y2 === undefined) {
       throw new Error('x2 and y2 must be defined if x1 is a number');
     }
-    return Math.sqrt((x1 as number - x2 as number) ** 2 + (y1 as number - y2 as number) ** 2);
+    return Math.sqrt((((x1 as number) - x2) as number) ** 2 + (((y1 as number) - y2) as number) ** 2);
   }
 }
 
@@ -68,9 +68,9 @@ function distanceTwoPoints(x1: number | Point, y1: number | Point, x2?: number, 
  * @returns distance or 0 if intersection
  */
 function distanceTwoRectangles(rectangle1: Rectangle, rectangle2: Rectangle): number {
-  const left = rectangle2.right < rectangle1.left
-  const right = rectangle1.right < rectangle2.left
-  const bottom = rectangle2.bottom < rectangle1.top
+  const left = rectangle2.right < rectangle1.left;
+  const right = rectangle1.right < rectangle2.left;
+  const bottom = rectangle2.bottom < rectangle1.top;
   const top = rectangle1.bottom < rectangle2.top;
   if (top && left) {
     return distanceTwoPoints(rectangle1.left, rectangle1.bottom, rectangle2.right, rectangle2.top);
@@ -86,7 +86,7 @@ function distanceTwoRectangles(rectangle1: Rectangle, rectangle2: Rectangle): nu
   }
   if (left) return rectangle1.left - rectangle2.right;
   if (right) return rectangle2.left - rectangle1.right;
-  if (bottom) return rectangle1.top - rectangle2.bottom
+  if (bottom) return rectangle1.top - rectangle2.bottom;
   if (top) return rectangle2.top - rectangle1.bottom;
 
   // intersects
@@ -101,5 +101,5 @@ export const intersects = {
   rectangleUnion,
   rectangleClip,
   distanceTwoPoints,
-  distanceTwoRectangles
+  distanceTwoRectangles,
 };

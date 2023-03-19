@@ -17,7 +17,6 @@ describe('intersects', () => {
     expect(intersects.distanceTwoPoints(0, 0, 5, 10)).toBe(distance);
   });
 
-
   it('Intersects two overlapping rectangles', () => {
     const rectangle1 = new Rectangle(0, 0, 10, 10);
     const rectangle2 = new Rectangle(5, 5, 10, 10);
