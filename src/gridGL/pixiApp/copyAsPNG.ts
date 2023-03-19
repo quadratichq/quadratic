@@ -4,14 +4,18 @@ import { PixiApp } from './PixiApp';
 const resolution = 2;
 const borderSize = 2;
 
-const renderer = new Renderer({
-  resolution,
-  antialias: true,
-  backgroundColor: 0xffffff,
-});
+let renderer: Renderer | undefined;
 
 /** returns a dataURL to a copy of the selected cells */
 export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
+  if (!renderer) {
+    renderer= new Renderer({
+      resolution,
+      antialias: true,
+      backgroundColor: 0xffffff,
+    });
+  }
+
   let column, width, row, height;
   const interaction = app.settings.interactionState;
   if (interaction.showMultiCursor) {
@@ -43,6 +47,6 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   renderer.render(app.viewportContents, { transform });
   app.cleanUpAfterQuadrantRendering();
   return new Promise((resolve) => {
-    renderer.view.toBlob((blob) => resolve(blob));
+    renderer!.view.toBlob((blob) => resolve(blob));
   });
 };
