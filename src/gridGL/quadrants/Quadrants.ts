@@ -78,6 +78,34 @@ export class Quadrants extends Container {
   }
 
   /**
+   * finds the next dirty quadrant:
+   * 1. if any dirty quadrant is visible, return that quadrant (with no specific ranking)
+   * 2. if no quadrant is visible, return the quadrant with the closest distance to the screen
+   */
+  private findNextDirty(): Quadrant | undefined {
+    const dirty = this.children.filter((child) => (child as Quadrant).dirty) as Quadrant[];
+    if (dirty.length === 0) return;
+    const screen = this.app.viewport.getVisibleBounds();
+    const ranking: number[] = [];
+    for (let i = 0; i < dirty.length; i++) {
+      const quadrant = dirty[i];
+      const distance = intersects.distanceTwoRectangles(screen, quadrant.visibleRectangle);
+      if (distance === 0) return quadrant;
+      ranking.push(distance);
+    }
+    let min = Infinity;
+    let minIndex = -1;
+    for (let i = 0; i < ranking.length; i++) {
+      if (ranking[i] < min) {
+        min = ranking[i];
+        minIndex = i;
+      }
+    }
+    if (minIndex === -1) throw new Error('Quadrants.findNextDirty() failed to find a quadrant.');
+    return dirty[minIndex];
+  }
+
+  /**
    * updates one dirty quadrant per frame(any more and UI felt less responsive, even if within frame time)
    * @param timeStart used for console debugging
    * @returns whether the app should rerender if quadrants are visible and the updated quadrant is visible
@@ -85,18 +113,18 @@ export class Quadrants extends Container {
   update(timeStart: number): boolean {
     if (debugSkipQuadrantRendering) return false;
 
-    const firstDirty = this.children.find((child) => (child as Quadrant).dirty) as Quadrant;
-    if (firstDirty) {
+    const nextDirty = this.findNextDirty();
+    if (nextDirty) {
       if (debugShowCacheInfo) {
         const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0) - 1;
-        firstDirty.update(timeStart, `${this.children.length - dirtyCount}/${this.children.length}`);
+        nextDirty.update(timeStart, `${this.children.length - dirtyCount}/${this.children.length}`);
         if (dirtyCount === 0 && !this.complete) {
           this.complete = true;
           this.debugCacheStats();
           this.app.sheet.gridOffsets.debugCache();
         }
       } else {
-        firstDirty.update();
+        nextDirty.update();
         this.complete = false;
       }
       if (debugShowCacheFlag) {
@@ -106,7 +134,7 @@ export class Quadrants extends Container {
         }/${this.children.length}`;
       }
       return (
-        this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle)
+        this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), nextDirty.visibleRectangle)
       );
     }
 
