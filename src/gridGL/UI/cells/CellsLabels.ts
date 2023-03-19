@@ -57,8 +57,6 @@ export class CellsLabels extends Container {
       label.setClip();
     }
     this.app.cells.cellsTypeBorder.draw(label, data);
-
-
   }
 
   private compareLabelData(label: CellLabel, data: LabelData): boolean {
@@ -153,7 +151,6 @@ export class CellsLabels extends Container {
         maxY = Math.max(label.y + label.height, maxY);
       }
     });
-
 
     if (minX !== Infinity) {
       return new Rectangle(minX, minY, maxX - minX, maxY - minY);

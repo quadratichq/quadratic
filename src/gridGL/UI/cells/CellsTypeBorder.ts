@@ -54,7 +54,6 @@ export class CellsTypeBorder extends Container {
   draw(label: CellLabel, data: LabelData): void {
     let tint: number | undefined, alpha: number | undefined;
     if (data.cell && this.app.settings.showCellTypeOutlines) {
-
       // Change outline color based on cell type
       if (data.cell.type === 'PYTHON') {
         tint = colors.cellColorUserPython;
