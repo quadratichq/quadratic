@@ -111,6 +111,7 @@ export class Quadrant extends Container {
   update(timeStart?: number, debug?: string): void {
     if (!this.dirty) return;
     this.clear();
+    this.app.cells.cellsMaskQuadrants.visible = false;
     const app = this.app;
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
@@ -202,6 +203,7 @@ export class Quadrant extends Container {
     if (debugShowTime && debugShowCacheInfo && timeStart) {
       console.log(`[Quadrant] Rendered ${this.debugName()} ${debug} (${Math.round(performance.now() - timeStart)} ms)`);
     }
+    this.app.cells.cellsMaskQuadrants.visible = true;
     this.dirty = false;
   }
 

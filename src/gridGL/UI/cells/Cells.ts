@@ -1,4 +1,4 @@
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../constants/gridConstants';
 import { colors } from '../../../theme/colors';
 import { CellTextFormatter } from '../../../grid/formatting/cellTextFormatter';
@@ -40,6 +40,9 @@ export class Cells extends Container {
   // track the cells that have arrays to update the visual dependency (used only after rendering a quadrant)
   private trackCellsWithArrays: Coordinate[] = [];
 
+  // used to mask cells when drawMultipleBounds is called (need to set visible to false when rendering quadrants)
+  cellsMaskQuadrants: Graphics;
+
   cellsBackground: CellsBackground;
   dirty = true;
 
@@ -54,6 +57,7 @@ export class Cells extends Container {
     this.cellsBorder = this.addChild(new CellsBorder(app));
     this.cellLabels = this.addChild(new CellsLabels());
     this.cellsMarkers = this.addChild(new CellsMarkers());
+    this.cellsMaskQuadrants = this.addChild(new Graphics());
   }
 
   /**
@@ -412,6 +416,28 @@ export class Cells extends Container {
       const visibleBounds = this.app.viewport.getVisibleBounds();
       this.drawCells(visibleBounds, false);
     }
+  }
+
+  /**
+   * draws a white box over the cells and creates holes where there are no dirty quadrants
+   * (this allows the dirty quadrants to only be rendered in their quadrant and not overlapping non-dirty quadrants)
+   * @param rectangles
+   * @returns
+   */
+  maskQuadrants(rectangles?: Rectangle[]): void {
+    this.cellsMaskQuadrants.clear();
+    if (!rectangles?.length) return;
+    const screen = this.app.viewport.getVisibleBounds();
+    this.cellsMaskQuadrants.beginFill(0xffffff);
+    this.cellsMaskQuadrants.drawShape(screen);
+    this.cellsMaskQuadrants.endFill();
+    this.cellsMaskQuadrants.beginHole();
+    rectangles.forEach((rectangle) => {
+      this.cellsMaskQuadrants.beginFill();
+      this.cellsMaskQuadrants.drawShape(rectangle);
+      this.cellsMaskQuadrants.endFill();
+    });
+    this.cellsMaskQuadrants.endHole();
   }
 
   debugShowCachedCounts(): void {

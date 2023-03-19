@@ -197,24 +197,26 @@ export class Quadrants extends Container {
   }
 
   /** Returns CellRectangles for visible dirty quadrants */
-  getCellsForDirtyQuadrants(): CellRectangle[] {
+  getCellsForDirtyQuadrants(): { cellRectangles: CellRectangle[], rectangles: Rectangle[]} | undefined {
     const { viewport } = this.app;
     const { grid, borders } = this.app.sheet;
     const screen = viewport.getVisibleBounds();
-    return this.children.flatMap((child) => {
+    const rectangles: Rectangle[] = [];
+    const cellRectangles = this.children.flatMap((child) => {
       const quadrant = child as Quadrant;
       if (!quadrant.dirty && !debugShowCellsForDirtyQuadrants) return [];
       if (intersects.rectangleRectangle(screen, quadrant.visibleRectangle)) {
         const columnStart = quadrant.location.x * QUADRANT_COLUMNS;
         const rowStart = quadrant.location.y * QUADRANT_ROWS;
-        const cellRectangle = grid.getCells(
-          new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS - 1, QUADRANT_ROWS - 1)
-        );
+        const rectangle = new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS - 1, QUADRANT_ROWS - 1);
+        rectangles.push(rectangle);
+        const cellRectangle = grid.getCells(rectangle);
         cellRectangle.addBorders(borders);
         return [cellRectangle];
       }
       return [];
     });
+    return cellRectangles.length ? { cellRectangles, rectangles } : undefined;
   }
 
   private debugCacheStats(): void {

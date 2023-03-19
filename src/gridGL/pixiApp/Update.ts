@@ -1,5 +1,5 @@
 import { Point } from 'pixi.js';
-import { debug, debugShowCellsForDirtyQuadrants, debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
+import { debugShowCellsForDirtyQuadrants, debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
 import {
   debugRendererLight,
   debugShowCachedCounts,
@@ -28,7 +28,7 @@ export class Update {
 
   start(): void {
     if (!this.raf) {
-      this.raf = requestAnimationFrame(debug ? this.updateDebug : this.update);
+      this.raf = requestAnimationFrame(this.update);
     }
   }
 
@@ -56,7 +56,7 @@ export class Update {
   }
 
   // update loop w/debug checks
-  private updateDebug = (timeStart: number): void => {
+  private update = (timeStart: number): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
 
@@ -96,19 +96,30 @@ export class Update {
       // forces the temporary replacement cells to render instead of the cache or cells (used for debugging only)
       if (debugShowCellsForDirtyQuadrants) {
         app.quadrants.visible = false;
-        const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
-        app.cells.changeVisibility(true);
-        app.cells.drawMultipleBounds(cellRectangles);
+        const dirtyQuadrants = app.quadrants.getCellsForDirtyQuadrants();
+        if (dirtyQuadrants) {
+          app.cells.changeVisibility(true);
+          app.cells.drawMultipleBounds(dirtyQuadrants.cellRectangles);
+        }
+      }
+
+      // quadrant rendering
+      else if (app.quadrants.visible) {
+        const dirtyQuadrants = app.quadrants.getCellsForDirtyQuadrants();
+        if (dirtyQuadrants) {
+          app.cells.changeVisibility(true);
+          app.cells.drawMultipleBounds(dirtyQuadrants.cellRectangles);
+          app.cells.maskQuadrants(dirtyQuadrants.rectangles);
+        } else {
+          app.cells.maskQuadrants();
+        }
       }
 
       // normal rendering
-      else if (app.quadrants.visible) {
-        const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
-        if (cellRectangles.length) {
-          app.cells.changeVisibility(true);
-          app.cells.drawMultipleBounds(cellRectangles);
-        }
+      else {
+        app.cells.maskQuadrants();
       }
+
       debugTimeReset();
       app.renderer.render(app.stage);
       debugTimeCheck('[Update] render');
@@ -125,49 +136,7 @@ export class Update {
       }
     }
 
-    this.raf = requestAnimationFrame(this.updateDebug);
-    this.fps?.update();
-  };
-
-  // update loop w/o debug checks
-  private update = (timeStart: number): void => {
-    const app = this.pixiApp;
-    if (app.destroyed) return;
-
-    this.updateViewport();
-
-    const rendererDirty =
-      app.viewport.dirty ||
-      app.gridLines.dirty ||
-      app.axesLines.dirty ||
-      app.headings.dirty ||
-      app.cells.dirty ||
-      app.cursor.dirty;
-
-    app.gridLines.update();
-    app.axesLines.update();
-    app.headings.update();
-    app.cells.update();
-    app.cursor.update();
-
-    if (rendererDirty) {
-      app.viewport.dirty = false;
-      if (app.quadrants.visible) {
-        const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
-        if (cellRectangles.length) {
-          app.cells.changeVisibility(true);
-          app.cells.drawMultipleBounds(cellRectangles);
-        }
-      }
-      app.renderer.render(app.stage);
-      this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
-    } else {
-      // only render quadrants when the viewport hasn't been dirty for a while
-      if (timeStart > this.nextQuadrantRender) {
-        app.quadrants.update(timeStart);
-      }
-    }
-
     this.raf = requestAnimationFrame(this.update);
+    this.fps?.update();
   };
 }
