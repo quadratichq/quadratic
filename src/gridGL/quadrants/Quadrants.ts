@@ -1,4 +1,4 @@
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 import {
   debugShowCacheFlag,
   debugShowCacheInfo,
@@ -11,6 +11,7 @@ import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { Quadrant } from './Quadrant';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS } from './quadrantConstants';
+import { domRectangleToViewportScreenRectangle } from '../interaction/viewportHelper';
 
 interface QuadrantChanged {
   row?: number;
@@ -24,12 +25,18 @@ export class Quadrants extends Container {
   private app: PixiApp;
   private complete = false;
   private quadrantChildren: Container;
+  private lastInputOverQuadrant: DOMRect | undefined;
+
+  // used to hide cells that are covered by input
+  private quadrantMask: Graphics;
+
   private quadrants: Map<string, Quadrant>;
 
   constructor(app: PixiApp) {
     super();
     this.app = app;
     this.quadrantChildren = this.addChild(new Container());
+    this.quadrantMask = this.addChild(new Graphics());
     this.quadrants = new Map<string, Quadrant>();
   }
 
@@ -77,6 +84,43 @@ export class Quadrants extends Container {
         } quadrants to queue.`
       );
     }
+  }
+
+  private domRectEquals(a: DOMRect, b?: DOMRect): boolean {
+    if (!b) return false;
+    return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+  }
+
+  /**
+   * clears portion of quadrants that are covered by input
+   * @returns true if the quadrant mask was changed and renderer needs to render
+   */
+  inputOverQuadrants(): boolean  {
+    this.quadrantMask.clear();
+    if (this.app.settings.interactionState.showInput) {
+      const input = document.querySelector('#cell-input') as HTMLDivElement;
+      if (!input) {
+        if (this.lastInputOverQuadrant) {
+          this.lastInputOverQuadrant = undefined;
+          return true;
+        }
+        return false;
+      };
+
+      const inputBounds = input.getBoundingClientRect();
+      if (this.domRectEquals(inputBounds, this.lastInputOverQuadrant)) return false;
+      const inputRectangle = domRectangleToViewportScreenRectangle(this.app, inputBounds);
+      this.quadrantMask.beginFill(0xffffff);
+      this.quadrantMask.drawShape(inputRectangle);
+      this.quadrantMask.endFill();
+      this.lastInputOverQuadrant = inputBounds;
+      return true;
+    }
+    if (this.lastInputOverQuadrant) {
+      this.lastInputOverQuadrant = undefined;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -232,7 +276,7 @@ export class Quadrants extends Container {
     const { viewport } = this.app;
     const { grid, borders } = this.app.sheet;
     const screen = viewport.getVisibleBounds();
-    return this.children.flatMap((child) => {
+    return this.quadrantChildren.children.flatMap((child) => {
       const quadrant = child as Quadrant;
       if (!quadrant.dirty && !debugShowCellsForDirtyQuadrants) return [];
       if (intersects.rectangleRectangle(screen, quadrant.visibleRectangle)) {
@@ -249,7 +293,7 @@ export class Quadrants extends Container {
   }
 
   private debugCacheStats(): void {
-    const textures = this.children.reduce((count, child) => count + (child as Quadrant).debugTextureCount(), 0);
+    const textures = this.quadrantChildren.children.reduce((count, child) => count + (child as Quadrant).debugTextureCount(), 0);
     console.log(`[Quadrants] Rendered ${textures} quadrant textures.`);
   }
 }

@@ -1,3 +1,4 @@
+import { Point, Rectangle } from 'pixi.js';
 import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { Sheet } from '../../grid/sheet/Sheet';
@@ -67,4 +68,23 @@ export function moveViewport(options: { app: PixiApp; center?: Coordinate; topLe
   }
 
   app.viewportChanged();
+}
+
+/**
+ * converts a DOMRect to a PIXI.Rectangle in world coordinates
+ * @param app
+ * @domRectangle
+ * @returns
+ */
+export function domRectangleToViewportScreenRectangle(app: PixiApp, domRectangle: DOMRect): Rectangle {
+  const { viewport } = app;
+  const { left, top, right, bottom } = domRectangle;
+
+  // adjust for canvas screen position
+  const canvas = app.renderer.view.getBoundingClientRect();
+
+  const topLeft = viewport.toWorld(new Point(left, top - canvas.top));
+  const bottomRight = viewport.toWorld(new Point(right, bottom - canvas.top));
+
+  return new Rectangle(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
 }

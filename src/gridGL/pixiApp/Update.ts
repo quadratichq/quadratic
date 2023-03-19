@@ -62,19 +62,22 @@ export class Update {
 
     this.updateViewport();
 
+    const inputOverQuadrants = app.quadrants.visible && app.quadrants.inputOverQuadrants();
+
     const rendererDirty =
       app.viewport.dirty ||
       app.gridLines.dirty ||
       app.axesLines.dirty ||
       app.headings.dirty ||
       app.cells.dirty ||
+      inputOverQuadrants ||
       app.cursor.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
         `dirty: ${app.viewport.dirty ? 'viewport ' : ''}${app.gridLines.dirty ? 'gridLines ' : ''}${
           app.axesLines.dirty ? 'axesLines ' : ''
-        }${app.headings.dirty ? 'headings ' : ''}${app.cells.dirty ? 'cells ' : ''}${app.cursor.dirty ? 'cursor ' : ''}`
+        }${app.headings.dirty ? 'headings ' : ''}${app.cells.dirty ? 'cells ' : ''}${app.cursor.dirty ? 'cursor ' : ''}${inputOverQuadrants ? 'inputOverQuadrants ' : ''}`
       );
     }
 
