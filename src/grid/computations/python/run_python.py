@@ -73,12 +73,12 @@ class Cell:
         if type(other) is Cell:
             try:
                 return op(Decimal(self.value), Decimal(other.value))
-            except DecimalException:
+            except (DecimalException, TypeError):
                 return op(self.value, other.value)
         else:
             try:
                 return op(Decimal(self.value), Decimal(other))
-            except DecimalException:
+            except (DecimalException, TypeError):
                 return op(self.value, other)
 
     def __add__(self, other):
