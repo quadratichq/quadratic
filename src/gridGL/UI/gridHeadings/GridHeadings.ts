@@ -158,7 +158,7 @@ export class GridHeadings extends Container {
       mod = this.findIntervalX(skipNumbers);
     }
 
-    const y = bounds.top + cellHeight / 2;
+    const y = bounds.top + cellHeight / 2.25;
     let column = start.index;
     let currentWidth = 0;
     this.gridLinesColumns = [];
