@@ -1,4 +1,4 @@
-import { Box, Tabs, Tab, Card } from '@mui/material';
+import { Box, Tabs, Tab } from '@mui/material';
 import { CSSProperties, useState } from 'react';
 import { cellEvaluationReturnType } from '../../../grid/computations/types';
 import { LinkNewTab } from '../../components/LinkNewTab';
@@ -134,16 +134,21 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
             </>
           ) : (
             <>
-              <h3>Spreadsheet Formulas</h3>
-              <p>Quadratic allows you to use the familiar spreadsheet formula language.</p> Example:
-              <Card variant="outlined">
+              <h3>Spreadsheet formulas</h3>
+              <p>Use the familiar language of spreadsheet formulas.</p>
+              <p>Example:</p>
+              <pre style={codeSampleStyles}>
                 <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>SUM</span>(A0:A99)
-                <br />↳ Returns the SUM of cells A0 to A99
-                <br></br>
-              </Card>
-              <h3>Referencing Cells</h3>
-              In the positive Quadrant cells are referenced similar to other spreadsheets. In the negative Quadrant,
-              cells are referenced using a `n` prefix. See examples below.
+                <br />
+                <br />
+                <span style={{ color: 'grey' }}>↳ Returns the SUM of cells A0 to A99</span>
+              </pre>
+              <h3>Referencing cells</h3>
+              <p>
+                In the positive quadrant, cells are referenced similar to other spreadsheets. In the negative quadrant,
+                cells are referenced using a `n` prefix.
+              </p>
+              <p>Examples:</p>
               <table>
                 <tbody>
                   <tr>
@@ -151,7 +156,7 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
                       <div>
                         <span>
                           <span>
-                            <strong>nAn0 Notation </strong>
+                            <strong>nAn0 notation</strong>
                           </span>
                         </span>
                       </div>
@@ -290,10 +295,12 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
                   </tr>
                 </tbody>
               </table>
-              <h3>Multiline Formulas</h3>
-              Line spaces are ignored when evaluating formulas. You can use them to make your formulas more readable.
-              <br></br> Example:
-              <Card variant="outlined">
+              <h3>Multiline formulas</h3>
+              <p>
+                Line spaces are ignored when evaluating formulas. You can use them to make your formulas more readable.
+              </p>
+              <p>Example:</p>
+              <pre style={codeSampleStyles}>
                 <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>IF</span>(A0 {'>'} 0,
                 <br></br>
                 <span style={{ color: 'grey' }}>2</span> <span style={{ color: 'blue' }}>&nbsp;&nbsp;IF</span>(B0 {'<'}{' '}
@@ -308,8 +315,8 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
                 <span style={{ color: 'grey' }}>3</span> &nbsp;&nbsp;"A0 is invalid",
                 <br></br>
                 <span style={{ color: 'grey' }}>5</span> )<br></br>
-              </Card>
-              <h3>Full Documentation</h3>
+              </pre>
+              <h3>More info</h3>
               <p>
                 <LinkNewTab href={DOCUMENTATION_FORMULAS_URL}>Check out the docs</LinkNewTab> to see a full list of
                 supported formulas and documentation for how to use specific formula functions.
