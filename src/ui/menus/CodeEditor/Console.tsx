@@ -81,7 +81,9 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
           {editorMode === 'PYTHON' ? (
             <>
               <p>
+                <h3>Print Statements</h3>
                 <p>Print statements and errors are piped to the CONSOLE tab.</p>
+                <h3>Returning Data to the Grid</h3>
                 To return data to the grid, either the last statement from your code is returned or a special variable
                 called <span style={{ color: 'grey', fontStyle: 'italic' }}>`result`</span>.
                 <br />
@@ -92,7 +94,6 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
                   <br></br>
                   <br />↳ 4 # number returned as the cell value
                 </Card>
-                <br />
                 <br /> Example:
                 <Card variant="outlined">
                   <span style={{ color: 'grey' }}>1</span> result = <span style={{ color: 'blue' }}>[]</span>
@@ -107,7 +108,17 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
                   <br />↳ [0, 1, 2, ..., 99] # returns 100 cells counting from 0 to 99
                 </Card>
               </p>
-              <p>Advanced Topics:</p>
+
+              <p>
+                <h3>Referencing Data from the Grid</h3> Example:
+                <Card variant="outlined">
+                  <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>c</span>(1, 1) +{' '}
+                  <span style={{ color: 'blue' }}>c</span>(2, 2)
+                  <br></br>
+                  <br />↳ The sum of the cell values at x:1 y:1 and x:2 y:2
+                </Card>
+              </p>
+              <h3>Advanced Topics</h3>
               <p>
                 Learn how to <LinkNewTab href={DOCUMENTATION_PYTHON_API_URL}>fetch data from an API.</LinkNewTab>
               </p>
@@ -118,15 +129,190 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
                 <LinkNewTab href={DOCUMENTATION_PYTHON_URL}>Check out the docs</LinkNewTab> to learn more about using
                 Python in Quadratic.
               </p>
+              <br></br>
             </>
           ) : (
             <>
               <p>Quadratic allows you to use the familiar spreadsheet formula language.</p>
-              <p>Negative cells are referenced like `nAn2`. This is referencing cell -1, -2. Letter case matters.</p>
+              <h3>Referencing Cells</h3>
+              In the positive Quadrant cells are referenced similar to other spreadsheets. In the negative Quadrant,
+              cells are referenced using a `n` prefix. See examples below.
+              <br></br> Example:
+              <Card variant="outlined">
+                <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>SUM</span>(A0:A99)
+                <br />↳ Returns the SUM of cells A0 to A99
+                <br></br>
+              </Card>
+              <table>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <strong>nAn0 Notation </strong>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>
+                              <strong>(x, y)</strong>
+                            </code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>A0</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>(0, 0)</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>A1</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>(0, 1)</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>B1</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>(1, 1)</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>An1</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>(0, -1)</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>nA1</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>(-1, 1)</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>nAn1</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <span>
+                          <span>
+                            <code>(-1, -1)</code>
+                          </span>
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <h3>Multiline Formulas</h3>
+              Line spaces are ignored when evaluating formulas. You can use them to make your formulas more readable.
+              <br></br> Example:
+              <Card variant="outlined">
+                <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>IF</span>(A0 {'>'} 0,
+                <br></br>
+                <span style={{ color: 'grey' }}>2</span> <span style={{ color: 'blue' }}>&nbsp;&nbsp;IF</span>(B0 {'<'}{' '}
+                2,
+                <br></br>
+                <span style={{ color: 'grey' }}>3</span> &nbsp;&nbsp;&nbsp;&nbsp;"Valid Dataset",
+                <br></br>
+                <span style={{ color: 'grey' }}>3</span> &nbsp;&nbsp;&nbsp;&nbsp;"B0 is invalid",
+                <br></br>
+                <span style={{ color: 'grey' }}>4</span> &nbsp;&nbsp;),
+                <br></br>
+                <span style={{ color: 'grey' }}>3</span> &nbsp;&nbsp;"A0 is invalid",
+                <br></br>
+                <span style={{ color: 'grey' }}>5</span> )<br></br>
+              </Card>
               <p>
                 <LinkNewTab href={DOCUMENTATION_FORMULAS_URL}>Check out the docs</LinkNewTab> to learn more about using
                 Formulas.
               </p>
+              <br></br>
             </>
           )}
         </TabPanel>
