@@ -27,8 +27,18 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
           aria-label="Console"
           style={{ minHeight: '32px' }}
         >
-          <Tab style={{ minHeight: '32px' }} label="Output" id="console-tab-0" aria-controls="console-tabpanel-0"></Tab>
-          <Tab style={{ minHeight: '32px' }} label="About" id="console-tab-1" aria-controls="console-tabpanel-1"></Tab>
+          <Tab
+            style={{ minHeight: '32px' }}
+            label="Console"
+            id="console-tab-0"
+            aria-controls="console-tabpanel-0"
+          ></Tab>
+          <Tab
+            style={{ minHeight: '32px' }}
+            label="Documentation"
+            id="console-tab-1"
+            aria-controls="console-tabpanel-1"
+          ></Tab>
         </Tabs>
       </Box>
       <div style={{ overflow: 'scroll', flex: '2' }}>
