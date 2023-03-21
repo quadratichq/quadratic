@@ -92,7 +92,6 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
                 <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>2</span> *{' '}
                 <span style={{ color: 'blue' }}>2</span>
                 <br />
-                <br />
                 <span style={{ color: 'grey' }}>↳ 4 # number returned as the cell value</span>
               </pre>
               <p>Example:</p>
@@ -106,17 +105,19 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
                 <span style={{ color: 'grey' }}>3</span> {'  '}
                 result.<span style={{ color: 'blue' }}>append</span>(x)
                 <br />
+                <span style={{ color: 'grey' }}>4</span>
+                <br />
+                <span style={{ color: 'grey' }}>5</span> result
                 <br />
                 <span style={{ color: 'grey' }}>↳ [0, 1, 2, ..., 99] # returns 100 cells counting from 0 to 99</span>
               </pre>
 
               <h3>Referencing data from the sheet</h3>
-              <p>Use the `cell()` function — or shorthand `c()` — to reference values in the sheet.</p>
+              <p>Use the `cell(x, y)` function — or shorthand `c(x, y)` — to reference values in the sheet.</p>
               <p>Example:</p>
               <pre style={codeSampleStyles}>
                 <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>c</span>(1, 1) +{' '}
                 <span style={{ color: 'blue' }}>c</span>(2, 2)
-                <br />
                 <br />
                 <span style={{ color: 'grey' }}>↳ The sum of the cell values at x:1 y:1 and x:2 y:2</span>
               </pre>
@@ -139,7 +140,6 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
               <p>Example:</p>
               <pre style={codeSampleStyles}>
                 <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>SUM</span>(A0:A99)
-                <br />
                 <br />
                 <span style={{ color: 'grey' }}>↳ Returns the SUM of cells A0 to A99</span>
               </pre>
