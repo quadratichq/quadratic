@@ -73,12 +73,12 @@ class Cell:
         if type(other) is Cell:
             try:
                 return op(Decimal(self.value), Decimal(other.value))
-            except DecimalException:
+            except (DecimalException, TypeError):
                 return op(self.value, other.value)
         else:
             try:
                 return op(Decimal(self.value), Decimal(other))
-            except DecimalException:
+            except (DecimalException, TypeError):
                 return op(self.value, other)
 
     def __add__(self, other):
@@ -137,7 +137,6 @@ class Table:
 
 
 async def run_python(code):
-
     cells_accessed = []
 
     async def getCells(p0, p1, first_row_header=False):
@@ -220,17 +219,23 @@ async def run_python(code):
                     if row_step is not None or col_step is not None:
                         raise IndexError("Slice step-size parameter not supported")
 
-                    return getCells((col_start, row_start), (col_stop - 1, row_stop - 1), first_row_header=False)
+                    return getCells(
+                        (col_start, row_start),
+                        (col_stop - 1, row_stop - 1),
+                        first_row_header=False,
+                    )
 
                 else:
                     raise IndexError("Only int and slice type indices supported")
             else:
-                raise IndexError("""Expected usage:
+                raise IndexError(
+                    """Expected usage:
                         1. cells[row                        , col                        ]
                         2. cells[row_slice_min:row_slice_max, col                        ]
                         3. cells[row                        , col_slice_min:col_slice_max]
                         4. cells[row_slice_min:row_slice_max, col_slice_min:col_slice_max]
-                        """)
+                        """
+                )
 
     globals = {
         "getCells": getCells,
@@ -268,10 +273,6 @@ async def run_python(code):
             "autopep8"
         )  # fixes a timing bug where autopep8 is not yet installed when attempting to import
         import autopep8
-
-        # get output_value (last statement) or use local "result"
-        if output_value is None:
-            output_value = globals.get("result", None)
 
         # return array_output if output is an array
         array_output = None
