@@ -1,9 +1,14 @@
-import { Box, Tabs, Tab } from '@mui/material';
+import { Box, Tabs, Tab, Card } from '@mui/material';
 import { useState } from 'react';
 import { cellEvaluationReturnType } from '../../../grid/computations/types';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { colors } from '../../../theme/colors';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
+import {
+  DOCUMENTATION_FORMULAS_URL,
+  DOCUMENTATION_PYTHON_API_URL,
+  DOCUMENTATION_PYTHON_DATA_FRAME_URL,
+  DOCUMENTATION_PYTHON_URL,
+} from '../../../constants/urls';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 
 interface ConsoleProps {
@@ -75,20 +80,49 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
         <TabPanel value={activeTabIndex} index={1}>
           {editorMode === 'PYTHON' ? (
             <>
-              <p>Quadratic allows you to leverage the power of Python to fetch, script, and compute cell data.</p>
               <p>
-                Pandas, NumPy, and SciPy are included by default. Micropip is also available for installing any
-                third-party libraries you need.
+                <p>Print statements and errors are piped to the CONSOLE tab.</p>
+                To return data to the grid, either the last statement from your code is returned or a special variable
+                called <span style={{ color: 'grey', fontStyle: 'italic' }}>`result`</span>.
+                <br />
+                <br /> Example:
+                <Card variant="outlined">
+                  <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>2</span> *{' '}
+                  <span style={{ color: 'blue' }}>2</span>
+                  <br></br>
+                  <br />↳ 4 # number returned as the cell value
+                </Card>
+                <br />
+                <br /> Example:
+                <Card variant="outlined">
+                  <span style={{ color: 'grey' }}>1</span> result = <span style={{ color: 'blue' }}>[]</span>
+                  <br />
+                  <span style={{ color: 'grey' }}>2</span> <span style={{ color: 'red' }}>for</span> x{' '}
+                  <span style={{ color: 'red' }}>in </span>
+                  <span style={{ color: 'blue' }}>range</span>(100):
+                  <br></br>
+                  <span style={{ color: 'grey' }}>3</span> {'  '}
+                  result.<span style={{ color: 'blue' }}>append</span>(x)
+                  <br></br>
+                  <br />↳ [0, 1, 2, ..., 99] # returns 100 cells counting from 0 to 99
+                </Card>
+              </p>
+              <p>Advanced Topics:</p>
+              <p>
+                Learn how to <LinkNewTab href={DOCUMENTATION_PYTHON_API_URL}>fetch data from an API.</LinkNewTab>
+              </p>
+              <p>
+                Read about <LinkNewTab href={DOCUMENTATION_PYTHON_DATA_FRAME_URL}>using Pandas DataFrames.</LinkNewTab>
               </p>
               <p>
                 <LinkNewTab href={DOCUMENTATION_PYTHON_URL}>Check out the docs</LinkNewTab> to learn more about using
-                Python.
+                Python in Quadratic.
               </p>
             </>
           ) : (
             <>
               <p>Quadratic allows you to use the familiar spreadsheet formula language.</p>
-              <p>Negative cells are referenced like `ZAn2`. This is referencing cell -1, -2. Letter case matters.</p>
+              <p>Negative cells are referenced like `nAn2`. This is referencing cell -1, -2. Letter case matters.</p>
               <p>
                 <LinkNewTab href={DOCUMENTATION_FORMULAS_URL}>Check out the docs</LinkNewTab> to learn more about using
                 Formulas.
