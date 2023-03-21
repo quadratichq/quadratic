@@ -133,16 +133,16 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
             </>
           ) : (
             <>
-              <p>Quadratic allows you to use the familiar spreadsheet formula language.</p>
-              <h3>Referencing Cells</h3>
-              In the positive Quadrant cells are referenced similar to other spreadsheets. In the negative Quadrant,
-              cells are referenced using a `n` prefix. See examples below.
-              <br></br> Example:
+              <h3>Spreadsheet Formulas</h3>
+              <p>Quadratic allows you to use the familiar spreadsheet formula language.</p> Example:
               <Card variant="outlined">
                 <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>SUM</span>(A0:A99)
                 <br />↳ Returns the SUM of cells A0 to A99
                 <br></br>
               </Card>
+              <h3>Referencing Cells</h3>
+              In the positive Quadrant cells are referenced similar to other spreadsheets. In the negative Quadrant,
+              cells are referenced using a `n` prefix. See examples below.
               <table>
                 <tbody>
                   <tr>
@@ -308,9 +308,10 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
                 <br></br>
                 <span style={{ color: 'grey' }}>5</span> )<br></br>
               </Card>
+              <h3>Full Documentation</h3>
               <p>
-                <LinkNewTab href={DOCUMENTATION_FORMULAS_URL}>Check out the docs</LinkNewTab> to learn more about using
-                Formulas.
+                <LinkNewTab href={DOCUMENTATION_FORMULAS_URL}>Check out the docs</LinkNewTab> to see a full list of
+                supported formulas and documentation for how to use specific formula functions.
               </p>
               <br></br>
             </>
