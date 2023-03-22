@@ -6,24 +6,20 @@ import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useContext } from 'react';
-import { AppContext } from '../../../QuadraticUI';
+import { LocalFilesContext } from '../../../QuadraticUIContext';
 
 const ListItems = [
   {
     label: 'File: New',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const {
-        localFiles: { newFile },
-      } = useContext(AppContext);
+      const { newFile } = useContext(LocalFilesContext);
       return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={newFile} />;
     },
   },
   {
     label: 'File: Save local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const {
-        localFiles: { downloadQuadraticFile },
-      } = useContext(AppContext);
+      const { downloadQuadraticFile } = useContext(LocalFilesContext);
       return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => downloadQuadraticFile()} />;
     },
   },

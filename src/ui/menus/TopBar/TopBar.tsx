@@ -11,22 +11,25 @@ import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { IS_READONLY_MODE } from '../../../constants/app';
-
+import { LocalFilesContext } from '../../QuadraticUIContext';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
 import { ManageSearch } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
-import { AppContext } from '../../QuadraticUI';
 
-export const TopBar = () => {
+interface IProps {
+  app: PixiApp;
+  sheetController: SheetController;
+}
+
+export const TopBar = (props: IProps) => {
+  const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const {
-    localFiles: { currentFilename, renameFile },
-    app,
-    sheetController,
-  } = useContext(AppContext);
+  const { currentFilename, renameFile } = useContext(LocalFilesContext);
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
 
   const settings = useGridSettings();
@@ -202,7 +205,7 @@ export const TopBar = () => {
             </Tooltip> */}
           </>
         )}
-        <ZoomDropdown />
+        <ZoomDropdown app={app} />
       </Box>
     </div>
   );

@@ -18,7 +18,7 @@ import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionState
 import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
-import { AppContext } from '../../../QuadraticUI';
+import { LocalFilesContext } from '../../../QuadraticUIContext';
 
 interface Props {
   sheetController: SheetController;
@@ -32,9 +32,7 @@ export const QuadraticMenu = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
 
-  const {
-    localFiles: { newFile, downloadQuadraticFile },
-  } = useContext(AppContext);
+  const { newFile, downloadQuadraticFile } = useContext(LocalFilesContext);
 
   const { isAuthenticated, user, logout } = useAuth0();
 

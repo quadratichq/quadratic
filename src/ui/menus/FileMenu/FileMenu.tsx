@@ -41,7 +41,7 @@ import { useLocalFiles } from '../../../storage/useLocalFiles';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
-import { AppContext } from '../../QuadraticUI';
+import { LocalFilesContext } from '../../QuadraticUIContext';
 
 interface FileMenuProps {
   app: PixiApp;
@@ -53,9 +53,7 @@ export type onCloseFn = (arg?: { reset: boolean }) => void;
 export function FileMenu(props: FileMenuProps) {
   const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const {
-    localFiles: { currentFileId, currentFilename, deleteFile, fileList, load, newFile },
-  } = useContext(AppContext);
+  const { currentFileId, currentFilename, deleteFile, fileList, load, newFile } = useContext(LocalFilesContext);
 
   const onClose: onCloseFn = ({ reset } = { reset: false }) => {
     if (reset) {

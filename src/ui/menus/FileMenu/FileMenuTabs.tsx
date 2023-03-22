@@ -21,7 +21,7 @@ import { ChangeEvent, ReactNode, SyntheticEvent, useCallback, useContext, useRef
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 import { QuadraticLoading } from '../../loading/QuadraticLoading';
 import { onCloseFn } from './FileMenu';
-import { AppContext } from '../../QuadraticUI';
+import { LocalFilesContext } from '../../QuadraticUIContext';
 
 // TODO work on descriptions
 const examples = [
@@ -99,9 +99,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const importURLInput = useRef<HTMLInputElement | null>(null);
   const theme = useTheme();
-  const {
-    localFiles: { importLocalFile, loadQuadraticFile, loadSample },
-  } = useContext(AppContext);
+  const { importLocalFile, loadQuadraticFile, loadSample } = useContext(LocalFilesContext);
   const importFileButton = useRef<HTMLInputElement | null>(null);
 
   const importFile = useCallback(
