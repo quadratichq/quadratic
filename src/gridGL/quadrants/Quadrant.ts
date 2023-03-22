@@ -84,7 +84,7 @@ export class Quadrant extends Container {
     if (sprite) {
       // reuse existing sprite and resize texture if needed
       if (sprite.texture.width !== width || sprite.texture.height !== height) {
-        sprite.texture.resize(width, height);
+        sprite.texture.resize(width, height, true);
       }
       sprite.visible = true;
     } else {
@@ -160,7 +160,7 @@ export class Quadrant extends Container {
           const textureWidth = (reducedDrawingRectangle.width - trimLeft - trimRight) * QUADRANT_SCALE;
           const textureHeight = (reducedDrawingRectangle.height - trimTop - trimBottom) * QUADRANT_SCALE;
 
-          // only create subQuadrants when there is content
+          // skip quadrants that have no size
           if (textureWidth <= 0 || textureHeight <= 0) continue;
 
           const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, textureWidth, textureHeight);

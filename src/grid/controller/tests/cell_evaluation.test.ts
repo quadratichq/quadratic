@@ -236,7 +236,7 @@ test('SheetController - test array formula', async () => {
     y: 0,
     value: '',
     type: 'FORMULA',
-    formula_code: 'Z0:Z2 * 2',
+    formula_code: 'A0:A2 * 2',
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
@@ -245,7 +245,7 @@ test('SheetController - test array formula', async () => {
   const after_code_run_cells = sc.sheet.grid.getNakedCells(1, 0, 1, 2);
   expect(after_code_run_cells[0]?.value).toBe('2');
   expect(after_code_run_cells[0]?.python_code).toBeUndefined();
-  expect(after_code_run_cells[0]?.formula_code).toBe('Z0:Z2 * 2');
+  expect(after_code_run_cells[0]?.formula_code).toBe('A0:A2 * 2');
   expect(after_code_run_cells[0]?.evaluation_result?.std_out).toBeUndefined();
   expect(after_code_run_cells[0]?.last_modified).toBeDefined();
   expect(after_code_run_cells[0]?.type).toBe('FORMULA');
@@ -280,7 +280,8 @@ test('SheetController - test DataFrame resizing', async () => {
     python_code: `result = []
 repeat = int(c(0,0))
 for x in range(0, repeat):
-  result.append(x + repeat)`,
+  result.append(x + repeat)
+result`,
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
