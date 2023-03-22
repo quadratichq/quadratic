@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import QuadraticUI from '../ui/QuadraticUI';
+import QuadraticUIContext from '../ui/QuadraticUIContext';
 import { RecoilRoot } from 'recoil';
 import { useLoading } from '../contexts/LoadingContext';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
@@ -8,16 +8,12 @@ import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../gridGL/loadAssets';
 import { IS_READONLY_MODE } from '../constants/app';
 import { debugSkipPythonLoad } from '../debugFlags';
-import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import { localFiles } from '../grid/sheet/localFiles';
-import { SheetController } from '../grid/controller/sheetController';
 import init, { hello } from 'quadratic-core';
 import { useGridSettings } from '../ui/menus/TopBar/SubMenus/useGridSettings';
 
 export const QuadraticApp = () => {
   const { loading, incrementLoadingCount } = useLoading();
-  const [sheet_controller] = useState<SheetController>(new SheetController());
-  const sheet = sheet_controller.sheet;
   const { setPresentationMode } = useGridSettings();
   const [settingsReset, setSettingsReset] = useState(false);
 
@@ -53,17 +49,12 @@ export const QuadraticApp = () => {
     }
   }, [loading, incrementLoadingCount]);
 
-  useEffect(() => {
-    // temporary way to attach sheet to global for use in GetCellsDB function
-    GetCellsDBSetSheet(sheet);
-  }, [sheet]);
-
   return (
     <RecoilRoot>
       {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
       <AnalyticsProvider></AnalyticsProvider>
       {/* Provider of All React UI Components */}
-      {!loading && <QuadraticUI sheetController={sheet_controller} />}
+      {!loading && <QuadraticUIContext />}
       {/* Loading screen */}
       {loading && <QuadraticLoading></QuadraticLoading>}
     </RecoilRoot>

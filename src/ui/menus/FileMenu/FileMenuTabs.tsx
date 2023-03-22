@@ -15,14 +15,13 @@ import {
   Box,
   Backdrop,
 } from '@mui/material';
-import { SheetController } from '../../../grid/controller/sheetController';
 import { InsertDriveFileOutlined } from '@mui/icons-material';
 import { LinkNewTab } from '../../components/LinkNewTab';
-import { useLocalFiles } from '../../../storage/useLocalFiles';
-import { ChangeEvent, ReactNode, SyntheticEvent, useCallback, useRef, useState } from 'react';
+import { ChangeEvent, ReactNode, SyntheticEvent, useCallback, useContext, useRef, useState } from 'react';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 import { QuadraticLoading } from '../../loading/QuadraticLoading';
 import { onCloseFn } from './FileMenu';
+import { LocalFilesContext } from '../../QuadraticUIContext';
 
 // TODO work on descriptions
 const examples = [
@@ -88,20 +87,19 @@ function a11yProps(index: number) {
 }
 
 interface FileMenuTabsProps {
-  sheetController: SheetController;
   onClose: onCloseFn;
   onNewFile: () => void;
 }
 
 export default function FileMenuTabs(props: FileMenuTabsProps) {
-  const { onClose, onNewFile, sheetController } = props;
+  const { onClose, onNewFile } = props;
   const [value, setValue] = useState(0);
   const [importLocalError, setImportLocalError] = useState<boolean>(false);
   const [importURLError, setImportURLError] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const importURLInput = useRef<HTMLInputElement | null>(null);
   const theme = useTheme();
-  const { importLocalFile, loadQuadraticFile, loadSample } = useLocalFiles(sheetController);
+  const { importLocalFile, loadQuadraticFile, loadSample } = useContext(LocalFilesContext);
   const importFileButton = useRef<HTMLInputElement | null>(null);
 
   const importFile = useCallback(

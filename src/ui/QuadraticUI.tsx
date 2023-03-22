@@ -8,34 +8,30 @@ import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import CommandPalette from './menus/CommandPalette';
 import GoTo from './menus/GoTo';
-import { useEffect, useState } from 'react';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import { SheetController } from '../grid/controller/sheetController';
+import { useEffect } from 'react';
 import CellTypeMenu from './menus/CellTypeMenu';
 import FileMenu from './menus/FileMenu';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
-import { useLocalFiles } from '../storage/useLocalFiles';
 import { CSVImportHelpMessage } from './overlays/CSVImportHelpMessage';
+import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
+import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../grid/controller/sheetController';
 
-interface Props {
-  sheetController: SheetController;
-}
-
-export default function QuadraticUI(props: Props) {
+export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
 
-  const { sheetController } = props;
-
-  const { save } = useLocalFiles(props.sheetController);
-  const [app] = useState(() => new PixiApp(props.sheetController, save));
-
   useEffect(() => {
     sheetController.setApp(app);
   }, [sheetController, app]);
+
+  // Temporary way to attach sheet to global for use in GetCellsDB function
+  useEffect(() => {
+    GetCellsDBSetSheet(sheetController.sheet);
+  }, [sheetController.sheet]);
 
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {

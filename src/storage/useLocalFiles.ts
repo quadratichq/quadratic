@@ -7,12 +7,10 @@ import { getURLParameter } from '../helpers/getURL';
 import { downloadFile } from './downloadFile';
 import { SheetController } from '../grid/controller/sheetController';
 import { useRecoilState } from 'recoil';
-import { fileAtom } from '../atoms/fileAtom';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 
 const INDEX = 'index';
 const VERSION = '1.0';
-let hookLoaded = false;
 
 export interface LocalFile {
   filename: string;
@@ -20,38 +18,32 @@ export interface LocalFile {
   modified: number;
 }
 
-interface LocalFiles {
-  loaded: boolean;
+export interface LocalFiles {
   fileList: LocalFile[];
   currentFilename: string;
   currentFileId: string;
   load: (id: string) => Promise<GridFileSchemaV1 | undefined>;
   save: () => Promise<void>;
   loadQuadraticFile: (url: string) => Promise<boolean>;
-  newFile: (filename?: string) => Promise<void>;
-  saveQuadraticFile: (autoDownload: boolean) => GridFileSchemaV1 | undefined;
+  newFile: () => Promise<void>;
+  downloadQuadraticFile: () => void;
   loadSample: (sample: string) => Promise<boolean>;
   renameFile: (filename: string) => Promise<void>;
   importLocalFile: (file: File) => Promise<boolean>;
   deleteFile: (id: string) => void;
 }
 
-function log(...s: string[]): void {
-  if (debugShowFileIO) console.log(`[useLocalFiles] ${s[0]}`, ...s.slice(1));
-}
-
 export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
-  const [fileState, setFileState] = useRecoilState(fileAtom);
+  const [hookLoaded, setHookLoaded] = useState<boolean>(false);
+  const [fileListIndex, setFileListIndex] = useState<LocalFile[]>([]);
+  const [currentFileContents, setCurrentFileContents] = useState<GridFileSchemaV1 | null>(null);
+  // TODO Move this recoil state into the hook
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-
   const { sheet } = sheetController;
-  const [loaded, setLoaded] = useState(false);
 
   const afterLoad = useCallback(
     (grid: GridFileSchemaV1) => {
-      setFileState((state) => {
-        return { ...state, lastFileContents: grid };
-      });
+      setCurrentFileContents(grid);
       sheetController.clear();
       sheetController.sheet.load_file(grid);
       sheetController.app?.rebuild();
@@ -60,31 +52,36 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       const url = `${window.location.href.split('?')[0]}?${searchParams.toString()}`;
       window.history.replaceState(undefined, '', url);
     },
-    [setFileState, sheetController]
+    [setCurrentFileContents, sheetController]
   );
 
+  // Rename `saveAndPersistFileListIndex` - Save index to react state, then persist to local storage
   const saveIndex = useCallback(
-    async (index: LocalFile[]): Promise<void> => {
-      index = index.sort((a, b) => b.modified - a.modified);
-      setFileState((oldFileState) => ({ ...oldFileState, index: index, loaded: true }));
-      await localforage.setItem(INDEX, index);
-      log(`setting index with ${index.length} file${index.length > 1 ? 's' : ''}`);
+    async (newFileListIndex: LocalFile[]): Promise<void> => {
+      newFileListIndex.sort((a, b) => b.modified - a.modified); // TODO sort here? Or elsewhere
+      setFileListIndex(newFileListIndex);
+      await localforage.setItem(INDEX, newFileListIndex);
+      log(`setting index with ${newFileListIndex.length} file${newFileListIndex.length > 1 ? 's' : ''}`);
     },
-    [setFileState]
+    [setFileListIndex]
   );
 
+  // Rename `saveAndPersistActiveFile` - save file to react state, then localstorage
+  // note: saveFile and afterLoad are both setting local state
   const saveFile = useCallback(
     async (file: GridFileSchemaV1): Promise<void> => {
-      setFileState((oldFileState) => ({ ...oldFileState, lastFileContents: file }));
+      setCurrentFileContents(file);
       await localforage.setItem(file.id, file);
       log(`Saved ${file.filename} (${file.id})`);
     },
-    [setFileState]
+    [setCurrentFileContents]
   );
 
+  // ?? load a local file from the index
+  // TODO probably move this directly into the one spot we use it
   const load = useCallback(
-    async (id: string, index: LocalFile[] = fileState.index): Promise<GridFileSchemaV1 | undefined> => {
-      if (!fileState.index || !index.find((entry) => entry.id === id)) {
+    async (id: string, index: LocalFile[] = fileListIndex): Promise<GridFileSchemaV1 | undefined> => {
+      if (!fileListIndex || !index.find((entry) => entry.id === id)) {
         throw new Error('Trying to load a local file that does not exist in the file index');
       }
       const result = await localforage.getItem(id);
@@ -102,41 +99,17 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
       return file;
     },
-    [fileState, afterLoad]
+    [fileListIndex, afterLoad]
   );
 
-  const validateFile = useCallback((file: GridFileSchemaV1, explainWhy?: boolean): boolean => {
-    const expected = [
-      'cells',
-      'formats',
-      'columns',
-      'rows',
-      'borders',
-      'cell_dependency',
-      'version',
-      'modified',
-      'created',
-      'id',
-      'filename',
-    ];
-    for (const key of expected) {
-      if (!(file as any)[key]) {
-        if (explainWhy) {
-          console.log(`${key} is not properly defined`);
-        }
-        return false;
-      }
-    }
-    return true;
-  }, []);
-
+  // importFile - take a file and 1) save file to LS, 2) save file meta to index, 3) save to react state
   const importQuadraticFile = useCallback(
     async (gridFileJSON: GridFileSchemaV1): Promise<boolean> => {
       if (validateFile(gridFileJSON)) {
         const newFileIndex = { filename: gridFileJSON.filename, id: uuid(), modified: Date.now() };
         const newFile = { ...gridFileJSON, ...newFileIndex };
         await saveFile(newFile);
-        await saveIndex([newFile, ...fileState.index]);
+        await saveIndex([newFile, ...fileListIndex]);
         afterLoad(newFile);
         log(`import success: ${gridFileJSON.filename} (${gridFileJSON.id})`);
         return true;
@@ -146,7 +119,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         return false;
       }
     },
-    [afterLoad, fileState.index, saveFile, saveIndex, validateFile]
+    [afterLoad, fileListIndex, saveFile, saveIndex]
   );
 
   /** imports an external Quadratic file -- new id is always created */
@@ -171,6 +144,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     [importQuadraticFile]
   );
 
+  // TODO Rename to match `importQuadraticFile` like `loadSampleQuadraticFile`
   const loadSample = useCallback(
     async (sample: string): Promise<boolean> => {
       return await loadQuadraticFile(`/examples/${sample}`);
@@ -181,20 +155,22 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   useEffect(() => {
     // ensure this only runs once
     if (hookLoaded) return;
-    hookLoaded = true;
+    setHookLoaded(true);
 
     localforage.config({ name: 'Quadratic', version: 1 });
     log('initialized localForage');
 
     // clear and load example file (for debugging purposes -- does not overwrite browser data)
+    // TODO this doesn't work
     if (getURLParameter('clear') === '1') {
       localforage.clear();
-      setFileState({ index: [], loaded: true });
+      setFileListIndex([]);
       log('clear requested. Loading example file');
       loadSample('default.grid');
       return;
     }
 
+    // TODO read & refactor this
     localforage.getItem(INDEX).then((result: unknown) => {
       let hasIndex = false;
       let index: LocalFile[];
@@ -202,14 +178,15 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         hasIndex = true;
         index = result as LocalFile[];
         index.sort((a, b) => b.modified - a.modified);
-        setFileState({ index, loaded: true });
+        setFileListIndex(index);
         log(`loaded index with ${index.length} files`);
       } else {
         index = [];
-        setFileState({ index, loaded: true });
+        setFileListIndex(index);
         log('index not found');
       }
-      setLoaded(true);
+
+      // TODO async these
       const file = getURLParameter('file');
       if (file) {
         loadQuadraticFile(file);
@@ -220,8 +197,9 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         load(local, index);
         return;
       }
+
       if (!hasIndex) {
-        setFileState({ index: [], loaded: true });
+        setFileListIndex([]);
         log('loading example file');
         loadSample('default.grid');
       } else {
@@ -235,24 +213,25 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     loadSample,
     loadQuadraticFile,
     load,
-    fileState.loaded,
-    setFileState,
+    setFileListIndex,
     setEditorInteractionState,
     editorInteractionState,
+    hookLoaded,
   ]);
 
+  // saveActiveFile
   const save = useCallback(async (): Promise<void> => {
-    if (!fileState.lastFileContents) {
-      throw new Error('Expected fileState.lastFileContents to be defined when saving a file');
+    if (!currentFileContents) {
+      throw new Error('Expected state `currentFileContents` to be defined when saving a file');
     }
 
     // update file
     const modified = Date.now();
-    const updatedFile = { ...fileState.lastFileContents, ...sheet.export_file(), modified };
+    const updatedFile = { ...currentFileContents, ...sheet.export_file(), modified };
     await saveFile(updatedFile);
     await saveIndex(
-      fileState.index.map((entry) => {
-        if (entry.id === fileState.lastFileContents?.id) {
+      fileListIndex.map((entry) => {
+        if (entry.id === currentFileContents?.id) {
           return {
             ...entry,
             modified,
@@ -261,7 +240,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         return entry;
       })
     );
-  }, [fileState.index, fileState.lastFileContents, saveFile, saveIndex, sheet]);
+  }, [fileListIndex, currentFileContents, saveFile, saveIndex, sheet]);
 
   useEffect(() => {
     if (sheetController.app) {
@@ -269,100 +248,75 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     }
   }, [save, sheetController.app]);
 
-  const createFilename = useCallback(
-    (filename?: string): string => {
-      if (filename) return filename;
-      const count = fileState.index.filter(
-        (entry) => entry.filename.substring(0, 'Untitled'.length) === 'Untitled'
-      ).length;
-      if (count) {
-        return `Untitled ${count + 1}`;
-      }
-      return 'Untitled';
-    },
-    [fileState.index]
-  );
+  const newFile = useCallback(async (): Promise<void> => {
+    // create a new file
+    const grid: GridFileData = {
+      cells: [],
+      formats: [],
+      columns: [],
+      rows: [],
+      borders: [],
+      cell_dependency: '',
 
-  const newFile = useCallback(
-    async (filename?: string): Promise<void> => {
-      // create file
-      const grid: GridFileData = {
-        cells: [],
-        formats: [],
-        columns: [],
-        rows: [],
-        borders: [],
-        cell_dependency: '',
+      // todo: this goes away when alignment branch is merged
+      render_dependency: [],
+    };
 
-        // todo: this goes away when alignment branch is merged
-        render_dependency: [],
-      };
-      filename = createFilename(filename);
-      const created = Date.now();
-      const newFile: GridFileSchemaV1 = {
-        ...grid,
-        id: uuid(),
-        created,
-        version: VERSION,
-        modified: created,
-        filename: filename || 'Untitled',
-      };
-      await saveFile(newFile);
-      await saveIndex([{ filename: newFile.filename, id: newFile.id, modified: newFile.modified }, ...fileState.index]);
-      afterLoad(newFile);
-    },
-    [afterLoad, createFilename, fileState.index, saveFile, saveIndex]
-  );
+    const created = Date.now();
+    const newFile: GridFileSchemaV1 = {
+      ...grid,
+      id: uuid(),
+      created,
+      version: VERSION,
+      modified: created,
+      filename: createFilename(fileListIndex),
+    };
+    await saveFile(newFile);
+    await saveIndex([{ filename: newFile.filename, id: newFile.id, modified: newFile.modified }, ...fileListIndex]);
+    afterLoad(newFile);
+  }, [afterLoad, fileListIndex, saveFile, saveIndex]);
 
-  const saveQuadraticFile = useCallback(
-    (autoDownload: boolean): GridFileSchemaV1 | undefined => {
-      if (!fileState.lastFileContents) return;
-      const data: GridFileSchemaV1 = {
-        ...fileState.lastFileContents,
-        ...sheet.export_file(),
-        version: VERSION,
-        modified: fileState.lastFileContents?.modified,
-      };
+  // Download quadratic file
+  const downloadQuadraticFile = useCallback(() => {
+    if (!currentFileContents) return;
+    const data: GridFileSchemaV1 = {
+      ...currentFileContents,
+      ...sheet.export_file(),
+      version: VERSION,
+      modified: currentFileContents?.modified,
+    };
 
-      //  auto download file
-      if (autoDownload) downloadFile(data.filename, JSON.stringify(data));
-
-      return data;
-    },
-    [fileState.lastFileContents, sheet]
-  );
+    // auto download file
+    downloadFile(data.filename, JSON.stringify(data));
+  }, [currentFileContents, sheet]);
 
   const currentFilename = useMemo(() => {
-    return fileState.lastFileContents?.filename || '';
-  }, [fileState.lastFileContents?.filename]);
+    return currentFileContents?.filename || '';
+  }, [currentFileContents?.filename]);
 
   const currentFileId = useMemo(() => {
-    return fileState.lastFileContents?.id || '';
-  }, [fileState.lastFileContents?.id]);
+    return currentFileContents?.id || '';
+  }, [currentFileContents?.id]);
 
   const renameFile = useCallback(
-    async (filename: string): Promise<void> => {
-      if (!fileState.lastFileContents) throw new Error('Expected lastFileContents to be defined in renameFile');
-      await saveFile({ ...fileState.lastFileContents, filename });
+    async (newFilename: string): Promise<void> => {
+      if (!currentFileContents) throw new Error('Expected lastFileContents to be defined in renameFile');
+      await saveFile({ ...currentFileContents, filename: newFilename });
       await saveIndex(
-        fileState.index.map((entry) => {
-          if (entry.id === fileState.lastFileContents?.id) {
+        fileListIndex.map((entry) => {
+          if (entry.id === currentFileContents?.id) {
             return {
               ...entry,
-              filename,
+              filename: newFilename,
+              modified: Date.now(),
             };
           }
           return entry;
         })
       );
-      log(
-        'Renamed file from `%s` to `%s` (%s)',
-        fileState.lastFileContents.filename,
-        filename,
-        fileState.lastFileContents?.id
-      );
+      log('Renamed file from `%s` to `%s` (%s)', currentFileContents.filename, newFilename, currentFileContents?.id);
     },
-    [fileState.lastFileContents, fileState.index, saveFile, saveIndex]
+    [currentFileContents, fileListIndex, saveFile, saveIndex]
   );
 
   const importLocalFile = useCallback(
@@ -371,7 +325,6 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         const reader = new FileReader();
         reader.onload = (event) => {
           const json = event.target?.result;
-          console.log(event);
           if (json) {
             const parsedFile = JSON.parse(json as string) as GridFileSchemaV1;
             parsedFile.filename = massageFilename(file.name);
@@ -388,25 +341,24 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
   const deleteFile = useCallback(
     async (id: string) => {
-      if (!fileState.index || !fileState.index.find((entry) => entry.id === id)) {
+      if (!fileListIndex || !fileListIndex.find((entry) => entry.id === id)) {
         throw new Error('Trying to load a local file that does not exist in the file index');
       }
-      saveIndex(fileState.index.filter((entry) => entry.id !== id));
+      saveIndex(fileListIndex.filter((entry) => entry.id !== id));
       await localforage.removeItem(id);
       log(`deleted file (${id})`);
     },
-    [fileState.index, saveIndex]
+    [fileListIndex, saveIndex]
   );
 
   return {
-    loaded,
-    fileList: fileState.index,
+    fileList: fileListIndex,
     currentFilename,
     currentFileId,
     load,
     save,
     loadQuadraticFile,
-    saveQuadraticFile,
+    downloadQuadraticFile,
     loadSample,
     newFile,
     renameFile,
@@ -424,4 +376,38 @@ function massageFilename(str: string | undefined): string {
 
   const extension = '.grid';
   return str.endsWith(extension) ? str.slice(0, str.length - extension.length) : str;
+}
+
+function validateFile(file: GridFileSchemaV1, explainWhy?: boolean): boolean {
+  const expected = [
+    'cells',
+    'formats',
+    'columns',
+    'rows',
+    'borders',
+    'cell_dependency',
+    'version',
+    'modified', // TODO older files that don't have modified should still be valid we just add it
+    'created',
+    'id',
+    'filename',
+  ];
+  for (const key of expected) {
+    if (!(file as any)[key]) {
+      if (explainWhy) {
+        console.log(`${key} is not properly defined`);
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
+function createFilename(fileListIndex: LocalFile[]): string {
+  const count = fileListIndex.filter(({ filename }) => filename.substring(0, 'Untitled'.length) === 'Untitled').length;
+  return 'Untitled' + (count ? ` ${count + 1}` : '');
+}
+
+function log(...s: string[]): void {
+  if (debugShowFileIO) console.log(`[useLocalFiles] ${s[0]}`, ...s.slice(1));
 }

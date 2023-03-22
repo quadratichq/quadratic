@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Box, Typography, IconButton, InputBase } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -11,8 +11,8 @@ import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { IS_READONLY_MODE } from '../../../constants/app';
+import { LocalFilesContext } from '../../QuadraticUIContext';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { useLocalFiles } from '../../../storage/useLocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -27,8 +27,9 @@ interface IProps {
 }
 
 export const TopBar = (props: IProps) => {
+  const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFilename, renameFile } = useLocalFiles(props.sheetController);
+  const { currentFilename, renameFile } = useContext(LocalFilesContext);
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
 
   const settings = useGridSettings();
@@ -67,12 +68,12 @@ export const TopBar = (props: IProps) => {
           alignItems: 'center',
         }}
       >
-        <QuadraticMenu app={props.app} sheetController={props.sheetController} />
+        <QuadraticMenu app={app} sheetController={sheetController} />
         {!IS_READONLY_MODE && (
           <>
             <DataMenu></DataMenu>
-            <FormatMenu app={props.app} sheet_controller={props.sheetController} />
-            <NumberFormatMenu app={props.app} sheet_controller={props.sheetController}></NumberFormatMenu>
+            <FormatMenu app={app} sheet_controller={sheetController} />
+            <NumberFormatMenu app={app} sheet_controller={sheetController}></NumberFormatMenu>
           </>
         )}
       </Box>
@@ -204,7 +205,7 @@ export const TopBar = (props: IProps) => {
             </Tooltip> */}
           </>
         )}
-        <ZoomDropdown app={props.app} />
+        <ZoomDropdown app={app} />
       </Box>
     </div>
   );
