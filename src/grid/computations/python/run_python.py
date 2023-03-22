@@ -256,6 +256,7 @@ async def run_python(code):
                 attempt_fix_await(code),
                 globals=globals,
                 return_mode="last_expr_or_assign",
+                quiet_trailing_semicolon=False,
             )
 
     except SyntaxError as err:
