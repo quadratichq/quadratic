@@ -14,6 +14,10 @@ export async function setupPython(pyodide: any) {
   await pyodide.registerJsModule('GetCellsDB', GetCellsDB);
   await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
 
+  // install autopep8
+  await pyodide.runPython('import micropip');
+  await pyodide.runPythonAsync('await micropip.install("autopep8")');
+
   // define a global py function called run_python used to run code from cells
   if (typeof window === 'undefined') {
     // Node environment (jest tests)

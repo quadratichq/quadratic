@@ -184,6 +184,13 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
     const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
     setEvalResult(updated_cell?.evaluation_result);
+
+    // Format code and restore cursor position
+    const position: any = editorRef.current?.getPosition();
+    setEditorContent(updated_cell?.evaluation_result?.formatted_code);
+    editorRef.current?.setPosition(position);
+
+    setSelectedCell(updated_cell);
   };
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {

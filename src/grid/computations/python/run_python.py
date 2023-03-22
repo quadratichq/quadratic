@@ -3,15 +3,16 @@ import GetCellsDB
 import sys
 import re
 import traceback
-import pyodide
 import asyncio
-import micropip
 import pandas as pd
 import numpy as np
 import operator
+import autopep8
+import ast
 
+from pyodide import CodeRunner
 from io import StringIO
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 from decimal import Decimal, DecimalException
 
 # todo separate this file out into a Python Package
@@ -247,17 +248,49 @@ async def run_python(code):
     }
 
     sout = StringIO()
+    serr = StringIO()
     output_value = None
+    last_node = None
 
+    # eval user code
     try:
-        # Capture STDOut to sout
         with redirect_stdout(sout):
-            output_value = await pyodide.code.eval_code_async(
-                attempt_fix_await(code),
-                globals=globals,
-                return_mode="last_expr_or_assign",
-                quiet_trailing_semicolon=False,
-            )
+            with redirect_stderr(serr):
+                # preprocess and fix code
+                code_to_run = attempt_fix_await(code)
+                runner = CodeRunner(
+                    code_to_run,
+                    return_mode="last_expr_or_assign",
+                    # globals=globals,
+                    mode="exec",
+                    quiet_trailing_semicolon=False,
+                    flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT,
+                )
+                # print("dir(runner)", dir(runner))
+
+                # print("runner.ast", runner.ast)
+
+                if runner.ast.body:
+                    last_node = runner.ast.body[-1]
+                    # print("last_node", dir(last_node))
+
+                    # take last_node and get the line number
+                    print("last_node.lineno", last_node.lineno)
+                    print("last_node.col_offset", last_node.col_offset)
+                    print("last_node.end_lineno", last_node.end_lineno)
+                    print("last_node.end_col_offset", last_node.end_col_offset)
+
+                    if hasattr(last_node, "value"):
+                        print("value", last_node.value)
+                        print("type", type(last_node.value))
+
+                runner.compile()
+
+                # print("runner.code", runner.code)
+
+                output_value = await runner.run_async(globals=globals)
+
+                print("output_type", type(output_value))
 
     except SyntaxError as err:
         error_class = err.__class__.__name__
@@ -272,10 +305,6 @@ async def run_python(code):
         # full_trace = traceback.format_exc()
     else:
         # Successfully Created a Result
-        await micropip.install(
-            "autopep8"
-        )  # fixes a timing bug where autopep8 is not yet installed when attempting to import
-        import autopep8
 
         # return array_output if output is an array
         array_output = None
@@ -299,11 +328,16 @@ async def run_python(code):
         if isinstance(output_value, pd.Series):
             array_output = output_value.to_numpy().tolist()
 
+        # get info about return type
+        output_description = str(last_node)
+
         return {
             "output_value": str(output_value),
+            "output_description": output_description,
             "array_output": array_output,
             "cells_accessed": cells_accessed,
             "input_python_std_out": sout.getvalue(),
+            "input_python_std_err": serr.getvalue(),
             "success": True,
             "input_python_stack_trace": None,
             "formatted_code": autopep8.fix_code(
@@ -316,6 +350,7 @@ async def run_python(code):
         "array_output": None,
         "cells_accessed": cells_accessed,
         "input_python_std_out": sout.getvalue(),
+        "input_python_std_err": serr.getvalue(),
         "success": False,
         "input_python_stack_trace": "{} on line {}: {}".format(
             error_class, line_number, detail

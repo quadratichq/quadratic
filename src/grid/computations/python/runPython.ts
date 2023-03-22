@@ -3,7 +3,9 @@ export interface runPythonReturnType {
   success: boolean;
   input_python_stack_trace: string;
   input_python_std_out: string;
+  input_python_std_err: string;
   output_value: string | null;
+  output_description: string;
   array_output: (string | number | boolean)[][];
   formatted_code: string;
 }
@@ -25,5 +27,9 @@ export async function runPython(python_code: string, pyodide: any = undefined): 
 
   const output = await pyodide_obj.globals.get('run_python')(python_code);
 
-  return Object.fromEntries(output.toJs()) as runPythonReturnType;
+  const output_obj = Object.fromEntries(output.toJs()) as runPythonReturnType;
+
+  console.log('output_obj', output_obj);
+
+  return output_obj;
 }
