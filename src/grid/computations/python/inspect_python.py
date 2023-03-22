@@ -12,7 +12,6 @@ async def inspect_python(code):
             flags=PyCF_ALLOW_TOP_LEVEL_AWAIT,
         )
     except Exception as e:
-        print("Exception", e)
         return None
 
     if runner.ast.body:
