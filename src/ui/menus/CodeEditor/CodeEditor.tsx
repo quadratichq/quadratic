@@ -26,6 +26,7 @@ import { Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
+import { inspectPython } from '../../../grid/computations/python/inspectPython';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -125,6 +126,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
     editorRef.current?.focus();
     editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
   }, [editorInteractionState.showCodeEditor]);
+
+  // When editor content changes inspect python code
+  useEffect(() => {
+    inspectPython(editorContent || '');
+  }, [editorContent]);
 
   // When cell changes
   useEffect(() => {

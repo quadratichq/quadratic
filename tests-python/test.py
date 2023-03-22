@@ -13,6 +13,9 @@ class mock_pyodide:
     async def eval_code_async(code, globals):
         return exec(code, globals=globals)
 
+    async def CodeRunner():
+        return None
+
 
 class mock_micropip:
     def install(name):
@@ -32,7 +35,6 @@ from run_python import run_python, attempt_fix_await
 
 class TestTesting(IsolatedAsyncioTestCase):
     async def test_run_python(self):
-
         result = await run_python("1 + 1")
 
         # NOTE: this approach bypasses the entire env of Pyodide.

@@ -1,6 +1,7 @@
 import { GetCellsDB } from '../../sheet/Cells/GetCellsDB';
 
 import define_run_python from './run_python.py';
+import define_inspect_python from './inspect_python.py';
 
 declare global {
   // <- [reference](https://stackoverflow.com/a/56458070/11542903)
@@ -22,10 +23,11 @@ export async function setupPython(pyodide: any) {
   if (typeof window === 'undefined') {
     // Node environment (jest tests)
     await pyodide.runPython(define_run_python);
+    await pyodide.runPython(define_inspect_python);
   } else {
     // Browser environment
-    const python_code = await (await fetch(define_run_python)).text();
-    await window.pyodide.runPython(python_code);
+    await window.pyodide.runPython(await (await fetch(define_run_python)).text());
+    await window.pyodide.runPython(await (await fetch(define_inspect_python)).text());
   }
 }
 
