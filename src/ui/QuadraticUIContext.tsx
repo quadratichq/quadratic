@@ -6,8 +6,10 @@ import { LocalFiles } from '../storage/useLocalFiles';
 import QuadraticUI from './QuadraticUI';
 
 export const LocalFilesContext = createContext<LocalFiles>({} as LocalFiles);
-export const PixiAppContext = createContext<PixiApp>({} as PixiApp);
-export const SheetControllerContext = createContext<SheetController>({} as SheetController);
+
+// TODO we'll add these in a separate PR
+// export const PixiAppContext = createContext<PixiApp>({} as PixiApp);
+// export const SheetControllerContext = createContext<SheetController>({} as SheetController);
 
 export default function QuadraticUIContext() {
   const [sheetController] = useState<SheetController>(new SheetController());
@@ -16,11 +18,11 @@ export default function QuadraticUIContext() {
 
   return (
     <LocalFilesContext.Provider value={localFiles}>
-      <PixiAppContext.Provider value={app}>
-        <SheetControllerContext.Provider value={sheetController}>
-          <QuadraticUI app={app} sheetController={sheetController} />
-        </SheetControllerContext.Provider>
-      </PixiAppContext.Provider>
+      {/* <PixiAppContext.Provider value={app}>
+        <SheetControllerContext.Provider value={sheetController}> */}
+      <QuadraticUI app={app} sheetController={sheetController} />
+      {/* </SheetControllerContext.Provider>
+      </PixiAppContext.Provider> */}
     </LocalFilesContext.Provider>
   );
 }

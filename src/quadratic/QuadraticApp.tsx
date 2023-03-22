@@ -8,7 +8,6 @@ import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../gridGL/loadAssets';
 import { IS_READONLY_MODE } from '../constants/app';
 import { debugSkipPythonLoad } from '../debugFlags';
-
 import { localFiles } from '../grid/sheet/localFiles';
 import init, { hello } from 'quadratic-core';
 import { useGridSettings } from '../ui/menus/TopBar/SubMenus/useGridSettings';
