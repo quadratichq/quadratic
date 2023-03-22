@@ -12,8 +12,8 @@ import {
   FormatColorText,
   FormatItalic,
   Percent,
-  MoreVert,
   ContentCopy,
+  MoreHoriz,
 } from '@mui/icons-material';
 import { ControlledMenu, Menu, MenuItem, useMenuState } from '@szhsin/react-menu';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
@@ -26,6 +26,7 @@ import { DecimalDecrease, DecimalIncrease } from '../../icons';
 import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting';
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
 import { MenuLineItem } from '../TopBar/MenuLineItem';
+import { colors } from '../../../theme/colors';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -37,8 +38,14 @@ interface Props {
 }
 
 export const FloatingContextMenu = (props: Props) => {
-  const { interactionState, app, container, sheetController, showContextMenu } = props;
-  const viewport = app.viewport;
+  const {
+    interactionState,
+    app,
+    app: { viewport },
+    container,
+    sheetController,
+    showContextMenu,
+  } = props;
 
   const moreMenu = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
@@ -201,16 +208,17 @@ export const FloatingContextMenu = (props: Props) => {
         style={{
           padding: '2px 4px',
           minHeight: '0px',
+          color: colors.darkGray,
         }}
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton size="small" onClick={() => changeBold(!format.bold)}>
+          <IconButton size="small" onClick={() => changeBold(!format.bold)} color="inherit">
             <FormatBold fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton size="small" onClick={() => changeItalic(!format.italic)}>
+          <IconButton size="small" onClick={() => changeItalic(!format.italic)} color="inherit">
             <FormatItalic fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -219,7 +227,9 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Text color">
-                <IconButton size="small">{<FormatColorText fontSize={iconSize}></FormatColorText>}</IconButton>
+                <IconButton size="small" color="inherit">
+                  <FormatColorText fontSize={iconSize} />
+                </IconButton>
               </TooltipHint>
             </div>
           }
@@ -234,8 +244,8 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Fill color">
-                <IconButton size="small">
-                  <FormatColorFill fontSize={iconSize}></FormatColorFill>
+                <IconButton size="small" color="inherit">
+                  <FormatColorFill fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
             </div>
@@ -247,7 +257,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Borders">
-                <IconButton size="small">
+                <IconButton size="small" color="inherit">
                   <BorderAll fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -260,32 +270,32 @@ export const FloatingContextMenu = (props: Props) => {
         <MenuDivider />
 
         <TooltipHint title="Format as currency">
-          <IconButton size="small" onClick={() => textFormatSetCurrency()}>
+          <IconButton size="small" onClick={() => textFormatSetCurrency()} color="inherit">
             <AttachMoneyOutlined fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as percent">
-          <IconButton size="small" onClick={() => textFormatSetPercentage()}>
+          <IconButton size="small" onClick={() => textFormatSetPercentage()} color="inherit">
             <Percent fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Decrease decimal places">
-          <IconButton size="small" onClick={() => textFormatDecreaseDecimalPlaces()}>
+          <IconButton size="small" onClick={() => textFormatDecreaseDecimalPlaces()} color="inherit">
             <DecimalDecrease fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Increase decimal places">
-          <IconButton size="small" onClick={() => textFormatIncreaseDecimalPlaces()}>
+          <IconButton size="small" onClick={() => textFormatIncreaseDecimalPlaces()} color="inherit">
             <DecimalIncrease fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <MenuDivider />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton size="small" onClick={() => clearAllFormatting()}>
+          <IconButton size="small" onClick={() => clearAllFormatting()} color="inherit">
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -323,14 +333,15 @@ export const FloatingContextMenu = (props: Props) => {
           <span style={{ fontSize: '1rem' }}>123</span>
         </Button> */}
         <MenuDivider />
-        <TooltipHint title="More Commands">
-          <IconButton size="small" onClick={() => moreMenu.toggleMenu()}>
-            <MoreVert />
+        <TooltipHint title="More commands…">
+          <IconButton size="small" onClick={() => moreMenu.toggleMenu()} color="inherit">
+            <MoreHoriz fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
-        <ControlledMenu state={moreMenu.state}>
+        <ControlledMenu state={moreMenu.state} menuStyles={{ padding: '2px 0', color: 'inherit' }}>
           <MenuItem onClick={saveAsPNG}>
             <MenuLineItem
+              size="small"
               primary="Copy selection as PNG"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'}
               Icon={ContentCopy}
