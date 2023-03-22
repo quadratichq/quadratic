@@ -12,7 +12,6 @@ import {
   FormatColorText,
   FormatItalic,
   Percent,
-  ContentCopy,
   MoreHoriz,
 } from '@mui/icons-material';
 import { ControlledMenu, Menu, MenuItem, useMenuState } from '@szhsin/react-menu';
@@ -22,7 +21,7 @@ import { QColorPicker } from '../../components/qColorPicker';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
 import { TooltipHint } from '../../components/TooltipHint';
-import { DecimalDecrease, DecimalIncrease } from '../../icons';
+import { CopyAsPNG, DecimalDecrease, DecimalIncrease } from '../../icons';
 import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting';
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
 import { MenuLineItem } from '../TopBar/MenuLineItem';
@@ -344,7 +343,7 @@ export const FloatingContextMenu = (props: Props) => {
               size="small"
               primary="Copy selection as PNG"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'}
-              Icon={ContentCopy}
+              Icon={CopyAsPNG}
             ></MenuLineItem>
           </MenuItem>
         </ControlledMenu>
