@@ -253,7 +253,10 @@ async def run_python(code):
         # Capture STDOut to sout
         with redirect_stdout(sout):
             output_value = await pyodide.code.eval_code_async(
-                attempt_fix_await(code), globals=globals
+                attempt_fix_await(code),
+                globals=globals,
+                return_mode="last_expr_or_assign",
+                quiet_trailing_semicolon=False,
             )
 
     except SyntaxError as err:
