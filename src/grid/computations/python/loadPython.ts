@@ -16,14 +16,14 @@ export async function setupPython(pyodide: any) {
   await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
 
   // install autopep8
-  await pyodide.runPython('import micropip');
+  await pyodide.runPythonAsync('import micropip');
   await pyodide.runPythonAsync('await micropip.install("autopep8")');
 
   // define a global py function called run_python used to run code from cells
   if (typeof window === 'undefined') {
     // Node environment (jest tests)
-    await pyodide.runPython(define_run_python);
-    await pyodide.runPython(define_inspect_python);
+    await pyodide.runPythonAsync(define_run_python);
+    await pyodide.runPythonAsync(define_inspect_python);
   } else {
     // Browser environment
     await window.pyodide.runPython(await (await fetch(define_run_python)).text());
