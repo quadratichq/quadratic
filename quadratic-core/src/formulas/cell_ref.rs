@@ -81,15 +81,15 @@ impl CellRef {
     /// Parses an A1-style cell reference relative to a given location.
     pub fn parse_a1(s: &str, base: Pos) -> Option<CellRef> {
         lazy_static! {
-            /// ^(\$?)([A-Z]+)(\$?)(n?)(\d+)$
-            /// ^                           $       match full string
+            /// ^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$
+            /// ^                             $     match full string
             ///  (\$?)                              group 1: optional `$`
-            ///       ([A-Z]+)                      group 2: column name
-            ///               (\$?)                 group 3: optional `$`
-            ///                    (n?)             group 4: optional `n`
-            ///                        (\d+)        group 5: row number
+            ///       (n?[A-Z]+)                    group 2: column name
+            ///                 (\$?)               group 3: optional `$`
+            ///                      (n?)           group 4: optional `n`
+            ///                          (\d+)      group 5: row number
             pub static ref A1_CELL_REFERENCE_REGEX: Regex =
-                Regex::new(r#"^(\$?)([A-Z]+)(\$?)(n?)(\d+)$"#).unwrap();
+                Regex::new(r#"^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$"#).unwrap();
         }
 
         let captures = A1_CELL_REFERENCE_REGEX.captures(s)?;
