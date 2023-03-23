@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import localforage from 'localforage';
 import { GridFileData, GridFileSchemaV1 } from './GridFileSchema';
 import { debugShowFileIO } from '../debugFlags';
@@ -36,11 +36,32 @@ export interface LocalFiles {
 
 export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const [hasInitialPageLoadError, setHasInitialPageLoadError] = useState<boolean>(false);
-  const [hookLoaded, setHookLoaded] = useState<boolean>(false);
+  const didMount = useRef(false);
   const [fileList, setFileList] = useState<LocalFile[]>([]);
   const [currentFileContents, setCurrentFileContents] = useState<GridFileSchemaV1 | null>(null);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { sheet } = sheetController;
+
+  // Persist `fileList` to localStorage when it changes
+  useEffect(() => {
+    localforage.setItem(INDEX, fileList).then((newFileList) => {
+      log(`persisted file list: ${newFileList.length} file${newFileList.length > 1 ? 's' : ''}`);
+    });
+  }, [fileList]);
+
+  // Persist `currentFileContents` to localStorage and update the tab title
+  // when it changes
+  useEffect(() => {
+    if (currentFileContents !== null) {
+      const { filename, id } = currentFileContents;
+      localforage.setItem(id, currentFileContents).then(() => {
+        document.title = `${filename} - Quadratic`;
+        log(`persisted current file: ${filename} (${id})`);
+      });
+    } else {
+      document.title = 'Quadratic';
+    }
+  }, [currentFileContents]);
 
   // Reset the sheet to the current file in state, update the URL accordingly
   const resetSheet = useCallback(
@@ -60,29 +81,6 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     [sheetController]
   );
 
-  // Save the file list to react state, then persist it to localStorage
-  const saveAndPersistFileList = useCallback(
-    async (newFileList: LocalFile[]): Promise<void> => {
-      // TODO sort here? Or elsewhere
-      newFileList.sort((a, b) => b.modified - a.modified);
-
-      setFileList(newFileList);
-      await localforage.setItem(INDEX, newFileList);
-      log(`setting index with ${newFileList.length} file${newFileList.length > 1 ? 's' : ''}`);
-    },
-    [setFileList]
-  );
-
-  // Save the current file to react state, then persist it to localstorage
-  const saveAndPersistCurrentFile = useCallback(
-    async (file: GridFileSchemaV1): Promise<void> => {
-      setCurrentFileContents(file);
-      await localforage.setItem(file.id, file);
-      log(`Saved ${file.filename} (${file.id})`);
-    },
-    [setCurrentFileContents]
-  );
-
   // Given a valid file, 1) save it's meta to the file list, 2) save it to react state, 3) and persist it to localStorage
   // A new ID is always created when importing a file
   const importQuadraticFile = useCallback(
@@ -92,8 +90,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       if (validateFile(gridFileJSON)) {
         const newFileListItem = { filename: gridFileJSON.filename, id: uuid(), modified: Date.now() };
         const newFile = { ...gridFileJSON, ...newFileListItem };
-        await saveAndPersistCurrentFile(newFile);
-        await saveAndPersistFileList([newFileListItem, ...fileList]);
+        setCurrentFileContents(newFile);
+        setFileList((oldFileList) => [newFileListItem, ...oldFileList]);
         resetSheet(newFile);
         log(`import success: ${gridFileJSON.filename} (${gridFileJSON.id})`);
         return true;
@@ -103,7 +101,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         return false;
       }
     },
-    [fileList, resetSheet, saveAndPersistCurrentFile, saveAndPersistFileList]
+    [resetSheet]
   );
 
   // Load a remote file over the network
@@ -128,7 +126,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Load an example file
   const loadFileFromExamples = useCallback(
     async (sample: string): Promise<boolean> => {
-      return await loadFileFromUrl(`/examples/${sample}`);
+      return await loadFileFromUrl(`${window.location.origin}/examples/${sample}`);
     },
     [loadFileFromUrl]
   );
@@ -156,13 +154,13 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       modified: created,
       filename: createFilename(fileList),
     };
-    await saveAndPersistCurrentFile(newFile);
-    await saveAndPersistFileList([
+    setCurrentFileContents(newFile);
+    setFileList((oldFileList) => [
       { filename: newFile.filename, id: newFile.id, modified: newFile.modified },
-      ...fileList,
+      ...oldFileList,
     ]);
     resetSheet(newFile);
-  }, [resetSheet, fileList, saveAndPersistCurrentFile, saveAndPersistFileList]);
+  }, [resetSheet, fileList]);
 
   // Download the currently active file
   const downloadCurrentFile = useCallback(() => {
@@ -188,23 +186,25 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Rename the current file open in the app
   const renameCurrentFile = useCallback(
     async (newFilename: string): Promise<void> => {
-      if (!currentFileContents) throw new Error('Expected `lastFileContents` to be defined in `renameCurrentFile`');
-      await saveAndPersistCurrentFile({ ...currentFileContents, filename: newFilename });
-      await saveAndPersistFileList(
-        fileList.map((entry) => {
-          if (entry.id === currentFileContents?.id) {
-            return {
-              ...entry,
-              filename: newFilename,
-              modified: Date.now(),
-            };
-          }
-          return entry;
-        })
+      if (!currentFileContents) throw new Error('Expected `currentFileContents` to rename the current file.');
+      setCurrentFileContents({ ...currentFileContents, filename: newFilename });
+      setFileList((oldFileList) =>
+        oldFileList
+          .map((entry) => {
+            if (entry.id === currentFileContents?.id) {
+              return {
+                ...entry,
+                filename: newFilename,
+                modified: Date.now(),
+              };
+            }
+            return entry;
+          })
+          .sort((a, b) => b.modified - a.modified)
       );
       log('Renamed file from `%s` to `%s` (%s)', currentFileContents.filename, newFilename, currentFileContents?.id);
     },
-    [currentFileContents, fileList, saveAndPersistCurrentFile, saveAndPersistFileList]
+    [currentFileContents]
   );
 
   // Load a file from the user's computer
@@ -228,18 +228,38 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     [importQuadraticFile]
   );
 
-  // Delete a from memory and state (only works for file that's not active)
-  const deleteFile = useCallback(
-    async (id: string) => {
-      if (!fileList || !fileList.find((entry) => entry.id === id)) {
-        throw new Error('Trying to load a local file that does not exist in the file index');
+  // Load a file from memory
+  const loadFileFromMemory = useCallback(
+    async (id: string): Promise<boolean> => {
+      try {
+        const file = (await localforage.getItem(id)) as GridFileSchemaV1;
+        if (!file) {
+          throw new Error(`Unable to load file: \`${id}\`. It doesn’t appear to be a file stored in memory.`);
+        }
+
+        // TODO in the future, this is where we would convert the file format
+        // (if necessary) as file formats persisted in memory may fall out of
+        // date change between app updates
+        // Probably use `importQuadraticFile` file here...
+
+        log(`loaded: ${file.filename} (${file.id})`);
+        setCurrentFileContents(file);
+        resetSheet(file);
+        return true;
+      } catch (e) {
+        console.error(e);
+        return false;
       }
-      await saveAndPersistFileList(fileList.filter((entry) => entry.id !== id));
-      await localforage.removeItem(id);
-      log(`deleted file (${id})`);
     },
-    [fileList, saveAndPersistFileList]
+    [resetSheet]
   );
+
+  // Delete a file (cannot delete a file that's currently active)
+  const deleteFile = useCallback(async (id: string) => {
+    setFileList((oldFileList) => oldFileList.filter((entry) => entry.id !== id));
+    await localforage.removeItem(id);
+    log(`deleted file: ${id}`);
+  }, []);
 
   // Save the active file
   const save = useCallback(async (): Promise<void> => {
@@ -247,51 +267,35 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       throw new Error('Expected state `currentFileContents` to be defined when saving a file');
     }
 
-    // update file
     const modified = Date.now();
     const updatedFile = { ...currentFileContents, ...sheet.export_file(), modified };
-    await saveAndPersistCurrentFile(updatedFile);
-    await saveAndPersistFileList(
-      fileList.map((entry) => {
-        if (entry.id === currentFileContents?.id) {
-          return {
-            ...entry,
-            modified,
-          };
-        }
-        return entry;
-      })
+    setCurrentFileContents(updatedFile);
+    setFileList((oldFileList) =>
+      oldFileList
+        .map((entry) => {
+          if (entry.id === currentFileContents?.id) {
+            return {
+              ...entry,
+              modified,
+            };
+          }
+          return entry;
+        })
+        .sort((a, b) => b.modified - a.modified)
     );
-  }, [fileList, currentFileContents, saveAndPersistCurrentFile, saveAndPersistFileList, sheet]);
+  }, [currentFileContents, sheet]);
 
-  // Load a file from memory
-  const loadFileFromMemory = useCallback(
-    async (id: string): Promise<boolean> => {
-      try {
-        const file = (await localforage.getItem(id)) as GridFileSchemaV1;
-
-        // TODO in the future, this is where we would convert the file format
-        // (if necessary) as file formats persisted in memory may fall out of
-        // date change between app updates
-        // Probably use `importQuadraticFile` file here...
-
-        log(`loaded ${file.filename} (${file.id})`);
-        setCurrentFileContents(file);
-        resetSheet(file);
-        return true;
-      } catch (e) {
-        console.error(`Unable to load file: \`${id}\`. It doesn’t appear to be a file stored in memory.`, e);
-        return false;
-      }
-    },
-    [resetSheet]
-  );
+  useEffect(() => {
+    if (sheetController.app) {
+      sheetController.app.save = save;
+    }
+  }, [save, sheetController.app]);
 
   // Logic for the initial page load
   useEffect(() => {
     // Ensure this only runs once
-    if (hookLoaded) return;
-    setHookLoaded(true);
+    if (didMount.current) return;
+    didMount.current = true;
 
     // Initialize local storage
     localforage.config({ name: 'Quadratic', version: 1 });
@@ -299,6 +303,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
     // Handle initial page load from memory or a fresh slate
     localforage.getItem(INDEX).then(async (result: unknown) => {
+      // Check if there's
+
       // If there's a list of files in memory, load it into the app's state
       let isFirstVisit = true;
       const newFileList = (result ? result : fileList) as LocalFile[];
@@ -322,10 +328,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
           setHasInitialPageLoadError(true);
         }
       } else if (local) {
-        let loaded = false;
-        if (newFileList.find((entry) => entry.id === local)) {
-          loaded = await loadFileFromMemory(local);
-        }
+        const loaded = await loadFileFromMemory(local);
         if (loaded) {
           return;
         } else {
@@ -354,14 +357,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     setFileList,
     setEditorInteractionState,
     editorInteractionState,
-    hookLoaded,
   ]);
-
-  useEffect(() => {
-    if (sheetController.app) {
-      sheetController.app.save = save;
-    }
-  }, [save, sheetController.app]);
 
   return {
     hasInitialPageLoadError,

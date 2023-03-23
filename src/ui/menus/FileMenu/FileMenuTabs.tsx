@@ -23,28 +23,31 @@ import { QuadraticLoading } from '../../loading/QuadraticLoading';
 import { onCloseFn } from './FileMenu';
 import { LocalFilesContext } from '../../QuadraticUIContext';
 
-// TODO work on descriptions
 const examples = [
   {
-    name: 'Quick start',
-    description: 'Intro to the basics of using Quadratic.',
+    name: 'Default',
+    description: 'Quick intro to the basics of using Quadratic.',
     file: 'default.grid',
   },
   {
-    name: 'Using Python',
+    name: 'Python',
     file: 'python.grid',
-    description: 'Returning data to the grid, making API requests, and more.',
+    description: 'Some advanced examples of how to use Python in Quadratic.',
   },
-  { name: 'Airports (large)', file: 'airports_large.grid', description: 'Lorem ipsum santa dolor.' },
-  { name: 'Airports (distance)', file: 'airport_distance.grid', description: 'Lorem ipsum santa dolor.' },
+  { name: 'Airports large', file: 'airports_large.grid', description: 'Lorem ipsum santa dolor.' },
+  { name: 'Airports distance', file: 'airport_distance.grid', description: 'Lorem ipsum santa dolor.' },
   { name: 'Expenses', file: 'expenses.grid', description: 'Example of spreadsheet-style budgeting.' },
   {
     name: 'Monte Carlo simulation',
     file: 'monte_carlo_simulation.grid',
     description: 'Working with large sets of data',
   },
-  { name: 'Startup portfolio', file: 'startup_portfolio.grid', description: 'Lorem ipsum santa dolor.' },
-].map((item) => ({ ...item, name: item.name + ' (Example)' }));
+  {
+    name: 'Startup portfolio',
+    file: 'startup_portfolio.grid',
+    description: 'Example with calculations from formulas and Python.',
+  },
+];
 
 interface TabPanelProps {
   children?: ReactNode;

@@ -38,13 +38,15 @@ export function keyboardViewport(options: {
 
   if (!viewport || event.altKey) return false;
 
-  // Should come before other shortcuts (toggles open file view)
+  // Should come before other shortcuts (opens file menu)
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyO') {
-    setEditorInteractionState({
-      ...editorInteractionState,
-      showFileMenu: !editorInteractionState.showFileMenu,
-    });
-    return true;
+    if (!editorInteractionState.showFileMenu) {
+      setEditorInteractionState({
+        ...editorInteractionState,
+        showFileMenu: !editorInteractionState.showFileMenu,
+      });
+      return true;
+    }
   }
   // If file menu is open, don't accept any other shortcuts
   if (editorInteractionState.showFileMenu) return false;
