@@ -67,7 +67,7 @@ export const FloatingContextMenu = (props: Props) => {
   // close moreMenu when context menu closes
   useEffect(() => {
     if (menuDiv.current?.style.visibility === 'hidden' && moreMenu.state === 'open') moreMenu.toggleMenu();
-  }, [showContextMenu, moreMenu]);
+  }, [menuDiv.current?.style.visibility, moreMenu]);
 
   // Function used to move and scale the Input with the Grid
   const updateContextMenuCSSTransform = useCallback(() => {
