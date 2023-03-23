@@ -8,21 +8,24 @@ import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import CommandPalette from './menus/CommandPalette';
 import GoTo from './menus/GoTo';
-import { useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import CellTypeMenu from './menus/CellTypeMenu';
 import FileMenu from './menus/FileMenu';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
+import InitialPageLoadError from './components/InitialPageLoadError';
 import { CSVImportHelpMessage } from './overlays/CSVImportHelpMessage';
 import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../grid/controller/sheetController';
+import { LocalFilesContext } from './QuadraticUIContext';
 
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
+  const { hasInitialPageLoadError } = useContext(LocalFilesContext);
 
   useEffect(() => {
     sheetController.setApp(app);
@@ -73,6 +76,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
 
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
       {presentationMode && <PresentationModeHint />}
+      {hasInitialPageLoadError && <InitialPageLoadError />}
     </div>
   );
 }

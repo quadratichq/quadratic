@@ -12,15 +12,15 @@ const ListItems = [
   {
     label: 'File: New',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { newFile } = useContext(LocalFilesContext);
-      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={newFile} />;
+      const { createNewFile } = useContext(LocalFilesContext);
+      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={createNewFile} />;
     },
   },
   {
     label: 'File: Save local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { downloadQuadraticFile } = useContext(LocalFilesContext);
-      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => downloadQuadraticFile()} />;
+      const { downloadCurrentFile } = useContext(LocalFilesContext);
+      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => downloadCurrentFile()} />;
     },
   },
   {

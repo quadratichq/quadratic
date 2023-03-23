@@ -99,19 +99,19 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const importURLInput = useRef<HTMLInputElement | null>(null);
   const theme = useTheme();
-  const { importLocalFile, loadQuadraticFile, loadSample } = useContext(LocalFilesContext);
+  const { loadFileFromDisk, loadFileFromUrl, loadFileFromExamples } = useContext(LocalFilesContext);
   const importFileButton = useRef<HTMLInputElement | null>(null);
 
   const importFile = useCallback(
     async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
       const file = e.target.files?.[0];
       if (file) {
-        const loaded = await importLocalFile(file);
+        const loaded = await loadFileFromDisk(file);
         if (loaded) onClose({ reset: true });
         else setImportLocalError(true);
       }
     },
-    [importLocalFile, onClose]
+    [loadFileFromDisk, onClose]
   );
 
   const importURL = useCallback(
@@ -120,13 +120,13 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
       const url = importURLInput.current?.value;
       if (url) {
         setIsLoading(true);
-        const loaded = await loadQuadraticFile(url);
+        const loaded = await loadFileFromUrl(url);
         setIsLoading(false);
         if (loaded) onClose({ reset: true });
         else setImportURLError(true);
       }
     },
-    [loadQuadraticFile, onClose]
+    [loadFileFromUrl, onClose]
   );
 
   const handleChange = useCallback((event: SyntheticEvent, newValue: number) => {
@@ -176,7 +176,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
                 <ListItemButton
                   onClick={() => {
                     setIsLoading(true);
-                    loadSample(file)
+                    loadFileFromExamples(file)
                       .then((loaded) => {
                         setIsLoading(false);
                         if (loaded) {

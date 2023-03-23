@@ -53,7 +53,8 @@ export type onCloseFn = (arg?: { reset: boolean }) => void;
 export function FileMenu(props: FileMenuProps) {
   const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFileId, currentFilename, deleteFile, fileList, load, newFile } = useContext(LocalFilesContext);
+  const { currentFileId, currentFilename, deleteFile, fileList, loadFileFromMemory, createNewFile } =
+    useContext(LocalFilesContext);
 
   const onClose: onCloseFn = ({ reset } = { reset: false }) => {
     if (reset) {
@@ -69,7 +70,7 @@ export function FileMenu(props: FileMenuProps) {
   const styles = getStyles(theme);
 
   const onNewFile = async () => {
-    await newFile();
+    await createNewFile();
     onClose({ reset: true });
   };
 
@@ -84,7 +85,8 @@ export function FileMenu(props: FileMenuProps) {
     <Modal
       open={true}
       onKeyDown={(e) => {
-        if (e.code === 'Escape') {
+        // Only close if there's an active sheet
+        if (e.code === 'Escape' && currentFileId) {
           onClose();
         }
       }}
@@ -122,7 +124,7 @@ export function FileMenu(props: FileMenuProps) {
                     <div key={i}>
                       <ListItem
                         onClick={() => {
-                          load(id);
+                          loadFileFromMemory(id);
                           onClose({ reset: true });
                         }}
                         secondaryAction={

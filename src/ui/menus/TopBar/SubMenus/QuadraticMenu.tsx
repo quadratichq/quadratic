@@ -32,7 +32,7 @@ export const QuadraticMenu = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
 
-  const { newFile, downloadQuadraticFile } = useContext(LocalFilesContext);
+  const { createNewFile, downloadCurrentFile } = useContext(LocalFilesContext);
 
   const { isAuthenticated, user, logout } = useAuth0();
 
@@ -61,12 +61,12 @@ export const QuadraticMenu = (props: Props) => {
           <MenuItem
             onClick={() => {
               app.reset();
-              newFile();
+              createNewFile();
             }}
           >
             New
           </MenuItem>
-          <MenuItem onClick={() => downloadQuadraticFile()}>Save local copy</MenuItem>
+          <MenuItem onClick={() => downloadCurrentFile()}>Save local copy</MenuItem>
           <MenuItem
             onClick={() => {
               setEditorInteractionState({
