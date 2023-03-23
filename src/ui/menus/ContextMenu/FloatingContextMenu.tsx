@@ -48,6 +48,7 @@ export const FloatingContextMenu = (props: Props) => {
 
   const moreMenu = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
+  const moreMenuButtonRef = useRef(null);
   const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
   const {
     changeFillColor,
@@ -62,6 +63,11 @@ export const FloatingContextMenu = (props: Props) => {
   } = useFormatCells(sheetController, props.app);
   const { format } = useGetSelection(sheetController.sheet);
   const { clearAllFormatting } = useClearAllFormatting(sheetController, props.app);
+
+  // close moreMenu when context menu closes
+  useEffect(() => {
+    if (menuDiv.current?.style.visibility === 'hidden' && moreMenu.state === 'open') moreMenu.toggleMenu();
+  }, [showContextMenu, moreMenu]);
 
   // Function used to move and scale the Input with the Grid
   const updateContextMenuCSSTransform = useCallback(() => {
@@ -333,11 +339,15 @@ export const FloatingContextMenu = (props: Props) => {
         </Button> */}
         <MenuDivider />
         <TooltipHint title="More commands…">
-          <IconButton size="small" onClick={() => moreMenu.toggleMenu()} color="inherit">
+          <IconButton size="small" onClick={() => moreMenu.toggleMenu()} color="inherit" ref={moreMenuButtonRef}>
             <MoreHoriz fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
-        <ControlledMenu state={moreMenu.state} menuStyles={{ padding: '2px 0', color: 'inherit' }}>
+        <ControlledMenu
+          state={moreMenu.state}
+          menuStyles={{ padding: '2px 0', color: 'inherit' }}
+          anchorRef={moreMenuButtonRef}
+        >
           <MenuItem onClick={saveAsPNG}>
             <MenuLineItem
               size="small"
