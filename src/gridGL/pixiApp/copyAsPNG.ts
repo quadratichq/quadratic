@@ -9,7 +9,7 @@ let renderer: Renderer | undefined;
 /** returns a dataURL to a copy of the selected cells */
 export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   if (!renderer) {
-    renderer= new Renderer({
+    renderer = new Renderer({
       resolution,
       antialias: true,
       backgroundColor: 0xffffff,
