@@ -49,7 +49,7 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
       {
         role: 'system',
         content:
-          'Here are the nearby cells above this cell. You can use these cells to help you answer the question:' +
+          'Here are the nearby cells around this cell. You can use these cells to help you answer the question:' +
           nearby_cells_string,
       },
       {
