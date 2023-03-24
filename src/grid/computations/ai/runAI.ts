@@ -21,11 +21,19 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
     model: 'gpt-4',
     messages: [
       { role: 'system', content: 'You are a helpful assistant inside of a spreadsheet application called Quadratic.' },
-      { role: 'system', content: 'You generate responses either as a single short string, or a list of strings.' },
       {
         role: 'system',
         content:
           'For example if a user asks for a list of 3 months starting at Jan 2020, you reply ["Jan 2020", "Feb 2020", "Mar 2020"].',
+      },
+      {
+        role: 'system',
+        content:
+          'For example if a user asks for the top 3 scoring basketball players and their score, you reply [["PLAYER_NAME", "SCORE"], ["PLAYER_NAME", "SCORE"], ["PLAYER_NAME", "SCORE"]].',
+      },
+      {
+        role: 'system',
+        content: 'You only ever respond with a single short string, or a list of strings, or list of list of strings.',
       },
       {
         role: 'user',
