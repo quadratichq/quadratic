@@ -37,7 +37,7 @@ export const runCellComputation = async (cell: Cell, pyodide?: any): Promise<cel
       std_err: undefined,
       output_value: result.output_value,
       cells_accessed: [],
-      array_output: [],
+      array_output: result.array_output || [],
       formatted_code: '',
       error_span: null,
     };

@@ -1,7 +1,7 @@
 import { Container, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../../theme/colors';
 
-export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'ErrorIcon';
+export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
 
 export class CellsMarkers extends Container {
   private visibleIndex = 0;
@@ -32,6 +32,11 @@ export class CellsMarkers extends Container {
       child.position.set(x + 1.25, y + 1.25);
       child.texture = Texture.from('images/formula-fx-icon.png');
       child.tint = colors.cellColorUserFormula;
+      child.width = child.height = 4;
+    } else if (type === 'AIIcon') {
+      child.position.set(x + 1.25, y + 1.25);
+      child.texture = Texture.from('images/ai-icon.png');
+      child.tint = colors.cellColorUserAI;
       child.width = child.height = 4;
     } else if (type === 'ErrorIcon') {
       child.position.set(x, y);

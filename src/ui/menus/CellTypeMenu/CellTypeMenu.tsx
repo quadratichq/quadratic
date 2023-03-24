@@ -53,7 +53,7 @@ const CELL_TYPE_OPTIONS = [
     ),
   },
   {
-    name: 'Artificial Intelligence',
+    name: 'Artificial Intelligence (AI)',
     mode: 'AI',
     icon: <AI sx={{ color: colors.languageAI }} />,
     description: (

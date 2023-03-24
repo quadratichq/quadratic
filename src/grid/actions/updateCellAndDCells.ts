@@ -186,7 +186,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
           });
         }
       } else {
-        // not python cell
+        // not computed cell
 
         // update current cell
         cell.last_modified = new Date().toISOString();
