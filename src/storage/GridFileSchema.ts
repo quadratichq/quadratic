@@ -1,5 +1,6 @@
 import { Dependency } from '../grid/sheet/GridRenderDependency';
 import { Border, Cell, CellFormat, Heading } from '../grid/sheet/gridTypes';
+import { v4 as uuid } from 'uuid';
 
 export interface GridFileData {
   cells: Cell[];
@@ -8,18 +9,17 @@ export interface GridFileData {
   rows: Heading[];
   borders: Border[];
   cell_dependency: string;
-
   // todo: this goes away when alignment branch is merged
   render_dependency: Dependency[];
 }
-
 export interface GridFileSchemaV1 extends GridFileData {
-  // For future file versions we should make a function that converts old versions to the latest version.
-  // Each version should be a new interface to help us avoid breaking changes.
-  // The code base should only ever use the latest version.
-  // And we can wrap where we import files to convert them to the latest version.
-  // This way only one file needs to care about file version and the rest of the code base can just use the latest version.
   version: '1.0';
+}
+
+export interface GridFileSchemaV1_1 extends GridFileData {
+  version: '1.1';
+
+  // New in 1.1
   modified: number;
   created: number;
   id: string;
@@ -27,3 +27,20 @@ export interface GridFileSchemaV1 extends GridFileData {
   // imported by either the file's name on disk or the name in the URL
   filename: string;
 }
+
+export function upgradeV1toV1_1(file: GridFileSchemaV1): GridFileSchemaV1_1 {
+  const date = Date.now();
+  return {
+    ...file,
+    version: '1.1',
+    modified: date,
+    created: date,
+    id: uuid(),
+    filename: 'Untitled',
+  };
+}
+
+// TODO
+// export const validFiles = [{ schema: GridFileSchemaV1, updateFn: upgradeV1toV1_1 }];
+
+export type GridFileSchema = GridFileSchemaV1_1;

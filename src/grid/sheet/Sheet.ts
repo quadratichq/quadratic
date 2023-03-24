@@ -1,5 +1,5 @@
 import { Rectangle } from 'pixi.js';
-import { GridFileData, GridFileSchemaV1 } from '../../storage/GridFileSchema';
+import { GridFileData, GridFileSchema } from '../../storage/GridFileSchema';
 import { intersects } from '../../gridGL/helpers/intersects';
 import { GridBorders } from './GridBorders';
 import { GridRenderDependency } from './GridRenderDependency';
@@ -43,7 +43,7 @@ export class Sheet {
     this.onRebuild?.();
   }
 
-  load_file(sheet: GridFileSchemaV1): void {
+  load_file(sheet: GridFileSchema): void {
     this.gridOffsets.populate(sheet.columns, sheet.rows);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import localforage from 'localforage';
-import { GridFileData, GridFileSchemaV1 } from './GridFileSchema';
+import { GridFileData, GridFileSchema } from './GridFileSchema';
 import { debugShowFileIO } from '../debugFlags';
 import { v4 as uuid } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
@@ -10,7 +10,8 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 
 const INDEX = 'index';
-const VERSION = '1.0';
+// TODO: this should be the current version, so pull it from the current `GridFileSchema` somehow...
+const VERSION = '1.1';
 
 export interface LocalFile {
   filename: string;
@@ -38,7 +39,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const [hasInitialPageLoadError, setHasInitialPageLoadError] = useState<boolean>(false);
   const didMount = useRef(false);
   const [fileList, setFileList] = useState<LocalFile[]>([]);
-  const [currentFileContents, setCurrentFileContents] = useState<GridFileSchemaV1 | null>(null);
+  const [currentFileContents, setCurrentFileContents] = useState<GridFileSchema | null>(null);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { sheet } = sheetController;
 
@@ -65,7 +66,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
   // Reset the sheet to the current file in state, update the URL accordingly
   const resetSheet = useCallback(
-    (grid: GridFileSchemaV1) => {
+    (grid: GridFileSchema) => {
       sheetController.clear();
       sheetController.sheet.load_file(grid);
       sheetController.app?.rebuild();
@@ -84,8 +85,10 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Given a valid file, 1) save it's meta to the file list, 2) save it to react state, 3) and persist it to localStorage
   // A new ID is always created when importing a file
   const importQuadraticFile = useCallback(
-    async (gridFileJSON: GridFileSchemaV1): Promise<boolean> => {
+    async (gridFileJSON: GridFileSchema): Promise<boolean> => {
       // TODO handle validating the file and updating it if it's old
+
+      // Does it have a version?
 
       if (validateFile(gridFileJSON)) {
         const newFileListItem = { filename: gridFileJSON.filename, id: uuid(), modified: Date.now() };
@@ -109,7 +112,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     async (url: string): Promise<boolean> => {
       try {
         const res = await fetch(url);
-        const file = (await res.json()) as GridFileSchemaV1;
+        const file = (await res.json()) as GridFileSchema;
 
         // Overwrite the file's `filename` to match the last path in the URL (and strip out `.grid`)
         file.filename = massageFilename(new URL(url).pathname.split('/').pop());
@@ -146,7 +149,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     };
 
     const created = Date.now();
-    const newFile: GridFileSchemaV1 = {
+    const newFile: GridFileSchema = {
       ...grid,
       id: uuid(),
       created,
@@ -165,11 +168,9 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Download the currently active file
   const downloadCurrentFile = useCallback(() => {
     if (!currentFileContents) return;
-    const data: GridFileSchemaV1 = {
+    const data: GridFileSchema = {
       ...currentFileContents,
       ...sheet.export_file(),
-      version: VERSION,
-      modified: currentFileContents?.modified,
     };
 
     downloadFile(data.filename, JSON.stringify(data));
@@ -215,7 +216,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         reader.onload = (event) => {
           const json = event.target?.result;
           if (json) {
-            const parsedFile = JSON.parse(json as string) as GridFileSchemaV1;
+            const parsedFile = JSON.parse(json as string) as GridFileSchema;
             parsedFile.filename = massageFilename(file.name);
             resolve(importQuadraticFile(parsedFile));
           }
@@ -232,7 +233,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const loadFileFromMemory = useCallback(
     async (id: string): Promise<boolean> => {
       try {
-        const file = (await localforage.getItem(id)) as GridFileSchemaV1;
+        const file = (await localforage.getItem(id)) as GridFileSchema;
         if (!file) {
           throw new Error(`Unable to load file: \`${id}\`. It doesn’t appear to be a file stored in memory.`);
         }
@@ -388,7 +389,7 @@ function massageFilename(str: string | undefined): string {
   return str.endsWith(extension) ? str.slice(0, str.length - extension.length) : str;
 }
 
-function validateFile(file: GridFileSchemaV1, explainWhy?: boolean): boolean {
+function validateFile(file: GridFileSchema, explainWhy?: boolean): boolean {
   const expected = [
     'cells',
     'formats',
