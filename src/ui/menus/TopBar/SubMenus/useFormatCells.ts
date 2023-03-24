@@ -77,7 +77,6 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
       app.quadrants.quadrantChanged({ range: { start, end } });
       app.cells.dirty = true;
     }
-    app.save();
 
     // triggers an even to indicate selection's format change (see useGetSelection.ts)
     window.dispatchEvent(new CustomEvent(FORMAT_SELECTION_EVENT));

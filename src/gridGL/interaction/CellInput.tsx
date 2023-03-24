@@ -119,7 +119,6 @@ export const CellInput = (props: CellInputProps) => {
         });
       }
       app.quadrants.quadrantChanged({ cells: [cellLocation.current] });
-      app.save();
     }
 
     // Update Grid Interaction state, reset input value state

@@ -124,7 +124,6 @@ export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
 
       app.cells.dirty = true;
       app.quadrants.quadrantChanged({ range: { start, end } });
-      app.save();
     }
   };
 
