@@ -1,4 +1,5 @@
 import { Cell } from '../sheet/gridTypes';
+import { runAI } from './ai/runAI';
 import { runFormula } from './formulas/runFormula';
 import { runPython } from './python/runPython';
 import { cellEvaluationReturnType } from './types';
@@ -26,6 +27,18 @@ export const runCellComputation = async (cell: Cell, pyodide?: any): Promise<cel
       cells_accessed: result.cells_accessed,
       array_output: result.array_output,
       formatted_code: result.formatted_code,
+      error_span: null,
+    };
+  } else if (cell.type === 'AI') {
+    let result = await runAI(cell.ai_prompt || '', { x: cell.x, y: cell.y });
+    return {
+      success: true,
+      std_out: undefined,
+      std_err: undefined,
+      output_value: result.output_value,
+      cells_accessed: [],
+      array_output: [],
+      formatted_code: '',
       error_span: null,
     };
   } else {

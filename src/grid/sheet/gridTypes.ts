@@ -1,7 +1,7 @@
 import { cellEvaluationReturnType } from '../computations/types';
 import { CellTextFormat } from '../formatting/cellTextFormat';
 
-export type CellTypes = 'TEXT' | 'FORMULA' | 'JAVASCRIPT' | 'PYTHON' | 'SQL' | 'COMPUTED';
+export type CellTypes = 'TEXT' | 'FORMULA' | 'JAVASCRIPT' | 'PYTHON' | 'SQL' | 'COMPUTED' | 'AI';
 
 export interface Cell {
   x: number;
@@ -14,6 +14,7 @@ export interface Cell {
 
   python_code?: string;
   formula_code?: string;
+  ai_prompt?: string;
 
   evaluation_result?: cellEvaluationReturnType;
 

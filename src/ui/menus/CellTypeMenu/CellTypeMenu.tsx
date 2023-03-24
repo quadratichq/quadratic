@@ -16,7 +16,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { CellTypes } from '../../../grid/sheet/gridTypes';
 import '../../styles/floating-dialog.css';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { Python, Formula, JavaScript, Sql } from '../../icons';
+import { Python, Formula, JavaScript, Sql, AI } from '../../icons';
 import { colors } from '../../../theme/colors';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
@@ -49,6 +49,17 @@ const CELL_TYPE_OPTIONS = [
       <>
         Script with Pandas, NumPy, SciPy, Micropip,{' '}
         <LinkNewTabWrapper href={DOCUMENTATION_PYTHON_URL}>and more</LinkNewTabWrapper>.
+      </>
+    ),
+  },
+  {
+    name: 'Artificial Intelligence',
+    mode: 'AI',
+    icon: <AI sx={{ color: colors.languageAI }} />,
+    description: (
+      <>
+        Generate data using an AI prompt.{' '}
+        <LinkNewTabWrapper href={DOCUMENTATION_PYTHON_URL}>Powered by GPT4</LinkNewTabWrapper>.
       </>
     ),
   },
