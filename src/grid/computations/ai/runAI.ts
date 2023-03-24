@@ -1,4 +1,4 @@
-// import { GetCellsDB } from '../../sheet/Cells/GetCellsDB';
+import { GetCellsDB } from '../../sheet/Cells/GetCellsDB';
 import { Coordinate } from '../../../gridGL/types/size';
 import { Configuration, OpenAIApi } from 'openai';
 
@@ -17,6 +17,21 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 export async function runAI(prompt: string, pos: Coordinate): Promise<runAIReturnType> {
+  const top_cells = await GetCellsDB(pos.x - 25, pos.y - 50, pos.x + 25, pos.y - 1);
+  const left_cells = await GetCellsDB(pos.x - 25, pos.y - 25, pos.x - 1, pos.y + 50);
+
+  let nearby_cells_string = '';
+  for (let i = 0; i < top_cells.length; i++) {
+    const cell = top_cells[i];
+    nearby_cells_string += `${cell.x},${cell.y}: "${cell.value}" \n`;
+    // top_cells_string += `||| ${cell.x},${cell.y}: "${cell.value}" ||| "${cell.type}" ||| "${cell.formula_code}" "${cell.python_code}" "${cell.ai_prompt}" |||\n`;
+  }
+  for (let i = 0; i < left_cells.length; i++) {
+    const cell = left_cells[i];
+    nearby_cells_string += `${cell.x},${cell.y}: "${cell.value}" \n`;
+    // top_cells_string += `||| ${cell.x},${cell.y}: "${cell.value}" ||| "${cell.type}" ||| "${cell.formula_code}" "${cell.python_code}" "${cell.ai_prompt}" |||\n`;
+  }
+
   const completion = await openai.createChatCompletion({
     model: 'gpt-4',
     messages: [
@@ -33,7 +48,18 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
       },
       {
         role: 'system',
-        content: 'You only ever respond with a single short string, or a list of strings, or list of list of strings.',
+        content:
+          'Here are the nearby cells above this cell. You can use these cells to help you answer the question:' +
+          nearby_cells_string,
+      },
+      {
+        role: 'system',
+        content: `The following prompt is located at ${pos.x},${pos.y}`,
+      },
+      {
+        role: 'system',
+        content:
+          'You only ever respond with a one or two dimensional array of strings to put in the cell. Just the array, no other text.',
       },
       {
         role: 'user',
