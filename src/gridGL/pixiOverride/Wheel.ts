@@ -110,7 +110,12 @@ export class Wheel extends Plugin {
     if (this.options.keyToPress) {
       this.handleKeyPresses(this.options.keyToPress);
     }
+    window.addEventListener('blur', this.handleBlur);
   }
+
+  private handleBlur = (): void => {
+    this.keyIsPressed = false;
+  };
 
   /**
    * Handles keypress events and set the keyIsPressed boolean accordingly
@@ -233,7 +238,6 @@ export class Wheel extends Plugin {
     if (this.paused) {
       return false;
     }
-
     if (this.checkKeyPress()) {
       const point = this.parent.input.getPointerPosition(e);
       const sign = this.options.reverse ? -1 : 1;
