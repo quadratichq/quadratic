@@ -263,8 +263,4 @@ export class PixiApp {
     this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
     this.settings.setInteractionState?.(gridInteractionStateDefault);
   }
-
-  forceUpdate(): void {
-    this.update.forceUpdate();
-  }
 }

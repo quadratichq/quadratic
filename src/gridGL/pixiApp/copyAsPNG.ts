@@ -38,14 +38,14 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   renderer.resize(rectangle.width * resolution, rectangle.height * resolution);
   renderer.view.width = rectangle.width * resolution;
   renderer.view.height = rectangle.height * resolution;
-  app.prepareForQuadrantRendering({ gridLines: false });
-  // app.gridLines.draw(rectangle);
+  app.prepareForQuadrantRendering();
+  app.settings.temporarilyHideCellTypeOutlines = true;
   app.cells.drawCells(rectangle, false);
   const transform = new Matrix();
   transform.translate(-rectangle.x + borderSize / 2, -rectangle.y + borderSize / 2);
-  app.forceUpdate();
   renderer.render(app.viewportContents, { transform });
   app.cleanUpAfterQuadrantRendering();
+  app.settings.temporarilyHideCellTypeOutlines = false;
   return new Promise((resolve) => {
     renderer!.view.toBlob((blob) => resolve(blob));
   });
