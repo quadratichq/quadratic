@@ -280,7 +280,8 @@ test('SheetController - test DataFrame resizing', async () => {
     python_code: `result = []
 repeat = int(c(0,0))
 for x in range(0, repeat):
-  result.append(x + repeat)`,
+  result.append(x + repeat)
+result`,
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
