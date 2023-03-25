@@ -12,7 +12,7 @@ import { getColumnA1Notation, getRowA1Notation } from './getA1Notation';
 export const LABEL_MAXIMUM_WIDTH_PERCENT = 0.7;
 export const LABEL_MAXIMUM_HEIGHT_PERCENT = 0.5;
 export const LABEL_PADDING_ROWS = 2;
-export const GRID_HEADER_FONT_SIZE = 9;
+export const GRID_HEADER_FONT_SIZE = 10;
 export const ROW_DIGIT_OFFSET = { x: 0, y: -1 };
 const GRID_HEADING_RESIZE_TOLERANCE = 3;
 
@@ -158,7 +158,7 @@ export class GridHeadings extends Container {
       mod = this.findIntervalX(skipNumbers);
     }
 
-    const y = bounds.top + cellHeight / 2;
+    const y = bounds.top + cellHeight / 2.25;
     let column = start.index;
     let currentWidth = 0;
     this.gridLinesColumns = [];

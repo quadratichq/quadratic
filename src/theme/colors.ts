@@ -8,7 +8,7 @@ export const colors = {
   cursorCell: 0x6cd4ff,
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,
-  headerSelectedBackgroundColor: 0xf2fbff,
+  headerSelectedBackgroundColor: 0xe7f7ff,
   headerCornerBackgroundColor: 0xffffff,
   defaultBorderColor: 0,
   lightGray: '#f6f8fa',
