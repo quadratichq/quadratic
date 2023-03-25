@@ -230,6 +230,7 @@ export class PointerHeading {
           ]);
         }
         gridOffsets.headingResizing = undefined;
+        this.app.viewport.plugins.get('decelerate')?.reset();
       }
       return true;
     }
