@@ -76,7 +76,9 @@ export class PixiAppSettings {
     return !this.settings.presentationMode && this.settings.showHeadings;
   }
   get showCellTypeOutlines(): boolean {
-    return !this.temporarilyHideCellTypeOutlines && !this.settings.presentationMode && this.settings.showCellTypeOutlines;
+    return (
+      !this.temporarilyHideCellTypeOutlines && !this.settings.presentationMode && this.settings.showCellTypeOutlines
+    );
   }
   get presentationMode(): boolean {
     return this.settings.presentationMode;
