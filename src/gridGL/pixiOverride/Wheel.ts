@@ -297,7 +297,7 @@ export class Wheel extends Plugin {
       let deltaX: number, deltaY: number;
       if (e.shiftKey) {
         deltaX = e.deltaY;
-        deltaY = e.deltaX;
+        deltaY = 0;  // e.deltaX; -- only use X axis when shift key is pressed
       } else {
         deltaX = e.deltaX;
         deltaY = e.deltaY;
