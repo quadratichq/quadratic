@@ -110,7 +110,10 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          action={() => copyAsPNG(props.app)}
+          action={() => {
+            copyAsPNG(props.app);
+            props.snackBar.triggerSnackbar('Copied selection as PNG to clipboard');
+          }}
           icon={<CopyAsPNG />}
           shortcut="C"
           shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}

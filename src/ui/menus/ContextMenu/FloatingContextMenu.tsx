@@ -26,6 +26,7 @@ import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting'
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
 import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { colors } from '../../../theme/colors';
+import { UseSnackBar } from '../../components/SnackBar';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -34,6 +35,7 @@ interface Props {
   app: PixiApp;
   sheetController: SheetController;
   showContextMenu: boolean;
+  snackBar: UseSnackBar;
 }
 
 export const FloatingContextMenu = (props: Props) => {
@@ -44,6 +46,7 @@ export const FloatingContextMenu = (props: Props) => {
     container,
     sheetController,
     showContextMenu,
+    snackBar,
   } = props;
 
   const moreMenu = useMenuState();
@@ -178,10 +181,12 @@ export const FloatingContextMenu = (props: Props) => {
     };
   }, [viewport, updateContextMenuCSSTransform]);
 
-  const saveAsPNG = useCallback(async () => {
+
+  const copyAsPNG = useCallback(async () => {
     await copySelectionToPNG(app);
     moreMenu.toggleMenu();
-  }, [app, moreMenu]);
+    snackBar.triggerSnackbar('Copied selection as PNG to clipboard');
+  }, [app, moreMenu, snackBar]);
 
   // If we don't have a viewport, we can't continue.
   if (!viewport || !container) return null;
@@ -348,7 +353,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuStyles={{ padding: '2px 0', color: 'inherit' }}
           anchorRef={moreMenuButtonRef}
         >
-          <MenuItem onClick={saveAsPNG}>
+          <MenuItem onClick={copyAsPNG}>
             <MenuLineItem
               size="small"
               primary="Copy selection as PNG"

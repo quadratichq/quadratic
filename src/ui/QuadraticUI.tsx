@@ -16,6 +16,7 @@ import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
 import { CSVImportHelpMessage } from './overlays/CSVImportHelpMessage';
+import { SnackBar, useSnackbar } from './components/SnackBar';
 
 interface Props {
   sheetController: SheetController;
@@ -39,6 +40,8 @@ export default function QuadraticUI(props: Props) {
     app.resize();
   }, [presentationMode, app]);
 
+  const snackBar = useSnackbar();
+
   return (
     <div
       style={{
@@ -51,7 +54,7 @@ export default function QuadraticUI(props: Props) {
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
       {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
-      {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
+      {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} snackBar={snackBar} />}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
 
       <div
@@ -64,7 +67,7 @@ export default function QuadraticUI(props: Props) {
         }}
       >
         <FileUploadWrapper sheetController={sheetController} app={app}>
-          <QuadraticGrid sheetController={sheetController} app={app} />
+          <QuadraticGrid sheetController={sheetController} app={app} snackBar={snackBar} />
         </FileUploadWrapper>
         <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
@@ -73,6 +76,9 @@ export default function QuadraticUI(props: Props) {
 
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
       {presentationMode && <PresentationModeHint />}
+
+      <SnackBar {...snackBar} />
+
     </div>
   );
 }
