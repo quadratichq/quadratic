@@ -3,6 +3,7 @@ import { PixiApp } from './PixiApp';
 
 const resolution = 4;
 const borderSize = 1;
+const maxTextureSize = 4096;
 
 let renderer: Renderer | undefined;
 
@@ -35,14 +36,26 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   rectangle.width += borderSize * 2;
   rectangle.height += borderSize * 2;
 
-  renderer.resize(rectangle.width * resolution, rectangle.height * resolution);
-  renderer.view.width = rectangle.width * resolution;
-  renderer.view.height = rectangle.height * resolution;
+  let imageWidth = rectangle.width * resolution, imageHeight = rectangle.height * resolution;
+  if (Math.max(imageWidth, imageHeight) > maxTextureSize) {
+    if (imageWidth > imageHeight) {
+      imageHeight = imageHeight * (maxTextureSize / imageWidth);
+      imageWidth = maxTextureSize;
+    } else {
+      imageWidth = imageWidth * (maxTextureSize / imageHeight);
+      imageHeight = maxTextureSize;
+    }
+  }
+  renderer.resize(imageWidth, imageHeight);
+  renderer.view.width = imageWidth;
+  renderer.view.height = imageHeight;
   app.prepareForQuadrantRendering();
   app.settings.temporarilyHideCellTypeOutlines = true;
   app.cells.drawCells(rectangle, false);
   const transform = new Matrix();
   transform.translate(-rectangle.x + borderSize / 2, -rectangle.y + borderSize / 2);
+  const scale = imageWidth / (rectangle.width * resolution);
+  transform.scale(scale, scale);
   renderer.render(app.viewportContents, { transform });
   app.cleanUpAfterQuadrantRendering();
   app.settings.temporarilyHideCellTypeOutlines = false;
