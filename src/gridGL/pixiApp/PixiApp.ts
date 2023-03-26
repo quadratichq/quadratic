@@ -20,6 +20,7 @@ import { editorInteractionStateDefault } from '../../atoms/editorInteractionStat
 import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../constants/app';
 import { Wheel } from '../pixiOverride/Wheel';
+import { BoxCells } from '../UI/boxCells';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -35,6 +36,7 @@ export class PixiApp {
   axesLines: AxesLines;
   cursor: Cursor;
   headings: GridHeadings;
+  boxCells: BoxCells;
   cells: Cells;
   quadrants: Quadrants;
 
@@ -114,6 +116,7 @@ export class PixiApp {
     // ensure the cell's background color is drawn first
     this.viewportContents.addChildAt(this.cells.cellsBackground, 0);
 
+    this.boxCells = this.viewportContents.addChild(new BoxCells(this));
     this.cursor = this.viewportContents.addChild(new Cursor(this));
     this.headings = this.viewportContents.addChild(new GridHeadings(this));
 
@@ -219,6 +222,7 @@ export class PixiApp {
     this.cursor.visible = false;
     this.headings.visible = false;
     this.quadrants.visible = false;
+    this.boxCells.visible = false;
     this.cells.changeVisibility(true);
     this.cells.dirty = true;
     return this.viewportContents;
@@ -229,6 +233,7 @@ export class PixiApp {
     this.axesLines.visible = true;
     this.cursor.visible = true;
     this.headings.visible = true;
+    this.boxCells.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
     this.cells.changeVisibility(!this.cacheIsVisible);
     if (!this.cacheIsVisible) this.cells.dirty = true;
@@ -250,6 +255,7 @@ export class PixiApp {
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cells.dirty = true;
+    this.boxCells.reset();
     this.quadrants.build();
   };
 

@@ -39,6 +39,7 @@ export default function QuadraticGrid(props: IProps) {
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
+
   let prevPanModeRef = useRef(interactionState.panMode);
   useEffect(() => {
     props.app?.settings.updateInteractionState(interactionState, setInteractionState);
