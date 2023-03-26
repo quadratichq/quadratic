@@ -96,7 +96,7 @@ export const FloatingContextMenu = (props: Props) => {
     if (!(interactionState.showMultiCursor || showContextMenu)) visibility = 'hidden';
 
     // Hide if currently selecting
-    if (app?.input?.pointerDown?.active) visibility = 'hidden';
+    if (app?.pointer?.pointerDown?.active) visibility = 'hidden';
 
     // Hide if in presentation mode
     if (app.settings.presentationMode) visibility = 'hidden';

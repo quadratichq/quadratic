@@ -40,7 +40,7 @@ export class PixiApp {
   cells: Cells;
   quadrants: Quadrants;
 
-  input: Pointer;
+  pointer: Pointer;
   viewportContents: Container;
   settings: PixiAppSettings;
   renderer: Renderer;
@@ -124,7 +124,7 @@ export class PixiApp {
 
     this.reset();
 
-    this.input = new Pointer(this);
+    this.pointer = new Pointer(this);
     this.update = new Update(this);
 
     if (debugAlwaysShowCache) this.showCache();

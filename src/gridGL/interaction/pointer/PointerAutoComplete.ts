@@ -5,6 +5,8 @@ import { PixiApp } from '../../pixiApp/PixiApp';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { PanMode } from '../../../atoms/gridInteractionStateAtom';
 import { intersects } from '../../helpers/intersects';
+import { DeleteCells } from '../../../grid/actions/DeleteCells';
+import { Coordinate } from '../../types/size';
 
 type State =
   | 'expandDown'
@@ -19,7 +21,9 @@ export class PointerAutoComplete {
   private app: PixiApp;
   private state: State;
   private selection?: Rectangle;
+  private endCell?: Coordinate;
   private screenSelection?: Rectangle;
+  cursor?: string;
   active = false;
 
   constructor(app: PixiApp) {
@@ -87,65 +91,149 @@ export class PointerAutoComplete {
   }
 
   pointerMove(world: Point): boolean {
-    if (this.active) {
-      const { column, row } = this.app.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
-      let boxCells: Rectangle | undefined;
-      const { selection, screenSelection } = this;
-      if (!selection || !screenSelection) {
-        throw new Error('Expected selection and screenSelection to be defined');
+    if (IS_READONLY_MODE) return false;
+    const { interactionState, setInteractionState } = this.app.settings;
+    if (interactionState.panMode !== PanMode.Disabled) return false;
+    if (!this.active) {
+      if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
+        this.cursor = 'crosshair';
+      } else {
+        this.cursor = undefined;
       }
-      const insideVertical = column >= selection.left && column <= selection.right;
-      const insideHorizontal = row >= selection.top && row <= selection.bottom;
-      let outsideVertical = false,
-        outsideHorizontal = false;
-      if (!insideVertical && !insideHorizontal) {
-        const aboveVertical = Math.abs(world.y - screenSelection.top);
-        const belowVertical = Math.abs(world.y - screenSelection.bottom);
-        const vertical = Math.min(aboveVertical, belowVertical);
-        const leftHorizontal = Math.abs(world.x - screenSelection.left);
-        const rightHorizontal = Math.abs(world.x - screenSelection.right);
-        const horizontal = Math.min(leftHorizontal, rightHorizontal);
-        if (vertical > horizontal) {
-          outsideVertical = true;
-        } else {
-          outsideHorizontal = true;
-        }
-      }
+      return false;
+    } else {
+      this.cursor = 'crosshair';
+      if (!setInteractionState) throw new Error('Expected setInteractionState to be defined in PointerAutoComplete');
 
-      if ((insideVertical && !insideHorizontal) || outsideVertical) {
-        if (row > selection.bottom) {
-          this.state = 'expandDown';
-          boxCells = new Rectangle(selection.x, selection.y, selection.width + 1, row - selection.y + 1);
-        } else if (row < selection.top) {
-          this.state = 'expandUp';
-          boxCells = new Rectangle(selection.x, row, selection.width + 1, selection.bottom - row + 1);
-        } else {
-          this.state = 'shrinkVertical';
-          boxCells = new Rectangle(selection.x, selection.y, selection.width + 1, row - selection.top + 1);
+      // handle dragging from the corner
+      if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
+      } else if (this.active) {
+        const { column, row } = this.app.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
+        let boxCells: Rectangle | undefined;
+        const { selection, screenSelection } = this;
+        if (!selection || !screenSelection) {
+          throw new Error('Expected selection and screenSelection to be defined');
         }
-      } else if (insideHorizontal || outsideHorizontal) {
-        if (column > selection.right) {
-          this.state = 'expandRight';
-          boxCells = new Rectangle(selection.x, selection.y, column - selection.x + 1, selection.height + 1);
-        } else if (column < selection.left) {
-          this.state = 'expandLeft';
-          boxCells = new Rectangle(column, selection.y, selection.x - column + 1, selection.height + 1);
-        } else {
-          this.state = 'shrinkHorizontal';
-          boxCells = new Rectangle(selection.x, selection.y, column - selection.left + 1, selection.height + 1);
+        const insideVertical = column >= selection.left && column <= selection.right;
+        const insideHorizontal = row >= selection.top && row <= selection.bottom;
+        let outsideVertical = false,
+          outsideHorizontal = false;
+        if (!insideVertical && !insideHorizontal) {
+          const aboveVertical = Math.abs(world.y - screenSelection.top);
+          const belowVertical = Math.abs(world.y - screenSelection.bottom);
+          const vertical = Math.min(aboveVertical, belowVertical);
+          const leftHorizontal = Math.abs(world.x - screenSelection.left);
+          const rightHorizontal = Math.abs(world.x - screenSelection.right);
+          const horizontal = Math.min(leftHorizontal, rightHorizontal);
+          if (vertical > horizontal) {
+            outsideVertical = true;
+          } else {
+            outsideHorizontal = true;
+          }
         }
-      }
 
-      if (boxCells) {
-        this.app.boxCells.populate(boxCells);
+        // handle reducing the selection
+        if (insideVertical && insideHorizontal) {
+          const distanceFromLeft = Math.abs(world.x - screenSelection.left);
+          const distanceFromTop = Math.abs(world.y - screenSelection.top);
+          if (distanceFromLeft < distanceFromTop) {
+            this.state = 'shrinkHorizontal';
+            boxCells = new Rectangle(selection.x, selection.y, column - selection.left + 1, selection.height + 1);
+          } else {
+            this.state = 'shrinkVertical';
+            boxCells = new Rectangle(selection.x, selection.y, selection.width + 1, row - selection.top + 1);
+          }
+          this.endCell = { x: column + 1, y: row };
+        } else if ((insideVertical && !insideHorizontal) || outsideVertical) {
+          if (row > selection.bottom) {
+            this.state = 'expandDown';
+            boxCells = new Rectangle(selection.x, selection.y, selection.width + 1, row - selection.y + 1);
+          } else if (row < selection.top) {
+            this.state = 'expandUp';
+            boxCells = new Rectangle(selection.x, row, selection.width + 1, selection.bottom - row + 1);
+          }
+        } else if (insideHorizontal || outsideHorizontal) {
+          if (column > selection.right) {
+            this.state = 'expandRight';
+            boxCells = new Rectangle(selection.x, selection.y, column - selection.x + 1, selection.height + 1);
+          } else if (column < selection.left) {
+            this.state = 'expandLeft';
+            boxCells = new Rectangle(column, selection.y, selection.x - column + 1, selection.height + 1);
+          }
+        }
+
+        if (boxCells) {
+          this.app.boxCells.populate(boxCells);
+        }
+        return true;
       }
-      return true;
+      return false;
     }
-    return false;
+  }
+
+  private async apply(): Promise<void> {
+    if (!this.selection) return;
+    const { sheet_controller } = this.app;
+    if (this.state === 'shrinkHorizontal') {
+      if (!this.endCell) return;
+      if (this.selection.left === this.endCell.x) return;
+
+      sheet_controller.start_transaction();
+      await DeleteCells({
+        x0: this.endCell.x,
+        y0: this.selection.top,
+        x1: this.selection.right,
+        y1: this.selection.bottom,
+        sheetController: sheet_controller,
+        app: sheet_controller.app,
+        create_transaction: false,
+      });
+      sheet_controller.end_transaction();
+
+      const { setInteractionState, interactionState } = this.app.settings;
+      setInteractionState?.({
+        ...interactionState,
+        multiCursorPosition: {
+          originPosition: interactionState.multiCursorPosition.originPosition,
+          terminalPosition: {
+            ...interactionState.multiCursorPosition.terminalPosition,
+            x: this.endCell.x - 1,
+          },
+        },
+      });
+    } else if (this.state === 'shrinkVertical') {
+      if (!this.endCell) return;
+      if (this.selection.top === this.endCell.y) return;
+
+      sheet_controller.start_transaction();
+      await DeleteCells({
+        x0: this.selection.left,
+        y0: this.endCell.y + 1,
+        x1: this.selection.right,
+        y1: this.selection.bottom,
+        sheetController: sheet_controller,
+        app: sheet_controller.app,
+        create_transaction: false,
+      });
+      sheet_controller.end_transaction();
+
+      const { setInteractionState, interactionState } = this.app.settings;
+      setInteractionState?.({
+        ...interactionState,
+        multiCursorPosition: {
+          originPosition: interactionState.multiCursorPosition.originPosition,
+          terminalPosition: {
+            ...interactionState.multiCursorPosition.terminalPosition,
+            y: this.endCell.y,
+          },
+        },
+      });
+    }
   }
 
   pointerUp(): boolean {
     if (this.active) {
+      this.apply();
       this.reset();
       return true;
     }
