@@ -53,11 +53,10 @@ export class PointerAutoComplete {
       }
       this.screenSelection = this.app.sheet.gridOffsets.getScreenRectangle(
         this.selection.left,
-        this.selection.right,
+        this.selection.top,
         this.selection.width + 1,
         this.selection.height + 1
       );
-      this.app.debug.clear().lineStyle({ color: 0xff0000, width: 1 }).drawShape(this.screenSelection);
 
       setInteractionState({
         ...interactionState,
@@ -108,10 +107,8 @@ export class PointerAutoComplete {
         const horizontal = Math.min(leftHorizontal, rightHorizontal);
         if (vertical > horizontal) {
           outsideVertical = true;
-          console.log('outsideVertical', horizontal, vertical);
         } else {
           outsideHorizontal = true;
-          console.log('outsideHorizontal', horizontal, vertical);
         }
       }
 
