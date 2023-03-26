@@ -181,7 +181,6 @@ export const FloatingContextMenu = (props: Props) => {
     };
   }, [viewport, updateContextMenuCSSTransform]);
 
-
   const copyAsPNG = useCallback(async () => {
     await copySelectionToPNG(app);
     moreMenu.toggleMenu();

@@ -15,7 +15,6 @@ export function keyboardClipboard(props: {
   sheet_controller: SheetController;
   app: PixiApp;
   snackbar: UseSnackBar;
-
 }): boolean {
   const { event, interactionState, sheet_controller, app, snackbar } = props;
 

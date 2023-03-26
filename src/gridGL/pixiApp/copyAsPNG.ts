@@ -36,7 +36,8 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   rectangle.width += borderSize * 2;
   rectangle.height += borderSize * 2;
 
-  let imageWidth = rectangle.width * resolution, imageHeight = rectangle.height * resolution;
+  let imageWidth = rectangle.width * resolution,
+    imageHeight = rectangle.height * resolution;
   if (Math.max(imageWidth, imageHeight) > maxTextureSize) {
     if (imageWidth > imageHeight) {
       imageHeight = imageHeight * (maxTextureSize / imageWidth);

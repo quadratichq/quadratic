@@ -54,7 +54,9 @@ export default function QuadraticUI(props: Props) {
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
       {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
-      {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} snackBar={snackBar} />}
+      {editorInteractionState.showCommandPalette && (
+        <CommandPalette app={app} sheetController={sheetController} snackBar={snackBar} />
+      )}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
 
       <div
@@ -78,7 +80,6 @@ export default function QuadraticUI(props: Props) {
       {presentationMode && <PresentationModeHint />}
 
       <SnackBar {...snackBar} />
-
     </div>
   );
 }

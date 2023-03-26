@@ -17,19 +17,22 @@ export const useSnackbar = (): UseSnackBar => {
   const [duration, setDuration] = useState<number>(defaultDuration);
   const [message, setMessage] = useState('');
 
-  const triggerSnackbar = useCallback((message: string, duration = defaultDuration) => {
-    setMessage(message);
-    setDuration(duration);
-    setOpen(true);
-  }, [setOpen]);
+  const triggerSnackbar = useCallback(
+    (message: string, duration = defaultDuration) => {
+      setMessage(message);
+      setDuration(duration);
+      setOpen(true);
+    },
+    [setOpen]
+  );
 
   return {
     triggerSnackbar,
     message,
     duration,
     open,
-    setOpen
-  }
+    setOpen,
+  };
 };
 
 export const SnackBar = (props: UseSnackBar): JSX.Element => {
@@ -44,4 +47,4 @@ export const SnackBar = (props: UseSnackBar): JSX.Element => {
       message={message}
     />
   );
-}
+};
