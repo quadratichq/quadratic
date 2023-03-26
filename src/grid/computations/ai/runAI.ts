@@ -23,13 +23,13 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
   let nearby_cells_string = '';
   for (let i = 0; i < top_cells.length; i++) {
     const cell = top_cells[i];
-    nearby_cells_string += `${cell.x},${cell.y}: "${cell.value}" \n`;
-    // top_cells_string += `||| ${cell.x},${cell.y}: "${cell.value}" ||| "${cell.type}" ||| "${cell.formula_code}" "${cell.python_code}" "${cell.ai_prompt}" |||\n`;
+    // nearby_cells_string += `${cell.x},${cell.y}: "${cell.value}" \n`;
+    nearby_cells_string += `||| ${cell.x},${cell.y} ||| "${cell.value}" ||| "${cell.type}" ||| "${cell.formula_code}" "${cell.python_code}" "${cell.ai_prompt}" |||\n`;
   }
   for (let i = 0; i < left_cells.length; i++) {
     const cell = left_cells[i];
-    nearby_cells_string += `${cell.x},${cell.y}: "${cell.value}" \n`;
-    // top_cells_string += `||| ${cell.x},${cell.y}: "${cell.value}" ||| "${cell.type}" ||| "${cell.formula_code}" "${cell.python_code}" "${cell.ai_prompt}" |||\n`;
+    // nearby_cells_string += `${cell.x},${cell.y}: "${cell.value}" \n`;
+    nearby_cells_string += `||| ${cell.x},${cell.y} ||| "${cell.value}" ||| "${cell.type}" ||| "${cell.formula_code}" "${cell.python_code}" "${cell.ai_prompt}" |||\n`;
   }
 
   const completion = await openai.createChatCompletion({
@@ -58,8 +58,12 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
       },
       {
         role: 'system',
+        content: `Cells to my left have a lower x value than me. Cells above me have a lower y value than me.`,
+      },
+      {
+        role: 'system',
         content:
-          'You only ever respond with a one or two dimensional array of strings to put in the cell. Just the array, no other text.',
+          'You only ever respond with a one or two dimensional array of strings to put in the cell. When responding with a table you add headers to each column. You just reply with the array, no other text, no description, no warnings. Just the array.',
       },
       {
         role: 'user',
