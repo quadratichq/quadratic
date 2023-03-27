@@ -384,8 +384,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
           height: `${consoleHeight}px`,
         }}
       >
-        {(editorInteractionState.mode === 'PYTHON' ||
-          editorInteractionState.mode === 'FORMULA' && <Console evalResult={evalResult} editorMode={editorMode} />}
+        {editorInteractionState.mode === 'PYTHON' ||
+          (editorInteractionState.mode === 'FORMULA' && <Console evalResult={evalResult} editorMode={editorMode} />)}
       </div>
     </div>
   );
