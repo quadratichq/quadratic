@@ -6,6 +6,7 @@ import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { Cell } from '../../../grid/sheet/gridTypes';
 import {
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -43,6 +44,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const [editorContent, setEditorContent] = useState<string | undefined>('');
   const [didMount, setDidMount] = useState(false);
+
+  const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -173,6 +176,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const saveAndRunCell = async () => {
     if (!selectedCell) return;
+    if (isRunningComputation) return;
+
+    setIsRunningComputation(true);
     console.log('saveAndRunCell', selectedCell);
 
     selectedCell.type = editorMode;
@@ -193,6 +199,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
     const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
     setEvalResult(updated_cell?.evaluation_result);
+    setIsRunningComputation(false);
   };
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -322,9 +329,13 @@ export const CodeEditor = (props: CodeEditorProps) => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
-            <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-              <PlayArrow />
-            </IconButton>
+            {isRunningComputation ? (
+              <CircularProgress size="1rem" />
+            ) : (
+              <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
+                <PlayArrow />
+              </IconButton>
+            )}
           </TooltipHint>
           <TooltipHint title="Close" shortcut="ESC">
             <IconButton
@@ -384,9 +395,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
           height: `${consoleHeight}px`,
         }}
       >
-        {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
-          <Console evalResult={evalResult} editorMode={editorMode} />
-        )}
+        {(editorInteractionState.mode === 'PYTHON' ||
+          editorInteractionState.mode === 'FORMULA' ||
+          editorInteractionState.mode === 'AI') && <Console evalResult={evalResult} editorMode={editorMode} />}
       </div>
     </div>
   );
