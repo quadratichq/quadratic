@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
-import monaco from 'monaco-editor';
+import { editor, Range } from 'monaco-editor';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { Cell } from '../../../grid/sheet/gridTypes';
@@ -26,7 +26,8 @@ import { Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
-import { inspectPython } from '../../../grid/computations/python/inspectPython';
+import { inspectPython, inspectPythonReturnType } from '../../../grid/computations/python/inspectPython';
+import './styles.css';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -34,16 +35,20 @@ interface CodeEditorProps {
   editorInteractionState: EditorInteractionState;
   sheet_controller: SheetController;
 }
+let decorations: string[] | undefined = [];
 
 export const CodeEditor = (props: CodeEditorProps) => {
   const { editorInteractionState } = props;
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
 
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
 
-  const [editorContent, setEditorContent] = useState<string | undefined>('');
   const [didMount, setDidMount] = useState(false);
+
+  // Editor content state
+  const [editorContent, setEditorContent] = useState<string | undefined>('');
+  const [returnSelection, setReturnSelection] = useState<inspectPythonReturnType | undefined>(undefined);
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -129,8 +134,36 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   // When editor content changes inspect python code
   useEffect(() => {
-    inspectPython(editorContent || '');
-  }, [editorContent]);
+    inspectPython(editorContent || '').then((result) => {
+      if (!result) {
+        setReturnSelection(undefined);
+        return;
+      }
+      setReturnSelection(result);
+    });
+  }, [editorContent, selectedCell]);
+
+  // highlight range in monaco editor
+  if (returnSelection !== undefined) {
+    if (editorMode === 'PYTHON') {
+      decorations = editorRef.current?.deltaDecorations(decorations || [], [
+        {
+          range: new Range(
+            returnSelection.lineno,
+            returnSelection.col_offset,
+            returnSelection.end_lineno,
+            returnSelection.end_col_offset + 1
+          ),
+          options: {
+            isWholeLine: false,
+            className: 'codeEditorReturnHighlight',
+          },
+        },
+      ]);
+    } else {
+      editorRef.current?.deltaDecorations(decorations || [], []);
+    }
+  }
 
   // When cell changes
   useEffect(() => {
@@ -199,7 +232,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     setSelectedCell(updated_cell);
   };
 
-  const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
+  const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
 
@@ -385,6 +418,14 @@ export const CodeEditor = (props: CodeEditorProps) => {
           height: `${consoleHeight}px`,
         }}
       >
+        {editorInteractionState.mode === 'PYTHON' && (
+          <span className="codeEditorReturnHighlight" style={{ fontFamily: 'monospace' }}>
+            Type ↳{' '}
+            {selectedCell.evaluation_result?.output_type !== undefined && !hasUnsavedChanges
+              ? selectedCell.evaluation_result?.output_type
+              : returnSelection?.value_type}{' '}
+          </span>
+        )}
         {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
           <Console evalResult={evalResult} editorMode={editorMode} />
         )}

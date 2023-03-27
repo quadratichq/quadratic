@@ -33,23 +33,23 @@ async def inspect_python(code):
 
         if hasattr(last_node, "value"):
             # print("value", last_node.value)
-            print("dir", dir(last_node.value))
-            print("type", type(last_node.value).__name__)
+            # print("dir", dir(last_node.value))
+            # print("type", type(last_node.value).__name__)
             return_value["value_type"] = type(last_node.value).__name__
 
             # if type is name then get the id
             if type(last_node.value).__name__ == "Name":
-                print("id", last_node.value.id)
-                return_value["value_type"] = "Name({})".format(last_node.value.id)
+                # print("id", last_node.value.id)
+                return_value["value_type"] = "Variable({})".format(last_node.value.id)
 
             # if type is call then get the func
             if type(last_node.value).__name__ == "Call":
                 if type(last_node.value.func).__name__ == "Name":
-                    return_value["value_type"] = "Call({})".format(
+                    return_value["value_type"] = "Function({})".format(
                         last_node.value.func.id
                     )
                 elif type(last_node.value.func).__name__ == "Attribute":
-                    return_value["value_type"] = "Call({})".format(
+                    return_value["value_type"] = "Function({})".format(
                         last_node.value.func.attr
                     )
 

@@ -17,9 +17,5 @@ export async function runPython(python_code: string, pyodide: any = undefined): 
 
   const output = await pyodide_obj.globals.get('run_python')(python_code);
 
-  const output_obj = Object.fromEntries(output.toJs()) as runPythonReturnType;
-
-  console.log('output_obj', output_obj);
-
-  return output_obj;
+  return Object.fromEntries(output.toJs()) as runPythonReturnType;
 }

@@ -20,7 +20,5 @@ export async function inspectPython(python_code: string, pyodide: any = undefine
 
   const output_obj = Object.fromEntries(output.toJs()) as inspectPythonReturnType;
 
-  console.log('output_obj', output_obj);
-
   return output_obj;
 }
