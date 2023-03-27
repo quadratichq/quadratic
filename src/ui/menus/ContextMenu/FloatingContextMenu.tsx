@@ -221,13 +221,13 @@ export const FloatingContextMenu = (props: Props) => {
         }}
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton size="small" onClick={() => changeBold(!format.bold)} color="inherit">
+          <IconButton onClick={() => changeBold(!format.bold)} color="inherit">
             <FormatBold fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton size="small" onClick={() => changeItalic(!format.italic)} color="inherit">
+          <IconButton onClick={() => changeItalic(!format.italic)} color="inherit">
             <FormatItalic fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -236,7 +236,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Text color">
-                <IconButton size="small" color="inherit">
+                <IconButton color="inherit">
                   <FormatColorText fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -253,7 +253,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Fill color">
-                <IconButton size="small" color="inherit">
+                <IconButton color="inherit">
                   <FormatColorFill fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -266,7 +266,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Borders">
-                <IconButton size="small" color="inherit">
+                <IconButton color="inherit">
                   <BorderAll fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -279,32 +279,32 @@ export const FloatingContextMenu = (props: Props) => {
         <MenuDivider />
 
         <TooltipHint title="Format as currency">
-          <IconButton size="small" onClick={() => textFormatSetCurrency()} color="inherit">
+          <IconButton onClick={() => textFormatSetCurrency()} color="inherit">
             <AttachMoneyOutlined fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as percent">
-          <IconButton size="small" onClick={() => textFormatSetPercentage()} color="inherit">
+          <IconButton onClick={() => textFormatSetPercentage()} color="inherit">
             <Percent fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Decrease decimal places">
-          <IconButton size="small" onClick={() => textFormatDecreaseDecimalPlaces()} color="inherit">
+          <IconButton onClick={() => textFormatDecreaseDecimalPlaces()} color="inherit">
             <DecimalDecrease fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Increase decimal places">
-          <IconButton size="small" onClick={() => textFormatIncreaseDecimalPlaces()} color="inherit">
+          <IconButton onClick={() => textFormatIncreaseDecimalPlaces()} color="inherit">
             <DecimalIncrease fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <MenuDivider />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton size="small" onClick={() => clearAllFormatting()} color="inherit">
+          <IconButton onClick={() => clearAllFormatting()} color="inherit">
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -343,7 +343,7 @@ export const FloatingContextMenu = (props: Props) => {
         </Button> */}
         <MenuDivider />
         <TooltipHint title="More commands…">
-          <IconButton size="small" onClick={() => moreMenu.toggleMenu()} color="inherit" ref={moreMenuButtonRef}>
+          <IconButton onClick={() => moreMenu.toggleMenu()} color="inherit" ref={moreMenuButtonRef}>
             <MoreHoriz fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -354,7 +354,6 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <MenuItem onClick={copyAsPNG}>
             <MenuLineItem
-              size="small"
               primary="Copy selection as PNG"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'}
               Icon={CopyAsPNG}
