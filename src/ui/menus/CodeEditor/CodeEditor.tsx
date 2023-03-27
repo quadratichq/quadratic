@@ -144,8 +144,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
   }, [editorContent, selectedCell]);
 
   // highlight range in monaco editor
-  if (returnSelection !== undefined) {
-    if (editorMode === 'PYTHON') {
+  if (editorMode === 'PYTHON') {
+    if (returnSelection !== undefined) {
       decorations = editorRef.current?.deltaDecorations(decorations || [], [
         {
           range: new Range(
@@ -163,6 +163,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
     } else {
       editorRef.current?.deltaDecorations(decorations || [], []);
     }
+  } else {
+    editorRef.current?.deltaDecorations(decorations || [], []);
   }
 
   // When cell changes
@@ -418,14 +420,23 @@ export const CodeEditor = (props: CodeEditorProps) => {
           height: `${consoleHeight}px`,
         }}
       >
-        {editorInteractionState.mode === 'PYTHON' && (
-          <span className="codeEditorReturnHighlight" style={{ fontFamily: 'monospace' }}>
-            Type ↳{' '}
-            {selectedCell.evaluation_result?.output_type !== undefined && !hasUnsavedChanges
-              ? selectedCell.evaluation_result?.output_type
-              : returnSelection?.value_type}{' '}
-          </span>
-        )}
+        {editorInteractionState.mode === 'PYTHON' &&
+          (selectedCell.evaluation_result?.output_type || returnSelection?.value_type) && (
+            <span style={{ fontFamily: 'monospace', padding: '2px' }}>
+              Type ↳{' '}
+              <span
+                className="codeEditorReturnHighlight"
+                style={{
+                  borderRadius: '4px',
+                  padding: '2px',
+                }}
+              >
+                {selectedCell.evaluation_result?.output_type !== undefined && !hasUnsavedChanges
+                  ? selectedCell.evaluation_result?.output_type
+                  : returnSelection?.value_type}{' '}
+              </span>
+            </span>
+          )}
         {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
           <Console evalResult={evalResult} editorMode={editorMode} />
         )}
