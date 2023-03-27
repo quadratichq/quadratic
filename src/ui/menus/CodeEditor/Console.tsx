@@ -133,6 +133,10 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
               </p>
               <br />
             </>
+          ) : editorMode === 'AI' ? (
+            <>
+              <h3>AI Docs</h3>
+            </>
           ) : (
             <>
               <h3>Spreadsheet formulas</h3>

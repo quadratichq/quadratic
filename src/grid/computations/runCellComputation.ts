@@ -32,9 +32,9 @@ export const runCellComputation = async (cell: Cell, pyodide?: any): Promise<cel
   } else if (cell.type === 'AI') {
     let result = await runAI(cell.ai_prompt || '', { x: cell.x, y: cell.y });
     return {
-      success: true,
+      success: result.success,
       std_out: undefined,
-      std_err: undefined,
+      std_err: result.error_msg,
       output_value: result.output_value,
       cells_accessed: [],
       array_output: result.array_output || [],
