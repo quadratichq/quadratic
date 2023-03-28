@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --exit-child src/",
+    "start": "ts-node-dev --respawn --exit-child src/",
     "build": "tsc",
     "lint": "eslint src/**/*.ts",
     "format": "eslint src/**/*.ts --fix",
@@ -29,5 +29,8 @@
   "devDependencies": {
     "@types/cors": "^2.8.12",
     "prisma": "^4.6.1"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }

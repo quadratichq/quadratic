@@ -58,6 +58,6 @@ app.get('/createFile', validateAccessToken, async (req: JWTRequest, res: express
   });
 });
 
-app.listen(8000);
+const PORT = process.env.PORT || 8000;
 
-console.log('Listening on http://localhost:8000');
+app.listen(PORT, () => console.log(`Listening on http://localhost:${PORT}`));
