@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import localforage from 'localforage';
-import { GridFileData, GridFile, GridFileSchema, validateFile } from './GridFile';
+import { GridFileData, GridFile, GridFileSchema, validateFile, GridFiles } from './GridFile';
 import { debugShowFileIO } from '../debugFlags';
 import { v4 as uuid } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
@@ -8,7 +8,7 @@ import { downloadFile } from './downloadFile';
 import { SheetController } from '../grid/controller/sheetController';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { EXAMPLE_FILES } from '../constants/app';
+import { DEFAULT_FILE_NAME, EXAMPLE_FILES } from '../constants/app';
 
 const INDEX = 'index';
 
@@ -85,7 +85,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Quadratic and, if it is, do what's necessary to load it.
   // Note: a new ID is always created when importing a file
   const importQuadraticFile = useCallback(
-    async (contents: string, filename: string): Promise<boolean> => {
+    async (contents: string, filename: string, isNewFile: boolean = true): Promise<boolean> => {
       // Try to parse the contents as JSON
       let quadraticJson;
       try {
@@ -102,12 +102,21 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         return false;
       }
 
-      const newFileListItem = { filename, id: uuid(), modified: Date.now() };
-      const newFile = { ...quadraticJson, ...newFileListItem };
-      setCurrentFileContents(newFile);
-      setFileList((oldFileList) => [newFileListItem, ...oldFileList]);
-      resetSheet(newFile);
-      log(`import success: ${filename} (${newFile.id})`);
+      // If it's a new file
+      if (isNewFile) {
+        const newFileListItem = { filename, id: uuid(), modified: Date.now() };
+        const newFile = { ...quadraticJson, ...newFileListItem };
+        setCurrentFileContents(newFile);
+        setFileList((oldFileList) => [newFileListItem, ...oldFileList]);
+        resetSheet(newFile);
+        log(`import success: ${filename} (${newFile.id})`);
+      } else {
+        // It's possible we updated the file's info, should we set .modified?
+        setCurrentFileContents(quadraticJson);
+        resetSheet(quadraticJson);
+        log(`import success: ${filename} (${quadraticJson.id})`);
+      }
+
       return true;
     },
     [resetSheet]
@@ -239,24 +248,17 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Load a file from memory
   const loadFileFromMemory = useCallback(
     async (id: string): Promise<boolean> => {
-      try {
-        const file = (await localforage.getItem(id)) as GridFile;
-        if (!file) {
-          throw new Error(`Unable to load file: \`${id}\`. It doesn’t appear to be a file stored in memory.`);
-        }
-
-        // Probably use `importQuadraticFile` file here...
-
-        log(`loaded: ${file.filename} (${file.id})`);
-        setCurrentFileContents(file);
-        resetSheet(file);
-        return true;
-      } catch (e) {
-        console.error(e);
-        return false;
+      const file: GridFiles | null = await localforage.getItem(id);
+      if (!file) {
+        throw new Error(`Unable to load file: \`${id}\`. It doesn’t appear to be a file stored in memory.`);
       }
+      let filename = DEFAULT_FILE_NAME;
+      // @ts-expect-error
+      if (file.filename) filename = file.filename;
+
+      return importQuadraticFile(JSON.stringify(file), filename, false);
     },
-    [resetSheet]
+    [importQuadraticFile]
   );
 
   // Delete a file (cannot delete a file that's currently active)
@@ -383,7 +385,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
 // Given a file name, strip out the `.grid` extension. Provide a default.
 function massageFilename(str: string | undefined): string {
-  let out = 'Untitled';
+  let out = DEFAULT_FILE_NAME;
 
   if (typeof str !== 'string' || str.length === 0) {
     return out;
@@ -394,8 +396,10 @@ function massageFilename(str: string | undefined): string {
 }
 
 function createFilename(fileList: LocalFile[]): string {
-  const count = fileList.filter(({ filename }) => filename.substring(0, 'Untitled'.length) === 'Untitled').length;
-  return 'Untitled' + (count ? ` ${count + 1}` : '');
+  const count = fileList.filter(
+    ({ filename }) => filename.substring(0, DEFAULT_FILE_NAME.length) === DEFAULT_FILE_NAME
+  ).length;
+  return DEFAULT_FILE_NAME + (count ? ` ${count + 1}` : '');
 }
 
 function log(...s: string[]): void {

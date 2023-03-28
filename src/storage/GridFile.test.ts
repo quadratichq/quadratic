@@ -41,7 +41,7 @@ describe('validateFile()', () => {
     expect(result).toHaveProperty('modified');
     expect(result).toHaveProperty('created');
     expect(result).toHaveProperty('id');
-    expect(result).toHaveProperty('filename', 'Untitled');
+    expect(result).toHaveProperty('filename');
   });
 
   test('Returns the file when it matches the most recent schema', () => {

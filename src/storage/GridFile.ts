@@ -3,6 +3,7 @@ import { BorderSchema, CellSchema, CellFormatSchema } from '../grid/sheet/gridTy
 import { v4 as uuid } from 'uuid';
 import z from 'zod';
 import { debugShowFileIO } from '../debugFlags';
+import { DEFAULT_FILE_NAME } from '../constants/app';
 
 const HeadingSchema = z.object({
   id: z.number(),
@@ -54,13 +55,13 @@ export function upgradeV1toV1_1(file: GridFileV1): GridFileV1_1 {
     modified: date,
     created: date,
     id: uuid(),
-    filename: 'Untitled',
+    filename: DEFAULT_FILE_NAME,
   };
 }
 
 export const GridFileSchema = GridFileSchemaV1_1;
 export type GridFile = GridFileV1_1;
-type GridFiles = GridFileV1 | GridFileV1_1;
+export type GridFiles = GridFileV1 | GridFileV1_1;
 
 /**
  * Given arbitrary JSON, validate whether it's a valid file format and return
