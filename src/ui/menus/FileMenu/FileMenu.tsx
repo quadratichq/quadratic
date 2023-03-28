@@ -74,10 +74,12 @@ export function FileMenu(props: FileMenuProps) {
     onClose({ reset: true });
   };
 
-  // Focus back to the grid when this unmounts
+  // If there's an active file, set focus back to the grid when this unmounts
   useEffect(() => {
     return () => {
-      focusGrid();
+      if (currentFileId) {
+        focusGrid();
+      }
     };
   });
 

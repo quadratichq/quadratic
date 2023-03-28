@@ -8,6 +8,7 @@ import { downloadFile } from './downloadFile';
 import { SheetController } from '../grid/controller/sheetController';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
+import { EXAMPLE_FILES } from '../constants/app';
 
 const INDEX = 'index';
 
@@ -28,7 +29,7 @@ export interface LocalFiles {
   loadFileFromMemory: (id: string) => Promise<boolean>;
   loadFileFromDisk: (file: File) => Promise<boolean>;
   loadFileFromUrl: (url: string) => Promise<boolean>;
-  loadFileFromExamples: (sample: string) => Promise<boolean>;
+  loadFileFromExamples: (sample: string, filename: string) => Promise<boolean>;
   renameCurrentFile: (newFilename: string) => Promise<void>;
   save: () => Promise<void>;
 }
@@ -114,13 +115,17 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
   // Load a remote file over the network
   const loadFileFromUrl = useCallback(
-    async (url: string): Promise<boolean> => {
+    async (url: string, filename?: string): Promise<boolean> => {
       try {
         const res = await fetch(url);
         const file = await res.text();
 
-        // Regardless of the file's name in its meta, derive it's name from the URL
-        return importQuadraticFile(file, massageFilename(new URL(url).pathname.split('/').pop()));
+        // If there's no specified name, derive it's name from the URL
+        if (!filename) {
+          filename = massageFilename(new URL(url).pathname.split('/').pop());
+        }
+
+        return importQuadraticFile(file, filename);
       } catch (e) {
         log('error fetching and/or loading file', e as string);
         return false;
@@ -131,8 +136,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
   // Load an example file
   const loadFileFromExamples = useCallback(
-    async (sample: string): Promise<boolean> => {
-      return await loadFileFromUrl(`${window.location.origin}/examples/${sample}`);
+    async (sample: string, filename: string): Promise<boolean> => {
+      return await loadFileFromUrl(`${window.location.origin}/examples/${sample}`, filename);
     },
     [loadFileFromUrl]
   );
@@ -341,7 +346,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       // otherwise show the file menu
       if (isFirstVisit) {
         log('first visit, loading example file');
-        loadFileFromExamples('default.grid');
+        loadFileFromExamples(EXAMPLE_FILES[0].file, EXAMPLE_FILES[0].name);
       } else {
         setEditorInteractionState({
           ...editorInteractionState,

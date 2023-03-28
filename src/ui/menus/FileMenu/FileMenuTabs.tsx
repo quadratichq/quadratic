@@ -22,32 +22,7 @@ import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 import { QuadraticLoading } from '../../loading/QuadraticLoading';
 import { onCloseFn } from './FileMenu';
 import { LocalFilesContext } from '../../QuadraticUIContext';
-
-const examples = [
-  {
-    name: 'Default',
-    description: 'Quick intro to the basics of using Quadratic.',
-    file: 'default.grid',
-  },
-  {
-    name: 'Python',
-    file: 'python.grid',
-    description: 'Some advanced examples of how to use Python in Quadratic.',
-  },
-  { name: 'Airports large', file: 'airports_large.grid', description: 'Lorem ipsum santa dolor.' },
-  { name: 'Airports distance', file: 'airports_distance.grid', description: 'Lorem ipsum santa dolor.' },
-  { name: 'Expenses', file: 'expenses.grid', description: 'Example of spreadsheet-style budgeting.' },
-  {
-    name: 'Monte Carlo simulation',
-    file: 'monte_carlo_simulation.grid',
-    description: 'Working with large sets of data',
-  },
-  {
-    name: 'Startup portfolio',
-    file: 'startup_portfolio.grid',
-    description: 'Example with calculations from formulas and Python.',
-  },
-];
+import { EXAMPLE_FILES } from '../../../constants/app';
 
 interface TabPanelProps {
   children?: ReactNode;
@@ -173,13 +148,13 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
         </Typography>
         <Divider />
         <List sx={{ mt: theme.spacing(-1) }}>
-          {examples.map(({ name, file, description }, i) => (
+          {EXAMPLE_FILES.map(({ name, file, description }, i) => (
             <div key={i}>
               <ListItem key={`sample-${file}`} disablePadding>
                 <ListItemButton
                   onClick={() => {
                     setIsLoading(true);
-                    loadFileFromExamples(file)
+                    loadFileFromExamples(file, name)
                       .then((loaded) => {
                         setIsLoading(false);
                         if (loaded) {
@@ -198,7 +173,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
                   <ListItemText primary={name} secondary={description} />
                 </ListItemButton>
               </ListItem>
-              {i < examples.length - 1 && <Divider />}
+              {i < EXAMPLE_FILES.length - 1 && <Divider />}
             </div>
           ))}
         </List>
