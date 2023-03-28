@@ -1,4 +1,3 @@
-// @TODO rename schema to just type, e.g. GridFileSchema -> GridFile
 import { Dependency } from '../grid/sheet/GridRenderDependency';
 import { BorderSchema, CellSchema, CellFormatSchema } from '../grid/sheet/gridTypes';
 import { v4 as uuid } from 'uuid';
@@ -25,14 +24,14 @@ const GridFileDataSchema = z.object({
 type GridFileDataWithoutDep = z.infer<typeof GridFileDataSchema>;
 export type GridFileData = GridFileDataWithoutDep & { render_dependency: Dependency[] };
 
-const GridFileSchemaV1Schema = GridFileDataSchema.merge(
+const GridFileSchemaV1 = GridFileDataSchema.merge(
   z.object({
     version: z.literal('1.0'),
   })
 );
-export type GridFileSchemaV1 = z.infer<typeof GridFileSchemaV1Schema>;
+export type GridFileV1 = z.infer<typeof GridFileSchemaV1>;
 
-const GridFileSchemaV1_1Schema = GridFileDataSchema.merge(
+const GridFileSchemaV1_1 = GridFileDataSchema.merge(
   z.object({
     version: z.literal('1.1'),
 
@@ -45,9 +44,9 @@ const GridFileSchemaV1_1Schema = GridFileDataSchema.merge(
     filename: z.string(),
   })
 );
-type GridFileSchemaV1_1 = z.infer<typeof GridFileSchemaV1_1Schema>;
+type GridFileV1_1 = z.infer<typeof GridFileSchemaV1_1>;
 
-export function upgradeV1toV1_1(file: GridFileSchemaV1): GridFileSchemaV1_1 {
+export function upgradeV1toV1_1(file: GridFileV1): GridFileV1_1 {
   const date = Date.now();
   return {
     ...file,
@@ -59,26 +58,25 @@ export function upgradeV1toV1_1(file: GridFileSchemaV1): GridFileSchemaV1_1 {
   };
 }
 
-export type GridFileSchema = GridFileSchemaV1_1;
-
-type GridFileSchemas = GridFileSchemaV1 | GridFileSchemaV1_1;
+export type GridFile = GridFileV1_1;
+type GridFiles = GridFileV1 | GridFileV1_1;
 
 /**
  * Given arbitrary JSON, validate whether it's a valid file format and return
  * the newest format of the file if it is.
  * @param jsonFile
- * @returns {GridFileSchema | null}
+ * @returns {GridFile | null}
  */
 export function validateFile(jsonFile: Object) {
   // Ordered by newest first
-  const files = [{ schema: GridFileSchemaV1_1Schema }, { schema: GridFileSchemaV1Schema, updateFn: upgradeV1toV1_1 }];
+  const files = [{ schema: GridFileSchemaV1_1 }, { schema: GridFileSchemaV1, updateFn: upgradeV1toV1_1 }];
 
   // Fn to step up through `files` and upgrade each valid file
-  const updateFile = (file: GridFileSchemas, filesIndex: number) => {
+  const updateFile = (file: GridFiles, filesIndex: number) => {
     while (filesIndex !== 0) {
-      if (debugShowFileIO) console.log('[GridFileSchema] upgrading file version: ' + file.version);
+      if (debugShowFileIO) console.log('[GridFile] upgrading file version: ' + file.version);
       // @ts-expect-error we know the top one doesn't have an updater function
-      file = files[filesIndex].updateFn(jsonFile as GridFileSchemas);
+      file = files[filesIndex].updateFn(jsonFile as GridFiles);
       filesIndex--;
     }
     return file;
@@ -106,7 +104,7 @@ export function validateFile(jsonFile: Object) {
     const result =
       schema.shape.version.value === '1.0' ? schema.safeParse(v1Fixes(jsonFile)) : schema.safeParse(jsonFile);
     if (result.success) {
-      jsonFile = updateFile(jsonFile as GridFileSchemas, index);
+      jsonFile = updateFile(jsonFile as GridFiles, index);
       isValid = true;
       break;
     } else {
@@ -115,7 +113,7 @@ export function validateFile(jsonFile: Object) {
   }
 
   if (!isValid) {
-    if (debugShowFileIO) console.log('[GridFileSchema] failed to validate file with zod.', errors);
+    if (debugShowFileIO) console.log('[GridFile] failed to validate file with zod.', errors);
     return null;
   }
 

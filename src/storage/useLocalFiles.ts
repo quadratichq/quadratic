@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import localforage from 'localforage';
-import { GridFileData, GridFileSchema, validateFile } from './GridFileSchema';
+import { GridFileData, GridFile, validateFile } from './GridFile';
 import { debugShowFileIO } from '../debugFlags';
 import { v4 as uuid } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
@@ -10,7 +10,7 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 
 const INDEX = 'index';
-// TODO: this should be the current version, so pull it from the current `GridFileSchema` somehow...
+// TODO: this should be the current version, so pull it from the current `GridFile` somehow...
 const VERSION = '1.1';
 
 export interface LocalFile {
@@ -39,7 +39,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const [hasInitialPageLoadError, setHasInitialPageLoadError] = useState<boolean>(false);
   const didMount = useRef(false);
   const [fileList, setFileList] = useState<LocalFile[]>([]);
-  const [currentFileContents, setCurrentFileContents] = useState<GridFileSchema | null>(null);
+  const [currentFileContents, setCurrentFileContents] = useState<GridFile | null>(null);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { sheet } = sheetController;
 
@@ -66,7 +66,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
   // Reset the sheet to the current file in state, update the URL accordingly
   const resetSheet = useCallback(
-    (grid: GridFileSchema) => {
+    (grid: GridFile) => {
       sheetController.clear();
       sheetController.sheet.load_file(grid);
       sheetController.app?.rebuild();
@@ -97,7 +97,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       }
 
       // Check if the JSON is a valid quadratic file
-      quadraticJson = validateFile(quadraticJson) as GridFileSchema | null;
+      quadraticJson = validateFile(quadraticJson) as GridFile | null;
       if (!quadraticJson) {
         console.error('Failed to parse data as a valid Quadratic file');
         return false;
@@ -154,7 +154,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     };
 
     const created = Date.now();
-    const newFile: GridFileSchema = {
+    const newFile: GridFile = {
       ...grid,
       id: uuid(),
       created,
@@ -173,7 +173,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Download the currently active file
   const downloadCurrentFile = useCallback(() => {
     if (!currentFileContents) return;
-    const data: GridFileSchema = {
+    const data: GridFile = {
       ...currentFileContents,
       ...sheet.export_file(),
     };
@@ -237,7 +237,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const loadFileFromMemory = useCallback(
     async (id: string): Promise<boolean> => {
       try {
-        const file = (await localforage.getItem(id)) as GridFileSchema;
+        const file = (await localforage.getItem(id)) as GridFile;
         if (!file) {
           throw new Error(`Unable to load file: \`${id}\`. It doesn’t appear to be a file stored in memory.`);
         }

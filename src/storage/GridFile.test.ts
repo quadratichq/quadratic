@@ -1,4 +1,4 @@
-import { validateFile } from './GridFileSchema';
+import { validateFile } from './GridFile';
 
 const v1File = {
   version: '1.0',
