@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import localforage from 'localforage';
-import { GridFileData, GridFile, validateFile } from './GridFile';
+import { GridFileData, GridFile, GridFileSchema, validateFile } from './GridFile';
 import { debugShowFileIO } from '../debugFlags';
 import { v4 as uuid } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
@@ -10,8 +10,6 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 
 const INDEX = 'index';
-// TODO: this should be the current version, so pull it from the current `GridFile` somehow...
-const VERSION = '1.1';
 
 export interface LocalFile {
   filename: string;
@@ -158,7 +156,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       ...grid,
       id: uuid(),
       created,
-      version: VERSION,
+      version: GridFileSchema.shape.version.value,
       modified: created,
       filename: createFilename(fileList),
     };

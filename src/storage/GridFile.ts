@@ -58,6 +58,7 @@ export function upgradeV1toV1_1(file: GridFileV1): GridFileV1_1 {
   };
 }
 
+export const GridFileSchema = GridFileSchemaV1_1;
 export type GridFile = GridFileV1_1;
 type GridFiles = GridFileV1 | GridFileV1_1;
 
