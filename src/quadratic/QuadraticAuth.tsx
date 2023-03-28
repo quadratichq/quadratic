@@ -3,6 +3,8 @@ import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { useAuth0 } from '@auth0/auth0-react';
 import { captureException } from '@sentry/react';
 import { QuadraticApp } from './QuadraticApp';
+import apiClientSingleton from '../api-client/apiClientSingleton';
+import { useEffect } from 'react';
 
 export const QuadraticAuth = () => {
   const {
@@ -11,7 +13,14 @@ export const QuadraticAuth = () => {
     isAuthenticated: Auth0IsAuthenticated,
     loginWithRedirect,
     logout,
+    getAccessTokenSilently,
   } = useAuth0();
+
+  useEffect(() => {
+    if (Auth0IsAuthenticated) {
+      apiClientSingleton.setAuth(getAccessTokenSilently);
+    }
+  }, [Auth0IsAuthenticated, getAccessTokenSilently]);
 
   // Auth0 is Optional
   if (process.env.REACT_APP_AUTH0_DOMAIN && process.env.REACT_APP_AUTH0_DOMAIN !== 'none') {

@@ -1,6 +1,6 @@
 import { GetCellsDB } from '../../sheet/Cells/GetCellsDB';
 import { Coordinate } from '../../../gridGL/types/size';
-import { Configuration, OpenAIApi } from 'openai';
+import apiClientSingleton from '../../../api-client/apiClientSingleton';
 
 export interface runAIReturnType {
   cells_accessed: [number, number][];
@@ -11,12 +11,9 @@ export interface runAIReturnType {
   array_output: string[][] | null;
 }
 
-const configuration = new Configuration({
-  apiKey: process.env.REACT_APP_OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
-
 export async function runAI(prompt: string, pos: Coordinate): Promise<runAIReturnType> {
+  const token = await apiClientSingleton.getAuth();
+
   const top_cells = await GetCellsDB(pos.x - 25, pos.y - 50, pos.x + 25, pos.y - 1);
   const left_cells = await GetCellsDB(pos.x - 25, pos.y - 25, pos.x - 1, pos.y + 50);
 
@@ -35,9 +32,9 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
   //cut string to 28000 chars to avoid openai error
   nearby_cells_string = nearby_cells_string.slice(0, 20000);
 
-  let completion;
+  let response;
   try {
-    completion = await openai.createChatCompletion({
+    const request_body = {
       model: 'gpt-4',
       messages: [
         {
@@ -78,34 +75,49 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
           content: prompt,
         },
       ],
+    };
+
+    response = await fetch(`http://localhost:8000/ai/autocomplete`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request_body),
     });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    const res_json = await response.json();
+
+    const result = res_json.data.choices[0].message?.content;
+
+    // try and parse the result as JSON
+    let parsedResult = null;
+    try {
+      parsedResult = JSON.parse(result || '');
+    } catch (e) {
+      throw new Error(`Invalid JSON: ${result}`);
+    }
+
+    return {
+      cells_accessed: [],
+      success: true,
+      error_span: null,
+      error_msg: undefined,
+      output_value: result.trim(),
+      array_output: parsedResult,
+    } as runAIReturnType;
   } catch (e: any) {
     return {
       cells_accessed: [],
       success: false,
       error_span: null,
-      error_msg: `OpenAI API Error: ${e.message} \n ${e.response?.data?.error?.message}`,
+      error_msg: `OpenAI API Error: ${e.message} \n ${await response?.text()}`,
       output_value: null,
       array_output: null,
     } as runAIReturnType;
   }
-
-  const result = completion.data.choices[0].message?.content;
-
-  // try and parse the result as JSON
-  let parsedResult = null;
-  try {
-    parsedResult = JSON.parse(result || '');
-  } catch (e) {
-    console.log('Could not parse result as JSON');
-  }
-
-  return {
-    cells_accessed: [],
-    success: true,
-    error_span: null,
-    error_msg: undefined,
-    output_value: completion.data.choices[0].message?.content?.trim(),
-    array_output: parsedResult,
-  } as runAIReturnType;
 }

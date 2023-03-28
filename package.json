@@ -38,7 +38,6 @@
     "lodash.debounce": "^4.0.8",
     "monaco-editor": "^0.31.1",
     "numerable": "^0.3.15",
-    "openai": "^3.2.1",
     "papaparse": "^5.3.2",
     "pixi-viewport": "^4.37.0",
     "pixi.js": "^6.5.1",
