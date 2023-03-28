@@ -84,7 +84,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Quadratic and, if it is, do what's necessary to load it.
   // Note: a new ID is always created when importing a file
   const importQuadraticFile = useCallback(
-    async (contents: any, filename: string): Promise<boolean> => {
+    async (contents: string, filename: string): Promise<boolean> => {
       // Try to parse the contents as JSON
       let quadraticJson;
       try {
@@ -220,7 +220,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
           const contents = event.target?.result;
           if (contents) {
             // Regardless of the name in the file's meta, use it's name on disk
-            resolve(importQuadraticFile(contents, massageFilename(file.name)));
+            resolve(importQuadraticFile(contents as string, massageFilename(file.name)));
           }
           resolve(false);
         };
