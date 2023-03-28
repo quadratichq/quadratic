@@ -181,6 +181,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
     setIsRunningComputation(true);
     console.log('saveAndRunCell', selectedCell);
 
+    if (isRunningComputation) return;
+
+    setIsRunningComputation(true);
+
     selectedCell.type = editorMode;
     selectedCell.value = '';
     if (editorMode === 'PYTHON') {
@@ -329,13 +333,15 @@ export const CodeEditor = (props: CodeEditorProps) => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
-            {isRunningComputation ? (
-              <CircularProgress size="1rem" />
-            ) : (
-              <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-                <PlayArrow />
-              </IconButton>
-            )}
+            <IconButton
+              id="QuadraticCodeEditorRunButtonID"
+              size="small"
+              color="primary"
+              onClick={saveAndRunCell}
+              disabled={isRunningComputation}
+            >
+              {isRunningComputation ? <CircularProgress size="1rem" /> : <PlayArrow />}
+            </IconButton>
           </TooltipHint>
           <TooltipHint title="Close" shortcut="ESC">
             <IconButton

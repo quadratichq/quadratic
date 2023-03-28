@@ -84,7 +84,7 @@ export default function CellTypeMenu() {
   const [value, setValue] = React.useState<string>('');
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
   const searchlabel = 'Choose a cell type…';
-  const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value));
+  const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value.toLowerCase()));
 
   const close = useCallback(() => {
     setEditorInteractionState({
