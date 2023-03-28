@@ -1,5 +1,5 @@
 import { ClickEvent, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
-import { BorderType } from '../../../../../grid/sheet/gridTypes';
+import { BorderType, BorderTypeEnum } from '../../../../../grid/sheet/gridTypes';
 import {
   BorderColor,
   LineStyle,
@@ -207,19 +207,19 @@ export function useGetBorderMenu(props: Props): JSX.Element {
           <MenuItem onClick={(e) => handleChangeBorderType(e)}>
             <div className="lineStyleBorder normalBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.line2)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.enum.line2)}>
             <div className="lineStyleBorder doubleBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.line3)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.enum.line3)}>
             <div className="lineStyleBorder tripleBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.dashed)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.enum.dashed)}>
             <div className="lineStyleBorder dashedBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.dotted)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.enum.dotted)}>
             <div className="lineStyleBorder dottedBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderType.double)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.enum.double)}>
             <div className="lineStyleBorder twoLineBorder"></div>
           </MenuItem>
         </SubMenu>

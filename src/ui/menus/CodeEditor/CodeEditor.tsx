@@ -20,7 +20,7 @@ import { EditorInteractionState, editorInteractionStateAtom } from '../../../ato
 import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
 import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
-import { cellEvaluationReturnType } from '../../../grid/computations/types';
+import { CellEvaluationResult } from '../../../grid/computations/types';
 import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
 import { Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -56,7 +56,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const cell = useMemo(() => props.sheet_controller.sheet.getCellCopy(x, y), [x, y, props.sheet_controller.sheet]);
 
   // Cell evaluation result
-  const [evalResult, setEvalResult] = useState<cellEvaluationReturnType | undefined>(cell?.evaluation_result);
+  const [evalResult, setEvalResult] = useState<CellEvaluationResult | undefined>(cell?.evaluation_result);
 
   // Editor width state
   const [editorWidth, setEditorWidth] = useState<number>(

@@ -35,7 +35,7 @@ const examples = [
     description: 'Some advanced examples of how to use Python in Quadratic.',
   },
   { name: 'Airports large', file: 'airports_large.grid', description: 'Lorem ipsum santa dolor.' },
-  { name: 'Airports distance', file: 'airport_distance.grid', description: 'Lorem ipsum santa dolor.' },
+  { name: 'Airports distance', file: 'airports_distance.grid', description: 'Lorem ipsum santa dolor.' },
   { name: 'Expenses', file: 'expenses.grid', description: 'Example of spreadsheet-style budgeting.' },
   {
     name: 'Monte Carlo simulation',

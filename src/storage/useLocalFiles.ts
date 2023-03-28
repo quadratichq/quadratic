@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import localforage from 'localforage';
-import { GridFileData, GridFileSchema } from './GridFileSchema';
+import { GridFileData, GridFileSchema, validateFile } from './GridFileSchema';
 import { debugShowFileIO } from '../debugFlags';
 import { v4 as uuid } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
@@ -82,27 +82,34 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     [sheetController]
   );
 
-  // Given a valid file, 1) save it's meta to the file list, 2) save it to react state, 3) and persist it to localStorage
-  // A new ID is always created when importing a file
+  // Given some contents, determine whether it's a valid file we can load into
+  // Quadratic and, if it is, do what's necessary to load it.
+  // Note: a new ID is always created when importing a file
   const importQuadraticFile = useCallback(
-    async (gridFileJSON: GridFileSchema): Promise<boolean> => {
-      // TODO handle validating the file and updating it if it's old
-
-      // Does it have a version?
-
-      if (validateFile(gridFileJSON)) {
-        const newFileListItem = { filename: gridFileJSON.filename, id: uuid(), modified: Date.now() };
-        const newFile = { ...gridFileJSON, ...newFileListItem };
-        setCurrentFileContents(newFile);
-        setFileList((oldFileList) => [newFileListItem, ...oldFileList]);
-        resetSheet(newFile);
-        log(`import success: ${gridFileJSON.filename} (${gridFileJSON.id})`);
-        return true;
-      } else {
-        log(`import failed: ${gridFileJSON.filename} (${gridFileJSON.id}) is an invalid Quadratic file`);
-        validateFile(gridFileJSON, true);
+    async (contents: any, filename: string): Promise<boolean> => {
+      // Try to parse the contents as JSON
+      let quadraticJson;
+      try {
+        quadraticJson = JSON.parse(contents) as any;
+      } catch (e) {
+        console.error('Failed to parse data as valid JSON.', e);
         return false;
       }
+
+      // Check if the JSON is a valid quadratic file
+      quadraticJson = validateFile(quadraticJson) as GridFileSchema | null;
+      if (!quadraticJson) {
+        console.error('Failed to parse data as a valid Quadratic file');
+        return false;
+      }
+
+      const newFileListItem = { filename, id: uuid(), modified: Date.now() };
+      const newFile = { ...quadraticJson, ...newFileListItem };
+      setCurrentFileContents(newFile);
+      setFileList((oldFileList) => [newFileListItem, ...oldFileList]);
+      resetSheet(newFile);
+      log(`import success: ${filename} (${newFile.id})`);
+      return true;
     },
     [resetSheet]
   );
@@ -112,12 +119,10 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     async (url: string): Promise<boolean> => {
       try {
         const res = await fetch(url);
-        const file = (await res.json()) as GridFileSchema;
+        const file = await res.text();
 
-        // Overwrite the file's `filename` to match the last path in the URL (and strip out `.grid`)
-        file.filename = massageFilename(new URL(url).pathname.split('/').pop());
-
-        return importQuadraticFile(file);
+        // Regardless of the file's name in its meta, derive it's name from the URL
+        return importQuadraticFile(file, massageFilename(new URL(url).pathname.split('/').pop()));
       } catch (e) {
         log('error fetching and/or loading file', e as string);
         return false;
@@ -214,11 +219,10 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (event) => {
-          const json = event.target?.result;
-          if (json) {
-            const parsedFile = JSON.parse(json as string) as GridFileSchema;
-            parsedFile.filename = massageFilename(file.name);
-            resolve(importQuadraticFile(parsedFile));
+          const contents = event.target?.result;
+          if (contents) {
+            // Regardless of the name in the file's meta, use it's name on disk
+            resolve(importQuadraticFile(contents, massageFilename(file.name)));
           }
           resolve(false);
         };
@@ -238,9 +242,6 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
           throw new Error(`Unable to load file: \`${id}\`. It doesn’t appear to be a file stored in memory.`);
         }
 
-        // TODO in the future, this is where we would convert the file format
-        // (if necessary) as file formats persisted in memory may fall out of
-        // date change between app updates
         // Probably use `importQuadraticFile` file here...
 
         log(`loaded: ${file.filename} (${file.id})`);
@@ -387,31 +388,6 @@ function massageFilename(str: string | undefined): string {
 
   const extension = '.grid';
   return str.endsWith(extension) ? str.slice(0, str.length - extension.length) : str;
-}
-
-function validateFile(file: GridFileSchema, explainWhy?: boolean): boolean {
-  const expected = [
-    'cells',
-    'formats',
-    'columns',
-    'rows',
-    'borders',
-    'cell_dependency',
-    'version',
-    'modified', // TODO older files that don't have modified should still be valid we just add it
-    'created',
-    'id',
-    'filename',
-  ];
-  for (const key of expected) {
-    if (!(file as any)[key]) {
-      if (explainWhy) {
-        console.log(`${key} is not properly defined`);
-      }
-      return false;
-    }
-  }
-  return true;
 }
 
 function createFilename(fileList: LocalFile[]): string {
