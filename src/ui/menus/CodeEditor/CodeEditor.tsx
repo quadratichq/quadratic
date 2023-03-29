@@ -6,6 +6,7 @@ import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { Cell } from '../../../grid/sheet/gridTypes';
 import {
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -43,6 +44,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const [editorContent, setEditorContent] = useState<string | undefined>('');
   const [didMount, setDidMount] = useState(false);
+
+  const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -168,6 +171,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const saveAndRunCell = async () => {
     if (!selectedCell) return;
 
+    if (isRunningComputation) return;
+
+    setIsRunningComputation(true);
+
     selectedCell.type = editorMode;
     selectedCell.value = '';
     if (editorMode === 'PYTHON') {
@@ -184,6 +191,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
     const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
     setEvalResult(updated_cell?.evaluation_result);
+    setIsRunningComputation(false);
   };
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -309,10 +317,19 @@ export const CodeEditor = (props: CodeEditorProps) => {
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+          {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
-            <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-              <PlayArrow />
-            </IconButton>
+            <span>
+              <IconButton
+                id="QuadraticCodeEditorRunButtonID"
+                size="small"
+                color="primary"
+                onClick={saveAndRunCell}
+                disabled={isRunningComputation}
+              >
+                <PlayArrow />
+              </IconButton>
+            </span>
           </TooltipHint>
           <TooltipHint title="Close" shortcut="ESC">
             <IconButton
