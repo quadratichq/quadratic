@@ -25,6 +25,7 @@ export interface LocalFiles {
   currentFileId: string;
   deleteFile: (id: string) => void;
   downloadCurrentFile: () => void;
+  downloadFileFromMemory: (id: string) => void;
   fileList: LocalFile[];
   initialize: () => Promise<void>;
   loadFileFromMemory: (id: string) => Promise<boolean>;
@@ -192,6 +193,25 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
     downloadFile(data.filename, JSON.stringify(data));
   }, [currentFileContents, sheet]);
+
+  // Given a file ID, download it
+  const downloadFileFromMemory = useCallback(
+    async (id: string): Promise<void> => {
+      try {
+        if (currentFileContents && currentFileContents.id === id) {
+          downloadCurrentFile();
+        }
+
+        const file = (await localforage.getItem(id)) as GridFile;
+        if (file) {
+          downloadFile(file.filename, JSON.stringify(file));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    [currentFileContents, downloadCurrentFile]
+  );
 
   const currentFilename = useMemo(() => {
     return currentFileContents?.filename || '';
@@ -366,6 +386,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     currentFileId,
     deleteFile,
     downloadCurrentFile,
+    downloadFileFromMemory,
     fileList,
     initialize,
     loadFileFromDisk,

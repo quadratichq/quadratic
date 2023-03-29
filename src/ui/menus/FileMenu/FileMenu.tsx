@@ -53,8 +53,15 @@ export type onCloseFn = (arg?: { reset: boolean }) => void;
 export function FileMenu(props: FileMenuProps) {
   const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFileId, currentFilename, deleteFile, fileList, loadFileFromMemory, createNewFile } =
-    useContext(LocalFilesContext);
+  const {
+    currentFileId,
+    currentFilename,
+    deleteFile,
+    downloadFileFromMemory,
+    fileList,
+    loadFileFromMemory,
+    createNewFile,
+  } = useContext(LocalFilesContext);
 
   const onClose: onCloseFn = ({ reset } = { reset: false }) => {
     if (reset) {
@@ -131,10 +138,18 @@ export function FileMenu(props: FileMenuProps) {
                         }}
                         secondaryAction={
                           <div style={styles.iconBtns}>
-                            {!fileIsOpen && (
-                              // For now we only support deleting a file that's not open
-                              // one day we refactor things to support that
-                              <TooltipHint title="Delete" enterDelay={1000}>
+                            <TooltipHint title="Save local copy" enterDelay={1000}>
+                              <IconButton
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  downloadFileFromMemory(id);
+                                }}
+                              >
+                                <FileDownloadOutlined />
+                              </IconButton>
+                            </TooltipHint>
+                            <TooltipHint title="Delete" enterDelay={1000}>
+                              <span>
                                 <IconButton
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -142,22 +157,12 @@ export function FileMenu(props: FileMenuProps) {
                                       deleteFile(id);
                                     }
                                   }}
+                                  disabled={fileIsOpen}
                                 >
                                   <DeleteOutline />
                                 </IconButton>
-                              </TooltipHint>
-                            )}
-                            {/* Comment this out for now
-                            <TooltipHint title="Save local copy" enterDelay={1000}>
-                              <IconButton
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // download file
-                                }}
-                              >
-                                <FileDownloadOutlined />
-                              </IconButton>
-                              </TooltipHint>*/}
+                              </span>
+                            </TooltipHint>
                           </div>
                         }
                         disablePadding
