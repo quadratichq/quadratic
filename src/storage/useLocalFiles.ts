@@ -250,11 +250,11 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     async (id: string): Promise<boolean> => {
       const file: GridFiles | null = await localforage.getItem(id);
       if (!file) {
-        throw new Error(`Unable to load file: \`${id}\`. It doesn’t appear to be a file stored in memory.`);
+        return false;
       }
       let filename = DEFAULT_FILE_NAME;
       // @ts-expect-error
-      if (file.filename) filename = file.filename;
+      if (file?.filename) filename = file.filename;
 
       return importQuadraticFile(JSON.stringify(file), filename, false);
     },
