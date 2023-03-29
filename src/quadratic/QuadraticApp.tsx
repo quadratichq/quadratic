@@ -12,12 +12,12 @@ import { SheetController } from '../grid/controller/sheetController';
 import { useLocalFiles } from '../storage/useLocalFiles';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 
-type loadItem = 'pixi' | 'local-files' | 'wasm-rust' | 'wasm-python';
-const THINGS_TO_LOAD = ['pixi', 'local-files', 'wasm-rust', 'wasm-python'] as loadItem[];
+type item = 'pixi' | 'local-files' | 'wasm-rust' | 'wasm-python';
+const ITEMS: item[] = ['pixi', 'local-files', 'wasm-rust', 'wasm-python'];
 
 export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
-  const [thingsLoaded, setThingsLoaded] = useState<loadItem[]>([]);
+  const [itemsLoaded, setItemsLoaded] = useState<item[]>([]);
   const didMount = useRef(false);
   const { setPresentationMode } = useGridSettings();
   const [settingsReset, setSettingsReset] = useState(false);
@@ -27,10 +27,10 @@ export const QuadraticApp = () => {
   const { initialize } = localFiles;
 
   useEffect(() => {
-    if (THINGS_TO_LOAD.every((item) => thingsLoaded.includes(item))) {
+    if (ITEMS.every((item) => itemsLoaded.includes(item))) {
       setLoading(false);
     }
-  }, [thingsLoaded]);
+  }, [itemsLoaded]);
 
   // reset presentation mode when app starts
   useEffect(() => {
@@ -48,21 +48,21 @@ export const QuadraticApp = () => {
 
     if (!IS_READONLY_MODE && !debugSkipPythonLoad) {
       loadPython().then(() => {
-        setThingsLoaded((old) => ['wasm-python', ...old]);
+        setItemsLoaded((old) => ['wasm-python', ...old]);
       });
     } else {
-      setThingsLoaded((old) => ['wasm-python', ...old]);
+      setItemsLoaded((old) => ['wasm-python', ...old]);
     }
     loadAssets().then(() => {
-      setThingsLoaded((old) => ['pixi', ...old]);
+      setItemsLoaded((old) => ['pixi', ...old]);
     });
     // load Rust wasm
     init().then(() => {
       hello(); // let Rust say hello to console
-      setThingsLoaded((old) => ['wasm-rust', ...old]);
+      setItemsLoaded((old) => ['wasm-rust', ...old]);
     });
     initialize().then(() => {
-      setThingsLoaded((old) => ['local-files', ...old]);
+      setItemsLoaded((old) => ['local-files', ...old]);
     });
   }, [initialize]);
 
