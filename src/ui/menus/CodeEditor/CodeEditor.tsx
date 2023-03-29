@@ -317,6 +317,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+          {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
             <IconButton
               id="QuadraticCodeEditorRunButtonID"
@@ -325,7 +326,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
               onClick={saveAndRunCell}
               disabled={isRunningComputation}
             >
-              {isRunningComputation ? <CircularProgress size="1rem" /> : <PlayArrow />}
+              <PlayArrow />
             </IconButton>
           </TooltipHint>
           <TooltipHint title="Close" shortcut="ESC">
