@@ -15,6 +15,7 @@ export const validateAccessToken = expressjwt({
     jwksUri: process.env.AUTH0_JWKS_URI,
   }) as GetVerificationKey,
   // audience: process.env.AUTH0_AUDIENCE,
+  // We should validate Audience on production
   issuer: process.env.AUTH0_ISSUER,
   algorithms: ['RS256'],
 });
