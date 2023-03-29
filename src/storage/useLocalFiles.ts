@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import localforage from 'localforage';
 import { GridFileData, GridFile, GridFileSchema, validateFile, GridFiles } from './GridFile';
 import { debugShowFileIO } from '../debugFlags';
@@ -26,6 +26,7 @@ export interface LocalFiles {
   deleteFile: (id: string) => void;
   downloadCurrentFile: () => void;
   fileList: LocalFile[];
+  initialize: () => Promise<void>;
   loadFileFromMemory: (id: string) => Promise<boolean>;
   loadFileFromDisk: (file: File) => Promise<boolean>;
   loadFileFromUrl: (url: string) => Promise<boolean>;
@@ -36,7 +37,6 @@ export interface LocalFiles {
 
 export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const [hasInitialPageLoadError, setHasInitialPageLoadError] = useState<boolean>(false);
-  const didMount = useRef(false);
   const [fileList, setFileList] = useState<LocalFile[]>([]);
   const [currentFileContents, setCurrentFileContents] = useState<GridFile | null>(null);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -299,63 +299,57 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   }, [save, sheetController.app]);
 
   // Logic for the initial page load
-  useEffect(() => {
-    // Ensure this only runs once
-    if (didMount.current) return;
-    didMount.current = true;
-
+  const initialize = useCallback(async () => {
     // Initialize local storage
     localforage.config({ name: 'Quadratic', version: 1 });
     log('initialized localForage');
 
     // Handle initial page load from memory or a fresh slate
-    localforage.getItem(INDEX).then(async (result: unknown) => {
-      // Check if there's
+    const result = await localforage.getItem(INDEX);
 
-      // If there's a list of files in memory, load it into the app's state
-      let isFirstVisit = true;
-      const newFileList = (result ? result : fileList) as LocalFile[];
-      if (result) {
-        isFirstVisit = false;
-        setFileList(newFileList);
-        log(`loaded index with ${newFileList.length} files`);
+    // If there's a list of files in memory, load it into the app's state
+    let isFirstVisit = true;
+    const newFileList = (result ? result : fileList) as LocalFile[];
+    if (result) {
+      isFirstVisit = false;
+      setFileList(newFileList);
+      log(`loaded index with ${newFileList.length} files`);
+    } else {
+      log('index not found');
+    }
+
+    // If there's a remote file URL, try fetching and loading it
+    // Or if there's a local file ID, try loading it
+    const file = getURLParameter('file');
+    const local = getURLParameter('local');
+    if (file) {
+      const loaded = await loadFileFromUrl(file);
+      if (loaded) {
+        return;
       } else {
-        log('index not found');
+        setHasInitialPageLoadError(true);
       }
-
-      // If there's a remote file URL, try fetching and loading it
-      // Or if there's a local file ID, try loading it
-      const file = getURLParameter('file');
-      const local = getURLParameter('local');
-      if (file) {
-        const loaded = await loadFileFromUrl(file);
-        if (loaded) {
-          return;
-        } else {
-          setHasInitialPageLoadError(true);
-        }
-      } else if (local) {
-        const loaded = await loadFileFromMemory(local);
-        if (loaded) {
-          return;
-        } else {
-          setHasInitialPageLoadError(true);
-        }
-      }
-
-      // If none of the above are true, or they failed, fallback to default
-      // functionality: if it's your first time then load a default file,
-      // otherwise show the file menu
-      if (isFirstVisit) {
-        log('first visit, loading example file');
-        loadFileFromExamples(EXAMPLE_FILES[0].file, EXAMPLE_FILES[0].name);
+    } else if (local) {
+      const loaded = await loadFileFromMemory(local);
+      if (loaded) {
+        return;
       } else {
-        setEditorInteractionState({
-          ...editorInteractionState,
-          showFileMenu: true,
-        });
+        setHasInitialPageLoadError(true);
       }
-    });
+    }
+
+    // If none of the above are true, or they failed, fallback to default
+    // functionality: if it's your first time then load a default file,
+    // otherwise show the file menu
+    if (isFirstVisit) {
+      log('first visit, loading example file');
+      await loadFileFromExamples(EXAMPLE_FILES[0].file, EXAMPLE_FILES[0].name);
+    } else {
+      setEditorInteractionState({
+        ...editorInteractionState,
+        showFileMenu: true,
+      });
+    }
   }, [
     fileList,
     loadFileFromMemory,
@@ -373,6 +367,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     deleteFile,
     downloadCurrentFile,
     fileList,
+    initialize,
     loadFileFromDisk,
     loadFileFromMemory,
     loadFileFromUrl,
