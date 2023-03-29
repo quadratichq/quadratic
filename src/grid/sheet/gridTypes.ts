@@ -10,12 +10,12 @@ export const CellSchema = z.object({
   y: z.number(),
   type: CellTypesSchema,
   value: z.string(),
-  dependent_cells: z.tuple([z.number(), z.number()]).array().optional(),
   array_cells: z.tuple([z.number(), z.number()]).array().optional(), // list of output array cells created by this cell
-  python_code: z.string().optional(),
-  formula_code: z.string().optional(),
+  dependent_cells: z.tuple([z.number(), z.number()]).array().optional(),
   evaluation_result: CellEvaluationResultSchema.optional(),
+  formula_code: z.string().optional(),
   last_modified: z.string().optional(),
+  python_code: z.string().optional(),
 });
 export type Cell = z.infer<typeof CellSchema>;
 
@@ -27,13 +27,13 @@ export interface Heading {
 export const CellFormatSchema = z.object({
   x: z.number(),
   y: z.number(),
+  alignment: z.enum(['right', 'center']).optional(), // default is left
   bold: z.boolean().optional(),
   fillColor: z.string().optional(),
   italic: z.boolean().optional(),
   textColor: z.string().optional(),
-  wrapping: z.enum(['wrap', 'clip']).optional(), // default is overflow
-  alignment: z.enum(['right', 'center']).optional(), // default is left
   textFormat: CellTextFormatSchema.optional(),
+  wrapping: z.enum(['wrap', 'clip']).optional(), // default is overflow
 });
 export type CellFormat = z.infer<typeof CellFormatSchema>;
 
@@ -41,8 +41,8 @@ export const BorderTypeEnum = z.enum(['line1', 'line2', 'line3', 'dotted', 'dash
 export type BorderType = z.infer<typeof BorderTypeEnum>;
 
 const BorderDirectionSchema = z.object({
-  type: BorderTypeEnum.optional(),
   color: z.string().optional(),
+  type: BorderTypeEnum.optional(),
 });
 export type BorderDirection = z.infer<typeof BorderDirectionSchema>;
 
