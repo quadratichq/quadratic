@@ -65,4 +65,4 @@ export const debugShowCellsForDirtyQuadrants = debug && false;
 // file i/o
 // --------
 
-export const debugShowFileIO = debug && true;
+export const debugShowFileIO = debug && false;
