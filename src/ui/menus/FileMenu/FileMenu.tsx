@@ -138,6 +138,20 @@ export function FileMenu(props: FileMenuProps) {
                         }}
                         secondaryAction={
                           <div style={styles.iconBtns}>
+                            {!fileIsOpen && (
+                              <TooltipHint title="Delete" enterDelay={1000}>
+                                <IconButton
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm(`Please confirm you want to delete the file “${filename}”`)) {
+                                      deleteFile(id);
+                                    }
+                                  }}
+                                >
+                                  <DeleteOutline />
+                                </IconButton>
+                              </TooltipHint>
+                            )}
                             <TooltipHint title="Save local copy" enterDelay={1000}>
                               <IconButton
                                 onClick={(e) => {
@@ -147,21 +161,6 @@ export function FileMenu(props: FileMenuProps) {
                               >
                                 <FileDownloadOutlined />
                               </IconButton>
-                            </TooltipHint>
-                            <TooltipHint title="Delete" enterDelay={1000}>
-                              <span>
-                                <IconButton
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (window.confirm(`Please confirm you want to delete the file “${filename}”`)) {
-                                      deleteFile(id);
-                                    }
-                                  }}
-                                  disabled={fileIsOpen}
-                                >
-                                  <DeleteOutline />
-                                </IconButton>
-                              </span>
                             </TooltipHint>
                           </div>
                         }
