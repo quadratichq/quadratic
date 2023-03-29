@@ -18,12 +18,17 @@ if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'no
     tracesSampleRate: 1.0,
   });
 
+const AUTH0_AUDIENCE =
+  process.env.REACT_APP_AUTH0_AUDIENCE !== 'none'
+    ? process.env.REACT_APP_AUTH0_AUDIENCE
+    : process.env.REACT_APP_QUADRATIC_API_URL;
+
 ReactDOM.render(
   <React.StrictMode>
     <Auth0Provider
       domain={process.env.REACT_APP_AUTH0_DOMAIN}
       clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
-      audience={process.env.REACT_APP_AUTH0_AUDIENCE || process.env.REACT_APP_QUADRATIC_API_URL}
+      audience={AUTH0_AUDIENCE}
       issuer={process.env.REACT_APP_AUTH0_ISSUER}
       redirectUri={window.location.origin}
     >
