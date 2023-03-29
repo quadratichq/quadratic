@@ -13,8 +13,8 @@ const prisma = new PrismaClient();
 const app = express();
 app.use(express.json());
 
-// set CORS (TODO: this is not configured for production)
-const origin = process.env.CORS || 'http://localhost:3000';
+// set CORS in production set as app.quadratichq.com
+const origin = process.env.CORS || '*';
 app.use(cors({ origin }));
 
 const getUserFromRequest = async (req: JWTRequest) => {
