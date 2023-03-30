@@ -36,7 +36,6 @@ import {
   LayoutColRightWrapper,
 } from './FileMenuStyles';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../grid/controller/sheetController';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 import { LocalFilesContext } from '../../QuadraticUIContext';
 
