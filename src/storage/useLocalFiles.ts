@@ -10,7 +10,7 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES } from '../constants/app';
 
-const INDEX = 'index';
+const INDEX = 'file-list';
 
 export interface LocalFile {
   filename: string;
@@ -324,10 +324,14 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     localforage.config({ name: 'Quadratic', version: 1 });
     log('initialized localForage');
 
+    // Keep track of whether this is a first time visit to the app
+    // (User clearing cache will look like first time visitor)
+    let isFirstVisit = true;
+
     // See if we have saved files and load them into memory
     const savedFileList: LocalFile[] | null = await localforage.getItem(INDEX);
-    const isFirstVisit = Boolean(!savedFileList);
     if (savedFileList) {
+      isFirstVisit = false;
       setFileList(savedFileList);
       log(`loaded saved file list (${savedFileList.length} files)`);
     }
@@ -336,35 +340,30 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     const file = getURLParameter('file');
     const local = getURLParameter('local');
 
-    // Migrate files from old version of the app (if necessary)
-    // Note: eventually this can be phased out
+    // Migrate files from old version of the app (one-time, if necessary thing)
+    // Note: eventually this code can be removed
     const oldFileListKey = 'last-file-queue';
     const oldFileList: string[] | null = await localforage.getItem(oldFileListKey);
     if (oldFileList && oldFileList.length > 0) {
+      isFirstVisit = false;
       // Import each old file as a new file, then delete from memory
       await Promise.all(
         oldFileList.map(async (filename): Promise<[string, boolean]> => {
+          let importSuccess = false;
           const itemId = `file-${filename}`;
           const contents: GridFileV1 | null = await localforage.getItem(itemId);
-          const importSuccess = await importQuadraticFile(JSON.stringify(contents), filename.replace('.grid', ''));
+          importSuccess = await importQuadraticFile(JSON.stringify(contents), filename.replace('.grid', ''));
           await localforage.removeItem(itemId);
-          log(importSuccess ? `migrated file: ${filename}` : `could not migrate file in memory ${filename}`);
+          log(importSuccess ? `migrated file: ${filename}` : `failed to migrate file into memory: ${filename}`);
           return [filename, importSuccess];
         })
       );
-
       // Remove old file list
       await localforage.removeItem(oldFileListKey);
     }
 
     // Load the app into a different state based on certain criteria
-    if (isFirstVisit) {
-      // First time visitor! Or at least they cleared their cache and we don't have
-      // a client-side record of them being to the app
-      log('first visit, loading example file');
-      await loadFileFromExamples(EXAMPLE_FILES[0].file, EXAMPLE_FILES[0].name);
-      return;
-    } else if (file) {
+    if (file) {
       // Somebody trying to import a remote file on page load
       if (await loadFileFromUrl(file)) {
         return;
@@ -376,9 +375,15 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         return;
       }
       setHasInitialPageLoadError(true);
+    } else if (isFirstVisit) {
+      // First time visitor gets the default sample file
+      log('first visit, loading example file');
+      await loadFileFromExamples(EXAMPLE_FILES[0].file, EXAMPLE_FILES[0].name);
+      return;
     }
 
-    // If none of the above happen, fall back to the default: show the file menu
+    // If none of the above happen (or one failed), fall back to the default:
+    // show the file menu
     setEditorInteractionState((oldState) => ({
       ...oldState,
       showFileMenu: true,
