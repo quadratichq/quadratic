@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { useCallback, useContext, useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import {
   AddCircleOutline,
   Close,
@@ -10,7 +9,6 @@ import {
 import {
   Alert,
   AlertTitle,
-  Box,
   Chip,
   Divider,
   IconButton,
@@ -37,7 +35,6 @@ import {
   LayoutColLeftWrapper,
   LayoutColRightWrapper,
 } from './FileMenuStyles';
-import { useLocalFiles } from '../../../storage/useLocalFiles';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
@@ -45,13 +42,12 @@ import { LocalFilesContext } from '../../QuadraticUIContext';
 
 interface FileMenuProps {
   app: PixiApp;
-  sheetController: SheetController;
 }
 
 export type onCloseFn = (arg?: { reset: boolean }) => void;
 
 export function FileMenu(props: FileMenuProps) {
-  const { app, sheetController } = props;
+  const { app } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const {
     currentFileId,
