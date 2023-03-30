@@ -6,13 +6,15 @@ import { colors } from '../../../theme/colors';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { useTheme } from '@mui/system';
+import { AITab } from './AITab';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
   evalResult: cellEvaluationReturnType | undefined;
+  editorContent: string | undefined;
 }
 
-export function Console({ evalResult, editorMode }: ConsoleProps) {
+export function Console({ evalResult, editorMode, editorContent }: ConsoleProps) {
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
@@ -47,9 +49,15 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
             id="console-tab-1"
             aria-controls="console-tabpanel-1"
           ></Tab>
+          <Tab
+            style={{ minHeight: '32px' }}
+            label="AI Assistant"
+            id="console-tab-4"
+            aria-controls="console-tabpanel-2"
+          ></Tab>
         </Tabs>
       </Box>
-      <div style={{ overflow: 'scroll', flex: '2' }}>
+      <div style={{ flex: '2' }}>
         <TabPanel value={activeTabIndex} index={0}>
           <div
             contentEditable="true"
@@ -62,7 +70,14 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
                 e.preventDefault();
               }
             }}
-            style={{ outline: 'none' }}
+            style={{
+              outline: 'none',
+              fontFamily: 'monospace',
+              fontSize: '.875rem',
+              lineHeight: '1.3',
+              whiteSpace: 'pre-wrap',
+              overflow: 'scroll',
+            }}
             // Disable Grammarly
             data-gramm="false"
             data-gramm_editor="false"
@@ -82,7 +97,7 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
         </TabPanel>
         <TabPanel value={activeTabIndex} index={1}>
           {editorMode === 'PYTHON' ? (
-            <>
+            <div style={{ overflow: 'scroll' }}>
               <h3>Logging</h3>
               <p>`print()` statements and errors are logged in the CONSOLE tab.</p>
               <h3>Returning data to the sheet</h3>
@@ -132,7 +147,7 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
                 <LinkNewTab href={DOCUMENTATION_PYTHON_URL}>Learn more in our documenation</LinkNewTab>.
               </p>
               <br />
-            </>
+            </div>
           ) : editorMode === 'AI' ? (
             <>
               <h3>AI Docs</h3>
@@ -329,6 +344,9 @@ export function Console({ evalResult, editorMode }: ConsoleProps) {
             </>
           )}
         </TabPanel>
+        <TabPanel value={activeTabIndex} index={2}>
+          <AITab evalResult={evalResult} editorMode={editorMode} editorContent={editorContent}></AITab>
+        </TabPanel>
       </div>
     </>
   );
@@ -345,19 +363,9 @@ function TabPanel(props: { children: React.ReactElement; value: number; index: n
       aria-labelledby={`console-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <pre
-          style={{
-            fontFamily: 'monospace',
-            fontSize: '.875rem',
-            padding: '0 1rem',
-            lineHeight: '1.3',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {children}
-        </pre>
-      )}
+      {/* {value === index && ( */}
+      <div style={{ padding: '1rem 1rem 0 1rem' }}>{children}</div>
+      {/* )} */}
     </div>
   );
 }

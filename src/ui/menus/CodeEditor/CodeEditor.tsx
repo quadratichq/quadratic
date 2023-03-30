@@ -179,7 +179,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
     if (isRunningComputation) return;
 
     setIsRunningComputation(true);
-    console.log('saveAndRunCell', selectedCell);
 
     if (isRunningComputation) return;
 
@@ -362,7 +361,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
       {/* Editor Body */}
       <div
         style={{
-          minHeight: '200px',
+          minHeight: '100px',
           flex: '2',
         }}
       >
@@ -405,7 +404,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
       >
         {(editorInteractionState.mode === 'PYTHON' ||
           editorInteractionState.mode === 'FORMULA' ||
-          editorInteractionState.mode === 'AI') && <Console evalResult={evalResult} editorMode={editorMode} />}
+          editorInteractionState.mode === 'AI') && (
+          <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
+        )}
       </div>
     </div>
   );
