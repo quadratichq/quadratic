@@ -93,8 +93,17 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'red', overflow: 'hidden' }}>
-      <div style={{ alignSelf: 'end', width: '100%' }}>
+    <>
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '0',
+          left: '0',
+          right: '1rem',
+          padding: '1rem 0 .5rem 1rem',
+          background: 'linear-gradient(0deg, rgba(255,255,255,1) 85%, rgba(255,255,255,0) 100%)',
+        }}
+      >
         <FormControl fullWidth>
           <OutlinedInput
             id="prompt-input"
@@ -105,93 +114,20 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
             placeholder="Ask a question"
             endAdornment={
               <InputAdornment position="end">
-                <IconButton onClick={submitPrompt} edge="end" disabled={loading}>
-                  {loading ? <CircularProgress></CircularProgress> : <Send></Send>}
+                {loading && <CircularProgress size="1.25rem" sx={{ mx: '1rem' }} />}
+                <IconButton size="small" onClick={submitPrompt} edge="end" disabled={loading}>
+                  <Send />
                 </IconButton>
               </InputAdornment>
             }
             size="small"
             fullWidth
+            autoFocus
+            sx={{ py: '.25rem', pr: '1rem' }}
           />
         </FormControl>
       </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ overflow: 'scroll' }}>
-          {CodeBlockParser({ input: result })}
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
-          magna aliqua. In nisl nisi scelerisque eu ultrices vitae auctor. Quam nulla porttitor massa id neque aliquam
-          vestibulum morbi blandit. Eget mauris pharetra et ultrices neque ornare aenean. Tincidunt eget nullam non nisi
-          est sit amet facilisis. Amet tellus cras adipiscing enim eu turpis egestas. Sapien et ligula ullamcorper
-          malesuada. Ultrices in iaculis nunc sed. Eleifend quam adipiscing vitae proin. Laoreet sit amet cursus sit.
-          Egestas congue quisque egestas diam in arcu. A condimentum vitae sapien pellentesque habitant morbi. Varius
-          sit amet mattis vulputate enim nulla aliquet porttitor lacus. Sapien faucibus et molestie ac feugiat sed
-          lectus. Natoque penatibus et magnis dis parturient montes nascetur ridiculus mus. Eget sit amet tellus cras
-          adipiscing enim eu turpis. Ut morbi tincidunt augue interdum velit euismod in pellentesque. Risus commodo
-          viverra maecenas accumsan lacus. Mollis aliquam ut porttitor leo a diam sollicitudin tempor. Tortor posuere ac
-          ut consequat semper viverra nam libero justo. Convallis a cras semper auctor neque vitae tempus quam. Dictum
-          non consectetur a erat nam at lectus. Cras adipiscing enim eu turpis egestas pretium aenean pharetra magna.
-          Imperdiet dui accumsan sit amet nulla facilisi morbi tempus iaculis. Sit amet est placerat in egestas. Lacus
-          sed turpis tincidunt id. Scelerisque eleifend donec pretium vulputate sapien nec sagittis. Viverra suspendisse
-          potenti nullam ac tortor. Velit scelerisque in dictum non consectetur a erat. Ornare lectus sit amet est
-          placerat in egestas erat imperdiet. Vel pharetra vel turpis nunc. Risus feugiat in ante metus dictum at tempor
-          commodo ullamcorper. Commodo ullamcorper a lacus vestibulum sed. Lacus vel facilisis volutpat est velit
-          egestas dui id. Faucibus scelerisque eleifend donec pretium vulputate sapien nec sagittis aliquam. Commodo
-          elit at imperdiet dui. Sit amet facilisis magna etiam. Orci eu lobortis elementum nibh tellus molestie nunc.
-          Magnis dis parturient montes nascetur ridiculus mus mauris vitae. Duis at consectetur lorem donec massa
-          sapien. Etiam tempor orci eu lobortis elementum nibh tellus. Viverra justo nec ultrices dui sapien eget mi
-          proin sed. Leo vel orci porta non pulvinar neque. Aliquet risus feugiat in ante metus dictum. Nascetur
-          ridiculus mus mauris vitae ultricies leo. Ac auctor augue mauris augue neque gravida in fermentum. Vitae proin
-          sagittis nisl rhoncus mattis rhoncus. Feugiat in ante metus dictum at tempor commodo ullamcorper. Id ornare
-          arcu odio ut sem nulla pharetra diam sit. Viverra tellus in hac habitasse. Nascetur ridiculus mus mauris vitae
-          ultricies leo integer malesuada nunc. Mi proin sed libero enim sed faucibus turpis in. Orci a scelerisque
-          purus semper eget duis at. Amet consectetur adipiscing elit pellentesque habitant morbi tristique senectus.
-          Nulla facilisi etiam dignissim diam. Aliquam id diam maecenas ultricies mi eget mauris pharetra et.
-          Pellentesque eu tincidunt tortor aliquam nulla facilisi. Feugiat sed lectus vestibulum mattis ullamcorper
-          velit sed ullamcorper. Aliquam ultrices sagittis orci a scelerisque purus semper eget. Nunc scelerisque
-          viverra mauris in aliquam sem fringilla. Nisl vel pretium lectus quam. Dignissim sodales ut eu sem integer
-          vitae justo eget magna. Ullamcorper velit sed ullamcorper morbi tincidunt ornare massa eget egestas. Convallis
-          aenean et tortor at risus. Pellentesque sit amet porttitor eget. Adipiscing elit ut aliquam purus sit amet
-          luctus. Sit amet commodo nulla facilisi nullam vehicula. Viverra vitae congue eu consequat ac felis donec et
-          odio. Fringilla ut morbi tincidunt augue interdum velit euismod in pellentesque. In hac habitasse platea
-          dictumst vestibulum rhoncus. Tortor at risus viverra adipiscing at in tellus. Et malesuada fames ac turpis
-          egestas integer eget aliquet. Eu volutpat odio facilisis mauris sit amet massa. Tellus integer feugiat
-          scelerisque varius morbi enim nunc faucibus a. Odio tempor orci dapibus ultrices. Purus semper eget duis at.
-          Morbi quis commodo odio aenean sed adipiscing diam. Velit scelerisque in dictum non consectetur a erat nam at.
-          Pretium viverra suspendisse potenti nullam ac tortor. Interdum velit laoreet id donec ultrices tincidunt.
-          Mattis nunc sed blandit libero volutpat sed cras. Ultricies lacus sed turpis tincidunt id. Mauris cursus
-          mattis molestie a iaculis at. Felis bibendum ut tristique et egestas quis ipsum suspendisse ultrices.
-          Suspendisse sed nisi lacus sed viverra tellus in hac habitasse. Molestie ac feugiat sed lectus. Pretium nibh
-          ipsum consequat nisl vel pretium lectus quam. Nisi scelerisque eu ultrices vitae auctor eu augue ut. Elit ut
-          aliquam purus sit amet luctus venenatis. In ornare quam viverra orci sagittis eu volutpat odio. Est velit
-          egestas dui id ornare arcu odio. Lectus urna duis convallis convallis tellus. Facilisis leo vel fringilla est
-          ullamcorper eget nulla facilisi. Egestas pretium aenean pharetra magna ac placerat vestibulum lectus. Aenean
-          et tortor at risus viverra. Orci eu lobortis elementum nibh tellus molestie nunc non blandit. Scelerisque
-          viverra mauris in aliquam sem. Mi bibendum neque egestas congue quisque egestas diam in. In hac habitasse
-          platea dictumst quisque sagittis purus sit. Egestas integer eget aliquet nibh praesent tristique magna sit
-          amet. Tincidunt praesent semper feugiat nibh sed pulvinar proin. Hac habitasse platea dictumst quisque
-          sagittis purus sit amet volutpat. Enim blandit volutpat maecenas volutpat. Vestibulum mattis ullamcorper velit
-          sed ullamcorper morbi. Nibh sed pulvinar proin gravida. Egestas quis ipsum suspendisse ultrices gravida dictum
-          fusce ut. Nam at lectus urna duis convallis convallis. Quisque egestas diam in arcu cursus euismod quis
-          viverra nibh. Diam sollicitudin tempor id eu nisl nunc mi ipsum faucibus. Nec dui nunc mattis enim. Nunc id
-          cursus metus aliquam eleifend mi in nulla. Viverra nam libero justo laoreet sit amet cursus. Imperdiet sed
-          euismod nisi porta lorem mollis. Elementum integer enim neque volutpat ac. Mattis pellentesque id nibh tortor
-          id aliquet lectus. Non nisi est sit amet facilisis magna etiam tempor. Posuere sollicitudin aliquam ultrices
-          sagittis orci a. Vulputate dignissim suspendisse in est ante in nibh. Sit amet facilisis magna etiam tempor
-          orci eu lobortis elementum. Viverra vitae congue eu consequat ac. Morbi quis commodo odio aenean sed. Cursus
-          eget nunc scelerisque viverra. Senectus et netus et malesuada fames ac. Faucibus purus in massa tempor nec
-          feugiat nisl. Convallis posuere morbi leo urna molestie at elementum eu facilisis. Vel facilisis volutpat est
-          velit egestas dui id. Morbi tincidunt ornare massa eget egestas purus viverra accumsan. Ultrices dui sapien
-          eget mi proin. Felis donec et odio pellentesque diam volutpat commodo. Sit amet cursus sit amet dictum sit.
-          Adipiscing bibendum est ultricies integer quis. Tellus in hac habitasse platea dictumst vestibulum rhoncus.
-          Nec sagittis aliquam malesuada bibendum. Venenatis tellus in metus vulputate. Bibendum arcu vitae elementum
-          curabitur vitae nunc sed. Blandit turpis cursus in hac. Commodo elit at imperdiet dui accumsan. Etiam tempor
-          orci eu lobortis. Erat velit scelerisque in dictum. Sollicitudin aliquam ultrices sagittis orci a scelerisque.
-          Faucibus in ornare quam viverra orci sagittis eu. Tristique sollicitudin nibh sit amet commodo nulla facilisi
-          nullam. At augue eget arcu dictum varius duis at. Orci porta non pulvinar neque laoreet. Tempus quam
-          pellentesque nec nam. Tempus quam pellentesque nec nam aliquam sem et tortor consequat. Ut tortor pretium
-          viverra suspendisse potenti nullam. Nisl nunc mi ipsum faucibus.
-        </div>
-      </div>
-    </div>
+      <div style={{ paddingBottom: '5rem' }}>{CodeBlockParser({ input: result })}</div>
+    </>
   );
 };

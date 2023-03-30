@@ -57,7 +57,7 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
           ></Tab>
         </Tabs>
       </Box>
-      <div style={{ flex: '2' }}>
+      <div style={{ flex: '2', overflow: 'scroll' }}>
         <TabPanel value={activeTabIndex} index={0}>
           <div
             contentEditable="true"
@@ -76,7 +76,6 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
               fontSize: '.875rem',
               lineHeight: '1.3',
               whiteSpace: 'pre-wrap',
-              overflow: 'scroll',
             }}
             // Disable Grammarly
             data-gramm="false"
@@ -364,7 +363,7 @@ function TabPanel(props: { children: React.ReactElement; value: number; index: n
       {...other}
     >
       {/* {value === index && ( */}
-      <div style={{ padding: '1rem 1rem 0 1rem' }}>{children}</div>
+      <div style={{ padding: '.5rem 1rem 0 1rem' }}>{children}</div>
       {/* )} */}
     </div>
   );
