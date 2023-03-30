@@ -66,10 +66,8 @@ export type GridFiles = GridFileV1 | GridFileV1_1;
 /**
  * Given arbitrary JSON, validate whether it's a valid file format and return
  * the newest format of the file if it is.
- * @param jsonFile
- * @returns {GridFile | null}
  */
-export function validateFile(jsonFile: Object) {
+export function validateFile(jsonFile: any): GridFile | null {
   // Ordered by newest first
   const files = [{ schema: GridFileSchemaV1_1 }, { schema: GridFileSchemaV1, updateFn: upgradeV1toV1_1 }];
 
@@ -87,12 +85,12 @@ export function validateFile(jsonFile: Object) {
   // Small fixes we found in v1 files. To be lenient, we make the fixes ourselves here.
   const v1Fixes = (jsonFile: any) => {
     // If this value is an integer, convert to a string
-    if (jsonFile.version === 1) {
+    if (jsonFile && jsonFile.version === 1) {
       jsonFile.version = '1.0';
     }
 
     // If this value is missing, add it as an empty string
-    if (!jsonFile.cell_dependency) {
+    if (jsonFile && !jsonFile.cell_dependency) {
       jsonFile.cell_dependency = '';
     }
 

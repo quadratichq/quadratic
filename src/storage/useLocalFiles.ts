@@ -88,16 +88,16 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const importQuadraticFile = useCallback(
     async (contents: string, filename: string, isNewFile: boolean = true): Promise<boolean> => {
       // Try to parse the contents as JSON
-      let quadraticJson;
+      let json;
       try {
-        quadraticJson = JSON.parse(contents) as any;
+        json = JSON.parse(contents);
       } catch (e) {
         console.error('Failed to parse data as valid JSON.', e);
         return false;
       }
 
       // Check if the JSON is a valid quadratic file
-      quadraticJson = validateFile(quadraticJson) as GridFile | null;
+      const quadraticJson = validateFile(json);
       if (!quadraticJson) {
         console.error('Failed to parse data as a valid Quadratic file');
         return false;
