@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import localforage from 'localforage';
-import { GridFileData, GridFile, GridFileSchema, validateFile, GridFiles } from './GridFile';
+import { GridFileData, GridFile, GridFileSchema, validateFile, GridFiles, GridFileV1 } from './GridFile';
 import { debugShowFileIO } from '../debugFlags';
 import { v4 as uuid } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
@@ -40,7 +40,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const [hasInitialPageLoadError, setHasInitialPageLoadError] = useState<boolean>(false);
   const [fileList, setFileList] = useState<LocalFile[]>([]);
   const [currentFileContents, setCurrentFileContents] = useState<GridFile | null>(null);
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { sheet } = sheetController;
 
   // Persist `fileList` to localStorage when it changes
@@ -324,60 +324,72 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     localforage.config({ name: 'Quadratic', version: 1 });
     log('initialized localForage');
 
-    // Handle initial page load from memory or a fresh slate
-    const result = await localforage.getItem(INDEX);
-
-    // If there's a list of files in memory, load it into the app's state
-    let isFirstVisit = true;
-    const newFileList = (result ? result : fileList) as LocalFile[];
-    if (result) {
-      isFirstVisit = false;
-      setFileList(newFileList);
-      log(`loaded index with ${newFileList.length} files`);
-    } else {
-      log('index not found');
+    // See if we have saved files and load them into memory
+    const savedFileList: LocalFile[] | null = await localforage.getItem(INDEX);
+    const isFirstVisit = Boolean(!savedFileList);
+    if (savedFileList) {
+      setFileList(savedFileList);
+      log(`loaded saved file list (${savedFileList.length} files)`);
     }
 
-    // If there's a remote file URL, try fetching and loading it
-    // Or if there's a local file ID, try loading it
+    // Get URL params we need at initialize time
     const file = getURLParameter('file');
     const local = getURLParameter('local');
-    if (file) {
-      const loaded = await loadFileFromUrl(file);
-      if (loaded) {
-        return;
-      } else {
-        setHasInitialPageLoadError(true);
-      }
-    } else if (local) {
-      const loaded = await loadFileFromMemory(local);
-      if (loaded) {
-        return;
-      } else {
-        setHasInitialPageLoadError(true);
-      }
+
+    // Migrate files from old version of the app (if necessary)
+    // Note: eventually this can be phased out
+    const oldFileListKey = 'last-file-queue';
+    const oldFileList: string[] | null = await localforage.getItem(oldFileListKey);
+    if (oldFileList && oldFileList.length > 0) {
+      // Import each old file as a new file, then delete from memory
+      await Promise.all(
+        oldFileList.map(async (filename): Promise<[string, boolean]> => {
+          const itemId = `file-${filename}`;
+          const contents: GridFileV1 | null = await localforage.getItem(itemId);
+          const importSuccess = await importQuadraticFile(JSON.stringify(contents), filename.replace('.grid', ''));
+          await localforage.removeItem(itemId);
+          log(importSuccess ? `migrated file: ${filename}` : `could not migrate file in memory ${filename}`);
+          return [filename, importSuccess];
+        })
+      );
+
+      // Remove old file list
+      await localforage.removeItem(oldFileListKey);
     }
 
-    // If none of the above are true, or they failed, fallback to default
-    // functionality: if it's your first time then load a default file,
-    // otherwise show the file menu
+    // Load the app into a different state based on certain criteria
     if (isFirstVisit) {
+      // First time visitor! Or at least they cleared their cache and we don't have
+      // a client-side record of them being to the app
       log('first visit, loading example file');
       await loadFileFromExamples(EXAMPLE_FILES[0].file, EXAMPLE_FILES[0].name);
-    } else {
-      setEditorInteractionState({
-        ...editorInteractionState,
-        showFileMenu: true,
-      });
+      return;
+    } else if (file) {
+      // Somebody trying to import a remote file on page load
+      if (await loadFileFromUrl(file)) {
+        return;
+      }
+      setHasInitialPageLoadError(true);
+    } else if (local) {
+      // Somebody trying to load a file already in memory
+      if (await loadFileFromMemory(local)) {
+        return;
+      }
+      setHasInitialPageLoadError(true);
     }
+
+    // If none of the above happen, fall back to the default: show the file menu
+    setEditorInteractionState((oldState) => ({
+      ...oldState,
+      showFileMenu: true,
+    }));
   }, [
-    fileList,
+    importQuadraticFile,
     loadFileFromMemory,
     loadFileFromExamples,
     loadFileFromUrl,
     setFileList,
     setEditorInteractionState,
-    editorInteractionState,
   ]);
 
   return {
