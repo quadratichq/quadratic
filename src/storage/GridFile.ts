@@ -67,7 +67,7 @@ export type GridFiles = GridFileV1 | GridFileV1_1;
  * Given arbitrary JSON, validate whether it's a valid file format and return
  * the newest format of the file if it is.
  */
-export function validateFile(jsonFile: any): GridFile | null {
+export function validateFile(jsonFile: {}): GridFile | null {
   // Ordered by newest first
   const files = [{ schema: GridFileSchemaV1_1 }, { schema: GridFileSchemaV1, updateFn: upgradeV1toV1_1 }];
 
@@ -117,5 +117,5 @@ export function validateFile(jsonFile: any): GridFile | null {
     return null;
   }
 
-  return jsonFile;
+  return jsonFile as GridFile;
 }
