@@ -17,6 +17,7 @@ function parseCodeBlocks(input: string): Array<string | JSX.Element> {
         // calculate height based on number of lines
         style={{
           height: `${Math.ceil(code.split('\n').length) * 19}px`,
+          width: '100%',
         }}
       >
         <Editor
@@ -36,7 +37,7 @@ function parseCodeBlocks(input: string): Array<string | JSX.Element> {
               handleMouseWheel: false,
             },
             scrollBeyondLastLine: false,
-            wordWrap: 'on',
+            wordWrap: 'off',
             // lineNumbers: 'off',
             automaticLayout: true,
           }}
