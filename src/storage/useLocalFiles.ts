@@ -6,7 +6,7 @@ import { v4 as uuid } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
 import { downloadFile } from './downloadFile';
 import { SheetController } from '../grid/controller/sheetController';
-import { useRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES } from '../constants/app';
 
@@ -40,7 +40,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   const [hasInitialPageLoadError, setHasInitialPageLoadError] = useState<boolean>(false);
   const [fileList, setFileList] = useState<LocalFile[]>([]);
   const [currentFileContents, setCurrentFileContents] = useState<GridFile | null>(null);
-  const [, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+
   const { sheet } = sheetController;
 
   // Persist `fileList` to localStorage when it changes
