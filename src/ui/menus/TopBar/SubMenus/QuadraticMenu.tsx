@@ -29,6 +29,7 @@ import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionState
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { MenuLineItem } from '../MenuLineItem';
 import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
+import { isMac } from '../../../../utils/isMac';
 
 interface Props {
   sheetController: SheetController;
@@ -132,7 +133,9 @@ export const QuadraticMenu = (props: Props) => {
           >
             <MenuLineItem
               primary="Redo"
-              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z'}
+              secondary={
+                KeyboardSymbols.Command + (isMac ? KeyboardSymbols.Shift + 'Z' : KeyboardSymbols.Command + 'Y')
+              }
               Icon={Undo}
             ></MenuLineItem>
           </MenuItem>

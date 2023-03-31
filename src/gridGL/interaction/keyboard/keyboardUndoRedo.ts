@@ -1,19 +1,20 @@
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
+import { isMac } from '../../../utils/isMac';
 
 export function keyboardUndoRedo(
   event: React.KeyboardEvent<HTMLElement>,
   interactionState: GridInteractionState,
   sheetController: SheetController
 ): boolean {
-  // Command + Shift + Z
-  if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.code === 'KeyZ') {
+  // Redo
+  if ((event.metaKey || event.ctrlKey) && (isMac ? event.shiftKey && event.code === 'KeyZ' : event.code === 'KeyY')) {
     sheetController.redo();
     event.preventDefault();
     return true;
   }
 
-  // Command + Z
+  // Undo
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyZ') {
     sheetController.undo();
     event.preventDefault();
