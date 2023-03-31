@@ -56,7 +56,6 @@ export const QuadraticApp = () => {
     loadAssets().then(() => {
       setItemsLoaded((old) => ['pixi', ...old]);
     });
-    // load Rust wasm
     init().then(() => {
       hello(); // let Rust say hello to console
       setItemsLoaded((old) => ['wasm-rust', ...old]);
@@ -69,11 +68,11 @@ export const QuadraticApp = () => {
   return (
     <>
       {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
-      <AnalyticsProvider></AnalyticsProvider>
+      <AnalyticsProvider />
       {/* Provider of All React UI Components */}
       {!loading && <QuadraticUIContext {...{ sheetController, localFiles, app }} />}
       {/* Loading screen */}
-      {loading && <QuadraticLoading></QuadraticLoading>}
+      {loading && <QuadraticLoading />}
     </>
   );
 };
