@@ -216,6 +216,17 @@ impl GridProxy for JsGridProxy {
     }
 }
 
+/// Returns a column's name from its number.
+#[wasm_bindgen]
+pub fn column_name(n: f64) -> String {
+    util::column_name(n.floor() as i64)
+}
+/// Returns a column number from a name, or `null` if it is invalid or out of range.
+#[wasm_bindgen]
+pub fn column_from_name(s: &str) -> Option<f64> {
+    Some(util::column_from_name(s)? as f64)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
