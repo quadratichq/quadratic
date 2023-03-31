@@ -13,7 +13,7 @@ export const EXAMPLE_FILES = [
     file: 'python.grid',
     description: 'Advanced examples of how to use Python in the app.',
   },
-  // Leave this one out, as it has nothing useful for users
+  // Leaving this one out, as it has nothing useful for users
   // { name: 'Airports large (example)', file: 'airports_large.grid', description: 'Lorem ipsum santa dolor.' },
   {
     name: 'Airports distance (example)',
