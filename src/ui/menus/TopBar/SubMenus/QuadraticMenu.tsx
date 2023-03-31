@@ -28,7 +28,7 @@ import { useRecoilValue } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { MenuLineItem } from '../MenuLineItem';
-import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
+import { ContentCopy, ContentCut, ContentPaste, Redo, Undo } from '@mui/icons-material';
 import { isMac } from '../../../../utils/isMac';
 
 interface Props {
@@ -133,10 +133,8 @@ export const QuadraticMenu = (props: Props) => {
           >
             <MenuLineItem
               primary="Redo"
-              secondary={
-                KeyboardSymbols.Command + (isMac ? KeyboardSymbols.Shift + 'Z' : KeyboardSymbols.Command + 'Y')
-              }
-              Icon={Undo}
+              secondary={isMac ? KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z' : KeyboardSymbols.Command + 'Y'}
+              Icon={Redo}
             ></MenuLineItem>
           </MenuItem>
           <MenuDivider />

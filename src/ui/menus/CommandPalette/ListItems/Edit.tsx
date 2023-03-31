@@ -36,7 +36,7 @@ const ListItems = [
             props.sheetController.redo();
           }}
           shortcut={isMac ? 'Z' : 'Y'}
-          shortcutModifiers={[KeyboardSymbols.Command, ...(isMac ? [KeyboardSymbols.Shift] : [])]}
+          shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
         />
       );
     },
