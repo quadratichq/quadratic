@@ -142,11 +142,7 @@ export const FormulaCompletionProvider = {
         '${1:a, b, ...}',
         'Returns `TRUE` if an odd number of values are truthy and `FALSE` if an even number of values are truthy. Returns `FALSE` if given no values.'
       ),
-      suggestion(
-        'IF',
-        '${1:cond}, ${2:t}, ${3:f}',
-        'Returns `t` if `cond` is truthy and `f` if `cond` if falsey.'
-      ),
+      suggestion('IF', '${1:cond}, ${2:t}, ${3:f}', 'Returns `t` if `cond` is truthy and `f` if `cond` if falsey.'),
       // String functions
       suggestion('CONCAT', '${1:values}', 'Concatenates all values as strings.'),
     ];
