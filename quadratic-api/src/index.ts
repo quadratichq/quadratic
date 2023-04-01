@@ -83,15 +83,28 @@ app.post('/ai/autocomplete', validateAccessToken, async (request, response) => {
 
   const r_json = AIAutoCompleteRequestBody.parse(request.body);
 
-  try {
-    const result = await openai.createChatCompletion({
-      model: r_json.model || 'gpt-4',
-      messages: r_json.messages,
-    });
+  response.setHeader('Content-Type', 'text/event-stream');
+  response.setHeader('Cache-Control', 'no-cache');
+  response.setHeader('Connection', 'keep-alive');
 
-    response.json({
-      data: result.data,
-    });
+  try {
+    await openai
+      .createChatCompletion(
+        {
+          model: r_json.model || 'gpt-4',
+          messages: r_json.messages,
+          stream: true,
+        },
+        { responseType: 'stream' }
+      )
+      .then((oai_response: any) => {
+        // Pipe the response from axios to the SSE response
+        oai_response.data.pipe(response);
+      })
+      .catch((error: any) => {
+        // console.error(error);
+        response.status(500).send('Error streaming data');
+      });
   } catch (error: any) {
     if (error.response) {
       response.status(error.response.status).json(error.response.data);
