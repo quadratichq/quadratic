@@ -36,7 +36,7 @@ const openai = new OpenAIApi(configuration);
 
 const limiter = rateLimit({
   windowMs: 3 * 60 * 60 * 1000, // 3 hours
-  max: 2, // Limit number of requests per windowMs
+  max: Number(process.env.RATE_LIMIT_AI_REQUESTS_PER_3_HOURS) || 25, // Limit number of requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   keyGenerator: (request: JWTRequest, response) => {
