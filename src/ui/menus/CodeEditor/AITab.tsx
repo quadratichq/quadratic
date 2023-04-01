@@ -210,7 +210,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
       >
         {display_message.length === 0 && (
           <div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '3rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '1rem' }}>
               <div style={{ fontSize: '1.5rem', fontWeight: 500, marginBottom: '1rem' }}>
                 <AI sx={{ color: colors.languageAI }} fontSize="large"></AI>
               </div>
