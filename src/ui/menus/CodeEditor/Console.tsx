@@ -7,6 +7,7 @@ import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../c
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { useTheme } from '@mui/system';
 import { AITab } from './AITab';
+import { useAuth0 } from '@auth0/auth0-react';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
@@ -19,6 +20,7 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
   const theme = useTheme();
+  const { isAuthenticated } = useAuth0();
 
   const codeSampleStyles: CSSProperties = {
     backgroundColor: colors.lightGray,
@@ -49,7 +51,7 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
             id="console-tab-1"
             aria-controls="console-tabpanel-1"
           ></Tab>
-          {editorMode === 'PYTHON' ? (
+          {isAuthenticated && editorMode === 'PYTHON' ? (
             <Tab
               style={{ minHeight: '32px' }}
               label="AI Assistant"

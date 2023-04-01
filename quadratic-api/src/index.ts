@@ -35,8 +35,8 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 const limiter = rateLimit({
-  windowMs: 3 * 60 * 60 * 1000, // 3 hours
-  max: Number(process.env.RATE_LIMIT_AI_REQUESTS_PER_3_HOURS) || 25, // Limit number of requests per windowMs
+  windowMs: Number(process.env.RATE_LIMIT_AI_WINDOW_MS) || 3 * 60 * 60 * 1000, // 3 hours
+  max: Number(process.env.RATE_LIMIT_AI_REQUESTS_MAX) || 25, // Limit number of requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   keyGenerator: (request: JWTRequest, response) => {
@@ -48,6 +48,7 @@ const AIMessage = z.object({
   // role can be only "user" or "bot"
   role: z.enum(['system', 'user', 'assistant']),
   content: z.string(),
+  stream: z.boolean().optional(),
 });
 
 const AIAutoCompleteRequestBody = z.object({

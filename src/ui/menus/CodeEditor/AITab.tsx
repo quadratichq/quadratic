@@ -21,6 +21,7 @@ type Message = {
 };
 
 export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
+  // TODO: Improve these messages. Pass current location and more docs.
   const initialMessages = [
     {
       role: 'system',
@@ -48,6 +49,8 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
   const { user } = useAuth0();
 
   const submitPrompt = async () => {
+    if (loading) return;
+
     setLoading(true);
 
     const token = await apiClientSingleton.getAuth();
