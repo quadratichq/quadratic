@@ -5,8 +5,7 @@ import { validateAccessToken } from './middleware/auth';
 import { Request as JWTRequest } from 'express-jwt';
 import { z } from 'zod';
 import { Configuration, OpenAIApi } from 'openai';
-import { AxiosError } from 'axios';
-import { RequiredError } from 'openai/dist/base';
+import rateLimit from 'express-rate-limit';
 
 const prisma = new PrismaClient();
 
@@ -30,40 +29,20 @@ const getUserFromRequest = async (req: JWTRequest) => {
   return user;
 };
 
-// set routes
-app.get('/', validateAccessToken, async (req: JWTRequest, res: express.Response) => {
-  const user = await getUserFromRequest(req);
-
-  const files = await prisma.qFile.findMany({
-    where: {
-      user_owner: user,
-    },
-  });
-
-  res.json({
-    files: files,
-  });
-});
-
-app.get('/createFile', validateAccessToken, async (req: JWTRequest, res: express.Response) => {
-  const user = await getUserFromRequest(req);
-
-  const new_file = await prisma.qFile.create({
-    data: {
-      name: 'first file!',
-      qUserId: user.id,
-    },
-  });
-
-  res.json({
-    created: new_file,
-  });
-});
-
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
+
+const limiter = rateLimit({
+  windowMs: 3 * 60 * 60 * 1000, // 3 hours
+  max: 2, // Limit number of requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  keyGenerator: (request: JWTRequest, response) => {
+    return request.auth?.sub || 'anonymous';
+  },
+});
 
 const AIMessage = z.object({
   // role can be only "user" or "bot"
@@ -77,10 +56,7 @@ const AIAutoCompleteRequestBody = z.object({
   model: z.enum(['gpt-4', 'gpt-3-turbo']).optional(),
 });
 
-app.post('/ai/autocomplete', validateAccessToken, async (request, response) => {
-  // const user = await getUserFromRequest(request);
-  // todo rate limit by user
-
+app.post('/ai/autocomplete', validateAccessToken, limiter, async (request: JWTRequest, response) => {
   const r_json = AIAutoCompleteRequestBody.parse(request.body);
 
   response.setHeader('Content-Type', 'text/event-stream');

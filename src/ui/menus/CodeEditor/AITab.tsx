@@ -49,19 +49,18 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
 
   const submitPrompt = async () => {
     setLoading(true);
-    console.log('submitting prompt', prompt);
 
     const token = await apiClientSingleton.getAuth();
 
-    try {
-      const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
-      const request_body = {
-        model: 'gpt-4',
-        messages: updatedMessages,
-      };
-      setMessages(updatedMessages);
-      setPrompt('');
+    const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
+    const request_body = {
+      model: 'gpt-4',
+      messages: updatedMessages,
+    };
+    setMessages(updatedMessages);
+    setPrompt('');
 
+    try {
       await fetch(`${apiClientSingleton.getAPIURL()}/ai/autocomplete`, {
         method: 'POST',
         headers: {
@@ -69,53 +68,75 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(request_body),
-      })
-        .then((response) => {
-          const reader = response.body?.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
+      }).then((response) => {
+        if (response.status !== 200) {
+          if (response.status === 429) {
+            setMessages((old) => [
+              ...old,
+              {
+                role: 'assistant',
+                content: 'You have exceeded the maximum number of requests. Please try again later.',
+              },
+            ]);
+          } else {
+            setMessages((old) => [
+              ...old,
+              {
+                role: 'assistant',
+                content: 'Looks like there was a problem. Status Code: ' + response.status,
+              },
+            ]);
+            console.error(`error retrieving data from AI API: ${response.status}`);
+          }
+          return;
+        }
 
-          let responseMessage = {
-            role: 'assistant',
-            content: '',
-          } as Message;
-          setMessages((old) => [...old, responseMessage]);
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-          return reader?.read().then(function processResult(result): any {
-            buffer += decoder.decode(result.value || new Uint8Array(), { stream: !result.done });
-            const parts = buffer.split('\n');
-            buffer = parts.pop() || '';
-            for (const part of parts) {
-              const message = part.replace(/^data: /, '');
-              try {
-                const data = JSON.parse(message);
+        let responseMessage = {
+          role: 'assistant',
+          content: '',
+        } as Message;
+        setMessages((old) => [...old, responseMessage]);
 
-                // Do something with the JSON data here
-                if (data.choices[0].delta.content !== undefined) {
-                  responseMessage.content += data.choices[0].delta.content;
-                  setMessages((old) => {
-                    old.pop();
-                    old.push(responseMessage);
-                    return [...old];
-                  });
-                }
-              } catch (err) {
-                // Not JSON, so do something else with the data
-                // console.log(message);
+        return reader?.read().then(function processResult(result): any {
+          buffer += decoder.decode(result.value || new Uint8Array(), { stream: !result.done });
+          const parts = buffer.split('\n');
+          buffer = parts.pop() || '';
+          for (const part of parts) {
+            const message = part.replace(/^data: /, '');
+            try {
+              const data = JSON.parse(message);
+
+              // Do something with the JSON data here
+              if (data.choices[0].delta.content !== undefined) {
+                responseMessage.content += data.choices[0].delta.content;
+                setMessages((old) => {
+                  old.pop();
+                  old.push(responseMessage);
+                  return [...old];
+                });
               }
+            } catch (err) {
+              // Not JSON, so do something else with the data
+              // console.log(message);
             }
-            if (result.done) {
-              console.log('Stream complete');
-              return;
-            }
-            return reader.read().then(processResult);
-          });
-        })
-        .catch((error) => {
-          console.error(error);
+          }
+          if (result.done) {
+            console.log('Stream complete');
+            return;
+          }
+          return reader.read().then(processResult);
         });
+      });
+      // .catch((error) => {
+      //   console.log('Error: ', error);
+      // });
     } catch (err: any) {
       //   setResult('Error');
+      console.log('3 Error: ', err);
     }
     setLoading(false);
   };
