@@ -49,12 +49,14 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
             id="console-tab-1"
             aria-controls="console-tabpanel-1"
           ></Tab>
-          <Tab
-            style={{ minHeight: '32px' }}
-            label="AI Assistant"
-            id="console-tab-4"
-            aria-controls="console-tabpanel-2"
-          ></Tab>
+          {editorMode === 'PYTHON' ? (
+            <Tab
+              style={{ minHeight: '32px' }}
+              label="AI Assistant"
+              id="console-tab-4"
+              aria-controls="console-tabpanel-2"
+            ></Tab>
+          ) : null}
         </Tabs>
       </Box>
       <div style={{ flex: '2', overflow: 'scroll' }}>
