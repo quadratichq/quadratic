@@ -60,6 +60,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
         messages: updatedMessages,
       };
       setMessages(updatedMessages);
+      setPrompt('');
 
       await fetch(`${apiClientSingleton.getAPIURL()}/ai/autocomplete`, {
         method: 'POST',
@@ -138,6 +139,11 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
             value={prompt}
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
               setPrompt(event.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                submitPrompt();
+              }
             }}
             placeholder="Ask a question"
             endAdornment={
