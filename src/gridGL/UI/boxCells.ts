@@ -8,6 +8,7 @@ export class BoxCells extends Graphics {
   private app: PixiApp;
   private gridRectangle?: Rectangle;
   private screenRectangle?: Rectangle;
+  private deleteCells = false;
   dirty = false;
 
   constructor(app: PixiApp) {
@@ -18,8 +19,9 @@ export class BoxCells extends Graphics {
   /**
    * @param rectangle in grid coordinates
    */
-  populate(rectangle: Rectangle): void {
+  populate(rectangle: Rectangle, deleteCells: boolean): void {
     this.gridRectangle = rectangle;
+    this.deleteCells = deleteCells;
     this.dirty = true;
   }
 
@@ -36,10 +38,19 @@ export class BoxCells extends Graphics {
         this.reset();
         return;
       }
-      this.screenRectangle = this.app.sheet.gridOffsets.getScreenRectangle(this.gridRectangle.x, this.gridRectangle.y, this.gridRectangle.width, this.gridRectangle.height);
+      this.screenRectangle = this.app.sheet.gridOffsets.getScreenRectangle(
+        this.gridRectangle.x,
+        this.gridRectangle.y,
+        this.gridRectangle.width,
+        this.gridRectangle.height
+      );
       this.dirty = false;
       this.clear();
-      this.lineStyle({ color: colors.boxCellsColor, alpha: colors.boxCellsAlpha, width: thickness });
+      this.lineStyle({
+        color: this.deleteCells ? colors.boxCellsDeleteColor : colors.boxCellsColor,
+        alpha: colors.boxCellsAlpha,
+        width: thickness,
+      });
       this.drawShape(this.screenRectangle);
     }
   }

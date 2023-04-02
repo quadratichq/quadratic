@@ -2,7 +2,7 @@ import { InteractionEvent } from 'pixi.js';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { PointerHeading } from './PointerHeading';
 import { PointerDown } from './PointerDown';
-import { PointerAutoComplete } from './PointerAutoComplete';
+import { PointerAutoComplete } from './PointerAutoComplete/PointerAutoComplete';
 import { PointerCursor } from './pointerCursor';
 
 export class Pointer {

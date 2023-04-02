@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Point, Rectangle } from 'pixi.js';
-import { IS_READONLY_MODE } from '../../../constants/app';
-import { PixiApp } from '../../pixiApp/PixiApp';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { PanMode } from '../../../atoms/gridInteractionStateAtom';
-import { intersects } from '../../helpers/intersects';
-import { DeleteCells } from '../../../grid/actions/DeleteCells';
-import { Coordinate } from '../../types/size';
+import { IS_READONLY_MODE } from '../../../../constants/app';
+import { PixiApp } from '../../../pixiApp/PixiApp';
+import { Sheet } from '../../../../grid/sheet/Sheet';
+import { PanMode } from '../../../../atoms/gridInteractionStateAtom';
+import { intersects } from '../../../helpers/intersects';
+import { Coordinate } from '../../../types/size';
+import { expandDown, expandLeft, expandRight, expandUp, shrinkHorizontal, shrinkVertical } from './autoComplete';
 
 type State =
   | 'expandDown'
@@ -22,6 +22,7 @@ export class PointerAutoComplete {
   private state: State;
   private selection?: Rectangle;
   private endCell?: Coordinate;
+  private boxCells?: Rectangle;
   private screenSelection?: Rectangle;
   cursor?: string;
   active = false;
@@ -148,22 +149,26 @@ export class PointerAutoComplete {
           if (row > selection.bottom) {
             this.state = 'expandDown';
             boxCells = new Rectangle(selection.x, selection.y, selection.width + 1, row - selection.y + 1);
+            this.boxCells = boxCells;
           } else if (row < selection.top) {
             this.state = 'expandUp';
             boxCells = new Rectangle(selection.x, row, selection.width + 1, selection.bottom - row + 1);
+            this.boxCells = boxCells;
           }
         } else if (insideHorizontal || outsideHorizontal) {
           if (column > selection.right) {
             this.state = 'expandRight';
             boxCells = new Rectangle(selection.x, selection.y, column - selection.x + 1, selection.height + 1);
+            this.boxCells = boxCells;
           } else if (column < selection.left) {
             this.state = 'expandLeft';
             boxCells = new Rectangle(column, selection.y, selection.x - column + 1, selection.height + 1);
+            this.boxCells = boxCells;
           }
         }
 
-        if (boxCells) {
-          this.app.boxCells.populate(boxCells);
+        if (boxCells && this.state) {
+          this.app.boxCells.populate(boxCells, this.state.includes('shrink'));
         }
         return true;
       }
@@ -173,61 +178,22 @@ export class PointerAutoComplete {
 
   private async apply(): Promise<void> {
     if (!this.selection) return;
-    const { sheet_controller } = this.app;
     if (this.state === 'shrinkHorizontal') {
-      if (!this.endCell) return;
-      if (this.selection.left === this.endCell.x) return;
-
-      sheet_controller.start_transaction();
-      await DeleteCells({
-        x0: this.endCell.x,
-        y0: this.selection.top,
-        x1: this.selection.right,
-        y1: this.selection.bottom,
-        sheetController: sheet_controller,
-        app: sheet_controller.app,
-        create_transaction: false,
-      });
-      sheet_controller.end_transaction();
-
-      const { setInteractionState, interactionState } = this.app.settings;
-      setInteractionState?.({
-        ...interactionState,
-        multiCursorPosition: {
-          originPosition: interactionState.multiCursorPosition.originPosition,
-          terminalPosition: {
-            ...interactionState.multiCursorPosition.terminalPosition,
-            x: this.endCell.x - 1,
-          },
-        },
-      });
+      if (!this.endCell || this.selection.left === this.endCell.x) return;
+      shrinkHorizontal({ app: this.app, selection: this.selection, endCell: this.endCell });
     } else if (this.state === 'shrinkVertical') {
-      if (!this.endCell) return;
-      if (this.selection.top === this.endCell.y) return;
-
-      sheet_controller.start_transaction();
-      await DeleteCells({
-        x0: this.selection.left,
-        y0: this.endCell.y + 1,
-        x1: this.selection.right,
-        y1: this.selection.bottom,
-        sheetController: sheet_controller,
-        app: sheet_controller.app,
-        create_transaction: false,
-      });
-      sheet_controller.end_transaction();
-
-      const { setInteractionState, interactionState } = this.app.settings;
-      setInteractionState?.({
-        ...interactionState,
-        multiCursorPosition: {
-          originPosition: interactionState.multiCursorPosition.originPosition,
-          terminalPosition: {
-            ...interactionState.multiCursorPosition.terminalPosition,
-            y: this.endCell.y,
-          },
-        },
-      });
+      if (!this.endCell || this.selection.top === this.endCell.y) return;
+      shrinkVertical({ app: this.app, selection: this.selection, endCell: this.endCell });
+    } else if (this.boxCells) {
+      if (this.state === 'expandDown') {
+        expandDown({ app: this.app, selection: this.selection, boxCells: this.boxCells });
+      } else if (this.state === 'expandRight') {
+        expandRight({ app: this.app, selection: this.selection, boxCells: this.boxCells });
+      } else if (this.state === 'expandUp') {
+        expandUp({ app: this.app, selection: this.selection, boxCells: this.boxCells });
+      } else if (this.state === 'expandLeft') {
+        expandLeft({ app: this.app, selection: this.selection, boxCells: this.boxCells });
+      }
     }
   }
 
