@@ -197,7 +197,7 @@ export class Quadrants extends Container {
   }
 
   /** Returns CellRectangles for visible dirty quadrants */
-  getCellsForDirtyQuadrants(): { cellRectangles: CellRectangle[], rectangles: Rectangle[]} | undefined {
+  getCellsForDirtyQuadrants(): { cellRectangles: CellRectangle[]; rectangles: Rectangle[] } | undefined {
     const { viewport } = this.app;
     const { grid, borders } = this.app.sheet;
     const screen = viewport.getVisibleBounds();
