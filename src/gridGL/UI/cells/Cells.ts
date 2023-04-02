@@ -426,16 +426,28 @@ export class Cells extends Container {
    */
   maskQuadrants(rectangles?: Rectangle[]): void {
     this.cellsMaskQuadrants.clear();
+    this.cellsMaskQuadrants.visible = false;
     if (!rectangles?.length) return;
+    this.cellsMaskQuadrants.visible = true;
     const screen = this.app.viewport.getVisibleBounds();
     this.cellsMaskQuadrants.beginFill(0xffffff);
     this.cellsMaskQuadrants.drawShape(screen);
     this.cellsMaskQuadrants.endFill();
     this.cellsMaskQuadrants.beginHole();
     rectangles.forEach((rectangle) => {
-      this.cellsMaskQuadrants.beginFill();
-      this.cellsMaskQuadrants.drawShape(rectangle);
-      this.cellsMaskQuadrants.endFill();
+      const convertedRectangle = this.app.sheet.gridOffsets.getScreenRectangle(
+        rectangle.left,
+        rectangle.top,
+        rectangle.width + 1,
+        rectangle.height + 1
+      );
+      // the rectangle must be clipped to inside the screen bounds or it does not render properly (issue with pixi)
+      const clippedRectangle = intersects.rectangleClip(convertedRectangle, screen);
+      if (clippedRectangle) {
+        this.cellsMaskQuadrants.beginFill();
+        this.cellsMaskQuadrants.drawShape(clippedRectangle);
+        this.cellsMaskQuadrants.endFill();
+      }
     });
     this.cellsMaskQuadrants.endHole();
   }

@@ -296,7 +296,7 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
       cell1,
     })
   );
-  const quadraticString = btoa(String.fromCharCode(...quadraticData));
+  const quadraticString = btoa(String.fromCharCode(...[...quadraticData]));
 
   const clipboardHTMLString = `<span data-metadata="<--(quadratic)${quadraticString}(/quadratic)-->"></span>${htmlClipboardString}`;
 

@@ -203,7 +203,6 @@ export class Quadrant extends Container {
     if (debugShowTime && debugShowCacheInfo && timeStart) {
       console.log(`[Quadrant] Rendered ${this.debugName()} ${debug} (${Math.round(performance.now() - timeStart)} ms)`);
     }
-    this.app.cells.cellsMaskQuadrants.visible = true;
     this.dirty = false;
   }
 
