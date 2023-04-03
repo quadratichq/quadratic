@@ -27,6 +27,10 @@ describe('validateFile()', () => {
         version: 1,
       })
     ).not.toBe(null);
+    let v1FileSansVersion = { ...v1File };
+    // @ts-expect-error
+    delete v1FileSansVersion.version;
+    expect(validateFile(v1FileSansVersion)).not.toBe(null);
     expect(
       validateFile({
         ...v1File,

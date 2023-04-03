@@ -85,8 +85,13 @@ export function validateFile(jsonFile: {}): GridFile | null {
   // Small fixes we found in v1 files. To be lenient, we make the fixes ourselves here.
   const v1Fixes = (jsonFile: any) => {
     // If this value is an integer, convert to a string
-    if (jsonFile && jsonFile.version === 1) {
-      jsonFile.version = '1.0';
+    if (jsonFile) {
+      if (jsonFile.version === 1) {
+        jsonFile.version = '1.0';
+        // Files created before Feb 2023 didn't have a version key
+      } else if (!jsonFile.version) {
+        jsonFile.version = '1.0';
+      }
     }
 
     // If this value is missing, add it as an empty string
