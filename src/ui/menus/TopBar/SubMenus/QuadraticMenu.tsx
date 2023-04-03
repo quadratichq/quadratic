@@ -56,7 +56,14 @@ export const QuadraticMenu = (props: Props) => {
           </Tooltip>
         }
       >
-        <MenuHeader>Quadratic</MenuHeader>
+        <MenuItem
+          onClick={() => {
+            setEditorInteractionState((oldState) => ({ ...oldState, showFileMenu: true }));
+          }}
+        >
+          <MenuLineItem primary="Back to files" />
+        </MenuItem>
+        <MenuDivider />
         <SubMenu label="File">
           <MenuItem
             onClick={() => {
