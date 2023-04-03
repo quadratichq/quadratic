@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import localforage from 'localforage';
 import { GridFileData, GridFile, GridFileSchema, validateFile, GridFiles, GridFileV1 } from './GridFile';
@@ -325,6 +326,9 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     localforage.config({ name: 'Quadratic', version: 1 });
     log('initialized localForage');
 
+    // @ts-expect-error
+    window.lf = localforage;
+
     // Keep track of whether this is a first time visit to the app
     // (User clearing cache will look like first time visitor)
     let isFirstVisit = true;
@@ -344,7 +348,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     // Migrate files from old version of the app (one-time, if necessary thing)
     // Note: eventually this code can be removed
     const oldFileListKey = 'last-file-queue';
-    const oldFileList: string[] | null = await localforage.getItem(oldFileListKey);
+    let oldFileList: string[] | null = await localforage.getItem(oldFileListKey);
+    let filesWithErrors: string[] = [];
     if (oldFileList && oldFileList.length > 0) {
       isFirstVisit = false;
       // Import each old file as a new file then delete from memory
@@ -356,16 +361,28 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
           const itemId = `file-${filename}`;
           const contents: GridFileV1 | null = await localforage.getItem(itemId);
           importSuccess = await importQuadraticFile(JSON.stringify(contents), filename.replace('.grid', ''));
-          // Only delete the item if we're sure it was imported successfully
           if (importSuccess) {
             await localforage.removeItem(itemId);
+          } else {
+            filesWithErrors.push(itemId);
+            Sentry.captureEvent({
+              message: 'User data from old file schema failed to migrate to the new file schema',
+              level: Sentry.Severity.Info,
+              extra: {
+                file: contents,
+              },
+            });
           }
           log(importSuccess ? `migrated file: ${filename}` : `failed to migrate file into memory: ${filename}`);
           return [filename, importSuccess];
         })
       );
-      // Remove old file list
-      await localforage.removeItem(oldFileListKey);
+      // Only delete the old file list if we successfully migrated all old files
+      if (filesWithErrors.length === 0) {
+        await localforage.removeItem(oldFileListKey);
+      } else {
+        await localforage.setItem(oldFileListKey, filesWithErrors);
+      }
     }
 
     // Load the app into a different state based on certain criteria
