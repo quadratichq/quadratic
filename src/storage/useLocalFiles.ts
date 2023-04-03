@@ -94,14 +94,14 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       try {
         json = JSON.parse(contents);
       } catch (e) {
-        console.error('Failed to parse data as valid JSON.', e);
+        console.error('Failed to parse data as valid JSON.', contents, e);
         return false;
       }
 
       // Check if the JSON is a valid quadratic file
       const quadraticJson = validateFile(json);
       if (!quadraticJson) {
-        console.error('Failed to parse data as a valid Quadratic file');
+        console.error('Failed to parse JSON as a valid Quadratic file', json);
         return false;
       }
 
@@ -365,11 +365,17 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
             await localforage.removeItem(itemId);
           } else {
             filesWithErrors.push(itemId);
+            let message;
+            try {
+              message = JSON.stringify(contents);
+            } catch (e) {
+              message = contents;
+            }
             Sentry.captureEvent({
               message: 'User data from old file schema failed to migrate to the new file schema',
               level: Sentry.Severity.Info,
               extra: {
-                file: contents,
+                file: message,
               },
             });
           }
