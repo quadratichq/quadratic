@@ -73,7 +73,7 @@ export const QuadraticMenu = (props: Props) => {
           >
             New
           </MenuItem>
-          <MenuItem onClick={() => downloadCurrentFile()}>Save local copy</MenuItem>
+          <MenuItem onClick={() => downloadCurrentFile()}>Download local copy</MenuItem>
           <MenuItem
             onClick={() => {
               setEditorInteractionState({

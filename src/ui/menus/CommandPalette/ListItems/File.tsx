@@ -17,7 +17,7 @@ const ListItems = [
     },
   },
   {
-    label: 'File: Save local copy',
+    label: 'File: Download local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { downloadCurrentFile } = useContext(LocalFilesContext);
       return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => downloadCurrentFile()} />;

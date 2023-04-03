@@ -112,7 +112,7 @@ export function FileMenu(props: FileMenuProps) {
         <LayoutColLeftWrapper>
           <LayoutColLeft>
             <div>
-              <Typography variant="h5">Your files</Typography>
+              <Typography variant="h5">Files stored in browser memory</Typography>
               <List>
                 <Divider />
                 <ListItem key="create" disablePadding>
@@ -149,7 +149,7 @@ export function FileMenu(props: FileMenuProps) {
                                 </IconButton>
                               </TooltipHint>
                             )}
-                            <TooltipHint title="Save local copy" enterDelay={1000}>
+                            <TooltipHint title="Download local copy" enterDelay={1000}>
                               <IconButton
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -187,7 +187,8 @@ export function FileMenu(props: FileMenuProps) {
             <div style={{ paddingBottom: '1rem' }}>
               <Alert severity="info">
                 <AlertTitle>Important note on files</AlertTitle>
-                Files are stored in browser memory. Always keep a local copy saved of any important files.{' '}
+                Files are stored in your browser’s memory. Always download a local copy of any important files. In the
+                future files will be collaborative in the cloud.{' '}
                 <LinkNewTab href={DOCUMENTATION_FILES_URL}>Learn more</LinkNewTab>.
               </Alert>
             </div>
