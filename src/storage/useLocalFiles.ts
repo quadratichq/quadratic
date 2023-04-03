@@ -347,14 +347,19 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     const oldFileList: string[] | null = await localforage.getItem(oldFileListKey);
     if (oldFileList && oldFileList.length > 0) {
       isFirstVisit = false;
-      // Import each old file as a new file, then delete from memory
+      // Import each old file as a new file then delete from memory
+      // (the first item in the array is the most recent, so we reverse the order
+      // so it is the last one imported and the first in the new file list)
       await Promise.all(
-        oldFileList.map(async (filename): Promise<[string, boolean]> => {
+        oldFileList.reverse().map(async (filename): Promise<[string, boolean]> => {
           let importSuccess = false;
           const itemId = `file-${filename}`;
           const contents: GridFileV1 | null = await localforage.getItem(itemId);
           importSuccess = await importQuadraticFile(JSON.stringify(contents), filename.replace('.grid', ''));
-          await localforage.removeItem(itemId);
+          // Only delete the item if we're sure it was imported successfully
+          if (importSuccess) {
+            await localforage.removeItem(itemId);
+          }
           log(importSuccess ? `migrated file: ${filename}` : `failed to migrate file into memory: ${filename}`);
           return [filename, importSuccess];
         })
