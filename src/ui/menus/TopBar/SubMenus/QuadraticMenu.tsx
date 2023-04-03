@@ -28,7 +28,7 @@ import { useRecoilValue } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { MenuLineItem } from '../MenuLineItem';
-import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
+import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
 
 interface Props {
   sheetController: SheetController;
@@ -133,7 +133,7 @@ export const QuadraticMenu = (props: Props) => {
             <MenuLineItem
               primary="Redo"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z'}
-              Icon={Undo}
+              Icon={Redo}
             ></MenuLineItem>
           </MenuItem>
           <MenuDivider />
@@ -210,7 +210,7 @@ export const QuadraticMenu = (props: Props) => {
           >
             Presentation mode
           </MenuItem>
-          {/* 
+          {/*
           Commented out because the editor switches this state automatically when the user
           is editing a formula.
           <MenuItem
