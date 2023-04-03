@@ -163,7 +163,7 @@ export class PointerHeading {
 
           // move viewport by the amount of the resize for negative columns
           const change = size - this.headingResizeViewport.originalSize;
-          this.app.viewport.x = this.headingResizeViewport.viewportStart + change;
+          this.app.viewport.x = this.headingResizeViewport.viewportStart + change * this.app.viewport.scale.x;
           this.headingResizeViewport.change = change;
         }
 
@@ -184,7 +184,7 @@ export class PointerHeading {
 
           // move viewport by the amount of the resize for negative columns
           const change = size - this.headingResizeViewport.originalSize;
-          this.app.viewport.y = this.headingResizeViewport.viewportStart + change;
+          this.app.viewport.y = this.headingResizeViewport.viewportStart + change * this.app.viewport.scale.x;
           this.headingResizeViewport.change = change;
         }
 
