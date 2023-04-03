@@ -52,6 +52,11 @@ Run Web `npm start`
 
 Run Electron `npm run dev`
 
+### Run Quadratic with Docker
+
+1. `docker build -t quadratic .`
+2. `docker run -p 3000:3000 quadratic`
+
 # Development Progress and Roadmap
 
 _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
