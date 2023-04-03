@@ -12,8 +12,8 @@ import { SheetController } from '../grid/controller/sheetController';
 import { useLocalFiles } from '../storage/useLocalFiles';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 
-type loadableItem = 'pixi' | 'local-files' | 'wasm-rust' | 'wasm-python';
-const ITEMS_TO_LOAD: loadableItem[] = ['pixi', 'local-files', 'wasm-rust', 'wasm-python'];
+type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-rust' | 'wasm-python';
+const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-rust', 'wasm-python'];
 
 export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
@@ -54,7 +54,7 @@ export const QuadraticApp = () => {
       setItemsLoaded((old) => ['wasm-python', ...old]);
     }
     loadAssets().then(() => {
-      setItemsLoaded((old) => ['pixi', ...old]);
+      setItemsLoaded((old) => ['pixi-assets', ...old]);
     });
     init().then(() => {
       hello(); // let Rust say hello to console
