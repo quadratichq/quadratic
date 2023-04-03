@@ -315,10 +315,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   }, [currentFileContents, sheet]);
 
   useEffect(() => {
-    if (sheetController.app) {
-      sheetController.app.save = save;
-    }
-  }, [save, sheetController.app]);
+    sheetController.saveLocalFiles = save;
+  }, [sheetController, save]);
 
   // Logic for the initial page load
   const initialize = useCallback(async () => {
