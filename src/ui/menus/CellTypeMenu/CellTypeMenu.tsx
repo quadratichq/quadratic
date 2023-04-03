@@ -20,6 +20,7 @@ import { Python, Formula, JavaScript, Sql, AI } from '../../icons';
 import { colors } from '../../../theme/colors';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
+import { useAuth0 } from '@auth0/auth0-react';
 
 export interface CellTypeOption {
   name: string;
@@ -29,7 +30,7 @@ export interface CellTypeOption {
   disabled?: boolean;
 }
 
-const CELL_TYPE_OPTIONS = [
+let CELL_TYPE_OPTIONS = [
   {
     name: 'Formula',
     mode: 'FORMULA',
@@ -58,8 +59,16 @@ const CELL_TYPE_OPTIONS = [
     icon: <AI sx={{ color: colors.languageAI }} />,
     description: (
       <>
+        {' '}
+        <span
+          style={{
+            fontStyle: 'italic',
+            fontWeight: 'bold',
+          }}
+        >
+          Experimental:
+        </span>{' '}
         Generate data using an AI prompt.{' '}
-        <LinkNewTabWrapper href={DOCUMENTATION_PYTHON_URL}>Powered by GPT4</LinkNewTabWrapper>.
       </>
     ),
   },
@@ -83,7 +92,14 @@ export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [value, setValue] = React.useState<string>('');
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
+  const { isAuthenticated } = useAuth0();
   const searchlabel = 'Choose a cell type…';
+
+  if (!isAuthenticated) {
+    // remove the AI option if not authenticated
+    CELL_TYPE_OPTIONS = CELL_TYPE_OPTIONS.filter((option) => option.mode !== 'AI');
+  }
+
   const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value.toLowerCase()));
 
   const close = useCallback(() => {
