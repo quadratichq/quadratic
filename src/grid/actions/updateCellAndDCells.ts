@@ -3,6 +3,7 @@ import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 import { runCellComputation } from '../computations/runCellComputation';
+import { ArrayOutput } from '../computations/types';
 
 interface ArgsType {
   starting_cells: Cell[];
@@ -120,12 +121,12 @@ export const updateCellAndDCells = async (args: ArgsType) => {
 
         // if array output
         if (result.array_output !== undefined && result.array_output.length > 0) {
-          if (result.array_output[0][0] !== undefined && typeof result.array_output[0] !== 'string') {
+          if (Array.isArray(result.array_output[0])) {
             // 2d array
             let y_offset = 0;
             for (const row of result.array_output) {
               let x_offset = 0;
-              for (const cell of row) {
+              for (const cell of row as ArrayOutput) {
                 if (cell !== undefined)
                   array_cells_to_output.push({
                     x: ref_current_cell[0] + x_offset,
