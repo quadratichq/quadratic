@@ -68,13 +68,20 @@ export function getStyles(theme: Theme): { [key: string]: React.CSSProperties } 
   return {
     logo: {
       position: 'fixed',
-      left: theme.spacing(2),
+      background: '#fff',
+      padding: theme.spacing(1),
+      left: theme.spacing(1),
       top: theme.spacing(1.25),
+      zIndex: '2',
+      borderRadius: '50%',
     },
     closeBtn: {
       position: 'fixed',
+      background: theme.palette.grey['50'],
       right: theme.spacing(1),
       top: theme.spacing(1),
+      zIndex: '2',
+      borderRadius: '50%',
     },
     colWrapper: {
       overflowY: 'scroll',

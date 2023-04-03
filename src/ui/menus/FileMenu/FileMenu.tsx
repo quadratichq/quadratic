@@ -96,7 +96,9 @@ export function FileMenu(props: FileMenuProps) {
       }}
     >
       <LayoutContainer>
-        <img src="favicon.ico" width="22" alt="Quadratic logo" style={styles.logo} />
+        <div style={styles.logo}>
+          <img src="favicon.ico" width="22" alt="Quadratic logo" />
+        </div>
         {currentFilename && (
           <div style={styles.closeBtn}>
             <TooltipHint title="Close" shortcut={'ESC'}>
