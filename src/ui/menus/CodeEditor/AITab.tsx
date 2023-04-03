@@ -4,14 +4,14 @@ import { Avatar, CircularProgress, FormControl, IconButton, InputAdornment, Outl
 import { useState } from 'react';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { cellEvaluationReturnType } from '../../../grid/computations/types';
+import { CellEvaluationResult } from '../../../grid/computations/types';
 import { colors } from '../../../theme/colors';
 import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
 
 interface Props {
   editorMode: EditorInteractionState['mode'];
-  evalResult: cellEvaluationReturnType | undefined;
+  evalResult: CellEvaluationResult | undefined;
   editorContent: string | undefined;
 }
 
