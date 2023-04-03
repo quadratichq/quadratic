@@ -12,12 +12,12 @@ import { SheetController } from '../grid/controller/sheetController';
 import { useLocalFiles } from '../storage/useLocalFiles';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 
-type item = 'pixi' | 'local-files' | 'wasm-rust' | 'wasm-python';
-const ITEMS: item[] = ['pixi', 'local-files', 'wasm-rust', 'wasm-python'];
+type loadableItem = 'pixi' | 'local-files' | 'wasm-rust' | 'wasm-python';
+const ITEMS_TO_LOAD: loadableItem[] = ['pixi', 'local-files', 'wasm-rust', 'wasm-python'];
 
 export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
-  const [itemsLoaded, setItemsLoaded] = useState<item[]>([]);
+  const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
   const didMount = useRef(false);
   const { setPresentationMode } = useGridSettings();
   const [settingsReset, setSettingsReset] = useState(false);
@@ -27,7 +27,7 @@ export const QuadraticApp = () => {
   const { initialize } = localFiles;
 
   useEffect(() => {
-    if (ITEMS.every((item) => itemsLoaded.includes(item))) {
+    if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
       setLoading(false);
     }
   }, [itemsLoaded]);
