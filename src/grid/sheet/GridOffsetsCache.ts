@@ -21,6 +21,22 @@ export class GridOffsetsCache {
     this.rowNegativeCache = [0];
   }
 
+  reset(direction: 'column' | 'row', negative: boolean) {
+    if (direction === 'column') {
+      if (negative) {
+        this.columnNegativeCache = [0];
+      } else {
+        this.columnCache = [0];
+      }
+    } else {
+      if (negative) {
+        this.rowNegativeCache = [0];
+      } else {
+        this.rowCache = [0];
+      }
+    }
+  }
+
   getColumnPlacement(column: number): { x: number; width: number } {
     let position = 0;
     if (column === 0) {

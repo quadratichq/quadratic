@@ -2,9 +2,9 @@ import { Cell } from '../sheet/gridTypes';
 import { runAI } from './ai/runAI';
 import { runFormula } from './formulas/runFormula';
 import { runPython } from './python/runPython';
-import { cellEvaluationReturnType } from './types';
+import { CellEvaluationResult } from './types';
 
-export const runCellComputation = async (cell: Cell, pyodide?: any): Promise<cellEvaluationReturnType> => {
+export const runCellComputation = async (cell: Cell, pyodide?: any): Promise<CellEvaluationResult> => {
   if (cell.type === 'FORMULA') {
     let result = await runFormula(cell.formula_code || '', { x: cell.x, y: cell.y });
     return {

@@ -1,6 +1,6 @@
 import { Box, Tabs, Tab } from '@mui/material';
 import { CSSProperties, useState } from 'react';
-import { cellEvaluationReturnType } from '../../../grid/computations/types';
+import { CellEvaluationResult } from '../../../grid/computations/types';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { colors } from '../../../theme/colors';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
@@ -11,7 +11,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
-  evalResult: cellEvaluationReturnType | undefined;
+  evalResult: CellEvaluationResult | undefined;
   editorContent: string | undefined;
 }
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import fuzzysort from 'fuzzysort';
 import HelpListItems from './ListItems/Help';
 import ViewListItems from './ListItems/View';

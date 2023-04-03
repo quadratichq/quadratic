@@ -5,6 +5,7 @@
         "Fuzzysort",
         "hljs",
         "openai",
+        "pixi",
         "pixiapp",
         "subquadrant",
         "subquadrants"
