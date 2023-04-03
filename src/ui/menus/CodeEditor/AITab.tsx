@@ -21,8 +21,10 @@ type Message = {
 };
 
 export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
+  console.log('editorContent', editorContent);
   // TODO: Improve these messages. Pass current location and more docs.
-  const initialMessages = [
+  // store in a separate location for different cells
+  const systemMessages = [
     {
       role: 'system',
       content:
@@ -45,26 +47,22 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
 
   const [prompt, setPrompt] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const { user } = useAuth0();
 
   const submitPrompt = async () => {
     if (loading) return;
-
     setLoading(true);
-
     const token = await apiClientSingleton.getAuth();
-
     const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
     const request_body = {
       model: 'gpt-4',
-      messages: updatedMessages,
+      messages: [...systemMessages, ...updatedMessages],
     };
     setMessages(updatedMessages);
     setPrompt('');
-
     try {
-      await fetch(`${apiClientSingleton.getAPIURL()}/ai/autocomplete`, {
+      await fetch(`${apiClientSingleton.getAPIURL()}/ai/chat/stream`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -123,23 +121,18 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
                 });
               }
             } catch (err) {
-              // Not JSON, so do something else with the data
-              // console.log(message);
+              // Not JSON, nothing to do.
             }
           }
           if (result.done) {
-            console.log('Stream complete');
+            // stream complete
             return;
           }
           return reader.read().then(processResult);
         });
       });
-      // .catch((error) => {
-      //   console.log('Error: ', error);
-      // });
     } catch (err: any) {
-      //   setResult('Error');
-      console.log('3 Error: ', err);
+      // not sure what would cause this to happen
     }
     setLoading(false);
   };

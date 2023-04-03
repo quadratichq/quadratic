@@ -77,7 +77,7 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
       ],
     };
 
-    response = await fetch(`${apiClientSingleton.getAPIURL()}/ai/autocomplete`, {
+    response = await fetch(`${apiClientSingleton.getAPIURL()}/ai/chat`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
