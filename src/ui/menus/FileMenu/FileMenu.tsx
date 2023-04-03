@@ -184,7 +184,7 @@ export function FileMenu(props: FileMenuProps) {
                 })}
               </List>
             </div>
-            <div>
+            <div style={{ paddingBottom: '1rem' }}>
               <Alert severity="info">
                 <AlertTitle>Important note on files</AlertTitle>
                 Files are stored in browser memory. Always keep a local copy saved of any important files.{' '}
