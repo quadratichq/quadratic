@@ -5,6 +5,9 @@ import { styled } from '@mui/material/styles';
 const LayoutColLeftWrapper = styled('div')(({ theme }) => ({
   overflowY: 'scroll',
   padding: theme.spacing(6, 2, 0),
+  // Fixes a bug in Firefox where the background is transparent, rather than
+  // the color of the parent bg
+  background: 'inherit',
 }));
 
 const LayoutColRightWrapper = styled(LayoutColLeftWrapper)(({ theme }) => ({
