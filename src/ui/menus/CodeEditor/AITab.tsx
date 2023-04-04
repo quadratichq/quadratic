@@ -21,7 +21,6 @@ type Message = {
 };
 
 export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
-  console.log('editorContent', editorContent);
   // TODO: Improve these messages. Pass current location and more docs.
   // store in a separate location for different cells
   const systemMessages = [
