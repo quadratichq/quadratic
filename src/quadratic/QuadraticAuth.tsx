@@ -1,5 +1,5 @@
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
-
+import { RecoilRoot } from 'recoil';
 import { useAuth0 } from '@auth0/auth0-react';
 import { captureException } from '@sentry/react';
 import { QuadraticApp } from './QuadraticApp';
@@ -36,5 +36,9 @@ export const QuadraticAuth = () => {
     }
   }
 
-  return <QuadraticApp></QuadraticApp>;
+  return (
+    <RecoilRoot>
+      <QuadraticApp />
+    </RecoilRoot>
+  );
 };
