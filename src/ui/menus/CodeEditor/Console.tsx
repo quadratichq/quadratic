@@ -1,4 +1,4 @@
-import { Box, Tabs, Tab } from '@mui/material';
+import { Box, Tabs, Tab, Chip } from '@mui/material';
 import { CSSProperties, useState } from 'react';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { LinkNewTab } from '../../components/LinkNewTab';
@@ -159,17 +159,7 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
           ) : editorMode === 'AI' ? (
             <>
               <br></br>
-              <span
-                style={{
-                  fontStyle: 'italic',
-                  fontWeight: 'bold',
-                  backgroundColor: colors.quadraticForth,
-                  padding: '4px',
-                  borderRadius: '4px',
-                }}
-              >
-                Experimental
-              </span>
+              <Chip label="Experimental" size="small" color="warning" variant="outlined" />
               <p>
                 Warning: AI in Quadratic as a cell type is currently experimental.<br></br> The implementation may
                 change without notice.

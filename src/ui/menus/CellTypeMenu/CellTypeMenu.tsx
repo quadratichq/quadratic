@@ -28,6 +28,7 @@ export interface CellTypeOption {
   icon: any;
   description: string | JSX.Element;
   disabled?: boolean;
+  experimental?: boolean;
 }
 
 let CELL_TYPE_OPTIONS = [
@@ -57,20 +58,8 @@ let CELL_TYPE_OPTIONS = [
     name: 'Artificial Intelligence (AI)',
     mode: 'AI',
     icon: <AI sx={{ color: colors.languageAI }} />,
-    description: (
-      <>
-        {' '}
-        <span
-          style={{
-            fontStyle: 'italic',
-            fontWeight: 'bold',
-          }}
-        >
-          Experimental:
-        </span>{' '}
-        Generate data using an AI prompt.{' '}
-      </>
-    ),
+    description: <>Generate data using an AI prompt. </>,
+    experimental: true,
   },
   {
     name: 'SQL Query',
@@ -179,7 +168,7 @@ export default function CellTypeMenu() {
 
         <List dense={true} disablePadding>
           {options.length ? (
-            options.map(({ name, disabled, description, mode, icon }, i) => (
+            options.map(({ name, disabled, description, mode, icon, experimental }, i) => (
               <ListItemButton
                 key={i}
                 disabled={disabled}
@@ -192,7 +181,8 @@ export default function CellTypeMenu() {
                 <ListItemText
                   primary={
                     <>
-                      {name} {disabled && <Chip label="Coming soon" size="small" />}
+                      {name} {disabled && <Chip label="Coming soon" size="small" />}{' '}
+                      {experimental && <Chip label="Experimental" size="small" color="warning" variant="outlined" />}
                     </>
                   }
                   secondary={description}
