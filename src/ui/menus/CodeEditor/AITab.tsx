@@ -213,10 +213,6 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
               <div style={{ fontSize: '1rem', fontWeight: 400, marginBottom: '1rem' }}>
                 Ask a question to get started.
               </div>
-              <div style={{ fontSize: '1rem', fontWeight: 400, marginBottom: '1rem' }}>
-                You can also type <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>help</span> to see what I
-                can do.
-              </div>
             </div>
           </div>
         )}

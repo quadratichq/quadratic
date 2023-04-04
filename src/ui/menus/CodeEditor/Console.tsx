@@ -158,6 +158,7 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
             </div>
           ) : editorMode === 'AI' ? (
             <>
+              <br></br>
               <span
                 style={{
                   fontStyle: 'italic',

@@ -35,10 +35,17 @@ const AIAutoCompleteRequestBody = z.object({
   model: z.enum(['gpt-4', 'gpt-3-turbo']).optional(),
 });
 
+type AIAutoCompleteRequestBodyType = z.infer<typeof AIAutoCompleteRequestBody>;
+
+const log_ai_request = (req: any, req_json: AIAutoCompleteRequestBodyType) => {
+  const to_log = req_json.messages.filter((message) => message.role !== 'system');
+  console.log('API Chat Request: ', req?.auth?.sub, to_log);
+};
+
 ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   const r_json = AIAutoCompleteRequestBody.parse(request.body);
 
-  //   console.log("API Chat Request: ", r_json)
+  log_ai_request(request, r_json);
 
   try {
     const result = await openai.createChatCompletion({
@@ -64,7 +71,7 @@ ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (reques
 ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
   const r_json = AIAutoCompleteRequestBody.parse(request.body);
 
-  //   console.log("API Chat Request: ", r_json)
+  log_ai_request(request, r_json);
 
   response.setHeader('Content-Type', 'text/event-stream');
   response.setHeader('Cache-Control', 'no-cache');
