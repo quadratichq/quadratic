@@ -167,7 +167,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
             endAdornment={
               <InputAdornment position="end">
                 {loading && <CircularProgress size="1.25rem" sx={{ mx: '1rem' }} />}
-                <IconButton size="small" onClick={submitPrompt} edge="end" disabled={loading}>
+                <IconButton size="small" color="primary" onClick={submitPrompt} edge="end" disabled={loading}>
                   <Send />
                 </IconButton>
               </InputAdornment>

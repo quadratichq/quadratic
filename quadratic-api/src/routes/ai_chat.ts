@@ -31,14 +31,14 @@ const AIMessage = z.object({
 
 const AIAutoCompleteRequestBody = z.object({
   messages: z.array(AIMessage),
-  // optional model to use either "gpt-4" or "gpt-3-turbo"
+  // optional model
   model: z.enum(['gpt-4', 'gpt-3-turbo']).optional(),
 });
 
 type AIAutoCompleteRequestBodyType = z.infer<typeof AIAutoCompleteRequestBody>;
 
 const log_ai_request = (req: any, req_json: AIAutoCompleteRequestBodyType) => {
-  const to_log = req_json.messages.filter((message) => message.role !== 'system');
+  const to_log = req_json.messages.filter((message) => message.role !== AIMessage.shape.role.Values.system);
   console.log('API Chat Request: ', req?.auth?.sub, to_log);
 };
 
@@ -59,11 +59,8 @@ ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (reques
   } catch (error: any) {
     if (error.response) {
       response.status(error.response.status).json(error.response.data);
-      // console.log(error.response.status);
-      // console.log(error.response.data);
     } else {
       response.status(400).json(error.message);
-      // console.log(error.message);
     }
   }
 });
@@ -92,17 +89,16 @@ ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async 
         oai_response.data.pipe(response);
       })
       .catch((error: any) => {
-        // console.error(error);
+        console.error(error);
         response.status(500).send('Error streaming data');
       });
   } catch (error: any) {
     if (error.response) {
       response.status(error.response.status).json(error.response.data);
-      // console.log(error.response.status);
-      // console.log(error.response.data);
+      console.log(error.response.status, error.response.data);
     } else {
       response.status(400).json(error.message);
-      // console.log(error.message);
+      console.log(error.message);
     }
   }
 });

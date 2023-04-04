@@ -3,9 +3,7 @@ import { Coordinate } from '../../../gridGL/types/size';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 
 export interface runAIReturnType {
-  cells_accessed: [number, number][];
   success: boolean;
-  error_span: [number, number] | null;
   error_msg: string | undefined;
   output_value: string | null;
   array_output: string[][] | null;
@@ -103,18 +101,14 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
     }
 
     return {
-      cells_accessed: [],
       success: true,
-      error_span: null,
       error_msg: undefined,
       output_value: result.trim(),
       array_output: parsedResult,
     } as runAIReturnType;
   } catch (e: any) {
     return {
-      cells_accessed: [],
       success: false,
-      error_span: null,
       error_msg: `OpenAI API Error: ${e.message} \n ${await response?.text()}`,
       output_value: null,
       array_output: null,
