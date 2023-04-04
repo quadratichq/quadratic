@@ -2,7 +2,7 @@ import { CellEvaluationResultSchema } from '../computations/types';
 import { CellTextFormatSchema } from '../formatting/cellTextFormat';
 import z from 'zod';
 
-const CellTypesSchema = z.enum(['TEXT', 'FORMULA', 'JAVASCRIPT', 'PYTHON', 'SQL', 'COMPUTED']);
+const CellTypesSchema = z.enum(['TEXT', 'FORMULA', 'JAVASCRIPT', 'PYTHON', 'SQL', 'COMPUTED', 'AI']);
 export type CellTypes = z.infer<typeof CellTypesSchema>;
 
 export const CellSchema = z.object({
@@ -15,6 +15,7 @@ export const CellSchema = z.object({
   evaluation_result: CellEvaluationResultSchema.optional(),
   formula_code: z.string().optional(),
   last_modified: z.string().optional(),
+  ai_prompt: z.string().optional(),
   python_code: z.string().optional(),
 });
 export type Cell = z.infer<typeof CellSchema>;

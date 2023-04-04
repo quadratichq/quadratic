@@ -120,6 +120,8 @@ export class Cursor extends Graphics {
             ? colors.cellColorUserPython
             : editorInteractionState.mode === 'FORMULA'
             ? colors.cellColorUserFormula
+            : editorInteractionState.mode === 'AI'
+            ? colors.cellColorUserAI
             : colors.cursorCell;
       this.beginFill(color).drawShape(this.indicator).endFill();
     }
@@ -135,6 +137,8 @@ export class Cursor extends Graphics {
           ? colors.cellColorUserPython
           : editorInteractionState.mode === 'FORMULA'
           ? colors.cellColorUserFormula
+          : editorInteractionState.mode === 'AI'
+          ? colors.cellColorUserAI
           : colors.independence;
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,
