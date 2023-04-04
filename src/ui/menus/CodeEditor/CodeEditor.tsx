@@ -6,6 +6,7 @@ import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { Cell } from '../../../grid/sheet/gridTypes';
 import {
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -20,7 +21,7 @@ import { EditorInteractionState, editorInteractionStateAtom } from '../../../ato
 import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
 import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
-import { cellEvaluationReturnType } from '../../../grid/computations/types';
+import { CellEvaluationResult } from '../../../grid/computations/types';
 import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
 import { Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -44,6 +45,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [editorContent, setEditorContent] = useState<string | undefined>('');
   const [didMount, setDidMount] = useState(false);
 
+  const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
+
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
@@ -56,7 +59,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const cell = useMemo(() => props.sheet_controller.sheet.getCellCopy(x, y), [x, y, props.sheet_controller.sheet]);
 
   // Cell evaluation result
-  const [evalResult, setEvalResult] = useState<cellEvaluationReturnType | undefined>(cell?.evaluation_result);
+  const [evalResult, setEvalResult] = useState<CellEvaluationResult | undefined>(cell?.evaluation_result);
 
   // Editor width state
   const [editorWidth, setEditorWidth] = useState<number>(
@@ -168,6 +171,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const saveAndRunCell = async () => {
     if (!selectedCell) return;
 
+    if (isRunningComputation) return;
+
+    setIsRunningComputation(true);
+
     selectedCell.type = editorMode;
     selectedCell.value = '';
     if (editorMode === 'PYTHON') {
@@ -184,6 +191,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
     const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
     setEvalResult(updated_cell?.evaluation_result);
+    setIsRunningComputation(false);
   };
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -309,10 +317,19 @@ export const CodeEditor = (props: CodeEditorProps) => {
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+          {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
-            <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-              <PlayArrow />
-            </IconButton>
+            <span>
+              <IconButton
+                id="QuadraticCodeEditorRunButtonID"
+                size="small"
+                color="primary"
+                onClick={saveAndRunCell}
+                disabled={isRunningComputation}
+              >
+                <PlayArrow />
+              </IconButton>
+            </span>
           </TooltipHint>
           <TooltipHint title="Close" shortcut="ESC">
             <IconButton

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLoading } from '../contexts/LoadingContext';
 import { gridInteractionStateAtom } from '../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
@@ -23,8 +22,6 @@ let mouseIsDown = false;
 let spaceIsDown = false;
 
 export default function QuadraticGrid(props: IProps) {
-  const { loading } = useLoading();
-
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node: HTMLDivElement | null) => {
     if (node) setContainer(node);
@@ -32,12 +29,6 @@ export default function QuadraticGrid(props: IProps) {
   useEffect(() => {
     if (props.app && container) props.app.attach(container);
   }, [props.app, container]);
-
-  useEffect(() => {
-    if (props.app) {
-      props.app.quadrants.build();
-    }
-  }, [props.sheetController.sheet, props.app]);
 
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
@@ -115,8 +106,6 @@ export default function QuadraticGrid(props: IProps) {
     app: props.app,
     snackbar: props.snackBar,
   });
-
-  if (loading) return null;
 
   return (
     <div

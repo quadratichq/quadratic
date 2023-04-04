@@ -33,7 +33,10 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
       if (!match?.length) return false;
 
       // parse json from text
-      let json = JSON.parse(atob(match[1]));
+      const decoder = new TextDecoder();
+      const quadraticData = new Uint8Array(Array.from(atob(match[1]), (c) => c.charCodeAt(0)));
+      const decodedString = decoder.decode(quadraticData);
+      const json = JSON.parse(decodedString);
 
       if (json.type === CLIPBOARD_FORMAT_VERSION) {
         const x_offset = pasteToCell.x - json.cell0.x;
@@ -277,7 +280,17 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
     cell1
   );
 
-  const quadraticString = btoa(
+  // const quadraticString = btoa(
+  //   JSON.stringify({
+  //     type: CLIPBOARD_FORMAT_VERSION,
+  //     data: quadraticClipboardString,
+  //     cell0,
+  //     cell1,
+  //   })
+  // );
+
+  const encoder = new TextEncoder();
+  const quadraticData = encoder.encode(
     JSON.stringify({
       type: CLIPBOARD_FORMAT_VERSION,
       data: quadraticClipboardString,
@@ -285,6 +298,7 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
       cell1,
     })
   );
+  const quadraticString = btoa(String.fromCharCode(...quadraticData));
 
   const clipboardHTMLString = `<span data-metadata="<--(quadratic)${quadraticString}(/quadratic)-->"></span>${htmlClipboardString}`;
 

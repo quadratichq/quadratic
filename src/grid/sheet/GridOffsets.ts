@@ -171,6 +171,7 @@ export class GridOffsets {
       } else {
         this.rows.set(change.row, { id: change.row, size: change.size });
       }
+      this.gridOffsetsCache.reset('row', change.row < 0);
     } else if (change.column !== undefined) {
       const entry = this.columns.get(change.column);
       if (entry) {
@@ -178,6 +179,7 @@ export class GridOffsets {
       } else {
         this.columns.set(change.column, { id: change.column, size: change.size });
       }
+      this.gridOffsetsCache.reset('column', change.column < 0);
     }
   }
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { Size } from '../../types/size';
@@ -15,6 +15,7 @@ import { useGetSelection } from '../../../ui/menus/TopBar/SubMenus/useGetSelecti
 import { useClearAllFormatting } from '../../../ui/menus/TopBar/SubMenus/useClearAllFormatting';
 import { useGridSettings } from '../../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { UseSnackBar } from '../../../ui/components/SnackBar';
+import { LocalFilesContext } from '../../../ui/QuadraticUIContext';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -41,6 +42,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { changeBold, changeItalic } = useFormatCells(sheetController, app);
   const { clearAllFormatting } = useClearAllFormatting(sheetController, app);
   const { presentationMode, setPresentationMode } = useGridSettings();
+  const { currentFileId } = useContext(LocalFilesContext);
 
   const keyDownWindow = useCallback(
     (event: KeyboardEvent): void => {
@@ -61,6 +63,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           pointer: app.input,
           presentationMode,
           setPresentationMode,
+          currentFileId,
         })
       ) {
         event.stopPropagation();
@@ -68,6 +71,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       }
     },
     [
+      currentFileId,
       interactionState,
       editorInteractionState,
       setEditorInteractionState,
