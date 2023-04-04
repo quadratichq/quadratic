@@ -362,7 +362,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
           if (importSuccess) {
             await localforage.removeItem(itemId);
           } else {
-            filesWithErrors.push(itemId);
+            filesWithErrors.push(filename);
             let message;
             try {
               message = JSON.stringify(contents);
