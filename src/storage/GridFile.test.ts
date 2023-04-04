@@ -37,6 +37,28 @@ describe('validateFile()', () => {
         cell_dependency: undefined,
       })
     ).not.toBe(null);
+
+    const result = validateFile({
+      ...v1File,
+      borders: [
+        { x: 0, y: 0, horizontal: { type: 0 }, vertical: { type: 0 } },
+        { x: 1, y: 1, horizontal: { type: 1 } },
+        { x: 2, y: 2, horizontal: { type: 2 } },
+        { x: 3, y: 3, horizontal: { type: 3 } },
+        { x: 4, y: 4, horizontal: { type: 4 } },
+        { x: 5, y: 5, horizontal: { type: 5 } },
+        { x: 6, y: 6, horizontal: {} },
+      ],
+    });
+
+    expect(result).toHaveProperty('borders[0].horizontal.type', 'line1');
+    expect(result).toHaveProperty('borders[0].vertical.type', 'line1');
+    expect(result).toHaveProperty('borders[1].horizontal.type', 'line2');
+    expect(result).toHaveProperty('borders[2].horizontal.type', 'line3');
+    expect(result).toHaveProperty('borders[3].horizontal.type', 'dotted');
+    expect(result).toHaveProperty('borders[4].horizontal.type', 'dashed');
+    expect(result).toHaveProperty('borders[5].horizontal.type', 'double');
+    expect(result).toHaveProperty('borders[6].horizontal', {});
   });
 
   test('Upgrades a valid file from v1 to v1.1', () => {

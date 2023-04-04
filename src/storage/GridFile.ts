@@ -1,5 +1,5 @@
 import { Dependency } from '../grid/sheet/GridRenderDependency';
-import { BorderSchema, CellSchema, CellFormatSchema, BorderTypeEnum } from '../grid/sheet/gridTypes';
+import { BorderSchema, CellSchema, CellFormatSchema } from '../grid/sheet/gridTypes';
 import { v4 as uuid } from 'uuid';
 import z from 'zod';
 import { debugShowFileIO } from '../debugFlags';
@@ -101,20 +101,21 @@ export function validateFile(jsonFile: {}): GridFile | null {
 
     // The previous enums for borders were integers but now we use strings
     // So we have to change them all, e.g. from "3" to "dotted"
-    // The old enum integers map directly to the new strings positions in the enum array
-    // Old enums: { line1 = 0, line2 = 1, line3 = 2, dotted = 3, dashed = 4, double = 5 }
-    // New enums: ['line1', 'line2', 'line3', 'dotted', 'dashed', 'double']
     // https://github.com/quadratichq/quadratic/pull/308/files#diff-fb2ecd77a7c43aa1f68a862e8866d079391f51b6ae9665059d523221fdf5256fL44-R41
+    const enumMapping = {
+      0: 'line1',
+      1: 'line2',
+      2: 'line3',
+      3: 'dotted',
+      4: 'dashed',
+      5: 'double',
+    };
     if (jsonFile && jsonFile.borders && jsonFile.borders.length > 0) {
       ['horizontal', 'vertical'].forEach((key) => {
         for (let i = 0; i < jsonFile.borders.length; i++) {
-          if (
-            jsonFile.borders[i][key] &&
-            jsonFile.borders[i][key].type &&
-            typeof jsonFile.borders[i][key].type === 'number'
-          ) {
-            const oldEnum = jsonFile.borders[i][key].type;
-            jsonFile.borders[i][key].type = BorderTypeEnum.options[oldEnum];
+          if (jsonFile.borders[i][key] && typeof jsonFile.borders[i][key].type === 'number') {
+            const value: 0 | 1 | 2 | 3 | 4 | 5 = jsonFile.borders[i][key].type;
+            jsonFile.borders[i][key].type = enumMapping[value];
           }
         }
       });
