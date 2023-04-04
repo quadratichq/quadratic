@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import ai_chat_router from './routes/ai_chat';
 import helmet from 'helmet';
@@ -21,6 +21,22 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/ai', ai_chat_router);
+
+// Error-logging middleware
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error(`[${new Date().toISOString()}] ${err.message}`);
+  next(err);
+});
+
+// Error-handling middleware
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  res.status(err.status || 500);
+  res.json({
+    error: {
+      message: err.message,
+    },
+  });
+});
 
 // Start the server
 const PORT = process.env.PORT || 8000;
