@@ -15,7 +15,7 @@ import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
-import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
+import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { LocalFilesContext } from '../../../QuadraticUIContext';
@@ -101,7 +101,7 @@ export const QuadraticMenu = (props: Props) => {
             <MenuLineItem
               primary="Redo"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z'}
-              Icon={Undo}
+              Icon={Redo}
             ></MenuLineItem>
           </MenuItem>
           <MenuDivider />
