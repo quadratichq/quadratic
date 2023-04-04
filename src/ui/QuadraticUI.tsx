@@ -16,6 +16,7 @@ import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
 import InitialPageLoadError from './components/InitialPageLoadError';
 import { CSVImportHelpMessage } from './overlays/CSVImportHelpMessage';
+import { SnackBar, useSnackbar } from './components/SnackBar';
 import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../grid/controller/sheetController';
@@ -41,6 +42,8 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
     app.resize();
   }, [presentationMode, app]);
 
+  const snackBar = useSnackbar();
+
   return (
     <div
       style={{
@@ -53,7 +56,9 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
       {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
-      {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
+      {editorInteractionState.showCommandPalette && (
+        <CommandPalette app={app} sheetController={sheetController} snackBar={snackBar} />
+      )}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
       {editorInteractionState.showFileMenu && <FileMenu app={app} />}
 
@@ -67,7 +72,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
         }}
       >
         <FileUploadWrapper sheetController={sheetController} app={app}>
-          <QuadraticGrid sheetController={sheetController} app={app} />
+          <QuadraticGrid sheetController={sheetController} app={app} snackBar={snackBar} />
         </FileUploadWrapper>
         <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
@@ -76,6 +81,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
 
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
       {presentationMode && <PresentationModeHint />}
+      <SnackBar {...snackBar} />
       {hasInitialPageLoadError && <InitialPageLoadError />}
     </div>
   );

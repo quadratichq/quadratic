@@ -4,6 +4,7 @@ import { ReactElement } from 'react';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { UseSnackBar } from '../../components/SnackBar';
 
 // Props generated in the root CommandPalette and passed to every CommandPaletteListItem
 export interface CommandPaletteListItemSharedProps {
@@ -20,6 +21,7 @@ export interface CommandPaletteListItemSharedProps {
   app: PixiApp;
   interactionState: GridInteractionState;
   sheetController: SheetController;
+  snackBar: UseSnackBar;
 }
 
 // Contextual props added to each individual <CommandPaletteListItem>
