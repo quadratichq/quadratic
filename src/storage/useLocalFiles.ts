@@ -101,7 +101,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       // Check if the JSON is a valid quadratic file
       const quadraticJson = validateFile(json);
       if (!quadraticJson) {
-        console.error('Failed to parse JSON as a valid Quadratic file', json);
+        console.error('Failed to parse JSON as a valid Quadratic file', json, contents);
         return false;
       }
 

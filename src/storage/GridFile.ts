@@ -99,6 +99,28 @@ export function validateFile(jsonFile: {}): GridFile | null {
       jsonFile.cell_dependency = '';
     }
 
+    // The previous enums for borders were integers but now we use strings
+    // So we have to change them all, e.g. from "3" to "dotted"
+    // https://github.com/quadratichq/quadratic/pull/308/files#diff-fb2ecd77a7c43aa1f68a862e8866d079391f51b6ae9665059d523221fdf5256fL44-R41
+    const enumMapping = {
+      0: 'line1',
+      1: 'line2',
+      2: 'line3',
+      3: 'dotted',
+      4: 'dashed',
+      5: 'double',
+    };
+    if (jsonFile && jsonFile.borders && jsonFile.borders.length > 0) {
+      ['horizontal', 'vertical'].forEach((key) => {
+        for (let i = 0; i < jsonFile.borders.length; i++) {
+          if (jsonFile.borders[i][key] && typeof jsonFile.borders[i][key].type === 'number') {
+            const value: 0 | 1 | 2 | 3 | 4 | 5 = jsonFile.borders[i][key].type;
+            jsonFile.borders[i][key].type = enumMapping[value];
+          }
+        }
+      });
+    }
+
     return jsonFile;
   };
 
