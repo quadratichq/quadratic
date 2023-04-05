@@ -1,7 +1,15 @@
+import fs from 'fs';
+import path from 'path';
+import { GridFiles } from '.';
 import { GridFileV1 } from './GridFileV1';
 import { GridFileV1_1 } from './GridFileV1_1';
 import { validateGridFile } from './validateGridFile';
 const v = validateGridFile;
+const EXAMPLES_DIR = path.join(__dirname, '../../public/examples/');
+const exampleGridFiles: GridFiles[] = fs
+  .readdirSync(EXAMPLES_DIR)
+  .filter((name) => name.includes('.grid'))
+  .map((name) => JSON.parse(fs.readFileSync(path.join(EXAMPLES_DIR, name)).toString()));
 
 const v1File: GridFileV1 = {
   version: '1.0',
@@ -25,6 +33,12 @@ const v1File: GridFileV1 = {
 
 describe('validateFile()', () => {
   // TODO test the round trip of import to export to import
+
+  test('Example files can be validate (and upgraded as needed)', () => {
+    exampleGridFiles.forEach((gridFile) => {
+      expect(v(gridFile)).not.toBe(null);
+    });
+  });
 
   test('Returns `null` for invalid JSON', () => {
     expect(v({})).toStrictEqual(null);
