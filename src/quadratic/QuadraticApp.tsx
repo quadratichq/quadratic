@@ -33,12 +33,10 @@ export const QuadraticApp = () => {
   }, [itemsLoaded]);
 
   // reset presentation mode when app starts
-  useEffect(() => {
-    if (!settingsReset) {
-      setPresentationMode(false);
-      setSettingsReset(true);
-    }
-  }, [setPresentationMode, settingsReset, setSettingsReset]);
+  if (!settingsReset) {
+    setPresentationMode(false);
+    setSettingsReset(true);
+  }
 
   // Loading Effect
   useEffect(() => {

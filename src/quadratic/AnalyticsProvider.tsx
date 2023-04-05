@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
 
 export const AnalyticsProvider = () => {
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(
+    // Only track analytics on cloud version where REACT_APP_GOOGLE_ANALYTICS_GTAG is set
+    () => !process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG
+  );
 
   useEffect(() => {
-    // Only track analytics on cloud version where REACT_APP_GOOGLE_ANALYTICS_GTAG is set
-    if (!process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG) {
-      setLoaded(true);
-      return;
-    }
-
     // Prevent loading twice
     if (loaded) return;
 
