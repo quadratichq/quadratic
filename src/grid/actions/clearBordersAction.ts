@@ -1,4 +1,4 @@
-import { Border } from '../sheet/gridTypes';
+import { GridFile } from '../../schemas';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 
@@ -12,7 +12,7 @@ export const clearBordersAction = (args: {
   const { sheet, app } = sheet_controller;
 
   // get all borders in the selection
-  const borderUpdate: Border[] = [];
+  const borderUpdate: GridFile['borders'] = [];
   const borderDelete: Coordinate[] = [];
   for (let y = start.y; y <= end.y; y++) {
     for (let x = start.x; x <= end.x; x++) {

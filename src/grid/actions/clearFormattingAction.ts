@@ -1,4 +1,4 @@
-import { CellFormat } from '../sheet/gridTypes';
+import { GridFile } from '../../schemas';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 
@@ -11,7 +11,7 @@ export const clearFormattingAction = (args: {
   const { sheet_controller, start, end, create_transaction } = args;
 
   // get all formats in the selection
-  const formats: CellFormat[] = [];
+  const formats: GridFile['formats'] = [];
   for (let y = start.y; y <= end.y; y++) {
     for (let x = start.x; x <= end.x; x++) {
       const format = sheet_controller.sheet.grid.getFormat(x, y);

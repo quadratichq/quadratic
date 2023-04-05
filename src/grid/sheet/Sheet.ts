@@ -1,5 +1,5 @@
 import { Rectangle } from 'pixi.js';
-import { GridFileData, GridFile } from '../../storage/GridFile';
+import { GridFileData, GridFile } from '../../schemas';
 import { intersects } from '../../gridGL/helpers/intersects';
 import { GridBorders } from './GridBorders';
 import { GridRenderDependency } from './GridRenderDependency';

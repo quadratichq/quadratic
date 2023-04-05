@@ -1,5 +1,9 @@
 import z from 'zod';
+import { GridFileV1 } from './GridFileV1';
+import { v4 as uuid } from 'uuid';
+import { DEFAULT_FILE_NAME } from '../constants/app';
 
+// Shared schemas
 const ArrayOutputSchema = z.array(z.union([z.string(), z.number(), z.boolean()]));
 const BorderDirectionSchema = z.object({
   color: z.string().optional(),
@@ -10,6 +14,7 @@ const HeadingSchema = z.object({
   size: z.number().optional(),
 });
 
+// File schema
 export const GridFileSchemaV1_1 = z.object({
   borders: z
     .object({
@@ -97,3 +102,46 @@ export const GridFileSchemaV1_1 = z.object({
   version: z.literal('1.1'),
 });
 export type GridFileV1_1 = z.infer<typeof GridFileSchemaV1_1>;
+
+/**
+ * Given a v1 file, update it to a v1_1 file
+ */
+export function upgradeV1toV1_1(file: GridFileV1): GridFileV1_1 {
+  const date = Date.now();
+
+  // The previous enums for borders were integers but now we use strings
+  // So we have to change them all, e.g. from "3" to "dotted"
+  // https://github.com/quadratichq/quadratic/pull/308/files#diff-fb2ecd77a7c43aa1f68a862e8866d079391f51b6ae9665059d523221fdf5256fL44-R41
+  const enumMapping = {
+    0: 'line1',
+    1: 'line2',
+    2: 'line3',
+    3: 'dotted',
+    4: 'dashed',
+    5: 'double',
+  };
+
+  return {
+    ...file,
+    borders: file.borders.map((oldBorder) => {
+      // Make a deep copy, modify as necessary, and return it
+      const border = JSON.parse(JSON.stringify(oldBorder));
+
+      if (typeof border?.horizontal?.type === 'number') {
+        // @ts-expect-error we know it exists
+        border.horizontal.type = enumMapping[border.horizontal.type];
+      }
+
+      if (typeof border?.vertical?.type === 'number') {
+        // @ts-expect-error we know it exists
+        border.vertical.type = enumMapping[border.vertical.type];
+      }
+      return border;
+    }),
+    version: '1.1',
+    modified: date,
+    created: date,
+    id: uuid(),
+    filename: DEFAULT_FILE_NAME,
+  } as GridFileV1_1;
+}
