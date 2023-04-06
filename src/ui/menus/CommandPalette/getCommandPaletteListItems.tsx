@@ -1,4 +1,3 @@
-import React from 'react';
 import fuzzysort from 'fuzzysort';
 import HelpListItems from './ListItems/Help';
 import ViewListItems from './ListItems/View';
@@ -12,6 +11,7 @@ import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { UseSnackBar } from '../../components/SnackBar';
 
 interface Commands {
   label: string;
@@ -36,6 +36,7 @@ export const getCommandPaletteListItems = (props: {
   closeCommandPalette: Function;
   activeSearchValue: string;
   selectedListItemIndex: number;
+  snackBar: UseSnackBar;
 }): Array<JSX.Element> => {
   const { activeSearchValue, ...rest } = props;
 

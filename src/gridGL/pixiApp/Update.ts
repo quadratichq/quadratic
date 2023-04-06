@@ -129,6 +129,15 @@ export class Update {
     this.fps?.update();
   };
 
+  forceUpdate(): void {
+    const app = this.pixiApp;
+    app.gridLines.update();
+    app.axesLines.update();
+    app.headings.update();
+    app.cells.update();
+    app.cursor.update();
+  }
+
   // update loop w/o debug checks
   private update = (timeStart: number): void => {
     const app = this.pixiApp;

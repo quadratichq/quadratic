@@ -21,9 +21,9 @@ import { EditorInteractionState, editorInteractionStateAtom } from '../../../ato
 import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
 import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
-import { cellEvaluationReturnType } from '../../../grid/computations/types';
+import { CellEvaluationResult } from '../../../grid/computations/types';
 import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
-import { Formula, Python } from '../../icons';
+import { AI, Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
@@ -59,7 +59,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const cell = useMemo(() => props.sheet_controller.sheet.getCellCopy(x, y), [x, y, props.sheet_controller.sheet]);
 
   // Cell evaluation result
-  const [evalResult, setEvalResult] = useState<cellEvaluationReturnType | undefined>(cell?.evaluation_result);
+  const [evalResult, setEvalResult] = useState<CellEvaluationResult | undefined>(cell?.evaluation_result);
 
   // Editor width state
   const [editorWidth, setEditorWidth] = useState<number>(
@@ -78,7 +78,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
     // existing cell and content has changed
     (editorMode === 'PYTHON'
       ? selectedCell?.python_code !== editorContent
-      : selectedCell?.formula_code !== editorContent);
+      : editorMode === 'FORMULA'
+      ? selectedCell?.formula_code !== editorContent
+      : editorMode === 'AI'
+      ? selectedCell?.ai_prompt !== editorContent
+      : false);
 
   // When changing mode
   // useEffect(() => {
@@ -155,6 +159,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
         setEditorContent(cell?.python_code);
       } else if (editorMode === 'FORMULA') {
         setEditorContent(cell?.formula_code);
+      } else if (editorMode === 'AI') {
+        setEditorContent(cell?.ai_prompt);
       }
     } else {
       // create blank cell
@@ -170,6 +176,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const saveAndRunCell = async () => {
     if (!selectedCell) return;
+    if (isRunningComputation) return;
+
+    setIsRunningComputation(true);
 
     if (isRunningComputation) return;
 
@@ -181,6 +190,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
       selectedCell.python_code = editorContent;
     } else if (editorMode === 'FORMULA') {
       selectedCell.formula_code = editorContent;
+    } else if (editorMode === 'AI') {
+      selectedCell.ai_prompt = editorContent;
     }
 
     await updateCellAndDCells({
@@ -296,6 +307,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
             <Python sx={{ color: colors.languagePython }} fontSize="small" />
           ) : editorMode === 'FORMULA' ? (
             <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
+          ) : editorMode === 'AI' ? (
+            <AI sx={{ color: colors.languageAI }} fontSize="small" />
           ) : (
             <Subject />
           )}
@@ -304,7 +317,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
               color: 'black',
             }}
           >
-            Cell ({selectedCell.x}, {selectedCell.y}) - {capitalize(selectedCell.type)}
+            Cell ({selectedCell.x}, {selectedCell.y}) -{' '}
+            {selectedCell.type === 'AI' ? 'AI' : capitalize(selectedCell.type)}
             {hasUnsavedChanges && (
               <TooltipHint title="Your changes haven’t been saved or run">
                 <FiberManualRecord
@@ -348,7 +362,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
       {/* Editor Body */}
       <div
         style={{
-          minHeight: '200px',
+          minHeight: '100px',
           flex: '2',
         }}
       >
@@ -389,8 +403,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
           height: `${consoleHeight}px`,
         }}
       >
-        {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
-          <Console evalResult={evalResult} editorMode={editorMode} />
+        {(editorInteractionState.mode === 'PYTHON' ||
+          editorInteractionState.mode === 'FORMULA' ||
+          editorInteractionState.mode === 'AI') && (
+          <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
         )}
       </div>
     </div>

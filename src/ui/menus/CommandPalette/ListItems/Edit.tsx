@@ -7,6 +7,8 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { Undo, Redo } from '@mui/icons-material';
 import { isMac } from '../../../../utils/isMac';
+import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
+import { CopyAsPNG } from '../../../icons';
 
 const ListItems = [
   {
@@ -99,6 +101,23 @@ const ListItems = [
           icon={<ContentPaste />}
           shortcut="V"
           shortcutModifiers={[KeyboardSymbols.Command]}
+        />
+      );
+    },
+  },
+  {
+    label: 'Copy selection as PNG',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      return (
+        <CommandPaletteListItem
+          {...props}
+          action={() => {
+            copyAsPNG(props.app);
+            props.snackBar.triggerSnackbar('Copied selection as PNG to clipboard');
+          }}
+          icon={<CopyAsPNG />}
+          shortcut="C"
+          shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
         />
       );
     },
