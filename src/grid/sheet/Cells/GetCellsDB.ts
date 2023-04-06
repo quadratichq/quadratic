@@ -1,4 +1,4 @@
-import { Cell } from '../gridTypes';
+import { Cell } from '../../../schemas';
 import { Sheet } from '../Sheet';
 
 // use to fake entry to sheet (this is only temporary as rust will directly handle this call)

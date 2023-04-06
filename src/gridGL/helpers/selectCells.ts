@@ -2,7 +2,7 @@ import { Viewport } from 'pixi-viewport';
 import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { Coordinate } from '../types/size';
-import { Cell } from '../../grid/sheet/gridTypes';
+import { Cell } from '../../schemas';
 
 export function selectAllCells(options: {
   sheet: Sheet;

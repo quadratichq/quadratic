@@ -28,7 +28,7 @@ export const GridFileSchemaV1_1 = z.object({
     .object({
       x: z.number(),
       y: z.number(),
-      type: z.enum(['TEXT', 'FORMULA', 'JAVASCRIPT', 'PYTHON', 'SQL', 'COMPUTED']),
+      type: z.enum(['TEXT', 'FORMULA', 'JAVASCRIPT', 'PYTHON', 'SQL', 'COMPUTED', 'AI']),
       value: z.string(),
       array_cells: z.tuple([z.number(), z.number()]).array().optional(), // list of output array cells created by this cell
       dependent_cells: z.tuple([z.number(), z.number()]).array().optional(),
@@ -46,6 +46,7 @@ export const GridFileSchemaV1_1 = z.object({
         .optional(),
       formula_code: z.string().optional(),
       last_modified: z.string().optional(),
+      ai_prompt: z.string().optional(),
       python_code: z.string().optional(),
     })
     .array(),

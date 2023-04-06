@@ -1,5 +1,5 @@
 import { format as formatNumber } from 'numerable';
-import { Cell, CellFormat } from '../sheet/gridTypes';
+import { Cell, CellFormat } from '../../schemas';
 import { CellTextFormat, DEFAULT_NUMBER_OF_DECIMAL_PLACES } from './cellTextFormat';
 
 // function that checks if a string is a number

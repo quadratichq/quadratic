@@ -1,4 +1,4 @@
-import { Cell, CellFormat } from '../sheet/gridTypes';
+import { Cell, CellFormat } from '../../schemas';
 import { CellTextFormat } from './cellTextFormat';
 import { CellTextFormatter } from './cellTextFormatter';
 
