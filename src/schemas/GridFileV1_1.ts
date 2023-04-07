@@ -9,6 +9,10 @@ const BorderDirectionSchema = z.object({
   color: z.string().optional(),
   type: z.enum(['line1', 'line2', 'line3', 'dotted', 'dashed', 'double']).optional(),
 });
+const CoordinateSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+});
 const HeadingSchema = z.object({
   id: z.number(),
   size: z.number().optional(),
@@ -94,11 +98,13 @@ export const GridFileSchemaV1_1 = z.object({
     .array(),
   id: z.string().uuid(),
   modified: z.number(),
-
-  // todo: this goes away when alignment branch is merged
-  // because this goes away, we'll accept anything in runtime parsing
-  render_dependency: z.any(), // Dependency[];
-
+  render_dependency: z
+    .object({
+      location: CoordinateSchema,
+      needToRender: CoordinateSchema.array(), // these are cells that must be rendered when drawing this cell
+      renderThisCell: CoordinateSchema.array(), // these are cells that render this cell when drawing
+    })
+    .array(),
   rows: HeadingSchema.array(),
   version: z.literal('1.1'),
 });

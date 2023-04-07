@@ -1,5 +1,4 @@
 import z from 'zod';
-import { Dependency } from '../grid/sheet/GridRenderDependency';
 import { GridFileV1 } from './GridFileV1';
 import { GridFileV1_1, GridFileSchemaV1_1 } from './GridFileV1_1';
 
@@ -30,11 +29,13 @@ const GridFileDataSchema = GridFileSchema.pick({
   render_dependency: true,
   rows: true,
 });
-export type GridFileData = z.infer<typeof GridFileDataSchema> & { render_dependency: Dependency[] };
+export type GridFileData = z.infer<typeof GridFileDataSchema>;
 
 export type Cell = GridFile['cells'][0];
 export type CellType = GridFile['cells'][0]['type'];
 export type CellFormat = GridFile['formats'][0];
+export type Dependency = GridFile['render_dependency'][0];
+export type Coordinate = GridFile['render_dependency'][0]['location'];
 export type Border = GridFile['borders'][0];
 export type BorderType = NonNullable<Pick<NonNullable<Border['horizontal']>, 'type'>['type']>;
 export const BorderTypeEnum = GridFileSchemaV1_1.shape.borders.element.shape.horizontal
