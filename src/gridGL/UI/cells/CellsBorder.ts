@@ -78,6 +78,8 @@ export class CellsBorder extends Container {
         drawInputBorder(input, colors.cellColorUserFormula, 0.75);
       } else if (input.cell.type === 'AI') {
         drawInputBorder(input, colors.cellColorUserAI, 0.75);
+      } else if (input.cell.type === 'SQL') {
+        drawInputBorder(input, colors.cellColorUserSQL, 0.75);
       } else if (input.cell.type === 'COMPUTED') {
         // drawInputBorder(input, colors.independence, 0.75);
       }

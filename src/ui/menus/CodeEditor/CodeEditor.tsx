@@ -23,7 +23,7 @@ import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
 import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
-import { AI, Formula, Python } from '../../icons';
+import { AI, Formula, Python, Sql } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
@@ -82,6 +82,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
       ? selectedCell?.formula_code !== editorContent
       : editorMode === 'AI'
       ? selectedCell?.ai_prompt !== editorContent
+      : editorMode === 'SQL'
+      ? selectedCell?.sql_statement !== editorContent
       : false);
 
   // When changing mode
@@ -161,6 +163,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
         setEditorContent(cell?.formula_code);
       } else if (editorMode === 'AI') {
         setEditorContent(cell?.ai_prompt);
+      } else if (editorMode === 'SQL') {
+        setEditorContent(cell?.sql_statement);
       }
     } else {
       // create blank cell
@@ -192,6 +196,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
       selectedCell.formula_code = editorContent;
     } else if (editorMode === 'AI') {
       selectedCell.ai_prompt = editorContent;
+    } else if (editorMode === 'SQL') {
+      selectedCell.sql_statement = editorContent;
     }
 
     await updateCellAndDCells({
@@ -309,6 +315,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
             <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
           ) : editorMode === 'AI' ? (
             <AI sx={{ color: colors.languageAI }} fontSize="small" />
+          ) : editorMode === 'SQL' ? (
+            <Sql sx={{ color: colors.languageSQL }} fontSize="small" />
           ) : (
             <Subject />
           )}
@@ -318,7 +326,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
             }}
           >
             Cell ({selectedCell.x}, {selectedCell.y}) -{' '}
-            {selectedCell.type === 'AI' ? 'AI' : capitalize(selectedCell.type)}
+            {['AI', 'SQL'].includes(selectedCell.type) ? selectedCell.type : capitalize(selectedCell.type)}
             {hasUnsavedChanges && (
               <TooltipHint title="Your changes haven’t been saved or run">
                 <FiberManualRecord
@@ -369,7 +377,15 @@ export const CodeEditor = (props: CodeEditorProps) => {
         <Editor
           height="100%"
           width="100%"
-          language={editorMode === 'PYTHON' ? 'python' : editorMode === 'FORMULA' ? 'formula' : 'plaintext'}
+          language={
+            editorMode === 'PYTHON'
+              ? 'python'
+              : editorMode === 'FORMULA'
+              ? 'formula'
+              : editorMode === 'SQL'
+              ? 'sql'
+              : 'plaintext'
+          }
           value={editorContent}
           onChange={(value) => {
             setEditorContent(value);
@@ -405,6 +421,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
       >
         {(editorInteractionState.mode === 'PYTHON' ||
           editorInteractionState.mode === 'FORMULA' ||
+          editorInteractionState.mode === 'SQL' ||
           editorInteractionState.mode === 'AI') && (
           <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
         )}

@@ -122,6 +122,8 @@ export class Cursor extends Graphics {
             ? colors.cellColorUserFormula
             : editorInteractionState.mode === 'AI'
             ? colors.cellColorUserAI
+            : editorInteractionState.mode === 'SQL'
+            ? colors.cellColorUserSQL
             : colors.cursorCell;
       this.beginFill(color).drawShape(this.indicator).endFill();
     }
@@ -139,6 +141,8 @@ export class Cursor extends Graphics {
           ? colors.cellColorUserFormula
           : editorInteractionState.mode === 'AI'
           ? colors.cellColorUserAI
+          : editorInteractionState.mode === 'SQL'
+          ? colors.cellColorUserSQL
           : colors.independence;
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,

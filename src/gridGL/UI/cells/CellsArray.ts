@@ -51,6 +51,8 @@ export class CellsArray extends Container {
           ? colors.cellColorUserFormula
           : type === 'AI'
           ? colors.cellColorUserAI
+          : type === 'SQL'
+          ? colors.cellColorUserSQL
           : colors.independence,
       alpha: 0.5,
       x,

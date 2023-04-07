@@ -160,6 +160,8 @@ export class Cells extends Container {
               this.cellsMarkers.add(x, y, 'FormulaIcon', error);
             } else if (entry.cell?.type === 'AI') {
               this.cellsMarkers.add(x, y, 'AIIcon', error);
+            } else if (entry.cell?.type === 'SQL') {
+              this.cellsMarkers.add(x, y, 'SQLIcon', error);
             }
 
           // show cell text

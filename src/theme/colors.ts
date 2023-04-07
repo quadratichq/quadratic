@@ -5,6 +5,7 @@ export const colors = {
   cellColorUserPython: 0x3776ab,
   cellColorUserFormula: 0x8c1a6a,
   cellColorUserAI: 0x1a8c5d,
+  cellColorUserSQL: 0xe0c75a,
   cellColorError: 0xf25f5c,
   cursorCell: 0x6cd4ff,
   independence: 0x5d576b,
@@ -23,5 +24,6 @@ export const colors = {
   languagePython: '#3776ab',
   languageFormula: '#8c1a6a',
   languageAI: '#1a8c5d',
+  languageSQL: '#e0c75a',
   error: '#f25f5c',
 };

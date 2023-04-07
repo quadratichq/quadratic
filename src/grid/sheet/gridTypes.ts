@@ -17,6 +17,7 @@ export const CellSchema = z.object({
   last_modified: z.string().optional(),
   ai_prompt: z.string().optional(),
   python_code: z.string().optional(),
+  sql_statement: z.string().optional(),
 });
 export type Cell = z.infer<typeof CellSchema>;
 

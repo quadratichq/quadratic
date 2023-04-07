@@ -2,6 +2,7 @@ import { Cell } from '../sheet/gridTypes';
 import { runAI } from './ai/runAI';
 import { runFormula } from './formulas/runFormula';
 import { runPython } from './python/runPython';
+import { runSQL } from './sql/runSQL';
 import { CellEvaluationResult } from './types';
 
 export const runCellComputation = async (cell: Cell, pyodide?: any): Promise<CellEvaluationResult> => {
@@ -35,6 +36,18 @@ export const runCellComputation = async (cell: Cell, pyodide?: any): Promise<Cel
       success: result.success,
       std_out: undefined,
       std_err: result.error_msg,
+      output_value: result.output_value,
+      cells_accessed: [],
+      array_output: result.array_output || [],
+      formatted_code: '',
+      error_span: null,
+    };
+  } else if (cell.type === 'SQL') {
+    let result = await runSQL(cell.sql_statement || '');
+    return {
+      success: true,
+      std_out: undefined,
+      std_err: result.stderr,
       output_value: result.output_value,
       cells_accessed: [],
       array_output: result.array_output || [],

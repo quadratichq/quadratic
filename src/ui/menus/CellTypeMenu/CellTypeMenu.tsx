@@ -64,9 +64,8 @@ let CELL_TYPE_OPTIONS = [
   {
     name: 'SQL Query',
     mode: 'SQL',
-    icon: <Sql color="disabled" />,
-    description: 'Import your data with queries.',
-    disabled: true,
+    icon: <Sql sx={{ color: colors.languageSQL }} />,
+    description: 'Powered by DuckDB.',
   },
   {
     name: 'JavaScript',

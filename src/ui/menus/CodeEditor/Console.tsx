@@ -187,6 +187,12 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
                 in Quadratic, you can be confident that your data is always accurate and up-to-date.
               </p>
             </>
+          ) : editorMode === 'SQL' ? (
+            <>
+              <br></br>
+              <Chip label="Experimental" size="small" color="warning" variant="outlined" />
+              <h3>SQL Docs</h3>
+            </>
           ) : (
             <>
               <h3>Spreadsheet formulas</h3>
