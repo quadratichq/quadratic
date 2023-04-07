@@ -9,7 +9,7 @@ import { downloadFile } from './downloadFile';
 import { SheetController } from '../grid/controller/sheetController';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { DEFAULT_FILE_NAME, EXAMPLE_FILES } from '../constants/app';
+import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
 
 const INDEX = 'file-list';
 
@@ -340,8 +340,16 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     }
 
     // Get URL params we need at initialize time
-    const file = getURLParameter('file');
     const local = getURLParameter('local');
+    let file = getURLParameter('file');
+    // We get the `file` query param from the URL, but if a user had it present
+    // _before_ they logged in, we lose it through the Auth0 process, so we
+    // store it in sessionStorage and use it (then delete it) if its present
+    const fileParamBeforeLogin = sessionStorage.getItem(FILE_PARAM_KEY);
+    if (fileParamBeforeLogin) {
+      file = fileParamBeforeLogin;
+      sessionStorage.removeItem(FILE_PARAM_KEY);
+    }
 
     // Migrate files from old version of the app (one-time, if necessary thing)
     // Note: eventually this code can be removed
