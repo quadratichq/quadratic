@@ -1,5 +1,5 @@
 import { Rectangle } from 'pixi.js';
-import { Border } from './gridTypes';
+import { Border } from '../../schemas';
 import { GridBorders } from './GridBorders';
 import { CellAndFormat, GridSparse } from './GridSparse';
 

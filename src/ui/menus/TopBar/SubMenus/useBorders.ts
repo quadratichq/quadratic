@@ -1,5 +1,5 @@
 import { clearBordersAction } from '../../../../grid/actions/clearBordersAction';
-import { Border, BorderType } from '../../../../grid/sheet/gridTypes';
+import { Border, BorderType } from '../../../../schemas';
 import { Sheet } from '../../../../grid/sheet/Sheet';
 import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { useGetSelection } from './useGetSelection';

@@ -1,5 +1,5 @@
 import { Coordinate } from '../../../gridGL/types/size';
-import { Border, Cell, CellFormat } from '../../sheet/gridTypes';
+import { Border, Cell, CellFormat } from '../../../schemas';
 import { SheetController } from '../../controller/sheetController';
 import { updateCellAndDCells } from '../updateCellAndDCells';
 import { DeleteCells } from '../DeleteCells';

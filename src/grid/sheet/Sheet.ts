@@ -1,11 +1,11 @@
 import { Rectangle } from 'pixi.js';
-import { GridFileData, GridFile } from '../../storage/GridFile';
+import { GridFileData, GridFile } from '../../schemas';
 import { intersects } from '../../gridGL/helpers/intersects';
 import { GridBorders } from './GridBorders';
 import { GridRenderDependency } from './GridRenderDependency';
 import { GridOffsets } from './GridOffsets';
 import { CellAndFormat, GridSparse } from './GridSparse';
-import { Cell, CellFormat } from './gridTypes';
+import { Cell, CellFormat } from '../../schemas';
 import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../../gridGL/types/size';
 
