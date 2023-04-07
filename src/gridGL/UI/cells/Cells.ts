@@ -158,6 +158,8 @@ export class Cells extends Container {
               this.cellsMarkers.add(x, y, 'CodeIcon', error);
             } else if (entry.cell?.type === 'FORMULA') {
               this.cellsMarkers.add(x, y, 'FormulaIcon', error);
+            } else if (entry.cell?.type === 'AI') {
+              this.cellsMarkers.add(x, y, 'AIIcon', error);
             }
 
           // show cell text

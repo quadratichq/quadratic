@@ -49,6 +49,8 @@ export class CellsArray extends Container {
           ? colors.cellColorUserPython
           : type === 'FORMULA'
           ? colors.cellColorUserFormula
+          : type === 'AI'
+          ? colors.cellColorUserAI
           : colors.independence,
       alpha: 0.5,
       x,

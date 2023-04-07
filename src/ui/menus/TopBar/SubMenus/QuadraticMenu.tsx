@@ -1,59 +1,38 @@
 import '@szhsin/react-menu/dist/index.css';
-
-import { useCallback, useEffect, useState } from 'react';
+import { useContext, useEffect } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
 import { IS_READONLY_MODE } from '../../../../constants/app';
 import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
-
-import '@szhsin/react-menu/dist/index.css';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
-import { SaveGridFile } from '../../../../grid/actions/gridFile/SaveGridFile';
-import {
-  newGridFile,
-  openExampleGridFile,
-  openGridFile,
-  openLocalGridFile,
-} from '../../../../grid/actions/gridFile/OpenGridFile';
-
 import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
-import { useLocalFiles } from '../../../../hooks/useLocalFiles';
 import { SheetController } from '../../../../grid/controller/sheetController';
-import { NewFile } from './newFile/NewFile';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { useRecoilValue } from 'recoil';
-import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { MenuLineItem } from '../MenuLineItem';
-import { ContentCopy, ContentCut, ContentPaste, Undo } from '@mui/icons-material';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
+import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
+import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
+import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
+import { LocalFilesContext } from '../../../QuadraticUIContext';
 
 interface Props {
   sheetController: SheetController;
+  app: PixiApp;
 }
 
-const examples = [
-  'default.grid',
-  'python.grid',
-  'startup_portfolio.grid',
-  'open_ai.grid',
-  'monte_carlo_simulation.grid',
-  'airports_distance.grid',
-  'expenses.grid',
-  // 'airports_large.grid',
-];
-
 export const QuadraticMenu = (props: Props) => {
-  const { sheetController } = props;
-  const { sheet } = sheetController;
+  const { app, sheetController } = props;
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
   const interactionState = useRecoilValue(gridInteractionStateAtom);
-
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
 
-  const [newFileOpen, setNewFileOpen] = useState(false);
+  const { createNewFile, downloadCurrentFile } = useContext(LocalFilesContext);
 
   const { isAuthenticated, user, logout } = useAuth0();
 
@@ -64,22 +43,6 @@ export const QuadraticMenu = (props: Props) => {
     }
     // eslint-disable-next-line
   }, []);
-
-  const { fileList, localFilename } = useLocalFiles();
-
-  const createNewFile = useCallback(
-    (filename?: string) => {
-      if (filename) {
-        const extension = filename.split('.').pop();
-        if (!extension || extension !== 'grid') {
-          filename += '.grid';
-        }
-        newGridFile(filename, sheetController);
-      }
-      setNewFileOpen(false);
-    },
-    [sheetController]
-  );
 
   return (
     <>
@@ -93,29 +56,34 @@ export const QuadraticMenu = (props: Props) => {
           </Tooltip>
         }
       >
-        <MenuHeader>Quadratic</MenuHeader>
+        <MenuItem
+          onClick={() => {
+            setEditorInteractionState((oldState) => ({ ...oldState, showFileMenu: true }));
+          }}
+        >
+          <MenuLineItem primary="Back to files" />
+        </MenuItem>
+        <MenuDivider />
         <SubMenu label="File">
-          <MenuItem onClick={() => setNewFileOpen(true)}>New grid</MenuItem>
-          <MenuDivider />
-          <MenuItem onClick={() => SaveGridFile(sheet, true, localFilename)}>Save local copy</MenuItem>
-          <MenuDivider />
-          <MenuItem onClick={() => openGridFile(sheetController)}>Open local</MenuItem>
-          <SubMenu label="Open sample">
-            {examples.map((filename) => (
-              <MenuItem key={`sample-${filename}`} onClick={() => openExampleGridFile(filename, sheetController)}>
-                {filename}
-              </MenuItem>
-            ))}
-          </SubMenu>
-          {fileList.length && (
-            <SubMenu label="Open recent">
-              {fileList.map((entry) => (
-                <MenuItem key={entry} onClick={() => openLocalGridFile(entry, sheetController)}>
-                  {entry}
-                </MenuItem>
-              ))}
-            </SubMenu>
-          )}
+          <MenuItem
+            onClick={() => {
+              app.reset();
+              createNewFile();
+            }}
+          >
+            New
+          </MenuItem>
+          <MenuItem onClick={() => downloadCurrentFile()}>Download local copy</MenuItem>
+          <MenuItem
+            onClick={() => {
+              setEditorInteractionState({
+                ...editorInteractionState,
+                showFileMenu: true,
+              });
+            }}
+          >
+            <MenuLineItem primary="Open…" secondary={KeyboardSymbols.Command + 'O'} />
+          </MenuItem>
         </SubMenu>
         <SubMenu label="Edit">
           <MenuItem
@@ -133,7 +101,7 @@ export const QuadraticMenu = (props: Props) => {
             <MenuLineItem
               primary="Redo"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z'}
-              Icon={Undo}
+              Icon={Redo}
             ></MenuLineItem>
           </MenuItem>
           <MenuDivider />
@@ -210,7 +178,7 @@ export const QuadraticMenu = (props: Props) => {
           >
             Presentation mode
           </MenuItem>
-          {/* 
+          {/*
           Commented out because the editor switches this state automatically when the user
           is editing a formula.
           <MenuItem
@@ -244,7 +212,6 @@ export const QuadraticMenu = (props: Props) => {
           <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>Report a problem</MenuItem>
         </SubMenu>
       </Menu>
-      <NewFile open={newFileOpen} handleClose={createNewFile} />
     </>
   );
 };
