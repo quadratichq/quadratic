@@ -1,7 +1,9 @@
 import * as Sentry from '@sentry/browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import localforage from 'localforage';
-import { GridFileData, GridFile, GridFileSchema, validateFile, GridFiles, GridFileV1 } from './GridFile';
+import { GridFileData, GridFile, GridFileSchema, GridFiles } from '../schemas';
+import { GridFileV1 } from '../schemas/GridFileV1';
+import { validateGridFile } from '../schemas/validateGridFile';
 import { debugShowFileIO } from '../debugFlags';
 import { v4 as uuid } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
@@ -99,7 +101,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       }
 
       // Check if the JSON is a valid quadratic file
-      const quadraticJson = validateFile(json);
+      const quadraticJson = validateGridFile(json);
       if (!quadraticJson) {
         console.error('Failed to parse JSON as a valid Quadratic file', json, contents);
         return false;

@@ -1,6 +1,6 @@
 import { Rectangle } from 'pixi.js';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
-import { Heading } from './gridTypes';
+import { Heading } from '../../schemas';
 import { HeadingSize } from './useHeadings';
 import { GridOffsetsCache } from './GridOffsetsCache';
 
