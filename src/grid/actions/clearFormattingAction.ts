@@ -1,4 +1,4 @@
-import { CellFormat } from '../sheet/gridTypes';
+import { CellFormat } from '../../schemas';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 

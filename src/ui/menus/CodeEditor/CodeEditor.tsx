@@ -3,7 +3,7 @@ import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
-import { Cell } from '../../../grid/sheet/gridTypes';
+import { Cell } from '../../../schemas';
 import {
   Button,
   CircularProgress,

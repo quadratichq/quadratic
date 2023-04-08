@@ -1,4 +1,4 @@
-import { Cell } from '../sheet/gridTypes';
+import { Cell } from '../../schemas';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';

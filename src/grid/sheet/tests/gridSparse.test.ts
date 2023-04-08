@@ -2,7 +2,7 @@ import { Rectangle } from 'pixi.js';
 import { GridOffsets } from '../GridOffsets';
 import { GridSparse } from '../GridSparse';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
-import { Cell, CellFormat } from '../gridTypes';
+import { Cell, CellFormat } from '../../../schemas';
 
 describe('gridSparse', () => {
   const gridOffsets = new GridOffsets();

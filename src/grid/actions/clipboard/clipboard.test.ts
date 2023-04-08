@@ -1,5 +1,5 @@
 import { SheetController } from '../../controller/sheetController';
-import { Cell } from '../../sheet/gridTypes';
+import { Cell } from '../../../schemas';
 import { generateClipboardStrings } from './clipboard';
 
 const createCell = (pos: [number, number], value: string): Cell => {
