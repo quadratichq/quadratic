@@ -1,6 +1,6 @@
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { colors } from '../../../theme/colors';
-import { Border } from '../../../grid/sheet/gridTypes';
+import { Border } from '../../../schemas';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { CellsDraw } from './Cells';
 import { drawBorder, drawCellBorder } from './drawBorder';
