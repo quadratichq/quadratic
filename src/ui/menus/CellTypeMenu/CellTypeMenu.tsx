@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { CellTypes } from '../../../grid/sheet/gridTypes';
+import { CellType } from '../../../schemas';
 import '../../styles/floating-dialog.css';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { Python, Formula, JavaScript, Sql, AI } from '../../icons';
@@ -24,7 +24,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 
 export interface CellTypeOption {
   name: string;
-  mode: CellTypes;
+  mode: CellType;
   icon: any;
   description: string | JSX.Element;
   disabled?: boolean;
@@ -100,7 +100,7 @@ export default function CellTypeMenu() {
   }, [editorInteractionState, setEditorInteractionState]);
 
   const openEditor = useCallback(
-    (mode: CellTypes) => {
+    (mode: CellType) => {
       setEditorInteractionState({
         ...editorInteractionState,
         ...{

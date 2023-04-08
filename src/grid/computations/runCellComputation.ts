@@ -1,4 +1,4 @@
-import { Cell } from '../sheet/gridTypes';
+import { Cell } from '../../schemas';
 import { runAI } from './ai/runAI';
 import { runFormula } from './formulas/runFormula';
 import { runPython } from './python/runPython';

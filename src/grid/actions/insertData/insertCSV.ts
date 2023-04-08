@@ -4,7 +4,7 @@ import { SheetController } from '../../controller/sheetController';
 // import { updateCellAndDCells } from '../updateCellAndDCells';
 import * as Papa from 'papaparse';
 import { updateCellAndDCells } from '../updateCellAndDCells';
-import { Cell } from '../../sheet/gridTypes';
+import { Cell } from '../../../schemas';
 
 export const InsertCSV = (props: {
   file: File;

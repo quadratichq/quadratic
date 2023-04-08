@@ -3,7 +3,7 @@ import { colors } from '../../../theme/colors';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { useEffect, useState } from 'react';
-import { Cell } from '../../../grid/sheet/gridTypes';
+import { Cell } from '../../../schemas';
 import { formatDistance } from 'date-fns';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { isMobileOnly } from 'react-device-detect';
