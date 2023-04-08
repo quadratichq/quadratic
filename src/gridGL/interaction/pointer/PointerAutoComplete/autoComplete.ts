@@ -4,7 +4,7 @@ import { Coordinate } from '../../../types/size';
 import { DeleteCells } from '../../../../grid/actions/DeleteCells';
 import { findAutoComplete } from './findAutoComplete';
 import { updateCellAndDCells } from '../../../../grid/actions/updateCellAndDCells';
-import { Cell } from '../../../../grid/sheet/gridTypes';
+import { Cell } from '../../../../schemas';
 
 export const shrinkHorizontal = async (options: {
   app: PixiApp;

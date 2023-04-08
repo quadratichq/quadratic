@@ -93,4 +93,17 @@ describe('findAutoComplete', () => {
       'JANUARY',
     ]);
   });
+
+  it('Continues a series', () => {
+    expect(findAutoComplete({ series: ['c', 'd', 'e'], spaces: 4, negative: false })).toEqual(['f', 'g', 'h', 'i']);
+  });
+
+  it('Continues a series after a wrap', () => {
+    expect(findAutoComplete({ series: ['Dec', 'Jan', 'Feb'], spaces: 4, negative: false })).toEqual([
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+    ]);
+  });
 });

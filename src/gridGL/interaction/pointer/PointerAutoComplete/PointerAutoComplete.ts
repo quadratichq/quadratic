@@ -76,6 +76,8 @@ export class PointerAutoComplete {
   private reset(): void {
     if (this.active) {
       this.state = undefined;
+      this.endCell = undefined;
+      this.boxCells = undefined;
       this.selection = undefined;
       this.screenSelection = undefined;
       this.active = false;

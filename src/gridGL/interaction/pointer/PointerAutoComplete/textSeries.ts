@@ -8,10 +8,10 @@ export const isSeriesNextKey = (key: string, existingKeys: string[], allKeys: st
   const index = allKeys.indexOf(lastKey);
   if (index === -1) throw new Error('Expected to find key in allKeys');
 
-  // find index of the lowerKey
+  // find index of the key
   const indexNextKey = allKeys.indexOf(key);
 
-  return index + 1 === indexNextKey;
+  return (index + 1) % allKeys.length === indexNextKey;
 };
 
 // https://stackoverflow.com/questions/4467539/javascript-modulo-gives-a-negative-result-for-negative-numbers
