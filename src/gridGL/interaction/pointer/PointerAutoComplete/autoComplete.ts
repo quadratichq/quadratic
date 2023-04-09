@@ -80,16 +80,15 @@ export const expandDown = async (options: {
   const cells: Cell[] = [];
   for (let x = selection.left; x <= selection.right; x++) {
     const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, x, selection.bottom));
-    const series: string[] = [];
+    const series: (Cell | undefined)[] = [];
     for (let y = selection.top; y <= selection.bottom; y++) {
-      series.push(rectangle.get(x, y)?.cell?.value ?? '');
+      series.push(rectangle.get(x, y)?.cell);
     }
     const results = findAutoComplete({ series, spaces: boxCells.bottom - selection.bottom - 1, negative: false });
     const updatedCells: Cell[] = results.map((value, index) => ({
-      value,
+      ...(value as Cell),
       x,
       y: selection.bottom + index + 1,
-      type: 'TEXT',
     }));
     cells.push(...updatedCells);
   }
@@ -119,16 +118,15 @@ export const expandUp = async (options: { app: PixiApp; selection: Rectangle; bo
   const cells: Cell[] = [];
   for (let x = selection.left; x <= selection.right; x++) {
     const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, x, selection.bottom));
-    const series: string[] = [];
+    const series: (Cell | undefined)[] = [];
     for (let y = selection.top; y <= selection.bottom; y++) {
-      series.push(rectangle.get(x, y)?.cell?.value ?? '');
+      series.push(rectangle.get(x, y)?.cell);
     }
     const results = findAutoComplete({ series, spaces: selection.top - boxCells.top, negative: true });
     const updatedCells: Cell[] = results.map((value, index) => ({
-      value,
+      ...(value as Cell),
       x,
       y: boxCells.top + index,
-      type: 'TEXT',
     }));
     cells.push(...updatedCells);
   }
@@ -162,16 +160,15 @@ export const expandRight = async (options: {
   const cells: Cell[] = [];
   for (let y = selection.top; y <= selection.bottom; y++) {
     const rectangle = sheet.grid.getCells(new Rectangle(selection.left, y, selection.right, y));
-    const series: string[] = [];
+    const series: (Cell | undefined)[] = [];
     for (let x = selection.left; x <= selection.right; x++) {
-      series.push(rectangle.get(x, y)?.cell?.value ?? '');
+      series.push(rectangle.get(x, y)?.cell);
     }
     const results = findAutoComplete({ series, spaces: boxCells.right - selection.right - 1, negative: false });
     const updatedCells: Cell[] = results.map((value, index) => ({
-      value,
+      ...(value as Cell),
       x: selection.right + index + 1,
       y,
-      type: 'TEXT',
     }));
     cells.push(...updatedCells);
   }
@@ -205,17 +202,21 @@ export const expandLeft = async (options: {
   const cells: Cell[] = [];
   for (let y = selection.top; y <= selection.bottom; y++) {
     const rectangle = sheet.grid.getCells(new Rectangle(selection.left, y, selection.right, y));
-    const series: string[] = [];
+    const series: (Cell | undefined)[] = [];
     for (let x = selection.left; x <= selection.right; x++) {
-      series.push(rectangle.get(x, y)?.cell?.value ?? '');
+      series.push(rectangle.get(x, y)?.cell);
     }
     const results = findAutoComplete({ series, spaces: selection.left - boxCells.left, negative: true });
-    const updatedCells: Cell[] = results.map((value, index) => ({
-      value,
-      x: boxCells.left + index,
-      y,
-      type: 'TEXT',
-    }));
+    const updatedCells: Cell[] = results.flatMap((value, index) => {
+      if (!value) return [];
+      return [
+        {
+          ...value,
+          x: boxCells.left + index,
+          y,
+        },
+      ];
+    });
     cells.push(...updatedCells);
   }
   await updateCellAndDCells({

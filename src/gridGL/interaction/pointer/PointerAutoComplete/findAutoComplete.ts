@@ -1,15 +1,16 @@
+import { Cell } from '../../../../schemas';
 import { isStringANumber } from '../../../helpers/isStringANumber';
 import { getSeriesNextKey, isSeriesKey, isSeriesNextKey, textSeries } from './textSeries';
 
 interface Series {
-  series: string[];
+  series: (Cell | undefined)[];
   spaces: number;
   negative: boolean;
 }
 
-function copySeries(options: Series): string[] {
+function copySeries(options: Series): (Cell | undefined)[] {
   const { series, spaces } = options;
-  const results: string[] = [];
+  const results: (Cell | undefined)[] = [];
   let copy = 0;
   for (let i = 0; i < spaces; i++) {
     results.push(series[copy]);
@@ -18,7 +19,7 @@ function copySeries(options: Series): string[] {
   return results;
 }
 
-function findNumberSeries(options: Series): string[] {
+function findNumberSeries(options: Series): (Cell | undefined)[] {
   const { series, spaces, negative } = options;
 
   // if only one number, copy it
@@ -26,7 +27,7 @@ function findNumberSeries(options: Series): string[] {
     return copySeries(options);
   }
 
-  const numbers = series.map((s) => Number(s));
+  const numbers = series.map((s) => Number((s as Cell).value));
 
   let addition: boolean | number = true;
   let multiplication: boolean | number = true;
@@ -57,38 +58,38 @@ function findNumberSeries(options: Series): string[] {
   }
 
   if (addition !== false) {
-    const results: string[] = [];
+    const results: Cell[] = [];
     if (negative) {
       let current = numbers[0];
       for (let i = 0; i < spaces; i++) {
         current = current - (addition as number);
-        results.push(current.toString());
+        results.push({ value: current.toString(), type: 'TEXT' } as Cell);
       }
       results.reverse();
     } else {
       let current = numbers[numbers.length - 1];
       for (let i = 0; i < spaces; i++) {
         current = current + (addition as number);
-        results.push(current.toString());
+        results.push({ value: current.toString(), type: 'TEXT' } as Cell);
       }
     }
     return results;
   }
 
   if (multiplication !== false) {
-    const results: string[] = [];
+    const results: Cell[] = [];
     if (negative) {
       let current = numbers[0];
       for (let i = 0; i < spaces; i++) {
         current = current / (multiplication as number);
-        results.push(current.toString());
+        results.push({ value: current.toString(), type: 'TEXT' } as Cell);
       }
       results.reverse();
     } else {
       let current = numbers[numbers.length - 1];
       for (let i = 0; i < spaces; i++) {
         current = current * (multiplication as number);
-        results.push(current.toString());
+        results.push({ value: current.toString(), type: 'TEXT' } as Cell);
       }
     }
     return results;
@@ -98,12 +99,13 @@ function findNumberSeries(options: Series): string[] {
   return copySeries(options);
 }
 
-function findStringSeries(options: Series): string[] {
+function findStringSeries(options: Series): (Cell | undefined)[] {
   const { series, spaces, negative } = options;
 
   const possibleTextSeries: (boolean | string[])[] = textSeries.map(() => true);
 
-  for (const s of series) {
+  for (const cell of series) {
+    const s = (cell as Cell).value;
     for (let i = 0; i < textSeries.length; i++) {
       const entry = possibleTextSeries[i];
       if (possibleTextSeries[i] !== false) {
@@ -123,13 +125,13 @@ function findStringSeries(options: Series): string[] {
   for (let i = 0; i < possibleTextSeries.length; i++) {
     const entry = possibleTextSeries[i];
     if (entry !== false) {
-      const results: string[] = [];
+      const results: Cell[] = [];
       if (negative) {
         const stringList = entry as string[];
         let current = stringList[0];
         for (let j = 0; j < spaces; j++) {
           current = getSeriesNextKey(current, textSeries[i], true);
-          results.push(current);
+          results.push({ type: 'TEXT', value: current } as Cell);
         }
         results.reverse();
       } else {
@@ -137,7 +139,7 @@ function findStringSeries(options: Series): string[] {
         let current = stringList[stringList.length - 1];
         for (let j = 0; j < spaces; j++) {
           current = getSeriesNextKey(current, textSeries[i], false);
-          results.push(current);
+          results.push({ type: 'TEXT', value: current } as Cell);
         }
       }
       return results;
@@ -148,12 +150,16 @@ function findStringSeries(options: Series): string[] {
   return copySeries(options);
 }
 
-export const findAutoComplete = (options: Series): string[] => {
+export const findAutoComplete = (options: Series): (Cell | undefined)[] => {
   const { series } = options;
 
+  // if cells are missing, just copy series
+  if (!series.every((s) => !!s)) {
+    return copySeries(options);
+  }
+
   // number series first
-  const isNumber = series.every((s) => isStringANumber(s));
-  if (isNumber) {
+  if (series.every((s) => s && s.type === 'TEXT' && isStringANumber(s.value))) {
     return findNumberSeries(options);
   }
 
