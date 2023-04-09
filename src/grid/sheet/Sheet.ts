@@ -60,7 +60,6 @@ export class Sheet {
       formats,
       borders: this.borders.getArray(),
       cell_dependency: this.cell_dependency.exportToString(),
-      render_dependency: this.render_dependency.save(),
     };
   }
 

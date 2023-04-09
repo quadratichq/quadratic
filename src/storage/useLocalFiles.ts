@@ -165,9 +165,6 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       rows: [],
       borders: [],
       cell_dependency: '',
-
-      // todo: this goes away when alignment branch is merged
-      render_dependency: [],
     };
 
     const created = Date.now();
