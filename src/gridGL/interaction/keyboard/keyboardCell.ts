@@ -57,10 +57,10 @@ export function keyboardCell(options: {
     } else {
       // delete a single cell
       DeleteCells({
-        x0: interactionState.multiCursorPosition.originPosition.x,
-        y0: interactionState.multiCursorPosition.originPosition.y,
-        x1: interactionState.multiCursorPosition.originPosition.x,
-        y1: interactionState.multiCursorPosition.originPosition.y,
+        x0: interactionState.cursorPosition.x,
+        y0: interactionState.cursorPosition.y,
+        x1: interactionState.cursorPosition.x,
+        y1: interactionState.cursorPosition.y,
         sheetController: sheet_controller,
         app,
       });

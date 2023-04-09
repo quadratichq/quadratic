@@ -1,51 +1,48 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { newGridFile } from '../../../../grid/actions/gridFile/OpenGridFile';
-import { SaveGridFile } from '../../../../grid/actions/gridFile/SaveGridFile';
-import { NoteAddOutlined } from '@mui/icons-material';
+import { NoteAddOutlined, UploadFileOutlined } from '@mui/icons-material';
 import { SaveFileOutlined } from '../../../icons';
-import { useLocalFiles } from '../../../../hooks/useLocalFiles';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { useRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
+import { useContext } from 'react';
+import { LocalFilesContext } from '../../../QuadraticUIContext';
 
 const ListItems = [
   {
     label: 'File: New',
-    Component: (props: CommandPaletteListItemSharedProps) => (
-      <CommandPaletteListItem
-        {...props}
-        icon={<NoteAddOutlined />}
-        action={() => {
-          newGridFile('Untitled.grid', props.sheetController);
-        }}
-      />
-    ),
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const { createNewFile } = useContext(LocalFilesContext);
+      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={createNewFile} />;
+    },
   },
   {
-    label: 'File: Save local copy',
+    label: 'File: Download local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { localFilename } = useLocalFiles();
+      const { downloadCurrentFile } = useContext(LocalFilesContext);
+      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => downloadCurrentFile()} />;
+    },
+  },
+  {
+    label: 'File: Open…',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<SaveFileOutlined />}
+          icon={<UploadFileOutlined />}
+          shortcut="O"
+          shortcutModifiers={[KeyboardSymbols.Command]}
           action={() => {
-            SaveGridFile(props.sheetController.sheet, true, localFilename);
+            setEditorInteractionState({
+              ...editorInteractionState,
+              showFileMenu: true,
+            });
           }}
         />
       );
     },
   },
-  // {
-  //   label: 'File: Open local',
-  //   Component: (props: CommandPaletteListItemSharedProps) => (
-  //     <CommandPaletteListItem
-  //       {...props}
-  //       icon={<UploadFileOutlined />}
-  //       action={() => {
-  //         openGridFile(props.sheetController);
-  //       }}
-  //     />
-  //   ),
-  // },
 ];
 
 export default ListItems;

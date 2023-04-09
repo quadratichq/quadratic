@@ -1,6 +1,6 @@
 import { format as formatNumber } from 'numerable';
 import { isStringANumber } from '../../helpers/isStringANumber';
-import { Cell, CellFormat } from '../sheet/gridTypes';
+import { Cell, CellFormat } from '../../schemas';
 import { CellTextFormat, DEFAULT_NUMBER_OF_DECIMAL_PLACES } from './cellTextFormat';
 
 const getDecimalPlacesString = (format: CellTextFormat, number_of_decimals: number) => {

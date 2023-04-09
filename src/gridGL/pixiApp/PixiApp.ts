@@ -25,6 +25,7 @@ export class PixiApp {
   private parent?: HTMLDivElement;
   private update: Update;
   private cacheIsVisible = false;
+  save: () => Promise<void>;
 
   sheet_controller: SheetController;
   sheet: Sheet;
@@ -49,10 +50,11 @@ export class PixiApp {
   // for testing purposes
   debug: Graphics;
 
-  constructor(sheet_controller: SheetController) {
+  constructor(sheet_controller: SheetController, save: () => Promise<void>) {
     this.sheet_controller = sheet_controller;
     this.sheet = sheet_controller.sheet;
     this.sheet.onRebuild = this.rebuild;
+    this.save = save;
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
@@ -216,8 +218,8 @@ export class PixiApp {
   }
 
   // called before and after a quadrant render
-  prepareForQuadrantRendering(): Container {
-    this.gridLines.visible = false;
+  prepareForQuadrantRendering(options?: { gridLines: boolean }): Container {
+    this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;
     this.headings.visible = false;

@@ -1,5 +1,5 @@
 import { Coordinate } from '../../../gridGL/types/size';
-import { Border, Cell, CellFormat } from '../../sheet/gridTypes';
+import { Border, Cell, CellFormat } from '../../../schemas';
 import { SheetController } from '../../controller/sheetController';
 import { updateCellAndDCells } from '../updateCellAndDCells';
 import { DeleteCells } from '../DeleteCells';
@@ -7,6 +7,8 @@ import { CellAndFormat } from '../../sheet/GridSparse';
 import { Rectangle } from 'pixi.js';
 import { clearFormattingAction } from '../clearFormattingAction';
 import { clearBordersAction } from '../clearBordersAction';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 
 const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.1';
 
@@ -31,7 +33,10 @@ const pasteFromTextHtml = async (sheet_controller: SheetController, pasteToCell:
       if (!match?.length) return false;
 
       // parse json from text
-      let json = JSON.parse(atob(match[1]));
+      const decoder = new TextDecoder();
+      const quadraticData = new Uint8Array(Array.from(atob(match[1]), (c) => c.charCodeAt(0)));
+      const decodedString = decoder.decode(quadraticData);
+      const json = JSON.parse(decodedString);
 
       if (json.type === CLIPBOARD_FORMAT_VERSION) {
         const x_offset = pasteToCell.x - json.cell0.x;
@@ -275,7 +280,17 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
     cell1
   );
 
-  const quadraticString = btoa(
+  // const quadraticString = btoa(
+  //   JSON.stringify({
+  //     type: CLIPBOARD_FORMAT_VERSION,
+  //     data: quadraticClipboardString,
+  //     cell0,
+  //     cell1,
+  //   })
+  // );
+
+  const encoder = new TextEncoder();
+  const quadraticData = encoder.encode(
     JSON.stringify({
       type: CLIPBOARD_FORMAT_VERSION,
       data: quadraticClipboardString,
@@ -283,6 +298,7 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
       cell1,
     })
   );
+  const quadraticString = btoa(String.fromCharCode(...quadraticData));
 
   const clipboardHTMLString = `<span data-metadata="<--(quadratic)${quadraticString}(/quadratic)-->"></span>${htmlClipboardString}`;
 
@@ -308,6 +324,21 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
     textarea.select();
     document.execCommand('copy');
     document.body.removeChild(textarea);
+  }
+};
+
+export const copySelectionToPNG = async (app: PixiApp) => {
+  const blob = await copyAsPNG(app);
+  if (!blob) {
+    throw new Error('Unable to copy as PNG');
+  }
+  if (navigator.clipboard && window.ClipboardItem) {
+    navigator.clipboard.write([
+      new ClipboardItem({
+        //@ts-ignore
+        'image/png': blob,
+      }),
+    ]);
   }
 };
 

@@ -8,36 +8,41 @@ import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import CommandPalette from './menus/CommandPalette';
 import GoTo from './menus/GoTo';
-import { useEffect, useState } from 'react';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import { SheetController } from '../grid/controller/sheetController';
+import { useContext, useEffect } from 'react';
 import CellTypeMenu from './menus/CellTypeMenu';
+import FileMenu from './menus/FileMenu';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
+import InitialPageLoadError from './components/InitialPageLoadError';
 import { CSVImportHelpMessage } from './overlays/CSVImportHelpMessage';
+import { SnackBar, useSnackbar } from './components/SnackBar';
+import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
+import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { SheetController } from '../grid/controller/sheetController';
+import { LocalFilesContext } from './QuadraticUIContext';
 
-interface Props {
-  sheetController: SheetController;
-}
-
-export default function QuadraticUI(props: Props) {
+export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
-
-  const [app] = useState(() => new PixiApp(props.sheetController));
-
-  const { sheetController } = props;
+  const { hasInitialPageLoadError } = useContext(LocalFilesContext);
 
   useEffect(() => {
     sheetController.setApp(app);
   }, [sheetController, app]);
 
+  // Temporary way to attach sheet to global for use in GetCellsDB function
+  useEffect(() => {
+    GetCellsDBSetSheet(sheetController.sheet);
+  }, [sheetController.sheet]);
+
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {
     app.resize();
   }, [presentationMode, app]);
+
+  const snackBar = useSnackbar();
 
   return (
     <div
@@ -51,8 +56,11 @@ export default function QuadraticUI(props: Props) {
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
       {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
-      {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
+      {editorInteractionState.showCommandPalette && (
+        <CommandPalette app={app} sheetController={sheetController} snackBar={snackBar} />
+      )}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
+      {editorInteractionState.showFileMenu && <FileMenu app={app} />}
 
       <div
         style={{
@@ -64,7 +72,7 @@ export default function QuadraticUI(props: Props) {
         }}
       >
         <FileUploadWrapper sheetController={sheetController} app={app}>
-          <QuadraticGrid sheetController={sheetController} app={app} />
+          <QuadraticGrid sheetController={sheetController} app={app} snackBar={snackBar} />
         </FileUploadWrapper>
         <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
@@ -73,6 +81,8 @@ export default function QuadraticUI(props: Props) {
 
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
       {presentationMode && <PresentationModeHint />}
+      <SnackBar {...snackBar} />
+      {hasInitialPageLoadError && <InitialPageLoadError />}
     </div>
   );
 }
