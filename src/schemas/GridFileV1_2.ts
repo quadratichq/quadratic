@@ -7,10 +7,6 @@ const BorderDirectionSchema = z.object({
   color: z.string().optional(),
   type: z.enum(['line1', 'line2', 'line3', 'dotted', 'dashed', 'double']).optional(),
 });
-const CoordinateSchema = z.object({
-  x: z.number(),
-  y: z.number(),
-});
 const HeadingSchema = z.object({
   id: z.number(),
   size: z.number().optional(),
@@ -96,24 +92,23 @@ export const GridFileSchemaV1_2 = z.object({
     .array(),
   id: z.string().uuid(),
   modified: z.number(),
-  render_dependency: z
-    .object({
-      location: CoordinateSchema,
-      needToRender: CoordinateSchema.array(), // these are cells that must be rendered when drawing this cell
-      renderThisCell: CoordinateSchema.array(), // these are cells that render this cell when drawing
-    })
-    .array(),
   rows: HeadingSchema.array(),
   version: z.literal('1.2'),
 });
 export type GridFileV1_2 = z.infer<typeof GridFileSchemaV1_2>;
 
 /**
- * Given a v1 file, update it to a v1_1 file
+ * Given a v1_1 file, update it to a v1_2 file
  */
 export function upgradeV1_1toV1_2(file: GridFileV1_1): GridFileV1_2 {
-  return {
+  const result = {
     ...file,
     version: '1.2',
   } as GridFileV1_2;
+
+  // we no longer store render_dependency but calculate it while rendering
+  if ((result as any).render_dependency) {
+    delete (result as any).render_dependency;
+  }
+  return result;
 }
