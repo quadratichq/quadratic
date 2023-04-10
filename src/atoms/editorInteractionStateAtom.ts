@@ -1,6 +1,6 @@
 import { atom } from 'recoil';
 import { Coordinate } from '../gridGL/types/size';
-import { CellTypes } from '../grid/sheet/gridTypes';
+import { CellType } from '../schemas';
 
 export interface EditorInteractionState {
   showCellTypeMenu: boolean;
@@ -9,7 +9,7 @@ export interface EditorInteractionState {
   showGoToMenu: boolean;
   showFileMenu: boolean;
   selectedCell: Coordinate;
-  mode: CellTypes;
+  mode: CellType;
 }
 
 export const editorInteractionStateDefault: EditorInteractionState = {
