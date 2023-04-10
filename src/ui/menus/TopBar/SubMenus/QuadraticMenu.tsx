@@ -62,7 +62,7 @@ export const QuadraticMenu = (props: Props) => {
             setEditorInteractionState((oldState) => ({ ...oldState, showFileMenu: true }));
           }}
         >
-          <MenuLineItem primary="Back to files" />
+          <MenuLineItem primary="Back to files" secondary={KeyboardSymbols.Command + 'O'} />
         </MenuItem>
         <MenuDivider />
         <SubMenu label="File">
