@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import * as amplitude from '@amplitude/analytics-browser';
 import { useAuth0, User } from '@auth0/auth0-react';
 
+// Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
+
 const loadGoogleAnalytics = async () => {
-  // Only track analytics on cloud version where REACT_APP_GOOGLE_ANALYTICS_GTAG is set
   if (!process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG) {
     return;
   }
@@ -31,7 +32,6 @@ const loadGoogleAnalytics = async () => {
 };
 
 const loadAmplitudeAnalytics = async (user: User | undefined) => {
-  // Only track analytics on cloud version where REACT_APP_GOOGLE_ANALYTICS_GTAG is set
   if (!process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY) {
     return;
   }
