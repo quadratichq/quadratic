@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
+import mixpanel from 'mixpanel-browser';
 
 export interface GridSettings {
   showGridAxes: boolean;
@@ -45,6 +46,7 @@ export const useGridSettings = (): GridSettingsReturn => {
 
   const setShowGridAxes = useCallback(
     (value: boolean) => {
+      mixpanel.track('[Grid].[Settings].setShowGridAxes', { value });
       if (value !== settings.showGridAxes) {
         setSettings({
           ...settings,
@@ -57,6 +59,7 @@ export const useGridSettings = (): GridSettingsReturn => {
 
   const setShowHeadings = useCallback(
     (value: boolean) => {
+      mixpanel.track('[Grid].[Settings].setShowHeadings', { value });
       if (value !== settings.showHeadings) {
         setSettings({
           ...settings,
@@ -69,6 +72,7 @@ export const useGridSettings = (): GridSettingsReturn => {
 
   const setShowGridLines = useCallback(
     (value: boolean) => {
+      mixpanel.track('[Grid].[Settings].setShowGridLines', { value });
       if (value !== settings.showGridLines) {
         setSettings({
           ...settings,
@@ -81,6 +85,7 @@ export const useGridSettings = (): GridSettingsReturn => {
 
   const setShowCellTypeOutlines = useCallback(
     (value: boolean) => {
+      mixpanel.track('[Grid].[Settings].setShowCellTypeOutlines', { value });
       if (value !== settings.showCellTypeOutlines) {
         setSettings({
           ...settings,
@@ -93,6 +98,7 @@ export const useGridSettings = (): GridSettingsReturn => {
 
   const setShowA1Notation = useCallback(
     (value: boolean) => {
+      mixpanel.track('[Grid].[Settings].setShowA1Notation', { value });
       if (value !== settings.showA1Notation) {
         setSettings({
           ...settings,
@@ -105,6 +111,7 @@ export const useGridSettings = (): GridSettingsReturn => {
 
   const setPresentationMode = useCallback(
     (value: boolean) => {
+      mixpanel.track('[Grid].[Settings].setPresentationMode', { value });
       if (value !== settings.presentationMode) {
         setSettings({
           ...settings,

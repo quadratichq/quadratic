@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as amplitude from '@amplitude/analytics-browser';
 import { useAuth0, User } from '@auth0/auth0-react';
+import mixpanel from 'mixpanel-browser';
 
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 
@@ -43,6 +44,22 @@ const loadAmplitudeAnalytics = async (user: User | undefined) => {
   console.log('[Analytics] Amplitude activated');
 };
 
+const loadMixPanelAnalytics = async (user: User | undefined) => {
+  if (!process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY) {
+    return;
+  }
+
+  mixpanel.init(process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY);
+
+  mixpanel.register({
+    email: user?.email,
+  });
+
+  mixpanel.identify(user?.sub);
+
+  console.log('[Analytics] Mixpanel activated');
+};
+
 export const AnalyticsProvider = () => {
   const [loaded, setLoaded] = useState(false);
   const { user } = useAuth0();
@@ -54,6 +71,7 @@ export const AnalyticsProvider = () => {
 
     loadGoogleAnalytics();
     loadAmplitudeAnalytics(user);
+    loadMixPanelAnalytics(user);
   }, [loaded, setLoaded, user]);
 
   return null;
