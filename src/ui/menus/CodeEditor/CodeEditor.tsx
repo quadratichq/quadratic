@@ -96,8 +96,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // }, [editorMode, cell]);
 
   useEffect(() => {
-    mixpanel.track('[CodeEditor].opened', { type: editorMode });
-  }, [editorMode]);
+    if (showCodeEditor) mixpanel.track('[CodeEditor].opened', { type: editorMode });
+  }, [showCodeEditor, editorMode]);
 
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
