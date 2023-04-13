@@ -6,7 +6,7 @@ import mixpanel from 'mixpanel-browser';
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 
 const loadGoogleAnalytics = async () => {
-  if (!process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG) {
+  if (!process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG && process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG !== 'none') {
     return;
   }
 
@@ -33,7 +33,10 @@ const loadGoogleAnalytics = async () => {
 };
 
 const loadAmplitudeAnalytics = async (user: User | undefined) => {
-  if (!process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY) {
+  if (
+    !process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY &&
+    process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY !== 'none'
+  ) {
     return;
   }
 
@@ -45,7 +48,7 @@ const loadAmplitudeAnalytics = async (user: User | undefined) => {
 };
 
 const loadMixPanelAnalytics = async (user: User | undefined) => {
-  if (!process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY) {
+  if (!process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY && process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY !== 'none') {
     return;
   }
 
