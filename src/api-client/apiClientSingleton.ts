@@ -36,24 +36,28 @@ class APIClientSingleton {
   }
 
   async backupFile(id: string, fileContents: GridFile) {
-    const base_url = this.getAPIURL();
+    try {
+      const base_url = this.getAPIURL();
 
-    const request_body = {
-      uuid: id,
-      fileContents: JSON.stringify(fileContents),
-    };
+      const request_body = {
+        uuid: id,
+        fileContents: JSON.stringify(fileContents),
+      };
 
-    const response = await fetch(`${base_url}/v0/files/backup`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${await this.getAuth()}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request_body),
-    });
+      const response = await fetch(`${base_url}/v0/files/backup`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${await this.getAuth()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request_body),
+      });
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error(error);
     }
   }
 }

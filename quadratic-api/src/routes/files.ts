@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { get_user } from '../helpers/get_user';
 import { get_file } from '../helpers/get_file';
+import { get_file_metadata } from '../helpers/read_file';
 
 const files_router = express.Router();
 const prisma = new PrismaClient();
@@ -34,6 +35,7 @@ files_router.post('/backup', validateAccessToken, ai_rate_limiter, async (reques
   const file = await get_file(user, r_json.uuid);
 
   const file_contents = JSON.parse(r_json.fileContents);
+  const file_metadata = get_file_metadata(file_contents);
 
   if (file) {
     await prisma.qFile.update({
@@ -41,8 +43,10 @@ files_router.post('/backup', validateAccessToken, ai_rate_limiter, async (reques
         id: file.id,
       },
       data: {
+        name: file_metadata.name,
         contents: file_contents,
-        updated_date: new Date(),
+        updated_date: new Date(file_metadata.modified),
+        version: file_metadata.version,
         times_updated: {
           increment: 1,
         },
@@ -51,12 +55,13 @@ files_router.post('/backup', validateAccessToken, ai_rate_limiter, async (reques
   } else {
     await prisma.qFile.create({
       data: {
-        name: r_json.uuid, // TODO: Get File Name from Contents
-        version: undefined, // TODO: Get Version from Contents
-        contents: file_contents,
         qUserId: user.id,
         uuid: r_json.uuid,
-        created_date: new Date(),
+        name: file_metadata.name,
+        contents: file_contents,
+        created_date: new Date(file_metadata.created),
+        updated_date: new Date(file_metadata.modified),
+        version: file_metadata.version,
       },
     });
   }
