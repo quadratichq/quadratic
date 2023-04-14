@@ -49,6 +49,8 @@ const loadAmplitudeAnalytics = async (user: User | undefined) => {
 
 const loadMixPanelAnalytics = async (user: User | undefined) => {
   if (!process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY && process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY !== 'none') {
+    mixpanel.init('FAKE_KEY');
+    mixpanel.disable();
     return;
   }
 
