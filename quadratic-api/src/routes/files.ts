@@ -66,7 +66,7 @@ files_router.post('/backup', validateAccessToken, ai_rate_limiter, async (reques
     });
   }
 
-  response.status(200);
+  response.status(200).json({ message: 'File backup successful.' });
 });
 
 export default files_router;
