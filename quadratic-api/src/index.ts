@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import files_router from './routes/files';
 
 const app = express();
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '5mb' }));
 app.use(helmet());
 
 // set CORS origin from env variable
