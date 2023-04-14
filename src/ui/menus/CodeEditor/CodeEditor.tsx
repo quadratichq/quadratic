@@ -27,6 +27,7 @@ import { AI, Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
+import mixpanel from 'mixpanel-browser';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -94,6 +95,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
   //   // monaco.editor.setModelLanguage(editor.getModel(), 'formula');
   // }, [editorMode, cell]);
 
+  useEffect(() => {
+    if (showCodeEditor) mixpanel.track('[CodeEditor].opened', { type: editorMode });
+  }, [showCodeEditor, editorMode]);
+
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
     if (cell) {
@@ -125,6 +130,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     setSelectedCell(undefined);
     setEvalResult(undefined);
     focusGrid();
+    mixpanel.track('[CodeEditor].closed', { type: editorMode });
   };
 
   useEffect(() => {
@@ -201,6 +207,16 @@ export const CodeEditor = (props: CodeEditorProps) => {
     });
 
     const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
+
+    mixpanel.track('[CodeEditor].cellRun', {
+      type: editorMode,
+      code: editorContent,
+      result_success: updated_cell?.evaluation_result?.success,
+      result_stdout: updated_cell?.evaluation_result?.std_out,
+      result_stderr: updated_cell?.evaluation_result?.std_err,
+      result_output_value: updated_cell?.evaluation_result?.output_value,
+    });
+
     setEvalResult(updated_cell?.evaluation_result);
     setIsRunningComputation(false);
   };
