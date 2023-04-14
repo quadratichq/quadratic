@@ -12,6 +12,7 @@ import { SheetController } from '../grid/controller/sheetController';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES } from '../constants/app';
+import apiClientSingleton from '../api-client/apiClientSingleton';
 import mixpanel from 'mixpanel-browser';
 
 const INDEX = 'file-list';
@@ -64,6 +65,10 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         document.title = `${filename} - Quadratic`;
         log(`persisted current file: ${filename} (${id})`);
       });
+
+      // If we are running with Quadratic in the cloud
+      // Backup the file to the cloud
+      if (process.env.REACT_APP_QUADRATIC_API_URL) apiClientSingleton.backupFile(id, currentFileContents);
     } else {
       document.title = 'Quadratic';
     }
