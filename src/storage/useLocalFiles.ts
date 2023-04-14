@@ -14,7 +14,6 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
 import mixpanel from 'mixpanel-browser';
 
-
 const INDEX = 'file-list';
 
 export interface LocalFile {
