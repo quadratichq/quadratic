@@ -164,6 +164,9 @@ export class Cells extends Container {
 
           // show cell text
           let cell_text = CellTextFormatter(entry.cell, entry.format);
+          // strip new lines
+          cell_text = cell_text.replace(/\n/g, '');
+
           let cell_format = entry.format;
           if (error) {
             cell_text = '  ERROR';

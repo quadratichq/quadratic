@@ -12,6 +12,8 @@ import { SheetController } from '../grid/controller/sheetController';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
+import mixpanel from 'mixpanel-browser';
+
 
 const INDEX = 'file-list';
 
@@ -130,6 +132,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Load a remote file over the network
   const loadFileFromUrl = useCallback(
     async (url: string, filename?: string): Promise<boolean> => {
+      mixpanel.track('[Files].loadFileFromUrl', { url, filename });
       try {
         const res = await fetch(url);
         const file = await res.text();
@@ -170,6 +173,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       render_dependency: [],
     };
 
+    mixpanel.track('[Files].newFile');
+
     const created = Date.now();
     const newFile: GridFile = {
       ...grid,
@@ -201,6 +206,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Given a file ID, download it
   const downloadFileFromMemory = useCallback(
     async (id: string): Promise<void> => {
+      mixpanel.track('[Files].downloadFileFromMemory', { id });
       try {
         if (currentFileContents && currentFileContents.id === id) {
           downloadCurrentFile();
@@ -228,6 +234,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Rename the current file open in the app
   const renameCurrentFile = useCallback(
     async (newFilename: string): Promise<void> => {
+      mixpanel.track('[Files].renameCurrentFile', { newFilename });
       if (!currentFileContents) throw new Error('Expected `currentFileContents` to rename the current file.');
       setCurrentFileContents({ ...currentFileContents, filename: newFilename });
       setFileList((oldFileList) =>
@@ -255,6 +262,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (event) => {
+          mixpanel.track('[Files].loadFileFromDisk', { fileName: file.name });
           const contents = event.target?.result;
           if (contents) {
             // Regardless of the name in the file's meta, use it's name on disk
@@ -280,6 +288,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       // @ts-expect-error
       if (file?.filename) filename = file.filename;
 
+      mixpanel.track('[Files].loadFileFromMemory', { filename });
+
       return importQuadraticFile(JSON.stringify(file), filename, false);
     },
     [importQuadraticFile]
@@ -287,6 +297,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
   // Delete a file (cannot delete a file that's currently active)
   const deleteFile = useCallback(async (id: string) => {
+    mixpanel.track('[Files].deleteFile', { id });
     setFileList((oldFileList) => oldFileList.filter((entry) => entry.id !== id));
     await localforage.removeItem(id);
     log(`deleted file: ${id}`);

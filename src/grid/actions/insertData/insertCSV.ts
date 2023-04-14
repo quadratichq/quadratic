@@ -5,6 +5,7 @@ import { SheetController } from '../../controller/sheetController';
 import * as Papa from 'papaparse';
 import { updateCellAndDCells } from '../updateCellAndDCells';
 import { Cell } from '../../../schemas';
+import mixpanel from 'mixpanel-browser';
 
 export const InsertCSV = (props: {
   file: File;
@@ -19,9 +20,11 @@ export const InsertCSV = (props: {
   Papa.parse(file, {
     error: function (error, File) {
       props.reportError(error.name + ': ' + error.message);
+      mixpanel.track('[Grid].[Actions].insertCSV', { status: 'error', name: error.name, message: error.message });
     },
     complete: function () {
       props.sheetController.end_transaction();
+      mixpanel.track('[Grid].[Actions].insertCSV', { status: 'complete' });
     },
     step: function (row) {
       const cellsToInsert: Cell[] = [];

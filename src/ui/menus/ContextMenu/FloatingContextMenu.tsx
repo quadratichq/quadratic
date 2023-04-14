@@ -27,6 +27,7 @@ import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
 import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { colors } from '../../../theme/colors';
 import { UseSnackBar } from '../../components/SnackBar';
+import mixpanel from 'mixpanel-browser';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -210,6 +211,7 @@ export const FloatingContextMenu = (props: Props) => {
       }}
       elevation={4}
       onClick={(e) => {
+        mixpanel.track('[FloatingContextMenu].click');
         e.stopPropagation();
       }}
     >
