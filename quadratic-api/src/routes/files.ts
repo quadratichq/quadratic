@@ -12,8 +12,8 @@ const files_router = express.Router();
 const prisma = new PrismaClient();
 
 const ai_rate_limiter = rateLimit({
-  windowMs: Number(process.env.RATE_LIMIT_AI_WINDOW_MS) || 3 * 60 * 60 * 1000, // 3 hours
-  max: Number(process.env.RATE_LIMIT_AI_REQUESTS_MAX) || 25, // Limit number of requests per windowMs
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // Limit number of requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   keyGenerator: (request: JWTRequest, response) => {
