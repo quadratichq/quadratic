@@ -3,6 +3,7 @@ import { Border, BorderType } from '../../../../schemas';
 import { Sheet } from '../../../../grid/sheet/Sheet';
 import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { useGetSelection } from './useGetSelection';
+import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 
 export interface ChangeBorder {
   borderAll?: boolean;
@@ -21,7 +22,7 @@ interface IResults {
   clearBorders: (args?: { create_transaction?: boolean }) => void;
 }
 
-export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
+export const useBorders = (sheet: Sheet, app: PixiApp | PixiAppTables): IResults => {
   const { start, end, multiCursor } = useGetSelection(sheet);
   const { sheet_controller } = app;
 

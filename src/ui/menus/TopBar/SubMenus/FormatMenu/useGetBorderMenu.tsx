@@ -26,10 +26,11 @@ import { convertReactColorToString, convertTintToString } from '../../../../../h
 import { Sheet } from '../../../../../grid/sheet/Sheet';
 import { PixiApp } from '../../../../../gridGL/pixiApp/PixiApp';
 import { QColorPicker } from '../../../../components/qColorPicker';
+import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 
 interface Props extends SubMenuProps {
   sheet: Sheet;
-  app: PixiApp;
+  app: PixiApp | PixiAppTables;
 }
 
 enum BorderSelection {

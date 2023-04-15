@@ -1,7 +1,8 @@
+import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 import { Cell } from '../../../schemas';
 import { PixiApp } from '../../pixiApp/PixiApp';
 
-export function doubleClickCell(options: { cell?: Cell; app: PixiApp }): void {
+export function doubleClickCell(options: { cell?: Cell; app: PixiApp | PixiAppTables }): void {
   const { cell, app } = options;
   const settings = app.settings;
 

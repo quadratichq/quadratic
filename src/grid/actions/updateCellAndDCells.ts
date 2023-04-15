@@ -4,11 +4,12 @@ import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 import { runCellComputation } from '../computations/runCellComputation';
 import { ArrayOutput } from '../computations/types';
+import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 
 interface ArgsType {
   starting_cells: Cell[];
   sheetController: SheetController;
-  app?: PixiApp;
+  app?: PixiApp | PixiAppTables;
   pyodide?: any;
   delete_starting_cells?: boolean;
   create_transaction?: boolean;

@@ -11,9 +11,12 @@ import { useGridSettings } from '../ui/menus/TopBar/SubMenus/useGridSettings';
 import { SheetController } from '../grid/controller/sheetController';
 import { useLocalFiles } from '../storage/useLocalFiles';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 
 type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-rust' | 'wasm-python';
 const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-rust', 'wasm-python'];
+
+const USE_NEW_LAYOUT = true;
 
 export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
@@ -23,7 +26,9 @@ export const QuadraticApp = () => {
   const [settingsReset, setSettingsReset] = useState(false);
   const [sheetController] = useState<SheetController>(new SheetController());
   const localFiles = useLocalFiles(sheetController);
-  const [app] = useState(() => new PixiApp(sheetController, localFiles.save));
+  const [app] = useState(() =>
+    USE_NEW_LAYOUT ? new PixiAppTables(sheetController, localFiles.save) : new PixiApp(sheetController, localFiles.save)
+  );
   const { initialize } = localFiles;
 
   useEffect(() => {

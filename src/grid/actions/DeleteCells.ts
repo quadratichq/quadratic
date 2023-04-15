@@ -1,6 +1,7 @@
 import { updateCellAndDCells } from './updateCellAndDCells';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../controller/sheetController';
+import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 
 interface DeleteCellsArgs {
   x0: number;
@@ -9,7 +10,7 @@ interface DeleteCellsArgs {
   y1: number;
   sheetController: SheetController;
   pyodide?: any;
-  app?: PixiApp;
+  app?: PixiApp | PixiAppTables;
   create_transaction?: boolean;
 }
 

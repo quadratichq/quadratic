@@ -6,6 +6,7 @@ import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { useGetSelection } from './useGetSelection';
+import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 
 export const FORMAT_SELECTION_EVENT = 'formatSelectionEvent';
 
@@ -28,7 +29,7 @@ interface IResults {
 
 type CellFormatNoPosition = Omit<CellFormat, 'x' | 'y'>;
 
-export const useFormatCells = (sheet_controller: SheetController, app: PixiApp): IResults => {
+export const useFormatCells = (sheet_controller: SheetController, app: PixiApp | PixiAppTables): IResults => {
   const { start, end } = useGetSelection(sheet_controller.sheet);
 
   const onFormat = (updatedFormat: CellFormatNoPosition, deltaNumberOfDecimalPlaces?: number): void => {

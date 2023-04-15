@@ -5,11 +5,12 @@ import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 import { HeadingSize } from '../../../grid/sheet/useHeadings';
 import { PanMode } from '../../../atoms/gridInteractionStateAtom';
+import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
 export class PointerHeading {
-  private app: PixiApp;
+  private app: PixiApp | PixiAppTables;
   private active = false;
   private downTimeout: number | undefined;
 
@@ -20,7 +21,7 @@ export class PointerHeading {
     viewportStart: 0,
   };
 
-  constructor(app: PixiApp) {
+  constructor(app: PixiApp | PixiAppTables) {
     this.app = app;
   }
 
@@ -29,8 +30,10 @@ export class PointerHeading {
       this.active = false;
       this.sheet.gridOffsets.headingResizing = undefined;
       this.app.cells.dirty = true;
-      this.app.gridLines.dirty = true;
-      this.app.cursor.dirty = true;
+
+      // todo...
+      // this.app.gridLines.dirty = true;
+      // this.app.cursor.dirty = true;
       this.app.headings.dirty = true;
       this.app.setViewportDirty();
       return true;

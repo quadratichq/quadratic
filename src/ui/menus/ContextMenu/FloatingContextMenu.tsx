@@ -28,12 +28,13 @@ import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { colors } from '../../../theme/colors';
 import { UseSnackBar } from '../../components/SnackBar';
 import mixpanel from 'mixpanel-browser';
+import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 
 interface Props {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
-  app: PixiApp;
+  app: PixiApp | PixiAppTables;
   sheetController: SheetController;
   showContextMenu: boolean;
   snackBar: UseSnackBar;

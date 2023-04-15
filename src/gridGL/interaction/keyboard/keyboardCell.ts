@@ -1,3 +1,4 @@
+import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { DeleteCells } from '../../../grid/actions/DeleteCells';
@@ -12,7 +13,7 @@ export function keyboardCell(options: {
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  app?: PixiApp;
+  app?: PixiApp | PixiAppTables;
 }): boolean {
   const {
     event,
