@@ -105,7 +105,7 @@ export class GridHeadings extends Container {
     if (!this.characterSize) return;
     const { viewport } = this.app;
     const { gridOffsets } = this.app.tables.sheet;
-    const showA1Notation = this.app.settings.showA1Notation;
+    const showA1Notation = true; //this.app.settings.showA1Notation;
     const cellWidth = CELL_WIDTH / viewport.scale.x;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
@@ -170,7 +170,7 @@ export class GridHeadings extends Container {
 
       const show = x >= 0 && x < table.actualWidth;
 
-      if (gridAlpha !== 0 && show) {
+      if (gridAlpha !== 0 && x <= table.actualWidth) {
         this.headingsGraphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(x, viewportBounds.top);
         this.headingsGraphics.lineTo(x, viewportBounds.top + cellHeight);
@@ -221,7 +221,7 @@ export class GridHeadings extends Container {
     if (!this.characterSize) return;
     const { viewport } = this.app;
     const { gridOffsets } = this.app.tables.sheet;
-    const showA1Notation = this.app.settings.showA1Notation;
+    const showA1Notation = true; //this.app.settings.showA1Notation;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
 
@@ -290,7 +290,7 @@ export class GridHeadings extends Container {
       const show = y >= 0 && y < table.actualWidth;
 
       currentHeight = gridOffsets.getRowHeight(row);
-      if (gridAlpha !== 0 || !show) {
+      if (gridAlpha !== 0 && y <= table.actualWidth) {
         this.headingsGraphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(viewportBounds.left, y);
         this.headingsGraphics.lineTo(viewportBounds.left + this.rowWidth, y);
