@@ -7,14 +7,13 @@ import { SheetController } from '../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
 import { DeleteCells } from '../../grid/actions/DeleteCells';
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
   editorInteractionState: EditorInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
-  app?: PixiApp | PixiAppTables;
+  app?: PixiApp;
   sheetController: SheetController;
 }
 

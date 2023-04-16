@@ -1,9 +1,9 @@
 import { Sprite, Texture, TilingSprite } from 'pixi.js';
-import { convertColorStringToTint } from '../../../helpers/convertColor';
-import { colors } from '../../../theme/colors';
-import { Border, BorderType, BorderTypeEnum } from '../../../schemas';
-import { dashedTextures } from '../../dashedTextures';
-import { Rectangle } from '../../types/size';
+import { convertColorStringToTint } from 'helpers/convertColor';
+import { colors } from 'theme/colors';
+import { Border, BorderType, BorderTypeEnum } from 'schemas';
+import { dashedTextures } from 'gridGL/dashedTextures';
+import { Rectangle } from 'gridGL/types/size';
 
 function setTexture(sprite: Sprite | TilingSprite, horizontal: boolean, borderType?: BorderType): void {
   if (borderType === BorderTypeEnum.dashed) {

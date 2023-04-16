@@ -1,15 +1,14 @@
 import { InteractionEvent } from 'pixi.js';
-import { PixiApp } from '../../pixiApp/PixiApp';
 import { PointerHeading } from './PointerHeading';
 import { PointerDown } from './PointerDown';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 export class Pointer {
-  private app: PixiApp | PixiAppTables;
+  private app: PixiApp;
   private headingResize: PointerHeading;
   pointerDown: PointerDown;
 
-  constructor(app: PixiApp | PixiAppTables) {
+  constructor(app: PixiApp) {
     this.app = app;
     this.headingResize = new PointerHeading(app);
     this.pointerDown = new PointerDown(app);

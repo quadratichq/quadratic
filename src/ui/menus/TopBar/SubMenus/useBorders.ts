@@ -1,9 +1,8 @@
 import { clearBordersAction } from '../../../../grid/actions/clearBordersAction';
 import { Border, BorderType } from '../../../../schemas';
 import { Sheet } from '../../../../grid/sheet/Sheet';
-import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { useGetSelection } from './useGetSelection';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 export interface ChangeBorder {
   borderAll?: boolean;
@@ -22,7 +21,7 @@ interface IResults {
   clearBorders: (args?: { create_transaction?: boolean }) => void;
 }
 
-export const useBorders = (sheet: Sheet, app: PixiApp | PixiAppTables): IResults => {
+export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
   const { start, end, multiCursor } = useGetSelection(sheet);
   const { sheet_controller } = app;
 

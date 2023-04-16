@@ -24,13 +24,12 @@ import './useGetBorderMenu.css';
 import { colors } from '../../../../../theme/colors';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
 import { Sheet } from '../../../../../grid/sheet/Sheet';
-import { PixiApp } from '../../../../../gridGL/pixiApp/PixiApp';
 import { QColorPicker } from '../../../../components/qColorPicker';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 interface Props extends SubMenuProps {
   sheet: Sheet;
-  app: PixiApp | PixiAppTables;
+  app: PixiApp;
 }
 
 enum BorderSelection {

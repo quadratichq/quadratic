@@ -1,6 +1,5 @@
 import { Matrix, Renderer } from 'pixi.js';
 import { PixiApp } from './PixiApp';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 
 const resolution = 4;
 const borderSize = 1;
@@ -9,7 +8,7 @@ const maxTextureSize = 4096;
 let renderer: Renderer | undefined;
 
 /** returns a dataURL to a copy of the selected cells */
-export const copyAsPNG = async (app: PixiApp | PixiAppTables): Promise<Blob | null> => {
+export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   if (!renderer) {
     renderer = new Renderer({
       resolution,

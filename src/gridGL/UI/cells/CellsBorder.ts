@@ -1,20 +1,20 @@
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
-import { colors } from '../../../theme/colors';
-import { Border } from '../../../schemas';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { colors } from 'theme/colors';
+import { Border } from 'schemas';
 import { CellsDraw } from './Cells';
 import { drawBorder, drawCellBorder } from './drawBorder';
+import { Table } from 'gridGL/pixiApp/Table';
 
 export class CellsBorder extends Container {
-  private app: PixiApp;
+  private table: Table;
   private spritesIndex = 0;
   private sprites: Container;
   private tilingIndex = 0;
   private tilingSprites: Container;
 
-  constructor(app: PixiApp) {
+  constructor(table: Table) {
     super();
-    this.app = app;
+    this.table = table;
     this.sprites = this.addChild(new Container());
     this.tilingSprites = this.addChild(new Container());
   }
@@ -68,7 +68,9 @@ export class CellsBorder extends Container {
       });
     };
 
-    if (input.cell && this.app.settings.showCellTypeOutlines) {
+    const { showCellTypeOutlines } = this.table.app.settings;
+
+    if (input.cell && showCellTypeOutlines) {
       // Change outline color based on cell type
       if (input.cell.type === 'TEXT') {
         // drawInputBorder(input, colors.cellColorUserText, 0.75);
@@ -90,7 +92,7 @@ export class CellsBorder extends Container {
       minY = Infinity,
       maxX = -Infinity,
       maxY = -Infinity;
-    const { gridOffsets } = this.app.sheet;
+    const { gridOffsets } = this.table.sheet;
     borders.forEach((border) => {
       const position = gridOffsets.getCell(border.x, border.y);
       if (border.horizontal || border.vertical) {

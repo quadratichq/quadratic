@@ -1,8 +1,8 @@
 import { Container, Rectangle } from 'pixi.js';
-import { Coordinate } from '../../types/size';
+import { Coordinate } from 'gridGL/types/size';
 import { CellLabel } from './CellLabel';
-import { CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
-import { CellFormat } from '../../../schemas';
+import { CELL_TEXT_MARGIN_LEFT } from 'constants/gridConstants';
+import { CellFormat } from 'schemas';
 
 interface LabelData {
   text: string;

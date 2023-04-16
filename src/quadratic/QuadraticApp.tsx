@@ -10,8 +10,7 @@ import init, { hello } from 'quadratic-core';
 import { useGridSettings } from '../ui/menus/TopBar/SubMenus/useGridSettings';
 import { SheetController } from '../grid/controller/sheetController';
 import { useLocalFiles } from '../storage/useLocalFiles';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-rust' | 'wasm-python';
 const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-rust', 'wasm-python'];
@@ -26,16 +25,14 @@ export const QuadraticApp = () => {
   const [settingsReset, setSettingsReset] = useState(false);
   const [sheetController] = useState<SheetController>(new SheetController());
   const localFiles = useLocalFiles(sheetController);
-  const [app, setApp] = useState<PixiApp | PixiAppTables>();
+  const [app, setApp] = useState<PixiApp>();
   const { initialize } = localFiles;
 
   useEffect(() => {
     if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
       setLoading(false);
       setApp(
-        USE_NEW_LAYOUT
-          ? new PixiAppTables(sheetController, localFiles.save)
-          : new PixiApp(sheetController, localFiles.save)
+        USE_NEW_LAYOUT ? new PixiApp(sheetController, localFiles.save) : new PixiApp(sheetController, localFiles.save)
       );
     }
   }, [itemsLoaded, localFiles.save, sheetController]);

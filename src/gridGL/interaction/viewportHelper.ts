@@ -1,15 +1,10 @@
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
 import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 
-export function isVisible(options: {
-  app: PixiApp | PixiAppTables;
-  interactionState: GridInteractionState;
-  sheet: Sheet;
-}) {
+export function isVisible(options: { app: PixiApp; interactionState: GridInteractionState; sheet: Sheet }) {
   // returns true if the cursor is visible in the viewport
   const { interactionState, app, sheet } = options;
   const { viewport, headings } = app;
@@ -41,11 +36,7 @@ export function isVisible(options: {
 }
 
 // Ensures the cursor is always visible
-export function ensureVisible(options: {
-  app: PixiApp | PixiAppTables;
-  interactionState: GridInteractionState;
-  sheet: Sheet;
-}): void {
+export function ensureVisible(options: { app: PixiApp; interactionState: GridInteractionState; sheet: Sheet }): void {
   const { interactionState, app, sheet } = options;
 
   if (!isVisible({ app, interactionState, sheet })) {

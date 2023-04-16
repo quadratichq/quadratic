@@ -1,5 +1,5 @@
 import { Graphics, Rectangle } from 'pixi.js';
-import { colors } from '../../theme/colors';
+import { colors } from 'theme/colors';
 import { PixiApp } from '../pixiApp/PixiApp';
 
 const CURSOR_THICKNESS = 1.25;
@@ -26,8 +26,8 @@ export class Cursor extends Graphics {
   }
 
   private drawCursor(): void {
-    const { settings, viewport } = this.app;
-    const { gridOffsets } = this.app.sheet;
+    const { settings, viewport, tables } = this.app;
+    const { gridOffsets } = tables.sheet;
     const { editorInteractionState } = this.app.settings;
     const cell = settings.interactionState.cursorPosition;
     const multiCursor = settings.interactionState.showMultiCursor;
@@ -66,8 +66,8 @@ export class Cursor extends Graphics {
   }
 
   private drawMultiCursor(): void {
-    const { settings } = this.app;
-    const { gridOffsets } = this.app.sheet;
+    const { settings, tables } = this.app;
+    const { gridOffsets } = tables.sheet;
 
     if (settings.interactionState.showMultiCursor) {
       const multiCursor = settings.interactionState.multiCursorPosition;
@@ -131,7 +131,7 @@ export class Cursor extends Graphics {
     const { editorInteractionState } = this.app.settings;
     if (editorInteractionState.showCodeEditor) {
       const cell = editorInteractionState.selectedCell;
-      const { x, y, width, height } = this.app.sheet.gridOffsets.getCell(cell.x, cell.y);
+      const { x, y, width, height } = this.app.tables.sheet.gridOffsets.getCell(cell.x, cell.y);
       const color =
         editorInteractionState.mode === 'PYTHON'
           ? colors.cellColorUserPython

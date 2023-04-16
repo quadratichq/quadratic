@@ -1,8 +1,8 @@
 import { Container, Graphics, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
-import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowSubCacheInfo, debugShowTime } from '../../debugFlags';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowSubCacheInfo, debugShowTime } from 'debugFlags';
 import { Coordinate } from '../types/size';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS, QUADRANT_SCALE, QUADRANT_TEXTURE_SIZE } from './quadrantConstants';
+import { Table } from '../pixiApp/Table';
 
 // subquadrants are sprites that live within a quadrant mapped to a rendered texture size
 interface SubQuadrant extends Sprite {
@@ -14,7 +14,7 @@ interface SubQuadrant extends Sprite {
 // A quadrant is a cached portion of the sheet mapped to column, row size (which can change based on heading size)
 // at the default heading size, one subquadrant is needed per quadrant
 export class Quadrant extends Container {
-  private app: PixiApp;
+  private table: Table;
   private subquadrants: SubQuadrant[];
   private _dirty = true;
   private overflowLeft = false;
@@ -24,9 +24,9 @@ export class Quadrant extends Container {
 
   private testGraphics: Graphics;
 
-  constructor(app: PixiApp, quadrantX: number, quadrantY: number) {
+  constructor(table: Table, quadrantX: number, quadrantY: number) {
     super();
-    this.app = app;
+    this.table = table;
     this.location = { x: quadrantX, y: quadrantY };
     this.subquadrants = [];
     this.testGraphics = this.addChild(new Graphics());
@@ -37,7 +37,7 @@ export class Quadrant extends Container {
     const oldRectangle = this.visibleRectangle;
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
-    this.visibleRectangle = this.app.sheet.gridOffsets.getScreenRectangle(
+    this.visibleRectangle = this.table.sheet.gridOffsets.getScreenRectangle(
       columnStart,
       rowStart,
       QUADRANT_COLUMNS,
@@ -111,10 +111,10 @@ export class Quadrant extends Container {
   update(timeStart?: number, debug?: string): void {
     if (!this.dirty) return;
     this.clear();
-    const app = this.app;
+    const table = this.table;
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
-    const screenRectangle = app.sheet.gridOffsets.getScreenRectangle(
+    const screenRectangle = table.sheet.gridOffsets.getScreenRectangle(
       columnStart,
       rowStart,
       QUADRANT_COLUMNS,
@@ -145,7 +145,7 @@ export class Quadrant extends Container {
         );
 
         // draw quadrant and return the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
-        const reducedDrawingRectangle = app.cells.drawCells(cellBounds, true);
+        const reducedDrawingRectangle = table.cells.drawCells(cellBounds, true);
         if (reducedDrawingRectangle) {
           // adjust the texture placement so we only render boundary cells for subquadrants once (the second time will be outside the texture)
           const trimLeft =
@@ -179,8 +179,11 @@ export class Quadrant extends Container {
           }
 
           // render the sprite's texture
+          const { app } = table;
           const container = app.prepareForQuadrantRendering();
           app.renderer.render(container, { renderTexture: subQuadrant.texture, transform, clear: true });
+
+          // todo: this is probably wrong
           app.cleanUpAfterQuadrantRendering();
           subQuadrant.position.set(reducedDrawingRectangle.left + trimLeft, reducedDrawingRectangle.top + trimTop);
 

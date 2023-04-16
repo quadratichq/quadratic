@@ -1,4 +1,4 @@
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import {
   copySelectionToPNG,
@@ -8,13 +8,12 @@ import {
 } from '../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { UseSnackBar } from '../../../ui/components/SnackBar';
-import { PixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardClipboard(props: {
   event: React.KeyboardEvent<HTMLElement>;
   interactionState: GridInteractionState;
   sheet_controller: SheetController;
-  app: PixiApp | PixiAppTables;
+  app: PixiApp;
   snackbar: UseSnackBar;
 }): boolean {
   const { event, interactionState, sheet_controller, app, snackbar } = props;

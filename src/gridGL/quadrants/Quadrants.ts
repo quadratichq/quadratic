@@ -4,13 +4,13 @@ import {
   debugShowCacheInfo,
   debugShowCellsForDirtyQuadrants,
   debugSkipQuadrantRendering,
-} from '../../debugFlags';
-import { CellRectangle } from '../../grid/sheet/CellRectangle';
+} from 'debugFlags';
+import { CellRectangle } from 'grid/sheet/CellRectangle';
 import { intersects } from '../helpers/intersects';
-import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { Quadrant } from './Quadrant';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS } from './quadrantConstants';
+import { Table } from '../pixiApp/Table';
 
 interface QuadrantChanged {
   row?: number;
@@ -21,13 +21,13 @@ interface QuadrantChanged {
 
 // Parent for all quadrants - renders the cache in loop
 export class Quadrants extends Container {
-  private app: PixiApp;
+  private table: Table;
   private complete = false;
   private quadrants: Map<string, Quadrant>;
 
-  constructor(app: PixiApp) {
+  constructor(table: Table) {
     super();
-    this.app = app;
+    this.table = table;
     this.quadrants = new Map<string, Quadrant>();
   }
 
@@ -46,7 +46,7 @@ export class Quadrants extends Container {
     this.removeChildren();
     this.quadrants.clear();
 
-    const { grid, borders, render_dependency, array_dependency } = this.app.sheet;
+    const { grid, borders, render_dependency, array_dependency } = this.table.sheet;
     const gridBounds = grid.getGridBounds(false);
     const borderBounds = borders.getGridBounds();
     const renderDependencyBounds = render_dependency.getGridBounds();
@@ -62,8 +62,8 @@ export class Quadrants extends Container {
     const xEnd = Math.floor(bounds.right / QUADRANT_COLUMNS);
     for (let y = yStart; y <= yEnd; y++) {
       for (let x = xStart; x <= xEnd; x++) {
-        if (this.app.sheet.hasQuadrant(x, y)) {
-          const quadrant = this.addChild(new Quadrant(this.app, x, y));
+        if (this.table.sheet.hasQuadrant(x, y)) {
+          const quadrant = this.addChild(new Quadrant(this.table, x, y));
           this.quadrants.set(`${x},${y}`, quadrant);
         }
       }
@@ -93,7 +93,7 @@ export class Quadrants extends Container {
         if (dirtyCount === 0 && !this.complete) {
           this.complete = true;
           this.debugCacheStats();
-          this.app.sheet.gridOffsets.debugCache();
+          this.table.sheet.gridOffsets.debugCache();
         }
       } else {
         firstDirty.update();
@@ -106,7 +106,8 @@ export class Quadrants extends Container {
         }/${this.children.length}`;
       }
       return (
-        this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle)
+        this.visible &&
+        intersects.rectangleRectangle(this.table.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle)
       );
     }
 
@@ -117,7 +118,7 @@ export class Quadrants extends Container {
     let quadrant = this.quadrants.get(`${row},${column}`);
     if (quadrant) return quadrant;
     if (!create) return;
-    quadrant = this.addChild(new Quadrant(this.app, row, column));
+    quadrant = this.addChild(new Quadrant(this.table, row, column));
     this.quadrants.set(`${row},${column}`, quadrant);
     this.complete = false;
     return quadrant;
@@ -125,7 +126,7 @@ export class Quadrants extends Container {
 
   /** marks quadrants dirty based on what has changed */
   quadrantChanged(options: QuadrantChanged): void {
-    const bounds = this.app.sheet.grid.getGridBounds(false);
+    const bounds = this.table.sheet.grid.getGridBounds(false);
     if (!bounds) return;
 
     if (options.row !== undefined) {
@@ -133,7 +134,7 @@ export class Quadrants extends Container {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, options.row);
         const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
         if (quadrant) quadrant.dirty = true;
-        const dependents = this.app.sheet.render_dependency.getDependents({ x, y: options.row });
+        const dependents = this.table.sheet.render_dependency.getDependents({ x, y: options.row });
         dependents?.forEach((dependent) => {
           const quadrant = this.getQuadrant(dependent.x, dependent.y, false);
           if (quadrant) quadrant.dirty = true;
@@ -198,8 +199,8 @@ export class Quadrants extends Container {
 
   /** Returns CellRectangles for visible dirty quadrants */
   getCellsForDirtyQuadrants(): CellRectangle[] {
-    const { viewport } = this.app;
-    const { grid, borders } = this.app.sheet;
+    const { viewport } = this.table.app;
+    const { grid, borders } = this.table.sheet;
     const screen = viewport.getVisibleBounds();
     return this.children.flatMap((child) => {
       const quadrant = child as Quadrant;

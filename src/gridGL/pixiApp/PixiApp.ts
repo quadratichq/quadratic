@@ -1,25 +1,27 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import './pixiApp.css';
+
 import { Renderer, Container, Graphics } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { PixiAppSettings } from './PixiAppSettings';
-import { Pointer } from '../interaction/pointer/Pointer';
 import { Update } from './Update';
-import './pixiApp.css';
-import { GridLines } from '../UI/GridLines';
-import { AxesLines } from '../UI/AxesLines';
-import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
-import { Cursor } from '../UI/Cursor';
-import { Cells } from '../UI/cells/Cells';
-import { zoomInOut, zoomToFit, zoomToSelection } from '../helpers/zoom';
-import { Quadrants } from '../quadrants/Quadrants';
+import { zoomInOut, zoomToFit, zoomToSelection } from 'gridGL/helpers/zoom';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
-import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../debugFlags';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { SheetController } from '../../grid/controller/sheetController';
-import { HEADING_SIZE } from '../../constants/gridConstants';
-import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
-import { IS_READONLY_MODE } from '../../constants/app';
-import { Wheel } from '../pixiOverride/Wheel';
+import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from 'debugFlags';
+import { SheetController } from 'grid/controller/sheetController';
+import { HEADING_SIZE } from 'constants/gridConstants';
+import { editorInteractionStateDefault } from 'atoms/editorInteractionStateAtom';
+import { gridInteractionStateDefault } from 'atoms/gridInteractionStateAtom';
+import { IS_READONLY_MODE } from 'constants/app';
+import { Wheel } from 'gridGL/pixiOverride/Wheel';
+import { Tables } from './Tables';
+import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
+import { Quadrants } from '../quadrants/Quadrants';
+import { Cells } from '../UI/cells/Cells';
+import { Pointer } from 'gridGL/interaction/pointer/Pointer';
+import { Sheet } from 'grid/sheet/Sheet';
+import { Cursor } from '../UI/Cursor';
+import { GridLines } from '../UI/GridLines';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -28,16 +30,14 @@ export class PixiApp {
   save: () => Promise<void>;
 
   sheet_controller: SheetController;
-  sheet: Sheet;
 
   canvas: HTMLCanvasElement;
   viewport: Viewport;
-  gridLines: GridLines;
-  axesLines: AxesLines;
+
+  tables: Tables;
+
   cursor: Cursor;
   headings: GridHeadings;
-  cells: Cells;
-  quadrants: Quadrants;
 
   input: Pointer;
   viewportContents: Container;
@@ -52,8 +52,9 @@ export class PixiApp {
 
   constructor(sheet_controller: SheetController, save: () => Promise<void>) {
     this.sheet_controller = sheet_controller;
-    this.sheet = sheet_controller.sheet;
-    this.sheet.onRebuild = this.rebuild;
+    // this.sheet = sheet_controller.sheet;
+    // this.sheet.onRebuild = this.rebuild;
+
     this.save = save;
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
@@ -106,15 +107,10 @@ export class PixiApp {
     // useful for debugging at viewport locations
     this.debug = this.viewportContents.addChild(new Graphics());
 
-    this.quadrants = this.viewportContents.addChild(new Quadrants(this));
-    this.quadrants.visible = false;
+    // this.axesLines = this.viewportContents.addChild(new AxesLines(this));
 
-    this.gridLines = this.viewportContents.addChild(new GridLines(this));
-    this.axesLines = this.viewportContents.addChild(new AxesLines(this));
-    this.cells = this.viewportContents.addChild(new Cells(this));
-
-    // ensure the cell's background color is drawn first
-    this.viewportContents.addChildAt(this.cells.cellsBackground, 0);
+    this.tables = this.viewportContents.addChild(new Tables(this));
+    this.tables.add(this.sheet_controller.sheet);
 
     this.cursor = this.viewportContents.addChild(new Cursor(this));
     this.headings = this.viewportContents.addChild(new GridHeadings(this));
@@ -134,24 +130,12 @@ export class PixiApp {
   }
 
   private showCache(): void {
-    if (debugShowCacheFlag && !this.quadrants.visible) {
-      const cacheOn = document.querySelector('.debug-show-cache-on');
-      if (cacheOn) {
-        (cacheOn as HTMLSpanElement).innerHTML = 'CACHE';
-      }
-    }
-    this.cells.changeVisibility(false);
-    this.quadrants.visible = true;
-    this.cacheIsVisible = true;
+    // this.tables.showCache();
+    // this.cacheIsVisible = true;
   }
 
   private showCells(): void {
-    if (debugShowCacheFlag && !this.cells.visible) {
-      (document.querySelector('.debug-show-cache-on') as HTMLSpanElement).innerHTML = '';
-    }
-    this.cells.dirty = true;
-    this.cells.changeVisibility(true);
-    this.quadrants.visible = false;
+    this.tables.showCells();
     this.cacheIsVisible = false;
   }
 
@@ -161,8 +145,8 @@ export class PixiApp {
 
   viewportChanged = (): void => {
     this.viewport.dirty = true;
-    this.gridLines.dirty = true;
-    this.axesLines.dirty = true;
+    this.tables.viewportChanged();
+    // this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
     if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
@@ -195,11 +179,12 @@ export class PixiApp {
     this.canvas.height = this.renderer.resolution * height;
     this.renderer.resize(width, height);
     this.viewport.resize(width, height);
-    this.gridLines.dirty = true;
-    this.axesLines.dirty = true;
+    this.tables.rebuild(false);
+    // this.gridLines.dirty = true;
+    // this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
-    this.cells.dirty = true;
+    // this.cells.dirty = true;
   };
 
   setZoomState(value: number): void {
@@ -207,33 +192,33 @@ export class PixiApp {
   }
 
   setZoomToFit(): void {
-    zoomToFit(this.sheet, this.viewport);
+    // zoomToFit(this.sheet, this.viewport);
   }
 
   setZoomToSelection(): void {
-    zoomToSelection(this.settings.interactionState, this.sheet, this.viewport);
+    // zoomToSelection(this.settings.interactionState, this.sheet, this.viewport);
   }
 
   // called before and after a quadrant render
   prepareForQuadrantRendering(options?: { gridLines: boolean }): Container {
-    this.gridLines.visible = options?.gridLines ?? false;
-    this.axesLines.visible = false;
-    this.cursor.visible = false;
-    this.headings.visible = false;
-    this.quadrants.visible = false;
-    this.cells.changeVisibility(true);
-    this.cells.dirty = true;
+    // this.gridLines.visible = options?.gridLines ?? false;
+    // this.axesLines.visible = false;
+    // this.cursor.visible = false;
+    // this.headings.visible = false;
+    // this.quadrants.visible = false;
+    // this.cells.changeVisibility(true);
+    // this.cells.dirty = true;
     return this.viewportContents;
   }
 
   cleanUpAfterQuadrantRendering(): void {
-    this.gridLines.visible = true;
-    this.axesLines.visible = true;
-    this.cursor.visible = true;
-    this.headings.visible = true;
-    this.quadrants.visible = this.cacheIsVisible;
-    this.cells.changeVisibility(!this.cacheIsVisible);
-    if (!this.cacheIsVisible) this.cells.dirty = true;
+    // this.gridLines.visible = true;
+    // this.axesLines.visible = true;
+    // this.cursor.visible = true;
+    // this.headings.visible = true;
+    // this.quadrants.visible = this.cacheIsVisible;
+    // this.cells.changeVisibility(!this.cacheIsVisible);
+    // if (!this.cacheIsVisible) this.cells.dirty = true;
   }
 
   // helper for playwright
@@ -245,14 +230,11 @@ export class PixiApp {
     this.canvas?.focus();
   }
 
-  rebuild = (): void => {
+  rebuild = (quadrantsDirty?: boolean): void => {
     this.viewport.dirty = true;
-    this.gridLines.dirty = true;
-    this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
-    this.cells.dirty = true;
-    this.quadrants.build();
+    // this.tables.rebuild(true);
   };
 
   reset(): void {
@@ -264,5 +246,25 @@ export class PixiApp {
     }
     this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
     this.settings.setInteractionState?.(gridInteractionStateDefault);
+  }
+
+  isDirty(): boolean {
+    return this.headings.dirty || this.cursor.dirty || this.tables.isDirty();
+  }
+
+  get quadrants(): Quadrants {
+    return this.tables.quadrants;
+  }
+
+  get cells(): Cells {
+    return this.tables.cells;
+  }
+
+  get sheet(): Sheet {
+    return this.tables.sheet;
+  }
+
+  get gridLines(): GridLines {
+    return this.tables.gridLines;
   }
 }

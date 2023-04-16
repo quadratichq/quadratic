@@ -7,9 +7,8 @@ import { CellAndFormat } from '../../sheet/GridSparse';
 import { Rectangle } from 'pixi.js';
 import { clearFormattingAction } from '../clearFormattingAction';
 import { clearBordersAction } from '../clearBordersAction';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.1';
 
@@ -328,7 +327,7 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
   }
 };
 
-export const copySelectionToPNG = async (app: PixiApp | PixiAppTables) => {
+export const copySelectionToPNG = async (app: PixiApp) => {
   const blob = await copyAsPNG(app);
   if (!blob) {
     throw new Error('Unable to copy as PNG');

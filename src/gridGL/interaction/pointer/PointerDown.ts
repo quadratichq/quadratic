@@ -1,16 +1,15 @@
 import { Point } from 'pixi.js';
 import { IS_READONLY_MODE } from '../../../constants/app';
 import { Sheet } from '../../../grid/sheet/Sheet';
-import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 import { PanMode } from '../../../atoms/gridInteractionStateAtom';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 const MINIMUM_MOVE_POSITION = 5;
 
 export class PointerDown {
-  private app: PixiApp | PixiAppTables;
+  private app: PixiApp;
   active = false;
 
   private positionRaw?: Point;
@@ -19,7 +18,7 @@ export class PointerDown {
   private pointerMoved = false;
   private doubleClickTimeout?: number;
 
-  constructor(app: PixiApp | PixiAppTables) {
+  constructor(app: PixiApp) {
     this.app = app;
   }
 

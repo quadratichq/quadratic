@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import {
@@ -28,13 +27,13 @@ import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { colors } from '../../../theme/colors';
 import { UseSnackBar } from '../../components/SnackBar';
 import mixpanel from 'mixpanel-browser';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 interface Props {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
-  app: PixiApp | PixiAppTables;
+  app: PixiApp;
   sheetController: SheetController;
   showContextMenu: boolean;
   snackBar: UseSnackBar;

@@ -6,7 +6,6 @@ import { keyboardClipboard } from './keyboardClipboard';
 import { keyboardSelect } from './keyboardSelect';
 import { keyboardPosition } from './keyboardPosition';
 import { keyboardCell } from './keyboardCell';
-import { PixiApp } from '../../pixiApp/PixiApp';
 import { keyboardViewport } from './keyboardViewport';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { keyboardUndoRedo } from './keyboardUndoRedo';
@@ -16,14 +15,14 @@ import { useClearAllFormatting } from '../../../ui/menus/TopBar/SubMenus/useClea
 import { useGridSettings } from '../../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { UseSnackBar } from '../../../ui/components/SnackBar';
 import { LocalFilesContext } from '../../../ui/QuadraticUIContext';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 interface IProps {
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  app: PixiApp | PixiAppTables;
+  app: PixiApp;
   sheetController: SheetController;
   snackbar: UseSnackBar;
 }

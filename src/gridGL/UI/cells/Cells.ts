@@ -1,18 +1,18 @@
 import { Container, Rectangle } from 'pixi.js';
-import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../constants/gridConstants';
-import { colors } from '../../../theme/colors';
-import { CellTextFormatter } from '../../../grid/formatting/cellTextFormatter';
-import { CellRectangle } from '../../../grid/sheet/CellRectangle';
-import { CellAndFormat } from '../../../grid/sheet/GridSparse';
-import { Cell, CellFormat } from '../../../schemas';
-import { intersects } from '../../helpers/intersects';
-import { PixiApp } from '../../pixiApp/PixiApp';
-import { Coordinate } from '../../types/size';
+import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from 'constants/gridConstants';
+import { colors } from 'theme/colors';
+import { CellTextFormatter } from 'grid/formatting/cellTextFormatter';
+import { CellRectangle } from 'grid/sheet/CellRectangle';
+import { CellAndFormat } from 'grid/sheet/GridSparse';
+import { Cell, CellFormat } from 'schemas';
+import { intersects } from 'gridGL/helpers/intersects';
+import { Coordinate } from 'gridGL/types/size';
 import { CellsArray } from './CellsArray';
 import { CellsBackground } from './cellsBackground';
 import { CellsBorder } from './CellsBorder';
 import { CellsLabels } from './CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
+import { Table } from 'gridGL/pixiApp/Table';
 
 export interface CellsBounds {
   minX: number;
@@ -31,7 +31,7 @@ export interface CellsDraw {
 }
 
 export class Cells extends Container {
-  private app: PixiApp;
+  private table: Table;
   private cellsArray: CellsArray;
   private cellsBorder: CellsBorder;
   private cellLabels: CellsLabels;
@@ -43,15 +43,15 @@ export class Cells extends Container {
   cellsBackground: CellsBackground;
   dirty = true;
 
-  constructor(app: PixiApp) {
+  constructor(table: Table) {
     super();
-    this.app = app;
+    this.table = table;
 
     // this is added directly in pixiApp to control z-index (instead of using pixi's sortable children)
     this.cellsBackground = new CellsBackground();
 
-    this.cellsArray = this.addChild(new CellsArray(app));
-    this.cellsBorder = this.addChild(new CellsBorder(app));
+    this.cellsArray = this.addChild(new CellsArray(table));
+    this.cellsBorder = this.addChild(new CellsBorder(table));
     this.cellLabels = this.addChild(new CellsLabels());
     this.cellsMarkers = this.addChild(new CellsMarkers());
   }
@@ -63,8 +63,8 @@ export class Cells extends Container {
   private handleOverflow(): void {
     const labels = this.cellLabels.getVisible();
 
-    const { quadrants } = this.app;
-    const { render_dependency, gridOffsets } = this.app.sheet;
+    const { quadrants } = this.table;
+    const { render_dependency, gridOffsets } = this.table.sheet;
     const changes: Coordinate[] = [];
 
     labels.forEach((label) => {
@@ -108,7 +108,7 @@ export class Cells extends Container {
 
   /** update visual dependency to ensure array boxes are drawn when zooming in */
   private handleArrayCells(cellRectangle: CellRectangle): void {
-    const { array_dependency } = this.app.sheet;
+    const { array_dependency } = this.table.sheet;
 
     for (const coordinate of this.trackCellsWithArrays) {
       const cell = cellRectangle.get(coordinate.x, coordinate.y);
@@ -137,6 +137,7 @@ export class Cells extends Container {
     isInput?: boolean;
   }): Rectangle | undefined {
     const { entry, x, y, width, height, isQuadrant, isInput } = options;
+    const { showCellTypeOutlines } = this.table.app.settings;
     if (entry) {
       const hasContent = entry.cell?.value || entry.format;
 
@@ -152,7 +153,7 @@ export class Cells extends Container {
           }
 
           // show cell type icons
-          if (this.app.settings.showCellTypeOutlines)
+          if (showCellTypeOutlines)
             if (entry.cell?.type === 'PYTHON') {
               // show cell type icon
               this.cellsMarkers.add(x, y, 'CodeIcon', error);
@@ -184,7 +185,7 @@ export class Cells extends Container {
         }
         this.cellsBorder.draw({ ...entry, x, y, width, height });
       }
-      if (this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
+      if (showCellTypeOutlines && entry.cell?.array_cells) {
         this.cellsArray.draw(entry.cell.array_cells, x, y, width, height, entry.cell.type);
       }
 
@@ -221,14 +222,16 @@ export class Cells extends Container {
     const { boundsWithData, bounds, cellRectangle, ignoreInput, isQuadrant } = options;
     const renderedCells = new Set<string>();
 
-    const { gridOffsets, render_dependency, array_dependency, grid } = this.app.sheet;
+    const { gridOffsets, render_dependency, array_dependency, grid } = this.table.sheet;
     this.clear();
 
+    const { interactionState, showCellTypeOutlines } = this.table.app.settings;
+
     const input =
-      !ignoreInput && this.app.settings.interactionState.showInput
+      !ignoreInput && interactionState.showInput
         ? {
-            column: this.app.settings.interactionState.cursorPosition.x,
-            row: this.app.settings.interactionState.cursorPosition.y,
+            column: interactionState.cursorPosition.x,
+            row: interactionState.cursorPosition.y,
           }
         : undefined;
 
@@ -252,7 +255,7 @@ export class Cells extends Container {
         const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, isInput });
 
         // track cells with arrays to add visual dependencies
-        if (entry && this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
+        if (entry && showCellTypeOutlines && entry.cell?.array_cells) {
           this.trackCellsWithArrays.push({ x: entry.cell.x, y: entry.cell.y });
         }
 
@@ -306,7 +309,7 @@ export class Cells extends Container {
   }
 
   drawMultipleBounds(cellRectangles: CellRectangle[]): void {
-    const { gridOffsets, render_dependency, grid } = this.app.sheet;
+    const { gridOffsets, render_dependency, grid } = this.table.sheet;
     this.cellLabels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
@@ -317,10 +320,12 @@ export class Cells extends Container {
     const renderedCells = new Set<string>();
     let content: Rectangle | undefined;
 
-    const input = this.app.settings.interactionState.showInput
+    const { interactionState } = this.table.app.settings;
+
+    const input = interactionState.showInput
       ? {
-          column: this.app.settings.interactionState.cursorPosition.x,
-          row: this.app.settings.interactionState.cursorPosition.y,
+          column: interactionState.cursorPosition.x,
+          row: interactionState.cursorPosition.y,
         }
       : undefined;
 
@@ -380,7 +385,7 @@ export class Cells extends Container {
   }
 
   drawCells(fullBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
-    const { grid, borders, render_dependency, array_dependency } = this.app.sheet;
+    const { grid, borders, render_dependency, array_dependency } = this.table.sheet;
 
     // find bounds with gridSparse data
     const { bounds, boundsWithData } = grid.getBounds(fullBounds);
@@ -414,7 +419,7 @@ export class Cells extends Container {
   update(): void {
     if (this.dirty) {
       this.dirty = false;
-      const visibleBounds = this.app.viewport.getVisibleBounds();
+      const visibleBounds = this.table.app.viewport.getVisibleBounds();
       this.drawCells(visibleBounds, false);
     }
   }

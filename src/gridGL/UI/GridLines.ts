@@ -1,21 +1,23 @@
 import { Graphics, Rectangle } from 'pixi.js';
 import { calculateAlphaForGridLines } from './gridUtils';
-import { colors } from '../../theme/colors';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { colors } from 'theme/colors';
+import { Table } from '../pixiApp/Table';
+import { intersects } from 'gridGL/helpers/intersects';
 
 export class GridLines extends Graphics {
-  private app: PixiApp;
+  private table: Table;
   dirty = true;
 
-  constructor(app: PixiApp) {
+  constructor(table: Table) {
     super();
-    this.app = app;
+    this.table = table;
   }
 
-  draw(bounds: Rectangle): void {
+  draw(viewportBounds: Rectangle): void {
     this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
-    this.drawVerticalLines(bounds);
-    this.drawHorizontalLines(bounds);
+    const tableBounds = new Rectangle(this.table.x, this.table.y, this.table.actualWidth, this.table.actualHeight);
+    this.drawVerticalLines(viewportBounds, tableBounds);
+    this.drawHorizontalLines(viewportBounds, tableBounds);
     this.dirty = true;
   }
 
@@ -24,13 +26,15 @@ export class GridLines extends Graphics {
       this.dirty = false;
       this.clear();
 
-      if (!this.app.settings.showGridLines) {
+      const { app } = this.table;
+
+      if (!app.settings.showGridLines) {
         this.visible = false;
-        this.app.setViewportDirty();
+        this.table.app.setViewportDirty();
         return;
       }
 
-      const gridAlpha = calculateAlphaForGridLines(this.app.viewport);
+      const gridAlpha = calculateAlphaForGridLines(app.viewport);
       if (gridAlpha === 0) {
         this.alpha = 0;
         this.visible = false;
@@ -41,40 +45,48 @@ export class GridLines extends Graphics {
       this.visible = true;
 
       this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
-      const bounds = this.app.viewport.getVisibleBounds();
-      this.drawVerticalLines(bounds);
-      this.drawHorizontalLines(bounds);
+      const viewportBounds = app.viewport.getVisibleBounds();
+      const tableBounds = new Rectangle(this.table.x, this.table.y, this.table.actualWidth, this.table.actualHeight);
+      if (!intersects.rectangleRectangle(viewportBounds, tableBounds)) return;
+      this.drawVerticalLines(viewportBounds, tableBounds);
+      this.drawHorizontalLines(viewportBounds, tableBounds);
     }
   }
 
-  private drawVerticalLines(bounds: Rectangle): void {
-    const { gridOffsets } = this.app.sheet;
-    const { index, position } = gridOffsets.getColumnIndex(bounds.left);
+  // todo: use viewportBounds to limit drawing
+  private drawVerticalLines(viewportBounds: Rectangle, tableBounds: Rectangle): void {
+    const { gridOffsets } = this.table.sheet;
+    const { index } = gridOffsets.getColumnIndex(viewportBounds.left);
     let column = index;
-    const offset = bounds.left - position;
+    // const offset = viewportBounds.left - position;
     let size = 0;
-    for (let x = bounds.left; x <= bounds.right + size - 1; x += size) {
+    const start = tableBounds.left;
+    const end = tableBounds.right + size - 1;
+    for (let x = start; x <= end; x += size) {
       // don't draw grid lines when hidden
       if (size !== 0) {
-        this.moveTo(x - offset, bounds.top);
-        this.lineTo(x - offset, bounds.bottom);
+        this.moveTo(x, tableBounds.top);
+        this.lineTo(x, tableBounds.bottom);
       }
       size = gridOffsets.getColumnWidth(column);
       column++;
     }
   }
 
-  private drawHorizontalLines(bounds: Rectangle): void {
-    const { gridOffsets } = this.app.sheet;
-    const { index, position } = gridOffsets.getRowIndex(bounds.top);
+  // todo: use viewportBounds to limit drawing
+  private drawHorizontalLines(viewportBounds: Rectangle, tableBounds: Rectangle): void {
+    const { gridOffsets } = this.table.sheet;
+    const { index } = gridOffsets.getRowIndex(viewportBounds.top);
     let row = index;
-    const offset = bounds.top - position;
+    // const offset = viewportBounds.top - position;
     let size = 0;
-    for (let y = bounds.top; y <= bounds.bottom + size - 1; y += size) {
+    const start = tableBounds.top; //Math.max(viewportBounds.top, tableBounds.top);
+    const end = tableBounds.bottom + size - 1; //Math.min(viewportBounds.bottom + size - 1, tableBounds.bottom);
+    for (let y = start; y <= end; y += size) {
       // don't draw grid lines when hidden
       if (size !== 0) {
-        this.moveTo(bounds.left, y - offset);
-        this.lineTo(bounds.right, y - offset);
+        this.moveTo(tableBounds.left, y);
+        this.lineTo(tableBounds.right, y);
       }
       size = gridOffsets.getRowHeight(row);
       row++;

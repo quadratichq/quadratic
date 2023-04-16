@@ -1,16 +1,16 @@
 import { Container, Sprite, Texture } from 'pixi.js';
-import { CellType } from '../../../schemas';
-import { colors } from '../../../theme/colors';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { CellType } from 'schemas';
+import { colors } from 'theme/colors';
 import { drawBorder } from './drawBorder';
+import { Table } from 'gridGL/pixiApp/Table';
 
 export class CellsArray extends Container {
-  private app: PixiApp;
+  private table: Table;
   private visibleIndex = 0;
 
-  constructor(app: PixiApp) {
+  constructor(table: Table) {
     super();
-    this.app = app;
+    this.table = table;
   }
 
   clear() {
@@ -30,7 +30,7 @@ export class CellsArray extends Container {
   };
 
   draw(cellArray: number[][], x: number, y: number, width: number, height: number, type: CellType): void {
-    const { gridOffsets } = this.app.sheet;
+    const { gridOffsets } = this.table.sheet;
 
     // calculate array cells outline size
     let xEnd = x + width;

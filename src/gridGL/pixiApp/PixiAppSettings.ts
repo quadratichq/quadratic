@@ -30,18 +30,14 @@ export class PixiAppSettings {
     } else {
       this.settings = defaultGridSettings;
     }
-    this.app.gridLines.dirty = true;
-    this.app.axesLines.dirty = true;
-    this.app.headings.dirty = true;
-    this.app.cells.dirty = true;
 
     // only rebuild quadrants if showCellTypeOutlines change
-    if (
-      (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
-      (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
-    ) {
-      this.app.quadrants.build();
-    }
+    this.app.rebuild(
+      !!(
+        (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
+        (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
+      )
+    );
     this.lastSettings = this.settings;
   };
 
@@ -51,9 +47,10 @@ export class PixiAppSettings {
   ): void {
     this.interactionState = interactionState;
     this.setInteractionState = setInteractionState;
-    this.app.cursor.dirty = true;
-    this.app.headings.dirty = true;
-    this.app.cells.dirty = true;
+    this.app.rebuild(false);
+    // this.app.cursor.dirty = true;
+    // this.app.headings.dirty = true;
+    // this.app.cells.dirty = true;
   }
 
   updateEditorInteractionState(
@@ -62,8 +59,9 @@ export class PixiAppSettings {
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
-    this.app.headings.dirty = true;
-    this.app.cursor.dirty = true;
+    this.app.rebuild(false);
+    // this.app.headings.dirty = true;
+    // this.app.cursor.dirty = true;
   }
 
   get showGridLines(): boolean {

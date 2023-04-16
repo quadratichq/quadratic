@@ -2,7 +2,7 @@ import { Sheet } from '../sheet/Sheet';
 import { Transaction } from './transaction';
 import { Statement } from './statement';
 import { StatementRunner } from './runners/runner';
-import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
 

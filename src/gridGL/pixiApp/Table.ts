@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
-import { PixiAppTables } from './PixiAppTables';
-import { Sheet } from '../../../grid/sheet/Sheet';
+import { PixiApp } from './PixiApp';
+import { Sheet } from '../../grid/sheet/Sheet';
 import { debugTimeCheck, debugTimeReset } from 'gridGL/helpers/debugPerformance';
 import { GridLines } from '../UI/GridLines';
 import { Quadrants } from '../quadrants/Quadrants';
@@ -8,7 +8,7 @@ import { Cells } from '../UI/cells/Cells';
 import { TableUI } from './TableUI';
 
 export class Table extends Container {
-  app: PixiAppTables;
+  app: PixiApp;
   sheet: Sheet;
 
   tableUI: TableUI;
@@ -20,7 +20,7 @@ export class Table extends Container {
   actualWidth = 1000;
   actualHeight = 1000;
 
-  constructor(app: PixiAppTables, sheet: Sheet) {
+  constructor(app: PixiApp, sheet: Sheet) {
     super();
     this.app = app;
     this.sheet = sheet;

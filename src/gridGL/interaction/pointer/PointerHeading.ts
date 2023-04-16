@@ -1,16 +1,15 @@
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
-import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 import { HeadingSize } from '../../../grid/sheet/useHeadings';
 import { PanMode } from '../../../atoms/gridInteractionStateAtom';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
 export class PointerHeading {
-  private app: PixiApp | PixiAppTables;
+  private app: PixiApp;
   private active = false;
   private downTimeout: number | undefined;
 
@@ -21,7 +20,7 @@ export class PointerHeading {
     viewportStart: 0,
   };
 
-  constructor(app: PixiApp | PixiAppTables) {
+  constructor(app: PixiApp) {
     this.app = app;
   }
 

@@ -2,11 +2,10 @@ import { ColorResult } from 'react-color';
 import { clearFormattingAction } from '../../../../grid/actions/clearFormattingAction';
 import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
 import { CellFormat } from '../../../../schemas';
-import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { useGetSelection } from './useGetSelection';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 export const FORMAT_SELECTION_EVENT = 'formatSelectionEvent';
 
@@ -29,7 +28,7 @@ interface IResults {
 
 type CellFormatNoPosition = Omit<CellFormat, 'x' | 'y'>;
 
-export const useFormatCells = (sheet_controller: SheetController, app: PixiApp | PixiAppTables): IResults => {
+export const useFormatCells = (sheet_controller: SheetController, app: PixiApp): IResults => {
   const { start, end } = useGetSelection(sheet_controller.sheet);
 
   const onFormat = (updatedFormat: CellFormatNoPosition, deltaNumberOfDecimalPlaces?: number): void => {

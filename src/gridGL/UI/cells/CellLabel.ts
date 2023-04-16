@@ -1,7 +1,7 @@
-import { Coordinate } from '../../types/size';
-import { BitmapTextClip } from '../../pixiOverride/BitmapTextClip';
-import { CellFormat } from '../../../schemas';
-import { convertColorStringToTint } from '../../../helpers/convertColor';
+import { Coordinate } from 'gridGL/types/size';
+import { BitmapTextClip } from 'gridGL/pixiOverride/BitmapTextClip';
+import { CellFormat } from 'schemas';
+import { convertColorStringToTint } from 'helpers/convertColor';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 

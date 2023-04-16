@@ -1,22 +1,22 @@
+import { Cells } from 'gridGL/UI/cells/Cells';
+import { Table } from 'gridGL/pixiApp/Table';
 import { Container, Graphics } from 'pixi.js';
-import { PixiApp } from '../pixiApp/PixiApp';
-import { Cells } from '../UI/cells/Cells';
 import { QUADRANT_SCALE, QUADRANT_TEXTURE_SIZE } from './quadrantConstants';
 
 export class QuadrantCells {
-  app: PixiApp;
+  table: Table;
   cells: Cells;
   container: Container;
   private test: Graphics;
 
-  constructor(app: PixiApp) {
-    this.app = app;
+  constructor(table: Table) {
+    this.table = table;
     this.container = new Container();
 
     // draw test backgrounds in quadrants
     this.test = new Graphics(); //this.container.addChild(new Graphics());
 
-    this.cells = this.container.addChild(new Cells(app));
+    this.cells = this.container.addChild(new Cells(table));
     this.container.addChildAt(this.cells.cellsBackground, 0);
   }
 

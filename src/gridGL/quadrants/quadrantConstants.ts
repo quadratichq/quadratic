@@ -1,4 +1,4 @@
-import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
+import { CELL_HEIGHT, CELL_WIDTH } from 'constants/gridConstants';
 
 export const QUADRANT_SCALE = 0.75;
 export const QUADRANT_TEXTURE_SIZE = 2048;

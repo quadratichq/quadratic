@@ -1,9 +1,8 @@
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { DeleteCells } from '../../../grid/actions/DeleteCells';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { PixiApp } from '../../pixiApp/PixiApp';
 import isAlphaNumeric from './isAlphaNumeric';
 
 export function keyboardCell(options: {
@@ -13,7 +12,7 @@ export function keyboardCell(options: {
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  app?: PixiApp | PixiAppTables;
+  app?: PixiApp;
 }): boolean {
   const {
     event,

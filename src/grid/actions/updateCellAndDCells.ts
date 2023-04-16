@@ -1,15 +1,14 @@
 import { Cell } from '../../schemas';
-import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 import { runCellComputation } from '../computations/runCellComputation';
 import { ArrayOutput } from '../computations/types';
-import { PixiAppTables } from 'gridGL/tables/pixiAppTables/PixiAppTables';
+import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 interface ArgsType {
   starting_cells: Cell[];
   sheetController: SheetController;
-  app?: PixiApp | PixiAppTables;
+  app?: PixiApp;
   pyodide?: any;
   delete_starting_cells?: boolean;
   create_transaction?: boolean;

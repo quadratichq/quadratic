@@ -10,11 +10,10 @@ import { SheetController } from '../grid/controller/sheetController';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { PanMode } from '../atoms/gridInteractionStateAtom';
 import { UseSnackBar } from '../ui/components/SnackBar';
-import { PixiAppTables } from './tables/pixiAppTables/PixiAppTables';
 
 interface IProps {
   sheetController: SheetController;
-  app: PixiApp | PixiAppTables;
+  app: PixiApp;
   snackBar: UseSnackBar;
 }
 

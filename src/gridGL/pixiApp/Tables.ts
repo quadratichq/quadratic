@@ -1,5 +1,5 @@
 import { Container, Rectangle } from 'pixi.js';
-import { PixiAppTables } from './PixiAppTables';
+import { PixiApp } from './PixiApp';
 import { Table } from './Table';
 import { Sheet } from 'grid/sheet/Sheet';
 import { debugShowCacheFlag } from 'debugFlags';
@@ -9,11 +9,11 @@ import { GridLines } from '../UI/GridLines';
 
 export class Tables extends Container {
   private quadrantsShowing = false;
-  app: PixiAppTables;
+  app: PixiApp;
   tables: Table[];
   table?: Table;
 
-  constructor(app: PixiAppTables) {
+  constructor(app: PixiApp) {
     super();
     this.app = app;
     this.tables = [];
