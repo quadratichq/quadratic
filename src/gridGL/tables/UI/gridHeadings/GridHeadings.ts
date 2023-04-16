@@ -101,7 +101,7 @@ export class GridHeadings extends Container {
     return { selectedColumns, selectedRows };
   }
 
-  private drawHorizontal() {
+  private drawHorizontal(viewportBounds: Rectangle, tableBounds: Rectangle): void {
     if (!this.characterSize) return;
     const { viewport } = this.app;
     const { gridOffsets } = this.app.tables.sheet;
@@ -109,7 +109,6 @@ export class GridHeadings extends Container {
     const cellWidth = CELL_WIDTH / viewport.scale.x;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
-    const bounds = viewport.getVisibleBounds();
 
     // draw horizontal bar
     this.headingsGraphics.lineStyle(0);
@@ -145,8 +144,8 @@ export class GridHeadings extends Container {
     this.headingsGraphics.drawRect(xSelectedStart, viewport.top, xSelectedEnd - xSelectedStart, cellHeight);
     this.headingsGraphics.endFill();
 
-    const start = gridOffsets.getColumnIndex(bounds.left);
-    const end = gridOffsets.getColumnIndex(bounds.right);
+    const start = gridOffsets.getColumnIndex(viewportBounds.left);
+    const end = gridOffsets.getColumnIndex(viewportBounds.right);
     const leftOffset = start.position;
     const rightOffset = end.position;
 
@@ -158,16 +157,23 @@ export class GridHeadings extends Container {
       mod = this.findIntervalX(skipNumbers);
     }
 
-    const y = bounds.top + cellHeight / 2.25;
+    const y = viewportBounds.top + cellHeight / 2.25;
     let column = start.index;
     let currentWidth = 0;
     this.gridLinesColumns = [];
+
+    const table = this.app.tables.table;
+    if (!table) return;
+
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
       currentWidth = gridOffsets.getColumnWidth(column);
-      if (gridAlpha !== 0) {
+
+      const show = x >= 0 && x < table.actualWidth;
+
+      if (gridAlpha !== 0 && show) {
         this.headingsGraphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
-        this.headingsGraphics.moveTo(x, bounds.top);
-        this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
+        this.headingsGraphics.moveTo(x, viewportBounds.top);
+        this.headingsGraphics.lineTo(x, viewportBounds.top + cellHeight);
         this.gridLinesColumns.push({ column: column - 1, x, width: gridOffsets.getColumnWidth(column - 1) });
       }
 
@@ -184,7 +190,7 @@ export class GridHeadings extends Container {
           ));
 
       // only show the label if selected or mod calculation
-      if (selected || mod === 0 || column % mod === 0) {
+      if (show && (selected || mod === 0 || column % mod === 0)) {
         // hide labels that are too small for the width
         // if (currentWidth > charactersWidth || this.app.gridLines.alpha === 0) {
 
@@ -211,18 +217,17 @@ export class GridHeadings extends Container {
     }
   }
 
-  private drawVertical() {
+  private drawVertical(viewportBounds: Rectangle, tableBounds: Rectangle) {
     if (!this.characterSize) return;
     const { viewport } = this.app;
     const { gridOffsets } = this.app.tables.sheet;
     const showA1Notation = this.app.settings.showA1Notation;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
-    const bounds = viewport.getVisibleBounds();
 
     // determine width of row header
-    const start = gridOffsets.getRowIndex(bounds.top);
-    const end = gridOffsets.getRowIndex(bounds.bottom);
+    const start = gridOffsets.getRowIndex(viewportBounds.top);
+    const end = gridOffsets.getRowIndex(viewportBounds.bottom);
     const topOffset = start.position;
     const bottomOffset = end.position;
     const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString().length;
@@ -237,9 +242,9 @@ export class GridHeadings extends Container {
     // draw vertical bar
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    const top = bounds.top + cellHeight;
-    const bottom = bounds.height - cellHeight;
-    this.rowRect = new Rectangle(bounds.left, top, this.rowWidth, bottom);
+    const top = viewportBounds.top + cellHeight;
+    const bottom = viewportBounds.height - cellHeight;
+    this.rowRect = new Rectangle(viewportBounds.left, top, this.rowWidth, bottom);
     this.headingsGraphics.drawShape(this.rowRect);
     this.headingsGraphics.endFill();
 
@@ -274,16 +279,21 @@ export class GridHeadings extends Container {
       mod = this.findIntervalY(skipNumbers);
     }
 
-    const x = bounds.left + this.rowWidth / 2;
+    const x = viewportBounds.left + this.rowWidth / 2;
     let row = start.index;
     let currentHeight = 0;
     this.gridLinesRows = [];
+    const table = this.app.tables.table;
+    if (!table) return;
+
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
+      const show = y >= 0 && y < table.actualWidth;
+
       currentHeight = gridOffsets.getRowHeight(row);
-      if (gridAlpha !== 0) {
+      if (gridAlpha !== 0 || !show) {
         this.headingsGraphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
-        this.headingsGraphics.moveTo(bounds.left, y);
-        this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
+        this.headingsGraphics.moveTo(viewportBounds.left, y);
+        this.headingsGraphics.lineTo(viewportBounds.left + this.rowWidth, y);
         this.gridLinesRows.push({ row: row - 1, y, height: gridOffsets.getRowHeight(row - 1) });
       }
 
@@ -300,7 +310,7 @@ export class GridHeadings extends Container {
           ));
 
       // only show the label if selected or mod calculation
-      if (selected || mod === 0 || row % mod === 0) {
+      if (show && (selected || mod === 0 || row % mod === 0)) {
         // only show labels if height is large enough
         // if (currentHeight > halfCharacterHeight * 2 || this.app.gridLines.alpha === 0) {
 
@@ -375,11 +385,16 @@ export class GridHeadings extends Container {
       this.calculateCharacterSize();
     }
 
-    this.drawVertical();
-    this.drawHorizontal();
-    this.drawHeadingLines();
-    this.labels.update();
-    this.drawCorner();
+    const viewportBounds = this.app.viewport.getVisibleBounds();
+    const tableBounds = this.app.tables.getTableBounds();
+
+    if (tableBounds && intersects.rectangleRectangle(viewportBounds, tableBounds)) {
+      this.drawVertical(viewportBounds, tableBounds);
+      this.drawHorizontal(viewportBounds, tableBounds);
+      this.drawHeadingLines();
+      this.labels.update();
+      this.drawCorner();
+    }
 
     this.headingSize = { width: this.rowWidth * this.app.viewport.scale.x, height: CELL_HEIGHT };
   }

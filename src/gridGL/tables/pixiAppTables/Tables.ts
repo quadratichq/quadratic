@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 import { PixiAppTables } from './PixiAppTables';
 import { Table } from './Table';
 import { Sheet } from 'grid/sheet/Sheet';
@@ -69,6 +69,13 @@ export class Tables extends Container {
 
   update(): void {
     this.tables.forEach((table) => table.update());
+  }
+
+  getTableBounds(): Rectangle | undefined {
+    if (!this.table) return;
+    const { table } = this;
+    const { actualWidth, actualHeight } = table;
+    return new Rectangle(table.x, table.y, actualWidth, actualHeight);
   }
 
   get quadrants(): Quadrants {
