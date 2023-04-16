@@ -168,9 +168,7 @@ export class GridHeadings extends Container {
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
       currentWidth = gridOffsets.getColumnWidth(column);
 
-      const show = x >= 0 && x < table.actualWidth;
-
-      if (gridAlpha !== 0 && x <= table.actualWidth) {
+      if (gridAlpha !== 0 && x >= 0 && x <= table.actualWidth) {
         this.headingsGraphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(x, viewportBounds.top);
         this.headingsGraphics.lineTo(x, viewportBounds.top + cellHeight);
@@ -190,7 +188,7 @@ export class GridHeadings extends Container {
           ));
 
       // only show the label if selected or mod calculation
-      if (show && (selected || mod === 0 || column % mod === 0)) {
+      if (x >= 0 && x < table.actualWidth && (selected || mod === 0 || column % mod === 0)) {
         // hide labels that are too small for the width
         // if (currentWidth > charactersWidth || this.app.gridLines.alpha === 0) {
 
@@ -287,10 +285,8 @@ export class GridHeadings extends Container {
     if (!table) return;
 
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
-      const show = y >= 0 && y < table.actualWidth;
-
       currentHeight = gridOffsets.getRowHeight(row);
-      if (gridAlpha !== 0 && y <= table.actualWidth) {
+      if (gridAlpha !== 0 && y >= 0 && y <= table.actualWidth) {
         this.headingsGraphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(viewportBounds.left, y);
         this.headingsGraphics.lineTo(viewportBounds.left + this.rowWidth, y);
@@ -310,7 +306,7 @@ export class GridHeadings extends Container {
           ));
 
       // only show the label if selected or mod calculation
-      if (show && (selected || mod === 0 || row % mod === 0)) {
+      if (y >= 0 && y < table.actualWidth && (selected || mod === 0 || row % mod === 0)) {
         // only show labels if height is large enough
         // if (currentHeight > halfCharacterHeight * 2 || this.app.gridLines.alpha === 0) {
 
