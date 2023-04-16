@@ -5,14 +5,20 @@ import { debugTimeCheck, debugTimeReset } from 'gridGL/helpers/debugPerformance'
 import { GridLines } from '../UI/GridLines';
 import { Quadrants } from '../quadrants/Quadrants';
 import { Cells } from '../UI/cells/Cells';
+import { TableUI } from './TableUI';
 
 export class Table extends Container {
   app: PixiAppTables;
   sheet: Sheet;
 
+  tableUI: TableUI;
   gridLines: GridLines;
   cells: Cells;
   quadrants: Quadrants;
+
+  // todo: make this real
+  actualWidth = 1000;
+  actualHeight = 1000;
 
   constructor(app: PixiAppTables, sheet: Sheet) {
     super();
@@ -28,6 +34,12 @@ export class Table extends Container {
 
     // ensure the cell's background color is drawn first
     this.addChildAt(this.cells.cellsBackground, 0);
+
+    this.tableUI = this.addChild(new TableUI(this));
+  }
+
+  get selected(): boolean {
+    return this.app.tables.table === this;
   }
 
   showQuadrants(): void {
@@ -53,5 +65,7 @@ export class Table extends Container {
     // debugTimeCheck('[Update] cells');
     // app.cursor.update();
     // debugTimeCheck('[Update] cursor');
+
+    this.tableUI.update();
   }
 }

@@ -8,6 +8,16 @@ export class Bounds {
   maxX = -Infinity;
   maxY = -Infinity;
 
+  constructor(x?: number, y?: number, width?: number, height?: number) {
+    if (x !== undefined && y !== undefined && width !== undefined && height !== undefined) {
+      this.minX = x;
+      this.minY = y;
+      this.maxX = x + width;
+      this.maxY = y + height;
+      this.empty = false;
+    }
+  }
+
   clear() {
     this.empty = true;
     this.minX = Infinity;

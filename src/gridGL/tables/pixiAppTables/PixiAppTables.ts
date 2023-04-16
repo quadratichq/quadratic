@@ -110,6 +110,7 @@ export class PixiAppTables {
     // this.axesLines = this.viewportContents.addChild(new AxesLines(this));
 
     this.tables = this.viewportContents.addChild(new Tables(this));
+    this.tables.add(this.sheet_controller.sheet);
 
     this.cursor = this.viewportContents.addChild(new Cursor(this));
     this.headings = this.viewportContents.addChild(new GridHeadings(this));

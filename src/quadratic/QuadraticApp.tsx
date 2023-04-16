@@ -26,16 +26,19 @@ export const QuadraticApp = () => {
   const [settingsReset, setSettingsReset] = useState(false);
   const [sheetController] = useState<SheetController>(new SheetController());
   const localFiles = useLocalFiles(sheetController);
-  const [app] = useState(() =>
-    USE_NEW_LAYOUT ? new PixiAppTables(sheetController, localFiles.save) : new PixiApp(sheetController, localFiles.save)
-  );
+  const [app, setApp] = useState<PixiApp | PixiAppTables>();
   const { initialize } = localFiles;
 
   useEffect(() => {
     if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
       setLoading(false);
+      setApp(
+        USE_NEW_LAYOUT
+          ? new PixiAppTables(sheetController, localFiles.save)
+          : new PixiApp(sheetController, localFiles.save)
+      );
     }
-  }, [itemsLoaded]);
+  }, [itemsLoaded, localFiles.save, sheetController]);
 
   // reset presentation mode when app starts
   useEffect(() => {

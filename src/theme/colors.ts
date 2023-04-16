@@ -12,6 +12,7 @@ export const colors = {
   headerSelectedBackgroundColor: 0xe7f7ff,
   headerCornerBackgroundColor: 0xffffff,
   defaultBorderColor: 0,
+  tableSelected: { color: 0x000099, width: 1, alpha: 0.5 },
   lightGray: '#f6f8fa',
   mediumGray: '#cfd7de',
   darkGray: '#55606b',

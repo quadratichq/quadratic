@@ -19,6 +19,7 @@ export class GridSparse {
   private cellBounds = new Bounds();
   private formatBounds = new Bounds();
   private cellFormatBounds = new Bounds();
+  visibleBounds = new Bounds(10, 5);
   cells = new Map<string, CellAndFormat>();
 
   // tracks which quadrants need to render based on GridSparse data

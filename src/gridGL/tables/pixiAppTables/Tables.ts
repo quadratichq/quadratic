@@ -19,6 +19,12 @@ export class Tables extends Container {
     this.tables = [];
   }
 
+  add(sheet: Sheet): void {
+    const table = this.addChild(new Table(this.app, sheet));
+    this.tables.push(table);
+    this.table = table;
+  }
+
   get sheet(): Sheet {
     if (!this.table) throw new Error('Expected Tables.sheet to be defined');
     return this.table.sheet;
