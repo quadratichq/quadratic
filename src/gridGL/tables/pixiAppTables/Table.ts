@@ -61,6 +61,9 @@ export class Table extends Container {
     debugTimeReset();
     this.gridLines.update();
     debugTimeCheck('[Update] gridLines');
+    this.cells.update();
+    debugTimeCheck('[Update] cells');
+
     // app.cells.update();
     // debugTimeCheck('[Update] cells');
     // app.cursor.update();

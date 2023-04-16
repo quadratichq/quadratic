@@ -130,8 +130,8 @@ export class PixiAppTables {
   }
 
   private showCache(): void {
-    this.tables.showCache();
-    this.cacheIsVisible = true;
+    // this.tables.showCache();
+    // this.cacheIsVisible = true;
   }
 
   private showCells(): void {
@@ -148,7 +148,7 @@ export class PixiAppTables {
     this.tables.viewportChanged();
     // this.axesLines.dirty = true;
     this.headings.dirty = true;
-    // this.cursor.dirty = true;
+    this.cursor.dirty = true;
     if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
       this.showCache();
     } else {
@@ -183,7 +183,7 @@ export class PixiAppTables {
     // this.gridLines.dirty = true;
     // this.axesLines.dirty = true;
     this.headings.dirty = true;
-    // this.cursor.dirty = true;
+    this.cursor.dirty = true;
     // this.cells.dirty = true;
   };
 
@@ -233,7 +233,7 @@ export class PixiAppTables {
   rebuild = (quadrantsDirty: boolean): void => {
     this.viewport.dirty = true;
     this.headings.dirty = true;
-    // this.cursor.dirty = true;
+    this.cursor.dirty = true;
     this.tables.rebuild(true);
   };
 
@@ -249,7 +249,7 @@ export class PixiAppTables {
   }
 
   isDirty(): boolean {
-    return this.headings.dirty || /* this.cursor.dirty */ this.tables.isDirty();
+    return this.headings.dirty || this.cursor.dirty || this.tables.isDirty();
   }
 
   get quadrants(): Quadrants {

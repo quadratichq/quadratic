@@ -77,7 +77,7 @@ export class Update {
     app.tables.update();
     app.headings.update();
     // debugTimeCheck('[Update] headings');
-    // app.cursor.update();
+    app.cursor.update();
     // debugTimeCheck('[Update] cursor');
 
     if (rendererDirty) {
