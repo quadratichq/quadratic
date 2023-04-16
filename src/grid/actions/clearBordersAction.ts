@@ -69,6 +69,9 @@ export const clearBordersAction = (args: {
   }
   if (create_transaction ?? true) sheet_controller.end_transaction();
 
-  if (app) app.cells.dirty = true;
-  app?.quadrants.quadrantChanged({ range: { start, end } });
+  const table = app?.table;
+  if (table) {
+    table.cells.dirty = true;
+    table.quadrants.quadrantChanged({ range: { start, end } });
+  }
 };

@@ -34,5 +34,5 @@ export const clearFormattingAction = (args: {
   if (create_transaction ?? true) sheet_controller.end_transaction();
 
   // tell app what quadrants have changed
-  sheet_controller.app?.quadrants.quadrantChanged({ range: { start, end } });
+  sheet_controller.app?.table?.quadrants.quadrantChanged({ range: { start, end } });
 };

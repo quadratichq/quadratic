@@ -1,6 +1,5 @@
 import { Point } from 'pixi.js';
 import { IS_READONLY_MODE } from '../../../constants/app';
-import { Sheet } from '../../../grid/sheet/Sheet';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 import { PanMode } from '../../../atoms/gridInteractionStateAtom';
@@ -22,33 +21,34 @@ export class PointerDown {
     this.app = app;
   }
 
-  get sheet(): Sheet {
-    return this.app.sheet;
-  }
-
   /** get world coordinate for the bottom-right of the selected cell to drag the indicator */
-  private getEndCell(): Point {
-    let endCell: Point;
-    const interactionState = this.app.settings.interactionState;
-    const gridOffsets = this.app.sheet.gridOffsets;
-    if (interactionState.showMultiCursor) {
-      const multiCursor = interactionState.multiCursorPosition;
-      const cell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
-      endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
-    } else {
-      const cell = gridOffsets.getCell(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
-      endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
-    }
-    return endCell;
-  }
+  // private getEndCell(): Point {
+  //   let endCell: Point;
+  //   const interactionState = this.app.settings.interactionState;
+  //   const gridOffsets = this.app.sheet.gridOffsets;
+  //   if (interactionState.showMultiCursor) {
+  //     const multiCursor = interactionState.multiCursorPosition;
+  //     const cell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
+  //     endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
+  //   } else {
+  //     const cell = gridOffsets.getCell(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
+  //     endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
+  //   }
+  //   return endCell;
+  // }
 
   pointerDown(world: Point, event: PointerEvent): void {
     if (IS_READONLY_MODE) return;
     if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
-    const { settings, cursor } = this.app;
+    if (!this.app.tables.activate(world)) return;
+
+    const { table, settings, cursor } = this.app;
+    if (!table) return;
+
     const { interactionState, setInteractionState } = settings;
-    const { gridOffsets } = this.sheet;
+    const { sheet } = table;
+    const { gridOffsets } = sheet;
 
     // handle dragging from the corner (disabled for now)
     // if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
@@ -101,7 +101,7 @@ export class PointerDown {
         if (rightClick) {
           return;
         }
-        doubleClickCell({ cell: this.sheet.grid.getCell(column, row), app: this.app });
+        doubleClickCell({ cell: sheet.grid.getCell(column, row), app: this.app });
         this.active = false;
         event.preventDefault();
         return;
@@ -160,8 +160,10 @@ export class PointerDown {
   pointerMove(world: Point): void {
     if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
-    const { viewport, settings, cursor } = this.app;
-    const { gridOffsets } = this.sheet;
+    const { viewport, settings, cursor, table } = this.app;
+    if (!table) return;
+
+    const { sheet } = table;
 
     // for determining if double click
     if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
@@ -206,7 +208,7 @@ export class PointerDown {
     }
 
     // calculate mouse move position
-    const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
+    const { column, row } = sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
 
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {

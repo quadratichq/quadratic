@@ -19,15 +19,17 @@ export const SetHeadingSizeRunner = (sheet: Sheet, statement: Statement, app?: P
   // set heading size
   sheet.gridOffsets.update(heading_size);
 
+  const table = app?.table;
+
   // mark things as dirty
   // TODO: move to end_transaction
-  if (app) {
-    app.cells.dirty = true;
-    app.gridLines.dirty = true;
+  if (table) {
+    table.cells.dirty = true;
+    table.gridLines.dirty = true;
     app.cursor.dirty = true;
     app.headings.dirty = true;
-    if (heading_size.column !== undefined) app.quadrants.quadrantChanged({ column: heading_size.column });
-    else if (heading_size.row !== undefined) app.quadrants.quadrantChanged({ row: heading_size.row });
+    if (heading_size.column !== undefined) table.quadrants.quadrantChanged({ column: heading_size.column });
+    else if (heading_size.row !== undefined) table.quadrants.quadrantChanged({ row: heading_size.row });
   }
 
   // return reverse statement

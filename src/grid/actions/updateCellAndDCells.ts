@@ -238,5 +238,5 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   // Pass updatedCells to the app so it can update the Grid Quadrants which changed.
   // TODO: move this to sheetController so it happens automatically with every transaction?
   // Maybe sheetController.end_transaction() should return a list of cells which updated in the transaction?
-  app?.quadrants.quadrantChanged({ cells: updatedCells });
+  app?.table?.quadrants.quadrantChanged({ cells: updatedCells });
 };

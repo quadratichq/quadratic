@@ -56,5 +56,5 @@ export function debugShowChildren(parent: PIXI.Container, name?: string): void {
 
 export function debugShowCachedCounts(app: PixiApp): void {
   if (!debugShowCachedSpriteCounts) return;
-  app.cells.debugShowCachedCounts();
+  app.table?.cells.debugShowCachedCounts();
 }

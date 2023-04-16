@@ -56,14 +56,18 @@ export function moveViewport(options: { app: PixiApp; center?: Coordinate; topLe
   if (!center && !topLeft) return;
 
   if (center) {
-    const cell = app.sheet.gridOffsets.getCell(center.x, center.y);
-    app.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
+    const cell = app.table?.sheet.gridOffsets.getCell(center.x, center.y);
+    if (cell) {
+      app.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
+    }
   }
 
   if (topLeft) {
     const adjust = app.settings.showHeadings ? HEADING_SIZE : 0;
-    const cell = app.sheet.gridOffsets.getCell(topLeft.x + adjust, topLeft.y + adjust);
-    app.viewport.moveCorner(cell.x, cell.y);
+    const cell = app.table?.sheet.gridOffsets.getCell(topLeft.x + adjust, topLeft.y + adjust);
+    if (cell) {
+      app.viewport.moveCorner(cell.x, cell.y);
+    }
   }
 
   app.viewportChanged();

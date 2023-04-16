@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container, Point, Rectangle } from 'pixi.js';
 import { PixiApp } from './PixiApp';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { debugTimeCheck, debugTimeReset } from 'gridGL/helpers/debugPerformance';
@@ -6,6 +6,7 @@ import { GridLines } from '../UI/GridLines';
 import { Quadrants } from '../quadrants/Quadrants';
 import { Cells } from '../UI/cells/Cells';
 import { TableUI } from './TableUI';
+import { intersects } from 'gridGL/helpers/intersects';
 
 export class Table extends Container {
   app: PixiApp;
@@ -70,5 +71,9 @@ export class Table extends Container {
     // debugTimeCheck('[Update] cursor');
 
     this.tableUI.update();
+  }
+
+  containsPoint(point: Point): boolean {
+    return intersects.rectanglePoint(new Rectangle(this.x, this.y, this.actualWidth, this.actualHeight), point);
   }
 }

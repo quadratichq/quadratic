@@ -13,14 +13,15 @@ export const SetCellFormatRunner = (sheet: Sheet, statement: Statement, app?: Pi
   // Applies the SET_CELL_FORMAT statement to the sheet and returns the reverse statement
   const { position, value: new_value } = statement.data;
   const old_value = CopyCellFormat(sheet.grid.getFormat(position[0], position[1]));
+  const table = app?.table;
 
   // if we are clearing formatting
   if (new_value === undefined) {
     // Clear the cell format
     if (old_value !== undefined) sheet.grid.clearFormat([old_value]);
-    if (app) {
-      app.quadrants.quadrantChanged({ cells: [{ x: position[0], y: position[1] }] });
-      app.cells.dirty = true;
+    if (table) {
+      table.quadrants.quadrantChanged({ cells: [{ x: position[0], y: position[1] }] });
+      table.cells.dirty = true;
     }
     return {
       type: 'SET_CELL_FORMAT',
@@ -33,9 +34,9 @@ export const SetCellFormatRunner = (sheet: Sheet, statement: Statement, app?: Pi
     // if we are setting formatting we update the grid
     // and return a statement that applies the old value.
     sheet.grid.updateFormat([{ ...new_value, x: position[0], y: position[1] }]);
-    if (app) {
-      app.quadrants.quadrantChanged({ cells: [{ x: position[0], y: position[1] }] });
-      app.cells.dirty = true;
+    if (table) {
+      table.quadrants.quadrantChanged({ cells: [{ x: position[0], y: position[1] }] });
+      table.cells.dirty = true;
     }
     return {
       type: 'SET_CELL_FORMAT',

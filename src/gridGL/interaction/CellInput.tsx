@@ -118,7 +118,7 @@ export const CellInput = (props: CellInputProps) => {
           app,
         });
       }
-      app.quadrants.quadrantChanged({ cells: [cellLocation.current] });
+      app.table?.quadrants.quadrantChanged({ cells: [cellLocation.current] });
     }
 
     // Update Grid Interaction state, reset input value state

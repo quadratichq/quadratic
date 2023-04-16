@@ -103,8 +103,9 @@ export class GridHeadings extends Container {
 
   private drawHorizontal(viewportBounds: Rectangle, tableBounds: Rectangle): void {
     if (!this.characterSize) return;
-    const { viewport } = this.app;
-    const { gridOffsets } = this.app.tables.sheet;
+    const { viewport, table } = this.app;
+    if (!table) return;
+    const { gridOffsets } = table.sheet;
     const showA1Notation = true; //this.app.settings.showA1Notation;
     const cellWidth = CELL_WIDTH / viewport.scale.x;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
@@ -162,9 +163,6 @@ export class GridHeadings extends Container {
     let currentWidth = 0;
     this.gridLinesColumns = [];
 
-    const table = this.app.tables.table;
-    if (!table) return;
-
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
       currentWidth = gridOffsets.getColumnWidth(column);
 
@@ -217,8 +215,10 @@ export class GridHeadings extends Container {
 
   private drawVertical(viewportBounds: Rectangle, tableBounds: Rectangle) {
     if (!this.characterSize) return;
-    const { viewport } = this.app;
-    const { gridOffsets } = this.app.tables.sheet;
+    const { viewport, table } = this.app;
+    if (!table) return;
+
+    const { gridOffsets } = table.sheet;
     const showA1Notation = true; //this.app.settings.showA1Notation;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
@@ -281,8 +281,6 @@ export class GridHeadings extends Container {
     let row = start.index;
     let currentHeight = 0;
     this.gridLinesRows = [];
-    const table = this.app.tables.table;
-    if (!table) return;
 
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = gridOffsets.getRowHeight(row);
@@ -397,11 +395,13 @@ export class GridHeadings extends Container {
 
   // whether the point is in the heading
   intersectsHeadings(world: Point): { column?: number; row?: number; corner?: true } | undefined {
+    const { table } = this.app;
+    if (!table) return;
     if (!this.columnRect || !this.rowRect || !this.cornerRect) return;
     if (intersects.rectanglePoint(this.cornerRect, world)) {
       return { corner: true };
     }
-    const { gridOffsets } = this.app.tables.sheet;
+    const { gridOffsets } = table.sheet;
     if (intersects.rectanglePoint(this.columnRect, world)) {
       return { column: gridOffsets.getColumnIndex(world.x).index };
     }
@@ -414,9 +414,11 @@ export class GridHeadings extends Container {
   intersectsHeadingGridLine(
     world: Point
   ): { start: number; column?: number; row?: number; width?: number; height?: number } | undefined {
-    const tolerance = GRID_HEADING_RESIZE_TOLERANCE / this.app.viewport.scale.x;
+    const { viewport, table } = this.app;
+    if (!table) return;
+    const tolerance = GRID_HEADING_RESIZE_TOLERANCE / viewport.scale.x;
     if (!this.columnRect || !this.rowRect) return;
-    const { gridOffsets } = this.app.tables.sheet;
+    const { gridOffsets } = table.sheet;
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {

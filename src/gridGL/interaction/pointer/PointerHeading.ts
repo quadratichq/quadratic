@@ -27,8 +27,11 @@ export class PointerHeading {
   handleEscape(): boolean {
     if (this.active) {
       this.active = false;
-      this.sheet.gridOffsets.headingResizing = undefined;
-      this.app.cells.dirty = true;
+      const table = this.app.table;
+      if (table) {
+        table.sheet.gridOffsets.headingResizing = undefined;
+        table.cells.dirty = true;
+      }
 
       // todo...
       // this.app.gridLines.dirty = true;
@@ -40,15 +43,12 @@ export class PointerHeading {
     return false;
   }
 
-  get sheet() {
-    return this.app.sheet;
-  }
-
   selectAll() {
-    const { viewport, settings, cursor } = this.app;
+    const { table, viewport, settings, cursor } = this.app;
+    if (!table) return;
     if (!settings.setInteractionState) return;
     selectAllCells({
-      sheet: this.sheet,
+      sheet: table.sheet,
       setInteractionState: settings.setInteractionState,
       interactionState: settings.interactionState,
       viewport,
@@ -57,8 +57,9 @@ export class PointerHeading {
   }
 
   pointerDown(world: Point, event: InteractivePointerEvent): boolean {
-    const { headings, viewport, settings, cursor } = this.app;
-    const { gridOffsets } = this.sheet;
+    const { table, headings, viewport, settings, cursor } = this.app;
+    if (!table) return false;
+
     if (!settings.setInteractionState) {
       throw new Error('Expected pixiAppSettings.setInteractionState to be defined');
     }
@@ -72,7 +73,7 @@ export class PointerHeading {
           originalSize: headingResize.width ?? headingResize.height ?? 0,
           viewportStart: headingResize.row === undefined ? viewport.x : viewport.y,
         };
-        gridOffsets.headingResizing = {
+        table.sheet.gridOffsets.headingResizing = {
           x: world.x,
           y: world.y,
           start: headingResize.start,
@@ -86,7 +87,7 @@ export class PointerHeading {
         if (intersects.corner) {
           if (this.downTimeout) {
             this.downTimeout = undefined;
-            zoomToFit(this.sheet, viewport);
+            zoomToFit(table.sheet, viewport);
           } else {
             this.selectAll();
             this.downTimeout = window.setTimeout(() => {
@@ -107,7 +108,7 @@ export class PointerHeading {
               viewport,
               start: Math.min(x1, x2),
               end: Math.max(x1, x2),
-              sheet: this.app.sheet,
+              sheet: table.sheet,
             });
             cursor.dirty = true;
           } else if (intersects.row !== undefined) {
@@ -119,13 +120,13 @@ export class PointerHeading {
               viewport,
               start: Math.min(y1, y2),
               end: Math.max(y1, y2),
-              sheet: this.app.sheet,
+              sheet: table.sheet,
             });
             cursor.dirty = true;
           }
         } else {
           selectAllCells({
-            sheet: this.sheet,
+            sheet: table.sheet,
             setInteractionState: settings.setInteractionState,
             interactionState: settings.interactionState,
             viewport,
@@ -141,8 +142,9 @@ export class PointerHeading {
   }
 
   pointerMove(world: Point): boolean {
-    const { canvas, headings, cells, gridLines, cursor, settings } = this.app;
-    const { gridOffsets } = this.sheet;
+    const { canvas, table, headings, cursor, settings } = this.app;
+    if (!table) return false;
+
     // Only style the heading resize cursor if panning mode is disabled
     if (settings.interactionState.panMode === PanMode.Disabled) {
       const headingResize = headings.intersectsHeadingGridLine(world);
@@ -154,8 +156,8 @@ export class PointerHeading {
     }
     if (!this.active) {
       return false;
-    } else if (gridOffsets.headingResizing) {
-      const { headingResizing } = gridOffsets;
+    } else if (table.sheet.gridOffsets.headingResizing) {
+      const { headingResizing } = table.sheet.gridOffsets;
       if (headingResizing.column !== undefined) {
         let size: number;
         if (headingResizing.column >= 0) {
@@ -171,11 +173,11 @@ export class PointerHeading {
 
         if (size !== headingResizing.width) {
           headingResizing.width = size;
-          cells.dirty = true;
-          gridLines.dirty = true;
+          table.cells.dirty = true;
+          table.gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
-          this.app.quadrants.quadrantChanged({ column: headingResizing.column });
+          table.quadrants.quadrantChanged({ column: headingResizing.column });
         }
       } else if (headingResizing.row !== undefined) {
         let size: number;
@@ -192,11 +194,11 @@ export class PointerHeading {
 
         if (size !== headingResizing.height) {
           headingResizing.height = size;
-          cells.dirty = true;
-          gridLines.dirty = true;
+          table.cells.dirty = true;
+          table.gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
-          this.app.quadrants.quadrantChanged({ row: headingResizing.row });
+          table.quadrants.quadrantChanged({ row: headingResizing.row });
         }
       }
     }
@@ -205,9 +207,12 @@ export class PointerHeading {
 
   pointerUp(): boolean {
     if (this.active) {
-      const { gridOffsets } = this.sheet;
+      const { table } = this.app;
+      if (!table) return false;
+
       this.active = false;
-      const { headingResizing } = gridOffsets;
+      const { sheet } = table;
+      const { headingResizing } = sheet.gridOffsets;
       if (headingResizing) {
         let updateHeading: HeadingSize | undefined;
         if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
@@ -231,7 +236,7 @@ export class PointerHeading {
             },
           ]);
         }
-        gridOffsets.headingResizing = undefined;
+        sheet.gridOffsets.headingResizing = undefined;
         this.app.viewport.plugins.get('decelerate')?.reset();
       }
       return true;

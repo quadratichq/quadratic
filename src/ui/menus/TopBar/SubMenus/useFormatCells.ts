@@ -73,9 +73,10 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     });
     sheet_controller.end_transaction();
 
-    if (app) {
-      app.quadrants.quadrantChanged({ range: { start, end } });
-      app.cells.dirty = true;
+    const { table } = app;
+    if (table) {
+      table.quadrants.quadrantChanged({ range: { start, end } });
+      table.cells.dirty = true;
     }
 
     // triggers an even to indicate selection's format change (see useGetSelection.ts)

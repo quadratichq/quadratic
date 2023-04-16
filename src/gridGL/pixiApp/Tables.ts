@@ -1,11 +1,8 @@
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Point, Rectangle } from 'pixi.js';
 import { PixiApp } from './PixiApp';
 import { Table } from './Table';
 import { Sheet } from 'grid/sheet/Sheet';
 import { debugShowCacheFlag } from 'debugFlags';
-import { Quadrants } from '../quadrants/Quadrants';
-import { Cells } from '../UI/cells/Cells';
-import { GridLines } from '../UI/GridLines';
 
 export class Tables extends Container {
   private quadrantsShowing = false;
@@ -19,15 +16,24 @@ export class Tables extends Container {
     this.tables = [];
   }
 
+  activate(world: Point): boolean {
+    if (this.table?.containsPoint(world)) {
+      return true;
+    }
+    for (const table of this.tables) {
+      if (table !== this.table && table.containsPoint(world)) {
+        this.table = table;
+        return true;
+      }
+    }
+    this.table = undefined;
+    return false;
+  }
+
   add(sheet: Sheet): void {
     const table = this.addChild(new Table(this.app, sheet));
     this.tables.push(table);
     this.table = table;
-  }
-
-  get sheet(): Sheet {
-    if (!this.table) throw new Error('Expected Tables.sheet to be defined');
-    return this.table.sheet;
   }
 
   isDirty(): boolean {
@@ -76,20 +82,5 @@ export class Tables extends Container {
     const { table } = this;
     const { actualWidth, actualHeight } = table;
     return new Rectangle(table.x, table.y, actualWidth, actualHeight);
-  }
-
-  get quadrants(): Quadrants {
-    if (!this.table) throw new Error('Expected Tables.quadrants to be defined');
-    return this.table.quadrants;
-  }
-
-  get cells(): Cells {
-    if (!this.table) throw new Error('Expected Tables.cells to be defined');
-    return this.table.cells;
-  }
-
-  get gridLines(): GridLines {
-    if (!this.table) throw new Error('Expected Tables.gridLines to be defined');
-    return this.table.gridLines;
   }
 }

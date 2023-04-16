@@ -1,13 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import './pixiApp.css';
 
 import { Renderer, Container, Graphics } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { PixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
-import { zoomInOut, zoomToFit, zoomToSelection } from 'gridGL/helpers/zoom';
+import { zoomInOut } from 'gridGL/helpers/zoom';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
-import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from 'debugFlags';
+import { debugAlwaysShowCache, debugNeverShowCache } from 'debugFlags';
 import { SheetController } from 'grid/controller/sheetController';
 import { HEADING_SIZE } from 'constants/gridConstants';
 import { editorInteractionStateDefault } from 'atoms/editorInteractionStateAtom';
@@ -16,12 +15,9 @@ import { IS_READONLY_MODE } from 'constants/app';
 import { Wheel } from 'gridGL/pixiOverride/Wheel';
 import { Tables } from './Tables';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
-import { Quadrants } from '../quadrants/Quadrants';
-import { Cells } from '../UI/cells/Cells';
 import { Pointer } from 'gridGL/interaction/pointer/Pointer';
-import { Sheet } from 'grid/sheet/Sheet';
 import { Cursor } from '../UI/Cursor';
-import { GridLines } from '../UI/GridLines';
+import { Table } from './Table';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -252,19 +248,7 @@ export class PixiApp {
     return this.headings.dirty || this.cursor.dirty || this.tables.isDirty();
   }
 
-  get quadrants(): Quadrants {
-    return this.tables.quadrants;
-  }
-
-  get cells(): Cells {
-    return this.tables.cells;
-  }
-
-  get sheet(): Sheet {
-    return this.tables.sheet;
-  }
-
-  get gridLines(): GridLines {
-    return this.tables.gridLines;
+  get table(): Table | undefined {
+    return this.tables.table;
   }
 }
