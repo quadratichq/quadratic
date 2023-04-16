@@ -63,7 +63,7 @@ export class Update {
 
     this.updateViewport();
 
-    const rendererDirty = app.isDirty();
+    // const rendererDirty = app.isDirty();
 
     // if (rendererDirty && debugShowWhyRendering) {
     //   console.log(
@@ -80,7 +80,7 @@ export class Update {
     app.cursor.update();
     // debugTimeCheck('[Update] cursor');
 
-    if (rendererDirty) {
+    if (app.isDirty()) {
       app.viewport.dirty = false;
 
       // // forces the temporary replacement cells to render instead of the cache or cells (used for debugging only)

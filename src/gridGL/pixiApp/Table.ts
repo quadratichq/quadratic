@@ -21,6 +21,8 @@ export class Table extends Container {
   actualWidth = 1000;
   actualHeight = 1000;
 
+  dirty = false;
+
   constructor(app: PixiApp, sheet: Sheet) {
     super();
     this.app = app;
@@ -71,6 +73,10 @@ export class Table extends Container {
     // debugTimeCheck('[Update] cursor');
 
     this.tableUI.update();
+  }
+
+  setDirty(): void {
+    this.tableUI.dirty = true;
   }
 
   containsPoint(point: Point): boolean {

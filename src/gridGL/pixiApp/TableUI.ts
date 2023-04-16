@@ -12,8 +12,10 @@ export class TableUI extends Container {
   private titleWidth = 0;
   private titleHeight = 0;
   private selection: Graphics;
-  private dirty = true;
   private lastScale = 1;
+  private lastSelected = false;
+
+  dirty = true;
 
   constructor(table: Table) {
     super();
@@ -34,6 +36,7 @@ export class TableUI extends Container {
     const scale = table.app.viewport.scale.x;
     this.title.tint = table.selected ? colors.tableSelected.color : 0;
     if (!table.selected) return;
+
     const { actualWidth, actualHeight } = table;
     const { width, color, alpha } = colors.tableSelected;
     this.selection.lineStyle({ width: width / scale, color, alpha }).drawRect(0, 0, actualWidth, actualHeight);
@@ -58,6 +61,13 @@ export class TableUI extends Container {
       this.updateSelection();
     }
 
+    const scale = viewport.scale.x;
+    if (this.lastScale !== scale || table.selected !== this.lastSelected) {
+      this.lastSelected = table.selected;
+      this.updateSelection();
+      this.table.app.setViewportDirty();
+    }
+
     if (viewport.dirty) {
       const viewportBounds = viewport.getVisibleBounds();
       if (
@@ -78,13 +88,12 @@ export class TableUI extends Container {
       } else {
         this.title.visible = false;
       }
-      const scale = viewport.scale.x;
+
       if (this.lastScale !== scale) {
         this.lastScale = scale;
         this.title.scale.set(1 / scale);
         this.titleWidth = this.title.width;
         this.titleHeight = this.title.height;
-        this.updateSelection();
       }
     }
   }

@@ -245,7 +245,7 @@ export class PixiApp {
   }
 
   isDirty(): boolean {
-    return this.headings.dirty || this.cursor.dirty || this.tables.isDirty();
+    return this.viewport.dirty || this.headings.dirty || this.cursor.dirty || this.tables.isDirty();
   }
 
   get table(): Table | undefined {

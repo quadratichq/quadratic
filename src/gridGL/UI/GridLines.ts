@@ -61,7 +61,7 @@ export class GridLines extends Graphics {
     // const offset = viewportBounds.left - position;
     let size = 0;
     const start = tableBounds.left;
-    const end = tableBounds.right + size - 1;
+    const end = tableBounds.right + size;
     for (let x = start; x <= end; x += size) {
       // don't draw grid lines when hidden
       if (size !== 0) {

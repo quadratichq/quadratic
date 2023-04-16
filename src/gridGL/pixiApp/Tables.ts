@@ -23,8 +23,12 @@ export class Tables extends Container {
     for (const table of this.tables) {
       if (table !== this.table && table.containsPoint(world)) {
         this.table = table;
+        this.table.setDirty();
         return true;
       }
+    }
+    if (this.table) {
+      this.table.setDirty();
     }
     this.table = undefined;
     return false;
