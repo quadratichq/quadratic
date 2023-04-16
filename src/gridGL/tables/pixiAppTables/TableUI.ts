@@ -32,6 +32,7 @@ export class TableUI extends Container {
     this.selection.clear();
     const { table } = this;
     const scale = table.app.viewport.scale.x;
+    this.title.tint = table.selected ? colors.tableSelected.color : 0;
     if (!table.selected) return;
     const { actualWidth, actualHeight } = table;
     const { width, color, alpha } = colors.tableSelected;
