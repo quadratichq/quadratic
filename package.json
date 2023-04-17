@@ -9,6 +9,7 @@
   "repository": "https://github.com/quadratichq/quadratic.git",
   "private": true,
   "dependencies": {
+    "@amplitude/analytics-browser": "^1.9.4",
     "@auth0/auth0-react": "^1.11.0",
     "@emotion/react": "^11.7.0",
     "@emotion/styled": "^11.6.0",
@@ -37,6 +38,7 @@
     "fuzzysort": "^2.0.4",
     "localforage": "^1.10.0",
     "lodash.debounce": "^4.0.8",
+    "mixpanel-browser": "^2.46.0",
     "monaco-editor": "^0.31.1",
     "numerable": "^0.3.15",
     "papaparse": "^5.3.2",
@@ -106,6 +108,7 @@
   "devDependencies": {
     "@playwright/test": "^1.22.2",
     "@types/lodash.debounce": "^4.0.7",
+    "@types/mixpanel-browser": "^2.38.1",
     "@types/papaparse": "^5.3.7",
     "concurrently": "^6.3.0",
     "electron": "^23.0.0",
