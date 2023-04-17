@@ -1,4 +1,5 @@
 import { Auth0ContextInterface } from '@auth0/auth0-react';
+import { GridFile } from '../schemas';
 
 class APIClientSingleton {
   // Allow only one instance of the class to be created
@@ -32,6 +33,32 @@ class APIClientSingleton {
       throw new Error('REACT_APP_QUADRATIC_API_URL not set');
     }
     return process.env.REACT_APP_QUADRATIC_API_URL;
+  }
+
+  async backupFile(id: string, fileContents: GridFile) {
+    try {
+      const base_url = this.getAPIURL();
+
+      const request_body = {
+        uuid: id,
+        fileContents: JSON.stringify(fileContents),
+      };
+
+      const response = await fetch(`${base_url}/v0/files/backup`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${await this.getAuth()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request_body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error(error);
+    }
   }
 }
 

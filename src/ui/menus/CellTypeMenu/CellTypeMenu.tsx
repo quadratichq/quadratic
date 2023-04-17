@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   Divider,
   List,
@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { CellTypes } from '../../../grid/sheet/gridTypes';
+import { CellType } from '../../../schemas';
 import '../../styles/floating-dialog.css';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { Python, Formula, JavaScript, Sql, AI } from '../../icons';
@@ -21,10 +21,11 @@ import { colors } from '../../../theme/colors';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { useAuth0 } from '@auth0/auth0-react';
+import mixpanel from 'mixpanel-browser';
 
 export interface CellTypeOption {
   name: string;
-  mode: CellTypes;
+  mode: CellType;
   icon: any;
   description: string | JSX.Element;
   disabled?: boolean;
@@ -91,6 +92,10 @@ export default function CellTypeMenu() {
 
   const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value.toLowerCase()));
 
+  useEffect(() => {
+    mixpanel.track('[CellTypeMenu].opened');
+  }, []);
+
   const close = useCallback(() => {
     setEditorInteractionState({
       ...editorInteractionState,
@@ -100,7 +105,7 @@ export default function CellTypeMenu() {
   }, [editorInteractionState, setEditorInteractionState]);
 
   const openEditor = useCallback(
-    (mode: CellTypes) => {
+    (mode: CellType) => {
       setEditorInteractionState({
         ...editorInteractionState,
         ...{

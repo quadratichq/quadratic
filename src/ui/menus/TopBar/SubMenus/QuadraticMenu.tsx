@@ -15,6 +15,7 @@ import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
+import { isMac } from '../../../../utils/isMac';
 import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
@@ -61,7 +62,7 @@ export const QuadraticMenu = (props: Props) => {
             setEditorInteractionState((oldState) => ({ ...oldState, showFileMenu: true }));
           }}
         >
-          <MenuLineItem primary="Back to files" />
+          <MenuLineItem primary="Back to files" secondary={KeyboardSymbols.Command + 'O'} />
         </MenuItem>
         <MenuDivider />
         <SubMenu label="File">
@@ -100,7 +101,7 @@ export const QuadraticMenu = (props: Props) => {
           >
             <MenuLineItem
               primary="Redo"
-              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z'}
+              secondary={isMac ? KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z' : KeyboardSymbols.Command + 'Y'}
               Icon={Redo}
             ></MenuLineItem>
           </MenuItem>

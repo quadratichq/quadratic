@@ -6,6 +6,7 @@ import { ContentCopy, ContentPaste, ContentCut, East } from '@mui/icons-material
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { Undo, Redo } from '@mui/icons-material';
+import { isMac } from '../../../../utils/isMac';
 import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
 import { CopyAsPNG } from '../../../icons';
 
@@ -36,8 +37,8 @@ const ListItems = [
           action={() => {
             props.sheetController.redo();
           }}
-          shortcut="Z"
-          shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
+          shortcut={isMac ? 'Z' : 'Y'}
+          shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
         />
       );
     },

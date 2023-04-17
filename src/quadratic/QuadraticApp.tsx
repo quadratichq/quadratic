@@ -19,7 +19,7 @@ export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
   const didMount = useRef(false);
-  const { setPresentationMode } = useGridSettings();
+  const { presentationMode, setPresentationMode } = useGridSettings();
   const [settingsReset, setSettingsReset] = useState(false);
   const [sheetController] = useState<SheetController>(new SheetController());
   const localFiles = useLocalFiles(sheetController);
@@ -35,10 +35,10 @@ export const QuadraticApp = () => {
   // reset presentation mode when app starts
   useEffect(() => {
     if (!settingsReset) {
-      setPresentationMode(false);
+      if (presentationMode) setPresentationMode(false);
       setSettingsReset(true);
     }
-  }, [setPresentationMode, settingsReset, setSettingsReset]);
+  }, [presentationMode, setPresentationMode, settingsReset, setSettingsReset]);
 
   // Loading Effect
   useEffect(() => {

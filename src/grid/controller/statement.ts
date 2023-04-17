@@ -1,4 +1,4 @@
-import { Border, Cell, CellFormat } from '../sheet/gridTypes';
+import { Border, Cell, CellFormat } from '../../schemas';
 import { HeadingSize } from '../sheet/useHeadings';
 
 // Everything that modifies Sheet must go through a Statement
