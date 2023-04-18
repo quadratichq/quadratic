@@ -1,3 +1,5 @@
+import { green, red } from '@mui/material/colors';
+
 export const colors = {
   gridLines: 0xcb8999,
   cellFontColor: 0x000000,
@@ -11,9 +13,9 @@ export const colors = {
   headerBackgroundColor: 0xffffff,
   headerSelectedBackgroundColor: 0xe7f7ff,
   headerCornerBackgroundColor: 0xffffff,
-  boxCellsDeleteColor: 0xff0000,
-  boxCellsColor: 0x0000ff,
-  boxCellsAlpha: 0.5,
+  boxCellsDeleteColor: Number(`0x${red['700'].replace('#', '')}`),
+  boxCellsColor: Number(`0x${green['700'].replace('#', '')}`),
+  boxCellsAlpha: 1,
   defaultBorderColor: 0,
   lightGray: '#f6f8fa',
   mediumGray: '#cfd7de',
