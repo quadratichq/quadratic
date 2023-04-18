@@ -60,9 +60,17 @@ const loadMixPanelAnalytics = async (user: User | undefined) => {
 
   mixpanel.register({
     email: user?.email,
+    distinct_id: user?.sub,
   });
 
   mixpanel.identify(user?.sub);
+
+  mixpanel.people.set_once({
+    $distinct_id: user?.sub,
+    $email: user?.email,
+    $name: user?.name,
+    $avatar: user?.picture,
+  });
 
   console.log('[Analytics] Mixpanel activated');
 };
