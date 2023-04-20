@@ -170,7 +170,19 @@ export class PointerAutoComplete {
         }
 
         if (boxCells && this.state) {
-          this.app.boxCells.populate(boxCells, this.state.includes('shrink'));
+          // Determine whether to show the drag as being a delete action
+          let isDelete = false;
+          if (this.state.includes('shrink') && this.selection && this.endCell) {
+            // Vertical delete
+            if (this.selection.height > 0 && this.endCell.y < this.selection.y + this.selection.height) {
+              isDelete = true;
+            }
+            // Horizontal delete
+            if (this.selection.width > 0 && this.endCell.x < this.selection.x + this.selection.width) {
+              isDelete = true;
+            }
+          }
+          this.app.boxCells.populate(boxCells, isDelete);
         }
         return true;
       }
