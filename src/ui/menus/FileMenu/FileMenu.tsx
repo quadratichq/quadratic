@@ -140,7 +140,7 @@ export function FileMenu(props: FileMenuProps) {
                               addGlobalSnackbar('Failed to load file.');
                               Sentry.captureEvent({
                                 message: 'User file became corrupted',
-                                level: Sentry.Severity.Info,
+                                level: Sentry.Severity.Critical,
                                 // TODO send along the corrupted file
                                 // extra: { file: ... }
                               });
