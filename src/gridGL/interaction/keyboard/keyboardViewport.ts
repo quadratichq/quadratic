@@ -5,7 +5,7 @@ import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../he
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { Pointer } from '../pointer/Pointer';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { LocalFiles } from '../../../storage/useLocalFiles';
+import { LocalFiles } from '../../../ui/contexts/LocalFiles';
 
 export function keyboardViewport(options: {
   event: KeyboardEvent;

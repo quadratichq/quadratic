@@ -1,5 +1,5 @@
 import '@szhsin/react-menu/dist/index.css';
-import { useContext, useEffect } from 'react';
+import { useEffect } from 'react';
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
@@ -19,7 +19,7 @@ import { isMac } from '../../../../utils/isMac';
 import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
-import { LocalFilesContext } from '../../../QuadraticUIContext';
+import { useLocalFiles } from '../../../contexts/LocalFiles';
 
 interface Props {
   sheetController: SheetController;
@@ -33,7 +33,7 @@ export const QuadraticMenu = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
 
-  const { createNewFile, downloadCurrentFile } = useContext(LocalFilesContext);
+  const { createNewFile, downloadCurrentFile } = useLocalFiles();
 
   const { isAuthenticated, user, logout } = useAuth0();
 

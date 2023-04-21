@@ -26,8 +26,9 @@ import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting'
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
 import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { colors } from '../../../theme/colors';
-import { UseSnackBar } from '../../components/SnackBar';
 import mixpanel from 'mixpanel-browser';
+import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
+import { PNG_MESSAGE } from '../../../constants/app';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -36,7 +37,6 @@ interface Props {
   app: PixiApp;
   sheetController: SheetController;
   showContextMenu: boolean;
-  snackBar: UseSnackBar;
 }
 
 export const FloatingContextMenu = (props: Props) => {
@@ -47,9 +47,8 @@ export const FloatingContextMenu = (props: Props) => {
     container,
     sheetController,
     showContextMenu,
-    snackBar,
   } = props;
-
+  const { addGlobalSnackbar } = useGlobalSnackbar();
   const moreMenu = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
@@ -185,8 +184,8 @@ export const FloatingContextMenu = (props: Props) => {
   const copyAsPNG = useCallback(async () => {
     await copySelectionToPNG(app);
     moreMenu.toggleMenu();
-    snackBar.triggerSnackbar('Copied selection as PNG to clipboard');
-  }, [app, moreMenu, snackBar]);
+    addGlobalSnackbar(PNG_MESSAGE);
+  }, [app, moreMenu, addGlobalSnackbar]);
 
   // If we don't have a viewport, we can't continue.
   if (!viewport || !container) return null;

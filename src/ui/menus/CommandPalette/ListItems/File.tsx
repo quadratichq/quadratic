@@ -5,21 +5,20 @@ import { SaveFileOutlined } from '../../../icons';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { useContext } from 'react';
-import { LocalFilesContext } from '../../../QuadraticUIContext';
+import { useLocalFiles } from '../../../contexts/LocalFiles';
 
 const ListItems = [
   {
     label: 'File: New',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { createNewFile } = useContext(LocalFilesContext);
+      const { createNewFile } = useLocalFiles();
       return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={createNewFile} />;
     },
   },
   {
     label: 'File: Download local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { downloadCurrentFile } = useContext(LocalFilesContext);
+      const { downloadCurrentFile } = useLocalFiles();
       return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => downloadCurrentFile()} />;
     },
   },

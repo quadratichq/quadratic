@@ -1,4 +1,5 @@
-import { useContext, useEffect } from 'react';
+import { useEffect } from 'react';
+import * as Sentry from '@sentry/browser';
 import {
   AddCircleOutline,
   Close,
@@ -37,7 +38,8 @@ import {
 } from './FileMenuStyles';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
-import { LocalFilesContext } from '../../QuadraticUIContext';
+import { useLocalFiles } from '../../contexts/LocalFiles';
+import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 
 interface FileMenuProps {
   app: PixiApp;
@@ -56,7 +58,8 @@ export function FileMenu(props: FileMenuProps) {
     fileList,
     loadFileFromMemory,
     createNewFile,
-  } = useContext(LocalFilesContext);
+  } = useLocalFiles();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const onClose: onCloseFn = ({ reset } = { reset: false }) => {
     if (reset) {
@@ -130,8 +133,19 @@ export function FileMenu(props: FileMenuProps) {
                     <div key={i}>
                       <ListItem
                         onClick={() => {
-                          loadFileFromMemory(id);
-                          onClose({ reset: true });
+                          loadFileFromMemory(id).then((loaded) => {
+                            if (loaded) {
+                              onClose({ reset: true });
+                            } else {
+                              addGlobalSnackbar('Failed to load file.');
+                              Sentry.captureEvent({
+                                message: 'User file became corrupted',
+                                level: Sentry.Severity.Info,
+                                // TODO send along the corrupted file
+                                // extra: { file: ... }
+                              });
+                            }
+                          });
                         }}
                         secondaryAction={
                           <div style={styles.iconBtns}>
