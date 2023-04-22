@@ -85,11 +85,17 @@ export const expandDown = async (options: {
       series.push(rectangle.get(x, y)?.cell);
     }
     const results = findAutoComplete({ series, spaces: boxCells.bottom - selection.bottom - 1, negative: false });
-    const updatedCells: Cell[] = results.map((value, index) => ({
-      ...(value as Cell),
-      x,
-      y: selection.bottom + index + 1,
-    }));
+    const updatedCells: Cell[] = results.flatMap((value, index) => {
+      if (value === undefined) {
+        return [];
+      } else {
+        return {
+          ...(value as Cell),
+          x,
+          y: selection.bottom + index + 1,
+        };
+      }
+    });
     cells.push(...updatedCells);
   }
   await updateCellAndDCells({
@@ -165,11 +171,17 @@ export const expandRight = async (options: {
       series.push(rectangle.get(x, y)?.cell);
     }
     const results = findAutoComplete({ series, spaces: boxCells.right - selection.right - 1, negative: false });
-    const updatedCells: Cell[] = results.map((value, index) => ({
-      ...(value as Cell),
-      x: selection.right + index + 1,
-      y,
-    }));
+    const updatedCells: Cell[] = results.flatMap((value, index) => {
+      if (value === undefined) {
+        return [];
+      } else {
+        return {
+          ...(value as Cell),
+          x: selection.right + index + 1,
+          y,
+        };
+      }
+    });
     cells.push(...updatedCells);
   }
   await updateCellAndDCells({
