@@ -2,7 +2,11 @@ name: Rust Tests
 
 # This workflow run tests and build for each push
 
-on: push
+on:
+  push:
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test_rust:
