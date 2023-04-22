@@ -9,8 +9,8 @@ export function keyboardUndoRedo(
 ): boolean {
   // Redo
   if (
-    ((event.metaKey || event.ctrlKey) && event.shiftKey && event.code === 'KeyZ') ||
-    ((event.metaKey || event.ctrlKey) && event.code === 'KeyY' && !isMac)
+    ((event.metaKey || event.ctrlKey) && event.key === 'Z') ||
+    ((event.metaKey || event.ctrlKey) && event.key === 'y' && !isMac)
   ) {
     sheetController.redo();
     event.preventDefault();
@@ -18,7 +18,7 @@ export function keyboardUndoRedo(
   }
 
   // Undo
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyZ') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
     sheetController.undo();
     event.preventDefault();
     return true;
