@@ -142,7 +142,6 @@ export class PointerAutoComplete {
           if (selection.width > 1 && (selection.height === 0 || distanceFromLeft < distanceFromTop)) {
             this.state = 'shrinkHorizontal';
             boxCells = new Rectangle(selection.x, selection.y, column - selection.left + 1, selection.height + 1);
-            console.log('shrink horizontal');
           } else {
             this.state = 'shrinkVertical';
             boxCells = new Rectangle(selection.x, selection.y, selection.width + 1, row - selection.top + 1);
@@ -194,10 +193,10 @@ export class PointerAutoComplete {
   private async apply(): Promise<void> {
     if (!this.selection) return;
     if (this.state === 'shrinkHorizontal') {
-      if (!this.endCell || this.selection.left === this.endCell.x) return;
+      if (!this.endCell) return;
       shrinkHorizontal({ app: this.app, selection: this.selection, endCell: this.endCell });
     } else if (this.state === 'shrinkVertical') {
-      if (!this.endCell || this.selection.top === this.endCell.y) return;
+      if (!this.endCell) return;
       shrinkVertical({ app: this.app, selection: this.selection, endCell: this.endCell });
     } else if (this.boxCells) {
       if (this.state === 'expandDown') {

@@ -55,10 +55,10 @@ export const shrinkVertical = async (options: {
     app: sheet_controller.app,
     create_transaction: true,
   });
-
   const { setInteractionState, interactionState } = app.settings;
   setInteractionState?.({
     ...interactionState,
+    showMultiCursor: !!(selection.width || endCell.y - selection.top),
     multiCursorPosition: {
       originPosition: interactionState.multiCursorPosition.originPosition,
       terminalPosition: {
@@ -107,6 +107,7 @@ export const expandDown = async (options: {
   const { setInteractionState, interactionState } = app.settings;
   setInteractionState?.({
     ...interactionState,
+    showMultiCursor: true,
     multiCursorPosition: {
       originPosition: interactionState.multiCursorPosition.originPosition,
       terminalPosition: {
@@ -145,6 +146,7 @@ export const expandUp = async (options: { app: PixiApp; selection: Rectangle; bo
   const { setInteractionState, interactionState } = app.settings;
   setInteractionState?.({
     ...interactionState,
+    showMultiCursor: true,
     multiCursorPosition: {
       originPosition: {
         ...interactionState.multiCursorPosition.originPosition,
@@ -193,6 +195,7 @@ export const expandRight = async (options: {
   const { setInteractionState, interactionState } = app.settings;
   setInteractionState?.({
     ...interactionState,
+    showMultiCursor: true,
     multiCursorPosition: {
       originPosition: interactionState.multiCursorPosition.originPosition,
       terminalPosition: {
@@ -240,6 +243,7 @@ export const expandLeft = async (options: {
   const { setInteractionState, interactionState } = app.settings;
   setInteractionState?.({
     ...interactionState,
+    showMultiCursor: true,
     multiCursorPosition: {
       originPosition: {
         ...interactionState.multiCursorPosition.originPosition,
