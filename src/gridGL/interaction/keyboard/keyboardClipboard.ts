@@ -19,7 +19,7 @@ export function keyboardClipboard(props: {
   const { event, interactionState, sheet_controller, app, snackbar } = props;
 
   // Command + V
-  if ((event.metaKey || event.ctrlKey) && event.key === 'KeyV') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'v') {
     pasteFromClipboard(sheet_controller, {
       x: interactionState.cursorPosition.x,
       y: interactionState.cursorPosition.y,
@@ -28,7 +28,7 @@ export function keyboardClipboard(props: {
   }
 
   // Command + Shift + C
-  if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'KeyC') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'C') {
     copySelectionToPNG(app);
     snackbar.triggerSnackbar('Copied selection as PNG to clipboard');
     event.preventDefault();
@@ -37,7 +37,7 @@ export function keyboardClipboard(props: {
   }
 
   // Command + C
-  if ((event.metaKey || event.ctrlKey) && event.key === 'KeyC') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'c') {
     copyToClipboard(
       sheet_controller,
       {
@@ -53,7 +53,7 @@ export function keyboardClipboard(props: {
   }
 
   // Command + X
-  if ((event.metaKey || event.ctrlKey) && event.key === 'KeyX') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'x') {
     cutToClipboard(
       sheet_controller,
       {
