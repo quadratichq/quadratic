@@ -139,9 +139,10 @@ export class PointerAutoComplete {
         if (insideVertical && insideHorizontal) {
           const distanceFromLeft = Math.abs(world.x - screenSelection.left);
           const distanceFromTop = Math.abs(world.y - screenSelection.top);
-          if (distanceFromLeft < distanceFromTop) {
+          if (selection.width > 1 && (selection.height === 0 || distanceFromLeft < distanceFromTop)) {
             this.state = 'shrinkHorizontal';
             boxCells = new Rectangle(selection.x, selection.y, column - selection.left + 1, selection.height + 1);
+            console.log('shrink horizontal');
           } else {
             this.state = 'shrinkVertical';
             boxCells = new Rectangle(selection.x, selection.y, selection.width + 1, row - selection.top + 1);
@@ -178,7 +179,7 @@ export class PointerAutoComplete {
               isDelete = true;
             }
             // Horizontal delete
-            if (this.selection.width > 0 && this.endCell.x < this.selection.x + this.selection.width) {
+            if (this.selection.width > 0 && this.endCell.x <= this.selection.x + this.selection.width) {
               isDelete = true;
             }
           }
