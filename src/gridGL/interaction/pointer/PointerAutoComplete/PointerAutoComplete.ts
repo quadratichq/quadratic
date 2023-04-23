@@ -137,9 +137,9 @@ export class PointerAutoComplete {
 
         // handle reducing the selection
         if (insideVertical && insideHorizontal) {
-          const distanceFromLeft = Math.abs(world.x - screenSelection.left);
-          const distanceFromTop = Math.abs(world.y - screenSelection.top);
-          if (selection.width > 0 && (selection.height === 0 || distanceFromLeft < distanceFromTop)) {
+          const distanceFromRight = Math.abs(world.x - screenSelection.right);
+          const distanceFromTop = Math.abs(world.y - screenSelection.bottom);
+          if (selection.width > 0 && (selection.height === 0 || distanceFromRight > distanceFromTop)) {
             this.state = 'shrinkHorizontal';
             boxCells = new Rectangle(selection.x, selection.y, column - selection.left + 1, selection.height + 1);
           } else {
