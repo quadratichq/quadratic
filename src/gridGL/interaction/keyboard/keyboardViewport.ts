@@ -6,8 +6,10 @@ import { EditorInteractionState } from '../../../atoms/editorInteractionStateAto
 import { Pointer } from '../pointer/Pointer';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { LocalFiles } from '../../../storage/useLocalFiles';
+import { PixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardViewport(options: {
+  app: PixiApp;
   event: KeyboardEvent;
   sheet: Sheet;
   viewport?: Viewport;
@@ -37,6 +39,7 @@ export function keyboardViewport(options: {
     setEditorInteractionState,
     presentationMode,
     setPresentationMode,
+    app,
   } = options;
 
   if (!viewport || event.altKey) return false;
@@ -84,8 +87,11 @@ export function keyboardViewport(options: {
   }
 
   if (event.code === 'Escape') {
-    if (presentationMode) setPresentationMode(false);
-    return true;
+    if (presentationMode) {
+      setPresentationMode(false);
+      return true;
+    }
+    return app.pointer.handleEscape();
   }
 
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyB') {
@@ -136,12 +142,6 @@ export function keyboardViewport(options: {
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyS') {
     // don't do anything on Command+S
     return true;
-  }
-
-  if (event.code === 'Escape') {
-    // if (pointer.handleEscape()) {
-    //   return true;
-    // }
   }
 
   return false;
