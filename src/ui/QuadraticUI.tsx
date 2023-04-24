@@ -21,6 +21,8 @@ import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../grid/controller/sheetController';
 import { LocalFilesContext } from './QuadraticUIContext';
+import ReadOnlyDialog from './components/ReadOnlyDialog';
+import { IS_READONLY_MODE } from '../constants/app';
 
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
@@ -83,6 +85,8 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {presentationMode && <PresentationModeHint />}
       <SnackBar {...snackBar} />
       {hasInitialPageLoadError && <InitialPageLoadError />}
+
+      {IS_READONLY_MODE && <ReadOnlyDialog />}
     </div>
   );
 }

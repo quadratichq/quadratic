@@ -49,6 +49,8 @@ const loadAmplitudeAnalytics = async (user: User | undefined) => {
 
 const loadMixPanelAnalytics = async (user: User | undefined) => {
   if (!process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY && process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY !== 'none') {
+    // Without init Mixpanel, all mixpanel events throw an error and break the app.
+    // So we have to init Mixpanel with a fake key, and disable Mixpanel.
     mixpanel.init('FAKE_KEY');
     mixpanel.disable();
     return;
@@ -58,9 +60,17 @@ const loadMixPanelAnalytics = async (user: User | undefined) => {
 
   mixpanel.register({
     email: user?.email,
+    distinct_id: user?.sub,
   });
 
   mixpanel.identify(user?.sub);
+
+  mixpanel.people.set_once({
+    $distinct_id: user?.sub,
+    $email: user?.email,
+    $name: user?.name,
+    $avatar: user?.picture,
+  });
 
   console.log('[Analytics] Mixpanel activated');
 };
