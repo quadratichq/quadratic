@@ -73,7 +73,7 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
             suppressContentEditableWarning={true}
             spellCheck={false}
             onKeyDown={(e) => {
-              if (((e.metaKey || e.ctrlKey) && e.code === 'KeyA') || ((e.metaKey || e.ctrlKey) && e.code === 'KeyC')) {
+              if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
                 // Allow a few commands, but nothing else
               } else {
                 e.preventDefault();

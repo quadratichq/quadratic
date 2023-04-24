@@ -236,7 +236,7 @@ function FileRename({
   return (
     <InputBase
       onKeyUp={(e) => {
-        if (e.code === 'Enter') {
+        if (e.key === 'Enter') {
           inputRef.current?.blur();
           focusGrid();
         }
