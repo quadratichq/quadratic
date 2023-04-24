@@ -9,7 +9,7 @@ export function keyboardUndoRedo(
 ): boolean {
   // Redo
   if (
-    ((event.metaKey || event.ctrlKey) && event.key === 'Z') ||
+    ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'z') ||
     ((event.metaKey || event.ctrlKey) && event.key === 'y' && !isMac)
   ) {
     sheetController.redo();
