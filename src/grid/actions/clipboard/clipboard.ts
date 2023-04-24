@@ -32,7 +32,7 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
         const match = regex.exec(item_text);
 
         if (!match?.length) {
-          const text_blob = await item.getType('text/plain')
+          const text_blob = await item.getType('text/plain');
           let item_text = await text_blob.text();
           return pasteFromText(sheet_controller, pasteToCell, item_text);
         }
@@ -131,7 +131,7 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
 
         return false; // unsuccessful
       } else if (item.types.includes('text/plain')) {
-        const text_blob = await item.getType('text/plain')
+        const text_blob = await item.getType('text/plain');
         let item_text = await text_blob.text();
         return pasteFromText(sheet_controller, pasteToCell, item_text);
       }
@@ -142,11 +142,7 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
   }
 };
 
-const pasteFromText = async (
-  sheet_controller: SheetController,
-  pasteToCell: Coordinate,
-  clipboard_text: string
-) => {
+const pasteFromText = async (sheet_controller: SheetController, pasteToCell: Coordinate, clipboard_text: string) => {
   try {
     let cell_x: number = pasteToCell.x;
     let cell_y: number = pasteToCell.y;
@@ -200,7 +196,7 @@ const pasteFromText = async (
 
     return true; // unsuccessful
   } catch (e) {
-    console.log(e)
+    console.log(e);
     return false; // unsuccessful
   }
 };
