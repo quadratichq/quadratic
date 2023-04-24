@@ -28,7 +28,7 @@ export function keyboardClipboard(props: {
   }
 
   // Command + Shift + C
-  if ((event.metaKey || event.ctrlKey) && event.key === 'C') {
+if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.code.toLowerCase() === 'c') {
     copySelectionToPNG(app);
     snackbar.triggerSnackbar('Copied selection as PNG to clipboard');
     event.preventDefault();
