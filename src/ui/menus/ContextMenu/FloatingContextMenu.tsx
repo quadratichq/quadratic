@@ -107,12 +107,16 @@ export const FloatingContextMenu = (props: Props) => {
     if (viewport.scale.x < 0.1) {
       visibility = 'hidden';
     }
+    // hide if boxCells is active
+    if (interactionState.boxCells) {
+      visibility = 'hidden';
+    }
 
     // Hide if it's not 1) a multicursor or, 2) an active right click
     if (!(interactionState.showMultiCursor || showContextMenu)) visibility = 'hidden';
 
     // Hide if currently selecting
-    if (app?.input?.pointerDown?.active) visibility = 'hidden';
+    if (app?.pointer?.pointerDown?.active) visibility = 'hidden';
 
     // Hide if in presentation mode
     if (app.settings.presentationMode) visibility = 'hidden';
@@ -157,16 +161,7 @@ export const FloatingContextMenu = (props: Props) => {
     } else menuDiv.current.style.pointerEvents = 'auto';
 
     return transform;
-  }, [
-    app,
-    viewport,
-    container,
-    interactionState.cursorPosition,
-    interactionState.showMultiCursor,
-    interactionState.multiCursorPosition,
-    sheetController.sheet.gridOffsets,
-    showContextMenu,
-  ]);
+  }, [app, viewport, container, sheetController.sheet.gridOffsets, interactionState, showContextMenu]);
 
   useEffect(() => {
     if (!viewport) return;
