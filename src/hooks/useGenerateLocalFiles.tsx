@@ -5,9 +5,9 @@ import { GridFileData, GridFile, GridFileSchema, GridFiles } from '../schemas';
 import { GridFileV1 } from '../schemas/GridFileV1';
 import { validateGridFile } from '../schemas/validateGridFile';
 import { debugShowFileIO } from '../debugFlags';
-import { v4 as uuid } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
 import { downloadFile } from '../helpers/downloadFile';
+import { generateUUID } from '../helpers/generateUUID';
 import { SheetController } from '../grid/controller/sheetController';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
@@ -118,7 +118,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
 
       // If it's a new file
       if (isNewFile) {
-        const newFileListItem = { filename, id: uuid(), modified: Date.now() };
+        const newFileListItem = { filename, id: generateUUID(), modified: Date.now() };
         const newFile = { ...quadraticJson, ...newFileListItem };
         setCurrentFileContents(newFile);
         setFileList((oldFileList) => [newFileListItem, ...oldFileList]);
@@ -185,7 +185,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     const created = Date.now();
     const newFile: GridFile = {
       ...grid,
-      id: uuid(),
+      id: generateUUID(),
       created,
       version: GridFileSchema.shape.version.value,
       modified: created,

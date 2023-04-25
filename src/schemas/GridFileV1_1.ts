@@ -1,7 +1,7 @@
 import z from 'zod';
 import { GridFileV1 } from './GridFileV1';
-import { v4 as uuid } from 'uuid';
 import { DEFAULT_FILE_NAME } from '../constants/app';
+import { generateUUID } from '../helpers/generateUUID';
 
 // Shared schemas
 const ArrayOutputSchema = z.array(z.union([z.string(), z.number(), z.boolean()]));
@@ -148,7 +148,7 @@ export function upgradeV1toV1_1(file: GridFileV1): GridFileV1_1 {
     version: '1.1',
     modified: date,
     created: date,
-    id: uuid(),
+    id: generateUUID(),
     filename: DEFAULT_FILE_NAME,
   } as GridFileV1_1;
 }
