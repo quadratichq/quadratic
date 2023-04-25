@@ -116,7 +116,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
               UNDO
         </Button> */}
             <IconButton aria-label="close" color="inherit" sx={{ p: 0.5 }} onClick={handleClose}>
-              <CloseIcon />
+              <CloseIcon fontSize="small" sx={{ opacity: '.5', ':hover': { opacity: 1 } }} />
             </IconButton>
           </React.Fragment>
         }
