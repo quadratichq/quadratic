@@ -1,4 +1,5 @@
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { PNG_MESSAGE } from '../../../constants/app';
 import {
   copySelectionToPNG,
   copyToClipboard,
@@ -6,7 +7,7 @@ import {
   pasteFromClipboard,
 } from '../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { UseSnackBar } from '../../../ui/components/SnackBar';
+import { GlobalSnackbar } from '../../../ui/contexts/GlobalSnackbar';
 import { PixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardClipboard(props: {
@@ -14,9 +15,9 @@ export function keyboardClipboard(props: {
   interactionState: GridInteractionState;
   sheet_controller: SheetController;
   app: PixiApp;
-  snackbar: UseSnackBar;
+  addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
 }): boolean {
-  const { event, interactionState, sheet_controller, app, snackbar } = props;
+  const { addGlobalSnackbar, event, interactionState, sheet_controller, app } = props;
 
   // Command + V
   if ((event.metaKey || event.ctrlKey) && event.code === 'KeyV') {
@@ -30,7 +31,7 @@ export function keyboardClipboard(props: {
   // Command + Shift + C
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.code === 'KeyC') {
     copySelectionToPNG(app);
-    snackbar.triggerSnackbar('Copied selection as PNG to clipboard');
+    addGlobalSnackbar(PNG_MESSAGE);
     event.preventDefault();
     event.stopPropagation();
     return true;
