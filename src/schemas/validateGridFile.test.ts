@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { randomUUID } from 'crypto';
 import { GridFiles } from '.';
 import { GridFileV1 } from './GridFileV1';
 import { GridFileV1_1 } from './GridFileV1_1';
@@ -10,6 +11,15 @@ const exampleGridFiles: GridFiles[] = fs
   .readdirSync(EXAMPLES_DIR)
   .filter((name) => name.includes('.grid'))
   .map((name) => JSON.parse(fs.readFileSync(path.join(EXAMPLES_DIR, name)).toString()));
+
+// Mock window.crypto.randomUUID by mapping it to node's equivalent
+Object.defineProperty(global, 'window', {
+  value: {
+    crypto: {
+      randomUUID,
+    },
+  },
+});
 
 const v1File: GridFileV1 = {
   version: '1.0',
