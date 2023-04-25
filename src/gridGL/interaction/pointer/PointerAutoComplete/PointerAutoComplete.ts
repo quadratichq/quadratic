@@ -174,11 +174,19 @@ export class PointerAutoComplete {
           let isDelete = false;
           if (this.state.includes('shrink') && this.selection && this.endCell) {
             // Vertical delete
-            if (this.selection.height > 0 && this.endCell.y < this.selection.y + this.selection.height) {
+            if (
+              this.state.includes('shrinkVertical') &&
+              this.selection.height > 0 &&
+              this.endCell.y < this.selection.y + this.selection.height
+            ) {
               isDelete = true;
             }
             // Horizontal delete
-            if (this.selection.width > 0 && this.endCell.x <= this.selection.x + this.selection.width) {
+            if (
+              this.state.includes('shrinkHorizontal') &&
+              this.selection.width > 0 &&
+              this.endCell.x <= this.selection.x + this.selection.width
+            ) {
               isDelete = true;
             }
           }
