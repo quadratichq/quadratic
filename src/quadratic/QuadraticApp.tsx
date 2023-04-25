@@ -9,7 +9,7 @@ import { debugSkipPythonLoad } from '../debugFlags';
 import init, { hello } from 'quadratic-core';
 import { useGridSettings } from '../ui/menus/TopBar/SubMenus/useGridSettings';
 import { SheetController } from '../grid/controller/sheetController';
-import { useLocalFiles } from '../storage/useLocalFiles';
+import { useGenerateLocalFiles } from '../hooks/useGenerateLocalFiles';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 
 type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-rust' | 'wasm-python';
@@ -22,7 +22,7 @@ export const QuadraticApp = () => {
   const { presentationMode, setPresentationMode } = useGridSettings();
   const [settingsReset, setSettingsReset] = useState(false);
   const [sheetController] = useState<SheetController>(new SheetController());
-  const localFiles = useLocalFiles(sheetController);
+  const localFiles = useGenerateLocalFiles(sheetController);
   const [app] = useState(() => new PixiApp(sheetController, localFiles.save));
   const { initialize } = localFiles;
 

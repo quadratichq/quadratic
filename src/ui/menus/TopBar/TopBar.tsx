@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, Typography, IconButton, InputBase } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -11,7 +11,6 @@ import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { IS_READONLY_MODE } from '../../../constants/app';
-import { LocalFilesContext } from '../../QuadraticUIContext';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
@@ -20,6 +19,7 @@ import { ManageSearch } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
+import { useLocalFiles } from '../../contexts/LocalFiles';
 
 interface IProps {
   app: PixiApp;
@@ -29,7 +29,7 @@ interface IProps {
 export const TopBar = (props: IProps) => {
   const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFilename, renameCurrentFile } = useContext(LocalFilesContext);
+  const { currentFilename, renameCurrentFile } = useLocalFiles();
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
 
   const settings = useGridSettings();

@@ -8,13 +8,11 @@ import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 import '../../styles/floating-dialog.css';
-import { UseSnackBar } from '../../components/SnackBar';
 import mixpanel from 'mixpanel-browser';
 
 interface Props {
   app: PixiApp;
   sheetController: SheetController;
-  snackBar: UseSnackBar;
 }
 
 export const CommandPalette = (props: Props) => {
@@ -57,7 +55,6 @@ export const CommandPalette = (props: Props) => {
     closeCommandPalette,
     activeSearchValue: activeSearchValue,
     selectedListItemIndex: selectedListItemIndex,
-    snackBar: props.snackBar,
   });
 
   const searchlabel = 'Search menus and commands…';
