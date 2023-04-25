@@ -20,7 +20,7 @@ export function keyboardClipboard(props: {
   const { addGlobalSnackbar, event, interactionState, sheet_controller, app } = props;
 
   // Command + V
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyV') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'v') {
     pasteFromClipboard(sheet_controller, {
       x: interactionState.cursorPosition.x,
       y: interactionState.cursorPosition.y,
@@ -29,7 +29,7 @@ export function keyboardClipboard(props: {
   }
 
   // Command + Shift + C
-  if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.code === 'KeyC') {
+  if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'c') {
     copySelectionToPNG(app);
     addGlobalSnackbar(PNG_MESSAGE);
     event.preventDefault();
@@ -38,7 +38,7 @@ export function keyboardClipboard(props: {
   }
 
   // Command + C
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyC') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'c') {
     copyToClipboard(
       sheet_controller,
       {
@@ -54,7 +54,7 @@ export function keyboardClipboard(props: {
   }
 
   // Command + X
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyX') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'x') {
     cutToClipboard(
       sheet_controller,
       {

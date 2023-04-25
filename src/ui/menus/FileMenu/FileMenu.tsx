@@ -93,7 +93,7 @@ export function FileMenu(props: FileMenuProps) {
       open={true}
       onKeyDown={(e) => {
         // Only close if there's an active sheet
-        if (e.code === 'Escape' && currentFileId) {
+        if (e.key === 'Escape' && currentFileId) {
           onClose();
         }
       }}
