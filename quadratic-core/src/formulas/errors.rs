@@ -47,6 +47,7 @@ pub enum FormulaErrorMsg {
         expected: Cow<'static, str>,
         got: Option<Cow<'static, str>>,
     },
+    Unexpected(Cow<'static, str>),
     ArraySizeMismatch {
         expected: (usize, usize),
         got: (usize, usize),
@@ -84,6 +85,7 @@ impl fmt::Display for FormulaErrorMsg {
                 Some(got) => write!(f, "Expected {expected}, got {got}"),
                 None => write!(f, "Expected {expected}"),
             },
+            Self::Unexpected(got) => write!(f, "Unexpected {got}"),
             Self::ArraySizeMismatch { expected, got } => {
                 write!(f, "Array size mismatch: expected {expected:?}, got {got:?}")
             }
