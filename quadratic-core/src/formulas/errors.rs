@@ -64,6 +64,7 @@ pub enum FormulaErrorMsg {
     DivideByZero,
     NegativeExponent,
     IndexOutOfBounds,
+    ArrayTooBig,
 }
 impl fmt::Display for FormulaErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -121,6 +122,9 @@ impl fmt::Display for FormulaErrorMsg {
             }
             Self::IndexOutOfBounds => {
                 write!(f, "Index out of bounds")
+            }
+            Self::ArrayTooBig => {
+                write!(f, "Array is too big")
             }
         }
     }

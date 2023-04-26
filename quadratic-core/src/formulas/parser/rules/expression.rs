@@ -136,7 +136,8 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 | Token::Concat
                 | Token::RangeOp
                 | Token::Percent
-                | Token::CellRangeOp => false,
+                | Token::CellRangeOp
+                | Token::Ellipsis => false,
 
                 Token::Comment | Token::UnterminatedBlockComment => false,
 

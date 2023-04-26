@@ -1,7 +1,10 @@
 use itertools::Itertools;
-use smallvec::SmallVec;
+use smallvec::{smallvec, SmallVec};
 
 use super::*;
+
+/// Maximum integer range allowed.
+const INTEGER_RANGE_LIMIT: f64 = 100_000.0;
 
 /// Produces a constant function that takes no arguments.
 macro_rules! constant_function {
@@ -57,7 +60,28 @@ pub fn pure_function_from_name(
         "^" | "**" => {
             array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()?.powf(b.to_number()?))))
         }
+        "<<" => array_mapped!(|[a, b]| Ok(Value::Number(
+            a.to_number()? * 2.0_f64.powf(b.to_integer()? as f64)
+        ))),
+        ">>" => array_mapped!(|[a, b]| Ok(Value::Number(
+            a.to_number()? / 2.0_f64.powf(b.to_integer()? as f64)
+        ))),
         "%" => array_mapped!(|[n]| Ok(Value::Number(n.to_number()? / 100.0))),
+        ".." => |args| {
+            let [a, b] = args.inner.as_slice() else {
+                return Err(FormulaErrorMsg::BadArgumentCount.with_span(args.span));
+            };
+            let a = a.to_integer()?;
+            let b = b.to_integer()?;
+            if (a as f64 - b as f64).abs() > INTEGER_RANGE_LIMIT {
+                return Err(FormulaErrorMsg::ArrayTooBig.with_span(args.span));
+            }
+            Ok(Value::Array(
+                if a < b { a..=b } else { b..=a }
+                    .map(|i| smallvec![Value::Number(i as f64)])
+                    .collect(),
+            ))
+        },
 
         // Logic functions (non-short-circuiting)
         "true" => constant_function!(Ok(Value::Bool(true))),

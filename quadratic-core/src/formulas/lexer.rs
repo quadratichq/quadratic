@@ -63,6 +63,12 @@ const UNTERMINATED_STRING_LITERAL_PATTERN: &str = r#"["']"#;
 const TOKEN_PATTERNS: &[&str] = &[
     // Comparison operators `==`, `!=`, `<=`, and `>=`.
     r#"[=!<>]="#,
+    // Double and triple dot.
+    r#"\.\.\.?"#,
+    // Bitshift operators `>>` and `<<`.
+    r#">>|<<"#,
+    // Exponentiation.
+    r#"\*\*"#,
     // Line comment.
     r#"//[^\n]*"#,
     // Start of a block comment (block comment has special handling).
@@ -174,6 +180,8 @@ pub enum Token {
     Percent, // %
     #[strum(to_string = "cell range operator")]
     CellRangeOp, // :
+    #[strum(to_string = "ellipsis")]
+    Ellipsis, // ...
 
     // Comments
     #[strum(to_string = "comment")]
@@ -202,80 +210,91 @@ impl Token {
     /// the next character after the token.
     fn consume_from_input(input_str: &str, start: usize) -> Option<(Self, usize)> {
         // Find next token.
-        TOKEN_REGEX.find_at(input_str, start).map(|m| {
-            let mut end = m.end();
+        let m = TOKEN_REGEX.find_at(input_str, start)?;
 
-            let token = match m.as_str() {
-                "(" => Self::LParen,
-                "[" => Self::LBracket,
-                "{" => Self::LBrace,
-                ")" => Self::RParen,
-                "]" => Self::RBracket,
-                "}" => Self::RBrace,
-                "," => Self::ArgSep,
-                ";" => Self::RowSep,
-                "=" | "==" => Self::Eql,
-                "<>" | "!=" => Self::Neq,
-                "<" => Self::Lt,
-                ">" => Self::Gt,
-                "<=" => Self::Lte,
-                ">=" => Self::Gte,
-                "+" => Self::Plus,
-                "-" => Self::Minus,
-                "*" => Self::Mult,
-                "/" => Self::Div,
-                "^" | "**" => Self::Power,
-                "<<" => Self::ShiftLeft,
-                ">>" => Self::ShiftRight,
-                "&" => Self::Concat,
-                ".." => Self::RangeOp,
-                "%" => Self::Percent,
-                ":" => Self::CellRangeOp,
+        let mut end = m.end();
 
-                // Match a line comment.
-                s if s.starts_with("//") => Self::Comment,
+        let token = match m.as_str() {
+            "(" => Self::LParen,
+            "[" => Self::LBracket,
+            "{" => Self::LBrace,
+            ")" => Self::RParen,
+            "]" => Self::RBracket,
+            "}" => Self::RBrace,
+            "," => Self::ArgSep,
+            ";" => Self::RowSep,
+            "=" | "==" => Self::Eql,
+            "<>" | "!=" => Self::Neq,
+            "<" => Self::Lt,
+            ">" => Self::Gt,
+            "<=" => Self::Lte,
+            ">=" => Self::Gte,
+            "+" => Self::Plus,
+            "-" => Self::Minus,
+            "*" => Self::Mult,
+            "/" => Self::Div,
+            "^" | "**" => Self::Power,
+            "<<" => Self::ShiftLeft,
+            ">>" => Self::ShiftRight,
+            "&" => Self::Concat,
+            ".." => Self::RangeOp,
+            "%" => Self::Percent,
+            ":" => Self::CellRangeOp,
+            "..." => Self::Ellipsis,
 
-                // Match a block comment.
-                s if s.starts_with("/*") => {
-                    lazy_static! {
-                        static ref COMMENT_BOUNDARY_PATTERN: Regex =
-                            Regex::new(r"/\*|\*/").unwrap();
+            // Match a line comment.
+            s if s.starts_with("//") => Self::Comment,
+
+            // Match a block comment.
+            s if s.starts_with("/*") => {
+                lazy_static! {
+                    static ref COMMENT_BOUNDARY_PATTERN: Regex = Regex::new(r"/\*|\*/").unwrap();
+                }
+                let mut depth = 0;
+                let mut comment_len = 0;
+                for m in COMMENT_BOUNDARY_PATTERN.find_iter(&input_str[start..]) {
+                    comment_len = m.end();
+                    match m.as_str() {
+                        "/*" => depth += 1,
+                        "*/" => depth -= 1,
+                        _ => (), // should be impossible
                     }
-                    let mut depth = 0;
-                    let mut comment_len = 0;
-                    for m in COMMENT_BOUNDARY_PATTERN.find_iter(&input_str[start..]) {
-                        comment_len = m.end();
-                        match m.as_str() {
-                            "/*" => depth += 1,
-                            "*/" => depth -= 1,
-                            _ => (), // should be impossible
-                        }
-                        if depth <= 0 {
-                            break;
-                        }
-                    }
-                    if depth == 0 {
-                        end = start + comment_len;
-                        Self::Comment
-                    } else {
-                        Self::UnterminatedBlockComment
+                    if depth <= 0 {
+                        break;
                     }
                 }
+                if depth == 0 {
+                    end = start + comment_len;
+                    Self::Comment
+                } else {
+                    Self::UnterminatedBlockComment
+                }
+            }
 
-                // Match anything else.
-                s if FUNCTION_CALL_REGEX.is_match(s) => Self::FunctionCall,
-                s if STRING_LITERAL_REGEX.is_match(s) => Self::StringLiteral,
-                s if UNTERMINATED_STRING_LITERAL_REGEX.is_match(s) => Self::StringLiteral,
-                s if NUMERIC_LITERAL_REGEX.is_match(s) => Self::NumericLiteral,
-                s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRef,
-                s if s.trim().is_empty() => Self::Whitespace,
+            // Match anything else.
+            s if FUNCTION_CALL_REGEX.is_match(s) => Self::FunctionCall,
+            s if STRING_LITERAL_REGEX.is_match(s) => Self::StringLiteral,
+            s if UNTERMINATED_STRING_LITERAL_REGEX.is_match(s) => Self::StringLiteral,
+            s if NUMERIC_LITERAL_REGEX.is_match(s) => Self::NumericLiteral,
+            s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRef,
+            s if s.trim().is_empty() => Self::Whitespace,
 
-                // Give up.
-                _ => Self::Unknown,
-            };
+            // Give up.
+            _ => Self::Unknown,
+        };
 
-            (token, end)
-        })
+        let rest_of_input = &input_str[end..];
+
+        // Special workaround for `<integer>..<number>`. This fails on `1...5`,
+        // which is ambiguous between `1 .. .5` and `1. .. 5`.
+        if token == Self::NumericLiteral
+            && m.as_str().ends_with('.')
+            && rest_of_input.starts_with('.')
+        {
+            end -= 1;
+        }
+
+        Some((token, end))
     }
 
     /// Returns whether this token is a comment or whitespace that should be
