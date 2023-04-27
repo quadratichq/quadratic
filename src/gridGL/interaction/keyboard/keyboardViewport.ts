@@ -17,6 +17,7 @@ export function keyboardViewport(options: {
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   clearAllFormatting: Function;
+  changeLiveCell: Function;
   changeBold: Function;
   changeItalic: Function;
   format: MultipleFormat;
@@ -26,6 +27,7 @@ export function keyboardViewport(options: {
   currentFileId: LocalFiles['currentFileId'];
 }): boolean {
   const {
+    changeLiveCell,
     changeBold,
     changeItalic,
     clearAllFormatting,
@@ -96,6 +98,11 @@ export function keyboardViewport(options: {
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
     changeBold(!(format.bold === true));
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === 'l') {
+    changeLiveCell(!(format.liveCell === true));
     return true;
   }
 

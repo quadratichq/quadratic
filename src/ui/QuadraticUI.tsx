@@ -21,16 +21,44 @@ import { SheetController } from '../grid/controller/sheetController';
 import ReadOnlyDialog from './components/ReadOnlyDialog';
 import { IS_READONLY_MODE } from '../constants/app';
 import { useLocalFiles } from './contexts/LocalFiles';
+// import { UpdateLiveCells } from '../grid/actions/updateLiveCells'
+import { updateCellAndDCells } from '../grid/actions/updateCellAndDCells';
 
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
   const { hasInitialPageLoadError } = useLocalFiles();
+  // UpdateLiveCells(sheetController);
 
   useEffect(() => {
     sheetController.setApp(app);
   }, [sheetController, app]);
+
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      // update live cells
+      if (sheetController.getLiveCell().length > 0) {
+
+        try {
+          sheetController.start_transaction();
+          await updateCellAndDCells({
+            starting_cells: sheetController.getLiveCell(),
+            sheetController: sheetController,
+
+          });
+        } catch {
+          return; // unsuccessful
+        }
+      }
+    }
+      , 60 * 1000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
 
   // Temporary way to attach sheet to global for use in GetCellsDB function
   useEffect(() => {

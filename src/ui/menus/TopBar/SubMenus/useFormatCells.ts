@@ -13,6 +13,7 @@ interface IResults {
   changeFillColor: (rgb: ColorResult) => void;
   removeFillColor: () => void;
   clearFormatting: (args?: { create_transaction?: boolean }) => void;
+  changeLiveCell: (liveCell: boolean, sheet_controller: SheetController) => void;
   changeBold: (bold: boolean) => void;
   changeItalic: (italic: boolean) => void;
   changeTextColor: (rgb: ColorResult) => void;
@@ -94,6 +95,20 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     clearFormattingAction({ sheet_controller, start, end, create_transaction: args?.create_transaction });
   };
 
+  const changeLiveCell = (liveCell: boolean, sheet_controller: SheetController): void => {
+    for (let y = start.y; y <= end.y; y++) {
+      for (let x = start.x; x <= end.x; x++) {
+        let cell = sheet_controller.sheet.grid.getCell(x, y);
+        if (liveCell && cell) {
+          sheet_controller.addLiveCell(cell);
+        } else if (cell) {
+          sheet_controller.removeLiveCell(cell);
+        }
+      }
+    }
+    onFormat({ liveCell });
+  };
+
   const changeBold = (bold: boolean): void => {
     onFormat({ bold });
   };
@@ -142,6 +157,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
     changeFillColor,
     removeFillColor,
     clearFormatting,
+    changeLiveCell,
     changeBold,
     changeItalic,
     changeTextColor,

@@ -23,6 +23,11 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   // keep track of cells that have been updated so we can update the quadrant cache
   const updatedCells: Coordinate[] = [];
 
+
+  //Add live cells to starting_cells
+  //starting_cells.push
+
+
   // start with a plan to just update the current cells
   let cells_to_update: [number, number][] = starting_cells.map((c) => [c.x, c.y]);
 

@@ -6,6 +6,7 @@ import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import {
   AttachMoneyOutlined,
   BorderAll,
+  Schedule,
   FormatBold,
   FormatClear,
   FormatColorFill,
@@ -56,6 +57,7 @@ export const FloatingContextMenu = (props: Props) => {
   const {
     changeFillColor,
     removeFillColor,
+    changeLiveCell,
     changeBold,
     changeItalic,
     changeTextColor,
@@ -216,6 +218,14 @@ export const FloatingContextMenu = (props: Props) => {
           color: colors.darkGray,
         }}
       >
+        <TooltipHint title="Live Cell" shortcut={KeyboardSymbols.Command + 'L'}>
+          <IconButton onClick={() => changeLiveCell(!format.liveCell, sheetController)} color={!format.liveCell ? "inherit" : "success"}>
+            <Schedule fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <MenuDivider />
+
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
           <IconButton onClick={() => changeBold(!format.bold)} color="inherit">
             <FormatBold fontSize={iconSize} />

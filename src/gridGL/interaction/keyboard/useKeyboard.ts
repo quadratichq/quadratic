@@ -38,7 +38,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     sheetController,
   } = props;
   const { format } = useGetSelection(sheetController.sheet);
-  const { changeBold, changeItalic } = useFormatCells(sheetController, app);
+  const { changeLiveCell, changeBold, changeItalic } = useFormatCells(sheetController, app);
   const { clearAllFormatting } = useClearAllFormatting(sheetController, app);
   const { presentationMode, setPresentationMode } = useGridSettings();
   const { currentFileId } = useLocalFiles();
@@ -57,6 +57,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           viewport: app?.viewport,
           sheet: sheetController.sheet,
           clearAllFormatting,
+          changeLiveCell,
           changeBold,
           changeItalic,
           format,
@@ -79,6 +80,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       app,
       sheetController.sheet,
       clearAllFormatting,
+      changeLiveCell,
       changeBold,
       changeItalic,
       format,
