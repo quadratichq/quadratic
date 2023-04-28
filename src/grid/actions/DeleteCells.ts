@@ -18,10 +18,17 @@ export const DeleteCells = async (args: DeleteCellsArgs) => {
 
   if (create_transaction ?? true) sheetController.start_transaction();
 
+
+
+
   // delete cells row by row
   for (var current_row = y0; current_row <= y1; current_row++) {
     const cells_to_delete = sheetController.sheet.grid.getNakedCells(x0, current_row, x1, current_row);
     // delete cells
+
+    //update graph
+    // sheetController.graph.removeNodes(cells_to_delete);
+
     await updateCellAndDCells({
       starting_cells: cells_to_delete,
       sheetController,

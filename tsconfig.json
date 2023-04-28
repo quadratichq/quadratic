@@ -22,7 +22,8 @@
     "downlevelIteration": true,
   },
   "include": [
-    "src", "setupPixiTests.ts",
+    "src",
+    "setupPixiTests.ts",
   ],
   "exclude": [
     "node_modules/*"

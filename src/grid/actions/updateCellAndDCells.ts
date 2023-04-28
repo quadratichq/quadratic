@@ -31,6 +31,8 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   // start with a plan to just update the current cells
   let cells_to_update: [number, number][] = starting_cells.map((c) => [c.x, c.y]);
 
+  let has_taken_cyclic_dependencies = false;
+
   // update cells, starting with the current cell
   while (cells_to_update.length > 0) {
     // dedupe cells_to_update
@@ -48,6 +50,8 @@ export const updateCellAndDCells = async (args: ArgsType) => {
     // get next cell to update
     const ref_current_cell = cells_to_update.shift();
     if (ref_current_cell === undefined) break;
+
+    // 
 
     // get cell from db or starting_cell if it is the starting cell passed in to this function
     let cell = sheetController.sheet.getCellCopy(ref_current_cell[0], ref_current_cell[1]);
@@ -222,19 +226,32 @@ export const updateCellAndDCells = async (args: ArgsType) => {
 
     // if any updated cells have other cells depending on them, add to list to update
     for (const array_cell of array_cells_to_output) {
-      let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
+      console.log("cells to update1")
+      console.log(cells_to_update);
+      let [deps,] = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
       if (deps) cells_to_update.push(...deps);
     }
 
     // any deleted cells have other cells depending on them, add to list to update
     for (const array_cell of array_cells_to_delete) {
-      let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
+      console.log("cells to update2")
+      console.log(cells_to_update);
+      let [deps,] = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
       if (deps) cells_to_update.push(...deps);
     }
 
     // if this cell updates other cells add them to the list to update
-    let deps = sheetController.sheet.cell_dependency.getDependencies([cell.x, cell.y]);
+    console.log("cells to update3")
+    console.log(cell.x, cell.y);
+    let [deps, cyclic_dep] = sheetController.sheet.cell_dependency.getDependencies([cell.x, cell.y]);
+    if (cyclic_dep) {
+      if (!has_taken_cyclic_dependencies) {
+        has_taken_cyclic_dependencies = true;
+        cells_to_update.push(...cyclic_dep);
+      }
+    }
     if (deps) cells_to_update.push(...deps);
+    console.log(cells_to_update)
   }
 
   // Officially end the transaction

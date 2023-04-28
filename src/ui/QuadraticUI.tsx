@@ -53,7 +53,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
         }
       }
     }
-      , 60 * 1000);
+      , 1000);
     return () => {
       clearInterval(interval);
     };

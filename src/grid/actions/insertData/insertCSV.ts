@@ -41,6 +41,8 @@ export const InsertCSV = (props: {
       });
       rowIndex++;
 
+      // props.sheetController.graph.addNodes(cellsToInsert)
+
       updateCellAndDCells({
         starting_cells: cellsToInsert,
         sheetController: props.sheetController,

@@ -45,6 +45,7 @@
     "pixi-viewport": "^4.37.0",
     "pixi.js": "^6.5.1",
     "quadratic-core": "file:quadratic-core/pkg",
+    "queue-typescript": "^1.0.1",
     "react": "^17.0.2",
     "react-color": "^2.19.3",
     "react-device-detect": "^2.2.2",
