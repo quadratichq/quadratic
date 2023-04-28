@@ -226,23 +226,17 @@ export const updateCellAndDCells = async (args: ArgsType) => {
 
     // if any updated cells have other cells depending on them, add to list to update
     for (const array_cell of array_cells_to_output) {
-      console.log("cells to update1")
-      console.log(cells_to_update);
       let [deps,] = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
       if (deps) cells_to_update.push(...deps);
     }
 
     // any deleted cells have other cells depending on them, add to list to update
     for (const array_cell of array_cells_to_delete) {
-      console.log("cells to update2")
-      console.log(cells_to_update);
       let [deps,] = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
       if (deps) cells_to_update.push(...deps);
     }
 
     // if this cell updates other cells add them to the list to update
-    console.log("cells to update3")
-    console.log(cell.x, cell.y);
     let [deps, cyclic_dep] = sheetController.sheet.cell_dependency.getDependencies([cell.x, cell.y]);
     if (cyclic_dep) {
       if (!has_taken_cyclic_dependencies) {
@@ -251,7 +245,6 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       }
     }
     if (deps) cells_to_update.push(...deps);
-    console.log(cells_to_update)
   }
 
   // Officially end the transaction

@@ -74,7 +74,7 @@
     "test:wasm": "cd quadratic-core && cargo test --workspace",
     "test": "",
     "eject": "react-scripts eject",
-    "dev": "concurrently \"BROWSER=none npm start\" \"electron .\"",
+    "dev": "concurrently \"BROWSER=none npm start\" \"electron  --trace-warnings .\"",
     "electron": "electron .",
     "lint:ts": "tsc --noemit",
     "lint:eslint": "eslint --ext .ts,.tsx src",

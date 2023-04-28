@@ -22,7 +22,7 @@ class Cycle {
 
   //returns all the cells in a cycle without the actual cell being updated in an order such that 
   // Cell A gets updated as a starting_cell from somewhere in the code
-  // all cells in cycle get updated
+  // all cells in cycle then get updated excluding Cell A
   // all cells depended on cycle but not apart of cycle get updated (this logic is in the function getDependencies)
   getOrderToUpdate(key: string): string[] {
     let index = this.list.indexOf(key)
