@@ -21,6 +21,7 @@ import { SheetController } from '../grid/controller/sheetController';
 import ReadOnlyDialog from './components/ReadOnlyDialog';
 import { IS_READONLY_MODE } from '../constants/app';
 import { useLocalFiles } from './contexts/LocalFiles';
+import FeedbackMenu from './menus/FeedbackMenu';
 
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
@@ -74,6 +75,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       </div>
 
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
+      {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {presentationMode && <PresentationModeHint />}
       {hasInitialPageLoadError && <InitialPageLoadError />}
 
