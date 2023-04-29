@@ -3,7 +3,6 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { DeleteCells } from '../../../grid/actions/DeleteCells';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../pixiApp/PixiApp';
-import isAlphaNumeric from './isAlphaNumeric';
 
 export function keyboardCell(options: {
   sheet_controller: SheetController;
@@ -12,7 +11,7 @@ export function keyboardCell(options: {
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  app?: PixiApp;
+  app: PixiApp;
 }): boolean {
   const {
     event,
@@ -23,7 +22,6 @@ export function keyboardCell(options: {
     app,
     sheet_controller,
   } = options;
-  if (!app) return false;
 
   if (event.key === 'Tab') {
     // move single cursor one right
@@ -41,6 +39,7 @@ export function keyboardCell(options: {
       },
     });
     event.preventDefault();
+    return false;
   }
 
   if (event.key === 'Backspace') {
@@ -67,6 +66,7 @@ export function keyboardCell(options: {
     }
 
     event.preventDefault();
+    return false;
   }
 
   if (event.key === 'Enter') {
@@ -103,6 +103,7 @@ export function keyboardCell(options: {
       });
     }
     event.preventDefault();
+    return false;
   }
 
   if (event.key === '/' || event.key === '=') {
@@ -140,10 +141,11 @@ export function keyboardCell(options: {
       });
     }
     event.preventDefault();
+    return false;
   }
 
-  // if key is a letter number start taking input
-  if (isAlphaNumeric(event.key) || event.key === '.') {
+  // Any single character key, start taking input
+  if (event.key.length === 1) {
     setInteractionState({
       ...interactionState,
       ...{
@@ -153,6 +155,7 @@ export function keyboardCell(options: {
     });
 
     event.preventDefault();
+    return false;
   }
 
   return false;
