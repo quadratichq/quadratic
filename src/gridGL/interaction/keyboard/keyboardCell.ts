@@ -145,7 +145,7 @@ export function keyboardCell(options: {
   }
 
   // Any single character key, start taking input
-  if (event.key.length === 1) {
+  if (event.key.length === 1 && event.key !== ' ') {
     setInteractionState({
       ...interactionState,
       ...{
