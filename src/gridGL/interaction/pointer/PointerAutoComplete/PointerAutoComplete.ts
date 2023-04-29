@@ -152,7 +152,7 @@ export class PointerAutoComplete {
           this.stateHorizontal = 'expandLeft';
           this.toHorizontal = column;
           rectangle.x = column;
-          rectangle.width = selection.x - column + 1;
+          rectangle.width = selection.right - column + 1;
         } else if (column > selection.right) {
           this.stateHorizontal = 'expandRight';
           this.toHorizontal = column;
