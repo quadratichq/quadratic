@@ -131,6 +131,7 @@ export class Quadrants extends Container {
   private findNextDirty(): Quadrant | undefined {
     const dirty = this.quadrantChildren.children.filter((child) => (child as Quadrant).dirty) as Quadrant[];
     if (dirty.length === 0) return;
+    if (dirty.length === 1) return dirty[0];
     const screen = this.app.viewport.getVisibleBounds();
     const ranking: number[] = [];
     for (let i = 0; i < dirty.length; i++) {
@@ -192,8 +193,8 @@ export class Quadrants extends Container {
     let quadrant = this.quadrants.get(`${row},${column}`);
     if (quadrant) return quadrant;
     if (!create) return;
-    quadrant = this.addChild(new Quadrant(this.app, row, column));
-    this.quadrants.set(`${row},${column}`, quadrant);
+    quadrant = this.quadrantChildren.addChild(new Quadrant(this.app, row, column));
+    this.quadrants.set(`${column},${row}`, quadrant);
     this.complete = false;
     return quadrant;
   }
