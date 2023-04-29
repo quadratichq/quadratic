@@ -9,6 +9,8 @@ import { Undo, Redo } from '@mui/icons-material';
 import { isMac } from '../../../../utils/isMac';
 import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
 import { CopyAsPNG } from '../../../icons';
+import { useGlobalSnackbar } from '../../../contexts/GlobalSnackbar';
+import { PNG_MESSAGE } from '../../../../constants/app';
 
 const ListItems = [
   {
@@ -108,12 +110,13 @@ const ListItems = [
   {
     label: 'Copy selection as PNG',
     Component: (props: CommandPaletteListItemSharedProps) => {
+      const { addGlobalSnackbar } = useGlobalSnackbar();
       return (
         <CommandPaletteListItem
           {...props}
           action={() => {
             copyAsPNG(props.app);
-            props.snackBar.triggerSnackbar('Copied selection as PNG to clipboard');
+            addGlobalSnackbar(PNG_MESSAGE);
           }}
           icon={<CopyAsPNG />}
           shortcut="C"

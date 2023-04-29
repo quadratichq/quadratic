@@ -9,12 +9,10 @@ import { CellInput } from './interaction/CellInput';
 import { SheetController } from '../grid/controller/sheetController';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { PanMode } from '../atoms/gridInteractionStateAtom';
-import { UseSnackBar } from '../ui/components/SnackBar';
 
 interface IProps {
   sheetController: SheetController;
   app: PixiApp;
-  snackBar: UseSnackBar;
 }
 
 // Keep track of state of mouse/space for panning mode
@@ -76,7 +74,7 @@ export default function QuadraticGrid(props: IProps) {
     window.addEventListener('mouseup', onMouseUp);
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.code === 'Space') {
+    if (e.key === ' ') {
       spaceIsDown = true;
       if (interactionState.panMode === PanMode.Disabled) {
         setInteractionState({
@@ -87,7 +85,7 @@ export default function QuadraticGrid(props: IProps) {
     }
   };
   const onKeyUp = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.code === 'Space') {
+    if (e.key === ' ') {
       spaceIsDown = false;
       if (interactionState.panMode !== PanMode.Disabled && !mouseIsDown) {
         setInteractionState({
@@ -105,7 +103,6 @@ export default function QuadraticGrid(props: IProps) {
     editorInteractionState,
     setEditorInteractionState,
     app: props.app,
-    snackbar: props.snackBar,
   });
 
   return (
@@ -162,7 +159,6 @@ export default function QuadraticGrid(props: IProps) {
         app={props.app}
         sheetController={props.sheetController}
         showContextMenu={showContextMenu}
-        snackBar={props.snackBar}
       ></FloatingContextMenu>
     </div>
   );

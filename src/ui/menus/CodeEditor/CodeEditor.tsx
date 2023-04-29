@@ -248,7 +248,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     }
 
     // Command + Enter
-    if ((event.metaKey || event.ctrlKey) && event.code === 'Enter') {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault();
       event.stopPropagation();
       saveAndRunCell();
