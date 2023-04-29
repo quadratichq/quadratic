@@ -15,7 +15,7 @@ export const shrinkHorizontal = async (options: {
   const { app, selection, endCell } = options;
   const { sheet_controller } = app;
   await DeleteCells({
-    x0: endCell.x,
+    x0: endCell.x + 1,
     y0: selection.top,
     x1: selection.right,
     y1: selection.bottom,
@@ -44,12 +44,18 @@ export const shrinkVertical = async (options: {
   });
 };
 
-export const expandDown = async (options: { app: PixiApp; selection: Rectangle; to: number }): Promise<void> => {
-  const { app, selection, to } = options;
+export const expandDown = async (options: {
+  app: PixiApp;
+  selection: Rectangle;
+  to: number;
+  shrinkHorizontal?: number;
+}): Promise<void> => {
+  const { app, selection, to, shrinkHorizontal } = options;
   const { sheet_controller, sheet } = app;
 
   const cells: Cell[] = [];
-  for (let x = selection.left; x <= selection.right; x++) {
+  const right = shrinkHorizontal === undefined ? selection.right : shrinkHorizontal;
+  for (let x = selection.left; x <= right; x++) {
     const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, x, selection.bottom));
     const series: (Cell | undefined)[] = [];
     for (let y = selection.top; y <= selection.bottom; y++) {
@@ -76,12 +82,18 @@ export const expandDown = async (options: { app: PixiApp; selection: Rectangle; 
   });
 };
 
-export const expandUp = async (options: { app: PixiApp; selection: Rectangle; to: number }): Promise<void> => {
-  const { app, selection, to } = options;
+export const expandUp = async (options: {
+  app: PixiApp;
+  selection: Rectangle;
+  to: number;
+  shrinkHorizontal?: number;
+}): Promise<void> => {
+  const { app, selection, to, shrinkHorizontal } = options;
   const { sheet_controller, sheet } = app;
 
   const cells: Cell[] = [];
-  for (let x = selection.left; x <= selection.right; x++) {
+  const right = shrinkHorizontal === undefined ? selection.right : shrinkHorizontal;
+  for (let x = selection.left; x <= right; x++) {
     const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, x, selection.bottom));
     const series: (Cell | undefined)[] = [];
     for (let y = selection.top; y <= selection.bottom; y++) {

@@ -224,17 +224,35 @@ export class PointerAutoComplete {
 
     if (this.stateVertical === 'shrink') {
       if (this.endCell) {
-        await shrinkVertical({ app: this.app, selection: this.selection, endCell: this.endCell });
+        await shrinkVertical({
+          app: this.app,
+          selection: this.selection,
+          endCell: this.endCell,
+        });
       }
     } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
-      await expandDown({ app: this.app, selection: this.selection, to: this.toVertical });
+      await expandDown({
+        app: this.app,
+        selection: this.selection,
+        to: this.toVertical,
+        shrinkHorizontal: this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined,
+      });
     } else if (this.stateVertical === 'expandUp' && this.toVertical !== undefined) {
-      await expandUp({ app: this.app, selection: this.selection, to: this.toVertical });
+      await expandUp({
+        app: this.app,
+        selection: this.selection,
+        to: this.toVertical,
+        shrinkHorizontal: this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined,
+      });
     }
 
     if (this.stateHorizontal === 'shrink') {
       if (this.endCell) {
-        await shrinkHorizontal({ app: this.app, selection: this.selection, endCell: this.endCell });
+        await shrinkHorizontal({
+          app: this.app,
+          selection: this.selection,
+          endCell: this.endCell,
+        });
       }
     } else if (this.stateHorizontal === 'expandLeft' && this.toHorizontal !== undefined) {
       await expandLeft({
