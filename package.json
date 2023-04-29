@@ -9,6 +9,7 @@
   "repository": "https://github.com/quadratichq/quadratic.git",
   "private": true,
   "dependencies": {
+    "@amplitude/analytics-browser": "^1.9.4",
     "@auth0/auth0-react": "^1.11.0",
     "@emotion/react": "^11.7.0",
     "@emotion/styled": "^11.6.0",
@@ -28,6 +29,7 @@
     "@types/react": "^17.0.33",
     "@types/react-color": "^3.0.6",
     "@types/react-dom": "^17.0.10",
+    "@types/uuid": "^9.0.1",
     "ace-builds": "^1.4.13",
     "axios": "^0.24.0",
     "color": "^4.2.3",
@@ -36,6 +38,7 @@
     "fuzzysort": "^2.0.4",
     "localforage": "^1.10.0",
     "lodash.debounce": "^4.0.8",
+    "mixpanel-browser": "^2.46.0",
     "monaco-editor": "^0.31.1",
     "numerable": "^0.3.15",
     "papaparse": "^5.3.2",
@@ -50,7 +53,9 @@
     "recoil": "^0.6.0",
     "sass": "^1.56.2",
     "typescript": "^4.4.4",
-    "web-vitals": "^1.0.1"
+    "uuid": "^9.0.0",
+    "web-vitals": "^1.0.1",
+    "zod": "^3.21.4"
   },
   "main": "public/electron.js",
   "scripts": {
@@ -103,6 +108,7 @@
   "devDependencies": {
     "@playwright/test": "^1.22.2",
     "@types/lodash.debounce": "^4.0.7",
+    "@types/mixpanel-browser": "^2.38.1",
     "@types/papaparse": "^5.3.7",
     "concurrently": "^6.3.0",
     "electron": "^23.0.0",

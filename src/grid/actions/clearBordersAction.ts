@@ -1,4 +1,4 @@
-import { Border } from '../sheet/gridTypes';
+import { Border } from '../../schemas';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 

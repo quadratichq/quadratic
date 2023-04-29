@@ -2,7 +2,7 @@ import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
-import { Cell, CellFormat } from './gridTypes';
+import { Cell, CellFormat } from '../../schemas';
 import { MinMax } from '../../gridGL/types/size';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Bounds } from './Bounds';

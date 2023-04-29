@@ -6,6 +6,11 @@ import { ContentCopy, ContentPaste, ContentCut, East } from '@mui/icons-material
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { Undo, Redo } from '@mui/icons-material';
+import { isMac } from '../../../../utils/isMac';
+import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
+import { CopyAsPNG } from '../../../icons';
+import { useGlobalSnackbar } from '../../../contexts/GlobalSnackbar';
+import { PNG_MESSAGE } from '../../../../constants/app';
 
 const ListItems = [
   {
@@ -34,8 +39,8 @@ const ListItems = [
           action={() => {
             props.sheetController.redo();
           }}
-          shortcut="Z"
-          shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
+          shortcut={isMac ? 'Z' : 'Y'}
+          shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
         />
       );
     },
@@ -98,6 +103,24 @@ const ListItems = [
           icon={<ContentPaste />}
           shortcut="V"
           shortcutModifiers={[KeyboardSymbols.Command]}
+        />
+      );
+    },
+  },
+  {
+    label: 'Copy selection as PNG',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const { addGlobalSnackbar } = useGlobalSnackbar();
+      return (
+        <CommandPaletteListItem
+          {...props}
+          action={() => {
+            copyAsPNG(props.app);
+            addGlobalSnackbar(PNG_MESSAGE);
+          }}
+          icon={<CopyAsPNG />}
+          shortcut="C"
+          shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
         />
       );
     },

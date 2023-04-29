@@ -12,6 +12,7 @@ export class PointerHeading {
   private app: PixiApp;
   private active = false;
   private downTimeout: number | undefined;
+  cursor?: string;
 
   // tracks changes to viewport caused by resizing negative column/row headings
   private headingResizeViewport = {
@@ -139,15 +140,17 @@ export class PointerHeading {
   }
 
   pointerMove(world: Point): boolean {
-    const { canvas, headings, cells, gridLines, cursor, settings } = this.app;
+    const { headings, cells, gridLines, cursor, settings } = this.app;
     const { gridOffsets } = this.sheet;
+    this.cursor = undefined;
+
     // Only style the heading resize cursor if panning mode is disabled
     if (settings.interactionState.panMode === PanMode.Disabled) {
       const headingResize = headings.intersectsHeadingGridLine(world);
       if (headingResize) {
-        canvas.style.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
+        this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
       } else {
-        canvas.style.cursor = headings.intersectsHeadings(world) ? 'pointer' : 'unset';
+        this.cursor = headings.intersectsHeadings(world) ? 'pointer' : undefined;
       }
     }
     if (!this.active) {
@@ -163,7 +166,7 @@ export class PointerHeading {
 
           // move viewport by the amount of the resize for negative columns
           const change = size - this.headingResizeViewport.originalSize;
-          this.app.viewport.x = this.headingResizeViewport.viewportStart + change;
+          this.app.viewport.x = this.headingResizeViewport.viewportStart + change * this.app.viewport.scale.x;
           this.headingResizeViewport.change = change;
         }
 
@@ -184,7 +187,7 @@ export class PointerHeading {
 
           // move viewport by the amount of the resize for negative columns
           const change = size - this.headingResizeViewport.originalSize;
-          this.app.viewport.y = this.headingResizeViewport.viewportStart + change;
+          this.app.viewport.y = this.headingResizeViewport.viewportStart + change * this.app.viewport.scale.x;
           this.headingResizeViewport.change = change;
         }
 

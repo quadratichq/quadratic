@@ -3,7 +3,7 @@ import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
-import { Cell } from '../../../grid/sheet/gridTypes';
+import { Cell } from '../../../schemas';
 import {
   Button,
   CircularProgress,
@@ -21,12 +21,13 @@ import { EditorInteractionState, editorInteractionStateAtom } from '../../../ato
 import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
 import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
-import { cellEvaluationReturnType } from '../../../grid/computations/types';
+import { CellEvaluationResult } from '../../../grid/computations/types';
 import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
-import { Formula, Python } from '../../icons';
+import { AI, Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
+import mixpanel from 'mixpanel-browser';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -59,7 +60,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const cell = useMemo(() => props.sheet_controller.sheet.getCellCopy(x, y), [x, y, props.sheet_controller.sheet]);
 
   // Cell evaluation result
-  const [evalResult, setEvalResult] = useState<cellEvaluationReturnType | undefined>(cell?.evaluation_result);
+  const [evalResult, setEvalResult] = useState<CellEvaluationResult | undefined>(cell?.evaluation_result);
 
   // Editor width state
   const [editorWidth, setEditorWidth] = useState<number>(
@@ -78,7 +79,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
     // existing cell and content has changed
     (editorMode === 'PYTHON'
       ? selectedCell?.python_code !== editorContent
-      : selectedCell?.formula_code !== editorContent);
+      : editorMode === 'FORMULA'
+      ? selectedCell?.formula_code !== editorContent
+      : editorMode === 'AI'
+      ? selectedCell?.ai_prompt !== editorContent
+      : false);
 
   // When changing mode
   // useEffect(() => {
@@ -89,6 +94,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   //   // monaco.editor.setModelLanguage(editor.getModel(), 'formula');
   // }, [editorMode, cell]);
+
+  useEffect(() => {
+    if (showCodeEditor) mixpanel.track('[CodeEditor].opened', { type: editorMode });
+  }, [showCodeEditor, editorMode]);
 
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
@@ -121,6 +130,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     setSelectedCell(undefined);
     setEvalResult(undefined);
     focusGrid();
+    mixpanel.track('[CodeEditor].closed', { type: editorMode });
   };
 
   useEffect(() => {
@@ -155,6 +165,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
         setEditorContent(cell?.python_code);
       } else if (editorMode === 'FORMULA') {
         setEditorContent(cell?.formula_code);
+      } else if (editorMode === 'AI') {
+        setEditorContent(cell?.ai_prompt);
       }
     } else {
       // create blank cell
@@ -170,6 +182,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const saveAndRunCell = async () => {
     if (!selectedCell) return;
+    if (isRunningComputation) return;
+
+    setIsRunningComputation(true);
 
     if (isRunningComputation) return;
 
@@ -181,6 +196,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
       selectedCell.python_code = editorContent;
     } else if (editorMode === 'FORMULA') {
       selectedCell.formula_code = editorContent;
+    } else if (editorMode === 'AI') {
+      selectedCell.ai_prompt = editorContent;
     }
 
     await updateCellAndDCells({
@@ -190,6 +207,16 @@ export const CodeEditor = (props: CodeEditorProps) => {
     });
 
     const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
+
+    mixpanel.track('[CodeEditor].cellRun', {
+      type: editorMode,
+      code: editorContent,
+      result_success: updated_cell?.evaluation_result?.success,
+      result_stdout: updated_cell?.evaluation_result?.std_out,
+      result_stderr: updated_cell?.evaluation_result?.std_err,
+      result_output_value: updated_cell?.evaluation_result?.output_value,
+    });
+
     setEvalResult(updated_cell?.evaluation_result);
     setIsRunningComputation(false);
   };
@@ -221,7 +248,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     }
 
     // Command + Enter
-    if ((event.metaKey || event.ctrlKey) && event.code === 'Enter') {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault();
       event.stopPropagation();
       saveAndRunCell();
@@ -296,6 +323,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
             <Python sx={{ color: colors.languagePython }} fontSize="small" />
           ) : editorMode === 'FORMULA' ? (
             <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
+          ) : editorMode === 'AI' ? (
+            <AI sx={{ color: colors.languageAI }} fontSize="small" />
           ) : (
             <Subject />
           )}
@@ -304,7 +333,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
               color: 'black',
             }}
           >
-            Cell ({selectedCell.x}, {selectedCell.y}) - {capitalize(selectedCell.type)}
+            Cell ({selectedCell.x}, {selectedCell.y}) -{' '}
+            {selectedCell.type === 'AI' ? 'AI' : capitalize(selectedCell.type)}
             {hasUnsavedChanges && (
               <TooltipHint title="Your changes haven’t been saved or run">
                 <FiberManualRecord
@@ -348,7 +378,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
       {/* Editor Body */}
       <div
         style={{
-          minHeight: '200px',
+          minHeight: '100px',
           flex: '2',
         }}
       >
@@ -389,8 +419,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
           height: `${consoleHeight}px`,
         }}
       >
-        {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
-          <Console evalResult={evalResult} editorMode={editorMode} />
+        {(editorInteractionState.mode === 'PYTHON' ||
+          editorInteractionState.mode === 'FORMULA' ||
+          editorInteractionState.mode === 'AI') && (
+          <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
         )}
       </div>
     </div>

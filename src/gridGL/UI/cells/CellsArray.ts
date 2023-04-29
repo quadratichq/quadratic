@@ -1,5 +1,5 @@
 import { Container, Sprite, Texture } from 'pixi.js';
-import { CellTypes } from '../../../grid/sheet/gridTypes';
+import { CellType } from '../../../schemas';
 import { colors } from '../../../theme/colors';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { drawBorder } from './drawBorder';
@@ -29,7 +29,7 @@ export class CellsArray extends Container {
     return this.addChild(new Sprite(Texture.WHITE));
   };
 
-  draw(cellArray: number[][], x: number, y: number, width: number, height: number, type: CellTypes): void {
+  draw(cellArray: number[][], x: number, y: number, width: number, height: number, type: CellType): void {
     const { gridOffsets } = this.app.sheet;
 
     // calculate array cells outline size
@@ -49,6 +49,8 @@ export class CellsArray extends Container {
           ? colors.cellColorUserPython
           : type === 'FORMULA'
           ? colors.cellColorUserFormula
+          : type === 'AI'
+          ? colors.cellColorUserAI
           : colors.independence,
       alpha: 0.5,
       x,

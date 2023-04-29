@@ -1,74 +1,78 @@
-import { useEffect, useState } from 'react';
-import QuadraticUI from '../ui/QuadraticUI';
-import { RecoilRoot } from 'recoil';
-import { useLoading } from '../contexts/LoadingContext';
+import { useEffect, useRef, useState } from 'react';
+import QuadraticUIContext from '../ui/QuadraticUIContext';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { loadPython } from '../grid/computations/python/loadPython';
-import { FileLoadingComponent } from './FileLoadingComponent';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../gridGL/loadAssets';
 import { IS_READONLY_MODE } from '../constants/app';
 import { debugSkipPythonLoad } from '../debugFlags';
-import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
-import { localFiles } from '../grid/sheet/localFiles';
-import { SheetController } from '../grid/controller/sheetController';
 import init, { hello } from 'quadratic-core';
 import { useGridSettings } from '../ui/menus/TopBar/SubMenus/useGridSettings';
+import { SheetController } from '../grid/controller/sheetController';
+import { useGenerateLocalFiles } from '../hooks/useGenerateLocalFiles';
+import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+
+type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-rust' | 'wasm-python';
+const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-rust', 'wasm-python'];
 
 export const QuadraticApp = () => {
-  const { loading, incrementLoadingCount } = useLoading();
-  const [sheet_controller] = useState<SheetController>(new SheetController());
-  const sheet = sheet_controller.sheet;
-  const { setPresentationMode } = useGridSettings();
+  const [loading, setLoading] = useState(true);
+  const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
+  const didMount = useRef(false);
+  const { presentationMode, setPresentationMode } = useGridSettings();
   const [settingsReset, setSettingsReset] = useState(false);
+  const [sheetController] = useState<SheetController>(new SheetController());
+  const localFiles = useGenerateLocalFiles(sheetController);
+  const [app] = useState(() => new PixiApp(sheetController, localFiles.save));
+  const { initialize } = localFiles;
+
+  useEffect(() => {
+    if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
+      setLoading(false);
+    }
+  }, [itemsLoaded]);
 
   // reset presentation mode when app starts
   useEffect(() => {
     if (!settingsReset) {
-      setPresentationMode(false);
+      if (presentationMode) setPresentationMode(false);
       setSettingsReset(true);
     }
-  }, [setPresentationMode, settingsReset, setSettingsReset]);
+  }, [presentationMode, setPresentationMode, settingsReset, setSettingsReset]);
 
   // Loading Effect
   useEffect(() => {
-    if (loading) {
-      if (!IS_READONLY_MODE && !debugSkipPythonLoad) {
-        loadPython().then(() => {
-          incrementLoadingCount();
-        });
-      } else {
-        incrementLoadingCount();
-      }
-      loadAssets().then(() => {
-        incrementLoadingCount();
-      });
-      // load Rust wasm
-      init().then(() => {
-        hello(); // let Rust say hello to console
-        incrementLoadingCount();
-      });
-      localFiles.initialize().then(() => {
-        incrementLoadingCount();
-      });
-    }
-  }, [loading, incrementLoadingCount]);
+    // Ensure this only runs once
+    if (didMount.current) return;
+    didMount.current = true;
 
-  useEffect(() => {
-    // temporary way to attach sheet to global for use in GetCellsDB function
-    GetCellsDBSetSheet(sheet);
-  }, [sheet]);
+    if (!IS_READONLY_MODE && !debugSkipPythonLoad) {
+      loadPython().then(() => {
+        setItemsLoaded((old) => ['wasm-python', ...old]);
+      });
+    } else {
+      setItemsLoaded((old) => ['wasm-python', ...old]);
+    }
+    loadAssets().then(() => {
+      setItemsLoaded((old) => ['pixi-assets', ...old]);
+    });
+    init().then(() => {
+      hello(); // let Rust say hello to console
+      setItemsLoaded((old) => ['wasm-rust', ...old]);
+    });
+    initialize().then(() => {
+      setItemsLoaded((old) => ['local-files', ...old]);
+    });
+  }, [initialize]);
 
   return (
-    <RecoilRoot>
+    <>
       {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
-      <AnalyticsProvider></AnalyticsProvider>
-      {/* Welcome Component loads appropriate sheet */}
-      {!loading && <FileLoadingComponent sheetController={sheet_controller} />}
+      <AnalyticsProvider />
       {/* Provider of All React UI Components */}
-      {!loading && <QuadraticUI sheetController={sheet_controller} />}
+      {!loading && <QuadraticUIContext {...{ sheetController, localFiles, app }} />}
       {/* Loading screen */}
-      {loading && <QuadraticLoading></QuadraticLoading>}
-    </RecoilRoot>
+      {loading && <QuadraticLoading />}
+    </>
   );
 };
