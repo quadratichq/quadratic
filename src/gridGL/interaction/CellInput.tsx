@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { Coordinate } from '../types/size';
 import { focusGrid } from '../../helpers/focusGrid';
@@ -24,17 +24,7 @@ export const CellInput = (props: CellInputProps) => {
   const cellLocation = interactionState.cursorPosition;
 
   const text = useRef('');
-  const handleChange = useCallback((e) => {
-    console.log(e.target.value);
-    text.current = e.target.value;
-  }, []);
-
-  // Effect for sizing the input width to the length of the value
-  const [textInput, setTextInput] = useState<HTMLDivElement>();
-  const textInputRef = useCallback((node) => {
-    node?.focus();
-    setTextInput(node);
-  }, []);
+  const handleChange = useCallback((e) => (text.current = e.target.value), []);
 
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
   const copy = sheetController.sheet.getCellAndFormatCopy(cellLocation.x, cellLocation.y);
@@ -48,11 +38,38 @@ export const CellInput = (props: CellInputProps) => {
     if (format.bold) return 'OpenSans-Bold';
   }, [format]);
 
-  useEffect(() => {
-    if (cell?.value) {
-      text.current = cell.value;
-    }
-  }, [cell?.value]);
+  // moves the cursor to the end of the input (since we're placing a single character that caused the input to open)
+  const handleFocus = useCallback((e) => {
+    const div = e.target;
+    window.setTimeout(() => {
+      if (!document.hasFocus() || !div.contains(document.activeElement)) return;
+      if (div.innerText?.length) {
+        const selection = document.getSelection();
+        const range = document.createRange();
+        if (selection) {
+          range.setStart(div.childNodes[0], div.innerText.length);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
+    }, 0);
+  }, []);
+
+  // Effect for sizing the input width to the length of the value
+  const [textInput, setTextInput] = useState<HTMLDivElement>();
+  const textInputRef = useCallback(
+    (node) => {
+      if (!node) return;
+      node.focus();
+      setTextInput(node);
+      text.current = interactionState.inputInitialValue ?? (cell?.value || '');
+      if (document.hasFocus() && node.contains(document.activeElement)) {
+        handleFocus({ target: node });
+      }
+    },
+    [cell?.value, handleFocus, interactionState.inputInitialValue]
+  );
 
   // If we don't have a viewport, we can't continue.
   if (!viewport || !container) return null;
@@ -199,9 +216,8 @@ export const CellInput = (props: CellInputProps) => {
         // letterSpacing: '0.07px',
       }}
       onChange={handleChange}
-      onBlur={() => {
-        closeInput();
-      }}
+      onFocus={handleFocus}
+      onBlur={() => closeInput()}
       onKeyDown={(event) => {
         if (event.key === 'Enter') {
           closeInput({ x: 0, y: 1 });
