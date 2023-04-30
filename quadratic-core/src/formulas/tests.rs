@@ -266,3 +266,9 @@ fn eval(grid: &mut impl GridProxy, s: &str) -> FormulaResult<Value> {
         .eval_blocking(grid, Pos::ORIGIN)
         .map(|value| value.inner)
 }
+
+/// Regression test for quadratic#410
+#[test]
+fn test_currency_string() {
+    assert_eq!("30", eval_to_string(&mut PanicGridMock, "\"$10\" + 20"));
+}

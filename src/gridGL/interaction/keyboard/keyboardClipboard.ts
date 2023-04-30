@@ -1,5 +1,6 @@
 import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { PNG_MESSAGE } from '../../../constants/app';
 import {
   copySelectionToPNG,
   copyToClipboard,
@@ -7,19 +8,19 @@ import {
   pasteFromClipboard,
 } from '../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { UseSnackBar } from '../../../ui/components/SnackBar';
+import { GlobalSnackbar } from '../../../ui/contexts/GlobalSnackbar';
 
 export function keyboardClipboard(props: {
   event: React.KeyboardEvent<HTMLElement>;
   interactionState: GridInteractionState;
   sheet_controller: SheetController;
   app: PixiApp;
-  snackbar: UseSnackBar;
+  addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
 }): boolean {
-  const { event, interactionState, sheet_controller, app, snackbar } = props;
+  const { addGlobalSnackbar, event, interactionState, sheet_controller, app } = props;
 
   // Command + V
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyV') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'v') {
     pasteFromClipboard(sheet_controller, {
       x: interactionState.cursorPosition.x,
       y: interactionState.cursorPosition.y,
@@ -28,16 +29,16 @@ export function keyboardClipboard(props: {
   }
 
   // Command + Shift + C
-  if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.code === 'KeyC') {
+  if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'c') {
     copySelectionToPNG(app);
-    snackbar.triggerSnackbar('Copied selection as PNG to clipboard');
+    addGlobalSnackbar(PNG_MESSAGE);
     event.preventDefault();
     event.stopPropagation();
     return true;
   }
 
   // Command + C
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyC') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'c') {
     copyToClipboard(
       sheet_controller,
       {
@@ -53,7 +54,7 @@ export function keyboardClipboard(props: {
   }
 
   // Command + X
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyX') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'x') {
     cutToClipboard(
       sheet_controller,
       {

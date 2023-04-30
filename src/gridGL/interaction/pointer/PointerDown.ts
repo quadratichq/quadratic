@@ -21,22 +21,6 @@ export class PointerDown {
     this.app = app;
   }
 
-  /** get world coordinate for the bottom-right of the selected cell to drag the indicator */
-  // private getEndCell(): Point {
-  //   let endCell: Point;
-  //   const interactionState = this.app.settings.interactionState;
-  //   const gridOffsets = this.app.sheet.gridOffsets;
-  //   if (interactionState.showMultiCursor) {
-  //     const multiCursor = interactionState.multiCursorPosition;
-  //     const cell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
-  //     endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
-  //   } else {
-  //     const cell = gridOffsets.getCell(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
-  //     endCell = new Point(cell.x + cell.width - 1, cell.y + cell.height - 1);
-  //   }
-  //   return endCell;
-  // }
-
   pointerDown(world: Point, event: PointerEvent): void {
     if (IS_READONLY_MODE) return;
     if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
@@ -49,24 +33,6 @@ export class PointerDown {
     const { interactionState, setInteractionState } = settings;
     const { sheet } = table;
     const { gridOffsets } = sheet;
-
-    // handle dragging from the corner (disabled for now)
-    // if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
-    //   const cursorPosition = interactionState.cursorPosition;
-    //   const end = this.getEndCell();
-    //   const { column, row } = gridOffsets.getRowColumnFromWorld(end.x, end.y);
-    //   const originX = cursorPosition.x < column ? cursorPosition.x : column;
-    //   const originY = cursorPosition.y < row ? cursorPosition.y : row;
-    //   this.active = true;
-    //   this.position = new Point(originX, originY);
-    //   this.positionRaw = end;
-    //   this.pointerMoved = true;
-    //   this.previousPosition = {
-    //     originPosition: new Point(originX, originY),
-    //     terminalPosition: new Point(column, row),
-    //   };
-    //   return;
-    // }
 
     this.positionRaw = world;
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);

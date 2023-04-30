@@ -201,9 +201,9 @@ export const CellInput = (props: CellInputProps) => {
           closeInput({ x: 0, y: -1 });
         } else if (event.key === 'ArrowDown') {
           closeInput({ x: 0, y: 1 });
-        } else if ((event.metaKey || event.ctrlKey) && event.code === 'KeyP') {
+        } else if ((event.metaKey || event.ctrlKey) && event.key === 'p') {
           event.preventDefault();
-        } else if (event.code === 'Space') {
+        } else if (event.key === ' ') {
           // Don't propagate so panning mode doesn't get triggered
           event.stopPropagation();
         }

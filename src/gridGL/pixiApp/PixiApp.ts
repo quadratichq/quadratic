@@ -4,7 +4,6 @@ import { Renderer, Container, Graphics } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { PixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
-import { zoomInOut } from 'gridGL/helpers/zoom';
 import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
 import { debugAlwaysShowCache, debugNeverShowCache } from 'debugFlags';
 import { SheetController } from 'grid/controller/sheetController';
@@ -18,6 +17,8 @@ import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { Pointer } from 'gridGL/interaction/pointer/Pointer';
 import { Cursor } from '../UI/Cursor';
 import { Table } from './Table';
+import { zoomInOut } from '../helpers/zoom';
+import { BoxCells } from '../UI/boxCells';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -34,8 +35,9 @@ export class PixiApp {
 
   cursor: Cursor;
   headings: GridHeadings;
+  boxCells: BoxCells;
 
-  input: Pointer;
+  pointer: Pointer;
   viewportContents: Container;
   settings: PixiAppSettings;
   renderer: Renderer;
@@ -108,6 +110,7 @@ export class PixiApp {
     this.tables = this.viewportContents.addChild(new Tables(this));
     this.tables.add(this.sheet_controller.sheet);
 
+    this.boxCells = this.viewportContents.addChild(new BoxCells(this));
     this.cursor = this.viewportContents.addChild(new Cursor(this));
     this.headings = this.viewportContents.addChild(new GridHeadings(this));
 
@@ -115,7 +118,7 @@ export class PixiApp {
 
     this.reset();
 
-    this.input = new Pointer(this);
+    this.pointer = new Pointer(this);
     this.update = new Update(this);
 
     if (debugAlwaysShowCache) this.showCache();

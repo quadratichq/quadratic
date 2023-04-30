@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { Size } from '../../types/size';
@@ -13,8 +13,8 @@ import { useFormatCells } from '../../../ui/menus/TopBar/SubMenus/useFormatCells
 import { useGetSelection } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';
 import { useClearAllFormatting } from '../../../ui/menus/TopBar/SubMenus/useClearAllFormatting';
 import { useGridSettings } from '../../../ui/menus/TopBar/SubMenus/useGridSettings';
-import { UseSnackBar } from '../../../ui/components/SnackBar';
-import { LocalFilesContext } from '../../../ui/QuadraticUIContext';
+import { useGlobalSnackbar } from '../../../ui/contexts/GlobalSnackbar';
+import { useLocalFiles } from '../../../ui/contexts/LocalFiles';
 import { PixiApp } from 'gridGL/pixiApp/PixiApp';
 
 interface IProps {
@@ -24,7 +24,6 @@ interface IProps {
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   app: PixiApp;
   sheetController: SheetController;
-  snackbar: UseSnackBar;
 }
 
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
@@ -42,7 +41,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { changeBold, changeItalic } = useFormatCells(sheetController, app);
   const { clearAllFormatting } = useClearAllFormatting(sheetController, app);
   const { presentationMode, setPresentationMode } = useGridSettings();
-  const { currentFileId } = useContext(LocalFilesContext);
+  const { currentFileId } = useLocalFiles();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const keyDownWindow = useCallback(
     (event: KeyboardEvent): void => {
@@ -60,9 +60,10 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           changeBold,
           changeItalic,
           format,
-          pointer: app.input,
+          pointer: app.pointer,
           presentationMode,
           setPresentationMode,
+          app,
           currentFileId,
         })
       ) {
@@ -75,8 +76,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       interactionState,
       editorInteractionState,
       setEditorInteractionState,
-      app?.viewport,
-      app.input,
+      app,
       sheetController.sheet,
       clearAllFormatting,
       changeBold,
@@ -101,7 +101,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
         interactionState,
         sheet_controller: props.sheetController,
         app: props.app,
-        snackbar: props.snackbar,
+        addGlobalSnackbar,
       }) ||
       keyboardUndoRedo(event, interactionState, props.sheetController) ||
       keyboardSelect({

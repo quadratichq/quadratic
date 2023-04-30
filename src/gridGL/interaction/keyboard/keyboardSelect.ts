@@ -13,7 +13,7 @@ export function keyboardSelect(options: {
   if (!options.viewport) return false;
 
   // Command + A
-  if ((options.event.metaKey || options.event.ctrlKey) && options.event.code === 'KeyA') {
+  if ((options.event.metaKey || options.event.ctrlKey) && options.event.key === 'a') {
     selectAllCells({
       sheet: options.sheet,
       setInteractionState: options.setInteractionState,

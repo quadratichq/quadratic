@@ -1,22 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Point } from 'pixi.js';
-import { debug, debugShowCellsForDirtyQuadrants, debugShowFPS, debugShowWhyRendering } from 'debugFlags';
-import {
-  debugRendererLight,
-  debugShowCachedCounts,
-  debugShowChildren,
-  debugTimeCheck,
-  debugTimeReset,
-} from '../helpers/debugPerformance';
+import { debugShowFPS } from 'debugFlags';
+import { debugRendererLight, debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { FPS } from '../helpers/Fps';
-import { QUADRANT_RENDER_WAIT } from '../quadrants/quadrantConstants';
 import { PixiApp } from './PixiApp';
 
 export class Update {
   private pixiApp: PixiApp;
   private raf?: number;
   private fps?: FPS;
-  private nextQuadrantRender = 0;
   private lastViewportPosition: Point = new Point();
   private lastViewportScale = 1;
 

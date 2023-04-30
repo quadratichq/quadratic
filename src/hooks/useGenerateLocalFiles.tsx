@@ -7,14 +7,13 @@ import { validateGridFile } from '../schemas/validateGridFile';
 import { debugShowFileIO } from '../debugFlags';
 import { v4 as uuid } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
-import { downloadFile } from './downloadFile';
+import { downloadFile } from '../helpers/downloadFile';
 import { SheetController } from '../grid/controller/sheetController';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { DEFAULT_FILE_NAME, EXAMPLE_FILES } from '../constants/app';
+import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import mixpanel from 'mixpanel-browser';
-
 const INDEX = 'file-list';
 
 export interface LocalFile {
@@ -41,7 +40,11 @@ export interface LocalFiles {
   save: () => Promise<void>;
 }
 
-export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
+/**
+ * This hook should ONLY be run once. The values it returns get stuck in the
+ * `useLocalFiles()` provider for as a react context for use throughout the app
+ */
+export const useGenerateLocalFiles = (sheetController: SheetController): LocalFiles => {
   const [hasInitialPageLoadError, setHasInitialPageLoadError] = useState<boolean>(false);
   const [fileList, setFileList] = useState<LocalFile[]>([]);
   const [currentFileContents, setCurrentFileContents] = useState<GridFile | null>(null);
@@ -357,8 +360,16 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     }
 
     // Get URL params we need at initialize time
-    const file = getURLParameter('file');
     const local = getURLParameter('local');
+    let file = getURLParameter('file');
+    // We get the `file` query param from the URL, but if a user had it present
+    // _before_ they logged in, we lose it through the Auth0 process, so we
+    // store it in sessionStorage and use it (then delete it) if its present
+    const fileParamBeforeLogin = sessionStorage.getItem(FILE_PARAM_KEY);
+    if (fileParamBeforeLogin) {
+      file = fileParamBeforeLogin;
+      sessionStorage.removeItem(FILE_PARAM_KEY);
+    }
 
     // Migrate files from old version of the app (one-time, if necessary thing)
     // Note: eventually this code can be removed
