@@ -35,6 +35,8 @@ export class SheetController {
   //
 
   public start_transaction(): void {
+    if (!this.app) throw new Error('Expected this.app to be defined in sheetController');
+
     if (this.transaction_in_progress) {
       // during debug mode, throw an error
       // otherwise, capture the error and continue
@@ -45,11 +47,13 @@ export class SheetController {
       this.end_transaction();
     }
 
+    const cursor = { ...this.app.settings.interactionState, showInput: false };
+
     // set transaction in progress to a new Transaction
     // transaction_in_progress represents the stack of commands needed
     // to undo the transaction currently being executed.
-    this.transaction_in_progress = { statements: [] };
-    this.transaction_in_progress_reverse = { statements: [] };
+    this.transaction_in_progress = { statements: [], cursor };
+    this.transaction_in_progress_reverse = { statements: [], cursor };
   }
 
   public execute_statement(statement: Statement): void {
@@ -107,6 +111,8 @@ export class SheetController {
   }
 
   public undo(): void {
+    if (!this.app) throw new Error('Expected this.app to be defined in sheetController');
+
     // check if undo stack is empty
     // check if transaction in progress
     // pop transaction off undo stack
@@ -135,12 +141,16 @@ export class SheetController {
     // add reverse transaction to redo stack
     this.redo_stack.push(reverse_transaction);
 
+    this.app.settings.setInteractionState?.(transaction.cursor);
+
     // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
     // This will be very inefficient on large files.
-    if (this.app) this.app.rebuild();
+    this.app.rebuild();
   }
 
   public redo(): void {
+    if (!this.app) throw new Error('Expected this.app to be defined in sheetController');
+
     // check if redo stack is empty
     // check if transaction in progress
     // pop transaction off redo stack
@@ -169,9 +179,11 @@ export class SheetController {
     // add reverse transaction to undo stack
     this.undo_stack.push(reverse_transaction);
 
+    this.app.settings.setInteractionState?.(transaction.cursor);
+
     // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
     // This will be very inefficient on large files.
-    if (this.app) this.app.rebuild();
+    this.app.rebuild();
   }
 
   public clear(): void {
