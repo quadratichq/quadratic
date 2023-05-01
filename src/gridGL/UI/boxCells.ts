@@ -53,7 +53,7 @@ export class BoxCells extends Graphics {
     this.dirty = false;
     this.clear();
     this.lineStyle({
-      color: this.horizontalDelete ? colors.boxCellsDeleteColor : colors.boxCellsColor,
+      color: colors.boxCellsColor,
       alpha: colors.boxCellsAlpha,
       width: thickness,
     });
@@ -62,7 +62,7 @@ export class BoxCells extends Graphics {
     this.moveTo(screenRectangle.x + screenRectangle.width, screenRectangle.y);
     this.lineTo(screenRectangle.x + screenRectangle.width, screenRectangle.y + screenRectangle.height);
     this.lineStyle({
-      color: this.verticalDelete ? colors.boxCellsDeleteColor : colors.boxCellsColor,
+      color: colors.boxCellsColor,
       alpha: colors.boxCellsAlpha,
       width: thickness,
     });
