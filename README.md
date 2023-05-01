@@ -82,3 +82,5 @@ You can download them and then open them in Quadratic via File > Open Grid
 ## Quadratic is Hiring
 
 Check out our open roles -> [careers.quadratichq.com](https://careers.quadratichq.com)
+
+hi
