@@ -141,7 +141,6 @@ export function keyboardCell(options: {
     event.preventDefault();
   }
 
-  // Any single character key, start taking input
   if (isAllowedFirstChar(event.key)) {
     setInteractionState({
       ...interactionState,
