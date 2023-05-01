@@ -42,7 +42,7 @@ export function keyboardCell(options: {
     event.preventDefault();
   }
 
-  if (event.key === 'Backspace') {
+  if (event.key === 'Backspace' || event.key === 'Delete') {
     // delete a range or a single cell, depending on if MultiCursor is active
     if (interactionState.showMultiCursor) {
       DeleteCells({
