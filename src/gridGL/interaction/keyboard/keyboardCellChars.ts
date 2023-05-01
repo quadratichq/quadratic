@@ -1,4 +1,5 @@
-// Select ASCII printable characters (char codes from 32-127)
+// Select ASCII printable characters (from 32-127)
+// https://www.ascii-code.com
 const specialChars = [
   '!',
   '"',
