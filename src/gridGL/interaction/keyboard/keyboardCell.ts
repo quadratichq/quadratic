@@ -3,6 +3,7 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { DeleteCells } from '../../../grid/actions/DeleteCells';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../pixiApp/PixiApp';
+import { isAllowedFirstChar } from './keyboardCellChars';
 
 export function keyboardCell(options: {
   sheet_controller: SheetController;
@@ -39,7 +40,6 @@ export function keyboardCell(options: {
       },
     });
     event.preventDefault();
-    return false;
   }
 
   if (event.key === 'Backspace') {
@@ -66,7 +66,6 @@ export function keyboardCell(options: {
     }
 
     event.preventDefault();
-    return false;
   }
 
   if (event.key === 'Enter') {
@@ -103,7 +102,6 @@ export function keyboardCell(options: {
       });
     }
     event.preventDefault();
-    return false;
   }
 
   if (event.key === '/' || event.key === '=') {
@@ -141,11 +139,10 @@ export function keyboardCell(options: {
       });
     }
     event.preventDefault();
-    return false;
   }
 
   // Any single character key, start taking input
-  if (event.key.length === 1 && event.key !== ' ') {
+  if (isAllowedFirstChar(event.key)) {
     setInteractionState({
       ...interactionState,
       ...{
@@ -155,7 +152,6 @@ export function keyboardCell(options: {
     });
 
     event.preventDefault();
-    return false;
   }
 
   return false;
