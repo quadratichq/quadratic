@@ -1,23 +1,25 @@
-# Use the latest Node.js 18 as a parent image
-FROM node:18
+FROM rust:latest
 
-# Set the working directory
-WORKDIR /app
-
-# Copy package.json and package-lock.json for installing dependencies
-COPY package*.json ./
-
-# Install any needed packages
-RUN npm install
-
-# Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-
-# Add Rust to PATH
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Install npm
+RUN apt-get update && apt-get install -y npm
 
 # Install wasm-pack
 RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-# Copy the rest of the app (optional if using the image only for builds)
-# COPY . .
+# Add wasm32 target
+RUN rustup target add wasm32-unknown-unknown
+
+# Copy package.json and package-lock.json
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the files
+COPY . .
+
+# Build Rust/WASM
+RUN npm run build:wasm
+
+# Start the app
+CMD ["npm", "start"]
