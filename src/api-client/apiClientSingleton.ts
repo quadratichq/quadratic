@@ -1,5 +1,6 @@
 import { Auth0ContextInterface } from '@auth0/auth0-react';
 import { GridFile } from '../schemas';
+import * as Sentry from '@sentry/react';
 
 class APIClientSingleton {
   // Allow only one instance of the class to be created
@@ -54,10 +55,15 @@ class APIClientSingleton {
       });
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        Sentry.captureException({
+          message: `API Response Error: ${response.status} ${response.statusText}`,
+        });
       }
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      Sentry.captureException({
+        message: `API Error Catch: ${error}`,
+        level: Sentry.Severity.Info,
+      });
     }
   }
 }
