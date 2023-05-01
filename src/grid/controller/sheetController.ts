@@ -5,6 +5,8 @@ import { StatementRunner } from './runners/runner';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
+import { Cell } from '../../schemas';
+// import { CellGraph } from './sheetUpdateGraph';
 
 export class SheetController {
   app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
@@ -14,6 +16,9 @@ export class SheetController {
   transaction_in_progress_reverse: Transaction | undefined;
   undo_stack: Transaction[];
   redo_stack: Transaction[];
+  // graph: CellGraph;
+  liveCells: Cell[];
+
 
   constructor(sheet?: Sheet) {
     if (sheet === undefined) {
@@ -27,6 +32,9 @@ export class SheetController {
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
     this.saveLocalFiles = undefined;
+    // this.graph = new CellGraph;
+    this.liveCells = [];
+
   }
 
   // starting a transaction is the only way to execute statements
@@ -206,4 +214,21 @@ export class SheetController {
     });
     console.log(print_string);
   }
+
+  public removeLiveCell(cell_to_remove: Cell) {
+    let index = this.liveCells.findIndex(x => x.x === cell_to_remove.x && x.y === cell_to_remove.y);
+    if (index > -1) {
+      this.liveCells.splice(index, 1);
+    }
+  }
+
+  public addLiveCell(cell_to_add: Cell) {
+    this.liveCells.push(cell_to_add);
+  }
+
+  public getLiveCell() {
+    return this.liveCells;
+  }
+
+
 }

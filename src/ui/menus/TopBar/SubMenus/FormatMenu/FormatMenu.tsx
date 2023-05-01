@@ -4,6 +4,7 @@ import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, MenuDivider, SubMenu, MenuChangeEvent } from '@szhsin/react-menu';
 
 import {
+  // Schedule,
   FormatBold,
   FormatItalic,
   // FormatAlignLeft,
@@ -64,6 +65,9 @@ export const FormatMenu = (props: IProps) => {
         </Tooltip>
       }
     >
+      {/* <MenuItem onClick={() => changeLiveCell(!(format.bold === true))}>
+        <MenuLineItem primary="Change Live Cell" secondary={KeyboardSymbols.Command + 'L'} Icon={Schedule} />
+      </MenuItem> */}
       <MenuItem onClick={() => changeBold(!(format.bold === true))}>
         <MenuLineItem primary="Bold" secondary={KeyboardSymbols.Command + 'B'} Icon={FormatBold} />
       </MenuItem>

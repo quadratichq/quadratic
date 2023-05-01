@@ -10,6 +10,7 @@ export type MultipleBoolean = true | false | 'multiple';
 export type MultipleString = string | 'multiple';
 
 export interface MultipleFormat {
+  liveCell: MultipleBoolean;
   bold: MultipleBoolean;
   italic: MultipleBoolean;
   textColor: string | undefined | 'multiple';
@@ -23,11 +24,28 @@ interface GetSelection {
 }
 
 const setFormat = (cells: CellFormat[]): MultipleFormat => {
+  let liveCell: MultipleBoolean | undefined;
   let bold: MultipleBoolean | undefined;
   let italic: MultipleBoolean | undefined;
   let textColor: string | undefined | 'multiple';
 
   cells.forEach((cell) => {
+
+    if (cell.liveCell === true) {
+      if (liveCell !== 'multiple') {
+        if (liveCell === false) {
+          liveCell = 'multiple';
+        } else {
+          liveCell = true;
+        }
+      }
+    } else if (cell.liveCell === false) {
+      if (liveCell === true) {
+        liveCell = 'multiple';
+      }
+      liveCell = cell.liveCell;
+    }
+
     if (cell.bold === true) {
       if (bold !== 'multiple') {
         if (bold === false) {
@@ -72,6 +90,7 @@ const setFormat = (cells: CellFormat[]): MultipleFormat => {
   });
 
   return {
+    liveCell: liveCell ?? false,
     bold: bold ?? false,
     italic: italic ?? false,
     textColor,

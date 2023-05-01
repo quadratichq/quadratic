@@ -90,6 +90,7 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
           // Start Transaction
           sheet_controller.start_transaction();
 
+          // sheet_controller.graph.addNodes(cells_to_update);
           // TODO: delete cells that will be overwritten
           // TODO: delete formats that will be overwritten
           // TODO: delete borders that will be overwritten
@@ -185,7 +186,7 @@ const pasteFromText = async (sheet_controller: SheetController, pasteToCell: Coo
     });
 
     // TODO ALSO BE ABLE TO PASS CELLS TO DELETE TO updatecellandcells
-
+    // sheet_controller.graph.addNodes(cells_to_write);
     // bulk update and delete cells
     await updateCellAndDCells({
       starting_cells: cells_to_write,
