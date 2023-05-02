@@ -4,6 +4,8 @@ use std::fmt;
 
 use super::{FormulaErrorMsg, FormulaResult, Spanned};
 
+const CURRENCY_PREFIX: &[char] = &['$', '¥', '£', '€'];
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     String(String),
@@ -78,10 +80,14 @@ impl Spanned<Value> {
     pub fn to_number(&self) -> FormulaResult<f64> {
         match &self.inner {
             Value::String(s) => {
-                if s.trim().is_empty() {
+                let mut s = s.trim();
+                if s.is_empty() {
                     return Ok(0.0);
                 }
-                s.trim().parse().map_err(|_| {
+                if let Some(rest) = s.strip_prefix(CURRENCY_PREFIX) {
+                    s = rest;
+                }
+                s.parse().map_err(|_| {
                     FormulaErrorMsg::Expected {
                         expected: "number".into(),
                         got: Some(format!("{s:?}").into()),

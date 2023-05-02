@@ -1,6 +1,6 @@
 import { Sheet } from '../../sheet/Sheet';
 import { Statement } from '../statement';
-import { CellFormat } from '../../sheet/gridTypes';
+import { CellFormat } from '../../../schemas';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 
 const CopyCellFormat = (format: CellFormat | undefined): CellFormat | undefined => {

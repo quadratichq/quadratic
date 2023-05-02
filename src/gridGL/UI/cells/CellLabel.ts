@@ -1,6 +1,6 @@
 import { Coordinate } from '../../types/size';
 import { BitmapTextClip } from '../../pixiOverride/BitmapTextClip';
-import { CellFormat } from '../../../grid/sheet/gridTypes';
+import { CellFormat } from '../../../schemas';
 import { convertColorStringToTint } from '../../../helpers/convertColor';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
