@@ -83,6 +83,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       sheetController.clear();
       sheetController.sheet.load_file(grid);
       sheetController.app?.rebuild();
+      sheetController.app?.reset();
       const searchParams = new URLSearchParams(window.location.search);
       // If `file` is in there from an intial page load, remove it
       if (searchParams.get('file')) {

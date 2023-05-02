@@ -36,19 +36,11 @@ import {
   LayoutColLeftWrapper,
   LayoutColRightWrapper,
 } from './FileMenuStyles';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 
-interface FileMenuProps {
-  app: PixiApp;
-}
-
-export type onCloseFn = (arg?: { reset: boolean }) => void;
-
-export function FileMenu(props: FileMenuProps) {
-  const { app } = props;
+export function FileMenu() {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const {
     currentFileId,
@@ -61,11 +53,7 @@ export function FileMenu(props: FileMenuProps) {
   } = useLocalFiles();
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const onClose: onCloseFn = ({ reset } = { reset: false }) => {
-    if (reset) {
-      app.reset();
-    }
-
+  const onClose = () => {
     setEditorInteractionState((prevState) => ({
       ...prevState,
       showFileMenu: false,
@@ -76,7 +64,8 @@ export function FileMenu(props: FileMenuProps) {
 
   const onNewFile = async () => {
     await createNewFile();
-    onClose({ reset: true });
+    // No need to reset, as `createNewFile` does that itself
+    onClose();
   };
 
   // If there's an active file, set focus back to the grid when this unmounts
@@ -135,7 +124,7 @@ export function FileMenu(props: FileMenuProps) {
                         onClick={() => {
                           loadFileFromMemory(id).then((loaded) => {
                             if (loaded) {
-                              onClose({ reset: true });
+                              onClose();
                             } else {
                               addGlobalSnackbar('Failed to load file.');
                               Sentry.captureEvent({
