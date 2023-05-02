@@ -64,7 +64,6 @@ export function FileMenu() {
 
   const onNewFile = async () => {
     await createNewFile();
-    // No need to reset, as `createNewFile` does that itself
     onClose();
   };
 
