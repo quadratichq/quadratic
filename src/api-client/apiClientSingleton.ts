@@ -62,7 +62,6 @@ class APIClientSingleton {
     } catch (error: any) {
       Sentry.captureException({
         message: `API Error Catch: ${error}`,
-        level: Sentry.Severity.Info,
       });
     }
   }
