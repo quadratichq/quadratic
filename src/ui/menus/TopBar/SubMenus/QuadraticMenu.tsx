@@ -67,9 +67,9 @@ export const QuadraticMenu = (props: Props) => {
         <MenuDivider />
         <SubMenu label="File">
           <MenuItem
-            onClick={() => {
+            onClick={async () => {
+              await createNewFile();
               app.reset();
-              createNewFile();
             }}
           >
             New

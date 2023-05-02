@@ -22,7 +22,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { useRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 import FileMenuTabs from './FileMenuTabs';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -49,7 +49,7 @@ export type onCloseFn = (arg?: { reset: boolean }) => void;
 
 export function FileMenu(props: FileMenuProps) {
   const { app } = props;
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const {
     currentFileId,
     currentFilename,
@@ -66,10 +66,10 @@ export function FileMenu(props: FileMenuProps) {
       app.reset();
     }
 
-    setEditorInteractionState({
-      ...editorInteractionState,
+    setEditorInteractionState((prevState) => ({
+      ...prevState,
       showFileMenu: false,
-    });
+    }));
   };
   const theme = useTheme();
   const styles = getStyles(theme);

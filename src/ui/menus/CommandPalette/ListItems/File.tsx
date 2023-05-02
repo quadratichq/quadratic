@@ -12,7 +12,16 @@ const ListItems = [
     label: 'File: New',
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { createNewFile } = useLocalFiles();
-      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={createNewFile} />;
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<NoteAddOutlined />}
+          action={async () => {
+            await createNewFile();
+            props.app.reset();
+          }}
+        />
+      );
     },
   },
   {
