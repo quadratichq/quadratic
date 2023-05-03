@@ -8,6 +8,7 @@ import { CellEvaluationResult } from '../../../grid/computations/types';
 import { colors } from '../../../theme/colors';
 import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
+import './AITab.css';
 
 interface Props {
   editorMode: EditorInteractionState['mode'];
@@ -203,7 +204,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
         data-gramm_editor="false"
         data-enable-grammarly="false"
       >
-        {display_message.length === 0 && (
+        {display_message.length === 0 ? (
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '1rem' }}>
               <div style={{ fontSize: '1.5rem', fontWeight: 500, marginBottom: '1rem' }}>
@@ -214,55 +215,56 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
               </div>
             </div>
           </div>
+        ) : (
+          <div id="ai-streaming-output">
+            {display_message.map((message, index) => (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
+                  marginTop: '1rem',
+                  paddingTop: index !== 0 ? '1rem' : '0',
+                  paddingLeft: '1rem',
+                  paddingRight: '1rem',
+                }}
+              >
+                {message.role === 'user' ? (
+                  <Avatar
+                    variant="rounded"
+                    sx={{
+                      bgcolor: colors.quadraticSecondary,
+                      width: 24,
+                      height: 24,
+                      fontSize: '0.8rem',
+                      marginBottom: '0.5rem',
+                    }}
+                    alt={user?.name}
+                    src={user?.picture}
+                  ></Avatar>
+                ) : (
+                  <Avatar
+                    variant="rounded"
+                    sx={{
+                      bgcolor: 'white',
+                      width: 24,
+                      height: 24,
+                      fontSize: '0.8rem',
+                      marginBottom: '0.5rem',
+                    }}
+                    alt="AI Assistant"
+                  >
+                    <AI sx={{ color: colors.languageAI }}></AI>
+                  </Avatar>
+                )}
+                <span>{CodeBlockParser({ input: message.content })}</span>
+              </div>
+            ))}
+          </div>
         )}
-        {display_message.map((message, index) => {
-          return (
-            <div
-              key={index}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
-                marginTop: '1rem',
-                paddingTop: index !== 0 ? '1rem' : '0',
-                paddingLeft: '1rem',
-                paddingRight: '1rem',
-              }}
-            >
-              {message.role === 'user' ? (
-                <Avatar
-                  variant="rounded"
-                  sx={{
-                    bgcolor: colors.quadraticSecondary,
-                    width: 24,
-                    height: 24,
-                    fontSize: '0.8rem',
-                    marginBottom: '0.5rem',
-                  }}
-                  alt={user?.name}
-                  src={user?.picture}
-                ></Avatar>
-              ) : (
-                <Avatar
-                  variant="rounded"
-                  sx={{
-                    bgcolor: 'white',
-                    width: 24,
-                    height: 24,
-                    fontSize: '0.8rem',
-                    marginBottom: '0.5rem',
-                  }}
-                  alt="AI Assistant"
-                >
-                  <AI sx={{ color: colors.languageAI }}></AI>
-                </Avatar>
-              )}
-              <span>{CodeBlockParser({ input: message.content })}</span>
-            </div>
-          );
-        })}
-        {}
+        <div id="ai-streaming-output-anchor" />
       </div>
     </>
   );
