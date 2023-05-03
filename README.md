@@ -10,7 +10,7 @@ Take your data and do something useful with it as quickly and easily as possible
 
 <img width="1552" alt="Screenshot 2023-02-24 at 2 57 36 PM" src="https://user-images.githubusercontent.com/3479421/221301059-921ad96a-878e-4082-b3b9-e55a54185c5d.png">
 
-## Online Demo
+## Online demo
 
 We have a hosted version of the `main` branch available online.
 
