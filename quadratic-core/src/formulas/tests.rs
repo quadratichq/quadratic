@@ -104,10 +104,6 @@ fn test_formula_math_operators() {
         (1 * -6 + -2 - 1 * (-3_i32).pow(2_u32.pow(3))).to_string(),
         eval_to_string(&mut PanicGridMock, "1 * -6 + -2 - 1 * -3 ^ 2 ^ 3"),
     );
-
-    assert_eq!("32", eval_to_string(&mut PanicGridMock, "2 ** 5"));
-    assert_eq!("4", eval_to_string(&mut PanicGridMock, "32 >> 3"));
-    assert_eq!("256", eval_to_string(&mut PanicGridMock, "32 << 3"));
 }
 
 #[test]

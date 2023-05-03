@@ -5,7 +5,6 @@ use super::*;
 pub enum OpPrecedence {
     Comparison,
     Concat,
-    Bitshift,
     AddSub,
     MulDiv,
     Pow,
@@ -30,8 +29,7 @@ impl OpPrecedence {
     pub fn next(self) -> Self {
         match self {
             Self::Comparison => Self::Concat,
-            Self::Concat => Self::Bitshift,
-            Self::Bitshift => Self::AddSub,
+            Self::Concat => Self::AddSub,
             Self::AddSub => Self::MulDiv,
             Self::MulDiv => Self::Pow,
             Self::Pow => Self::Range,
@@ -49,7 +47,6 @@ impl OpPrecedence {
         match self {
             Self::Comparison => &[Eql, Neq, Lt, Gt, Lte, Gte],
             Self::Concat => &[Concat],
-            Self::Bitshift => &[ShiftLeft, ShiftRight],
             Self::AddSub => &[Plus, Minus],
             Self::MulDiv => &[Mult, Div],
             Self::Pow => &[Power],
@@ -131,8 +128,6 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 Token::Mult
                 | Token::Div
                 | Token::Power
-                | Token::ShiftLeft
-                | Token::ShiftRight
                 | Token::Concat
                 | Token::RangeOp
                 | Token::Percent

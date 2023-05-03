@@ -57,15 +57,9 @@ pub fn pure_function_from_name(
         "product" => |args| product(&args.inner).map(Value::Number),
         "*" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? * b.to_number()?))),
         "/" => array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()? / b.to_number()?))),
-        "^" | "**" => {
+        "^" => {
             array_mapped!(|[a, b]| Ok(Value::Number(a.to_number()?.powf(b.to_number()?))))
         }
-        "<<" => array_mapped!(|[a, b]| Ok(Value::Number(
-            a.to_number()? * 2.0_f64.powf(b.to_integer()? as f64)
-        ))),
-        ">>" => array_mapped!(|[a, b]| Ok(Value::Number(
-            a.to_number()? / 2.0_f64.powf(b.to_integer()? as f64)
-        ))),
         "%" => array_mapped!(|[n]| Ok(Value::Number(n.to_number()? / 100.0))),
         ".." => |args| {
             let [a, b] = args.inner.as_slice() else {

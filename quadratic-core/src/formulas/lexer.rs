@@ -65,10 +65,6 @@ const TOKEN_PATTERNS: &[&str] = &[
     r#"[=!<>]="#,
     // Double and triple dot.
     r#"\.\.\.?"#,
-    // Bitshift operators `>>` and `<<`.
-    r#">>|<<"#,
-    // Exponentiation.
-    r#"\*\*"#,
     // Line comment.
     r#"//[^\n]*"#,
     // Start of a block comment (block comment has special handling).
@@ -165,11 +161,7 @@ pub enum Token {
     #[strum(to_string = "division operator")]
     Div,
     #[strum(to_string = "exponentiation operator")]
-    Power, // ^ or **
-    #[strum(to_string = "left shift operator")]
-    ShiftLeft,
-    #[strum(to_string = "right shift operator")]
-    ShiftRight,
+    Power, // ^
 
     // Other operators
     #[strum(to_string = "concatenation operator")]
@@ -233,9 +225,7 @@ impl Token {
             "-" => Self::Minus,
             "*" => Self::Mult,
             "/" => Self::Div,
-            "^" | "**" => Self::Power,
-            "<<" => Self::ShiftLeft,
-            ">>" => Self::ShiftRight,
+            "^" => Self::Power,
             "&" => Self::Concat,
             ".." => Self::RangeOp,
             "%" => Self::Percent,
