@@ -2,7 +2,7 @@
 ![Twitter Follow](https://img.shields.io/twitter/follow/QuadraticHQ)
 ![quadraticlogo4 1](https://user-images.githubusercontent.com/3479421/162037216-2fea1620-2310-4cfa-96fb-31299195e3a9.png)
 
-## ![quardatic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **_The Data Science Spreadsheet_**
+## ![quardatic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **_The data science spreadsheet_**
 
 Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to pull in your data.
 
@@ -39,9 +39,9 @@ Quadratic has no environment to configure. The grid runs entirely in the browser
 - Quickly mix data from different sources
 - Explore your data for new insights
 
-# Getting Started
+# Getting started
 
-### Run Quadratic Locally
+### Run Quadratic locally
 
 1. Install npm, [rustup](https://www.rust-lang.org/tools/install), and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 2. Run `rustup target add wasm32-unknown-unknown`
@@ -52,7 +52,7 @@ Run Web `npm start`
 
 Run Electron `npm run dev`
 
-# Development Progress and Roadmap
+# Development progress and roadmap
 
 _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 
@@ -79,6 +79,6 @@ There are more example files are in the application file menu. File > Open sampl
 
 You can download them and then open them in Quadratic via File > Open Grid
 
-## Quadratic is Hiring
+## Quadratic is hiring
 
 Check out our open roles -> [careers.quadratichq.com](https://careers.quadratichq.com)
