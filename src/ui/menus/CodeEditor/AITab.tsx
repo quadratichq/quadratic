@@ -1,11 +1,12 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import { Send } from '@mui/icons-material';
+import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, FormControl, IconButton, InputAdornment, OutlinedInput } from '@mui/material';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { colors } from '../../../theme/colors';
+import { TooltipHint } from '../../components/TooltipHint';
 import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
 import './AITab.css';
@@ -48,10 +49,17 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
   const [prompt, setPrompt] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const controller = useRef<AbortController>();
   const { user } = useAuth0();
+
+  const abortPrompt = () => {
+    controller.current?.abort();
+    setLoading(false);
+  };
 
   const submitPrompt = async () => {
     if (loading) return;
+    controller.current = new AbortController();
     setLoading(true);
     const token = await apiClientSingleton.getAuth();
     const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
@@ -61,15 +69,17 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
     };
     setMessages(updatedMessages);
     setPrompt('');
-    try {
-      await fetch(`${apiClientSingleton.getAPIURL()}/ai/chat/stream`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request_body),
-      }).then((response) => {
+
+    await fetch(`${apiClientSingleton.getAPIURL()}/ai/chat/stream`, {
+      method: 'POST',
+      signal: controller.current.signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request_body),
+    })
+      .then((response) => {
         if (response.status !== 200) {
           if (response.status === 429) {
             setMessages((old) => [
@@ -130,10 +140,16 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
           }
           return reader.read().then(processResult);
         });
+      })
+      .catch((err) => {
+        // not sure what would cause this to happen
+        if (err.name !== 'AbortError') {
+          console.log(err);
+          return;
+        }
       });
-    } catch (err: any) {
-      // not sure what would cause this to happen
-    }
+    // eslint-disable-next-line no-unreachable
+
     setLoading(false);
   };
 
@@ -149,7 +165,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
           right: '1rem',
           padding: '1rem 0 .5rem 1rem',
           background: 'linear-gradient(0deg, rgba(255,255,255,1) 85%, rgba(255,255,255,0) 100%)',
-          zIndex: 1000000,
+          zIndex: 100,
         }}
       >
         <FormControl fullWidth>
@@ -168,9 +184,19 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
             endAdornment={
               <InputAdornment position="end">
                 {loading && <CircularProgress size="1.25rem" sx={{ mx: '1rem' }} />}
-                <IconButton size="small" color="primary" onClick={submitPrompt} edge="end" disabled={loading}>
-                  <Send />
-                </IconButton>
+                {loading ? (
+                  <TooltipHint title="Stop generating">
+                    <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
+                      <Stop />
+                    </IconButton>
+                  </TooltipHint>
+                ) : (
+                  <TooltipHint title="Send">
+                    <IconButton size="small" color="primary" onClick={submitPrompt} edge="end" disabled={loading}>
+                      <Send />
+                    </IconButton>
+                  </TooltipHint>
+                )}
               </InputAdornment>
             }
             size="small"
