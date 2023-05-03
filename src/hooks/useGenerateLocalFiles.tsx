@@ -14,6 +14,7 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import mixpanel from 'mixpanel-browser';
+import { focusGrid } from '../helpers/focusGrid';
 const INDEX = 'file-list';
 
 export interface LocalFile {
@@ -84,6 +85,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       sheetController.sheet.load_file(grid);
       sheetController.app?.rebuild();
       sheetController.app?.reset();
+      focusGrid();
       const searchParams = new URLSearchParams(window.location.search);
       // If `file` is in there from an intial page load, remove it
       if (searchParams.get('file')) {
