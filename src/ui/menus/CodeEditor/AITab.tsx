@@ -262,9 +262,9 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
                 <span>{CodeBlockParser({ input: message.content })}</span>
               </div>
             ))}
+            <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
           </div>
         )}
-        <div id="ai-streaming-output-anchor" />
       </div>
     </>
   );
