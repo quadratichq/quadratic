@@ -176,7 +176,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
               setPrompt(event.target.value);
             }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && prompt.length > 0) {
                 submitPrompt();
               }
             }}
@@ -192,7 +192,13 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
                   </TooltipHint>
                 ) : (
                   <TooltipHint title="Send">
-                    <IconButton size="small" color="primary" onClick={submitPrompt} edge="end" disabled={loading}>
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={submitPrompt}
+                      edge="end"
+                      disabled={prompt.length === 0}
+                    >
                       <Send />
                     </IconButton>
                   </TooltipHint>
