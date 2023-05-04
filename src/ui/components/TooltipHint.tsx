@@ -3,7 +3,7 @@ import { Tooltip } from '@mui/material';
 interface TooltipHintProps {
   title: string;
   shortcut?: string;
-  children: JSX.Element;
+  children: React.ReactElement<any, any>;
   // Anything else for <Tooltip> you want to pass
   [x: string]: any;
 }

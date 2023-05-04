@@ -194,8 +194,11 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
                 ) : (
                   <ConditionalWrapper
                     condition={prompt.length !== 0}
-                    // @ts-expect-error
-                    wrapper={({ children }) => <TooltipHint title="Send">{children}</TooltipHint>}
+                    Wrapper={({ children }) => (
+                      <TooltipHint title="Send">
+                        <>{children}</>
+                      </TooltipHint>
+                    )}
                   >
                     <IconButton
                       size="small"
