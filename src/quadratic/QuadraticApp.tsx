@@ -7,7 +7,6 @@ import { loadAssets } from '../gridGL/loadAssets';
 import { IS_READONLY_MODE } from '../constants/app';
 import { debugSkipPythonLoad } from '../debugFlags';
 import init, { hello } from 'quadratic-core';
-import { useGridSettings } from '../ui/menus/TopBar/SubMenus/useGridSettings';
 import { SheetController } from '../grid/controller/sheetController';
 import { useGenerateLocalFiles } from '../hooks/useGenerateLocalFiles';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
@@ -19,8 +18,6 @@ export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
   const didMount = useRef(false);
-  const { presentationMode, setPresentationMode } = useGridSettings();
-  const [settingsReset, setSettingsReset] = useState(false);
   const [sheetController] = useState<SheetController>(new SheetController());
   const localFiles = useGenerateLocalFiles(sheetController);
   const [app] = useState(() => new PixiApp(sheetController, localFiles.save));
@@ -31,14 +28,6 @@ export const QuadraticApp = () => {
       setLoading(false);
     }
   }, [itemsLoaded]);
-
-  // reset presentation mode when app starts
-  useEffect(() => {
-    if (!settingsReset) {
-      if (presentationMode) setPresentationMode(false);
-      setSettingsReset(true);
-    }
-  }, [presentationMode, setPresentationMode, settingsReset, setSettingsReset]);
 
   // Loading Effect
   useEffect(() => {
