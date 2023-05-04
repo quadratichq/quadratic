@@ -9,6 +9,7 @@ import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
+import ConditionalWrapper from '../../components/ConditionalWrapper';
 import './AITab.css';
 
 interface Props {
@@ -191,17 +192,21 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
                     </IconButton>
                   </TooltipHint>
                 ) : (
-                  <TooltipHint title="Send">
+                  <ConditionalWrapper
+                    condition={prompt.length !== 0}
+                    // @ts-expect-error
+                    wrapper={({ children }) => <TooltipHint title="Send">{children}</TooltipHint>}
+                  >
                     <IconButton
                       size="small"
                       color="primary"
                       onClick={submitPrompt}
                       edge="end"
-                      disabled={prompt.length === 0}
+                      {...(prompt.length === 0 ? { disabled: true } : {})}
                     >
                       <Send />
                     </IconButton>
-                  </TooltipHint>
+                  </ConditionalWrapper>
                 )}
               </InputAdornment>
             }
