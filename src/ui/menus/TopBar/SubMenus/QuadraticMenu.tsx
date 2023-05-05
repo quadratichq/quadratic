@@ -18,16 +18,14 @@ import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionState
 import { isMac } from '../../../../utils/isMac';
 import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { useLocalFiles } from '../../../contexts/LocalFiles';
 
 interface Props {
   sheetController: SheetController;
-  app: PixiApp;
 }
 
 export const QuadraticMenu = (props: Props) => {
-  const { app, sheetController } = props;
+  const { sheetController } = props;
   const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
   const interactionState = useRecoilValue(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -66,14 +64,7 @@ export const QuadraticMenu = (props: Props) => {
         </MenuItem>
         <MenuDivider />
         <SubMenu label="File">
-          <MenuItem
-            onClick={() => {
-              app.reset();
-              createNewFile();
-            }}
-          >
-            New
-          </MenuItem>
+          <MenuItem onClick={createNewFile}>New</MenuItem>
           <MenuItem onClick={() => downloadCurrentFile()}>Download local copy</MenuItem>
           <MenuItem
             onClick={() => {
