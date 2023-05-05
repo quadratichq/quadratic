@@ -56,7 +56,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
       {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
-      {editorInteractionState.showFileMenu && <FileMenu app={app} />}
+      {editorInteractionState.showFileMenu && <FileMenu />}
 
       <div
         style={{
