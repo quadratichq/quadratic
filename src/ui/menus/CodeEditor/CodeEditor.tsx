@@ -134,9 +134,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
   };
 
   useEffect(() => {
-    // focus editor on show editor change
-    editorRef.current?.focus();
-    editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
+    if (editorInteractionState.showCodeEditor) {
+      // focus editor on show editor change
+      editorRef.current?.focus();
+      editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
+    }
   }, [editorInteractionState.showCodeEditor]);
 
   // When cell changes
