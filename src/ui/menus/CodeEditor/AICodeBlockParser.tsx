@@ -14,6 +14,7 @@ function parseCodeBlocks(input: string): Array<string | JSX.Element> {
     }
     blocks.push(
       <div
+        key={lastIndex}
         // calculate height based on number of lines
         style={{
           height: `${Math.ceil(code.split('\n').length) * 19}px`,
