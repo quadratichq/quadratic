@@ -149,7 +149,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
 
         // If there's no specified name, derive it's name from the URL
         if (!filename) {
-          filename = massageFilename(new URL(url).pathname.split('/').pop());
+          filename = decodeURIComponent(massageFilename(new URL(url).pathname.split('/').pop()));
         }
 
         return importQuadraticFile(file, filename);
