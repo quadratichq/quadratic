@@ -156,6 +156,7 @@ export const CellInput = (props: CellInputProps) => {
         });
       }
       app.quadrants.quadrantChanged({ cells: [cellLocation] });
+      textInput.innerText = '';
     }
 
     // Update Grid Interaction state, reset input value state
