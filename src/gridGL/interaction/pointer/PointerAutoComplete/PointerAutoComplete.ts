@@ -117,7 +117,7 @@ export class PointerAutoComplete {
         this.endCell = { x: column, y: row };
         const rectangle = new Rectangle(selection.x, selection.y, selection.width + 1, selection.height + 1);
         const deleteRectangles = [];
-        if (row > selection.top && row < selection.bottom) {
+        if (row >= selection.top && row < selection.bottom) {
           this.stateVertical = 'shrink';
           this.toVertical = row;
           rectangle.height = row - selection.top + 1;
