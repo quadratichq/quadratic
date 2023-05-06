@@ -5,6 +5,7 @@ import { StatementRunner } from './runners/runner';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
+import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 
 export class SheetController {
   app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
@@ -34,7 +35,7 @@ export class SheetController {
   // execute_statement until end_transaction is called.
   //
 
-  public start_transaction(): void {
+  public start_transaction(interactionState?: GridInteractionState): void {
     if (!this.app) throw new Error('Expected this.app to be defined in sheetController');
 
     if (this.transaction_in_progress) {
@@ -47,7 +48,7 @@ export class SheetController {
       this.end_transaction();
     }
 
-    const cursor = { ...this.app.settings.interactionState, showInput: false };
+    const cursor = { ...(interactionState ?? this.app.settings.interactionState), showInput: false };
 
     // set transaction in progress to a new Transaction
     // transaction_in_progress represents the stack of commands needed
