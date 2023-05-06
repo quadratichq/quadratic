@@ -31,6 +31,7 @@ const GridFileDataSchema = GridFileSchema.pick({
 });
 export type GridFileData = z.infer<typeof GridFileDataSchema>;
 
+export type ArrayOutput = Partial<Pick<GridFile['cells'][0]['evaluation_result'], 'array_output'>>;
 export type Cell = GridFile['cells'][0];
 export type CellType = GridFile['cells'][0]['type'];
 export type CellFormat = GridFile['formats'][0];
