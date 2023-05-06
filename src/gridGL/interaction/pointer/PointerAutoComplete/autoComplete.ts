@@ -61,18 +61,22 @@ export const expandDown = async (options: {
       series.push(rectangle.get(x, y)?.cell);
     }
     const results = findAutoComplete({ series, spaces: to - selection.bottom, negative: false });
-    const updatedCells: Cell[] = results.flatMap((value, index) => {
+    results.forEach((value, index) => {
       if (value === undefined) {
-        return [];
+        cells.push({
+          type: 'TEXT',
+          value: '',
+          x,
+          y: selection.bottom + index + 1,
+        });
       } else {
-        return {
+        cells.push({
           ...(value as Cell),
           x,
           y: selection.bottom + index + 1,
-        };
+        });
       }
     });
-    cells.push(...updatedCells);
   }
   await updateCellAndDCells({
     create_transaction: false,
@@ -99,12 +103,22 @@ export const expandUp = async (options: {
       series.push(rectangle.get(x, y)?.cell);
     }
     const results = findAutoComplete({ series, spaces: selection.top - to, negative: true });
-    const updatedCells: Cell[] = results.map((value, index) => ({
-      ...(value as Cell),
-      x,
-      y: to + index,
-    }));
-    cells.push(...updatedCells);
+    results.forEach((value, index) => {
+      if (!value) {
+        cells.push({
+          type: 'TEXT',
+          value: '',
+          x,
+          y: to + index,
+        });
+      } else {
+        cells.push({
+          ...value,
+          x,
+          y: to + index,
+        });
+      }
+    });
   }
   await updateCellAndDCells({
     create_transaction: false,
@@ -131,18 +145,22 @@ export const expandRight = async (options: {
       series.push(rectangle.get(x, y)?.cell);
     }
     const results = findAutoComplete({ series, spaces: to - selection.right, negative: false });
-    const updatedCells: Cell[] = results.flatMap((value, index) => {
+    results.forEach((value, index) => {
       if (value === undefined) {
-        return [];
+        cells.push({
+          value: '',
+          type: 'TEXT',
+          x: selection.right + index + 1,
+          y,
+        });
       } else {
-        return {
+        cells.push({
           ...(value as Cell),
           x: selection.right + index + 1,
           y,
-        };
+        });
       }
     });
-    cells.push(...updatedCells);
   }
   await updateCellAndDCells({
     create_transaction: false,
@@ -170,20 +188,26 @@ export const expandLeft = async (options: {
       series.push(rectangle.get(x, y)?.cell);
     }
     const results = findAutoComplete({ series, spaces: selection.left - to, negative: true });
-    const updatedCells: Cell[] = results.flatMap((value, index) => {
-      if (!value) return [];
-      return [
-        {
+    results.forEach((value, index) => {
+      if (!value) {
+        cells.push({
+          value: '',
+          x: to + index,
+          y,
+          type: 'TEXT',
+        });
+      } else {
+        cells.push({
           ...value,
           x: to + index,
           y,
-        },
-      ];
+        });
+      }
     });
-    cells.push(...updatedCells);
   }
   await updateCellAndDCells({
     create_transaction: false,
+    delete_starting_cells: true,
     starting_cells: cells,
     sheetController: sheet_controller,
   });
