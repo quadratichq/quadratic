@@ -207,7 +207,6 @@ export const expandLeft = async (options: {
   }
   await updateCellAndDCells({
     create_transaction: false,
-    delete_starting_cells: true,
     starting_cells: cells,
     sheetController: sheet_controller,
   });

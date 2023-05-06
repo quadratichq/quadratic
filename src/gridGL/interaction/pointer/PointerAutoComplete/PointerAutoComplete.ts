@@ -113,11 +113,13 @@ export class PointerAutoComplete {
         if (!selection || !screenSelection) {
           throw new Error('Expected selection and screenSelection to be defined');
         }
-
         this.endCell = { x: column, y: row };
         const rectangle = new Rectangle(selection.x, selection.y, selection.width + 1, selection.height + 1);
         const deleteRectangles = [];
-        if (row >= selection.top && row < selection.bottom) {
+        if (row === selection.top) {
+          this.toVertical = undefined;
+          this.stateVertical = undefined;
+        } else if (row >= selection.top && row < selection.bottom) {
           this.stateVertical = 'shrink';
           this.toVertical = row;
           rectangle.height = row - selection.top + 1;
@@ -135,7 +137,10 @@ export class PointerAutoComplete {
           this.stateVertical = undefined;
         }
 
-        if (column >= selection.left && column < selection.right) {
+        if (column === selection.left) {
+          this.toHorizontal = undefined;
+          this.stateHorizontal = undefined;
+        } else if (column >= selection.left && column < selection.right) {
           this.stateHorizontal = 'shrink';
           this.toHorizontal = column;
           rectangle.width = column - selection.left + 1;
@@ -160,7 +165,6 @@ export class PointerAutoComplete {
         } else {
           this.stateHorizontal = undefined;
         }
-
         this.app.boxCells.populate({
           gridRectangle: rectangle,
           horizontalDelete: this.stateHorizontal === 'shrink',
@@ -185,9 +189,12 @@ export class PointerAutoComplete {
         : selection.bottom;
     const left =
       this.toHorizontal !== undefined && this.stateHorizontal === 'expandLeft' ? this.toHorizontal : selection.left;
-    const right = this.toHorizontal !== undefined && this.stateHorizontal && ['expandRight', 'shrink']
-      ? this.toHorizontal
-      : selection.right;
+    const right =
+      this.toHorizontal !== undefined &&
+      this.stateHorizontal &&
+      ['expandRight', 'shrink'].includes(this.stateHorizontal)
+        ? this.toHorizontal
+        : selection.right;
 
     const width = bottom - top;
     const height = right - left;
