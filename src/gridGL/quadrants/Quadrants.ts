@@ -25,7 +25,7 @@ export class Quadrants extends Container {
   private app: PixiApp;
   private complete = false;
   private quadrantChildren: Container;
-  private lastInputOverQuadrant: DOMRect | undefined;
+  private lastInputOverQuadrant: Rectangle | undefined;
 
   // used to hide cells that are covered by input
   private quadrantMask: Graphics;
@@ -86,7 +86,7 @@ export class Quadrants extends Container {
     }
   }
 
-  private domRectEquals(a: DOMRect, b?: DOMRect): boolean {
+  private rectangleEquals(a: Rectangle, b?: Rectangle): boolean {
     if (!b) return false;
     return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
   }
@@ -106,14 +106,14 @@ export class Quadrants extends Container {
         }
         return false;
       }
-
       const inputBounds = input.getBoundingClientRect();
-      if (this.domRectEquals(inputBounds, this.lastInputOverQuadrant)) return false;
       const inputRectangle = domRectangleToViewportScreenRectangle(this.app, inputBounds);
+      console.log(inputRectangle);
+      if (this.rectangleEquals(inputRectangle, this.lastInputOverQuadrant)) return false;
       this.quadrantMask.beginFill(0xffffff);
       this.quadrantMask.drawShape(inputRectangle);
       this.quadrantMask.endFill();
-      this.lastInputOverQuadrant = inputBounds;
+      this.lastInputOverQuadrant = inputRectangle;
       return true;
     }
     if (this.lastInputOverQuadrant) {
