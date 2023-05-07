@@ -63,6 +63,7 @@ export class SheetController {
   addSheet(): void {
     const sheet = new Sheet(`Sheet${this.sheets.length + 1}`);
     this.sheets.push(sheet);
+    this.app?.quadrants.addSheet(sheet);
     this.current = this.sheets.length - 1;
   }
 

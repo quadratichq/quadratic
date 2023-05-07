@@ -50,6 +50,12 @@ export class Quadrants extends Container {
     }
   }
 
+  // adds a newly created sheet to the quadrants
+  addSheet(sheet: Sheet): void {
+    const quadrantsSheet = this.addChild(new QuadrantsSheet(this.app, sheet));
+    this.quadrants.set(sheet.id, quadrantsSheet);
+  }
+
   // rebuilds all quadrants
   build(): void {
     this.removeChildren();
