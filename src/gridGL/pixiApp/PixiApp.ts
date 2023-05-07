@@ -38,6 +38,7 @@ export class PixiApp {
   headings: GridHeadings;
   boxCells: BoxCells;
   cells: Cells;
+
   quadrants: Quadrants;
 
   pointer: Pointer;
@@ -251,6 +252,17 @@ export class PixiApp {
 
   focus(): void {
     this.canvas?.focus();
+  }
+
+  changeSheet(index: number): void {
+    this.viewport.dirty = true;
+    this.gridLines.dirty = true;
+    this.axesLines.dirty = true;
+    this.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.cells.dirty = true;
+    this.quadrants.changeSheet();
+    this.boxCells.reset();
   }
 
   rebuild = (): void => {

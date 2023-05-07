@@ -13,6 +13,7 @@ import { CellsBackground } from './cellsBackground';
 import { CellsBorder } from './CellsBorder';
 import { CellsLabels } from './CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
+import { Sheet } from '../../../grid/sheet/Sheet';
 
 export interface CellsBounds {
   minX: number;
@@ -60,11 +61,11 @@ export class Cells extends Container {
    * update visual dependency graph for labels generated via quadrants
    * note: this will not remove dependencies for cells that have been deleted but had dependencies
    */
-  private handleOverflow(): void {
+  private handleOverflow(sheet: Sheet): void {
     const labels = this.cellLabels.getVisible();
 
     const { quadrants } = this.app;
-    const { render_dependency, gridOffsets } = this.app.sheet;
+    const { render_dependency, gridOffsets } = sheet;
     const changes: Coordinate[] = [];
 
     labels.forEach((label) => {
@@ -107,8 +108,8 @@ export class Cells extends Container {
   }
 
   /** update visual dependency to ensure array boxes are drawn when zooming in */
-  private handleArrayCells(cellRectangle: CellRectangle): void {
-    const { array_dependency } = this.app.sheet;
+  private handleArrayCells(sheet: Sheet, cellRectangle: CellRectangle): void {
+    const { array_dependency } = sheet;
 
     for (const coordinate of this.trackCellsWithArrays) {
       const cell = cellRectangle.get(coordinate.x, coordinate.y);
@@ -212,16 +213,17 @@ export class Cells extends Container {
    * @returns a Rectangle of the content bounds (not including empty area), or undefined if nothing is drawn
    */
   private drawBounds(options: {
+    sheet: Sheet;
     boundsWithData: Rectangle;
     bounds: Rectangle;
     cellRectangle: CellRectangle;
     ignoreInput?: boolean;
     isQuadrant?: boolean;
   }): Rectangle | undefined {
-    const { boundsWithData, bounds, cellRectangle, ignoreInput, isQuadrant } = options;
+    const { boundsWithData, bounds, cellRectangle, ignoreInput, isQuadrant, sheet } = options;
     const renderedCells = new Set<string>();
 
-    const { gridOffsets, render_dependency, array_dependency, grid } = this.app.sheet;
+    const { gridOffsets, render_dependency, array_dependency, grid } = sheet;
     this.clear();
 
     const input =
@@ -298,8 +300,8 @@ export class Cells extends Container {
 
     // only calculate overflow when rendering quadrants so it's only done one time
     if (isQuadrant) {
-      this.handleOverflow();
-      this.handleArrayCells(cellRectangle);
+      this.handleOverflow(sheet);
+      this.handleArrayCells(sheet, cellRectangle);
     }
 
     return content;
@@ -379,8 +381,8 @@ export class Cells extends Container {
     this.cellLabels.update();
   }
 
-  drawCells(fullBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
-    const { grid, borders, render_dependency, array_dependency } = this.app.sheet;
+  drawCells(sheet: Sheet, fullBounds: Rectangle, isQuadrant: boolean): Rectangle | undefined {
+    const { grid, borders, render_dependency, array_dependency } = sheet;
 
     // find bounds with gridSparse data
     const { bounds, boundsWithData } = grid.getBounds(fullBounds);
@@ -393,7 +395,7 @@ export class Cells extends Container {
     let rectCells: Rectangle | undefined;
     if (boundsWithData && fullBoundsWithData) {
       const cellRectangle = grid.getCells(boundsWithData);
-      rectCells = this.drawBounds({ bounds, boundsWithData, cellRectangle, isQuadrant });
+      rectCells = this.drawBounds({ sheet, bounds, boundsWithData, cellRectangle, isQuadrant });
     } else {
       this.clear();
     }
@@ -415,7 +417,7 @@ export class Cells extends Container {
     if (this.dirty) {
       this.dirty = false;
       const visibleBounds = this.app.viewport.getVisibleBounds();
-      this.drawCells(visibleBounds, false);
+      this.drawCells(this.app.sheet, visibleBounds, false);
     }
   }
 

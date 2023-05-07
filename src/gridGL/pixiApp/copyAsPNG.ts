@@ -52,7 +52,7 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   renderer.view.height = imageHeight;
   app.prepareForQuadrantRendering();
   app.settings.temporarilyHideCellTypeOutlines = true;
-  app.cells.drawCells(rectangle, false);
+  app.cells.drawCells(app.sheet, rectangle, false);
   const transform = new Matrix();
   transform.translate(-rectangle.x + borderSize / 2, -rectangle.y + borderSize / 2);
   const scale = imageWidth / (rectangle.width * resolution);

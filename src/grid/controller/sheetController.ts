@@ -37,7 +37,7 @@ export class SheetController {
   }
   set current(value: number) {
     this._current = value;
-    this.app?.rebuild();
+    this.app?.changeSheet(value);
   }
 
   loadSheets(sheets: SheetSchema[]): void {
@@ -46,7 +46,9 @@ export class SheetController {
       const sheet = new Sheet();
       sheet.load_file(sheetSchema);
       this.sheets.push(sheet);
-      this.current = 0;
+
+      // need to set internal value to avoid set current call
+      this._current = 0;
     });
   }
 

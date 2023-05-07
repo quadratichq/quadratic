@@ -1,3 +1,4 @@
+import { v4 as uuid } from 'uuid';
 import { Rectangle } from 'pixi.js';
 import { SheetSchema } from '../../schemas';
 import { intersects } from '../../gridGL/helpers/intersects';
@@ -10,6 +11,7 @@ import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../../gridGL/types/size';
 
 export class Sheet {
+  id: string; // used to connect Sheet to Quadrants (could be saved as part of Sheet if needed in the future)
   name: string;
   gridOffsets: GridOffsets;
   grid: GridSparse;
@@ -25,6 +27,7 @@ export class Sheet {
   cell_dependency: CellDependencyManager;
 
   constructor(name?: string) {
+    this.id = uuid();
     this.name = name ?? 'Sheet';
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
