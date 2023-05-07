@@ -38,7 +38,6 @@ export class Quadrants extends Container {
     if (debugShowCacheFlag) {
       const quadrantsSheet = this.quadrants.get(activeId);
       if (!quadrantsSheet) {
-        debugger;
         throw new Error('Expected to find QuadrantsSheet in Quadrants.changeSheet');
       }
       const dirtyCount = quadrantsSheet.children.reduce(
