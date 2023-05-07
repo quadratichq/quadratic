@@ -29,7 +29,6 @@ export class PixiApp {
   save: () => Promise<void>;
 
   sheet_controller: SheetController;
-  sheet: Sheet;
 
   canvas: HTMLCanvasElement;
   viewport: Viewport;
@@ -54,8 +53,6 @@ export class PixiApp {
 
   constructor(sheet_controller: SheetController, save: () => Promise<void>) {
     this.sheet_controller = sheet_controller;
-    this.sheet = sheet_controller.sheet;
-    this.sheet.onRebuild = this.rebuild;
     this.save = save;
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
@@ -133,7 +130,13 @@ export class PixiApp {
 
     window.addEventListener('resize', this.resize);
 
+    this.rebuild();
+
     console.log('[QuadraticGL] environment ready');
+  }
+
+  get sheet(): Sheet {
+    return this.sheet_controller.sheet;
   }
 
   private showCache(): void {

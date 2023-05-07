@@ -5,28 +5,63 @@ import { StatementRunner } from './runners/runner';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
+import { SheetSchema } from '../../schemas';
 
 export class SheetController {
   app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
-  sheet: Sheet;
+  sheets: Sheet[];
+  _current: number;
   saveLocalFiles: (() => void) | undefined;
   transaction_in_progress: Transaction | undefined;
   transaction_in_progress_reverse: Transaction | undefined;
   undo_stack: Transaction[];
   redo_stack: Transaction[];
 
-  constructor(sheet?: Sheet) {
-    if (sheet === undefined) {
-      this.sheet = new Sheet();
+  constructor(sheets?: Sheet[]) {
+    if (sheets === undefined) {
+      this.sheets = [new Sheet()];
     } else {
-      this.sheet = sheet;
+      this.sheets = sheets;
     }
 
+    this._current = 0;
     this.undo_stack = [];
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
     this.saveLocalFiles = undefined;
+  }
+
+  get current(): number {
+    return this._current;
+  }
+  set current(value: number) {
+    this._current = value;
+    this.app?.rebuild();
+  }
+
+  loadSheets(sheets: SheetSchema[]): void {
+    this.sheets = [];
+    sheets.forEach((sheetSchema) => {
+      const sheet = new Sheet();
+      sheet.load_file(sheetSchema);
+      this.sheets.push(sheet);
+      this.current = 0;
+    });
+  }
+
+  export(): SheetSchema[] {
+    return this.sheets.map((sheet) => sheet.export_file());
+  }
+
+  get sheet(): Sheet {
+    return this.sheets[this.current];
+  }
+
+  addSheet(): void {
+    const sheet = new Sheet(`Sheet${this.sheets.length + 1}`);
+    this.sheets.push(sheet);
+    this.current = this.sheets.length - 1;
   }
 
   // starting a transaction is the only way to execute statements

@@ -1,5 +1,5 @@
 import { Rectangle } from 'pixi.js';
-import { GridFileData, GridFile } from '../../schemas';
+import { SheetSchema } from '../../schemas';
 import { intersects } from '../../gridGL/helpers/intersects';
 import { GridBorders } from './GridBorders';
 import { GridRenderDependency } from './GridRenderDependency';
@@ -10,6 +10,7 @@ import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../../gridGL/types/size';
 
 export class Sheet {
+  name: string;
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
@@ -23,9 +24,8 @@ export class Sheet {
   // cell calculation dependency
   cell_dependency: CellDependencyManager;
 
-  onRebuild?: () => void;
-
-  constructor() {
+  constructor(name?: string) {
+    this.name = name ?? 'Sheet';
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
@@ -34,34 +34,24 @@ export class Sheet {
     this.cell_dependency = new CellDependencyManager();
   }
 
-  newFile(): void {
-    this.gridOffsets = new GridOffsets();
-    this.grid = new GridSparse(this.gridOffsets);
-    this.borders = new GridBorders(this.gridOffsets);
-    this.render_dependency = new GridRenderDependency();
-    this.cell_dependency = new CellDependencyManager();
-    this.onRebuild?.();
-  }
-
-  load_file(sheet: GridFile): void {
+  load_file(sheet: SheetSchema): void {
+    this.name = sheet.name;
     this.gridOffsets.populate(sheet.columns, sheet.rows);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
-    this.render_dependency.load(sheet.render_dependency);
     this.cell_dependency.loadFromString(sheet.cell_dependency);
-    this.onRebuild?.();
   }
 
-  export_file(): GridFileData {
+  export_file(): SheetSchema {
     const { cells, formats } = this.grid.getArrays();
     return {
+      name: this.name,
       columns: this.gridOffsets.getColumnsArray(),
       rows: this.gridOffsets.getRowsArray(),
       cells,
       formats,
       borders: this.borders.getArray(),
       cell_dependency: this.cell_dependency.exportToString(),
-      render_dependency: this.render_dependency.save(),
     };
   }
 

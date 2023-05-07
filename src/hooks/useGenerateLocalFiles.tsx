@@ -15,6 +15,7 @@ import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/a
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import mixpanel from 'mixpanel-browser';
 import { focusGrid } from '../helpers/focusGrid';
+
 const INDEX = 'file-list';
 
 export interface LocalFile {
@@ -51,8 +52,6 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   const [currentFileContents, setCurrentFileContents] = useState<GridFile | null>(null);
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
-  const { sheet } = sheetController;
-
   // Persist `fileList` to localStorage when it changes
   useEffect(() => {
     localforage.setItem(INDEX, fileList).then((newFileList) => {
@@ -82,7 +81,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   const resetSheet = useCallback(
     (grid: GridFile) => {
       sheetController.clear();
-      sheetController.sheet.load_file(grid);
+      sheetController.loadSheets(grid.sheets);
       sheetController.app?.rebuild();
       sheetController.app?.reset();
       focusGrid();
@@ -172,15 +171,17 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   // Create a new file (and load it in the app)
   const createNewFile = useCallback(async (): Promise<void> => {
     const grid: GridFileData = {
-      cells: [],
-      formats: [],
-      columns: [],
-      rows: [],
-      borders: [],
-      cell_dependency: '',
-
-      // todo: this goes away when alignment branch is merged
-      render_dependency: [],
+      sheets: [
+        {
+          name: 'Sheet1',
+          cells: [],
+          formats: [],
+          columns: [],
+          rows: [],
+          borders: [],
+          cell_dependency: '',
+        },
+      ],
     };
 
     mixpanel.track('[Files].newFile');
@@ -207,11 +208,11 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     if (!currentFileContents) return;
     const data: GridFile = {
       ...currentFileContents,
-      ...sheet.export_file(),
+      sheets: sheetController.export(),
     };
 
     downloadFile(data.filename, JSON.stringify(data));
-  }, [currentFileContents, sheet]);
+  }, [currentFileContents, sheetController]);
 
   // Given a file ID, download it
   const downloadFileFromMemory = useCallback(
@@ -320,7 +321,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     }
 
     const modified = Date.now();
-    const updatedFile = { ...currentFileContents, ...sheet.export_file(), modified };
+    const updatedFile = { ...currentFileContents, sheets: sheetController.export(), modified };
     setCurrentFileContents(updatedFile);
     setFileList((oldFileList) =>
       oldFileList
@@ -335,7 +336,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
         })
         .sort((a, b) => b.modified - a.modified)
     );
-  }, [currentFileContents, sheet]);
+  }, [currentFileContents, sheetController]);
 
   useEffect(() => {
     sheetController.saveLocalFiles = save;

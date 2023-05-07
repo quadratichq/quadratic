@@ -1,9 +1,14 @@
 import { Rectangle } from 'pixi.js';
 import { Coordinate, coordinateEqual } from '../../gridGL/types/size';
 import { Bounds } from './Bounds';
-import { Dependency } from '../../schemas';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { intersects } from '../../gridGL/helpers/intersects';
+
+interface Dependency {
+  location: Coordinate;
+  needToRender: Coordinate[]; // these are cells that must be rendered when drawing this cell
+  renderThisCell: Coordinate[]; // these are cells that render this cell when drawing
+}
 
 export class GridRenderDependency {
   private dependents: Map<string, Dependency> = new Map();

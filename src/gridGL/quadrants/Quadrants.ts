@@ -45,7 +45,6 @@ export class Quadrants extends Container {
   build(): void {
     this.removeChildren();
     this.quadrants.clear();
-
     const { grid, borders, render_dependency, array_dependency } = this.app.sheet;
     const gridBounds = grid.getGridBounds(false);
     const borderBounds = borders.getGridBounds();
