@@ -65,6 +65,6 @@ export const debugShowCellsForDirtyQuadrants = debug && false;
 // Hooks
 // --------
 
-export const debugShowFileIO = debug && true;
+export const debugShowFileIO = debug && false;
 
-export const debugGridSettings = debug && true;
+export const debugGridSettings = debug && false;
