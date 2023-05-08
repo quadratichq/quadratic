@@ -21,26 +21,6 @@ impl Ctx<'_> {
         ))
     }
 
-    /// Fetches the contents of the given cell coordinates, or an array of cells
-    /// if the input is an array.
-    pub async fn array_mapped_indirect(
-        &mut self,
-        args: Spanned<Vec<Spanned<Value>>>,
-    ) -> FormulaResult {
-        let base_pos = self.pos;
-        self.array_map_async(args, |ctx, [cell_ref_string]| {
-            async move {
-                let pos =
-                    CellRef::parse_a1(&cell_ref_string.to_string(), base_pos).ok_or_else(|| {
-                        FormulaErrorMsg::BadCellReference.with_span(cell_ref_string.span)
-                    })?;
-                ctx.get_cell(pos, cell_ref_string.span).await
-            }
-            .boxed_local()
-        })
-        .await
-    }
-
     /// Fetches the contents of the cell at `(x, y)`, but fetches an array of cells
     /// if either `x` or `y` is an array.
     pub async fn array_mapped_indirect(

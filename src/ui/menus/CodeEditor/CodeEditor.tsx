@@ -21,6 +21,7 @@ import { EditorInteractionState, editorInteractionStateAtom } from '../../../ato
 import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
+import { provideCompletionItems } from 'quadratic-core';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
 import { AI, Formula, Python } from '../../icons';
@@ -80,10 +81,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
     (editorMode === 'PYTHON'
       ? selectedCell?.python_code !== editorContent
       : editorMode === 'FORMULA'
-      ? selectedCell?.formula_code !== editorContent
-      : editorMode === 'AI'
-      ? selectedCell?.ai_prompt !== editorContent
-      : false);
+        ? selectedCell?.formula_code !== editorContent
+        : editorMode === 'AI'
+          ? selectedCell?.ai_prompt !== editorContent
+          : false);
 
   // When changing mode
   // useEffect(() => {
@@ -236,8 +237,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
     // Only register language once
 
     monaco.languages.register({ id: 'formula' });
-    monaco.languages.setMonarchTokensProvider('formula', FormulaLanguageConfig);
-    monaco.languages.registerCompletionItemProvider('formula', FormulaCompletionProvider);
+    monaco.languages.setLanguageConfiguration('formula', FormulaLanguageConfig);
+    monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
+    monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
 
     setDidMount(true);
   };
@@ -424,8 +426,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
         {(editorInteractionState.mode === 'PYTHON' ||
           editorInteractionState.mode === 'FORMULA' ||
           editorInteractionState.mode === 'AI') && (
-          <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
-        )}
+            <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
+          )}
       </div>
     </div>
   );

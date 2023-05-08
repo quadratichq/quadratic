@@ -13,6 +13,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         name: "INDIRECT",
         arg_completion: "${1:cellref_string}",
         usages: &["cellref_string"],
+        examples: &["INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)"],
         doc: "Returns the value of the cell at a given location.",
         eval: Box::new(|ctx, args| ctx.array_mapped_indirect(args).boxed_local()),
     }]

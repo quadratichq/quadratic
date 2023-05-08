@@ -28,7 +28,7 @@ lazy_static! {
         .map(|f| CompletionItem {
             detail: Some(f.usages_strings().join("\n")),
             documentation: Some(Documentation::Markdown {
-                value: f.doc.to_string(),
+                value: f.lsp_full_docs(),
             }),
             insert_text: Some(f.autocomplete_snippet()),
             insert_text_rules: Some(CompletionItemInsertTextRule::INSERT_AS_SNIPPET),

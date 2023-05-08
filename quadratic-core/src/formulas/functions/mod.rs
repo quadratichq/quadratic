@@ -53,6 +53,7 @@ pub struct FormulaFunction {
     pub name: &'static str,
     pub arg_completion: &'static str,
     pub usages: &'static [&'static str],
+    pub examples: &'static [&'static str],
     pub doc: &'static str,
     pub eval: FormulaFn,
 }
@@ -68,6 +69,7 @@ impl FormulaFunction {
             name,
             arg_completion: "",
             usages: &[],
+            examples: &[],
             doc: "",
             eval: Box::new(move |ctx, args| {
                 async move {
@@ -95,6 +97,7 @@ impl FormulaFunction {
             name,
             arg_completion: "",
             usages: &[],
+            examples: &[],
             doc: "",
             eval: util::array_mapped(eval_fn),
         }
@@ -114,6 +117,20 @@ impl FormulaFunction {
         let name = self.name;
         let arg_completion = self.arg_completion;
         format!("{name}({arg_completion})")
+    }
+
+    /// Returns the Markdown documentation for this function that should appear
+    /// in the formula editor via the language server.
+    pub fn lsp_full_docs(&self) -> String {
+        let mut ret = String::new();
+        if !self.doc.is_empty() {
+            ret.push_str(&format!("# Description\n\n{}\n\n", self.doc));
+        }
+        if !self.examples.is_empty() {
+            let examples = self.examples.iter().map(|s| format!("- `{s}`\n")).join("");
+            ret.push_str(&format!("# Examples\n\n{examples}\n\n"));
+        }
+        ret
     }
 }
 
