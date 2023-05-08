@@ -29,7 +29,7 @@ impl GridProxy for PanicGridMock {
 
 #[test]
 fn test_formula_indirect() {
-    let form = parse_formula("CELL(3, 5)", pos![B2]).unwrap();
+    let form = parse_formula("INDIRECT(\"D5\")", pos![B2]).unwrap();
 
     make_stateless_grid_mock!(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
@@ -40,7 +40,7 @@ fn test_formula_indirect() {
 
     assert_eq!(
         (3 * 10 + 5).to_string(),
-        eval_to_string(&mut GridMock, "CELL(3, 5)"),
+        eval_to_string(&mut GridMock, "INDIRECT(\"D5\")"),
     );
 }
 
@@ -101,6 +101,23 @@ fn test_formula_math_operators() {
 }
 
 #[test]
+fn test_formula_range_operator() {
+    let expected = "{1; 2; 3; 4; 5}";
+    let all_a = ["1", "1.0", ".9"];
+    let all_ops = ["..", " ..", " .. ", ".. "];
+    let all_b = ["5", "5.0", "5."];
+    for (a, op, b) in itertools::iproduct!(all_a, all_ops, all_b) {
+        let actual = eval_to_string(&mut PanicGridMock, &format!("{a}{op}{b}"));
+        assert_eq!(expected, actual);
+    }
+
+    assert_eq!(
+        FormulaErrorMsg::Unexpected("ellipsis".into()),
+        parse_formula("1...5", Pos::ORIGIN).unwrap_err().msg,
+    );
+}
+
+#[test]
 fn test_formula_concat() {
     assert_eq!(
         "Hello, 14000605 worlds!".to_string(),
@@ -138,7 +155,7 @@ fn test_formula_average() {
 
     make_stateless_grid_mock!(|pos| {
         if (1..=3).contains(&pos.x) && (1..=3).contains(&pos.y) {
-            Some((pos.x * 3 + pos.y).to_string()) // 4 ... 12
+            Some((pos.x * 3 + pos.y).to_string()) // 4 .. 12
         } else {
             panic!("cell {pos} shouldn't be accessed")
         }

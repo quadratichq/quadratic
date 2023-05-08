@@ -19,10 +19,7 @@ pub fn parse_formula(source: &str, pos: Pos) -> FormulaResult<ast::Formula> {
 fn parse_exactly_one<R: SyntaxRule>(source: &str, pos: Pos, rule: R) -> FormulaResult<R::Output> {
     let tokens = lexer::tokenize(source).collect_vec();
     let mut p = Parser::new(source, &tokens, pos);
-    match p.parse(rule) {
-        Ok(_) if p.next().is_some() => p.expected("end of formula"),
-        result => result,
-    }
+    p.parse(rule).and_then(|output| p.ok_if_not_eof(output))
 }
 
 pub fn find_cell_references(source: &str, pos: Pos) -> Vec<Spanned<RangeRef>> {
@@ -195,7 +192,14 @@ impl<'a> Parser<'a> {
         // return FormulaResult<!>.
         Err(self.expected_err(expected))
     }
-
+    /// Returns an error describing that EOF was expected.
+    pub fn ok_if_not_eof<T>(mut self, or_else: T) -> FormulaResult<T> {
+        if let Some(tok) = self.next() {
+            Err(FormulaErrorMsg::Unexpected(tok.to_string().into()).with_span(self.span()))
+        } else {
+            Ok(or_else)
+        }
+    }
     /// Returns an error describing that `expected` was expected.
     pub fn expected_err(mut self, expected: impl ToString) -> FormulaError {
         self.next();

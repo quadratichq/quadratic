@@ -10,10 +10,10 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 
 fn get_functions() -> Vec<FormulaFunction> {
     vec![FormulaFunction {
-        name: "CELL",
-        arg_completion: "${1:x}, ${2:y}",
-        usages: &["x, y"],
-        doc: "todo!()",
-        eval: Box::new(|ctx, args| ctx.array_mapped_get_cell(args).boxed_local()),
+        name: "INDIRECT",
+        arg_completion: "${1:cellref_string}",
+        usages: &["cellref_string"],
+        doc: "Returns the value of the cell at a given location.",
+        eval: Box::new(|ctx, args| ctx.array_mapped_indirect(args).boxed_local()),
     }]
 }
