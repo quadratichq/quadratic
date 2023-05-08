@@ -68,7 +68,7 @@ export const TopBar = (props: IProps) => {
           alignItems: 'center',
         }}
       >
-        <QuadraticMenu app={app} sheetController={sheetController} />
+        <QuadraticMenu sheetController={sheetController} />
         {!IS_READONLY_MODE && (
           <>
             <DataMenu></DataMenu>
