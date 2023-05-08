@@ -22,7 +22,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { useRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 import FileMenuTabs from './FileMenuTabs';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -36,20 +36,12 @@ import {
   LayoutColLeftWrapper,
   LayoutColRightWrapper,
 } from './FileMenuStyles';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 
-interface FileMenuProps {
-  app: PixiApp;
-}
-
-export type onCloseFn = (arg?: { reset: boolean }) => void;
-
-export function FileMenu(props: FileMenuProps) {
-  const { app } = props;
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+export function FileMenu() {
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const {
     currentFileId,
     currentFilename,
@@ -61,22 +53,18 @@ export function FileMenu(props: FileMenuProps) {
   } = useLocalFiles();
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const onClose: onCloseFn = ({ reset } = { reset: false }) => {
-    if (reset) {
-      app.reset();
-    }
-
-    setEditorInteractionState({
-      ...editorInteractionState,
+  const onClose = () => {
+    setEditorInteractionState((prevState) => ({
+      ...prevState,
       showFileMenu: false,
-    });
+    }));
   };
   const theme = useTheme();
   const styles = getStyles(theme);
 
   const onNewFile = async () => {
     await createNewFile();
-    onClose({ reset: true });
+    onClose();
   };
 
   // If there's an active file, set focus back to the grid when this unmounts
@@ -135,7 +123,7 @@ export function FileMenu(props: FileMenuProps) {
                         onClick={() => {
                           loadFileFromMemory(id).then((loaded) => {
                             if (loaded) {
-                              onClose({ reset: true });
+                              onClose();
                             } else {
                               addGlobalSnackbar('Failed to load file.');
                               Sentry.captureEvent({
