@@ -57,6 +57,8 @@ pub struct FormulaFunction {
     pub eval: FormulaFn,
 }
 impl FormulaFunction {
+    /// Constructs a function for an operator that can be called with one or two
+    /// arguments.
     fn variadic_operator<const N1: usize, const N2: usize>(
         name: &'static str,
         eval_monadic: Option<NonVariadicFn<N1>>,
@@ -86,6 +88,8 @@ impl FormulaFunction {
         }
     }
 
+    /// Constructs an operator that can be called with a fixed number of
+    /// arguments.
     fn operator<const N: usize>(name: &'static str, eval_fn: NonVariadicPureFn<N>) -> Self {
         Self {
             name,
