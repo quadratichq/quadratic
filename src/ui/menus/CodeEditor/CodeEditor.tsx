@@ -20,7 +20,7 @@ import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
-import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
+import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
 import { AI, Formula, Python } from '../../icons';

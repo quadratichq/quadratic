@@ -9,6 +9,7 @@ mod ctx;
 mod functions;
 mod grid_proxy;
 mod lexer;
+pub mod lsp;
 mod parser;
 mod span;
 mod value;

@@ -95,6 +95,23 @@ impl FormulaFunction {
             eval: util::array_mapped(eval_fn),
         }
     }
+
+    /// Returns a user-friendly string containing the usages of this function,
+    /// delimited by newlines.
+    pub fn usages_string(&self) -> String {
+        let name = self.name;
+        self.usages
+            .iter()
+            .map(|args| format!("{name}({args})"))
+            .join("\n")
+    }
+
+    /// Returns the autocomplete snippet for this function.
+    pub fn autocomplete_snippet(&self) -> String {
+        let name = self.name;
+        let arg_completion = self.arg_completion;
+        format!("{name}({arg_completion})")
+    }
 }
 
 pub struct FormulaFunctionCategory {
