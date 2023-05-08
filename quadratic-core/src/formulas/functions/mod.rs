@@ -11,7 +11,7 @@ mod statistics;
 mod string;
 mod util;
 
-use super::{Ctx, FormulaErrorMsg, FormulaResult, Spanned, Value};
+use super::{Ctx, FormulaErrorMsg, FormulaResult, Span, Spanned, Value};
 
 pub fn lookup_function(name: &str) -> Option<&FormulaFunction> {
     ALL_FUNCTIONS.get(name)
