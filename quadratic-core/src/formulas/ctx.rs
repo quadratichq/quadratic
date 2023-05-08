@@ -23,6 +23,25 @@ impl Ctx<'_> {
 
     /// Fetches the contents of the cell at `(x, y)`, but fetches an array of cells
     /// if either `x` or `y` is an array.
+    pub async fn array_mapped_indirect(
+        &mut self,
+        args: Spanned<Vec<Spanned<Value>>>,
+    ) -> FormulaResult {
+        let base_pos = self.pos;
+
+        self.array_map_async(args, |ctx, [cellref_string]| {
+            async move {
+                let pos = CellRef::parse_a1(&cellref_string.to_string(), base_pos)
+                    .ok_or(FormulaErrorMsg::BadCellReference.with_span(cellref_string.span))?;
+                ctx.get_cell(pos, cellref_string.span).await
+            }
+            .boxed_local()
+        })
+        .await
+    }
+
+    /// Fetches the contents of the cell at `(x, y)`, but fetches an array of cells
+    /// if either `x` or `y` is an array.
     pub async fn array_mapped_get_cell(
         &mut self,
         args: Spanned<Vec<Spanned<Value>>>,
@@ -33,9 +52,6 @@ impl Ctx<'_> {
                     x: x.to_integer()?,
                     y: y.to_integer()?,
                 };
-                // Can't have this be async because it needs to mutate `grid` and
-                // Rust isn't happy about moving a mutable reference to `grid` into
-                // the closure.
                 ctx.get_cell(CellRef::absolute(pos), Span::merge(x, y))
                     .await
             }

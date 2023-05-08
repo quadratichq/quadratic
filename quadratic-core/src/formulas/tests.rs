@@ -29,7 +29,7 @@ impl GridProxy for PanicGridMock {
 
 #[test]
 fn test_formula_indirect() {
-    let form = parse_formula("CELL(3, 5)", pos![B2]).unwrap();
+    let form = parse_formula("INDIRECT(\"D5\")", pos![B2]).unwrap();
 
     make_stateless_grid_mock!(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
@@ -40,7 +40,7 @@ fn test_formula_indirect() {
 
     assert_eq!(
         (3 * 10 + 5).to_string(),
-        eval_to_string(&mut GridMock, "CELL(3, 5)"),
+        eval_to_string(&mut GridMock, "INDIRECT(\"D5\")"),
     );
 }
 
