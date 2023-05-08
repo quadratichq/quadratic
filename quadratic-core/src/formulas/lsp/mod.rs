@@ -1,5 +1,6 @@
 //! Language server implementation for Monaco editor
 
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
@@ -25,7 +26,7 @@ lazy_static! {
         .filter(|category| category.include_in_completions)
         .flat_map(|category| (category.get_functions)())
         .map(|f| CompletionItem {
-            detail: Some(f.usages_string()),
+            detail: Some(f.usages_strings().join("\n")),
             documentation: Some(Documentation::Markdown {
                 value: f.doc.to_string(),
             }),

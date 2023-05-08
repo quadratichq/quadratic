@@ -6,7 +6,7 @@ mod errors;
 mod ast;
 mod cell_ref;
 mod ctx;
-mod functions;
+pub mod functions;
 mod grid_proxy;
 mod lexer;
 pub mod lsp;

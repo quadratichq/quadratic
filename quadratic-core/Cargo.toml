@@ -12,6 +12,10 @@ license = "MIT"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[[bin]]
+name = "docgen"
+path = "src/bin/docgen.rs"
+
 [features]
 default = ["console_error_panic_hook"]
 

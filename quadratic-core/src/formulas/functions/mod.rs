@@ -102,12 +102,11 @@ impl FormulaFunction {
 
     /// Returns a user-friendly string containing the usages of this function,
     /// delimited by newlines.
-    pub fn usages_string(&self) -> String {
+    pub fn usages_strings(&self) -> impl Iterator<Item = String> {
         let name = self.name;
         self.usages
             .iter()
-            .map(|args| format!("{name}({args})"))
-            .join("\n")
+            .map(move |args| format!("{name}({args})"))
     }
 
     /// Returns the autocomplete snippet for this function.
