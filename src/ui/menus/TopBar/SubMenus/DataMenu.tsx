@@ -1,7 +1,6 @@
 import Button from '@mui/material/Button';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, MenuHeader } from '@szhsin/react-menu';
-
 import {
   CloudDownloadOutlined,
   StorageOutlined,
@@ -9,16 +8,14 @@ import {
   UploadFile,
   InsertDriveFile,
 } from '@mui/icons-material';
-
 import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
 import { MenuLineItem } from '../MenuLineItem';
-
-import { useSetRecoilState } from 'recoil';
-import { showCSVImportHelpAtom } from '../../../../atoms/showCSVImportHelpAtom';
+import { CSV_IMPORT_MESSAGE } from '../../../../constants/app';
+import { useGlobalSnackbar } from '../../../contexts/GlobalSnackbar';
 
 export const DataMenu = () => {
-  const setShowCSVImportHelpMessage = useSetRecoilState(showCSVImportHelpAtom);
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   return (
     <>
@@ -35,7 +32,7 @@ export const DataMenu = () => {
         <MenuHeader>Import</MenuHeader>
         <MenuItem
           onClick={() => {
-            setShowCSVImportHelpMessage(true);
+            addGlobalSnackbar(CSV_IMPORT_MESSAGE);
           }}
         >
           <MenuLineItem primary="CSV" Icon={UploadFile} />

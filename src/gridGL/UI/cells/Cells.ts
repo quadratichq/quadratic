@@ -4,7 +4,7 @@ import { colors } from '../../../theme/colors';
 import { CellTextFormatter } from '../../../grid/formatting/cellTextFormatter';
 import { CellRectangle } from '../../../grid/sheet/CellRectangle';
 import { CellAndFormat } from '../../../grid/sheet/GridSparse';
-import { Cell, CellFormat } from '../../../grid/sheet/gridTypes';
+import { Cell, CellFormat } from '../../../schemas';
 import { intersects } from '../../helpers/intersects';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { Coordinate } from '../../types/size';
@@ -158,10 +158,15 @@ export class Cells extends Container {
               this.cellsMarkers.add(x, y, 'CodeIcon', error);
             } else if (entry.cell?.type === 'FORMULA') {
               this.cellsMarkers.add(x, y, 'FormulaIcon', error);
+            } else if (entry.cell?.type === 'AI') {
+              this.cellsMarkers.add(x, y, 'AIIcon', error);
             }
 
           // show cell text
           let cell_text = CellTextFormatter(entry.cell, entry.format);
+          // strip new lines
+          cell_text = cell_text ? cell_text.replace(/\n/g, '') : '';
+
           let cell_format = entry.format;
           if (error) {
             cell_text = '  ERROR';

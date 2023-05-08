@@ -1,4 +1,5 @@
-import { Box, Typography, IconButton } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+import { Box, Typography, IconButton, InputBase } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -11,7 +12,6 @@ import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { IS_READONLY_MODE } from '../../../constants/app';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { useLocalFiles } from '../../../hooks/useLocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -19,6 +19,7 @@ import { ManageSearch } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
+import { useLocalFiles } from '../../contexts/LocalFiles';
 
 interface IProps {
   app: PixiApp;
@@ -26,8 +27,11 @@ interface IProps {
 }
 
 export const TopBar = (props: IProps) => {
+  const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { localFilename } = useLocalFiles();
+  const { currentFilename, renameCurrentFile } = useLocalFiles();
+  const [isRenaming, setIsRenaming] = useState<boolean>(false);
+
   const settings = useGridSettings();
   // const { user } = useAuth0();
 
@@ -64,12 +68,12 @@ export const TopBar = (props: IProps) => {
           alignItems: 'center',
         }}
       >
-        <QuadraticMenu sheetController={props.sheetController} />
+        <QuadraticMenu app={app} sheetController={sheetController} />
         {!IS_READONLY_MODE && (
           <>
             <DataMenu></DataMenu>
-            <FormatMenu app={props.app} sheet_controller={props.sheetController} />
-            <NumberFormatMenu app={props.app} sheet_controller={props.sheetController}></NumberFormatMenu>
+            <FormatMenu app={app} sheet_controller={sheetController} />
+            <NumberFormatMenu app={app} sheet_controller={sheetController}></NumberFormatMenu>
           </>
         )}
       </Box>
@@ -88,7 +92,7 @@ export const TopBar = (props: IProps) => {
             color={colors.mediumGray}
             style={{ whiteSpace: 'nowrap', marginLeft: '1rem' }}
           >
-            Read Only
+            Read only
           </Typography>
         </Box>
       ) : (
@@ -96,16 +100,44 @@ export const TopBar = (props: IProps) => {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            userSelect: 'none',
+            justifyContent: 'center',
+            flexGrow: '1',
             visibility: { sm: 'hidden', xs: 'hidden', md: 'visible' },
           }}
         >
-          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-            Local &nbsp;
-          </Typography>
-          <Typography variant="body2" fontFamily={'sans-serif'} color={colors.darkGray}>
-            / {localFilename}
-          </Typography>
+          {isRenaming ? (
+            <FileRename
+              setIsRenaming={setIsRenaming}
+              currentFilename={currentFilename}
+              renameCurrentFile={renameCurrentFile}
+            />
+          ) : (
+            <>
+              <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
+                Local /&nbsp;
+              </Typography>
+              <Typography
+                onClick={() => {
+                  setIsRenaming(true);
+                }}
+                variant="body2"
+                fontFamily={'sans-serif'}
+                color={colors.darkGray}
+                style={{
+                  display: 'block',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  // this is a little bit of a magic number for now, but it
+                  // works and truncates at an appropriate, proportional size
+                  maxWidth: '25vw',
+                }}
+              >
+                {currentFilename}
+              </Typography>
+            </>
+          )}
+
           {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
         </Box>
       )}
@@ -177,8 +209,59 @@ export const TopBar = (props: IProps) => {
             </Tooltip> */}
           </>
         )}
-        <ZoomDropdown app={props.app} />
+        <ZoomDropdown app={app} />
       </Box>
     </div>
   );
 };
+
+function FileRename({
+  currentFilename,
+  renameCurrentFile,
+  setIsRenaming,
+}: {
+  currentFilename: string;
+  renameCurrentFile: Function;
+  setIsRenaming: Function;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // When user selects input, highlight it's contents
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.setSelectionRange(0, inputRef.current.value.length);
+    }
+  }, []);
+
+  return (
+    <InputBase
+      onKeyUp={(e) => {
+        if (e.key === 'Enter') {
+          inputRef.current?.blur();
+          focusGrid();
+        }
+      }}
+      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+        setIsRenaming(false);
+        const value = inputRef.current?.value;
+
+        // Don't allow empty file names
+        if (value === '' || (value && value.trim() === '')) {
+          return;
+        }
+
+        // Don't do anything if the name didn't change
+        if (value === currentFilename) {
+          return;
+        }
+
+        renameCurrentFile(value);
+      }}
+      defaultValue={currentFilename}
+      inputRef={inputRef}
+      autoFocus
+      inputProps={{ style: { textAlign: 'center' } }}
+      sx={{ fontSize: '.875rem', color: colors.darkGray, width: '100%' }}
+    />
+  );
+}

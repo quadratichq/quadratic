@@ -3,7 +3,6 @@ import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { Coordinate } from '../types/size';
 import { focusGrid } from '../../helpers/focusGrid';
 import { PixiApp } from '../pixiApp/PixiApp';
-import { localFiles } from '../../grid/sheet/localFiles';
 import { SheetController } from '../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
 import { DeleteCells } from '../../grid/actions/DeleteCells';
@@ -119,8 +118,7 @@ export const CellInput = (props: CellInputProps) => {
           app,
         });
       }
-      app?.quadrants.quadrantChanged({ cells: [cellLocation.current] });
-      localFiles.saveLastLocal(sheetController.sheet.export_file());
+      app.quadrants.quadrantChanged({ cells: [cellLocation.current] });
     }
 
     // Update Grid Interaction state, reset input value state
@@ -203,9 +201,9 @@ export const CellInput = (props: CellInputProps) => {
           closeInput({ x: 0, y: -1 });
         } else if (event.key === 'ArrowDown') {
           closeInput({ x: 0, y: 1 });
-        } else if ((event.metaKey || event.ctrlKey) && event.code === 'KeyP') {
+        } else if ((event.metaKey || event.ctrlKey) && event.key === 'p') {
           event.preventDefault();
-        } else if (event.code === 'Space') {
+        } else if (event.key === ' ') {
           // Don't propagate so panning mode doesn't get triggered
           event.stopPropagation();
         }

@@ -320,3 +320,9 @@ fn test_find_cell_references() {
 
     assert_eq!(iter.next(), None);
 }
+
+/// Regression test for quadratic#410
+#[test]
+fn test_currency_string() {
+    assert_eq!("30", eval_to_string(&mut PanicGridMock, "\"$10\" + 20"));
+}

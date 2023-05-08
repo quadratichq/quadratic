@@ -1,8 +1,7 @@
 import { ColorResult } from 'react-color';
 import { clearFormattingAction } from '../../../../grid/actions/clearFormattingAction';
 import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
-import { CellFormat } from '../../../../grid/sheet/gridTypes';
-import { localFiles } from '../../../../grid/sheet/localFiles';
+import { CellFormat } from '../../../../schemas';
 import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
@@ -78,7 +77,6 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
       app.quadrants.quadrantChanged({ range: { start, end } });
       app.cells.dirty = true;
     }
-    localFiles.saveLastLocal(sheet_controller.sheet.export_file());
 
     // triggers an even to indicate selection's format change (see useGetSelection.ts)
     window.dispatchEvent(new CustomEvent(FORMAT_SELECTION_EVENT));

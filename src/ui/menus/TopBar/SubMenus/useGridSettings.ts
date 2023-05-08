@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
+import mixpanel from 'mixpanel-browser';
 
 export interface GridSettings {
   showGridAxes: boolean;
@@ -46,6 +47,7 @@ export const useGridSettings = (): GridSettingsReturn => {
   const setShowGridAxes = useCallback(
     (value: boolean) => {
       if (value !== settings.showGridAxes) {
+        mixpanel.track('[Grid].[Settings].setShowGridAxes', { value });
         setSettings({
           ...settings,
           showGridAxes: value,
@@ -58,6 +60,7 @@ export const useGridSettings = (): GridSettingsReturn => {
   const setShowHeadings = useCallback(
     (value: boolean) => {
       if (value !== settings.showHeadings) {
+        mixpanel.track('[Grid].[Settings].setShowHeadings', { value });
         setSettings({
           ...settings,
           showHeadings: value,
@@ -70,6 +73,7 @@ export const useGridSettings = (): GridSettingsReturn => {
   const setShowGridLines = useCallback(
     (value: boolean) => {
       if (value !== settings.showGridLines) {
+        mixpanel.track('[Grid].[Settings].setShowGridLines', { value });
         setSettings({
           ...settings,
           showGridLines: value,
@@ -82,6 +86,7 @@ export const useGridSettings = (): GridSettingsReturn => {
   const setShowCellTypeOutlines = useCallback(
     (value: boolean) => {
       if (value !== settings.showCellTypeOutlines) {
+        mixpanel.track('[Grid].[Settings].setShowCellTypeOutlines', { value });
         setSettings({
           ...settings,
           showCellTypeOutlines: value,
@@ -94,6 +99,7 @@ export const useGridSettings = (): GridSettingsReturn => {
   const setShowA1Notation = useCallback(
     (value: boolean) => {
       if (value !== settings.showA1Notation) {
+        mixpanel.track('[Grid].[Settings].setShowA1Notation', { value });
         setSettings({
           ...settings,
           showA1Notation: value,
@@ -106,6 +112,7 @@ export const useGridSettings = (): GridSettingsReturn => {
   const setPresentationMode = useCallback(
     (value: boolean) => {
       if (value !== settings.presentationMode) {
+        mixpanel.track('[Grid].[Settings].setPresentationMode', { value });
         setSettings({
           ...settings,
           presentationMode: value,

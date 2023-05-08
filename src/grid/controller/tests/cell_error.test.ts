@@ -1,5 +1,5 @@
 import { SheetController } from '../sheetController';
-import { Cell } from '../../sheet/gridTypes';
+import { Cell } from '../../../schemas';
 import { setupPython } from '../../computations/python/loadPython';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
