@@ -31,13 +31,15 @@ const GridFileDataSchema = GridFileSchema.pick({
 });
 export type GridFileData = z.infer<typeof GridFileDataSchema>;
 
-export type ArrayOutput = Partial<Pick<GridFile['cells'][0]['evaluation_result'], 'array_output'>>;
-export type Cell = GridFile['cells'][0];
-export type CellType = GridFile['cells'][0]['type'];
-export type CellFormat = GridFile['formats'][0];
-export type Dependency = GridFile['render_dependency'][0];
-export type Coordinate = GridFile['render_dependency'][0]['location'];
-export type Border = GridFile['borders'][0];
+export const ArrayOutputSchema = GridFileSchema.shape.cells.element.shape.evaluation_result.unwrap().shape.array_output;
+
+export type Cell = GridFile['cells'][number];
+export type CellType = GridFile['cells'][number]['type'];
+export type ArrayOutput = NonNullable<GridFile['cells'][number]['evaluation_result']>['array_output'];
+export type CellFormat = GridFile['formats'][number];
+export type Dependency = GridFile['render_dependency'][number];
+export type Coordinate = GridFile['render_dependency'][number]['location'];
+export type Border = GridFile['borders'][number];
 export type BorderType = NonNullable<Pick<NonNullable<Border['horizontal']>, 'type'>['type']>;
 export const BorderTypeEnum = GridFileSchemaV1_1.shape.borders.element.shape.horizontal
   .unwrap()
