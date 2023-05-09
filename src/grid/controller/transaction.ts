@@ -3,5 +3,5 @@ import { Statement } from './statement';
 
 export type Transaction = {
   statements: Statement[];
-  cursor: GridInteractionState;
+  cursor?: GridInteractionState;
 };
