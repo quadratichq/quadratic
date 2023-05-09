@@ -36,8 +36,6 @@ export class SheetController {
   //
 
   public start_transaction(interactionState?: GridInteractionState): void {
-    if (!this.app) throw new Error('Expected this.app to be defined in sheetController');
-
     if (this.transaction_in_progress) {
       // during debug mode, throw an error
       // otherwise, capture the error and continue
@@ -48,7 +46,14 @@ export class SheetController {
       this.end_transaction();
     }
 
-    const cursor = { ...(interactionState ?? this.app.settings.interactionState), showInput: false };
+    // This is useful when the user clicks outside of the active cell to another
+    // cell, so the cursor moves to that new cell and the transaction finishes
+    let cursor = undefined;
+    if (interactionState) {
+      cursor = { ...interactionState, showInput: false };
+    } else if (this.app?.settings.interactionState) {
+      cursor = { ...this.app.settings.interactionState, showInput: false };
+    }
 
     // set transaction in progress to a new Transaction
     // transaction_in_progress represents the stack of commands needed
@@ -112,8 +117,6 @@ export class SheetController {
   }
 
   public undo(): void {
-    if (!this.app) throw new Error('Expected this.app to be defined in sheetController');
-
     // check if undo stack is empty
     // check if transaction in progress
     // pop transaction off undo stack
@@ -142,16 +145,18 @@ export class SheetController {
     // add reverse transaction to redo stack
     this.redo_stack.push(reverse_transaction);
 
-    this.app.settings.setInteractionState?.(transaction.cursor);
+    if (this.app) {
+      if (transaction.cursor) {
+        this.app.settings.setInteractionState?.(transaction.cursor);
+      }
 
-    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
-    // This will be very inefficient on large files.
-    this.app.rebuild();
+      // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
+      // This will be very inefficient on large files.
+      this.app.rebuild();
+    }
   }
 
   public redo(): void {
-    if (!this.app) throw new Error('Expected this.app to be defined in sheetController');
-
     // check if redo stack is empty
     // check if transaction in progress
     // pop transaction off redo stack
@@ -180,11 +185,15 @@ export class SheetController {
     // add reverse transaction to undo stack
     this.undo_stack.push(reverse_transaction);
 
-    this.app.settings.setInteractionState?.(transaction.cursor);
+    if (this.app) {
+      if (transaction.cursor) {
+        this.app.settings.setInteractionState?.(transaction.cursor);
+      }
 
-    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
-    // This will be very inefficient on large files.
-    this.app.rebuild();
+      // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
+      // This will be very inefficient on large files.
+      this.app.rebuild();
+    }
   }
 
   public clear(): void {
