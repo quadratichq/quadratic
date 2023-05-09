@@ -7,20 +7,38 @@ mod macros;
 pub mod rules;
 
 use super::*;
+use lexer::Token;
 use rules::SyntaxRule;
 
-pub fn parse_formula(source: &str, loc: Pos) -> FormulaResult<ast::Formula> {
+pub fn parse_formula(source: &str, pos: Pos) -> FormulaResult<ast::Formula> {
     Ok(Formula {
-        ast: parse_exactly_one(source, loc, rules::Expression)?,
+        ast: parse_exactly_one(source, pos, rules::Expression)?,
     })
 }
 
-fn parse_exactly_one<R: SyntaxRule>(source: &str, loc: Pos, rule: R) -> FormulaResult<R::Output> {
+fn parse_exactly_one<R: SyntaxRule>(source: &str, pos: Pos, rule: R) -> FormulaResult<R::Output> {
+    let tokens = lexer::tokenize(source).collect_vec();
+    let mut p = Parser::new(source, &tokens, pos);
+    p.parse(rule).and_then(|output| p.ok_if_not_eof(output))
+}
+
+pub fn find_cell_references(source: &str, pos: Pos) -> Vec<Spanned<RangeRef>> {
+    let mut ret = vec![];
+
     let tokens = lexer::tokenize(source)
         .filter(|t| !t.inner.is_skip())
         .collect_vec();
-    let mut p = Parser::new(source, &tokens, loc);
-    p.parse(rule).and_then(|output| p.ok_if_not_eof(output))
+    let mut p = Parser::new(source, &tokens, pos);
+
+    while !p.is_done() {
+        if let Some(Ok(cell_ref)) = p.try_parse(rules::CellRangeReference) {
+            ret.push(cell_ref);
+        } else {
+            p.next();
+        }
+    }
+
+    ret
 }
 
 /// Token parser used to assemble an AST.
@@ -34,17 +52,17 @@ pub struct Parser<'a> {
     pub cursor: Option<usize>,
 
     /// Coordinates of the cell where this formula was entered.
-    pub loc: Pos,
+    pub pos: Pos,
 }
 impl<'a> Parser<'a> {
     /// Constructs a parser for a file.
-    pub fn new(source_str: &'a str, tokens: &'a [Spanned<Token>], loc: Pos) -> Self {
+    pub fn new(source_str: &'a str, tokens: &'a [Spanned<Token>], pos: Pos) -> Self {
         let mut ret = Self {
             source_str,
             tokens,
             cursor: None,
 
-            loc,
+            pos,
         };
 
         // Skip leading `=`
@@ -106,6 +124,10 @@ impl<'a> Parser<'a> {
         } else {
             false
         }
+    }
+    /// Returns whether the end of the input has been reached.
+    pub fn is_done(self) -> bool {
+        self.cursor.is_some() && self.current().is_none()
     }
 
     /// Moves the cursor forward and then returns the token at the cursor.
