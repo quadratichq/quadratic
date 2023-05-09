@@ -29,50 +29,46 @@ impl GridProxy for PanicGridMock {
 
 #[test]
 fn test_formula_indirect() {
-    let form = parse_formula("CELL(3, 5)", Pos::new(1, 2)).unwrap();
+    let form = parse_formula("INDIRECT(\"D5\")", pos![B2]).unwrap();
 
     make_stateless_grid_mock!(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
     assert_eq!(
         FormulaErrorMsg::CircularReference,
-        form.eval_blocking(&mut GridMock, Pos::new(3, 5))
-            .unwrap_err()
-            .msg,
+        form.eval_blocking(&mut GridMock, pos![D5]).unwrap_err().msg,
     );
 
     assert_eq!(
         (3 * 10 + 5).to_string(),
-        eval_to_string(&mut GridMock, "CELL(3, 5)"),
+        eval_to_string(&mut GridMock, "INDIRECT(\"D5\")"),
     );
 }
 
 #[test]
 fn test_formula_cell_ref() {
-    let form = parse_formula("SUM($D$4, $B0, E$n6, B0, nB2)", Pos::new(3, 4)).unwrap();
+    let form = parse_formula("SUM($D$4, $B0, E$n6, B0, nB2)", pos![D4]).unwrap();
 
     make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
-        // The formula was parsed at C4, but we'll be evaluating it from A2 so
+        // The formula was parsed at D4, but we'll be evaluating it from B2 so
         // adjust the cell coordinates accordingly.
-        (3, 4) => "1".to_string(),      // $C$4 -> C4
-        (1, -2) => "10".to_string(),    // $A0  -> An2
-        (2, -6) => "100".to_string(),   // D$n6 -> Bn6
-        (-1, -2) => "1000".to_string(), // A0   -> nAn2
+        (3, 4) => "1".to_string(),      // $D$4 -> D4
+        (1, -2) => "10".to_string(),    // $B0  -> Bn2
+        (2, -6) => "100".to_string(),   // E$n6 -> Cn6
+        (-1, -2) => "1000".to_string(), // B0   -> nAn2
         (-4, 0) => "10000".to_string(), // nB2  -> nD0
         _ => panic!("cell {pos} shouldn't be accessed"),
     }));
 
-    // Evaluate at C4, causing a circular reference.
+    // Evaluate at D4, causing a circular reference.
     assert_eq!(
         FormulaErrorMsg::CircularReference,
-        form.eval_blocking(&mut GridMock, Pos::new(3, 4))
-            .unwrap_err()
-            .msg,
+        form.eval_blocking(&mut GridMock, pos![D4]).unwrap_err().msg,
     );
 
-    // Evaluate at A2
+    // Evaluate at B2
     assert_eq!(
         "11111".to_string(),
-        form.eval_blocking(&mut GridMock, Pos::new(1, 2))
+        form.eval_blocking(&mut GridMock, pos![B2])
             .unwrap()
             .to_string(),
     );
@@ -80,10 +76,10 @@ fn test_formula_cell_ref() {
 
 #[test]
 fn test_formula_circular_array_ref() {
-    let form = parse_formula("$B$0:$C$4", Pos::new(0, 0)).unwrap();
+    let form = parse_formula("$B$0:$C$4", pos![A0]).unwrap();
 
     make_stateless_grid_mock!(|pos| {
-        if pos == Pos::new(1, 2) {
+        if pos == pos![B2] {
             panic!("cell {pos} shouldn't be accessed")
         } else {
             None
@@ -92,9 +88,7 @@ fn test_formula_circular_array_ref() {
 
     assert_eq!(
         FormulaErrorMsg::CircularReference,
-        form.eval_blocking(&mut GridMock, Pos::new(1, 2))
-            .unwrap_err()
-            .msg,
+        form.eval_blocking(&mut GridMock, pos![B2]).unwrap_err().msg,
     )
 }
 
@@ -133,7 +127,7 @@ fn test_formula_concat() {
 
 #[test]
 fn test_formula_if() {
-    let form = parse_formula("IF(A1=2, 'yep', 'nope')", Pos::new(0, 0)).unwrap();
+    let form = parse_formula("IF(A1=2, 'yep', 'nope')", pos![A0]).unwrap();
 
     make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
         (0, 1) => "2".to_string(),
@@ -143,13 +137,13 @@ fn test_formula_if() {
 
     assert_eq!(
         "yep".to_string(),
-        form.eval_blocking(&mut GridMock, Pos::new(0, 0))
+        form.eval_blocking(&mut GridMock, pos![A0])
             .unwrap()
             .to_string(),
     );
     assert_eq!(
         "nope".to_string(),
-        form.eval_blocking(&mut GridMock, Pos::new(1, 0))
+        form.eval_blocking(&mut GridMock, pos![B0])
             .unwrap()
             .to_string(),
     );
@@ -157,7 +151,7 @@ fn test_formula_if() {
 
 #[test]
 fn test_formula_average() {
-    let form = parse_formula("AVERAGE(3, B1:D3)", Pos::new(-1, -1)).unwrap();
+    let form = parse_formula("AVERAGE(3, B1:D3)", pos![nAn1]).unwrap();
 
     make_stateless_grid_mock!(|pos| {
         if (1..=3).contains(&pos.x) && (1..=3).contains(&pos.y) {
@@ -169,7 +163,7 @@ fn test_formula_average() {
 
     assert_eq!(
         "7.5".to_string(),
-        form.eval_blocking(&mut GridMock, Pos::new(-1, -1))
+        form.eval_blocking(&mut GridMock, pos![nAn1])
             .unwrap()
             .to_string(),
     );
@@ -275,13 +269,73 @@ fn test_hyphen_after_cell_ref() {
     assert_eq!("25", eval_to_string(&mut GridMock, "Z1-5"));
 }
 
-fn eval_to_string(grid: &mut impl GridProxy, s: &str) -> String {
+fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
     eval(grid, s).unwrap().to_string()
 }
-fn eval(grid: &mut impl GridProxy, s: &str) -> FormulaResult<Value> {
+fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult {
     parse_formula(s, Pos::ORIGIN)?
         .eval_blocking(grid, Pos::ORIGIN)
         .map(|value| value.inner)
+}
+
+#[test]
+fn test_find_cell_references() {
+    use CellRefCoord::{Absolute, Relative};
+
+    // Evaluate at D4.
+    let base = pos![D4];
+    let refs = find_cell_references("SUM($C$4, $A0 : nQ7, :D$n6, A0:, ZB2)", base);
+    let mut iter = refs.iter().map(|r| r.inner);
+
+    // $C$4
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef::absolute(pos![C4]))),
+    );
+
+    // $A0:nQ7
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::CellRange(
+            CellRef {
+                x: Absolute(col![A]),
+                y: Relative(0 - base.y),
+            },
+            CellRef {
+                x: Relative(col![nQ] - base.x),
+                y: Relative(7 - base.y),
+            },
+        )),
+    );
+
+    // D$n6
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef {
+            x: Relative(col![D] - base.x),
+            y: Absolute(-6),
+        })),
+    );
+
+    // A0
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef {
+            x: Relative(col![A] - base.x),
+            y: Relative(0 - base.y),
+        })),
+    );
+
+    // ZB2
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef {
+            x: Relative(col![ZB] - base.x),
+            y: Relative(2 - base.y),
+        })),
+    );
+
+    assert_eq!(iter.next(), None);
 }
 
 /// Regression test for quadratic#410
