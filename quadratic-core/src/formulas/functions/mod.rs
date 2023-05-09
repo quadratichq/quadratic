@@ -13,8 +13,8 @@ mod util;
 
 use super::{Ctx, FormulaErrorMsg, FormulaResult, Span, Spanned, Value};
 
-pub fn lookup_function(name: &str) -> Option<&FormulaFunction> {
-    ALL_FUNCTIONS.get(name)
+pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
+    ALL_FUNCTIONS.get(name.to_ascii_uppercase().as_str())
 }
 
 pub const CATEGORIES: &[FormulaFunctionCategory] = &[

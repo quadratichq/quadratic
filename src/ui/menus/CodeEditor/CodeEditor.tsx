@@ -21,7 +21,7 @@ import { EditorInteractionState, editorInteractionStateAtom } from '../../../ato
 import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
-import { provideCompletionItems } from 'quadratic-core';
+import { provideCompletionItems, provideHover } from 'quadratic-core';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
 import { AI, Formula, Python } from '../../icons';
@@ -240,6 +240,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     monaco.languages.setLanguageConfiguration('formula', FormulaLanguageConfig);
     monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
     monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
+    monaco.languages.registerHoverProvider('formula', { provideHover });
 
     setDidMount(true);
   };

@@ -19,7 +19,13 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 #[serde(untagged, rename_all = "camelCase")]
 pub enum Documentation {
     String(String),
-    Markdown { value: String },
+    Markdown(MarkdownString),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MarkdownString {
+    pub value: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
