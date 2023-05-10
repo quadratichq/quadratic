@@ -5,7 +5,11 @@ export const FormulaLanguageConfig = {
     lineComment: '//',
     blockComment: ['/*', '*/'],
   },
-  brackets: [['(', ')'], ['[', ']'], ['{', '}']],
+  brackets: [
+    ['(', ')'],
+    ['[', ']'],
+    ['{', '}'],
+  ],
   autoClosingPairs: [
     { open: '{', close: '}' },
     { open: '[', close: ']' },

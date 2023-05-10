@@ -81,10 +81,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
     (editorMode === 'PYTHON'
       ? selectedCell?.python_code !== editorContent
       : editorMode === 'FORMULA'
-        ? selectedCell?.formula_code !== editorContent
-        : editorMode === 'AI'
-          ? selectedCell?.ai_prompt !== editorContent
-          : false);
+      ? selectedCell?.formula_code !== editorContent
+      : editorMode === 'AI'
+      ? selectedCell?.ai_prompt !== editorContent
+      : false);
 
   // When changing mode
   // useEffect(() => {
@@ -427,8 +427,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
         {(editorInteractionState.mode === 'PYTHON' ||
           editorInteractionState.mode === 'FORMULA' ||
           editorInteractionState.mode === 'AI') && (
-            <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
-          )}
+          <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
+        )}
       </div>
     </div>
   );
