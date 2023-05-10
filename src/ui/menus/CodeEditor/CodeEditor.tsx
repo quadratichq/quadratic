@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
+import { convert_formula_abs_to_rel, convert_formula_rel_to_abs } from 'quadratic-core';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { Cell } from '../../../schemas';
@@ -43,6 +44,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
 
+  const [initialEditorContent, setInitialEditorContent] = useState<string | undefined>('');
   const [editorContent, setEditorContent] = useState<string | undefined>('');
   const [didMount, setDidMount] = useState(false);
 
@@ -77,13 +79,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     // new cell and no content
     !(cell === undefined && !editorContent) &&
     // existing cell and content has changed
-    (editorMode === 'PYTHON'
-      ? selectedCell?.python_code !== editorContent
-      : editorMode === 'FORMULA'
-      ? selectedCell?.formula_code !== editorContent
-      : editorMode === 'AI'
-      ? selectedCell?.ai_prompt !== editorContent
-      : false);
+    initialEditorContent !== editorContent;
 
   // When changing mode
   // useEffect(() => {
@@ -164,11 +160,15 @@ export const CodeEditor = (props: CodeEditorProps) => {
       // load cell content
       setSelectedCell(cell);
       if (editorMode === 'PYTHON') {
-        setEditorContent(cell?.python_code);
+        setInitialEditorContent(cell?.python_code);
       } else if (editorMode === 'FORMULA') {
-        setEditorContent(cell?.formula_code);
+        if (cell?.formula_code === undefined){
+          setInitialEditorContent(undefined);
+        } else {
+          setInitialEditorContent(convert_formula_abs_to_rel(cell.formula_code, x, y));
+        }
       } else if (editorMode === 'AI') {
-        setEditorContent(cell?.ai_prompt);
+        setInitialEditorContent(cell?.ai_prompt);
       }
     } else {
       // create blank cell
@@ -178,8 +178,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
         type: editorInteractionState.mode,
         value: '',
       } as Cell);
-      setEditorContent('');
+      setInitialEditorContent('');
     }
+    setEditorContent(initialEditorContent)
   }, [selectedCell, editorInteractionState, props.sheet_controller.sheet, showCodeEditor, editorMode]);
 
   const saveAndRunCell = async () => {
@@ -197,7 +198,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
     if (editorMode === 'PYTHON') {
       selectedCell.python_code = editorContent;
     } else if (editorMode === 'FORMULA') {
-      selectedCell.formula_code = editorContent;
+      if (editorContent === undefined) {
+        selectedCell.formula_code = undefined;
+      } else {
+        selectedCell.formula_code = convert_formula_rel_to_abs(editorContent, x, y);
+      }
     } else if (editorMode === 'AI') {
       selectedCell.ai_prompt = editorContent;
     }

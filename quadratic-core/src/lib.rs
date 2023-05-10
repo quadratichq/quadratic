@@ -158,7 +158,7 @@ impl From<formulas::Spanned<formulas::RangeRef>> for JsCellRefSpan {
 /// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
 /// `parse_error_span`, `parse_error_msg` may still be present.
 #[wasm_bindgen]
-pub async fn parse_formula(formula_string: &str, cfg: ParseConfig) -> JsValue {
+pub fn parse_formula(formula_string: &str, cfg: ParseConfig) -> JsValue {
     let parse_error = formulas::parse_formula(formula_string, cfg).err();
 
     let result = JsFormulaParseResult {
@@ -177,7 +177,7 @@ pub async fn parse_formula(formula_string: &str, cfg: ParseConfig) -> JsValue {
 /// Replaces all valid A1-style references in a formula with RC-style
 /// references. Invalid references and syntax errors remain unchanged.
 #[wasm_bindgen]
-pub async fn convert_formula_abs_to_rel(formula_string: &str, x: f64, y: f64) -> String {
+pub fn convert_formula_abs_to_rel(formula_string: &str, x: f64, y: f64) -> String {
     let x = x as i64;
     let y = y as i64;
     let pos = Pos { x, y };
@@ -188,7 +188,7 @@ pub async fn convert_formula_abs_to_rel(formula_string: &str, x: f64, y: f64) ->
 /// Replaces all valid RC-style references in a formula with A1-style
 /// references. Invalid references and syntax errors remain unchanged.
 #[wasm_bindgen]
-pub async fn convert_formula_rel_to_abs(formula_string: &str, x: f64, y: f64) -> String {
+pub fn convert_formula_rel_to_abs(formula_string: &str, x: f64, y: f64) -> String {
     let x = x as i64;
     let y = y as i64;
     let pos = Pos { x, y };
