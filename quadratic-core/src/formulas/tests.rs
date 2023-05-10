@@ -29,7 +29,7 @@ impl GridProxy for PanicGridMock {
 
 #[test]
 fn test_formula_indirect() {
-    let form = parse_formula("INDIRECT(\"D5\")", pos![B2]).unwrap();
+    let form = parse_formula_a1("INDIRECT(\"D5\")", pos![B2]).unwrap();
 
     make_stateless_grid_mock!(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
@@ -46,7 +46,7 @@ fn test_formula_indirect() {
 
 #[test]
 fn test_formula_cell_ref() {
-    let form = parse_formula("SUM($D$4, $B0, E$n6, B0, nB2)", pos![D4]).unwrap();
+    let form = parse_formula_a1("SUM($D$4, $B0, E$n6, B0, nB2)", pos![D4]).unwrap();
 
     make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
         // The formula was parsed at D4, but we'll be evaluating it from B2 so
@@ -76,7 +76,7 @@ fn test_formula_cell_ref() {
 
 #[test]
 fn test_formula_circular_array_ref() {
-    let form = parse_formula("$B$0:$C$4", pos![A0]).unwrap();
+    let form = parse_formula_a1("$B$0:$C$4", pos![A0]).unwrap();
 
     make_stateless_grid_mock!(|pos| {
         if pos == pos![B2] {
@@ -113,7 +113,7 @@ fn test_formula_range_operator() {
 
     assert_eq!(
         FormulaErrorMsg::Unexpected("ellipsis".into()),
-        parse_formula("1...5", Pos::ORIGIN).unwrap_err().msg,
+        parse_formula_a1("1...5", Pos::ORIGIN).unwrap_err().msg,
     );
 }
 
@@ -127,7 +127,7 @@ fn test_formula_concat() {
 
 #[test]
 fn test_formula_if() {
-    let form = parse_formula("IF(A1=2, 'yep', 'nope')", pos![A0]).unwrap();
+    let form = parse_formula_a1("IF(A1=2, 'yep', 'nope')", pos![A0]).unwrap();
 
     make_stateless_grid_mock!(|pos| Some(match (pos.x, pos.y) {
         (0, 1) => "2".to_string(),
@@ -151,7 +151,7 @@ fn test_formula_if() {
 
 #[test]
 fn test_formula_average() {
-    let form = parse_formula("AVERAGE(3, B1:D3)", pos![nAn1]).unwrap();
+    let form = parse_formula_a1("AVERAGE(3, B1:D3)", pos![nAn1]).unwrap();
 
     make_stateless_grid_mock!(|pos| {
         if (1..=3).contains(&pos.x) && (1..=3).contains(&pos.y) {
@@ -273,18 +273,22 @@ fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
     eval(grid, s).unwrap().to_string()
 }
 fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult {
-    parse_formula(s, Pos::ORIGIN)?
+    parse_formula_a1(s, Pos::ORIGIN)?
         .eval_blocking(grid, Pos::ORIGIN)
         .map(|value| value.inner)
 }
 
 #[test]
-fn test_find_cell_references() {
+fn test_find_cell_references_a1() {
     use CellRefCoord::{Absolute, Relative};
 
     // Evaluate at D4.
     let base = pos![D4];
-    let refs = find_cell_references("SUM($C$4, $A0 : nQ7, :D$n6, A0:, ZB2)", base);
+    let cfg = ParseConfig {
+        pos: base,
+        cell_ref_notation: CellRefNotation::A1,
+    };
+    let refs = find_cell_references("SUM($C$4, $A0 : nQ7, :D$n6, A0:, ZB2)", cfg);
     let mut iter = refs.iter().map(|r| r.inner);
 
     // $C$4
@@ -336,6 +340,97 @@ fn test_find_cell_references() {
     );
 
     assert_eq!(iter.next(), None);
+
+    // Test that RC-style cell references fail to parse.
+    let cfg = ParseConfig {
+        pos: base,
+        cell_ref_notation: CellRefNotation::RC,
+    };
+    assert!(parse_formula("R1C1", cfg).is_err());
+    assert!(parse_formula("R[1]C1", cfg).is_err());
+    assert!(parse_formula("R1C[1]", cfg).is_err());
+    assert!(parse_formula("R[1]C[1]", cfg).is_err());
+}
+
+#[test]
+fn test_find_cell_references_rc() {
+    use CellRefCoord::{Absolute, Relative};
+
+    // Evaluate at D4 (although it shouldn't matter).
+    let base = pos![D4];
+    let cfg = ParseConfig {
+        pos: base,
+        cell_ref_notation: CellRefNotation::RC,
+    };
+    let refs = find_cell_references(
+        "SUM(R4C5, R0C[-4] : Rn12C3, :R[0]Cn6, R[2]C[3]:, Rn99C[-99])",
+        cfg,
+    );
+    let mut iter = refs.iter().map(|r| r.inner);
+
+    // R4C5
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef::absolute(Pos { x: 5, y: 4 }))),
+    );
+
+    // R0C[-4]:Rn12C3
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::CellRange(
+            CellRef {
+                x: Relative(-4),
+                y: Absolute(0),
+            },
+            CellRef {
+                x: Absolute(3),
+                y: Absolute(-12),
+            },
+        )),
+    );
+
+    // R[0]Cn6
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef {
+            x: Absolute(-6),
+            y: Relative(0),
+        })),
+    );
+
+    // R[2]C[3]
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef {
+            x: Relative(3),
+            y: Relative(2),
+        })),
+    );
+
+    // Rn99C[-99]
+    assert_eq!(
+        iter.next(),
+        Some(RangeRef::Cell(CellRef {
+            x: Relative(-99),
+            y: Absolute(-99),
+        })),
+    );
+
+    assert_eq!(iter.next(), None);
+
+    // Test that RC-style cell references fail to parse.
+    let cfg = ParseConfig {
+        pos: base,
+        cell_ref_notation: CellRefNotation::RC,
+    };
+    assert!(parse_formula("A1", cfg).is_err());
+    assert!(parse_formula("nA0", cfg).is_err());
+    assert!(parse_formula("Rn1", cfg).is_err());
+    assert!(parse_formula("nRn3", cfg).is_err());
+    assert!(parse_formula("C6", cfg).is_err());
+    assert!(parse_formula("Cn6", cfg).is_err());
+    assert!(parse_formula("nC6", cfg).is_err());
+    assert!(parse_formula("nCn6", cfg).is_err());
 }
 
 /// Regression test for quadratic#410

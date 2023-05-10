@@ -140,7 +140,8 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 | Token::StringLiteral
                 | Token::UnterminatedStringLiteral
                 | Token::NumericLiteral
-                | Token::CellRef => true,
+                | Token::CellRefA1
+                | Token::CellRefRC => true,
 
                 Token::Whitespace => false,
                 Token::Unknown => false,

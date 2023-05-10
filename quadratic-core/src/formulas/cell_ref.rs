@@ -29,10 +29,18 @@ impl RangeRef {
     pub fn a1_string(self, base: Pos) -> String {
         match self {
             RangeRef::RowRange(start, end) => {
-                format!("{}:{}", start.row_string(base.y), end.row_string(base.y))
+                format!(
+                    "{}:{}",
+                    start.a1_row_string(base.y),
+                    end.a1_row_string(base.y),
+                )
             }
             RangeRef::ColRange(start, end) => {
-                format!("{}:{}", start.col_string(base.x), end.col_string(base.x))
+                format!(
+                    "{}:{}",
+                    start.a1_col_string(base.x),
+                    end.a1_col_string(base.x),
+                )
             }
             RangeRef::CellRange(start, end) => {
                 format!("{}:{}", start.a1_string(base), end.a1_string(base))
@@ -73,9 +81,14 @@ impl CellRef {
     /// Returns the human-friendly string representing this cell reference in
     /// A1-style notation.
     pub fn a1_string(self, base: Pos) -> String {
-        let col = self.x.col_string(base.x);
-        let row = self.y.col_string(base.y);
+        let col = self.x.a1_col_string(base.x);
+        let row = self.y.a1_row_string(base.y);
         format!("{col}{row}")
+    }
+    /// Returns the string representing this cell reference in RC-style
+    /// notation.
+    pub fn rc_string(self) -> String {
+        self.to_string()
     }
 
     /// Parses an A1-style cell reference relative to a given location.
@@ -122,6 +135,25 @@ impl CellRef {
             y: row_ref,
         })
     }
+
+    /// Parses an RC-style cell reference.
+    pub fn parse_rc(s: &str) -> Option<CellRef> {
+        lazy_static! {
+            /// ^R(.+?)C(.+)$
+            /// ^           $       match full string
+            ///   (.+?)             group 1: row reference (anything, non-greedily)
+            ///         (.+)        group 2: column reference (anything)
+            pub static ref RC_CELL_REFERENCE_REGEX: Regex =
+                Regex::new(r#"^R(.+?)C(.+)$"#).unwrap();
+        }
+
+        let captures = RC_CELL_REFERENCE_REGEX.captures(s)?;
+
+        Some(CellRef {
+            x: captures[2].parse().ok()?,
+            y: captures[1].parse().ok()?,
+        })
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -149,17 +181,17 @@ impl fmt::Display for CellRefCoord {
     }
 }
 impl FromStr for CellRefCoord {
-    type Err = ();
+    type Err = std::num::ParseIntError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // IIFE to mimic try_block
-        let maybe_relative = (|| s.strip_prefix('[')?.strip_suffix(']')?.parse().ok())();
+        let maybe_relative = (|| s.strip_prefix('[')?.strip_suffix(']'))();
         if let Some(rel) = maybe_relative {
-            Ok(Self::Relative(rel))
-        } else if let Ok(abs) = s.parse() {
-            Ok(Self::Absolute(abs))
+            Ok(Self::Relative(rel.parse()?))
+        } else if let Some(neg_abs) = s.strip_prefix('n') {
+            Ok(Self::Absolute(-neg_abs.parse()?))
         } else {
-            Err(())
+            Ok(Self::Absolute(s.parse()?))
         }
     }
 }
@@ -180,16 +212,72 @@ impl CellRefCoord {
             CellRefCoord::Absolute(_) => "$",
         }
     }
-    /// Returns the human-friendly string representing this coordinate, if it is
-    /// a column coordinate.
-    fn col_string(self, base: i64) -> String {
+    /// Returns the A1 column string, prefixed with `n` if it is negative.
+    fn a1_col_string(self, base: i64) -> String {
         let col = crate::util::column_name(self.resolve_from(base));
         format!("{}{col}", self.prefix())
     }
-    /// Returns the human-friendly string representing this coordinate, if it is
-    /// a row coordinate.
-    fn row_string(self, base: i64) -> String {
+    /// Returns the A1 row string, prefixed with `n` if it is negative.
+    fn a1_row_string(self, base: i64) -> String {
         let row = self.resolve_from(base);
-        format!("{}{row}", self.prefix())
+        if row >= 0 {
+            format!("{}{row}", self.prefix())
+        } else {
+            let row = -row;
+            format!("{}n{row}", self.prefix())
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_a1_cell_ref_parsing() {
+        let a = CellRefCoord::Absolute;
+        let r = CellRefCoord::Relative;
+
+        let base_pos = pos![B4];
+        let test_pairs = [
+            //   ,   X     Y
+            ("B4", (r(0), r(0))),
+            ("C7", (r(1), r(3))),
+            ("A2", (r(-1), r(-2))),
+            ("A0", (r(-1), r(-4))),
+            ("An1", (r(-1), r(-5))),
+            ("nA2", (r(-2), r(-2))),
+            ("nAA2", (r(-28), r(-2))),
+            ("AB99", (r(26), r(95))),
+            ("$B4", (a(1), r(0))),
+            ("C$7", (r(1), a(7))),
+            ("$A$2", (a(0), a(2))),
+            ("$A0", (a(0), r(-4))),
+            ("A$n1", (r(-1), a(-1))),
+            ("$nA$2", (a(-1), a(2))),
+            ("$nAA2", (a(-27), r(-2))),
+            ("AB$99", (r(26), a(99))),
+        ];
+
+        for (string, (x, y)) in test_pairs {
+            let expected = CellRef { x, y };
+            println!("Checking that {string} = {expected}");
+            assert_eq!(CellRef::parse_a1(string, base_pos), Some(expected));
+            assert_eq!(string, expected.a1_string(base_pos));
+        }
+    }
+
+    #[test]
+    fn test_rc_cell_ref_parsing() {
+        let range = -5..=5;
+        let abs_or_rel = [CellRefCoord::Absolute, CellRefCoord::Relative];
+        let test_cases = itertools::iproduct!(range.clone(), range, abs_or_rel, abs_or_rel)
+            .map(|(x, y, f, g)| CellRef { x: f(x), y: g(y) });
+
+        for cell_ref in test_cases {
+            let string = cell_ref.rc_string();
+            println!("Checking that {string} = {cell_ref}");
+            assert_eq!(CellRef::parse_rc(&string), Some(cell_ref));
+        }
     }
 }

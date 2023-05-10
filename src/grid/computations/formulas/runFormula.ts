@@ -1,4 +1,4 @@
-import { eval_formula } from 'quadratic-core';
+import { eval_formula, CellRefNotation, ParseConfig, Pos } from 'quadratic-core';
 import { GetCellsDB } from '../../sheet/Cells/GetCellsDB';
 import { Coordinate } from '../../../gridGL/types/size';
 
@@ -12,7 +12,8 @@ export interface runFormulaReturnType {
 }
 
 export async function runFormula(formula_code: string, pos: Coordinate): Promise<runFormulaReturnType> {
-  const output = await eval_formula(formula_code, pos.x, pos.y, GetCellsDB);
+  const cfg = new ParseConfig(new Pos(pos.x, pos.y), CellRefNotation.A1);
+  const output = await eval_formula(formula_code, GetCellsDB, cfg);
 
   return output as runFormulaReturnType;
 }

@@ -4,12 +4,12 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use strum_macros::Display;
 
-use super::{Span, Spanned};
+use super::{ParseConfig, Span, Spanned};
 
-pub fn tokenize(input_str: &str) -> impl '_ + Iterator<Item = Spanned<Token>> {
+pub fn tokenize(input_str: &str, cfg: ParseConfig) -> impl '_ + Iterator<Item = Spanned<Token>> {
     let mut token_start = 0;
     std::iter::from_fn(move || {
-        Token::consume_from_input(input_str, token_start).map(|(token, token_end)| {
+        Token::consume_from_input(input_str, token_start, cfg).map(|(token, token_end)| {
             let span = Span {
                 start: token_start,
                 end: token_end,
@@ -37,6 +37,20 @@ const FUNCTION_CALL_PATTERN: &str = r#"[A-Za-z_][A-Za-z_\d]*\("#;
 ///                 \d+       digits
 const A1_CELL_REFERENCE_PATTERN: &str = r#"\$?n?[A-Z]+\$?n?\d+"#;
 
+/// RC-style cell reference.
+///
+/// R(\[-?\d+\]|n?\d+)C(\[-?\d+\]|n?\d+)
+/// R                                       literal `R`
+///  (         |     )                      EITHER
+///   \[     \]                               square brackets
+///     -?\d+                                 containing an integer
+///  (         |     )                      OR
+///             n?                            optional `n`
+///               \d+                         followed by some digits
+///                   C                     literal `C`
+///                    (\[-?\d+\]|n?\d+)    same thing as before
+const RC_CELL_REFERENCE_PATTERN: &str = r#"R(\[-?\d+\]|n?\d+)C(\[-?\d+\]|n?\d+)"#;
+
 /// Floating-point or integer number, without leading sign.
 ///
 /// (\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?
@@ -59,7 +73,8 @@ const DOUBLE_QUOTE_STRING_LITERAL_PATTERN: &str = r#""([^"\\]|\\[\s\S])*""#;
 /// Unterminated string literal.
 const UNTERMINATED_STRING_LITERAL_PATTERN: &str = r#"["']"#;
 
-/// List of token patterns, arranged roughly from least to most general.
+/// List of token patterns, arranged roughly from least to most general,
+/// excluding cell references (which depend on the parsing configuration).
 const TOKEN_PATTERNS: &[&str] = &[
     // Comparison operators `==`, `!=`, `<=`, and `>=`.
     r#"[=!<>]="#,
@@ -77,8 +92,6 @@ const TOKEN_PATTERNS: &[&str] = &[
     NUMERIC_LITERAL_PATTERN,
     // Function call.
     FUNCTION_CALL_PATTERN,
-    // Reference to a cell.
-    A1_CELL_REFERENCE_PATTERN,
     // Whitespace.
     r#"\s+"#,
     // Any other single Unicode character.
@@ -88,8 +101,15 @@ const TOKEN_PATTERNS: &[&str] = &[
 lazy_static! {
     /// Single regex that matches any token, including comments and strings,
     /// by joining each member of `TOKEN_PATTERNS` with "|".
-    pub static ref TOKEN_REGEX: Regex =
-        Regex::new(&TOKEN_PATTERNS.join("|")).unwrap();
+    ///
+    /// Allows A1-style cell references, but not RC-style
+    pub static ref TOKEN_REGEX_WITH_A1_CELLREFS: Regex =
+        Regex::new(&format!("{A1_CELL_REFERENCE_PATTERN}|{}", TOKEN_PATTERNS.join("|"))).unwrap();
+
+    /// Single regex that matches any token, including comments and strings,
+    /// by joining each member of `TOKEN_PATTERNS` with "|".
+    pub static ref TOKEN_REGEX_WITH_RC_CELLREFS: Regex =
+        Regex::new(&format!("{RC_CELL_REFERENCE_PATTERN}|{}", TOKEN_PATTERNS.join("|"))).unwrap();
 
     /// Regex that matches a valid function call.
     pub static ref FUNCTION_CALL_REGEX: Regex =
@@ -98,6 +118,10 @@ lazy_static! {
     /// Regex that matches a valid A1-style cell reference.
     pub static ref A1_CELL_REFERENCE_REGEX: Regex =
         new_fullmatch_regex(A1_CELL_REFERENCE_PATTERN);
+
+    /// Regex that matches a valid RC-style cell reference.
+    pub static ref RC_CELL_REFERENCE_REGEX: Regex =
+        new_fullmatch_regex(RC_CELL_REFERENCE_PATTERN);
 
     /// Regex that matches all valid numeric literals and some invalid ones.
     pub static ref NUMERIC_LITERAL_REGEX: Regex =
@@ -191,7 +215,9 @@ pub enum Token {
     #[strum(to_string = "numeric literal")]
     NumericLiteral,
     #[strum(to_string = "cell reference")]
-    CellRef,
+    CellRefA1,
+    #[strum(to_string = "cell reference")]
+    CellRefRC,
     #[strum(to_string = "whitespace")]
     Whitespace,
     #[strum(to_string = "unknown symbol")]
@@ -200,9 +226,18 @@ pub enum Token {
 impl Token {
     /// Consumes a token from a given starting index and returns the index of
     /// the next character after the token.
-    fn consume_from_input(input_str: &str, start: usize) -> Option<(Self, usize)> {
+    fn consume_from_input(
+        input_str: &str,
+        start: usize,
+        cfg: ParseConfig,
+    ) -> Option<(Self, usize)> {
+        let token_regex = match cfg.cell_ref_notation {
+            super::CellRefNotation::A1 => &*TOKEN_REGEX_WITH_A1_CELLREFS,
+            super::CellRefNotation::RC => &*TOKEN_REGEX_WITH_RC_CELLREFS,
+        };
+
         // Find next token.
-        let m = TOKEN_REGEX.find_at(input_str, start)?;
+        let m = token_regex.find_at(input_str, start)?;
 
         let mut end = m.end();
 
@@ -266,7 +301,8 @@ impl Token {
             s if STRING_LITERAL_REGEX.is_match(s) => Self::StringLiteral,
             s if UNTERMINATED_STRING_LITERAL_REGEX.is_match(s) => Self::UnterminatedStringLiteral,
             s if NUMERIC_LITERAL_REGEX.is_match(s) => Self::NumericLiteral,
-            s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRef,
+            s if cfg.is_a1() && A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRefA1,
+            s if cfg.is_rc() && RC_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRefRC,
             s if s.trim().is_empty() => Self::Whitespace,
 
             // Give up.
@@ -315,7 +351,7 @@ mod tests {
         test_block_comment(false, "/*/");
     }
     fn test_block_comment(expected_to_end: bool, s: &str) {
-        let tokens = tokenize(s).collect_vec();
+        let tokens = tokenize(s, ParseConfig::default()).collect_vec();
         if expected_to_end {
             assert_eq!(1, tokens.len(), "Too many tokens: {:?}", tokens);
         }

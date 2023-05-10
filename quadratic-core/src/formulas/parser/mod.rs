@@ -10,25 +10,37 @@ use super::*;
 use lexer::Token;
 use rules::SyntaxRule;
 
-pub fn parse_formula(source: &str, pos: Pos) -> FormulaResult<ast::Formula> {
+pub fn parse_formula_a1(source: &str, pos: Pos) -> FormulaResult<ast::Formula> {
+    let cfg = ParseConfig {
+        pos,
+        cell_ref_notation: CellRefNotation::A1,
+    };
+    parse_formula(source, cfg)
+}
+
+pub fn parse_formula(source: &str, cfg: ParseConfig) -> FormulaResult<ast::Formula> {
     Ok(Formula {
-        ast: parse_exactly_one(source, pos, rules::Expression)?,
+        ast: parse_exactly_one(source, rules::Expression, cfg)?,
     })
 }
 
-fn parse_exactly_one<R: SyntaxRule>(source: &str, pos: Pos, rule: R) -> FormulaResult<R::Output> {
-    let tokens = lexer::tokenize(source).collect_vec();
-    let mut p = Parser::new(source, &tokens, pos);
+fn parse_exactly_one<R: SyntaxRule>(
+    source: &str,
+    rule: R,
+    cfg: ParseConfig,
+) -> FormulaResult<R::Output> {
+    let tokens = lexer::tokenize(source, cfg).collect_vec();
+    let mut p = Parser::new(source, &tokens, &cfg);
     p.parse(rule).and_then(|output| p.ok_if_not_eof(output))
 }
 
-pub fn find_cell_references(source: &str, pos: Pos) -> Vec<Spanned<RangeRef>> {
+pub fn find_cell_references(source: &str, cfg: ParseConfig) -> Vec<Spanned<RangeRef>> {
     let mut ret = vec![];
 
-    let tokens = lexer::tokenize(source)
+    let tokens = lexer::tokenize(source, cfg)
         .filter(|t| !t.inner.is_skip())
         .collect_vec();
-    let mut p = Parser::new(source, &tokens, pos);
+    let mut p = Parser::new(source, &tokens, &cfg);
 
     while !p.is_done() {
         if let Some(Ok(cell_ref)) = p.try_parse(rules::CellRangeReference) {
@@ -51,18 +63,18 @@ pub struct Parser<'a> {
     /// Index of the "current" token (None = before start).
     pub cursor: Option<usize>,
 
-    /// Coordinates of the cell where this formula was entered.
-    pub pos: Pos,
+    /// Parser configuration.
+    pub cfg: &'a ParseConfig,
 }
 impl<'a> Parser<'a> {
     /// Constructs a parser for a file.
-    pub fn new(source_str: &'a str, tokens: &'a [Spanned<Token>], pos: Pos) -> Self {
+    pub fn new(source_str: &'a str, tokens: &'a [Spanned<Token>], cfg: &'a ParseConfig) -> Self {
         let mut ret = Self {
             source_str,
             tokens,
             cursor: None,
 
-            pos,
+            cfg,
         };
 
         // Skip leading `=`

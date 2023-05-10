@@ -77,11 +77,11 @@ impl SyntaxRule for CellReference {
     type Output = AstNode;
 
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
-        p.next() == Some(Token::CellRef)
+        matches!(p.next(), Some(Token::CellRefA1 | Token::CellRefRC))
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
         p.next();
-        let Some(cell_ref) = CellRef::parse_a1(p.token_str(), p.pos) else {
+        let Some(cell_ref) = CellRef::parse_a1(p.token_str(), p.cfg.pos) else {
             return Err(FormulaErrorMsg::BadCellReference.with_span(p.span()));
         };
         Ok(AstNode {
@@ -99,11 +99,12 @@ impl SyntaxRule for CellRangeReference {
     type Output = Spanned<RangeRef>;
 
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
-        p.next() == Some(Token::CellRef)
+        matches!(p.next(), Some(Token::CellRefA1 | Token::CellRefRC))
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
         p.next();
-        let Some(cell_ref) = CellRef::parse_a1(p.token_str(), p.pos) else {
+
+        let Some(cell_ref) = parse_current_cell_ref(p) else {
             return Err(FormulaErrorMsg::BadCellReference.with_span(p.span()));
         };
         let span = p.span();
@@ -111,7 +112,7 @@ impl SyntaxRule for CellRangeReference {
         // Check for a range reference.
         if p.try_parse(Token::CellRangeOp).is_some() {
             p.next();
-            if let Some(cell_ref2) = CellRef::parse_a1(p.token_str(), p.pos) {
+            if let Some(cell_ref2) = parse_current_cell_ref(p) {
                 return Ok(Spanned {
                     span: Span::merge(span, p.span()),
                     inner: RangeRef::CellRange(cell_ref, cell_ref2),
@@ -125,5 +126,15 @@ impl SyntaxRule for CellRangeReference {
             span,
             inner: RangeRef::Cell(cell_ref),
         })
+    }
+}
+
+/// Parses the current token as a cell reference, if it is one. Does not advance
+/// the cursor.
+fn parse_current_cell_ref(p: &Parser<'_>) -> Option<CellRef> {
+    match p.current() {
+        Some(Token::CellRefA1) => CellRef::parse_a1(p.token_str(), p.cfg.pos),
+        Some(Token::CellRefRC) => CellRef::parse_rc(p.token_str()),
+        _ => None,
     }
 }

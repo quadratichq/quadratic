@@ -14,7 +14,7 @@ pub mod formulas;
 mod position;
 
 pub use cell::{Cell, CellTypes, JsCell};
-use formulas::{GridProxy, Value};
+use formulas::{GridProxy, ParseConfig, Value};
 pub use position::Pos;
 
 pub const QUADRANT_SIZE: u64 = 16;
@@ -47,17 +47,13 @@ struct JsFormulaResult {
 #[wasm_bindgen]
 pub async fn eval_formula(
     formula_string: &str,
-    x: f64,
-    y: f64,
     grid_accessor_fn: js_sys::Function,
+    cfg: ParseConfig,
 ) -> JsValue {
     let mut grid_proxy = JsGridProxy::new(grid_accessor_fn);
-    let x = x as i64;
-    let y = y as i64;
-    let pos = Pos { x, y };
 
-    let formula_result = match formulas::parse_formula(formula_string, pos) {
-        Ok(formula) => formula.eval(&mut grid_proxy, pos).await,
+    let formula_result = match formulas::parse_formula(formula_string, cfg) {
+        Ok(formula) => formula.eval(&mut grid_proxy, cfg.pos).await,
         Err(e) => Err(e),
     };
     let cells_accessed = grid_proxy
@@ -162,24 +158,42 @@ impl From<formulas::Spanned<formulas::RangeRef>> for JsCellRefSpan {
 /// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
 /// `parse_error_span`, `parse_error_msg` may still be present.
 #[wasm_bindgen]
-pub async fn parse_formula(formula_string: &str, x: f64, y: f64) -> JsValue {
-    let x = x as i64;
-    let y = y as i64;
-    let pos = Pos { x, y };
-
-    let parse_error = formulas::parse_formula(formula_string, pos).err();
+pub async fn parse_formula(formula_string: &str, cfg: ParseConfig) -> JsValue {
+    let parse_error = formulas::parse_formula(formula_string, cfg).err();
 
     let result = JsFormulaParseResult {
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
 
-        cell_refs: formulas::find_cell_references(formula_string, pos)
+        cell_refs: formulas::find_cell_references(formula_string, cfg)
             .into_iter()
             .map(|r| r.into())
             .collect(),
     };
 
     serde_wasm_bindgen::to_value(&result).unwrap()
+}
+
+/// Replaces all valid A1-style references in a formula with RC-style
+/// references. Invalid references and syntax errors remain unchanged.
+#[wasm_bindgen]
+pub async fn convert_formula_abs_to_rel(formula_string: &str, x: f64, y: f64) -> String {
+    let x = x as i64;
+    let y = y as i64;
+    let pos = Pos { x, y };
+
+    formulas::a1_to_rc(formula_string, pos)
+}
+
+/// Replaces all valid RC-style references in a formula with A1-style
+/// references. Invalid references and syntax errors remain unchanged.
+#[wasm_bindgen]
+pub async fn convert_formula_rel_to_abs(formula_string: &str, x: f64, y: f64) -> String {
+    let x = x as i64;
+    let y = y as i64;
+    let pos = Pos { x, y };
+
+    formulas::rc_to_a1(formula_string, pos)
 }
 
 #[derive(Debug, Clone)]
