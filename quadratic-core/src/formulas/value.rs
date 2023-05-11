@@ -41,7 +41,29 @@ impl fmt::Display for Value {
     }
 }
 
+impl From<String> for Value {
+    fn from(value: String) -> Self {
+        Value::String(value)
+    }
+}
+impl From<&str> for Value {
+    fn from(value: &str) -> Self {
+        Value::String(value.to_string())
+    }
+}
+impl From<f64> for Value {
+    fn from(value: f64) -> Self {
+        Value::Number(value)
+    }
+}
+impl From<bool> for Value {
+    fn from(value: bool) -> Self {
+        Value::Bool(value)
+    }
+}
+
 impl Value {
+    /// Returns a human-friendly string describing the type of value.
     pub fn type_name(&self) -> &'static str {
         match self {
             Value::String(_) => "string",
@@ -74,11 +96,9 @@ impl Value {
             _ => None,
         }
     }
-}
 
-impl Spanned<Value> {
-    pub fn to_number(&self) -> FormulaResult<f64> {
-        match &self.inner {
+    pub fn to_number(&self) -> Result<f64, FormulaErrorMsg> {
+        match self {
             Value::String(s) => {
                 let mut s = s.trim();
                 if s.is_empty() {
@@ -87,12 +107,9 @@ impl Spanned<Value> {
                 if let Some(rest) = s.strip_prefix(CURRENCY_PREFIX) {
                     s = rest;
                 }
-                s.parse().map_err(|_| {
-                    FormulaErrorMsg::Expected {
-                        expected: "number".into(),
-                        got: Some(format!("{s:?}").into()),
-                    }
-                    .with_span(self)
+                s.parse().map_err(|_| FormulaErrorMsg::Expected {
+                    expected: "number".into(),
+                    got: Some(format!("{s:?}").into()),
                 })
             }
             Value::Number(n) => Ok(*n),
@@ -100,25 +117,32 @@ impl Spanned<Value> {
             Value::Bool(false) => Ok(0.0),
             _ => Err(FormulaErrorMsg::Expected {
                 expected: "number".into(),
-                got: Some(self.inner.type_name().into()),
-            }
-            .with_span(self.span)),
+                got: Some(self.type_name().into()),
+            }),
         }
     }
-    pub fn to_integer(&self) -> FormulaResult<i64> {
-        Ok(self.to_number()?.round() as i64)
-    }
-    pub fn to_bool(&self) -> FormulaResult<bool> {
-        match &self.inner {
+    pub fn to_bool(&self) -> Result<bool, FormulaErrorMsg> {
+        match self {
             Value::Bool(b) => Ok(*b),
             Value::String(s) if s.eq_ignore_ascii_case("TRUE") => Ok(true),
             Value::String(s) if s.eq_ignore_ascii_case("FALSE") => Ok(false),
             _ => Err(FormulaErrorMsg::Expected {
                 expected: "boolean".into(),
-                got: Some(self.inner.type_name().into()),
-            }
-            .with_span(self.span)),
+                got: Some(self.type_name().into()),
+            }),
         }
+    }
+}
+
+impl Spanned<Value> {
+    pub fn to_number(&self) -> FormulaResult<f64> {
+        self.inner.to_number().map_err(|e| e.with_span(self.span))
+    }
+    pub fn to_integer(&self) -> FormulaResult<i64> {
+        Ok(self.to_number()?.round() as i64)
+    }
+    pub fn to_bool(&self) -> FormulaResult<bool> {
+        self.inner.to_bool().map_err(|e| e.with_span(self.span))
     }
 
     pub fn to_numbers(&self) -> FormulaResult<SmallVec<[f64; 1]>> {

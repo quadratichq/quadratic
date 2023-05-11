@@ -5,6 +5,7 @@ use ast::AstNode;
 mod errors;
 mod ast;
 mod cell_ref;
+mod criteria;
 mod ctx;
 pub mod functions;
 mod grid_proxy;
