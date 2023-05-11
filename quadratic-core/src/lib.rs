@@ -177,7 +177,7 @@ pub fn parse_formula(formula_string: &str, cfg: ParseConfig) -> JsValue {
 /// Replaces all valid A1-style references in a formula with RC-style
 /// references. Invalid references and syntax errors remain unchanged.
 #[wasm_bindgen]
-pub fn convert_formula_abs_to_rel(formula_string: &str, x: f64, y: f64) -> String {
+pub fn convert_formula_a1_to_rc(formula_string: &str, x: f64, y: f64) -> String {
     let x = x as i64;
     let y = y as i64;
     let pos = Pos { x, y };
@@ -188,7 +188,7 @@ pub fn convert_formula_abs_to_rel(formula_string: &str, x: f64, y: f64) -> Strin
 /// Replaces all valid RC-style references in a formula with A1-style
 /// references. Invalid references and syntax errors remain unchanged.
 #[wasm_bindgen]
-pub fn convert_formula_rel_to_abs(formula_string: &str, x: f64, y: f64) -> String {
+pub fn convert_formula_rc_to_a1(formula_string: &str, x: f64, y: f64) -> String {
     let x = x as i64;
     let y = y as i64;
     let pos = Pos { x, y };

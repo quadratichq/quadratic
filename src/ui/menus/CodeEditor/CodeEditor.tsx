@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
-import { convert_formula_abs_to_rel, convert_formula_rel_to_abs } from 'quadratic-core';
+import { convert_formula_a1_to_rc, convert_formula_rc_to_a1 } from 'quadratic-core';
 import { colors } from '../../../theme/colors';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { Cell } from '../../../schemas';
@@ -156,19 +156,20 @@ export const CodeEditor = (props: CodeEditorProps) => {
     editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
 
     const cell = props.sheet_controller.sheet.getCellCopy(x, y);
+    let newContent;
     if (cell) {
       // load cell content
       setSelectedCell(cell);
       if (editorMode === 'PYTHON') {
-        setInitialEditorContent(cell?.python_code);
+        newContent = cell?.python_code;
       } else if (editorMode === 'FORMULA') {
         if (cell?.formula_code === undefined){
-          setInitialEditorContent(undefined);
+          newContent = undefined;
         } else {
-          setInitialEditorContent(convert_formula_abs_to_rel(cell.formula_code, x, y));
+          newContent = convert_formula_rc_to_a1(cell.formula_code, x, y);
         }
       } else if (editorMode === 'AI') {
-        setInitialEditorContent(cell?.ai_prompt);
+        newContent = cell?.ai_prompt;
       }
     } else {
       // create blank cell
@@ -178,9 +179,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
         type: editorInteractionState.mode,
         value: '',
       } as Cell);
-      setInitialEditorContent('');
+      newContent = '';
     }
-    setEditorContent(initialEditorContent)
+    setInitialEditorContent(newContent);
+    setEditorContent(newContent);
   }, [selectedCell, editorInteractionState, props.sheet_controller.sheet, showCodeEditor, editorMode]);
 
   const saveAndRunCell = async () => {
@@ -201,7 +203,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
       if (editorContent === undefined) {
         selectedCell.formula_code = undefined;
       } else {
-        selectedCell.formula_code = convert_formula_rel_to_abs(editorContent, x, y);
+        selectedCell.formula_code = convert_formula_a1_to_rc(editorContent, x, y);
       }
     } else if (editorMode === 'AI') {
       selectedCell.ai_prompt = editorContent;

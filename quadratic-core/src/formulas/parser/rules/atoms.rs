@@ -81,7 +81,7 @@ impl SyntaxRule for CellReference {
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
         p.next();
-        let Some(cell_ref) = CellRef::parse_a1(p.token_str(), p.cfg.pos) else {
+        let Some(cell_ref) = parse_current_cell_ref(p) else {
             return Err(FormulaErrorMsg::BadCellReference.with_span(p.span()));
         };
         Ok(AstNode {

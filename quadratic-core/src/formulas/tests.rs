@@ -344,7 +344,7 @@ fn test_find_cell_references_a1() {
     // Test that RC-style cell references fail to parse.
     let cfg = ParseConfig {
         pos: base,
-        cell_ref_notation: CellRefNotation::RC,
+        cell_ref_notation: CellRefNotation::A1,
     };
     assert!(parse_formula("R1C1", cfg).is_err());
     assert!(parse_formula("R[1]C1", cfg).is_err());

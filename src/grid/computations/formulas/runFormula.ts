@@ -12,7 +12,7 @@ export interface runFormulaReturnType {
 }
 
 export async function runFormula(formula_code: string, pos: Coordinate): Promise<runFormulaReturnType> {
-  const cfg = new ParseConfig(new Pos(pos.x, pos.y), CellRefNotation.A1);
+  const cfg = new ParseConfig(new Pos(pos.x, pos.y), CellRefNotation.RC);
   const output = await eval_formula(formula_code, GetCellsDB, cfg);
 
   return output as runFormulaReturnType;
