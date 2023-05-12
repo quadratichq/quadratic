@@ -96,6 +96,13 @@ impl Value {
             _ => None,
         }
     }
+    /// Converts a value to an array.
+    pub fn into_array(self) -> Vec<SmallVec<[Value; 1]>> {
+        match self {
+            Value::Array(a) => a,
+            v => vec![smallvec![v]],
+        }
+    }
 
     pub fn to_number(&self) -> Result<f64, FormulaErrorMsg> {
         match self {

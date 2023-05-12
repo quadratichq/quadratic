@@ -13,10 +13,10 @@ pub enum Criterion {
     NotRegex(Regex),
     Compare { compare_fn: CompareFn, rhs: Value },
 }
-impl TryFrom<Spanned<Value>> for Criterion {
+impl TryFrom<&Spanned<Value>> for Criterion {
     type Error = FormulaError;
 
-    fn try_from(value: Spanned<Value>) -> Result<Self, Self::Error> {
+    fn try_from(value: &Spanned<Value>) -> Result<Self, Self::Error> {
         match &value.inner {
             Value::String(s) => {
                 let (compare_fn, rhs_string) =
@@ -34,14 +34,14 @@ impl TryFrom<Spanned<Value>> for Criterion {
                 } else if compare_fn == CompareFn::Neq && rhs_string.contains(['?', '*']) {
                     return Ok(Self::NotRegex(wildcard_pattern_to_regex(rhs_string)?));
                 } else {
-                    Value::String(rhs_string.to_string())
+                    Value::String(rhs_string.to_string().to_ascii_lowercase())
                 };
 
                 Ok(Criterion::Compare { compare_fn, rhs })
             }
             Value::Number(_) | Value::Bool(_) => Ok(Criterion::Compare {
                 compare_fn: CompareFn::Eql,
-                rhs: value.inner,
+                rhs: value.inner.clone(),
             }),
             Value::Array(_) | Value::MissingErr => Err(FormulaErrorMsg::Expected {
                 expected: "comparable value (string, number, etc.)".into(),
@@ -58,7 +58,9 @@ impl Criterion {
             Criterion::Regex(r) => r.is_match(&value.to_string()),
             Criterion::NotRegex(r) => !r.is_match(&value.to_string()),
             Criterion::Compare { compare_fn, rhs } => match rhs {
-                Value::String(rhs) => compare_fn.compare(&value.to_string(), rhs),
+                Value::String(rhs) => {
+                    compare_fn.compare(&value.to_string().to_ascii_lowercase(), &rhs)
+                }
                 Value::Number(rhs) => match value.to_number() {
                     Ok(lhs) => compare_fn.compare(&lhs, rhs),
                     Err(_) => false,
@@ -76,6 +78,7 @@ impl Criterion {
 fn wildcard_pattern_to_regex(s: &str) -> Result<Regex, FormulaError> {
     let mut chars = s.chars();
     let mut regex_string = String::new();
+    regex_string.push('^'); // Match whole string using `^...$`.
     while let Some(c) = chars.next() {
         match c {
             // Escape the next character, if there is one. Otherwise ignore.
@@ -86,6 +89,7 @@ fn wildcard_pattern_to_regex(s: &str) -> Result<Regex, FormulaError> {
             _ => regex_string.push_str(&regex::escape(&c.to_string())),
         }
     }
+    regex_string.push('$'); // Match whole string using `^...$`.
     RegexBuilder::new(&regex_string)
         .case_insensitive(true)
         .build()
@@ -141,7 +145,7 @@ mod tests {
     #[test]
     fn test_formula_criteria() {
         fn make_criterion(v: impl Into<Value>) -> Criterion {
-            Criterion::try_from(Spanned::new(0, 0, v.into())).unwrap()
+            Criterion::try_from(&Spanned::new(0, 0, v.into())).unwrap()
         }
 
         fn matches(c: &Criterion, v: impl Into<Value>) -> bool {
@@ -179,6 +183,9 @@ mod tests {
             assert!(matches(&c, "BLUE"));
             assert!(!matches(&c, "green"));
             assert!(!matches(&c, "alpha"));
+            assert!(!matches(&c, "bluee"));
+            assert!(!matches(&c, "bblue"));
+            assert!(!matches(&c, "bbluee"));
             assert!(!matches(&c, 1.0));
             assert!(!matches(&c, true));
             assert!(!matches(&c, false));
