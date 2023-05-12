@@ -1,9 +1,5 @@
 use super::*;
 
-macro_rules! see_docs_for_more_about_criteria {
-    () => { " See [the documentation](https://docs.quadratichq.com/formulas) for more details about how criteria work in formulas." };
-}
-
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
     include_in_completions: true,
@@ -38,10 +34,18 @@ fn get_functions() -> Vec<FormulaFunction> {
                  value in `range_to_evaluate` meets the criteria.",
                 see_docs_for_more_about_criteria!(),
             ),
-            eval: util::pure_fn(|args| match args.inner.as_slice() {
-                [range, criteria] => sum_if(range, criteria, range),
-                [eval_range, criteria, sum_range] => sum_if(eval_range, criteria, sum_range),
-                _ => Err(FormulaErrorMsg::BadArgumentCount.with_span(args.span)),
+            eval: util::pure_fn(|args| {
+                let [eval_range, criteria, sum_range] = match args.inner.as_slice() {
+                    [range, criteria] => [range, criteria, range],
+                    [eval_range, criteria, sum_range] => [eval_range, criteria, sum_range],
+                    _ => return Err(FormulaErrorMsg::BadArgumentCount.with_span(args.span)),
+                };
+                let values = util::iter_values_meeting_criteria(eval_range, criteria, sum_range)?;
+                Ok(Value::Number(
+                    values
+                        .map(|value| value?.to_number())
+                        .sum::<FormulaResult<f64>>()?,
+                ))
             }),
         },
         FormulaFunction {
@@ -53,40 +57,4 @@ fn get_functions() -> Vec<FormulaFunction> {
             eval: util::pure_fn(|args| Ok(Value::Number(util::product(&args.inner)?))),
         },
     ]
-}
-
-fn sum_if(
-    eval_range: &Spanned<Value>,
-    criteria: &Spanned<Value>,
-    sum_range: &Spanned<Value>,
-) -> FormulaResult<Value> {
-    use super::super::criteria::Criterion;
-
-    let criteria: Criterion = Criterion::try_from(criteria)?;
-
-    let eval_array_size = eval_range.inner.array_size().unwrap_or((1, 1));
-    if let Some(sum_array_size) = sum_range.inner.array_size() {
-        if eval_array_size != sum_array_size {
-            return Err(FormulaErrorMsg::ArraySizeMismatch {
-                expected: eval_array_size,
-                got: sum_array_size,
-            }
-            .with_span(sum_range.span));
-        }
-    }
-    let (rows, cols) = eval_array_size;
-
-    let mut sum = 0.0;
-
-    for col in 0..cols {
-        for row in 0..rows {
-            if criteria.matches(&eval_range.get_array_value(row, col)?.inner) {
-                if let Ok(x) = sum_range.get_array_value(row, col)?.to_number() {
-                    sum += x;
-                }
-            }
-        }
-    }
-
-    Ok(Value::Number(sum))
 }

@@ -3,13 +3,14 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 
+#[macro_use]
+mod util;
 mod logic;
 mod lookup;
 mod mathematics;
 mod operators;
 mod statistics;
 mod string;
-mod util;
 
 use super::{Ctx, FormulaErrorMsg, FormulaResult, Span, Spanned, Value};
 

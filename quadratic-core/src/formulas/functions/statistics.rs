@@ -23,12 +23,72 @@ fn get_functions() -> Vec<FormulaFunction> {
             }),
         },
         FormulaFunction {
+            name: "AVERAGEIF",
+            arg_completion: "${1:range_to_evaluate}, ${2:criteria}${3:, ${4:[range_to_average]}}",
+            usages: &["range_to_evaluate, criteria, [range_to_average]"],
+            examples: &[
+                "AVERAGEIF(A1:A10, \"2\")",
+                "AVERAGEIF(A1:A10, \">0\")",
+                "AVERAGEIF(A1:A10, \"<>INVALID\", B1:B10)",
+            ],
+            doc: concat!(
+                "Evaluates each value based on some criteria, and then computes \
+                 the arithmetic mean of the ones that meet those criteria. If \
+                 `range_to_average` is given, then values in `range_to_average` \
+                 are averaged instead wherever the corresponding value in \
+                 `range_to_evaluate` meets the criteria.",
+                see_docs_for_more_about_criteria!(),
+            ),
+            eval: util::pure_fn(|args| {
+                let [eval_range, criteria, sum_range] = match args.inner.as_slice() {
+                    [range, criteria] => [range, criteria, range],
+                    [eval_range, criteria, sum_range] => [eval_range, criteria, sum_range],
+                    _ => return Err(FormulaErrorMsg::BadArgumentCount.with_span(args.span)),
+                };
+                let mut sum = 0.0;
+                let mut total = 0;
+                for value in util::iter_values_meeting_criteria(eval_range, criteria, sum_range)? {
+                    sum += value?.to_number()?;
+                    total += 1;
+                }
+                Ok(Value::Number(sum / total as f64))
+            }),
+        },
+        FormulaFunction {
             name: "COUNT",
             arg_completion: "${1:a, b, ...}",
             usages: &["a, b, ..."],
             examples: &["COUNT(A1:C42, E17)", "SUM(A1:A10) / COUNT(A1:A10)"],
             doc: "Returns the number of nonempty values.",
             eval: util::pure_fn(|args| Ok(Value::Number(util::count(&args.inner) as f64))),
+        },
+        FormulaFunction {
+            name: "COUNTIF",
+            arg_completion: "${1:range_to_evaluate}, ${2:criteria}",
+            usages: &["range_to_evaluate, criteria"],
+            examples: &[
+                "COUNTIF(A1:A10, \"2\")",
+                "COUNTIF(A1:A10, \">0\")",
+                "COUNTIF(A1:A10, \"<>INVALID\")",
+            ],
+            doc: concat!(
+                "Evaluates each value based on some criteria, and then counts \
+                 how many values meet those criteria.",
+                see_docs_for_more_about_criteria!(),
+            ),
+            eval: util::pure_fn(|args| {
+                let [range, criteria] = match args.inner.as_slice() {
+                    [range, criteria] => [range, criteria],
+                    _ => return Err(FormulaErrorMsg::BadArgumentCount.with_span(args.span)),
+                };
+                // Use `.map_ok().sum()` instead of just `.count()` because we
+                // want to propogate errors.
+                Ok(Value::Number(
+                    util::iter_values_meeting_criteria(range, criteria, range)?
+                        .map_ok(|_| 1.0)
+                        .sum::<FormulaResult<f64>>()?,
+                ))
+            }),
         },
         FormulaFunction {
             name: "MIN",
