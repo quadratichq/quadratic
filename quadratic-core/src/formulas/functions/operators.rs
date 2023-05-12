@@ -52,9 +52,6 @@ fn get_functions() -> Vec<FormulaFunction> {
         FormulaFunction::operator("^", |[a, b]| {
             Ok(Value::Number(a.to_number()?.powf(b.to_number()?)))
         }),
-        FormulaFunction::operator("**", |[a, b]| {
-            Ok(Value::Number(a.to_number()?.powf(b.to_number()?)))
-        }),
         FormulaFunction::operator("%", |[n]| Ok(Value::Number(n.to_number()? / 100.0))),
         FormulaFunction::operator("..", |[a, b]| {
             let span = Span::merge(&a, &b);
