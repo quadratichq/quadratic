@@ -16,7 +16,7 @@ export function validateGridFile(jsonFile: {}): GridFile | null {
     while (filesIndex !== 0) {
       if (debugShowFileIO) console.log('[GridFile] upgrading file version: ' + file.version);
       // @ts-expect-error we know the top one doesn't have an updater function
-      file = files[filesIndex].updateFn(jsonFile as GridFiles);
+      file = files[filesIndex].updateFn(file as GridFiles);
       filesIndex--;
     }
     return file;
