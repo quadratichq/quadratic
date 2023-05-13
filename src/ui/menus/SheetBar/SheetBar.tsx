@@ -3,6 +3,8 @@ import { SheetController } from '../../../grid/controller/sheetController';
 import { colors } from '../../../theme/colors';
 import { Tab, Tabs } from '@mui/material';
 import { useCallback, useState } from 'react';
+import { InputRename } from './InputRename';
+import { useLocalFiles } from '../../contexts/LocalFiles';
 
 interface Props {
   sheetController: SheetController;
@@ -11,6 +13,8 @@ interface Props {
 export const SheetBar = (props: Props): JSX.Element => {
   const { sheetController } = props;
   const [current, setCurrent] = useState(sheetController.current);
+
+  const localFiles = useLocalFiles()
 
   const changeSheet = useCallback(
     (_, value: number | 'create') => {
@@ -61,10 +65,43 @@ export const SheetBar = (props: Props): JSX.Element => {
           variant="scrollable"
           scrollButtons="auto"
           aria-label="select sheet control"
-          sx={{ height: '1.5rem'}}
+          sx={{ height: '1.5rem' }}
         >
           {sheetController.sheets.map((sheet, index) => (
-            <Tab key={index} value={index} label={sheet.name} sx={{ height: '1.5rem', padding: 0 }} />
+            <Tab
+              key={index}
+              value={index}
+              label={<InputRename
+                value={sheet.name}
+                displayProps={{
+                  style: {
+                    textAlign: 'center',
+                    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+                    fontSize: '14px',
+                    minWidth: '90px',
+                    maxWidth: '360px',
+                    padding: 0,
+                    color: 'rgb(25, 118, 210)',
+                    fontWeight: 500,
+                    lineHeight: '1.25rem',
+                    textOverflow: 'ellipsis',
+                  }
+                }}
+                selectTextOnRename
+                onUpdate={(value?: string) => {
+                  if (value) {
+                    sheet.rename(value);
+                    localFiles.save();
+                  }
+                }}
+              />}
+              sx={{
+                height: '1.5rem',
+                padding: 0,
+                textAlign: 'center',
+                textTransform: 'none',
+                marginRight: '1rem'
+              }} />
           ))}
           <Tab value={'create'} label="+" style={{ width: '1rem' }} />
         </Tabs>

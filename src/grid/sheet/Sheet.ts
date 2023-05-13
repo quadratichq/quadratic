@@ -37,6 +37,10 @@ export class Sheet {
     this.cell_dependency = new CellDependencyManager();
   }
 
+  rename(name: string) {
+    this.name = name;
+  }
+
   load_file(sheet: SheetSchema): void {
     this.name = sheet.name;
     this.gridOffsets.populate(sheet.columns, sheet.rows);
