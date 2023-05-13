@@ -26,6 +26,7 @@ export const CellInput = (props: CellInputProps) => {
   const viewport = app?.viewport;
 
   const cellLocation = interactionState.cursorPosition;
+  const [saveInteractionState, setSaveInteractionState] = useState<GridInteractionState>();
 
   const text = useRef('');
   const handleChange = useCallback((e) => (text.current = e.target.value), []);
@@ -126,6 +127,11 @@ export const CellInput = (props: CellInputProps) => {
     return null;
   }
 
+  // copy interaction state when input starts
+  if (!saveInteractionState) {
+    setSaveInteractionState(interactionState);
+  }
+
   // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
   let closed = false;
 
@@ -137,6 +143,7 @@ export const CellInput = (props: CellInputProps) => {
     const value = textInput.innerText;
 
     if (!cancel) {
+      sheetController.start_transaction(saveInteractionState);
       // Update Cell and dependent cells
       if (value === '') {
         // delete cell if input is empty, and wasn't empty before
@@ -148,10 +155,10 @@ export const CellInput = (props: CellInputProps) => {
             y1: cellLocation.y,
             sheetController,
             app,
+            create_transaction: false,
           });
       } else {
         // create cell with value at input location
-        sheetController.start_transaction();
         await updateCellAndDCells({
           create_transaction: false,
           starting_cells: [
@@ -171,8 +178,8 @@ export const CellInput = (props: CellInputProps) => {
         if (temporaryItalic !== undefined && temporaryItalic !== !!format?.italic) {
           changeItalic(temporaryItalic);
         }
-        sheetController.end_transaction();
       }
+      sheetController.end_transaction();
       app.quadrants.quadrantChanged({ cells: [cellLocation] });
       textInput.innerText = '';
     }
@@ -192,6 +199,8 @@ export const CellInput = (props: CellInputProps) => {
       inputInitialValue: '',
     });
     // setValue(undefined);
+
+    setSaveInteractionState(undefined);
 
     // Set focus back to Grid
     focusGrid();

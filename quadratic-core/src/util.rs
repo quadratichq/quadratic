@@ -1,6 +1,24 @@
 use itertools::Itertools;
 use std::fmt;
 
+/// Converts a column name to a number.
+#[allow(unused)]
+macro_rules! col {
+    [$col_name:ident] => {
+        $crate::util::column_from_name(stringify!($col_name)).expect("invalid column name")
+    };
+}
+
+/// Parses a cell position in A1 notation.
+#[allow(unused)]
+macro_rules! pos {
+    [$s:ident] => {
+        $crate::formulas::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)
+            .expect("invalid cell reference")
+            .resolve_from(crate::Pos::ORIGIN)
+    };
+}
+
 /// Returns a column's name from its number.
 pub fn column_name(mut n: i64) -> String {
     let negative = n < 0;
@@ -56,13 +74,13 @@ pub fn column_from_name(mut s: &str) -> Option<i64> {
 /// conjuction.
 pub fn join_with_conjunction(conjunction: &str, items: &[impl fmt::Display]) -> String {
     match items {
-        [] => format!("(none)"),
-        [a] => format!("{}", a),
-        [a, b] => format!("{} {} {}", a, conjunction, b),
+        [] => "(none)".to_string(),
+        [a] => format!("{a}"),
+        [a, b] => format!("{a} {conjunction} {b}"),
         [all_but_last @ .., z] => {
-            let mut ret = all_but_last.iter().map(|x| format!("{}, ", x)).join("");
+            let mut ret = all_but_last.iter().map(|x| format!("{x}, ")).join("");
             ret.push_str(conjunction);
-            ret.push_str(&format!(" {}", z));
+            ret.push_str(&format!(" {z}"));
             ret
         }
     }
@@ -206,5 +224,20 @@ mod tests {
         // Test fun stuff
         assert_eq!(Some(3719092809668), column_from_name("QUADRATIC"));
         assert_eq!(Some(1700658608758053877), column_from_name("QUICKBROWNFOX"));
+    }
+
+    #[test]
+    fn test_a1_notation_macros() {
+        assert_eq!(col![A], 0);
+        assert_eq!(col![C], 2);
+        assert_eq!(col![nC], -3);
+
+        assert_eq!(pos![A0], crate::Pos { x: 0, y: 0 });
+        assert_eq!(pos![A1], crate::Pos { x: 0, y: 1 });
+
+        assert_eq!(pos![C6], crate::Pos { x: 2, y: 6 });
+        assert_eq!(pos![Cn6], crate::Pos { x: 2, y: -6 });
+        assert_eq!(pos![nC6], crate::Pos { x: -3, y: 6 });
+        assert_eq!(pos![nCn6], crate::Pos { x: -3, y: -6 });
     }
 }
