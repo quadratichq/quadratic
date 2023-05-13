@@ -37,7 +37,6 @@ export const SheetBar = (props: Props): JSX.Element => {
         color: colors.darkGray,
         bottom: 0,
         width: '100%',
-        height: '1.5rem',
         backdropFilter: 'blur(1px)',
         display: 'flex',
         justifyContent: 'space-between',
@@ -53,6 +52,7 @@ export const SheetBar = (props: Props): JSX.Element => {
           display: 'flex',
           alignItems: 'center',
           gap: '1rem',
+          height: '1.5rem'
         }}
       >
         <Tabs
@@ -61,9 +61,10 @@ export const SheetBar = (props: Props): JSX.Element => {
           variant="scrollable"
           scrollButtons="auto"
           aria-label="select sheet control"
+          sx={{ height: '1.5rem'}}
         >
           {sheetController.sheets.map((sheet, index) => (
-            <Tab key={index} value={index} label={sheet.name} />
+            <Tab key={index} value={index} label={sheet.name} sx={{ height: '1.5rem', padding: 0 }} />
           ))}
           <Tab value={'create'} label="+" style={{ width: '1rem' }} />
         </Tabs>
