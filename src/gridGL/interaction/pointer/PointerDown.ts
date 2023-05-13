@@ -30,6 +30,12 @@ export class PointerDown {
     if (IS_READONLY_MODE) return;
     if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
+    // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
+    if (this.app.settings.interactionState.showInput) {
+      setTimeout(() => this.pointerDown(world, event), 0);
+      return;
+    }
+
     const { settings, cursor } = this.app;
     const { interactionState, setInteractionState } = settings;
     const { gridOffsets } = this.sheet;
