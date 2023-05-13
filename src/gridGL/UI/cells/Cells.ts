@@ -141,46 +141,48 @@ export class Cells extends Container {
       const hasContent = entry.cell?.value || entry.format;
 
       // only render if there is cell data or cell formatting
-      if (!isInput && (entry.cell || entry.format)) {
+      if (entry.cell || entry.format) {
         this.cellsBackground.draw({ ...entry, x, y, width, height });
-        if (entry.cell) {
-          const error = entry.cell.evaluation_result?.success === false;
+        if (!isInput) {
+          if (entry.cell) {
+            const error = entry.cell.evaluation_result?.success === false;
 
-          // show cell error icon
-          if (error) {
-            this.cellsMarkers.add(x, y, 'ErrorIcon');
-          }
-
-          // show cell type icons
-          if (this.app.settings.showCellTypeOutlines)
-            if (entry.cell?.type === 'PYTHON') {
-              // show cell type icon
-              this.cellsMarkers.add(x, y, 'CodeIcon', error);
-            } else if (entry.cell?.type === 'FORMULA') {
-              this.cellsMarkers.add(x, y, 'FormulaIcon', error);
-            } else if (entry.cell?.type === 'AI') {
-              this.cellsMarkers.add(x, y, 'AIIcon', error);
+            // show cell error icon
+            if (error) {
+              this.cellsMarkers.add(x, y, 'ErrorIcon');
             }
 
-          // show cell text
-          let cell_text = CellTextFormatter(entry.cell, entry.format);
-          // strip new lines
-          cell_text = cell_text ? cell_text.replace(/\n/g, '') : '';
+            // show cell type icons
+            if (this.app.settings.showCellTypeOutlines)
+              if (entry.cell?.type === 'PYTHON') {
+                // show cell type icon
+                this.cellsMarkers.add(x, y, 'CodeIcon', error);
+              } else if (entry.cell?.type === 'FORMULA') {
+                this.cellsMarkers.add(x, y, 'FormulaIcon', error);
+              } else if (entry.cell?.type === 'AI') {
+                this.cellsMarkers.add(x, y, 'AIIcon', error);
+              }
 
-          let cell_format = entry.format;
-          if (error) {
-            cell_text = '  ERROR';
-            cell_format = { x: entry.cell.x, y: entry.cell.y, textColor: colors.error, italic: true };
+            // show cell text
+            let cell_text = CellTextFormatter(entry.cell, entry.format);
+            // strip new lines
+            cell_text = cell_text ? cell_text.replace(/\n/g, '') : '';
+
+            let cell_format = entry.format;
+            if (error) {
+              cell_text = '  ERROR';
+              cell_format = { x: entry.cell.x, y: entry.cell.y, textColor: colors.error, italic: true };
+            }
+            this.cellLabels.add({
+              x: x + CELL_TEXT_MARGIN_LEFT,
+              y: y + CELL_TEXT_MARGIN_TOP,
+              text: cell_text,
+              isQuadrant,
+              expectedWidth: width - CELL_TEXT_MARGIN_LEFT * 2,
+              location: isQuadrant ? { x: entry.cell.x, y: entry.cell.y } : undefined,
+              format: cell_format,
+            });
           }
-          this.cellLabels.add({
-            x: x + CELL_TEXT_MARGIN_LEFT,
-            y: y + CELL_TEXT_MARGIN_TOP,
-            text: cell_text,
-            isQuadrant,
-            expectedWidth: width - CELL_TEXT_MARGIN_LEFT * 2,
-            location: isQuadrant ? { x: entry.cell.x, y: entry.cell.y } : undefined,
-            format: cell_format,
-          });
         }
         this.cellsBorder.draw({ ...entry, x, y, width, height });
       }

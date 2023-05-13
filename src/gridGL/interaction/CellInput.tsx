@@ -220,15 +220,15 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: 100,
-        outline: 'solid',
-        outlineColor: format?.fillColor ?? 'transparent',
+        minWidth: cell_offsets.width,
+        outline: 'none',
+        // outlineColor: format?.fillColor ?? 'transparent',
         color: format?.textColor ?? 'black',
         padding: 0,
         margin: 0,
         lineHeight: '1', //`${cell_offsets.height}px`,
         verticalAlign: 'text-top',
-        background: format?.fillColor ?? 'transparent',
+        background: 'transparent', //format?.fillColor ?? 'transparent',
         transformOrigin: '0 0',
         transform,
         fontFamily,
@@ -237,7 +237,7 @@ export const CellInput = (props: CellInputProps) => {
       }}
       onChange={handleChange}
       onFocus={handleFocus}
-      // onBlur={() => closeInput()}
+      onBlur={() => closeInput()}
       onKeyDown={(event) => {
         if (event.key === 'Enter') {
           closeInput({ x: 0, y: 1 });
