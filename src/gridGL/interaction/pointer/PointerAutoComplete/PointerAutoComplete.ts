@@ -226,7 +226,7 @@ export class PointerAutoComplete {
 
   private async apply(): Promise<void> {
     if (!this.selection) return;
-    console.log(this.stateHorizontal, this.stateVertical)
+    console.log(this.stateHorizontal, this.stateVertical);
     if (!this.stateHorizontal && !this.stateVertical) {
       this.reset();
       return;
