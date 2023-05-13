@@ -210,33 +210,34 @@ export const CellInput = (props: CellInputProps) => {
 
   return (
     <div
+      id="cell-edit"
       contentEditable={true}
       suppressContentEditableWarning={true}
       ref={textInputRef}
       spellCheck={false}
       style={{
-        display: 'block',
+        display: 'table-cell',
         position: 'absolute',
         top: 0,
         left: 0,
         minWidth: 100,
-        border: 'none',
         outline: 'solid',
         outlineColor: format?.fillColor ?? 'transparent',
         color: format?.textColor ?? 'black',
         padding: 0,
         margin: 0,
-        lineHeight: '1',
+        lineHeight: '1', //`${cell_offsets.height}px`,
+        verticalAlign: 'text-top',
         background: format?.fillColor ?? 'transparent',
         transformOrigin: '0 0',
         transform,
         fontFamily,
         fontSize: '14px',
-        // letterSpacing: '0.07px',
+        // border: `2px solid ${convertTintToString(colors.cursorCell)}`,
       }}
       onChange={handleChange}
       onFocus={handleFocus}
-      onBlur={() => closeInput()}
+      // onBlur={() => closeInput()}
       onKeyDown={(event) => {
         if (event.key === 'Enter') {
           closeInput({ x: 0, y: 1 });
@@ -263,6 +264,9 @@ export const CellInput = (props: CellInputProps) => {
           setTemporaryBold((bold) => !bold);
           event.stopPropagation();
         }
+
+        // ensure the cell border is redrawn
+        app.cursor.dirty = true;
       }}
     >
       {text.current}

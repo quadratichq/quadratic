@@ -8,6 +8,9 @@ const INDICATOR_SIZE = 8;
 const INDICATOR_PADDING = 1;
 const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 
+// adds a bit of padding when editing a cell w/CellInput
+const CELL_INPUT_PADDING = 5;
+
 export class Cursor extends Graphics {
   private app: PixiApp;
   indicator: Rectangle;
@@ -31,7 +34,9 @@ export class Cursor extends Graphics {
     const { editorInteractionState } = this.app.settings;
     const cell = settings.interactionState.cursorPosition;
     const multiCursor = settings.interactionState.showMultiCursor;
-    const { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
+    const showInput = settings.interactionState.showInput;
+
+    let { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
     const color = colors.cursorCell;
     const editor_selected_cell = editorInteractionState.selectedCell;
 
@@ -42,8 +47,17 @@ export class Cursor extends Graphics {
     const terminalPosition = settings.interactionState.multiCursorPosition.terminalPosition;
     const cursorPosition = settings.interactionState.cursorPosition;
     let indicatorOffset = 0;
-    if (!multiCursor || (terminalPosition.x === cursorPosition.x && terminalPosition.y === cursorPosition.y)) {
-      indicatorOffset = indicatorSize / 2 + indicatorPadding;
+
+    // showInput changes after cellEdit is removed from DOM
+    const cellEdit = document.querySelector('#cell-edit') as HTMLDivElement;
+    if (showInput && cellEdit) {
+      if (cellEdit.offsetWidth !== width) {
+        width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
+      }
+    } else {
+      if (!multiCursor || (terminalPosition.x === cursorPosition.x && terminalPosition.y === cursorPosition.y)) {
+        indicatorOffset = indicatorSize / 2 + indicatorPadding;
+      }
     }
 
     // hide cursor if code editor is open and CodeCursor is in the same cell
@@ -155,6 +169,7 @@ export class Cursor extends Graphics {
       this.dirty = false;
       this.clear();
       this.drawCursor();
+      if (this.app.settings.interactionState.showInput) return;
       this.drawMultiCursor();
       this.drawCodeCursor();
       this.drawCursorIndicator();
