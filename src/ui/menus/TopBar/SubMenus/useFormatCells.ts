@@ -28,7 +28,7 @@ interface IResults {
 
 type CellFormatNoPosition = Omit<CellFormat, 'x' | 'y'>;
 
-export const useFormatCells = (sheet_controller: SheetController, app: PixiApp): IResults => {
+export const useFormatCells = (sheet_controller: SheetController, app?: PixiApp, skipStartTransaction?: boolean): IResults => {
   const { start, end } = useGetSelection(sheet_controller.sheet);
 
   const onFormat = (updatedFormat: CellFormatNoPosition, deltaNumberOfDecimalPlaces?: number): void => {
@@ -60,7 +60,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
       }
     }
     // Transaction to update formats
-    sheet_controller.start_transaction();
+    if (!skipStartTransaction) sheet_controller.start_transaction();
     formats.forEach((format) => {
       if (format.x !== undefined && format.y !== undefined)
         sheet_controller.execute_statement({
@@ -71,7 +71,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
           },
         });
     });
-    sheet_controller.end_transaction();
+    if (!skipStartTransaction) sheet_controller.end_transaction();
 
     if (app) {
       app.quadrants.quadrantChanged({ range: { start, end } });

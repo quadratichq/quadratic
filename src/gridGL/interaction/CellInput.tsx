@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { Coordinate } from '../types/size';
 import { focusGrid } from '../../helpers/focusGrid';
@@ -7,6 +7,8 @@ import { SheetController } from '../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
 import { DeleteCells } from '../../grid/actions/DeleteCells';
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
+import { CellFormat } from '../../schemas';
+import { useFormatCells } from '../../ui/menus/TopBar/SubMenus/useFormatCells';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -19,6 +21,8 @@ interface CellInputProps {
 
 export const CellInput = (props: CellInputProps) => {
   const { interactionState, editorInteractionState, setInteractionState, app, container, sheetController } = props;
+  const { changeBold, changeItalic } = useFormatCells(sheetController, app, true);
+
   const viewport = app?.viewport;
 
   const cellLocation = interactionState.cursorPosition;
@@ -29,14 +33,19 @@ export const CellInput = (props: CellInputProps) => {
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
   const copy = sheetController.sheet.getCellAndFormatCopy(cellLocation.x, cellLocation.y);
   const cell = copy?.cell;
-  const format = copy?.format;
+  const format = copy?.format ?? {} as CellFormat;
 
-  const fontFamily = useMemo(() => {
-    if (!format) return 'OpenSans';
-    if (format.italic && format.bold) return 'OpenSans-BoldItalic';
-    if (format.italic) return 'OpenSans-Italic';
-    if (format.bold) return 'OpenSans-Bold';
-  }, [format]);
+  // handle temporary changes to bold and italic (via keyboard)
+  const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
+  const [temporaryItalic, setTemporaryItalic] = useState<undefined | boolean>();
+  let fontFamily = 'OpenSans';
+  if ((temporaryItalic === undefined ? format.italic : temporaryItalic) && (temporaryBold === undefined ? format.bold : temporaryBold)) {
+    fontFamily = 'OpenSans-BoldItalic';
+  } else if (temporaryItalic === undefined ? format.italic : temporaryItalic) {
+    fontFamily = 'OpenSans-Italic';
+  } else if (temporaryBold === undefined ? format.bold : temporaryBold) {
+    fontFamily = 'OpenSans-Bold';
+  }
 
   // moves the cursor to the end of the input (since we're placing a single character that caused the input to open)
   const handleFocus = useCallback((e) => {
@@ -142,7 +151,9 @@ export const CellInput = (props: CellInputProps) => {
           });
       } else {
         // create cell with value at input location
+        sheetController.start_transaction();
         await updateCellAndDCells({
+          create_transaction: false,
           starting_cells: [
             {
               x: cellLocation.x,
@@ -154,6 +165,13 @@ export const CellInput = (props: CellInputProps) => {
           sheetController,
           app,
         });
+        if (temporaryBold !== undefined && temporaryBold !== !!format?.bold) {
+          changeBold(temporaryBold);
+        }
+        if (temporaryItalic !== undefined && temporaryItalic !== !!format?.italic) {
+          changeItalic(temporaryItalic);
+        }
+        sheetController.end_transaction();
       }
       app.quadrants.quadrantChanged({ cells: [cellLocation] });
       textInput.innerText = '';
@@ -237,6 +255,12 @@ export const CellInput = (props: CellInputProps) => {
           event.preventDefault();
         } else if (event.key === ' ') {
           // Don't propagate so panning mode doesn't get triggered
+          event.stopPropagation();
+        } else if (event.key === 'i' && (event.ctrlKey || event.metaKey)) {
+          setTemporaryItalic((italic) => !italic);
+          event.stopPropagation();
+        } else if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
+          setTemporaryBold((bold) => !bold);
           event.stopPropagation();
         }
       }}
