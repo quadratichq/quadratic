@@ -226,7 +226,11 @@ export class PointerAutoComplete {
 
   private async apply(): Promise<void> {
     if (!this.selection) return;
-    if (!this.stateHorizontal && !this.stateVertical) return;
+    console.log(this.stateHorizontal, this.stateVertical)
+    if (!this.stateHorizontal && !this.stateVertical) {
+      this.reset();
+      return;
+    }
     this.app.sheet_controller.start_transaction();
 
     if (this.stateVertical === 'shrink') {
