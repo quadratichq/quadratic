@@ -108,7 +108,6 @@ export class Quadrants extends Container {
       }
       const inputBounds = input.getBoundingClientRect();
       const inputRectangle = domRectangleToViewportScreenRectangle(this.app, inputBounds);
-      console.log(inputRectangle);
       if (this.rectangleEquals(inputRectangle, this.lastInputOverQuadrant)) return false;
       this.quadrantMask.beginFill(0xffffff);
       this.quadrantMask.drawShape(inputRectangle);
