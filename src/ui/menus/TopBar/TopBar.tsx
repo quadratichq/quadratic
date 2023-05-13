@@ -239,6 +239,12 @@ function FileRename({
         if (e.key === 'Enter') {
           inputRef.current?.blur();
           focusGrid();
+        } else if (e.key === 'Escape') {
+          if (inputRef.current) {
+            inputRef.current.value = currentFilename;
+            inputRef.current.blur();
+          }
+          focusGrid();
         }
       }}
       onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
