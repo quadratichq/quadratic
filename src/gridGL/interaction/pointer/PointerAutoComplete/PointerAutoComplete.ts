@@ -116,7 +116,7 @@ export class PointerAutoComplete {
         this.endCell = { x: column, y: row };
         const rectangle = new Rectangle(selection.x, selection.y, selection.width + 1, selection.height + 1);
         const deleteRectangles = [];
-        if (row === selection.top) {
+        if (row === selection.top && selection.top === selection.bottom) {
           this.toVertical = undefined;
           this.stateVertical = undefined;
         } else if (row >= selection.top && row < selection.bottom) {
@@ -137,7 +137,7 @@ export class PointerAutoComplete {
           this.stateVertical = undefined;
         }
 
-        if (column === selection.left) {
+        if (column === selection.left && selection.left === selection.right) {
           this.toHorizontal = undefined;
           this.stateHorizontal = undefined;
         } else if (column >= selection.left && column < selection.right) {
