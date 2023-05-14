@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Box } from '@mui/system';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { colors } from '../../../theme/colors';
 import { Tab, Tabs } from '@mui/material';
-import { useCallback, useState } from 'react';
-import { SheetBarRename } from './SheetBarRename';
+import { KeyboardEvent, useCallback, useState } from 'react';
 import { useLocalFiles } from '../../contexts/LocalFiles';
+import { focusGrid } from '../../../helpers/focusGrid';
 
 interface Props {
   sheetController: SheetController;
@@ -82,11 +81,37 @@ export const SheetBar = (props: Props): JSX.Element => {
             <Tab
               key={index}
               value={index}
-              label={isRenaming === index ? <SheetBarRename
-                key={index}
-                value={sheet.name}
-                onUpdate={onRenameSheet}
-              /> : sheet.name}
+              label={<div
+                style={{
+                  outline: 'none',
+                }}
+                onKeyUp={(e: KeyboardEvent<HTMLDivElement>) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur();
+                    onRenameSheet(e.currentTarget.innerText)
+                    focusGrid();
+                  } else if (e.key === 'Escape') {
+                    onRenameSheet();
+                    e.currentTarget.blur();
+                  }
+                }}
+                contentEditable={isRenaming === index}
+                suppressContentEditableWarning={true}
+                tabIndex={1}
+                onFocus={(e) => {
+                  const div = e.currentTarget;
+                  const range = document.createRange();
+                  range.selectNodeContents(div);
+                  const selection = document.getSelection();
+                  if (selection) {
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                  }
+                }}
+              >
+                {sheet.name}
+              </div>
+              }
               onDoubleClick={(e) => {
                 setIsRenaming(index);
                 e.stopPropagation();
@@ -96,7 +121,9 @@ export const SheetBar = (props: Props): JSX.Element => {
                 padding: 0,
                 textAlign: 'center',
                 textTransform: 'none',
-                marginRight: '1rem'
+                marginRight: '1rem',
+                outline: 'none',
+                border: 'none',
               }}
             />
           ))}

@@ -9,5 +9,6 @@
         "pixiapp",
         "subquadrant",
         "subquadrants"
-    ]
+    ],
+    "editor.formatOnType": true
 }
