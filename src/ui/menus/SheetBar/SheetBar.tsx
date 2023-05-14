@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Box } from '@mui/system';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { colors } from '../../../theme/colors';
 import { Tab, Tabs } from '@mui/material';
 import { useCallback, useState } from 'react';
-import { InputRename } from './InputRename';
+import { SheetBarRename } from './SheetBarRename';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 
 interface Props {
@@ -12,18 +13,28 @@ interface Props {
 
 export const SheetBar = (props: Props): JSX.Element => {
   const { sheetController } = props;
-  const [current, setCurrent] = useState(sheetController.current);
 
+  // rename sheet
   const localFiles = useLocalFiles()
+  const [isRenaming, setIsRenaming] = useState<number | false>(false);
+  const onRenameSheet = useCallback((name?: string) => {
+    if (name) {
+      sheetController.sheet.rename(name);
+      localFiles.save();
+    }
+    setIsRenaming(false);
+  }, [localFiles, sheetController.sheet]);
 
+  // activate sheet
+  const [activeSheet, setActiveSheet] = useState(sheetController.current);
   const changeSheet = useCallback(
     (_, value: number | 'create') => {
       if (value === 'create') {
         sheetController.addSheet();
-        setCurrent(sheetController.current);
+        setActiveSheet(sheetController.current);
       } else {
         sheetController.current = value;
-        setCurrent(sheetController.current);
+        setActiveSheet(sheetController.current);
       }
     },
     [sheetController]
@@ -60,48 +71,34 @@ export const SheetBar = (props: Props): JSX.Element => {
         }}
       >
         <Tabs
-          value={current}
+          value={activeSheet}
           onChange={changeSheet}
           variant="scrollable"
           scrollButtons="auto"
           aria-label="select sheet control"
-          sx={{ height: '1.5rem' }}
+          sx={{ height: '1.5rem', fontSize: '14px' }}
         >
           {sheetController.sheets.map((sheet, index) => (
             <Tab
               key={index}
               value={index}
-              label={<InputRename
+              label={isRenaming === index ? <SheetBarRename
+                key={index}
                 value={sheet.name}
-                displayProps={{
-                  style: {
-                    textAlign: 'center',
-                    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                    fontSize: '14px',
-                    minWidth: '90px',
-                    maxWidth: '360px',
-                    padding: 0,
-                    color: 'rgb(25, 118, 210)',
-                    fontWeight: 500,
-                    lineHeight: '1.25rem',
-                    textOverflow: 'ellipsis',
-                  }
-                }}
-                selectTextOnRename
-                onUpdate={(value?: string) => {
-                  if (value) {
-                    sheet.rename(value);
-                    localFiles.save();
-                  }
-                }}
-              />}
+                onUpdate={onRenameSheet}
+              /> : sheet.name}
+              onDoubleClick={(e) => {
+                setIsRenaming(index);
+                e.stopPropagation();
+              }}
               sx={{
                 height: '1.5rem',
                 padding: 0,
                 textAlign: 'center',
                 textTransform: 'none',
                 marginRight: '1rem'
-              }} />
+              }}
+            />
           ))}
           <Tab value={'create'} label="+" style={{ width: '1rem' }} />
         </Tabs>
