@@ -26,5 +26,30 @@ fn get_functions() -> Vec<FormulaFunction> {
             doc: "Multiplies all values.\nReturns 1 if given no values.",
             eval: util::pure_fn(|args| Ok(Value::Number(util::product(&args.inner)?))),
         },
+        FormulaFunction {
+            name: "ABS",
+            arg_completion: "${1:number}",
+            usages: &["number"],
+            examples: &["ABS(-4)"],
+            doc: "Returns the absolute value of a number.",
+            eval: util::array_mapped(|[number]| Ok(Value::Number(number.to_number()?.abs()))),
+        },
+        // Constants
+        FormulaFunction {
+            name: "PI",
+            arg_completion: "",
+            usages: &[""],
+            examples: &["PI()"],
+            doc: "Returns π, the circle constant.",
+            eval: util::constant_fn(Value::Number(std::f64::consts::PI)),
+        },
+        FormulaFunction {
+            name: "TAU",
+            arg_completion: "",
+            usages: &[""],
+            examples: &["TAU()"],
+            doc: "Returns τ, the circle constant equal to 2π.",
+            eval: util::constant_fn(Value::Number(std::f64::consts::TAU)),
+        },
     ]
 }
