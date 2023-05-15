@@ -121,3 +121,26 @@ fn get_functions() -> Vec<FormulaFunction> {
         },
     ]
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::formulas::tests::*;
+
+    #[test]
+    fn test_formula_average() {
+        let form = parse_formula("AVERAGE(3, B1:D3)", pos![nAn1]).unwrap();
+
+        let mut g = FnGrid(|pos| {
+            if (1..=3).contains(&pos.x) && (1..=3).contains(&pos.y) {
+                Some((pos.x * 3 + pos.y).to_string()) // 4 .. 12
+            } else {
+                panic!("cell {pos} shouldn't be accessed")
+            }
+        });
+
+        assert_eq!(
+            "7.5".to_string(),
+            form.eval_blocking(&mut g, pos![nAn1]).unwrap().to_string(),
+        );
+    }
+}

@@ -98,3 +98,30 @@ fn get_functions() -> Vec<FormulaFunction> {
         },
     ]
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::formulas::tests::*;
+
+    #[test]
+    fn test_formula_if() {
+        let form = parse_formula("IF(A1=2, 'yep', 'nope')", pos![A0]).unwrap();
+
+        let mut g = FnGrid(|pos| {
+            Some(match (pos.x, pos.y) {
+                (0, 1) => "2".to_string(),
+                (1, 1) => "16".to_string(),
+                _ => panic!("cell {pos} shouldn't be accessed"),
+            })
+        });
+
+        assert_eq!(
+            "yep".to_string(),
+            form.eval_blocking(&mut g, pos![A0]).unwrap().to_string(),
+        );
+        assert_eq!(
+            "nope".to_string(),
+            form.eval_blocking(&mut g, pos![B0]).unwrap().to_string(),
+        );
+    }
+}

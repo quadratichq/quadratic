@@ -76,3 +76,16 @@ fn get_functions() -> Vec<FormulaFunction> {
 fn values_eq(a: &Spanned<Value>, b: &Spanned<Value>) -> bool {
     a.to_string().eq_ignore_ascii_case(&b.to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::formulas::tests::*;
+
+    #[test]
+    fn test_formula_math_operators() {
+        assert_eq!(
+            (1 * -6 + -2 - 1 * (-3_i32).pow(2_u32.pow(3))).to_string(),
+            eval_to_string(&mut NoGrid, "1 * -6 + -2 - 1 * -3 ^ 2 ^ 3"),
+        );
+    }
+}
