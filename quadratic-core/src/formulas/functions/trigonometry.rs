@@ -87,9 +87,9 @@ fn get_functions() -> Vec<FormulaFunction> {
             arg_completion: "{$1:x}, {$2:y}",
             usages: &["x, y"],
             examples: &["ATAN2(2, 1)"],
-            doc: "Returns the counterclockwise angle from the X axis to the point \
-                  `(x, y)`. Note that the argument order is reversed compared to the \
-                  [typical `atan2()` function](https://en.wikipedia.org/wiki/Atan2).",
+            doc: "Returns the counterclockwise angle, in radians, from the X axis to the \
+                  point `(x, y)`. Note that the argument order is reversed compared to \
+                  the [typical `atan2()` function](https://en.wikipedia.org/wiki/Atan2).",
             eval: util::array_mapped(|[x, y]| {
                 Ok(Value::Number(f64::atan2(y.to_number()?, x.to_number()?)))
             }),
