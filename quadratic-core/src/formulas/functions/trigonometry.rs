@@ -79,12 +79,12 @@ fn get_functions() -> Vec<FormulaFunction> {
     all_trig_functions.extend(trig_functions_and_inverses![
         url: "https://en.wikipedia.org/wiki/Trigonometric_functions";
         inverse_url: "https://en.wikipedia.org/wiki/Inverse_trigonometric_functions";
-        //                              function,             inverse function, range;
-        "SIN",  "sine",                 |x| x.sin(),          |x| x.asin(), "-π/2 to π/2";
-        "COS",  "cosine",               |x| x.cos(),          |x| x.acos(), "0 to π";
-        "TAN",  "tangent",              |x| x.tan(),          |x| x.atan(), "-π/2 to π/2";
+        //                              function,             inverse function,         range;
+        "SIN",  "sine",                 |x| x.sin(),          |x| x.asin(),         "-π/2 to π/2";
+        "COS",  "cosine",               |x| x.cos(),          |x| x.acos(),            "0 to π";
+        "TAN",  "tangent",              |x| x.tan(),          |x| x.atan(),         "-π/2 to π/2";
         "CSC",  "cosecant",             |x| x.sin().recip(),  |x| x.recip().asin(), "-π/2 to π/2";
-        "SEC",  "secant",               |x| x.cos().recip(),  |x| x.recip().acos(), "0 to π";
+        "SEC",  "secant",               |x| x.cos().recip(),  |x| x.recip().acos(),    "0 to π";
         "COT",  "cotangent",            |x| x.tan().recip(),  |x| x.recip().atan(), "-π/2 to π/2";
     ]);
 
