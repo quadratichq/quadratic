@@ -196,6 +196,9 @@ impl JsGridProxy {
     }
 
     async fn get_cell_jsvalue(&mut self, pos: Pos) -> Result<JsValue, JsValue> {
+        // Record that we accessed this cell.
+        self.cells_accessed.insert(pos);
+
         let grid_accessor_fn = self.grid_accessor_fn.clone();
         let x: JsValue = pos.x.into();
         let y: JsValue = pos.y.into();
