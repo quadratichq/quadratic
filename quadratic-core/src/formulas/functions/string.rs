@@ -11,8 +11,9 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 fn get_functions() -> Vec<FormulaFunction> {
     vec![FormulaFunction {
         name: "CONCAT",
-        arg_completion: "",
-        usages: &[""],
+        arg_completion: "${1:a, b, ...}",
+        usages: &["a, b, ..."],
+        examples: &["CONCAT(\"Hello, \", C0, \"!\")"],
         doc: "[Concatenates](https://en.wikipedia.org/wiki/Concatenation) all values as strings.",
         eval: util::pure_fn(|args| {
             Ok(Value::String(
