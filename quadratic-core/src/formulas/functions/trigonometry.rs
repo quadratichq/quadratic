@@ -119,3 +119,21 @@ fn get_functions() -> Vec<FormulaFunction> {
 
     all_trig_functions
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::formulas::tests::*;
+
+    #[test]
+    fn test_formula_trigonometry() {
+        let g = &mut NoGrid;
+
+        assert_eq!("-4", eval_to_string(g, "RADIANS(-720) / PI()"));
+        assert_eq!("-720", eval_to_string(g, "DEGREES(-PI() * 4)"));
+
+        crate::util::assert_f64_approx_eq(0.5, &eval_to_string(g, "SIN(PI()/4)^2"));
+        crate::util::assert_f64_approx_eq(0.25, &eval_to_string(g, "ASIN(SQRT(0.5))/PI()"));
+
+        assert!(eval_to_string(g, "ATAN2(2, 1)").starts_with("0.4636"));
+    }
+}

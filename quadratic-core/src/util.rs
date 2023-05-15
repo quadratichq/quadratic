@@ -165,6 +165,14 @@ macro_rules! impl_display {
 }
 
 #[cfg(test)]
+pub(crate) fn assert_f64_approx_eq(expected: f64, actual: &str) {
+    const EPSILON: f64 = 0.0001;
+
+    let actual = actual.parse::<f64>().unwrap();
+    assert!((expected - actual).abs() < EPSILON);
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
