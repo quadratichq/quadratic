@@ -30,7 +30,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                                 "Returns the [", $full_name, "](", $url, ") ",
                                 "of an angle in radians.",
                             ),
-                            eval: util::array_mapped(move |[number]| Ok(Value::Number(f(number.to_number()?)))),
+                            eval: util::array_mapped(move |[radians]| Ok(Value::Number(f(radians.to_number()?)))),
                         }
                     },
                     {
@@ -53,7 +53,28 @@ fn get_functions() -> Vec<FormulaFunction> {
         };
     }
 
-    let mut all_trig_functions = vec![];
+    let mut all_trig_functions = vec![
+        FormulaFunction {
+            name: "DEGREES",
+            arg_completion: "${1:radians}",
+            usages: &["radians"],
+            examples: &["DEGREES(PI() / 2)"],
+            doc: "Converts radians to degrees",
+            eval: util::array_mapped(|[radians]| {
+                Ok(Value::Number(radians.to_number()?.to_degrees()))
+            }),
+        },
+        FormulaFunction {
+            name: "RADIANS",
+            arg_completion: "${1:degrees}",
+            usages: &["degrees"],
+            examples: &["RADIANS(90)"],
+            doc: "Converts degrees to radians",
+            eval: util::array_mapped(|[degrees]| {
+                Ok(Value::Number(degrees.to_number()?.to_radians()))
+            }),
+        },
+    ];
 
     all_trig_functions.extend(trig_functions_and_inverses![
         url: "https://en.wikipedia.org/wiki/Trigonometric_functions";
