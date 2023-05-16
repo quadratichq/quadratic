@@ -194,25 +194,22 @@ impl JsGridProxy {
             cells_accessed: HashSet::new(),
         }
     }
+
+    async fn get_cell_jsvalue(&mut self, pos: Pos) -> Result<JsValue, JsValue> {
+        // Record that we accessed this cell.
+        self.cells_accessed.insert(pos);
+
+        let grid_accessor_fn = self.grid_accessor_fn.clone();
+        let x: JsValue = pos.x.into();
+        let y: JsValue = pos.y.into();
+        // Access a rectangle of one cell, ranging from (x, y) to (x, y).
+        Ok(jsexpr!(grid_accessor_fn(x, y, x, y).await[0].value))
+    }
 }
 #[async_trait(?Send)]
 impl GridProxy for JsGridProxy {
     async fn get(&mut self, pos: Pos) -> Option<String> {
-        let js_this = JsValue::UNDEFINED;
-
-        self.cells_accessed.insert(pos);
-        let cell_value_array = self
-            .grid_accessor_fn
-            .bind2(&js_this, &pos.x.into(), &pos.y.into()) // Upper-left corner
-            .call2(&js_this, &pos.x.into(), &pos.y.into()) // Lower-right corner
-            .map(js_sys::Promise::from)
-            .map(wasm_bindgen_futures::JsFuture::from)
-            .ok()?
-            .await
-            .ok()?;
-        let cell_value = js_sys::Reflect::get(&cell_value_array, &0.into()).ok()?;
-        let cell_string = js_sys::Reflect::get(&cell_value, &"value".into()).ok()?;
-        cell_string.as_string()
+        self.get_cell_jsvalue(pos).await.ok()?.as_string()
     }
 }
 
