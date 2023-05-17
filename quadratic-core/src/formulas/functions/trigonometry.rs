@@ -120,6 +120,10 @@ fn get_functions() -> Vec<FormulaFunction> {
     all_trig_functions
 }
 
+/// Inverse cotangent function with the correct range.
+///
+/// If we just use `.recip().atan()`, then the range is discontinuous and we
+/// lose `acot(0) = 0`. So this function does it properly.
 fn arc_cotangent(x: f64) -> f64 {
     if x > 0.0 {
         x.recip().atan()
