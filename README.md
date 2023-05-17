@@ -2,7 +2,7 @@
 ![Twitter Follow](https://img.shields.io/twitter/follow/QuadraticHQ)
 ![quadraticlogo4 1](https://user-images.githubusercontent.com/3479421/162037216-2fea1620-2310-4cfa-96fb-31299195e3a9.png)
 
-## ![quardatic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **The Data Science Spreadsheet**
+## ![quardatic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **_The data science spreadsheet_**
 
 Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to pull in your data.
 
