@@ -16,7 +16,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             usages: &["a, b, ..."],
             examples: &["SUM(B2:C6, 15, E1)"],
             doc: "Adds all values.\nReturns `0` if given no values.",
-            eval: util::pure_fn(|args| Ok(Value::Number(util::sum(&args.inner)?))),
+            eval: util::pure_fn(|args| Ok(Value::Number(util::sum(&args.inner)))),
         },
         FormulaFunction {
             name: "SUMIF",
@@ -40,12 +40,9 @@ fn get_functions() -> Vec<FormulaFunction> {
                     [eval_range, criteria, sum_range] => [eval_range, criteria, sum_range],
                     _ => return Err(FormulaErrorMsg::BadArgumentCount.with_span(args.span)),
                 };
-                let values = util::iter_values_meeting_criteria(eval_range, criteria, sum_range)?;
-                Ok(Value::Number(
-                    values
-                        .map(|value| value?.to_number())
-                        .sum::<FormulaResult<f64>>()?,
-                ))
+                let values = util::iter_values_meeting_criteria(eval_range, criteria, sum_range)?
+                    .collect::<FormulaResult<Vec<_>>>()?;
+                Ok(Value::Number(util::sum(&values)))
             }),
         },
         FormulaFunction {
@@ -54,7 +51,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             usages: &["a, b, ..."],
             examples: &["PRODUCT(B2:C6, 0.002, E1)"],
             doc: "Multiplies all values.\nReturns 1 if given no values.",
-            eval: util::pure_fn(|args| Ok(Value::Number(util::product(&args.inner)?))),
+            eval: util::pure_fn(|args| Ok(Value::Number(util::product(&args.inner)))),
         },
     ]
 }

@@ -74,17 +74,19 @@ impl Value {
         }
     }
 
-    /// Returns the number of values.
+    /// Returns the number of numeric values.
     ///
-    /// Empty strings count as zero. Each value in an array counts separately.
-    /// Other values count as 1.
-    pub fn count(&self) -> usize {
+    /// Each value in an array counts separately. Numeric values count as 1. All
+    /// other values count as zero.
+    pub fn count_numeric(&self) -> usize {
         match self {
-            Value::Array(a) => a.iter().flat_map(|row| row.iter().map(|v| v.count())).sum(),
-            Value::String(n) if n.is_empty() => 0,
-            Value::MissingErr => 0,
-
-            Value::String(_) | Value::Number(_) | Value::Bool(_) => 1,
+            Value::String(s) if s.is_empty() => 0,
+            Value::Array(a) => a
+                .iter()
+                .flat_map(|row| row.iter().map(|v| v.count_numeric()))
+                .sum(),
+            _ if self.to_number().is_ok() => 1,
+            _ => 0,
         }
     }
 
@@ -152,26 +154,30 @@ impl Spanned<Value> {
         self.inner.to_bool().map_err(|e| e.with_span(self.span))
     }
 
-    pub fn to_numbers(&self) -> FormulaResult<SmallVec<[f64; 1]>> {
-        self.to_flat_array_of(Self::to_number)
+    /// Returns a flattened array of numbers, ignoring any non-numeric values.
+    pub fn to_numbers(&self) -> SmallVec<[f64; 1]> {
+        self.to_flat_array_of(|v| v.to_number().ok())
     }
-    pub fn to_bools(&self) -> FormulaResult<SmallVec<[bool; 1]>> {
-        self.to_flat_array_of(Self::to_bool)
+    /// Returns a flattened array of booleans, ignoring any non-boolean values.
+    pub fn to_bools(&self) -> SmallVec<[bool; 1]> {
+        self.to_flat_array_of(|v| v.to_bool().ok())
     }
-    pub fn to_strings(&self) -> FormulaResult<SmallVec<[String; 1]>> {
-        self.to_flat_array_of(|x| Ok(x.to_string()))
+    /// Returns a flattened array of strings, ignoring any non-string values.
+    pub fn to_strings(&self) -> SmallVec<[String; 1]> {
+        self.to_flat_array_of(|x| Some(x.to_string()))
     }
-    fn to_flat_array_of<T>(
-        &self,
-        conv: fn(&Self) -> FormulaResult<T>,
-    ) -> FormulaResult<SmallVec<[T; 1]>> {
+    /// Returns a flattened array of values, ignoring any that aren't the right
+    /// type.
+    fn to_flat_array_of<T>(&self, conv: fn(&Self) -> Option<T>) -> SmallVec<[T; 1]> {
         match &self.inner {
-            Value::String(s) if s.is_empty() => Ok(smallvec![]),
+            // On its own, an empty value will coerce to a number or boolean.
+            // But in an array, it won't.
+            Value::String(s) if s.is_empty() => smallvec![],
 
             Value::Array(a) => a
                 .iter()
                 .flatten()
-                .map(|v| {
+                .filter_map(|v| {
                     conv(&Spanned {
                         inner: v.clone(),
                         span: self.span,
@@ -179,11 +185,12 @@ impl Spanned<Value> {
                 })
                 .collect(),
 
-            Value::String(_) | Value::Number(_) | Value::Bool(_) => {
-                conv(self).map(|x| smallvec![x])
-            }
+            Value::String(_) | Value::Number(_) | Value::Bool(_) => match conv(self) {
+                Some(x) => smallvec![x],
+                None => smallvec![],
+            },
 
-            Value::MissingErr => Ok(smallvec![]),
+            Value::MissingErr => smallvec![],
         }
     }
 

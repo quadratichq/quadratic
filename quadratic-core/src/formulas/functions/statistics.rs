@@ -18,7 +18,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             doc: "Returns the arithmetic mean of all values.",
             eval: util::pure_fn(|args| {
                 Ok(Value::Number(
-                    util::sum(&args.inner)? / util::count(&args.inner) as f64,
+                    util::sum(&args.inner) / util::count_numeric(&args.inner) as f64,
                 ))
             }),
         },
@@ -59,8 +59,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             arg_completion: "${1:a, b, ...}",
             usages: &["a, b, ..."],
             examples: &["COUNT(A1:C42, E17)", "SUM(A1:A10) / COUNT(A1:A10)"],
-            doc: "Returns the number of nonempty values.",
-            eval: util::pure_fn(|args| Ok(Value::Number(util::count(&args.inner) as f64))),
+            doc: "Returns the number of numeric values.",
+            eval: util::pure_fn(|args| Ok(Value::Number(util::count_numeric(&args.inner) as f64))),
         },
         FormulaFunction {
             name: "COUNTIF",
@@ -98,9 +98,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             doc: "Returns the smallest value.\nReturns +∞ if given no values.",
             eval: util::pure_fn(|args| {
                 Ok(Value::Number(
-                    util::flat_iter_numbers(&args.inner).try_fold(f64::INFINITY, |ret, next| {
-                        FormulaResult::Ok(f64::min(ret, next?))
-                    })?,
+                    util::flat_iter_numbers(&args.inner).fold(f64::INFINITY, f64::min),
                 ))
             }),
         },
@@ -112,10 +110,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             doc: "Returns the largest value.\nReturns -∞ if given no values.",
             eval: util::pure_fn(|args| {
                 Ok(Value::Number(
-                    util::flat_iter_numbers(&args.inner)
-                        .try_fold(-f64::INFINITY, |ret, next| {
-                            FormulaResult::Ok(f64::max(ret, next?))
-                        })?,
+                    util::flat_iter_numbers(&args.inner).fold(-f64::INFINITY, f64::max),
                 ))
             }),
         },

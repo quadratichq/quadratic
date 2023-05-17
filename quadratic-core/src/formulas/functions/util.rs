@@ -53,33 +53,31 @@ pub fn constant_fn(v: Value) -> FormulaFn {
 
 /// Returns the sum of a list of values, which may be arrays. This is
 /// essentially the `SUM` function.
-pub fn sum(args: &[Spanned<Value>]) -> FormulaResult<f64> {
-    flat_iter_numbers(args).try_fold(0.0, |sum, next| FormulaResult::Ok(sum + next?))
+pub fn sum(args: &[Spanned<Value>]) -> f64 {
+    flat_iter_numbers(args).sum()
 }
 /// Returns the product of a list of values, which may be arrays. This is
 /// essentially the `PRODUCT` function.
-pub fn product(args: &[Spanned<Value>]) -> FormulaResult<f64> {
-    flat_iter_numbers(args).try_fold(1.0, |prod, next| FormulaResult::Ok(prod * next?))
+pub fn product(args: &[Spanned<Value>]) -> f64 {
+    flat_iter_numbers(args).product()
 }
-/// Returns the number of values in a list of values, which may be arrays. This
-/// is essentially the `COUNT` function.
-pub fn count(args: &[Spanned<Value>]) -> usize {
-    args.iter().map(|v| v.inner.count()).sum()
+/// Returns the number of numeric values in a list of values, which may be
+/// arrays. This is essentially the `COUNT` function.
+pub fn count_numeric(args: &[Spanned<Value>]) -> usize {
+    args.iter().map(|v| v.inner.count_numeric()).sum()
 }
 
 /// Iterates over arguments converted to numbers, with any arrays flattened.
-pub fn flat_iter_numbers(args: &[Spanned<Value>]) -> impl '_ + Iterator<Item = FormulaResult<f64>> {
-    args.iter().map(|v| v.to_numbers()).flatten_ok()
+pub fn flat_iter_numbers(args: &[Spanned<Value>]) -> impl '_ + Iterator<Item = f64> {
+    args.iter().flat_map(|v| v.to_numbers())
 }
 /// Iterates over arguments converted to booleans, with any arrays flattened.
-pub fn flat_iter_bools(args: &[Spanned<Value>]) -> impl '_ + Iterator<Item = FormulaResult<bool>> {
-    args.iter().map(|v| v.to_bools()).flatten_ok()
+pub fn flat_iter_bools(args: &[Spanned<Value>]) -> impl '_ + Iterator<Item = bool> {
+    args.iter().flat_map(|v| v.to_bools())
 }
 /// Iterates over arguments converted to strings, with any arrays flattened.
-pub fn flat_iter_strings(
-    args: &[Spanned<Value>],
-) -> impl '_ + Iterator<Item = FormulaResult<String>> {
-    args.iter().map(|v| v.to_strings()).flatten_ok()
+pub fn flat_iter_strings(args: &[Spanned<Value>]) -> impl '_ + Iterator<Item = String> {
+    args.iter().flat_map(|v| v.to_strings())
 }
 
 /// Iterates over values in `output_values_range` corresponding to values in
