@@ -82,7 +82,11 @@ fn wildcard_pattern_to_regex(s: &str) -> Result<Regex, FormulaError> {
     while let Some(c) = chars.next() {
         match c {
             // Escape the next character, if there is one. Otherwise ignore.
-            '~' => regex_string.extend(chars.next()),
+            '~' => {
+                if let Some(c) = chars.next() {
+                    regex_string.push_str(&regex::escape(&c.to_string()))
+                }
+            }
 
             '?' => regex_string.push('.'),
             '*' => regex_string.push_str(".*"),
@@ -142,20 +146,24 @@ impl CompareFn {
 mod tests {
     use super::*;
 
+    fn make_criterion(v: impl Into<Value>) -> Criterion {
+        Criterion::try_from(&Spanned::new(0, 0, v.into())).unwrap()
+    }
+
+    fn matches(c: &Criterion, v: impl Into<Value>) -> bool {
+        c.matches(&v.into())
+    }
+
+    fn criterion_matches(criteria_string: &str, value: impl Into<Value>) -> bool {
+        make_criterion(criteria_string).matches(&value.into())
+    }
+
     #[test]
-    fn test_formula_criteria() {
-        fn make_criterion(v: impl Into<Value>) -> Criterion {
-            Criterion::try_from(&Spanned::new(0, 0, v.into())).unwrap()
-        }
-
-        fn matches(c: &Criterion, v: impl Into<Value>) -> bool {
-            c.matches(&v.into())
-        }
-
+    fn test_formula_comparison_criteria() {
         // Excel is much more strict than we are about types. At the time this
-        // code is being written, we don't have a strong type system in
-        // Quadratic, so I've commented out tests that would fail right now
-        // due to implicit type conversions.
+        // code was written, we don't have a strong type system in Quadratic, so
+        // I've commented out tests that would fail right now due to implicit
+        // type conversions.
 
         // Test number (implicit equality)
         let c = make_criterion(1.0);
@@ -203,10 +211,154 @@ mod tests {
             assert!(matches(&c, false));
         }
 
-        // TODO:
-        // - Test boolean comparison (< > <= >=)
-        // - Test numeric comparison
-        // - Test string comparison
-        // - Test wildcards and escaping
+        // Test boolean comparison against non-boolean values
+        for prefix in ["=", "==", "<>", "!=", "<", ">", "<=", ">="] {
+            for value in ["TRUE", "FALSE"] {
+                let c = make_criterion(format!("{prefix}{value}"));
+                assert!(!matches(&c, "a string"));
+                assert!(!matches(&c, 0.0));
+                assert!(!matches(&c, 1.0));
+            }
+        }
+        // Test comparison between booleans
+        for (criteria_string, matches_true, matches_false) in [
+            ("=TRUE", true, false),
+            ("=FALSE", false, true),
+            ("<>TRUE", false, true),
+            ("<>FALSE", true, false),
+            ("<TRUE", false, true),
+            ("<FALSE", false, false),
+            (">TRUE", false, false),
+            (">FALSE", true, false),
+            ("<=TRUE", true, true),
+            ("<=FALSE", false, true),
+            (">=TRUE", true, false),
+            (">=FALSE", true, true),
+        ] {
+            let c = make_criterion(criteria_string);
+            assert_eq!(matches_true, matches(&c, true));
+            assert_eq!(matches_false, matches(&c, false));
+        }
+
+        // Test numeric comparison
+        let c = make_criterion("<3");
+        assert!(matches(&c, 2.0));
+        assert!(!matches(&c, 3.0));
+        assert!(!matches(&c, 4.0));
+        let c = make_criterion(">=-12");
+        assert!(!matches(&c, -13.0));
+        assert!(matches(&c, -12.0));
+        assert!(matches(&c, 0.0));
+        assert!(matches(&c, 4.0));
+        let c = make_criterion("<>0");
+        assert!(matches(&c, -3.5));
+        assert!(matches(&c, 9.0));
+        assert!(!matches(&c, 0.0));
+        let c = make_criterion("==0");
+        assert!(!matches(&c, -3.5));
+        assert!(!matches(&c, 9.0));
+        assert!(matches(&c, 0.0));
+
+        let strings_in_order = [
+            (0, "andrew"),
+            (1, "David"),
+            (1, "DAVID"),
+            (2, "Jim"),
+            (3, "peter"),
+        ];
+        for (i1, s1) in strings_in_order {
+            println!("Testing string {s1:?}");
+
+            let c = make_criterion(format!("<{s1}"));
+            for (i2, s2) in strings_in_order {
+                assert_eq!(i2 < i1, matches(&c, s2));
+            }
+
+            let c = make_criterion(format!(">{s1}"));
+            for (i2, s2) in strings_in_order {
+                assert_eq!(i2 > i1, matches(&c, s2));
+            }
+
+            let c = make_criterion(format!("<={s1}"));
+            for (i2, s2) in strings_in_order {
+                assert_eq!(i2 <= i1, matches(&c, s2));
+            }
+
+            let c = make_criterion(format!(">={s1}"));
+            for (i2, s2) in strings_in_order {
+                assert_eq!(i2 >= i1, matches(&c, s2));
+            }
+        }
+    }
+
+    #[test]
+    fn test_formula_wildcards() {
+        fn test_wildcard(
+            criteria_string: &str,
+            inputs_to_match: &[&str],
+            inputs_to_not_match: &[&str],
+        ) {
+            println!("Testing criteria string {criteria_string:?}");
+            let c1 = make_criterion(criteria_string);
+            let c2 = make_criterion(format!("={criteria_string}"));
+            let c3 = make_criterion(format!("=={criteria_string}"));
+            let c4 = make_criterion(format!("<>{criteria_string}"));
+            let c5 = make_criterion(format!("!={criteria_string}"));
+            for &input in inputs_to_match {
+                println!("... against input {input:?} (should match)");
+                assert!(matches(&c1, input));
+                assert!(matches(&c2, input));
+                assert!(matches(&c3, input));
+                assert!(!matches(&c4, input));
+                assert!(!matches(&c5, input));
+            }
+            for &input in inputs_to_not_match {
+                println!("... against input {input:?} (should reject)");
+                assert!(!matches(&c1, input));
+                assert!(!matches(&c2, input));
+                assert!(!matches(&c3, input));
+                assert!(matches(&c4, input));
+                assert!(matches(&c5, input));
+            }
+        }
+
+        // Test `?` on its own
+        test_wildcard(
+            "DEFEN?E",
+            &["defence", "defense"],
+            &["defenestrate", "defene"],
+        );
+
+        // Test `*` on its own
+        test_wildcard("*ATE", &["ate", "inflate", "late"], &["wait"]);
+
+        // Test `?` and `*` together
+        test_wildcard(
+            "A*B?C",
+            &["ab~c", "abbc", "aqbqqb_c", "aqbqqb_c"],
+            &["ab~~c", "abc", "ab~bc"],
+        );
+
+        // Test literal `~` with no escaping
+        test_wildcard("a~b", &["a~b"], &["a_b", "ab"]);
+
+        // Test escaping of `?` and `*`
+        test_wildcard("A~?B", &["A?B"], &["A~?B", "A~qB", "AqB"]);
+        test_wildcard("A~*B", &["A*B"], &["A~*B", "A~qB", "AqB"]);
+        test_wildcard("HELLO~?", &["Hello?"], &["Hello", "Hello!", "Hello~?"]);
+
+        // Test escaping of `~` (a single extra trailing `~` is ignored)
+        test_wildcard("~*", &["*"], &["~*"]);
+        test_wildcard("~*~", &["*"], &["~*"]);
+        test_wildcard("~*~~", &["*~"], &["*", "*~~"]);
+        test_wildcard("~*~~~", &["*~"], &["*", "*~~"]);
+        test_wildcard("~*~~~~", &["*~~"], &["*~", "*~~~"]);
+        test_wildcard("~*~~~~~", &["*~~"], &["*~", "*~~~"]);
+        test_wildcard("~*~~~~~~", &["*~~~"], &["*~~", "*~~~~"]);
+        test_wildcard(
+            "HELLO ~~?",
+            &["hello ~Q", "hello ~R", "hello ~?"],
+            &["hello qq"],
+        );
     }
 }
