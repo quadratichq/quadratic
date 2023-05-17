@@ -154,10 +154,6 @@ mod tests {
         c.matches(&v.into())
     }
 
-    fn criterion_matches(criteria_string: &str, value: impl Into<Value>) -> bool {
-        make_criterion(criteria_string).matches(&value.into())
-    }
-
     #[test]
     fn test_formula_comparison_criteria() {
         // Excel is much more strict than we are about types. At the time this

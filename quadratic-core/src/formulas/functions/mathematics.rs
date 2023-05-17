@@ -58,3 +58,35 @@ fn get_functions() -> Vec<FormulaFunction> {
         },
     ]
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::formulas::tests::*;
+
+    #[test]
+    fn test_sum() {
+        let g = &mut NoGrid;
+        assert_eq!("0", eval_to_string(g, "SUM(\"\", \"abc\")"));
+        assert_eq!("12", eval_to_string(g, "SUM(\"\", \"abc\", 12)"));
+        assert_eq!("27", eval_to_string(g, "SUM(0..5, \"\", \"abc\", 12)"));
+    }
+
+    #[test]
+    fn test_sumif() {
+        let g = &mut NoGrid;
+        assert_eq!("15", eval_to_string(g, "SUMIF(0..10, \"<=5\")"));
+        assert_eq!("63", eval_to_string(g, "SUMIF(0..10, \"<=5\", 2^0..10)"));
+    }
+
+    #[test]
+    fn test_product() {
+        let g = &mut NoGrid;
+        assert_eq!("1", eval_to_string(g, "PRODUCT(\"\", \"abc\")"));
+        assert_eq!("12", eval_to_string(g, "PRODUCT(\"\", \"abc\", 12)"));
+        assert_eq!(
+            "1440",
+            eval_to_string(g, "PRODUCT(1..5, \"\", \"abc\", 12)")
+        );
+        assert_eq!("0", eval_to_string(g, "PRODUCT(0..5, \"\", \"abc\", 12)"));
+    }
+}

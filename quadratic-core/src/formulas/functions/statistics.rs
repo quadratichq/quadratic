@@ -142,5 +142,33 @@ mod tests {
             "7.5".to_string(),
             form.eval_blocking(&mut g, pos![nAn1]).unwrap().to_string(),
         );
+
+        assert_eq!(
+            "17",
+            eval_to_string(&mut g, "AVERAGE(\"\", \"a\", 12, -3.5, 42.5)"),
+        );
+        assert_eq!("5.5", eval_to_string(&mut g, "AVERAGE(1..10)"));
+        assert_eq!("5", eval_to_string(&mut g, "AVERAGE(0..10)"));
+    }
+
+    #[test]
+    fn test_count() {
+        let g = &mut NoGrid;
+        assert_eq!("0", eval_to_string(g, "COUNT()"));
+        assert_eq!("3", eval_to_string(g, "COUNT(\"\", \"a\", 12, -3.5, 42.5)"));
+        assert_eq!("10", eval_to_string(g, "COUNT(1..10)"));
+        assert_eq!("11", eval_to_string(g, "COUNT(0..10)"));
+    }
+
+    #[test]
+    fn test_countif() {
+        let g = &mut NoGrid;
+        assert_eq!("6", eval_to_string(g, "COUNTIF(0..10, \"<=5\")"));
+    }
+
+    #[test]
+    fn test_averageif() {
+        let g = &mut NoGrid;
+        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(0..10, \"<=5\")"));
     }
 }
