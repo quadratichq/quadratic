@@ -1,14 +1,5 @@
 use super::*;
 
-/// Outputs a string containing a sentence linking to the documentation for
-/// user-specification of criteria used in `SUMIF`, `COUNTIF`, and `AVERAGEIF`.
-/// The string begins with a space.
-///
-/// This is a macro instead of a constant so that it can be used with `concat!`.
-macro_rules! see_docs_for_more_about_criteria {
-    () => { " See [the documentation](https://docs.quadratichq.com/formulas) for more details about how criteria work in formulas." };
-}
-
 /// Constructs a pure formula function that maps a pure function over arguments
 /// that may be arrays.
 ///
@@ -78,38 +69,4 @@ pub fn flat_iter_bools(args: &[Spanned<Value>]) -> impl '_ + Iterator<Item = boo
 /// Iterates over arguments converted to strings, with any arrays flattened.
 pub fn flat_iter_strings(args: &[Spanned<Value>]) -> impl '_ + Iterator<Item = String> {
     args.iter().flat_map(|v| v.to_strings())
-}
-
-/// Iterates over values in `output_values_range` corresponding to values in
-/// `eval_range` that meet `criteria`.
-pub fn iter_values_meeting_criteria<'a>(
-    eval_range: &'a Spanned<Value>,
-    criteria: &'a Spanned<Value>,
-    output_values_range: &'a Spanned<Value>,
-) -> FormulaResult<impl 'a + Iterator<Item = FormulaResult<Spanned<Value>>>> {
-    use super::super::criteria::Criterion;
-
-    let criteria: Criterion = Criterion::try_from(criteria)?;
-
-    let eval_array_size = eval_range.inner.array_size().unwrap_or((1, 1));
-    if let Some(sum_array_size) = output_values_range.inner.array_size() {
-        if eval_array_size != sum_array_size {
-            return Err(FormulaErrorMsg::ArraySizeMismatch {
-                expected: eval_array_size,
-                got: sum_array_size,
-            }
-            .with_span(output_values_range.span));
-        }
-    }
-    let (rows, cols) = eval_array_size;
-
-    Ok(itertools::iproduct!(0..cols, 0..rows)
-        .map(move |(col, row)| {
-            if criteria.matches(&eval_range.get_array_value(row, col)?.inner) {
-                output_values_range.get_array_value(row, col).map(Some)
-            } else {
-                Ok(None)
-            }
-        })
-        .filter_map_ok(|optional_value| optional_value))
 }
