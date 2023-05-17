@@ -106,6 +106,7 @@ mod tests {
     #[test]
     fn test_formula_sqrt() {
         let g = &mut NoGrid;
+        crate::util::assert_f64_approx_eq(3.0_f64.sqrt(), &eval_to_string(g, "SQRT(3)"));
         assert_eq!("4", eval_to_string(g, "SQRT(16)"));
         assert_eq!(
             FormulaErrorMsg::BadArgumentCount,
