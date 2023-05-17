@@ -1,13 +1,16 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import { Send } from '@mui/icons-material';
+import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, FormControl, IconButton, InputAdornment, OutlinedInput } from '@mui/material';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { colors } from '../../../theme/colors';
+import { TooltipHint } from '../../components/TooltipHint';
 import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
+import ConditionalWrapper from '../../components/ConditionalWrapper';
+import './AITab.css';
 
 interface Props {
   editorMode: EditorInteractionState['mode'];
@@ -47,10 +50,17 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
   const [prompt, setPrompt] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const controller = useRef<AbortController>();
   const { user } = useAuth0();
+
+  const abortPrompt = () => {
+    controller.current?.abort();
+    setLoading(false);
+  };
 
   const submitPrompt = async () => {
     if (loading) return;
+    controller.current = new AbortController();
     setLoading(true);
     const token = await apiClientSingleton.getAuth();
     const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
@@ -60,15 +70,17 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
     };
     setMessages(updatedMessages);
     setPrompt('');
-    try {
-      await fetch(`${apiClientSingleton.getAPIURL()}/ai/chat/stream`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request_body),
-      }).then((response) => {
+
+    await fetch(`${apiClientSingleton.getAPIURL()}/ai/chat/stream`, {
+      method: 'POST',
+      signal: controller.current.signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request_body),
+    })
+      .then((response) => {
         if (response.status !== 200) {
           if (response.status === 429) {
             setMessages((old) => [
@@ -129,10 +141,16 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
           }
           return reader.read().then(processResult);
         });
+      })
+      .catch((err) => {
+        // not sure what would cause this to happen
+        if (err.name !== 'AbortError') {
+          console.log(err);
+          return;
+        }
       });
-    } catch (err: any) {
-      // not sure what would cause this to happen
-    }
+    // eslint-disable-next-line no-unreachable
+
     setLoading(false);
   };
 
@@ -148,7 +166,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
           right: '1rem',
           padding: '1rem 0 .5rem 1rem',
           background: 'linear-gradient(0deg, rgba(255,255,255,1) 85%, rgba(255,255,255,0) 100%)',
-          zIndex: 1000000,
+          zIndex: 100,
         }}
       >
         <FormControl fullWidth>
@@ -159,7 +177,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
               setPrompt(event.target.value);
             }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && prompt.length > 0) {
                 submitPrompt();
               }
             }}
@@ -167,9 +185,28 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
             endAdornment={
               <InputAdornment position="end">
                 {loading && <CircularProgress size="1.25rem" sx={{ mx: '1rem' }} />}
-                <IconButton size="small" color="primary" onClick={submitPrompt} edge="end" disabled={loading}>
-                  <Send />
-                </IconButton>
+                {loading ? (
+                  <TooltipHint title="Stop generating">
+                    <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
+                      <Stop />
+                    </IconButton>
+                  </TooltipHint>
+                ) : (
+                  <ConditionalWrapper
+                    condition={prompt.length !== 0}
+                    Wrapper={({ children }) => <TooltipHint title="Send">{children as React.ReactElement}</TooltipHint>}
+                  >
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={submitPrompt}
+                      edge="end"
+                      {...(prompt.length === 0 ? { disabled: true } : {})}
+                    >
+                      <Send />
+                    </IconButton>
+                  </ConditionalWrapper>
+                )}
               </InputAdornment>
             }
             size="small"
@@ -184,7 +221,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
         suppressContentEditableWarning={true}
         spellCheck={false}
         onKeyDown={(e) => {
-          if (((e.metaKey || e.ctrlKey) && e.code === 'KeyA') || ((e.metaKey || e.ctrlKey) && e.code === 'KeyC')) {
+          if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
             // Allow a few commands, but nothing else
           } else {
             e.preventDefault();
@@ -203,7 +240,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
         data-gramm_editor="false"
         data-enable-grammarly="false"
       >
-        {display_message.length === 0 && (
+        {display_message.length === 0 ? (
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '1rem' }}>
               <div style={{ fontSize: '1.5rem', fontWeight: 500, marginBottom: '1rem' }}>
@@ -214,55 +251,56 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
               </div>
             </div>
           </div>
+        ) : (
+          <div id="ai-streaming-output">
+            {display_message.map((message, index) => (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
+                  marginTop: '1rem',
+                  paddingTop: index !== 0 ? '1rem' : '0',
+                  paddingLeft: '1rem',
+                  paddingRight: '1rem',
+                }}
+              >
+                {message.role === 'user' ? (
+                  <Avatar
+                    variant="rounded"
+                    sx={{
+                      bgcolor: colors.quadraticSecondary,
+                      width: 24,
+                      height: 24,
+                      fontSize: '0.8rem',
+                      marginBottom: '0.5rem',
+                    }}
+                    alt={user?.name}
+                    src={user?.picture}
+                  ></Avatar>
+                ) : (
+                  <Avatar
+                    variant="rounded"
+                    sx={{
+                      bgcolor: 'white',
+                      width: 24,
+                      height: 24,
+                      fontSize: '0.8rem',
+                      marginBottom: '0.5rem',
+                    }}
+                    alt="AI Assistant"
+                  >
+                    <AI sx={{ color: colors.languageAI }}></AI>
+                  </Avatar>
+                )}
+                <span>{CodeBlockParser({ input: message.content })}</span>
+              </div>
+            ))}
+            <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
+          </div>
         )}
-        {display_message.map((message, index) => {
-          return (
-            <div
-              key={index}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
-                marginTop: '1rem',
-                paddingTop: index !== 0 ? '1rem' : '0',
-                paddingLeft: '1rem',
-                paddingRight: '1rem',
-              }}
-            >
-              {message.role === 'user' ? (
-                <Avatar
-                  variant="rounded"
-                  sx={{
-                    bgcolor: colors.quadraticSecondary,
-                    width: 24,
-                    height: 24,
-                    fontSize: '0.8rem',
-                    marginBottom: '0.5rem',
-                  }}
-                  alt={user?.name}
-                  src={user?.picture}
-                ></Avatar>
-              ) : (
-                <Avatar
-                  variant="rounded"
-                  sx={{
-                    bgcolor: 'white',
-                    width: 24,
-                    height: 24,
-                    fontSize: '0.8rem',
-                    marginBottom: '0.5rem',
-                  }}
-                  alt="AI Assistant"
-                >
-                  <AI sx={{ color: colors.languageAI }}></AI>
-                </Avatar>
-              )}
-              <span>{CodeBlockParser({ input: message.content })}</span>
-            </div>
-          );
-        })}
-        {}
       </div>
     </>
   );

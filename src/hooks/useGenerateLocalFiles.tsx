@@ -7,12 +7,14 @@ import { validateGridFile } from '../schemas/validateGridFile';
 import { debugShowFileIO } from '../debugFlags';
 import { v4 as uuid } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
-import { downloadFile } from './downloadFile';
+import { downloadFile } from '../helpers/downloadFile';
 import { SheetController } from '../grid/controller/sheetController';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { DEFAULT_FILE_NAME, EXAMPLE_FILES } from '../constants/app';
-
+import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
+import apiClientSingleton from '../api-client/apiClientSingleton';
+import mixpanel from 'mixpanel-browser';
+import { focusGrid } from '../helpers/focusGrid';
 const INDEX = 'file-list';
 
 export interface LocalFile {
@@ -39,7 +41,11 @@ export interface LocalFiles {
   save: () => Promise<void>;
 }
 
-export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
+/**
+ * This hook should ONLY be run once. The values it returns get stuck in the
+ * `useLocalFiles()` provider for as a react context for use throughout the app
+ */
+export const useGenerateLocalFiles = (sheetController: SheetController): LocalFiles => {
   const [hasInitialPageLoadError, setHasInitialPageLoadError] = useState<boolean>(false);
   const [fileList, setFileList] = useState<LocalFile[]>([]);
   const [currentFileContents, setCurrentFileContents] = useState<GridFile | null>(null);
@@ -63,6 +69,10 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
         document.title = `${filename} - Quadratic`;
         log(`persisted current file: ${filename} (${id})`);
       });
+
+      // If we are running with Quadratic in the cloud
+      // Backup the file to the cloud
+      if (process.env.REACT_APP_QUADRATIC_API_URL) apiClientSingleton.backupFile(id, currentFileContents);
     } else {
       document.title = 'Quadratic';
     }
@@ -74,6 +84,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       sheetController.clear();
       sheetController.sheet.load_file(grid);
       sheetController.app?.rebuild();
+      sheetController.app?.reset();
+      focusGrid();
       const searchParams = new URLSearchParams(window.location.search);
       // If `file` is in there from an intial page load, remove it
       if (searchParams.get('file')) {
@@ -130,13 +142,14 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Load a remote file over the network
   const loadFileFromUrl = useCallback(
     async (url: string, filename?: string): Promise<boolean> => {
+      mixpanel.track('[Files].loadFileFromUrl', { url, filename });
       try {
         const res = await fetch(url);
         const file = await res.text();
 
         // If there's no specified name, derive it's name from the URL
         if (!filename) {
-          filename = massageFilename(new URL(url).pathname.split('/').pop());
+          filename = decodeURIComponent(massageFilename(new URL(url).pathname.split('/').pop()));
         }
 
         return importQuadraticFile(file, filename);
@@ -166,6 +179,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       borders: [],
       cell_dependency: '',
     };
+
+    mixpanel.track('[Files].newFile');
 
     const created = Date.now();
     const newFile: GridFile = {
@@ -198,6 +213,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Given a file ID, download it
   const downloadFileFromMemory = useCallback(
     async (id: string): Promise<void> => {
+      mixpanel.track('[Files].downloadFileFromMemory', { id });
       try {
         if (currentFileContents && currentFileContents.id === id) {
           downloadCurrentFile();
@@ -225,6 +241,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
   // Rename the current file open in the app
   const renameCurrentFile = useCallback(
     async (newFilename: string): Promise<void> => {
+      mixpanel.track('[Files].renameCurrentFile', { newFilename });
       if (!currentFileContents) throw new Error('Expected `currentFileContents` to rename the current file.');
       setCurrentFileContents({ ...currentFileContents, filename: newFilename });
       setFileList((oldFileList) =>
@@ -252,6 +269,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (event) => {
+          mixpanel.track('[Files].loadFileFromDisk', { fileName: file.name });
           const contents = event.target?.result;
           if (contents) {
             // Regardless of the name in the file's meta, use it's name on disk
@@ -277,6 +295,8 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
       // @ts-expect-error
       if (file?.filename) filename = file.filename;
 
+      mixpanel.track('[Files].loadFileFromMemory', { filename });
+
       return importQuadraticFile(JSON.stringify(file), filename, false);
     },
     [importQuadraticFile]
@@ -284,6 +304,7 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
 
   // Delete a file (cannot delete a file that's currently active)
   const deleteFile = useCallback(async (id: string) => {
+    mixpanel.track('[Files].deleteFile', { id });
     setFileList((oldFileList) => oldFileList.filter((entry) => entry.id !== id));
     await localforage.removeItem(id);
     log(`deleted file: ${id}`);
@@ -339,8 +360,16 @@ export const useLocalFiles = (sheetController: SheetController): LocalFiles => {
     }
 
     // Get URL params we need at initialize time
-    const file = getURLParameter('file');
     const local = getURLParameter('local');
+    let file = getURLParameter('file');
+    // We get the `file` query param from the URL, but if a user had it present
+    // _before_ they logged in, we lose it through the Auth0 process, so we
+    // store it in sessionStorage and use it (then delete it) if its present
+    const fileParamBeforeLogin = sessionStorage.getItem(FILE_PARAM_KEY);
+    if (fileParamBeforeLogin) {
+      file = fileParamBeforeLogin;
+      sessionStorage.removeItem(FILE_PARAM_KEY);
+    }
 
     // Migrate files from old version of the app (one-time, if necessary thing)
     // Note: eventually this code can be removed

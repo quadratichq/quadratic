@@ -8,25 +8,25 @@ import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import CommandPalette from './menus/CommandPalette';
 import GoTo from './menus/GoTo';
-import { useContext, useEffect } from 'react';
+import { useEffect } from 'react';
 import CellTypeMenu from './menus/CellTypeMenu';
 import FileMenu from './menus/FileMenu';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
 import InitialPageLoadError from './components/InitialPageLoadError';
-import { CSVImportHelpMessage } from './overlays/CSVImportHelpMessage';
-import { SnackBar, useSnackbar } from './components/SnackBar';
 import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../grid/controller/sheetController';
-import { LocalFilesContext } from './QuadraticUIContext';
+import ReadOnlyDialog from './components/ReadOnlyDialog';
+import { IS_READONLY_MODE } from '../constants/app';
+import { useLocalFiles } from './contexts/LocalFiles';
 
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
-  const { hasInitialPageLoadError } = useContext(LocalFilesContext);
+  const { hasInitialPageLoadError } = useLocalFiles();
 
   useEffect(() => {
     sheetController.setApp(app);
@@ -42,8 +42,6 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
     app.resize();
   }, [presentationMode, app]);
 
-  const snackBar = useSnackbar();
-
   return (
     <div
       style={{
@@ -56,11 +54,9 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
       {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
-      {editorInteractionState.showCommandPalette && (
-        <CommandPalette app={app} sheetController={sheetController} snackBar={snackBar} />
-      )}
+      {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
-      {editorInteractionState.showFileMenu && <FileMenu app={app} />}
+      {editorInteractionState.showFileMenu && <FileMenu />}
 
       <div
         style={{
@@ -72,17 +68,16 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
         }}
       >
         <FileUploadWrapper sheetController={sheetController} app={app}>
-          <QuadraticGrid sheetController={sheetController} app={app} snackBar={snackBar} />
+          <QuadraticGrid sheetController={sheetController} app={app} />
         </FileUploadWrapper>
         <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
       </div>
 
-      <CSVImportHelpMessage></CSVImportHelpMessage>
-
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
       {presentationMode && <PresentationModeHint />}
-      <SnackBar {...snackBar} />
       {hasInitialPageLoadError && <InitialPageLoadError />}
+
+      {IS_READONLY_MODE && <ReadOnlyDialog />}
     </div>
   );
 }

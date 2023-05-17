@@ -5,9 +5,11 @@ import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../he
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { Pointer } from '../pointer/Pointer';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { LocalFiles } from '../../../storage/useLocalFiles';
+import { LocalFiles } from '../../../ui/contexts/LocalFiles';
+import { PixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardViewport(options: {
+  app: PixiApp;
   event: KeyboardEvent;
   sheet: Sheet;
   viewport?: Viewport;
@@ -37,12 +39,13 @@ export function keyboardViewport(options: {
     setEditorInteractionState,
     presentationMode,
     setPresentationMode,
+    app,
   } = options;
 
   if (!viewport || event.altKey) return false;
 
   // Should come before other shortcuts (opens file menu)
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyO') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'o') {
     // Toggle visibility but only under certain conditions
     if (!editorInteractionState.showFileMenu) {
       setEditorInteractionState({
@@ -63,7 +66,7 @@ export function keyboardViewport(options: {
   // If file menu is open, don't accept any other shortcuts
   if (editorInteractionState.showFileMenu) return false;
 
-  if ((event.metaKey || event.ctrlKey) && (event.code === 'KeyP' || event.code === 'KeyK' || event.code === 'Slash')) {
+  if ((event.metaKey || event.ctrlKey) && (event.key === 'p' || event.key === 'k' || event.key === '/')) {
     setEditorInteractionState({
       ...editorInteractionState,
       showCellTypeMenu: false,
@@ -73,32 +76,35 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'Backslash') {
+  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
     clearAllFormatting();
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'Period') {
+  if ((event.metaKey || event.ctrlKey) && event.key === '.') {
     setPresentationMode(!presentationMode);
     return true;
   }
 
-  if (event.code === 'Escape') {
-    if (presentationMode) setPresentationMode(false);
-    return true;
+  if (event.key === 'Escape') {
+    if (presentationMode) {
+      setPresentationMode(false);
+      return true;
+    }
+    return app.pointer.handleEscape();
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyB') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
     changeBold(!(format.bold === true));
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyI') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
     changeItalic(!(format.italic === true));
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && (event.code === 'KeyG' || event.code === 'KeyJ')) {
+  if ((event.metaKey || event.ctrlKey) && (event.key === 'g' || event.key === 'j')) {
     setEditorInteractionState({
       ...editorInteractionState,
       showCellTypeMenu: false,
@@ -108,40 +114,34 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'Equal') {
+  if ((event.metaKey || event.ctrlKey) && event.key === '=') {
     zoomIn(viewport);
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'Minus') {
+  if ((event.metaKey || event.ctrlKey) && event.key === '-') {
     zoomOut(viewport);
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'Digit8') {
+  if ((event.metaKey || event.ctrlKey) && event.key === '8') {
     zoomToSelection(interactionState, sheet, viewport);
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'Digit9') {
+  if ((event.metaKey || event.ctrlKey) && event.key === '9') {
     zoomToFit(sheet, viewport);
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'Digit0') {
+  if ((event.metaKey || event.ctrlKey) && event.key === '0') {
     zoomTo100(viewport);
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.code === 'KeyS') {
+  if ((event.metaKey || event.ctrlKey) && event.key === 's') {
     // don't do anything on Command+S
     return true;
-  }
-
-  if (event.code === 'Escape') {
-    // if (pointer.handleEscape()) {
-    //   return true;
-    // }
   }
 
   return false;

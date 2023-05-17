@@ -5,6 +5,8 @@ import { captureException, setUser } from '@sentry/react';
 import { QuadraticApp } from './QuadraticApp';
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import { useEffect } from 'react';
+import { debug } from '../debugFlags';
+import { FILE_PARAM_KEY } from '../constants/app';
 
 export const QuadraticAuth = () => {
   const {
@@ -47,6 +49,16 @@ export const QuadraticAuth = () => {
     }
 
     if (!Auth0IsAuthenticated) {
+      // If we're not authenticated but there is a `file` query param,
+      // store it for later so it doesn't get lost. In `useLocalFiles` we'll
+      // grab it and apply it
+      const file = new URLSearchParams(window.location.search).get('file');
+      if (file) {
+        sessionStorage.setItem(FILE_PARAM_KEY, file);
+        if (debug)
+          console.log('[QuadraticAuth] user is not logged in, saving `file` query param for after login: ', file);
+      }
+
       loginWithRedirect({ screen_hint: 'signup' });
       return <QuadraticLoading></QuadraticLoading>;
     }

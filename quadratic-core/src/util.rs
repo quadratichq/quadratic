@@ -1,6 +1,91 @@
 use itertools::Itertools;
 use std::fmt;
 
+/// Recursively evaluates an expression, mimicking JavaScript syntax. Assumes
+/// that `?` can throw an error of type `JsValue`.
+macro_rules! jsexpr {
+    // Recursive base cases
+    ($value:ident) => { $value };
+    ($lit:literal) => { ::wasm_bindgen::JsValue::from($lit) };
+
+    // Rust referencing and dereferencing
+    (& $($rest:tt)*) => { &jsexpr!($($rest)*) };
+    (* $($rest:tt)*) => { *jsexpr!($($rest)*) };
+
+    // Parentheses
+    (($($inner:tt)*) $($rest:tt)*) => {{
+        let inner = jsexpr!($($inner)*)
+        jsexpr!(inner $($rest)*)
+    }};
+
+    // Await
+    ($recv:ident.await $($rest:tt)*) => {{
+        let result = ::wasm_bindgen_futures::JsFuture::from(::js_sys::Promise::from($recv)).await?;
+        jsexpr!(result $($rest)*)
+    }};
+
+    // Dot syntax
+    ($recv:ident.$property_name:ident $($rest:tt)*) => {{
+        let property_name = ::wasm_bindgen::JsValue::from(stringify!($property_name));
+        jsexpr!($recv[property_name] $($rest)*)
+    }};
+
+    // Function call
+    ($func:ident($($args_tok:tt)*) $($rest:tt)*) => {{
+        let func = ::js_sys::Function::from($func);
+        let result = jsexpr!(
+            @ call_internal (::wasm_bindgen::JsValue::UNDEFINED)
+            func($($args_tok)*)
+        );
+        jsexpr!(result $($rest)*)
+    }};
+
+    // Method call
+    ($recv:ident[$($method_name_tok:tt)*]($($args_tok:tt)*) $($rest:tt)*) => {{
+        let property = jsexpr!($recv[$($method_name_tok)*]);
+        let method = ::js_sys::Function::from(property);
+        let result = jsexpr!(
+            @ call_internal ($recv)
+            method($($args_tok)*)
+        );
+        jsexpr!(result $($rest)*)
+    }};
+
+    // Property access
+    ($recv:ident[$($property_name_tok:tt)*] $($rest:tt)*) => {{
+        let property_name = jsexpr!($($property_name_tok)*);
+        let result = ::js_sys::Reflect::get(&$recv, &property_name)?;
+        jsexpr!(result $($rest)*)
+    }};
+
+    // Function call with a specific number of arguments
+    (@ call_internal ($recv:expr) $func:ident($arg1:tt $(, $($rest:tt)*)?)) => {{
+        let bound_function = $func.bind1(&$recv, &jsexpr!($arg1));
+        jsexpr!(@ call_internal ($recv) bound_function($($($rest)*)?))
+    }};
+    (@ call_internal ($recv:expr) $func:ident()) => {{
+        $func.call0(&$recv)?
+    }};
+}
+
+/// Converts a column name to a number.
+#[allow(unused)]
+macro_rules! col {
+    [$col_name:ident] => {
+        $crate::util::column_from_name(stringify!($col_name)).expect("invalid column name")
+    };
+}
+
+/// Parses a cell position in A1 notation.
+#[allow(unused)]
+macro_rules! pos {
+    [$s:ident] => {
+        $crate::formulas::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)
+            .expect("invalid cell reference")
+            .resolve_from(crate::Pos::ORIGIN)
+    };
+}
+
 /// Returns a column's name from its number.
 pub fn column_name(mut n: i64) -> String {
     let negative = n < 0;
@@ -56,13 +141,13 @@ pub fn column_from_name(mut s: &str) -> Option<i64> {
 /// conjuction.
 pub fn join_with_conjunction(conjunction: &str, items: &[impl fmt::Display]) -> String {
     match items {
-        [] => format!("(none)"),
-        [a] => format!("{}", a),
-        [a, b] => format!("{} {} {}", a, conjunction, b),
+        [] => "(none)".to_string(),
+        [a] => format!("{a}"),
+        [a, b] => format!("{a} {conjunction} {b}"),
         [all_but_last @ .., z] => {
-            let mut ret = all_but_last.iter().map(|x| format!("{}, ", x)).join("");
+            let mut ret = all_but_last.iter().map(|x| format!("{x}, ")).join("");
             ret.push_str(conjunction);
-            ret.push_str(&format!(" {}", z));
+            ret.push_str(&format!(" {z}"));
             ret
         }
     }
@@ -206,5 +291,20 @@ mod tests {
         // Test fun stuff
         assert_eq!(Some(3719092809668), column_from_name("QUADRATIC"));
         assert_eq!(Some(1700658608758053877), column_from_name("QUICKBROWNFOX"));
+    }
+
+    #[test]
+    fn test_a1_notation_macros() {
+        assert_eq!(col![A], 0);
+        assert_eq!(col![C], 2);
+        assert_eq!(col![nC], -3);
+
+        assert_eq!(pos![A0], crate::Pos { x: 0, y: 0 });
+        assert_eq!(pos![A1], crate::Pos { x: 0, y: 1 });
+
+        assert_eq!(pos![C6], crate::Pos { x: 2, y: 6 });
+        assert_eq!(pos![Cn6], crate::Pos { x: 2, y: -6 });
+        assert_eq!(pos![nC6], crate::Pos { x: -3, y: 6 });
+        assert_eq!(pos![nCn6], crate::Pos { x: -3, y: -6 });
     }
 }

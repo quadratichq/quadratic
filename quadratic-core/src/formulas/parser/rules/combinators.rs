@@ -2,12 +2,19 @@ use super::*;
 
 /// Rule that matches the same tokens but applies some function to the
 /// result.
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct TokenMapper<R, F> {
     /// Inner syntax rule.
     pub inner: R,
     /// Function to apply to the result.
     pub f: F,
+}
+impl<R: fmt::Debug, F> fmt::Debug for TokenMapper<R, F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TokenMapper")
+            .field("inner", &self.inner)
+            .finish()
+    }
 }
 impl<R: fmt::Display, F> fmt::Display for TokenMapper<R, F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -115,16 +122,14 @@ impl<R: Copy + SyntaxRule> SyntaxRule for List<R> {
         p.parse(self.start)?;
         loop {
             // End the list or consume an item.
-            if let Some(item) = parse_one_of!(p, [self.inner.map(Some), self.end.map(|_| None)])? {
-                items.push(item); // There is an item.
-            } else {
-                break; // End of list; empty list, or trailing separator.
+            match parse_one_of!(p, [self.inner.map(Some), self.end.map(|_| None)])? {
+                Some(item) => items.push(item), // There is an item.
+                None => break,                  // End of list; empty list, or trailing separator.
             }
             // End the list or consume a separator.
-            if let Some(_) = parse_one_of!(p, [self.sep.map(Some), self.end.map(|_| None)])? {
-                continue; // There is a separator.
-            } else {
-                break; // End of list, no trailing separator.
+            match parse_one_of!(p, [self.sep.map(Some), self.end.map(|_| None)])? {
+                Some(_) => continue, // There is a separator.
+                None => break,       // End of list, no trailing separator.
             }
         }
 
@@ -136,6 +141,7 @@ impl<R: Copy + SyntaxRule> SyntaxRule for List<R> {
 
 /// Rule that matches no tokens; always succeeds (useful as a fallback when
 /// matching multiple possible rules).
+#[derive(Debug, Copy, Clone)]
 pub struct Epsilon;
 impl_display!(for Epsilon, "nothing");
 impl SyntaxRule for Epsilon {
@@ -150,6 +156,7 @@ impl SyntaxRule for Epsilon {
 }
 
 /// Rule that matches end of file and consumes no tokens.
+#[derive(Debug, Copy, Clone)]
 pub struct EndOfFile;
 impl_display!(for EndOfFile, "end of file");
 impl SyntaxRule for EndOfFile {

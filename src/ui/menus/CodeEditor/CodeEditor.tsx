@@ -20,13 +20,15 @@ import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
-import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
+import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
+import { provideCompletionItems, provideHover } from 'quadratic-core';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
 import { AI, Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
+import mixpanel from 'mixpanel-browser';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -94,6 +96,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
   //   // monaco.editor.setModelLanguage(editor.getModel(), 'formula');
   // }, [editorMode, cell]);
 
+  useEffect(() => {
+    if (showCodeEditor) mixpanel.track('[CodeEditor].opened', { type: editorMode });
+  }, [showCodeEditor, editorMode]);
+
   // When selected cell changes in LocalDB update the UI here.
   useEffect(() => {
     if (cell) {
@@ -125,12 +131,15 @@ export const CodeEditor = (props: CodeEditorProps) => {
     setSelectedCell(undefined);
     setEvalResult(undefined);
     focusGrid();
+    mixpanel.track('[CodeEditor].closed', { type: editorMode });
   };
 
   useEffect(() => {
-    // focus editor on show editor change
-    editorRef.current?.focus();
-    editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
+    if (editorInteractionState.showCodeEditor) {
+      // focus editor on show editor change
+      editorRef.current?.focus();
+      editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
+    }
   }, [editorInteractionState.showCodeEditor]);
 
   // When cell changes
@@ -201,6 +210,16 @@ export const CodeEditor = (props: CodeEditorProps) => {
     });
 
     const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);
+
+    mixpanel.track('[CodeEditor].cellRun', {
+      type: editorMode,
+      code: editorContent,
+      result_success: updated_cell?.evaluation_result?.success,
+      result_stdout: updated_cell?.evaluation_result?.std_out,
+      result_stderr: updated_cell?.evaluation_result?.std_err,
+      result_output_value: updated_cell?.evaluation_result?.output_value,
+    });
+
     setEvalResult(updated_cell?.evaluation_result);
     setIsRunningComputation(false);
   };
@@ -218,8 +237,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
     // Only register language once
 
     monaco.languages.register({ id: 'formula' });
-    monaco.languages.setMonarchTokensProvider('formula', FormulaLanguageConfig);
-    monaco.languages.registerCompletionItemProvider('formula', FormulaCompletionProvider);
+    monaco.languages.setLanguageConfiguration('formula', FormulaLanguageConfig);
+    monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
+    monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
+    monaco.languages.registerHoverProvider('formula', { provideHover });
 
     setDidMount(true);
   };
@@ -232,7 +253,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     }
 
     // Command + Enter
-    if ((event.metaKey || event.ctrlKey) && event.code === 'Enter') {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault();
       event.stopPropagation();
       saveAndRunCell();

@@ -1,4 +1,5 @@
-import { useContext, useEffect } from 'react';
+import { useEffect } from 'react';
+import * as Sentry from '@sentry/browser';
 import {
   AddCircleOutline,
   Close,
@@ -21,7 +22,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { useRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 import FileMenuTabs from './FileMenuTabs';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -35,19 +36,12 @@ import {
   LayoutColLeftWrapper,
   LayoutColRightWrapper,
 } from './FileMenuStyles';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
-import { LocalFilesContext } from '../../QuadraticUIContext';
+import { useLocalFiles } from '../../contexts/LocalFiles';
+import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 
-interface FileMenuProps {
-  app: PixiApp;
-}
-
-export type onCloseFn = (arg?: { reset: boolean }) => void;
-
-export function FileMenu(props: FileMenuProps) {
-  const { app } = props;
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+export function FileMenu() {
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const {
     currentFileId,
     currentFilename,
@@ -56,24 +50,21 @@ export function FileMenu(props: FileMenuProps) {
     fileList,
     loadFileFromMemory,
     createNewFile,
-  } = useContext(LocalFilesContext);
+  } = useLocalFiles();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const onClose: onCloseFn = ({ reset } = { reset: false }) => {
-    if (reset) {
-      app.reset();
-    }
-
-    setEditorInteractionState({
-      ...editorInteractionState,
+  const onClose = () => {
+    setEditorInteractionState((prevState) => ({
+      ...prevState,
       showFileMenu: false,
-    });
+    }));
   };
   const theme = useTheme();
   const styles = getStyles(theme);
 
   const onNewFile = async () => {
     await createNewFile();
-    onClose({ reset: true });
+    onClose();
   };
 
   // If there's an active file, set focus back to the grid when this unmounts
@@ -90,7 +81,7 @@ export function FileMenu(props: FileMenuProps) {
       open={true}
       onKeyDown={(e) => {
         // Only close if there's an active sheet
-        if (e.code === 'Escape' && currentFileId) {
+        if (e.key === 'Escape' && currentFileId) {
           onClose();
         }
       }}
@@ -130,8 +121,19 @@ export function FileMenu(props: FileMenuProps) {
                     <div key={i}>
                       <ListItem
                         onClick={() => {
-                          loadFileFromMemory(id);
-                          onClose({ reset: true });
+                          loadFileFromMemory(id).then((loaded) => {
+                            if (loaded) {
+                              onClose();
+                            } else {
+                              addGlobalSnackbar('Failed to load file.');
+                              Sentry.captureEvent({
+                                message: 'User file became corrupted',
+                                level: Sentry.Severity.Critical,
+                                // TODO send along the corrupted file
+                                // extra: { file: ... }
+                              });
+                            }
+                          });
                         }}
                         secondaryAction={
                           <div style={styles.iconBtns}>

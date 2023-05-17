@@ -23,6 +23,9 @@ export const CellInput = (props: CellInputProps) => {
 
   const [value, setValue] = useState<string | undefined>(undefined);
 
+  // used to save interaction state when input starts
+  const [saveInteractionState, setSaveInteractionState] = useState<GridInteractionState>();
+
   const cellLocation = useRef(interactionState.cursorPosition);
   const textInput = useRef<HTMLInputElement>(null);
   // Effect for sizing the input width to the length of the value
@@ -82,6 +85,11 @@ export const CellInput = (props: CellInputProps) => {
     return null;
   }
 
+  // copy interaction state when input starts
+  if (!saveInteractionState) {
+    setSaveInteractionState(interactionState);
+  }
+
   // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
   let closed = false;
 
@@ -91,6 +99,7 @@ export const CellInput = (props: CellInputProps) => {
     closed = true;
 
     if (!cancel) {
+      sheetController.start_transaction(saveInteractionState);
       // Update Cell and dependent cells
       if (value === '') {
         // delete cell if input is empty, and wasn't empty before
@@ -102,6 +111,7 @@ export const CellInput = (props: CellInputProps) => {
             y1: cellLocation.current.y,
             sheetController,
             app,
+            create_transaction: false,
           });
       } else {
         // create cell with value at input location
@@ -116,8 +126,10 @@ export const CellInput = (props: CellInputProps) => {
           ],
           sheetController,
           app,
+          create_transaction: false,
         });
       }
+      sheetController.end_transaction();
       app.quadrants.quadrantChanged({ cells: [cellLocation.current] });
     }
 
@@ -136,6 +148,8 @@ export const CellInput = (props: CellInputProps) => {
       inputInitialValue: '',
     });
     setValue(undefined);
+
+    setSaveInteractionState(undefined);
 
     // Set focus back to Grid
     focusGrid();
@@ -201,9 +215,9 @@ export const CellInput = (props: CellInputProps) => {
           closeInput({ x: 0, y: -1 });
         } else if (event.key === 'ArrowDown') {
           closeInput({ x: 0, y: 1 });
-        } else if ((event.metaKey || event.ctrlKey) && event.code === 'KeyP') {
+        } else if ((event.metaKey || event.ctrlKey) && event.key === 'p') {
           event.preventDefault();
-        } else if (event.code === 'Space') {
+        } else if (event.key === ' ') {
           // Don't propagate so panning mode doesn't get triggered
           event.stopPropagation();
         }
