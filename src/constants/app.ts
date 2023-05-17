@@ -14,6 +14,16 @@ export const EXAMPLE_FILES = [
     file: 'python.grid',
     description: 'Advanced examples of how to use Python in the app.',
   },
+  {
+    name: 'NPM downloads (example)',
+    file: 'npm_downloads.grid',
+    description: 'Example of pulling download stats from the NPM API.',
+  },
+  {
+    name: 'Mercury bank transactions (example)',
+    file: 'mercury_bank.grid',
+    description: 'Example of pulling data from the Mercury API.',
+  },
   // Leaving this one out, as it has nothing useful for users
   // { name: 'Airports large (example)', file: 'airports_large.grid', description: 'Lorem ipsum santa dolor.' },
   {
