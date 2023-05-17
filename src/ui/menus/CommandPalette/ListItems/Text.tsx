@@ -42,14 +42,14 @@ const ListItems = [
     },
   },
   {
-    label: 'Text: Align Left',
+    label: 'Text: Align left',
     Component: (props: any) => {
       const { changeAlignment } = useFormatCells(props.sheetController, props.app);
       return <CommandPaletteListItem {...props} icon={<FormatAlignLeft />} action={() => changeAlignment('left')} />;
     },
   },
   {
-    label: 'Text: Align Center',
+    label: 'Text: Align center',
     Component: (props: any) => {
       const { changeAlignment } = useFormatCells(props.sheetController, props.app);
       return (
@@ -58,7 +58,7 @@ const ListItems = [
     },
   },
   {
-    label: 'Text: Align Right',
+    label: 'Text: Align right',
     Component: (props: any) => {
       const { changeAlignment } = useFormatCells(props.sheetController, props.app);
       return <CommandPaletteListItem {...props} icon={<FormatAlignRight />} action={() => changeAlignment('right')} />;
