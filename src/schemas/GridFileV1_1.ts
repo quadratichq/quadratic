@@ -109,6 +109,7 @@ export const GridFileSchemaV1_1 = z.object({
   version: z.literal('1.1'),
 });
 export type GridFileV1_1 = z.infer<typeof GridFileSchemaV1_1>;
+export type ArrayOutputBase = z.infer<typeof ArrayOutputBaseSchema>;
 
 /**
  * Given a v1 file, update it to a v1_1 file

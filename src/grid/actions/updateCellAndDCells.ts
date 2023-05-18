@@ -1,4 +1,4 @@
-import { ArrayOutput, Cell } from '../../schemas';
+import { Cell, ArrayOutputBase } from '../../schemas';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
@@ -127,7 +127,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
             for (const row of result.array_output) {
               // [[], []]
               let x_offset = 0;
-              for (const cell of row as ArrayOutput) {
+              for (const cell of row as ArrayOutputBase) {
                 if (cell !== undefined)
                   array_cells_to_output.push({
                     x: ref_current_cell[0] + x_offset,
@@ -143,7 +143,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
           } else {
             // 1d array
             let y_offset = 0;
-            for (const cell of result.array_output) {
+            for (const cell of result.array_output as ArrayOutputBase) {
               array_cells_to_output.push({
                 x: ref_current_cell[0],
                 y: ref_current_cell[1] + y_offset,
