@@ -385,3 +385,45 @@ test('SheetController - test deleted array cells update dependent cells', async 
     "TypeError on line 1: unsupported operand type(s) for +: 'NoneType' and 'int'"
   );
 });
+
+test('SheetController - test formula dependencies', async () => {
+  const sc = new SheetController();
+  GetCellsDBSetSheet(sc.sheet);
+
+  const cell_0_0_dependent = {
+    x: 0,
+    y: 0,
+    value: '',
+    type: 'FORMULA',
+    formula_code: 'A1+A2',
+  } as Cell;
+
+  await updateCellAndDCells({ starting_cells: [cell_0_0_dependent], sheetController: sc, pyodide });
+
+  let after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 0);
+  expect(after_code_run_cells[0]?.value).toBe('0');
+
+  const cell_0_1 = {
+    x: 0,
+    y: 1,
+    value: '10',
+    type: 'TEXT',
+  } as Cell;
+
+  await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc, pyodide });
+
+  after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 0);
+  expect(after_code_run_cells[0]?.value).toBe('10');
+
+  const cell_0_2 = {
+    x: 0,
+    y: 2,
+    value: '20',
+    type: 'TEXT',
+  } as Cell;
+
+  await updateCellAndDCells({ starting_cells: [cell_0_2], sheetController: sc, pyodide });
+
+  after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 0);
+  expect(after_code_run_cells[0]?.value).toBe('30');
+});
