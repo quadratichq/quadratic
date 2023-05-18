@@ -48,8 +48,10 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let mut sum = 0.0;
                 let mut total = 0;
                 for value in util::iter_values_meeting_criteria(eval_range, criteria, sum_range)? {
-                    sum += value?.to_number()?;
-                    total += 1;
+                    if let Some(n) = value?.inner.nonblank_to_number() {
+                        sum += n;
+                        total += 1;
+                    }
                 }
                 Ok(Value::Number(sum / total as f64))
             }),
@@ -85,6 +87,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 // want to propogate errors.
                 Ok(Value::Number(
                     util::iter_values_meeting_criteria(range, criteria, range)?
+                        .filter_ok(|v| !v.inner.is_blank())
                         .map_ok(|_| 1.0)
                         .sum::<FormulaResult<f64>>()?,
                 ))
@@ -174,19 +177,29 @@ mod tests {
 
     #[test]
     fn test_countif() {
-        let g = &mut NoGrid;
+        let g = &mut FnGrid(|_| None);
         assert_eq!("6", eval_to_string(g, "COUNTIF(0..10, \"<=5\")"));
+        assert_eq!("6", eval_to_string(g, "COUNTIF(0..10, \"<=5\")"));
+
+        // Test that blank cells are ignored
+        let g = &mut FnGrid(|pos| (pos.y >= 0).then(|| pos.y.to_string()));
+        assert_eq!("6", eval_to_string(g, "COUNTIF(Bn5:B10, \"<=5\")"))
     }
 
     #[test]
     fn test_countblank() {
         let g = &mut FnGrid(|_| None);
-        assert_eq!("3", eval_to_string(g, "COUNTBLANK(\"\", \"a\", 0, 1)"));
+        assert_eq!("1", eval_to_string(g, "COUNTBLANK(\"\", \"a\", 0, 1)"));
     }
 
     #[test]
     fn test_averageif() {
         let g = &mut NoGrid;
         assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(0..10, \"<=5\")"));
+        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(0..10, \"<=5\")"));
+
+        // Test that blank cells are ignored
+        let g = &mut FnGrid(|pos| (pos.y >= 0).then(|| pos.y.to_string()));
+        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(Bn5:B10, \"<=5\")"))
     }
 }

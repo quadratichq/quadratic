@@ -79,14 +79,16 @@ impl Value {
     /// Each value in an array counts separately. Numeric values count as 1. All
     /// other values count as zero.
     pub fn count_numeric(&self) -> usize {
-        match self {
-            Value::String(s) if s.is_empty() => 0,
-            Value::Array(a) => a
-                .iter()
+        if self.is_blank() {
+            return 0;
+        } else if let Value::Array(a) = self {
+            a.iter()
                 .flat_map(|row| row.iter().map(|v| v.count_numeric()))
-                .sum(),
-            _ if self.to_number().is_ok() => 1,
-            _ => 0,
+                .sum()
+        } else if self.to_number().is_ok() {
+            1
+        } else {
+            0
         }
     }
 
@@ -148,6 +150,21 @@ impl Value {
             Value::Number(_) | Value::Bool(_) => false,
             Value::Array(a) => a.iter().flatten().all(|v| v.is_blank()),
             Value::MissingErr => false,
+        }
+    }
+
+    pub fn nonblank_to_number(&self) -> Option<f64> {
+        if self.is_blank() {
+            None
+        } else {
+            self.to_number().ok()
+        }
+    }
+    pub fn nonblank_to_bool(&self) -> Option<bool> {
+        if self.is_blank() {
+            None
+        } else {
+            self.to_bool().ok()
         }
     }
 }

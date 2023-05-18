@@ -44,7 +44,7 @@ impl TryFrom<&Spanned<Value>> for Criterion {
                 rhs: value.inner.clone(),
             }),
             Value::Array(_) | Value::MissingErr => Err(FormulaErrorMsg::Expected {
-                expected: "comparable value (string, number, etc.)".into(),
+                expected: "criteria or comparable value (string, number, etc.)".into(),
                 got: Some(value.inner.type_name().into()),
             }
             .with_span(value.span)),
