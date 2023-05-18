@@ -91,6 +91,23 @@ fn get_functions() -> Vec<FormulaFunction> {
             }),
         },
         FormulaFunction {
+            name: "COUNTBLANK",
+            arg_completion: "${1:range}",
+            usages: &["range"],
+            examples: &["COUNTBLANK(A1:A10)"],
+            doc: "Counts how many values in the range are empty. Cells with \
+                  formula or code output of an empty string are also counted.",
+            eval: util::pure_fn(|args| {
+                Ok(Value::Number(
+                    // TODO: don't need to convert to string to check if the
+                    // value is blank (use `Value::is_blank()`)
+                    util::flat_iter_strings(&args.inner)
+                        .filter(|s| s.is_empty())
+                        .count() as f64,
+                ))
+            }),
+        },
+        FormulaFunction {
             name: "MIN",
             arg_completion: "${1:a, b, ...}",
             usages: &["a, b, ..."],
@@ -159,6 +176,12 @@ mod tests {
     fn test_countif() {
         let g = &mut NoGrid;
         assert_eq!("6", eval_to_string(g, "COUNTIF(0..10, \"<=5\")"));
+    }
+
+    #[test]
+    fn test_countblank() {
+        let g = &mut FnGrid(|_| None);
+        assert_eq!("3", eval_to_string(g, "COUNTBLANK(\"\", \"a\", 0, 1)"));
     }
 
     #[test]

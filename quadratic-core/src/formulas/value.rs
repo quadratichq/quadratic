@@ -141,6 +141,15 @@ impl Value {
             }),
         }
     }
+
+    pub fn is_blank(&self) -> bool {
+        match self {
+            Value::String(s) => s.is_empty(),
+            Value::Number(_) | Value::Bool(_) => false,
+            Value::Array(a) => a.iter().flatten().all(|v| v.is_blank()),
+            Value::MissingErr => false,
+        }
+    }
 }
 
 impl Spanned<Value> {
@@ -156,11 +165,15 @@ impl Spanned<Value> {
 
     /// Returns a flattened array of numbers, ignoring any non-numeric values.
     pub fn to_numbers(&self) -> SmallVec<[f64; 1]> {
-        self.to_flat_array_of(|v| v.to_number().ok())
+        // On its own, an empty value will coerce to a number or boolean. But in
+        // an array, it won't.
+        self.to_flat_array_of(|v| v.to_number().ok().filter(|_| !v.inner.is_blank()))
     }
     /// Returns a flattened array of booleans, ignoring any non-boolean values.
     pub fn to_bools(&self) -> SmallVec<[bool; 1]> {
-        self.to_flat_array_of(|v| v.to_bool().ok())
+        // On its own, an empty value will coerce to a number or boolean. But in
+        // an array, it won't.
+        self.to_flat_array_of(|v| v.to_bool().ok().filter(|_| !v.inner.is_blank()))
     }
     /// Returns a flattened array of strings, ignoring any non-string values.
     pub fn to_strings(&self) -> SmallVec<[String; 1]> {
@@ -170,10 +183,6 @@ impl Spanned<Value> {
     /// type.
     fn to_flat_array_of<T>(&self, conv: fn(&Self) -> Option<T>) -> SmallVec<[T; 1]> {
         match &self.inner {
-            // On its own, an empty value will coerce to a number or boolean.
-            // But in an array, it won't.
-            Value::String(s) if s.is_empty() => smallvec![],
-
             Value::Array(a) => a
                 .iter()
                 .flatten()
