@@ -119,13 +119,11 @@ export const updateCellAndDCells = async (args: ArgsType) => {
         }
 
         // if array output
-        // result.array_output = [[], []]
         if (result.array_output !== undefined && result.array_output.length > 0) {
           if (Array.isArray(result.array_output[0])) {
             // 2d array
             let y_offset = 0;
             for (const row of result.array_output) {
-              // [[], []]
               let x_offset = 0;
               for (const cell of row as ArrayOutputBase) {
                 if (cell !== undefined)
