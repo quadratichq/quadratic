@@ -5,7 +5,7 @@ import { GridFileData, GridFile, GridFileSchema, GridFiles } from '../schemas';
 import { GridFileV1 } from '../schemas/GridFileV1';
 import { validateGridFile } from '../schemas/validateGridFile';
 import { debugShowFileIO } from '../debugFlags';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuid, validate } from 'uuid';
 import { getURLParameter } from '../helpers/getURL';
 import { downloadFile } from '../helpers/downloadFile';
 import { SheetController } from '../grid/controller/sheetController';
@@ -15,7 +15,6 @@ import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/a
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import mixpanel from 'mixpanel-browser';
 import { focusGrid } from '../helpers/focusGrid';
-const INDEX = 'file-list';
 
 export interface LocalFile {
   filename: string;
@@ -52,13 +51,6 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   const { sheet } = sheetController;
-
-  // Persist `fileList` to localStorage when it changes
-  useEffect(() => {
-    localforage.setItem(INDEX, fileList).then((newFileList) => {
-      log(`persisted file list: ${newFileList.length} file${newFileList.length > 1 ? 's' : ''}`);
-    });
-  }, [fileList]);
 
   // Persist `currentFileContents` to localStorage and update the tab title
   // when it changes
@@ -354,13 +346,32 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     // (User clearing cache will look like first time visitor)
     let isFirstVisit = true;
 
-    // See if we have saved files and load them into memory
-    const savedFileList: LocalFile[] | null = await localforage.getItem(INDEX);
-    if (savedFileList) {
+    // When the app first loads, read all files in memory and create a cached
+    // list of those files for display (if there are any).
+    //
+    // Anytime we make an update to a file, we update 1) the file, and
+    // 2) the cached representation of the file
+    const savedFileUUIDs: string[] = await localforage.keys().then((keys) => keys.filter(validate));
+    if (savedFileUUIDs && savedFileUUIDs.length) {
       isFirstVisit = false;
+
+      const savedFiles: GridFile[] = await Promise.all(
+        savedFileUUIDs.map((uuid) => {
+          return localforage.getItem(uuid) as Promise<GridFile>;
+        })
+      );
+      const savedFileList: LocalFile[] = savedFiles.map((file) => {
+        const { filename, id, modified } = file;
+        return { filename, id, modified };
+      });
+
       setFileList(savedFileList);
       log(`loaded saved file list (${savedFileList.length} files)`);
     }
+    // We used to manually keep track of the file list. Now we derive it from
+    // indexDB each time the app loads and store it in memory.
+    // So we clean up the old item here, eventually this can be removed.
+    localforage.removeItem('file-list');
 
     // Get URL params we need at initialize time
     const local = getURLParameter('local');
