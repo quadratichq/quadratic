@@ -84,6 +84,7 @@ mod tests {
             eval_to_string(g, "PRODUCT(1..5, \"\", \"abc\", 12)")
         );
         assert_eq!("0", eval_to_string(g, "PRODUCT(0..5, \"\", \"abc\", 12)"));
+    }
 
     #[test]
     fn test_formula_abs() {
