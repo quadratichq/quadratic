@@ -18,7 +18,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             doc: "Returns the arithmetic mean of all values.",
             eval: util::pure_fn(|args| {
                 Ok(Value::Number(
-                    util::sum(&args.inner)? / util::count(&args.inner) as f64,
+                    util::sum(&args.inner) / util::count_numeric(&args.inner) as f64,
                 ))
             }),
         },
@@ -27,8 +27,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             arg_completion: "${1:a, b, ...}",
             usages: &["a, b, ..."],
             examples: &["COUNT(A1:C42, E17)", "SUM(A1:A10) / COUNT(A1:A10)"],
-            doc: "Returns the number of nonempty values.",
-            eval: util::pure_fn(|args| Ok(Value::Number(util::count(&args.inner) as f64))),
+            doc: "Returns the number of numeric values.",
+            eval: util::pure_fn(|args| Ok(Value::Number(util::count_numeric(&args.inner) as f64))),
         },
         FormulaFunction {
             name: "MIN",
@@ -38,9 +38,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             doc: "Returns the smallest value.\nReturns +∞ if given no values.",
             eval: util::pure_fn(|args| {
                 Ok(Value::Number(
-                    util::flat_iter_numbers(&args.inner).try_fold(f64::INFINITY, |ret, next| {
-                        FormulaResult::Ok(f64::min(ret, next?))
-                    })?,
+                    util::flat_iter_numbers(&args.inner).fold(f64::INFINITY, f64::min),
                 ))
             }),
         },
@@ -52,10 +50,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             doc: "Returns the largest value.\nReturns -∞ if given no values.",
             eval: util::pure_fn(|args| {
                 Ok(Value::Number(
-                    util::flat_iter_numbers(&args.inner)
-                        .try_fold(-f64::INFINITY, |ret, next| {
-                            FormulaResult::Ok(f64::max(ret, next?))
-                        })?,
+                    util::flat_iter_numbers(&args.inner).fold(-f64::INFINITY, f64::max),
                 ))
             }),
         },
@@ -82,5 +77,21 @@ mod tests {
             "7.5".to_string(),
             form.eval_blocking(&mut g, pos![nAn1]).unwrap().to_string(),
         );
+
+        assert_eq!(
+            "17",
+            eval_to_string(&mut g, "AVERAGE(\"\", \"a\", 12, -3.5, 42.5)"),
+        );
+        assert_eq!("5.5", eval_to_string(&mut g, "AVERAGE(1..10)"));
+        assert_eq!("5", eval_to_string(&mut g, "AVERAGE(0..10)"));
+    }
+
+    #[test]
+    fn test_count() {
+        let g = &mut NoGrid;
+        assert_eq!("0", eval_to_string(g, "COUNT()"));
+        assert_eq!("3", eval_to_string(g, "COUNT(\"\", \"a\", 12, -3.5, 42.5)"));
+        assert_eq!("10", eval_to_string(g, "COUNT(1..10)"));
+        assert_eq!("11", eval_to_string(g, "COUNT(0..10)"));
     }
 }
