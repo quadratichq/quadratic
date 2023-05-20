@@ -33,6 +33,7 @@ export class PointerDown {
     // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
     if (this.app.settings.interactionState.showInput) {
       setTimeout(() => this.pointerDown(world, event), 0);
+      event.stopPropagation();
       return;
     }
 
