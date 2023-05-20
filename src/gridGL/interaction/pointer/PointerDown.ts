@@ -18,6 +18,9 @@ export class PointerDown {
   private pointerMoved = false;
   private doubleClickTimeout?: number;
 
+  // flag that ensures that if pointerUp triggers during setTimeout, pointerUp is still called (see below)
+  private afterShowInput?: boolean;
+
   constructor(app: PixiApp) {
     this.app = app;
   }
@@ -32,8 +35,11 @@ export class PointerDown {
 
     // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
     if (this.app.settings.interactionState.showInput) {
-      setTimeout(() => this.pointerDown(world, event), 0);
-      event.stopPropagation();
+      this.afterShowInput = true;
+      setTimeout(() => {
+        this.pointerDown(world, event);
+        this.afterShowInput = false;
+      }, 0);
       return;
     }
 
@@ -243,6 +249,11 @@ export class PointerDown {
   }
 
   pointerUp(): void {
+    if (this.afterShowInput) {
+      window.setTimeout(() => this.pointerUp(), 0);
+      this.afterShowInput = false;
+      return;
+    }
     if (this.active) {
       if (!this.pointerMoved) {
         this.doubleClickTimeout = window.setTimeout(() => (this.doubleClickTimeout = undefined), DOUBLE_CLICK_TIME);

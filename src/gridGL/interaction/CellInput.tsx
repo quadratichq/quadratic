@@ -231,18 +231,16 @@ export const CellInput = (props: CellInputProps) => {
         left: 0,
         minWidth: cell_offsets.width,
         outline: 'none',
-        // outlineColor: format?.fillColor ?? 'transparent',
         color: format?.textColor ?? 'black',
         padding: 0,
         margin: 0,
         lineHeight: '1', //`${cell_offsets.height}px`,
         verticalAlign: 'text-top',
-        background: 'transparent', //format?.fillColor ?? 'transparent',
+        background: 'transparent',
         transformOrigin: '0 0',
         transform,
         fontFamily,
         fontSize: '14px',
-        // border: `2px solid ${convertTintToString(colors.cursorCell)}`,
       }}
       onChange={handleChange}
       onFocus={handleFocus}
