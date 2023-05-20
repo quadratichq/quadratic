@@ -51,7 +51,7 @@ export class Cursor extends Graphics {
     // showInput changes after cellEdit is removed from DOM
     const cellEdit = document.querySelector('#cell-edit') as HTMLDivElement;
     if (showInput && cellEdit) {
-      if (cellEdit.offsetWidth !== width) {
+      if (cellEdit.offsetWidth > width) {
         width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
       }
     } else {
