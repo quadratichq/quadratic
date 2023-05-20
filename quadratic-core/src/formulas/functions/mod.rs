@@ -3,13 +3,15 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 
+#[macro_use]
+mod util;
 mod logic;
 mod lookup;
 mod mathematics;
 mod operators;
 mod statistics;
 mod string;
-mod util;
+mod trigonometry;
 
 use super::{Ctx, FormulaErrorMsg, FormulaResult, Span, Spanned, Value};
 
@@ -20,6 +22,7 @@ pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
 pub const CATEGORIES: &[FormulaFunctionCategory] = &[
     operators::CATEGORY,
     mathematics::CATEGORY,
+    trigonometry::CATEGORY,
     statistics::CATEGORY,
     logic::CATEGORY,
     string::CATEGORY,

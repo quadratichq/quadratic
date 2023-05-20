@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Point, Rectangle } from 'pixi.js';
 import { IS_READONLY_MODE } from '../../../../constants/app';
 import { PixiApp } from '../../../pixiApp/PixiApp';
@@ -8,21 +7,17 @@ import { intersects } from '../../../helpers/intersects';
 import { Coordinate } from '../../../types/size';
 import { expandDown, expandLeft, expandRight, expandUp, shrinkHorizontal, shrinkVertical } from './autoComplete';
 
-type State =
-  | 'expandDown'
-  | 'expandUp'
-  | 'expandRight'
-  | 'expandLeft'
-  | 'shrinkVertical'
-  | 'shrinkHorizontal'
-  | undefined;
+export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
+export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefined;
 
 export class PointerAutoComplete {
   private app: PixiApp;
-  private state: State;
   private selection?: Rectangle;
   private endCell?: Coordinate;
-  private boxCells?: Rectangle;
+  private stateHorizontal: StateHorizontal;
+  private stateVertical: StateVertical;
+  private toVertical?: number;
+  private toHorizontal?: number;
   private screenSelection?: Rectangle;
   cursor?: string;
   active = false;
@@ -75,9 +70,11 @@ export class PointerAutoComplete {
 
   private reset(): void {
     if (this.active) {
-      this.state = undefined;
+      this.stateHorizontal = undefined;
+      this.stateVertical = undefined;
       this.endCell = undefined;
-      this.boxCells = undefined;
+      this.toHorizontal = undefined;
+      this.toVertical = undefined;
       this.selection = undefined;
       this.screenSelection = undefined;
       this.active = false;
@@ -112,117 +109,185 @@ export class PointerAutoComplete {
       if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
       } else if (this.active) {
         const { column, row } = this.app.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
-        let boxCells: Rectangle | undefined;
         const { selection, screenSelection } = this;
         if (!selection || !screenSelection) {
           throw new Error('Expected selection and screenSelection to be defined');
         }
-        const insideVertical = column >= selection.left && column <= selection.right;
-        const insideHorizontal = row >= selection.top && row <= selection.bottom;
-        let outsideVertical = false,
-          outsideHorizontal = false;
-        if (!insideVertical && !insideHorizontal) {
-          const aboveVertical = Math.abs(world.y - screenSelection.top);
-          const belowVertical = Math.abs(world.y - screenSelection.bottom);
-          const vertical = Math.min(aboveVertical, belowVertical);
-          const leftHorizontal = Math.abs(world.x - screenSelection.left);
-          const rightHorizontal = Math.abs(world.x - screenSelection.right);
-          const horizontal = Math.min(leftHorizontal, rightHorizontal);
-          if (vertical > horizontal) {
-            outsideVertical = true;
-          } else {
-            outsideHorizontal = true;
-          }
+        this.endCell = { x: column, y: row };
+        const rectangle = new Rectangle(selection.x, selection.y, selection.width + 1, selection.height + 1);
+        const deleteRectangles = [];
+        if (row === selection.top && selection.top === selection.bottom) {
+          this.toVertical = undefined;
+          this.stateVertical = undefined;
+        } else if (row >= selection.top && row < selection.bottom) {
+          this.stateVertical = 'shrink';
+          this.toVertical = row;
+          rectangle.height = row - selection.top + 1;
+          deleteRectangles.push(new Rectangle(selection.x, row + 1, selection.width + 1, selection.bottom - row));
+        } else if (row < selection.top) {
+          this.stateVertical = 'expandUp';
+          this.toVertical = row;
+          rectangle.y = row;
+          rectangle.height = selection.bottom - row + 1;
+        } else if (row > selection.bottom) {
+          this.stateVertical = 'expandDown';
+          this.toVertical = row;
+          rectangle.height = row - selection.y + 1;
+        } else {
+          this.stateVertical = undefined;
         }
 
-        // handle reducing the selection
-        if (insideVertical && insideHorizontal) {
-          const distanceFromRight = Math.abs(world.x - screenSelection.right);
-          const distanceFromTop = Math.abs(world.y - screenSelection.bottom);
-          if (selection.width > 0 && (selection.height === 0 || distanceFromRight > distanceFromTop)) {
-            this.state = 'shrinkHorizontal';
-            boxCells = new Rectangle(selection.x, selection.y, column - selection.left + 1, selection.height + 1);
+        if (column === selection.left && selection.left === selection.right) {
+          this.toHorizontal = undefined;
+          this.stateHorizontal = undefined;
+        } else if (column >= selection.left && column < selection.right) {
+          this.stateHorizontal = 'shrink';
+          this.toHorizontal = column;
+          rectangle.width = column - selection.left + 1;
+          if (this.stateVertical === 'shrink') {
+            deleteRectangles.push(
+              new Rectangle(column + 1, selection.y, selection.right - column, row - selection.y + 1)
+            );
           } else {
-            this.state = 'shrinkVertical';
-            boxCells = new Rectangle(selection.x, selection.y, selection.width + 1, row - selection.top + 1);
+            deleteRectangles.push(
+              new Rectangle(column + 1, selection.y, selection.right - column, selection.height + 1)
+            );
           }
-          this.endCell = { x: column + 1, y: row };
-        } else if ((insideVertical && !insideHorizontal) || outsideVertical) {
-          if (row > selection.bottom) {
-            this.state = 'expandDown';
-            boxCells = new Rectangle(selection.x, selection.y, selection.width + 1, row - selection.y + 1);
-            this.boxCells = boxCells;
-          } else if (row < selection.top) {
-            this.state = 'expandUp';
-            boxCells = new Rectangle(selection.x, row, selection.width + 1, selection.bottom - row + 1);
-            this.boxCells = boxCells;
-          }
-        } else if (insideHorizontal || outsideHorizontal) {
-          if (column > selection.right) {
-            this.state = 'expandRight';
-            boxCells = new Rectangle(selection.x, selection.y, column - selection.x + 1, selection.height + 1);
-            this.boxCells = boxCells;
-          } else if (column < selection.left) {
-            this.state = 'expandLeft';
-            boxCells = new Rectangle(column, selection.y, selection.x - column + 1, selection.height + 1);
-            this.boxCells = boxCells;
-          }
+        } else if (column < selection.left) {
+          this.stateHorizontal = 'expandLeft';
+          this.toHorizontal = column;
+          rectangle.x = column;
+          rectangle.width = selection.right - column + 1;
+        } else if (column > selection.right) {
+          this.stateHorizontal = 'expandRight';
+          this.toHorizontal = column;
+          rectangle.width = column - selection.x + 1;
+        } else {
+          this.stateHorizontal = undefined;
         }
-
-        if (boxCells && this.state) {
-          // Determine whether to show the drag as being a delete action
-          let isDelete = false;
-          if (this.state.includes('shrink') && this.selection && this.endCell) {
-            // Vertical delete
-            if (
-              this.state.includes('shrinkVertical') &&
-              this.selection.height > 0 &&
-              this.endCell.y < this.selection.y + this.selection.height
-            ) {
-              isDelete = true;
-            }
-            // Horizontal delete
-            if (
-              this.state.includes('shrinkHorizontal') &&
-              this.selection.width > 0 &&
-              this.endCell.x <= this.selection.x + this.selection.width
-            ) {
-              isDelete = true;
-            }
-          }
-          this.app.boxCells.populate(boxCells, isDelete);
-        }
+        this.app.boxCells.populate({
+          gridRectangle: rectangle,
+          horizontalDelete: this.stateHorizontal === 'shrink',
+          verticalDelete: this.stateVertical === 'shrink',
+          deleteRectangles,
+        });
         return true;
       }
       return false;
     }
   }
 
+  private setSelection(): void {
+    const { selection } = this;
+    const { setInteractionState, interactionState } = this.app.settings;
+    if (!selection || !setInteractionState) return;
+
+    const top = this.toVertical !== undefined && this.stateVertical === 'expandUp' ? this.toVertical : selection.top;
+    const bottom =
+      this.toVertical !== undefined && this.stateVertical && ['expandDown', 'shrink'].includes(this.stateVertical)
+        ? this.toVertical
+        : selection.bottom;
+    const left =
+      this.toHorizontal !== undefined && this.stateHorizontal === 'expandLeft' ? this.toHorizontal : selection.left;
+    const right =
+      this.toHorizontal !== undefined &&
+      this.stateHorizontal &&
+      ['expandRight', 'shrink'].includes(this.stateHorizontal)
+        ? this.toHorizontal
+        : selection.right;
+
+    const width = bottom - top;
+    const height = right - left;
+
+    if (width === 1 && height === 1) {
+      setInteractionState({
+        ...interactionState,
+        showMultiCursor: false,
+      });
+    } else {
+      setInteractionState({
+        ...interactionState,
+        showMultiCursor: true,
+        multiCursorPosition: {
+          originPosition: {
+            ...interactionState.multiCursorPosition.originPosition,
+            x: left,
+            y: top,
+          },
+          terminalPosition: {
+            ...interactionState.multiCursorPosition.terminalPosition,
+            x: right,
+            y: bottom,
+          },
+        },
+      });
+    }
+  }
+
   private async apply(): Promise<void> {
     if (!this.selection) return;
-    if (this.state === 'shrinkHorizontal') {
-      if (!this.endCell) return;
-      shrinkHorizontal({ app: this.app, selection: this.selection, endCell: this.endCell });
-    } else if (this.state === 'shrinkVertical') {
-      if (!this.endCell) return;
-      shrinkVertical({ app: this.app, selection: this.selection, endCell: this.endCell });
-    } else if (this.boxCells) {
-      if (this.state === 'expandDown') {
-        expandDown({ app: this.app, selection: this.selection, boxCells: this.boxCells });
-      } else if (this.state === 'expandRight') {
-        expandRight({ app: this.app, selection: this.selection, boxCells: this.boxCells });
-      } else if (this.state === 'expandUp') {
-        expandUp({ app: this.app, selection: this.selection, boxCells: this.boxCells });
-      } else if (this.state === 'expandLeft') {
-        expandLeft({ app: this.app, selection: this.selection, boxCells: this.boxCells });
-      }
+    if (!this.stateHorizontal && !this.stateVertical) {
+      this.reset();
+      return;
     }
+    this.app.sheet_controller.start_transaction();
+
+    if (this.stateVertical === 'shrink') {
+      if (this.endCell) {
+        await shrinkVertical({
+          app: this.app,
+          selection: this.selection,
+          endCell: this.endCell,
+        });
+      }
+    } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
+      await expandDown({
+        app: this.app,
+        selection: this.selection,
+        to: this.toVertical,
+        shrinkHorizontal: this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined,
+      });
+    } else if (this.stateVertical === 'expandUp' && this.toVertical !== undefined) {
+      await expandUp({
+        app: this.app,
+        selection: this.selection,
+        to: this.toVertical,
+        shrinkHorizontal: this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined,
+      });
+    }
+
+    if (this.stateHorizontal === 'shrink') {
+      if (this.endCell) {
+        await shrinkHorizontal({
+          app: this.app,
+          selection: this.selection,
+          endCell: this.endCell,
+        });
+      }
+    } else if (this.stateHorizontal === 'expandLeft' && this.toHorizontal !== undefined) {
+      await expandLeft({
+        app: this.app,
+        selection: this.selection,
+        to: this.toHorizontal,
+        toVertical: this.toVertical,
+      });
+    } else if (this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined) {
+      await expandRight({
+        app: this.app,
+        selection: this.selection,
+        to: this.toHorizontal,
+        toVertical: this.toVertical,
+      });
+    }
+    this.app.sheet_controller.end_transaction();
+
+    this.setSelection();
+    this.reset();
   }
 
   pointerUp(): boolean {
     if (this.active) {
       this.apply();
-      this.reset();
       return true;
     }
     return false;

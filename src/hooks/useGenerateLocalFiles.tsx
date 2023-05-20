@@ -178,9 +178,6 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       rows: [],
       borders: [],
       cell_dependency: '',
-
-      // todo: this goes away when alignment branch is merged
-      render_dependency: [],
     };
 
     mixpanel.track('[Files].newFile');
