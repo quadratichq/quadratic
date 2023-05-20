@@ -2,7 +2,6 @@ import { Container, Point, Rectangle } from 'pixi.js';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
 import { Bounds } from '../../../grid/sheet/Bounds';
-import { isStringANumber } from '../../../helpers/isStringANumber';
 import { CellFormat, CellAlignment } from '../../../schemas';
 
 export interface LabelData {
@@ -130,7 +129,7 @@ export class CellsLabels extends Container {
   }
 
   private calculatePosition(label: CellLabel, data: LabelData): Point {
-    data.alignment = isStringANumber(data.originalText) ? 'right' : 'left';
+    data.alignment = 'left';
     if (data.format?.alignment === 'right') data.alignment = 'right';
     else if (data.format?.alignment === 'center') data.alignment = 'center';
     else if (data.format?.alignment === 'left') data.alignment = 'left';
