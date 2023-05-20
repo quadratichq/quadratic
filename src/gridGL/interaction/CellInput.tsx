@@ -29,7 +29,6 @@ export const CellInput = (props: CellInputProps) => {
   const [saveInteractionState, setSaveInteractionState] = useState<GridInteractionState>();
 
   const text = useRef('');
-  const handleChange = useCallback((e) => (text.current = e.target.value), []);
 
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
   const copy = sheetController.sheet.getCellAndFormatCopy(cellLocation.x, cellLocation.y);
@@ -242,7 +241,6 @@ export const CellInput = (props: CellInputProps) => {
         fontFamily,
         fontSize: '14px',
       }}
-      onChange={handleChange}
       onFocus={handleFocus}
       onBlur={() => closeInput()}
       onKeyDown={(event) => {
