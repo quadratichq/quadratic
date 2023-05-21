@@ -158,7 +158,7 @@ impl AstNode {
                     inner: arg_values,
                 };
 
-                let func_name = func.inner.to_ascii_uppercase();
+                let func_name = &func.inner;
                 match functions::lookup_function(&func_name) {
                     Some(f) => (f.eval)(&mut *ctx, spanned_arg_values).await?,
                     None => return Err(FormulaErrorMsg::BadFunctionName.with_span(func.span)),
