@@ -233,7 +233,7 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: cell_offsets.width,
+        minWidth: cell_offsets.width - CURSOR_THICKNESS * 2,
         outline: 'none',
         color: format?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px`,
@@ -246,7 +246,6 @@ export const CellInput = (props: CellInputProps) => {
         fontFamily,
         fontSize: '14px',
         backgroundColor: format?.fillColor ?? 'white',
-        outlineColor: format?.fillColor ?? 'white',
       }}
       onFocus={handleFocus}
       onBlur={() => closeInput()}
