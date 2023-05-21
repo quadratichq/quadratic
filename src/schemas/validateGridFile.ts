@@ -2,9 +2,14 @@ import { GridFileSchemaV1 } from './GridFileV1';
 import { GridFileSchemaV1_1, upgradeV1toV1_1 } from './GridFileV1_1';
 import { GridFile, GridFiles } from '.';
 import { debugShowFileIO } from '../debugFlags';
+import { GridFileSchemaV1_2, upgradeV1_1toV1_2 } from './GridFileV1_2';
 
 // Ordered by newest first
-const files = [{ schema: GridFileSchemaV1_1 }, { schema: GridFileSchemaV1, updateFn: upgradeV1toV1_1 }];
+const files = [
+  { schema: GridFileSchemaV1_2, updateFn: upgradeV1_1toV1_2 },
+  { schema: GridFileSchemaV1_1 },
+  { schema: GridFileSchemaV1, updateFn: upgradeV1toV1_1 },
+];
 
 /**
  * Given arbitrary JSON, validate whether it's a valid file format and return
