@@ -12,7 +12,7 @@ const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
 
 // outside border when editing the cell
-const INPUT_ALPHA = 0.5;
+const INPUT_ALPHA = 0.4;
 
 export class Cursor extends Graphics {
   private app: PixiApp;
