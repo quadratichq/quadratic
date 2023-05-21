@@ -11,6 +11,9 @@ const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 // adds a bit of padding when editing a cell w/CellInput
 const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
 
+// outside border when editing the cell
+const INPUT_ALPHA = 0.5;
+
 export class Cursor extends Graphics {
   private app: PixiApp;
   indicator: Rectangle;
@@ -64,19 +67,33 @@ export class Cursor extends Graphics {
     if (editorInteractionState.showCodeEditor && editor_selected_cell.x === cell.x && editor_selected_cell.y === cell.y)
       return;
 
+    // draw cursor
     this.lineStyle({
       width: CURSOR_THICKNESS,
       color,
       alignment: 0,
     });
-
-    // draw cursor
     this.moveTo(x, y);
     this.lineTo(x + width, y);
     this.lineTo(x + width, y + height - indicatorOffset);
     this.moveTo(x + width - indicatorOffset, y + height);
     this.lineTo(x, y + height);
     this.lineTo(x, y);
+
+    if (showInput && cellEdit) {
+      this.lineStyle({
+        width: CURSOR_THICKNESS,
+        color,
+        alpha: INPUT_ALPHA,
+        alignment: 0,
+      });
+      this.drawRect(
+        x - CURSOR_THICKNESS,
+        y - CURSOR_THICKNESS,
+        width + CURSOR_THICKNESS * 2,
+        height + CURSOR_THICKNESS * 2
+      );
+    }
   }
 
   private drawMultiCursor(): void {
