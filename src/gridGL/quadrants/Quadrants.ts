@@ -128,10 +128,11 @@ export class Quadrants extends Container {
         this.complete = false;
       }
       if (debugShowCacheFlag) {
-        const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0);
-        (document.querySelector('.debug-show-cache-count') as HTMLSpanElement).innerHTML = `Quadrants: ${
-          this.children.length - dirtyCount
-        }/${this.children.length}`;
+        const cacheCount = document.querySelector('.debug-show-cache-count') as HTMLSpanElement;
+        if (cacheCount) {
+          const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0);
+          cacheCount.innerHTML = `Quadrants: ${this.children.length - dirtyCount}/${this.children.length}`;
+        }
       }
       return (
         this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), nextDirty.visibleRectangle)

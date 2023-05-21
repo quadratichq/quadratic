@@ -2,6 +2,7 @@ import { Viewport } from 'pixi-viewport';
 import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { Coordinate } from '../types/size';
+import { Cell } from '../../schemas';
 
 export function selectAllCells(options: {
   sheet: Sheet;
@@ -110,4 +111,9 @@ export async function selectRows(options: {
     });
     if (options.viewport) options.viewport.dirty = true;
   }
+}
+
+export function cellHasContent(cell?: Cell): boolean {
+  if (!cell) return false;
+  return !!cell.value || cell.type !== 'TEXT';
 }

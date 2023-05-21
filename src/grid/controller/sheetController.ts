@@ -3,13 +3,14 @@ import { Transaction } from './transaction';
 import { Statement } from './statement';
 import { StatementRunner } from './runners/runner';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { localFiles } from '../sheet/localFiles';
 import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
+import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 
 export class SheetController {
   app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
   sheet: Sheet;
+  saveLocalFiles: (() => void) | undefined;
   transaction_in_progress: Transaction | undefined;
   transaction_in_progress_reverse: Transaction | undefined;
   undo_stack: Transaction[];
@@ -26,6 +27,7 @@ export class SheetController {
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
+    this.saveLocalFiles = undefined;
   }
 
   // starting a transaction is the only way to execute statements
@@ -33,7 +35,7 @@ export class SheetController {
   // execute_statement until end_transaction is called.
   //
 
-  public start_transaction(): void {
+  public start_transaction(interactionState?: GridInteractionState): void {
     if (this.transaction_in_progress) {
       // during debug mode, throw an error
       // otherwise, capture the error and continue
@@ -44,11 +46,20 @@ export class SheetController {
       this.end_transaction();
     }
 
+    // This is useful when the user clicks outside of the active cell to another
+    // cell, so the cursor moves to that new cell and the transaction finishes
+    let cursor = undefined;
+    if (interactionState) {
+      cursor = { ...interactionState, showInput: false };
+    } else if (this.app?.settings.interactionState) {
+      cursor = { ...this.app.settings.interactionState, showInput: false };
+    }
+
     // set transaction in progress to a new Transaction
     // transaction_in_progress represents the stack of commands needed
     // to undo the transaction currently being executed.
-    this.transaction_in_progress = { statements: [] };
-    this.transaction_in_progress_reverse = { statements: [] };
+    this.transaction_in_progress = { statements: [], cursor };
+    this.transaction_in_progress_reverse = { statements: [], cursor };
   }
 
   public execute_statement(statement: Statement): void {
@@ -82,7 +93,7 @@ export class SheetController {
 
     // TODO: This is a good place to do things like mark Quadrants as dirty, save the file, etc.
     // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
-    localFiles.saveLastLocal(this.sheet.export_file());
+    if (this.saveLocalFiles) this.saveLocalFiles();
 
     return reverse_transaction;
   }
@@ -134,9 +145,15 @@ export class SheetController {
     // add reverse transaction to redo stack
     this.redo_stack.push(reverse_transaction);
 
-    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
-    // This will be very inefficient on large files.
-    if (this.app) this.app.rebuild();
+    if (this.app) {
+      if (transaction.cursor) {
+        this.app.settings.setInteractionState?.(transaction.cursor);
+      }
+
+      // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
+      // This will be very inefficient on large files.
+      this.app.rebuild();
+    }
   }
 
   public redo(): void {
@@ -168,9 +185,15 @@ export class SheetController {
     // add reverse transaction to undo stack
     this.undo_stack.push(reverse_transaction);
 
-    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
-    // This will be very inefficient on large files.
-    if (this.app) this.app.rebuild();
+    if (this.app) {
+      if (transaction.cursor) {
+        this.app.settings.setInteractionState?.(transaction.cursor);
+      }
+
+      // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
+      // This will be very inefficient on large files.
+      this.app.rebuild();
+    }
   }
 
   public clear(): void {

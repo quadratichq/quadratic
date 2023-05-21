@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLoading } from '../contexts/LoadingContext';
 import { gridInteractionStateAtom } from '../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
@@ -21,8 +20,6 @@ let mouseIsDown = false;
 let spaceIsDown = false;
 
 export default function QuadraticGrid(props: IProps) {
-  const { loading } = useLoading();
-
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node: HTMLDivElement | null) => {
     if (node) setContainer(node);
@@ -31,14 +28,9 @@ export default function QuadraticGrid(props: IProps) {
     if (props.app && container) props.app.attach(container);
   }, [props.app, container]);
 
-  useEffect(() => {
-    if (props.app) {
-      props.app.quadrants.build();
-    }
-  }, [props.sheetController.sheet, props.app]);
-
   // Interaction State hook
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
+
   let prevPanModeRef = useRef(interactionState.panMode);
   useEffect(() => {
     props.app?.settings.updateInteractionState(interactionState, setInteractionState);
@@ -82,7 +74,7 @@ export default function QuadraticGrid(props: IProps) {
     window.addEventListener('mouseup', onMouseUp);
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.code === 'Space') {
+    if (e.key === ' ') {
       spaceIsDown = true;
       if (interactionState.panMode === PanMode.Disabled) {
         setInteractionState({
@@ -93,7 +85,7 @@ export default function QuadraticGrid(props: IProps) {
     }
   };
   const onKeyUp = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.code === 'Space') {
+    if (e.key === ' ') {
       spaceIsDown = false;
       if (interactionState.panMode !== PanMode.Disabled && !mouseIsDown) {
         setInteractionState({
@@ -112,8 +104,6 @@ export default function QuadraticGrid(props: IProps) {
     setEditorInteractionState,
     app: props.app,
   });
-
-  if (loading) return null;
 
   return (
     <div

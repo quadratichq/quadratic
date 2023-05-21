@@ -1,5 +1,5 @@
 import { SheetController } from '../sheetController';
-import { Cell } from '../../sheet/gridTypes';
+import { Cell } from '../../../schemas';
 
 const createCell = (pos: [number, number], value: string): Cell => {
   return {

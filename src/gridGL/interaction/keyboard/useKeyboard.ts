@@ -14,6 +14,8 @@ import { useFormatCells } from '../../../ui/menus/TopBar/SubMenus/useFormatCells
 import { useGetSelection } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';
 import { useClearAllFormatting } from '../../../ui/menus/TopBar/SubMenus/useClearAllFormatting';
 import { useGridSettings } from '../../../ui/menus/TopBar/SubMenus/useGridSettings';
+import { useGlobalSnackbar } from '../../../ui/contexts/GlobalSnackbar';
+import { useLocalFiles } from '../../../ui/contexts/LocalFiles';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -39,6 +41,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { changeBold, changeItalic } = useFormatCells(sheetController, app);
   const { clearAllFormatting } = useClearAllFormatting(sheetController, app);
   const { presentationMode, setPresentationMode } = useGridSettings();
+  const { currentFileId } = useLocalFiles();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const keyDownWindow = useCallback(
     (event: KeyboardEvent): void => {
@@ -56,9 +60,11 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           changeBold,
           changeItalic,
           format,
-          pointer: app.input,
+          pointer: app.pointer,
           presentationMode,
           setPresentationMode,
+          app,
+          currentFileId,
         })
       ) {
         event.stopPropagation();
@@ -66,11 +72,11 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       }
     },
     [
+      currentFileId,
       interactionState,
       editorInteractionState,
       setEditorInteractionState,
-      app?.viewport,
-      app.input,
+      app,
       sheetController.sheet,
       clearAllFormatting,
       changeBold,
@@ -90,7 +96,13 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     if (interactionState.showInput) return;
 
     if (
-      keyboardClipboard(event, interactionState, props.sheetController) ||
+      keyboardClipboard({
+        event,
+        interactionState,
+        sheet_controller: props.sheetController,
+        app: props.app,
+        addGlobalSnackbar,
+      }) ||
       keyboardUndoRedo(event, interactionState, props.sheetController) ||
       keyboardSelect({
         event,
@@ -102,13 +114,14 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     )
       return;
 
+    if (keyboardPosition({ event, interactionState, setInteractionState, sheet: sheetController.sheet })) return;
+
     // Prevent these commands if "command" key is being pressed
     if (event.metaKey || event.ctrlKey) {
       return;
     }
 
     if (
-      keyboardPosition({ event, interactionState, setInteractionState }) ||
       keyboardCell({
         sheet_controller: props.sheetController,
         event,

@@ -1,8 +1,12 @@
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
-
+import { RecoilRoot } from 'recoil';
 import { useAuth0 } from '@auth0/auth0-react';
-import { captureException } from '@sentry/react';
+import { captureException, setUser } from '@sentry/react';
 import { QuadraticApp } from './QuadraticApp';
+import apiClientSingleton from '../api-client/apiClientSingleton';
+import { useEffect } from 'react';
+import { debug } from '../debugFlags';
+import { FILE_PARAM_KEY } from '../constants/app';
 
 export const QuadraticAuth = () => {
   const {
@@ -11,7 +15,21 @@ export const QuadraticAuth = () => {
     isAuthenticated: Auth0IsAuthenticated,
     loginWithRedirect,
     logout,
+    getAccessTokenSilently,
+    user,
   } = useAuth0();
+
+  useEffect(() => {
+    if (Auth0IsAuthenticated) {
+      apiClientSingleton.setAuth(getAccessTokenSilently);
+    }
+  }, [Auth0IsAuthenticated, getAccessTokenSilently]);
+
+  useEffect(() => {
+    if (Auth0IsAuthenticated && user) {
+      setUser({ email: user.email, id: user.sub });
+    }
+  }, [Auth0IsAuthenticated, user]);
 
   // Auth0 is Optional
   if (process.env.REACT_APP_AUTH0_DOMAIN && process.env.REACT_APP_AUTH0_DOMAIN !== 'none') {
@@ -31,10 +49,24 @@ export const QuadraticAuth = () => {
     }
 
     if (!Auth0IsAuthenticated) {
+      // If we're not authenticated but there is a `file` query param,
+      // store it for later so it doesn't get lost. In `useLocalFiles` we'll
+      // grab it and apply it
+      const file = new URLSearchParams(window.location.search).get('file');
+      if (file) {
+        sessionStorage.setItem(FILE_PARAM_KEY, file);
+        if (debug)
+          console.log('[QuadraticAuth] user is not logged in, saving `file` query param for after login: ', file);
+      }
+
       loginWithRedirect({ screen_hint: 'signup' });
       return <QuadraticLoading></QuadraticLoading>;
     }
   }
 
-  return <QuadraticApp></QuadraticApp>;
+  return (
+    <RecoilRoot>
+      <QuadraticApp />
+    </RecoilRoot>
+  );
 };

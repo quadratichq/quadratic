@@ -6,7 +6,7 @@ import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import debounce from 'lodash.debounce';
-import { QuadraticSnackBar } from './QuadraticSnackBar';
+import { useGlobalSnackbar } from '../contexts/GlobalSnackbar';
 
 interface Props {
   sheetController: SheetController;
@@ -19,8 +19,7 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
   const [dragActive, setDragActive] = useState(false);
   const divRef = useRef<HTMLDivElement>(null);
   const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
-
-  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const moveCursor = debounce((e: DragEvent<HTMLDivElement>): void => {
     const clientBoudingRect = divRef?.current?.getBoundingClientRect();
@@ -73,10 +72,10 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
           sheetController: props.sheetController,
           file: file,
           insertAtCellLocation: { x: column, y: row } as Coordinate,
-          reportError: setErrorMessage,
+          reportError: addGlobalSnackbar,
         });
       } else {
-        setErrorMessage('File type not supported. Please upload a CSV file.');
+        addGlobalSnackbar('File type not supported. Please upload a CSV file.');
       }
     }
   };
@@ -103,13 +102,6 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
           }}
         ></div>
       )}
-      <QuadraticSnackBar
-        open={errorMessage !== undefined}
-        onClose={() => {
-          setErrorMessage(undefined);
-        }}
-        message={errorMessage}
-      />
     </div>
   );
 };

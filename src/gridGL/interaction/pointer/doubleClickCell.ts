@@ -1,4 +1,4 @@
-import { Cell } from '../../../grid/sheet/gridTypes';
+import { Cell } from '../../../schemas';
 import { PixiApp } from '../../pixiApp/PixiApp';
 
 export function doubleClickCell(options: { cell?: Cell; app: PixiApp }): void {

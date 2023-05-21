@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { Coordinate, MinMax } from '../../gridGL/types/size';
 import { GridOffsets } from './GridOffsets';
-import { Border } from './gridTypes';
+import { Border } from '../../schemas';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Bounds } from './Bounds';
 
