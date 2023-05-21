@@ -7,6 +7,7 @@ import { SheetController } from '../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
 import { DeleteCells } from '../../grid/actions/DeleteCells';
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
+import useAlertOnUnsavedChanges from '../../hooks/useAlertOnUnsavedChanges';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -22,6 +23,7 @@ export const CellInput = (props: CellInputProps) => {
   const viewport = app?.viewport;
 
   const [value, setValue] = useState<string | undefined>(undefined);
+  const [isEditing, setIsEditing] = useState(false);
 
   // used to save interaction state when input starts
   const [saveInteractionState, setSaveInteractionState] = useState<GridInteractionState>();
@@ -32,6 +34,8 @@ export const CellInput = (props: CellInputProps) => {
   useEffect(() => {
     if (textInput.current) textInput.current.size = value?.length || 0 + 1;
   }, [value, textInput]);
+
+  useAlertOnUnsavedChanges(isEditing);
 
   // If we don't have a viewport, we can't continue.
   if (!viewport || !container) return null;
@@ -130,6 +134,7 @@ export const CellInput = (props: CellInputProps) => {
         });
       }
       sheetController.end_transaction();
+      setIsEditing(false);
       app.quadrants.quadrantChanged({ cells: [cellLocation.current] });
     }
 
@@ -196,6 +201,7 @@ export const CellInput = (props: CellInputProps) => {
       }}
       value={value}
       onChange={(event) => {
+        setIsEditing(true);
         setValue(event.target.value);
       }}
       onBlur={() => {
