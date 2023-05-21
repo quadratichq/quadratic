@@ -9,6 +9,7 @@ import { DeleteCells } from '../../grid/actions/DeleteCells';
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
 import { CellFormat } from '../../schemas';
 import { useFormatCells } from '../../ui/menus/TopBar/SubMenus/useFormatCells';
+import { CURSOR_THICKNESS } from '../UI/Cursor';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -101,7 +102,7 @@ export const CellInput = (props: CellInputProps) => {
     let worldTransform = viewport.worldTransform;
 
     // Calculate position of input based on cell (magic number via experimentation)
-    let cell_offset_scaled = viewport.toScreen(cell_offsets.x + 2, cell_offsets.y + 3);
+    let cell_offset_scaled = viewport.toScreen(cell_offsets.x + CURSOR_THICKNESS, cell_offsets.y + CURSOR_THICKNESS);
 
     // Generate transform CSS
     const transform =
@@ -235,15 +236,17 @@ export const CellInput = (props: CellInputProps) => {
         minWidth: cell_offsets.width,
         outline: 'none',
         color: format?.textColor ?? 'black',
-        padding: 0,
+        padding: `0 ${CURSOR_THICKNESS}px`,
         margin: 0,
-        lineHeight: '1', //`${cell_offsets.height}px`,
+        lineHeight: `${cell_offsets.height - CURSOR_THICKNESS * 2}px`,
         verticalAlign: 'text-top',
         background: 'transparent',
         transformOrigin: '0 0',
         transform,
         fontFamily,
         fontSize: '14px',
+        backgroundColor: format?.fillColor ?? 'white',
+        outlineColor: format?.fillColor ?? 'white',
       }}
       onFocus={handleFocus}
       onBlur={() => closeInput()}

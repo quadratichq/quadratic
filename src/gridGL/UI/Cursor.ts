@@ -2,14 +2,14 @@ import { Graphics, Rectangle } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { PixiApp } from '../pixiApp/PixiApp';
 
-const CURSOR_THICKNESS = 1.25;
+export const CURSOR_THICKNESS = 1.25;
 const FILL_ALPHA = 0.1;
 const INDICATOR_SIZE = 8;
 const INDICATOR_PADDING = 1;
 const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 
 // adds a bit of padding when editing a cell w/CellInput
-const CELL_INPUT_PADDING = 5;
+const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
 
 export class Cursor extends Graphics {
   private app: PixiApp;

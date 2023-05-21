@@ -144,8 +144,8 @@ export class Cells extends Container {
       if (entry.cell || entry.format) {
         const column = entry.cell ? entry.cell.x : entry.format!.x;
         const row = entry.cell ? entry.cell.x : entry.format!.y;
-        this.cellsBackground.draw({ ...entry, x, y, width, height });
         if (!isInput) {
+          this.cellsBackground.draw({ ...entry, x, y, width, height });
           let cell_text = '';
           let error = false;
           let cell_format: CellFormat | undefined;
