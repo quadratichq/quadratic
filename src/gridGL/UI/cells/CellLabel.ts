@@ -47,7 +47,10 @@ export class CellLabel extends BitmapTextClip {
   set text(text: string) {
     text = String(text === null || text === undefined ? '' : text);
     if (text !== this.originalText) {
-      this._text = text.split('').map(c => c.charCodeAt(0) === 160 ? ' ' : c).join('');
+      this._text = text
+        .split('')
+        .map((c) => (c.charCodeAt(0) === 160 ? ' ' : c))
+        .join('');
       this.originalText = text;
       this.dirty = true;
     }
