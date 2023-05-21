@@ -6,8 +6,8 @@ import { GridFileSchemaV1_2, upgradeV1_1toV1_2 } from './GridFileV1_2';
 
 // Ordered by newest first
 const files = [
-  { schema: GridFileSchemaV1_2, updateFn: upgradeV1_1toV1_2 },
-  { schema: GridFileSchemaV1_1 },
+  { schema: GridFileSchemaV1_2 },
+  { schema: GridFileSchemaV1_1, updateFn: upgradeV1_1toV1_2 },
   { schema: GridFileSchemaV1, updateFn: upgradeV1toV1_1 },
 ];
 
