@@ -33,17 +33,19 @@ export const CellInput = (props: CellInputProps) => {
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
   const copy = sheetController.sheet.getCellAndFormatCopy(cellLocation.x, cellLocation.y);
   const cell = copy?.cell;
-  const format = copy?.format ?? {} as CellFormat;
+  const format = copy?.format ?? ({} as CellFormat);
 
   // handle temporary changes to bold and italic (via keyboard)
   const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
   const [temporaryItalic, setTemporaryItalic] = useState<undefined | boolean>();
   let fontFamily = 'OpenSans';
-  if ((temporaryItalic === undefined ? format.italic : temporaryItalic) && (temporaryBold === undefined ? format.bold : temporaryBold)) {
+  const italic = temporaryItalic === undefined ? format.italic : temporaryItalic;
+  const bold = temporaryBold === undefined ? format.bold : temporaryBold;
+  if (italic && bold) {
     fontFamily = 'OpenSans-BoldItalic';
-  } else if (temporaryItalic === undefined ? format.italic : temporaryItalic) {
+  } else if (italic) {
     fontFamily = 'OpenSans-Italic';
-  } else if (temporaryBold === undefined ? format.bold : temporaryBold) {
+  } else if (bold) {
     fontFamily = 'OpenSans-Bold';
   }
 
@@ -178,6 +180,8 @@ export const CellInput = (props: CellInputProps) => {
           changeItalic(temporaryItalic);
         }
       }
+      setTemporaryBold(undefined);
+      setTemporaryItalic(undefined);
       sheetController.end_transaction();
       app.quadrants.quadrantChanged({ cells: [cellLocation] });
       textInput.innerText = '';
@@ -263,10 +267,10 @@ export const CellInput = (props: CellInputProps) => {
           // Don't propagate so panning mode doesn't get triggered
           event.stopPropagation();
         } else if (event.key === 'i' && (event.ctrlKey || event.metaKey)) {
-          setTemporaryItalic((italic) => !italic);
+          setTemporaryItalic((italic) => (italic === undefined ? !format.italic : !italic));
           event.stopPropagation();
         } else if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
-          setTemporaryBold((bold) => !bold);
+          setTemporaryBold((bold) => (bold === undefined ? !format.bold : !bold));
           event.stopPropagation();
         }
 
