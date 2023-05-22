@@ -1,14 +1,14 @@
 import { Sprite, Texture, TilingSprite } from 'pixi.js';
 import { convertColorStringToTint } from '../../../helpers/convertColor';
 import { colors } from '../../../theme/colors';
-import { Border, BorderType } from '../../../grid/sheet/gridTypes';
+import { Border, BorderType, BorderTypeEnum } from '../../../schemas';
 import { dashedTextures } from '../../dashedTextures';
 import { Rectangle } from '../../types/size';
 
 function setTexture(sprite: Sprite | TilingSprite, horizontal: boolean, borderType?: BorderType): void {
-  if (borderType === BorderType.dashed) {
+  if (borderType === BorderTypeEnum.dashed) {
     sprite.texture = horizontal ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical;
-  } else if (borderType === BorderType.dotted) {
+  } else if (borderType === BorderTypeEnum.dotted) {
     sprite.texture = horizontal ? dashedTextures.dottedHorizontal : dashedTextures.dottedVertical;
   } else {
     sprite.texture = Texture.WHITE;
@@ -30,10 +30,10 @@ export function drawBorder(options: {
   borderType?: BorderType;
 }): void {
   const { borderType } = options;
-  const lineWidth = borderType === BorderType.line2 ? 2 : borderType === BorderType.line3 ? 3 : 1;
+  const lineWidth = borderType === BorderTypeEnum.line2 ? 2 : borderType === BorderTypeEnum.line3 ? 3 : 1;
 
-  const tiling = borderType === BorderType.dashed || borderType === BorderType.dotted;
-  const doubleDistance = borderType === BorderType.double ? lineWidth * 2 : 0;
+  const tiling = borderType === BorderTypeEnum.dashed || borderType === BorderTypeEnum.dotted;
+  const doubleDistance = borderType === BorderTypeEnum.double ? lineWidth * 2 : 0;
 
   if (options.top) {
     const top = options.getSprite(tiling);
@@ -137,9 +137,9 @@ export function drawCellBorder(options: {
 
   if (border.horizontal) {
     const borderType = border.horizontal.type;
-    const lineWidth = borderType === BorderType.line2 ? 2 : borderType === BorderType.line3 ? 3 : 1;
-    const tiling = borderType === BorderType.dashed || borderType === BorderType.dotted;
-    const doubleDistance = borderType === BorderType.double ? lineWidth * 2 : 0;
+    const lineWidth = borderType === BorderTypeEnum.line2 ? 2 : borderType === BorderTypeEnum.line3 ? 3 : 1;
+    const tiling = borderType === BorderTypeEnum.dashed || borderType === BorderTypeEnum.dotted;
+    const doubleDistance = borderType === BorderTypeEnum.double ? lineWidth * 2 : 0;
 
     const top = getSprite(tiling);
     setTexture(top, true, borderType);
@@ -166,9 +166,9 @@ export function drawCellBorder(options: {
 
   if (border.vertical) {
     const borderType = border.vertical.type;
-    const lineWidth = borderType === BorderType.line2 ? 2 : borderType === BorderType.line3 ? 3 : 1;
-    const tiling = borderType === BorderType.dashed || borderType === BorderType.dotted;
-    const doubleDistance = borderType === BorderType.double ? lineWidth * 2 : 0;
+    const lineWidth = borderType === BorderTypeEnum.line2 ? 2 : borderType === BorderTypeEnum.line3 ? 3 : 1;
+    const tiling = borderType === BorderTypeEnum.dashed || borderType === BorderTypeEnum.dotted;
+    const doubleDistance = borderType === BorderTypeEnum.double ? lineWidth * 2 : 0;
 
     const left = options.getSprite(tiling);
     setTexture(left, false, borderType);

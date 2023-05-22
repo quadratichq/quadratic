@@ -12,6 +12,14 @@ export class PointerHeading {
   private app: PixiApp;
   private active = false;
   private downTimeout: number | undefined;
+  cursor?: string;
+
+  // tracks changes to viewport caused by resizing negative column/row headings
+  private headingResizeViewport = {
+    change: 0,
+    originalSize: 0,
+    viewportStart: 0,
+  };
 
   constructor(app: PixiApp) {
     this.app = app;
@@ -58,11 +66,15 @@ export class PointerHeading {
       const headingResize = headings.intersectsHeadingGridLine(world);
       if (headingResize) {
         this.app.setViewportDirty();
+        this.headingResizeViewport = {
+          change: 0,
+          originalSize: headingResize.width ?? headingResize.height ?? 0,
+          viewportStart: headingResize.row === undefined ? viewport.x : viewport.y,
+        };
         gridOffsets.headingResizing = {
           x: world.x,
           y: world.y,
           start: headingResize.start,
-          end: headingResize.end,
           row: headingResize.row,
           column: headingResize.column,
           width: headingResize.width,
@@ -128,15 +140,17 @@ export class PointerHeading {
   }
 
   pointerMove(world: Point): boolean {
-    const { canvas, headings, cells, gridLines, cursor, settings } = this.app;
+    const { headings, cells, gridLines, cursor, settings } = this.app;
     const { gridOffsets } = this.sheet;
+    this.cursor = undefined;
+
     // Only style the heading resize cursor if panning mode is disabled
     if (settings.interactionState.panMode === PanMode.Disabled) {
       const headingResize = headings.intersectsHeadingGridLine(world);
       if (headingResize) {
-        canvas.style.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
+        this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
       } else {
-        canvas.style.cursor = headings.intersectsHeadings(world) ? 'pointer' : 'unset';
+        this.cursor = headings.intersectsHeadings(world) ? 'pointer' : undefined;
       }
     }
     if (!this.active) {
@@ -148,8 +162,14 @@ export class PointerHeading {
         if (headingResizing.column >= 0) {
           size = Math.max(MINIMUM_COLUMN_SIZE, world.x - headingResizing.start);
         } else {
-          size = Math.max(MINIMUM_COLUMN_SIZE, headingResizing.end - world.x);
+          size = Math.max(MINIMUM_COLUMN_SIZE, world.x - headingResizing.start + this.headingResizeViewport.change);
+
+          // move viewport by the amount of the resize for negative columns
+          const change = size - this.headingResizeViewport.originalSize;
+          this.app.viewport.x = this.headingResizeViewport.viewportStart + change * this.app.viewport.scale.x;
+          this.headingResizeViewport.change = change;
         }
+
         if (size !== headingResizing.width) {
           headingResizing.width = size;
           cells.dirty = true;
@@ -163,8 +183,14 @@ export class PointerHeading {
         if (headingResizing.row >= 0) {
           size = Math.max(MINIMUM_COLUMN_SIZE, world.y - headingResizing.start);
         } else {
-          size = Math.max(MINIMUM_COLUMN_SIZE, headingResizing.end - world.y);
+          size = Math.max(MINIMUM_COLUMN_SIZE, world.y - headingResizing.start + this.headingResizeViewport.change);
+
+          // move viewport by the amount of the resize for negative columns
+          const change = size - this.headingResizeViewport.originalSize;
+          this.app.viewport.y = this.headingResizeViewport.viewportStart + change * this.app.viewport.scale.x;
+          this.headingResizeViewport.change = change;
         }
+
         if (size !== headingResizing.height) {
           headingResizing.height = size;
           cells.dirty = true;
@@ -207,6 +233,7 @@ export class PointerHeading {
           ]);
         }
         gridOffsets.headingResizing = undefined;
+        this.app.viewport.plugins.get('decelerate')?.reset();
       }
       return true;
     }

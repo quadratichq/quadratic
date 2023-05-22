@@ -7,6 +7,7 @@ export class PixiAppSettings {
   private app: PixiApp;
   private settings!: GridSettings;
   private lastSettings?: GridSettings;
+  temporarilyHideCellTypeOutlines = false;
   interactionState = gridInteractionStateDefault;
   setInteractionState?: (value: GridInteractionState) => void;
   editorInteractionState = editorInteractionStateDefault;
@@ -63,6 +64,7 @@ export class PixiAppSettings {
     this.setEditorInteractionState = setEditorInteractionState;
     this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
+    this.app.cells.dirty = true;
   }
 
   get showGridLines(): boolean {
@@ -75,7 +77,9 @@ export class PixiAppSettings {
     return !this.settings.presentationMode && this.settings.showHeadings;
   }
   get showCellTypeOutlines(): boolean {
-    return !this.settings.presentationMode && this.settings.showCellTypeOutlines;
+    return (
+      !this.temporarilyHideCellTypeOutlines && !this.settings.presentationMode && this.settings.showCellTypeOutlines
+    );
   }
   get presentationMode(): boolean {
     return this.settings.presentationMode;

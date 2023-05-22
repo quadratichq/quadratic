@@ -83,21 +83,6 @@ const ListItems = [
   //     );
   //   },
   // },
-  // {
-  //   label: 'View: Show debug menu',
-  //   Component: (props: CommandPaletteListItemSharedProps) => {
-  //     const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
-  //     return (
-  //       <CommandPaletteListItem
-  //         {...props}
-  //         icon={<CommandPaletteListItemCheckbox checked={showDebugMenu} />}
-  //         action={() => {
-  //           setShowDebugMenu(!showDebugMenu);
-  //         }}
-  //       />
-  //     );
-  //   },
-  // },
   {
     label: 'View: Presentation mode',
     Component: (props: any) => {

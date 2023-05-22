@@ -67,6 +67,7 @@ export class Update {
       app.gridLines.dirty ||
       app.axesLines.dirty ||
       app.headings.dirty ||
+      app.boxCells.dirty ||
       app.cells.dirty ||
       app.cursor.dirty;
 
@@ -85,6 +86,8 @@ export class Update {
     debugTimeCheck('[Update] axesLines');
     app.headings.update();
     debugTimeCheck('[Update] headings');
+    app.boxCells.update();
+    debugTimeCheck('[Update] boxCells');
     app.cells.update();
     debugTimeCheck('[Update] cells');
     app.cursor.update();
@@ -129,6 +132,15 @@ export class Update {
     this.fps?.update();
   };
 
+  forceUpdate(): void {
+    const app = this.pixiApp;
+    app.gridLines.update();
+    app.axesLines.update();
+    app.headings.update();
+    app.cells.update();
+    app.cursor.update();
+  }
+
   // update loop w/o debug checks
   private update = (timeStart: number): void => {
     const app = this.pixiApp;
@@ -141,12 +153,14 @@ export class Update {
       app.gridLines.dirty ||
       app.axesLines.dirty ||
       app.headings.dirty ||
+      app.boxCells.dirty ||
       app.cells.dirty ||
       app.cursor.dirty;
 
     app.gridLines.update();
     app.axesLines.update();
     app.headings.update();
+    app.boxCells.update();
     app.cells.update();
     app.cursor.update();
 
