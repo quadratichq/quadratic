@@ -3,7 +3,7 @@ import { PixiApp } from '../../../pixiApp/PixiApp';
 import { Coordinate } from '../../../types/size';
 import { findAutoComplete } from './findAutoComplete';
 import { updateCellAndDCells } from '../../../../grid/actions/updateCellAndDCells';
-import { Cell } from '../../../../schemas';
+import { Cell, CellFormat } from '../../../../schemas';
 import { DeleteCells } from '../../../../grid/actions/DeleteCells';
 
 export const shrinkHorizontal = async (options: {
@@ -53,6 +53,7 @@ export const expandDown = async (options: {
   const { sheet_controller, sheet } = app;
 
   const cells: Cell[] = [];
+  const formats: CellFormat[] = [];
   const right = shrinkHorizontal === undefined ? selection.right : shrinkHorizontal;
   for (let x = selection.left; x <= right; x++) {
     const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, x, selection.bottom));
@@ -62,26 +63,46 @@ export const expandDown = async (options: {
     }
     const results = findAutoComplete({ series, spaces: to - selection.bottom, negative: false });
     results.forEach((value, index) => {
+      const yIndex = selection.bottom + index + 1;
       if (value === undefined) {
         cells.push({
           type: 'TEXT',
           value: '',
           x,
-          y: selection.bottom + index + 1,
+          y: yIndex,
         });
       } else {
         cells.push({
           ...(value as Cell),
           x,
-          y: selection.bottom + index + 1,
+          y: yIndex,
         });
       }
     });
+    let index = 0;
+    for (let y = selection.bottom + 1; y <= to; y++) {
+      const format = rectangle.get(x, selection.top + index)?.format;
+      if (format) {
+        formats.push({ ...format, x, y });
+      } else {
+        formats.push({ x, y });
+      }
+      index = (index + 1) % (selection.bottom - selection.top + 1);
+    }
   }
   await updateCellAndDCells({
     create_transaction: false,
     starting_cells: cells,
     sheetController: sheet_controller,
+  });
+  formats.forEach((format) => {
+    sheet_controller.execute_statement({
+      type: 'SET_CELL_FORMAT',
+      data: {
+        position: [format.x, format.y],
+        value: format,
+      },
+    });
   });
 };
 
@@ -95,6 +116,7 @@ export const expandUp = async (options: {
   const { sheet_controller, sheet } = app;
 
   const cells: Cell[] = [];
+  const formats: CellFormat[] = [];
   const right = shrinkHorizontal === undefined ? selection.right : shrinkHorizontal;
   for (let x = selection.left; x <= right; x++) {
     const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, x, selection.bottom));
@@ -104,26 +126,47 @@ export const expandUp = async (options: {
     }
     const results = findAutoComplete({ series, spaces: selection.top - to, negative: true });
     results.forEach((value, index) => {
+      const yIndex = to + index;
       if (!value) {
         cells.push({
           type: 'TEXT',
           value: '',
           x,
-          y: to + index,
+          y: yIndex,
         });
       } else {
         cells.push({
           ...value,
           x,
-          y: to + index,
+          y: yIndex,
         });
       }
     });
+    let index = 0;
+    for (let y = to; y < selection.top; y++) {
+      const format = rectangle.get(x, selection.top + index)?.format;
+      if (format) {
+        formats.push({ ...format, x, y });
+      } else {
+        formats.push({ x, y });
+      }
+      index = (index + 1) % (selection.bottom - selection.top + 1);
+    }
   }
+
   await updateCellAndDCells({
     create_transaction: false,
     starting_cells: cells,
     sheetController: sheet_controller,
+  });
+  formats.forEach((format) => {
+    sheet_controller.execute_statement({
+      type: 'SET_CELL_FORMAT',
+      data: {
+        position: [format.x, format.y],
+        value: format,
+      },
+    });
   });
 };
 
@@ -136,6 +179,7 @@ export const expandRight = async (options: {
   const { app, selection, to, toVertical } = options;
   const { sheet_controller, sheet } = app;
   const cells: Cell[] = [];
+  const formats: CellFormat[] = [];
   const top = toVertical === undefined ? selection.top : Math.min(selection.top, toVertical);
   const bottom = toVertical === undefined ? selection.bottom : Math.max(selection.bottom, toVertical);
   for (let y = top; y <= bottom; y++) {
@@ -146,26 +190,46 @@ export const expandRight = async (options: {
     }
     const results = findAutoComplete({ series, spaces: to - selection.right, negative: false });
     results.forEach((value, index) => {
+      const xIndex = selection.right + index + 1;
       if (value === undefined) {
         cells.push({
           value: '',
           type: 'TEXT',
-          x: selection.right + index + 1,
+          x: xIndex,
           y,
         });
       } else {
         cells.push({
           ...(value as Cell),
-          x: selection.right + index + 1,
+          x: xIndex,
           y,
         });
       }
     });
+    let index = 0;
+    for (let x = selection.right + 1; x <= to; x++) {
+      const format = rectangle.get(selection.left + index, y)?.format;
+      if (format) {
+        formats.push({ ...format, x, y });
+      } else {
+        formats.push({ x, y });
+      }
+      index = (index + 1) % (selection.right - selection.left + 1);
+    }
   }
   await updateCellAndDCells({
     create_transaction: false,
     starting_cells: cells,
     sheetController: sheet_controller,
+  });
+  formats.forEach((format) => {
+    sheet_controller.execute_statement({
+      type: 'SET_CELL_FORMAT',
+      data: {
+        position: [format.x, format.y],
+        value: format,
+      },
+    });
   });
 };
 
@@ -179,6 +243,7 @@ export const expandLeft = async (options: {
   const { sheet_controller, sheet } = app;
 
   const cells: Cell[] = [];
+  const formats: CellFormat[] = [];
   const top = toVertical === undefined ? selection.top : Math.min(selection.top, toVertical);
   const bottom = toVertical === undefined ? selection.bottom : Math.max(selection.bottom, toVertical);
   for (let y = top; y <= bottom; y++) {
@@ -204,10 +269,29 @@ export const expandLeft = async (options: {
         });
       }
     });
+    let index = 0;
+    for (let x = to; x < selection.left; x++) {
+      const format = rectangle.get(selection.left + index, y)?.format;
+      if (format) {
+        formats.push({ ...format, x, y });
+      } else {
+        formats.push({ x, y });
+      }
+      index = (index + 1) % (selection.right - selection.left + 1);
+    }
   }
   await updateCellAndDCells({
     create_transaction: false,
     starting_cells: cells,
     sheetController: sheet_controller,
+  });
+  formats.forEach((format) => {
+    sheet_controller.execute_statement({
+      type: 'SET_CELL_FORMAT',
+      data: {
+        position: [format.x, format.y],
+        value: format,
+      },
+    });
   });
 };
