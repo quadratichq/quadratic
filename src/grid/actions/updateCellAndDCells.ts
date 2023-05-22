@@ -216,7 +216,6 @@ export const updateCellAndDCells = async (args: ArgsType) => {
     // if any updated cells have other cells depending on them, add to list to update
     for (const array_cell of array_cells_to_output) {
       let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
-      for (const dep of deps) cells_to_update.add(`${dep[0]},${dep[1]}`);
       addToSet(deps, cells_to_update);
     }
 
