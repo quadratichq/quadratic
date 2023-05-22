@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, Typography, IconButton, InputBase } from '@mui/material';
+import { Box, Typography, IconButton, InputBase, Button } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
@@ -193,20 +193,21 @@ export const TopBar = (props: IProps) => {
                 <ManageSearch />
               </IconButton>
             </TooltipHint>
-            {/* <Tooltip title="Coming soon" arrow>
-              <Button
-                style={{
-                  color: colors.darkGray,
-                  borderColor: colors.darkGray,
-                  paddingTop: '1px',
-                  paddingBottom: '1px',
-                }}
-                variant="outlined"
-                size="small"
-              >
-                Share
-              </Button>
-            </Tooltip> */}
+            <Button
+              onClick={() => {
+                setEditorInteractionState((prevState) => ({ ...prevState, showShareMenu: true }));
+              }}
+              style={{
+                color: colors.darkGray,
+                borderColor: colors.darkGray,
+                paddingTop: '1px',
+                paddingBottom: '1px',
+              }}
+              variant="outlined"
+              size="small"
+            >
+              Share
+            </Button>
           </>
         )}
         <ZoomDropdown app={app} />
