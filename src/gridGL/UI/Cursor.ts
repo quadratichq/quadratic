@@ -82,17 +82,12 @@ export class Cursor extends Graphics {
 
     if (showInput && cellEdit) {
       this.lineStyle({
-        width: CURSOR_THICKNESS * 2,
+        width: CURSOR_THICKNESS * 1.5,
         color,
         alpha: INPUT_ALPHA,
-        alignment: 0.5,
+        alignment: 1,
       });
-      this.drawRect(
-        x - CURSOR_THICKNESS,
-        y - CURSOR_THICKNESS,
-        width + CURSOR_THICKNESS * 1.5,
-        height + CURSOR_THICKNESS * 1.5
-      );
+      this.drawRect(x, y, width, height);
     }
   }
 
