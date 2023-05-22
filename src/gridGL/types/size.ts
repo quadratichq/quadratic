@@ -1,5 +1,7 @@
-import { Coordinate } from '../../schemas';
-export type { Coordinate };
+export interface Coordinate {
+  x: number;
+  y: number;
+}
 
 export interface Size {
   width: number;

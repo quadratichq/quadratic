@@ -6,6 +6,9 @@ import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import {
   AttachMoneyOutlined,
   BorderAll,
+  FormatAlignCenter,
+  FormatAlignLeft,
+  FormatAlignRight,
   FormatBold,
   FormatClear,
   FormatColorFill,
@@ -59,6 +62,7 @@ export const FloatingContextMenu = (props: Props) => {
     changeBold,
     changeItalic,
     changeTextColor,
+    changeAlignment,
     textFormatDecreaseDecimalPlaces,
     textFormatIncreaseDecimalPlaces,
     textFormatSetCurrency,
@@ -244,6 +248,24 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDivider />
 
+        <TooltipHint title="Align left">
+          <IconButton size="small" onClick={() => changeAlignment('left')}>
+            <FormatAlignLeft fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+        <TooltipHint title="Align center">
+          <IconButton size="small" onClick={() => changeAlignment('center')}>
+            <FormatAlignCenter fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+        <TooltipHint title="Align right">
+          <IconButton size="small" onClick={() => changeAlignment('right')}>
+            <FormatAlignRight fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <MenuDivider />
+
         <Menu
           className="color-picker-submenu"
           menuButton={
@@ -304,39 +326,6 @@ export const FloatingContextMenu = (props: Props) => {
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
-
-        {/*
-        <Divider
-          orientation="vertical"
-          flexItem
-          style={{
-            // add padding left and right
-            paddingLeft: '10px',
-            marginRight: '10px',
-          }}
-        />
-        <IconButton disabled={true}>
-          <FormatAlignLeft fontSize={iconSize} />
-        </IconButton>
-        <IconButton disabled={true}>
-          <FormatAlignCenter fontSize={iconSize} />
-        </IconButton>
-        <IconButton disabled={true}>
-          <FormatAlignRight fontSize={iconSize} />
-        </IconButton>
-
-        <Divider
-          orientation="vertical"
-          flexItem
-          style={{
-            // add padding left and right
-            paddingLeft: '10px',
-            // marginRight: '10px',
-          }}
-        />
-        <Button style={{ color: colors.mediumGray }} disabled>
-          <span style={{ fontSize: '1rem' }}>123</span>
-        </Button> */}
         <MenuDivider />
         <TooltipHint title="More commands…">
           <IconButton onClick={() => moreMenu.toggleMenu()} color="inherit" ref={moreMenuButtonRef}>
