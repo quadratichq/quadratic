@@ -98,6 +98,14 @@ export class SheetController {
     return reverse_transaction;
   }
 
+  public cancel_transaction(): void {
+    if (!this.transaction_in_progress || !this.transaction_in_progress_reverse) {
+      throw new Error('No transaction in progress.');
+    }
+    this.transaction_in_progress = undefined;
+    this.transaction_in_progress_reverse = undefined;
+  }
+
   public predefined_transaction(statements: Statement[]): Transaction {
     // Starts a transaction, executes all statements, and ends the transaction.
     // Returns the transaction.
