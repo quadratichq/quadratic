@@ -7,7 +7,6 @@ function beforeUnloadListener(event: Event) {
 
 export default function useAlertOnUnsavedChanges(hasUnsavedChanges: boolean) {
   useEffect(() => {
-    console.log('hasUnsavedChanges', hasUnsavedChanges);
     if (hasUnsavedChanges) {
       window.addEventListener('beforeunload', beforeUnloadListener);
       return;
