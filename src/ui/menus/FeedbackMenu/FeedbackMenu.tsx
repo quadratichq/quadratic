@@ -4,9 +4,10 @@ import { useTheme } from '@mui/system';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { LinkNewTab } from '../../components/LinkNewTab';
-import { BUG_REPORT_URL, DISCORD } from '../../../constants/urls';
+import { BUG_REPORT_URL, DISCORD, TWITTER } from '../../../constants/urls';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
+import apiClientSingleton from '../../../api-client/apiClientSingleton';
 
 export const FeedbackMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -26,16 +27,22 @@ export const FeedbackMenu = () => {
 
   const onSubmit = () => {
     setLoadState('LOADING');
-
-    // TODO post to DB
-    const postToServer = () =>
-      new Promise((resolve, reject) => {
-        setTimeout(() => {
-          resolve('');
-        }, 2000);
-      });
-
-    postToServer()
+    console.log('fired');
+    fetch(`${apiClientSingleton.getAPIURL()}/feedback`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer apiClientSingleton.getAuth()`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user: 'foo', feedback: value }),
+    })
+      .then((res) => {
+        console.log('fired2');
+        if (res.ok) {
+          return res.json();
+        }
+        throw new Error('Request failed');
+      })
       .then(() => {
         setValue('');
         closeMenu();
@@ -55,9 +62,9 @@ export const FeedbackMenu = () => {
       <DialogTitle>Provide feedback</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          We’re listening on <LinkNewTab href={BUG_REPORT_URL}>GitHub</LinkNewTab> or{' '}
-          <LinkNewTab href={DISCORD}>Discord</LinkNewTab>. Or, provide feedback below (we read all feedback and may
-          follow up via email).
+          We’re listening on <LinkNewTab href={BUG_REPORT_URL}>GitHub</LinkNewTab>,{' '}
+          <LinkNewTab href={DISCORD}>Discord</LinkNewTab>, or <LinkNewTab href={TWITTER}>Twitter</LinkNewTab>. Or,
+          provide feedback below (we read all feedback and may follow up via email).
         </DialogContentText>
 
         <TextField

@@ -2,7 +2,7 @@
 export const debug = process.env.REACT_APP_DEBUG === '1' ? true : false;
 
 // skip python load (used to speed up debugging)
-export const debugSkipPythonLoad = debug && true;
+export const debugSkipPythonLoad = true;
 
 // ------------------
 // Debug footer marks
