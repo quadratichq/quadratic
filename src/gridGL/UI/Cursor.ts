@@ -2,7 +2,7 @@ import { Graphics, Rectangle } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { PixiApp } from '../pixiApp/PixiApp';
 
-export const CURSOR_THICKNESS = 1.25;
+export const CURSOR_THICKNESS = 2;
 const FILL_ALPHA = 0.1;
 const INDICATOR_SIZE = 8;
 const INDICATOR_PADDING = 1;
@@ -12,7 +12,7 @@ const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
 
 // outside border when editing the cell
-const INPUT_ALPHA = 0.4;
+const INPUT_ALPHA = 0.333;
 
 export class Cursor extends Graphics {
   private app: PixiApp;
@@ -82,16 +82,16 @@ export class Cursor extends Graphics {
 
     if (showInput && cellEdit) {
       this.lineStyle({
-        width: CURSOR_THICKNESS,
+        width: CURSOR_THICKNESS + 4,
         color,
         alpha: INPUT_ALPHA,
         alignment: 0,
       });
       this.drawRect(
-        x - CURSOR_THICKNESS,
-        y - CURSOR_THICKNESS,
-        width + CURSOR_THICKNESS * 2,
-        height + CURSOR_THICKNESS * 2
+        x - CURSOR_THICKNESS - 1,
+        y - CURSOR_THICKNESS - 1,
+        width + CURSOR_THICKNESS + 4,
+        height + CURSOR_THICKNESS + 4
       );
     }
   }
