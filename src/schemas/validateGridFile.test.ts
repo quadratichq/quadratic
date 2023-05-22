@@ -2,8 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { GridFiles } from '.';
 import { GridFileV1 } from './GridFileV1';
-import { GridFileV1_1 } from './GridFileV1_1';
 import { validateGridFile } from './validateGridFile';
+import { GridFileV1_2 } from './GridFileV1_2';
+import { GridFileV1_1 } from './GridFileV1_1';
+import { randomUUID } from 'crypto';
 const v = validateGridFile;
 const EXAMPLES_DIR = path.join(__dirname, '../../public/examples/');
 const exampleGridFiles: GridFiles[] = fs
@@ -29,6 +31,21 @@ const v1File: GridFileV1 = {
   cell_dependency: 'foo',
   formats: [{ x: 1, y: 1 }],
   render_dependency: [],
+};
+
+const v1_1File: GridFileV1_1 = {
+  version: '1.1',
+  cells: [],
+  columns: [],
+  rows: [],
+  borders: [],
+  cell_dependency: 'foo',
+  formats: [],
+  render_dependency: [],
+  id: randomUUID(),
+  created: 1,
+  filename: '1',
+  modified: 1,
 };
 
 describe('validateFile()', () => {
@@ -61,9 +78,10 @@ describe('validateFile()', () => {
     expect(v(v1FileSansCellDependency)).not.toBe(null);
   });
 
-  test('Upgrades a valid file from v1 to v1.1', () => {
+  test('Upgrades a valid file from v1 to v1.2', () => {
     const result = v(v1File);
-    expect(result).toHaveProperty('version', '1.1');
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('version', '1.2');
     expect(result).toHaveProperty('modified');
     expect(result).toHaveProperty('created');
     expect(result).toHaveProperty('id');
@@ -79,21 +97,30 @@ describe('validateFile()', () => {
     expect(result).not.toHaveProperty('borders[7].horizontal');
   });
 
+  test('Upgrades a valid file from v1.1 to v1.2', () => {
+    const result = v(v1_1File);
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('version', '1.2');
+    expect(result).toHaveProperty('modified');
+    expect(result).toHaveProperty('created');
+    expect(result).toHaveProperty('id');
+    expect(result).toHaveProperty('filename');
+  });
+
   test('Returns the file when it matches the most recent schema', () => {
-    const v1_1File: GridFileV1_1 = {
-      version: '1.1',
+    const v1_2File: GridFileV1_2 = {
+      version: '1.2',
       cells: [],
       columns: [],
       rows: [],
       borders: [{ x: 0, y: 0, horizontal: { type: 'line1' } }],
       formats: [{ x: 1, y: 1 }],
-      render_dependency: [],
       cell_dependency: 'foo',
       modified: 123,
       created: 123,
       id: '123e4567-e89b-12d3-a456-426614174000',
       filename: 'foo',
     };
-    expect(v(v1_1File)).toStrictEqual(v1_1File);
+    expect(v(v1_2File)).toStrictEqual(v1_2File);
   });
 });
