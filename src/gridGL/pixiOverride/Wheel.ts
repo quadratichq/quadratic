@@ -71,6 +71,10 @@ export interface IWheelOptions {
   wheelZoom?: boolean;
 }
 
+export const ZOOM_KEY = ['ControlKey', 'ControlLeft', 'ControlRight', 'MetaKey', 'MetaLeft', 'MetaRight'];
+
+export const HORIZONTAL_SCROLL_KEY = ['ShiftLeft', 'ShiftRight'];
+
 const DEFAULT_WHEEL_OPTIONS: Required<IWheelOptions> = {
   percent: 0.1,
   smooth: false,
@@ -97,7 +101,10 @@ export class Wheel extends Plugin {
   protected smoothingCount?: number;
 
   /** Flags whether the keys required to zoom are pressed currently. */
-  protected keyIsPressed: boolean;
+  protected zoomKeyIsPressed: boolean;
+
+  /** Flags whether the keys required to horizontal scrolling are currently pressed. */
+  protected horizontalScrollKeyIsPressed: boolean;
 
   /**
    * This is called by {@link Viewport.wheel}.
@@ -105,7 +112,8 @@ export class Wheel extends Plugin {
   constructor(parent: Viewport, options: IWheelOptions = {}) {
     super(parent);
     this.options = Object.assign({}, DEFAULT_WHEEL_OPTIONS, options);
-    this.keyIsPressed = false;
+    this.zoomKeyIsPressed = false;
+    this.horizontalScrollKeyIsPressed = false;
 
     if (this.options.keyToPress) {
       this.handleKeyPresses(this.options.keyToPress);
@@ -114,7 +122,8 @@ export class Wheel extends Plugin {
   }
 
   private handleBlur = (): void => {
-    this.keyIsPressed = false;
+    this.zoomKeyIsPressed = false;
+    this.horizontalScrollKeyIsPressed = false;
   };
 
   /**
@@ -124,20 +133,22 @@ export class Wheel extends Plugin {
    */
   protected handleKeyPresses(codes: string[]): void {
     window.addEventListener('keydown', (e) => {
-      if (codes.includes(e.code)) {
-        this.keyIsPressed = true;
+      if (this.isZoomKey(e.code)) {
+        this.zoomKeyIsPressed = true;
+      }
+      if (this.isHorizontalScrollKey(e.code)) {
+        this.horizontalScrollKeyIsPressed = true;
       }
     });
 
     window.addEventListener('keyup', (e) => {
-      if (codes.includes(e.code)) {
-        this.keyIsPressed = false;
+      if (this.isZoomKey(e.code)) {
+        this.zoomKeyIsPressed = false;
+      }
+      if (this.isHorizontalScrollKey(e.code)) {
+        this.horizontalScrollKeyIsPressed = false;
       }
     });
-  }
-
-  protected checkKeyPress(): boolean {
-    return !this.options.keyToPress || this.keyIsPressed;
   }
 
   public down(): boolean {
@@ -154,6 +165,14 @@ export class Wheel extends Plugin {
 
   protected isAxisY(): boolean {
     return ['all', 'y'].includes(this.options.axis);
+  }
+
+  protected isZoomKey(key: string): key is (typeof ZOOM_KEY)[number] {
+    return ZOOM_KEY.includes(key);
+  }
+
+  protected isHorizontalScrollKey(key: string): key is (typeof HORIZONTAL_SCROLL_KEY)[number] {
+    return HORIZONTAL_SCROLL_KEY.includes(key);
   }
 
   public update(): void {
@@ -235,10 +254,11 @@ export class Wheel extends Plugin {
   }
 
   public wheel(e: WheelEvent): boolean {
-    if (this.paused) {
+    // If paused or both zoom and horizontal keys are pressed do nothing
+    if (this.paused || (this.zoomKeyIsPressed && this.horizontalScrollKeyIsPressed)) {
       return false;
     }
-    if (this.checkKeyPress()) {
+    if (this.zoomKeyIsPressed) {
       const point = this.parent.input.getPointerPosition(e);
       const sign = this.options.reverse ? -1 : 1;
       const step = (sign * -e.deltaY * (e.deltaMode ? this.options.lineHeight : 1)) / 500;
@@ -296,10 +316,10 @@ export class Wheel extends Plugin {
       const step = 1;
 
       const deltas = [e.deltaX, e.deltaY];
-      const [deltaX, deltaY] = deltas;
+      let [deltaX, deltaY] = deltas;
 
-      this.parent.x += deltaX * step * -1;
-      this.parent.y += deltaY * step * -1;
+      this.parent.x += (this.horizontalScrollKeyIsPressed ? deltaY : deltaX) * step * -1;
+      this.parent.y += deltaY * step * -1 * (this.horizontalScrollKeyIsPressed ? 0 : 1);
       this.parent.emit('wheel-scroll', this.parent);
       this.parent.emit('moved', { viewport: this.parent, type: 'wheel' });
     }
