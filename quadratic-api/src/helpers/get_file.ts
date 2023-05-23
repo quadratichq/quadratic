@@ -1,4 +1,4 @@
-import { PrismaClient, QUser } from '@prisma/client';
+import { PrismaClient, QUser, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -11,9 +11,10 @@ export const get_file = async (user: QUser, uuid: string) => {
   });
 
   if (!file) return null;
+  const gridFile = file.contents as Prisma.JsonObject;
 
-  // only return the file if the user is the owner
-  if (user.id === file.qUserId) {
+  // only return the file if the user is the owner OR if it's marked as public
+  if (user.id === file.qUserId || gridFile.isPublic) {
     return file;
   }
 

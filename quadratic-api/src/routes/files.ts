@@ -3,7 +3,7 @@ import { validateAccessToken } from '../middleware/auth';
 import { Request as JWTRequest } from 'express-jwt';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, QFile, QUser } from '@prisma/client';
 import { get_user } from '../helpers/get_user';
 import { get_file } from '../helpers/get_file';
 import { get_file_metadata } from '../helpers/read_file';
@@ -27,6 +27,25 @@ const FilesBackupRequestBody = z.object({
 });
 
 // type FilesBackupRequestBodyType = z.infer<typeof FilesBackupRequestBody>;
+
+files_router.get('/:id', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
+  try {
+    const fileUUID = request.params.id;
+    const user: QUser = await get_user(request);
+    const file: QFile | null = await get_file(user, fileUUID);
+
+    if (!file) {
+      throw new Error('The requested file could not be found.');
+    }
+
+    response.status(200).json({ file: file.contents });
+  } catch (e) {
+    console.error(e);
+    response
+      .status(400)
+      .json({ message: 'Something went wrong. It’s likely the requested file is not publicly accessible.' });
+  }
+});
 
 files_router.post('/backup', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
   const r_json = FilesBackupRequestBody.parse(request.body);
