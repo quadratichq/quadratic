@@ -28,6 +28,7 @@ export interface LocalFiles {
   createNewFile: () => Promise<void>;
   currentFilename: string;
   currentFileId: string;
+  currentFileIsPublic: boolean;
   deleteFile: (id: string) => void;
   downloadCurrentFile: () => void;
   downloadFileFromMemory: (id: string) => void;
@@ -38,6 +39,7 @@ export interface LocalFiles {
   loadFileFromUrl: (url: string) => Promise<boolean>;
   loadFileFromExamples: (sample: string, filename: string) => Promise<boolean>;
   renameCurrentFile: (newFilename: string) => Promise<void>;
+  shareCurrentFile: (isPublic: boolean) => Promise<void>;
   save: () => Promise<void>;
 }
 
@@ -238,6 +240,10 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     return currentFileContents?.id || '';
   }, [currentFileContents?.id]);
 
+  const currentFileIsPublic = useMemo(() => {
+    return Boolean(currentFileContents?.isPublic);
+  }, [currentFileContents?.isPublic]);
+
   // Rename the current file open in the app
   const renameCurrentFile = useCallback(
     async (newFilename: string): Promise<void> => {
@@ -259,6 +265,16 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
           .sort((a, b) => b.modified - a.modified)
       );
       log('Renamed file from `%s` to `%s` (%s)', currentFileContents.filename, newFilename, currentFileContents?.id);
+    },
+    [currentFileContents]
+  );
+
+  const shareCurrentFile = useCallback(
+    async (isPublic: boolean) => {
+      if (!currentFileContents) throw new Error('Expected `currentFileContents` to rename the current file.');
+      setCurrentFileContents({ ...currentFileContents, isPublic, modified: Date.now() });
+      // TODO setFileList with modified date?
+      log('Set `isPublic` to `%s` for file `%s`', String(isPublic), currentFileContents?.id);
     },
     [currentFileContents]
   );
@@ -417,6 +433,9 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       }
     }
 
+    // Get share UUID (if present)
+    const share = getURLParameter('share');
+
     // Load the app into a different state based on certain criteria
     if (file) {
       // Somebody trying to import a remote file on page load
@@ -427,6 +446,16 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     } else if (local) {
       // Somebody trying to load a file already in memory
       if (await loadFileFromMemory(local)) {
+        return;
+      }
+      setHasInitialPageLoadError(true);
+    } else if (share) {
+      // The user who generated the share URL put it into their own browser
+      if (savedFileList && savedFileList.filter(({ id }) => share === id).length) {
+        if (await loadFileFromMemory(share)) {
+          return;
+        }
+      } else if (await loadFileFromUrl(`https://api.quadratichq.com/files/${share}`)) {
         return;
       }
       setHasInitialPageLoadError(true);
@@ -456,6 +485,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     hasInitialPageLoadError,
     currentFilename,
     currentFileId,
+    currentFileIsPublic,
     deleteFile,
     downloadCurrentFile,
     downloadFileFromMemory,
@@ -467,6 +497,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     loadFileFromExamples,
     createNewFile,
     renameCurrentFile,
+    shareCurrentFile,
     save,
   };
 };

@@ -1,28 +1,50 @@
-import { useState } from 'react';
+import { useCallback } from 'react';
 import { Button, Dialog, Paper, Switch, TextField, Typography, useTheme } from '@mui/material';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { Public } from '@mui/icons-material';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
-// import { focusGrid } from '../../../helpers/focusGrid';
+import { focusGrid } from '../../../helpers/focusGrid';
+// import apiClientSingleton from '../../../api-client/apiClientSingleton';
 
-// import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
+// function highlightLink(input: HTMLInputElement) {
+//   input.focus();
+//   input.select();
+//   input.scrollLeft = 0;
+// }
 
 export function ShareMenu() {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  const [isPublic, setIsPublic] = useState(false);
   const onClose = () => {
     setEditorInteractionState((prevState) => ({
       ...prevState,
-      showFileMenu: false,
+      showShareMenu: false,
     }));
+    // TODO get this working, proper focus trapping with modal
+    focusGrid();
   };
-  const { currentFileId } = useLocalFiles();
+  // const input = useRef<HTMLInputElement>();
+  const { currentFileId, currentFileIsPublic, shareCurrentFile } = useLocalFiles();
   const theme = useTheme();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const shareLink = `https://app.quadratichq.com?share=${currentFileId}`;
-  // const styles = getStyles(theme);
+
+  // useEffect(() => {
+  //   apiClientSingleton.getFile(currentFileId).then(file => {
+  //     setIsPublic(true);
+  //   }).catch(e => {
+  //   })
+  // }, [])
+
+  // https://stackoverflow.com/a/60066291/1339693
+  const onRefChange = useCallback((input: HTMLInputElement | null) => {
+    if (input !== null) {
+      input.focus();
+      input.select();
+      input.scrollLeft = 0;
+    }
+  }, []);
 
   return (
     <Dialog open={true} onClose={onClose} fullWidth maxWidth={'sm'} BackdropProps={{ invisible: true }}>
@@ -42,24 +64,16 @@ export function ShareMenu() {
               Anyone with link can view or duplicate this sheet
             </Typography>
           </div>
-          <Switch sx={{ ml: 'auto' }} checked={isPublic} onChange={() => setIsPublic(!isPublic)} />
+          {/* TODO Make this switch styled like the other */}
+          <Switch
+            sx={{ ml: 'auto' }}
+            checked={currentFileIsPublic}
+            onChange={() => shareCurrentFile(!currentFileIsPublic)}
+          />
         </div>
-        {isPublic && (
+        {currentFileIsPublic && (
           <div style={{ display: 'flex', gap: theme.spacing(2), marginTop: theme.spacing(2) }}>
-            <TextField
-              fullWidth
-              InputProps={{
-                onClick: (e) => {
-                  // console.log(typeof e.target);
-                  // // @ts-expect-error
-                  // e.target.select();
-                },
-              }}
-              size="small"
-              disabled
-              id="outlined-disabled"
-              defaultValue={shareLink}
-            />
+            <TextField inputRef={onRefChange} fullWidth size="small" id="outlined-disabled" defaultValue={shareLink} />
             <Button
               style={{ flexShrink: '0' }}
               onClick={() => {

@@ -1,6 +1,6 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { NoteAddOutlined, UploadFileOutlined } from '@mui/icons-material';
+import { IosShare, NoteAddOutlined, UploadFileOutlined } from '@mui/icons-material';
 import { SaveFileOutlined } from '../../../icons';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRecoilState } from 'recoil';
@@ -36,6 +36,24 @@ const ListItems = [
             setEditorInteractionState({
               ...editorInteractionState,
               showFileMenu: true,
+            });
+          }}
+        />
+      );
+    },
+  },
+  {
+    label: 'File: Share…',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<IosShare />}
+          action={() => {
+            setEditorInteractionState({
+              ...editorInteractionState,
+              showShareMenu: true,
             });
           }}
         />
