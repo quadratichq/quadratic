@@ -1,7 +1,7 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { IosShare, NoteAddOutlined, UploadFileOutlined } from '@mui/icons-material';
-import { SaveFileOutlined } from '../../../icons';
+import { NoteAddOutlined, UploadFileOutlined } from '@mui/icons-material';
+import { ShareFileOutlined, SaveFileOutlined } from '../../../icons';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
@@ -49,7 +49,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<IosShare />}
+          icon={<ShareFileOutlined />}
           action={() => {
             setEditorInteractionState({
               ...editorInteractionState,

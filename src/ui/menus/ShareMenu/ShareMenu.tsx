@@ -6,13 +6,6 @@ import { Public } from '@mui/icons-material';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 import { focusGrid } from '../../../helpers/focusGrid';
-// import apiClientSingleton from '../../../api-client/apiClientSingleton';
-
-// function highlightLink(input: HTMLInputElement) {
-//   input.focus();
-//   input.select();
-//   input.scrollLeft = 0;
-// }
 
 export function ShareMenu() {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -25,17 +18,10 @@ export function ShareMenu() {
     focusGrid();
   };
   // const input = useRef<HTMLInputElement>();
-  const { currentFileId, currentFileIsPublic, shareCurrentFile } = useLocalFiles();
+  const { currentFileIsPublic, shareCurrentFile } = useLocalFiles();
   const theme = useTheme();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const shareLink = `https://app.quadratichq.com?share=${currentFileId}`;
-
-  // useEffect(() => {
-  //   apiClientSingleton.getFile(currentFileId).then(file => {
-  //     setIsPublic(true);
-  //   }).catch(e => {
-  //   })
-  // }, [])
+  const shareLink = window.location.href;
 
   // https://stackoverflow.com/a/60066291/1339693
   const onRefChange = useCallback((input: HTMLInputElement | null) => {
@@ -57,7 +43,8 @@ export function ShareMenu() {
             justifyContent: 'space-between',
           }}
         >
-          <Public fontSize="large" color="disabled" />
+          <Public fontSize="large" color={currentFileIsPublic ? 'inherit' : 'disabled'} />
+
           <div>
             <Typography variant="body1">Share publicly</Typography>
             <Typography variant="body2" color={theme.palette.text.secondary}>

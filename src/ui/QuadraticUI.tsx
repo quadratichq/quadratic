@@ -20,11 +20,12 @@ import ReadOnlyDialog from './components/ReadOnlyDialog';
 import { IS_READONLY_MODE } from '../constants/app';
 import { useLocalFiles } from './contexts/LocalFiles';
 import ShareMenu from './menus/ShareMenu';
+import SharedFileAlert from './components/SharedFileAlert';
 
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
-  const { hasInitialPageLoadError } = useLocalFiles();
+  const { currentFileId, currentFileIsReadOnly, hasInitialPageLoadError } = useLocalFiles();
 
   useEffect(() => {
     sheetController.setApp(app);
@@ -76,6 +77,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {hasInitialPageLoadError && <InitialPageLoadError />}
 
       {IS_READONLY_MODE && <ReadOnlyDialog />}
+      {currentFileId && currentFileIsReadOnly && <SharedFileAlert />}
     </div>
   );
 }

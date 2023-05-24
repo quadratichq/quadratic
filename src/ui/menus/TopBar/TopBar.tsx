@@ -15,7 +15,7 @@ import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
-import { ManageSearch } from '@mui/icons-material';
+import { ManageSearch, Public } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
@@ -29,7 +29,7 @@ interface IProps {
 export const TopBar = (props: IProps) => {
   const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFilename, renameCurrentFile } = useLocalFiles();
+  const { currentFilename, currentFileIsPublic, renameCurrentFile } = useLocalFiles();
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
 
   const settings = useGridSettings();
@@ -171,6 +171,21 @@ export const TopBar = (props: IProps) => {
                 </Avatar>
               </AvatarGroup>
             )} */}
+            <Button
+              onClick={() => {
+                setEditorInteractionState((prevState) => ({ ...prevState, showShareMenu: true }));
+              }}
+              style={{
+                color: colors.darkGray,
+                borderColor: colors.darkGray,
+                display: 'flex',
+                gap: '4px',
+              }}
+              variant="outlined"
+              size="small"
+            >
+              {currentFileIsPublic && <Public fontSize="small" />} Share
+            </Button>
             <TooltipHint title={`${settings.showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
               <CodeOutlinesSwitch
                 onClick={() => {
@@ -193,21 +208,6 @@ export const TopBar = (props: IProps) => {
                 <ManageSearch />
               </IconButton>
             </TooltipHint>
-            <Button
-              onClick={() => {
-                setEditorInteractionState((prevState) => ({ ...prevState, showShareMenu: true }));
-              }}
-              style={{
-                color: colors.darkGray,
-                borderColor: colors.darkGray,
-                paddingTop: '1px',
-                paddingBottom: '1px',
-              }}
-              variant="outlined"
-              size="small"
-            >
-              Share
-            </Button>
           </>
         )}
         <ZoomDropdown app={app} />

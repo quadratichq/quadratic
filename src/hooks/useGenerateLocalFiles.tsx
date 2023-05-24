@@ -6,7 +6,7 @@ import { GridFileV1 } from '../schemas/GridFileV1';
 import { validateGridFile } from '../schemas/validateGridFile';
 import { debugShowFileIO } from '../debugFlags';
 import { v4 as uuid } from 'uuid';
-import { getURLParameter } from '../helpers/getURL';
+import { getSearchParams, updateSearchParamsInUrl } from '../helpers/searchParams';
 import { downloadFile } from '../helpers/downloadFile';
 import { SheetController } from '../grid/controller/sheetController';
 import { useSetRecoilState } from 'recoil';
@@ -29,6 +29,7 @@ export interface LocalFiles {
   currentFilename: string;
   currentFileId: string;
   currentFileIsPublic: boolean;
+  currentFileIsReadOnly: boolean;
   deleteFile: (id: string) => void;
   downloadCurrentFile: () => void;
   downloadFileFromMemory: (id: string) => void;
@@ -55,6 +56,23 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
 
   const { sheet } = sheetController;
 
+  // Current file info
+  const currentFilename = useMemo(() => {
+    return currentFileContents?.filename || '';
+  }, [currentFileContents?.filename]);
+  const currentFileId = useMemo(() => {
+    return currentFileContents?.id || '';
+  }, [currentFileContents?.id]);
+  const currentFileIsPublic = useMemo(() => {
+    return Boolean(currentFileContents?.isPublic);
+  }, [currentFileContents?.isPublic]);
+  const currentFileIsReadOnly = useMemo(() => {
+    if (fileList && !fileList.map(({ id }) => id).includes(currentFileId)) {
+      return true;
+    }
+    return false;
+  }, [fileList, currentFileId]);
+
   // Persist `fileList` to localStorage when it changes
   useEffect(() => {
     localforage.setItem(INDEX, fileList).then((newFileList) => {
@@ -62,23 +80,25 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     });
   }, [fileList]);
 
-  // Persist `currentFileContents` to localStorage and update the tab title
-  // when it changes
+  // Persist current file data and update the tab title when it changes
   useEffect(() => {
     if (currentFileContents !== null) {
       const { filename, id } = currentFileContents;
-      localforage.setItem(id, currentFileContents).then(() => {
-        document.title = `${filename} - Quadratic`;
-        log(`persisted current file: ${filename} (${id})`);
-      });
 
-      // If we are running with Quadratic in the cloud
-      // Backup the file to the cloud
-      if (process.env.REACT_APP_QUADRATIC_API_URL) apiClientSingleton.backupFile(id, currentFileContents);
+      document.title = `${filename} - Quadratic`;
+
+      // If user owns file, persist to local storage and backup to API
+      if (!currentFileIsReadOnly) {
+        localforage.setItem(id, currentFileContents).then(() => {
+          log(`persisted current file: ${filename} (${id})`);
+        });
+
+        apiClientSingleton.backupFile(id, currentFileContents);
+      }
     } else {
       document.title = 'Quadratic';
     }
-  }, [currentFileContents]);
+  }, [currentFileContents, currentFileIsReadOnly]);
 
   // Reset the sheet to the current file in state, update the URL accordingly
   const resetSheet = useCallback(
@@ -88,14 +108,10 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       sheetController.app?.rebuild();
       sheetController.app?.reset();
       focusGrid();
-      const searchParams = new URLSearchParams(window.location.search);
-      // If `file` is in there from an intial page load, remove it
-      if (searchParams.get('file')) {
-        searchParams.delete('file');
-      }
-      searchParams.set('local', grid.id);
-      const url = `${window.location.href.split('?')[0]}?${searchParams.toString()}`;
-      window.history.replaceState(undefined, '', url);
+
+      // Update URL to the new file we just loaded
+      const { id, isPublic } = grid;
+      updateSearchParamsInUrl(new URLSearchParams(isPublic ? `?share=${id}` : `?local=${id}`));
     },
     [sheetController]
   );
@@ -232,18 +248,6 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     [currentFileContents, downloadCurrentFile]
   );
 
-  const currentFilename = useMemo(() => {
-    return currentFileContents?.filename || '';
-  }, [currentFileContents?.filename]);
-
-  const currentFileId = useMemo(() => {
-    return currentFileContents?.id || '';
-  }, [currentFileContents?.id]);
-
-  const currentFileIsPublic = useMemo(() => {
-    return Boolean(currentFileContents?.isPublic);
-  }, [currentFileContents?.isPublic]);
-
   // Rename the current file open in the app
   const renameCurrentFile = useCallback(
     async (newFilename: string): Promise<void> => {
@@ -272,9 +276,14 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   const shareCurrentFile = useCallback(
     async (isPublic: boolean) => {
       if (!currentFileContents) throw new Error('Expected `currentFileContents` to rename the current file.');
+      const { id } = currentFileContents;
       setCurrentFileContents({ ...currentFileContents, isPublic, modified: Date.now() });
+
+      // Update URL based on the state of the file
+      updateSearchParamsInUrl(new URLSearchParams(isPublic ? `?share=${id}` : `?local=${id}`));
+
       // TODO setFileList with modified date?
-      log('Set `isPublic` to `%s` for file `%s`', String(isPublic), currentFileContents?.id);
+      log('Update URL and set `isPublic` to `%s` for file `%s`', String(isPublic), currentFileContents?.id);
     },
     [currentFileContents]
   );
@@ -376,13 +385,16 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     }
 
     // Get URL params we need at initialize time
-    const local = getURLParameter('local');
-    let file = getURLParameter('file');
+    const searchParams = getSearchParams();
+    const share = searchParams.get('share');
+    const local = searchParams.get('local');
+    let file = searchParams.get('file');
     // We get the `file` query param from the URL, but if a user had it present
     // _before_ they logged in, we lose it through the Auth0 process, so we
     // store it in sessionStorage and use it (then delete it) if its present
     const fileParamBeforeLogin = sessionStorage.getItem(FILE_PARAM_KEY);
     if (fileParamBeforeLogin) {
+      // TODO support share here too
       file = fileParamBeforeLogin;
       sessionStorage.removeItem(FILE_PARAM_KEY);
     }
@@ -433,9 +445,6 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       }
     }
 
-    // Get share UUID (if present)
-    const share = getURLParameter('share');
-
     // Load the app into a different state based on certain criteria
     if (file) {
       // Somebody trying to import a remote file on page load
@@ -451,13 +460,20 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       setHasInitialPageLoadError(true);
     } else if (share) {
       // The user who generated the share URL put it into their own browser
-      if (savedFileList && savedFileList.filter(({ id }) => share === id).length) {
+      if (savedFileList && savedFileList.map(({ id }) => id).includes(share)) {
+        log('Shared URL is owned by the current user, loading from memory...');
         if (await loadFileFromMemory(share)) {
           return;
         }
-      } else if (await loadFileFromUrl(`https://api.quadratichq.com/files/${share}`)) {
-        return;
+      } else {
+        log('Shared URL is remote, fetching file...');
+        const file = await apiClientSingleton.getFile(share);
+        if (file) {
+          const imported = await importQuadraticFile(JSON.stringify(file), file.filename, false);
+          if (imported) return;
+        }
       }
+      // TODO not a great message but it's what we have ATM
       setHasInitialPageLoadError(true);
     } else if (isFirstVisit) {
       // First time visitor gets the default sample file
@@ -472,6 +488,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       ...oldState,
       showFileMenu: true,
     }));
+    updateSearchParamsInUrl(new URLSearchParams(''));
   }, [
     importQuadraticFile,
     loadFileFromMemory,
@@ -486,6 +503,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     currentFilename,
     currentFileId,
     currentFileIsPublic,
+    currentFileIsReadOnly,
     deleteFile,
     downloadCurrentFile,
     downloadFileFromMemory,
