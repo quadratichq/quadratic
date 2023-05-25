@@ -37,34 +37,14 @@ export const FeedbackMenu = () => {
 
   const onSubmit = async () => {
     setLoadState('LOADING');
-
-    apiClientSingleton
-      .getAuth()
-      .then((token) =>
-        fetch(`${apiClientSingleton.getAPIURL()}/feedback`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ feedback: value }),
-        })
-      )
-      .then((res) => {
-        if (res.ok) {
-          return;
-        }
-        throw new Error('Unexpected response from the server.');
-      })
-      .then(() => {
-        setValue('');
-        closeMenu();
-        addGlobalSnackbar('Feedback submitted! Thank you.');
-      })
-      .catch((e) => {
-        console.error(e);
-        setLoadState('LOAD_ERROR');
-      });
+    const success = await apiClientSingleton.postFeedback(value);
+    if (success) {
+      setValue('');
+      closeMenu();
+      addGlobalSnackbar('Feedback submitted! Thank you.');
+    } else {
+      setLoadState('LOAD_ERROR');
+    }
   };
 
   const isLoading = loadState === 'LOADING';
