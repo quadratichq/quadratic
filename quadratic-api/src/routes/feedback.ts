@@ -1,11 +1,9 @@
 import express from 'express';
-import { validateAccessToken } from '../middleware/auth';
-import { Request as JWTRequest } from 'express-jwt';
 import { z } from 'zod';
+import { Request as JWTRequest } from 'express-jwt';
 import { PrismaClient } from '@prisma/client';
+import { validateAccessToken } from '../middleware/auth';
 import { get_user } from '../helpers/get_user';
-// import { get_file } from '../helpers/get_file';
-// import { get_file_metadata } from '../helpers/read_file';
 
 const files_router = express.Router();
 const prisma = new PrismaClient();
