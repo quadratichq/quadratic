@@ -18,6 +18,7 @@ import { isMac } from '../../../../utils/isMac';
 import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useLocalFiles } from '../../../contexts/LocalFiles';
+import { focusGrid } from '../../../../helpers/focusGrid';
 
 interface Props {
   sheetController: SheetController;
@@ -59,6 +60,18 @@ export const QuadraticMenu = (props: Props) => {
           }}
         >
           <MenuLineItem primary="Back to files" secondary={KeyboardSymbols.Command + 'O'} />
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            setEditorInteractionState({
+              ...editorInteractionState,
+              showCommandPalette: true,
+            });
+            focusGrid();
+          }}
+        >
+          <MenuLineItem primary="Command palette" secondary={KeyboardSymbols.Command + 'P'} />
         </MenuItem>
         <MenuDivider />
         <SubMenu label="File">
@@ -178,7 +191,6 @@ export const QuadraticMenu = (props: Props) => {
           >
             Show A1 notation on headings
           </MenuItem> */}
-          <MenuDivider />
         </SubMenu>
 
         {isAuthenticated && (

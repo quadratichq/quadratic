@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, Typography, IconButton, InputBase } from '@mui/material';
-import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { Box, Typography, InputBase } from '@mui/material';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { colors } from '../../../theme/colors';
@@ -13,9 +11,7 @@ import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximize
 import { IS_READONLY_MODE } from '../../../constants/app';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
-import { ManageSearch } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
@@ -28,7 +24,6 @@ interface IProps {
 
 export const TopBar = (props: IProps) => {
   const { app, sheetController } = props;
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { currentFilename, renameCurrentFile } = useLocalFiles();
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
 
@@ -179,19 +174,6 @@ export const TopBar = (props: IProps) => {
                 }}
                 checked={settings.showCellTypeOutlines}
               />
-            </TooltipHint>
-            <TooltipHint title="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
-              <IconButton
-                onClick={() => {
-                  setEditorInteractionState({
-                    ...editorInteractionState,
-                    showCommandPalette: true,
-                  });
-                  focusGrid();
-                }}
-              >
-                <ManageSearch />
-              </IconButton>
             </TooltipHint>
             {/* <Tooltip title="Coming soon" arrow>
               <Button
