@@ -38,7 +38,7 @@ files_router.get('/:id', validateAccessToken, ai_rate_limiter, async (request: J
       throw new Error('The requested file could not be found.');
     }
 
-    response.status(200).json({ file: file.contents });
+    response.status(200).json(file.contents);
   } catch (e) {
     console.error(e);
     response
