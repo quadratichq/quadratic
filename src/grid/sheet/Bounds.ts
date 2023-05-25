@@ -24,6 +24,14 @@ export class Bounds {
     this.empty = false;
   }
 
+  addRectangle(rectangle: Rectangle): void {
+    this.minX = Math.min(rectangle.left, this.minX);
+    this.maxX = Math.max(rectangle.right, this.maxX);
+    this.minY = Math.min(rectangle.top, this.minY);
+    this.maxY = Math.max(rectangle.bottom, this.maxY);
+    this.empty = false;
+  }
+
   addCoordinate(coordinate: Coordinate): void {
     this.add(coordinate.x, coordinate.y);
   }

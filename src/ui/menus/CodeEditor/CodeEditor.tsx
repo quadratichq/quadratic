@@ -20,7 +20,8 @@ import { useSetRecoilState } from 'recoil';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
-import { FormulaCompletionProvider, FormulaLanguageConfig } from './FormulaLanguageModel';
+import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
+import { provideCompletionItems, provideHover } from 'quadratic-core';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
 import { AI, Formula, Python } from '../../icons';
@@ -28,6 +29,7 @@ import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
 import mixpanel from 'mixpanel-browser';
+import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -113,6 +115,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
     }
   }, [selectedCell]);
 
+  useAlertOnUnsavedChanges(hasUnsavedChanges);
+
   const closeEditor = ({ skipUnsavedChangesCheck } = { skipUnsavedChangesCheck: false }) => {
     // If there are unsaved changes and we haven't been told to explicitly skip
     // checking for unsaved changes, ask the user what they want to do
@@ -134,9 +138,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
   };
 
   useEffect(() => {
-    // focus editor on show editor change
-    editorRef.current?.focus();
-    editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
+    if (editorInteractionState.showCodeEditor) {
+      // focus editor on show editor change
+      editorRef.current?.focus();
+      editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
+    }
   }, [editorInteractionState.showCodeEditor]);
 
   // When cell changes
@@ -234,8 +240,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
     // Only register language once
 
     monaco.languages.register({ id: 'formula' });
-    monaco.languages.setMonarchTokensProvider('formula', FormulaLanguageConfig);
-    monaco.languages.registerCompletionItemProvider('formula', FormulaCompletionProvider);
+    monaco.languages.setLanguageConfiguration('formula', FormulaLanguageConfig);
+    monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
+    monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
+    monaco.languages.registerHoverProvider('formula', { provideHover });
 
     setDidMount(true);
   };

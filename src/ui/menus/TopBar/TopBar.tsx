@@ -68,7 +68,7 @@ export const TopBar = (props: IProps) => {
           alignItems: 'center',
         }}
       >
-        <QuadraticMenu app={app} sheetController={sheetController} />
+        <QuadraticMenu sheetController={sheetController} />
         {!IS_READONLY_MODE && (
           <>
             <DataMenu></DataMenu>
@@ -238,6 +238,12 @@ function FileRename({
       onKeyUp={(e) => {
         if (e.key === 'Enter') {
           inputRef.current?.blur();
+          focusGrid();
+        } else if (e.key === 'Escape') {
+          if (inputRef.current) {
+            inputRef.current.value = currentFilename;
+            inputRef.current.blur();
+          }
           focusGrid();
         }
       }}

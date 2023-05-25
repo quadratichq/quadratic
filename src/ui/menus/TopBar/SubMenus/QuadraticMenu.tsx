@@ -6,7 +6,6 @@ import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-
 import { IS_READONLY_MODE } from '../../../../constants/app';
 import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
-import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
 import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { SheetController } from '../../../../grid/controller/sheetController';
@@ -18,17 +17,14 @@ import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionState
 import { isMac } from '../../../../utils/isMac';
 import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { useLocalFiles } from '../../../contexts/LocalFiles';
 
 interface Props {
   sheetController: SheetController;
-  app: PixiApp;
 }
 
 export const QuadraticMenu = (props: Props) => {
-  const { app, sheetController } = props;
-  const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
+  const { sheetController } = props;
   const interactionState = useRecoilValue(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
@@ -66,14 +62,7 @@ export const QuadraticMenu = (props: Props) => {
         </MenuItem>
         <MenuDivider />
         <SubMenu label="File">
-          <MenuItem
-            onClick={() => {
-              app.reset();
-              createNewFile();
-            }}
-          >
-            New
-          </MenuItem>
+          <MenuItem onClick={createNewFile}>New</MenuItem>
           <MenuItem onClick={() => downloadCurrentFile()}>Download local copy</MenuItem>
           <MenuItem
             onClick={() => {
@@ -190,15 +179,6 @@ export const QuadraticMenu = (props: Props) => {
             Show A1 notation on headings
           </MenuItem> */}
           <MenuDivider />
-          <MenuItem
-            type="checkbox"
-            checked={showDebugMenu}
-            onClick={() => {
-              setShowDebugMenu(!showDebugMenu);
-            }}
-          >
-            Show debug menu
-          </MenuItem>
         </SubMenu>
 
         {isAuthenticated && (

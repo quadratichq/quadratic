@@ -20,7 +20,6 @@ import { LinkNewTab } from '../../components/LinkNewTab';
 import { ChangeEvent, ReactNode, SyntheticEvent, useCallback, useRef, useState } from 'react';
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 import { QuadraticLoading } from '../../loading/QuadraticLoading';
-import { onCloseFn } from './FileMenu';
 import { EXAMPLE_FILES } from '../../../constants/app';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 
@@ -65,7 +64,7 @@ function a11yProps(index: number) {
 }
 
 interface FileMenuTabsProps {
-  onClose: onCloseFn;
+  onClose: () => void;
   onNewFile: () => void;
 }
 
@@ -85,7 +84,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
       const file = e.target.files?.[0];
       if (file) {
         const loaded = await loadFileFromDisk(file);
-        if (loaded) onClose({ reset: true });
+        if (loaded) onClose();
         else setImportLocalError(true);
       }
     },
@@ -100,7 +99,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
         setIsLoading(true);
         const loaded = await loadFileFromUrl(url);
         setIsLoading(false);
-        if (loaded) onClose({ reset: true });
+        if (loaded) onClose();
         else setImportURLError(true);
       }
     },
@@ -131,7 +130,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
       </Tabs>
       <TabPanel value={value} index={0}>
         <Typography variant="body1" sx={{ mb: theme.spacing(2) }}>
-          Quadratic spreadsheets use an open <code>.grid</code> file format that be saved to your local computer, shared
+          Quadratic spreadsheets use an open <code>.grid</code> file format that is saved to your local computer, shared
           with others, and re-opened here.{' '}
           <LinkNewTab href={DOCUMENTATION_FILES_URL} color="inherit">
             Learn more
@@ -158,7 +157,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
                       .then((loaded) => {
                         setIsLoading(false);
                         if (loaded) {
-                          onClose({ reset: true });
+                          onClose();
                         }
                       })
                       .catch((e) => {

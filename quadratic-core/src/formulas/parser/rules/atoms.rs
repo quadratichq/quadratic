@@ -70,6 +70,7 @@ impl SyntaxRule for NumericLiteral {
 }
 
 /// Matches a cell reference.
+#[derive(Debug, Copy, Clone)]
 pub struct CellReference;
 impl_display!(for CellReference, "cell reference, such as 'A6' or '$ZB$3'");
 impl SyntaxRule for CellReference {
@@ -80,12 +81,49 @@ impl SyntaxRule for CellReference {
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
         p.next();
-        let Some(cell_ref) = CellRef::parse_a1(p.token_str(), p.loc) else {
+        let Some(cell_ref) = CellRef::parse_a1(p.token_str(), p.pos) else {
             return Err(FormulaErrorMsg::BadCellReference.with_span(p.span()));
         };
         Ok(AstNode {
             span: p.span(),
             inner: ast::AstNodeContents::CellRef(cell_ref),
+        })
+    }
+}
+
+/// Matches a cell range reference on its own, not as part of an expression.
+#[derive(Debug, Copy, Clone)]
+pub struct CellRangeReference;
+impl_display!(for CellRangeReference, "cell range reference, such as 'A6:D10' or '$ZB$3'");
+impl SyntaxRule for CellRangeReference {
+    type Output = Spanned<RangeRef>;
+
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        p.next() == Some(Token::CellRef)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+        p.next();
+        let Some(cell_ref) = CellRef::parse_a1(p.token_str(), p.pos) else {
+            return Err(FormulaErrorMsg::BadCellReference.with_span(p.span()));
+        };
+        let span = p.span();
+
+        // Check for a range reference.
+        if p.try_parse(Token::CellRangeOp).is_some() {
+            p.next();
+            if let Some(cell_ref2) = CellRef::parse_a1(p.token_str(), p.pos) {
+                return Ok(Spanned {
+                    span: Span::merge(span, p.span()),
+                    inner: RangeRef::CellRange(cell_ref, cell_ref2),
+                });
+            }
+            p.prev();
+            p.prev();
+        }
+
+        Ok(Spanned {
+            span,
+            inner: RangeRef::Cell(cell_ref),
         })
     }
 }

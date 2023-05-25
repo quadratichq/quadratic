@@ -3,7 +3,7 @@ import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { DeleteCells } from '../../../grid/actions/DeleteCells';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../pixiApp/PixiApp';
-import isAlphaNumeric from './isAlphaNumeric';
+import { isAllowedFirstChar } from './keyboardCellChars';
 
 export function keyboardCell(options: {
   sheet_controller: SheetController;
@@ -12,7 +12,7 @@ export function keyboardCell(options: {
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  app?: PixiApp;
+  app: PixiApp;
 }): boolean {
   const {
     event,
@@ -23,7 +23,6 @@ export function keyboardCell(options: {
     app,
     sheet_controller,
   } = options;
-  if (!app) return false;
 
   if (event.key === 'Tab') {
     // move single cursor one right
@@ -43,7 +42,7 @@ export function keyboardCell(options: {
     event.preventDefault();
   }
 
-  if (event.key === 'Backspace') {
+  if (event.key === 'Backspace' || event.key === 'Delete') {
     // delete a range or a single cell, depending on if MultiCursor is active
     if (interactionState.showMultiCursor) {
       DeleteCells({
@@ -142,8 +141,7 @@ export function keyboardCell(options: {
     event.preventDefault();
   }
 
-  // if key is a letter number start taking input
-  if (isAlphaNumeric(event.key) || event.key === '.') {
+  if (isAllowedFirstChar(event.key)) {
     setInteractionState({
       ...interactionState,
       ...{
