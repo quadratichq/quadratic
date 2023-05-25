@@ -1,13 +1,23 @@
 import { useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from '@mui/material';
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
+  TextField,
+} from '@mui/material';
 import { useTheme } from '@mui/system';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { LinkNewTab } from '../../components/LinkNewTab';
-import { BUG_REPORT_URL, DISCORD, TWITTER } from '../../../constants/urls';
+import { BUG_REPORT_URL, DISCORD, EMAIL, TWITTER } from '../../../constants/urls';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
+import { SocialDiscord, SocialGithub, SocialTwitter } from '../../icons';
+import { Email } from '@mui/icons-material';
 
 export const FeedbackMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -25,23 +35,26 @@ export const FeedbackMenu = () => {
     }));
   };
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     setLoadState('LOADING');
-    console.log('fired');
-    fetch(`${apiClientSingleton.getAPIURL()}/feedback`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer apiClientSingleton.getAuth()`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ user: 'foo', feedback: value }),
-    })
+
+    apiClientSingleton
+      .getAuth()
+      .then((token) =>
+        fetch(`${apiClientSingleton.getAPIURL()}/feedback`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ feedback: value }),
+        })
+      )
       .then((res) => {
-        console.log('fired2');
         if (res.ok) {
-          return res.json();
+          return;
         }
-        throw new Error('Request failed');
+        throw new Error('Unexpected response from the server.');
       })
       .then(() => {
         setValue('');
@@ -59,18 +72,29 @@ export const FeedbackMenu = () => {
 
   return (
     <Dialog open={showFeedbackMenu} onClose={closeMenu} fullWidth maxWidth={'sm'} BackdropProps={{ invisible: true }}>
-      <DialogTitle>Provide feedback</DialogTitle>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>Provide feedback</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: theme.spacing(1) }}>
+          <IconButton href={BUG_REPORT_URL} target="_blank" color="inherit">
+            <SocialGithub />
+          </IconButton>
+          <IconButton href={TWITTER} target="_blank" color="inherit">
+            <SocialTwitter />
+          </IconButton>
+          <IconButton href={DISCORD} target="_blank" color="inherit">
+            <SocialDiscord />
+          </IconButton>
+          <IconButton href={EMAIL} target="_blank" color="inherit">
+            <Email />
+          </IconButton>
+        </span>
+      </DialogTitle>
       <DialogContent>
-        <DialogContentText>
-          We’re listening on <LinkNewTab href={BUG_REPORT_URL}>GitHub</LinkNewTab>,{' '}
-          <LinkNewTab href={DISCORD}>Discord</LinkNewTab>, or <LinkNewTab href={TWITTER}>Twitter</LinkNewTab>. Or,
-          provide feedback below (we read all feedback and may follow up via email).
-        </DialogContentText>
+        <DialogContentText>How can we make Quadratic better? Reach out, or let us know below:</DialogContentText>
 
         <TextField
           InputLabelProps={{ shrink: true }}
           id="feedback"
-          label="Your feedback"
           variant="outlined"
           disabled={isLoading}
           fullWidth
