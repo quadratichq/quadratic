@@ -48,7 +48,7 @@ class APIClientSingleton {
       const response = await fetch(`${base_url}/v0/files/${id}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer await this.getAuth()`,
+          Authorization: `Bearer ${await this.getAuth()}`,
           'Content-Type': 'application/json',
         },
       });
