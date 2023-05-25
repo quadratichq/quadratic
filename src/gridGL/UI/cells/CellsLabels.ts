@@ -36,7 +36,6 @@ export class CellsLabels extends Container {
     }
     const getClipLeft = (): number | undefined => {
       const start = label.x + data.expectedWidth - label.textWidth;
-      // const end = start + (label.textWidth - data.expectedWidth);
       const neighboringLabels = this.labelData.filter(
         (search) =>
           search !== data &&
@@ -52,9 +51,8 @@ export class CellsLabels extends Container {
 
     const getClipRight = (): number | undefined => {
       const start = label.x + data.expectedWidth;
-      const end = start + (label.textWidth - data.expectedWidth);
       const neighboringLabels = this.labelData.filter(
-        (search) => search !== data && search.y === data.y && search.x >= start && search.x <= end
+        (search) => search !== data && search.y === data.y && search.x >= start && search.location.x > data.location.x
       );
       if (neighboringLabels.length) {
         const neighboringLabel = neighboringLabels.sort((a, b) => a.location.x - b.location.x)[0];
