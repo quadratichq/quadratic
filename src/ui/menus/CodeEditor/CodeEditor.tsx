@@ -1,3 +1,4 @@
+// https://github.com/microsoft/monaco-editor/issues/1228
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
@@ -273,6 +274,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
     return <></>;
   }
 
+  console.log(editorContent);
+
   return (
     <div
       id="QuadraticCodeEditorID"
@@ -388,15 +391,38 @@ export const CodeEditor = (props: CodeEditorProps) => {
         style={{
           minHeight: '100px',
           flex: '2',
+          fontStyle: editorContent ? '' : 'italic',
         }}
       >
         <Editor
           height="100%"
           width="100%"
           language={editorMode === 'PYTHON' ? 'python' : editorMode === 'FORMULA' ? 'formula' : 'plaintext'}
-          value={editorContent}
-          onChange={(value) => {
-            setEditorContent(value);
+          value={
+            editorContent
+              ? editorContent
+              : ['Start typing to dismiss', 'Last line returns to the sheet, e.g.', '', "hello_world = 'Hello world'"]
+                  .map((str) => '# ' + str)
+                  .join('\n')
+          }
+          onChange={(next, ev) => {
+            const change = ev.changes[0].text;
+            const prev = editorContent;
+            // console.log('Prev: `%s`, Next: `%s`', prev, change);
+
+            if (!prev) {
+              if (change.length !== 0) {
+                setEditorContent(change);
+                // console.log('Set to changed char');
+              } else {
+                setEditorContent('');
+                // TODO This isn't working.
+                // console.log('do nothing', ev);
+              }
+            } else {
+              // console.log('Set value in editor');
+              setEditorContent(next);
+            }
           }}
           onMount={handleEditorDidMount}
           options={{

@@ -81,8 +81,8 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
             }}
             style={{
               outline: 'none',
-              fontFamily: 'monospace',
-              fontSize: '.875rem',
+              fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+              fontSize: '.75rem',
               lineHeight: '1.3',
               whiteSpace: 'pre-wrap',
             }}
@@ -91,7 +91,7 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
             data-gramm_editor="false"
             data-enable-grammarly="false"
           >
-            {hasOutput && (
+            {hasOutput ? (
               <>
                 {std_err && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
@@ -100,6 +100,10 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
                 )}
                 {std_out}
               </>
+            ) : (
+              <div style={{ opacity: '.5', fontSize: '.75rem', marginTop: '8px', fontStyle: 'italic' }}>
+                Any `print()` statements or errors will appear here…
+              </div>
             )}
           </div>
         </TabPanel>
