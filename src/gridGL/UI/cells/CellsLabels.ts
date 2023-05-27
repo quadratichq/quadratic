@@ -3,6 +3,7 @@ import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { CellFormat, CellAlignment } from '../../../schemas';
+import { PixiApp } from '../../pixiApp/PixiApp';
 
 export interface LabelData {
   text: string;
@@ -17,7 +18,13 @@ export interface LabelData {
 }
 
 export class CellsLabels extends Container {
+  private app: PixiApp;
   private labelData: LabelData[] = [];
+
+  constructor(app: PixiApp) {
+    super();
+    this.app = app;
+  }
 
   clear() {
     this.labelData = [];
@@ -26,6 +33,22 @@ export class CellsLabels extends Container {
 
   add(label: LabelData): void {
     this.labelData.push(label);
+  }
+
+  // todo: handle alignment: center properly
+  private getClipRight(label: CellLabel): number | undefined {
+    const rightEnd = label.x + label.width;
+    let column = label.data.location.x + 1;
+    const row = label.data.location.y;
+    let neighborOffset = this.app.sheet.gridOffsets.getCell(column, row).x;
+    while (neighborOffset < rightEnd) {
+      if (this.app.sheet.grid.get(column, row)?.cell?.value) {
+        return neighborOffset;
+      }
+      const neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
+      neighborOffset += neighborWidth;
+      column++;
+    }
   }
 
   // checks to see if the label needs to be clipped based on other labels
@@ -68,7 +91,7 @@ export class CellsLabels extends Container {
         clipLeft = getClipLeft();
         clipRight = getClipRight();
       } else {
-        clipRight = getClipRight();
+        clipRight = this.getClipRight(label);
       }
       label.setClip({ clipLeft, clipRight });
     } else {
