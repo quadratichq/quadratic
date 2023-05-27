@@ -30,8 +30,7 @@ export class PointerDown {
     if (IS_READONLY_MODE) return;
     if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
-    const { settings, cursor } = this.app;
-    const { interactionState, setInteractionState } = settings;
+    // note: directly call this.app.settings instead of locally defining it here; otherwise it dereferences this
     const { gridOffsets } = this.sheet;
 
     this.positionRaw = world;
@@ -41,15 +40,12 @@ export class PointerDown {
 
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
-    if (!setInteractionState) {
-      throw new Error('Expected setInteractionState to be defined');
-    }
-    if (rightClick && interactionState.showMultiCursor) {
+    if (rightClick && this.app.settings.interactionState.showMultiCursor) {
       if (
-        column >= interactionState.multiCursorPosition.originPosition.x &&
-        column <= interactionState.multiCursorPosition.terminalPosition.x &&
-        row >= interactionState.multiCursorPosition.originPosition.y &&
-        row <= interactionState.multiCursorPosition.terminalPosition.y
+        column >= this.app.settings.interactionState.multiCursorPosition.originPosition.x &&
+        column <= this.app.settings.interactionState.multiCursorPosition.terminalPosition.x &&
+        row >= this.app.settings.interactionState.multiCursorPosition.originPosition.y &&
+        row <= this.app.settings.interactionState.multiCursorPosition.terminalPosition.y
       )
         // Ignore this click. User is accessing the RightClickMenu.
         return;
@@ -77,7 +73,7 @@ export class PointerDown {
     // select cells between pressed and cursor position
     if (event.shiftKey) {
       const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
-      const cursorPosition = interactionState.cursorPosition;
+      const cursorPosition = this.app.settings.interactionState.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
         // make origin top left, and terminal bottom right
         const originX = cursorPosition.x < column ? cursorPosition.x : column;
@@ -85,8 +81,8 @@ export class PointerDown {
         const termX = cursorPosition.x > column ? cursorPosition.x : column;
         const termY = cursorPosition.y > row ? cursorPosition.y : row;
 
-        setInteractionState({
-          ...interactionState,
+        this.app.settings.setInteractionState({
+          ...this.app.settings.interactionState,
           keyboardMovePosition: { x: column, y: row },
           multiCursorPosition: {
             originPosition: new Point(originX, originY),
@@ -94,7 +90,7 @@ export class PointerDown {
           },
           showMultiCursor: true,
         });
-        cursor.dirty = true;
+        this.app.cursor.dirty = true;
       }
       return;
     }
@@ -112,14 +108,15 @@ export class PointerDown {
 
     // Move cursor to mouse down position
     // For single click, hide multiCursor
-    setInteractionState({
-      ...interactionState,
+    this.app.settings.setInteractionState({
+      ...this.app.settings.interactionState,
       keyboardMovePosition: { x: column, y: row },
       cursorPosition: { x: column, y: row },
       multiCursorPosition: previousPosition,
       showMultiCursor: false,
+      showInput: false,
     });
-    cursor.dirty = true;
+    this.app.cursor.dirty = true;
     this.pointerMoved = false;
   }
 

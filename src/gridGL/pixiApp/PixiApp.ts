@@ -272,6 +272,6 @@ export class PixiApp {
       this.viewport.position.set(0, 0);
     }
     this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
-    this.settings.setInteractionState?.(gridInteractionStateDefault);
+    this.settings.setInteractionState(gridInteractionStateDefault);
   }
 }
