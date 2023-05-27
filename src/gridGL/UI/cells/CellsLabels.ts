@@ -35,9 +35,8 @@ export class CellsLabels extends Container {
     this.labelData.push(label);
   }
 
-  // todo: handle alignment: center properly
-  private getClipRight(label: CellLabel): number | undefined {
-    const rightEnd = label.x + label.width;
+  private getClipRight(label: CellLabel, textWidth: number): number | undefined {
+    const rightEnd = label.x + textWidth;
     let column = label.data.location.x + 1;
     const row = label.data.location.y;
     let neighborOffset = this.app.sheet.gridOffsets.getCell(column, row).x;
@@ -51,47 +50,40 @@ export class CellsLabels extends Container {
     }
   }
 
+  private getClipLeft(label: CellLabel): number | undefined {
+    const leftEnd = label.x;
+    let column = label.data.location.x - 1;
+    const row = label.data.location.y;
+    let neighbor = this.app.sheet.gridOffsets.getCell(column, row);
+    let neighborWidth = neighbor.width;
+    let neighborOffset = neighbor.x + neighbor.width;
+    while (neighborOffset > leftEnd) {
+      if (this.app.sheet.grid.get(column, row)?.cell?.value) {
+        return neighborOffset;
+      }
+      neighborOffset -= neighborWidth;
+      column--;
+      neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
+    }
+  }
+
   // checks to see if the label needs to be clipped based on other labels
   private checkForClipping(label: CellLabel): void {
     const data = label.data;
     if (!data) {
       throw new Error('Expected label.data to be defined in checkForClipping');
     }
-    const getClipLeft = (): number | undefined => {
-      const start = label.x + data.expectedWidth - label.textWidth;
-      const neighboringLabels = this.labelData.filter(
-        (search) =>
-          search !== data &&
-          search.y === data.y &&
-          search.x + search.expectedWidth >= start &&
-          search.location.x < data.location.x
-      );
-      if (neighboringLabels.length) {
-        const neighboringLabel = neighboringLabels.sort((a, b) => b.location.x - a.location.x)[0];
-        return neighboringLabel.x + neighboringLabel.expectedWidth;
-      }
-    };
 
-    const getClipRight = (): number | undefined => {
-      const start = label.x + data.expectedWidth;
-      const neighboringLabels = this.labelData.filter(
-        (search) => search !== data && search.y === data.y && search.x >= start && search.location.x > data.location.x
-      );
-      if (neighboringLabels.length) {
-        const neighboringLabel = neighboringLabels.sort((a, b) => a.location.x - b.location.x)[0];
-        return neighboringLabel.x;
-      }
-    };
-
-    if (label.textWidth > data.expectedWidth) {
+    const textWidth = label.getFullTextWidth();
+    if (textWidth > data.expectedWidth) {
       let clipLeft: number | undefined, clipRight: number | undefined;
       if (data.alignment === 'right') {
-        clipLeft = getClipLeft();
+        clipLeft = this.getClipLeft(label);
       } else if (data.alignment === 'center') {
-        clipLeft = getClipLeft();
-        clipRight = getClipRight();
+        clipLeft = this.getClipLeft(label);
+        clipRight = this.getClipRight(label, textWidth);
       } else {
-        clipRight = this.getClipRight(label);
+        clipRight = this.getClipRight(label, textWidth);
       }
       label.setClip({ clipLeft, clipRight });
     } else {
@@ -162,7 +154,7 @@ export class CellsLabels extends Container {
     return new Point(data.x, data.y);
   }
 
-  updateLabel(label: CellLabel, data: LabelData): void {
+  private updateLabel(label: CellLabel, data: LabelData): void {
     label.update(data);
     label.visible = true;
 
