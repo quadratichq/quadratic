@@ -236,7 +236,7 @@ export const CellInput = (props: CellInputProps) => {
         minWidth: cell_offsets.width - CURSOR_THICKNESS * 2,
         outline: 'none',
         color: format?.textColor ?? 'black',
-        padding: `0 ${CURSOR_THICKNESS}px`,
+        padding: `0 ${CURSOR_THICKNESS}px 0 0`,
         margin: 0,
         lineHeight: `${cell_offsets.height - CURSOR_THICKNESS * 2}px`,
         verticalAlign: 'text-top',
@@ -246,6 +246,41 @@ export const CellInput = (props: CellInputProps) => {
         fontFamily,
         fontSize: '14px',
         backgroundColor: format?.fillColor ?? 'white',
+        whiteSpace: 'nowrap',
+      }}
+      onInput={() => {
+        // viewport should try to keep the input box in view
+        if (!textInput) return;
+        const bounds = textInput.getBoundingClientRect();
+        const canvas = app.canvas.getBoundingClientRect();
+        const center = app.viewport.center;
+        let x = center.x,
+          y = center.y,
+          move = false;
+        if (bounds.right > canvas.right) {
+          x = center.x + (bounds.right - canvas.right) / app.viewport.scale.x;
+          move = true;
+        } else if (bounds.left < canvas.left) {
+          const change = (bounds.left - canvas.left) / app.viewport.scale.x;
+          if (bounds.right < canvas.right + change) {
+            x = center.x + change;
+            move = true;
+          }
+        }
+        if (bounds.bottom > canvas.bottom) {
+          y = center.y + (bounds.bottom - canvas.bottom) / app.viewport.scale.x;
+          move = true;
+        } else if (bounds.top < canvas.top) {
+          const change = (bounds.top - canvas.top) / app.viewport.scale.x;
+          if (bounds.bottom < canvas.bottom + change) {
+            y = center.y + change;
+            move = true;
+          }
+        }
+        if (move) {
+          app.viewport.moveCenter(x, y);
+          app.setViewportDirty();
+        }
       }}
       onFocus={handleFocus}
       onBlur={() => closeInput()}
@@ -275,7 +310,6 @@ export const CellInput = (props: CellInputProps) => {
           setTemporaryBold((bold) => (bold === undefined ? !format.bold : !bold));
           event.stopPropagation();
         }
-
         // ensure the cell border is redrawn
         app.cursor.dirty = true;
       }}
