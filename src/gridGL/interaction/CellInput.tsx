@@ -306,9 +306,11 @@ export const CellInput = (props: CellInputProps) => {
         } else if (event.key === 'i' && (event.ctrlKey || event.metaKey)) {
           setTemporaryItalic((italic) => (italic === undefined ? !format.italic : !italic));
           event.stopPropagation();
+          event.preventDefault();
         } else if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
           setTemporaryBold((bold) => (bold === undefined ? !format.bold : !bold));
           event.stopPropagation();
+          event.preventDefault();
         }
         // ensure the cell border is redrawn
         app.cursor.dirty = true;
