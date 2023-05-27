@@ -56,7 +56,7 @@ export const expandDown = async (options: {
   const formats: CellFormat[] = [];
   const right = shrinkHorizontal === undefined ? selection.right : shrinkHorizontal;
   for (let x = selection.left; x <= right; x++) {
-    const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, x, selection.bottom));
+    const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, 0, selection.bottom - selection.top));
     const series: (Cell | undefined)[] = [];
     for (let y = selection.top; y <= selection.bottom; y++) {
       series.push(rectangle.get(x, y)?.cell);
@@ -119,7 +119,7 @@ export const expandUp = async (options: {
   const formats: CellFormat[] = [];
   const right = shrinkHorizontal === undefined ? selection.right : shrinkHorizontal;
   for (let x = selection.left; x <= right; x++) {
-    const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, x, selection.bottom));
+    const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, 0, selection.bottom - selection.top));
     const series: (Cell | undefined)[] = [];
     for (let y = selection.top; y <= selection.bottom; y++) {
       series.push(rectangle.get(x, y)?.cell);
@@ -183,7 +183,7 @@ export const expandRight = async (options: {
   const top = toVertical === undefined ? selection.top : Math.min(selection.top, toVertical);
   const bottom = toVertical === undefined ? selection.bottom : Math.max(selection.bottom, toVertical);
   for (let y = top; y <= bottom; y++) {
-    const rectangle = sheet.grid.getCells(new Rectangle(selection.left, y, selection.right, y));
+    const rectangle = sheet.grid.getCells(new Rectangle(selection.left, y, selection.right - selection.left, 0));
     const series: (Cell | undefined)[] = [];
     for (let x = selection.left; x <= selection.right; x++) {
       series.push(rectangle.get(x, y)?.cell);
@@ -247,7 +247,7 @@ export const expandLeft = async (options: {
   const top = toVertical === undefined ? selection.top : Math.min(selection.top, toVertical);
   const bottom = toVertical === undefined ? selection.bottom : Math.max(selection.bottom, toVertical);
   for (let y = top; y <= bottom; y++) {
-    const rectangle = sheet.grid.getCells(new Rectangle(selection.left, y, selection.right, y));
+    const rectangle = sheet.grid.getCells(new Rectangle(selection.left, y, selection.right - selection.left, 0));
     const series: (Cell | undefined)[] = [];
     for (let x = selection.left; x <= selection.right; x++) {
       series.push(rectangle.get(x, y)?.cell);
