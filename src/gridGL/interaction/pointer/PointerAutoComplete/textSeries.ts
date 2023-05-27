@@ -1,3 +1,5 @@
+import { mod } from '../../../../utils/mod';
+
 export const isSeriesKey = (key: string, keys: string[]): boolean => {
   return keys.includes(key);
 };
@@ -13,11 +15,6 @@ export const isSeriesNextKey = (key: string, existingKeys: string[], allKeys: st
 
   return (index + 1) % allKeys.length === indexNextKey;
 };
-
-// https://stackoverflow.com/questions/4467539/javascript-modulo-gives-a-negative-result-for-negative-numbers
-function mod(n: number, m: number): number {
-  return ((n % m) + m) % m;
-}
 
 export const getSeriesNextKey = (lastKey: string, allKeys: string[], negative: boolean): string => {
   const index = allKeys.indexOf(lastKey);
