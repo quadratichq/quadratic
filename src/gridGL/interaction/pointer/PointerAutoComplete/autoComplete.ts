@@ -197,7 +197,7 @@ export const expandUp = async (options: {
     });
     let index = 0;
 
-    // format & borders
+    // format
     for (let y = to; y < selection.top; y++) {
       const format = rectangle.get(x, selection.top + index)?.format;
       if (format) {
@@ -205,9 +205,13 @@ export const expandUp = async (options: {
       } else {
         formats.push({ x, y });
       }
+      index = (index + 1) % (selection.bottom - selection.top + 1);
+    }
 
-      const borderIndex = selection.height - index;
-      const border = rectangle.getBorder(x, selection.top + borderIndex);
+    // borders
+    index = selection.height;
+    for (let y = selection.top - 1; y >= to; y--) {
+      const border = rectangle.getBorder(x, selection.top + index);
       if (border) {
         borders.push({ ...border, x, y });
       } else {
@@ -216,12 +220,12 @@ export const expandUp = async (options: {
 
       // change border on right edge
       if (x === right) {
-        const border = rectangle.getBorder(x + 1, selection.top + borderIndex);
+        const border = rectangle.getBorder(x + 1, selection.top + index);
         const existing = app.sheet.borders.get(x + 1, y);
         borders.push({ vertical: border?.vertical, x: x + 1, y, horizontal: existing?.horizontal });
       }
-
-      index = (index + 1) % (selection.bottom - selection.top + 1);
+      index--;
+      if (index === -1) index = selection.height;
     }
   }
   await updateFormatAndBorders({
@@ -351,10 +355,9 @@ export const expandLeft = async (options: {
         });
       }
     });
-    let index = 0;
-    let borderIndex = selection.width - ((selection.left - to) % (selection.width + 1));
 
-    // formats & borders
+    // formats
+    let index = 0;
     for (let x = to; x < selection.left; x++) {
       const format = rectangle.get(selection.left + index, y)?.format;
       if (format) {
@@ -362,8 +365,13 @@ export const expandLeft = async (options: {
       } else {
         formats.push({ x, y });
       }
+      index = (index + 1) % (selection.width + 1);
+    }
 
-      const border = rectangle.getBorder(selection.left + borderIndex, y);
+    // borders
+    index = selection.width;
+    for (let x = selection.left - 1; x >= to; x--) {
+      const border = rectangle.getBorder(selection.left + index, y);
       if (border) {
         borders.push({ ...border, x, y });
       } else {
@@ -372,13 +380,13 @@ export const expandLeft = async (options: {
 
       // change border on bottom edge
       if (y === bottom) {
-        const border = rectangle.getBorder(selection.left + borderIndex, y + 1);
+        const border = rectangle.getBorder(selection.left + index, y + 1);
         const existing = app.sheet.borders.get(x, y + 1);
         borders.push({ vertical: existing?.vertical, x, y: y + 1, horizontal: border?.horizontal });
       }
 
-      index = (index + 1) % (selection.width + 1);
-      borderIndex = (borderIndex + 1) % (selection.width + 1);
+      index--;
+      if (index === -1) index = selection.width;
     }
   }
   await updateFormatAndBorders({
