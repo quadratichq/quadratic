@@ -154,7 +154,10 @@ export class PixiApp {
 
   private showCells(): void {
     if (debugShowCacheFlag && !this.cells.visible) {
-      (document.querySelector('.debug-show-cache-on') as HTMLSpanElement).innerHTML = '';
+      const cacheOn = document.querySelector('.debug-show-cache-on') as HTMLSpanElement;
+      if (cacheOn) {
+        cacheOn.innerHTML = '';
+      }
     }
     this.cells.dirty = true;
     this.cells.changeVisibility(true);

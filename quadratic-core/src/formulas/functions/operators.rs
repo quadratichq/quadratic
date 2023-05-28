@@ -52,9 +52,6 @@ fn get_functions() -> Vec<FormulaFunction> {
         FormulaFunction::operator("^", |[a, b]| {
             Ok(Value::Number(a.to_number()?.powf(b.to_number()?)))
         }),
-        FormulaFunction::operator("**", |[a, b]| {
-            Ok(Value::Number(a.to_number()?.powf(b.to_number()?)))
-        }),
         FormulaFunction::operator("%", |[n]| Ok(Value::Number(n.to_number()? / 100.0))),
         FormulaFunction::operator("..", |[a, b]| {
             let span = Span::merge(&a, &b);
@@ -77,5 +74,48 @@ fn get_functions() -> Vec<FormulaFunction> {
 }
 
 fn values_eq(a: &Spanned<Value>, b: &Spanned<Value>) -> bool {
+    // TODO: coerce empty cell (but not empty *string*) to zero.
     a.to_string().eq_ignore_ascii_case(&b.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::formulas::tests::*;
+
+    #[test]
+    fn test_formula_math_operators() {
+        assert_eq!(
+            (1 * -6 + -2 - 1 * (-3_i32).pow(2_u32.pow(3))).to_string(),
+            eval_to_string(&mut NoGrid, "1 * -6 + -2 - 1 * -3 ^ 2 ^ 3"),
+        );
+    }
+
+    #[test]
+    fn test_formula_math_operators_on_empty_string() {
+        // Empty string should coerce to zero
+
+        let mut g = FnGrid(|_| None);
+
+        // Test addition
+        assert_eq!("2", eval_to_string(&mut g, "C6 + 2"));
+        assert_eq!("2", eval_to_string(&mut g, "2 + C6"));
+
+        // Test multiplication
+        assert_eq!("0", eval_to_string(&mut g, "2 * C6"));
+        assert_eq!("0", eval_to_string(&mut g, "C6 * 2"));
+
+        // TODO: uncomment this once we have a type system that understands
+        // blank cells
+
+        // // Test comparisons (very cursed)
+        // assert_eq!("FALSE", eval_to_string(&mut g, "1 < C6"));
+        // assert_eq!("FALSE", eval_to_string(&mut g, "0 < C6"));
+        // assert_eq!("TRUE", eval_to_string(&mut g, "0 <= C6"));
+        // assert_eq!("TRUE", eval_to_string(&mut g, "-1 < C6"));
+        // assert_eq!("TRUE", eval_to_string(&mut g, "0 = C6"));
+        // assert_eq!("FALSE", eval_to_string(&mut g, "1 = C6"));
+
+        // Test string concatenation
+        assert_eq!("apple", eval_to_string(&mut g, "C6 & \"apple\" & D6"));
+    }
 }

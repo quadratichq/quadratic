@@ -2,11 +2,13 @@ import { GridFileSchemaV1 } from './GridFileV1';
 import { GridFileSchemaV1_1, upgradeV1toV1_1 } from './GridFileV1_1';
 import { GridFile, GridFiles } from '.';
 import { debugShowFileIO } from '../debugFlags';
-import { GridFileSchemaV1_2, upgradeV1_1toV1_2 } from './GridFileV1_3';
+import { GridFileSchemaV1_2, upgradeV1_1toV1_2 } from './GridFileV1_2';
+import { GridFileSchemaV1_3, upgradeV1_2toV1_3 } from './GridFileV1_3';
 
 // Ordered by newest first
 const files = [
-  { schema: GridFileSchemaV1_2 },
+  { schema: GridFileSchemaV1_3 },
+  { schema: GridFileSchemaV1_2, updateFn: upgradeV1_2toV1_3 },
   { schema: GridFileSchemaV1_1, updateFn: upgradeV1_1toV1_2 },
   { schema: GridFileSchemaV1, updateFn: upgradeV1toV1_1 },
 ];
