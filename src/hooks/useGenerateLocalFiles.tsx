@@ -174,6 +174,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       sheets: [
         {
           name: 'Sheet1',
+          order: 0,
           cells: [],
           formats: [],
           columns: [],

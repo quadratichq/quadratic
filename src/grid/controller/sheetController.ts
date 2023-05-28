@@ -20,7 +20,7 @@ export class SheetController {
 
   constructor(sheets?: Sheet[]) {
     if (sheets === undefined) {
-      this.sheets = [new Sheet()];
+      this.sheets = [new Sheet(undefined, 0)];
     } else {
       this.sheets = sheets;
     }
@@ -44,7 +44,7 @@ export class SheetController {
   loadSheets(sheets: SheetSchema[]): void {
     this.sheets = [];
     sheets.forEach((sheetSchema) => {
-      const sheet = new Sheet();
+      const sheet = new Sheet(undefined, sheetSchema.order);
       sheet.load_file(sheetSchema);
       this.sheets.push(sheet);
 
@@ -61,11 +61,31 @@ export class SheetController {
     return this.sheets[this.current];
   }
 
+  // changes sheet.order to integers that are one number apart
+  private cleanUpOrdering() {
+    this.sheets.sort((a, b) => a.order - b.order);
+    this.sheets.forEach((sheet, index) => {
+      sheet.order = index;
+    });
+  }
+
+  reorderSheet(id: string, order: number) {
+    const sheet = this.sheets.find((sheet) => sheet.id === id);
+    if (sheet) {
+      sheet.order = order;
+      this.cleanUpOrdering();
+      if (this.saveLocalFiles) this.saveLocalFiles();
+    } else {
+      throw new Error('Expected sheet to be defined in reorderSheet');
+    }
+  }
+
   addSheet(): void {
-    const sheet = new Sheet(`Sheet${this.sheets.length + 1}`);
+    const sheet = new Sheet(`Sheet${this.sheets.length + 1}`, this.sheets.length);
     this.sheets.push(sheet);
     this.app?.quadrants.addSheet(sheet);
     this.current = this.sheets.length - 1;
+    if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
   // starting a transaction is the only way to execute statements

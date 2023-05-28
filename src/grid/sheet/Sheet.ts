@@ -16,6 +16,7 @@ export class Sheet {
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
+  order: number;
 
   // visual dependency for overflowing cells
   render_dependency: GridRenderDependency;
@@ -26,7 +27,7 @@ export class Sheet {
   // cell calculation dependency
   cell_dependency: CellDependencyManager;
 
-  constructor(name?: string) {
+  constructor(name: string | undefined, order: number) {
     this.id = uuid();
     this.name = name ?? 'Sheet';
     this.gridOffsets = new GridOffsets();
@@ -35,6 +36,7 @@ export class Sheet {
     this.render_dependency = new GridRenderDependency();
     this.array_dependency = new GridRenderDependency();
     this.cell_dependency = new CellDependencyManager();
+    this.order = order;
   }
 
   rename(name: string) {
@@ -53,6 +55,7 @@ export class Sheet {
     const { cells, formats } = this.grid.getArrays();
     return {
       name: this.name,
+      order: this.order,
       columns: this.gridOffsets.getColumnsArray(),
       rows: this.gridOffsets.getRowsArray(),
       cells,
