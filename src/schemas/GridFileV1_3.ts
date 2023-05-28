@@ -1,5 +1,5 @@
 import z from 'zod';
-import { GridFileV1_1 } from './GridFileV1_1';
+import { GridFileV1_2 } from './GridFileV1_2';
 
 // Shared schemas
 const ArrayOutputSchema = z.array(z.union([z.string(), z.number(), z.boolean()]));
@@ -13,7 +13,7 @@ const HeadingSchema = z.object({
 });
 
 // File schema
-export const GridFileSchemaV1_2 = z.object({
+export const GridFileSchemaV1_3 = z.object({
   sheets: z
     .object({
       name: z.string(),
@@ -102,12 +102,12 @@ export const GridFileSchemaV1_2 = z.object({
   modified: z.number(),
   version: z.literal('1.2'),
 });
-export type GridFileV1_2 = z.infer<typeof GridFileSchemaV1_2>;
+export type GridFileV1_3 = z.infer<typeof GridFileSchemaV1_3>;
 
 /**
  * Given a v1_1 file, update it to a v1_2 file
  */
-export function upgradeV1_1toV1_2(file: GridFileV1_1): GridFileV1_2 {
+export function upgradeV1_2toV1_3(file: GridFileV1_2): GridFileV1_3 {
   // file.render_dependency is removed
   return {
     sheets: [
@@ -126,5 +126,5 @@ export function upgradeV1_1toV1_2(file: GridFileV1_1): GridFileV1_2 {
     modified: file.modified,
     id: file.id,
     version: '1.2',
-  } as GridFileV1_2;
+  } as GridFileV1_3;
 }
