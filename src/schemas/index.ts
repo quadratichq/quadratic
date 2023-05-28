@@ -30,6 +30,7 @@ export type GridFileData = z.infer<typeof GridFileDataSchema>;
 export type Cell = GridFile['sheets'][0]['cells'][0];
 export type CellType = GridFile['sheets'][0]['cells'][0]['type'];
 export type CellFormat = GridFile['sheets'][0]['formats'][0];
+export type CellAlignment = GridFile['sheets'][0]['formats'][0]['alignment'];
 export type Border = GridFile['sheets'][0]['borders'][0];
 export type Heading = GridFile['sheets'][0]['columns'][0];
 export type BorderType = NonNullable<Pick<NonNullable<Border['horizontal']>, 'type'>['type']>;

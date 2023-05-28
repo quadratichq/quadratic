@@ -58,7 +58,7 @@ export const GridFileSchemaV1_3 = z.object({
         .object({
           x: z.number(),
           y: z.number(),
-          alignment: z.enum(['right', 'center']).optional(), // default is left
+          alignment: z.enum(['left', 'right', 'center']).optional(),
           bold: z.boolean().optional(),
           fillColor: z.string().optional(),
           italic: z.boolean().optional(),
@@ -100,7 +100,7 @@ export const GridFileSchemaV1_3 = z.object({
 
   id: z.string().uuid(),
   modified: z.number(),
-  version: z.literal('1.2'),
+  version: z.literal('1.3'),
 });
 export type GridFileV1_3 = z.infer<typeof GridFileSchemaV1_3>;
 
@@ -125,6 +125,6 @@ export function upgradeV1_2toV1_3(file: GridFileV1_2): GridFileV1_3 {
     created: file.created,
     modified: file.modified,
     id: file.id,
-    version: '1.2',
+    version: '1.3',
   } as GridFileV1_3;
 }
