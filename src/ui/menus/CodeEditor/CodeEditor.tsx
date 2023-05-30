@@ -1,4 +1,3 @@
-// https://github.com/microsoft/monaco-editor/issues/1228
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
@@ -274,8 +273,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
   if (selectedCell === undefined || !editorInteractionState.showCodeEditor) {
     return <></>;
   }
-
-  console.log(editorContent);
 
   return (
     <div
