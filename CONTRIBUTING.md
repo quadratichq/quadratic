@@ -15,11 +15,20 @@ If you have any problems getting the project to run locally, please create an is
 3. Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 4. `rustup target add wasm32-unknown-unknown` to install the WASM toolchain
 
-## Run Quadratic locally
+## Run Quadratic front-end locally
 
 1. `npm run build:wasm` to compile the Rust code
 2. `npm install` to install dependencies (run again when updating Rust)
 3. `npm start` to run in browser or `npm run dev` to run with Electron
+
+### Run Quadrtic server locally
+
+1. `cd quadratic-api`
+2. `npm i`
+3. Install [postgress.app](https://postgresapp.com/) (follow instructions on website)
+4. Configure `./.env` & `./quadratic-api/.env` values, including update to `DATABASE_ENV` variable to point at your local postgres db.
+5. `npm run prisma:migrate`
+6. `npm start`
 
 ### Run tests (TypeScript)
 

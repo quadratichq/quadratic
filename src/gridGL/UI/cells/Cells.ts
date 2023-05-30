@@ -52,7 +52,7 @@ export class Cells extends Container {
 
     this.cellsArray = this.addChild(new CellsArray(app));
     this.cellsBorder = this.addChild(new CellsBorder(app));
-    this.cellLabels = this.addChild(new CellsLabels());
+    this.cellLabels = this.addChild(new CellsLabels(app));
     this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
