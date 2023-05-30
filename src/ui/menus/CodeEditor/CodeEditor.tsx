@@ -29,6 +29,7 @@ import { AI, Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
+import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import mixpanel from 'mixpanel-browser';
 import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
 
@@ -389,41 +390,17 @@ export const CodeEditor = (props: CodeEditorProps) => {
       {/* Editor Body */}
       <div
         style={{
+          position: 'relative',
           minHeight: '100px',
           flex: '2',
-          fontStyle: editorContent ? '' : 'italic',
         }}
       >
         <Editor
           height="100%"
           width="100%"
           language={editorMode === 'PYTHON' ? 'python' : editorMode === 'FORMULA' ? 'formula' : 'plaintext'}
-          value={
-            editorContent
-              ? editorContent
-              : ['Start typing to dismiss', 'Last line returns to the sheet, e.g.', '', "hello_world = 'Hello world'"]
-                  .map((str) => '# ' + str)
-                  .join('\n')
-          }
-          onChange={(next, ev) => {
-            const change = ev.changes[0].text;
-            const prev = editorContent;
-            // console.log('Prev: `%s`, Next: `%s`', prev, change);
-
-            if (!prev) {
-              if (change.length !== 0) {
-                setEditorContent(change);
-                // console.log('Set to changed char');
-              } else {
-                setEditorContent('');
-                // TODO This isn't working.
-                // console.log('do nothing', ev);
-              }
-            } else {
-              // console.log('Set value in editor');
-              setEditorContent(next);
-            }
-          }}
+          value={editorContent}
+          onChange={setEditorContent}
           onMount={handleEditorDidMount}
           options={{
             minimap: { enabled: true },
@@ -438,6 +415,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
             wordWrap: 'on',
           }}
         />
+        {selectedCell.type === 'PYTHON' && (
+          <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
+        )}
       </div>
 
       <ResizeControl setState={setConsoleHeight} position="TOP" />
