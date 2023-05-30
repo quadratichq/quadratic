@@ -313,13 +313,14 @@ export class Wheel extends Plugin {
     } else if (e.ctrlKey && this.options.trackpadPinch) {
       this.pinch(e);
     } else {
+      const isMac = navigator.userAgent.search('Mac') !== -1;
       const step = 1;
 
       const deltas = [e.deltaX, e.deltaY];
       let [deltaX, deltaY] = deltas;
 
-      this.parent.x += (this.horizontalScrollKeyIsPressed ? deltaY : deltaX) * step * -1;
-      this.parent.y += deltaY * step * -1 * (this.horizontalScrollKeyIsPressed ? 0 : 1);
+      this.parent.x += (this.horizontalScrollKeyIsPressed && !isMac ? deltaY : deltaX) * step * -1;
+      this.parent.y += deltaY * step * -1 * (this.horizontalScrollKeyIsPressed && !isMac ? 0 : 1);
       this.parent.emit('wheel-scroll', this.parent);
       this.parent.emit('moved', { viewport: this.parent, type: 'wheel' });
     }
