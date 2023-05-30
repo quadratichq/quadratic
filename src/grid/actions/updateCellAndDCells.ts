@@ -4,6 +4,7 @@ import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 import { runCellComputation } from '../computations/runCellComputation';
 import { ArrayOutput } from '../computations/types';
+import { StringId, getKey } from '../../helpers/getKey';
 
 interface ArgsType {
   starting_cells: Cell[];
@@ -14,8 +15,6 @@ interface ArgsType {
   create_transaction?: boolean;
 }
 
-type StringId = `${string},${string}`;
-
 function getCoordinatesFromStringId(stringId: StringId): [number, number] {
   // required for type inference
   const [x, y] = stringId.split(',').map((val) => parseInt(val));
@@ -23,7 +22,7 @@ function getCoordinatesFromStringId(stringId: StringId): [number, number] {
 }
 
 function addToSet(deps: [number, number][], set: Set<StringId>) {
-  for (const dep of deps) set.add(`${dep[0]},${dep[1]}`);
+  for (const dep of deps) set.add(getKey(dep[0], dep[1]));
 }
 
 export const updateCellAndDCells = async (args: ArgsType) => {
@@ -36,7 +35,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   const updatedCells: Coordinate[] = [];
 
   // start with a plan to just update the current cells
-  const cells_to_update: Set<StringId> = new Set(starting_cells.map((c) => `${c.x},${c.y}` as const));
+  const cells_to_update: Set<StringId> = new Set(starting_cells.map((c) => getKey(c.x, c.y)));
 
   // update cells, starting with the current cell
   for (const ref_current_cell of cells_to_update) {
