@@ -12,12 +12,11 @@ import {
 import { useTheme } from '@mui/system';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { BUG_REPORT_URL, DISCORD, EMAIL, TWITTER } from '../../../constants/urls';
+import { BUG_REPORT_URL, DISCORD, TWITTER } from '../../../constants/urls';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { SocialDiscord, SocialGithub, SocialTwitter } from '../../icons';
-import { Email } from '@mui/icons-material';
 
 export const FeedbackMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -63,9 +62,6 @@ export const FeedbackMenu = () => {
           </IconButton>
           <IconButton href={DISCORD} target="_blank" color="inherit">
             <SocialDiscord />
-          </IconButton>
-          <IconButton href={EMAIL} target="_blank" color="inherit">
-            <Email />
           </IconButton>
         </span>
       </DialogTitle>

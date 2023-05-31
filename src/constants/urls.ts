@@ -6,4 +6,3 @@ export const DOCUMENTATION_FILES_URL = `${DOCUMENTATION_URL}/files`;
 export const BUG_REPORT_URL = 'https://github.com/quadratichq/quadratic/issues';
 export const DISCORD = 'https://discord.gg/quadratic';
 export const TWITTER = 'https://twitter.com/quadratichq';
-export const EMAIL = 'mailto:support@quadratichq.com';
