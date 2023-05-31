@@ -47,6 +47,7 @@ pub enum FormulaErrorMsg {
         expected: Cow<'static, str>,
         got: Option<Cow<'static, str>>,
     },
+    Unexpected(Cow<'static, str>),
     ArraySizeMismatch {
         expected: (usize, usize),
         got: (usize, usize),
@@ -63,6 +64,7 @@ pub enum FormulaErrorMsg {
     DivideByZero,
     NegativeExponent,
     IndexOutOfBounds,
+    ArrayTooBig,
 }
 impl fmt::Display for FormulaErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -84,6 +86,7 @@ impl fmt::Display for FormulaErrorMsg {
                 Some(got) => write!(f, "Expected {expected}, got {got}"),
                 None => write!(f, "Expected {expected}"),
             },
+            Self::Unexpected(got) => write!(f, "Unexpected {got}"),
             Self::ArraySizeMismatch { expected, got } => {
                 write!(f, "Array size mismatch: expected {expected:?}, got {got:?}")
             }
@@ -119,6 +122,9 @@ impl fmt::Display for FormulaErrorMsg {
             }
             Self::IndexOutOfBounds => {
                 write!(f, "Index out of bounds")
+            }
+            Self::ArrayTooBig => {
+                write!(f, "Array is too big")
             }
         }
     }

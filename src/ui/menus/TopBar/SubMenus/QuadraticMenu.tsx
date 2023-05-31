@@ -6,9 +6,8 @@ import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-
 import { IS_READONLY_MODE } from '../../../../constants/app';
 import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
-import useLocalStorage from '../../../../hooks/useLocalStorage';
 import { Tooltip } from '@mui/material';
-import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
+import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { MenuLineItem } from '../MenuLineItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
@@ -26,7 +25,6 @@ interface Props {
 
 export const QuadraticMenu = (props: Props) => {
   const { sheetController } = props;
-  const [showDebugMenu, setShowDebugMenu] = useLocalStorage('showDebugMenu', false);
   const interactionState = useRecoilValue(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
@@ -181,15 +179,6 @@ export const QuadraticMenu = (props: Props) => {
             Show A1 notation on headings
           </MenuItem> */}
           <MenuDivider />
-          <MenuItem
-            type="checkbox"
-            checked={showDebugMenu}
-            onClick={() => {
-              setShowDebugMenu(!showDebugMenu);
-            }}
-          >
-            Show debug menu
-          </MenuItem>
         </SubMenu>
 
         {isAuthenticated && (
@@ -201,7 +190,16 @@ export const QuadraticMenu = (props: Props) => {
 
         <SubMenu label="Help">
           <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>Read the docs</MenuItem>
-          <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>Report a problem</MenuItem>
+          <MenuItem
+            onClick={() =>
+              setEditorInteractionState((prevState) => ({
+                ...prevState,
+                showFeedbackMenu: true,
+              }))
+            }
+          >
+            Provide feedback
+          </MenuItem>
         </SubMenu>
       </Menu>
     </>

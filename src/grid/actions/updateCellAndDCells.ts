@@ -3,6 +3,7 @@ import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 import { runCellComputation } from '../computations/runCellComputation';
+import { StringId, getKey } from '../../helpers/getKey';
 
 interface ArgsType {
   starting_cells: Cell[];
@@ -11,6 +12,16 @@ interface ArgsType {
   pyodide?: any;
   delete_starting_cells?: boolean;
   create_transaction?: boolean;
+}
+
+function getCoordinatesFromStringId(stringId: StringId): [number, number] {
+  // required for type inference
+  const [x, y] = stringId.split(',').map((val) => parseInt(val));
+  return [x, y];
+}
+
+function addToSet(deps: [number, number][], set: Set<StringId>) {
+  for (const dep of deps) set.add(getKey(dep[0], dep[1]));
 }
 
 export const updateCellAndDCells = async (args: ArgsType) => {
@@ -23,28 +34,15 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   const updatedCells: Coordinate[] = [];
 
   // start with a plan to just update the current cells
-  let cells_to_update: [number, number][] = starting_cells.map((c) => [c.x, c.y]);
+  const cells_to_update: Set<StringId> = new Set(starting_cells.map((c) => getKey(c.x, c.y)));
 
   // update cells, starting with the current cell
-  while (cells_to_update.length > 0) {
-    // dedupe cells_to_update
-    let seen = Array<string>();
-    for (let i = 0; i < cells_to_update.length; null) {
-      let string_id = cells_to_update[i].join(',');
-      if (seen.includes(string_id)) {
-        cells_to_update.splice(i, 1);
-      } else {
-        i++;
-      }
-      seen.push(string_id);
-    }
-
-    // get next cell to update
-    const ref_current_cell = cells_to_update.shift();
+  for (const ref_current_cell of cells_to_update) {
     if (ref_current_cell === undefined) break;
 
+    const [current_cell_x, current_cell_y] = getCoordinatesFromStringId(ref_current_cell);
     // get cell from db or starting_cell if it is the starting cell passed in to this function
-    let cell = sheetController.sheet.getCellCopy(ref_current_cell[0], ref_current_cell[1]);
+    let cell = sheetController.sheet.getCellCopy(current_cell_x, current_cell_y);
     let old_array_cells: Coordinate[] = [];
 
     // keep track of previous array cells for this cell
@@ -52,14 +50,13 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       cell?.array_cells?.map((cell) => {
         return { x: cell[0], y: cell[1] };
       }) || [];
-    old_array_cells.unshift(); // remove this cell
 
     // ref_current_cell is in starting_cells
-    if (starting_cells.some((c) => c.x === ref_current_cell[0] && c.y === ref_current_cell[1])) {
+    if (starting_cells.some((c) => c.x === current_cell_x && c.y === current_cell_y)) {
       // if the ref_cell_to_update is the starting_cell
       // then we need to update the cell with data from the starting_cell
 
-      const passed_in_cell = starting_cells.find((c) => c.x === ref_current_cell[0] && c.y === ref_current_cell[1]);
+      const passed_in_cell = starting_cells.find((c) => c.x === current_cell_x && c.y === current_cell_y);
       if (passed_in_cell === undefined) continue;
       cell = { ...passed_in_cell };
     }
@@ -73,7 +70,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
           type: 'REMOVE_CELL_DEPENDENCY',
           data: {
             position: dcell,
-            updates: ref_current_cell,
+            updates: getCoordinatesFromStringId(ref_current_cell),
           },
         });
       });
@@ -112,7 +109,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
               type: 'ADD_CELL_DEPENDENCY',
               data: {
                 position: cell_accessed,
-                updates: ref_current_cell,
+                updates: getCoordinatesFromStringId(ref_current_cell),
               },
             });
           });
@@ -128,8 +125,8 @@ export const updateCellAndDCells = async (args: ArgsType) => {
               for (const cell of row as ArrayOutputBase) {
                 if (cell !== undefined)
                   array_cells_to_output.push({
-                    x: ref_current_cell[0] + x_offset,
-                    y: ref_current_cell[1] + y_offset,
+                    x: current_cell_x + x_offset,
+                    y: current_cell_y + y_offset,
                     type: 'COMPUTED',
                     value: cell.toString(),
                     last_modified: new Date().toISOString(),
@@ -143,8 +140,8 @@ export const updateCellAndDCells = async (args: ArgsType) => {
             let y_offset = 0;
             for (const cell of result.array_output as ArrayOutputBase) {
               array_cells_to_output.push({
-                x: ref_current_cell[0],
-                y: ref_current_cell[1] + y_offset,
+                x: current_cell_x,
+                y: current_cell_y + y_offset,
                 type: 'COMPUTED',
                 value: cell.toString(),
                 last_modified: new Date().toISOString(),
@@ -217,18 +214,18 @@ export const updateCellAndDCells = async (args: ArgsType) => {
     // if any updated cells have other cells depending on them, add to list to update
     for (const array_cell of array_cells_to_output) {
       let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
-      if (deps) cells_to_update.push(...deps);
+      addToSet(deps, cells_to_update);
     }
 
     // any deleted cells have other cells depending on them, add to list to update
     for (const array_cell of array_cells_to_delete) {
       let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
-      if (deps) cells_to_update.push(...deps);
+      addToSet(deps, cells_to_update);
     }
 
     // if this cell updates other cells add them to the list to update
     let deps = sheetController.sheet.cell_dependency.getDependencies([cell.x, cell.y]);
-    if (deps) cells_to_update.push(...deps);
+    addToSet(deps, cells_to_update);
   }
 
   // Officially end the transaction

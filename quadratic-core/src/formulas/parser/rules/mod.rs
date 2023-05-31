@@ -10,7 +10,7 @@ pub use combinators::*;
 pub use expression::*;
 
 /// A grammar rule that produces an AST node from tokens.
-pub trait SyntaxRule: fmt::Display {
+pub trait SyntaxRule: fmt::Debug + fmt::Display {
     /// AST node type that this rule outputs.
     type Output;
 
@@ -31,11 +31,6 @@ pub trait SyntaxRule: fmt::Display {
     }
 }
 
-impl<O> std::fmt::Debug for Box<dyn SyntaxRule<Output = O>> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", *self)
-    }
-}
 impl<O, T: SyntaxRule<Output = O> + ?Sized> SyntaxRule for Box<T> {
     type Output = O;
 

@@ -38,8 +38,121 @@ const pageMeshDataDefaultPageMeshData: PageMeshData[] = [];
 const pageMeshDataMSDFPageMeshData: PageMeshData[] = [];
 const charRenderDataPool: CharRenderData[] = [];
 
-// This clips the text for characters > maxWidth
+// This clips left and right
 export class BitmapTextClip extends BitmapText {
+  clipLeft: number | undefined;
+  clipRight: number | undefined;
+
+  // a simpler version of updateText that calculates the text width without clipping or setting the webGL buffers
+  public getFullTextWidth(): number {
+    const data = BitmapFont.available[this._fontName];
+    const pos = new Point();
+    const chars: CharRenderData[] = [];
+    const lineWidths = [];
+    const lineSpaces = [];
+    const text = this._text.replace(/(?:\r\n|\r)/g, '\n') || ' ';
+    const charsInput = splitTextToCharacters(text);
+    const maxWidth = (this._maxWidth * data.size) / this._fontSize;
+
+    let prevCharCode = null;
+    let lastLineWidth = 0;
+    let maxLineWidth = 0;
+    let line = 0;
+    let lastBreakPos = -1;
+    let lastBreakWidth = 0;
+    let spacesRemoved = 0;
+    let maxLineHeight = 0;
+    let spaceCount = 0;
+
+    let i: number;
+    for (i = 0; i < charsInput.length; i++) {
+      const char = charsInput[i];
+      const charCode = extractCharCode(char);
+
+      if (/(?:\s)/.test(char)) {
+        lastBreakPos = i;
+        lastBreakWidth = lastLineWidth;
+        spaceCount++;
+      }
+
+      if (char === '\r' || char === '\n') {
+        lineWidths.push(lastLineWidth);
+        lineSpaces.push(-1);
+        maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
+        ++line;
+        ++spacesRemoved;
+
+        pos.x = 0;
+        pos.y += data.lineHeight;
+        prevCharCode = null;
+        spaceCount = 0;
+        continue;
+      }
+
+      const charData = data.chars[charCode];
+
+      if (!charData) {
+        continue;
+      }
+
+      if (prevCharCode && charData.kerning[prevCharCode]) {
+        pos.x += charData.kerning[prevCharCode];
+      }
+
+      const charRenderData: CharRenderData = charRenderDataPool.pop() || {
+        texture: Texture.EMPTY,
+        line: 0,
+        charCode: 0,
+        prevSpaces: 0,
+        position: new Point(),
+      };
+
+      charRenderData.texture = charData.texture;
+      charRenderData.line = line;
+      charRenderData.charCode = charCode;
+      charRenderData.position.x = pos.x + charData.xOffset + this._letterSpacing / 2;
+      charRenderData.position.y = pos.y + charData.yOffset;
+      charRenderData.prevSpaces = spaceCount;
+
+      chars.push(charRenderData);
+
+      lastLineWidth = charRenderData.position.x + Math.max(charData.xAdvance, charData.texture.orig.width);
+      pos.x += charData.xAdvance + this._letterSpacing;
+      maxLineHeight = Math.max(maxLineHeight, charData.yOffset + charData.texture.height);
+      prevCharCode = charCode;
+
+      if (lastBreakPos !== -1 && maxWidth > 0 && pos.x > maxWidth) {
+        ++spacesRemoved;
+        removeItems(chars, 1 + lastBreakPos - spacesRemoved, 1 + i - lastBreakPos);
+        i = lastBreakPos;
+        lastBreakPos = -1;
+
+        lineWidths.push(lastBreakWidth);
+        lineSpaces.push(chars.length > 0 ? chars[chars.length - 1].prevSpaces : 0);
+        maxLineWidth = Math.max(maxLineWidth, lastBreakWidth);
+        line++;
+
+        pos.x = 0;
+        pos.y += data.lineHeight;
+        prevCharCode = null;
+        spaceCount = 0;
+      }
+    }
+
+    const lastChar = charsInput[i]; //charsInput.length - 1];
+
+    if (lastChar !== '\r' && lastChar !== '\n') {
+      if (/(?:\s)/.test(lastChar)) {
+        lastLineWidth = lastBreakWidth;
+      }
+
+      lineWidths.push(lastLineWidth);
+      maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
+      lineSpaces.push(-1);
+    }
+    return maxLineWidth;
+  }
+
   /** Renders text and updates it when needed. This should only be called if the BitmapFont is regenerated. */
   public updateText(): void {
     const data = BitmapFont.available[this._fontName];
@@ -121,11 +234,9 @@ export class BitmapTextClip extends BitmapText {
       maxLineHeight = Math.max(maxLineHeight, charData.yOffset + charData.texture.height);
       prevCharCode = charCode;
 
-      // todo: make this an option instead of a separate class
-      if (/*lastBreakPos !== -1 && */ maxWidth > 0 && pos.x > maxWidth) {
-        // ++spacesRemoved;
-        removeItems(chars, i, 1); //1 + lastBreakPos - spacesRemoved, 1 + i - lastBreakPos);
-
+      if (lastBreakPos !== -1 && maxWidth > 0 && pos.x > maxWidth) {
+        ++spacesRemoved;
+        removeItems(chars, 1 + lastBreakPos - spacesRemoved, 1 + i - lastBreakPos);
         i = lastBreakPos;
         lastBreakPos = -1;
 
@@ -138,8 +249,6 @@ export class BitmapTextClip extends BitmapText {
         pos.y += data.lineHeight;
         prevCharCode = null;
         spaceCount = 0;
-
-        break;
       }
     }
 
@@ -310,38 +419,47 @@ export class BitmapTextClip extends BitmapText {
       const textureFrame = texture.frame;
       const textureUvs = texture._uvs;
 
-      const index = pageMesh.index++;
+      // remove letters that are outside the clipping bounds
+      if (
+        (this.clipRight !== undefined && xPos + textureFrame.width * scale + this.x >= this.clipRight) ||
+        (this.clipLeft !== undefined && xPos + this.x <= this.clipLeft)
+      ) {
+        // this removes extra characters from the mesh after a clip
+        pageMesh.mesh.size -= 6;
+      } else {
+        const index = pageMesh.index++;
 
-      pageMesh.indices![index * 6 + 0] = 0 + index * 4;
-      pageMesh.indices![index * 6 + 1] = 1 + index * 4;
-      pageMesh.indices![index * 6 + 2] = 2 + index * 4;
-      pageMesh.indices![index * 6 + 3] = 0 + index * 4;
-      pageMesh.indices![index * 6 + 4] = 2 + index * 4;
-      pageMesh.indices![index * 6 + 5] = 3 + index * 4;
+        pageMesh.indices![index * 6 + 0] = 0 + index * 4;
+        pageMesh.indices![index * 6 + 1] = 1 + index * 4;
+        pageMesh.indices![index * 6 + 2] = 2 + index * 4;
+        pageMesh.indices![index * 6 + 3] = 0 + index * 4;
+        pageMesh.indices![index * 6 + 4] = 2 + index * 4;
+        pageMesh.indices![index * 6 + 5] = 3 + index * 4;
 
-      pageMesh.vertices![index * 8 + 0] = xPos;
-      pageMesh.vertices![index * 8 + 1] = yPos;
+        pageMesh.vertices![index * 8 + 0] = xPos;
+        pageMesh.vertices![index * 8 + 1] = yPos;
 
-      pageMesh.vertices![index * 8 + 2] = xPos + textureFrame.width * scale;
-      pageMesh.vertices![index * 8 + 3] = yPos;
+        pageMesh.vertices![index * 8 + 2] = xPos + textureFrame.width * scale;
+        pageMesh.vertices![index * 8 + 3] = yPos;
 
-      pageMesh.vertices![index * 8 + 4] = xPos + textureFrame.width * scale;
-      pageMesh.vertices![index * 8 + 5] = yPos + textureFrame.height * scale;
+        pageMesh.vertices![index * 8 + 4] = xPos + textureFrame.width * scale;
+        pageMesh.vertices![index * 8 + 5] = yPos + textureFrame.height * scale;
 
-      pageMesh.vertices![index * 8 + 6] = xPos;
-      pageMesh.vertices![index * 8 + 7] = yPos + textureFrame.height * scale;
+        pageMesh.vertices![index * 8 + 6] = xPos;
+        pageMesh.vertices![index * 8 + 7] = yPos + textureFrame.height * scale;
 
-      pageMesh.uvs![index * 8 + 0] = textureUvs.x0;
-      pageMesh.uvs![index * 8 + 1] = textureUvs.y0;
+        pageMesh.uvs![index * 8 + 0] = textureUvs.x0;
+        pageMesh.uvs![index * 8 + 1] = textureUvs.y0;
 
-      pageMesh.uvs![index * 8 + 2] = textureUvs.x1;
-      pageMesh.uvs![index * 8 + 3] = textureUvs.y1;
+        pageMesh.uvs![index * 8 + 2] = textureUvs.x1;
+        pageMesh.uvs![index * 8 + 3] = textureUvs.y1;
 
-      pageMesh.uvs![index * 8 + 4] = textureUvs.x2;
-      pageMesh.uvs![index * 8 + 5] = textureUvs.y2;
+        pageMesh.uvs![index * 8 + 4] = textureUvs.x2;
+        pageMesh.uvs![index * 8 + 5] = textureUvs.y2;
 
-      pageMesh.uvs![index * 8 + 6] = textureUvs.x3;
-      pageMesh.uvs![index * 8 + 7] = textureUvs.y3;
+        pageMesh.uvs![index * 8 + 6] = textureUvs.x3;
+        pageMesh.uvs![index * 8 + 7] = textureUvs.y3;
+      }
     }
 
     this._textWidth = maxLineWidth * scale;

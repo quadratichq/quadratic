@@ -1,7 +1,5 @@
 import TopBar from '../ui/menus/TopBar';
 import CodeEditor from '../ui/menus/CodeEditor';
-import DebugMenu from './menus/DebugMenu/DebugMenu';
-import useLocalStorage from '../hooks/useLocalStorage';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import BottomBar from './menus/BottomBar';
@@ -21,9 +19,9 @@ import { SheetController } from '../grid/controller/sheetController';
 import ReadOnlyDialog from './components/ReadOnlyDialog';
 import { IS_READONLY_MODE } from '../constants/app';
 import { useLocalFiles } from './contexts/LocalFiles';
+import FeedbackMenu from './menus/FeedbackMenu';
 
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
-  const [showDebugMenu] = useLocalStorage('showDebugMenu', false);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
   const { hasInitialPageLoadError } = useLocalFiles();
@@ -52,7 +50,6 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
-      {showDebugMenu && <DebugMenu sheet={sheetController.sheet} />}
       {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
       {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
@@ -74,6 +71,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       </div>
 
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
+      {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {presentationMode && <PresentationModeHint />}
       {hasInitialPageLoadError && <InitialPageLoadError />}
 

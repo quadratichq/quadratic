@@ -64,6 +64,7 @@ export class PixiAppSettings {
     this.setEditorInteractionState = setEditorInteractionState;
     this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
+    this.app.cells.dirty = true;
   }
 
   get showGridLines(): boolean {

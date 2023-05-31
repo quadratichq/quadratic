@@ -1,10 +1,11 @@
 import { Rectangle } from 'pixi.js';
 import { PixiApp } from '../../../pixiApp/PixiApp';
 import { Coordinate } from '../../../types/size';
-import { DeleteCells } from '../../../../grid/actions/DeleteCells';
 import { findAutoComplete } from './findAutoComplete';
 import { updateCellAndDCells } from '../../../../grid/actions/updateCellAndDCells';
-import { Cell } from '../../../../schemas';
+import { Border, Cell, CellFormat } from '../../../../schemas';
+import { DeleteCells } from '../../../../grid/actions/DeleteCells';
+import { SheetController } from '../../../../grid/controller/sheetController';
 
 export const shrinkHorizontal = async (options: {
   app: PixiApp;
@@ -13,28 +14,14 @@ export const shrinkHorizontal = async (options: {
 }): Promise<void> => {
   const { app, selection, endCell } = options;
   const { sheet_controller } = app;
-  sheet_controller.start_transaction();
   await DeleteCells({
-    x0: endCell.x,
+    x0: endCell.x + 1,
     y0: selection.top,
     x1: selection.right,
     y1: selection.bottom,
     sheetController: sheet_controller,
     app: sheet_controller.app,
     create_transaction: false,
-  });
-  sheet_controller.end_transaction();
-
-  const { setInteractionState, interactionState } = app.settings;
-  setInteractionState?.({
-    ...interactionState,
-    multiCursorPosition: {
-      originPosition: interactionState.multiCursorPosition.originPosition,
-      terminalPosition: {
-        ...interactionState.multiCursorPosition.terminalPosition,
-        x: endCell.x - 1,
-      },
-    },
   });
 };
 
@@ -53,203 +40,359 @@ export const shrinkVertical = async (options: {
     y1: selection.bottom,
     sheetController: sheet_controller,
     app: sheet_controller.app,
-    create_transaction: true,
+    create_transaction: false,
   });
-  const { setInteractionState, interactionState } = app.settings;
-  setInteractionState?.({
-    ...interactionState,
-    showMultiCursor: !!(selection.width || endCell.y - selection.top),
-    multiCursorPosition: {
-      originPosition: interactionState.multiCursorPosition.originPosition,
-      terminalPosition: {
-        ...interactionState.multiCursorPosition.terminalPosition,
-        y: endCell.y,
+};
+
+const updateFormatAndBorders = async (options: {
+  cells: Cell[];
+  sheet_controller: SheetController;
+  formats: CellFormat[];
+  borders: Border[];
+}) => {
+  const { cells, sheet_controller, formats, borders } = options;
+  await updateCellAndDCells({
+    create_transaction: false,
+    starting_cells: cells,
+    sheetController: sheet_controller,
+  });
+  formats.forEach((format) => {
+    sheet_controller.execute_statement({
+      type: 'SET_CELL_FORMAT',
+      data: {
+        position: [format.x, format.y],
+        value: format,
       },
-    },
+    });
+  });
+  borders.forEach((border) => {
+    sheet_controller.execute_statement({
+      type: 'SET_BORDER',
+      data: {
+        position: [border.x, border.y],
+        border,
+      },
+    });
   });
 };
 
 export const expandDown = async (options: {
   app: PixiApp;
   selection: Rectangle;
-  boxCells: Rectangle;
+  to: number;
+  shrinkHorizontal?: number;
 }): Promise<void> => {
-  const { app, selection, boxCells } = options;
+  const { app, selection, to, shrinkHorizontal } = options;
   const { sheet_controller, sheet } = app;
 
   const cells: Cell[] = [];
-  for (let x = selection.left; x <= selection.right; x++) {
-    const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, x, selection.bottom));
+  const formats: CellFormat[] = [];
+  const borders: Border[] = [];
+  const right = shrinkHorizontal === undefined ? selection.right : shrinkHorizontal;
+  for (let x = selection.left; x <= right; x++) {
+    const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, 0, selection.bottom - selection.top));
+    rectangle.addBorders(sheet.borders, true);
     const series: (Cell | undefined)[] = [];
     for (let y = selection.top; y <= selection.bottom; y++) {
       series.push(rectangle.get(x, y)?.cell);
     }
-    const results = findAutoComplete({ series, spaces: boxCells.bottom - selection.bottom - 1, negative: false });
-    const updatedCells: Cell[] = results.flatMap((value, index) => {
+    const results = findAutoComplete({ series, spaces: to - selection.bottom, negative: false });
+    results.forEach((value, index) => {
+      const yIndex = selection.bottom + index + 1;
       if (value === undefined) {
-        return [];
+        cells.push({
+          type: 'TEXT',
+          value: '',
+          x,
+          y: yIndex,
+        });
       } else {
-        return {
+        cells.push({
           ...(value as Cell),
           x,
-          y: selection.bottom + index + 1,
-        };
+          y: yIndex,
+        });
       }
     });
-    cells.push(...updatedCells);
-  }
-  await updateCellAndDCells({
-    create_transaction: true,
-    starting_cells: cells,
-    sheetController: sheet_controller,
-  });
+    let index = 0;
 
-  const { setInteractionState, interactionState } = app.settings;
-  setInteractionState?.({
-    ...interactionState,
-    showMultiCursor: true,
-    multiCursorPosition: {
-      originPosition: interactionState.multiCursorPosition.originPosition,
-      terminalPosition: {
-        ...interactionState.multiCursorPosition.terminalPosition,
-        y: boxCells.bottom - 1,
-      },
-    },
+    // formats & borders
+    for (let y = selection.bottom + 1; y <= to; y++) {
+      const format = rectangle.get(x, selection.top + index)?.format;
+      if (format) {
+        formats.push({ ...format, x, y });
+      } else {
+        formats.push({ x, y });
+      }
+
+      const border = rectangle.getBorder(x, selection.top + index);
+      if (border) {
+        borders.push({ ...border, x, y });
+      } else {
+        borders.push({ x, y });
+      }
+
+      // change border on right edge
+      if (x === right) {
+        const border = rectangle.getBorder(x + 1, selection.top + index);
+        const existing = app.sheet.borders.get(x + 1, y);
+        borders.push({ vertical: border?.vertical, x: x + 1, y, horizontal: existing?.horizontal });
+      }
+
+      // change border on bottom edge
+      if (y === to) {
+        const border = rectangle.getBorder(x, selection.top + index + 1);
+        const existing = app.sheet.borders.get(x, y + 1);
+        borders.push({ vertical: existing?.vertical, x, y: y + 1, horizontal: border?.horizontal });
+      }
+
+      index = (index + 1) % (selection.bottom - selection.top + 1);
+    }
+  }
+  await updateFormatAndBorders({
+    cells,
+    sheet_controller,
+    formats,
+    borders,
   });
 };
 
-export const expandUp = async (options: { app: PixiApp; selection: Rectangle; boxCells: Rectangle }): Promise<void> => {
-  const { app, selection, boxCells } = options;
+export const expandUp = async (options: {
+  app: PixiApp;
+  selection: Rectangle;
+  to: number;
+  shrinkHorizontal?: number;
+}): Promise<void> => {
+  const { app, selection, to, shrinkHorizontal } = options;
   const { sheet_controller, sheet } = app;
 
   const cells: Cell[] = [];
-  for (let x = selection.left; x <= selection.right; x++) {
-    const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, x, selection.bottom));
+  const formats: CellFormat[] = [];
+  const borders: Border[] = [];
+  const right = shrinkHorizontal === undefined ? selection.right : shrinkHorizontal;
+  for (let x = selection.left; x <= right; x++) {
+    const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, 0, selection.bottom - selection.top));
+    rectangle.addBorders(sheet.borders, true);
     const series: (Cell | undefined)[] = [];
     for (let y = selection.top; y <= selection.bottom; y++) {
       series.push(rectangle.get(x, y)?.cell);
     }
-    const results = findAutoComplete({ series, spaces: selection.top - boxCells.top, negative: true });
-    const updatedCells: Cell[] = results.map((value, index) => ({
-      ...(value as Cell),
-      x,
-      y: boxCells.top + index,
-    }));
-    cells.push(...updatedCells);
-  }
-  await updateCellAndDCells({
-    create_transaction: true,
-    starting_cells: cells,
-    sheetController: sheet_controller,
-  });
+    const results = findAutoComplete({ series, spaces: selection.top - to, negative: true });
+    results.forEach((value, index) => {
+      const yIndex = to + index;
+      if (!value) {
+        cells.push({
+          type: 'TEXT',
+          value: '',
+          x,
+          y: yIndex,
+        });
+      } else {
+        cells.push({
+          ...value,
+          x,
+          y: yIndex,
+        });
+      }
+    });
+    let index = 0;
 
-  const { setInteractionState, interactionState } = app.settings;
-  setInteractionState?.({
-    ...interactionState,
-    showMultiCursor: true,
-    multiCursorPosition: {
-      originPosition: {
-        ...interactionState.multiCursorPosition.originPosition,
-        y: boxCells.top,
-      },
-      terminalPosition: interactionState.multiCursorPosition.terminalPosition,
-    },
+    // format
+    for (let y = to; y < selection.top; y++) {
+      const format = rectangle.get(x, selection.top + index)?.format;
+      if (format) {
+        formats.push({ ...format, x, y });
+      } else {
+        formats.push({ x, y });
+      }
+      index = (index + 1) % (selection.bottom - selection.top + 1);
+    }
+
+    // borders
+    index = selection.height;
+    for (let y = selection.top - 1; y >= to; y--) {
+      const border = rectangle.getBorder(x, selection.top + index);
+      if (border) {
+        borders.push({ ...border, x, y });
+      } else {
+        borders.push({ x, y });
+      }
+
+      // change border on right edge
+      if (x === right) {
+        const border = rectangle.getBorder(x + 1, selection.top + index);
+        const existing = app.sheet.borders.get(x + 1, y);
+        borders.push({ vertical: border?.vertical, x: x + 1, y, horizontal: existing?.horizontal });
+      }
+      index--;
+      if (index === -1) index = selection.height;
+    }
+  }
+  await updateFormatAndBorders({
+    cells,
+    sheet_controller,
+    formats,
+    borders,
   });
 };
 
 export const expandRight = async (options: {
   app: PixiApp;
   selection: Rectangle;
-  boxCells: Rectangle;
+  to: number;
+  toVertical?: number;
 }): Promise<void> => {
-  const { app, selection, boxCells } = options;
+  const { app, selection, to, toVertical } = options;
   const { sheet_controller, sheet } = app;
-
   const cells: Cell[] = [];
-  for (let y = selection.top; y <= selection.bottom; y++) {
-    const rectangle = sheet.grid.getCells(new Rectangle(selection.left, y, selection.right, y));
+  const formats: CellFormat[] = [];
+  const borders: Border[] = [];
+  const top = toVertical === undefined ? selection.top : Math.min(selection.top, toVertical);
+  const bottom = toVertical === undefined ? selection.bottom : Math.max(selection.bottom, toVertical);
+  for (let y = top; y <= bottom; y++) {
+    const rectangle = sheet.grid.getCells(new Rectangle(selection.left, y, selection.right - selection.left, 0));
+    rectangle.addBorders(sheet.borders, true);
     const series: (Cell | undefined)[] = [];
     for (let x = selection.left; x <= selection.right; x++) {
       series.push(rectangle.get(x, y)?.cell);
     }
-    const results = findAutoComplete({ series, spaces: boxCells.right - selection.right - 1, negative: false });
-    const updatedCells: Cell[] = results.flatMap((value, index) => {
+    const results = findAutoComplete({ series, spaces: to - selection.right, negative: false });
+    results.forEach((value, index) => {
+      const xIndex = selection.right + index + 1;
       if (value === undefined) {
-        return [];
-      } else {
-        return {
-          ...(value as Cell),
-          x: selection.right + index + 1,
+        cells.push({
+          value: '',
+          type: 'TEXT',
+          x: xIndex,
           y,
-        };
+        });
+      } else {
+        cells.push({
+          ...(value as Cell),
+          x: xIndex,
+          y,
+        });
       }
     });
-    cells.push(...updatedCells);
-  }
-  await updateCellAndDCells({
-    create_transaction: true,
-    starting_cells: cells,
-    sheetController: sheet_controller,
-  });
+    let index = 0;
 
-  const { setInteractionState, interactionState } = app.settings;
-  setInteractionState?.({
-    ...interactionState,
-    showMultiCursor: true,
-    multiCursorPosition: {
-      originPosition: interactionState.multiCursorPosition.originPosition,
-      terminalPosition: {
-        ...interactionState.multiCursorPosition.terminalPosition,
-        x: boxCells.right - 1,
-      },
-    },
+    // formats & borders
+    for (let x = selection.right + 1; x <= to; x++) {
+      const format = rectangle.get(selection.left + index, y)?.format;
+      if (format) {
+        formats.push({ ...format, x, y });
+      } else {
+        formats.push({ x, y });
+      }
+
+      const border = rectangle.getBorder(selection.left + index, y);
+      if (border) {
+        borders.push({ ...border, x, y });
+      } else {
+        borders.push({ x, y });
+      }
+
+      // change border on right edge
+      if (x === to) {
+        const border = rectangle.getBorder(selection.left + index + 1, y);
+        const existing = app.sheet.borders.get(x + 1, y);
+        borders.push({ vertical: border?.vertical, x: x + 1, y, horizontal: existing?.horizontal });
+      }
+
+      // change border on bottom edge
+      if (y === bottom) {
+        const border = rectangle.getBorder(selection.left + index, y + 1);
+        const existing = app.sheet.borders.get(x, y + 1);
+        borders.push({ vertical: existing?.vertical, x, y: y + 1, horizontal: border?.horizontal });
+      }
+
+      index = (index + 1) % (selection.right - selection.left + 1);
+    }
+  }
+  await updateFormatAndBorders({
+    cells,
+    sheet_controller,
+    formats,
+    borders,
   });
 };
 
 export const expandLeft = async (options: {
   app: PixiApp;
   selection: Rectangle;
-  boxCells: Rectangle;
+  to: number;
+  toVertical?: number;
 }): Promise<void> => {
-  const { app, selection, boxCells } = options;
+  const { app, selection, to, toVertical } = options;
   const { sheet_controller, sheet } = app;
 
   const cells: Cell[] = [];
-  for (let y = selection.top; y <= selection.bottom; y++) {
-    const rectangle = sheet.grid.getCells(new Rectangle(selection.left, y, selection.right, y));
+  const formats: CellFormat[] = [];
+  const borders: Border[] = [];
+  const top = toVertical === undefined ? selection.top : Math.min(selection.top, toVertical);
+  const bottom = toVertical === undefined ? selection.bottom : Math.max(selection.bottom, toVertical);
+  for (let y = top; y <= bottom; y++) {
+    const rectangle = sheet.grid.getCells(new Rectangle(selection.left, y, selection.right - selection.left, 0));
+    rectangle.addBorders(sheet.borders, true);
     const series: (Cell | undefined)[] = [];
     for (let x = selection.left; x <= selection.right; x++) {
       series.push(rectangle.get(x, y)?.cell);
     }
-    const results = findAutoComplete({ series, spaces: selection.left - boxCells.left, negative: true });
-    const updatedCells: Cell[] = results.flatMap((value, index) => {
-      if (!value) return [];
-      return [
-        {
-          ...value,
-          x: boxCells.left + index,
+    const results = findAutoComplete({ series, spaces: selection.left - to, negative: true });
+    results.forEach((value, index) => {
+      if (!value) {
+        cells.push({
+          value: '',
+          x: to + index,
           y,
-        },
-      ];
+          type: 'TEXT',
+        });
+      } else {
+        cells.push({
+          ...value,
+          x: to + index,
+          y,
+        });
+      }
     });
-    cells.push(...updatedCells);
-  }
-  await updateCellAndDCells({
-    create_transaction: true,
-    starting_cells: cells,
-    sheetController: sheet_controller,
-  });
 
-  const { setInteractionState, interactionState } = app.settings;
-  setInteractionState?.({
-    ...interactionState,
-    showMultiCursor: true,
-    multiCursorPosition: {
-      originPosition: {
-        ...interactionState.multiCursorPosition.originPosition,
-        x: boxCells.left,
-      },
-      terminalPosition: interactionState.multiCursorPosition.terminalPosition,
-    },
+    // formats
+    let index = 0;
+    for (let x = to; x < selection.left; x++) {
+      const format = rectangle.get(selection.left + index, y)?.format;
+      if (format) {
+        formats.push({ ...format, x, y });
+      } else {
+        formats.push({ x, y });
+      }
+      index = (index + 1) % (selection.width + 1);
+    }
+
+    // borders
+    index = selection.width;
+    for (let x = selection.left - 1; x >= to; x--) {
+      const border = rectangle.getBorder(selection.left + index, y);
+      if (border) {
+        borders.push({ ...border, x, y });
+      } else {
+        borders.push({ x, y });
+      }
+
+      // change border on bottom edge
+      if (y === bottom) {
+        const border = rectangle.getBorder(selection.left + index, y + 1);
+        const existing = app.sheet.borders.get(x, y + 1);
+        borders.push({ vertical: existing?.vertical, x, y: y + 1, horizontal: border?.horizontal });
+      }
+
+      index--;
+      if (index === -1) index = selection.width;
+    }
+  }
+  await updateFormatAndBorders({
+    cells,
+    sheet_controller,
+    formats,
+    borders,
   });
 };
