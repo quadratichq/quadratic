@@ -1,5 +1,6 @@
 import { Viewport, Plugin } from 'pixi-viewport';
 import { IPointData, Point } from '@pixi/math';
+import { isMac } from '../../utils/isMac';
 
 /** Options for {@link Wheel}. */
 export interface IWheelOptions {
@@ -313,7 +314,6 @@ export class Wheel extends Plugin {
     } else if (e.ctrlKey && this.options.trackpadPinch) {
       this.pinch(e);
     } else {
-      const isMac = navigator.userAgent.search('Mac') !== -1;
       const step = 1;
 
       const deltas = [e.deltaX, e.deltaY];
