@@ -7,7 +7,7 @@ import { IS_READONLY_MODE } from '../../../../constants/app';
 import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
 import { Tooltip } from '@mui/material';
-import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
+import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { MenuLineItem } from '../MenuLineItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
@@ -190,7 +190,16 @@ export const QuadraticMenu = (props: Props) => {
 
         <SubMenu label="Help">
           <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>Read the docs</MenuItem>
-          <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>Report a problem</MenuItem>
+          <MenuItem
+            onClick={() =>
+              setEditorInteractionState((prevState) => ({
+                ...prevState,
+                showFeedbackMenu: true,
+              }))
+            }
+          >
+            Provide feedback
+          </MenuItem>
         </SubMenu>
       </Menu>
     </>
