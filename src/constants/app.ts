@@ -25,9 +25,9 @@ export const EXAMPLE_FILES = [
     description: 'Example of pulling data from the Mercury API.',
   },
   {
-    name: 'Open AI (example)',
+    name: 'OpenAI (example)',
     file: 'open_ai.grid',
-    description: 'Example prompt querying the Open AI API.',
+    description: 'Example prompt querying the OpenAI API.',
   },
   // Leaving this one out, as it has nothing useful for users
   // { name: 'Airports large (example)', file: 'airports_large.grid', description: 'Lorem ipsum santa dolor.' },
