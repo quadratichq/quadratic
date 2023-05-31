@@ -61,7 +61,7 @@ export const QuadraticMenu = (props: Props) => {
         >
           <MenuLineItem primary="Back to files" secondary={KeyboardSymbols.Command + 'O'} />
         </MenuItem>
-
+        <MenuDivider />
         <MenuItem
           onClick={() => {
             setEditorInteractionState({
