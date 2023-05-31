@@ -11,10 +11,20 @@ interface Series {
 function copySeries(options: Series): (Cell | undefined)[] {
   const { series, spaces } = options;
   const results: (Cell | undefined)[] = [];
-  let copy = 0;
-  for (let i = 0; i < spaces; i++) {
-    results.push(series[copy]);
-    copy = (copy + 1) % series.length;
+  if (options.negative) {
+    let copy = options.series.length - 1;
+    for (let i = 0; i < spaces; i++) {
+      results.push(series[copy]);
+      copy--;
+      if (copy === -1) copy = options.series.length - 1;
+    }
+    results.reverse();
+  } else {
+    let copy = 0;
+    for (let i = 0; i < spaces; i++) {
+      results.push(series[copy]);
+      copy = (copy + 1) % series.length;
+    }
   }
   return results;
 }
