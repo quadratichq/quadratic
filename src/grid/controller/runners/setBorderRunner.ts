@@ -13,8 +13,11 @@ export const SetBorderRunner = (sheet: Sheet, statement: Statement, app?: PixiAp
   reverse_statement.data.border = sheet.borders.get(statement.data.position[0], statement.data.position[1]);
 
   // set border
-  if (border === undefined) sheet.borders.clear([{ x: statement.data.position[0], y: statement.data.position[1] }]);
-  else sheet.borders.update([border]);
+  if (border === undefined || (!border.horizontal && !border.vertical)) {
+    sheet.borders.clear([{ x: statement.data.position[0], y: statement.data.position[1] }]);
+  } else {
+    sheet.borders.update([border]);
+  }
 
   // return reverse statement
   return reverse_statement;
