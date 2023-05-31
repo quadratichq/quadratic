@@ -69,6 +69,7 @@ export function keyboardViewport(options: {
   if ((event.metaKey || event.ctrlKey) && (event.key === 'p' || event.key === 'k' || event.key === '/')) {
     setEditorInteractionState({
       ...editorInteractionState,
+      showFeedbackMenu: false,
       showCellTypeMenu: false,
       showGoToMenu: false,
       showCommandPalette: !editorInteractionState.showCommandPalette,
@@ -107,6 +108,7 @@ export function keyboardViewport(options: {
   if ((event.metaKey || event.ctrlKey) && (event.key === 'g' || event.key === 'j')) {
     setEditorInteractionState({
       ...editorInteractionState,
+      showFeedbackMenu: false,
       showCellTypeMenu: false,
       showCommandPalette: false,
       showGoToMenu: !editorInteractionState.showGoToMenu,
