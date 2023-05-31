@@ -103,7 +103,7 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
               </>
             ) : (
               <div style={{ ...codeEditorCommentStyles, marginTop: theme.spacing(0.5) }}>
-                Any `print()` statements or errors will appear here…
+                Any{editorMode === 'PYTHON' && ' `print()` statements or'} errors will be logged here…
               </div>
             )}
           </div>
