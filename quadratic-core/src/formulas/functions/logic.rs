@@ -49,9 +49,9 @@ fn get_functions() -> Vec<FormulaFunction> {
                   and `FALSE` if any values is falsey.\n\\
                   Returns `TRUE` if given no values.",
             eval: util::pure_fn(|args| {
-                util::flat_iter_bools(&args.inner)
-                    .try_fold(true, |ret, next| FormulaResult::Ok(ret & next?))
-                    .map(Value::Bool)
+                Ok(Value::Bool(
+                    util::flat_iter_bools(&args.inner).fold(true, |a, b| a & b),
+                ))
             }),
         },
         FormulaFunction {
@@ -63,9 +63,9 @@ fn get_functions() -> Vec<FormulaFunction> {
                   and `FALSE` if any value is falsey.\n\
                   Returns `FALSE` if given no values.",
             eval: util::pure_fn(|args| {
-                util::flat_iter_bools(&args.inner)
-                    .try_fold(false, |ret, next| FormulaResult::Ok(ret | next?))
-                    .map(Value::Bool)
+                Ok(Value::Bool(
+                    util::flat_iter_bools(&args.inner).fold(true, |a, b| a | b),
+                ))
             }),
         },
         FormulaFunction {
@@ -78,9 +78,9 @@ fn get_functions() -> Vec<FormulaFunction> {
                   of values are truthy.\n\
                   Returns `FALSE` if given no values.",
             eval: util::pure_fn(|args| {
-                util::flat_iter_bools(&args.inner)
-                    .try_fold(false, |ret, next| FormulaResult::Ok(ret ^ next?))
-                    .map(Value::Bool)
+                Ok(Value::Bool(
+                    util::flat_iter_bools(&args.inner).fold(false, |a, b| a ^ b),
+                ))
             }),
         },
         FormulaFunction {

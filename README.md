@@ -8,21 +8,21 @@ Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to
 
 Take your data and do something useful with it as quickly and easily as possible!
 
-<img width="1552" alt="Screenshot 2023-02-24 at 2 57 36 PM" src="https://user-images.githubusercontent.com/3479421/221301059-921ad96a-878e-4082-b3b9-e55a54185c5d.png">
+<img width="1552" alt="Quadratic in a standalone macOS window; on the left is a table of stock prices, and on the right is a code editor containing Python code to fetch the stock prices from Polygon's API" src="https://user-images.githubusercontent.com/3479421/221301059-921ad96a-878e-4082-b3b9-e55a54185c5d.png">
 
 ## Online demo
 
 We have a hosted version of the `main` branch available online.
 
-**Try it out! --> <https://app.quadratichq.com>**
+**Try it out! ⟶ <https://app.quadratichq.com>**
 
 ## Community
 
-Join the conversation on our Discord channel -> <https://discord.gg/quadratic>
+Join the conversation on our Discord channel ⟶ <https://discord.gg/quadratic>
 
 ## Documentation
 
-Read the documentation -> <https://docs.quadratichq.com>
+Read the documentation ⟶ <https://docs.quadratichq.com>
 
 # What is Quadratic?
 
@@ -39,20 +39,7 @@ Quadratic has no environment to configure. The grid runs entirely in the browser
 - Quickly mix data from different sources
 - Explore your data for new insights
 
-# Getting started
-
-### Run Quadratic locally
-
-1. Install npm, [rustup](https://www.rust-lang.org/tools/install), and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
-2. Run `rustup target add wasm32-unknown-unknown`
-3. Build the Rust/WASM `npm run build:wasm`
-4. run `npm install`
-
-Run Web `npm start`
-
-Run Electron `npm run dev`
-
-# Development progress and roadmap
+## Development progress and roadmap
 
 _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 
@@ -75,10 +62,10 @@ Want to learn more about how Quadratic works? Read the [How Quadratic Works](./d
 
 ## Examples
 
-There are more example files are in the application file menu. File > Open sample
+There are more example files are in the application file menu. File → Open sample
 
-You can download them and then open them in Quadratic via File > Open Grid
+You can download them and then open them in Quadratic via File → Open Grid
 
 ## Quadratic is hiring
 
-Check out our open roles -> [careers.quadratichq.com](https://careers.quadratichq.com)
+Check out our open roles ⟶ [careers.quadratichq.com](https://careers.quadratichq.com)

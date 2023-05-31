@@ -16,10 +16,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         examples: &["CONCAT(\"Hello, \", C0, \"!\")"],
         doc: "[Concatenates](https://en.wikipedia.org/wiki/Concatenation) all values as strings.",
         eval: util::pure_fn(|args| {
-            Ok(Value::String(
-                util::flat_iter_strings(&args.inner)
-                    .try_fold(String::new(), |ret, next| FormulaResult::Ok(ret + &next?))?,
-            ))
+            Ok(Value::String(util::flat_iter_strings(&args.inner).join("")))
         }),
     }]
 }
