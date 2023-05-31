@@ -126,16 +126,20 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
-        <span
-          style={{ display: 'flex', alignItems: 'center', gap: '.25rem' }}
-          onClick={() => {
-            setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
-          }}
-        >
-          <ChatBubbleOutline fontSize="inherit" />
-          Feedback
-        </span>
-        {!isMobileOnly && <span>✓ Python 3.9.5</span>}
+        {!isMobileOnly && (
+          <>
+            <span
+              style={{ display: 'flex', alignItems: 'center', gap: '.25rem' }}
+              onClick={() => {
+                setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
+              }}
+            >
+              <ChatBubbleOutline fontSize="inherit" />
+              Feedback
+            </span>
+            <span>✓ Python 3.9.5</span>
+          </>
+        )}
         <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
         <span
           style={{
