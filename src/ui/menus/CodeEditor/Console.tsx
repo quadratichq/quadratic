@@ -8,7 +8,7 @@ import { EditorInteractionState } from '../../../atoms/editorInteractionStateAto
 import { useTheme } from '@mui/system';
 import { AITab } from './AITab';
 import { useAuth0 } from '@auth0/auth0-react';
-import { codeEditorCommentStyles } from './styles';
+import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
@@ -82,10 +82,8 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
             }}
             style={{
               outline: 'none',
-              fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-              fontSize: '.75rem',
-              lineHeight: '1.3',
               whiteSpace: 'pre-wrap',
+              ...codeEditorBaseStyles,
             }}
             // Disable Grammarly
             data-gramm="false"
