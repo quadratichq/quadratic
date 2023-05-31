@@ -1,7 +1,9 @@
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { OpenInNew } from '@mui/icons-material';
-import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
+import { ChatBubbleOutline, OpenInNew } from '@mui/icons-material';
+import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
+import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
+import { useSetRecoilState } from 'recoil';
 
 const ListItems = [
   {
@@ -17,16 +19,19 @@ const ListItems = [
     ),
   },
   {
-    label: 'Help: Report a problem',
-    Component: (props: CommandPaletteListItemSharedProps) => (
-      <CommandPaletteListItem
-        {...props}
-        icon={<OpenInNew />}
-        action={() => {
-          window.open(BUG_REPORT_URL, '_blank')?.focus();
-        }}
-      />
-    ),
+    label: 'Help: Provide feedback',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<ChatBubbleOutline />}
+          action={() => {
+            setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
+          }}
+        />
+      );
+    },
   },
 ];
 
