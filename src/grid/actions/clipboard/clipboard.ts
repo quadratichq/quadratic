@@ -9,6 +9,7 @@ import { clearFormattingAction } from '../clearFormattingAction';
 import { clearBordersAction } from '../clearBordersAction';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
+import localforage from 'localforage';
 
 const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.1';
 
@@ -16,6 +17,8 @@ interface ClipboardData {
   cells: CellAndFormat[];
   borders: Border[];
 }
+
+const CLIPBOARD_STORAGE_KEY = 'clipboardHtmlString';
 
 const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCell: Coordinate) => {
   try {
@@ -27,110 +30,12 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
         const item_blob = await item.getType('text/html');
         let item_text = await item_blob.text();
 
-        // regex to match `--(quadratic)${quadraticString}(/quadratic)--` and extract quadraticString
-        const regex = /<span data-metadata="<--\(quadratic\)(.*)\(\/quadratic\)-->"><\/span>/g;
-        const match = regex.exec(item_text);
+        const wasParsed = await parseHtmlString(sheet_controller, item_text, pasteToCell);
 
-        if (!match?.length) {
-          const text_blob = await item.getType('text/plain');
-          let item_text = await text_blob.text();
-          return pasteFromText(sheet_controller, pasteToCell, item_text);
-        }
-
-        // parse json from text
-        const decoder = new TextDecoder();
-        const quadraticData = new Uint8Array(Array.from(atob(match[1]), (c) => c.charCodeAt(0)));
-        const decodedString = decoder.decode(quadraticData);
-        const json = JSON.parse(decodedString);
-
-        if (json.type === CLIPBOARD_FORMAT_VERSION) {
-          const x_offset = pasteToCell.x - json.cell0.x;
-          const y_offset = pasteToCell.y - json.cell0.y;
-
-          let cells_to_update: Cell[] = [];
-          let formats_to_update: CellFormat[] = [];
-          let borders_to_update: Border[] = [];
-
-          // Get Cell and Format data from clipboard
-          json.data.cells.forEach((cellAndFormat: CellAndFormat) => {
-            const cell = cellAndFormat.cell;
-            const format = cellAndFormat.format;
-
-            // transpose cells
-            if (cell)
-              cells_to_update.push({
-                ...cell, // take old cell
-                x: cell.x + x_offset, // transpose it to new location
-                y: cell.y + y_offset,
-                last_modified: new Date().toISOString(), // update last_modified
-              });
-
-            // transpose format
-            if (format && format.x !== undefined && format.y !== undefined)
-              formats_to_update.push({
-                ...format, // take old format
-                x: format.x + x_offset, // transpose it to new location
-                y: format.y + y_offset,
-              });
-          });
-
-          // border data
-          json.data.borders.forEach((border: Border) => {
-            // transpose borders
-            // combine with existing borders
-            const existingBorder = sheet_controller.sheet.borders.get(border.x + x_offset, border.y + y_offset);
-            borders_to_update.push({
-              ...existingBorder,
-              ...border, // take old border
-              x: border.x + x_offset, // transpose it to new location
-              y: border.y + y_offset,
-            });
-          });
-
-          // Start Transaction
-          sheet_controller.start_transaction();
-
-          // TODO: delete cells that will be overwritten
-          // TODO: delete formats that will be overwritten
-          // TODO: delete borders that will be overwritten
-
-          // update cells
-          await updateCellAndDCells({
-            starting_cells: cells_to_update,
-            sheetController: sheet_controller,
-            create_transaction: false,
-          });
-
-          // update formats
-          formats_to_update.forEach((format) => {
-            if (format.x !== undefined && format.y !== undefined)
-              sheet_controller.execute_statement({
-                type: 'SET_CELL_FORMAT',
-                data: {
-                  position: [format.x, format.y],
-                  value: format,
-                },
-              });
-          });
-
-          // update borders
-          borders_to_update.forEach((border) => {
-            sheet_controller.execute_statement({
-              type: 'SET_BORDER',
-              data: {
-                position: [border.x, border.y],
-                border,
-              },
-            });
-          });
-
-          sheet_controller.end_transaction();
-
-          return true; // successful don't continue
-        }
-
-        return false; // unsuccessful
-      } else if (item.types.includes('text/plain')) {
+        // successful don't continue
+        if (wasParsed) return true;
+      }
+      if (item.types.includes('text/plain')) {
         const text_blob = await item.getType('text/plain');
         let item_text = await text_blob.text();
         return pasteFromText(sheet_controller, pasteToCell, item_text);
@@ -204,8 +109,11 @@ const pasteFromText = async (sheet_controller: SheetController, pasteToCell: Coo
 export const pasteFromClipboard = async (sheet_controller: SheetController, pasteToCell: Coordinate) => {
   if (navigator.clipboard && window.ClipboardItem) {
     // attempt to read Quadratic data from clipboard
-    await pasteFromTextOrHtml(sheet_controller, pasteToCell);
+    return await pasteFromTextOrHtml(sheet_controller, pasteToCell);
   }
+  const clipboardHtmlString = await localforage.getItem<string>(CLIPBOARD_STORAGE_KEY);
+  if (!clipboardHtmlString) return false;
+  return await parseHtmlString(sheet_controller, clipboardHtmlString, pasteToCell);
 };
 
 export const generateClipboardStrings = (sheet_controller: SheetController, cell0: Coordinate, cell1: Coordinate) => {
@@ -316,16 +224,8 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
       }),
     ]);
   } else {
-    // fallback to textarea
-    const textarea = document.createElement('textarea');
-    textarea.value = plainTextClipboardString;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
+    // fallback to localforage
+    await localforage.setItem(CLIPBOARD_STORAGE_KEY, clipboardHTMLString);
   }
 };
 
@@ -368,4 +268,104 @@ export const cutToClipboard = async (sheet_controller: SheetController, cell0: C
   clearBordersAction({ sheet_controller, start: cell0, end: cell1, create_transaction: false });
 
   sheet_controller.end_transaction();
+};
+
+const parseHtmlString = async (sheet_controller: SheetController, item_text: string, pasteToCell: Coordinate) => {
+  // regex to match `--(quadratic)${quadraticString}(/quadratic)--` and extract quadraticString
+  const regex = /<span data-metadata="<--\(quadratic\)(.*)\(\/quadratic\)-->"><\/span>/g;
+  const match = regex.exec(item_text);
+
+  if (!match?.length) return false;
+
+  // parse json from text
+  const decoder = new TextDecoder();
+  const quadraticData = new Uint8Array(Array.from(atob(match[1]), (c) => c.charCodeAt(0)));
+  const decodedString = decoder.decode(quadraticData);
+  const json = JSON.parse(decodedString);
+
+  if (json.type === CLIPBOARD_FORMAT_VERSION) {
+    const x_offset = pasteToCell.x - json.cell0.x;
+    const y_offset = pasteToCell.y - json.cell0.y;
+
+    let cells_to_update: Cell[] = [];
+    let formats_to_update: CellFormat[] = [];
+    let borders_to_update: Border[] = [];
+
+    // Get Cell and Format data from clipboard
+    json.data.cells.forEach((cellAndFormat: CellAndFormat) => {
+      const cell = cellAndFormat.cell;
+      const format = cellAndFormat.format;
+
+      // transpose cells
+      if (cell)
+        cells_to_update.push({
+          ...cell, // take old cell
+          x: cell.x + x_offset, // transpose it to new location
+          y: cell.y + y_offset,
+          last_modified: new Date().toISOString(), // update last_modified
+        });
+
+      // transpose format
+      if (format && format.x !== undefined && format.y !== undefined)
+        formats_to_update.push({
+          ...format, // take old format
+          x: format.x + x_offset, // transpose it to new location
+          y: format.y + y_offset,
+        });
+    });
+
+    // border data
+    json.data.borders.forEach((border: Border) => {
+      // transpose borders
+      // combine with existing borders
+      const existingBorder = sheet_controller.sheet.borders.get(border.x + x_offset, border.y + y_offset);
+      borders_to_update.push({
+        ...existingBorder,
+        ...border, // take old border
+        x: border.x + x_offset, // transpose it to new location
+        y: border.y + y_offset,
+      });
+    });
+
+    // Start Transaction
+    sheet_controller.start_transaction();
+
+    // TODO: delete cells that will be overwritten
+    // TODO: delete formats that will be overwritten
+    // TODO: delete borders that will be overwritten
+
+    // update cells
+    await updateCellAndDCells({
+      starting_cells: cells_to_update,
+      sheetController: sheet_controller,
+      create_transaction: false,
+    });
+
+    // update formats
+    formats_to_update.forEach((format) => {
+      if (format.x !== undefined && format.y !== undefined)
+        sheet_controller.execute_statement({
+          type: 'SET_CELL_FORMAT',
+          data: {
+            position: [format.x, format.y],
+            value: format,
+          },
+        });
+    });
+
+    // update borders
+    borders_to_update.forEach((border) => {
+      sheet_controller.execute_statement({
+        type: 'SET_BORDER',
+        data: {
+          position: [border.x, border.y],
+          border,
+        },
+      });
+    });
+
+    sheet_controller.end_transaction();
+
+    return true; // successful don't continue
+  }
 };
