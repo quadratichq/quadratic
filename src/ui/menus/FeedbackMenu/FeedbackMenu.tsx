@@ -74,6 +74,7 @@ export const FeedbackMenu = () => {
           variant="outlined"
           disabled={isLoading}
           fullWidth
+          minRows={4}
           multiline
           sx={{ mt: theme.spacing(2) }}
           autoFocus
