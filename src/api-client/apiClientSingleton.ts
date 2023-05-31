@@ -68,7 +68,7 @@ class APIClientSingleton {
 
   async postFeedback(feedback: string): Promise<boolean> {
     try {
-      const url = `${this.getAPIURL()}/feedback`;
+      const url = `${this.getAPIURL()}/v0/feedback`;
       const body = JSON.stringify({ feedback });
       const token = await this.getAuth();
       const response = await fetch(url, {
@@ -85,7 +85,7 @@ class APIClientSingleton {
       return true;
     } catch (error) {
       Sentry.captureException({
-        message: `API Error Catch \`/feedback\`: ${error}`,
+        message: `API Error Catch \`/v0/feedback\`: ${error}`,
       });
       return false;
     }

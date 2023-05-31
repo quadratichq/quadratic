@@ -55,7 +55,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/ai', ai_chat_router);
 app.use('/v0/files', files_router);
-app.use('/feedback', feedback_router);
+app.use('/v0/feedback', feedback_router);
 
 if (SENTRY_DSN) {
   // test route
