@@ -78,6 +78,7 @@ export function CodeEditorPlaceholder({
       style={{
         position: 'absolute',
         left: '64px',
+        right: '14%',
         top: 0,
         pointerEvents: 'none',
         // Kinda hacky, but we're copying the style of the code editor
