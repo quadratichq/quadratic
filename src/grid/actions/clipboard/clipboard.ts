@@ -210,7 +210,7 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
   );
   const quadraticString = btoa(String.fromCharCode(...quadraticData));
 
-  const clipboardHTMLString = `<span data-metadata="<--(quadratic)${quadraticString}(/quadratic)-->"></span>${htmlClipboardString}`;
+  const clipboardHTMLString = `<span id="quadratic-data" data-metadata="${quadraticString}"></span>${htmlClipboardString}`;
 
   // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
   if (navigator.clipboard && window.ClipboardItem) {
@@ -271,15 +271,18 @@ export const cutToClipboard = async (sheet_controller: SheetController, cell0: C
 };
 
 const parseHtmlString = async (sheet_controller: SheetController, item_text: string, pasteToCell: Coordinate) => {
-  // regex to match `--(quadratic)${quadraticString}(/quadratic)--` and extract quadraticString
-  const regex = /<span data-metadata="<--\(quadratic\)(.*)\(\/quadratic\)-->"><\/span>/g;
-  const match = regex.exec(item_text);
+  const domParser = new DOMParser();
+  const html = domParser.parseFromString(item_text, 'text/html');
+  const span = html.getElementById('quadratic-data');
 
-  if (!match?.length) return false;
+  if (!span) return false;
 
   // parse json from text
   const decoder = new TextDecoder();
-  const quadraticData = new Uint8Array(Array.from(atob(match[1]), (c) => c.charCodeAt(0)));
+  const dataMetadata = span.getAttribute('data-metadata');
+  if (!dataMetadata) return false;
+
+  const quadraticData = new Uint8Array(Array.from(atob(dataMetadata), (c) => c.charCodeAt(0)));
   const decodedString = decoder.decode(quadraticData);
   const json = JSON.parse(decodedString);
 
