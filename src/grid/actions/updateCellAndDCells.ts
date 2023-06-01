@@ -1,9 +1,8 @@
-import { Cell } from '../../schemas';
+import { Cell, ArrayOutputBase } from '../../schemas';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 import { runCellComputation } from '../computations/runCellComputation';
-import { ArrayOutput } from '../computations/types';
 import { StringId, getKey } from '../../helpers/getKey';
 
 interface ArgsType {
@@ -123,13 +122,13 @@ export const updateCellAndDCells = async (args: ArgsType) => {
             let y_offset = 0;
             for (const row of result.array_output) {
               let x_offset = 0;
-              for (const cell of row as ArrayOutput) {
-                if (cell !== undefined)
+              for (const value of row as ArrayOutputBase) {
+                if (value !== undefined && value !== null)
                   array_cells_to_output.push({
                     x: current_cell_x + x_offset,
                     y: current_cell_y + y_offset,
                     type: 'COMPUTED',
-                    value: cell.toString(),
+                    value: value.toString(),
                     last_modified: new Date().toISOString(),
                   });
                 x_offset++;
@@ -139,14 +138,15 @@ export const updateCellAndDCells = async (args: ArgsType) => {
           } else {
             // 1d array
             let y_offset = 0;
-            for (const cell of result.array_output) {
-              array_cells_to_output.push({
-                x: current_cell_x,
-                y: current_cell_y + y_offset,
-                type: 'COMPUTED',
-                value: cell.toString(),
-                last_modified: new Date().toISOString(),
-              });
+            for (const value of result.array_output as ArrayOutputBase) {
+              if (value !== undefined && value !== null)
+                array_cells_to_output.push({
+                  x: current_cell_x,
+                  y: current_cell_y + y_offset,
+                  type: 'COMPUTED',
+                  value: value.toString(),
+                  last_modified: new Date().toISOString(),
+                });
               y_offset++;
             }
           }
