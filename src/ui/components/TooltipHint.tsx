@@ -1,16 +1,17 @@
 import { Tooltip } from '@mui/material';
 
-export const TooltipHint = ({
-  title,
-  shortcut,
-  children,
-}: {
+interface TooltipHintProps {
   title: string;
   shortcut?: string;
-  children: JSX.Element;
-}) => {
+  children: React.ReactElement<any, any>;
+  // Anything else for <Tooltip> you want to pass
+  [x: string]: any;
+}
+
+export const TooltipHint = ({ title, shortcut, children, ...rest }: TooltipHintProps) => {
   return (
     <Tooltip
+      {...rest}
       arrow
       placement="top"
       title={

@@ -1,3 +1,8 @@
+export interface Coordinate {
+  x: number;
+  y: number;
+}
+
 export interface Size {
   width: number;
   height: number;
@@ -8,11 +13,6 @@ export interface Rectangle {
   y: number;
   width: number;
   height: number;
-}
-
-export interface Coordinate {
-  x: number;
-  y: number;
 }
 
 export function coordinateEqual(a: Coordinate, b: Coordinate): boolean {

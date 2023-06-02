@@ -8,6 +8,7 @@ import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 import '../../styles/floating-dialog.css';
+import mixpanel from 'mixpanel-browser';
 
 interface Props {
   app: PixiApp;
@@ -31,6 +32,10 @@ export const CommandPalette = (props: Props) => {
     }));
     focusGrid();
   };
+
+  useEffect(() => {
+    mixpanel.track('[CommandPalette].open');
+  }, []);
 
   // Upon keyboard navigation, scroll the element into view
   useEffect(() => {

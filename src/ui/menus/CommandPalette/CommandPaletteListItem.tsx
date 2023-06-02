@@ -4,6 +4,7 @@ import { ReactElement } from 'react';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import mixpanel from 'mixpanel-browser';
 
 // Props generated in the root CommandPalette and passed to every CommandPaletteListItem
 export interface CommandPaletteListItemSharedProps {
@@ -57,6 +58,7 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
         data-command-bar-list-item-index={listItemIndex}
         disabled={disabled}
         onClick={() => {
+          mixpanel.track('[CommandPalette].run', { label: label });
           action();
           closeCommandPalette();
         }}

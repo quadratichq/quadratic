@@ -1,21 +1,21 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-
 import { UploadFile } from '@mui/icons-material';
-import { useSetRecoilState } from 'recoil';
-import { showCSVImportHelpAtom } from '../../../../atoms/showCSVImportHelpAtom';
+import { CSV_IMPORT_MESSAGE } from '../../../../constants/app';
+import { useGlobalSnackbar } from '../../../contexts/GlobalSnackbar';
 
 const ListItems = [
   {
     label: 'Import: CSV',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const setShowCSVImportHelpMessage = useSetRecoilState(showCSVImportHelpAtom);
+      const { addGlobalSnackbar } = useGlobalSnackbar();
+
       return (
         <CommandPaletteListItem
           {...props}
           icon={<UploadFile />}
           action={() => {
-            setShowCSVImportHelpMessage(true);
+            addGlobalSnackbar(CSV_IMPORT_MESSAGE);
           }}
         />
       );

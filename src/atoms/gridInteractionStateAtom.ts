@@ -9,6 +9,7 @@ export enum PanMode {
 
 export interface GridInteractionState {
   panMode: PanMode;
+  boxCells: boolean;
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
   showMultiCursor: boolean;
@@ -22,6 +23,7 @@ export interface GridInteractionState {
 
 export const gridInteractionStateDefault: GridInteractionState = {
   panMode: PanMode.Disabled,
+  boxCells: false,
   keyboardMovePosition: { x: 0, y: 0 },
   cursorPosition: { x: 0, y: 0 },
   showMultiCursor: false,

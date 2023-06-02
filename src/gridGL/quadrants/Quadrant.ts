@@ -92,7 +92,7 @@ export class Quadrant extends Container {
       const texture = RenderTexture.create({
         width,
         height,
-        resolution: window.devicePixelRatio,
+        resolution: Math.max(2, window.devicePixelRatio),
         mipmap: MIPMAP_MODES.ON,
       });
       sprite = this.addChild(new Sprite(texture)) as SubQuadrant;

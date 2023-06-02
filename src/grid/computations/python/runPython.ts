@@ -1,13 +1,14 @@
 import { getPyodide } from './getPyodide';
+import { ArrayOutput } from '../../../schemas';
 export interface runPythonReturnType {
   cells_accessed: [number, number][];
   success: boolean;
   input_python_stack_trace: string;
   input_python_std_out: string;
   input_python_std_err: string;
-  output_value: string | null;
   output_type: string;
-  array_output: (string | number | boolean)[][];
+  output_value: string | null;
+  array_output: ArrayOutput;
   formatted_code: string;
 }
 

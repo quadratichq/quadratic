@@ -1,14 +1,16 @@
 import { atom } from 'recoil';
 import { Coordinate } from '../gridGL/types/size';
-import { CellTypes } from '../grid/sheet/gridTypes';
+import { CellType } from '../schemas';
 
 export interface EditorInteractionState {
   showCellTypeMenu: boolean;
   showCodeEditor: boolean;
   showCommandPalette: boolean;
   showGoToMenu: boolean;
+  showFileMenu: boolean;
+  showFeedbackMenu: boolean;
   selectedCell: Coordinate;
-  mode: CellTypes;
+  mode: CellType;
 }
 
 export const editorInteractionStateDefault: EditorInteractionState = {
@@ -16,6 +18,8 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showCodeEditor: false,
   showCommandPalette: false,
   showGoToMenu: false,
+  showFeedbackMenu: false,
+  showFileMenu: false,
   selectedCell: { x: 0, y: 0 },
   mode: 'TEXT',
 };

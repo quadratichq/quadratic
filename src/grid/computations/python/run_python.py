@@ -297,8 +297,8 @@ async def run_python(code):
                 ] + output_value.values.tolist()
 
             else:
-                # Just return PD values
-                array_output = output_value.values.tolist()
+                # convert nan to None, return PD values list 
+                array_output = output_value.where(output_value.notnull(), None).values.tolist()
 
         # Convert Pandas.Series to array_output
         if isinstance(output_value, pd.Series):

@@ -8,7 +8,7 @@ import { BrowserTracing } from '@sentry/tracing';
 import { Auth0Provider } from '@auth0/auth0-react';
 
 // Enable sentry only if SENTRY_DSN is in ENV
-if (process.env.REACT_APP_SENTRY_DSN)
+if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'none')
   Sentry.init({
     dsn: process.env.REACT_APP_SENTRY_DSN,
     integrations: [new BrowserTracing()],
@@ -23,6 +23,8 @@ ReactDOM.render(
     <Auth0Provider
       domain={process.env.REACT_APP_AUTH0_DOMAIN}
       clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
+      audience={process.env.REACT_APP_AUTH0_AUDIENCE}
+      issuer={process.env.REACT_APP_AUTH0_ISSUER}
       redirectUri={window.location.origin}
     >
       <App />

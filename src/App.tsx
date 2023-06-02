@@ -1,14 +1,11 @@
 import * as React from 'react';
-
 import './styles.css';
-
-import { LoadingProvider } from './contexts/LoadingContext';
-
 import { QuadraticAuth } from './quadratic/QuadraticAuth';
 import { isWASMSupported } from './utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';
 import { BrowserNotSupported } from './ui/overlays/BrowserNotSupported';
 import * as Sentry from '@sentry/browser';
+import { RecoilRoot } from 'recoil';
 
 export default function App() {
   // Check if browser supports WebGL and WASM
@@ -22,9 +19,8 @@ export default function App() {
   }
 
   return (
-    <LoadingProvider>
-      {/* Provider of QuadraticApp */}
-      <QuadraticAuth></QuadraticAuth>
-    </LoadingProvider>
+    <RecoilRoot>
+      <QuadraticAuth />
+    </RecoilRoot>
   );
 }

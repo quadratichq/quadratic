@@ -3,13 +3,14 @@ import { colors } from '../../../theme/colors';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { useEffect, useState } from 'react';
-import { Cell } from '../../../grid/sheet/gridTypes';
+import { Cell } from '../../../schemas';
 import { formatDistance } from 'date-fns';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { isMobileOnly } from 'react-device-detect';
 import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { ChatBubbleOutline } from '@mui/icons-material';
 
 interface Props {
   sheet: Sheet;
@@ -125,7 +126,20 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
-        {!isMobileOnly && <span>✓ Python 3.9.5</span>}
+        {!isMobileOnly && (
+          <>
+            <span
+              style={{ display: 'flex', alignItems: 'center', gap: '.25rem' }}
+              onClick={() => {
+                setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
+              }}
+            >
+              <ChatBubbleOutline fontSize="inherit" />
+              Feedback
+            </span>
+            <span>✓ Python 3.9.5</span>
+          </>
+        )}
         <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
         <span
           style={{

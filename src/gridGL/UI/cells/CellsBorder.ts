@@ -1,6 +1,6 @@
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { colors } from '../../../theme/colors';
-import { Border } from '../../../grid/sheet/gridTypes';
+import { Border } from '../../../schemas';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { CellsDraw } from './Cells';
 import { drawBorder, drawCellBorder } from './drawBorder';
@@ -76,6 +76,8 @@ export class CellsBorder extends Container {
         drawInputBorder(input, colors.cellColorUserPython, 0.75);
       } else if (input.cell.type === 'FORMULA') {
         drawInputBorder(input, colors.cellColorUserFormula, 0.75);
+      } else if (input.cell.type === 'AI') {
+        drawInputBorder(input, colors.cellColorUserAI, 0.75);
       } else if (input.cell.type === 'COMPUTED') {
         // drawInputBorder(input, colors.independence, 0.75);
       }

@@ -1,11 +1,11 @@
 import { Rectangle } from 'pixi.js';
-import { GridFileSchemaV1 } from '../actions/gridFile/GridFileSchema';
+import { GridFileData, GridFile } from '../../schemas';
 import { intersects } from '../../gridGL/helpers/intersects';
 import { GridBorders } from './GridBorders';
 import { GridRenderDependency } from './GridRenderDependency';
 import { GridOffsets } from './GridOffsets';
 import { CellAndFormat, GridSparse } from './GridSparse';
-import { Cell, CellFormat } from './gridTypes';
+import { Cell, CellFormat } from '../../schemas';
 import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../../gridGL/types/size';
 
@@ -43,16 +43,15 @@ export class Sheet {
     this.onRebuild?.();
   }
 
-  load_file(sheet: GridFileSchemaV1): void {
+  load_file(sheet: GridFile): void {
     this.gridOffsets.populate(sheet.columns, sheet.rows);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
-    this.render_dependency.load(sheet.render_dependency);
     this.cell_dependency.loadFromString(sheet.cell_dependency);
     this.onRebuild?.();
   }
 
-  export_file(): GridFileSchemaV1 {
+  export_file(): GridFileData {
     const { cells, formats } = this.grid.getArrays();
     return {
       columns: this.gridOffsets.getColumnsArray(),
@@ -60,9 +59,7 @@ export class Sheet {
       cells,
       formats,
       borders: this.borders.getArray(),
-      render_dependency: this.render_dependency.save(),
       cell_dependency: this.cell_dependency.exportToString(),
-      version: '1.0',
     };
   }
 

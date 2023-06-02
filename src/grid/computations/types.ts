@@ -1,11 +1,16 @@
-export interface cellEvaluationReturnType {
-  success: boolean;
-  std_out?: string;
-  std_err?: string;
-  output_value: string | null;
-  output_type: string | null;
-  cells_accessed: [number, number][];
-  array_output: (string | number | boolean)[][];
-  formatted_code: string;
-  error_span: [number, number] | null;
-}
+import z from 'zod';
+import { ArrayOutputSchema } from '../../schemas';
+
+export const CellEvaluationResultSchema = z.object({
+  success: z.boolean(),
+  std_out: z.string().optional(),
+  std_err: z.string().optional(),
+  output_type: z.string().or(z.null()).or(z.undefined()),
+  output_value: z.string().or(z.null()).or(z.undefined()),
+  cells_accessed: z.tuple([z.number(), z.number()]).array(),
+  array_output: ArrayOutputSchema,
+  formatted_code: z.string(),
+  error_span: z.tuple([z.number(), z.number()]).or(z.null()),
+});
+
+export type CellEvaluationResult = z.infer<typeof CellEvaluationResultSchema>;
