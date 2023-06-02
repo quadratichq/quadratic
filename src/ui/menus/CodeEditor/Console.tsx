@@ -8,14 +8,37 @@ import { EditorInteractionState } from '../../../atoms/editorInteractionStateAto
 import { useTheme } from '@mui/system';
 import { AITab } from './AITab';
 import { useAuth0 } from '@auth0/auth0-react';
+import { KeyboardReturn } from '@mui/icons-material';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
   evalResult: CellEvaluationResult | undefined;
   editorContent: string | undefined;
+  returnSelection: any;
+  selectedCell: any;
+  hasUnsavedChanges: boolean;
 }
 
-export function Console({ evalResult, editorMode, editorContent }: ConsoleProps) {
+const ReturnType = ({ children }: any) => (
+  <span
+    style={{
+      background: '#eee',
+      fontWeight: '600',
+      padding: '1px 8px',
+    }}
+  >
+    {children}
+  </span>
+);
+
+export function Console({
+  evalResult,
+  editorMode,
+  editorContent,
+  selectedCell,
+  returnSelection,
+  hasUnsavedChanges,
+}: ConsoleProps) {
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
@@ -31,6 +54,8 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
   if (editorMode === 'AI') {
     if (activeTabIndex !== 1) setActiveTabIndex(1);
   }
+
+  console.log(selectedCell.evaluation_result?.output_type, returnSelection);
 
   return (
     <>
@@ -91,11 +116,53 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
             data-gramm_editor="false"
             data-enable-grammarly="false"
           >
+            {
+              /*editorInteractionState.mode === 'PYTHON' &&*/
+              (selectedCell.evaluation_result?.output_type || returnSelection?.value_type) && (
+                <>
+                  <div
+                    style={{
+                      // padding: '4px 0 8px',
+                      // color: hasUnsavedChanges ? '#777' : 'green',
+                      color: std_err ? 'red' : '#777',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: theme.spacing(1),
+                    }}
+                  >
+                    <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} />{' '}
+                    <ReturnType>
+                      {std_err ? 'ERROR' : hasUnsavedChanges ? '…' : selectedCell.evaluation_result?.output_type}
+                    </ReturnType>
+                    {std_err ? (
+                      ''
+                    ) : hasUnsavedChanges ? (
+                      <>
+                        [
+                        <a href="#TODO" style={{ color: 'inherit' }}>
+                          line: {returnSelection?.lineno}
+                        </a>
+                        ]
+                      </>
+                    ) : (
+                      <>
+                        [
+                        <a href="#TODO" style={{ color: 'inherit' }}>
+                          line: {returnSelection?.lineno}
+                        </a>
+                        ] {returnSelection?.value_type}
+                      </>
+                    )}
+                  </div>
+                  <br />
+                </>
+              )
+            }
             {hasOutput && (
               <>
                 {std_err && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
-                    ERROR: {std_err}
+                    {std_err}
                   </span>
                 )}
                 {std_out}

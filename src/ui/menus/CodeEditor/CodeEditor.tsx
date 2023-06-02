@@ -29,7 +29,6 @@ import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
 import { inspectPython, inspectPythonReturnType } from '../../../grid/computations/python/inspectPython';
-import './styles.css';
 import mixpanel from 'mixpanel-browser';
 import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
 
@@ -474,27 +473,17 @@ export const CodeEditor = (props: CodeEditorProps) => {
           height: `${consoleHeight}px`,
         }}
       >
-        {editorInteractionState.mode === 'PYTHON' &&
-          (selectedCell.evaluation_result?.output_type || returnSelection?.value_type) && (
-            <span style={{ fontFamily: 'monospace', padding: '2px' }}>
-              Type ↳{' '}
-              <span
-                className="codeEditorReturnHighlight"
-                style={{
-                  borderRadius: '4px',
-                  padding: '2px',
-                }}
-              >
-                {selectedCell.evaluation_result?.output_type !== undefined && !hasUnsavedChanges
-                  ? selectedCell.evaluation_result?.output_type
-                  : returnSelection?.value_type}{' '}
-              </span>
-            </span>
-          )}
         {(editorInteractionState.mode === 'PYTHON' ||
           editorInteractionState.mode === 'FORMULA' ||
           editorInteractionState.mode === 'AI') && (
-          <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
+          <Console
+            hasUnsavedChanges={hasUnsavedChanges}
+            selectedCell={selectedCell}
+            returnSelection={returnSelection}
+            evalResult={evalResult}
+            editorMode={editorMode}
+            editorContent={editorContent}
+          />
         )}
       </div>
     </div>
