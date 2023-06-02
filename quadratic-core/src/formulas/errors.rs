@@ -7,7 +7,7 @@ use std::fmt;
 use super::Span;
 
 /// Error message and accompanying span.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FormulaError {
     /// Location of the source code where the error occurred (if any).
     pub span: Option<Span>,
@@ -48,12 +48,24 @@ pub enum FormulaErrorMsg {
         got: Option<Cow<'static, str>>,
     },
     Unexpected(Cow<'static, str>),
-    ArraySizeMismatch {
-        expected: (usize, usize),
-        got: (usize, usize),
+    ArrayWidthMismatch {
+        expected: u32,
+        got: u32,
     },
+    ArrayHeightMismatch {
+        expected: u32,
+        got: u32,
+    },
+    EmptyArray,
     NonRectangularArray,
-    BadArgumentCount,
+    TooManyArguments {
+        func_name: &'static str,
+        max_arg_count: usize,
+    },
+    MissingRequiredArgument {
+        func_name: &'static str,
+        arg_name: &'static str,
+    },
     BadFunctionName,
     BadCellReference,
     BadNumber,
@@ -87,16 +99,45 @@ impl fmt::Display for FormulaErrorMsg {
                 None => write!(f, "Expected {expected}"),
             },
             Self::Unexpected(got) => write!(f, "Unexpected {got}"),
-            Self::ArraySizeMismatch { expected, got } => {
-                write!(f, "Array size mismatch: expected {expected:?}, got {got:?}")
+            Self::ArrayWidthMismatch { expected, got } => {
+                write!(
+                    f,
+                    "Array width mismatch: expected value with 1 \
+                     column or {expected:?} columns, got {got:?} columns",
+                )
+            }
+            Self::ArrayHeightMismatch { expected, got } => {
+                write!(
+                    f,
+                    "Array height mismatch: expected value with 1 \
+                     row or {expected:?} rows, got {got:?} rows",
+                )
+            }
+            Self::EmptyArray => {
+                write!(f, "Array cannot be empty")
             }
             Self::NonRectangularArray => {
                 write!(f, "Array must be rectangular")
             }
-            Self::BadArgumentCount => {
-                // TODO: give a nicer error message that says what the arguments
-                // should be
-                write!(f, "Bad argument count")
+            Self::TooManyArguments {
+                func_name,
+                max_arg_count,
+            } => {
+                write!(
+                    f,
+                    "Too many arguments (`{func_name}` \
+                     expects at most {max_arg_count})",
+                )
+            }
+            Self::MissingRequiredArgument {
+                func_name,
+                arg_name,
+            } => {
+                write!(
+                    f,
+                    "Function `{func_name}` is missing \
+                     required argument `{arg_name}`",
+                )
             }
             Self::BadFunctionName => {
                 write!(f, "There is no function with this name")
