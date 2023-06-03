@@ -53,7 +53,7 @@ export class Cells extends Container {
 
     this.cellsArray = this.addChild(new CellsArray(app));
     this.cellsBorder = this.addChild(new CellsBorder(app));
-    this.cellLabels = this.addChild(new CellsLabels());
+    this.cellLabels = this.addChild(new CellsLabels(app));
     this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
@@ -431,5 +431,14 @@ export class Cells extends Container {
     this.cellsBorder.debugShowCachedCounts();
     this.cellsMarkers.debugShowCachedCounts();
     this.cellsBackground.debugShowCachedCounts();
+  }
+
+  getCellsContentWidth(): { location: Coordinate; textWidth: number }[] {
+    return this.cellLabels.get().map((cellLabel) => {
+      return {
+        location: cellLabel.data.location,
+        textWidth: cellLabel.textWidth,
+      };
+    });
   }
 }
