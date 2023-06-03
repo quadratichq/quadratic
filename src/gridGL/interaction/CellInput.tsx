@@ -75,7 +75,9 @@ export const CellInput = (props: CellInputProps) => {
       if (!node) return;
       node.focus();
       setTextInput(node);
+      console.log(interactionState.inputInitialValue, cell?.value);
       text.current = interactionState.inputInitialValue ?? (cell?.value || '');
+      // text.current = text.current.replace(/\s/g, '&nbsp;');
       if (document.hasFocus() && node.contains(document.activeElement)) {
         handleFocus({ target: node });
       }
@@ -246,7 +248,7 @@ export const CellInput = (props: CellInputProps) => {
         fontFamily,
         fontSize: '14px',
         backgroundColor: format?.fillColor ?? 'white',
-        whiteSpace: 'nowrap',
+        whiteSpace: 'break-spaces',
       }}
       onInput={() => {
         // viewport should try to keep the input box in view
