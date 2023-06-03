@@ -143,7 +143,7 @@ export class Cells extends Container {
       // only render if there is cell data or cell formatting
       if (entry.cell || entry.format) {
         const column = entry.cell ? entry.cell.x : entry.format!.x;
-        const row = entry.cell ? entry.cell.x : entry.format!.y;
+        const row = entry.cell ? entry.cell.y : entry.format!.y;
         if (!isInput) {
           this.cellsBackground.draw({ ...entry, x, y, width, height });
           let cell_text = '';

@@ -14,8 +14,6 @@ export class CellLabel extends BitmapTextClip {
   lastPosition?: Point;
   data: LabelData;
 
-  // stores original text for comparison, but allows space characters to be replaced (nbsp; vs ' ') as required by contenteditable
-  private originalText: string;
   private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
 
   constructor(data: LabelData) {
@@ -29,7 +27,6 @@ export class CellLabel extends BitmapTextClip {
 
     // needed for linting
     this.data = data;
-    this.originalText = '';
   }
 
   private setFormat(data: LabelData): void {
@@ -46,12 +43,8 @@ export class CellLabel extends BitmapTextClip {
 
   set text(text: string) {
     text = String(text === null || text === undefined ? '' : text);
-    if (text !== this.originalText) {
-      this._text = text
-        .split('')
-        .map((c) => (c.charCodeAt(0) === 160 ? ' ' : c))
-        .join('');
-      this.originalText = text;
+    if (this._text !== text) {
+      this._text = text;
       this.dirty = true;
     }
   }

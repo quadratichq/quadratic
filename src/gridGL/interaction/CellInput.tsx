@@ -75,9 +75,7 @@ export const CellInput = (props: CellInputProps) => {
       if (!node) return;
       node.focus();
       setTextInput(node);
-      console.log(interactionState.inputInitialValue, cell?.value);
       text.current = interactionState.inputInitialValue ?? (cell?.value || '');
-      // text.current = text.current.replace(/\s/g, '&nbsp;');
       if (document.hasFocus() && node.contains(document.activeElement)) {
         handleFocus({ target: node });
       }
