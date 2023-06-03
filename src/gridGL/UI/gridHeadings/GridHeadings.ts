@@ -411,14 +411,8 @@ export class GridHeadings extends Container {
         if (Math.abs(world.x - line.x) < tolerance) {
           // resizing at origin is undefined
           if (line.column === -1) return;
-
-          if (line.column < 0) {
-            const start = gridOffsets.getColumnPlacement(line.column);
-            return { start: start.x, column: line.column, width: start.width };
-          } else {
-            const start = gridOffsets.getColumnPlacement(line.column);
-            return { start: start.x, column: line.column, width: line.width };
-          }
+          const start = gridOffsets.getColumnPlacement(line.column);
+          return { start: start.x, column: line.column, width: line.width };
         }
       }
     }
@@ -427,14 +421,8 @@ export class GridHeadings extends Container {
         if (Math.abs(world.y - line.y) < tolerance) {
           // resizing at origin is undefined
           if (line.row === -1) return;
-
-          if (line.row < 0) {
-            const start = gridOffsets.getRowPlacement(line.row + 1);
-            return { start: start.y, row: line.row + 1, height: start.height };
-          } else {
-            const start = gridOffsets.getRowPlacement(line.row);
-            return { start: start.y, row: line.row, height: line.height };
-          }
+          const start = gridOffsets.getRowPlacement(line.row);
+          return { start: start.y, row: line.row, height: line.height };
         }
       }
     }
