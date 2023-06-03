@@ -1,7 +1,7 @@
 import z from 'zod';
 import { GridFileV1 } from './GridFileV1';
 import { GridFileV1_1, GridFileSchemaV1_1 } from './GridFileV1_1';
-import { GridFileSchemaV1_2, GridFileV1_2 } from './GridFileV1_2';
+import { GridFileSchemaV1_2, GridFileV1_2, ArrayOutputBase } from './GridFileV1_2';
 
 /**
  * Export types for the grid files
@@ -32,6 +32,9 @@ const GridFileDataSchema = GridFileSchema.pick({
 });
 export type GridFileData = z.infer<typeof GridFileDataSchema>;
 
+export const ArrayOutputSchema = GridFileSchema.shape.cells.element.shape.evaluation_result.unwrap().shape.array_output;
+export type ArrayOutput = z.infer<typeof ArrayOutputSchema>;
+export type { ArrayOutputBase };
 export type Cell = GridFile['cells'][0];
 export type CellType = GridFile['cells'][0]['type'];
 export type CellFormat = GridFile['formats'][0];

@@ -438,4 +438,13 @@ export class Cells extends Container {
     this.cellsMarkers.debugShowCachedCounts();
     this.cellsBackground.debugShowCachedCounts();
   }
+
+  getCellsContentWidth(): { location: Coordinate; textWidth: number }[] {
+    return this.cellLabels.get().map((cellLabel) => {
+      return {
+        location: cellLabel.data.location,
+        textWidth: cellLabel.textWidth,
+      };
+    });
+  }
 }
