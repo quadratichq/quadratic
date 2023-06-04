@@ -1,14 +1,21 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Box } from '@mui/system';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { colors } from '../../../theme/colors';
-import { Tab, Tabs } from '@mui/material';
-import { KeyboardEvent, PointerEvent, useCallback, useRef, useState } from 'react';
+// import { Tab, Tabs } from '@mui/material';
+import { KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { SheetBarTab } from './SheetBarTab';
+import { ButtonGroup, ButtonUnstyled } from '@mui/material';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 
 interface Props {
   sheetController: SheetController;
 }
+
+const ARROW_SCROLL_AMOUNT = 100;
 
 export const SheetBar = (props: Props): JSX.Element => {
   const { sheetController } = props;
@@ -29,18 +36,53 @@ export const SheetBar = (props: Props): JSX.Element => {
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheetController.current);
-  const changeSheet = useCallback(
-    (_, value: number | 'create') => {
-      if (value === 'create') {
-        sheetController.addSheet();
-        setActiveSheet(sheetController.current);
-      } else {
-        sheetController.current = value;
-        setActiveSheet(sheetController.current);
-      }
-      focusGrid();
+
+  // handle disabling left arrow and right arrow
+  const [sheets, setSheets] = useState<HTMLDivElement | undefined>();
+  const [leftArrow, setLeftArrow] = useState<HTMLElement | undefined>();
+  const [rightArrow, setRightArrow] = useState<HTMLElement | undefined>();
+  const leftRef = useCallback(
+    (node: HTMLElement) => {
+      setLeftArrow(node);
+      if (!sheets || !node) return;
+      const hide = sheets.scrollLeft === 0 || sheets.offsetWidth === sheets.scrollWidth;
+      node.style.opacity = hide ? '0.25' : '1';
+      node.style.cursor = hide ? 'auto' : 'pointer';
     },
-    [sheetController]
+    [sheets]
+  );
+  const rightRef = useCallback(
+    (node: HTMLElement) => {
+      setRightArrow(node);
+      if (!sheets || !node) return;
+      const hide =
+        sheets.offsetWidth === sheets.scrollWidth ||
+        Math.round(sheets.scrollLeft) === Math.round(sheets.scrollWidth - sheets.offsetWidth);
+      node.style.opacity = hide ? '0.25' : '1';
+      node.style.cursor = hide ? 'auto' : 'pointer';
+    },
+    [sheets]
+  );
+  const sheetsRef = useCallback(
+    (node: HTMLDivElement) => {
+      setSheets(node);
+      if (!node) return;
+      node.addEventListener('scroll', () => {
+        if (leftArrow) {
+          const hide = node.scrollLeft === 0 || node.offsetWidth === node.scrollWidth;
+          leftArrow.style.opacity = hide ? '0.25' : '1';
+          leftArrow.style.cursor = hide ? 'auto' : 'pointer';
+        }
+        if (rightArrow) {
+          const hide =
+            node.offsetWidth === node.scrollWidth ||
+            Math.round(node.scrollLeft) === Math.round(node.scrollWidth - node.offsetWidth);
+          rightArrow.style.opacity = hide ? '0.25' : '1';
+          rightArrow.style.cursor = hide ? 'auto' : 'pointer';
+        }
+      });
+    },
+    [leftArrow, rightArrow]
   );
 
   // handle drag tabs
@@ -48,28 +90,39 @@ export const SheetBar = (props: Props): JSX.Element => {
     | { tab: HTMLElement; x: number; order: number; original: number; offset: number; id: string; actualOrder: number }
     | undefined
   >();
-  const handlePointerDown = useCallback((event: PointerEvent<HTMLDivElement>, order: number) => {
-    const tab = event.currentTarget.parentElement;
-    if (tab) {
-      const rect = tab.getBoundingClientRect();
-      const id = tab.getAttribute('data-id');
-      if (!id) {
-        throw new Error('Expected sheet.id to be defined in SheetBar.handlePointerDown');
+  const handlePointerDown = useCallback(
+    (options: { event: React.PointerEvent<HTMLDivElement>; index: number; sheet: Sheet }) => {
+      const { event, index, sheet } = options;
+      setActiveSheet((prevState: number) => {
+        if (prevState !== index) {
+          sheetController.current = index;
+          setActiveSheet(index);
+          return index;
+        }
+        return prevState;
+      });
+      const tab = event.currentTarget;
+      if (tab) {
+        const rect = tab.getBoundingClientRect();
+        down.current = {
+          tab,
+          x: event.clientX,
+          order: sheet.order,
+          original: sheet.order,
+          actualOrder: sheet.order,
+          offset: event.clientX - rect.left,
+          id: sheet.id,
+        };
       }
-      down.current = {
-        tab,
-        x: event.clientX,
-        order,
-        original: order,
-        actualOrder: order,
-        offset: event.clientX - rect.left,
-        id,
-      };
-    }
-  }, []);
+      event.preventDefault();
+    },
+    [sheetController]
+  );
 
-  const handlePointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
+  const handlePointerMove = useCallback((event: PointerEvent) => {
     if (down.current) {
+      event.stopPropagation();
+      event.preventDefault();
       // store current tabs (except the dragging tab)
       const tabs: { rect: DOMRect; order: number; element: HTMLDivElement }[] = [];
       const tab = down.current.tab;
@@ -88,17 +141,15 @@ export const SheetBar = (props: Props): JSX.Element => {
       if (overlap) {
         const newOrder = overlap.order + (down.current.order <= overlap.order ? 1 : 0);
 
-        // reset down.x to the correct position for the newly ordered tabs
-        // todo: this is not exactly correct
-        if (newOrder > down.current.order) {
-          down.current.x = down.current.offset + event.clientX;
-        } else {
-          down.current.x = down.current.offset + event.clientX - overlap.element.offsetWidth;
-        }
+        // if (newOrder > down.current.order) {
+        //   down.current.x = down.current.offset + event.clientX;
+        // } else {
+        //   down.current.x = down.current.offset + event.clientX - overlap.element.offsetWidth;
+        // }
         down.current.actualOrder = newOrder - 0.5;
-        tab.style.order = newOrder.toString();
+        // tab.style.order = newOrder.toString();
         down.current.order = newOrder;
-        down.current.tab.style.transform = '';
+        // down.current.tab.style.transform = '';
       }
 
       // otherwise transform the button so it looks like its moving
@@ -108,7 +159,7 @@ export const SheetBar = (props: Props): JSX.Element => {
     }
   }, []);
 
-  const handlePointerUp = useCallback((event: PointerEvent<HTMLDivElement>) => {
+  const handlePointerUp = useCallback(() => {
     if (down.current) {
       if (down.current.order !== down.current.original) {
         sheetController.reorderSheet(down.current.id, down.current.actualOrder);
@@ -116,110 +167,109 @@ export const SheetBar = (props: Props): JSX.Element => {
       down.current.tab.style.transform = '';
       down.current = undefined;
     }
-  }, []);
+  }, [sheetController]);
+
+  useEffect(() => {
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [handlePointerMove, handlePointerUp]);
 
   return (
     <div
-      onContextMenu={(event) => {
-        // Disable right-click
-        event.preventDefault();
-      }}
+      className="sheet-tabs"
       style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        borderTop: `1px solid ${colors.mediumGray}`,
-        color: colors.darkGray,
-        bottom: 0,
-        width: '100%',
-        backdropFilter: 'blur(1px)',
+        height: '2rem',
         display: 'flex',
         justifyContent: 'space-between',
-        paddingLeft: '1rem',
-        paddingRight: '1rem',
-        fontFamily: 'sans-serif',
+        alignItems: 'center',
+        gap: '0.25rem',
+        width: '100%',
+        background: '#eeeeee',
         fontSize: '0.7rem',
-        userSelect: 'none',
       }}
     >
-      <Box
-        sx={{
+      <div
+        style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          height: '1.5rem',
+          width: '100%',
+          overflow: 'hidden visible',
         }}
       >
-        <Tabs
-          value={activeSheet}
-          onChange={changeSheet}
-          variant="scrollable"
-          scrollButtons="auto"
-          aria-label="select sheet control"
-          sx={{ height: '1.5rem', fontSize: '14px' }}
-          component="div"
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
+        <ButtonUnstyled
+          style={{
+            border: 'none',
+            padding: '0 1rem',
+            cursor: 'pointer',
+          }}
+          onClick={() => {
+            sheetController.addSheet();
+            setActiveSheet(sheetController.current);
+          }}
+        >
+          +
+        </ButtonUnstyled>
+        <div
+          ref={sheetsRef}
+          style={{
+            display: 'flex',
+            flexShrink: '1',
+            width: '100%',
+            overflow: 'hidden visible',
+          }}
+          onWheel={(e) => {
+            if (!sheets) return;
+            if (e.deltaX) {
+              sheets.scrollLeft += e.deltaX;
+            }
+          }}
         >
           {sheetController.sheets.map((sheet, index) => (
-            <Tab
-              data-order={sheet.order}
-              data-id={sheet.id}
-              className="sheetBarTab"
+            <SheetBarTab
               key={index}
-              value={index}
-              label={
-                <div
-                  onPointerDown={(e) => handlePointerDown(e, sheet.order)}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                  style={{
-                    outline: 'none',
-                  }}
-                  onKeyUp={(e: KeyboardEvent<HTMLDivElement>) => {
-                    if (e.key === 'Enter') {
-                      e.currentTarget.blur();
-                      onRenameSheet(e.currentTarget.innerText);
-                      focusGrid();
-                    } else if (e.key === 'Escape') {
-                      onRenameSheet();
-                      e.currentTarget.blur();
-                    }
-                  }}
-                  contentEditable={isRenaming === index}
-                  suppressContentEditableWarning={true}
-                  tabIndex={1}
-                  onFocus={(e) => {
-                    const div = e.currentTarget;
-                    const range = document.createRange();
-                    range.selectNodeContents(div);
-                    const selection = document.getSelection();
-                    if (selection) {
-                      selection.removeAllRanges();
-                      selection.addRange(range);
-                    }
-                  }}
-                >
-                  {sheet.name}
-                </div>
-              }
-              onDoubleClick={(e) => {
-                setIsRenaming(index);
-                e.stopPropagation();
-              }}
-              sx={{
-                height: '1.5rem',
-                padding: 0,
-                textAlign: 'center',
-                textTransform: 'none',
-                marginRight: '1rem',
-                outline: 'none',
-                border: 'none',
-                order: sheet.order,
-              }}
+              onPointerDown={handlePointerDown}
+              active={activeSheet === index}
+              sheet={sheet}
+              index={index}
             />
           ))}
-          <Tab value={'create'} label="+" style={{ width: '1rem', order: sheetController.sheets.length }} />
-        </Tabs>
-      </Box>
+        </div>
+      </div>
+      <div style={{ display: 'flex', height: '100%', alignItems: 'center' }}>
+        <ButtonUnstyled
+          ref={leftRef}
+          onClick={() => {
+            if (sheets) {
+              sheets.scrollLeft -= ARROW_SCROLL_AMOUNT;
+            }
+          }}
+          style={{
+            border: 'none',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <ChevronLeft />
+        </ButtonUnstyled>
+        <ButtonUnstyled
+          ref={rightRef}
+          onClick={() => {
+            if (sheets) {
+              sheets.scrollLeft += ARROW_SCROLL_AMOUNT;
+            }
+          }}
+          style={{
+            border: 'none',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <ChevronRight />
+        </ButtonUnstyled>
+      </div>
     </div>
   );
 };
