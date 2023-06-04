@@ -409,8 +409,6 @@ export class GridHeadings extends Container {
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
-          // resizing at origin is undefined
-          if (line.column === -1) return;
           const start = gridOffsets.getColumnPlacement(line.column);
           return { start: start.x, column: line.column, width: line.width };
         }
@@ -419,8 +417,6 @@ export class GridHeadings extends Container {
     if (intersects.rectanglePoint(this.rowRect, world)) {
       for (const line of this.gridLinesRows) {
         if (Math.abs(world.y - line.y) < tolerance) {
-          // resizing at origin is undefined
-          if (line.row === -1) return;
           const start = gridOffsets.getRowPlacement(line.row);
           return { start: start.y, row: line.row, height: line.height };
         }
