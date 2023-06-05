@@ -12,6 +12,7 @@ mod operators;
 mod statistics;
 mod string;
 mod trigonometry;
+mod util;
 
 use super::{
     Array, BasicValue, CellRef, CoerceInto, Ctx, FormulaErrorMsg, FormulaResult, Param, ParamKind,

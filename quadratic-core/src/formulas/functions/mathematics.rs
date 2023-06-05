@@ -70,9 +70,17 @@ mod tests {
         assert_eq!(
             FormulaErrorMsg::Expected {
                 expected: "number".into(),
-                got: Some("\"abc\"".into()),
+                got: Some("text".into()),
             },
             eval_to_err(g, "SUM(\"abc\")").msg,
+        );
+        assert_eq!(
+            FormulaErrorMsg::DivideByZero,
+            eval_to_err(g, "SUM(1/0)").msg
+        );
+        assert_eq!(
+            FormulaErrorMsg::DivideByZero,
+            eval_to_err(g, "SUM({1/0})").msg
         );
         assert_eq!("0", eval_to_string(g, "SUM()"));
         assert_eq!("12", eval_to_string(g, "SUM(12)"));

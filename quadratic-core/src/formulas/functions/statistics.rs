@@ -13,14 +13,14 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns the arithmetic mean of all values.
             #[examples("AVERAGE(A1:A6)", "AVERAGE(A1, A3, A5, B1:B6)")]
-            fn AVERAGE(numbers: (Iter<f64>)) {
+            fn AVERAGE(span: Span, numbers: (Iter<f64>)) {
                 let mut sum = 0.0;
                 let mut count = 0;
                 for n in numbers {
                     sum += n?;
                     count += 1;
                 }
-                sum / count as f64
+                util::checked_div(span, sum, count as f64)
             }
         ),
         formula_fn!(

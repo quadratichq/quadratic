@@ -159,7 +159,8 @@ impl AstNode {
                 match functions::lookup_function(&func_name) {
                     Some(f) => {
                         let args = FormulaFnArgs::new(arg_values, self.span, f.name);
-                        (f.eval)(&mut *ctx, args).await?
+                        let result = (f.eval)(&mut *ctx, args).await?;
+                        result.purify_floats(self.span)?
                     }
                     None => return Err(FormulaErrorMsg::BadFunctionName.with_span(func.span)),
                 }

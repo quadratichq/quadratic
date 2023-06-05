@@ -81,6 +81,7 @@
 ///
 /// Special types:
 /// - `Ctx` - context (type is `Ctx<'_>`)
+/// - `Span` - span of the function call (type is `Span`)
 ///
 /// Additionally, if the parameter name is surrounded by square brackets (such
 /// as `[arg]: f64`) then if the argument is an array then the function will be
@@ -136,8 +137,7 @@ macro_rules! formula_fn_eval {
     ($($tok:tt)*) => {{
         #[allow(unused_mut)]
         let ret: FormulaFn = |_ctx, mut _args: FormulaFnArgs| {
-            // _ctx: &'a mut Ctx return value: LocalBoxFuture<'a,
-            // FormulaResult<Value>>
+            // _ctx: &'a mut Ctx return value: LocalBoxFuture<'a, FormulaResult<Value>>
             //
             // Unfortunately, we can't annotate those types because there's no
             // way to introduce the named lifetime `'a`.
@@ -246,6 +246,10 @@ macro_rules! formula_fn_arg {
     // Context argument
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Ctx) => {
         let $arg_name: &mut Ctx<'_> = &mut *$ctx; // Reborrow context
+    };
+    // Span argument
+    (@assign($ctx:ident, $args:ident); $arg_name:ident: Span) => {
+        let $arg_name = $args.span;
     };
 
     // Zip-mapped context argument
@@ -414,6 +418,8 @@ macro_rules! params_list {
 
     // Context argument (not user-visible)
     (@append($result:ident, $name:ident, Ctx)) => {};
+    // Span argument (not user-visible)
+    (@append($result:ident, $name:ident, Span)) => {};
 
     // Normal argument
     (@append($result:ident, $arg_name:ident, $($arg_type:tt)*)) => {

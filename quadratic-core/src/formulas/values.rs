@@ -107,6 +107,15 @@ impl Value {
             Value::Array(array) => &array.values,
         }
     }
+
+    /// Replaces NaN and Inf with errors; otherwise returns the value
+    /// unchanged.
+    pub fn purify_floats(self, span: Span) -> FormulaResult<Self> {
+        match self {
+            Value::Single(v) => v.purify_float(span).map(Value::Single),
+            Value::Array(a) => a.purify_floats(span).map(Value::Array),
+        }
+    }
 }
 impl Spanned<Value> {
     pub fn basic_value(&self) -> FormulaResult<Spanned<&BasicValue>> {
@@ -313,12 +322,22 @@ impl Array {
             None => "array",
         }
     }
+
+    /// Replaces NaN and Inf with errors; otherwise returns the value
+    /// unchanged.
+    pub fn purify_floats(mut self, span: Span) -> FormulaResult<Self> {
+        for v in &mut self.values {
+            *v = std::mem::take(v).purify_float(span)?;
+        }
+        Ok(self)
+    }
 }
 
 /// Non-array value in the formula language.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub enum BasicValue {
     /// Blank cell, which contains nothing.
+    #[default]
     Blank,
     /// Empty string.
     String(String),
@@ -328,11 +347,6 @@ pub enum BasicValue {
     Bool(bool),
     /// Error value.
     Err(Box<FormulaError>),
-}
-impl Default for BasicValue {
-    fn default() -> Self {
-        BasicValue::Blank
-    }
 }
 impl fmt::Display for BasicValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -352,7 +366,7 @@ impl BasicValue {
     pub fn type_name(&self) -> &'static str {
         match self {
             BasicValue::Blank => "blank",
-            BasicValue::String(_) => "string",
+            BasicValue::String(_) => "text",
             BasicValue::Number(_) => "number",
             BasicValue::Bool(_) => "boolean",
             BasicValue::Err(_) => "error",
@@ -433,6 +447,18 @@ impl BasicValue {
             std::cmp::Ordering::Greater | std::cmp::Ordering::Equal,
         ))
     }
+
+    /// Replaces NaN and Inf with an error; otherwise returns the value
+    /// unchanged.
+    pub fn purify_float(self, span: Span) -> FormulaResult<Self> {
+        match self {
+            BasicValue::Number(n) if n.is_nan() => Err(FormulaErrorMsg::NotANumber.with_span(span)),
+            BasicValue::Number(n) if n.is_infinite() => {
+                Err(FormulaErrorMsg::Infinity.with_span(span))
+            }
+            other_single_value => Ok(other_single_value),
+        }
+    }
 }
 
 /*
@@ -512,7 +538,7 @@ impl<'a> TryFrom<&'a BasicValue> for f64 {
                 }
                 s.parse().map_err(|_| FormulaErrorMsg::Expected {
                     expected: "number".into(),
-                    got: Some(format!("{s:?}").into()),
+                    got: Some(value.type_name().into()),
                 })
             }
             BasicValue::Number(n) => Ok(*n),

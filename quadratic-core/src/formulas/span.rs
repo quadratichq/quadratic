@@ -44,6 +44,11 @@ impl<T> From<&Spanned<T>> for Span {
         spanned.span
     }
 }
+impl From<&Span> for Span {
+    fn from(span: &Span) -> Self {
+        *span
+    }
+}
 
 /// Any data with an associated span.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
@@ -82,6 +87,13 @@ impl<T> Spanned<T> {
             span: self.span,
             inner: f(self.inner),
         }
+    }
+    /// Applies a fallible function to the inside of a `Spanned<T>`.
+    pub fn try_map<U, E>(self, f: impl FnOnce(T) -> Result<U, E>) -> Result<Spanned<U>, E> {
+        Ok(Spanned {
+            span: self.span,
+            inner: f(self.inner)?,
+        })
     }
     /// Converts a `&Spanned<T>` to a `Spanned<&T>`.
     pub fn as_ref(&self) -> Spanned<&T> {

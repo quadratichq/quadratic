@@ -75,6 +75,8 @@ pub enum FormulaErrorMsg {
     Overflow,
     DivideByZero,
     NegativeExponent,
+    NotANumber,
+    Infinity,
     IndexOutOfBounds,
     ArrayTooBig,
 }
@@ -160,6 +162,12 @@ impl fmt::Display for FormulaErrorMsg {
             }
             Self::NegativeExponent => {
                 write!(f, "Negative exponent")
+            }
+            Self::NotANumber => {
+                write!(f, "NaN")
+            }
+            Self::Infinity => {
+                write!(f, "Infinite value")
             }
             Self::IndexOutOfBounds => {
                 write!(f, "Index out of bounds")
