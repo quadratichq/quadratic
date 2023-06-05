@@ -89,6 +89,20 @@ mod tests {
         assert_eq!("27", eval_to_string(g, "SUM(0..5, {\"\"}, {\"abc\"}, 12)"));
         assert_eq!("0", eval_to_string(g, "SUM({\"\", \"abc\"})"));
         assert_eq!("12", eval_to_string(g, "SUM({\"\", \"abc\", 12})"));
+
+        let g = &mut FnGrid(|_| Some("text".to_string()));
+        // One bad cell reference on its own doesn't cause an error because it's
+        // a 1x1 array.
+        assert_eq!("12", eval_to_string(g, "SUM(12, A6)"));
+        // But doing an operation on it converts it to a single value, which
+        // does cause an error.
+        assert_eq!(
+            FormulaErrorMsg::Expected {
+                expected: "number".into(),
+                got: Some("text".into())
+            },
+            eval_to_err(g, "SUM(12, A6&A7)").msg,
+        );
     }
 
     #[test]
