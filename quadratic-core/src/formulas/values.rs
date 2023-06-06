@@ -311,6 +311,10 @@ impl Array {
     pub fn height(&self) -> u32 {
         self.height
     }
+    /// Returns the width and height of an array.
+    pub fn array_size(&self) -> (u32, u32) {
+        (self.width, self.height)
+    }
     /// Returns an iterator over the rows of the array.
     pub fn rows(&self) -> impl Iterator<Item = &[BasicValue]> {
         self.values.chunks(self.width as usize)
@@ -345,6 +349,10 @@ impl Array {
         } else {
             Err(FormulaErrorMsg::IndexOutOfBounds)
         }
+    }
+    /// Returns a flat slice of basic values in the array.
+    pub fn basic_values_slice(&self) -> &[BasicValue] {
+        &self.values
     }
 
     /// Returns a human-friendly string describing the type of value.

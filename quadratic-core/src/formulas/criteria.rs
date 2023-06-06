@@ -7,7 +7,8 @@ use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
 
 use super::{
-    Array, BasicValue, CoerceInto, FormulaError, FormulaErrorMsg, FormulaResult, Spanned, Value,
+    Array, BasicValue, CoerceInto, FormulaError, FormulaErrorMsg, FormulaResult, SpannableIterExt,
+    Spanned,
 };
 
 #[derive(Debug, Clone)]
@@ -95,31 +96,34 @@ impl Criterion {
     /// Iterates over values, excluding those that do not match.
     pub fn iter_matching<'a>(
         &'a self,
-        eval_range: &'a Spanned<Value>,
-        output_values_range: Option<&'a Spanned<Value>>,
-    ) -> FormulaResult<impl 'a + Iterator<Item = FormulaResult<Spanned<&'a BasicValue>>>> {
+        eval_range: &'a Spanned<Array>,
+        output_values_range: Option<&'a Spanned<Array>>,
+    ) -> FormulaResult<impl 'a + Iterator<Item = Spanned<&'a BasicValue>>> {
+        if let Some(range) = output_values_range {
+            if range.inner.array_size() != eval_range.inner.array_size() {
+                return Err(FormulaErrorMsg::ExactArraySizeMismatch {
+                    expected: eval_range.inner.array_size(),
+                    got: range.inner.array_size(),
+                }
+                .with_span(range.span));
+            }
+        }
         let output_values_range = output_values_range.unwrap_or(eval_range);
 
-        let (width, height) = Value::common_array_size([eval_range, output_values_range])?;
-
-        Ok(Array::indices(width, height)
-            .map(|(x, y)| {
-                let eval_value = eval_range.get(x, y)?.inner;
-                if self.matches(eval_value) {
-                    let output_value = output_values_range.get(x, y)?;
-                    Ok(Some(output_value))
-                } else {
-                    Ok(None)
-                }
-            })
-            .filter_map(Result::transpose))
+        Ok(std::iter::zip(
+            eval_range.inner.basic_values_slice(),
+            output_values_range.inner.basic_values_slice(),
+        )
+        .filter(|(eval_value, _output_value)| self.matches(eval_value))
+        .map(|(_eval_value, output_value)| output_value)
+        .with_all_same_span(output_values_range.span))
     }
     /// Iterates over values and coerces each one, excluding those that do not
     /// match or where coercion fails.
     pub fn iter_matching_coerced<'a, T>(
         &'a self,
-        eval_range: &'a Spanned<Value>,
-        output_values_range: Option<&'a Spanned<Value>>,
+        eval_range: &'a Spanned<Array>,
+        output_values_range: Option<&'a Spanned<Array>>,
     ) -> FormulaResult<impl 'a + Iterator<Item = FormulaResult<T>>>
     where
         &'a BasicValue: TryInto<T>,
@@ -127,7 +131,7 @@ impl Criterion {
         Ok(self
             .iter_matching(eval_range, output_values_range)?
             // Propogate errors
-            .map(|v| v?.into_non_error_value())
+            .map(|v| v.into_non_error_value())
             // Ignore blank values
             .filter_map_ok(|v| v.coerce_nonblank::<T>()))
     }

@@ -425,6 +425,9 @@ macro_rules! formula_fn_convert_arg {
     (@convert $value:expr, Value -> Spanned< BasicValue > $(>)?) => {
         $value.into_basic_value()?
     };
+    (@convert $value:expr, Value -> Spanned< Array > $(>)?) => {
+        $value.map(Array::from)
+    };
     (@convert $value:expr, Value -> Spanned< $arg_type:ty > $(>)?) => {
         $value.try_coerce::<$arg_type>()?
     };

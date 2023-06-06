@@ -31,13 +31,13 @@ fn get_functions() -> Vec<FormulaFunction> {
             )]
             #[pure_zip_map]
             fn SUMIF(
-                eval_range: (Spanned<Value>),
+                eval_range: (Spanned<Array>),
                 [criteria]: (Spanned<BasicValue>),
-                numbers_range: (Option<Spanned<Value>>),
+                numbers_range: (Option<Spanned<Array>>),
             ) {
                 let criteria = Criterion::try_from(*criteria)?;
                 let numbers =
-                    criteria.iter_matching_coerced::<f64>(&eval_range, numbers_range.as_ref())?;
+                    criteria.iter_matching_coerced::<f64>(eval_range, numbers_range.as_ref())?;
                 numbers.sum::<FormulaResult<f64>>()
             }
         ),
@@ -130,9 +130,14 @@ mod tests {
 
     #[test]
     fn test_sumif() {
-        let g = &mut NoGrid;
+        let g = &mut BlankGrid;
         assert_eq!("15", eval_to_string(g, "SUMIF(0..10, \"<=5\")"));
         assert_eq!("63", eval_to_string(g, "SUMIF(0..10, \"<=5\", 2^0..10)"));
+        // Test with an array of conditions.
+        assert_eq!(
+            "{63, 16; 1984, 1}",
+            eval_to_string(g, "SUMIF(0..10, {\"<=5\", 4; \">5\", 0}, 2^0..10)"),
+        );
     }
 
     #[test]
