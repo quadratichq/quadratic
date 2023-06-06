@@ -29,6 +29,7 @@ import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
 import mixpanel from 'mixpanel-browser';
+import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -113,6 +114,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
       setEvalResult(selectedCell?.evaluation_result);
     }
   }, [selectedCell]);
+
+  useAlertOnUnsavedChanges(hasUnsavedChanges);
 
   const closeEditor = ({ skipUnsavedChangesCheck } = { skipUnsavedChangesCheck: false }) => {
     // If there are unsaved changes and we haven't been told to explicitly skip

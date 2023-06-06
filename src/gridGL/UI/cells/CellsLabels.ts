@@ -1,21 +1,30 @@
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Point, Rectangle } from 'pixi.js';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
-import { CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
-import { CellFormat } from '../../../schemas';
+import { Bounds } from '../../../grid/sheet/Bounds';
+import { CellFormat, CellAlignment } from '../../../schemas';
+import { PixiApp } from '../../pixiApp/PixiApp';
 
-interface LabelData {
+export interface LabelData {
   text: string;
+  originalText: string;
   x: number;
   y: number;
-  location?: Coordinate;
+  location: Coordinate;
   isQuadrant?: boolean;
   expectedWidth: number;
   format?: CellFormat;
+  alignment?: CellAlignment;
 }
 
 export class CellsLabels extends Container {
+  private app: PixiApp;
   private labelData: LabelData[] = [];
+
+  constructor(app: PixiApp) {
+    super();
+    this.app = app;
+  }
 
   clear() {
     this.labelData = [];
@@ -26,24 +35,91 @@ export class CellsLabels extends Container {
     this.labelData.push(label);
   }
 
-  // checks to see if the label needs to be clipped based on other labels
-  private checkForClipping(label: CellLabel, data: LabelData): void {
-    label.setClip();
-    if (label.textWidth > data.expectedWidth) {
-      const start = label.x + data.expectedWidth;
-      const end = start + (label.width - data.expectedWidth);
-      const neighboringLabels = this.labelData.filter(
-        (search) => search.y === data.y && search.x >= start && search.x <= end
-      );
-      if (neighboringLabels.length) {
-        const neighboringLabel = neighboringLabels.sort((a, b) => a.x - b.x)[0];
-        label.setClip(neighboringLabel.x - data.x - CELL_TEXT_MARGIN_LEFT * 2);
-      } else {
-        label.setClip();
+  private getClipRight(label: CellLabel, textWidth: number): number | undefined {
+    const rightEnd = label.x + textWidth;
+    let column = label.data.location.x + 1;
+    const row = label.data.location.y;
+    let neighborOffset = this.app.sheet.gridOffsets.getCell(column, row).x;
+    while (neighborOffset < rightEnd) {
+      if (this.app.sheet.grid.get(column, row)?.cell?.value) {
+        return neighborOffset;
       }
+      const neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
+      neighborOffset += neighborWidth;
+      column++;
+    }
+  }
+
+  private getClipLeft(label: CellLabel): number | undefined {
+    const leftEnd = label.x;
+    let column = label.data.location.x - 1;
+    const row = label.data.location.y;
+    let neighbor = this.app.sheet.gridOffsets.getCell(column, row);
+    let neighborWidth = neighbor.width;
+    let neighborOffset = neighbor.x + neighbor.width;
+    while (neighborOffset > leftEnd) {
+      if (this.app.sheet.grid.get(column, row)?.cell?.value) {
+        return neighborOffset;
+      }
+      neighborOffset -= neighborWidth;
+      column--;
+      neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
+    }
+  }
+
+  // checks to see if the label needs to be clipped based on other labels
+  private checkForClipping(label: CellLabel): void {
+    const data = label.data;
+    if (!data) {
+      throw new Error('Expected label.data to be defined in checkForClipping');
+    }
+
+    const textWidth = label.getFullTextWidth();
+    if (textWidth > data.expectedWidth) {
+      let clipLeft: number | undefined, clipRight: number | undefined;
+      if (data.alignment === 'right') {
+        clipLeft = this.getClipLeft(label);
+      } else if (data.alignment === 'center') {
+        clipLeft = this.getClipLeft(label);
+        clipRight = this.getClipRight(label, textWidth);
+      } else {
+        clipRight = this.getClipRight(label, textWidth);
+      }
+      label.setClip({ clipLeft, clipRight });
     } else {
       label.setClip();
     }
+  }
+
+  private checkForOverflow(options: { label: CellLabel; bounds: Bounds }): void {
+    const { label, bounds } = options;
+    const { data } = label;
+    const { alignment } = data;
+
+    // track overflowed widths
+    const width = label.textWidth;
+
+    if (width > data.expectedWidth) {
+      if (alignment === 'left' && !label.clipRight) {
+        label.overflowRight = width - data.expectedWidth;
+        label.overflowLeft = undefined;
+      } else if (alignment === 'right' && !label.clipLeft) {
+        label.overflowLeft = width - data.expectedWidth;
+        label.overflowRight = undefined;
+      } else if (alignment === 'center') {
+        const overflow = (width - data.expectedWidth) / 2;
+        if (!label.clipLeft) {
+          label.overflowLeft = overflow;
+        }
+        if (!label.clipRight) {
+          label.overflowRight = overflow;
+        }
+      }
+    } else {
+      label.overflowRight = undefined;
+      label.overflowLeft = undefined;
+    }
+    bounds.addRectangle(new Rectangle(label.x, label.y, width, label.height));
   }
 
   private compareLabelData(label: CellLabel, data: LabelData): boolean {
@@ -51,12 +127,44 @@ export class CellsLabels extends Container {
       return (!a && !b) || (a && b) ? true : false;
     };
 
-    return (
-      label.originalText === data.text &&
-      isSame(label.format?.bold, data.format?.bold) &&
-      isSame(label.format?.italic, data.format?.italic) &&
-      label.format?.textColor === data.format?.textColor
-    );
+    if (
+      label.data?.text !== data.text ||
+      !isSame(label.data?.format?.bold, data.format?.bold) ||
+      !isSame(label.data?.format?.italic, data.format?.italic) ||
+      label.data?.format?.textColor !== data.format?.textColor
+    )
+      return false;
+
+    const position = this.calculatePosition(label, data);
+    if (!label.lastPosition || !label.lastPosition.equals(position)) return false;
+
+    return true;
+  }
+
+  private calculatePosition(label: CellLabel, data: LabelData): Point {
+    data.alignment = 'left';
+    if (data.format?.alignment === 'right') data.alignment = 'right';
+    else if (data.format?.alignment === 'center') data.alignment = 'center';
+    else if (data.format?.alignment === 'left') data.alignment = 'left';
+    if (data.alignment === 'right') {
+      return new Point(data.x + data.expectedWidth - label.textWidth, data.y);
+    } else if (data.alignment === 'center') {
+      return new Point(data.x + data.expectedWidth / 2 - label.textWidth / 2, data.y);
+    }
+    return new Point(data.x, data.y);
+  }
+
+  private updateLabel(label: CellLabel, data: LabelData): void {
+    label.update(data);
+    label.visible = true;
+
+    label.position = this.calculatePosition(label, data);
+
+    // this ensures that the text is redrawn during column resize (otherwise clipping will not work properly)
+    if (!label.lastPosition || !label.lastPosition.equals(label.position)) {
+      label.dirty = true;
+      label.lastPosition = label.position.clone();
+    }
   }
 
   /**
@@ -64,10 +172,7 @@ export class CellsLabels extends Container {
    * @returns the visual bounds only if isQuadrant is defined (otherwise not worth the .width/.height call)
    */
   update(): Rectangle | undefined {
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
+    const bounds = new Bounds();
 
     // keep current children to use as the cache
     this.children.forEach((child) => (child.visible = false));
@@ -81,64 +186,35 @@ export class CellsLabels extends Container {
       if (index === -1) {
         leftovers.push(data);
       } else {
-        const label = available[index];
-        label.position.set(data.x, data.y);
-        label.visible = true;
-        this.checkForClipping(label, data);
-
-        // track overflowed widths
-        if (data.isQuadrant) {
-          label.location = data.location;
-          const width = label.width;
-          if (width > data.expectedWidth) {
-            label.overflowRight = width - data.expectedWidth;
-          } else {
-            label.overflowRight = undefined;
-          }
-          minX = Math.min(label.x, minX);
-          maxX = Math.max(label.x + width, maxX);
-          minY = Math.min(label.y, minY);
-          maxY = Math.max(label.y + label.height, maxY);
-        }
+        this.updateLabel(available[index], data);
         available.splice(index, 1);
       }
     });
 
     // use existing labels but change the text
     leftovers.forEach((data, i) => {
-      let label: CellLabel;
       if (i < available.length) {
-        label = available[i];
-        label.visible = true;
-        label.setFormat(data.format);
+        this.updateLabel(available[i], data);
       }
 
       // otherwise create new labels
       else {
-        label = this.addChild(new CellLabel(data.format));
-      }
-      label.position.set(data.x, data.y);
-      label.text = data.text;
-      this.checkForClipping(label, data);
-
-      // track overflowed widths
-      if (data.expectedWidth) {
-        label.location = data.location;
-        if (label.textWidth > data.expectedWidth) {
-          label.overflowRight = label.textWidth - data.expectedWidth;
-        } else {
-          label.overflowRight = undefined;
-        }
-      }
-      if (data.isQuadrant) {
-        minX = Math.min(label.x, minX);
-        maxX = Math.max(label.x + label.width, maxX);
-        minY = Math.min(label.y, minY);
-        maxY = Math.max(label.y + label.height, maxY);
+        const label = this.addChild(new CellLabel(data));
+        label.position = this.calculatePosition(label, data);
+        label.lastPosition = label.position.clone();
       }
     });
-    if (minX !== Infinity) {
-      return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+
+    this.children.forEach((child) => {
+      const label = child as CellLabel;
+      if (label.visible) {
+        this.checkForClipping(label);
+        this.checkForOverflow({ label, bounds });
+      }
+    });
+
+    if (!bounds.empty) {
+      return bounds.toRectangle();
     }
   }
 
