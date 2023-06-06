@@ -106,7 +106,7 @@ mod tests {
     fn test_formula_average() {
         let form = parse_formula("AVERAGE(3, B1:D3)", pos![nAn1]).unwrap();
 
-        let mut g = FnGrid(|pos| {
+        let g = &mut FnGrid(|pos| {
             if (1..=3).contains(&pos.x) && (1..=3).contains(&pos.y) {
                 Some((pos.x * 3 + pos.y).to_string()) // 4 .. 12
             } else {
@@ -116,15 +116,27 @@ mod tests {
 
         assert_eq!(
             "7.5".to_string(),
-            form.eval_blocking(&mut g, pos![nAn1]).unwrap().to_string(),
+            form.eval_blocking(g, pos![nAn1]).unwrap().to_string(),
         );
 
         assert_eq!(
             "17",
-            eval_to_string(&mut g, "AVERAGE({\"_\", \"a\"}, 12, -3.5, 42.5)"),
+            eval_to_string(g, "AVERAGE({\"_\", \"a\"}, 12, -3.5, 42.5)"),
         );
-        assert_eq!("5.5", eval_to_string(&mut g, "AVERAGE(1..10)"));
-        assert_eq!("5", eval_to_string(&mut g, "AVERAGE(0..10)"));
+        assert_eq!("5.5", eval_to_string(g, "AVERAGE(1..10)"));
+        assert_eq!("5", eval_to_string(g, "AVERAGE(0..10)"));
+
+        // Test that null arguments count as zero.
+        assert_eq!("1", eval_to_string(g, "AVERAGE(3,,)"));
+        assert_eq!("1", eval_to_string(g, "AVERAGE(,3,)"));
+        assert_eq!("1", eval_to_string(g, "AVERAGE(,,3)"));
+        assert_eq!("0", eval_to_string(g, "AVERAGE(,)"));
+
+        // Test with no arguments
+        assert_eq!(
+            FormulaErrorMsg::DivideByZero,
+            eval_to_err(g, "AVERAGE()").msg,
+        );
     }
 
     #[test]

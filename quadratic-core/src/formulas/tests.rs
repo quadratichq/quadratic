@@ -213,12 +213,12 @@ fn test_array_parsing() {
         eval(&mut NoGrid, "{1; 3, 4}").unwrap_err().msg,
     );
 
-    // Empty array
-    assert!(eval(&mut NoGrid, "{}").is_err());
-    assert!(eval(&mut NoGrid, "{ }").is_err());
+    // Blank values
+    assert_eq!("{[blank]}", eval_to_string(&mut NoGrid, "{}"));
+    assert_eq!("{[blank]}", eval_to_string(&mut NoGrid, "{ }"));
 
     // Empty row
-    assert!(eval(&mut NoGrid, "{ ; }").is_err());
+    assert_eq!("{[blank]; [blank]}", eval_to_string(&mut NoGrid, "{ ; }"));
 }
 
 #[test]
@@ -233,6 +233,39 @@ fn test_hyphen_after_cell_ref() {
     let mut g = FnGrid(|_| Some("30".to_string()));
     assert_eq!("25", eval_to_string(&mut g, "Z1 - 5"));
     assert_eq!("25", eval_to_string(&mut g, "Z1-5"));
+}
+
+#[test]
+fn test_formula_omit_required_argument() {
+    let g = &mut NoGrid;
+    assert_eq!(
+        FormulaErrorMsg::MissingRequiredArgument {
+            func_name: "ATAN2",
+            arg_name: "x"
+        },
+        eval_to_err(g, "ATAN2(,1)").msg,
+    );
+    assert_eq!(
+        FormulaErrorMsg::MissingRequiredArgument {
+            func_name: "ATAN2",
+            arg_name: "y"
+        },
+        eval_to_err(g, "ATAN2(1,)").msg,
+    );
+    assert_eq!(
+        FormulaErrorMsg::MissingRequiredArgument {
+            func_name: "ATAN2",
+            arg_name: "x"
+        },
+        eval_to_err(g, "ATAN2(,)").msg,
+    );
+    assert_eq!(
+        FormulaErrorMsg::MissingRequiredArgument {
+            func_name: "ATAN2",
+            arg_name: "x"
+        },
+        eval_to_err(g, "ATAN2()").msg,
+    );
 }
 
 #[test]

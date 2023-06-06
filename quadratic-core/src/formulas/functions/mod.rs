@@ -74,7 +74,7 @@ impl FormulaFnArgs {
         }
     }
     /// Takes the next argument, or returns `None` if there is none.
-    pub fn take_next(&mut self) -> Option<Spanned<Value>> {
+    pub fn take_next_optional(&mut self) -> Option<Spanned<Value>> {
         if !self.values.is_empty() {
             self.args_popped += 1;
         }
@@ -82,7 +82,7 @@ impl FormulaFnArgs {
     }
     /// Takes the next argument, or returns an error if there is none.
     pub fn take_next_required(&mut self, arg_name: &'static str) -> FormulaResult<Spanned<Value>> {
-        self.take_next().ok_or_else(|| {
+        self.take_next_optional().ok_or_else(|| {
             FormulaErrorMsg::MissingRequiredArgument {
                 func_name: self.func_name,
                 arg_name,

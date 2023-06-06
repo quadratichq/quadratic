@@ -117,9 +117,10 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 Token::LBracket => false,
                 Token::LBrace => true,
 
-                Token::RParen | Token::RBracket | Token::RBrace => false,
-
-                Token::ArgSep | Token::RowSep => false,
+                //  These match because an expression in a list or array or
+                //  functional call is allowed to be empty.
+                Token::RParen | Token::RBracket | Token::RBrace => true,
+                Token::ArgSep | Token::RowSep => true,
 
                 Token::Eql | Token::Neq | Token::Lt | Token::Gt | Token::Lte | Token::Gte => false,
 
@@ -162,7 +163,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
                     ArrayLiteral.map(Some),
                     CellReference.map(Some),
                     ParenExpression.map(Some),
-                    Epsilon.map(|_| None),
+                    EmptyExpression.map(Some),
                 ],
             )
             .transpose()
@@ -329,6 +330,7 @@ impl SyntaxRule for FunctionCall {
             start: Token::FunctionCall,
             end: Token::RParen,
             sep_name: "comma",
+            allow_trailing_sep: false,
         })?;
         let args = spanned_args.inner;
 
@@ -403,6 +405,31 @@ impl SyntaxRule for ArrayLiteral {
         Ok(Spanned {
             span: Span::merge(start_span, end_span),
             inner: ast::AstNodeContents::Array(rows),
+        })
+    }
+}
+
+/// Matches an empty expression that is followed by something that should
+/// normally follow an expression (such as a comma or semicolon or right paren).
+#[derive(Debug, Copy, Clone)]
+pub struct EmptyExpression;
+impl_display!(for EmptyExpression, "empty expression");
+impl SyntaxRule for EmptyExpression {
+    type Output = ast::AstNode;
+
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        match p.next() {
+            None => true,
+            Some(Token::ArgSep | Token::RowSep) => true,
+            Some(Token::RBrace | Token::RBracket | Token::RParen) => true,
+            _ => false,
+        }
+    }
+
+    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+        Ok(Spanned {
+            span: Span::empty(p.cursor.unwrap_or(0) as u32),
+            inner: ast::AstNodeContents::Empty,
         })
     }
 }
