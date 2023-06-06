@@ -3,30 +3,42 @@
 //! This entire file feels really janky and awful but this is my best the
 //! behavior Excel has.
 
+use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
 
-use super::{FormulaError, FormulaErrorMsg, Spanned, Value};
+use super::{
+    Array, BasicValue, CoerceInto, FormulaError, FormulaErrorMsg, FormulaResult, Spanned, Value,
+};
 
 #[derive(Debug, Clone)]
 pub enum Criterion {
     Regex(Regex),
     NotRegex(Regex),
-    Compare { compare_fn: CompareFn, rhs: Value },
+    Compare {
+        compare_fn: CompareFn,
+        rhs: BasicValue,
+    },
 }
-impl TryFrom<&Spanned<Value>> for Criterion {
+impl TryFrom<Spanned<&BasicValue>> for Criterion {
     type Error = FormulaError;
 
-    fn try_from(value: &Spanned<Value>) -> Result<Self, Self::Error> {
+    fn try_from(value: Spanned<&BasicValue>) -> Result<Self, Self::Error> {
         match &value.inner {
-            Value::String(s) => {
+            BasicValue::Blank | BasicValue::Number(_) | BasicValue::Bool(_) => {
+                Ok(Criterion::Compare {
+                    compare_fn: CompareFn::Eql,
+                    rhs: value.inner.clone(),
+                })
+            }
+            BasicValue::String(s) => {
                 let (compare_fn, rhs_string) =
                     strip_compare_fn_prefix(s).unwrap_or((CompareFn::Eql, s));
                 let rhs = if rhs_string.eq_ignore_ascii_case("TRUE") {
-                    Value::Bool(true)
+                    BasicValue::Bool(true)
                 } else if rhs_string.eq_ignore_ascii_case("FALSE") {
-                    Value::Bool(false)
+                    BasicValue::Bool(false)
                 } else if let Ok(n) = rhs_string.parse::<f64>() {
-                    Value::Number(n)
+                    BasicValue::Number(n)
                 } else if compare_fn == CompareFn::Eql && rhs_string.contains(['?', '*']) {
                     // If the string doesn't contain any `?` or `*`, then Excel
                     // treats all `~` as literal.
@@ -34,44 +46,90 @@ impl TryFrom<&Spanned<Value>> for Criterion {
                 } else if compare_fn == CompareFn::Neq && rhs_string.contains(['?', '*']) {
                     return Ok(Self::NotRegex(wildcard_pattern_to_regex(rhs_string)?));
                 } else {
-                    Value::String(rhs_string.to_string().to_ascii_lowercase())
+                    BasicValue::String(rhs_string.to_string().to_ascii_lowercase())
                 };
 
                 Ok(Criterion::Compare { compare_fn, rhs })
             }
-            Value::Number(_) | Value::Bool(_) => Ok(Criterion::Compare {
-                compare_fn: CompareFn::Eql,
-                rhs: value.inner.clone(),
-            }),
-            Value::Array(_) | Value::MissingErr => Err(FormulaErrorMsg::Expected {
-                expected: "criteria or comparable value (string, number, etc.)".into(),
-                got: Some(value.inner.type_name().into()),
-            }
-            .with_span(value.span)),
+            BasicValue::Err(e) => Err((**e).clone()),
         }
     }
 }
 impl Criterion {
     /// Evaluates the criterion on a value and returns whether it matches.
-    pub fn matches(&self, value: &Value) -> bool {
+    pub fn matches(&self, value: &BasicValue) -> bool {
         match self {
             Criterion::Regex(r) => r.is_match(&value.to_string()),
             Criterion::NotRegex(r) => !r.is_match(&value.to_string()),
-            Criterion::Compare { compare_fn, rhs } => match rhs {
-                Value::String(rhs) => {
-                    compare_fn.compare(&value.to_string().to_ascii_lowercase(), &rhs)
-                }
-                Value::Number(rhs) => match value.to_number() {
-                    Ok(lhs) => compare_fn.compare(&lhs, rhs),
-                    Err(_) => false,
-                },
-                Value::Bool(rhs) => match value.to_bool() {
-                    Ok(lhs) => compare_fn.compare(&lhs, rhs),
-                    Err(_) => false,
-                },
-                Value::Array(_) | Value::MissingErr => false,
+            Criterion::Compare { compare_fn, rhs } => match compare_fn {
+                // "Not equal" is the only comparison that can return `true` for
+                // disparate types.
+                CompareFn::Neq => !Self::compare(CompareFn::Eql, value, rhs),
+
+                _ => Self::compare(*compare_fn, value, rhs),
             },
         }
+    }
+
+    fn compare(compare_fn: CompareFn, lhs: &BasicValue, rhs: &BasicValue) -> bool {
+        match rhs {
+            BasicValue::Blank => match lhs {
+                BasicValue::Number(lhs) => compare_fn.compare(lhs, &0.0),
+                _ => false,
+            },
+            BasicValue::String(rhs) => {
+                compare_fn.compare(&lhs.to_string().to_ascii_lowercase(), rhs)
+            }
+            BasicValue::Number(rhs) => match lhs {
+                BasicValue::Number(lhs) => compare_fn.compare(lhs, rhs),
+                _ => false,
+            },
+            BasicValue::Bool(rhs) => match lhs {
+                BasicValue::Bool(lhs) => compare_fn.compare(lhs, rhs),
+                _ => false,
+            },
+            BasicValue::Err(_) => false,
+        }
+    }
+
+    /// Iterates over values, excluding those that do not match.
+    pub fn iter_matching<'a>(
+        &'a self,
+        eval_range: &'a Spanned<Value>,
+        output_values_range: Option<&'a Spanned<Value>>,
+    ) -> FormulaResult<impl 'a + Iterator<Item = FormulaResult<Spanned<&'a BasicValue>>>> {
+        let output_values_range = output_values_range.unwrap_or(eval_range);
+
+        let (width, height) = Value::common_array_size([eval_range, output_values_range])?;
+
+        Ok(Array::indices(width, height)
+            .map(|(x, y)| {
+                let eval_value = eval_range.get(x, y)?.inner;
+                if self.matches(eval_value) {
+                    let output_value = output_values_range.get(x, y)?;
+                    Ok(Some(output_value))
+                } else {
+                    Ok(None)
+                }
+            })
+            .filter_map(Result::transpose))
+    }
+    /// Iterates over values and coerces each one, excluding those that do not
+    /// match or where coercion fails.
+    pub fn iter_matching_coerced<'a, T>(
+        &'a self,
+        eval_range: &'a Spanned<Value>,
+        output_values_range: Option<&'a Spanned<Value>>,
+    ) -> FormulaResult<impl 'a + Iterator<Item = FormulaResult<T>>>
+    where
+        &'a BasicValue: TryInto<T>,
+    {
+        Ok(self
+            .iter_matching(eval_range, output_values_range)?
+            // Propogate errors
+            .map(|v| v?.into_non_error_value())
+            // Ignore blank values
+            .filter_map_ok(|v| v.coerce_nonblank::<T>()))
     }
 }
 
@@ -146,11 +204,11 @@ impl CompareFn {
 mod tests {
     use super::*;
 
-    fn make_criterion(v: impl Into<Value>) -> Criterion {
-        Criterion::try_from(&Spanned::new(0, 0, v.into())).unwrap()
+    fn make_criterion(v: impl Into<BasicValue>) -> Criterion {
+        Criterion::try_from(Spanned::new(0, 0, &v.into())).unwrap()
     }
 
-    fn matches(c: &Criterion, v: impl Into<Value>) -> bool {
+    fn matches(c: &Criterion, v: impl Into<BasicValue>) -> bool {
         c.matches(&v.into())
     }
 
@@ -208,7 +266,7 @@ mod tests {
         }
 
         // Test boolean comparison against non-boolean values
-        for prefix in ["=", "==", "<>", "!=", "<", ">", "<=", ">="] {
+        for prefix in ["=", "==", "<", ">", "<=", ">="] {
             for value in ["TRUE", "FALSE"] {
                 let c = make_criterion(format!("{prefix}{value}"));
                 assert!(!matches(&c, "a string"));
@@ -216,6 +274,17 @@ mod tests {
                 assert!(!matches(&c, 1.0));
             }
         }
+
+        // Test boolean comparison against non-boolean values (not-equal)
+        for prefix in ["<>", "!="] {
+            for value in ["TRUE", "FALSE"] {
+                let c = make_criterion(format!("{prefix}{value}"));
+                assert!(matches(&c, "a string"));
+                assert!(matches(&c, 0.0));
+                assert!(matches(&c, 1.0));
+            }
+        }
+
         // Test comparison between booleans
         for (criteria_string, matches_true, matches_false) in [
             ("=TRUE", true, false),

@@ -6,7 +6,7 @@ macro_rules! zip_map_impl {
     ($arrays:ident.zip_map(|$args_buffer:ident| $eval_f:expr)) => {{
         let (width, height) = Value::common_array_size($arrays)?;
 
-        let mut $args_buffer = Vec::with_capacity($arrays.len());
+        let mut $args_buffer = Vec::with_capacity($arrays.into_iter().len());
 
         // If the result is a single value, return that value instead of a 1x1
         // array. This isn't just an optimization; it's important for Excel
@@ -19,15 +19,13 @@ macro_rules! zip_map_impl {
         }
 
         let mut values = Vec::with_capacity(width as usize * height as usize);
-        for y in 0..height {
-            for x in 0..width {
-                $args_buffer.clear();
-                for array in $arrays {
-                    $args_buffer.push(array.get(x, y)?);
-                }
-
-                values.push($eval_f);
+        for (x, y) in Array::indices(width, height) {
+            $args_buffer.clear();
+            for array in $arrays {
+                $args_buffer.push(array.get(x, y)?);
             }
+
+            values.push($eval_f);
         }
 
         let result = Array::from_row_major_iter(width, height, values)?;
@@ -52,7 +50,7 @@ impl Ctx<'_> {
         if ref_pos == self.pos {
             return Err(FormulaErrorMsg::CircularReference.with_span(span));
         }
-        let value: BasicValue = self.grid.get(ref_pos).await.unwrap_or_default().into();
+        let value = self.grid.get(ref_pos).await;
         Ok(Spanned { inner: value, span })
     }
 
@@ -80,11 +78,14 @@ impl Ctx<'_> {
     /// 2-dimensionally: if one argument is a 1x3 array and the other argument
     /// is a 3x1 array, then both arguments are first expanded to 3x3 arrays. If
     /// arrays cannot be expanded like this, then an error is returned.
-    pub fn zip_map(
+    pub fn zip_map<'a, I: Copy + IntoIterator<Item = &'a Spanned<Value>>>(
         &mut self,
-        arrays: &[Spanned<Value>],
-        f: impl for<'a> Fn(&'a mut Ctx<'_>, &[Spanned<&BasicValue>]) -> FormulaResult<BasicValue>,
-    ) -> FormulaResult<Value> {
+        arrays: I,
+        f: impl for<'b> Fn(&'b mut Ctx<'_>, &[Spanned<&BasicValue>]) -> FormulaResult<BasicValue>,
+    ) -> FormulaResult<Value>
+    where
+        I::IntoIter: ExactSizeIterator,
+    {
         zip_map_impl!(arrays.zip_map(|args_buffer| f(self, &args_buffer)?))
     }
 }

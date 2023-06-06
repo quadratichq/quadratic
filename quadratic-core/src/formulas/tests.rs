@@ -17,16 +17,6 @@ macro_rules! array {
     }};
 }
 
-/// `GridProxy` implementation that just panics whenever a cell is accessed.
-#[derive(Debug, Default, Copy, Clone)]
-pub(crate) struct NoGrid;
-#[async_trait(?Send)]
-impl GridProxy for NoGrid {
-    async fn get(&mut self, _pos: Pos) -> Option<String> {
-        panic!("no cell should be accessed")
-    }
-}
-
 pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
     eval(grid, s).unwrap().to_string()
 }
@@ -43,27 +33,48 @@ pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
         .map(|value| value.inner)
 }
 
+/// `GridProxy` implementation that just panics whenever a cell is accessed.
+#[derive(Debug, Default, Copy, Clone)]
+pub(crate) struct NoGrid;
+#[async_trait(?Send)]
+impl GridProxy for NoGrid {
+    async fn get(&mut self, _pos: Pos) -> BasicValue {
+        panic!("no cell should be accessed")
+    }
+}
+
+/// `GridProxy` implementation that always returns empty cells.
+#[derive(Debug, Default, Copy, Clone)]
+pub(crate) struct BlankGrid;
+#[async_trait(?Send)]
+impl GridProxy for BlankGrid {
+    async fn get(&mut self, _pos: Pos) -> BasicValue {
+        BasicValue::Blank
+    }
+}
+
 /// `GridProxy` implementation that calls a function for grid access.
 #[derive(Copy, Clone)]
-pub(crate) struct FnGrid<F>(pub F)
+pub(crate) struct FnGrid<F, T>(pub F)
 // Include `where` bounds here to help type inference when constructing.
 where
-    F: FnMut(Pos) -> Option<String>;
-impl<F> fmt::Debug for FnGrid<F>
+    F: FnMut(Pos) -> T;
+impl<F, T> fmt::Debug for FnGrid<F, T>
 where
-    F: FnMut(Pos) -> Option<String>,
+    F: FnMut(Pos) -> T,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("FnGrid").finish_non_exhaustive()
     }
 }
 #[async_trait(?Send)]
-impl<F> GridProxy for FnGrid<F>
+impl<F, T> GridProxy for FnGrid<F, T>
 where
-    F: FnMut(Pos) -> Option<String>,
+    F: FnMut(Pos) -> T,
+    T: Into<BasicValue>,
 {
-    async fn get(&mut self, pos: Pos) -> Option<String> {
-        self.0(pos)
+    async fn get(&mut self, pos: Pos) -> BasicValue {
+        self.0(pos).into()
     }
 }
 
@@ -105,7 +116,7 @@ fn test_formula_circular_array_ref() {
         if pos == pos![B2] {
             panic!("cell {pos} shouldn't be accessed")
         } else {
-            None
+            ()
         }
     });
 

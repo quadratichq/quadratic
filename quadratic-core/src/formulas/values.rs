@@ -46,7 +46,9 @@ impl Value {
     /// - If there are multiple unequal sizes greater than one, returns an
     ///   error.
     /// - Both numbers returned are always nonzero.
-    pub fn common_array_size(values: &[Spanned<Value>]) -> FormulaResult<(u32, u32)> {
+    pub fn common_array_size<'a>(
+        values: impl IntoIterator<Item = &'a Spanned<Value>>,
+    ) -> FormulaResult<(u32, u32)> {
         fn merge_array_sizes(a: u32, b: u32) -> Option<u32> {
             // If a!=b and a>1 and b>1, then there is a mismatch.
             (a == b || a <= 1 || b <= 1).then_some(std::cmp::max(a, b))
@@ -105,6 +107,27 @@ impl Value {
         match self {
             Value::Single(value) => std::slice::from_ref(value),
             Value::Array(array) => &array.values,
+        }
+    }
+
+    /// Returns whether the value is blank. The empty string is considered
+    /// non-blank.
+    pub fn is_blank(&self) -> bool {
+        match self {
+            Value::Single(v) => v.is_blank(),
+            Value::Array(a) => a.values.iter().all(|v| v.is_blank()),
+        }
+    }
+
+    /// Coerces the value to a specific type; returns `None` if the conversion
+    /// fails or the original value is `None`.
+    pub fn coerce_nonblank<'a, T>(&'a self) -> Option<T>
+    where
+        &'a Value: TryInto<T>,
+    {
+        match self.is_blank() {
+            true => None,
+            false => self.try_into().ok(),
         }
     }
 
@@ -180,15 +203,19 @@ impl Spanned<Value> {
     /// Returns an iterator over basic values.
     pub fn into_iter_basic_values(
         self,
-    ) -> impl Iterator<Item = Spanned<FormulaResult<BasicValue>>> {
+    ) -> impl Iterator<Item = FormulaResult<Spanned<BasicValue>>> {
+        let span = self.span;
+
         match self.inner {
             Value::Single(value) => smallvec![value],
             Value::Array(array) => array.values,
         }
         .into_iter()
         .with_all_same_span(self.span)
-        .map(|v| v.into_non_error_value())
-        .with_all_same_span(self.span)
+        .map(move |v| {
+            v.into_non_error_value()
+                .map(|inner| Spanned { span, inner })
+        })
     }
 }
 
@@ -269,6 +296,11 @@ impl Array {
                 values.len(),
             )
         }
+    }
+
+    /// Returns an iterator over `(x, y)` array indices in canonical order.
+    pub fn indices(width: u32, height: u32) -> impl Iterator<Item = (u32, u32)> {
+        itertools::iproduct!(0..height, 0..width).map(|(y, x)| (x, y))
     }
 
     /// Returns the width of an array.
@@ -373,9 +405,25 @@ impl BasicValue {
         }
     }
 
-    /// Returns whether the value is a blank value.
+    /// Returns whether the value is a blank value. The empty string is considered
+    /// non-blank.
     pub fn is_blank(&self) -> bool {
         matches!(self, BasicValue::Blank)
+    }
+    pub fn is_blank_or_empty_string(&self) -> bool {
+        self.is_blank() || *self == BasicValue::String(String::new())
+    }
+
+    /// Coerces the value to a specific type; returns `None` if the conversion
+    /// fails or the original value is `None`.
+    pub fn coerce_nonblank<'a, T>(&'a self) -> Option<T>
+    where
+        &'a BasicValue: TryInto<T>,
+    {
+        match self.is_blank() {
+            true => None,
+            false => self.try_into().ok(),
+        }
     }
 
     /// Compares two values using a total ordering that propogates errors.
@@ -465,6 +513,22 @@ impl BasicValue {
  * CONVERSIONS (specific type -> Value)
  */
 
+impl From<()> for BasicValue {
+    fn from(_: ()) -> Self {
+        BasicValue::Blank
+    }
+}
+impl<T> From<Option<T>> for BasicValue
+where
+    T: Into<BasicValue>,
+{
+    fn from(value: Option<T>) -> Self {
+        match value {
+            Some(v) => v.into(),
+            None => BasicValue::Blank,
+        }
+    }
+}
 impl From<String> for BasicValue {
     fn from(value: String) -> Self {
         BasicValue::String(value)
