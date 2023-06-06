@@ -196,7 +196,7 @@ mod tests {
     #[test]
     fn test_countblank() {
         let g = &mut BlankGrid;
-        assert_eq!("1", eval_to_string(g, "COUNTBLANK(\"\", \"a\", 0, 1)"));
+        assert_eq!("2", eval_to_string(g, "COUNTBLANK(B3, \"\", \"a\", 0, 1)"));
     }
 
     #[test]
