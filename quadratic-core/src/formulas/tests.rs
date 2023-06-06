@@ -1,8 +1,21 @@
 use async_trait::async_trait;
-use smallvec::smallvec;
 use std::fmt;
 
 pub(crate) use super::*;
+
+macro_rules! array {
+    ($( $( $value:expr ),+ );+ $(;)?) => {{
+        let values = [$( [$( $value ),+] ),+];
+        let height = values.len();
+        let width = values[0].len(); // This will generate a compile-time error if there are no values.
+        Array::from_row_major_iter(
+            width as u32,
+            height as u32,
+            values.into_iter().flatten(),
+        )
+        .unwrap()
+    }};
+}
 
 /// `GridProxy` implementation that just panics whenever a cell is accessed.
 #[derive(Debug, Default, Copy, Clone)]
@@ -17,7 +30,14 @@ impl GridProxy for NoGrid {
 pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
     eval(grid, s).unwrap().to_string()
 }
-pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult {
+pub(crate) fn eval_to_err(grid: &mut dyn GridProxy, s: &str) -> FormulaError {
+    match eval(grid, s) {
+        Err(e) => e,
+        Ok(Value::Single(BasicValue::Err(e))) => *e,
+        Ok(v) => panic!("expected error; got value {v}"),
+    }
+}
+pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
     parse_formula(s, Pos::ORIGIN)?
         .eval_blocking(grid, Pos::ORIGIN)
         .map(|value| value.inner)
@@ -116,50 +136,50 @@ fn test_formula_range_operator() {
 fn test_formula_array_op() {
     let mut g = FnGrid(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
-    let f = |x| Value::Number(x as f64);
+    let f = |x| BasicValue::Number(x as f64);
 
     assert_eq!((11 * 31).to_string(), eval_to_string(&mut g, "B1 * D1"));
     assert_eq!(
-        Value::Array(vec![
-            smallvec![f(11 * 31), f(21 * 31)],
-            smallvec![f(12 * 31), f(22 * 31)],
-            smallvec![f(13 * 31), f(23 * 31)],
-            smallvec![f(14 * 31), f(24 * 31)],
+        Value::from(array![
+            f(11 * 31), f(21 * 31);
+            f(12 * 31), f(22 * 31);
+            f(13 * 31), f(23 * 31);
+            f(14 * 31), f(24 * 31);
         ]),
         eval(&mut g, "B1:C4 * D1").unwrap(),
     );
     assert_eq!(
-        Value::Array(vec![
-            smallvec![f(11 * 31), f(11 * 41)],
-            smallvec![f(11 * 32), f(11 * 42)],
-            smallvec![f(11 * 33), f(11 * 43)],
-            smallvec![f(11 * 34), f(11 * 44)],
+        Value::from(array![
+            f(11 * 31), f(11 * 41);
+            f(11 * 32), f(11 * 42);
+            f(11 * 33), f(11 * 43);
+            f(11 * 34), f(11 * 44);
         ]),
         eval(&mut g, "B1 * D1:E4").unwrap(),
     );
     assert_eq!(
-        Value::Array(vec![
-            smallvec![f(11 * 31), f(21 * 41)],
-            smallvec![f(12 * 32), f(22 * 42)],
-            smallvec![f(13 * 33), f(23 * 43)],
-            smallvec![f(14 * 34), f(24 * 44)],
+        Value::from(array![
+            f(11 * 31), f(21 * 41);
+            f(12 * 32), f(22 * 42);
+            f(13 * 33), f(23 * 43);
+            f(14 * 34), f(24 * 44);
         ]),
         eval(&mut g, "B1:C4 * D1:E4").unwrap(),
     );
     assert_eq!(
-        "Array size mismatch: expected (4, 2), got (5, 2)",
+        "Array height mismatch: expected value with 1 row or 4 rows, got 5 rows",
         eval(&mut g, "B1:C4 * D1:E5").unwrap_err().msg.to_string(),
     );
 }
 
 #[test]
 fn test_array_parsing() {
-    let f = |x| Value::Number(x as f64);
+    let f = |x| BasicValue::Number(x as f64);
     assert_eq!(
-        Value::Array(vec![
-            smallvec![f(11), f(12)],
-            smallvec![f(21), f(22)],
-            smallvec![f(31), f(32)],
+        Value::from(array![
+            f(11), f(12);
+            f(21), f(22);
+            f(31), f(32);
         ]),
         eval(&mut NoGrid, "{11, 12; 21, 22; 31, 32}").unwrap(),
     );

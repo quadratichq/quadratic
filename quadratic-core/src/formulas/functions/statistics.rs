@@ -10,130 +10,91 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
-        FormulaFunction {
-            name: "AVERAGE",
-            arg_completion: "${1:a, b, ...}",
-            usages: &["a, b, ..."],
-            examples: &["AVERAGE(A1:A6)", "AVERAGE(A1, A3, A5, B1:B6)"],
-            doc: "Returns the arithmetic mean of all values.",
-            eval: util::pure_fn(|args| {
-                Ok(Value::Number(
-                    util::sum(&args.inner) / util::count_numeric(&args.inner) as f64,
-                ))
-            }),
-        },
-        FormulaFunction {
-            name: "AVERAGEIF",
-            arg_completion: "${1:range_to_evaluate}, ${2:criteria}${3:, ${4:[range_to_average]}}",
-            usages: &["range_to_evaluate, criteria, [range_to_average]"],
-            examples: &[
+        formula_fn!(
+            /// Returns the arithmetic mean of all values.
+            #[examples("AVERAGE(A1:A6)", "AVERAGE(A1, A3, A5, B1:B6)")]
+            fn AVERAGE(span: Span, numbers: (Iter<f64>)) {
+                util::average(span, numbers)
+            }
+        ),
+        formula_fn!(
+            /// Evaluates each value based on some criteria, and then computes
+            /// the arithmetic mean of the ones that meet those criteria. If
+            /// `range_to_average` is given, then values in `range_to_average`
+            /// are averaged instead wherever the corresponding value in
+            /// `range_to_evaluate` meets the criteria.
+            #[doc = see_docs_for_more_about_criteria!()]
+            #[examples(
                 "AVERAGEIF(A1:A10, \"2\")",
                 "AVERAGEIF(A1:A10, \">0\")",
-                "AVERAGEIF(A1:A10, \"<>INVALID\", B1:B10)",
-            ],
-            doc: concat!(
-                "Evaluates each value based on some criteria, and then computes \
-                 the arithmetic mean of the ones that meet those criteria. If \
-                 `range_to_average` is given, then values in `range_to_average` \
-                 are averaged instead wherever the corresponding value in \
-                 `range_to_evaluate` meets the criteria.",
-                see_docs_for_more_about_criteria!(),
-            ),
-            eval: util::pure_fn(|args| {
-                let [eval_range, criteria, sum_range] = match args.inner.as_slice() {
-                    [range, criteria] => [range, criteria, range],
-                    [eval_range, criteria, sum_range] => [eval_range, criteria, sum_range],
-                    _ => return Err(FormulaErrorMsg::BadArgumentCount.with_span(args.span)),
-                };
-                let mut sum = 0.0;
-                let mut total = 0;
-                for value in util::iter_values_meeting_criteria(eval_range, criteria, sum_range)? {
-                    if let Some(n) = value?.inner.nonblank_to_number() {
-                        sum += n;
-                        total += 1;
-                    }
-                }
-                Ok(Value::Number(sum / total as f64))
-            }),
-        },
-        FormulaFunction {
-            name: "COUNT",
-            arg_completion: "${1:a, b, ...}",
-            usages: &["a, b, ..."],
-            examples: &["COUNT(A1:C42, E17)", "SUM(A1:A10) / COUNT(A1:A10)"],
-            doc: "Returns the number of numeric values.",
-            eval: util::pure_fn(|args| Ok(Value::Number(util::count_numeric(&args.inner) as f64))),
-        },
-        FormulaFunction {
-            name: "COUNTIF",
-            arg_completion: "${1:range_to_evaluate}, ${2:criteria}",
-            usages: &["range_to_evaluate, criteria"],
-            examples: &[
+                "AVERAGEIF(A1:A10, \"<>INVALID\", B1:B10)"
+            )]
+            #[pure_zip_map]
+            fn AVERAGEIF(
+                span: Span,
+                eval_range: (Spanned<Value>),
+                [criteria]: (Spanned<BasicValue>),
+                numbers_range: (Option<Spanned<Value>>),
+            ) {
+                let criteria = Criterion::try_from(*criteria)?;
+                let numbers =
+                    criteria.iter_matching_coerced::<f64>(eval_range, numbers_range.as_ref())?;
+                util::average(span, numbers)
+            }
+        ),
+        formula_fn!(
+            /// Returns the number of numeric values.
+            #[examples("COUNT(A1:C42, E17)", "SUM(A1:A10) / COUNT(A1:A10)")]
+            fn COUNT(numbers: (Iter<f64>)) {
+                // Ignore error values.
+                numbers.filter(|x| x.is_ok()).count() as f64
+            }
+        ),
+        formula_fn!(
+            /// Evaluates each value based on some criteria, and then counts
+            /// how many values meet those criteria.
+            #[doc = see_docs_for_more_about_criteria!()]
+            #[examples(
                 "COUNTIF(A1:A10, \"2\")",
                 "COUNTIF(A1:A10, \">0\")",
-                "COUNTIF(A1:A10, \"<>INVALID\")",
-            ],
-            doc: concat!(
-                "Evaluates each value based on some criteria, and then counts \
-                 how many values meet those criteria.",
-                see_docs_for_more_about_criteria!(),
-            ),
-            eval: util::pure_fn(|args| {
-                let [range, criteria] = match args.inner.as_slice() {
-                    [range, criteria] => [range, criteria],
-                    _ => return Err(FormulaErrorMsg::BadArgumentCount.with_span(args.span)),
-                };
-                // Use `.map_ok().sum()` instead of just `.count()` because we
-                // want to propogate errors.
-                Ok(Value::Number(
-                    util::iter_values_meeting_criteria(range, criteria, range)?
-                        .filter_ok(|v| !v.inner.is_blank())
-                        .map_ok(|_| 1.0)
-                        .sum::<FormulaResult<f64>>()?,
-                ))
-            }),
-        },
-        FormulaFunction {
-            name: "COUNTBLANK",
-            arg_completion: "${1:range}",
-            usages: &["range"],
-            examples: &["COUNTBLANK(A1:A10)"],
-            doc: "Counts how many values in the range are empty. Cells with \
-                  formula or code output of an empty string are also counted.",
-            eval: util::pure_fn(|args| {
-                Ok(Value::Number(
-                    // TODO: don't need to convert to string to check if the
-                    // value is blank (use `Value::is_blank()`)
-                    util::flat_iter_strings(&args.inner)
-                        .filter(|s| s.is_empty())
-                        .count() as f64,
-                ))
-            }),
-        },
-        FormulaFunction {
-            name: "MIN",
-            arg_completion: "${1:a, b, ...}",
-            usages: &["a, b, ..."],
-            examples: &["MIN(A1:A6)", "MIN(0, A1:A6)"],
-            doc: "Returns the smallest value.\nReturns +∞ if given no values.",
-            eval: util::pure_fn(|args| {
-                Ok(Value::Number(
-                    util::flat_iter_numbers(&args.inner).fold(f64::INFINITY, f64::min),
-                ))
-            }),
-        },
-        FormulaFunction {
-            name: "MAX",
-            arg_completion: "${1:a, b, ...}",
-            usages: &["a, b, ..."],
-            examples: &["MAX(A1:A6)", "MAX(0, A1:A6)"],
-            doc: "Returns the largest value.\nReturns -∞ if given no values.",
-            eval: util::pure_fn(|args| {
-                Ok(Value::Number(
-                    util::flat_iter_numbers(&args.inner).fold(-f64::INFINITY, f64::max),
-                ))
-            }),
-        },
+                "COUNTIF(A1:A10, \"<>INVALID\")"
+            )]
+            #[pure_zip_map]
+            fn COUNTIF(range: (Spanned<Value>), [criteria]: (Spanned<BasicValue>)) {
+                let criteria = Criterion::try_from(*criteria)?;
+                // Ignore error values.
+                let count = criteria.iter_matching(range, None)?.count();
+                count as f64
+            }
+        ),
+        formula_fn!(
+            /// Counts how many values in the range are empty. Cells with
+            /// formula or code output of an empty string are also counted.
+            #[examples("COUNTBLANK(A1:A10)")]
+            fn COUNTBLANK(range: (Iter<BasicValue>)) {
+                // Do not count error values.
+                range
+                    .filter_map(|v| v.ok())
+                    .filter(|v| v.is_blank_or_empty_string())
+                    .count() as f64
+            }
+        ),
+        formula_fn!(
+            /// Returns the smallest value.
+            /// Returns +∞ if given no values.
+            #[examples("MIN(A1:A6)", "MIN(0, A1:A6)")]
+            fn MIN(numbers: (Iter<f64>)) {
+                numbers.try_fold(f64::INFINITY, |a, b| Ok(f64::min(a, b?)))
+            }
+        ),
+        formula_fn!(
+            /// Returns the largest value.
+            /// Returns -∞ if given no values.
+            #[examples("MAX(A1:A6)", "MAX(0, A1:A6)")]
+            fn MAX(numbers: (Iter<f64>)) {
+                numbers.try_fold(-f64::INFINITY, |a, b| Ok(f64::max(a, b?)))
+            }
+        ),
     ]
 }
 
@@ -160,46 +121,63 @@ mod tests {
 
         assert_eq!(
             "17",
-            eval_to_string(&mut g, "AVERAGE(\"\", \"a\", 12, -3.5, 42.5)"),
+            eval_to_string(&mut g, "AVERAGE({\"_\", \"a\"}, 12, -3.5, 42.5)"),
         );
         assert_eq!("5.5", eval_to_string(&mut g, "AVERAGE(1..10)"));
         assert_eq!("5", eval_to_string(&mut g, "AVERAGE(0..10)"));
     }
 
     #[test]
+    fn test_averageif() {
+        let g = &mut NoGrid;
+
+        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(0..10, \"<=5\")"));
+        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(0..10, \"<=5\")"));
+
+        // Test that blank cells are ignored
+        let g = &mut FnGrid(|pos| (pos.y >= 0).then(|| pos.y));
+        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(Bn5:B10, \"<=5\")"))
+    }
+
+    #[test]
     fn test_count() {
         let g = &mut NoGrid;
         assert_eq!("0", eval_to_string(g, "COUNT()"));
-        assert_eq!("3", eval_to_string(g, "COUNT(\"\", \"a\", 12, -3.5, 42.5)"));
+        assert_eq!(
+            "3",
+            eval_to_string(g, "COUNT(\"_\", \"a\", 12, -3.5, 42.5)"),
+        );
+        assert_eq!("1", eval_to_string(g, "COUNT(2)"));
         assert_eq!("10", eval_to_string(g, "COUNT(1..10)"));
         assert_eq!("11", eval_to_string(g, "COUNT(0..10)"));
     }
 
     #[test]
     fn test_countif() {
-        let g = &mut FnGrid(|_| None);
+        let g = &mut BlankGrid;
         assert_eq!("6", eval_to_string(g, "COUNTIF(0..10, \"<=5\")"));
         assert_eq!("6", eval_to_string(g, "COUNTIF(0..10, \"<=5\")"));
 
         // Test that blank cells are ignored
-        let g = &mut FnGrid(|pos| (pos.y >= 0).then(|| pos.y.to_string()));
+        let g = &mut FnGrid(|pos| (pos.y >= 0).then(|| pos.y));
         assert_eq!("6", eval_to_string(g, "COUNTIF(Bn5:B10, \"<=5\")"))
     }
 
     #[test]
     fn test_countblank() {
-        let g = &mut FnGrid(|_| None);
+        let g = &mut BlankGrid;
         assert_eq!("1", eval_to_string(g, "COUNTBLANK(\"\", \"a\", 0, 1)"));
     }
 
     #[test]
-    fn test_averageif() {
+    fn test_min() {
         let g = &mut NoGrid;
-        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(0..10, \"<=5\")"));
-        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(0..10, \"<=5\")"));
+        assert_eq!("1", eval_to_string(g, "MIN(1, 3, 2)"));
+    }
 
-        // Test that blank cells are ignored
-        let g = &mut FnGrid(|pos| (pos.y >= 0).then(|| pos.y.to_string()));
-        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(Bn5:B10, \"<=5\")"))
+    #[test]
+    fn test_max() {
+        let g = &mut NoGrid;
+        assert_eq!("3", eval_to_string(g, "MAX(1, 3, 2)"));
     }
 }

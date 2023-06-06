@@ -1,6 +1,5 @@
 //! Language server implementation for Monaco editor
 
-use itertools::Itertools;
 use lazy_static::lazy_static;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
@@ -35,7 +34,7 @@ lazy_static! {
         .filter(|category| category.include_in_completions)
         .flat_map(|category| (category.get_functions)())
         .map(|f| CompletionItem {
-            detail: Some(f.usages_strings().join("\n")),
+            detail: Some(f.usages_string()),
             documentation: Some(Documentation::Markdown(MarkdownString {
                 value: f.lsp_full_docs(),
             })),
@@ -73,11 +72,7 @@ pub async fn provide_hover(
     match function {
         Some(function) => Ok(serde_wasm_bindgen::to_value(&Hover {
             contents: vec![MarkdownString {
-                value: function
-                    .usages_strings()
-                    .map(|s| format!("`{s}`\n"))
-                    .join("")
-                    + &function.lsp_full_docs(),
+                value: format!("`{}`\n", function.usages_string()) + &function.lsp_full_docs(),
             }],
         })?),
         None => Ok(JsValue::NULL),

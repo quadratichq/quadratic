@@ -4,17 +4,17 @@ use serde::{Deserialize, Serialize};
 use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
 
-/// A contiguous span of text from one byte index to another in a &str.
+/// A contiguous span of text from one byte index to another in a formula.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Span {
     /// The byte index of the first character.
-    pub start: usize,
+    pub start: u32,
     /// The byte index after the last character.
-    pub end: usize,
+    pub end: u32,
 }
 impl Span {
     /// Returns a 0-length span at the given index.
-    pub fn empty(idx: usize) -> Self {
+    pub fn empty(idx: u32) -> Self {
         Self {
             start: idx,
             end: idx,
@@ -31,7 +31,7 @@ impl Span {
     }
     /// Returns the substring with this span from a string.
     pub fn of_str(self, s: &str) -> &str {
-        &s[self.start..self.end]
+        &s[self.start as usize..self.end as usize]
     }
 }
 impl<T> From<Spanned<T>> for Span {
@@ -42,6 +42,11 @@ impl<T> From<Spanned<T>> for Span {
 impl<T> From<&Spanned<T>> for Span {
     fn from(spanned: &Spanned<T>) -> Self {
         spanned.span
+    }
+}
+impl From<&Span> for Span {
+    fn from(span: &Span) -> Self {
+        *span
     }
 }
 
@@ -70,17 +75,31 @@ impl<T: fmt::Display> fmt::Display for Spanned<T> {
 }
 impl<T> Spanned<T> {
     /// Constructs a Spanned<T> spanning the given byte indices.
-    pub fn new(start: usize, end: usize, inner: T) -> Self {
+    pub fn new(start: u32, end: u32, inner: T) -> Self {
         Self {
             span: Span { start, end },
             inner,
         }
     }
-    /// Apply a function to the inside of this Spanned<T>.
+    /// Applies a function to the inside of a `Spanned<T>`.
     pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Spanned<U> {
         Spanned {
             span: self.span,
             inner: f(self.inner),
+        }
+    }
+    /// Applies a fallible function to the inside of a `Spanned<T>`.
+    pub fn try_map<U, E>(self, f: impl FnOnce(T) -> Result<U, E>) -> Result<Spanned<U>, E> {
+        Ok(Spanned {
+            span: self.span,
+            inner: f(self.inner)?,
+        })
+    }
+    /// Converts a `&Spanned<T>` to a `Spanned<&T>`.
+    pub fn as_ref(&self) -> Spanned<&T> {
+        Spanned {
+            span: self.span,
+            inner: &self.inner,
         }
     }
 }
