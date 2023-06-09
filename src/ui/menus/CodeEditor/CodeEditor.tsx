@@ -30,6 +30,7 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
 import mixpanel from 'mixpanel-browser';
 import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
+import { useEditorCellHighlights } from '../../../hooks/useEditorCellHighlights';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -47,6 +48,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const [editorContent, setEditorContent] = useState<string | undefined>('');
   const [didMount, setDidMount] = useState(false);
+  const [isValidRef, setIsValidRef] = useState(false);
 
   const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
 
@@ -116,6 +118,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   }, [selectedCell]);
 
   useAlertOnUnsavedChanges(hasUnsavedChanges);
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef, setInteractionState);
 
   const closeEditor = ({ skipUnsavedChangesCheck } = { skipUnsavedChangesCheck: false }) => {
     // If there are unsaved changes and we haven't been told to explicitly skip
@@ -124,11 +127,12 @@ export const CodeEditor = (props: CodeEditorProps) => {
       setShowSaveChangesAlert(true);
       return;
     }
+    setIsValidRef(false);
 
     setShowSaveChangesAlert(false);
     setInteractionState({
       ...editorInteractionState,
-      ...{ showCodeEditor: false },
+      ...{ showCodeEditor: false, highlightedCells: new Set() },
     });
     setEditorContent('');
     setSelectedCell(undefined);
@@ -230,6 +234,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+    setIsValidRef(true);
 
     editor.focus();
 
