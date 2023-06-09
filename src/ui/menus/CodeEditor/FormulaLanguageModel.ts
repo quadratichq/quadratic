@@ -1,5 +1,8 @@
 import { languages } from 'monaco-editor';
 
+export const CELL_REFERENCE_MULTICURSOR = 'cell.reference.multicursor';
+export const CELL_REFERENCE = 'cell.reference';
+
 export const FormulaLanguageConfig = {
   comments: {
     lineComment: '//',
@@ -50,8 +53,11 @@ export const FormulaTokenizerConfig = {
   ],
   tokenizer: {
     root: [
-      // cell references
-      [/\$?n?[A-Z]+\$?n?\d+/, 'constant.other.cell'],
+      // cell refence multicursor
+      [/\$?n?[A-Z]+\$?n?\d+:\$?n?[A-Z]+\$?n?\d+/, CELL_REFERENCE_MULTICURSOR],
+
+      // cell reference
+      [/\$?n?[A-Z]+\$?n?\d+/, CELL_REFERENCE],
 
       [/[a-zA-Z_$][\w$]*/, { cases: { '@keywords': 'keyword', '@default': 'unknown' } }],
 
