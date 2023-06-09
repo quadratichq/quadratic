@@ -29,4 +29,16 @@ export const colors = {
   languageFormula: '#8c1a6a',
   languageAI: '#1a8c5d',
   error: '#f25f5c',
+  cellHighlightColor: [
+    '#F79F2D',
+    '#7E3794',
+    '#45ABD3',
+    '#C56C8B',
+    '#6199F6',
+    '#F6D358',
+    '#86C16D',
+    '#89695E',
+    '#999999',
+    '#415DAA',
+  ],
 };
