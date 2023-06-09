@@ -11,6 +11,7 @@ export interface EditorInteractionState {
   showFeedbackMenu: boolean;
   selectedCell: Coordinate;
   mode: CellType;
+  highlightedCells: Set<string>;
 }
 
 export const editorInteractionStateDefault: EditorInteractionState = {
@@ -22,6 +23,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showFileMenu: false,
   selectedCell: { x: 0, y: 0 },
   mode: 'TEXT',
+  highlightedCells: new Set(),
 };
 
 export const editorInteractionStateAtom = atom({
