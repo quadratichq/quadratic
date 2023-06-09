@@ -1,6 +1,9 @@
 import { Graphics, Rectangle } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { PixiApp } from '../pixiApp/PixiApp';
+import { convertColorStringToTint } from '../../helpers/convertColor';
+import { dashedTextures } from '../dashedTextures';
+import { getCellFromFormulaNotation, parseMulticursorFormulaNotation } from '../../helpers/formulaNotation';
 
 const CURSOR_THICKNESS = 1.25;
 const FILL_ALPHA = 0.1;
@@ -8,21 +11,24 @@ const INDICATOR_SIZE = 8;
 const INDICATOR_PADDING = 1;
 const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 
+type CursorCell = { x: number; y: number; width: number; height: number };
+const CURSOR_CELL_DEFAULT_VALUE: CursorCell = { x: 0, y: 0, width: 0, height: 0 };
+
 export class Cursor extends Graphics {
   private app: PixiApp;
   indicator: Rectangle;
   dirty = true;
 
-  startCell: { x: number; y: number; width: number; height: number };
-  endCell: { x: number; y: number; width: number; height: number };
+  startCell: CursorCell;
+  endCell: CursorCell;
 
   constructor(app: PixiApp) {
     super();
     this.app = app;
     this.indicator = new Rectangle();
 
-    this.startCell = { x: 0, y: 0, width: 0, height: 0 };
-    this.endCell = { x: 0, y: 0, width: 0, height: 0 };
+    this.startCell = CURSOR_CELL_DEFAULT_VALUE;
+    this.endCell = CURSOR_CELL_DEFAULT_VALUE;
   }
 
   private drawCursor(): void {
@@ -129,24 +135,71 @@ export class Cursor extends Graphics {
 
   private drawCodeCursor(): void {
     const { editorInteractionState } = this.app.settings;
-    if (editorInteractionState.showCodeEditor) {
-      const cell = editorInteractionState.selectedCell;
-      const { x, y, width, height } = this.app.sheet.gridOffsets.getCell(cell.x, cell.y);
-      const color =
-        editorInteractionState.mode === 'PYTHON'
-          ? colors.cellColorUserPython
-          : editorInteractionState.mode === 'FORMULA'
-          ? colors.cellColorUserFormula
-          : editorInteractionState.mode === 'AI'
-          ? colors.cellColorUserAI
-          : colors.independence;
+    if (!editorInteractionState.showCodeEditor) return;
+    this.drawEditorHighlightedCells(editorInteractionState.highlightedCells);
+    const cell = editorInteractionState.selectedCell;
+    const { x, y, width, height } = this.app.sheet.gridOffsets.getCell(cell.x, cell.y);
+    const color =
+      editorInteractionState.mode === 'PYTHON'
+        ? colors.cellColorUserPython
+        : editorInteractionState.mode === 'FORMULA'
+        ? colors.cellColorUserFormula
+        : editorInteractionState.mode === 'AI'
+        ? colors.cellColorUserAI
+        : colors.independence;
+    this.lineStyle({
+      width: CURSOR_THICKNESS * 1.5,
+      color,
+      alignment: 0.5,
+    });
+
+    this.drawRect(x, y, width, height);
+  }
+
+  private drawEditorHighlightedCells(highlightedCells: Set<string>): void {
+    if (highlightedCells.size === 0) return;
+
+    let colorIndex = 0;
+    for (const formulaNotation of highlightedCells) {
+      if (formulaNotation.includes(':')) {
+        const cursorCells = parseMulticursorFormulaNotation(formulaNotation, this.app.sheet.gridOffsets);
+        if (!cursorCells) continue;
+        const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % 10]);
+        colorIndex++;
+        this.drawDashedRectangle(colorNumber, cursorCells.startCell, cursorCells.endCell);
+        continue;
+      }
+
+      const simpleCellMatch = getCellFromFormulaNotation(formulaNotation, this.app.sheet.gridOffsets);
+      if (!simpleCellMatch) continue;
+      const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % 10]);
+      colorIndex++;
+      this.drawDashedRectangle(colorNumber, simpleCellMatch);
+    }
+  }
+
+  private drawDashedRectangle(color: number, startCell: CursorCell, endCell?: CursorCell) {
+    const minX = Math.min(startCell.x, endCell?.x ?? Infinity);
+    const minY = Math.min(startCell.y, endCell?.y ?? Infinity);
+    const maxX = Math.max(startCell.width + startCell.x, endCell ? endCell.x + endCell.width : -Infinity);
+    const maxY = Math.max(startCell.y + startCell.height, endCell ? endCell.y + endCell.height : -Infinity);
+
+    const path = [
+      [maxX, minY],
+      [maxX, maxY],
+      [minX, maxY],
+      [minX, minY],
+    ];
+    this.moveTo(minX, minY);
+
+    for (let i = 0; i < path.length; i++) {
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,
         color,
-        alignment: 0.5,
+        alignment: 0,
+        texture: i % 2 === 0 ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical,
       });
-
-      this.drawRect(x, y, width, height);
+      this.lineTo(path[i][0], path[i][1]);
     }
   }
 
