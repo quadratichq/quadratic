@@ -3,7 +3,7 @@ import { Box } from '@mui/system';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { colors } from '../../../theme/colors';
 // import { Tab, Tabs } from '@mui/material';
-import { KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { SheetBarTab } from './SheetBarTab';
@@ -16,25 +16,11 @@ interface Props {
 }
 
 const ARROW_SCROLL_AMOUNT = 100;
-const HOVER_SCROLL_AMOUNT = 3;
-const SCROLLING_INTERVAL = 20;
+const HOVER_SCROLL_AMOUNT = 5;
+const SCROLLING_INTERVAL = 17;
 
 export const SheetBar = (props: Props): JSX.Element => {
   const { sheetController } = props;
-
-  // rename sheet
-  const localFiles = useLocalFiles();
-  const [isRenaming, setIsRenaming] = useState<number | false>(false);
-  const onRenameSheet = useCallback(
-    (name?: string) => {
-      if (name) {
-        sheetController.sheet.rename(name);
-        localFiles.save();
-      }
-      setIsRenaming(false);
-    },
-    [localFiles, sheetController.sheet]
-  );
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheetController.current);
@@ -88,6 +74,28 @@ export const SheetBar = (props: Props): JSX.Element => {
     [leftArrow, rightArrow]
   );
 
+  // return tab to original spot when pressing Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Escape' && down.current) {
+        if (scrolling.current) {
+          window.clearInterval(scrolling.current);
+          scrolling.current = undefined;
+        }
+        const tab = down.current.tab;
+        tab.style.boxShadow = '';
+        tab.style.zIndex = '';
+        tab.style.transform = '';
+        tab.style.order = down.current.original.toString();
+        tab.scrollIntoView();
+        down.current = undefined;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
+
   // ensure active tab is visible when changed
   useEffect(() => {
     if (sheets) {
@@ -108,6 +116,7 @@ export const SheetBar = (props: Props): JSX.Element => {
         id: string;
         actualOrder: number;
         overlap?: number;
+        scrollWidth: number;
       }
     | undefined
   >();
@@ -115,6 +124,7 @@ export const SheetBar = (props: Props): JSX.Element => {
 
   const handlePointerDown = useCallback(
     (options: { event: React.PointerEvent<HTMLDivElement>; sheet: Sheet }) => {
+      if (!sheets) return;
       const { event, sheet } = options;
       setActiveSheet((prevState: string) => {
         if (prevState !== sheet.id) {
@@ -124,6 +134,7 @@ export const SheetBar = (props: Props): JSX.Element => {
         }
         return prevState;
       });
+
       const tab = event.currentTarget;
       if (tab) {
         const rect = tab.getBoundingClientRect();
@@ -131,6 +142,7 @@ export const SheetBar = (props: Props): JSX.Element => {
           tab,
           offset: event.clientX - rect.left,
           id: sheet.id,
+          scrollWidth: sheets.scrollWidth,
 
           // order is a multiple of 2 so we can move tabs before and after other tabs (order needs to be an integer)
           original: sheet.order * 2,
@@ -141,7 +153,7 @@ export const SheetBar = (props: Props): JSX.Element => {
       }
       event.preventDefault();
     },
-    [sheetController]
+    [sheetController, sheets]
   );
 
   const handlePointerMove = useCallback(
@@ -160,9 +172,8 @@ export const SheetBar = (props: Props): JSX.Element => {
       // positions dragging div
       const positionTab = () => {
         if (!down.current) return;
-        tab.style.transform = `translateX(${
-          event.clientX - tab.offsetLeft + sheets.scrollLeft - down.current.offset
-        }px)`;
+        const left = event.clientX - tab.offsetLeft + sheets.scrollLeft - down.current.offset;
+        tab.style.transform = `translateX(${left}px)`;
       };
 
       // handles when dragging tab overlaps another tab
@@ -222,19 +233,20 @@ export const SheetBar = (props: Props): JSX.Element => {
         checkPosition(event.clientX);
 
         // when dragging, scroll the sheets div if necessary
-        if (sheets.offsetWidth !== sheets.scrollWidth) {
+        if (sheets.offsetWidth !== down.current.scrollWidth) {
           // scroll to the right if necessary
           if (
             event.clientX > sheets.offsetLeft + sheets.offsetWidth &&
-            sheets.scrollLeft < sheets.scrollWidth - sheets.offsetWidth
+            sheets.scrollLeft < down.current.scrollWidth - sheets.offsetWidth
           ) {
+            if (scrolling.current) return;
             clearScrollingInterval();
             scrolling.current = window.setInterval(() => {
               if (!down.current) return;
-              if (sheets.scrollLeft < sheets.scrollWidth - sheets.offsetWidth - tab.offsetWidth) {
+              if (sheets.scrollLeft < down.current.scrollWidth - sheets.offsetWidth + tab.offsetWidth) {
                 sheets.scrollLeft += HOVER_SCROLL_AMOUNT;
               } else {
-                sheets.scrollLeft = sheets.scrollWidth - sheets.offsetWidth;
+                sheets.scrollLeft = down.current.scrollWidth - sheets.offsetWidth;
                 clearScrollingInterval();
               }
               checkPosition(event.clientX);
@@ -243,7 +255,7 @@ export const SheetBar = (props: Props): JSX.Element => {
           }
 
           // scroll to the left
-          else if (event.clientX < sheets.offsetLeft && sheets.scrollLeft) {
+          else if (event.clientX < sheets.offsetLeft && sheets.scrollLeft !== 0) {
             clearScrollingInterval();
             scrolling.current = window.setInterval(() => {
               if (!down.current) return;
@@ -251,10 +263,11 @@ export const SheetBar = (props: Props): JSX.Element => {
                 sheets.scrollLeft -= HOVER_SCROLL_AMOUNT;
               } else {
                 sheets.scrollLeft = 0;
+                clearScrollingInterval();
               }
               checkPosition(event.clientX);
               positionTab();
-            });
+            }, SCROLLING_INTERVAL);
           } else {
             clearScrollingInterval();
           }
@@ -345,6 +358,7 @@ export const SheetBar = (props: Props): JSX.Element => {
               onPointerDown={handlePointerDown}
               active={activeSheet === sheet.id}
               sheet={sheet}
+              sheetController={sheetController}
             />
           ))}
         </div>
