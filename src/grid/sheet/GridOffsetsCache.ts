@@ -174,7 +174,7 @@ export class GridOffsetsCache {
       // use cache if available
       const closestIndex = Math.floor(-row / GRID_OFFSETS_CACHE_SIZE);
       if (this.rowNegativeCache.length > closestIndex) {
-        position = this.columnNegativeCache[closestIndex];
+        position = this.rowNegativeCache[closestIndex];
         for (let y = -closestIndex * GRID_OFFSETS_CACHE_SIZE; y >= row; y--) {
           // add to cache when needed
           if (-y % GRID_OFFSETS_CACHE_SIZE === 0) {
@@ -221,6 +221,9 @@ export class GridOffsetsCache {
       while (this.rowNegativeCache[cacheIndex + 1] > y) cacheIndex++;
       let position = this.rowNegativeCache[cacheIndex];
       let index = cacheIndex * GRID_OFFSETS_CACHE_SIZE;
+      if (cacheIndex >= 1) {
+        index -= 1;
+      }
       while (position > y) {
         index++;
         position -= this.gridOffsets.getRowHeight(-index);
