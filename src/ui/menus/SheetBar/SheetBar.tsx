@@ -16,7 +16,7 @@ interface Props {
 }
 
 const ARROW_SCROLL_AMOUNT = 100;
-const HOVER_SCROLL_AMOUNT = 2;
+const HOVER_SCROLL_AMOUNT = 3;
 const SCROLLING_INTERVAL = 20;
 
 export const SheetBar = (props: Props): JSX.Element => {
@@ -103,7 +103,6 @@ export const SheetBar = (props: Props): JSX.Element => {
   const down = useRef<
     | {
         tab: HTMLElement;
-        x: number;
         original: number;
         offset: number;
         id: string;
@@ -112,7 +111,7 @@ export const SheetBar = (props: Props): JSX.Element => {
       }
     | undefined
   >();
-  const scrolling = useRef<undefined | { direction: 1 | -1; interval: number }>();
+  const scrolling = useRef<undefined | number>();
 
   const handlePointerDown = useCallback(
     (options: { event: React.PointerEvent<HTMLDivElement>; sheet: Sheet }) => {
@@ -130,7 +129,6 @@ export const SheetBar = (props: Props): JSX.Element => {
         const rect = tab.getBoundingClientRect();
         down.current = {
           tab,
-          x: event.clientX,
           offset: event.clientX - rect.left,
           id: sheet.id,
 
@@ -149,14 +147,22 @@ export const SheetBar = (props: Props): JSX.Element => {
   const handlePointerMove = useCallback(
     (event: PointerEvent) => {
       const tab = down.current?.tab;
-      if (!tab) return;
+      if (!tab || !sheets) return;
 
       // clears scrolling interval
       const clearScrollingInterval = () => {
-        if (scrolling.current) {
-          window.clearInterval(scrolling.current.interval);
+        if (scrolling.current !== undefined) {
+          window.clearInterval(scrolling.current);
           scrolling.current = undefined;
         }
+      };
+
+      // positions dragging div
+      const positionTab = () => {
+        if (!down.current) return;
+        tab.style.transform = `translateX(${
+          event.clientX - tab.offsetLeft + sheets.scrollLeft - down.current.offset
+        }px)`;
       };
 
       // handles when dragging tab overlaps another tab
@@ -189,7 +195,6 @@ export const SheetBar = (props: Props): JSX.Element => {
               } else {
                 tab.style.order = overlap.order.toString();
               }
-              down.current.x -= tab.offsetWidth;
               down.current.actualOrder = overlap.order - 1;
             }
 
@@ -201,14 +206,13 @@ export const SheetBar = (props: Props): JSX.Element => {
               } else {
                 tab.style.order = overlap.order.toString();
               }
-              down.current.x += tab.offsetWidth;
               down.current.actualOrder = overlap.order + 1;
             }
           }
         } else {
           down.current.overlap = undefined;
         }
-        tab.style.transform = `translateX(${event.clientX - down.current.x}px)`;
+        positionTab();
       };
 
       if (down.current) {
@@ -218,32 +222,39 @@ export const SheetBar = (props: Props): JSX.Element => {
         checkPosition(event.clientX);
 
         // when dragging, scroll the sheets div if necessary
-        if (!sheets) return;
         if (sheets.offsetWidth !== sheets.scrollWidth) {
+          // scroll to the right if necessary
           if (
             event.clientX > sheets.offsetLeft + sheets.offsetWidth &&
             sheets.scrollLeft < sheets.scrollWidth - sheets.offsetWidth
           ) {
             clearScrollingInterval();
-            scrolling.current = {
-              direction: 1,
-              interval: window.setInterval(() => {
-                if (!down.current) return;
-                if (sheets.scrollLeft < sheets.scrollWidth - sheets.offsetWidth - tab.offsetWidth) {
-                  sheets.scrollLeft += HOVER_SCROLL_AMOUNT;
-                  down.current.x -= HOVER_SCROLL_AMOUNT;
-                  tab.style.transform = `translateX(${event.clientX - down.current.x}px)`;
-                  checkPosition(event.clientX);
-                } else {
-                  const old = sheets.scrollLeft;
-                  sheets.scrollLeft = sheets.scrollWidth - sheets.offsetWidth;
-                  down.current.x += old - sheets.scrollLeft;
-                  tab.style.transform = `translateX(${event.clientX - down.current.x}px)`;
-                  clearScrollingInterval();
-                }
-                checkPosition(event.clientX);
-              }, SCROLLING_INTERVAL),
-            };
+            scrolling.current = window.setInterval(() => {
+              if (!down.current) return;
+              if (sheets.scrollLeft < sheets.scrollWidth - sheets.offsetWidth - tab.offsetWidth) {
+                sheets.scrollLeft += HOVER_SCROLL_AMOUNT;
+              } else {
+                sheets.scrollLeft = sheets.scrollWidth - sheets.offsetWidth;
+                clearScrollingInterval();
+              }
+              checkPosition(event.clientX);
+              positionTab();
+            }, SCROLLING_INTERVAL);
+          }
+
+          // scroll to the left
+          else if (event.clientX < sheets.offsetLeft && sheets.scrollLeft) {
+            clearScrollingInterval();
+            scrolling.current = window.setInterval(() => {
+              if (!down.current) return;
+              if (sheets.scrollLeft !== 0) {
+                sheets.scrollLeft -= HOVER_SCROLL_AMOUNT;
+              } else {
+                sheets.scrollLeft = 0;
+              }
+              checkPosition(event.clientX);
+              positionTab();
+            });
           } else {
             clearScrollingInterval();
           }
@@ -256,7 +267,7 @@ export const SheetBar = (props: Props): JSX.Element => {
   const handlePointerUp = useCallback(() => {
     if (down.current) {
       if (scrolling.current) {
-        window.clearInterval(scrolling.current.interval);
+        window.clearInterval(scrolling.current);
         scrolling.current = undefined;
       }
       const tab = down.current.tab;
