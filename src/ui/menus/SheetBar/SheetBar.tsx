@@ -16,6 +16,8 @@ interface Props {
 }
 
 const ARROW_SCROLL_AMOUNT = 100;
+const HOVER_SCROLL_AMOUNT = 2;
+const SCROLLING_INTERVAL = 20;
 
 export const SheetBar = (props: Props): JSX.Element => {
   const { sheetController } = props;
@@ -51,6 +53,7 @@ export const SheetBar = (props: Props): JSX.Element => {
     },
     [sheets]
   );
+
   const rightRef = useCallback(
     (node: HTMLElement) => {
       setRightArrow(node);
@@ -85,6 +88,17 @@ export const SheetBar = (props: Props): JSX.Element => {
     [leftArrow, rightArrow]
   );
 
+  // ensure active tab is visible when changed
+  useEffect(() => {
+    if (sheets) {
+      const children = [...sheets.children];
+      const tab = children.find((child) => child.getAttribute('data-id') === activeSheet);
+      if (tab) {
+        tab.scrollIntoView();
+      }
+    }
+  }, [activeSheet, sheets]);
+
   // handle drag tabs
   const down = useRef<
     | {
@@ -98,6 +112,8 @@ export const SheetBar = (props: Props): JSX.Element => {
       }
     | undefined
   >();
+  const scrolling = useRef<undefined | { direction: 1 | -1; interval: number }>();
+
   const handlePointerDown = useCallback(
     (options: { event: React.PointerEvent<HTMLDivElement>; sheet: Sheet }) => {
       const { event, sheet } = options;
@@ -130,62 +146,119 @@ export const SheetBar = (props: Props): JSX.Element => {
     [sheetController]
   );
 
-  const handlePointerMove = useCallback((event: PointerEvent) => {
-    if (down.current) {
-      event.stopPropagation();
-      event.preventDefault();
-      // store current tabs (except the dragging tab)
-      const tabs: { rect: DOMRect; order: number; element: HTMLDivElement }[] = [];
-      const tab = down.current.tab;
-      down.current.tab.parentElement?.childNodes.forEach((node) => {
-        if (node !== tab) {
-          const element = node as HTMLDivElement;
-          let order = element.getAttribute('data-order');
-          if (order) {
-            tabs.push({ rect: element.getBoundingClientRect(), order: parseInt(order), element });
+  const handlePointerMove = useCallback(
+    (event: PointerEvent) => {
+      const tab = down.current?.tab;
+      if (!tab) return;
+
+      // clears scrolling interval
+      const clearScrollingInterval = () => {
+        if (scrolling.current) {
+          window.clearInterval(scrolling.current.interval);
+          scrolling.current = undefined;
+        }
+      };
+
+      // handles when dragging tab overlaps another tab
+      const checkPosition = (mouseX: number) => {
+        if (!down.current) return;
+
+        // store current tabs (except the dragging tab)
+        const tabs: { rect: DOMRect; order: number; element: HTMLDivElement }[] = [];
+        down.current.tab.parentElement?.childNodes.forEach((node) => {
+          if (node !== tab) {
+            const element = node as HTMLDivElement;
+            let order = element.getAttribute('data-order');
+            if (order) {
+              tabs.push({ rect: element.getBoundingClientRect(), order: parseInt(order), element });
+            }
+          }
+        });
+
+        // search for an overlap from the current tabs to replace its order
+        const overlap = tabs.find((tab) => mouseX >= tab.rect.left && mouseX <= tab.rect.right);
+        if (overlap) {
+          if (down.current.overlap !== overlap.order) {
+            // ensure we only use the overlapping tab one time
+            down.current.overlap = overlap.order;
+
+            // moving left
+            if (down.current.actualOrder > overlap.order) {
+              if (down.current.original > overlap.order) {
+                tab.style.order = (overlap.order - 1).toString();
+              } else {
+                tab.style.order = overlap.order.toString();
+              }
+              down.current.x -= tab.offsetWidth;
+              down.current.actualOrder = overlap.order - 1;
+            }
+
+            // moving right
+            else {
+              // each tab has order * 2, so there's a space next to each tab.order + 1
+              if (down.current.original < overlap.order) {
+                tab.style.order = (overlap.order + 1).toString();
+              } else {
+                tab.style.order = overlap.order.toString();
+              }
+              down.current.x += tab.offsetWidth;
+              down.current.actualOrder = overlap.order + 1;
+            }
+          }
+        } else {
+          down.current.overlap = undefined;
+        }
+        tab.style.transform = `translateX(${event.clientX - down.current.x}px)`;
+      };
+
+      if (down.current) {
+        event.stopPropagation();
+        event.preventDefault();
+
+        checkPosition(event.clientX);
+
+        // when dragging, scroll the sheets div if necessary
+        if (!sheets) return;
+        if (sheets.offsetWidth !== sheets.scrollWidth) {
+          if (
+            event.clientX > sheets.offsetLeft + sheets.offsetWidth &&
+            sheets.scrollLeft < sheets.scrollWidth - sheets.offsetWidth
+          ) {
+            clearScrollingInterval();
+            scrolling.current = {
+              direction: 1,
+              interval: window.setInterval(() => {
+                if (!down.current) return;
+                if (sheets.scrollLeft < sheets.scrollWidth - sheets.offsetWidth - tab.offsetWidth) {
+                  sheets.scrollLeft += HOVER_SCROLL_AMOUNT;
+                  down.current.x -= HOVER_SCROLL_AMOUNT;
+                  tab.style.transform = `translateX(${event.clientX - down.current.x}px)`;
+                  checkPosition(event.clientX);
+                } else {
+                  const old = sheets.scrollLeft;
+                  sheets.scrollLeft = sheets.scrollWidth - sheets.offsetWidth;
+                  down.current.x += old - sheets.scrollLeft;
+                  tab.style.transform = `translateX(${event.clientX - down.current.x}px)`;
+                  clearScrollingInterval();
+                }
+                checkPosition(event.clientX);
+              }, SCROLLING_INTERVAL),
+            };
+          } else {
+            clearScrollingInterval();
           }
         }
-      });
-
-      // search for an overlap from the current tabs to replace its order
-      const overlap = tabs.find((tab) => event.clientX >= tab.rect.left && event.clientX <= tab.rect.right);
-      if (overlap) {
-        if (down.current.overlap !== overlap.order) {
-          // ensure we only use the overlapping tab one time
-          down.current.overlap = overlap.order;
-
-          // moving left
-          if (down.current.actualOrder > overlap.order) {
-            if (down.current.original > overlap.order) {
-              tab.style.order = (overlap.order - 1).toString();
-            } else {
-              tab.style.order = overlap.order.toString();
-            }
-            down.current.x -= tab.offsetWidth;
-            down.current.actualOrder = overlap.order - 1;
-          }
-
-          // moving right
-          else {
-            // each tab has order * 2, so there's a space next to each tab.order + 1
-            if (down.current.original < overlap.order) {
-              tab.style.order = (overlap.order + 1).toString();
-            } else {
-              tab.style.order = overlap.order.toString();
-            }
-            down.current.x += tab.offsetWidth;
-            down.current.actualOrder = overlap.order + 1;
-          }
-        }
-      } else {
-        down.current.overlap = undefined;
       }
-      tab.style.transform = `translateX(${event.clientX - down.current.x}px)`;
-    }
-  }, []);
+    },
+    [sheets]
+  );
 
   const handlePointerUp = useCallback(() => {
     if (down.current) {
+      if (scrolling.current) {
+        window.clearInterval(scrolling.current.interval);
+        scrolling.current = undefined;
+      }
       const tab = down.current.tab;
       tab.style.boxShadow = '';
       tab.style.zIndex = '';
@@ -224,7 +297,7 @@ export const SheetBar = (props: Props): JSX.Element => {
         style={{
           display: 'flex',
           width: '100%',
-          overflow: 'hidden visible',
+          overflow: 'hidden',
         }}
       >
         <ButtonUnstyled
@@ -246,7 +319,7 @@ export const SheetBar = (props: Props): JSX.Element => {
             display: 'flex',
             flexShrink: '1',
             width: '100%',
-            overflow: 'hidden visible',
+            overflow: 'hidden',
           }}
           onWheel={(e) => {
             if (!sheets) return;

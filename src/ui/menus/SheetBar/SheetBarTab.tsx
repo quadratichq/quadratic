@@ -13,6 +13,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
     <div
       className="sheet-tab"
       data-order={sheet.order * 2}
+      data-id={sheet.id}
       style={{
         textAlign: 'center',
         padding: '0.5rem 1rem',
