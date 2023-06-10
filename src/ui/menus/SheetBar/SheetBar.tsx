@@ -87,17 +87,25 @@ export const SheetBar = (props: Props): JSX.Element => {
 
   // handle drag tabs
   const down = useRef<
-    | { tab: HTMLElement; x: number; order: number; original: number; offset: number; id: string; actualOrder: number }
+    | {
+        tab: HTMLElement;
+        x: number;
+        original: number;
+        offset: number;
+        id: string;
+        actualOrder: number;
+        overlap?: number;
+      }
     | undefined
   >();
   const handlePointerDown = useCallback(
-    (options: { event: React.PointerEvent<HTMLDivElement>; index: number; sheet: Sheet }) => {
-      const { event, index, sheet } = options;
-      setActiveSheet((prevState: number) => {
-        if (prevState !== index) {
-          sheetController.current = index;
-          setActiveSheet(index);
-          return index;
+    (options: { event: React.PointerEvent<HTMLDivElement>; sheet: Sheet }) => {
+      const { event, sheet } = options;
+      setActiveSheet((prevState: string) => {
+        if (prevState !== sheet.id) {
+          sheetController.current = sheet.id;
+          setActiveSheet(sheet.id);
+          return sheet.id;
         }
         return prevState;
       });
@@ -107,12 +115,15 @@ export const SheetBar = (props: Props): JSX.Element => {
         down.current = {
           tab,
           x: event.clientX,
-          order: sheet.order,
-          original: sheet.order,
-          actualOrder: sheet.order,
           offset: event.clientX - rect.left,
           id: sheet.id,
+
+          // order is a multiple of 2 so we can move tabs before and after other tabs (order needs to be an integer)
+          original: sheet.order * 2,
+          actualOrder: sheet.order * 2,
         };
+        tab.style.boxShadow = '0.25rem -0.25rem 0.5rem rgba(0,0,0,0.25)';
+        tab.style.zIndex = '2';
       }
       event.preventDefault();
     },
@@ -139,32 +150,49 @@ export const SheetBar = (props: Props): JSX.Element => {
       // search for an overlap from the current tabs to replace its order
       const overlap = tabs.find((tab) => event.clientX >= tab.rect.left && event.clientX <= tab.rect.right);
       if (overlap) {
-        const newOrder = overlap.order + (down.current.order <= overlap.order ? 1 : 0);
+        if (down.current.overlap !== overlap.order) {
+          // ensure we only use the overlapping tab one time
+          down.current.overlap = overlap.order;
 
-        // if (newOrder > down.current.order) {
-        //   down.current.x = down.current.offset + event.clientX;
-        // } else {
-        //   down.current.x = down.current.offset + event.clientX - overlap.element.offsetWidth;
-        // }
-        down.current.actualOrder = newOrder - 0.5;
-        // tab.style.order = newOrder.toString();
-        down.current.order = newOrder;
-        // down.current.tab.style.transform = '';
-      }
+          // moving left
+          if (down.current.actualOrder > overlap.order) {
+            if (down.current.original > overlap.order) {
+              tab.style.order = (overlap.order - 1).toString();
+            } else {
+              tab.style.order = overlap.order.toString();
+            }
+            down.current.x -= tab.offsetWidth;
+            down.current.actualOrder = overlap.order - 1;
+          }
 
-      // otherwise transform the button so it looks like its moving
-      else {
-        down.current.tab.style.transform = `translateX(${event.clientX - down.current.x}px)`;
+          // moving right
+          else {
+            // each tab has order * 2, so there's a space next to each tab.order + 1
+            if (down.current.original < overlap.order) {
+              tab.style.order = (overlap.order + 1).toString();
+            } else {
+              tab.style.order = overlap.order.toString();
+            }
+            down.current.x += tab.offsetWidth;
+            down.current.actualOrder = overlap.order + 1;
+          }
+        }
+      } else {
+        down.current.overlap = undefined;
       }
+      tab.style.transform = `translateX(${event.clientX - down.current.x}px)`;
     }
   }, []);
 
   const handlePointerUp = useCallback(() => {
     if (down.current) {
-      if (down.current.order !== down.current.original) {
-        sheetController.reorderSheet(down.current.id, down.current.actualOrder);
+      const tab = down.current.tab;
+      tab.style.boxShadow = '';
+      tab.style.zIndex = '';
+      tab.style.transform = '';
+      if (down.current.actualOrder !== down.current.original) {
+        sheetController.reorderSheet(down.current.id, down.current.actualOrder / 2);
       }
-      down.current.tab.style.transform = '';
       down.current = undefined;
     }
   }, [sheetController]);
@@ -227,13 +255,12 @@ export const SheetBar = (props: Props): JSX.Element => {
             }
           }}
         >
-          {sheetController.sheets.map((sheet, index) => (
+          {sheetController.sheets.map((sheet) => (
             <SheetBarTab
-              key={index}
+              key={sheet.id}
               onPointerDown={handlePointerDown}
-              active={activeSheet === index}
+              active={activeSheet === sheet.id}
               sheet={sheet}
-              index={index}
             />
           ))}
         </div>

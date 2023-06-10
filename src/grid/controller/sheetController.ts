@@ -11,7 +11,7 @@ import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 export class SheetController {
   app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
   sheets: Sheet[];
-  _current: number;
+  _current: string;
   saveLocalFiles: (() => void) | undefined;
   transaction_in_progress: Transaction | undefined;
   transaction_in_progress_reverse: Transaction | undefined;
@@ -25,7 +25,7 @@ export class SheetController {
       this.sheets = sheets;
     }
 
-    this._current = 0;
+    this._current = this.sheets[0].id;
     this.undo_stack = [];
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
@@ -33,12 +33,12 @@ export class SheetController {
     this.saveLocalFiles = undefined;
   }
 
-  get current(): number {
+  get current(): string {
     return this._current;
   }
-  set current(value: number) {
+  set current(value: string) {
     this._current = value;
-    this.app?.changeSheet(value);
+    this.app?.changeSheet();
   }
 
   loadSheets(sheets: SheetSchema[]): void {
@@ -47,10 +47,12 @@ export class SheetController {
       const sheet = new Sheet(undefined, sheetSchema.order);
       sheet.load_file(sheetSchema);
       this.sheets.push(sheet);
-
-      // need to set internal value to avoid set current call
-      this._current = 0;
     });
+    if (this.sheets.length === 0) {
+      this.sheets.push(new Sheet(undefined, 0));
+    }
+    // need to set internal value to avoid set current call
+    this._current = this.sheets[0].id;
   }
 
   export(): SheetSchema[] {
@@ -58,7 +60,11 @@ export class SheetController {
   }
 
   get sheet(): Sheet {
-    return this.sheets[this.current];
+    const sheet = this.sheets.find((sheet) => sheet.id === this.current);
+    if (!sheet) {
+      throw new Error('Expected to find sheet based on id');
+    }
+    return sheet;
   }
 
   // changes sheet.order to integers that are one number apart
@@ -84,7 +90,7 @@ export class SheetController {
     const sheet = new Sheet(`Sheet${this.sheets.length + 1}`, this.sheets.length);
     this.sheets.push(sheet);
     this.app?.quadrants.addSheet(sheet);
-    this.current = this.sheets.length - 1;
+    this.current = sheet.id;
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
 

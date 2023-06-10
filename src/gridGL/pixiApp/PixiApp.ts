@@ -257,7 +257,7 @@ export class PixiApp {
     this.canvas?.focus();
   }
 
-  changeSheet(index: number): void {
+  changeSheet(): void {
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
     this.axesLines.dirty = true;
