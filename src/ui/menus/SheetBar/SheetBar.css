@@ -15,7 +15,7 @@
   overflow: hidden;
 }
 
-.sheet-bar-add button {
+.sheet-bar-add > button {
   border: none;
   padding: 0 1rem;
   cursor: pointer;
@@ -31,6 +31,12 @@
   border: none;
   display: flex;
   justify-content: center;
+  transition: background 200ms ease;
+}
+
+.sheet-bar-add > button:hover,
+.sheet-bar-arrow:hover {
+  background: #f5f5f5;
 }
 
 .sheet-bar-sheets {
