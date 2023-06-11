@@ -11,6 +11,7 @@ export class PixiAppSettings {
   // throttle for setting recoil state
   private interactionStateDirty = false;
   private setInteractionStateRecoil?: (value: GridInteractionState) => void;
+  private lastShowInput = false;
 
   temporarilyHideCellTypeOutlines = false;
   interactionState = gridInteractionStateDefault;
@@ -63,7 +64,10 @@ export class PixiAppSettings {
     this.interactionStateDirty = false;
     this.app.cursor.dirty = true;
     this.app.headings.dirty = true;
-    this.app.cells.dirty = true;
+    if (interactionState.showInput !== this.lastShowInput) {
+      this.app.cells.dirty = true;
+      this.lastShowInput = interactionState.showInput;
+    }
   }
 
   update() {
