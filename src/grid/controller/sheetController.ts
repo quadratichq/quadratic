@@ -103,6 +103,36 @@ export class SheetController {
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
+  deleteSheet(id: string): void {
+    const index = this.sheets.findIndex((sheet) => sheet.id === id);
+    if (index === -1) {
+      throw new Error('Expected to find sheet in deleteSheet');
+    }
+    const deletedSheet = this.sheets.splice(index, 1)[0];
+    const order = deletedSheet.order;
+    this.app?.quadrants.deleteSheet(deletedSheet);
+
+    // if deleted the last sheet, add a new one
+    if (this.sheets.length === 0) {
+      const sheet = new Sheet(`Sheet1`, 0);
+      this.sheets.push(sheet);
+      this.app?.quadrants.addSheet(sheet);
+      this.current = sheet.id;
+    }
+
+    // otherwise select the next sheet
+    else {
+      this.cleanUpOrdering();
+      const next = this.sheets.find((sheet) => sheet.order >= order);
+      if (next) {
+        this.current = next.id;
+      } else {
+        this.current = this.sheets[this.sheets.length - 1].id;
+      }
+    }
+    if (this.saveLocalFiles) this.saveLocalFiles();
+  }
+
   // starting a transaction is the only way to execute statements
   // once a transaction is started, statements can be executed via
   // execute_statement until end_transaction is called.

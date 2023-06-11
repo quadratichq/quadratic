@@ -56,6 +56,16 @@ export class Quadrants extends Container {
     this.quadrants.set(sheet.id, quadrantsSheet);
   }
 
+  // deletes the quadrants for a delete sheet
+  deleteSheet(sheet: Sheet): void {
+    const child = this.quadrants.get(sheet.id);
+    if (!child) {
+      throw new Error("Could not find sheet's quadrants to delete");
+    }
+    this.quadrants.delete(sheet.id);
+    this.removeChild(child);
+  }
+
   // rebuilds all quadrants
   build(): void {
     this.removeChildren();
