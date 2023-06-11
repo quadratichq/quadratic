@@ -84,6 +84,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
       data-order={sheet.order * 2}
       data-id={sheet.id}
       style={{
+        borderBottomColor: sheet.color,
         // * 2 is needed so there's a space next to each tab
         order: sheet.order * 2,
       }}

@@ -17,6 +17,7 @@ export const GridFileSchemaV1_3 = z.object({
   sheets: z
     .object({
       name: z.string(),
+      color: z.string().optional(),
       order: z.number(),
       borders: z
         .object({

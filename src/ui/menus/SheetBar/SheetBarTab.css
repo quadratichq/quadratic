@@ -1,11 +1,14 @@
 .sheet-tab,
 .sheet-tab-active {
   text-align: center;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1rem 0.25rem;
   cursor: pointer;
   transition: box-shadow 200ms ease 250ms, background-color 200ms ease;
   white-space: nowrap;
   opacity: 0.5;
+  border-bottom-width: 0.25rem;
+  border-bottom-style: solid;
+  border-bottom-color: transparent;
 }
 
 .sheet-tab-active {
@@ -24,4 +27,8 @@
   background: white;
   font-size: 0.7rem;
   border: none;
+}
+
+.sheet-bar-context-menu {
+  font-size: 0.9rem;
 }

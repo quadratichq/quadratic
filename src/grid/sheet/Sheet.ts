@@ -17,6 +17,7 @@ export class Sheet {
   grid: GridSparse;
   borders: GridBorders;
   order: number;
+  color?: string;
 
   // visual dependency for overflowing cells
   render_dependency: GridRenderDependency;
@@ -45,6 +46,7 @@ export class Sheet {
 
   load_file(sheet: SheetSchema): void {
     this.name = sheet.name;
+    this.color = sheet.color;
     this.gridOffsets.populate(sheet.columns, sheet.rows);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
@@ -55,6 +57,7 @@ export class Sheet {
     const { cells, formats } = this.grid.getArrays();
     return {
       name: this.name,
+      color: this.color,
       order: this.order,
       columns: this.gridOffsets.getColumnsArray(),
       rows: this.gridOffsets.getRowsArray(),

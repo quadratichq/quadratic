@@ -331,16 +331,16 @@ export const SheetBar = (props: Props): JSX.Element => {
     };
   }, [handlePointerMove, handlePointerUp]);
 
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; sheet: Sheet } | undefined>();
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string; name: string } | undefined>();
   const handleContextEvent = useCallback((event: MouseEvent, sheet: Sheet) => {
     event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY, sheet });
+    setContextMenu({ x: event.clientX, y: event.clientY, name: sheet.name, id: sheet.id });
   }, []);
 
   const [forceRename, setForceRename] = useState<string | undefined>();
   const handleRename = useCallback(() => {
     if (!contextMenu || !sheets) return;
-    setForceRename(contextMenu.sheet.id);
+    setForceRename(contextMenu.id);
     setContextMenu(undefined);
   }, [contextMenu, sheets]);
   const clearRename = useCallback(() => setForceRename(undefined), []);

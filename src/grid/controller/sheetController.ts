@@ -138,6 +138,13 @@ export class SheetController {
   // execute_statement until end_transaction is called.
   //
 
+  changeSheetColor(id: string, color?: string): void {
+    const sheet = this.sheets.find((sheet) => sheet.id === id);
+    if (!sheet) throw new Error('Expected to find sheet in changeSheetColor');
+    sheet.color = color;
+    if (this.saveLocalFiles) this.saveLocalFiles();
+  }
+
   public start_transaction(interactionState?: GridInteractionState): void {
     if (this.transaction_in_progress) {
       // during debug mode, throw an error
