@@ -1,27 +1,41 @@
-.sheet-tab,
-.sheet-tab-active {
-  text-align: center;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  transition: box-shadow 200ms ease 250ms, background-color 200ms ease;
-  white-space: nowrap;
-  opacity: 0.5;
-}
-
-.sheet-tab-active {
-  background: white;
-  opacity: 1;
-}
-
-.sheet-tab:hover {
-  background: white;
-}
-
-.sheet-tab-input {
-  text-align: left;
-  padding: 0.5rem 1rem;
-  height: 100%;
-  background: white;
+.sheet-bar {
+  height: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  background: #eeeeee;
   font-size: 0.7rem;
+}
+
+.sheet-bar-add {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sheet-bar-add button {
   border: none;
+  padding: 0 1rem;
+  cursor: pointer;
+}
+
+.sheet-bar-arrows {
+  display: flex;
+  height: 100%;
+  align-items: center;
+}
+
+.sheet-bar-arrow {
+  border: none;
+  display: flex;
+  justify-content: center;
+}
+
+.sheet-bar-sheets {
+  display: flex;
+  flex-shrink: 1;
+  width: 100%;
+  overflow: hidden;
 }

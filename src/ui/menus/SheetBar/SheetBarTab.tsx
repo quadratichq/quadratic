@@ -1,4 +1,4 @@
-import './SheetBar.css';
+import './SheetBarTab.css';
 
 import { PointerEvent, useCallback, useState } from 'react';
 import { Sheet } from '../../../grid/sheet/Sheet';

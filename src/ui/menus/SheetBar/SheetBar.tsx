@@ -1,13 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Box } from '@mui/system';
+import './SheetBar.css';
+
 import { SheetController } from '../../../grid/controller/sheetController';
-import { colors } from '../../../theme/colors';
-// import { Tab, Tabs } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocalFiles } from '../../contexts/LocalFiles';
-import { focusGrid } from '../../../helpers/focusGrid';
 import { SheetBarTab } from './SheetBarTab';
-import { ButtonGroup, ButtonUnstyled } from '@mui/material';
+import { ButtonUnstyled } from '@mui/material';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 
@@ -15,9 +11,10 @@ interface Props {
   sheetController: SheetController;
 }
 
-const ARROW_SCROLL_AMOUNT = 100;
+const ARROW_SCROLL_AMOUNT = 10;
 const HOVER_SCROLL_AMOUNT = 5;
 const SCROLLING_INTERVAL = 17;
+const ARROW_REPEAT_INTERVAL = 17;
 
 export const SheetBar = (props: Props): JSX.Element => {
   const { sheetController } = props;
@@ -277,6 +274,29 @@ export const SheetBar = (props: Props): JSX.Element => {
     [sheets]
   );
 
+  const scrollInterval = useRef<number | undefined>();
+  const handleArrowDown = useCallback(
+    (direction: number) => {
+      if (scrollInterval.current) {
+        window.clearInterval(scrollInterval.current);
+      }
+      if (sheets) {
+        sheets.scrollLeft += ARROW_SCROLL_AMOUNT * direction;
+        scrollInterval.current = window.setInterval(
+          () => (sheets.scrollLeft += ARROW_SCROLL_AMOUNT * direction),
+          ARROW_REPEAT_INTERVAL
+        );
+      }
+    },
+    [sheets]
+  );
+  const handleArrowUp = useCallback(() => {
+    if (scrollInterval.current) {
+      window.clearInterval(scrollInterval.current);
+      scrollInterval.current = undefined;
+    }
+  }, []);
+
   const handlePointerUp = useCallback(() => {
     if (down.current) {
       if (scrolling.current) {
@@ -304,32 +324,9 @@ export const SheetBar = (props: Props): JSX.Element => {
   }, [handlePointerMove, handlePointerUp]);
 
   return (
-    <div
-      className="sheet-tabs"
-      style={{
-        height: '2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '0.25rem',
-        width: '100%',
-        background: '#eeeeee',
-        fontSize: '0.7rem',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          width: '100%',
-          overflow: 'hidden',
-        }}
-      >
+    <div className="sheet-bar">
+      <div className="sheet-bar-add">
         <ButtonUnstyled
-          style={{
-            border: 'none',
-            padding: '0 1rem',
-            cursor: 'pointer',
-          }}
           onClick={() => {
             sheetController.addSheet();
             setActiveSheet(sheetController.current);
@@ -338,13 +335,8 @@ export const SheetBar = (props: Props): JSX.Element => {
           +
         </ButtonUnstyled>
         <div
+          className="sheet-bar-sheets"
           ref={sheetsRef}
-          style={{
-            display: 'flex',
-            flexShrink: '1',
-            width: '100%',
-            overflow: 'hidden',
-          }}
           onWheel={(e) => {
             if (!sheets) return;
             if (e.deltaX) {
@@ -363,34 +355,20 @@ export const SheetBar = (props: Props): JSX.Element => {
           ))}
         </div>
       </div>
-      <div style={{ display: 'flex', height: '100%', alignItems: 'center' }}>
+      <div className="sheet-bar-arrows">
         <ButtonUnstyled
+          className="sheet-bar-arrow"
           ref={leftRef}
-          onClick={() => {
-            if (sheets) {
-              sheets.scrollLeft -= ARROW_SCROLL_AMOUNT;
-            }
-          }}
-          style={{
-            border: 'none',
-            display: 'flex',
-            justifyContent: 'center',
-          }}
+          onPointerDown={() => handleArrowDown(-1)}
+          onPointerUp={handleArrowUp}
         >
           <ChevronLeft />
         </ButtonUnstyled>
         <ButtonUnstyled
+          className="sheet-bar-arrow"
           ref={rightRef}
-          onClick={() => {
-            if (sheets) {
-              sheets.scrollLeft += ARROW_SCROLL_AMOUNT;
-            }
-          }}
-          style={{
-            border: 'none',
-            display: 'flex',
-            justifyContent: 'center',
-          }}
+          onPointerDown={() => handleArrowDown(1)}
+          onPointerUp={handleArrowUp}
         >
           <ChevronRight />
         </ButtonUnstyled>
