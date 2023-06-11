@@ -229,7 +229,7 @@ export class PixiApp {
     this.quadrants.visible = false;
     this.boxCells.visible = false;
     this.cells.changeVisibility(true);
-    this.cells.dirty = true;
+    // this.cells.dirty = true;
     return this.viewportContents;
   }
 
@@ -241,7 +241,7 @@ export class PixiApp {
     this.boxCells.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
     this.cells.changeVisibility(!this.cacheIsVisible);
-    if (!this.cacheIsVisible) this.cells.dirty = true;
+    // if (!this.cacheIsVisible) this.cells.dirty = true;
   }
 
   // helper for playwright
