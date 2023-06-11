@@ -1,11 +1,12 @@
 import './SheetBar.css';
 
 import { SheetController } from '../../../grid/controller/sheetController';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { SheetBarTab } from './SheetBarTab';
 import { ButtonUnstyled } from '@mui/material';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
 
 interface Props {
   sheetController: SheetController;
@@ -313,7 +314,7 @@ export const SheetBar = (props: Props): JSX.Element => {
       tab.style.zIndex = '';
       tab.style.transform = '';
       if (down.current.actualOrder !== down.current.original) {
-        sheetController.reorderSheet(down.current.id, down.current.actualOrder / 2);
+        sheetController.reorderSheet({ id: down.current.id, order: down.current.actualOrder / 2 });
       }
       down.current = undefined;
     }
@@ -327,6 +328,12 @@ export const SheetBar = (props: Props): JSX.Element => {
       window.removeEventListener('pointerup', handlePointerUp);
     };
   }, [handlePointerMove, handlePointerUp]);
+
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; sheetId: string } | undefined>();
+  const handleContextEvent = useCallback((event: MouseEvent, sheet: Sheet) => {
+    event.preventDefault();
+    setContextMenu({ x: event.clientX, y: event.clientY, sheetId: sheet.id });
+  }, []);
 
   return (
     <div className="sheet-bar">
@@ -353,6 +360,7 @@ export const SheetBar = (props: Props): JSX.Element => {
             <SheetBarTab
               key={sheet.id}
               onPointerDown={handlePointerDown}
+              onContextMenu={handleContextEvent}
               active={activeSheet === sheet.id}
               sheet={sheet}
               sheetController={sheetController}
@@ -378,6 +386,11 @@ export const SheetBar = (props: Props): JSX.Element => {
           <ChevronRight />
         </ButtonUnstyled>
       </div>
+      <SheetBarTabContextMenu
+        sheetController={sheetController}
+        contextMenu={contextMenu}
+        handleClose={() => setContextMenu(undefined)}
+      />
     </div>
   );
 };

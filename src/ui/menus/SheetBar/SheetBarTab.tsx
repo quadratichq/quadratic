@@ -1,6 +1,6 @@
 import './SheetBarTab.css';
 
-import { PointerEvent, useCallback, useState } from 'react';
+import { MouseEvent, PointerEvent, useCallback, useState } from 'react';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
@@ -11,10 +11,11 @@ interface Props {
   sheetController: SheetController;
   active: boolean;
   onPointerDown: (options: { event: PointerEvent<HTMLDivElement>; sheet: Sheet }) => void;
+  onContextMenu: (event: MouseEvent, sheet: Sheet) => void;
 }
 
 export const SheetBarTab = (props: Props): JSX.Element => {
-  const { sheet, sheetController, active, onPointerDown } = props;
+  const { sheet, sheetController, active, onPointerDown, onContextMenu } = props;
 
   const localFiles = useLocalFiles();
   const [isRenaming, setIsRenaming] = useState(false);
@@ -80,6 +81,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
       }}
       onPointerDown={(event) => onPointerDown({ event, sheet })}
       onDoubleClick={() => setIsRenaming(true)}
+      onContextMenu={(e) => onContextMenu(e, sheet)}
     >
       {sheet.name}
     </div>

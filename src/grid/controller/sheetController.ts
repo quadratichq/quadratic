@@ -80,10 +80,14 @@ export class SheetController {
     });
   }
 
-  reorderSheet(id: string, order: number) {
-    const sheet = this.sheets.find((sheet) => sheet.id === id);
+  reorderSheet(options: { id: string; order?: number; delta?: number }) {
+    const sheet = this.sheets.find((sheet) => sheet.id === options.id);
     if (sheet) {
-      sheet.order = order;
+      if (options.order !== undefined) {
+        sheet.order = options.order;
+      } else if (options.delta !== undefined) {
+        sheet.order += options.delta;
+      }
       this.cleanUpOrdering();
       if (this.saveLocalFiles) this.saveLocalFiles();
     } else {
@@ -304,5 +308,19 @@ export class SheetController {
       });
     });
     console.log(print_string);
+  }
+
+  getFirstSheet(): Sheet {
+    this.sheets.sort((a, b) => a.order - b.order);
+    return this.sheets[0];
+  }
+
+  getLastSheet(): Sheet {
+    this.sheets.sort((a, b) => a.order - b.order);
+    return this.sheets[this.sheets.length - 1];
+  }
+
+  changeSheetOrder(sheetId: string, delta: number): void {
+    this.reorderSheet({ id: sheetId, delta: delta * 1.5 });
   }
 }
