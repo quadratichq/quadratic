@@ -266,6 +266,7 @@ export class PixiApp {
     this.cells.dirty = true;
     this.quadrants.changeSheet();
     this.boxCells.reset();
+    window.dispatchEvent(new CustomEvent('sheet-change'));
   }
 
   rebuild = (): void => {

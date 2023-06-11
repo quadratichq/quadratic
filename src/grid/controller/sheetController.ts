@@ -37,8 +37,10 @@ export class SheetController {
     return this._current;
   }
   set current(value: string) {
-    this._current = value;
-    this.app?.changeSheet();
+    if (value !== this._current) {
+      this._current = value;
+      this.app?.changeSheet();
+    }
   }
 
   loadSheets(sheets: SheetSchema[]): void {
@@ -53,6 +55,9 @@ export class SheetController {
     }
     // need to set internal value to avoid set current call
     this._current = this.sheets[0].id;
+
+    // needed to ensure UI properly updates
+    window.dispatchEvent(new CustomEvent('sheet-change'));
   }
 
   export(): SheetSchema[] {

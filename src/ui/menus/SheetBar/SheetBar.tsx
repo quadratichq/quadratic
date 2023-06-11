@@ -21,6 +21,11 @@ export const SheetBar = (props: Props): JSX.Element => {
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheetController.current);
+  useEffect(() => {
+    const updateSheet = () => setActiveSheet(sheetController.current);
+    window.addEventListener('sheet-change', updateSheet);
+    return () => window.removeEventListener('sheet-change', updateSheet);
+  }, [sheetController]);
 
   // handle disabling left arrow and right arrow
   const [sheets, setSheets] = useState<HTMLDivElement | undefined>();
