@@ -7,6 +7,7 @@ import { ButtonUnstyled } from '@mui/material';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
+import { focusGrid } from '../../../helpers/focusGrid';
 
 interface Props {
   sheetController: SheetController;
@@ -154,6 +155,7 @@ export const SheetBar = (props: Props): JSX.Element => {
         tab.style.boxShadow = '0.25rem -0.25rem 0.5rem rgba(0,0,0,0.25)';
         tab.style.zIndex = '2';
       }
+      focusGrid();
       event.preventDefault();
     },
     [sheetController, sheets]
@@ -335,6 +337,14 @@ export const SheetBar = (props: Props): JSX.Element => {
     setContextMenu({ x: event.clientX, y: event.clientY, sheetId: sheet.id });
   }, []);
 
+  const [forceRename, setForceRename] = useState<string | undefined>();
+  const handleRename = useCallback(() => {
+    if (!contextMenu || !sheets) return;
+    setForceRename(contextMenu.sheetId);
+    setContextMenu(undefined);
+  }, [contextMenu, sheets]);
+  const clearRename = useCallback(() => setForceRename(undefined), []);
+
   return (
     <div className="sheet-bar">
       <div className="sheet-bar-add">
@@ -364,6 +374,8 @@ export const SheetBar = (props: Props): JSX.Element => {
               active={activeSheet === sheet.id}
               sheet={sheet}
               sheetController={sheetController}
+              forceRename={forceRename === sheet.id}
+              clearRename={clearRename}
             />
           ))}
         </div>
@@ -390,6 +402,7 @@ export const SheetBar = (props: Props): JSX.Element => {
         sheetController={sheetController}
         contextMenu={contextMenu}
         handleClose={() => setContextMenu(undefined)}
+        handleRename={handleRename}
       />
     </div>
   );

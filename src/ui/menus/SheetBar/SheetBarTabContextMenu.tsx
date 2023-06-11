@@ -4,11 +4,12 @@ import { SheetController } from '../../../grid/controller/sheetController';
 interface Props {
   sheetController: SheetController;
   contextMenu?: { x: number; y: number; sheetId: string };
+  handleRename: () => void;
   handleClose: () => void;
 }
 
 export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
-  const { sheetController, contextMenu, handleClose } = props;
+  const { sheetController, contextMenu, handleClose, handleRename } = props;
 
   return (
     <Menu
@@ -17,8 +18,11 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
       anchorReference="anchorPosition"
       anchorPosition={contextMenu ? { top: contextMenu.y, left: contextMenu.x } : undefined}
     >
-      <MenuItem onClick={handleClose}>Copy</MenuItem>
-      <MenuItem onClick={handleClose}>Print</MenuItem>
+      <MenuItem onClick={handleRename}>
+        <b>Rename</b>
+      </MenuItem>
+      {/* <MenuItem onClick={handleClose}>Duplicate</MenuItem>
+      <MenuItem onClick={handleClose}>Delete</MenuItem> */}
       <MenuItem divider />
       <MenuItem
         disabled={sheetController.getFirstSheet().id === contextMenu?.sheetId}

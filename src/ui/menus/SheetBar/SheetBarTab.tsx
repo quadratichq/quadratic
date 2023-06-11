@@ -1,6 +1,6 @@
 import './SheetBarTab.css';
 
-import { MouseEvent, PointerEvent, useCallback, useState } from 'react';
+import { MouseEvent, PointerEvent, useCallback, useEffect, useState } from 'react';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 import { SheetController } from '../../../grid/controller/sheetController';
@@ -12,13 +12,20 @@ interface Props {
   active: boolean;
   onPointerDown: (options: { event: PointerEvent<HTMLDivElement>; sheet: Sheet }) => void;
   onContextMenu: (event: MouseEvent, sheet: Sheet) => void;
+  forceRename: boolean;
+  clearRename: () => void;
 }
 
 export const SheetBarTab = (props: Props): JSX.Element => {
-  const { sheet, sheetController, active, onPointerDown, onContextMenu } = props;
+  const { sheet, sheetController, active, onPointerDown, onContextMenu, forceRename, clearRename } = props;
 
   const localFiles = useLocalFiles();
   const [isRenaming, setIsRenaming] = useState(false);
+  useEffect(() => {
+    if (forceRename) {
+      setIsRenaming(true);
+    }
+  }, [forceRename]);
 
   const inputRef = useCallback(
     (node: HTMLInputElement) => {
@@ -64,6 +71,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
             sheetController.sheet.rename(input.value);
             localFiles.save();
           }
+          clearRename();
           focusGrid();
         }}
       />
