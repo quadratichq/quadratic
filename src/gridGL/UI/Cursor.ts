@@ -136,7 +136,6 @@ export class Cursor extends Graphics {
   private drawCodeCursor(): void {
     const { editorInteractionState } = this.app.settings;
     if (!editorInteractionState.showCodeEditor) return;
-    this.drawEditorHighlightedCells(editorInteractionState.highlightedCells);
     const cell = editorInteractionState.selectedCell;
     const { x, y, width, height } = this.app.sheet.gridOffsets.getCell(cell.x, cell.y);
     const color =
@@ -156,17 +155,23 @@ export class Cursor extends Graphics {
     this.drawRect(x, y, width, height);
   }
 
-  private drawEditorHighlightedCells(highlightedCells: Set<string>): void {
+  private drawEditorHighlightedCells(): void {
+    const { highlightedCells, selectedCell } = this.app.settings.editorHighlightedCellsState;
     if (highlightedCells.size === 0) return;
 
     let colorIndex = 0;
-    for (const formulaNotation of highlightedCells) {
+    for (const [formulaNotation] of highlightedCells.entries()) {
       if (formulaNotation.includes(':')) {
         const cursorCells = parseMulticursorFormulaNotation(formulaNotation, this.app.sheet.gridOffsets);
         if (!cursorCells) continue;
         const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % 10]);
         colorIndex++;
-        this.drawDashedRectangle(colorNumber, cursorCells.startCell, cursorCells.endCell);
+        this.drawDashedRectangle(
+          colorNumber,
+          formulaNotation === selectedCell,
+          cursorCells.startCell,
+          cursorCells.endCell
+        );
         continue;
       }
 
@@ -174,11 +179,11 @@ export class Cursor extends Graphics {
       if (!simpleCellMatch) continue;
       const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % 10]);
       colorIndex++;
-      this.drawDashedRectangle(colorNumber, simpleCellMatch);
+      this.drawDashedRectangle(colorNumber, formulaNotation === selectedCell, simpleCellMatch);
     }
   }
 
-  private drawDashedRectangle(color: number, startCell: CursorCell, endCell?: CursorCell) {
+  private drawDashedRectangle(color: number, isSelected: boolean, startCell: CursorCell, endCell?: CursorCell) {
     const minX = Math.min(startCell.x, endCell?.x ?? Infinity);
     const minY = Math.min(startCell.y, endCell?.y ?? Infinity);
     const maxX = Math.max(startCell.width + startCell.x, endCell ? endCell.x + endCell.width : -Infinity);
@@ -190,8 +195,19 @@ export class Cursor extends Graphics {
       [minX, maxY],
       [minX, minY],
     ];
-    this.moveTo(minX, minY);
 
+    // have to fill a rect because setting multiple line styles makes it unable to be filled
+    if (isSelected) {
+      this.lineStyle({
+        alignment: 0,
+      });
+      this.moveTo(minX, minY);
+      this.beginFill(color, FILL_ALPHA);
+      this.drawRect(minX, minY, maxX - minX, maxY - minY);
+      this.endFill();
+    }
+
+    this.moveTo(minX, minY);
     for (let i = 0; i < path.length; i++) {
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,
@@ -211,6 +227,7 @@ export class Cursor extends Graphics {
       this.drawMultiCursor();
       this.drawCodeCursor();
       this.drawCursorIndicator();
+      this.drawEditorHighlightedCells();
     }
   }
 }
