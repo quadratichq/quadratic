@@ -1,5 +1,9 @@
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { GridInteractionState, gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
+import {
+  EditorHighlightedCellsState,
+  editorHighlightedCellsStateDefault,
+} from '../../atoms/editorHighlightedCellsStateAtom';
 import { defaultGridSettings, GridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { PixiApp } from './PixiApp';
 
@@ -12,6 +16,8 @@ export class PixiAppSettings {
   setInteractionState?: (value: GridInteractionState) => void;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: (value: EditorInteractionState) => void;
+  editorHighlightedCellsState = editorHighlightedCellsStateDefault;
+  setEditorHighlightedCellsState?: (value: EditorHighlightedCellsState) => void;
 
   constructor(app: PixiApp) {
     this.app = app;
@@ -65,6 +71,15 @@ export class PixiAppSettings {
     this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
     this.app.cells.dirty = true;
+  }
+
+  updateEditorHighlightedCellsState(
+    editorHighlightedCellsState: EditorHighlightedCellsState,
+    setEditorHighlightedCellsState: (value: EditorHighlightedCellsState) => void
+  ): void {
+    this.editorHighlightedCellsState = editorHighlightedCellsState;
+    this.setEditorHighlightedCellsState = setEditorHighlightedCellsState;
+    this.app.cursor.dirty = true;
   }
 
   get showGridLines(): boolean {
