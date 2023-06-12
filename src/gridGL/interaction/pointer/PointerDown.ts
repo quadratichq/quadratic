@@ -33,7 +33,6 @@ export class PointerDown {
     if (IS_READONLY_MODE) return;
     if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
-
     // note: directly call this.app.settings instead of locally defining it here; otherwise it dereferences this
 
     // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
