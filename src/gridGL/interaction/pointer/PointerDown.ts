@@ -45,8 +45,6 @@ export class PointerDown {
       return;
     }
 
-    const { settings, cursor } = this.app;
-    const { interactionState, setInteractionState } = settings;
     const { gridOffsets } = this.sheet;
 
     this.positionRaw = world;
