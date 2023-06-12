@@ -31,6 +31,11 @@ import { ResizeControl } from './ResizeControl';
 import mixpanel from 'mixpanel-browser';
 import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
 import { useEditorCellHighlights } from '../../../hooks/useEditorCellHighlights';
+import { useEditorOnSelectionChange } from '../../../hooks/useEditorOnSelectionChange';
+import {
+  editorHighlightedCellsStateAtom,
+  editorHighlightedCellsStateDefault,
+} from '../../../atoms/editorHighlightedCellsStateAtom';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
@@ -57,6 +62,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   // Selected Cell State
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>(undefined);
+
+  // HighlightedCells State hook
+  const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
 
   // Monitor selected cell for changes
   const x = editorInteractionState.selectedCell.x;
@@ -118,7 +126,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
   }, [selectedCell]);
 
   useAlertOnUnsavedChanges(hasUnsavedChanges);
-  useEditorCellHighlights(isValidRef, editorRef, monacoRef, setInteractionState);
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef);
+  useEditorOnSelectionChange(isValidRef, editorRef);
 
   const closeEditor = ({ skipUnsavedChangesCheck } = { skipUnsavedChangesCheck: false }) => {
     // If there are unsaved changes and we haven't been told to explicitly skip
@@ -132,8 +141,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
     setShowSaveChangesAlert(false);
     setInteractionState({
       ...editorInteractionState,
-      ...{ showCodeEditor: false, highlightedCells: new Set() },
+      ...{ showCodeEditor: false },
     });
+    setEditorHighlightedCells(editorHighlightedCellsStateDefault);
     setEditorContent('');
     setSelectedCell(undefined);
     setEvalResult(undefined);
