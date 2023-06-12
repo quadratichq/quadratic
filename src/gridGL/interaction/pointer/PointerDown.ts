@@ -18,6 +18,9 @@ export class PointerDown {
   private pointerMoved = false;
   private doubleClickTimeout?: number;
 
+  // flag that ensures that if pointerUp triggers during setTimeout, pointerUp is still called (see below)
+  private afterShowInput?: boolean;
+
   constructor(app: PixiApp) {
     this.app = app;
   }
@@ -30,7 +33,21 @@ export class PointerDown {
     if (IS_READONLY_MODE) return;
     if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
+
     // note: directly call this.app.settings instead of locally defining it here; otherwise it dereferences this
+
+    // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
+    if (this.app.settings.interactionState.showInput) {
+      this.afterShowInput = true;
+      setTimeout(() => {
+        this.pointerDown(world, event);
+        this.afterShowInput = false;
+      }, 0);
+      return;
+    }
+
+    const { settings, cursor } = this.app;
+    const { interactionState, setInteractionState } = settings;
     const { gridOffsets } = this.sheet;
 
     this.positionRaw = world;
@@ -233,6 +250,11 @@ export class PointerDown {
   }
 
   pointerUp(): void {
+    if (this.afterShowInput) {
+      window.setTimeout(() => this.pointerUp(), 0);
+      this.afterShowInput = false;
+      return;
+    }
     if (this.active) {
       if (!this.pointerMoved) {
         this.doubleClickTimeout = window.setTimeout(() => (this.doubleClickTimeout = undefined), DOUBLE_CLICK_TIME);
