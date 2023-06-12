@@ -19,7 +19,7 @@ import { HEADING_SIZE } from '../../constants/gridConstants';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../constants/app';
-import { Wheel } from '../pixiOverride/Wheel';
+import { Wheel, ZOOM_KEY, HORIZONTAL_SCROLL_KEY } from '../pixiOverride/Wheel';
 import { BoxCells } from '../UI/boxCells';
 
 export class PixiApp {
@@ -95,7 +95,7 @@ export class PixiApp {
         trackpadPinch: true,
         wheelZoom: true,
         percent: 1.5,
-        keyToPress: ['ControlKey', 'ControlLeft', 'ControlRight', 'MetaKey', 'MetaLeft', 'MetaRight'],
+        keyToPress: [...ZOOM_KEY, ...HORIZONTAL_SCROLL_KEY],
       })
     );
 
