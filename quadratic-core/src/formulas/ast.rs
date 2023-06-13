@@ -93,13 +93,16 @@ impl Formula {
     /// Evaluates a formula, blocking on async calls.
     ///
     /// Use this when the grid proxy isn't actually doing anything async.
-    pub fn eval_blocking(&self, grid: &mut dyn GridProxy, pos: Pos) -> FormulaResult {
+    pub fn eval_blocking(&self, grid: &mut dyn GridProxy, pos: Pos) -> FormulaResult<Value> {
         pollster::block_on(self.eval(grid, pos))
     }
 
     /// Evaluates a formula.
-    pub async fn eval(&self, grid: &mut dyn GridProxy, pos: Pos) -> FormulaResult {
-        self.ast.eval(&mut Ctx { grid, pos }).await
+    pub async fn eval(&self, grid: &mut dyn GridProxy, pos: Pos) -> FormulaResult<Value> {
+        self.ast
+            .eval(&mut Ctx { grid, pos })
+            .await?
+            .into_non_error_value()
     }
 }
 

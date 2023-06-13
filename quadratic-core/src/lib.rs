@@ -78,7 +78,7 @@ pub async fn eval_formula(
         Ok(formula_output) => {
             let mut output_value = None;
             let mut array_output = None;
-            match formula_output.inner {
+            match formula_output {
                 Value::Array(a) => {
                     array_output = Some(
                         a.rows()
