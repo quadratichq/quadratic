@@ -23,14 +23,11 @@ pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
 pub(crate) fn eval_to_err(grid: &mut dyn GridProxy, s: &str) -> FormulaError {
     match eval(grid, s) {
         Err(e) => e,
-        Ok(Value::Single(BasicValue::Err(e))) => *e,
         Ok(v) => panic!("expected error; got value {v}"),
     }
 }
 pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
-    parse_formula(s, Pos::ORIGIN)?
-        .eval_blocking(grid, Pos::ORIGIN)
-        .map(|value| value.inner)
+    parse_formula(s, Pos::ORIGIN)?.eval_blocking(grid, Pos::ORIGIN)
 }
 
 /// `GridProxy` implementation that just panics whenever a cell is accessed.
@@ -235,7 +232,6 @@ fn test_hyphen_after_cell_ref() {
     assert_eq!("25", eval_to_string(&mut g, "Z1-5"));
 }
 
-#[test]
 fn test_find_cell_references() {
     use CellRefCoord::{Absolute, Relative};
 
