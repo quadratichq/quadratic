@@ -11,7 +11,7 @@ const INDICATOR_SIZE = 8;
 const INDICATOR_PADDING = 1;
 const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 
-type CursorCell = { x: number; y: number; width: number; height: number };
+export type CursorCell = { x: number; y: number; width: number; height: number };
 const CURSOR_CELL_DEFAULT_VALUE: CursorCell = { x: 0, y: 0, width: 0, height: 0 };
 // adds a bit of padding when editing a cell w/CellInput
 const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
@@ -181,13 +181,18 @@ export class Cursor extends Graphics {
   }
 
   private drawEditorHighlightedCells(): void {
-    const { highlightedCells, selectedCell } = this.app.settings.editorHighlightedCellsState;
+    const { editorHighlightedCellsState, editorInteractionState } = this.app.settings;
+    const { highlightedCells, selectedCell } = editorHighlightedCellsState;
     if (highlightedCells.size === 0) return;
 
     let colorIndex = 0;
     for (const [formulaNotation] of highlightedCells.entries()) {
       if (formulaNotation.includes(':')) {
-        const cursorCells = parseMulticursorFormulaNotation(formulaNotation, this.app.sheet.gridOffsets);
+        const cursorCells = parseMulticursorFormulaNotation(
+          formulaNotation,
+          this.app.sheet.gridOffsets,
+          editorInteractionState.selectedCell
+        );
         if (!cursorCells) continue;
         const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % 10]);
         colorIndex++;
@@ -200,8 +205,13 @@ export class Cursor extends Graphics {
         continue;
       }
 
-      const simpleCellMatch = getCellFromFormulaNotation(formulaNotation, this.app.sheet.gridOffsets);
+      const simpleCellMatch = getCellFromFormulaNotation(
+        formulaNotation,
+        this.app.sheet.gridOffsets,
+        editorInteractionState.selectedCell
+      );
       if (!simpleCellMatch) continue;
+
       const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % 10]);
       colorIndex++;
       this.drawDashedRectangle(colorNumber, formulaNotation === selectedCell, simpleCellMatch);
