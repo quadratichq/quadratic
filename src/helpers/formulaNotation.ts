@@ -13,7 +13,7 @@ export function getColumnFromFormulaNotation(formulaNotation: string) {
 }
 
 export function getCellFromFormulaNotation(formulaNotation: string, gridOffsets: GridOffsets) {
-  const match = formulaNotation.match(/(\$?n?[A-Z]+\$?)(n?\d+)/);
+  const match = formulaNotation.match(/\$?(n?[A-Z]+)\$?(n?\d+)/);
   if (!match) return false;
   const columnNumber = getColumnFromFormulaNotation(match[1]);
   const { formulaNotation: rowFormulaNotation, isNegative } = parseNegative(match[2]);
