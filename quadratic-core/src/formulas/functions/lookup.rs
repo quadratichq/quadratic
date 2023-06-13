@@ -9,14 +9,16 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 };
 
 fn get_functions() -> Vec<FormulaFunction> {
-    vec![FormulaFunction {
-        name: "INDIRECT",
-        arg_completion: "${1:cellref_string}",
-        usages: &["cellref_string"],
-        examples: &["INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)"],
-        doc: "Returns the value of the cell at a given location.",
-        eval: Box::new(|ctx, args| ctx.array_mapped_indirect(args).boxed_local()),
-    }]
+    vec![formula_fn!(
+        /// Returns the value of the cell at a given location.
+        #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
+        #[async_zip_map]
+        fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
+            let pos = CellRef::parse_a1(&cellref_string.inner, ctx.pos)
+                .ok_or(FormulaErrorMsg::BadCellReference.with_span(cellref_string.span))?;
+            ctx.get_cell(pos, cellref_string.span).await?.inner
+        }
+    )]
 }
 
 #[cfg(test)]

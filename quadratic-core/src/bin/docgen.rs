@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 const OUT_FILENAME: &str = "formula_docs_output.md";
 
 fn main() {
@@ -17,7 +15,7 @@ fn main() {
         output.push_str("| **Function** | **Description** |\n");
         output.push_str("| ------------ | --------------- |\n");
         for func in (category.get_functions)() {
-            let usages = func.usages_strings().map(|s| format!("`{s}`")).join("; ");
+            let usages = format!("`{}`", func.usages_string());
             let doc = func.doc.replace('\n', " ");
             output.push_str(&format!("| {usages} | {doc} |\n"));
         }
