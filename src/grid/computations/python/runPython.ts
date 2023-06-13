@@ -1,10 +1,12 @@
+import { ArrayOutput } from '../../../schemas';
+
 export interface runPythonReturnType {
   cells_accessed: [number, number][];
   success: boolean;
   input_python_stack_trace: string;
   input_python_std_out: string;
   output_value: string | null;
-  array_output: (string | number | boolean)[][];
+  array_output: ArrayOutput;
   formatted_code: string;
 }
 

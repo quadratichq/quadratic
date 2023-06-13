@@ -52,7 +52,7 @@ export class Cells extends Container {
 
     this.cellsArray = this.addChild(new CellsArray(app));
     this.cellsBorder = this.addChild(new CellsBorder(app));
-    this.cellLabels = this.addChild(new CellsLabels());
+    this.cellLabels = this.addChild(new CellsLabels(app));
     this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
@@ -68,18 +68,18 @@ export class Cells extends Container {
     const changes: Coordinate[] = [];
 
     labels.forEach((label) => {
-      if (!label.location) return;
+      if (!label.data.location) return;
       if (!label.overflowLeft && !label.overflowRight) {
-        render_dependency.empty(label.location);
+        render_dependency.empty(label.data.location);
       } else {
         const dependents: Coordinate[] = [];
 
         // find cells that overflow to the right
         if (label.overflowRight) {
-          let column = label.location.x + 1;
+          let column = label.data.location.x + 1;
           let x = 0;
           do {
-            dependents.push({ x: column, y: label.location.y });
+            dependents.push({ x: column, y: label.data.location.y });
             x += gridOffsets.getColumnWidth(column);
             column++;
           } while (x < label.overflowRight);
@@ -87,15 +87,15 @@ export class Cells extends Container {
 
         // find cells that overflow to the left
         if (label.overflowLeft) {
-          let column = label.location.x - 1;
+          let column = label.data.location.x - 1;
           let x = 0;
           do {
-            dependents.push({ x: column, y: label.location.y });
+            dependents.push({ x: column, y: label.data.location.y });
             x -= gridOffsets.getColumnWidth(column);
             column--;
-          } while (x > label.overflowLeft);
+          } while (x > -label.overflowLeft);
         }
-        const dependencies = render_dependency.update(label.location, dependents);
+        const dependencies = render_dependency.update(label.data.location, dependents);
         changes.push(...dependencies);
       }
     });
@@ -141,44 +141,53 @@ export class Cells extends Container {
       const hasContent = entry.cell?.value || entry.format;
 
       // only render if there is cell data or cell formatting
-      if (!isInput && (entry.cell || entry.format)) {
-        this.cellsBackground.draw({ ...entry, x, y, width, height });
-        if (entry.cell) {
-          const error = entry.cell.evaluation_result?.success === false;
+      if (entry.cell || entry.format) {
+        const column = entry.cell ? entry.cell.x : entry.format!.x;
+        const row = entry.cell ? entry.cell.y : entry.format!.y;
+        if (!isInput) {
+          this.cellsBackground.draw({ ...entry, x, y, width, height });
+          let cell_text = '';
+          let error = false;
+          let cell_format: CellFormat | undefined;
+          if (entry.cell) {
+            const error = entry.cell.evaluation_result?.success === false;
 
-          // show cell error icon
-          if (error) {
-            this.cellsMarkers.add(x, y, 'ErrorIcon');
-          }
-
-          // show cell type icons
-          if (this.app.settings.showCellTypeOutlines)
-            if (entry.cell?.type === 'PYTHON') {
-              // show cell type icon
-              this.cellsMarkers.add(x, y, 'CodeIcon', error);
-            } else if (entry.cell?.type === 'FORMULA') {
-              this.cellsMarkers.add(x, y, 'FormulaIcon', error);
-            } else if (entry.cell?.type === 'AI') {
-              this.cellsMarkers.add(x, y, 'AIIcon', error);
+            // show cell error icon
+            if (error) {
+              this.cellsMarkers.add(x, y, 'ErrorIcon');
             }
 
-          // show cell text
-          let cell_text = CellTextFormatter(entry.cell, entry.format);
-          // strip new lines
-          cell_text = cell_text ? cell_text.replace(/\n/g, '') : '';
+            // show cell type icons
+            if (this.app.settings.showCellTypeOutlines)
+              if (entry.cell?.type === 'PYTHON') {
+                // show cell type icon
+                this.cellsMarkers.add(x, y, 'CodeIcon', error);
+              } else if (entry.cell?.type === 'FORMULA') {
+                this.cellsMarkers.add(x, y, 'FormulaIcon', error);
+              } else if (entry.cell?.type === 'AI') {
+                this.cellsMarkers.add(x, y, 'AIIcon', error);
+              }
 
-          let cell_format = entry.format;
-          if (error) {
-            cell_text = '  ERROR';
-            cell_format = { x: entry.cell.x, y: entry.cell.y, textColor: colors.error, italic: true };
+            // show cell text
+            cell_text = CellTextFormatter(entry.cell, entry.format);
+            // strip new lines
+            cell_text = cell_text ? cell_text.replace(/\n/g, '') : '';
+            if (error) {
+              cell_text = '  ERROR';
+              cell_format = { x: column, y: row, textColor: colors.error, italic: true };
+            }
+          }
+          if (entry.format && !error) {
+            cell_format = entry.format;
           }
           this.cellLabels.add({
             x: x + CELL_TEXT_MARGIN_LEFT,
             y: y + CELL_TEXT_MARGIN_TOP,
             text: cell_text,
             isQuadrant,
+            originalText: entry.cell?.value ?? '',
             expectedWidth: width - CELL_TEXT_MARGIN_LEFT * 2,
-            location: isQuadrant ? { x: entry.cell.x, y: entry.cell.y } : undefined,
+            location: { x: column, y: row },
             format: cell_format,
           });
         }
@@ -246,21 +255,24 @@ export class Cells extends Container {
         const width = gridOffsets.getColumnWidth(column);
         const entry = cellRectangle.get(column, row);
 
-        // don't render input (unless ignoreInput === true)
-        const isInput = input && input.column === column && input.row === row;
+        // render each cell only once
+        const key = `${column},${row}`;
+        if (!renderedCells.has(key)) {
+          renderedCells.add(key);
 
-        const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, isInput });
+          // don't render input (unless ignoreInput === true)
+          const isInput = input && input.column === column && input.row === row;
 
-        // track cells with arrays to add visual dependencies
-        if (entry && this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
-          this.trackCellsWithArrays.push({ x: entry.cell.x, y: entry.cell.y });
+          const rendered = this.renderCell({ entry, x, y, width, height, isQuadrant, isInput });
+
+          // track cells with arrays to add visual dependencies
+          if (entry && this.app.settings.showCellTypeOutlines && entry.cell?.array_cells) {
+            this.trackCellsWithArrays.push({ x: entry.cell.x, y: entry.cell.y });
+          }
+
+          content = content ? intersects.rectangleUnion(content, rendered) : rendered;
         }
-
-        content = content ? intersects.rectangleUnion(content, rendered) : rendered;
         x += width;
-
-        // ensure we only render each cell once
-        renderedCells.add(`${column},${row}`);
       }
       x = xStart;
       y += height;
@@ -276,15 +288,16 @@ export class Cells extends Container {
     if (dependentCells.length) {
       dependentCells.forEach((coordinate) => {
         const key = `${coordinate.x},${coordinate.y}`;
-        if (renderedCells.has(key)) return;
-        renderedCells.add(key);
-        const entry = grid.get(coordinate.x, coordinate.y);
-        if (entry) {
-          const position = gridOffsets.getCell(coordinate.x, coordinate.y);
-          const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
-          const rendered = this.renderCell({ entry, ...position, isInput, isQuadrant });
-          if (rendered) {
-            content = content ? intersects.rectangleUnion(content, rendered) : rendered;
+        if (!renderedCells.has(key)) {
+          renderedCells.add(key);
+          const entry = grid.get(coordinate.x, coordinate.y);
+          if (entry) {
+            const position = gridOffsets.getCell(coordinate.x, coordinate.y);
+            const isInput = input && input.column === coordinate.x && input.row === coordinate.y;
+            const rendered = this.renderCell({ entry, ...position, isInput, isQuadrant });
+            if (rendered) {
+              content = content ? intersects.rectangleUnion(content, rendered) : rendered;
+            }
           }
         }
       });
@@ -424,5 +437,14 @@ export class Cells extends Container {
     this.cellsBorder.debugShowCachedCounts();
     this.cellsMarkers.debugShowCachedCounts();
     this.cellsBackground.debugShowCachedCounts();
+  }
+
+  getCellsContentWidth(): { location: Coordinate; textWidth: number }[] {
+    return this.cellLabels.get().map((cellLabel) => {
+      return {
+        location: cellLabel.data.location,
+        textWidth: cellLabel.textWidth,
+      };
+    });
   }
 }

@@ -409,26 +409,16 @@ export class GridHeadings extends Container {
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
-          if (line.column < 0) {
-            const start = gridOffsets.getColumnPlacement(line.column);
-            return { start: start.x, column: line.column, width: start.width };
-          } else {
-            const start = gridOffsets.getColumnPlacement(line.column);
-            return { start: start.x, column: line.column, width: line.width };
-          }
+          const start = gridOffsets.getColumnPlacement(line.column);
+          return { start: start.x, column: line.column, width: line.width };
         }
       }
     }
     if (intersects.rectanglePoint(this.rowRect, world)) {
       for (const line of this.gridLinesRows) {
         if (Math.abs(world.y - line.y) < tolerance) {
-          if (line.row < 0) {
-            const start = gridOffsets.getRowPlacement(line.row + 1);
-            return { start: start.y, row: line.row + 1, height: start.height };
-          } else {
-            const start = gridOffsets.getRowPlacement(line.row);
-            return { start: start.y, row: line.row, height: line.height };
-          }
+          const start = gridOffsets.getRowPlacement(line.row);
+          return { start: start.y, row: line.row, height: line.height };
         }
       }
     }
