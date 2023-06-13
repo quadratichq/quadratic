@@ -60,6 +60,8 @@ pub(super) fn arg_completion_string(args: &[Param]) -> &'static str {
                 ret.push_str(&format!("${{{i}:, "));
                 i += 1;
                 depth += 1;
+            } else {
+                ret.push_str(", ");
             }
         }
         if arg.is_required() {
