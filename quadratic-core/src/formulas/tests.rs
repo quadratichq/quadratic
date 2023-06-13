@@ -23,14 +23,11 @@ pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
 pub(crate) fn eval_to_err(grid: &mut dyn GridProxy, s: &str) -> FormulaError {
     match eval(grid, s) {
         Err(e) => e,
-        Ok(Value::Single(BasicValue::Err(e))) => *e,
         Ok(v) => panic!("expected error; got value {v}"),
     }
 }
 pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
-    parse_formula(s, Pos::ORIGIN)?
-        .eval_blocking(grid, Pos::ORIGIN)
-        .map(|value| value.inner)
+    parse_formula(s, Pos::ORIGIN)?.eval_blocking(grid, Pos::ORIGIN)
 }
 
 /// `GridProxy` implementation that just panics whenever a cell is accessed.
@@ -238,33 +235,21 @@ fn test_hyphen_after_cell_ref() {
 #[test]
 fn test_formula_omit_required_argument() {
     let g = &mut NoGrid;
-    assert_eq!(
-        FormulaErrorMsg::MissingRequiredArgument {
-            func_name: "ATAN2",
-            arg_name: "x"
-        },
-        eval_to_err(g, "ATAN2(,1)").msg,
-    );
-    assert_eq!(
-        FormulaErrorMsg::MissingRequiredArgument {
-            func_name: "ATAN2",
-            arg_name: "y"
-        },
-        eval_to_err(g, "ATAN2(1,)").msg,
-    );
-    assert_eq!(
-        FormulaErrorMsg::MissingRequiredArgument {
-            func_name: "ATAN2",
-            arg_name: "x"
-        },
-        eval_to_err(g, "ATAN2(,)").msg,
-    );
+    assert!(eval_to_string(g, "ATAN2(,1)").starts_with("1.57"));
+    assert_eq!("0", eval_to_string(g, "ATAN2(1,)"));
     assert_eq!(
         FormulaErrorMsg::MissingRequiredArgument {
             func_name: "ATAN2",
             arg_name: "x"
         },
         eval_to_err(g, "ATAN2()").msg,
+    );
+    assert_eq!(
+        FormulaErrorMsg::MissingRequiredArgument {
+            func_name: "ATAN2",
+            arg_name: "y"
+        },
+        eval_to_err(g, "ATAN2(1)").msg,
     );
 }
 
