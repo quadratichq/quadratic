@@ -19,6 +19,14 @@ pub use position::Pos;
 
 pub const QUADRANT_SIZE: u64 = 16;
 
+pub mod limits {
+    /// Maximum integer range allowed.
+    pub const INTEGER_RANGE_LIMIT: f64 = 100_000.0;
+
+    /// Maximum cell range size allowed. Must be strictly less than `u32::MAX`.
+    pub const CELL_RANGE_LIMIT: u32 = 1_000_000;
+}
+
 #[wasm_bindgen]
 extern "C" {
     // Use `js_namespace` here to bind `console.log(..)` instead of just
@@ -37,7 +45,7 @@ pub fn hello() {
 struct JsFormulaResult {
     pub cells_accessed: Vec<[i64; 2]>,
     pub success: bool,
-    pub error_span: Option<[usize; 2]>,
+    pub error_span: Option<[u32; 2]>,
     pub error_msg: Option<String>,
     pub output_value: Option<String>,
     pub array_output: Option<Vec<Vec<String>>>,
@@ -73,12 +81,12 @@ pub async fn eval_formula(
             match formula_output.inner {
                 Value::Array(a) => {
                     array_output = Some(
-                        a.iter()
+                        a.rows()
                             .map(|row| row.iter().map(|cell| cell.to_string()).collect())
                             .collect(),
                     );
                 }
-                non_array_value => output_value = Some(non_array_value.to_string()),
+                Value::Single(non_array_value) => output_value = Some(non_array_value.to_string()),
             };
             JsFormulaResult {
                 cells_accessed,
