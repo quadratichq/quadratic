@@ -88,7 +88,7 @@ impl<'a> Parser<'a> {
             } else {
                 // This is the end of the region; return an empty span at the
                 // end of the region.
-                Span::empty(self.source_str.len())
+                Span::empty(self.source_str.len() as u32)
             }
         } else {
             // This is the beginning of the region; return an empty span at the
@@ -100,7 +100,7 @@ impl<'a> Parser<'a> {
     /// token, returns an empty string.
     pub fn token_str(&self) -> &'a str {
         let Span { start, end } = self.span();
-        &self.source_str[start..end]
+        &self.source_str[start as usize..end as usize]
     }
 
     /// Moves the cursor forward without skipping whitespace/comments and then
