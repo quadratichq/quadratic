@@ -30,3 +30,10 @@ model QFile {
     times_updated Int      @default(1)
     version       String?
 }
+
+model QFeedback {
+    id            Int      @id @default(autoincrement())
+    feedback      String
+    created_date  DateTime @default(now())
+    qUserId       Int
+}

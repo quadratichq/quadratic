@@ -52,7 +52,7 @@ export class Cells extends Container {
 
     this.cellsArray = this.addChild(new CellsArray(app));
     this.cellsBorder = this.addChild(new CellsBorder(app));
-    this.cellLabels = this.addChild(new CellsLabels());
+    this.cellLabels = this.addChild(new CellsLabels(app));
     this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
@@ -141,45 +141,53 @@ export class Cells extends Container {
       const hasContent = entry.cell?.value || entry.format;
 
       // only render if there is cell data or cell formatting
-      if (!isInput && (entry.cell || entry.format)) {
-        this.cellsBackground.draw({ ...entry, x, y, width, height });
-        if (entry.cell) {
-          const error = entry.cell.evaluation_result?.success === false;
+      if (entry.cell || entry.format) {
+        const column = entry.cell ? entry.cell.x : entry.format!.x;
+        const row = entry.cell ? entry.cell.y : entry.format!.y;
+        if (!isInput) {
+          this.cellsBackground.draw({ ...entry, x, y, width, height });
+          let cell_text = '';
+          let error = false;
+          let cell_format: CellFormat | undefined;
+          if (entry.cell) {
+            const error = entry.cell.evaluation_result?.success === false;
 
-          // show cell error icon
-          if (error) {
-            this.cellsMarkers.add(x, y, 'ErrorIcon');
-          }
-
-          // show cell type icons
-          if (this.app.settings.showCellTypeOutlines)
-            if (entry.cell?.type === 'PYTHON') {
-              // show cell type icon
-              this.cellsMarkers.add(x, y, 'CodeIcon', error);
-            } else if (entry.cell?.type === 'FORMULA') {
-              this.cellsMarkers.add(x, y, 'FormulaIcon', error);
-            } else if (entry.cell?.type === 'AI') {
-              this.cellsMarkers.add(x, y, 'AIIcon', error);
+            // show cell error icon
+            if (error) {
+              this.cellsMarkers.add(x, y, 'ErrorIcon');
             }
 
-          // show cell text
-          let cell_text = CellTextFormatter(entry.cell, entry.format);
-          // strip new lines
-          cell_text = cell_text ? cell_text.replace(/\n/g, '') : '';
+            // show cell type icons
+            if (this.app.settings.showCellTypeOutlines)
+              if (entry.cell?.type === 'PYTHON') {
+                // show cell type icon
+                this.cellsMarkers.add(x, y, 'CodeIcon', error);
+              } else if (entry.cell?.type === 'FORMULA') {
+                this.cellsMarkers.add(x, y, 'FormulaIcon', error);
+              } else if (entry.cell?.type === 'AI') {
+                this.cellsMarkers.add(x, y, 'AIIcon', error);
+              }
 
-          let cell_format = entry.format;
-          if (error) {
-            cell_text = '  ERROR';
-            cell_format = { x: entry.cell.x, y: entry.cell.y, textColor: colors.error, italic: true };
+            // show cell text
+            cell_text = CellTextFormatter(entry.cell, entry.format);
+            // strip new lines
+            cell_text = cell_text ? cell_text.replace(/\n/g, '') : '';
+            if (error) {
+              cell_text = '  ERROR';
+              cell_format = { x: column, y: row, textColor: colors.error, italic: true };
+            }
+          }
+          if (entry.format && !error) {
+            cell_format = entry.format;
           }
           this.cellLabels.add({
             x: x + CELL_TEXT_MARGIN_LEFT,
             y: y + CELL_TEXT_MARGIN_TOP,
             text: cell_text,
-            originalText: entry.cell.value,
             isQuadrant,
+            originalText: entry.cell?.value ?? '',
             expectedWidth: width - CELL_TEXT_MARGIN_LEFT * 2,
-            location: { x: entry.cell.x, y: entry.cell.y },
+            location: { x: column, y: row },
             format: cell_format,
           });
         }
@@ -429,5 +437,14 @@ export class Cells extends Container {
     this.cellsBorder.debugShowCachedCounts();
     this.cellsMarkers.debugShowCachedCounts();
     this.cellsBackground.debugShowCachedCounts();
+  }
+
+  getCellsContentWidth(): { location: Coordinate; textWidth: number }[] {
+    return this.cellLabels.get().map((cellLabel) => {
+      return {
+        location: cellLabel.data.location,
+        textWidth: cellLabel.textWidth,
+      };
+    });
   }
 }

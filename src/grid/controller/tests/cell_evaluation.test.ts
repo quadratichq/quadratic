@@ -427,3 +427,65 @@ test('SheetController - test formula dependencies', async () => {
   after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 0);
   expect(after_code_run_cells[0]?.value).toBe('30');
 });
+
+test('SheetController - test empty cell to be `null` in `array_output`', async () => {
+  const sc = new SheetController();
+  GetCellsDBSetSheet(sc.sheet);
+
+  // Ensure that blank cells are `null`, e.g. (2,0) should be `null`
+  // even when programtically getting cells
+  //
+  //    [ 0 ][ 1 ][ 2 ][ 3 ]
+  // [0][foo][bar][   ][baz]
+  //
+  // https://github.com/quadratichq/quadratic/issues/472
+
+  const cell_0_0 = {
+    x: 0,
+    y: 0,
+    value: 'foo',
+    type: 'TEXT',
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  const cell_1_0 = {
+    x: 1,
+    y: 0,
+    value: 'bar',
+    type: 'TEXT',
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  const cell_3_0 = {
+    x: 3,
+    y: 0,
+    value: 'baz',
+    type: 'TEXT',
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  const cell_0_1 = {
+    x: 0,
+    y: 1,
+    value: '',
+    type: 'PYTHON',
+    python_code: 'val=cells((0,0), (3,0))\nval',
+    last_modified: '2023-01-19T19:12:21.745Z',
+  } as Cell;
+
+  await updateCellAndDCells({
+    starting_cells: [cell_0_0, cell_1_0, cell_3_0, cell_0_1],
+    sheetController: sc,
+    pyodide,
+  });
+
+  const result = sc.sheet.grid.getNakedCells(0, 1, 3, 1);
+  expect(result[0]?.value).toBe('foo');
+  // If you stringify this, it will actually be `['foo','bar',null,'baz']` but
+  // jest converts null to undefined so we test for that
+  expect(result[0]?.evaluation_result?.array_output).toStrictEqual([['foo', 'bar', undefined, 'baz']]);
+  expect(result[1]?.value).toBe('bar');
+  expect(result[1]?.type).toBe('COMPUTED');
+  expect(result[2]?.value).toBe('baz');
+  expect(result[2]?.type).toBe('COMPUTED');
+});

@@ -13,6 +13,7 @@ export class CellLabel extends BitmapTextClip {
   overflowLeft?: number;
   lastPosition?: Point;
   data: LabelData;
+
   private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
 
   constructor(data: LabelData) {
@@ -42,7 +43,7 @@ export class CellLabel extends BitmapTextClip {
 
   set text(text: string) {
     text = String(text === null || text === undefined ? '' : text);
-    if (text !== this._text) {
+    if (this._text !== text) {
       this._text = text;
       this.dirty = true;
     }

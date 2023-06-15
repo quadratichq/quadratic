@@ -1,9 +1,4 @@
-use smallvec::smallvec;
-
 use super::*;
-
-/// Maximum integer range allowed.
-const INTEGER_RANGE_LIMIT: f64 = 100_000.0;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: false,
@@ -16,66 +11,85 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
         // Comparison operators
-        FormulaFunction::operator("=", |[a, b]| Ok(Value::Bool(values_eq(&a, &b)))),
-        FormulaFunction::operator("==", |[a, b]| Ok(Value::Bool(values_eq(&a, &b)))),
-        FormulaFunction::operator("<>", |[a, b]| Ok(Value::Bool(!values_eq(&a, &b)))),
-        FormulaFunction::operator("!=", |[a, b]| Ok(Value::Bool(!values_eq(&a, &b)))),
-        FormulaFunction::operator("<", |[a, b]| {
-            Ok(Value::Bool(a.to_number()? < b.to_number()?))
-        }),
-        FormulaFunction::operator(">", |[a, b]| {
-            Ok(Value::Bool(a.to_number()? > b.to_number()?))
-        }),
-        FormulaFunction::operator("<=", |[a, b]| {
-            Ok(Value::Bool(a.to_number()? <= b.to_number()?))
-        }),
-        FormulaFunction::operator(">=", |[a, b]| {
-            Ok(Value::Bool(a.to_number()? >= b.to_number()?))
-        }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "="([a]: _, [b]: _) { a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "=="([a]: _, [b]: _) { a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "<>"([a]: _, [b]: _) { !a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "!="([a]: _, [b]: _) { !a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "<"([a]: _, [b]: _) { a.lt(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn ">"([a]: _, [b]: _) { a.gt(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "<="([a]: _, [b]: _) { a.lte(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn ">="([a]: _, [b]: _) { a.gte(b)? }),
         // Mathematical operators
-        FormulaFunction::variadic_operator(
-            "+",
-            Some(|_ctx, [a]| Ok(Value::Number(a.to_number()?))),
-            Some(|_ctx, [a, b]| Ok(Value::Number(a.to_number()? + b.to_number()?))),
-        ),
-        FormulaFunction::variadic_operator(
-            "-",
-            Some(|_ctx, [a]| Ok(Value::Number(-a.to_number()?))),
-            Some(|_ctx, [a, b]| Ok(Value::Number(a.to_number()? - b.to_number()?))),
-        ),
-        FormulaFunction::operator("*", |[a, b]| {
-            Ok(Value::Number(a.to_number()? * b.to_number()?))
-        }),
-        FormulaFunction::operator("/", |[a, b]| {
-            Ok(Value::Number(a.to_number()? / b.to_number()?))
-        }),
-        FormulaFunction::operator("^", |[a, b]| {
-            Ok(Value::Number(a.to_number()?.powf(b.to_number()?)))
-        }),
-        FormulaFunction::operator("%", |[n]| Ok(Value::Number(n.to_number()? / 100.0))),
-        FormulaFunction::operator("..", |[a, b]| {
-            let span = Span::merge(&a, &b);
-            let a = a.to_integer()?;
-            let b = b.to_integer()?;
-            if (a as f64 - b as f64).abs() > INTEGER_RANGE_LIMIT {
-                return Err(FormulaErrorMsg::ArrayTooBig.with_span(span));
+        formula_fn!(
+            #[operator]
+            #[pure_zip_map]
+            fn "+"([a]: f64, [b]: (Option<f64>)) {
+                a + b.unwrap_or(0.0)
             }
-            Ok(Value::Array(
-                if a < b { a..=b } else { b..=a }
-                    .map(|i| smallvec![Value::Number(i as f64)])
-                    .collect(),
-            ))
-        }),
+        ),
+        formula_fn!(
+            #[operator]
+            #[pure_zip_map]
+            fn "-"([a]: f64, [b]: (Option<f64>)) {
+                match b {
+                    Some(b) => a - b,
+                    None => -a
+                }
+            }
+        ),
+        formula_fn!(
+            #[operator]
+            #[pure_zip_map]
+            fn "*"([a]: f64, [b]: f64) {
+                a * b
+            }
+        ),
+        formula_fn!(
+            #[operator]
+            #[pure_zip_map]
+            fn "/"(span: Span, [dividend]: f64, [divisor]: f64) {
+                util::checked_div(span, dividend, divisor)
+            }
+        ),
+        formula_fn!(
+            #[operator]
+            #[pure_zip_map]
+            fn "^"([base]: f64, [exponent]: f64) {
+                base.powf(exponent)
+            }
+        ),
+        formula_fn!(
+            #[operator]
+            #[pure_zip_map]
+            fn "%"([percentage]: f64) {
+                percentage / 100.0
+            }
+        ),
+        formula_fn!(
+            #[operator]
+            fn ".."(start: (Spanned<i64>), end: (Spanned<i64>)) {
+                let span = Span::merge(start.span, end.span);
+                let a = start.inner;
+                let b = end.inner;
+                let len = (a-b).abs() as u32 + 1;
+                if len as f64 > crate::limits::INTEGER_RANGE_LIMIT {
+                    return Err(FormulaErrorMsg::ArrayTooBig.with_span(span));
+                }
+                let range = if a < b { a..=b } else { b..=a };
+                let width = 1;
+                let height = len;
+                Array::from_row_major_iter(width, height, range.map(BasicValue::from))?
+            }
+        ),
         // String operators
-        FormulaFunction::operator("&", |[a, b]| {
-            Ok(Value::String(a.to_string() + &b.to_string()))
-        }),
+        formula_fn!(
+            #[operator]
+            #[pure_zip_map]
+            fn "&"([a]: String, [b]: String) {
+                a + &b
+            }
+        ),
     ]
-}
-
-fn values_eq(a: &Spanned<Value>, b: &Spanned<Value>) -> bool {
-    // TODO: coerce empty cell (but not empty *string*) to zero.
-    a.to_string().eq_ignore_ascii_case(&b.to_string())
 }
 
 #[cfg(test)]
@@ -84,38 +98,43 @@ mod tests {
 
     #[test]
     fn test_formula_math_operators() {
+        let g = &mut NoGrid;
+
         assert_eq!(
             (1 * -6 + -2 - 1 * (-3_i32).pow(2_u32.pow(3))).to_string(),
-            eval_to_string(&mut NoGrid, "1 * -6 + -2 - 1 * -3 ^ 2 ^ 3"),
+            eval_to_string(g, "1 * -6 + -2 - 1 * -3 ^ 2 ^ 3"),
         );
+        assert_eq!((1.0 / 2.0).to_string(), eval_to_string(g, "1/2"));
+        assert_eq!(FormulaErrorMsg::DivideByZero, eval_to_err(g, "1 / 0").msg);
+        assert_eq!(FormulaErrorMsg::DivideByZero, eval_to_err(g, "0/ 0").msg);
     }
 
     #[test]
     fn test_formula_math_operators_on_empty_string() {
         // Empty string should coerce to zero
 
-        let mut g = FnGrid(|_| None);
+        let g = &mut FnGrid(|_| None);
 
         // Test addition
-        assert_eq!("2", eval_to_string(&mut g, "C6 + 2"));
-        assert_eq!("2", eval_to_string(&mut g, "2 + C6"));
+        assert_eq!("2", eval_to_string(g, "C6 + 2"));
+        assert_eq!("2", eval_to_string(g, "2 + C6"));
 
         // Test multiplication
-        assert_eq!("0", eval_to_string(&mut g, "2 * C6"));
-        assert_eq!("0", eval_to_string(&mut g, "C6 * 2"));
+        assert_eq!("0", eval_to_string(g, "2 * C6"));
+        assert_eq!("0", eval_to_string(g, "C6 * 2"));
 
         // TODO: uncomment this once we have a type system that understands
         // blank cells
 
         // // Test comparisons (very cursed)
-        // assert_eq!("FALSE", eval_to_string(&mut g, "1 < C6"));
-        // assert_eq!("FALSE", eval_to_string(&mut g, "0 < C6"));
-        // assert_eq!("TRUE", eval_to_string(&mut g, "0 <= C6"));
-        // assert_eq!("TRUE", eval_to_string(&mut g, "-1 < C6"));
-        // assert_eq!("TRUE", eval_to_string(&mut g, "0 = C6"));
-        // assert_eq!("FALSE", eval_to_string(&mut g, "1 = C6"));
+        // assert_eq!("FALSE", eval_to_string(g, "1 < C6"));
+        // assert_eq!("FALSE", eval_to_string(g, "0 < C6"));
+        // assert_eq!("TRUE", eval_to_string(g, "0 <= C6"));
+        // assert_eq!("TRUE", eval_to_string(g, "-1 < C6"));
+        // assert_eq!("TRUE", eval_to_string(g, "0 = C6"));
+        // assert_eq!("FALSE", eval_to_string(g, "1 = C6"));
 
         // Test string concatenation
-        assert_eq!("apple", eval_to_string(&mut g, "C6 & \"apple\" & D6"));
+        assert_eq!("apple", eval_to_string(g, "C6 & \"apple\" & D6"));
     }
 }
