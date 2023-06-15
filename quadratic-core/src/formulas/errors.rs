@@ -48,6 +48,10 @@ pub enum FormulaErrorMsg {
         got: Option<Cow<'static, str>>,
     },
     Unexpected(Cow<'static, str>),
+    ExactArraySizeMismatch {
+        expected: (u32, u32),
+        got: (u32, u32),
+    },
     ArrayWidthMismatch {
         expected: u32,
         got: u32,
@@ -101,18 +105,28 @@ impl fmt::Display for FormulaErrorMsg {
                 None => write!(f, "Expected {expected}"),
             },
             Self::Unexpected(got) => write!(f, "Unexpected {got}"),
+            Self::ExactArraySizeMismatch {
+                expected: (w1, h1),
+                got: (w2, h2),
+            } => {
+                write!(
+                    f,
+                    "Array size mismatch: expected \
+                     {w1}x{h1} array, got {w2}x{h2} array"
+                )
+            }
             Self::ArrayWidthMismatch { expected, got } => {
                 write!(
                     f,
                     "Array width mismatch: expected value with 1 \
-                     column or {expected:?} columns, got {got:?} columns",
+                     column or {expected} columns, got {got} columns",
                 )
             }
             Self::ArrayHeightMismatch { expected, got } => {
                 write!(
                     f,
                     "Array height mismatch: expected value with 1 \
-                     row or {expected:?} rows, got {got:?} rows",
+                     row or {expected} rows, got {got} rows",
                 )
             }
             Self::EmptyArray => {

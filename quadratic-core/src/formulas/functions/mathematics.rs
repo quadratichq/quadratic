@@ -19,6 +19,29 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Evaluates each value based on some criteria, and then adds the
+            /// ones that meet those criteria. If `range_to_sum` is given, then
+            /// values in `range_to_sum` are added instead wherever the
+            /// corresponding value in `range_to_evaluate` meets the criteria.
+            #[doc = see_docs_for_more_about_criteria!()]
+            #[examples(
+                "SUMIF(A1:A10, \"2\")",
+                "SUMIF(A1:A10, \">0\")",
+                "SUMIF(A1:A10, \"<>INVALID\", B1:B10)"
+            )]
+            #[pure_zip_map]
+            fn SUMIF(
+                eval_range: (Spanned<Array>),
+                [criteria]: (Spanned<BasicValue>),
+                numbers_range: (Option<Spanned<Array>>),
+            ) {
+                let criteria = Criterion::try_from(*criteria)?;
+                let numbers =
+                    criteria.iter_matching_coerced::<f64>(eval_range, numbers_range.as_ref())?;
+                numbers.sum::<FormulaResult<f64>>()
+            }
+        ),
+        formula_fn!(
             /// Multiplies all values.
             /// Returns `1` if given no values.
             #[examples("PRODUCT(B2:C6, 0.002, E1)")]
@@ -106,6 +129,18 @@ mod tests {
     }
 
     #[test]
+    fn test_sumif() {
+        let g = &mut BlankGrid;
+        assert_eq!("15", eval_to_string(g, "SUMIF(0..10, \"<=5\")"));
+        assert_eq!("63", eval_to_string(g, "SUMIF(0..10, \"<=5\", 2^0..10)"));
+        // Test with an array of conditions.
+        assert_eq!(
+            "{63, 16; 1984, 1}",
+            eval_to_string(g, "SUMIF(0..10, {\"<=5\", 4; \">5\", 0}, 2^0..10)"),
+        );
+    }
+
+    #[test]
     fn test_product() {
         let g = &mut NoGrid;
         assert_eq!("1", eval_to_string(g, "PRODUCT()"));
@@ -132,7 +167,7 @@ mod tests {
     }
 
     #[test]
-    fn test_formula_abs() {
+    fn test_abs() {
         let g = &mut NoGrid;
         assert_eq!("10", eval_to_string(g, "ABS(-10)"));
         assert_eq!("10", eval_to_string(g, "ABS(10)"));
@@ -161,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn test_formula_sqrt() {
+    fn test_sqrt() {
         let g = &mut NoGrid;
         crate::util::assert_f64_approx_eq(3.0_f64.sqrt(), &eval_to_string(g, "SQRT(3)"));
         assert_eq!("4", eval_to_string(g, "SQRT(16)"));
@@ -190,7 +225,7 @@ mod tests {
     }
 
     #[test]
-    fn test_formula_pi() {
+    fn test_pi() {
         let g = &mut NoGrid;
         assert!(eval_to_string(g, "PI()").starts_with("3.14159"));
         assert_eq!(
@@ -207,7 +242,7 @@ mod tests {
     }
 
     #[test]
-    fn test_formula_tau() {
+    fn test_tau() {
         let g = &mut NoGrid;
         assert!(eval_to_string(g, "TAU()").starts_with("6.283"));
         assert_eq!(

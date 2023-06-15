@@ -3,6 +3,15 @@
 //! `formula_fn!` is the entry point; other macros generally should not be
 //! called by outside code.
 
+/// Outputs a string containing a sentence linking to the documentation for
+/// user-specification of criteria used in `SUMIF`, `COUNTIF`, and `AVERAGEIF`.
+/// The string begins with a space.
+///
+/// This is a macro instead of a constant so that it can be used with `concat!`.
+macro_rules! see_docs_for_more_about_criteria {
+    () => { " See [the documentation](https://docs.quadratichq.com/formulas) for more details about how criteria work in formulas." };
+}
+
 /// Macro to generate a `FormulaFunction` which contains an implementation of a
 /// function along with its documentation. This macro also generates code to
 /// check the number of arguments passed to the function at runtime.
@@ -65,7 +74,8 @@
 /// inaccessible.)
 ///
 /// Basic types:
-/// - `_` - do not coerce (keep as `Value`)
+/// - `Value` - keep as `Value` (do not coerce)
+/// - `BasicValue` - coerce to `BasicValue` (reject or flatten arrays)
 /// - `Array` - coerce to `Array`
 /// - `String` - coerce to `String`
 /// - `f64` - coerce to `f64`
@@ -275,7 +285,8 @@ macro_rules! formula_fn_arg {
     };
 
     // Repeating argument
-    (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< _ > >) => {
+    (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Value > >) => {
+        // Do not flatten `Value`s.
         let mut $arg_name = $args.take_rest().map(FormulaResult::Ok);
     };
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Array > >) => {
@@ -286,8 +297,7 @@ macro_rules! formula_fn_arg {
         // Flatten into iterator over non-array type.
         let remaining_args = $args.take_rest();
         let $arg_name = remaining_args.flat_map(|arg_value| {
-            // $($arg_type)* will include an extra `>` at the end, and that's ok.
-            formula_fn_convert_arg!(arg_value, Iter< Spanned< $($arg_type)*)
+            formula_fn_convert_arg!(arg_value, Value -> Iter< Spanned< $($arg_type)*)
         });
     };
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< $($arg_type:tt)*) => {
@@ -298,17 +308,17 @@ macro_rules! formula_fn_arg {
 
     // Optional argument
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Option< $($arg_type:tt)*) => {
-        // $($arg_type)* will include an extra `>` at the end, and that's ok.
         let $arg_name = match $args.take_next() {
-            Some(arg_value) => Some(formula_fn_convert_arg!(arg_value, $($arg_type)*)),
+            // $($arg_type)* will include an extra `>` at the end, and that's ok.
+            Some(arg_value) => Some(formula_fn_convert_arg!(arg_value, Value -> $($arg_type)*)),
             None => None,
-        }
+        };
     };
 
     // Required argument
     (@assign($ctx:ident, $args:ident); $arg_name:ident: $($arg_type:tt)*) => {
         let arg_value = $args.take_next_required(stringify!($arg_name))?;
-        let $arg_name = formula_fn_convert_arg!(arg_value, $($arg_type)*);
+        let $arg_name = formula_fn_convert_arg!(arg_value, Value -> $($arg_type)*);
     };
 
     // Zip-mapped repeating argument
@@ -323,8 +333,9 @@ macro_rules! formula_fn_arg {
     (@unzip($ctx:ident, $zipped_args:ident); [$arg_name:ident]: Iter< $($arg_type:tt)*) => {
         // Grab the range stored above and unpack the argument into `$arg_name`
         // where the user of the macro expects it to be.
-        let $arg_name = $zipped_args[$arg_name].iter().flat_map(|arg_value| {
-            formula_fn_convert_arg!(arg_value, Iter< $($arg_type)*)
+        let $arg_name = $zipped_args[$arg_name].iter().map(|arg_value| {
+            // There's an extra trailing `>` in `$($arg_type)*` but that's ok.
+            formula_fn_convert_arg!(arg_value, BasicValue -> $($arg_type)*)
         });
     };
 
@@ -345,8 +356,8 @@ macro_rules! formula_fn_arg {
         // Grab the index stored above and unpack the argument into `$arg_name`
         // where the user of the macro expects it to be.
         let $arg_name = match $arg_name {
-            // $($arg_type)* will include an extra `>` at the end, and that's ok.
-            Some(i) => Some(formula_fn_convert_arg!(&$zipped_args[i], $($arg_type)*)),
+            // There's an extra trailing `>` in `$($arg_type)*` but that's ok.
+            Some(i) => Some(formula_fn_convert_arg!(&$zipped_args[i], BasicValue -> $($arg_type)*)),
             None => None,
         };
     };
@@ -362,51 +373,74 @@ macro_rules! formula_fn_arg {
         // Grab the index stored above and unpack the argument into `$arg_name`
         // where the user of the macro expects it to be.
         let arg_value = &$zipped_args[$arg_name];
-        let $arg_name = formula_fn_convert_arg!(arg_value, $($arg_type)*);
+        let $arg_name = formula_fn_convert_arg!(arg_value, BasicValue -> $($arg_type)*);
     };
 }
 
 /// Converts a value to a specific type.
 ///
-/// The spaces inside `< ... >` in this macro are often necessary; we don't want
-/// Rust to treat `>>` as a single token.
+/// The spaces inside `< ... >` in this macro are often necessary; it's
+/// important that Rust doesn't see `>>` and think it's a single token.
 macro_rules! formula_fn_convert_arg {
-    // Any type (no conversion)
-    ($value:expr, Iter< Spanned< _ > >) => { [$value] };
-    ($value:expr, Option< Spanned< _ > >) => { $value };
-    ($value:expr, Spanned< _ >) => { $value };
-    ($value:expr, Iter< _ >) => { $value.inner.into_basic_values().inner };
-    ($value:expr, Option< _ >) => { $value.map(|v| v.inner) };
-    ($value:expr, _) => { $value.inner };
+    ($value:expr, $($arg_type:tt)*) => {
+        formula_fn_convert_arg!(@retokenize ($value,) $($arg_type)*)
+    };
 
-    // Repeating argument
-    ($value:expr, Iter< Spanned< BasicValue > >) => {
+    // Convert `>>` to two separate tokens `> >`. I don't like that we have to
+    // do this.
+    (@retokenize ($($done:tt)*) >> $($rest:tt)*) => {
+        formula_fn_convert_arg!(@retokenize ($($done)* > >) $($rest)*)
+    };
+    (@retokenize ($($done:tt)*) $tok:tt $($rest:tt)*) => {
+        formula_fn_convert_arg!(@retokenize ($($done)* $tok) $($rest)*)
+    };
+    (@retokenize ($($done:tt)*)) => {
+        formula_fn_convert_arg!(@convert $($done)*)
+    };
+
+    // No conversion
+    (@convert $value:expr, Value -> Spanned< Value > $(>)?) => {
+        $value
+    };
+    (@convert $value:expr, BasicValue -> Spanned< BasicValue > $(>)?) => {
+        $value
+    };
+    (@convert $value:expr, BasicValue -> Spanned< Value > $(>)?) => {
+        compile_error!("unnecessary conversion from `BasicValue` to `Value`; \
+                        change the argument to have type `BasicValue`")
+    };
+
+    // Iterate
+    (@convert $value:expr, Value -> Iter< Spanned< BasicValue > > $(>)*) => {
         $value.into_iter_basic_values()
     };
-    ($value:expr, Iter< Spanned< $inner_type:ty > > $(>)*) => {
+    (@convert $value:expr, Value -> Iter< Spanned< $inner_type:ty > > $(>)*) => {
         $value.into_iter::<$inner_type>()
     };
-    ($value:expr, Iter< $($inner_type:tt)*) => {
-        compile_error!("oh my");
-        formula_fn_convert_arg!($value, Iter< Spanned< $($inner_type)* >).without_spans()
+    (@convert $value:expr, Value -> Iter< $($inner_type:tt)* $(>)*) => {
+        formula_fn_convert_arg!(@convert $value, Iter< Spanned< $inner_type > >).unspanned()
     };
 
-    // Optional argument
-    ($value:expr, Option< $($inner_type:tt)*) => {
-        match $value {
-            Some(v) => Some(formula_fn_convert_arg!(v, $($inner_type)*)),
-            None => None,
-        }
+    // Generic conversion
+    (@convert $value:expr, Value -> Spanned< BasicValue > $(>)?) => {
+        $value.into_basic_value()?
+    };
+    (@convert $value:expr, Value -> Spanned< Array > $(>)?) => {
+        $value.map(Array::from)
+    };
+    (@convert $value:expr, Value -> Spanned< $arg_type:ty > $(>)?) => {
+        $value.try_coerce::<$arg_type>()?
+    };
+    (@convert $value:expr, BasicValue -> Spanned< $arg_type:ty > $(>)?) => {
+        $value.try_coerce::<$arg_type>()?
     };
 
-    // Spanned argument
-    ($value:expr, Spanned< $inner_type:ty $(>)*) => {
-        $value.try_coerce::<$inner_type>()?
+    // Unspanned conversion
+    (@convert $value:expr, $orig:tt -> Spanned< $($arg_type:tt)*) => {
+        compile_error!(concat!("invalid type: ", stringify!($($arg_type)*)))
     };
-
-    // Basic argument
-    ($value:expr, $($arg_type:tt)*) => {
-        formula_fn_convert_arg!($value, Spanned<$($arg_type)*>).inner
+    (@convert $value:expr, $orig:tt -> $($arg_type:tt)*) => {
+        formula_fn_convert_arg!(@convert $value, $orig -> Spanned< $($arg_type)* >).inner
     };
 }
 

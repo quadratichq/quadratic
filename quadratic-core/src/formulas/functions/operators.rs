@@ -11,14 +11,14 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
         // Comparison operators
-        formula_fn!(#[operator] #[pure_zip_map] fn "="([a]: _, [b]: _) { a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "=="([a]: _, [b]: _) { a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "<>"([a]: _, [b]: _) { !a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "!="([a]: _, [b]: _) { !a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "<"([a]: _, [b]: _) { a.lt(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn ">"([a]: _, [b]: _) { a.gt(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "<="([a]: _, [b]: _) { a.lte(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn ">="([a]: _, [b]: _) { a.gte(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "="([a]: BasicValue, [b]: BasicValue) { a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "=="([a]: BasicValue, [b]: BasicValue) { a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "<>"([a]: BasicValue, [b]: BasicValue) { !a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "!="([a]: BasicValue, [b]: BasicValue) { !a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "<"([a]: BasicValue, [b]: BasicValue) { a.lt(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn ">"([a]: BasicValue, [b]: BasicValue) { a.gt(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "<="([a]: BasicValue, [b]: BasicValue) { a.lte(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn ">="([a]: BasicValue, [b]: BasicValue) { a.gte(b)? }),
         // Mathematical operators
         formula_fn!(
             #[operator]
@@ -113,7 +113,7 @@ mod tests {
     fn test_formula_math_operators_on_empty_string() {
         // Empty string should coerce to zero
 
-        let g = &mut FnGrid(|_| None);
+        let g = &mut BlankGrid;
 
         // Test addition
         assert_eq!("2", eval_to_string(g, "C6 + 2"));
