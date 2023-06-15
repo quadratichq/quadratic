@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
 import { CELL_REFERENCE, CELL_REFERENCE_MULTICURSOR } from '../ui/menus/CodeEditor/FormulaLanguageModel';
 import { useSetRecoilState } from 'recoil';
+import { colors } from '../theme/colors';
 
 function compareOldToNewMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch): boolean {
   if (oldCellsMatches.size !== cellsMatches.size) return false;
@@ -23,6 +24,23 @@ export const useEditorCellHighlights = (
   monacoRef: React.MutableRefObject<typeof monaco | null>
 ) => {
   const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
+
+  // Dynamically generate the classnames we'll use for cell references by pulling
+  // the colors from the same colors used in pixi and stick them in the DOM
+  useEffect(() => {
+    const id = 'useEditorCellHighlights';
+    if (!document.querySelector(id)) {
+      const style = document.createElement('style');
+      document.head.appendChild(style);
+      style.id = id;
+      style.type = 'text/css';
+      style.appendChild(
+        document.createTextNode(
+          colors.cellHighlightColor.map((color, i) => `.cell-reference-${i} { color: ${color} !important }`).join('')
+        )
+      );
+    }
+  }, []);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -56,7 +74,8 @@ export const useEditorCellHighlights = (
             continue;
 
           const tokenText = lineContent.substring(startColumnNumber, endColumnNumber);
-          const cellColor = cellColorReferences.get(tokenText) ?? cellColorReferences.size % 10;
+          const cellColor =
+            cellColorReferences.get(tokenText) ?? cellColorReferences.size % colors.cellHighlightColor.length;
           cellColorReferences.set(tokenText, cellColor);
 
           const range = new monacoInst.Range(

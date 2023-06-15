@@ -10,6 +10,7 @@ const FILL_ALPHA = 0.1;
 const INDICATOR_SIZE = 8;
 const INDICATOR_PADDING = 1;
 const HIDE_INDICATORS_BELOW_SCALE = 0.1;
+const NUM_OF_CELL_REF_COLORS = colors.cellHighlightColor.length;
 
 export type CursorCell = { x: number; y: number; width: number; height: number };
 const CURSOR_CELL_DEFAULT_VALUE: CursorCell = { x: 0, y: 0, width: 0, height: 0 };
@@ -194,7 +195,7 @@ export class Cursor extends Graphics {
           editorInteractionState.selectedCell
         );
         if (!cursorCells) continue;
-        const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % 10]);
+        const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % NUM_OF_CELL_REF_COLORS]);
         colorIndex++;
         this.drawDashedRectangle(
           colorNumber,
@@ -212,7 +213,7 @@ export class Cursor extends Graphics {
       );
       if (!simpleCellMatch) continue;
 
-      const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % 10]);
+      const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % NUM_OF_CELL_REF_COLORS]);
       colorIndex++;
       this.drawDashedRectangle(colorNumber, formulaNotation === selectedCell, simpleCellMatch);
     }
@@ -245,7 +246,7 @@ export class Cursor extends Graphics {
     this.moveTo(minX, minY);
     for (let i = 0; i < path.length; i++) {
       this.lineStyle({
-        width: CURSOR_THICKNESS * 1.5,
+        width: CURSOR_THICKNESS,
         color,
         alignment: 0,
         texture: i % 2 === 0 ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical,
