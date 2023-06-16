@@ -3,7 +3,7 @@ import { colors } from '../../theme/colors';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { dashedTextures } from '../dashedTextures';
-import { getCellFromFormulaNotation, parseMulticursorFormulaNotation } from '../../helpers/formulaNotation';
+import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
 
 export const CURSOR_THICKNESS = 2;
 const FILL_ALPHA = 0.1;
@@ -184,38 +184,26 @@ export class Cursor extends Graphics {
   private drawEditorHighlightedCells(): void {
     const { editorHighlightedCellsState, editorInteractionState } = this.app.settings;
     const { highlightedCells, selectedCell } = editorHighlightedCellsState;
-    if (highlightedCells.size === 0) return;
+    if (!highlightedCells || highlightedCells.size === 0) return;
 
     let colorIndex = 0;
-    for (const [formulaNotation] of highlightedCells.entries()) {
-      if (formulaNotation.includes(':')) {
-        const cursorCells = parseMulticursorFormulaNotation(
-          formulaNotation,
-          this.app.sheet.gridOffsets,
-          editorInteractionState.selectedCell
-        );
-        if (!cursorCells) continue;
-        const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % NUM_OF_CELL_REF_COLORS]);
-        colorIndex++;
-        this.drawDashedRectangle(
-          colorNumber,
-          formulaNotation === selectedCell,
-          cursorCells.startCell,
-          cursorCells.endCell
-        );
-        continue;
-      }
-
-      const simpleCellMatch = getCellFromFormulaNotation(
-        formulaNotation,
+    for (const [cellRefId] of highlightedCells.entries()) {
+      const cell = getCellFromFormulaNotation(
+        cellRefId,
         this.app.sheet.gridOffsets,
         editorInteractionState.selectedCell
       );
-      if (!simpleCellMatch) continue;
 
+      if (!cell) continue;
       const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % NUM_OF_CELL_REF_COLORS]);
+      const isCellRange = isCellRangeTypeGuard(cell);
+      this.drawDashedRectangle(
+        colorNumber,
+        cellRefId === selectedCell,
+        isCellRange ? cell.startCell : cell,
+        isCellRange ? cell.endCell : undefined
+      );
       colorIndex++;
-      this.drawDashedRectangle(colorNumber, formulaNotation === selectedCell, simpleCellMatch);
     }
   }
 
