@@ -5,6 +5,7 @@ use ast::AstNode;
 mod errors;
 mod ast;
 mod cell_ref;
+mod criteria;
 mod ctx;
 pub mod ext;
 pub mod functions;
@@ -18,6 +19,7 @@ mod values;
 
 pub use ast::Formula;
 pub use cell_ref::*;
+pub use criteria::Criterion;
 pub use ctx::Ctx;
 pub use errors::{FormulaError, FormulaErrorMsg};
 pub use ext::*;

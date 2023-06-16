@@ -14,7 +14,7 @@ pub mod formulas;
 mod position;
 
 pub use cell::{Cell, CellTypes, JsCell};
-use formulas::{GridProxy, Value};
+use formulas::{BasicValue, GridProxy, Value};
 pub use position::Pos;
 
 pub const QUADRANT_SIZE: u64 = 16;
@@ -78,7 +78,7 @@ pub async fn eval_formula(
         Ok(formula_output) => {
             let mut output_value = None;
             let mut array_output = None;
-            match formula_output.inner {
+            match formula_output {
                 Value::Array(a) => {
                     array_output = Some(
                         a.rows()
@@ -216,8 +216,24 @@ impl JsGridProxy {
 }
 #[async_trait(?Send)]
 impl GridProxy for JsGridProxy {
-    async fn get(&mut self, pos: Pos) -> Option<String> {
-        self.get_cell_jsvalue(pos).await.ok()?.as_string()
+    async fn get(&mut self, pos: Pos) -> BasicValue {
+        let jsvalue = match self.get_cell_jsvalue(pos).await {
+            Ok(v) => v,
+            Err(_) => return BasicValue::Blank,
+        };
+
+        let string = match jsvalue.as_string() {
+            Some(s) => s,
+            None => return BasicValue::Blank,
+        };
+
+        if let Ok(n) = string.parse::<f64>() {
+            BasicValue::Number(n)
+        } else if string.is_empty() {
+            BasicValue::Blank
+        } else {
+            BasicValue::String(string)
+        }
     }
 }
 
