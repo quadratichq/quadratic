@@ -1,22 +1,38 @@
 import monaco from 'monaco-editor';
 import { useEffect } from 'react';
 import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
-import { CELL_REFERENCE, CELL_REFERENCE_MULTICURSOR } from '../ui/menus/CodeEditor/FormulaLanguageModel';
 import { useSetRecoilState } from 'recoil';
 import { colors } from '../theme/colors';
+import { ParseFormulaReturnType, Span } from '../helpers/formulaNotation';
+import { parse_formula } from 'quadratic-core';
+import { getKey, StringId } from '../helpers/getKey';
 
 function compareOldToNewMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch): boolean {
   if (oldCellsMatches.size !== cellsMatches.size) return false;
 
-  for (const item of oldCellsMatches.keys()) {
-    if (!cellsMatches.has(item)) return false;
+  for (const key of oldCellsMatches.keys()) {
+    if (!cellsMatches.has(key)) return false;
   }
 
   return true;
 }
 
-// formulaNotation, range
-export type CellMatch = Map<string, monaco.Range>;
+function extractCellsFromParseFormula(parsedFormula: ParseFormulaReturnType): { cellId: CellRefId; span: Span }[] {
+  return parsedFormula.cell_refs.map(({ cell_ref, span }) => {
+    if ('Cell' in cell_ref) return { cellId: getKey(cell_ref.Cell.x.Relative, cell_ref.Cell.y.Relative), span };
+    return {
+      cellId: `${getKey(cell_ref.CellRange[0].x.Relative, cell_ref.CellRange[0].y.Relative)}:${getKey(
+        cell_ref.CellRange[1].x.Relative,
+        cell_ref.CellRange[1].y.Relative
+      )}`,
+      span,
+    };
+  });
+}
+
+export type CellRefId = StringId | `${StringId}:${StringId}`;
+
+export type CellMatch = Map<CellRefId, monaco.Range>;
 
 export const useEditorCellHighlights = (
   isValidRef: boolean,
@@ -53,47 +69,42 @@ export const useEditorCellHighlights = (
 
     let oldDecorations: string[] = [];
     let oldCellsMatches: CellMatch = new Map();
-
-    const onChangeModel = () => {
+    let selectedCell: string;
+    const onChangeModel = async () => {
       const cellColorReferences = new Map<string, number>();
       let newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
-
       const cellsMatches: CellMatch = new Map();
-      const tokens = monacoInst.editor.tokenize(editor.getValue(), 'formula');
 
-      for (let lineTokens = 0; lineTokens < tokens.length; lineTokens++) {
-        const lineNumber = lineTokens + 1;
-        const lineContent = model.getLineContent(lineNumber);
-        for (let i = 0; i < tokens[lineTokens].length; i++) {
-          const startColumnNumber = tokens[lineTokens][i].offset;
-          const endColumnNumber = tokens[lineTokens][i + 1]?.offset ?? lineContent.length;
+      const modelValue = editor.getValue();
 
-          const tokenType = tokens[lineTokens][i].type;
+      const parsedFormula = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
 
-          if (tokenType !== `${CELL_REFERENCE}.formula` && tokenType !== `${CELL_REFERENCE_MULTICURSOR}.formula`)
-            continue;
+      const extractedCells = extractCellsFromParseFormula(parsedFormula);
 
-          const tokenText = lineContent.substring(startColumnNumber, endColumnNumber);
-          const cellColor =
-            cellColorReferences.get(tokenText) ?? cellColorReferences.size % colors.cellHighlightColor.length;
-          cellColorReferences.set(tokenText, cellColor);
+      for (const { cellId, span } of extractedCells) {
+        const startPosition = model.getPositionAt(span.start);
 
-          const range = new monacoInst.Range(
-            lineNumber,
-            startColumnNumber === 0 ? 0 : startColumnNumber + 1,
-            lineNumber,
-            endColumnNumber + 1
-          );
+        const cellColor =
+          cellColorReferences.get(cellId) ?? cellColorReferences.size % colors.cellHighlightColor.length;
+        cellColorReferences.set(cellId, cellColor);
 
-          newDecorations.push({
-            range,
-            options: {
-              stickiness: 1,
-              inlineClassName: `cell-reference-${cellColorReferences.get(tokenText)}`,
-            },
-          });
-          cellsMatches.set(tokenText, range);
-        }
+        const range = new monacoInst.Range(
+          startPosition.lineNumber,
+          startPosition.column,
+          startPosition.lineNumber,
+          startPosition.column + span.end - span.start
+        );
+
+        newDecorations.push({
+          range,
+          options: {
+            stickiness: 1,
+            inlineClassName: `cell-reference-${cellColorReferences.get(cellId)}`,
+          },
+        });
+        cellsMatches.set(cellId, range);
+        const editorCursorPosition = editor.getPosition();
+        if (editorCursorPosition && range.containsPosition(editorCursorPosition)) selectedCell = cellId;
       }
 
       const decorationsIds = editor.deltaDecorations(oldDecorations, newDecorations);
@@ -109,10 +120,7 @@ export const useEditorCellHighlights = (
     function setStateOnChangedMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch) {
       // setting the state on each interaction takes too long and makes the input laggy
       if (compareOldToNewMatches(oldCellsMatches, cellsMatches)) return;
-      setEditorHighlightedCells(({ selectedCell }) => ({
-        highlightedCells: cellsMatches,
-        selectedCell,
-      }));
+      setEditorHighlightedCells({ highlightedCells: cellsMatches, selectedCell });
     }
 
     return () => editor.dispose();
