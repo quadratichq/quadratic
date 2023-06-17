@@ -22,7 +22,7 @@ export class Update {
   // used to avoid a hiccup on first user interaction
   private firstRender = false;
 
-  // tracks whether quadrants were rendered last frame (after quadrants have finished rendered, we'll warm up cells by rendering them so there's no future delay)
+  // tracks whether quadrants were rendered last frame (after quadrants have finished rendering, we'll warm up real rendering by adding an additional render)
   private quadrantsRendered = false;
 
   constructor(app: PixiApp) {
