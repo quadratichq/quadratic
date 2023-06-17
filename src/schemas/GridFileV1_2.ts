@@ -2,7 +2,7 @@ import z from 'zod';
 import { GridFileV1_1 } from './GridFileV1_1';
 
 // Shared schemas
-const ArrayOutputBaseSchema = z.array(z.union([z.string(), z.number(), z.boolean(), z.null()]));
+const ArrayOutputBaseSchema = z.array(z.any());
 const BorderDirectionSchema = z.object({
   color: z.string().optional(),
   type: z.enum(['line1', 'line2', 'line3', 'dotted', 'dashed', 'double']).optional(),

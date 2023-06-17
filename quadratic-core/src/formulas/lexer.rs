@@ -11,8 +11,8 @@ pub fn tokenize(input_str: &str) -> impl '_ + Iterator<Item = Spanned<Token>> {
     std::iter::from_fn(move || {
         Token::consume_from_input(input_str, token_start).map(|(token, token_end)| {
             let span = Span {
-                start: token_start,
-                end: token_end,
+                start: token_start as u32,
+                end: token_end as u32,
             };
             token_start = token_end;
             Spanned { span, inner: token }
