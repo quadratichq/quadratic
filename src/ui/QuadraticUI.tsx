@@ -33,8 +33,8 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
 
   // Temporary way to attach sheet to global for use in GetCellsDB function
   useEffect(() => {
-    GetCellsDBSetSheet(sheetController.sheet);
-  }, [sheetController.sheet]);
+    GetCellsDBSetSheet(sheetController);
+  }, [sheetController]);
 
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {

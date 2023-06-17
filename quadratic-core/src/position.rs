@@ -4,7 +4,7 @@ use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.
 #[derive(
-    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
+    Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
 )]
 #[wasm_bindgen]
 pub struct Pos {
@@ -12,16 +12,17 @@ pub struct Pos {
     pub x: i64,
     /// Row
     pub y: i64,
+    pub sheet: str,
 }
 #[wasm_bindgen]
 impl Pos {
     #[wasm_bindgen(constructor)]
-    pub fn new(x: i64, y: i64) -> Self {
-        Self { x, y }
+    pub fn new(x: i64, y: i64, sheet: str) -> Self {
+        Self { x, y, sheet }
     }
 }
 impl Pos {
-    pub const ORIGIN: Self = Self { x: 0, y: 0 };
+    pub const ORIGIN: Self = Self { x: 0, y: 0, sheet: "" };
 
     /// Returns which quadrant the cell position is in.
     pub fn quadrant(self) -> (i64, i64) {
@@ -30,10 +31,14 @@ impl Pos {
             self.y.div_euclid(crate::QUADRANT_SIZE as _),
         )
     }
+
+    pub fn copy(&self) -> Pos {
+        *self
+    }
 }
 
 impl fmt::Display for Pos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}, {})", self.x, self.y)
+        write!(f, "({}, {}, {})", self.x, self.y, self.sheet)
     }
 }
