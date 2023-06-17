@@ -209,7 +209,7 @@ export class Quadrant extends Container {
   }
 
   debugTextureCount(): number {
-    return this.children.reduce((count, child) => count + (child.visible ? 1 : 0), 0);
+    return this.children.reduce((count, child) => count + (child.visible ? 1 : 0), 0) - 1;
   }
 
   cull(bounds: Rectangle): void {

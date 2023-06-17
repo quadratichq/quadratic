@@ -274,4 +274,20 @@ export class PixiApp {
     this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
     this.settings.setInteractionState(gridInteractionStateDefault);
   }
+
+  // Pre-renders quadrants by cycling through one quadrant per frame
+  preRenderQuadrants(resolve?: () => void): Promise<void> {
+    return new Promise((_resolve) => {
+      if (!resolve) {
+        resolve = _resolve;
+      }
+      this.quadrants.update(0);
+      if (this.quadrants.needsUpdating()) {
+        // the timeout allows the quadratic logo animation to appear smooth
+        setTimeout(() => this.preRenderQuadrants(resolve), 100);
+      } else {
+        resolve();
+      }
+    });
+  }
 }
