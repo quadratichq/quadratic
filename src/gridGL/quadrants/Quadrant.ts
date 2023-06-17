@@ -145,7 +145,7 @@ export class Quadrant extends Container {
         );
 
         // draw quadrant and return the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
-        const reducedDrawingRectangle = app.cells.drawCells(cellBounds, true);
+        const reducedDrawingRectangle = this.app.quadrants.cells.drawCells(cellBounds, true);
         if (reducedDrawingRectangle) {
           // adjust the texture placement so we only render boundary cells for subquadrants once (the second time will be outside the texture)
           const trimLeft =
@@ -179,9 +179,7 @@ export class Quadrant extends Container {
           }
 
           // render the sprite's texture
-          const container = app.prepareForQuadrantRendering();
-          app.renderer.render(container, { renderTexture: subQuadrant.texture, transform, clear: true });
-          app.cleanUpAfterQuadrantRendering();
+          app.renderer.render(app.quadrants.container, { renderTexture: subQuadrant.texture, transform, clear: true });
           subQuadrant.position.set(reducedDrawingRectangle.left + trimLeft, reducedDrawingRectangle.top + trimTop);
 
           if (debugShowQuadrantBoxes) {

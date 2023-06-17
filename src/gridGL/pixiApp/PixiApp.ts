@@ -221,7 +221,7 @@ export class PixiApp {
   }
 
   // called before and after a quadrant render
-  prepareForQuadrantRendering(options?: { gridLines: boolean }): Container {
+  prepareForCopying(options?: { gridLines: boolean }): Container {
     this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;
@@ -229,11 +229,11 @@ export class PixiApp {
     this.quadrants.visible = false;
     this.boxCells.visible = false;
     this.cells.changeVisibility(true);
-    // this.cells.dirty = true;
+    this.cells.dirty = true;
     return this.viewportContents;
   }
 
-  cleanUpAfterQuadrantRendering(): void {
+  cleanUpAfterCopying(): void {
     this.gridLines.visible = true;
     this.axesLines.visible = true;
     this.cursor.visible = true;
@@ -241,7 +241,7 @@ export class PixiApp {
     this.boxCells.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
     this.cells.changeVisibility(!this.cacheIsVisible);
-    // if (!this.cacheIsVisible) this.cells.dirty = true;
+    if (!this.cacheIsVisible) this.cells.dirty = true;
   }
 
   // helper for playwright
