@@ -360,4 +360,8 @@ export class SheetController {
   changeSheetOrder(sheetId: string, delta: number): void {
     this.reorderSheet({ id: sheetId, delta: delta * 1.5 });
   }
+
+  sheetNameExists(name: string): boolean {
+    return !!this.sheets.find((sheet) => sheet.name === name);
+  }
 }

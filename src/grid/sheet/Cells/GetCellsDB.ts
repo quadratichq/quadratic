@@ -6,6 +6,7 @@ let sheet: Sheet | undefined = undefined;
 
 // todo: this file goes away once we have rust backend
 export const GetCellsDB = async (
+  // sheetName = '',
   p0_x = -Infinity,
   p0_y = -Infinity,
   p1_x = Infinity,
