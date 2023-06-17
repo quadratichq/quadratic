@@ -3,6 +3,7 @@ import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowSubCacheInfo, debu
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS, QUADRANT_SCALE, QUADRANT_TEXTURE_SIZE } from './quadrantConstants';
+import { intersects } from '../helpers/intersects';
 
 // subquadrants are sprites that live within a quadrant mapped to a rendered texture size
 interface SubQuadrant extends Sprite {
@@ -209,5 +210,13 @@ export class Quadrant extends Container {
 
   debugTextureCount(): number {
     return this.children.reduce((count, child) => count + (child.visible ? 1 : 0), 0);
+  }
+
+  cull(bounds: Rectangle): void {
+    if (this.dirty) {
+      this.visible = false;
+    } else {
+      this.visible = intersects.rectangleRectangle(bounds, this.visibleRectangle);
+    }
   }
 }

@@ -122,7 +122,6 @@ export class Quadrants extends Container {
         this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle)
       );
     }
-
     return false;
   }
 
@@ -233,5 +232,12 @@ export class Quadrants extends Container {
   private debugCacheStats(): void {
     const textures = this.children.reduce((count, child) => count + (child as Quadrant).debugTextureCount(), 0);
     console.log(`[Quadrants] Rendered ${textures} quadrant textures.`);
+  }
+
+  cull(): void {
+    const bounds = this.app.viewport.getVisibleBounds();
+    this.children.forEach((child) => {
+      (child as Quadrant).cull(bounds);
+    });
   }
 }

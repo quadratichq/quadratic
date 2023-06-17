@@ -111,10 +111,15 @@ export class Update {
 
       // normal rendering
       else if (app.quadrants.visible) {
+        app.quadrants.cull();
+
+        // forces real rendering for dirty quadrants
         const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
         if (cellRectangles.length) {
           app.cells.changeVisibility(true);
           app.cells.drawMultipleBounds(cellRectangles);
+        } else {
+          app.cells.changeVisibility(false);
         }
       }
       debugTimeReset();
@@ -136,7 +141,7 @@ export class Update {
 
         // if quadrants are not dirty then rerender cells so it's ready for user input
         else if (this.quadrantsRendered) {
-          app.viewport.dirty = true;
+          app.cells.dirty = true;
           this.quadrantsRendered = false;
         }
       }
@@ -174,10 +179,15 @@ export class Update {
     if (rendererDirty) {
       app.viewport.dirty = false;
       if (app.quadrants.visible) {
+        app.quadrants.cull();
+
+        // forces real rendering for dirty quadrants
         const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
         if (cellRectangles.length) {
           app.cells.changeVisibility(true);
           app.cells.drawMultipleBounds(cellRectangles);
+        } else {
+          app.cells.changeVisibility(false);
         }
       }
       app.renderer.render(app.stage);
@@ -192,7 +202,7 @@ export class Update {
 
         // if quadrants are not dirty then rerender cells so it's ready for user input
         else if (this.quadrantsRendered) {
-          app.viewport.dirty = true;
+          app.cells.dirty = true;
           this.quadrantsRendered = false;
         }
       }
