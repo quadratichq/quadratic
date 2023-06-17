@@ -96,7 +96,12 @@ export class SheetController {
   }
 
   addSheet(): void {
-    const sheet = new Sheet(`Sheet${this.sheets.length + 1}`, this.sheets.length);
+    // find a unique sheet name (usually `Sheet${this.sheets.length + 1}`), but will continue to increment if that name is already in use
+    let i = this.sheets.length + 1;
+    while (this.sheetNameExists(`Sheet${i}`)) {
+      i++;
+    }
+    const sheet = new Sheet(`Sheet${i}`, this.sheets.length);
     this.sheets.push(sheet);
     this.app?.quadrants.addSheet(sheet);
     this.current = sheet.id;
