@@ -104,7 +104,6 @@ export class PointerDown {
           },
           showMultiCursor: true,
         });
-        this.app.cursor.dirty = true;
       }
       return;
     }
@@ -130,7 +129,6 @@ export class PointerDown {
       showMultiCursor: false,
       showInput: false,
     });
-    this.app.cursor.dirty = true;
     this.pointerMoved = false;
   }
 
@@ -139,7 +137,7 @@ export class PointerDown {
 
     if (!this.active) return;
 
-    const { viewport, settings, cursor } = this.app;
+    const { viewport, settings } = this.app;
     const { gridOffsets } = this.sheet;
 
     // for determining if double click
@@ -153,23 +151,6 @@ export class PointerDown {
       }
     }
 
-    // cursor intersects edges
-    // if (
-    //   !this.active ||
-    //   !this.position ||
-    //   !this.previousPosition ||
-    //   !this.positionRaw ||
-    //   !settings.setInteractionState
-    // ) {
-    //   if (
-    //     Math.abs(this.app.cursor.format_indicator.x - world.x) < 3 ||
-    //     Math.abs(this.app.cursor.format_indicator.y - world.y) < 3
-    //   ) {
-    //     this.app.canvas.style.cursor = 'grab';
-    //   }
-
-    // }
-
     // cursor intersects bottom-corner indicator (disabled for now)
     if (
       !this.active ||
@@ -178,9 +159,6 @@ export class PointerDown {
       !this.positionRaw ||
       !settings.setInteractionState
     ) {
-      // if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
-      //   this.app.canvas.style.cursor = 'cell';
-      // }
       return;
     }
 
@@ -235,7 +213,6 @@ export class PointerDown {
           showInput: false,
           inputInitialValue: '',
         });
-        cursor.dirty = true;
 
         // update previousPosition
         this.previousPosition = {
