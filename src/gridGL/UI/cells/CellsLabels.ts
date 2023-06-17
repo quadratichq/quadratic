@@ -75,7 +75,6 @@ export class CellsLabels extends Container {
     if (!data) {
       throw new Error('Expected label.data to be defined in checkForClipping');
     }
-
     const textWidth = label.getFullTextWidth();
     if (textWidth > data.expectedWidth) {
       let clipLeft: number | undefined, clipRight: number | undefined;
