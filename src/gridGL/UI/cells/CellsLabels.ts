@@ -42,7 +42,7 @@ export class CellsLabels extends Container {
     let neighborOffset = this.app.sheet.gridOffsets.getCell(column, row).x;
     while (neighborOffset < rightEnd) {
       const cell = this.app.sheet.grid.get(column, row)?.cell;
-      if (cell?.value || !cell?.evaluation_result?.success) {
+      if (cell?.value || (cell?.evaluation_result && cell?.evaluation_result?.success === false)) {
         return neighborOffset;
       }
       const neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
@@ -60,7 +60,7 @@ export class CellsLabels extends Container {
     let neighborOffset = neighbor.x + neighbor.width;
     while (neighborOffset > leftEnd) {
       const cell = this.app.sheet.grid.get(column, row)?.cell;
-      if (cell?.value || !cell?.evaluation_result?.success) {
+      if (cell?.value || (cell?.evaluation_result && cell?.evaluation_result?.success === false)) {
         return neighborOffset;
       }
       neighborOffset -= neighborWidth;
