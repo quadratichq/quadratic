@@ -19,6 +19,9 @@ export class Update {
   private lastViewportPosition: Point = new Point();
   private lastViewportScale = 1;
 
+  // used to avoid a hiccup on first user interaction
+  private firstRender = false;
+
   // tracks whether quadrants were rendered last frame (after quadrants have finished rendered, we'll warm up cells by rendering them so there's no future delay)
   private quadrantsRendered = false;
 
@@ -101,6 +104,12 @@ export class Update {
     if (rendererDirty) {
       app.viewport.dirty = false;
 
+      // not sure why this is needed, but avoids a slowdown on first interaction
+      if (!this.firstRender) {
+        this.firstRender = true;
+        app.viewport.dirty = true;
+      }
+
       // forces the temporary replacement cells to render instead of the cache or cells (used for debugging only)
       if (debugShowCellsForDirtyQuadrants) {
         app.quadrants.visible = false;
@@ -178,6 +187,13 @@ export class Update {
 
     if (rendererDirty) {
       app.viewport.dirty = false;
+
+      // not sure why this is needed, but avoids a slowdown on first interaction
+      if (!this.firstRender) {
+        this.firstRender = true;
+        app.viewport.dirty = true;
+      }
+
       if (app.quadrants.visible) {
         app.quadrants.cull();
 
