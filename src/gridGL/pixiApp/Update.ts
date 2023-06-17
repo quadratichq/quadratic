@@ -19,6 +19,9 @@ export class Update {
   private lastViewportPosition: Point = new Point();
   private lastViewportScale = 1;
 
+  // tracks whether quadrants were rendered last frame (after quadrants have finished rendered, we'll warm up cells by rendering them so there's no future delay)
+  private quadrantsRendered = false;
+
   constructor(app: PixiApp) {
     this.pixiApp = app;
     if (debugShowFPS) {
@@ -126,22 +129,22 @@ export class Update {
 
       // only render quadrants when the viewport hasn't been dirty for a while
       if (timeStart > this.nextQuadrantRender) {
-        app.quadrants.update(timeStart);
+        if (app.quadrants.needsUpdating()) {
+          this.quadrantsRendered = true;
+          app.quadrants.update(timeStart);
+        }
+
+        // if quadrants are not dirty then rerender cells so it's ready for user input
+        else if (this.quadrantsRendered) {
+          app.viewport.dirty = true;
+          this.quadrantsRendered = false;
+        }
       }
     }
 
     this.raf = requestAnimationFrame(this.updateDebug);
     this.fps?.update();
   };
-
-  forceUpdate(): void {
-    const app = this.pixiApp;
-    app.gridLines.update();
-    app.axesLines.update();
-    app.headings.update();
-    app.cells.update();
-    app.cursor.update();
-  }
 
   // update loop w/o debug checks
   private update = (timeStart: number): void => {
@@ -182,7 +185,16 @@ export class Update {
     } else {
       // only render quadrants when the viewport hasn't been dirty for a while
       if (timeStart > this.nextQuadrantRender) {
-        app.quadrants.update(timeStart);
+        if (app.quadrants.needsUpdating()) {
+          this.quadrantsRendered = true;
+          app.quadrants.update(timeStart);
+        }
+
+        // if quadrants are not dirty then rerender cells so it's ready for user input
+        else if (this.quadrantsRendered) {
+          app.viewport.dirty = true;
+          this.quadrantsRendered = false;
+        }
       }
     }
 

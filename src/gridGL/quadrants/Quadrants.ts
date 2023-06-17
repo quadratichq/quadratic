@@ -85,6 +85,10 @@ export class Quadrants extends Container {
     }
   }
 
+  needsUpdating(): boolean {
+    return !!this.children.find((child) => (child as Quadrant).dirty);
+  }
+
   /**
    * updates one dirty quadrant per frame(any more and UI felt less responsive, even if within frame time)
    * @param timeStart used for console debugging
