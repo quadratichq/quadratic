@@ -6,7 +6,7 @@ import BottomBar from './menus/BottomBar';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import CommandPalette from './menus/CommandPalette';
 import GoTo from './menus/GoTo';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import CellTypeMenu from './menus/CellTypeMenu';
 import FileMenu from './menus/FileMenu';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
@@ -21,6 +21,7 @@ import { IS_READONLY_MODE } from '../constants/app';
 import { useLocalFiles } from './contexts/LocalFiles';
 import SheetBar from './menus/SheetBar';
 import FeedbackMenu from './menus/FeedbackMenu';
+import { ConfirmDeleteSheet } from './menus/SheetBar/ConfirmDeleteSheet';
 
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
@@ -41,6 +42,10 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
     app.resize();
   }, [presentationMode, app]);
 
+  // used for delete sheet
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | undefined>();
+  const [lastName, setLastName] = useState<string | undefined>();
+
   return (
     <div
       style={{
@@ -52,7 +57,16 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
       {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
-      {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
+      {editorInteractionState.showCommandPalette && (
+        <CommandPalette
+          app={app}
+          sheetController={sheetController}
+          confirmSheetDelete={() => {
+            setConfirmDelete({ id: sheetController.sheet.id, name: sheetController.sheet.name });
+            setLastName(sheetController.sheet.name);
+          }}
+        />
+      )}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
       {editorInteractionState.showFileMenu && <FileMenu />}
 
@@ -78,6 +92,13 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {hasInitialPageLoadError && <InitialPageLoadError />}
 
       {IS_READONLY_MODE && <ReadOnlyDialog />}
+
+      <ConfirmDeleteSheet
+        sheetController={sheetController}
+        lastName={lastName}
+        confirmDelete={confirmDelete}
+        handleClose={() => setConfirmDelete(undefined)}
+      />
     </div>
   );
 }

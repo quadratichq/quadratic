@@ -6,6 +6,7 @@ import ImportListItems from './ListItems/Import';
 import EditListItems from './ListItems/Edit';
 import FormatListItems from './ListItems/Format';
 import BordersListItems from './ListItems/Borders';
+import SheetListItems from './ListItems/Sheets';
 import TextListItems from './ListItems/Text';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
@@ -17,17 +18,6 @@ interface Commands {
   Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
 }
 
-const commands: Array<Commands> = [
-  ...FileListItems,
-  ...EditListItems,
-  ...ViewListItems,
-  ...ImportListItems,
-  ...BordersListItems,
-  ...TextListItems,
-  ...FormatListItems,
-  ...HelpListItems,
-];
-
 export const getCommandPaletteListItems = (props: {
   sheetController: SheetController;
   app: PixiApp;
@@ -35,8 +25,23 @@ export const getCommandPaletteListItems = (props: {
   closeCommandPalette: Function;
   activeSearchValue: string;
   selectedListItemIndex: number;
+  extraItems: Commands[];
+  confirmDelete: () => void;
 }): Array<JSX.Element> => {
-  const { activeSearchValue, ...rest } = props;
+  const { activeSearchValue, extraItems, ...rest } = props;
+
+  const commands: Array<Commands> = [
+    ...FileListItems,
+    ...EditListItems,
+    ...ViewListItems,
+    ...ImportListItems,
+    ...BordersListItems,
+    ...TextListItems,
+    ...FormatListItems,
+    ...SheetListItems,
+    ...extraItems,
+    ...HelpListItems,
+  ];
 
   // If there's no active search query, return everything
   if (!activeSearchValue) {
