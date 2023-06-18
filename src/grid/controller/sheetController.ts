@@ -108,6 +108,20 @@ export class SheetController {
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
+  duplicateSheet(): void {
+    let i = 0;
+    while (this.sheetNameExists(`Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim())) {
+      i++;
+    }
+    const name = `Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim();
+    const sheet = new Sheet(name, this.sheet.order + 0.5, this.sheet);
+    this.sheets.push(sheet);
+    this.cleanUpOrdering();
+    this.app?.quadrants.addSheet(sheet);
+    this.current = sheet.id;
+    if (this.saveLocalFiles) this.saveLocalFiles();
+  }
+
   deleteSheet(id: string): void {
     const index = this.sheets.findIndex((sheet) => sheet.id === id);
     if (index === -1) {

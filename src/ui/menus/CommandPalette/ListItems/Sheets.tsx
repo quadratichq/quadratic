@@ -17,6 +17,20 @@ const ListItems = [
       );
     },
   },
+  {
+    label: 'Sheet: Duplicate',
+    Component: (props: any) => {
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<PostAddOutlinedIcon />}
+          action={() => {
+            (props.sheetController as SheetController).duplicateSheet();
+          }}
+        />
+      );
+    },
+  },
 ];
 
 export default ListItems;

@@ -30,7 +30,9 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         <MenuItem onClick={handleRename}>
           <b>Rename</b>
         </MenuItem>
-        {/* <MenuItem onClick={handleClose}>Duplicate</MenuItem> */}
+        <MenuItem onClick={handleClose} onClickCapture={() => sheetController.duplicateSheet()}>
+          Duplicate
+        </MenuItem>
         <MenuItem
           onClick={() => {
             if (!contextMenu) return;

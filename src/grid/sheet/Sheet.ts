@@ -28,15 +28,19 @@ export class Sheet {
   // cell calculation dependency
   cell_dependency: CellDependencyManager;
 
-  constructor(name: string | undefined, order: number) {
-    this.id = uuid();
-    this.name = name ?? 'Sheet';
+  constructor(name: string | undefined, order: number, copyFrom?: Sheet) {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
     this.render_dependency = new GridRenderDependency();
     this.array_dependency = new GridRenderDependency();
     this.cell_dependency = new CellDependencyManager();
+    if (copyFrom) {
+      const save = copyFrom.export_file();
+      this.load_file(save);
+    }
+    this.id = uuid();
+    this.name = name ?? 'Sheet';
     this.order = order;
   }
 
