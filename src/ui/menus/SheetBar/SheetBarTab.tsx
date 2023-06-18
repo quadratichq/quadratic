@@ -76,6 +76,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
               focusGrid();
             } else if (event.code === 'Escape') {
               setIsRenaming(false);
+              setNameExists(false);
               focusGrid();
             }
           }}
@@ -83,16 +84,20 @@ export const SheetBarTab = (props: Props): JSX.Element => {
           onBlur={(event) => {
             const input = event.currentTarget as HTMLInputElement;
             if (!input) return false;
-            setIsRenaming(false);
-            if (input.value !== sheet.name) {
-              if (!sheetController.sheetNameExists(input.value)) {
-                sheetController.sheet.rename(input.value);
-                localFiles.save();
-              } else {
-                setNameExists(true);
-                setTimeout(() => setNameExists(false), 1500);
+            if (!isRenaming) return;
+            setIsRenaming((isRenaming) => {
+              if (!isRenaming) return false;
+              if (input.value !== sheet.name) {
+                if (!sheetController.sheetNameExists(input.value)) {
+                  sheetController.sheet.rename(input.value);
+                  localFiles.save();
+                } else {
+                  setNameExists(true);
+                  setTimeout(() => setNameExists(false), 1500);
+                }
               }
-            }
+              return false;
+            });
             clearRename();
             focusGrid();
             return false;
