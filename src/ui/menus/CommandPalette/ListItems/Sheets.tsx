@@ -4,7 +4,7 @@ import { SheetController } from '../../../../grid/controller/sheetController';
 
 const ListItems = [
   {
-    label: 'Sheet: Create sheet',
+    label: 'Sheet: Create',
     Component: (props: any) => {
       return (
         <CommandPaletteListItem
