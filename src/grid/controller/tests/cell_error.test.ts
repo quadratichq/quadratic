@@ -14,7 +14,7 @@ beforeAll(async () => {
 
 test('SheetController - cell error', async () => {
   const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
+  GetCellsDBSetSheet(sc);
 
   const cell = {
     x: 54,
@@ -40,7 +40,7 @@ test('SheetController - cell error', async () => {
 
 test('SheetController - cell error prev array output', async () => {
   const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
+  GetCellsDBSetSheet(sc);
 
   const cell_arr = {
     x: 54,

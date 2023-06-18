@@ -205,7 +205,7 @@ test('SheetController - array output length change', async () => {
 
 test('SheetController - test array formula', async () => {
   const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
+  GetCellsDBSetSheet(sc);
 
   const cell_0_0 = {
     x: 0,
@@ -260,7 +260,7 @@ test('SheetController - test array formula', async () => {
 
 test('SheetController - test DataFrame resizing', async () => {
   const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
+  GetCellsDBSetSheet(sc);
 
   const cell_0_0 = {
     x: 0,
@@ -339,7 +339,7 @@ result`,
 
 test('SheetController - test deleted array cells update dependent cells', async () => {
   const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
+  GetCellsDBSetSheet(sc);
 
   const cell_1_2_dependent = {
     x: 1,
@@ -388,7 +388,7 @@ test('SheetController - test deleted array cells update dependent cells', async 
 
 test('SheetController - test formula dependencies', async () => {
   const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
+  GetCellsDBSetSheet(sc);
 
   const cell_0_0_dependent = {
     x: 0,
@@ -430,7 +430,7 @@ test('SheetController - test formula dependencies', async () => {
 
 test('SheetController - test empty cell to be `null` in `array_output`', async () => {
   const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
+  GetCellsDBSetSheet(sc);
 
   // Ensure that blank cells are `null`, e.g. (2,0) should be `null`
   // even when programtically getting cells
