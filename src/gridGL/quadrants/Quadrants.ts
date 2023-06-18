@@ -117,10 +117,11 @@ export class Quadrants extends Container {
         // debug only if it is the active sheet
         if (quadrantsSheet.sheet === this.app.sheet) {
           if (debugShowCacheFlag) {
-            const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0);
-            (document.querySelector('.debug-show-cache-count') as HTMLSpanElement).innerHTML = `Quadrants: ${
-              this.children.length - dirtyCount
-            }/${this.children.length}`;
+            const span = document.querySelector('.debug-show-cache-count') as HTMLSpanElement;
+            if (span) {
+              const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0);
+              span.innerHTML = `Quadrants: ${this.children.length - dirtyCount}/${this.children.length}`;
+            }
           }
           return updated;
         } else {
