@@ -6,6 +6,7 @@ import ImportListItems from './ListItems/Import';
 import EditListItems from './ListItems/Edit';
 import FormatListItems from './ListItems/Format';
 import BordersListItems from './ListItems/Borders';
+import SheetListItems from './ListItems/Sheets';
 import TextListItems from './ListItems/Text';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
@@ -16,17 +17,6 @@ interface Commands {
   label: string;
   Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
 }
-
-const commands: Array<Commands> = [
-  ...FileListItems,
-  ...EditListItems,
-  ...ViewListItems,
-  ...ImportListItems,
-  ...BordersListItems,
-  ...TextListItems,
-  ...FormatListItems,
-  ...HelpListItems,
-];
 
 export const getCommandPaletteListItems = (props: {
   sheetController: SheetController;
@@ -39,11 +29,22 @@ export const getCommandPaletteListItems = (props: {
 }): Array<JSX.Element> => {
   const { activeSearchValue, extraItems, ...rest } = props;
 
-  const complete = [...commands, ...extraItems];
+  const commands: Array<Commands> = [
+    ...FileListItems,
+    ...EditListItems,
+    ...ViewListItems,
+    ...ImportListItems,
+    ...BordersListItems,
+    ...TextListItems,
+    ...FormatListItems,
+    ...SheetListItems,
+    ...extraItems,
+    ...HelpListItems,
+  ];
 
   // If there's no active search query, return everything
   if (!activeSearchValue) {
-    return complete.map(({ label, Component }, i) => (
+    return commands.map(({ label, Component }, i) => (
       <Component {...rest} key={label} listItemIndex={i} label={label} />
     ));
   }
@@ -52,7 +53,7 @@ export const getCommandPaletteListItems = (props: {
   // component for rendering
   let out: any = [];
   let listItemIndex = 0;
-  complete.forEach(({ label, Component }, i) => {
+  commands.forEach(({ label, Component }, i) => {
     const result = fuzzysort.single(activeSearchValue, label);
     if (result) {
       out.push(

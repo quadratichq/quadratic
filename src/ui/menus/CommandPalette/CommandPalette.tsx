@@ -9,7 +9,7 @@ import { SheetController } from '../../../grid/controller/sheetController';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 import '../../styles/floating-dialog.css';
 import mixpanel from 'mixpanel-browser';
-import { useSheetListItems } from './ListItems/tempuseSheetListItems';
+import { useSheetListItems } from './ListItems/useSheetListItems';
 
 interface Props {
   app: PixiApp;
@@ -19,7 +19,7 @@ interface Props {
 export const CommandPalette = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const [activeSearchValue, setActiveSearchValue] = React.useState<string>('');
   const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
