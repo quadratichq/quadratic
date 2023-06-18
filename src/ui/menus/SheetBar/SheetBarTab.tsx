@@ -41,18 +41,23 @@ export const SheetBarTab = (props: Props): JSX.Element => {
   );
 
   return (
-    <div ref={divRef}>
+    <div
+      ref={divRef}
+      style={{
+        // * 2 is needed so there's a space next to each tab
+        order: sheet.order * 2,
+      }}
+      data-order={sheet.order * 2}
+      data-id={sheet.id}
+      onPointerDown={(event) => onPointerDown({ event, sheet })}
+      onDoubleClick={() => setIsRenaming(true)}
+      onContextMenu={(e) => onContextMenu(e, sheet)}
+    >
       {isRenaming && (
         <input
           ref={inputRef}
           className="sheet-tab-input"
-          data-order={sheet.order * 2}
-          data-id={sheet.id}
           autoFocus={true}
-          style={{
-            // * 2 is needed so there's a space next to each tab
-            order: sheet.order * 2,
-          }}
           onKeyDown={(event) => {
             if (event.code === 'Enter') {
               const input = event.currentTarget as HTMLInputElement;
@@ -71,25 +76,28 @@ export const SheetBarTab = (props: Props): JSX.Element => {
               focusGrid();
             } else if (event.code === 'Escape') {
               setIsRenaming(false);
+              setNameExists(false);
               focusGrid();
             }
           }}
           onInput={() => setNameExists(false)}
-          onPointerDown={(event) => onPointerDown({ event, sheet })}
-          onDoubleClick={() => setIsRenaming(true)}
           onBlur={(event) => {
             const input = event.currentTarget as HTMLInputElement;
             if (!input) return false;
-            setIsRenaming(false);
-            if (input.value !== sheet.name) {
-              if (!sheetController.sheetNameExists(input.value)) {
-                sheetController.sheet.rename(input.value);
-                localFiles.save();
-              } else {
-                setNameExists(true);
-                setTimeout(() => setNameExists(false), 1500);
+            if (!isRenaming) return;
+            setIsRenaming((isRenaming) => {
+              if (!isRenaming) return false;
+              if (input.value !== sheet.name) {
+                if (!sheetController.sheetNameExists(input.value)) {
+                  sheetController.sheet.rename(input.value);
+                  localFiles.save();
+                } else {
+                  setNameExists(true);
+                  setTimeout(() => setNameExists(false), 1500);
+                }
               }
-            }
+              return false;
+            });
             clearRename();
             focusGrid();
             return false;
@@ -100,16 +108,9 @@ export const SheetBarTab = (props: Props): JSX.Element => {
       {!isRenaming && (
         <div
           className={active ? 'sheet-tab-active' : 'sheet-tab'}
-          data-order={sheet.order * 2}
-          data-id={sheet.id}
           style={{
             borderBottomColor: sheet.color,
-            // * 2 is needed so there's a space next to each tab
-            order: sheet.order * 2,
           }}
-          onPointerDown={(event) => onPointerDown({ event, sheet })}
-          onDoubleClick={() => setIsRenaming(true)}
-          onContextMenu={(e) => onContextMenu(e, sheet)}
         >
           {sheet.name}
         </div>
