@@ -14,9 +14,12 @@ import { useSheetListItems } from './ListItems/useSheetListItems';
 interface Props {
   app: PixiApp;
   sheetController: SheetController;
+  confirmSheetDelete: () => void;
 }
 
 export const CommandPalette = (props: Props) => {
+  const { app, sheetController, confirmSheetDelete } = props;
+
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -48,72 +51,75 @@ export const CommandPalette = (props: Props) => {
     }
   }, [selectedListItemIndex]);
 
-  const sheets = useSheetListItems(props.sheetController);
+  const sheets = useSheetListItems(sheetController);
 
   // Otherwise, define vars and render the list
   const ListItems = getCommandPaletteListItems({
-    sheetController: props.sheetController,
-    app: props.app,
+    sheetController,
+    app,
     interactionState,
     closeCommandPalette,
     activeSearchValue: activeSearchValue,
     selectedListItemIndex: selectedListItemIndex,
     extraItems: sheets,
+    confirmDelete: () => confirmSheetDelete(),
   });
 
   const searchlabel = 'Search menus and commands…';
 
   return (
-    <Dialog open={true} onClose={closeCommandPalette} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
-      <Paper
-        component="form"
-        elevation={12}
-        onKeyUp={(e: React.KeyboardEvent) => {
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            e.stopPropagation();
-            setSelectedListItemIndex(selectedListItemIndex === ListItems.length - 1 ? 0 : selectedListItemIndex + 1);
-          } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            e.stopPropagation();
-            setSelectedListItemIndex(selectedListItemIndex === 0 ? ListItems.length - 1 : selectedListItemIndex - 1);
-          }
-        }}
-        onSubmit={(e: React.FormEvent) => {
-          e.preventDefault();
-          const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
-          if (el !== undefined) {
-            (el as HTMLElement).click();
-          }
-        }}
-      >
-        <InputBase
-          sx={{ width: '100%', padding: '8px 16px' }}
-          placeholder={searchlabel}
-          inputProps={{ 'aria-label': searchlabel }}
-          autoFocus
-          value={activeSearchValue}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setSelectedListItemIndex(0);
-            setActiveSearchValue(event.target.value);
+    <>
+      <Dialog open={true} onClose={closeCommandPalette} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
+        <Paper
+          component="form"
+          elevation={12}
+          onKeyUp={(e: React.KeyboardEvent) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              e.stopPropagation();
+              setSelectedListItemIndex(selectedListItemIndex === ListItems.length - 1 ? 0 : selectedListItemIndex + 1);
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              e.stopPropagation();
+              setSelectedListItemIndex(selectedListItemIndex === 0 ? ListItems.length - 1 : selectedListItemIndex - 1);
+            }
           }}
-        />
+          onSubmit={(e: React.FormEvent) => {
+            e.preventDefault();
+            const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
+            if (el !== undefined) {
+              (el as HTMLElement).click();
+            }
+          }}
+        >
+          <InputBase
+            sx={{ width: '100%', padding: '8px 16px' }}
+            placeholder={searchlabel}
+            inputProps={{ 'aria-label': searchlabel }}
+            autoFocus
+            value={activeSearchValue}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setSelectedListItemIndex(0);
+              setActiveSearchValue(event.target.value);
+            }}
+          />
 
-        <Divider />
-        <div style={{ maxHeight: '330px', overflowY: 'scroll', paddingBottom: '5px' }}>
-          <List dense={true} disablePadding>
-            {ListItems.length ? (
-              ListItems
-            ) : (
-              <ListItem disablePadding>
-                <ListItemButton disabled>
-                  <ListItemText primary="No matches" />
-                </ListItemButton>
-              </ListItem>
-            )}
-          </List>
-        </div>
-      </Paper>
-    </Dialog>
+          <Divider />
+          <div style={{ maxHeight: '330px', overflowY: 'scroll', paddingBottom: '5px' }}>
+            <List dense={true} disablePadding>
+              {ListItems.length ? (
+                ListItems
+              ) : (
+                <ListItem disablePadding>
+                  <ListItemButton disabled>
+                    <ListItemText primary="No matches" />
+                  </ListItemButton>
+                </ListItem>
+              )}
+            </List>
+          </div>
+        </Paper>
+      </Dialog>
+    </>
   );
 };

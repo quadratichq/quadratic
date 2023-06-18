@@ -1,5 +1,6 @@
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined';
+import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import { SheetController } from '../../../../grid/controller/sheetController';
 
 const ListItems = [
@@ -14,6 +15,14 @@ const ListItems = [
             (props.sheetController as SheetController).addSheet();
           }}
         />
+      );
+    },
+  },
+  {
+    label: 'Sheet: Delete',
+    Component: (props: any) => {
+      return (
+        <CommandPaletteListItem {...props} icon={<DeleteOutlineOutlinedIcon />} action={() => props.confirmDelete()} />
       );
     },
   },

@@ -26,6 +26,7 @@ export const getCommandPaletteListItems = (props: {
   activeSearchValue: string;
   selectedListItemIndex: number;
   extraItems: Commands[];
+  confirmDelete: () => void;
 }): Array<JSX.Element> => {
   const { activeSearchValue, extraItems, ...rest } = props;
 

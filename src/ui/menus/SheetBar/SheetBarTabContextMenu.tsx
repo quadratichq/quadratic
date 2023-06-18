@@ -1,10 +1,10 @@
 import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { useState } from 'react';
 import { QColorPicker } from '../../components/qColorPicker';
 import { convertReactColorToString } from '../../../helpers/convertColor';
 import { ColorResult } from 'react-color';
+import { ConfirmDeleteSheet } from './ConfirmDeleteSheet';
 
 interface Props {
   sheetController: SheetController;
@@ -15,9 +15,8 @@ interface Props {
 
 export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
   const { sheetController, contextMenu, handleClose, handleRename } = props;
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | undefined>();
+  const [lastName, setLastName] = useState<string | undefined>();
 
   return (
     <>
@@ -37,6 +36,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           onClick={() => {
             if (!contextMenu) return;
             setConfirmDelete({ ...contextMenu });
+            setLastName(confirmDelete?.name);
             handleClose();
           }}
         >
@@ -83,33 +83,12 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           Move Right
         </MenuItem>
       </ControlledMenu>
-      <Dialog open={!!confirmDelete}>
-        <DialogTitle>Delete Sheet</DialogTitle>
-        <DialogContent>Are you sure you want to delete {confirmDelete?.name}?</DialogContent>
-        <DialogActions>
-          <Button
-            autoFocus
-            onClick={() => {
-              setConfirmDelete(undefined);
-              handleClose();
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            color="warning"
-            onClick={() => {
-              if (confirmDelete) {
-                sheetController.deleteSheet(confirmDelete.id);
-              }
-              setConfirmDelete(undefined);
-              handleClose();
-            }}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDeleteSheet
+        sheetController={sheetController}
+        lastName={lastName}
+        confirmDelete={confirmDelete}
+        handleClose={() => setConfirmDelete(undefined)}
+      />
     </>
   );
 };
