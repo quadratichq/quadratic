@@ -369,4 +369,8 @@ export class SheetController {
   sheetNameExists(name: string): boolean {
     return !!this.sheets.find((sheet) => sheet.name === name);
   }
+
+  getSheetListItems() {
+    return this.sheets.map((sheet) => ({ name: sheet.name, id: sheet.id }));
+  }
 }

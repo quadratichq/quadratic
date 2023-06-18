@@ -9,6 +9,7 @@ import { SheetController } from '../../../grid/controller/sheetController';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 import '../../styles/floating-dialog.css';
 import mixpanel from 'mixpanel-browser';
+import { useSheetListItems } from './ListItems/tempuseSheetListItems';
 
 interface Props {
   app: PixiApp;
@@ -47,7 +48,9 @@ export const CommandPalette = (props: Props) => {
     }
   }, [selectedListItemIndex]);
 
-  // Otherwise, define vars and render the lsit
+  const sheets = useSheetListItems(props.sheetController);
+
+  // Otherwise, define vars and render the list
   const ListItems = getCommandPaletteListItems({
     sheetController: props.sheetController,
     app: props.app,
@@ -55,6 +58,7 @@ export const CommandPalette = (props: Props) => {
     closeCommandPalette,
     activeSearchValue: activeSearchValue,
     selectedListItemIndex: selectedListItemIndex,
+    extraItems: sheets,
   });
 
   const searchlabel = 'Search menus and commands…';

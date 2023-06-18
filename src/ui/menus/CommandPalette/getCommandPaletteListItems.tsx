@@ -35,12 +35,15 @@ export const getCommandPaletteListItems = (props: {
   closeCommandPalette: Function;
   activeSearchValue: string;
   selectedListItemIndex: number;
+  extraItems: Commands[];
 }): Array<JSX.Element> => {
-  const { activeSearchValue, ...rest } = props;
+  const { activeSearchValue, extraItems, ...rest } = props;
+
+  const complete = [...commands, ...extraItems];
 
   // If there's no active search query, return everything
   if (!activeSearchValue) {
-    return commands.map(({ label, Component }, i) => (
+    return complete.map(({ label, Component }, i) => (
       <Component {...rest} key={label} listItemIndex={i} label={label} />
     ));
   }
@@ -49,7 +52,7 @@ export const getCommandPaletteListItems = (props: {
   // component for rendering
   let out: any = [];
   let listItemIndex = 0;
-  commands.forEach(({ label, Component }, i) => {
+  complete.forEach(({ label, Component }, i) => {
     const result = fuzzysort.single(activeSearchValue, label);
     if (result) {
       out.push(
