@@ -187,16 +187,16 @@ export const SheetBar = (props: Props): JSX.Element => {
 
         // store current tabs (except the dragging tab)
         const tabs: { rect: DOMRect; order: number; element: HTMLDivElement }[] = [];
+
         down.current.tab.parentElement?.childNodes.forEach((node) => {
-          if (node !== tab) {
-            const element = node as HTMLDivElement;
+          const element = node as HTMLDivElement;
+          if (element !== tab) {
             let order = element.getAttribute('data-order');
             if (order) {
               tabs.push({ rect: element.getBoundingClientRect(), order: parseInt(order), element });
             }
           }
         });
-
         // search for an overlap from the current tabs to replace its order
         const overlap = tabs.find((tab) => mouseX >= tab.rect.left && mouseX <= tab.rect.right);
         if (overlap) {
