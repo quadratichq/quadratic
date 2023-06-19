@@ -29,6 +29,7 @@ pub enum AstNodeContents {
     CellRef(CellRef),
     String(String),
     Number(f64),
+    Bool(bool),
 }
 impl fmt::Display for AstNodeContents {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -53,6 +54,8 @@ impl fmt::Display for AstNodeContents {
             AstNodeContents::CellRef(cellref) => write!(f, "{cellref}"),
             AstNodeContents::String(s) => write!(f, "{s:?}"),
             AstNodeContents::Number(n) => write!(f, "{n:?}"),
+            AstNodeContents::Bool(false) => write!(f, "FALSE"),
+            AstNodeContents::Bool(true) => write!(f, "TRUE"),
         }
     }
 }
@@ -69,6 +72,7 @@ impl AstNodeContents {
             AstNodeContents::CellRef(_) => "cell reference",
             AstNodeContents::String(_) => "string literal",
             AstNodeContents::Number(_) => "numeric literal",
+            AstNodeContents::Bool(_) => "boolean literal",
         }
     }
 }
@@ -198,8 +202,8 @@ impl AstNode {
             }
 
             AstNodeContents::String(s) => Value::from(s.to_string()),
-
             AstNodeContents::Number(n) => Value::from(*n),
+            AstNodeContents::Bool(b) => Value::from(*b),
         };
 
         Ok(Spanned {
