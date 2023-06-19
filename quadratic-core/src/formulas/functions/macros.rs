@@ -147,7 +147,8 @@ macro_rules! formula_fn_eval {
     ($($tok:tt)*) => {{
         #[allow(unused_mut)]
         let ret: FormulaFn = |_ctx, mut _args: FormulaFnArgs| {
-            // _ctx: &'a mut Ctx return value: LocalBoxFuture<'a, FormulaResult<Value>>
+            // _ctx: &'a mut Ctx
+            // return value: LocalBoxFuture<'a, FormulaResult<Value>>
             //
             // Unfortunately, we can't annotate those types because there's no
             // way to introduce the named lifetime `'a`.
