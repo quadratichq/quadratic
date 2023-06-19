@@ -257,6 +257,10 @@ fn test_formula_omit_required_argument() {
     assert!(eval_to_string(g, "ATAN2(,1)").starts_with("1.57"));
     assert_eq!("0", eval_to_string(g, "ATAN2(1,)"));
     assert_eq!(
+        FormulaErrorMsg::DivideByZero,
+        eval_to_err(g, "ATAN2(,)").msg,
+    );
+    assert_eq!(
         FormulaErrorMsg::MissingRequiredArgument {
             func_name: "ATAN2",
             arg_name: "x"
