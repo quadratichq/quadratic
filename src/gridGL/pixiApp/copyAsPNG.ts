@@ -50,7 +50,7 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   renderer.resize(imageWidth, imageHeight);
   renderer.view.width = imageWidth;
   renderer.view.height = imageHeight;
-  app.prepareForQuadrantRendering();
+  app.prepareForCopying();
   app.settings.temporarilyHideCellTypeOutlines = true;
   app.cells.drawCells(rectangle, false);
   const transform = new Matrix();
@@ -58,7 +58,7 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   const scale = imageWidth / (rectangle.width * resolution);
   transform.scale(scale, scale);
   renderer.render(app.viewportContents, { transform });
-  app.cleanUpAfterQuadrantRendering();
+  app.cleanUpAfterCopying();
   app.settings.temporarilyHideCellTypeOutlines = false;
   return new Promise((resolve) => {
     renderer!.view.toBlob((blob) => resolve(blob));
