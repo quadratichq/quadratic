@@ -1,7 +1,7 @@
 //! Functions for lossless tokenization.
 
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use strum_macros::Display;
 
 use super::{Span, Spanned};
@@ -75,6 +75,8 @@ const TOKEN_PATTERNS: &[&str] = &[
     UNTERMINATED_STRING_LITERAL_PATTERN,
     // Numeric literal.
     NUMERIC_LITERAL_PATTERN,
+    // Boolean literal (case-insensitive).
+    r#"false|true"#,
     // Function call.
     FUNCTION_CALL_PATTERN,
     // Reference to a cell.
@@ -89,7 +91,7 @@ lazy_static! {
     /// Single regex that matches any token, including comments and strings,
     /// by joining each member of `TOKEN_PATTERNS` with "|".
     pub static ref TOKEN_REGEX: Regex =
-        Regex::new(&TOKEN_PATTERNS.join("|")).unwrap();
+        RegexBuilder::new(&TOKEN_PATTERNS.join("|")).case_insensitive(true).build().unwrap();
 
     /// Regex that matches a valid function call.
     pub static ref FUNCTION_CALL_REGEX: Regex =
@@ -175,6 +177,12 @@ pub enum Token {
     #[strum(to_string = "ellipsis")]
     Ellipsis, // ...
 
+    // Booleans
+    #[strum(to_string = "FALSE")]
+    False,
+    #[strum(to_string = "TRUE")]
+    True,
+
     // Comments
     #[strum(to_string = "comment")]
     Comment,
@@ -231,6 +239,8 @@ impl Token {
             "%" => Self::Percent,
             ":" => Self::CellRangeOp,
             "..." => Self::Ellipsis,
+            s if s.eq_ignore_ascii_case("false") => Self::False,
+            s if s.eq_ignore_ascii_case("true") => Self::True,
 
             // Match a line comment.
             s if s.starts_with("//") => Self::Comment,

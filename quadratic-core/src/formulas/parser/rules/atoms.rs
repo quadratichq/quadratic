@@ -127,3 +127,26 @@ impl SyntaxRule for CellRangeReference {
         })
     }
 }
+
+#[derive(Debug, Copy, Clone)]
+pub struct BoolExpression;
+impl_display!(for BoolExpression, "boolean, either 'TRUE' or 'FALSE'");
+impl SyntaxRule for BoolExpression {
+    type Output = AstNode;
+
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        matches!(p.next(), Some(Token::False | Token::True))
+    }
+
+    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+        let b = match p.next() {
+            Some(Token::False) => false,
+            Some(Token::True) => true,
+            _ => p.expected(self)?,
+        };
+        return Ok(AstNode {
+            span: p.span(),
+            inner: ast::AstNodeContents::Bool(b),
+        });
+    }
+}
