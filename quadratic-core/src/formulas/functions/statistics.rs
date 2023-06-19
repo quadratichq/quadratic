@@ -159,23 +159,23 @@ mod tests {
         // Error on range size mismatch.
         assert_eq!(
             FormulaErrorMsg::ExactArraySizeMismatch {
-                expected: (1, 11),
-                got: (2, 1)
+                expected: ArraySize { w: 1, h: 11 },
+                got: ArraySize { w: 2, h: 1 },
             },
             eval_to_err(g, "AVERAGEIF(0..10, \"<=5\", {A1, A2})").msg,
         );
         // ... even if one of the arguments is just a single value.
         assert_eq!(
             FormulaErrorMsg::ExactArraySizeMismatch {
-                expected: (1, 11),
-                got: (1, 1)
+                expected: ArraySize { w: 1, h: 11 },
+                got: ArraySize { w: 1, h: 1 },
             },
             eval_to_err(g, "AVERAGEIF(0..10, \"<=5\", 3)").msg,
         );
         assert_eq!(
             FormulaErrorMsg::ExactArraySizeMismatch {
-                expected: (1, 1),
-                got: (1, 11)
+                expected: ArraySize { w: 1, h: 1 },
+                got: ArraySize { w: 1, h: 11 },
             },
             eval_to_err(g, "AVERAGEIF(3, \"<=5\", 0..10)").msg,
         );

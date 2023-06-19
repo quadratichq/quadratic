@@ -15,8 +15,8 @@ mod trigonometry;
 mod util;
 
 use super::{
-    Array, BasicValue, CellRef, CoerceInto, Criterion, Ctx, FormulaErrorMsg, FormulaResult, Param,
-    ParamKind, Span, Spanned, SpannedIterExt, Value,
+    Array, Axis, BasicValue, CellRef, CoerceInto, Criterion, Ctx, FormulaError, FormulaErrorMsg,
+    FormulaResult, Param, ParamKind, Span, Spanned, SpannedIterExt, Value,
 };
 
 pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {

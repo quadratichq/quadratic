@@ -5,13 +5,13 @@ pub(crate) use super::*;
 
 macro_rules! array {
     ($( $( $value:expr ),+ );+ $(;)?) => {{
-        let values = [$( [$( $value ),+] ),+];
+        let values = [$( [$( BasicValue::from($value) ),+] ),+];
         let height = values.len();
         let width = values[0].len(); // This will generate a compile-time error if there are no values.
-        Array::from_row_major_iter(
+        Array::new_row_major(
             width as u32,
             height as u32,
-            values.into_iter().flatten(),
+            values.into_iter().flatten().collect(),
         )
         .unwrap()
     }};
@@ -21,9 +21,10 @@ pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
     eval(grid, s).unwrap().to_string()
 }
 pub(crate) fn eval_to_err(grid: &mut dyn GridProxy, s: &str) -> FormulaError {
+    println!("Testing formula {s:?}");
     match eval(grid, s) {
         Err(e) => e,
-        Ok(v) => panic!("expected error; got value {v}"),
+        Ok(v) => panic!("expected error; got value {v:?}"),
     }
 }
 pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
@@ -72,6 +73,26 @@ where
 {
     async fn get(&mut self, pos: Pos) -> BasicValue {
         self.0(pos).into()
+    }
+}
+
+/// `GridProxy` implementation with an array starting at (x, y) and no values
+/// anywhere else in the sheet.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ArrayGrid(pub Pos, pub Array);
+#[async_trait(?Send)]
+impl GridProxy for ArrayGrid {
+    async fn get(&mut self, pos: Pos) -> BasicValue {
+        let x = pos.x - self.0.x;
+        let y = pos.y - self.0.y;
+
+        if x < 0 || y < 0 {
+            return BasicValue::Blank;
+        }
+        self.1
+            .get(x as u32, y as u32)
+            .cloned()
+            .unwrap_or(BasicValue::Blank)
     }
 }
 
@@ -144,33 +165,31 @@ fn test_formula_range_operator() {
 fn test_formula_array_op() {
     let mut g = FnGrid(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
-    let f = |x| BasicValue::Number(x as f64);
-
     assert_eq!((11 * 31).to_string(), eval_to_string(&mut g, "B1 * D1"));
     assert_eq!(
         Value::from(array![
-            f(11 * 31), f(21 * 31);
-            f(12 * 31), f(22 * 31);
-            f(13 * 31), f(23 * 31);
-            f(14 * 31), f(24 * 31);
+            11 * 31, 21 * 31;
+            12 * 31, 22 * 31;
+            13 * 31, 23 * 31;
+            14 * 31, 24 * 31;
         ]),
         eval(&mut g, "B1:C4 * D1").unwrap(),
     );
     assert_eq!(
         Value::from(array![
-            f(11 * 31), f(11 * 41);
-            f(11 * 32), f(11 * 42);
-            f(11 * 33), f(11 * 43);
-            f(11 * 34), f(11 * 44);
+            11 * 31, 11 * 41;
+            11 * 32, 11 * 42;
+            11 * 33, 11 * 43;
+            11 * 34, 11 * 44;
         ]),
         eval(&mut g, "B1 * D1:E4").unwrap(),
     );
     assert_eq!(
         Value::from(array![
-            f(11 * 31), f(21 * 41);
-            f(12 * 32), f(22 * 42);
-            f(13 * 33), f(23 * 43);
-            f(14 * 34), f(24 * 44);
+            11 * 31, 21 * 41;
+            12 * 32, 22 * 42;
+            13 * 33, 23 * 43;
+            14 * 34, 24 * 44;
         ]),
         eval(&mut g, "B1:C4 * D1:E4").unwrap(),
     );
