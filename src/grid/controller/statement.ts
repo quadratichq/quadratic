@@ -1,4 +1,5 @@
 import { Border, Cell, CellFormat } from '../../schemas';
+import { Sheet } from '../sheet/Sheet';
 import { HeadingSize } from '../sheet/useHeadings';
 
 // Everything that modifies Sheet must go through a Statement
@@ -42,5 +43,12 @@ export type Statement =
       data: {
         position: [number, number];
         border: Border | undefined; // TODO: Make this accept more than one border
+      };
+    }
+  | {
+      type: 'SET_SHEET';
+      data: {
+        sheetId: string;
+        sheet?: Sheet;
       };
     };

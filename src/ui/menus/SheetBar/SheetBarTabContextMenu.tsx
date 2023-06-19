@@ -5,6 +5,7 @@ import { QColorPicker } from '../../components/qColorPicker';
 import { convertReactColorToString } from '../../../helpers/convertColor';
 import { ColorResult } from 'react-color';
 import { ConfirmDeleteSheet } from './ConfirmDeleteSheet';
+import { createSheet } from '../../../grid/actions/sheetsAction';
 
 interface Props {
   sheetController: SheetController;
@@ -29,7 +30,13 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         <MenuItem onClick={handleRename}>
           <b>Rename</b>
         </MenuItem>
-        <MenuItem onClick={handleClose} onClickCapture={() => sheetController.duplicateSheet()}>
+        <MenuItem
+          onClick={handleClose}
+          onClickCapture={() => {
+            const sheet = sheetController.createDuplicateSheet();
+            createSheet({ sheetController, sheet, create_transaction: true });
+          }}
+        >
           Duplicate
         </MenuItem>
         <MenuItem

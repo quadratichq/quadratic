@@ -6,6 +6,7 @@ import { SetCellFormatRunner } from './setCellFormatRunner';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SetHeadingSizeRunner } from './setHeadingSizeRunner';
 import { SetBorderRunner } from './setBorderRunner';
+import { SetSheetRunner } from './setSheetRunner';
 
 export const StatementRunner = (sheet: Sheet, statement: Statement, app?: PixiApp): Statement => {
   if (statement.type === 'SET_CELL') {
@@ -20,6 +21,9 @@ export const StatementRunner = (sheet: Sheet, statement: Statement, app?: PixiAp
     return SetHeadingSizeRunner(sheet, statement, app);
   } else if (statement.type === 'SET_BORDER') {
     return SetBorderRunner(sheet, statement, app);
+  } else if (statement.type === 'SET_SHEET') {
+    if (!app) throw new Error('StatementRunner for Sheets needs app to complete');
+    return SetSheetRunner(statement, app);
   } else {
     throw new Error('Statement type not recognized.');
   }

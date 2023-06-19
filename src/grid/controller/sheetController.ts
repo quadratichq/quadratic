@@ -7,6 +7,7 @@ import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
 import { SheetSchema } from '../../schemas';
 import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
+import { generateKeyBetween } from 'fractional-indexing';
 
 export class SheetController {
   app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
@@ -20,7 +21,7 @@ export class SheetController {
 
   constructor(sheets?: Sheet[]) {
     if (sheets === undefined) {
-      this.sheets = [new Sheet(undefined, 0)];
+      this.sheets = [new Sheet(undefined, generateKeyBetween(null, null))];
     } else {
       this.sheets = sheets;
     }
@@ -51,7 +52,7 @@ export class SheetController {
       this.sheets.push(sheet);
     });
     if (this.sheets.length === 0) {
-      this.sheets.push(new Sheet(undefined, 0));
+      this.sheets.push(new Sheet(undefined, generateKeyBetween(null, null)));
     }
     // need to set internal value to avoid set current call
     this._current = this.sheets[0].id;
@@ -72,15 +73,7 @@ export class SheetController {
     return sheet;
   }
 
-  // changes sheet.order to integers that are one number apart
-  private cleanUpOrdering() {
-    this.sheets.sort((a, b) => a.order - b.order);
-    this.sheets.forEach((sheet, index) => {
-      sheet.order = index;
-    });
-  }
-
-  reorderSheet(options: { id: string; order?: number; delta?: number }) {
+  reorderSheet(options: { id: string; order?: string; delta?: number }) {
     const sheet = this.sheets.find((sheet) => sheet.id === options.id);
     if (sheet) {
       if (options.order !== undefined) {
@@ -88,35 +81,41 @@ export class SheetController {
       } else if (options.delta !== undefined) {
         sheet.order += options.delta;
       }
-      this.cleanUpOrdering();
       if (this.saveLocalFiles) this.saveLocalFiles();
     } else {
       throw new Error('Expected sheet to be defined in reorderSheet');
     }
   }
 
-  addSheet(): void {
+  createNewSheet(): Sheet {
     // find a unique sheet name (usually `Sheet${this.sheets.length + 1}`), but will continue to increment if that name is already in use
     let i = this.sheets.length + 1;
     while (this.sheetNameExists(`Sheet${i}`)) {
       i++;
     }
-    const sheet = new Sheet(`Sheet${i}`, this.sheets.length);
-    this.sheets.push(sheet);
-    this.app?.quadrants.addSheet(sheet);
-    this.current = sheet.id;
-    if (this.saveLocalFiles) this.saveLocalFiles();
+    let order: string;
+    const last = this.getLastSheet();
+    if (!last) {
+      order = generateKeyBetween(null, null);
+    } else {
+      order = generateKeyBetween(last.order, null);
+    }
+    const sheet = new Sheet(`Sheet${i}`, order);
+    return sheet;
   }
 
-  duplicateSheet(): void {
+  createDuplicateSheet(): Sheet {
     let i = 0;
     while (this.sheetNameExists(`Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim())) {
       i++;
     }
     const name = `Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim();
     const sheet = new Sheet(name, this.sheet.order + 0.5, this.sheet);
+    return sheet;
+  }
+
+  addSheet(sheet: Sheet): void {
     this.sheets.push(sheet);
-    this.cleanUpOrdering();
     this.app?.quadrants.addSheet(sheet);
     this.current = sheet.id;
     if (this.saveLocalFiles) this.saveLocalFiles();
@@ -128,27 +127,27 @@ export class SheetController {
       throw new Error('Expected to find sheet in deleteSheet');
     }
     const deletedSheet = this.sheets.splice(index, 1)[0];
-    const order = deletedSheet.order;
+    // const order = deletedSheet.order;
     this.app?.quadrants.deleteSheet(deletedSheet);
 
-    // if deleted the last sheet, add a new one
-    if (this.sheets.length === 0) {
-      const sheet = new Sheet(`Sheet1`, 0);
-      this.sheets.push(sheet);
-      this.app?.quadrants.addSheet(sheet);
-      this.current = sheet.id;
-    }
+    // // if deleted the last sheet, add a new one
+    // if (this.sheets.length === 0) {
+    //   const sheet = new Sheet(`Sheet1`, 0);
+    //   this.sheets.push(sheet);
+    //   this.app?.quadrants.addSheet(sheet);
+    //   this.current = sheet.id;
+    // }
 
-    // otherwise select the next sheet
-    else {
-      this.cleanUpOrdering();
-      const next = this.sheets.find((sheet) => sheet.order >= order);
-      if (next) {
-        this.current = next.id;
-      } else {
-        this.current = this.sheets[this.sheets.length - 1].id;
-      }
-    }
+    // // otherwise select the next sheet
+    // else {
+    //   this.cleanUpOrdering();
+    //   const next = this.sheets.find((sheet) => sheet.order >= order);
+    //   if (next) {
+    //     this.current = next.id;
+    //   } else {
+    //     this.current = this.sheets[this.sheets.length - 1].id;
+    //   }
+    // }
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
@@ -366,18 +365,22 @@ export class SheetController {
     console.log(print_string);
   }
 
+  sortSheets(): void {
+    this.sheets.sort((a, b) => {
+      if (a.order < b.order) return -1;
+      if (a.order > b.order) return 1;
+      return 0;
+    });
+  }
+
   getFirstSheet(): Sheet {
-    this.sheets.sort((a, b) => a.order - b.order);
+    this.sortSheets();
     return this.sheets[0];
   }
 
   getLastSheet(): Sheet {
-    this.sheets.sort((a, b) => a.order - b.order);
+    this.sortSheets();
     return this.sheets[this.sheets.length - 1];
-  }
-
-  changeSheetOrder(sheetId: string, delta: number): void {
-    this.reorderSheet({ id: sheetId, delta: delta * 1.5 });
   }
 
   sheetNameExists(name: string): boolean {
@@ -386,5 +389,9 @@ export class SheetController {
 
   getSheetListItems() {
     return this.sheets.map((sheet) => ({ name: sheet.name, id: sheet.id }));
+  }
+
+  getSheet(id: string): Sheet | undefined {
+    return this.sheets.find((sheet) => sheet.id === id);
   }
 }

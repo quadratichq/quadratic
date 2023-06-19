@@ -9,6 +9,7 @@ import { Box, Fade, Popper } from '@mui/material';
 
 interface Props {
   sheet: Sheet;
+  order: string;
   sheetController: SheetController;
   active: boolean;
   onPointerDown: (options: { event: PointerEvent<HTMLDivElement>; sheet: Sheet }) => void;
@@ -18,7 +19,7 @@ interface Props {
 }
 
 export const SheetBarTab = (props: Props): JSX.Element => {
-  const { sheet, sheetController, active, onPointerDown, onContextMenu, forceRename, clearRename } = props;
+  const { sheet, order, sheetController, active, onPointerDown, onContextMenu, forceRename, clearRename } = props;
   const localFiles = useLocalFiles();
   const [nameExists, setNameExists] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -44,10 +45,8 @@ export const SheetBarTab = (props: Props): JSX.Element => {
     <div
       ref={divRef}
       style={{
-        // * 2 is needed so there's a space next to each tab
-        order: sheet.order * 2,
+        order,
       }}
-      data-order={sheet.order * 2}
       data-id={sheet.id}
       onPointerDown={(event) => onPointerDown({ event, sheet })}
       onDoubleClick={() => setIsRenaming(true)}

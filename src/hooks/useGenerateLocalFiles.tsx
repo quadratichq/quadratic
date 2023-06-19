@@ -15,6 +15,7 @@ import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/a
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import mixpanel from 'mixpanel-browser';
 import { focusGrid } from '../helpers/focusGrid';
+import { generateKeyBetween } from 'fractional-indexing';
 
 const INDEX = 'file-list';
 
@@ -86,7 +87,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       sheetController.app?.reset();
       focusGrid();
       const searchParams = new URLSearchParams(window.location.search);
-      // If `file` is in there from an intial page load, remove it
+      // If `file` is in there from an initial page load, remove it
       if (searchParams.get('file')) {
         searchParams.delete('file');
       }
@@ -174,7 +175,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       sheets: [
         {
           name: 'Sheet1',
-          order: 0,
+          order: generateKeyBetween(null, null),
           cells: [],
           formats: [],
           columns: [],

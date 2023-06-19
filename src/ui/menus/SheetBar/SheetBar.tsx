@@ -8,6 +8,8 @@ import { Sheet } from '../../../grid/sheet/Sheet';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { generateKeyBetween } from 'fractional-indexing';
+import { createSheet } from '../../../grid/actions/sheetsAction';
 
 interface Props {
   sheetController: SheetController;
@@ -90,7 +92,7 @@ export const SheetBar = (props: Props): JSX.Element => {
         tab.style.boxShadow = '';
         tab.style.zIndex = '';
         tab.style.transform = '';
-        tab.style.order = down.current.original.toString();
+        tab.style.order = down.current.originalOrder.toString();
         tab.scrollIntoView();
         down.current = undefined;
       }
@@ -115,11 +117,11 @@ export const SheetBar = (props: Props): JSX.Element => {
   const down = useRef<
     | {
         tab: HTMLElement;
-        original: number;
         offset: number;
         id: string;
-        actualOrder: number;
-        overlap?: number;
+        originalOrder: string;
+        actualOrder: string;
+        overlap?: string;
         scrollWidth: number;
       }
     | undefined
@@ -147,10 +149,8 @@ export const SheetBar = (props: Props): JSX.Element => {
           offset: event.clientX - rect.left,
           id: sheet.id,
           scrollWidth: sheets.scrollWidth,
-
-          // order is a multiple of 2 so we can move tabs before and after other tabs (order needs to be an integer)
-          original: sheet.order * 2,
-          actualOrder: sheet.order * 2,
+          originalOrder: sheet.order,
+          actualOrder: sheet.order,
         };
         tab.style.boxShadow = '0.25rem -0.25rem 0.5rem rgba(0,0,0,0.25)';
         tab.style.zIndex = '2';
@@ -159,6 +159,23 @@ export const SheetBar = (props: Props): JSX.Element => {
       event.preventDefault();
     },
     [sheetController, sheets]
+  );
+
+  // finds the index * 2 for a new order string
+  const getOrderIndex = useCallback(
+    (order: string): string => {
+      const orders = sheetController.sheets.map((sheet) => sheet.order);
+      if (orders.length === 0) {
+        return '0';
+      }
+      for (let i = 0; i < orders.length; i++) {
+        if (order < orders[i]) {
+          return (i * 2).toString();
+        }
+      }
+      return (orders.length * 2).toString();
+    },
+    [sheetController.sheets]
   );
 
   const handlePointerMove = useCallback(
@@ -186,17 +203,44 @@ export const SheetBar = (props: Props): JSX.Element => {
         if (!down.current) return;
 
         // store current tabs (except the dragging tab)
-        const tabs: { rect: DOMRect; order: number; element: HTMLDivElement }[] = [];
+        const tabs: { rect: DOMRect; order: string; element: HTMLDivElement }[] = [];
 
         down.current.tab.parentElement?.childNodes.forEach((node) => {
           const element = node as HTMLDivElement;
           if (element !== tab) {
             let order = element.getAttribute('data-order');
             if (order) {
-              tabs.push({ rect: element.getBoundingClientRect(), order: parseInt(order), element });
+              tabs.push({ rect: element.getBoundingClientRect(), order, element });
             }
           }
         });
+
+        // finds the order string from the previous sheet
+        const getPreviousOrder = (order: string): string | null => {
+          const sheet = sheetController.sheets.find((sheet) => sheet.order === order);
+          if (!sheet) throw new Error('Expected to find sheet in getPreviousOrder in SheetBar');
+          let previous: string | undefined;
+          sheetController.sheets.forEach((search) => {
+            if (search !== sheet && (!previous || (search.order < order && search.order > previous))) {
+              previous = search.order;
+            }
+          });
+          return previous ?? null;
+        };
+
+        // finds the order string from the previous sheet
+        const getNextOrder = (order: string): string | null => {
+          const sheet = sheetController.sheets.find((sheet) => sheet.order === order);
+          if (!sheet) throw new Error('Expected to find sheet in getPreviousOrder in SheetBar');
+          let next: string | undefined;
+          sheetController.sheets.forEach((search) => {
+            if (search !== sheet && (!next || (search.order > order && search.order < next))) {
+              next = search.order;
+            }
+          });
+          return next ?? null;
+        };
+
         // search for an overlap from the current tabs to replace its order
         const overlap = tabs.find((tab) => mouseX >= tab.rect.left && mouseX <= tab.rect.right);
         if (overlap) {
@@ -206,23 +250,14 @@ export const SheetBar = (props: Props): JSX.Element => {
 
             // moving left
             if (down.current.actualOrder > overlap.order) {
-              if (down.current.original > overlap.order) {
-                tab.style.order = (overlap.order - 1).toString();
-              } else {
-                tab.style.order = overlap.order.toString();
-              }
-              down.current.actualOrder = overlap.order - 1;
+              down.current.actualOrder = generateKeyBetween(getPreviousOrder(overlap.order), overlap.order);
+              tab.style.order = getOrderIndex(down.current.actualOrder);
             }
 
             // moving right
             else {
-              // each tab has order * 2, so there's a space next to each tab.order + 1
-              if (down.current.original < overlap.order) {
-                tab.style.order = (overlap.order + 1).toString();
-              } else {
-                tab.style.order = overlap.order.toString();
-              }
-              down.current.actualOrder = overlap.order + 1;
+              down.current.actualOrder = generateKeyBetween(getNextOrder(overlap.order), overlap.order);
+              tab.style.order = getOrderIndex(down.current.actualOrder);
             }
           }
         } else {
@@ -279,7 +314,7 @@ export const SheetBar = (props: Props): JSX.Element => {
         }
       }
     },
-    [sheets]
+    [getOrderIndex, sheetController.sheets, sheets]
   );
 
   const scrollInterval = useRef<number | undefined>();
@@ -315,8 +350,8 @@ export const SheetBar = (props: Props): JSX.Element => {
       tab.style.boxShadow = '';
       tab.style.zIndex = '';
       tab.style.transform = '';
-      if (down.current.actualOrder !== down.current.original) {
-        sheetController.reorderSheet({ id: down.current.id, order: down.current.actualOrder / 2 });
+      if (down.current.actualOrder !== down.current.originalOrder) {
+        sheetController.reorderSheet({ id: down.current.id, order: down.current.actualOrder });
       }
       down.current = undefined;
     }
@@ -350,7 +385,8 @@ export const SheetBar = (props: Props): JSX.Element => {
       <div className="sheet-bar-add">
         <ButtonUnstyled
           onClick={() => {
-            sheetController.addSheet();
+            const sheet = sheetController.createNewSheet();
+            createSheet({ sheetController, sheet, create_transaction: true });
             setActiveSheet(sheetController.current);
           }}
         >
@@ -369,6 +405,7 @@ export const SheetBar = (props: Props): JSX.Element => {
           {sheetController.sheets.map((sheet) => (
             <SheetBarTab
               key={sheet.id}
+              order={getOrderIndex(sheet.order)}
               onPointerDown={handlePointerDown}
               onContextMenu={handleContextEvent}
               active={activeSheet === sheet.id}

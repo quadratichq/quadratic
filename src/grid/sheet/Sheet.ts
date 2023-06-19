@@ -16,7 +16,7 @@ export class Sheet {
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
-  order: number;
+  order: string;
   color?: string;
 
   // visual dependency for overflowing cells
@@ -28,7 +28,7 @@ export class Sheet {
   // cell calculation dependency
   cell_dependency: CellDependencyManager;
 
-  constructor(name: string | undefined, order: number, copyFrom?: Sheet) {
+  constructor(name: string | undefined, order: string, copyFrom?: Sheet) {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);

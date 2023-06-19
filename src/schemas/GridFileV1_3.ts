@@ -1,5 +1,6 @@
 import z from 'zod';
 import { GridFileV1_2 } from './GridFileV1_2';
+import { generateKeyBetween } from 'fractional-indexing';
 
 // Shared schemas
 const ArrayOutputSchema = z.array(z.union([z.string(), z.number(), z.boolean()]));
@@ -18,7 +19,7 @@ export const GridFileSchemaV1_3 = z.object({
     .object({
       name: z.string(),
       color: z.string().optional(),
-      order: z.number(),
+      order: z.string(),
       borders: z
         .object({
           x: z.number(),
@@ -115,7 +116,7 @@ export function upgradeV1_2toV1_3(file: GridFileV1_2): GridFileV1_3 {
     sheets: [
       {
         name: 'Sheet1',
-        order: 0,
+        order: generateKeyBetween(null, null),
         borders: file.borders,
         cells: file.cells,
         cell_dependency: file.cell_dependency,
