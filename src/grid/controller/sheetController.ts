@@ -155,7 +155,7 @@ export class SheetController {
 
     if (this.app) {
       if (transaction.cursor) {
-        this.app.settings.setInteractionState?.(transaction.cursor);
+        this.app.settings.setInteractionState(transaction.cursor);
       }
 
       // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
@@ -195,7 +195,7 @@ export class SheetController {
 
     if (this.app) {
       if (transaction.cursor) {
-        this.app.settings.setInteractionState?.(transaction.cursor);
+        this.app.settings.setInteractionState(transaction.cursor);
       }
 
       // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
