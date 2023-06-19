@@ -272,7 +272,7 @@ export class PixiApp {
       this.viewport.position.set(0, 0);
     }
     this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
-    this.settings.setInteractionState(gridInteractionStateDefault);
+    this.settings.setInteractionState?.(gridInteractionStateDefault);
   }
 
   // Pre-renders quadrants by cycling through one quadrant per frame
