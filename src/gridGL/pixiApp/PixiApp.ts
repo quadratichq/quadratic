@@ -221,7 +221,7 @@ export class PixiApp {
   }
 
   // called before and after a quadrant render
-  prepareForQuadrantRendering(options?: { gridLines: boolean }): Container {
+  prepareForCopying(options?: { gridLines: boolean }): Container {
     this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;
@@ -233,7 +233,7 @@ export class PixiApp {
     return this.viewportContents;
   }
 
-  cleanUpAfterQuadrantRendering(): void {
+  cleanUpAfterCopying(): void {
     this.gridLines.visible = true;
     this.axesLines.visible = true;
     this.cursor.visible = true;
@@ -272,6 +272,22 @@ export class PixiApp {
       this.viewport.position.set(0, 0);
     }
     this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
-    this.settings.setInteractionState?.(gridInteractionStateDefault);
+    this.settings.setInteractionState(gridInteractionStateDefault);
+  }
+
+  // Pre-renders quadrants by cycling through one quadrant per frame
+  preRenderQuadrants(resolve?: () => void): Promise<void> {
+    return new Promise((_resolve) => {
+      if (!resolve) {
+        resolve = _resolve;
+      }
+      this.quadrants.update(0);
+      if (this.quadrants.needsUpdating()) {
+        // the timeout allows the quadratic logo animation to appear smooth
+        setTimeout(() => this.preRenderQuadrants(resolve), 100);
+      } else {
+        resolve();
+      }
+    });
   }
 }
