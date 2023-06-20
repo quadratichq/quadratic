@@ -10,8 +10,9 @@ import { getKey, StringId } from '../helpers/getKey';
 function compareOldToNewMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch): boolean {
   if (oldCellsMatches.size !== cellsMatches.size) return false;
 
-  for (const key of oldCellsMatches.keys()) {
-    if (!cellsMatches.has(key)) return false;
+  for (const [cellRefId, range] of oldCellsMatches.entries()) {
+    const newRange = cellsMatches.get(cellRefId);
+    if (!newRange || !range.equalsRange(newRange)) return false;
   }
 
   return true;
