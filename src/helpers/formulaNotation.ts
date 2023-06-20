@@ -20,8 +20,8 @@ export type Span = { start: number; end: number };
 export type CellRef = { Cell: CoordiantePositionType } | { CellRange: CoordiantePositionType[] };
 
 export type ParseFormulaReturnType = {
-  parse_error_msg: string;
-  parse_error_span: { start: number; end: number };
+  parse_error_msg: string | undefined;
+  parse_error_span: { start: number | null; end: number | null } | undefined;
   cell_refs: {
     cell_ref: CellRef;
     span: Span;
