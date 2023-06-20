@@ -126,7 +126,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   }, [selectedCell]);
 
   useAlertOnUnsavedChanges(hasUnsavedChanges);
-  useEditorCellHighlights(isValidRef, editorRef, monacoRef);
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef, selectedCell?.type);
   useEditorOnSelectionChange(isValidRef, editorRef);
 
   const closeEditor = ({ skipUnsavedChangesCheck } = { skipUnsavedChangesCheck: false }) => {
