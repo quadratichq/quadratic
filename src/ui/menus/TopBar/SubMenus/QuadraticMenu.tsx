@@ -7,7 +7,7 @@ import { IS_READONLY_MODE } from '../../../../constants/app';
 import { useGridSettings } from './useGridSettings';
 import { useAuth0 } from '@auth0/auth0-react';
 import { Tooltip } from '@mui/material';
-import { DOCUMENTATION_URL, BUG_REPORT_URL } from '../../../../constants/urls';
+import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { MenuLineItem } from '../MenuLineItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
@@ -18,6 +18,7 @@ import { isMac } from '../../../../utils/isMac';
 import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useLocalFiles } from '../../../contexts/LocalFiles';
+import { focusGrid } from '../../../../helpers/focusGrid';
 
 interface Props {
   sheetController: SheetController;
@@ -59,6 +60,18 @@ export const QuadraticMenu = (props: Props) => {
           }}
         >
           <MenuLineItem primary="Back to files" secondary={KeyboardSymbols.Command + 'O'} />
+        </MenuItem>
+        <MenuDivider />
+        <MenuItem
+          onClick={() => {
+            setEditorInteractionState({
+              ...editorInteractionState,
+              showCommandPalette: true,
+            });
+            focusGrid();
+          }}
+        >
+          <MenuLineItem primary="Command palette" secondary={KeyboardSymbols.Command + 'P'} />
         </MenuItem>
         <MenuDivider />
         <SubMenu label="File">
@@ -178,7 +191,6 @@ export const QuadraticMenu = (props: Props) => {
           >
             Show A1 notation on headings
           </MenuItem> */}
-          <MenuDivider />
         </SubMenu>
 
         {isAuthenticated && (
@@ -190,7 +202,16 @@ export const QuadraticMenu = (props: Props) => {
 
         <SubMenu label="Help">
           <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>Read the docs</MenuItem>
-          <MenuItem onClick={() => window.open(BUG_REPORT_URL, '_blank')}>Report a problem</MenuItem>
+          <MenuItem
+            onClick={() =>
+              setEditorInteractionState((prevState) => ({
+                ...prevState,
+                showFeedbackMenu: true,
+              }))
+            }
+          >
+            Provide feedback
+          </MenuItem>
         </SubMenu>
       </Menu>
     </>

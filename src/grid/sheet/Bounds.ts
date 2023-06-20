@@ -24,6 +24,30 @@ export class Bounds {
     this.empty = false;
   }
 
+  addX(x: number): void {
+    this.minX = Math.min(this.minX, x);
+    this.maxX = Math.max(this.maxX, x);
+    if (this.minY !== Infinity) {
+      this.empty = false;
+    }
+  }
+
+  addY(y: number): void {
+    this.minY = Math.min(this.minY, y);
+    this.maxY = Math.max(this.maxY, y);
+    if (this.minX !== Infinity) {
+      this.empty = false;
+    }
+  }
+
+  addRectangle(rectangle: Rectangle): void {
+    this.minX = Math.min(rectangle.left, this.minX);
+    this.maxX = Math.max(rectangle.right, this.maxX);
+    this.minY = Math.min(rectangle.top, this.minY);
+    this.maxY = Math.max(rectangle.bottom, this.maxY);
+    this.empty = false;
+  }
+
   addCoordinate(coordinate: Coordinate): void {
     this.add(coordinate.x, coordinate.y);
   }

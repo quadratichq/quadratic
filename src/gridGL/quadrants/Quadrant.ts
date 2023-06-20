@@ -3,6 +3,7 @@ import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowSubCacheInfo, debu
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS, QUADRANT_SCALE, QUADRANT_TEXTURE_SIZE } from './quadrantConstants';
+import { intersects } from '../helpers/intersects';
 
 // subquadrants are sprites that live within a quadrant mapped to a rendered texture size
 interface SubQuadrant extends Sprite {
@@ -92,7 +93,7 @@ export class Quadrant extends Container {
       const texture = RenderTexture.create({
         width,
         height,
-        resolution: window.devicePixelRatio,
+        resolution: Math.max(2, window.devicePixelRatio),
         mipmap: MIPMAP_MODES.ON,
       });
       sprite = this.addChild(new Sprite(texture)) as SubQuadrant;
@@ -145,7 +146,7 @@ export class Quadrant extends Container {
         );
 
         // draw quadrant and return the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
-        const reducedDrawingRectangle = app.cells.drawCells(cellBounds, true);
+        const reducedDrawingRectangle = this.app.quadrants.cells.drawCells(cellBounds, true);
         if (reducedDrawingRectangle) {
           // adjust the texture placement so we only render boundary cells for subquadrants once (the second time will be outside the texture)
           const trimLeft =
@@ -179,9 +180,7 @@ export class Quadrant extends Container {
           }
 
           // render the sprite's texture
-          const container = app.prepareForQuadrantRendering();
-          app.renderer.render(container, { renderTexture: subQuadrant.texture, transform, clear: true });
-          app.cleanUpAfterQuadrantRendering();
+          app.renderer.render(app.quadrants.container, { renderTexture: subQuadrant.texture, transform, clear: true });
           subQuadrant.position.set(reducedDrawingRectangle.left + trimLeft, reducedDrawingRectangle.top + trimTop);
 
           if (debugShowQuadrantBoxes) {
@@ -210,6 +209,14 @@ export class Quadrant extends Container {
   }
 
   debugTextureCount(): number {
-    return this.children.reduce((count, child) => count + (child.visible ? 1 : 0), 0);
+    return this.children.reduce((count, child) => count + (child.visible ? 1 : 0), 0) - 1;
+  }
+
+  cull(bounds: Rectangle): void {
+    if (this.dirty) {
+      this.visible = false;
+    } else {
+      this.visible = intersects.rectangleRectangle(bounds, this.visibleRectangle);
+    }
   }
 }
