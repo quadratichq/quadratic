@@ -33,7 +33,6 @@ export const colors = {
     muiColors.orange['900'],
     muiColors.purple['500'],
     muiColors.cyan['800'],
-
     muiColors.green['800'],
     muiColors.indigo['500'],
     muiColors.pink['600'],
