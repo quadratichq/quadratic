@@ -6,15 +6,12 @@ import { colors } from '../theme/colors';
 import { ParseFormulaReturnType, Span } from '../helpers/formulaNotation';
 import { parse_formula } from 'quadratic-core';
 import { getKey, StringId } from '../helpers/getKey';
-import { Cell } from '../schemas';
-import { parsePython } from '../helpers/parseEditorPythonCell';
 
 function compareOldToNewMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch): boolean {
   if (oldCellsMatches.size !== cellsMatches.size) return false;
 
-  for (const [cellRefId, range] of oldCellsMatches.entries()) {
-    const newRange = cellsMatches.get(cellRefId);
-    if (!newRange || !range.equalsRange(newRange)) return false;
+  for (const key of oldCellsMatches.keys()) {
+    if (!cellsMatches.has(key)) return false;
   }
 
   return true;
@@ -40,8 +37,7 @@ export type CellMatch = Map<CellRefId, monaco.Range>;
 export const useEditorCellHighlights = (
   isValidRef: boolean,
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<typeof monaco | null>,
-  editorContentType?: Cell['type']
+  monacoRef: React.MutableRefObject<typeof monaco | null>
 ) => {
   const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
 
@@ -67,24 +63,21 @@ export const useEditorCellHighlights = (
     const monacoInst = monacoRef.current;
     if (!isValidRef || !editor || !monacoInst) return;
 
-    const parseFormula =
-      editorContentType === 'FORMULA' ? parse_formula : editorContentType === 'PYTHON' ? parsePython : null;
-
     const model = editor.getModel();
 
-    if (!model || !parseFormula) return;
+    if (!model) return;
 
     let oldDecorations: string[] = [];
     let oldCellsMatches: CellMatch = new Map();
     let selectedCell: string;
-    const onChangeModelContent = async () => {
+    const onChangeModel = async () => {
       const cellColorReferences = new Map<string, number>();
       let newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
       const cellsMatches: CellMatch = new Map();
 
       const modelValue = editor.getValue();
 
-      const parsedFormula = (await parseFormula(modelValue, 0, 0)) as ParseFormulaReturnType;
+      const parsedFormula = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
 
       const extractedCells = extractCellsFromParseFormula(parsedFormula);
 
@@ -121,8 +114,8 @@ export const useEditorCellHighlights = (
       oldCellsMatches = cellsMatches;
     };
 
-    onChangeModelContent();
-    editor.onDidChangeModelContent(onChangeModelContent);
+    onChangeModel();
+    editor.onDidChangeModelContent(onChangeModel);
 
     function setStateOnChangedMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch) {
       // setting the state on each interaction takes too long and makes the input laggy
@@ -131,5 +124,5 @@ export const useEditorCellHighlights = (
     }
 
     return () => editor.dispose();
-  }, [isValidRef, editorRef, monacoRef, setEditorHighlightedCells, editorContentType]);
+  }, [isValidRef, editorRef, monacoRef, setEditorHighlightedCells]);
 };
