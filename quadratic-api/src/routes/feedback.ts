@@ -28,6 +28,8 @@ files_router.post('/', validateAccessToken, async (request: JWTRequest, response
   });
 
   // Post to Slack
+  // SLACK_FEEDBACK_URL is the Quadratic product feedback slack app webhook URL
+  // https://api.slack.com/apps/A05E24P1WRW/incoming-webhooks
   if (process.env.SLACK_FEEDBACK_URL) {
     const payload = {
       text: [
