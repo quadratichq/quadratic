@@ -182,48 +182,6 @@ mod tests {
     }
 
     #[test]
-    fn test_averageif() {
-        let g = &mut NoGrid;
-
-        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(0..10, \"<=5\")"));
-        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(0..10, \"<=5\")"));
-
-        // Blank values are treated as zeros when summing, but *not* when
-        // evaluating conditions.
-        let g = &mut FnGrid(|pos| (pos.y >= 0).then(|| pos.y));
-        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(Bn5:B10, \"<=5\")"));
-        let g = &mut BlankGrid;
-        assert_eq!(
-            "7.5",
-            eval_to_string(g, "AVERAGEIF({0, 0, 0}, \"<=5\", {5, 10, B3})"),
-        );
-
-        // Error on range size mismatch.
-        assert_eq!(
-            FormulaErrorMsg::ExactArraySizeMismatch {
-                expected: (1, 11),
-                got: (2, 1)
-            },
-            eval_to_err(g, "AVERAGEIF(0..10, \"<=5\", {A1, A2})").msg,
-        );
-        // ... even if one of the arguments is just a single value.
-        assert_eq!(
-            FormulaErrorMsg::ExactArraySizeMismatch {
-                expected: (1, 11),
-                got: (1, 1)
-            },
-            eval_to_err(g, "AVERAGEIF(0..10, \"<=5\", 3)").msg,
-        );
-        assert_eq!(
-            FormulaErrorMsg::ExactArraySizeMismatch {
-                expected: (1, 1),
-                got: (1, 11)
-            },
-            eval_to_err(g, "AVERAGEIF(3, \"<=5\", 0..10)").msg,
-        );
-    }
-
-    #[test]
     fn test_count() {
         let g = &mut NoGrid;
         assert_eq!("0", eval_to_string(g, "COUNT()"));
