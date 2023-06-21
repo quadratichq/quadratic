@@ -5,7 +5,7 @@ import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 import { HeadingSize } from '../../../grid/sheet/useHeadings';
 import { PanMode } from '../../../atoms/gridInteractionStateAtom';
-import { CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
+import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
@@ -72,7 +72,10 @@ export class PointerHeading {
     if (headingResize) {
       this.app.setViewportDirty();
       if (this.clicked && headingResize.column !== undefined) {
-        this.onDoubleClick(headingResize.column);
+        this.onDoubleClickColumn(headingResize.column);
+        return true;
+      } else if (this.clicked && headingResize.row !== undefined) {
+        this.onDoubleClickRow(headingResize.row);
         return true;
       }
       this.headingResizeViewport = {
@@ -253,7 +256,7 @@ export class PointerHeading {
     return false;
   }
 
-  private onDoubleClick(column: number): void {
+  private onDoubleClickColumn(column: number): void {
     const cellsColumnContent = this.app.cells.getCellsContentWidth().filter((cell) => cell.location.x === column);
 
     if (cellsColumnContent.length === 0) return;
@@ -268,6 +271,30 @@ export class PointerHeading {
         data: {
           heading_size: {
             column,
+            size,
+          },
+        },
+      },
+    ]);
+  }
+
+  private onDoubleClickRow(row: number): void {
+    // todo when rows have content...
+    // const cellsColumnContent = this.app.cells.getCellsContentWidth().filter((cell) => cell.location.x === column);
+    // if (cellsColumnContent.length === 0) return;
+    // const maxWidth = cellsColumnContent.reduce((max, cell) => (cell.textWidth > max ? cell.textWidth : max), 0);
+    // const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
+    // const size = Math.max(contentSizePlusMargin, MINIMUM_COLUMN_SIZE);
+
+    const size = CELL_HEIGHT;
+
+    this.app.quadrants.quadrantChanged({ row });
+    this.app.sheet_controller.predefined_transaction([
+      {
+        type: 'SET_HEADING_SIZE',
+        data: {
+          heading_size: {
+            row,
             size,
           },
         },
