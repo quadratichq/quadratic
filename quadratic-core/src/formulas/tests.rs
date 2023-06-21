@@ -17,18 +17,30 @@ macro_rules! array {
     }};
 }
 
-pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
-    eval(grid, s).unwrap().to_string()
-}
-pub(crate) fn eval_to_err(grid: &mut dyn GridProxy, s: &str) -> FormulaError {
-    println!("Testing formula {s:?}");
-    match eval(grid, s) {
-        Err(e) => e,
-        Ok(v) => panic!("expected error; got value {v:?}"),
-    }
-}
-pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
+pub(crate) fn try_eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
+    println!("Evaluating formula {s:?}");
     parse_formula(s, Pos::ORIGIN)?.eval_blocking(grid, Pos::ORIGIN)
+}
+#[track_caller]
+pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> Value {
+    try_eval(grid, s).expect("error evaluating formula")
+}
+#[track_caller]
+pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
+    eval(grid, s).to_string()
+}
+#[track_caller]
+pub(crate) fn eval_to_err(grid: &mut dyn GridProxy, s: &str) -> FormulaError {
+    try_eval(grid, s).expect_err("expected error")
+}
+
+#[track_caller]
+pub(crate) fn expect_val(value: impl Into<Value>, grid: &mut dyn GridProxy, s: &str) {
+    assert_eq!(value.into(), eval(grid, s));
+}
+#[track_caller]
+pub(crate) fn expect_err(error_msg: &FormulaErrorMsg, grid: &mut dyn GridProxy, s: &str) {
+    assert_eq!(*error_msg, eval_to_err(grid, s).msg);
 }
 
 /// `GridProxy` implementation that just panics whenever a cell is accessed.
@@ -173,7 +185,7 @@ fn test_formula_array_op() {
             13 * 31, 23 * 31;
             14 * 31, 24 * 31;
         ]),
-        eval(&mut g, "B1:C4 * D1").unwrap(),
+        eval(&mut g, "B1:C4 * D1"),
     );
     assert_eq!(
         Value::from(array![
@@ -182,7 +194,7 @@ fn test_formula_array_op() {
             11 * 33, 11 * 43;
             11 * 34, 11 * 44;
         ]),
-        eval(&mut g, "B1 * D1:E4").unwrap(),
+        eval(&mut g, "B1 * D1:E4"),
     );
     assert_eq!(
         Value::from(array![
@@ -191,11 +203,11 @@ fn test_formula_array_op() {
             13 * 33, 23 * 43;
             14 * 34, 24 * 44;
         ]),
-        eval(&mut g, "B1:C4 * D1:E4").unwrap(),
+        eval(&mut g, "B1:C4 * D1:E4"),
     );
     assert_eq!(
         "Array height mismatch: expected value with 1 row or 4 rows, got 5 rows",
-        eval(&mut g, "B1:C4 * D1:E5").unwrap_err().msg.to_string(),
+        eval_to_err(&mut g, "B1:C4 * D1:E5").msg.to_string(),
     );
 }
 
@@ -208,7 +220,7 @@ fn test_array_parsing() {
             f(21), f(22);
             f(31), f(32);
         ]),
-        eval(&mut NoGrid, "{11, 12; 21, 22; 31, 32}").unwrap(),
+        eval(&mut NoGrid, "{11, 12; 21, 22; 31, 32}"),
     );
 
     // Test stringification
@@ -226,7 +238,7 @@ fn test_array_parsing() {
     // Mismatched rows
     assert_eq!(
         FormulaErrorMsg::NonRectangularArray,
-        eval(&mut NoGrid, "{1; 3, 4}").unwrap_err().msg,
+        eval_to_err(&mut NoGrid, "{1; 3, 4}").msg,
     );
 
     // Blank values

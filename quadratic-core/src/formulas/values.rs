@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use smallvec::{smallvec, SmallVec};
 use std::fmt;
 
@@ -61,6 +62,14 @@ impl Value {
         match self {
             Value::Single(value) => std::slice::from_ref(value),
             Value::Array(array) => &array.values,
+        }
+    }
+
+    /// Returns a formula-source-code representation of the value.
+    pub fn repr(&self) -> String {
+        match self {
+            Value::Single(value) => value.repr(),
+            Value::Array(array) => array.repr(),
         }
     }
 
@@ -275,8 +284,18 @@ impl Array {
             )
         }
     }
+    /// Returns a formula-source-code representation of the value.
+    pub fn repr(&self) -> String {
+        format!(
+            "{{{}}}",
+            self.rows()
+                .map(|row| row.iter().map(|v| v.repr()).join(", "))
+                .join("; "),
+        )
+    }
 
-    /// Transposes an array (swaps rows and columns). This is an expensive operation for large arrays.
+    /// Transposes an array (swaps rows and columns). This is an expensive
+    /// operation for large arrays.
     pub fn transpose(&self) -> Array {
         let width = self.height;
         let height = self.width;
@@ -284,6 +303,26 @@ impl Array {
             .map(|(x, y)| self.get(y, x).unwrap().clone())
             .collect();
         Self::new_row_major(width, height, values).unwrap()
+    }
+    /// Flips an array horizontally. This is an expensive operation for large
+    /// arrays.
+    pub fn flip_horizontally(&self) -> Array {
+        let ArraySize { w, h } = self.array_size();
+        Self::new_row_major(
+            w,
+            h,
+            self.rows()
+                .map(|row| row.iter().rev().cloned())
+                .flatten()
+                .collect(),
+        )
+        .unwrap()
+    }
+    /// Flips an array vertically. This is an expensive operation for large
+    /// arrays.
+    pub fn flip_vertically(&self) -> Array {
+        let ArraySize { w, h } = self.array_size();
+        Self::new_row_major(w, h, self.rows().rev().flatten().cloned().collect()).unwrap()
     }
 
     /// Returns an iterator over `(x, y)` array indices in canonical order.
@@ -307,7 +346,7 @@ impl Array {
         }
     }
     /// Returns an iterator over the rows of the array.
-    pub fn rows(&self) -> impl Iterator<Item = &[BasicValue]> {
+    pub fn rows(&self) -> std::slice::Chunks<'_, BasicValue> {
         self.values.chunks(self.width as usize)
     }
 
@@ -480,6 +519,19 @@ impl BasicValue {
             BasicValue::Err(_) => "error",
         }
     }
+    /// Returns a formula-source-code representation of the value.
+    pub fn repr(&self) -> String {
+        match self {
+            BasicValue::Blank => String::new(),
+            BasicValue::String(s) => format!("{s:?}"),
+            BasicValue::Number(n) => n.to_string(),
+            BasicValue::Bool(b) => match b {
+                true => "TRUE".to_string(),
+                false => "FALSE".to_string(),
+            },
+            BasicValue::Err(_) => format!("[error]"),
+        }
+    }
 
     /// Returns whether the value is a blank value. The empty string is considered
     /// non-blank.
@@ -488,6 +540,13 @@ impl BasicValue {
     }
     pub fn is_blank_or_empty_string(&self) -> bool {
         self.is_blank() || *self == BasicValue::String(String::new())
+    }
+    /// Returns the contained error, if this is an error value.
+    pub fn error(&self) -> Option<&FormulaError> {
+        match self {
+            BasicValue::Err(e) => Some(e),
+            _ => None,
+        }
     }
 
     /// Coerces the value to a specific type; returns `None` if the conversion

@@ -30,6 +30,11 @@ impl Pos {
             self.y.div_euclid(crate::QUADRANT_SIZE as _),
         )
     }
+
+    /// Returns an A1-style reference to the cell position.
+    pub fn a1_string(self) -> String {
+        crate::util::column_name(self.x) + &self.y.to_string()
+    }
 }
 
 impl fmt::Display for Pos {
