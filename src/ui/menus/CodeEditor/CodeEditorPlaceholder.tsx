@@ -97,7 +97,7 @@ export function CodeEditorPlaceholder({
         ...codeEditorCommentStyles,
       }}
     >
-      Start typing or start with a quick snippet:{' '}
+      Start with a code snippet to{' '}
       {snippets.map((snippet, i: number) => (
         <Fragment key={i}>
           <a
@@ -115,7 +115,7 @@ export function CodeEditorPlaceholder({
       ))}
       <br />
       <br />
-      Last line returns to the sheet (
+      Start typing to dismiss or{' '}
       <a
         href="#dont-show-again"
         style={{ color: 'inherit', pointerEvents: 'auto' }}
@@ -126,7 +126,7 @@ export function CodeEditorPlaceholder({
       >
         don’t show this again
       </a>
-      ).
+      .
     </div>
   );
 }
