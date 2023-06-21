@@ -1,4 +1,5 @@
 import express from 'express';
+import axios from 'axios';
 import { z } from 'zod';
 import { Request as JWTRequest } from 'express-jwt';
 import { PrismaClient } from '@prisma/client';
@@ -39,14 +40,7 @@ files_router.post('/', validateAccessToken, async (request: JWTRequest, response
         feedback,
       ].join('\n\n'),
     };
-    // @ts-expect-error we're on node18 so global fetch is ok
-    fetch(process.env.SLACK_FEEDBACK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    }).catch((e: Error) => {
+    axios.post(process.env.SLACK_FEEDBACK_URL, payload).catch((e: Error) => {
       console.log('Failed to post feedback to Slack', e);
     });
   }
