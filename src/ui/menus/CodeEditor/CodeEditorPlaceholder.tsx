@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect } from 'react';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
@@ -59,12 +59,22 @@ out
 
 export function CodeEditorPlaceholder({
   editorContent,
+  editorRef,
   setEditorContent,
 }: {
   editorContent: string | undefined;
+  editorRef: any;
   setEditorContent: (str: string | undefined) => void;
 }) {
   const [showPlaceholder, setShowPlaceholder] = useLocalStorage<boolean>('showCodeEditorPlaceholder', true);
+
+  // When autofill the snippet, focus the editor at the initial position
+  useEffect(() => {
+    if (editorRef && editorRef.current) {
+      editorRef.current.focus();
+      editorRef.current.setPosition({ lineNumber: 0, column: 0 });
+    }
+  }, [editorRef, editorContent]);
 
   if (editorContent) {
     return null;
@@ -87,7 +97,7 @@ export function CodeEditorPlaceholder({
         ...codeEditorCommentStyles,
       }}
     >
-      Start typing — or get started with a quick snippet:{' '}
+      Start typing or start with a quick snippet:{' '}
       {snippets.map((snippet, i: number) => (
         <Fragment key={i}>
           <a

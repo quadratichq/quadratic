@@ -413,7 +413,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
           }}
         />
         {selectedCell.type === 'PYTHON' && (
-          <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
+          <CodeEditorPlaceholder
+            editorContent={editorContent}
+            setEditorContent={setEditorContent}
+            editorRef={editorRef}
+          />
         )}
       </div>
 
