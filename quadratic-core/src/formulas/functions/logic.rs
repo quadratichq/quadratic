@@ -75,7 +75,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "IF(A2<0, \"A2 is negative\", IF(A2>0, \"A2 is positive\", \"A2 is zero\"))"
             )]
             #[pure_zip_map]
-            fn IF([condition]: bool, [t]: _, [f]: _) {
+            fn IF([condition]: bool, [t]: BasicValue, [f]: BasicValue) {
                 if condition { t } else { f }.clone()
             }
         ),

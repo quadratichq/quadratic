@@ -11,6 +11,7 @@ import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { Quadrant } from './Quadrant';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS } from './quadrantConstants';
+import { Cells } from '../UI/cells/Cells';
 
 interface QuadrantChanged {
   row?: number;
@@ -25,10 +26,17 @@ export class Quadrants extends Container {
   private complete = false;
   private quadrants: Map<string, Quadrant>;
 
+  // used to render cells in Quadrant
+  container: Container;
+  cells: Cells;
+
   constructor(app: PixiApp) {
     super();
     this.app = app;
     this.quadrants = new Map<string, Quadrant>();
+    this.container = new Container();
+    this.cells = this.container.addChild(new Cells(app));
+    this.container.addChildAt(this.cells.cellsBackground, 0);
   }
 
   getQuadrantCoordinate(x: number, y: number): Coordinate {
@@ -75,6 +83,10 @@ export class Quadrants extends Container {
         } quadrants to queue.`
       );
     }
+  }
+
+  needsUpdating(): boolean {
+    return !!this.children.find((child) => (child as Quadrant).dirty);
   }
 
   /**
@@ -138,7 +150,6 @@ export class Quadrants extends Container {
         this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), nextDirty.visibleRectangle)
       );
     }
-
     return false;
   }
 
@@ -249,5 +260,12 @@ export class Quadrants extends Container {
   private debugCacheStats(): void {
     const textures = this.children.reduce((count, child) => count + (child as Quadrant).debugTextureCount(), 0);
     console.log(`[Quadrants] Rendered ${textures} quadrant textures.`);
+  }
+
+  cull(): void {
+    const bounds = this.app.viewport.getVisibleBounds();
+    this.children.forEach((child) => {
+      (child as Quadrant).cull(bounds);
+    });
   }
 }
