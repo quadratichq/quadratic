@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
@@ -88,7 +89,7 @@ export function CodeEditorPlaceholder({
     >
       Start typing — or get started with a quick snippet:{' '}
       {snippets.map((snippet, i: number) => (
-        <>
+        <Fragment key={i}>
           <a
             href={`#snippet-${i}`}
             style={{ color: 'inherit', pointerEvents: 'auto' }}
@@ -100,7 +101,7 @@ export function CodeEditorPlaceholder({
             {snippet.label}
           </a>
           {i === snippets.length - 1 ? '.' : i < snippets.length - 2 ? ', ' : ', or '}
-        </>
+        </Fragment>
       ))}
       <br />
       <br />
