@@ -20,6 +20,7 @@ pub type AstNode = Spanned<AstNodeContents>;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum AstNodeContents {
+    Empty,
     FunctionCall {
         func: Spanned<String>,
         args: Vec<AstNode>,
@@ -34,6 +35,7 @@ pub enum AstNodeContents {
 impl fmt::Display for AstNodeContents {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            AstNodeContents::Empty => write!(f, ""),
             AstNodeContents::FunctionCall { func, args } => {
                 write!(f, "{func}(")?;
                 if let Some(first) = args.first() {
@@ -62,6 +64,7 @@ impl fmt::Display for AstNodeContents {
 impl AstNodeContents {
     fn type_string(&self) -> &'static str {
         match self {
+            AstNodeContents::Empty => "empty expression",
             AstNodeContents::FunctionCall { func, .. } => match func.inner.as_str() {
                 "=" | "==" | "<>" | "!=" | "<" | ">" | "<=" | ">=" => "comparison",
                 s if s.chars().all(|c| c.is_alphanumeric() || c == '_') => "function call",
@@ -116,6 +119,8 @@ impl AstNode {
 
     async fn eval_inner<'ctx: 'a, 'a>(&'a self, ctx: &'a mut Ctx<'ctx>) -> FormulaResult {
         let value = match &self.inner {
+            AstNodeContents::Empty => BasicValue::Blank.into(),
+
             // Cell range
             AstNodeContents::FunctionCall { func, args } if func.inner == ":" => {
                 if args.len() != 2 {

@@ -50,22 +50,19 @@ pub(super) fn arg_completion_string(args: &[Param]) -> &'static str {
     let mut i = 0;
     let mut depth = 0;
     let mut is_first = true;
-    let mut is_after_first_required_argument = false;
+    // Assume that all required arguments come before any optional ones.
     for arg in args {
         i += 1;
         if is_first {
             is_first = false;
         } else {
-            if arg.is_optional() && is_after_first_required_argument {
+            if arg.is_optional() {
                 ret.push_str(&format!("${{{i}:, "));
                 i += 1;
                 depth += 1;
             } else {
                 ret.push_str(", ");
             }
-        }
-        if arg.is_required() {
-            is_after_first_required_argument = true;
         }
         ret.push_str(&format!("${{{i}:{}}}", arg.usage_string()));
     }
