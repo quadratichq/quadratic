@@ -1,4 +1,4 @@
-import { Fragment, useEffect, RefObject } from 'react';
+import { Fragment, RefObject, useEffect, useState } from 'react';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 import monaco from 'monaco-editor';
@@ -68,14 +68,17 @@ export function CodeEditorPlaceholder({
   setEditorContent: (str: string | undefined) => void;
 }) {
   const [showPlaceholder, setShowPlaceholder] = useLocalStorage<boolean>('showCodeEditorPlaceholder', true);
+  const [shouldRunEffect, setShouldRunEffect] = useState<boolean>(false);
 
-  // When autofill the snippet, focus the editor at the initial position
+  // When the user chooses to autofill the editor with a predefined snippet,
+  // focus the editor and set the initial cursor position
   useEffect(() => {
-    if (editorRef && editorRef.current) {
+    if (editorRef && editorRef.current && shouldRunEffect) {
       editorRef.current.focus();
       editorRef.current.setPosition({ lineNumber: 0, column: 0 });
+      setShouldRunEffect(false);
     }
-  }, [editorRef, editorContent]);
+  }, [editorRef, editorContent, shouldRunEffect]);
 
   if (editorContent) {
     return null;
@@ -107,6 +110,7 @@ export function CodeEditorPlaceholder({
             onClick={(e) => {
               e.preventDefault();
               setEditorContent(snippet.code);
+              setShouldRunEffect(true);
             }}
           >
             {snippet.label}
