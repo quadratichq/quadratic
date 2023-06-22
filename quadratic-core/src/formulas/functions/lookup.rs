@@ -30,44 +30,42 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///
             /// This function uses a [binary search
             /// algorithm](https://en.wikipedia.org/wiki/Binary_search_algorithm),
-            /// so **the first column of `range_to_search_in` must be sorted**,
-            /// with smaller values at the top and larger values at the bottom.
-            /// If that column is not sorted, then the result of this function
-            /// will be meaningless.
+            /// so **the first column of `search_range` must be sorted**, with
+            /// smaller values at the top and larger values at the bottom. If
+            /// that column is not sorted, then the result of this function will
+            /// be meaningless.
             ///
-            /// If `use_approx_match` is `TRUE`, this function finds the closest
-            /// match that is less than or equal to `value_to_search_for`. If
-            /// `use_approx_match` is `FALSE`, this function only accepts an
-            /// exact match. If `use_approx_match` is omitted, it defaults to
-            /// `TRUE`.
+            /// If `approx` is `TRUE`, this function finds the closest match
+            /// that is less than or equal to `search_key`. If `approx` is
+            /// `FALSE`, this function only accepts an exact match. If `approx`
+            /// is omitted, it defaults to `TRUE`.
             ///
-            /// If any of `value_to_search_for`, `column_to_return`, or
-            /// `use_approx_match` is an array, then they must be compatible
-            /// sizes and a lookup will be performed for each corresponding set
-            /// of elements.
+            /// If any of `search_key`, `output_col`, or `approx` is an array,
+            /// then they must be compatible sizes and a lookup will be
+            /// performed for each corresponding set of elements.
             #[examples("VLOOKUP(17, A1:C10, 3)", "VLOOKUP(17, A1:C10, 2, FALSE)")]
             #[pure_zip_map]
             fn VLOOKUP(
                 span: Span,
-                [value_to_search_for]: BasicValue,
-                range_to_search_in: Array,
-                [column_to_return]: u32,
-                [use_approx_match]: (Option<bool>),
+                [search_key]: BasicValue,
+                search_range: Array,
+                [output_col]: u32,
+                [approx]: (Option<bool>),
             ) {
-                let needle = value_to_search_for;
-                let haystack = &(0..range_to_search_in.height())
-                    .filter_map(|y| range_to_search_in.get(0, y).ok())
+                let needle = search_key;
+                let haystack = &(0..search_range.height())
+                    .filter_map(|y| search_range.get(0, y).ok())
                     .collect_vec();
-                let match_mode = LookupMatchMode::from_approx_match_param(use_approx_match);
+                let match_mode = LookupMatchMode::from_approx_param(approx);
                 let search_mode = LookupSearchMode::BinaryAscending;
 
-                let x = column_to_return
+                let x = output_col
                     .checked_sub(1)
                     .ok_or_else(|| FormulaErrorMsg::IndexOutOfBounds)?;
                 let y = lookup(needle, haystack, match_mode, search_mode)?
                     .ok_or_else(|| FormulaErrorMsg::NoMatch.with_span(span))?;
 
-                range_to_search_in.get(x, y as u32)?.clone()
+                search_range.get(x, y as u32)?.clone()
             }
         ),
         formula_fn!(
@@ -77,53 +75,50 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///
             /// This function uses a [binary search
             /// algorithm](https://en.wikipedia.org/wiki/Binary_search_algorithm),
-            /// so **the first row of `range_to_search_in` must be sorted**,
-            /// with smaller values at the left and larger values at the right.
-            /// If that row is not sorted, then the result of this function will
-            /// be meaningless.
+            /// so **the first row of `search_range` must be sorted**, with
+            /// smaller values at the left and larger values at the right. If
+            /// that row is not sorted, then the result of this function will be
+            /// meaningless.
             ///
-            /// If `use_approx_match` is `TRUE`, this function finds the closest
-            /// match that is less than or equal to `value_to_search_for`. If
-            /// `use_approx_match` is `FALSE`, this function only accepts an
-            /// exact match. If `use_approx_match` is omitted, it defaults to
-            /// `TRUE`.
+            /// If `approx` is `TRUE`, this function finds the closest match
+            /// that is less than or equal to `search_key`. If `approx` is
+            /// `FALSE`, this function only accepts an exact match. If `approx`
+            /// is omitted, it defaults to `TRUE`.
             ///
-            /// If any of `value_to_search_for`, `column_to_return`, or
-            /// `use_approx_match` is an array, then they must be compatible
-            /// sizes and a lookup will be performed for each corresponding set
-            /// of elements.
+            /// If any of `search_key`, `output_col`, or `approx` is an array,
+            /// then they must be compatible sizes and a lookup will be
+            /// performed for each corresponding set of elements.
             #[examples("HLOOKUP(17, A1:Z3, 3)", "HLOOKUP(17, A1:Z3, 2, FALSE)")]
             #[pure_zip_map]
             fn HLOOKUP(
                 span: Span,
-                [value_to_search_for]: BasicValue,
-                range_to_search_in: Array,
-                [row_to_return]: u32,
-                [use_approx_match]: (Option<bool>),
+                [search_key]: BasicValue,
+                search_range: Array,
+                [output_row]: u32,
+                [approx]: (Option<bool>),
             ) {
-                let needle = value_to_search_for;
-                let haystack = range_to_search_in
+                let needle = search_key;
+                let haystack = search_range
                     .rows()
                     .next()
                     .ok_or_else(|| internal_error_value!("missing first row"))?;
-                let match_mode = LookupMatchMode::from_approx_match_param(use_approx_match);
+                let match_mode = LookupMatchMode::from_approx_param(approx);
                 let search_mode = LookupSearchMode::BinaryAscending;
 
                 let x = lookup(needle, haystack, match_mode, search_mode)?
                     .ok_or_else(|| FormulaErrorMsg::NoMatch.with_span(span))?;
-                let y = row_to_return
+                let y = output_row
                     .checked_sub(1)
                     .ok_or_else(|| FormulaErrorMsg::IndexOutOfBounds)?;
 
-                range_to_search_in.get(x as u32, y)?.clone()
+                search_range.get(x as u32, y)?.clone()
             }
         ),
         formula_fn!(
             /// Searches for a value in a linear range and returns a row or
             /// column from another range.
             ///
-            /// `range_to_search_in` must be either a single row or a single
-            /// column.
+            /// `search_range` must be either a single row or a single column.
             ///
             /// # Match modes
             ///
@@ -153,35 +148,32 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// search requires that values are sorted, with smaller values at
             /// the top or left and larger values at the bottom or right.
             /// Reverse binary search requires that values are sorted in the
-            /// opposite direction. If `range_to_search_in` is not sorted, then
-            /// the result of this function will be meaningless.
+            /// opposite direction. If `search_range` is not sorted, then the
+            /// result of this function will be meaningless.
             ///
             /// Binary search is not compatible with the wildcard match mode.
             ///
             /// # Result
             ///
-            /// If `range_to_search_in` is a row, then it must have the same
-            /// width as `range_to_return_from` so that each value in
-            /// `range_to_search_in` corresponds to a column in
-            /// `range_to_return_from`. In this case, the **search axis** is
-            /// vertical.
+            /// If `search_range` is a row, then it must have the same width as
+            /// `output_range` so that each value in `search_range` corresponds
+            /// to a column in `output_range`. In this case, the **search axis**
+            /// is vertical.
             ///
-            /// If `range_to_search_in` is a column, then it must have the same
-            /// height as `range_to_return_from` so that each value in
-            /// `range_to_search_in` corresponds to a row in
-            /// `range_to_return_from`. In this case, the **search axis** is
-            /// horizontal.
+            /// If `search_range` is a column, then it must have the same height
+            /// as `output_range` so that each value in `search_range`
+            /// corresponds to a row in `output_range`. In this case, the
+            /// **search axis** is horizontal.
             ///
-            /// If a match is not found, then `return_if_not_found` is returned
-            /// instead. If there is no match and `return_if_not_found` is
-            /// omitted, then returns an error.
+            /// If a match is not found, then `fallback` is returned instead. If
+            /// there is no match and `fallback` is omitted, then returns an
+            /// error.
             ///
-            /// If any of `value_to_search_for`, `return_if_not_found`,
-            /// `match_mode`, or `search_mode` is an array, then they must be
-            /// compatible sizes and a lookup will be performed for each
-            /// corresponding set of elements. These arrays must also have
-            /// compatible size with the non-search axis of
-            /// `range_to_return_from`.
+            /// If any of `search_key`, `fallback`, `match_mode`, or
+            /// `search_mode` is an array, then they must be compatible sizes
+            /// and a lookup will be performed for each corresponding set of
+            /// elements. These arrays must also have compatible size with the
+            /// non-search axis of `output_range`.
             #[examples(
                 "XLOOKUP(\"zebra\", A1:Z1, A4:Z6)",
                 "XLOOKUP({\"zebra\"; \"aardvark\"}, A1:Z1, A4:Z6)",
@@ -189,14 +181,14 @@ fn get_functions() -> Vec<FormulaFunction> {
             )]
             fn XLOOKUP(
                 span: Span,
-                value_to_search_for: (Spanned<Array>),
-                range_to_search_in: (Spanned<Array>),
-                range_to_return_from: (Spanned<Array>),
-                return_if_not_found: (Option<Spanned<Array>>),
+                search_key: (Spanned<Array>),
+                search_range: (Spanned<Array>),
+                output_range: (Spanned<Array>),
+                fallback: (Option<Spanned<Array>>),
                 match_mode: (Option<Spanned<i64>>),
                 search_mode: (Option<Spanned<i64>>),
             ) {
-                let return_if_not_found = return_if_not_found.unwrap_or(Spanned {
+                let fallback = fallback.unwrap_or(Spanned {
                     span,
                     inner: Array::from(BasicValue::Err(Box::new(
                         FormulaErrorMsg::NoMatch.with_span(span),
@@ -221,9 +213,9 @@ fn get_functions() -> Vec<FormulaFunction> {
 
                 // Give more concise names so it's easier to keep track of them
                 // while reading this code.
-                let needle = value_to_search_for;
-                let haystack = range_to_search_in;
-                let returns = range_to_return_from;
+                let needle = search_key;
+                let haystack = search_range;
+                let returns = output_range;
 
                 // Infer which axis to search along.
                 let search_axis = None
@@ -246,19 +238,16 @@ fn get_functions() -> Vec<FormulaFunction> {
                 // - The output of the function is QxR
                 // - `needle` is QxR
                 // - `returns` is NxR
-                // - `return_if_not_found` is QxR
+                // - `fallback` is QxR
 
-                // Find the values for N, Q, and R, and error if there's an array
-                // mismatch.
+                // Find the values for N, Q, and R, and error if there's an
+                // array mismatch.
                 let n = Array::common_len(search_axis, [&haystack, &returns].map(|v| v.as_ref()))?;
                 returns.check_array_size_on(search_axis, n)?;
-                let q = Array::common_len(
-                    search_axis,
-                    [&needle, &return_if_not_found].map(|v| v.as_ref()),
-                )?;
+                let q = Array::common_len(search_axis, [&needle, &fallback].map(|v| v.as_ref()))?;
                 let r = Array::common_len(
                     non_search_axis,
-                    [&needle, &returns, &return_if_not_found].map(|v| v.as_ref()),
+                    [&needle, &returns, &fallback].map(|v| v.as_ref()),
                 )?;
 
                 // Perform the lookup for each needle.
@@ -285,8 +274,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                                 let y = if search_axis == Axis::Y { i as u32 } else { y };
                                 returns.inner.get(x, y)?.clone()
                             }),
-                            None => final_output_array
-                                .push(return_if_not_found.inner.get(x, y)?.clone()),
+                            None => final_output_array.push(fallback.inner.get(x, y)?.clone()),
                         }
                     }
                 }
@@ -440,8 +428,8 @@ impl TryFrom<Option<Spanned<i64>>> for LookupMatchMode {
     }
 }
 impl LookupMatchMode {
-    pub fn from_approx_match_param(use_approx_match: Option<bool>) -> Self {
-        match use_approx_match {
+    pub fn from_approx_param(approx: Option<bool>) -> Self {
+        match approx {
             Some(true) | None => LookupMatchMode::NextSmaller,
             Some(false) => LookupMatchMode::Exact,
         }
@@ -533,12 +521,12 @@ mod tests {
         let g = &mut ArrayGrid(pos![A1], array.clone());
 
         // Test exact match
-        for use_approx_match in ["", ", TRUE", ", FALSE"] {
+        for approx in ["", ", TRUE", ", FALSE"] {
             for row in array.rows() {
                 let needle = &row[0];
                 for (i, elem) in row.iter().enumerate() {
                     let col = i + 1;
-                    let formula = format!("VLOOKUP({needle}, A1:C4, {col} {use_approx_match})");
+                    let formula = format!("VLOOKUP({needle}, A1:C4, {col} {approx})");
                     println!("Testing formula {formula:?}");
                     assert_eq!(elem.to_string(), eval_to_string(g, &formula));
                 }
@@ -577,15 +565,14 @@ mod tests {
         let g = &mut ArrayGrid(pos![A1], array.clone());
 
         // Test exact match
-        for use_approx_match in ["", ", TRUE", ", FALSE"] {
+        for approx in ["", ", TRUE", ", FALSE"] {
             for row in array.clone().rows() {
                 let s = row[0].to_string();
                 // should be case-insensitive
                 for needle in [s.clone(), s.to_ascii_lowercase(), s.to_ascii_uppercase()] {
                     for (i, elem) in row.iter().enumerate() {
                         let col = i + 1;
-                        let formula =
-                            format!("VLOOKUP('{needle}', A1:C4, {col} {use_approx_match})");
+                        let formula = format!("VLOOKUP('{needle}', A1:C4, {col} {approx})");
                         println!("Testing formula {formula:?}");
                         assert_eq!(elem.to_string(), eval_to_string(g, &formula));
                     }
@@ -623,12 +610,12 @@ mod tests {
         let g = &mut ArrayGrid(pos![A1], array);
 
         // Test exact match
-        for use_approx_match in ["", ", TRUE", ", FALSE"] {
+        for approx in ["", ", TRUE", ", FALSE"] {
             for col in transposed_array.rows() {
                 let needle = &col[0];
                 for (i, elem) in col.iter().enumerate() {
                     let row = i + 1;
-                    let formula = format!("HLOOKUP({needle}, A1:D3, {row} {use_approx_match})");
+                    let formula = format!("HLOOKUP({needle}, A1:D3, {row} {approx})");
                     println!("Testing formula {formula:?}");
                     assert_eq!(elem.to_string(), eval_to_string(g, &formula));
                 }
@@ -668,15 +655,14 @@ mod tests {
         let g = &mut ArrayGrid(pos![A1], array);
 
         // Test exact match
-        for use_approx_match in ["", ", TRUE", ", FALSE"] {
+        for approx in ["", ", TRUE", ", FALSE"] {
             for col in transposed_array.rows() {
                 let s = col[0].to_string();
                 // should be case-insensitive
                 for needle in [s.clone(), s.to_ascii_lowercase(), s.to_ascii_uppercase()] {
                     for (i, elem) in col.iter().enumerate() {
                         let row = i + 1;
-                        let formula =
-                            format!("HLOOKUP('{needle}', A1:D3, {row} {use_approx_match})");
+                        let formula = format!("HLOOKUP('{needle}', A1:D3, {row} {approx})");
                         println!("Testing formula {formula:?}");
                         assert_eq!(elem.to_string(), eval_to_string(g, &formula));
                     }
