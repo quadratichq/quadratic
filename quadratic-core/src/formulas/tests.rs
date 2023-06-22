@@ -242,6 +242,7 @@ fn test_hyphen_after_cell_ref() {
     assert_eq!("25", eval_to_string(&mut g, "Z1-5"));
 }
 
+#[test]
 fn test_find_cell_references() {
     use CellRefCoord::{Absolute, Relative};
 
