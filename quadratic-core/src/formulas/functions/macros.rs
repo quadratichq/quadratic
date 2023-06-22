@@ -12,6 +12,12 @@ macro_rules! see_docs_for_more_about_criteria {
     () => { " See [the documentation](https://docs.quadratichq.com/formulas) for more details about how criteria work in formulas." };
 }
 
+macro_rules! see_docs_for_more_about_wildcards {
+    () => {
+        " See [the documentation](https://docs.quadratichq.com/formulas#31e708d41a1a497f8677ff01dddff38b) for more details about how wildcards work in formulas."
+    };
+}
+
 /// Macro to generate a `FormulaFunction` which contains an implementation of a
 /// function along with its documentation. This macro also generates code to
 /// check the number of arguments passed to the function at runtime.

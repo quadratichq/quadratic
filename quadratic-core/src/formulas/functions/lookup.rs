@@ -24,8 +24,28 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// TODO
-            #[examples("todo")]
+            /// Searches for a value in the first vertical column of a range and
+            /// return the corresponding cell in another vertical column, or an
+            /// error if no match is found.
+            ///
+            /// This function uses a [binary search
+            /// algorithm](https://en.wikipedia.org/wiki/Binary_search_algorithm),
+            /// so **the first column of `range_to_search_in` must be sorted**,
+            /// with smaller values at the top and larger values at the bottom.
+            /// If that column is not sorted, then the result of this function
+            /// will be meaningless.
+            ///
+            /// If `use_approx_match` is `TRUE`, this function finds the closest
+            /// match that is less than or equal to `value_to_search_for`. If
+            /// `use_approx_match` is `FALSE`, this function only accepts an
+            /// exact match. If `use_approx_match` is omitted, it defaults to
+            /// `TRUE`.
+            ///
+            /// If any of `value_to_search_for`, `column_to_return`, or
+            /// `use_approx_match` is an array, then they must be compatible
+            /// sizes and a lookup will be performed for each corresponding set
+            /// of elements.
+            #[examples("VLOOKUP(17, A1:C10, 3)", "VLOOKUP(17, A1:C10, 2, FALSE)")]
             #[pure_zip_map]
             fn VLOOKUP(
                 span: Span,
@@ -51,8 +71,28 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// TODO
-            #[examples("todo")]
+            /// Searches for a value in the first horizontal row of a range and
+            /// return the corresponding cell in another horizontal row, or an
+            /// error if no match is found.
+            ///
+            /// This function uses a [binary search
+            /// algorithm](https://en.wikipedia.org/wiki/Binary_search_algorithm),
+            /// so **the first row of `range_to_search_in` must be sorted**,
+            /// with smaller values at the left and larger values at the right.
+            /// If that row is not sorted, then the result of this function will
+            /// be meaningless.
+            ///
+            /// If `use_approx_match` is `TRUE`, this function finds the closest
+            /// match that is less than or equal to `value_to_search_for`. If
+            /// `use_approx_match` is `FALSE`, this function only accepts an
+            /// exact match. If `use_approx_match` is omitted, it defaults to
+            /// `TRUE`.
+            ///
+            /// If any of `value_to_search_for`, `column_to_return`, or
+            /// `use_approx_match` is an array, then they must be compatible
+            /// sizes and a lookup will be performed for each corresponding set
+            /// of elements.
+            #[examples("HLOOKUP(17, A1:Z3, 3)", "HLOOKUP(17, A1:Z3, 2, FALSE)")]
             #[pure_zip_map]
             fn HLOOKUP(
                 span: Span,
@@ -79,7 +119,69 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// TODO
+            /// Searches for a value in a linear range and returns a row or
+            /// column from another range.
+            ///
+            /// `range_to_search_in` must be either a single row or a single
+            /// column.
+            ///
+            /// # Match modes
+            ///
+            /// There are four match modes:
+            ///
+            /// - 0 = exact match (default)
+            /// - -1 = next smaller
+            /// - 1 = next larger
+            /// - 2 = wildcard
+            ///
+            #[doc = see_docs_for_more_about_wildcards!()]
+            ///
+            /// # Search modes
+            ///
+            /// There are four search modes:
+            ///
+            /// - 1 = linear search (default)
+            /// - -1 = reverse linear search
+            /// - 2 = [binary
+            ///        search](https://en.wikipedia.org/wiki/Binary_search_algorithm)
+            /// - -2 = reverse binary search
+            ///
+            /// Linear search finds the first matching value, while reverse
+            /// linear search finds the last matching value.
+            ///
+            /// Binary search may be faster than linear search, but binary
+            /// search requires that values are sorted, with smaller values at
+            /// the top or left and larger values at the bottom or right.
+            /// Reverse binary search requires that values are sorted in the
+            /// opposite direction. If `range_to_search_in` is not sorted, then
+            /// the result of this function will be meaningless.
+            ///
+            /// Binary search is not compatible with the wildcard match mode.
+            ///
+            /// # Result
+            ///
+            /// If `range_to_search_in` is a row, then it must have the same
+            /// width as `range_to_return_from` so that each value in
+            /// `range_to_search_in` corresponds to a column in
+            /// `range_to_return_from`. In this case, the **search axis** is
+            /// vertical.
+            ///
+            /// If `range_to_search_in` is a column, then it must have the same
+            /// height as `range_to_return_from` so that each value in
+            /// `range_to_search_in` corresponds to a row in
+            /// `range_to_return_from`. In this case, the **search axis** is
+            /// horizontal.
+            ///
+            /// If a match is not found, then `return_if_not_found` is returned
+            /// instead. If there is no match and `return_if_not_found` is
+            /// omitted, then returns an error.
+            ///
+            /// If any of `value_to_search_for`, `return_if_not_found`,
+            /// `match_mode`, or `search_mode` is an array, then they must be
+            /// compatible sizes and a lookup will be performed for each
+            /// corresponding set of elements. These arrays must also have
+            /// compatible size with the non-search axis of
+            /// `range_to_return_from`.
             #[examples("todo")]
             fn XLOOKUP(
                 span: Span,

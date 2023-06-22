@@ -137,6 +137,12 @@ impl FormulaFunction {
         format!("{name}({args})")
     }
 
+    /// Returns the documentation string after stripping leading spaces. Leading
+    /// spaces show up because we define formula docs using `/// stuff` syntax.
+    pub fn docs_string(&self) -> String {
+        self.doc.replace("\n ", "\n")
+    }
+
     /// Returns the autocomplete snippet for this function.
     pub fn autocomplete_snippet(&self) -> String {
         let name = self.name;
