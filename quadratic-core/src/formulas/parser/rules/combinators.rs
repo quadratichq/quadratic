@@ -99,6 +99,8 @@ pub struct List<R> {
 
     /// User-friendly name for separator.
     pub(super) sep_name: &'static str,
+    /// Whether to allow a trailing separator.
+    pub(super) allow_trailing_sep: bool,
 }
 impl<R: fmt::Display> fmt::Display for List<R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -121,13 +123,19 @@ impl<R: Copy + SyntaxRule> SyntaxRule for List<R> {
         let mut items = vec![];
         p.parse(self.start)?;
         loop {
-            // End the list or consume an item.
-            match parse_one_of!(p, [self.inner.map(Some), self.end.map(|_| None)])? {
+            let result = if self.allow_trailing_sep || items.is_empty() {
+                // End the list or consume an item.
+                parse_one_of!(p, [self.end.map(|_| None), self.inner.map(Some)])?
+            } else {
+                // Consume an item.
+                parse_one_of!(p, [self.inner.map(Some)])?
+            };
+            match result {
                 Some(item) => items.push(item), // There is an item.
                 None => break,                  // End of list; empty list, or trailing separator.
             }
             // End the list or consume a separator.
-            match parse_one_of!(p, [self.sep.map(Some), self.end.map(|_| None)])? {
+            match parse_one_of!(p, [self.end.map(|_| None), self.sep.map(Some)])? {
                 Some(_) => continue, // There is a separator.
                 None => break,       // End of list, no trailing separator.
             }
