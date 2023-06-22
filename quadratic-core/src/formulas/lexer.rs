@@ -75,10 +75,10 @@ const TOKEN_PATTERNS: &[&str] = &[
     UNTERMINATED_STRING_LITERAL_PATTERN,
     // Numeric literal.
     NUMERIC_LITERAL_PATTERN,
-    // Boolean literal (case-insensitive).
-    r#"false|true"#,
     // Function call.
     FUNCTION_CALL_PATTERN,
+    // Boolean literal (case-insensitive).
+    r#"false|true"#,
     // Reference to a cell.
     A1_CELL_REFERENCE_PATTERN,
     // Whitespace.
