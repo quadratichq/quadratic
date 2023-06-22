@@ -1,6 +1,7 @@
-import { Fragment, useEffect } from 'react';
+import { Fragment, useEffect, RefObject } from 'react';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
+import monaco from 'monaco-editor';
 
 export const snippets = [
   {
@@ -63,7 +64,7 @@ export function CodeEditorPlaceholder({
   setEditorContent,
 }: {
   editorContent: string | undefined;
-  editorRef: any;
+  editorRef: RefObject<monaco.editor.IStandaloneCodeEditor | null>;
   setEditorContent: (str: string | undefined) => void;
 }) {
   const [showPlaceholder, setShowPlaceholder] = useLocalStorage<boolean>('showCodeEditorPlaceholder', true);
