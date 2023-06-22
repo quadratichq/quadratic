@@ -66,10 +66,10 @@ class APIClientSingleton {
     }
   }
 
-  async postFeedback(feedback: string): Promise<boolean> {
+  async postFeedback({ feedback, userEmail }: { feedback: string; userEmail?: string }): Promise<boolean> {
     try {
       const url = `${this.getAPIURL()}/v0/feedback`;
-      const body = JSON.stringify({ feedback });
+      const body = JSON.stringify({ feedback, userEmail });
       const token = await this.getAuth();
       const response = await fetch(url, {
         method: 'POST',
