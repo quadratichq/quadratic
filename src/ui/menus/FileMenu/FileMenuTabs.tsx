@@ -130,7 +130,7 @@ export default function FileMenuTabs(props: FileMenuTabsProps) {
       </Tabs>
       <TabPanel value={value} index={0}>
         <Typography variant="body1" sx={{ mb: theme.spacing(2) }}>
-          Quadratic spreadsheets use an open <code>.grid</code> file format that be saved to your local computer, shared
+          Quadratic spreadsheets use an open <code>.grid</code> file format that is saved to your local computer, shared
           with others, and re-opened here.{' '}
           <LinkNewTab href={DOCUMENTATION_FILES_URL} color="inherit">
             Learn more

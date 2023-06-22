@@ -7,11 +7,18 @@
 /// user-specification of criteria used in `SUMIF`, `COUNTIF`, and `AVERAGEIF`.
 /// The string begins with a space.
 ///
-/// This is a macro instead of a constant so that it can be used with `concat!`.
+/// This is a macro instead of a constant so that it can be used with `concat!`
+/// or `#[doc]`.
 macro_rules! see_docs_for_more_about_criteria {
     () => { " See [the documentation](https://docs.quadratichq.com/formulas) for more details about how criteria work in formulas." };
 }
 
+/// Outputs a string containing a sentence linking to the documentation for
+/// user-specification of wildcards used in `SUMIF`, `COUNTIF`, `AVERAGEIF`, and
+/// `XLOOKUP`. The string begins with a space.
+///
+/// This is a macro instead of a constant so that it can be used with `concat!`
+/// or `#[doc]`.
 macro_rules! see_docs_for_more_about_wildcards {
     () => {
         " See [the documentation](https://docs.quadratichq.com/formulas#31e708d41a1a497f8677ff01dddff38b) for more details about how wildcards work in formulas."

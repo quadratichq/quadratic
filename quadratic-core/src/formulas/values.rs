@@ -491,7 +491,7 @@ pub enum BasicValue {
 impl fmt::Display for BasicValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            BasicValue::Blank => write!(f, "[blank]"),
+            BasicValue::Blank => write!(f, ""),
             BasicValue::String(s) => write!(f, "{s}"),
             BasicValue::Number(n) => write!(f, "{n}"),
             BasicValue::Bool(true) => write!(f, "TRUE"),

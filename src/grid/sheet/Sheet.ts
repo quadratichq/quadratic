@@ -47,7 +47,6 @@ export class Sheet {
     this.gridOffsets.populate(sheet.columns, sheet.rows);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
-    this.render_dependency.load(sheet.render_dependency);
     this.cell_dependency.loadFromString(sheet.cell_dependency);
     this.onRebuild?.();
   }
@@ -61,7 +60,6 @@ export class Sheet {
       formats,
       borders: this.borders.getArray(),
       cell_dependency: this.cell_dependency.exportToString(),
-      render_dependency: this.render_dependency.save(),
     };
   }
 
