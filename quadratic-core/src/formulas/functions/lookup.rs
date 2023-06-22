@@ -182,7 +182,11 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// corresponding set of elements. These arrays must also have
             /// compatible size with the non-search axis of
             /// `range_to_return_from`.
-            #[examples("todo")]
+            #[examples(
+                "XLOOKUP(\"zebra\", A1:Z1, A4:Z6)",
+                "XLOOKUP({\"zebra\"; \"aardvark\"}, A1:Z1, A4:Z6)",
+                "XLOOKUP(50, C4:C834, B4:C834, {-1, 0, \"not found\"}, -1, 2)"
+            )]
             fn XLOOKUP(
                 span: Span,
                 value_to_search_for: (Spanned<Array>),
