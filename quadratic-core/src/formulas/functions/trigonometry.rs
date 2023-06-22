@@ -100,6 +100,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// to the point `(x, y)`. Note that the argument order is reversed
             /// compared to the [typical `atan2()`
             /// function](https://en.wikipedia.org/wiki/Atan2).
+            ///
+            /// If both arguments are zero, returns zero.
             #[examples("ATAN2(2, 1)")]
             #[pure_zip_map]
             fn ATAN2(span: Span, [x]: f64, [y]: f64) {
