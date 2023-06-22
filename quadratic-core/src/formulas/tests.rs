@@ -219,6 +219,16 @@ fn test_array_parsing() {
 }
 
 #[test]
+fn test_bool_parsing() {
+    let g = &mut NoGrid;
+
+    assert_eq!("1", eval_to_string(g, "IF(TRUE, 1, 2)"));
+    assert_eq!("1", eval_to_string(g, "IF(true(), 1, 2)"));
+    assert_eq!("2", eval_to_string(g, "IF(False, 1, 2)"));
+    assert_eq!("2", eval_to_string(g, "IF(FALSE(), 1, 2)"));
+}
+
+#[test]
 fn test_leading_equals() {
     assert_eq!("7", eval_to_string(&mut NoGrid, "=3+4"));
     assert_eq!("7", eval_to_string(&mut NoGrid, "= 3+4"));

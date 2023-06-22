@@ -239,8 +239,6 @@ impl Token {
             "%" => Self::Percent,
             ":" => Self::CellRangeOp,
             "..." => Self::Ellipsis,
-            s if s.eq_ignore_ascii_case("false") => Self::False,
-            s if s.eq_ignore_ascii_case("true") => Self::True,
 
             // Match a line comment.
             s if s.starts_with("//") => Self::Comment,
@@ -275,6 +273,8 @@ impl Token {
             s if FUNCTION_CALL_REGEX.is_match(s) => Self::FunctionCall,
             s if STRING_LITERAL_REGEX.is_match(s) => Self::StringLiteral,
             s if UNTERMINATED_STRING_LITERAL_REGEX.is_match(s) => Self::UnterminatedStringLiteral,
+            s if s.eq_ignore_ascii_case("false") => Self::False,
+            s if s.eq_ignore_ascii_case("true") => Self::True,
             s if NUMERIC_LITERAL_REGEX.is_match(s) => Self::NumericLiteral,
             s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRef,
             s if s.trim().is_empty() => Self::Whitespace,
