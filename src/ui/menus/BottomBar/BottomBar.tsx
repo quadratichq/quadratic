@@ -129,7 +129,7 @@ export const BottomBar = (props: Props) => {
         {!isMobileOnly && (
           <>
             <span
-              style={{ display: 'flex', alignItems: 'center', gap: '.25rem' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '.25rem', cursor: 'pointer' }}
               onClick={() => {
                 setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
               }}

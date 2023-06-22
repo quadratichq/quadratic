@@ -17,6 +17,7 @@ import useLocalStorage from '../../../hooks/useLocalStorage';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { SocialDiscord, SocialGithub, SocialTwitter } from '../../icons';
+import { useAuth0 } from '@auth0/auth0-react';
 
 export const FeedbackMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -26,6 +27,7 @@ export const FeedbackMenu = () => {
   const [loadState, setLoadState] = useState<'INITIAL' | 'LOADING' | 'LOAD_ERROR'>('INITIAL');
   const theme = useTheme();
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const { user } = useAuth0();
 
   const closeMenu = () => {
     setEditorInteractionState((state) => ({
@@ -36,7 +38,7 @@ export const FeedbackMenu = () => {
 
   const onSubmit = async () => {
     setLoadState('LOADING');
-    const success = await apiClientSingleton.postFeedback(value);
+    const success = await apiClientSingleton.postFeedback({ feedback: value, userEmail: user?.email });
     if (success) {
       setValue('');
       closeMenu();
