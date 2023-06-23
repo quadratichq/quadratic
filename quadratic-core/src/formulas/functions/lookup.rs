@@ -28,20 +28,15 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// return the corresponding cell in another vertical column, or an
             /// error if no match is found.
             ///
-            /// This function uses a [binary search
+            /// If `is_sorted` is `TRUE`, this function uses a [binary search
             /// algorithm](https://en.wikipedia.org/wiki/Binary_search_algorithm),
-            /// so **the first column of `search_range` must be sorted**, with
-            /// smaller values at the top and larger values at the bottom. If
-            /// that column is not sorted, then the result of this function will
-            /// be meaningless.
+            /// so the first column of `search_range` must be sorted, with
+            /// smaller values at the top and larger values at the bottom;
+            /// otherwise the result of this function will be meaningless. If
+            /// `is_sorted` is omitted, it is assumed to be `false`.
             ///
-            /// If `approx` is `TRUE`, this function finds the closest match
-            /// that is less than or equal to `search_key`. If `approx` is
-            /// `FALSE`, this function only accepts an exact match. If `approx`
-            /// is omitted, it defaults to `TRUE`.
-            ///
-            /// If any of `search_key`, `output_col`, or `approx` is an array,
-            /// then they must be compatible sizes and a lookup will be
+            /// If any of `search_key`, `output_col`, or `is_sorted` is an
+            /// array, then they must be compatible sizes and a lookup will be
             /// performed for each corresponding set of elements.
             #[examples("VLOOKUP(17, A1:C10, 3)", "VLOOKUP(17, A1:C10, 2, FALSE)")]
             #[pure_zip_map]
@@ -50,14 +45,14 @@ fn get_functions() -> Vec<FormulaFunction> {
                 [search_key]: BasicValue,
                 search_range: Array,
                 [output_col]: u32,
-                [approx]: (Option<bool>),
+                [is_sorted]: (Option<bool>),
             ) {
                 let needle = search_key;
                 let haystack = &(0..search_range.height())
                     .filter_map(|y| search_range.get(0, y).ok())
                     .collect_vec();
-                let match_mode = LookupMatchMode::from_approx_param(approx);
-                let search_mode = LookupSearchMode::BinaryAscending;
+                let match_mode = LookupMatchMode::Exact;
+                let search_mode = LookupSearchMode::from_is_sorted(is_sorted);
 
                 let x = output_col
                     .checked_sub(1)
@@ -73,20 +68,16 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// return the corresponding cell in another horizontal row, or an
             /// error if no match is found.
             ///
-            /// This function uses a [binary search
+            ///
+            /// If `is_sorted` is `TRUE`, this function uses a [binary search
             /// algorithm](https://en.wikipedia.org/wiki/Binary_search_algorithm),
-            /// so **the first row of `search_range` must be sorted**, with
-            /// smaller values at the left and larger values at the right. If
-            /// that row is not sorted, then the result of this function will be
-            /// meaningless.
+            /// so the first row of `search_range` must be sorted, with smaller
+            /// values at the left and larger values at the right; otherwise the
+            /// result of this function will be meaningless. If `is_sorted` is
+            /// omitted, it is assumed to be `false`.
             ///
-            /// If `approx` is `TRUE`, this function finds the closest match
-            /// that is less than or equal to `search_key`. If `approx` is
-            /// `FALSE`, this function only accepts an exact match. If `approx`
-            /// is omitted, it defaults to `TRUE`.
-            ///
-            /// If any of `search_key`, `output_col`, or `approx` is an array,
-            /// then they must be compatible sizes and a lookup will be
+            /// If any of `search_key`, `output_col`, or `is_sorted` is an
+            /// array, then they must be compatible sizes and a lookup will be
             /// performed for each corresponding set of elements.
             #[examples("HLOOKUP(17, A1:Z3, 3)", "HLOOKUP(17, A1:Z3, 2, FALSE)")]
             #[pure_zip_map]
@@ -95,15 +86,15 @@ fn get_functions() -> Vec<FormulaFunction> {
                 [search_key]: BasicValue,
                 search_range: Array,
                 [output_row]: u32,
-                [approx]: (Option<bool>),
+                [is_sorted]: (Option<bool>),
             ) {
                 let needle = search_key;
                 let haystack = search_range
                     .rows()
                     .next()
                     .ok_or_else(|| internal_error_value!("missing first row"))?;
-                let match_mode = LookupMatchMode::from_approx_param(approx);
-                let search_mode = LookupSearchMode::BinaryAscending;
+                let match_mode = LookupMatchMode::Exact;
+                let search_mode = LookupSearchMode::from_is_sorted(is_sorted);
 
                 let x = lookup(needle, haystack, match_mode, search_mode)?
                     .ok_or_else(|| FormulaErrorMsg::NoMatch.with_span(span))?;
@@ -427,14 +418,6 @@ impl TryFrom<Option<Spanned<i64>>> for LookupMatchMode {
         }
     }
 }
-impl LookupMatchMode {
-    pub fn from_approx_param(approx: Option<bool>) -> Self {
-        match approx {
-            Some(true) | None => LookupMatchMode::NextSmaller,
-            Some(false) => LookupMatchMode::Exact,
-        }
-    }
-}
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
 enum LookupSearchMode {
@@ -443,6 +426,14 @@ enum LookupSearchMode {
     LinearReverse = -1,
     BinaryAscending = 2,
     BinaryDescending = -2,
+}
+impl LookupSearchMode {
+    fn from_is_sorted(is_sorted: Option<bool>) -> Self {
+        match is_sorted {
+            Some(false) | None => LookupSearchMode::LinearForward,
+            Some(true) => LookupSearchMode::BinaryAscending,
+        }
+    }
 }
 impl TryFrom<Option<Spanned<i64>>> for LookupSearchMode {
     type Error = FormulaError;
@@ -514,36 +505,22 @@ mod tests {
         );
     }
 
-    /// Test VLOOKUP on numeric data.
+    /// Test VLOOKUP error conditions.
     #[test]
-    fn test_vlookup_numeric() {
+    fn test_vlookup_errors() {
+        // Test using numbers ...
         let array = &*NUMBERS_LOOKUP_ARRAY;
         let g = &mut ArrayGrid(pos![A1], array.clone());
 
-        // Test exact match
-        for approx in ["", ", TRUE", ", FALSE"] {
-            for row in array.rows() {
-                let needle = &row[0];
-                for (i, elem) in row.iter().enumerate() {
-                    let col = i + 1;
-                    let formula = format!("VLOOKUP({needle}, A1:C4, {col} {approx})");
-                    println!("Testing formula {formula:?}");
-                    assert_eq!(elem.to_string(), eval_to_string(g, &formula));
+        // Test no match (value missing)
+        for col in 1..=3 {
+            for is_sorted in ["", ", FALSE", ", TRUE"] {
+                for search_key in [-5, 11, 999] {
+                    let formula = format!("VLOOKUP({search_key}, A1:C4, {col}{is_sorted})");
+                    eval_to_err(g, &formula);
                 }
             }
         }
-        // Test inexact match (less-than comparison)
-        assert_eq!("2", eval_to_string(g, "VLOOKUP(49, A1:C4, 1)"));
-        assert_eq!("two", eval_to_string(g, "VLOOKUP(49, A1:C4, 2)"));
-        assert_eq!("100", eval_to_string(g, "VLOOKUP(101, A1:C4, 1)"));
-        assert_eq!("hundred", eval_to_string(g, "VLOOKUP(101, A1:C4, 2)"));
-        assert_eq!("2", eval_to_string(g, "VLOOKUP(49, A1:C4, 1, TRUE)"));
-        assert_eq!("two", eval_to_string(g, "VLOOKUP(49, A1:C4, 2, TRUE)"));
-        assert_eq!("100", eval_to_string(g, "VLOOKUP(101, A1:C4, 1, TRUE)"));
-        assert_eq!("hundred", eval_to_string(g, "VLOOKUP(101, A1:C4, 2, TRUE)"));
-        eval_to_err(g, "VLOOKUP(49, A1:C4, 1, FALSE)");
-        eval_to_err(g, "VLOOKUP(49, A1:C4, 2, FALSE)");
-        eval_to_err(g, "VLOOKUP(0.9, A1:C4, 2, TRUE)");
 
         // Test no match due to wrong type
         eval_to_err(g, "VLOOKUP('word', A1:C4, 1)");
@@ -556,23 +533,38 @@ mod tests {
         eval_to_err(g, "VLOOKUP(-99, A1:C4, 'word')");
         eval_to_err(g, "VLOOKUP(-99, A1:C4, 0)");
         eval_to_err(g, "VLOOKUP(-99, A1:C4, 3)");
-    }
 
-    /// Test VLOOKUP on string data.
-    #[test]
-    fn test_vlookup_string() {
+        // Test using strings ...
         let array = &*STRINGS_LOOKUP_ARRAY;
         let g = &mut ArrayGrid(pos![A1], array.clone());
 
-        // Test exact match
-        for approx in ["", ", TRUE", ", FALSE"] {
+        // Test no match
+        for word in ["aardvark", "crackers", "zebra"] {
+            for is_sorted in ["", ", FALSE", ", TRUE"] {
+                eval_to_err(g, &format!("VLOOKUP('{word}', A1:C4, 1 {is_sorted})"));
+            }
+        }
+
+        // Test no match due to wrong type
+        eval_to_err(g, "VLOOKUP(10, A1:C4, 1)");
+        eval_to_err(g, "VLOOKUP(10, A1:C4, 1, FALSE)");
+        eval_to_err(g, "VLOOKUP(10, A1:C4, 1, TRUE)");
+    }
+
+    /// Test VLOOKUP.
+    #[test]
+    fn test_vlookup() {
+        // Test exact match (unsorted)
+        let array = &*MIXED_LOOKUP_ARRAY;
+        let g = &mut ArrayGrid(pos![A1], array.clone());
+        for is_sorted in ["", ", FALSE"] {
             for row in array.clone().rows() {
-                let s = row[0].to_string();
+                let s = row[0].repr();
                 // should be case-insensitive
-                for needle in [s.clone(), s.to_ascii_lowercase(), s.to_ascii_uppercase()] {
+                for needle in [&s, &s.to_ascii_lowercase(), &s.to_ascii_uppercase()] {
                     for (i, elem) in row.iter().enumerate() {
                         let col = i + 1;
-                        let formula = format!("VLOOKUP('{needle}', A1:C4, {col} {approx})");
+                        let formula = format!("VLOOKUP({needle}, A1:C8, {col} {is_sorted})");
                         println!("Testing formula {formula:?}");
                         assert_eq!(elem.to_string(), eval_to_string(g, &formula));
                     }
@@ -580,59 +572,40 @@ mod tests {
             }
         }
 
-        // Test inexact match (less-than comparison)
-        assert_eq!("bread", eval_to_string(g, "VLOOKUP('crackers', A1:C4, 1)"));
-        assert_eq!("3", eval_to_string(g, "VLOOKUP('crackers', A1:C4, 2)"));
-        assert_eq!("EGG", eval_to_string(g, "VLOOKUP('zebra', A1:C4, 1)"));
-        assert_eq!("4", eval_to_string(g, "VLOOKUP('zebra', A1:C4, 2)"));
-        assert_eq!(
-            "bread",
-            eval_to_string(g, "VLOOKUP('crackers', A1:C4, 1, TRUE)")
-        );
-        assert_eq!(
-            "3",
-            eval_to_string(g, "VLOOKUP('crackers', A1:C4, 2, TRUE)")
-        );
-        assert_eq!("EGG", eval_to_string(g, "VLOOKUP('zebra', A1:C4, 1, TRUE)"));
-        assert_eq!("4", eval_to_string(g, "VLOOKUP('zebra', A1:C4, 2, TRUE)"));
-        eval_to_err(g, "VLOOKUP('crackers', A1:C4, 1, FALSE)");
-        eval_to_err(g, "VLOOKUP('crackers', A1:C4, 2, FALSE)");
-
-        // Test no match due to wrong type
-        eval_to_err(g, "VLOOKUP(10, A1:C4, 1)");
-    }
-
-    /// Test HLOOKUP on numeric data.
-    #[test]
-    fn test_hlookup_numeric() {
-        let transposed_array = &*NUMBERS_LOOKUP_ARRAY;
-        let array = transposed_array.transpose();
-        let g = &mut ArrayGrid(pos![A1], array);
-
-        // Test exact match
-        for approx in ["", ", TRUE", ", FALSE"] {
-            for col in transposed_array.rows() {
-                let needle = &col[0];
-                for (i, elem) in col.iter().enumerate() {
-                    let row = i + 1;
-                    let formula = format!("HLOOKUP({needle}, A1:D3, {row} {approx})");
+        // Test exact match (sorted)
+        let array = &*STRINGS_LOOKUP_ARRAY;
+        let g = &mut ArrayGrid(pos![A1], array.clone());
+        for row in array.clone().rows() {
+            let s = row[0].repr();
+            // should be case-insensitive
+            for needle in [&s, &s.to_ascii_lowercase(), &s.to_ascii_uppercase()] {
+                for (i, elem) in row.iter().enumerate() {
+                    let col = i + 1;
+                    let formula = format!("VLOOKUP({needle}, A1:C4, {col}, TRUE)");
                     println!("Testing formula {formula:?}");
                     assert_eq!(elem.to_string(), eval_to_string(g, &formula));
                 }
             }
         }
-        // Test inexact match (less-than comparison)
-        assert_eq!("2", eval_to_string(g, "HLOOKUP(49, A1:D3, 1)"));
-        assert_eq!("two", eval_to_string(g, "HLOOKUP(49, A1:D3, 2)"));
-        assert_eq!("100", eval_to_string(g, "HLOOKUP(101, A1:D3, 1)"));
-        assert_eq!("hundred", eval_to_string(g, "HLOOKUP(101, A1:D3, 2)"));
-        assert_eq!("2", eval_to_string(g, "HLOOKUP(49, A1:D3, 1, TRUE)"));
-        assert_eq!("two", eval_to_string(g, "HLOOKUP(49, A1:D3, 2, TRUE)"));
-        assert_eq!("100", eval_to_string(g, "HLOOKUP(101, A1:D3, 1, TRUE)"));
-        assert_eq!("hundred", eval_to_string(g, "HLOOKUP(101, A1:D3, 2, TRUE)"));
-        eval_to_err(g, "HLOOKUP(49, A1:D3, 1, FALSE)");
-        eval_to_err(g, "HLOOKUP(49, A1:D3, 2, FALSE)");
-        eval_to_err(g, "HLOOKUP(0.9, A1:D3, 2, TRUE)");
+    }
+
+    /// Test HLOOKUP error conditions.
+    #[test]
+    fn test_hlookup_errors() {
+        // Test using numbers ...
+        let transposed_array = &*NUMBERS_LOOKUP_ARRAY;
+        let array = transposed_array.transpose();
+        let g = &mut ArrayGrid(pos![A1], array.clone());
+
+        // Test no match (value missing)
+        for row in 1..=3 {
+            for is_sorted in ["", ", FALSE", ", TRUE"] {
+                for search_key in [-5, 11, 999] {
+                    let formula = format!("HLOOKUP({search_key}, A1:D3, {row}{is_sorted})");
+                    eval_to_err(g, &formula);
+                }
+            }
+        }
 
         // Test no match due to wrong type
         eval_to_err(g, "HLOOKUP('word', A1:D3, 1)");
@@ -645,24 +618,40 @@ mod tests {
         eval_to_err(g, "HLOOKUP(-99, A1:D3, 'word')");
         eval_to_err(g, "HLOOKUP(-99, A1:D3, 0)");
         eval_to_err(g, "HLOOKUP(-99, A1:D3, 3)");
-    }
 
-    /// Test HLOOKUP on string data.
-    #[test]
-    fn test_hlookup_string() {
+        // Test using strings ...
         let transposed_array = &*STRINGS_LOOKUP_ARRAY;
         let array = transposed_array.transpose();
-        let g = &mut ArrayGrid(pos![A1], array);
+        let g = &mut ArrayGrid(pos![A1], array.clone());
 
-        // Test exact match
-        for approx in ["", ", TRUE", ", FALSE"] {
-            for col in transposed_array.rows() {
-                let s = col[0].to_string();
+        // Test no match
+        for word in ["aardvark", "crackers", "zebra"] {
+            for is_sorted in ["", ", FALSE", ", TRUE"] {
+                eval_to_err(g, &format!("HLOOKUP('{word}', A1:D3, 1 {is_sorted})"));
+            }
+        }
+
+        // Test no match due to wrong type
+        eval_to_err(g, "HLOOKUP(10, A1:D3, 1)");
+        eval_to_err(g, "HLOOKUP(10, A1:D3, 1, FALSE)");
+        eval_to_err(g, "HLOOKUP(10, A1:D3, 1, TRUE)");
+    }
+
+    /// Test HLOOKUP.
+    #[test]
+    fn test_hlookup() {
+        // Test exact match (unsorted)
+        let transposed_array = &*MIXED_LOOKUP_ARRAY;
+        let array = transposed_array.transpose();
+        let g = &mut ArrayGrid(pos![A1], array.clone());
+        for is_sorted in ["", ", FALSE"] {
+            for col in transposed_array.clone().rows() {
+                let s = col[0].repr();
                 // should be case-insensitive
-                for needle in [s.clone(), s.to_ascii_lowercase(), s.to_ascii_uppercase()] {
+                for needle in [&s, &s.to_ascii_lowercase(), &s.to_ascii_uppercase()] {
                     for (i, elem) in col.iter().enumerate() {
-                        let row = i + 1;
-                        let formula = format!("HLOOKUP('{needle}', A1:D3, {row} {approx})");
+                        let col = i + 1;
+                        let formula = format!("HLOOKUP({needle}, A1:H3, {col} {is_sorted})");
                         println!("Testing formula {formula:?}");
                         assert_eq!(elem.to_string(), eval_to_string(g, &formula));
                     }
@@ -670,26 +659,22 @@ mod tests {
             }
         }
 
-        // Test inexact match (less-than comparison)
-        assert_eq!("bread", eval_to_string(g, "HLOOKUP('crackers', A1:D3, 1)"));
-        assert_eq!("3", eval_to_string(g, "HLOOKUP('crackers', A1:D3, 2)"));
-        assert_eq!("EGG", eval_to_string(g, "HLOOKUP('zebra', A1:D3, 1)"));
-        assert_eq!("4", eval_to_string(g, "HLOOKUP('zebra', A1:D3, 2)"));
-        assert_eq!(
-            "bread",
-            eval_to_string(g, "HLOOKUP('crackers', A1:D3, 1, TRUE)")
-        );
-        assert_eq!(
-            "3",
-            eval_to_string(g, "HLOOKUP('crackers', A1:D3, 2, TRUE)")
-        );
-        assert_eq!("EGG", eval_to_string(g, "HLOOKUP('zebra', A1:D3, 1, TRUE)"));
-        assert_eq!("4", eval_to_string(g, "HLOOKUP('zebra', A1:D3, 2, TRUE)"));
-        eval_to_err(g, "HLOOKUP('crackers', A1:D3, 1, FALSE)");
-        eval_to_err(g, "HLOOKUP('crackers', A1:D3, 2, FALSE)");
-
-        // Test no match due to wrong type
-        eval_to_err(g, "HLOOKUP(10, A1:D3, 1)");
+        // Test exact match (sorted)
+        let transposed_array = &*STRINGS_LOOKUP_ARRAY;
+        let array = transposed_array.transpose();
+        let g = &mut ArrayGrid(pos![A1], array.clone());
+        for col in transposed_array.clone().rows() {
+            let s = col[0].repr();
+            // should be case-insensitive
+            for needle in [&s, &s.to_ascii_lowercase(), &s.to_ascii_uppercase()] {
+                for (i, elem) in col.iter().enumerate() {
+                    let col = i + 1;
+                    let formula = format!("HLOOKUP({needle}, A1:D3, {col}, TRUE)");
+                    println!("Testing formula {formula:?}");
+                    assert_eq!(elem.to_string(), eval_to_string(g, &formula));
+                }
+            }
+        }
     }
 
     /// Test XLOOKUP input validation
