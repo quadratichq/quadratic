@@ -41,3 +41,28 @@ export const deleteSheet = (args: { sheetController: SheetController; sheet: She
     sheetController.end_transaction();
   }
 };
+
+export const changeSheetOrder = (args: {
+  sheetController: SheetController;
+  sheet: Sheet;
+  order?: string;
+  delta?: number;
+  create_transaction: boolean;
+}) => {
+  const { create_transaction, sheetController, sheet, order, delta } = args;
+
+  if (create_transaction ?? true) sheetController.start_transaction();
+
+  sheetController.execute_statement({
+    type: 'SET_SHEET_ORDER',
+    data: {
+      sheetId: sheet.id,
+      order,
+      delta,
+    },
+  });
+
+  if (create_transaction ?? true) {
+    sheetController.end_transaction();
+  }
+};

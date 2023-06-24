@@ -21,7 +21,7 @@ export const StatementRunner = (sheet: Sheet, statement: Statement, app?: PixiAp
     return SetHeadingSizeRunner(sheet, statement, app);
   } else if (statement.type === 'SET_BORDER') {
     return SetBorderRunner(sheet, statement, app);
-  } else if (statement.type === 'SET_SHEET') {
+  } else if (['SET_SHEET', 'SET_SHEET_ORDER'].includes(statement.type)) {
     if (!app) throw new Error('StatementRunner for Sheets needs app to complete');
     return SetSheetRunner(statement, app);
   } else {

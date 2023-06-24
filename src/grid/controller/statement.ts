@@ -51,4 +51,12 @@ export type Statement =
         sheetId: string;
         sheet?: Sheet;
       };
+    }
+  | {
+      type: 'SET_SHEET_ORDER';
+      data: {
+        sheetId: string;
+        order?: string;
+        delta?: number;
+      };
     };

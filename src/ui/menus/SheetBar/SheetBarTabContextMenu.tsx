@@ -5,7 +5,7 @@ import { QColorPicker } from '../../components/qColorPicker';
 import { convertReactColorToString } from '../../../helpers/convertColor';
 import { ColorResult } from 'react-color';
 import { ConfirmDeleteSheet } from './ConfirmDeleteSheet';
-import { createSheet } from '../../../grid/actions/sheetsAction';
+import { changeSheetOrder, createSheet } from '../../../grid/actions/sheetsAction';
 
 interface Props {
   sheetController: SheetController;
@@ -71,7 +71,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           disabled={sheetController.getFirstSheet().id === contextMenu?.id}
           onClick={() => {
             if (contextMenu) {
-              sheetController.changeSheetOrder(contextMenu.id, -1);
+              changeSheetOrder({ sheetController, sheet: sheetController.sheet, delta: -1, create_transaction: true });
             }
             handleClose();
           }}
@@ -82,7 +82,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           disabled={sheetController.getLastSheet().id === contextMenu?.id}
           onClick={() => {
             if (contextMenu) {
-              sheetController.changeSheetOrder(contextMenu.id, 1);
+              changeSheetOrder({ sheetController, sheet: sheetController.sheet, delta: 1, create_transaction: true });
             }
             handleClose();
           }}
