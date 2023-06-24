@@ -32,26 +32,25 @@ export class PointerAutoComplete {
 
   pointerDown(world: Point): boolean {
     if (IS_READONLY_MODE) return false;
-    if (!this.app.settings.setInteractionState)
-      throw new Error('Expected setInteractionState to be defined in PointerAutoComplete');
-    if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return false;
+    const { settings } = this.app;
+    if (settings.interactionState.panMode !== PanMode.Disabled) return false;
 
     // handle dragging from the corner
     if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
       this.active = true;
-      if (this.app.settings.interactionState.multiCursorPosition) {
+      if (settings.interactionState.multiCursorPosition) {
         this.selection = new Rectangle(
-          this.app.settings.interactionState.multiCursorPosition.originPosition.x,
-          this.app.settings.interactionState.multiCursorPosition.originPosition.y,
-          this.app.settings.interactionState.multiCursorPosition.terminalPosition.x -
-            this.app.settings.interactionState.multiCursorPosition.originPosition.x,
-          this.app.settings.interactionState.multiCursorPosition.terminalPosition.y -
-            this.app.settings.interactionState.multiCursorPosition.originPosition.y
+          settings.interactionState.multiCursorPosition.originPosition.x,
+          settings.interactionState.multiCursorPosition.originPosition.y,
+          settings.interactionState.multiCursorPosition.terminalPosition.x -
+            settings.interactionState.multiCursorPosition.originPosition.x,
+          settings.interactionState.multiCursorPosition.terminalPosition.y -
+            settings.interactionState.multiCursorPosition.originPosition.y
         );
       } else {
         this.selection = new Rectangle(
-          this.app.settings.interactionState.cursorPosition.x,
-          this.app.settings.interactionState.cursorPosition.y,
+          settings.interactionState.cursorPosition.x,
+          settings.interactionState.cursorPosition.y,
           1,
           1
         );
@@ -63,7 +62,7 @@ export class PointerAutoComplete {
         this.selection.height + 1
       );
 
-      this.app.settings.setInteractionState({
+      settings.setInteractionState({
         boxCells: true,
       });
 
@@ -92,8 +91,8 @@ export class PointerAutoComplete {
 
   pointerMove(world: Point): boolean {
     if (IS_READONLY_MODE) return false;
-    const { interactionState, setInteractionState } = this.app.settings;
-    if (interactionState.panMode !== PanMode.Disabled) return false;
+    const { settings } = this.app;
+    if (settings.interactionState.panMode !== PanMode.Disabled) return false;
     if (!this.active) {
       if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
         this.cursor = 'crosshair';
@@ -103,10 +102,7 @@ export class PointerAutoComplete {
       return false;
     } else {
       this.cursor = 'crosshair';
-      if (!setInteractionState) throw new Error('Expected setInteractionState to be defined in PointerAutoComplete');
 
-      // handle dragging from the corner
-      // if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
       if (this.active) {
         const { column, row } = this.app.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
         const { selection, screenSelection } = this;
@@ -199,22 +195,22 @@ export class PointerAutoComplete {
 
     const width = bottom - top;
     const height = right - left;
-
+    const { settings } = this.app;
     if (width === 1 && height === 1) {
-      this.app.settings.setInteractionState({
+      settings.setInteractionState({
         showMultiCursor: false,
       });
     } else {
-      this.app.settings.setInteractionState({
+      settings.setInteractionState({
         showMultiCursor: true,
         multiCursorPosition: {
           originPosition: {
-            ...this.app.settings.interactionState.multiCursorPosition.originPosition,
+            ...settings.interactionState.multiCursorPosition.originPosition,
             x: left,
             y: top,
           },
           terminalPosition: {
-            ...this.app.settings.interactionState.multiCursorPosition.terminalPosition,
+            ...settings.interactionState.multiCursorPosition.terminalPosition,
             x: right,
             y: bottom,
           },
