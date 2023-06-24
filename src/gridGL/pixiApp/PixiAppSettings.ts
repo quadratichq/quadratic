@@ -50,8 +50,8 @@ export class PixiAppSettings {
     this.lastSettings = this.settings;
   };
 
-  setInteractionState(value: GridInteractionState): void {
-    this.interactionState = value;
+  setInteractionState(value: Partial<GridInteractionState>): void {
+    this.interactionState = { ...this.interactionState, ...value };
     this.interactionStateDirty = true;
   }
 
