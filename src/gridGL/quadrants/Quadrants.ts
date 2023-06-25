@@ -8,6 +8,7 @@ import { Quadrant } from './Quadrant';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS } from './quadrantConstants';
 import { QuadrantsSheet } from './QuadrantsSheet';
 import { Sheet } from '../../grid/sheet/Sheet';
+import { Cells } from '../UI/cells/Cells';
 
 export interface QuadrantChanged {
   row?: number;
@@ -21,10 +22,17 @@ export class Quadrants extends Container {
   private app: PixiApp;
   private quadrants: Map<string, QuadrantsSheet>;
 
+  // used to render cells in Quadrant
+  container: Container;
+  cells: Cells;
+
   constructor(app: PixiApp) {
     super();
     this.app = app;
     this.quadrants = new Map();
+    this.container = new Container();
+    this.cells = this.container.addChild(new Cells(app));
+    this.container.addChildAt(this.cells.cellsBackground, 0);
   }
 
   static getKey(x: number, y: number): string {
@@ -102,6 +110,11 @@ export class Quadrants extends Container {
     return quadrantsSheets;
   }
 
+  needsUpdating(): boolean {
+    const quadrantsSheets = Array.from(this.quadrants.values());
+    return !!quadrantsSheets.find((child) => !(child as QuadrantsSheet).complete);
+  }
+
   /**
    * updates one dirty quadrant per frame(any more and UI felt less responsive, even if within frame time)
    * @param timeStart used for console debugging
@@ -129,7 +142,6 @@ export class Quadrants extends Container {
         }
       }
     }
-
     return false;
   }
 
@@ -165,6 +177,18 @@ export class Quadrants extends Container {
         return [cellRectangle];
       }
       return [];
+    });
+  }
+
+  private debugCacheStats(): void {
+    const textures = this.children.reduce((count, child) => count + (child as Quadrant).debugTextureCount(), 0);
+    console.log(`[Quadrants] Rendered ${textures} quadrant textures.`);
+  }
+
+  cull(): void {
+    const bounds = this.app.viewport.getVisibleBounds();
+    this.children.forEach((child) => {
+      (child as Quadrant).cull(bounds);
     });
   }
 }

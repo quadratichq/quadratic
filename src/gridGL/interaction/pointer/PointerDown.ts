@@ -33,6 +33,8 @@ export class PointerDown {
     if (IS_READONLY_MODE) return;
     if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
+    // note: directly call this.app.settings instead of locally defining it here; otherwise it dereferences this
+
     // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
     if (this.app.settings.interactionState.showInput) {
       this.afterShowInput = true;
@@ -43,8 +45,6 @@ export class PointerDown {
       return;
     }
 
-    const { settings, cursor } = this.app;
-    const { interactionState, setInteractionState } = settings;
     const { gridOffsets } = this.sheet;
 
     this.positionRaw = world;
@@ -54,15 +54,12 @@ export class PointerDown {
 
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
-    if (!setInteractionState) {
-      throw new Error('Expected setInteractionState to be defined');
-    }
-    if (rightClick && interactionState.showMultiCursor) {
+    if (rightClick && this.app.settings.interactionState.showMultiCursor) {
       if (
-        column >= interactionState.multiCursorPosition.originPosition.x &&
-        column <= interactionState.multiCursorPosition.terminalPosition.x &&
-        row >= interactionState.multiCursorPosition.originPosition.y &&
-        row <= interactionState.multiCursorPosition.terminalPosition.y
+        column >= this.app.settings.interactionState.multiCursorPosition.originPosition.x &&
+        column <= this.app.settings.interactionState.multiCursorPosition.terminalPosition.x &&
+        row >= this.app.settings.interactionState.multiCursorPosition.originPosition.y &&
+        row <= this.app.settings.interactionState.multiCursorPosition.terminalPosition.y
       )
         // Ignore this click. User is accessing the RightClickMenu.
         return;
@@ -90,7 +87,7 @@ export class PointerDown {
     // select cells between pressed and cursor position
     if (event.shiftKey) {
       const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
-      const cursorPosition = interactionState.cursorPosition;
+      const cursorPosition = this.app.settings.interactionState.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
         // make origin top left, and terminal bottom right
         const originX = cursorPosition.x < column ? cursorPosition.x : column;
@@ -98,8 +95,8 @@ export class PointerDown {
         const termX = cursorPosition.x > column ? cursorPosition.x : column;
         const termY = cursorPosition.y > row ? cursorPosition.y : row;
 
-        setInteractionState({
-          ...interactionState,
+        this.app.settings.setInteractionState({
+          ...this.app.settings.interactionState,
           keyboardMovePosition: { x: column, y: row },
           multiCursorPosition: {
             originPosition: new Point(originX, originY),
@@ -107,7 +104,6 @@ export class PointerDown {
           },
           showMultiCursor: true,
         });
-        cursor.dirty = true;
       }
       return;
     }
@@ -125,14 +121,14 @@ export class PointerDown {
 
     // Move cursor to mouse down position
     // For single click, hide multiCursor
-    setInteractionState({
-      ...interactionState,
+    this.app.settings.setInteractionState({
+      ...this.app.settings.interactionState,
       keyboardMovePosition: { x: column, y: row },
       cursorPosition: { x: column, y: row },
       multiCursorPosition: previousPosition,
       showMultiCursor: false,
+      showInput: false,
     });
-    cursor.dirty = true;
     this.pointerMoved = false;
   }
 
@@ -141,7 +137,7 @@ export class PointerDown {
 
     if (!this.active) return;
 
-    const { viewport, settings, cursor } = this.app;
+    const { viewport, settings } = this.app;
     const { gridOffsets } = this.sheet;
 
     // for determining if double click
@@ -155,23 +151,6 @@ export class PointerDown {
       }
     }
 
-    // cursor intersects edges
-    // if (
-    //   !this.active ||
-    //   !this.position ||
-    //   !this.previousPosition ||
-    //   !this.positionRaw ||
-    //   !settings.setInteractionState
-    // ) {
-    //   if (
-    //     Math.abs(this.app.cursor.format_indicator.x - world.x) < 3 ||
-    //     Math.abs(this.app.cursor.format_indicator.y - world.y) < 3
-    //   ) {
-    //     this.app.canvas.style.cursor = 'grab';
-    //   }
-
-    // }
-
     // cursor intersects bottom-corner indicator (disabled for now)
     if (
       !this.active ||
@@ -180,9 +159,6 @@ export class PointerDown {
       !this.positionRaw ||
       !settings.setInteractionState
     ) {
-      // if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
-      //   this.app.canvas.style.cursor = 'cell';
-      // }
       return;
     }
 
@@ -237,7 +213,6 @@ export class PointerDown {
           showInput: false,
           inputInitialValue: '',
         });
-        cursor.dirty = true;
 
         // update previousPosition
         this.previousPosition = {

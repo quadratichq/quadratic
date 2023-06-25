@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { intersects } from '../helpers/intersects';
 import { Quadrant } from './Quadrant';
@@ -69,19 +69,21 @@ export class QuadrantsSheet extends Container {
   }
 
   update(viewport: Viewport, timeStart: number): boolean | 'not dirty' {
+    const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0) - 1;
+    if (!dirtyCount) return 'not dirty';
     const firstDirty = this.children.find((child) => (child as Quadrant).dirty) as Quadrant;
     if (firstDirty) {
       if (debugShowCacheInfo) {
-        const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0) - 1;
         firstDirty.update(this.app, timeStart, `${this.children.length - dirtyCount}/${this.children.length}`);
-        if (dirtyCount === 0 && !this.complete) {
-          this.complete = true;
+      } else {
+        firstDirty.update(this.app);
+      }
+      if (dirtyCount === 1 && !this.complete) {
+        this.complete = true;
+        if (debugShowCacheInfo) {
           this.debugCacheStats();
           this.sheet.gridOffsets.debugCache();
         }
-      } else {
-        firstDirty.update(this.app);
-        this.complete = false;
       }
       return this.visible && intersects.rectangleRectangle(viewport.getVisibleBounds(), firstDirty.visibleRectangle);
     }
@@ -173,5 +175,9 @@ export class QuadrantsSheet extends Container {
   private debugCacheStats(): void {
     const textures = this.children.reduce((count, child) => count + (child as Quadrant).debugTextureCount(), 0);
     console.log(`[Quadrants] Rendered ${textures} quadrant textures.`);
+  }
+
+  cull(bounds: Rectangle): void {
+    this.quadrants.forEach((quadrant) => quadrant.cull(bounds));
   }
 }

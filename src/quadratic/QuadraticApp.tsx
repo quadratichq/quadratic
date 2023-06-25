@@ -11,8 +11,8 @@ import { SheetController } from '../grid/controller/sheetController';
 import { useGenerateLocalFiles } from '../hooks/useGenerateLocalFiles';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 
-type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-rust' | 'wasm-python';
-const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-rust', 'wasm-python'];
+type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-rust' | 'wasm-python' | 'quadrants';
+const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-rust', 'wasm-python', 'quadrants'];
 
 export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
@@ -31,13 +31,25 @@ export const QuadraticApp = () => {
     if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
       setLoading(false);
     }
-  }, [itemsLoaded]);
+  }, [app, itemsLoaded]);
 
   // Loading Effect
   useEffect(() => {
     // Ensure this only runs once
     if (didMount.current) return;
     didMount.current = true;
+
+    let assets = false,
+      files = false;
+    const prerenderQuadrants = async () => {
+      // wait for local-files and pixi-assets to load before pre-rendering quadrants
+      if (!assets || !files) {
+        return;
+      }
+      app.preRenderQuadrants().then(() => {
+        setItemsLoaded((old) => ['quadrants', ...old]);
+      });
+    };
 
     if (!IS_READONLY_MODE && !debugSkipPythonLoad) {
       loadPython().then(() => {
@@ -48,6 +60,8 @@ export const QuadraticApp = () => {
     }
     loadAssets().then(() => {
       setItemsLoaded((old) => ['pixi-assets', ...old]);
+      assets = true;
+      prerenderQuadrants();
     });
     init().then(() => {
       hello(); // let Rust say hello to console
@@ -55,8 +69,10 @@ export const QuadraticApp = () => {
     });
     initialize().then(() => {
       setItemsLoaded((old) => ['local-files', ...old]);
+      files = true;
+      prerenderQuadrants();
     });
-  }, [initialize]);
+  }, [app, initialize]);
 
   return (
     <>

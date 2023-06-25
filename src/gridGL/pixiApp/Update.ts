@@ -19,6 +19,12 @@ export class Update {
   private lastViewportPosition: Point = new Point();
   private lastViewportScale = 1;
 
+  // used to avoid a hiccup on first user interaction
+  private firstRender = false;
+
+  // tracks whether quadrants were rendered last frame (after quadrants have finished rendering, we'll warm up real rendering by adding an additional render)
+  private quadrantsRendered = false;
+
   constructor(app: PixiApp) {
     this.pixiApp = app;
     if (debugShowFPS) {
@@ -93,8 +99,16 @@ export class Update {
     app.cursor.update();
     debugTimeCheck('[Update] cursor');
 
+    app.settings.update();
+
     if (rendererDirty) {
       app.viewport.dirty = false;
+
+      // not sure why this is needed, but avoids a slowdown on first interaction
+      if (!this.firstRender) {
+        this.firstRender = true;
+        app.viewport.dirty = true;
+      }
 
       // forces the temporary replacement cells to render instead of the cache or cells (used for debugging only)
       if (debugShowCellsForDirtyQuadrants) {
@@ -106,10 +120,15 @@ export class Update {
 
       // normal rendering
       else if (app.quadrants.visible) {
+        app.quadrants.cull();
+
+        // forces real rendering for dirty quadrants
         const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
         if (cellRectangles.length) {
           app.cells.changeVisibility(true);
           app.cells.drawMultipleBounds(cellRectangles);
+        } else {
+          app.cells.changeVisibility(false);
         }
       }
       debugTimeReset();
@@ -124,22 +143,22 @@ export class Update {
 
       // only render quadrants when the viewport hasn't been dirty for a while
       if (timeStart > this.nextQuadrantRender) {
-        app.quadrants.update(timeStart);
+        if (app.quadrants.needsUpdating()) {
+          this.quadrantsRendered = true;
+          app.quadrants.update(timeStart);
+        }
+
+        // if quadrants are not dirty then rerender cells so it's ready for user input
+        else if (this.quadrantsRendered) {
+          app.cells.dirty = true;
+          this.quadrantsRendered = false;
+        }
       }
     }
 
     this.raf = requestAnimationFrame(this.updateDebug);
     this.fps?.update();
   };
-
-  forceUpdate(): void {
-    const app = this.pixiApp;
-    app.gridLines.update();
-    app.axesLines.update();
-    app.headings.update();
-    app.cells.update();
-    app.cursor.update();
-  }
 
   // update loop w/o debug checks
   private update = (timeStart: number): void => {
@@ -164,13 +183,26 @@ export class Update {
     app.cells.update();
     app.cursor.update();
 
+    app.settings.update();
+
     if (rendererDirty) {
       app.viewport.dirty = false;
+      // not sure why this is needed, but avoids a slowdown on first interaction
+      if (!this.firstRender) {
+        this.firstRender = true;
+        app.viewport.dirty = true;
+      }
+
       if (app.quadrants.visible) {
+        app.quadrants.cull();
+
+        // forces real rendering for dirty quadrants
         const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
         if (cellRectangles.length) {
           app.cells.changeVisibility(true);
           app.cells.drawMultipleBounds(cellRectangles);
+        } else {
+          app.cells.changeVisibility(false);
         }
       }
       app.renderer.render(app.stage);
@@ -178,7 +210,16 @@ export class Update {
     } else {
       // only render quadrants when the viewport hasn't been dirty for a while
       if (timeStart > this.nextQuadrantRender) {
-        app.quadrants.update(timeStart);
+        if (app.quadrants.needsUpdating()) {
+          this.quadrantsRendered = true;
+          app.quadrants.update(timeStart);
+        }
+
+        // if quadrants are not dirty then rerender cells so it's ready for user input
+        else if (this.quadrantsRendered) {
+          app.cells.dirty = true;
+          this.quadrantsRendered = false;
+        }
       }
     }
 

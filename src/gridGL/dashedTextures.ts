@@ -13,10 +13,10 @@ interface DashedTexture {
 
 // fallback to a white texture
 export const dashedTextures: DashedTexture = {
-  dottedVertical: Texture.WHITE,
-  dottedHorizontal: Texture.WHITE,
-  dashedVertical: Texture.WHITE,
-  dashedHorizontal: Texture.WHITE,
+  dottedVertical: Texture.EMPTY,
+  dottedHorizontal: Texture.EMPTY,
+  dashedVertical: Texture.EMPTY,
+  dashedHorizontal: Texture.EMPTY,
 };
 
 function createDashedLine(horizontal: boolean): Texture {
