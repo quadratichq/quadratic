@@ -5,7 +5,9 @@ import { QColorPicker } from '../../components/qColorPicker';
 import { convertReactColorToString } from '../../../helpers/convertColor';
 import { ColorResult } from 'react-color';
 import { ConfirmDeleteSheet } from './ConfirmDeleteSheet';
-import { changeSheetOrder, createSheet } from '../../../grid/actions/sheetsAction';
+import { updateSheet, createSheet } from '../../../grid/actions/sheetsAction';
+import { generateKeyBetween } from 'fractional-indexing';
+import { focusGrid } from '../../../helpers/focusGrid';
 
 interface Props {
   sheetController: SheetController;
@@ -35,6 +37,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           onClickCapture={() => {
             const sheet = sheetController.createDuplicateSheet();
             createSheet({ sheetController, sheet, create_transaction: true });
+            focusGrid();
           }}
         >
           Duplicate
@@ -54,13 +57,19 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             onChangeComplete={(change: ColorResult) => {
               const color = convertReactColorToString(change);
               if (contextMenu) {
-                sheetController.changeSheetColor(contextMenu.id, color);
+                const sheet = sheetController.getSheet(contextMenu.id);
+                if (!sheet) throw new Error('Expected sheet to be defined in Change Color');
+                updateSheet({ sheetController, sheet, color, create_transaction: true });
+                focusGrid();
               }
               handleClose();
             }}
             onClear={() => {
               if (contextMenu) {
-                sheetController.changeSheetColor(contextMenu.id);
+                const sheet = sheetController.getSheet(contextMenu.id);
+                if (!sheet) throw new Error('Expected sheet to be defined in Change Color');
+                updateSheet({ sheetController, sheet, color: null, create_transaction: true });
+                focusGrid();
               }
               handleClose();
             }}
@@ -71,7 +80,17 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           disabled={sheetController.getFirstSheet().id === contextMenu?.id}
           onClick={() => {
             if (contextMenu) {
-              changeSheetOrder({ sheetController, sheet: sheetController.sheet, delta: -1, create_transaction: true });
+              const sheet = sheetController.sheet;
+              const previous = sheetController.getPreviousSheet(sheet.order)?.order ?? null;
+              const previousSecond = previous ? sheetController.getPreviousSheet(previous)?.order ?? null : null;
+              const order = generateKeyBetween(previousSecond, previous);
+              updateSheet({
+                sheetController,
+                sheet: sheetController.sheet,
+                order,
+                create_transaction: true,
+              });
+              focusGrid();
             }
             handleClose();
           }}
@@ -82,7 +101,17 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           disabled={sheetController.getLastSheet().id === contextMenu?.id}
           onClick={() => {
             if (contextMenu) {
-              changeSheetOrder({ sheetController, sheet: sheetController.sheet, delta: 1, create_transaction: true });
+              const sheet = sheetController.sheet;
+              const next = sheetController.getNextSheet(sheet.order)?.order ?? null;
+              const nextSecond = next ? sheetController.getNextSheet(next)?.order ?? null : null;
+              const order = generateKeyBetween(next, nextSecond);
+              updateSheet({
+                sheetController,
+                sheet: sheetController.sheet,
+                order,
+                create_transaction: true,
+              });
+              focusGrid();
             }
             handleClose();
           }}
@@ -94,7 +123,10 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         sheetController={sheetController}
         lastName={lastName}
         confirmDelete={confirmDelete}
-        handleClose={() => setConfirmDelete(undefined)}
+        handleClose={() => {
+          setConfirmDelete(undefined);
+          window.setTimeout(focusGrid, 0);
+        }}
       />
     </>
   );

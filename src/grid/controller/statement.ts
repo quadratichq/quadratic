@@ -53,10 +53,10 @@ export type Statement =
       };
     }
   | {
-      type: 'SET_SHEET_ORDER';
+      type: 'UPDATE_SHEET';
       data: {
         sheetId: string;
         order?: string;
-        delta?: number;
+        color?: string | null;
       };
     };

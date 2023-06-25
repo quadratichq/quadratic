@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { generateKeyBetween } from 'fractional-indexing';
-import { createSheet } from '../../../grid/actions/sheetsAction';
+import { createSheet, updateSheet } from '../../../grid/actions/sheetsAction';
 
 interface Props {
   sheetController: SheetController;
@@ -215,32 +215,6 @@ export const SheetBar = (props: Props): JSX.Element => {
           }
         });
 
-        // finds the order string from the previous sheet
-        const getPreviousOrder = (order: string): string | null => {
-          const sheet = sheetController.sheets.find((sheet) => sheet.order === order);
-          if (!sheet) throw new Error('Expected to find sheet in getPreviousOrder in SheetBar');
-          let previous: string | undefined;
-          sheetController.sheets.forEach((search) => {
-            if (search !== sheet && (!previous || (search.order < order && search.order > previous))) {
-              previous = search.order;
-            }
-          });
-          return previous ?? null;
-        };
-
-        // finds the order string from the previous sheet
-        const getNextOrder = (order: string): string | null => {
-          const sheet = sheetController.sheets.find((sheet) => sheet.order === order);
-          if (!sheet) throw new Error('Expected to find sheet in getPreviousOrder in SheetBar');
-          let next: string | undefined;
-          sheetController.sheets.forEach((search) => {
-            if (search !== sheet && (!next || (search.order > order && search.order < next))) {
-              next = search.order;
-            }
-          });
-          return next ?? null;
-        };
-
         // search for an overlap from the current tabs to replace its order
         const overlap = tabs.find((tab) => mouseX >= tab.rect.left && mouseX <= tab.rect.right);
         if (overlap) {
@@ -250,14 +224,20 @@ export const SheetBar = (props: Props): JSX.Element => {
 
             // moving left
             if (down.current.actualOrder > overlap.order) {
-              down.current.actualOrder = generateKeyBetween(getPreviousOrder(overlap.order), overlap.order);
-              tab.style.order = getOrderIndex(down.current.actualOrder);
+              const previous = sheetController.getPreviousSheet(overlap.order);
+              down.current.actualOrder = generateKeyBetween(previous?.order, overlap.order);
+
+              // place floating tab to the left of the overlapped tab
+              tab.style.order = (parseInt(overlap.element.style.order) - 1).toString();
             }
 
             // moving right
             else {
-              down.current.actualOrder = generateKeyBetween(getNextOrder(overlap.order), overlap.order);
-              tab.style.order = getOrderIndex(down.current.actualOrder);
+              const next = sheetController.getNextSheet(overlap.order);
+              down.current.actualOrder = generateKeyBetween(overlap.order, next?.order);
+
+              // place floating tab to the right of the overlapped tab
+              tab.style.order = (parseInt(overlap.element.style.order) + 1).toString();
             }
           }
         } else {
@@ -314,7 +294,7 @@ export const SheetBar = (props: Props): JSX.Element => {
         }
       }
     },
-    [getOrderIndex, sheetController.sheets, sheets]
+    [sheetController, sheets]
   );
 
   const scrollInterval = useRef<number | undefined>();
@@ -351,7 +331,11 @@ export const SheetBar = (props: Props): JSX.Element => {
       tab.style.zIndex = '';
       tab.style.transform = '';
       if (down.current.actualOrder !== down.current.originalOrder) {
-        sheetController.reorderSheet({ id: down.current.id, order: down.current.actualOrder });
+        const sheet = sheetController.getSheet(down.current.id);
+        if (!sheet) {
+          throw new Error('Expect sheet to be defined in SheetBar.pointerUp');
+        }
+        updateSheet({ sheetController, sheet, order: down.current.actualOrder, create_transaction: true });
       }
       down.current = undefined;
     }
@@ -387,7 +371,7 @@ export const SheetBar = (props: Props): JSX.Element => {
           onClick={() => {
             const sheet = sheetController.createNewSheet();
             createSheet({ sheetController, sheet, create_transaction: true });
-            setActiveSheet(sheetController.current);
+            focusGrid();
           }}
         >
           +

@@ -48,6 +48,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
         order,
       }}
       data-id={sheet.id}
+      data-order={sheet.order}
       onPointerDown={(event) => onPointerDown({ event, sheet })}
       onDoubleClick={() => setIsRenaming(true)}
       onContextMenu={(e) => onContextMenu(e, sheet)}

@@ -26,7 +26,6 @@ export const ConfirmDeleteSheet = (props: Props): JSX.Element => {
           onClick={() => {
             if (confirmDelete) {
               deleteSheet({ sheetController, sheet: sheetController.sheet, create_transaction: true });
-              sheetController.deleteSheet(confirmDelete.id);
             }
             handleClose();
           }}

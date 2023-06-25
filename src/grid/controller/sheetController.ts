@@ -25,7 +25,6 @@ export class SheetController {
     } else {
       this.sheets = sheets;
     }
-
     this._current = this.sheets[0].id;
     this.undo_stack = [];
     this.redo_stack = [];
@@ -55,6 +54,7 @@ export class SheetController {
       this.sheets.push(new Sheet(undefined, generateKeyBetween(null, null)));
     }
     // need to set internal value to avoid set current call
+    this.sortSheets();
     this._current = this.sheets[0].id;
 
     // needed to ensure UI properly updates
@@ -127,27 +127,16 @@ export class SheetController {
       throw new Error('Expected to find sheet in deleteSheet');
     }
     const deletedSheet = this.sheets.splice(index, 1)[0];
-    // const order = deletedSheet.order;
+    const order = deletedSheet.order;
     this.app?.quadrants.deleteSheet(deletedSheet);
 
-    // // if deleted the last sheet, add a new one
-    // if (this.sheets.length === 0) {
-    //   const sheet = new Sheet(`Sheet1`, 0);
-    //   this.sheets.push(sheet);
-    //   this.app?.quadrants.addSheet(sheet);
-    //   this.current = sheet.id;
-    // }
-
-    // // otherwise select the next sheet
-    // else {
-    //   this.cleanUpOrdering();
-    //   const next = this.sheets.find((sheet) => sheet.order >= order);
-    //   if (next) {
-    //     this.current = next.id;
-    //   } else {
-    //     this.current = this.sheets[this.sheets.length - 1].id;
-    //   }
-    // }
+    // set current to next sheet
+    if (this.sheets.length) {
+      const next = this.getNextSheet(order);
+      if (next) {
+        this.current = next.id;
+      }
+    }
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
@@ -160,6 +149,7 @@ export class SheetController {
     const sheet = this.sheets.find((sheet) => sheet.id === id);
     if (!sheet) throw new Error('Expected to find sheet in changeSheetColor');
     sheet.color = color;
+    this.current = id;
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
@@ -381,6 +371,47 @@ export class SheetController {
   getLastSheet(): Sheet {
     this.sortSheets();
     return this.sheets[this.sheets.length - 1];
+  }
+
+  getPreviousSheet(order?: string): Sheet | undefined {
+    if (!order) {
+      return this.getFirstSheet();
+    }
+    const sheets = this.sheets;
+
+    // only one sheet so previous is always null
+    if (sheets.length === 1) {
+      return;
+    }
+    const index = sheets.findIndex((s) => s.order === order);
+
+    // if first sheet so previous is null
+    if (index === 0) {
+      return;
+    }
+
+    return sheets[index - 1];
+  }
+
+  getNextSheet(order?: string): Sheet | undefined {
+    if (!order) {
+      return this.getLastSheet();
+    }
+    const sheets = this.sheets;
+
+    // only one sheet
+    if (sheets.length === 1) {
+      return;
+    }
+    const index = sheets.findIndex((s) => s.order === order);
+
+    // order is the last sheet
+    if (index === sheets.length - 1) {
+      return;
+    }
+
+    // otherwise find the next sheet after the order
+    return sheets[index + 1];
   }
 
   sheetNameExists(name: string): boolean {
