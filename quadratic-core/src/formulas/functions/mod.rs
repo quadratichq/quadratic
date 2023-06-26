@@ -74,7 +74,7 @@ impl FormulaFnArgs {
         }
     }
     /// Takes the next argument, or returns `None` if there is none.
-    pub fn take_next(&mut self) -> Option<Spanned<Value>> {
+    pub fn take_next_optional(&mut self) -> Option<Spanned<Value>> {
         if !self.values.is_empty() {
             self.args_popped += 1;
         }
@@ -82,7 +82,7 @@ impl FormulaFnArgs {
     }
     /// Takes the next argument, or returns an error if there is none.
     pub fn take_next_required(&mut self, arg_name: &'static str) -> FormulaResult<Spanned<Value>> {
-        self.take_next().ok_or_else(|| {
+        self.take_next_optional().ok_or_else(|| {
             FormulaErrorMsg::MissingRequiredArgument {
                 func_name: self.func_name,
                 arg_name,
@@ -116,7 +116,7 @@ pub type FormulaFn =
 /// Formula function with associated metadata.
 pub struct FormulaFunction {
     pub name: &'static str,
-    pub arg_completion: &'static str,
+    pub arg_completion: Option<&'static str>,
     pub usage: &'static str,
     pub examples: &'static [&'static str],
     pub doc: &'static str,
@@ -134,8 +134,10 @@ impl FormulaFunction {
     /// Returns the autocomplete snippet for this function.
     pub fn autocomplete_snippet(&self) -> String {
         let name = self.name;
-        let arg_completion = self.arg_completion;
-        format!("{name}({arg_completion})")
+        match self.arg_completion {
+            Some(arg_completion) => format!("{name}({arg_completion})"),
+            None => name.to_string(),
+        }
     }
 
     /// Returns the Markdown documentation for this function that should appear
@@ -161,4 +163,34 @@ pub struct FormulaFunctionCategory {
     pub name: &'static str,
     pub docs: &'static str,
     pub get_functions: fn() -> Vec<FormulaFunction>,
+}
+
+#[test]
+fn test_autocomplete_snippet() {
+    assert_eq!(
+        "TRUE",
+        ALL_FUNCTIONS.get("TRUE").unwrap().autocomplete_snippet(),
+    );
+    assert_eq!(
+        "PI()",
+        ALL_FUNCTIONS.get("PI").unwrap().autocomplete_snippet(),
+    );
+    assert_eq!(
+        "NOT(${1:boolean})",
+        ALL_FUNCTIONS.get("NOT").unwrap().autocomplete_snippet(),
+    );
+    assert_eq!(
+        "IF(${1:condition}, ${2:t}, ${3:f})",
+        ALL_FUNCTIONS.get("IF").unwrap().autocomplete_snippet(),
+    );
+    assert_eq!(
+        "IF(${1:condition}, ${2:t}, ${3:f})",
+        ALL_FUNCTIONS.get("IF").unwrap().autocomplete_snippet(),
+    );
+
+    // Optional
+    assert_eq!(
+        "SUMIF(${1:eval_range}, ${2:criteria}${3:, ${4:[numbers_range]}})",
+        ALL_FUNCTIONS.get("SUMIF").unwrap().autocomplete_snippet(),
+    );
 }

@@ -17,6 +17,7 @@ fn get_functions() -> Vec<FormulaFunction> {
     vec![
         formula_fn!(
             /// Returns `TRUE`.
+            #[include_args_in_completion(false)]
             #[examples("TRUE()")]
             fn TRUE() {
                 true
@@ -24,6 +25,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         ),
         formula_fn!(
             /// Returns `FALSE`.
+            #[include_args_in_completion(false)]
             #[examples("FALSE()")]
             fn FALSE() {
                 false

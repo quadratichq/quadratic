@@ -141,6 +141,20 @@ fn test_formula_range_operator() {
 }
 
 #[test]
+fn test_formula_blank_array_parsing() {
+    let g = &mut BlankGrid;
+    const B: BasicValue = BasicValue::Blank;
+    assert_eq!(Value::from(array![B]), eval(g, "{}").unwrap());
+    assert_eq!(Value::from(array![B; B]), eval(g, "{;}").unwrap());
+    assert_eq!(Value::from(array![B, B]), eval(g, "{,}").unwrap());
+    assert_eq!(Value::from(array![B, B; B, B]), eval(g, "{,;,}").unwrap());
+    assert_eq!(
+        FormulaErrorMsg::NonRectangularArray,
+        eval_to_err(g, "{;,;}").msg,
+    );
+}
+
+#[test]
 fn test_formula_array_op() {
     let mut g = FnGrid(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
@@ -210,12 +224,22 @@ fn test_array_parsing() {
         eval(&mut NoGrid, "{1; 3, 4}").unwrap_err().msg,
     );
 
-    // Empty array
-    assert!(eval(&mut NoGrid, "{}").is_err());
-    assert!(eval(&mut NoGrid, "{ }").is_err());
+    // Blank values
+    assert_eq!("{}", eval_to_string(&mut NoGrid, "{}"));
+    assert_eq!("{}", eval_to_string(&mut NoGrid, "{ }"));
 
     // Empty row
-    assert!(eval(&mut NoGrid, "{ ; }").is_err());
+    assert_eq!("{; }", eval_to_string(&mut NoGrid, "{ ; }"));
+}
+
+#[test]
+fn test_bool_parsing() {
+    let g = &mut NoGrid;
+
+    assert_eq!("1", eval_to_string(g, "IF(TRUE, 1, 2)"));
+    assert_eq!("1", eval_to_string(g, "IF(true(), 1, 2)"));
+    assert_eq!("2", eval_to_string(g, "IF(False, 1, 2)"));
+    assert_eq!("2", eval_to_string(g, "IF(FALSE(), 1, 2)"));
 }
 
 #[test]
@@ -232,6 +256,34 @@ fn test_hyphen_after_cell_ref() {
     assert_eq!("25", eval_to_string(&mut g, "Z1-5"));
 }
 
+#[test]
+fn test_formula_omit_required_argument() {
+    let g = &mut NoGrid;
+    assert!(eval_to_string(g, "ATAN2(,1)").starts_with("1.57"));
+    assert_eq!("0", eval_to_string(g, "ATAN2(1,)"));
+    assert_eq!(
+        FormulaErrorMsg::MissingRequiredArgument {
+            func_name: "ATAN2",
+            arg_name: "x"
+        },
+        eval_to_err(g, "ATAN2()").msg,
+    );
+    assert_eq!(
+        FormulaErrorMsg::MissingRequiredArgument {
+            func_name: "ATAN2",
+            arg_name: "y"
+        },
+        eval_to_err(g, "ATAN2(1)").msg,
+    );
+}
+
+#[test]
+fn test_formula_blank_to_string() {
+    let g = &mut NoGrid;
+    assert_eq!("", eval_to_string(g, "IF(1=1,,)"));
+}
+
+#[test]
 fn test_find_cell_references() {
     use CellRefCoord::{Absolute, Relative};
 
