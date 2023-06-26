@@ -135,6 +135,8 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 | Token::CellRangeOp
                 | Token::Ellipsis => false,
 
+                Token::False | Token::True => true,
+
                 Token::Comment | Token::UnterminatedBlockComment => false,
 
                 Token::FunctionCall
@@ -162,6 +164,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
                     NumericLiteral.map(Some),
                     ArrayLiteral.map(Some),
                     CellReference.map(Some),
+                    BoolExpression.map(Some),
                     ParenExpression.map(Some),
                     EmptyExpression.map(Some),
                 ],
