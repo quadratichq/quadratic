@@ -110,7 +110,8 @@ export class SheetController {
       i++;
     }
     const name = `Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim();
-    const sheet = new Sheet(name, this.sheet.order + 0.5, this.sheet);
+    const next = this.getNextSheet(this.sheet.order);
+    const sheet = new Sheet(name, generateKeyBetween(this.sheet.order, next?.order), this.sheet);
     return sheet;
   }
 
@@ -135,6 +136,11 @@ export class SheetController {
       const next = this.getNextSheet(order);
       if (next) {
         this.current = next.id;
+      } else {
+        const first = this.getFirstSheet();
+        if (first) {
+          this.current = first.id;
+        }
       }
     }
     if (this.saveLocalFiles) this.saveLocalFiles();
