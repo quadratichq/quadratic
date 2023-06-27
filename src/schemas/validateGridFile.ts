@@ -44,7 +44,7 @@ export function validateGridFile(jsonFile: {}): GridFile | null {
   }
 
   if (!isValid) {
-    console.error('[validateGridFile] failed to validate file with zod.', errors);
+    if (debugShowFileIO) console.log('[validateGridFile] failed to validate file with zod.', errors);
     return null;
   }
 
