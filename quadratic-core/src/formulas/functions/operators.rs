@@ -78,7 +78,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let range = if a < b { a..=b } else { b..=a };
                 let width = 1;
                 let height = len;
-                Array::from_row_major_iter(width, height, range.map(BasicValue::from))?
+                Array::new_row_major(width, height, range.map(BasicValue::from).collect())?
             }
         ),
         // String operators

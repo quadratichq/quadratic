@@ -11,14 +11,36 @@ fn main() {
         output.push_str(&format!("## {}\n\n", category.name));
         output.push_str(category.docs);
 
-        // Table header.
+        // Table header
         output.push_str("| **Function** | **Description** |\n");
         output.push_str("| ------------ | --------------- |\n");
-        for func in (category.get_functions)() {
-            let usages = format!("`{}`", func.usages_string());
-            let doc = func.doc.replace('\n', " ");
-            output.push_str(&format!("| {usages} | {doc} |\n"));
+
+        let all_functions = (category.get_functions)();
+        let mut functions_that_need_their_own_sections = vec![];
+        for func in &all_functions {
+            let docs = func.docs_string();
+            // Check for multiple paragraphs (one blank line)
+            if docs.contains("\n\n") {
+                functions_that_need_their_own_sections.push(func)
+            } else {
+                let usages = format!("`{}`", func.usages_string());
+                let docs = docs.replace('\n', " ");
+                output.push_str(&format!("| {usages} | {docs} |\n"));
+            }
         }
+        for func in functions_that_need_their_own_sections {
+            output.push('\n');
+            output.push_str(&format!("### {}\n\n", func.name));
+            output.push_str(&format!("`{}`\n\n", func.usages_string()));
+            output.push_str("Examples:\n\n");
+            for example in func.examples {
+                output.push_str(&format!("- `{example}`\n"));
+            }
+            output.push('\n');
+            output.push_str(&func.docs_string().replace("\n#", "\n####"));
+            output.push('\n');
+        }
+
         output.push('\n');
     }
 

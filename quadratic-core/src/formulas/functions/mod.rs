@@ -15,8 +15,8 @@ mod trigonometry;
 mod util;
 
 use super::{
-    Array, BasicValue, CellRef, CoerceInto, Criterion, Ctx, FormulaErrorMsg, FormulaResult, Param,
-    ParamKind, Span, Spanned, SpannedIterExt, Value,
+    Array, Axis, BasicValue, CellRef, CoerceInto, Criterion, Ctx, FormulaError, FormulaErrorMsg,
+    FormulaResult, Param, ParamKind, Span, Spanned, SpannedIterExt, Value,
 };
 
 pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
@@ -73,16 +73,22 @@ impl FormulaFnArgs {
             args_popped: 0,
         }
     }
-    /// Takes the next argument, or returns `None` if there is none.
-    pub fn take_next_optional(&mut self) -> Option<Spanned<Value>> {
+    /// Takes the next argument.
+    fn take_next(&mut self) -> Option<Spanned<Value>> {
         if !self.values.is_empty() {
             self.args_popped += 1;
         }
         self.values.pop_front()
     }
+    /// Takes the next argument, or returns `None` if there is none or the
+    /// argument is blank˙.
+    pub fn take_next_optional(&mut self) -> Option<Spanned<Value>> {
+        self.take_next()
+            .filter(|v| v.inner != Value::Single(BasicValue::Blank))
+    }
     /// Takes the next argument, or returns an error if there is none.
     pub fn take_next_required(&mut self, arg_name: &'static str) -> FormulaResult<Spanned<Value>> {
-        self.take_next_optional().ok_or_else(|| {
+        self.take_next().ok_or_else(|| {
             FormulaErrorMsg::MissingRequiredArgument {
                 func_name: self.func_name,
                 arg_name,
@@ -129,6 +135,12 @@ impl FormulaFunction {
         let name = self.name;
         let args = self.usage;
         format!("{name}({args})")
+    }
+
+    /// Returns the documentation string after stripping leading spaces. Leading
+    /// spaces show up because we define formula docs using `/// stuff` syntax.
+    pub fn docs_string(&self) -> String {
+        self.doc.replace("\n ", "\n")
     }
 
     /// Returns the autocomplete snippet for this function.

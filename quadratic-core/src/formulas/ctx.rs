@@ -4,22 +4,22 @@ use super::*;
 
 macro_rules! zip_map_impl {
     ($arrays:ident.zip_map(|$args_buffer:ident| $eval_f:expr)) => {{
-        let (width, height) = Value::common_array_size($arrays)?;
+        let ArraySize { w, h } = Value::common_array_size($arrays)?;
 
         let mut $args_buffer = Vec::with_capacity($arrays.into_iter().len());
 
         // If the result is a single value, return that value instead of a 1x1
         // array. This isn't just an optimization; it's important for Excel
         // compatibility.
-        if width == 1 && height == 1 {
+        if w == 1 && h == 1 {
             for array in $arrays {
                 $args_buffer.push(array.basic_value()?);
             }
             return Ok(Value::Single($eval_f));
         }
 
-        let mut values = Vec::with_capacity(width as usize * height as usize);
-        for (x, y) in Array::indices(width, height) {
+        let mut values = smallvec::SmallVec::with_capacity(w as usize * h as usize);
+        for (x, y) in Array::indices(w, h) {
             $args_buffer.clear();
             for array in $arrays {
                 $args_buffer.push(array.get(x, y)?);
@@ -28,7 +28,7 @@ macro_rules! zip_map_impl {
             values.push($eval_f);
         }
 
-        let result = Array::from_row_major_iter(width, height, values)?;
+        let result = Array::new_row_major(w, h, values)?;
         Ok(Value::Array(result))
     }};
 }

@@ -239,6 +239,8 @@ impl Token {
             "%" => Self::Percent,
             ":" => Self::CellRangeOp,
             "..." => Self::Ellipsis,
+            s if s.eq_ignore_ascii_case("false") => Self::False,
+            s if s.eq_ignore_ascii_case("true") => Self::True,
 
             // Match a line comment.
             s if s.starts_with("//") => Self::Comment,
