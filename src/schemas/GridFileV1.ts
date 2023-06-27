@@ -1,6 +1,6 @@
 import z from 'zod';
 
-const ArrayOutputSchema = z.array(z.union([z.string(), z.number(), z.boolean()]));
+const ArrayOutputSchema = z.array(z.any());
 
 export enum BorderType {
   line1 = 0,

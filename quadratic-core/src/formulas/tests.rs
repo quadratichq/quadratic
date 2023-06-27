@@ -5,29 +5,42 @@ pub(crate) use super::*;
 
 macro_rules! array {
     ($( $( $value:expr ),+ );+ $(;)?) => {{
-        let values = [$( [$( $value ),+] ),+];
+        let values = [$( [$( BasicValue::from($value) ),+] ),+];
         let height = values.len();
         let width = values[0].len(); // This will generate a compile-time error if there are no values.
-        Array::from_row_major_iter(
+        Array::new_row_major(
             width as u32,
             height as u32,
-            values.into_iter().flatten(),
+            values.into_iter().flatten().collect(),
         )
         .unwrap()
     }};
 }
 
-pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
-    eval(grid, s).unwrap().to_string()
-}
-pub(crate) fn eval_to_err(grid: &mut dyn GridProxy, s: &str) -> FormulaError {
-    match eval(grid, s) {
-        Err(e) => e,
-        Ok(v) => panic!("expected error; got value {v}"),
-    }
-}
-pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
+pub(crate) fn try_eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
+    println!("Evaluating formula {s:?}");
     parse_formula(s, Pos::ORIGIN)?.eval_blocking(grid, Pos::ORIGIN)
+}
+#[track_caller]
+pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> Value {
+    try_eval(grid, s).expect("error evaluating formula")
+}
+#[track_caller]
+pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
+    eval(grid, s).to_string()
+}
+#[track_caller]
+pub(crate) fn eval_to_err(grid: &mut dyn GridProxy, s: &str) -> FormulaError {
+    try_eval(grid, s).expect_err("expected error")
+}
+
+#[track_caller]
+pub(crate) fn expect_val(value: impl Into<Value>, grid: &mut dyn GridProxy, s: &str) {
+    assert_eq!(value.into(), eval(grid, s));
+}
+#[track_caller]
+pub(crate) fn expect_err(error_msg: &FormulaErrorMsg, grid: &mut dyn GridProxy, s: &str) {
+    assert_eq!(*error_msg, eval_to_err(grid, s).msg);
 }
 
 /// `GridProxy` implementation that just panics whenever a cell is accessed.
@@ -72,6 +85,26 @@ where
 {
     async fn get(&mut self, pos: Pos) -> BasicValue {
         self.0(pos).into()
+    }
+}
+
+/// `GridProxy` implementation with an array starting at (x, y) and no values
+/// anywhere else in the sheet.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ArrayGrid(pub Pos, pub Array);
+#[async_trait(?Send)]
+impl GridProxy for ArrayGrid {
+    async fn get(&mut self, pos: Pos) -> BasicValue {
+        let x = pos.x - self.0.x;
+        let y = pos.y - self.0.y;
+
+        if x < 0 || y < 0 {
+            return BasicValue::Blank;
+        }
+        self.1
+            .get(x as u32, y as u32)
+            .cloned()
+            .unwrap_or(BasicValue::Blank)
     }
 }
 
@@ -144,10 +177,10 @@ fn test_formula_range_operator() {
 fn test_formula_blank_array_parsing() {
     let g = &mut BlankGrid;
     const B: BasicValue = BasicValue::Blank;
-    assert_eq!(Value::from(array![B]), eval(g, "{}").unwrap());
-    assert_eq!(Value::from(array![B; B]), eval(g, "{;}").unwrap());
-    assert_eq!(Value::from(array![B, B]), eval(g, "{,}").unwrap());
-    assert_eq!(Value::from(array![B, B; B, B]), eval(g, "{,;,}").unwrap());
+    assert_eq!(Value::from(array![B]), eval(g, "{}"));
+    assert_eq!(Value::from(array![B; B]), eval(g, "{;}"));
+    assert_eq!(Value::from(array![B, B]), eval(g, "{,}"));
+    assert_eq!(Value::from(array![B, B; B, B]), eval(g, "{,;,}"));
     assert_eq!(
         FormulaErrorMsg::NonRectangularArray,
         eval_to_err(g, "{;,;}").msg,
@@ -158,39 +191,37 @@ fn test_formula_blank_array_parsing() {
 fn test_formula_array_op() {
     let mut g = FnGrid(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
-    let f = |x| BasicValue::Number(x as f64);
-
     assert_eq!((11 * 31).to_string(), eval_to_string(&mut g, "B1 * D1"));
     assert_eq!(
         Value::from(array![
-            f(11 * 31), f(21 * 31);
-            f(12 * 31), f(22 * 31);
-            f(13 * 31), f(23 * 31);
-            f(14 * 31), f(24 * 31);
+            11 * 31, 21 * 31;
+            12 * 31, 22 * 31;
+            13 * 31, 23 * 31;
+            14 * 31, 24 * 31;
         ]),
-        eval(&mut g, "B1:C4 * D1").unwrap(),
+        eval(&mut g, "B1:C4 * D1"),
     );
     assert_eq!(
         Value::from(array![
-            f(11 * 31), f(11 * 41);
-            f(11 * 32), f(11 * 42);
-            f(11 * 33), f(11 * 43);
-            f(11 * 34), f(11 * 44);
+            11 * 31, 11 * 41;
+            11 * 32, 11 * 42;
+            11 * 33, 11 * 43;
+            11 * 34, 11 * 44;
         ]),
-        eval(&mut g, "B1 * D1:E4").unwrap(),
+        eval(&mut g, "B1 * D1:E4"),
     );
     assert_eq!(
         Value::from(array![
-            f(11 * 31), f(21 * 41);
-            f(12 * 32), f(22 * 42);
-            f(13 * 33), f(23 * 43);
-            f(14 * 34), f(24 * 44);
+            11 * 31, 21 * 41;
+            12 * 32, 22 * 42;
+            13 * 33, 23 * 43;
+            14 * 34, 24 * 44;
         ]),
-        eval(&mut g, "B1:C4 * D1:E4").unwrap(),
+        eval(&mut g, "B1:C4 * D1:E4"),
     );
     assert_eq!(
         "Array height mismatch: expected value with 1 row or 4 rows, got 5 rows",
-        eval(&mut g, "B1:C4 * D1:E5").unwrap_err().msg.to_string(),
+        eval_to_err(&mut g, "B1:C4 * D1:E5").msg.to_string(),
     );
 }
 
@@ -203,7 +234,7 @@ fn test_array_parsing() {
             f(21), f(22);
             f(31), f(32);
         ]),
-        eval(&mut NoGrid, "{11, 12; 21, 22; 31, 32}").unwrap(),
+        eval(&mut NoGrid, "{11, 12; 21, 22; 31, 32}"),
     );
 
     // Test stringification
@@ -221,7 +252,7 @@ fn test_array_parsing() {
     // Mismatched rows
     assert_eq!(
         FormulaErrorMsg::NonRectangularArray,
-        eval(&mut NoGrid, "{1; 3, 4}").unwrap_err().msg,
+        eval_to_err(&mut NoGrid, "{1; 3, 4}").msg,
     );
 
     // Blank values
@@ -261,6 +292,10 @@ fn test_formula_omit_required_argument() {
     let g = &mut NoGrid;
     assert!(eval_to_string(g, "ATAN2(,1)").starts_with("1.57"));
     assert_eq!("0", eval_to_string(g, "ATAN2(1,)"));
+    assert_eq!(
+        FormulaErrorMsg::DivideByZero,
+        eval_to_err(g, "ATAN2(,)").msg,
+    );
     assert_eq!(
         FormulaErrorMsg::MissingRequiredArgument {
             func_name: "ATAN2",

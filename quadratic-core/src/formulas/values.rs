@@ -1,9 +1,10 @@
+use itertools::Itertools;
 use smallvec::{smallvec, SmallVec};
 use std::fmt;
 
 use super::{
-    FormulaError, FormulaErrorMsg, FormulaResult, FormulaResultExt, Span, SpannableIterExt,
-    Spanned, Unspan,
+    ArraySize, Axis, FormulaError, FormulaErrorMsg, FormulaResult, FormulaResultExt, Span,
+    SpannableIterExt, Spanned, Unspan,
 };
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
@@ -39,52 +40,6 @@ impl From<Array> for Value {
 }
 
 impl Value {
-    /// Returns the unique width and height that fits all of `values`.
-    ///
-    /// - If `values` does not contain any arrays, returns `(1, 1)`.
-    /// - Sizes of `1` are ignored.
-    /// - If there are multiple unequal sizes greater than one, returns an
-    ///   error.
-    /// - Both numbers returned are always nonzero.
-    pub fn common_array_size<'a>(
-        values: impl IntoIterator<Item = &'a Spanned<Value>>,
-    ) -> FormulaResult<(u32, u32)> {
-        fn merge_array_sizes(a: u32, b: u32) -> Option<u32> {
-            // If a!=b and a>1 and b>1, then there is a mismatch.
-            (a == b || a <= 1 || b <= 1).then_some(std::cmp::max(a, b))
-        }
-
-        let mut width = 1;
-        let mut height = 1;
-
-        for value in values {
-            let Value::Array(array) = &value.inner else {
-                continue;
-            };
-
-            let value_width = array.width;
-            let value_height = array.height;
-
-            width = merge_array_sizes(width, value_width).ok_or_else(|| {
-                FormulaErrorMsg::ArrayWidthMismatch {
-                    expected: width,
-                    got: value_width,
-                }
-                .with_span(value.span)
-            })?;
-
-            height = merge_array_sizes(height, value_height).ok_or_else(|| {
-                FormulaErrorMsg::ArrayHeightMismatch {
-                    expected: height,
-                    got: value_height,
-                }
-                .with_span(value.span)
-            })?;
-        }
-
-        Ok((width, height))
-    }
-
     pub fn basic_value(&self) -> Result<&BasicValue, FormulaErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
@@ -107,6 +62,14 @@ impl Value {
         match self {
             Value::Single(value) => std::slice::from_ref(value),
             Value::Array(array) => &array.values,
+        }
+    }
+
+    /// Returns a formula-source-code representation of the value.
+    pub fn repr(&self) -> String {
+        match self {
+            Value::Single(value) => value.repr(),
+            Value::Array(array) => array.repr(),
         }
     }
 
@@ -139,6 +102,22 @@ impl Value {
             Value::Array(a) => a.purify_floats(span).map(Value::Array),
         }
     }
+
+    /// Returns the unique width and height that fits all of `values`.
+    ///
+    /// - If `values` does not contain any arrays, returns `(1, 1)`.
+    /// - Sizes of `1` are ignored.
+    /// - If there are multiple unequal sizes greater than one, returns an
+    ///   error.
+    /// - Both numbers returned are always nonzero.
+    pub fn common_array_size<'a>(
+        values: impl Copy + IntoIterator<Item = &'a Spanned<Value>>,
+    ) -> FormulaResult<ArraySize> {
+        Ok(ArraySize {
+            w: Array::common_len(Axis::X, values.into_iter().filter_map(|v| v.as_array()))?,
+            h: Array::common_len(Axis::Y, values.into_iter().filter_map(|v| v.as_array()))?,
+        })
+    }
 }
 impl Spanned<Value> {
     pub fn basic_value(&self) -> FormulaResult<Spanned<&BasicValue>> {
@@ -146,6 +125,15 @@ impl Spanned<Value> {
     }
     pub fn into_basic_value(self) -> FormulaResult<Spanned<BasicValue>> {
         self.inner.into_basic_value().with_span(self.span)
+    }
+    pub fn as_array(&self) -> Option<Spanned<&Array>> {
+        match &self.inner {
+            Value::Single(_) => None,
+            Value::Array(array) => Some(Spanned {
+                span: self.span,
+                inner: array,
+            }),
+        }
     }
 
     /// Returns the value from an array if this is an array value, or the single
@@ -276,12 +264,11 @@ impl From<Value> for Array {
 
 impl Array {
     /// Constructs an array from an iterator in row-major order.
-    pub fn from_row_major_iter(
+    pub fn new_row_major(
         width: u32,
         height: u32,
-        values: impl IntoIterator<Item = BasicValue>,
-    ) -> Result<Self, FormulaError> {
-        let values: SmallVec<_> = values.into_iter().collect();
+        values: SmallVec<[BasicValue; 1]>,
+    ) -> FormulaResult<Self> {
         if width > 0 && height > 0 && values.len() == width as usize * height as usize {
             Ok(Self {
                 width,
@@ -296,6 +283,46 @@ impl Array {
                 values.len(),
             )
         }
+    }
+    /// Returns a formula-source-code representation of the value.
+    pub fn repr(&self) -> String {
+        format!(
+            "{{{}}}",
+            self.rows()
+                .map(|row| row.iter().map(|v| v.repr()).join(", "))
+                .join("; "),
+        )
+    }
+
+    /// Transposes an array (swaps rows and columns). This is an expensive
+    /// operation for large arrays.
+    pub fn transpose(&self) -> Array {
+        let width = self.height;
+        let height = self.width;
+        let values = Self::indices(width, height)
+            .map(|(x, y)| self.get(y, x).unwrap().clone())
+            .collect();
+        Self::new_row_major(width, height, values).unwrap()
+    }
+    /// Flips an array horizontally. This is an expensive operation for large
+    /// arrays.
+    pub fn flip_horizontally(&self) -> Array {
+        let ArraySize { w, h } = self.array_size();
+        Self::new_row_major(
+            w,
+            h,
+            self.rows()
+                .map(|row| row.iter().rev().cloned())
+                .flatten()
+                .collect(),
+        )
+        .unwrap()
+    }
+    /// Flips an array vertically. This is an expensive operation for large
+    /// arrays.
+    pub fn flip_vertically(&self) -> Array {
+        let ArraySize { w, h } = self.array_size();
+        Self::new_row_major(w, h, self.rows().rev().flatten().cloned().collect()).unwrap()
     }
 
     /// Returns an iterator over `(x, y)` array indices in canonical order.
@@ -312,11 +339,14 @@ impl Array {
         self.height
     }
     /// Returns the width and height of an array.
-    pub fn array_size(&self) -> (u32, u32) {
-        (self.width, self.height)
+    pub fn array_size(&self) -> ArraySize {
+        ArraySize {
+            w: self.width,
+            h: self.height,
+        }
     }
     /// Returns an iterator over the rows of the array.
-    pub fn rows(&self) -> impl Iterator<Item = &[BasicValue]> {
+    pub fn rows(&self) -> std::slice::Chunks<'_, BasicValue> {
         self.values.chunks(self.width as usize)
     }
 
@@ -342,13 +372,8 @@ impl Array {
     /// then `x` is ignored. If the height is 1, then `y` is ignored. Otherwise,
     /// returns an error if a coordinate is out of bounds.
     pub fn get(&self, x: u32, y: u32) -> Result<&BasicValue, FormulaErrorMsg> {
-        let x = if self.width > 1 { x } else { 0 };
-        let y = if self.height > 1 { y } else { 0 };
-        if x < self.width && y < self.height {
-            Ok(&self.values[(x + y * self.width) as usize])
-        } else {
-            Err(FormulaErrorMsg::IndexOutOfBounds)
-        }
+        let i = self.array_size().flatten_index(x, y)?;
+        Ok(&self.values[i])
     }
     /// Returns a flat slice of basic values in the array.
     pub fn basic_values_slice(&self) -> &[BasicValue] {
@@ -370,6 +395,81 @@ impl Array {
             *v = std::mem::take(v).purify_float(span)?;
         }
         Ok(self)
+    }
+
+    /// Returns the unique length that fits all `values` along `axis`. See
+    /// `common_array_size()` for more.
+    pub fn common_len<'a>(
+        axis: Axis,
+        arrays: impl IntoIterator<Item = Spanned<&'a Array>>,
+    ) -> FormulaResult<u32> {
+        let mut common_len = 1;
+
+        for array in arrays {
+            let new_array_len = array.inner.array_size()[axis];
+            match (common_len, new_array_len) {
+                (a, b) if a == b => continue,
+                (_, 1) => continue,
+                (1, l) => common_len = l,
+                _ => {
+                    return Err(FormulaErrorMsg::ArrayAxisMismatch {
+                        axis,
+                        expected: common_len,
+                        got: new_array_len,
+                    }
+                    .with_span(array.span))
+                }
+            }
+        }
+
+        Ok(common_len)
+    }
+}
+impl Spanned<Array> {
+    /// Checks that an array is linear (width=1 or height=1), then returns which
+    /// is the long axis. Returns `None` in the case of a 1x1 array.
+    pub fn array_linear_axis(&self) -> FormulaResult<Option<Axis>> {
+        match self.inner.array_size() {
+            ArraySize { w: 1, h: 1 } => Ok(None),
+            ArraySize { w: _, h: 1 } => Ok(Some(Axis::X)),
+            ArraySize { w: 1, h: _ } => Ok(Some(Axis::Y)),
+            _ => Err(FormulaErrorMsg::NonLinearArray.with_span(self.span)),
+        }
+    }
+    /// Checks that an array is linear along a particular axis, then returns the
+    /// length along that axis.
+    pub fn array_linear_length(&self, axis: Axis) -> FormulaResult<u32> {
+        self.check_array_size_on(axis.other_axis(), 1)?;
+        Ok(self.inner.array_size()[axis])
+    }
+
+    /// Checks the size of the array on one axis, returning an error if it does
+    /// not match exactly.
+    pub fn check_array_size_on(&self, axis: Axis, len: u32) -> FormulaResult<()> {
+        let expected = len;
+        let got = self.inner.array_size()[axis];
+        if expected == got {
+            Ok(())
+        } else {
+            Err(FormulaErrorMsg::ExactArrayAxisMismatch {
+                axis,
+                expected,
+                got,
+            }
+            .with_span(self.span))
+        }
+    }
+
+    /// Checks the size of the array, returning an error if it does not match
+    /// exactly.
+    pub fn check_array_size_exact(&self, size: ArraySize) -> FormulaResult<()> {
+        let expected = size;
+        let got = self.inner.array_size();
+        if expected == got {
+            Ok(())
+        } else {
+            Err(FormulaErrorMsg::ExactArraySizeMismatch { expected, got }.with_span(self.span))
+        }
     }
 }
 
@@ -400,6 +500,13 @@ impl fmt::Display for BasicValue {
         }
     }
 }
+/// Implement `AsRef` so we can use `impl AsRef<BasicValue>` to be generic over
+/// `BasicValue` and `&BasicValue`.
+impl AsRef<BasicValue> for BasicValue {
+    fn as_ref(&self) -> &BasicValue {
+        self
+    }
+}
 
 impl BasicValue {
     /// Returns a human-friendly string describing the type of value.
@@ -412,6 +519,19 @@ impl BasicValue {
             BasicValue::Err(_) => "error",
         }
     }
+    /// Returns a formula-source-code representation of the value.
+    pub fn repr(&self) -> String {
+        match self {
+            BasicValue::Blank => String::new(),
+            BasicValue::String(s) => format!("{s:?}"),
+            BasicValue::Number(n) => n.to_string(),
+            BasicValue::Bool(b) => match b {
+                true => "TRUE".to_string(),
+                false => "FALSE".to_string(),
+            },
+            BasicValue::Err(_) => format!("[error]"),
+        }
+    }
 
     /// Returns whether the value is a blank value. The empty string is considered
     /// non-blank.
@@ -420,6 +540,13 @@ impl BasicValue {
     }
     pub fn is_blank_or_empty_string(&self) -> bool {
         self.is_blank() || *self == BasicValue::String(String::new())
+    }
+    /// Returns the contained error, if this is an error value.
+    pub fn error(&self) -> Option<&FormulaError> {
+        match self {
+            BasicValue::Err(e) => Some(e),
+            _ => None,
+        }
     }
 
     /// Coerces the value to a specific type; returns `None` if the conversion
@@ -434,7 +561,30 @@ impl BasicValue {
         }
     }
 
-    /// Compares two values using a total ordering that propogates errors.
+    /// Compares two values but propogates errors and returns `None` in the case
+    /// of disparate types.
+    pub fn partial_cmp(&self, other: &Self) -> FormulaResult<Option<std::cmp::Ordering>> {
+        Ok(Some(match (self, other) {
+            (BasicValue::Err(e), _) | (_, BasicValue::Err(e)) => return Err((**e).clone()),
+
+            (BasicValue::Number(a), BasicValue::Number(b)) => a.total_cmp(&b),
+            (BasicValue::String(a), BasicValue::String(b)) => {
+                let a = a.to_ascii_uppercase();
+                let b = b.to_ascii_uppercase();
+                a.cmp(&b)
+            }
+            (BasicValue::Bool(a), BasicValue::Bool(b)) => a.cmp(b),
+            (BasicValue::Blank, BasicValue::Blank) => std::cmp::Ordering::Equal,
+
+            (BasicValue::Number(_), _)
+            | (BasicValue::String(_), _)
+            | (BasicValue::Bool(_), _)
+            | (BasicValue::Blank, _) => return Ok(None),
+        }))
+    }
+
+    /// Compares two values using a total ordering that propogates errors and
+    /// converts blanks to zeros.
     pub fn cmp(&self, other: &Self) -> FormulaResult<std::cmp::Ordering> {
         fn type_id(v: &BasicValue) -> u8 {
             // Sort order, based on the results of Excel's `SORT()` function.
@@ -458,23 +608,9 @@ impl BasicValue {
             rhs = &BasicValue::Number(0.0);
         }
 
-        Ok(match (lhs, rhs) {
-            (BasicValue::Err(e), _) | (_, BasicValue::Err(e)) => return Err((**e).clone()),
-
-            (BasicValue::Number(a), BasicValue::Number(b)) => a.total_cmp(&b),
-            (BasicValue::String(a), BasicValue::String(b)) => {
-                let a = a.to_ascii_uppercase();
-                let b = b.to_ascii_uppercase();
-                a.cmp(&b)
-            }
-            (BasicValue::Bool(a), BasicValue::Bool(b)) => a.cmp(b),
-            (BasicValue::Blank, BasicValue::Blank) => std::cmp::Ordering::Equal,
-
-            (BasicValue::Number(_), _)
-            | (BasicValue::String(_), _)
-            | (BasicValue::Bool(_), _)
-            | (BasicValue::Blank, _) => type_id(self).cmp(&type_id(other)),
-        })
+        Ok(lhs
+            .partial_cmp(rhs)?
+            .unwrap_or_else(|| type_id(lhs).cmp(&type_id(rhs))))
     }
 
     /// Returns whether `self == other` using `BasicValue::cmp()`.
@@ -557,6 +693,16 @@ impl From<i64> for BasicValue {
         BasicValue::Number(value as f64)
     }
 }
+impl From<i32> for BasicValue {
+    fn from(value: i32) -> Self {
+        BasicValue::Number(value as f64)
+    }
+}
+impl From<u32> for BasicValue {
+    fn from(value: u32) -> Self {
+        BasicValue::Number(value as f64)
+    }
+}
 impl From<bool> for BasicValue {
     fn from(value: bool) -> Self {
         BasicValue::Bool(value)
@@ -624,7 +770,14 @@ impl<'a> TryFrom<&'a BasicValue> for i64 {
     type Error = FormulaErrorMsg;
 
     fn try_from(value: &'a BasicValue) -> Result<Self, Self::Error> {
-        Ok(f64::try_from(value)?.round() as i64)
+        Ok(f64::try_from(value)?.round() as i64) // TODO: should be floor for excel compat
+    }
+}
+impl<'a> TryFrom<&'a BasicValue> for u32 {
+    type Error = FormulaErrorMsg;
+
+    fn try_from(value: &'a BasicValue) -> Result<Self, Self::Error> {
+        Ok(f64::try_from(value)?.round() as u32) // TODO: should be floor for excel compat
     }
 }
 impl<'a> TryFrom<&'a BasicValue> for bool {
