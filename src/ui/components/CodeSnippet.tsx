@@ -16,7 +16,6 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
 
   const handleClick = (e: any) => {
     if (editorRef.current) {
-      console.log(editorRef.current);
       navigator.clipboard.writeText(code);
       setTooltipMsg('Copied!');
       setTimeout(() => {
