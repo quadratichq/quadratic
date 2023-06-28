@@ -1,6 +1,8 @@
-import Editor from '@monaco-editor/react';
+import { Stack } from '@mui/material';
+import { CodeSnippet } from '../../components/CodeSnippet';
+// import monaco from 'monaco-editor';
 
-const CODE_BLOCK_REGEX = /```([a-z]+)?\n([\s\S]+?)\n```/g;
+const CODE_BLOCK_REGEX = /```([a-z]+)?\n([\s\S]+?)(?:\n```|$)/g;
 
 function parseCodeBlocks(input: string): Array<string | JSX.Element> {
   const blocks: Array<string | JSX.Element> = [];
@@ -12,39 +14,7 @@ function parseCodeBlocks(input: string): Array<string | JSX.Element> {
     if (lastIndex < match.index) {
       blocks.push(input.substring(lastIndex, match.index));
     }
-    blocks.push(
-      <div
-        key={lastIndex}
-        // calculate height based on number of lines
-        style={{
-          height: `${Math.ceil(code.split('\n').length) * 19}px`,
-          width: '100%',
-        }}
-      >
-        <Editor
-          language={language}
-          value={code}
-          height="100%"
-          width="100%"
-          options={{
-            readOnly: true,
-            minimap: { enabled: false },
-            overviewRulerLanes: 0,
-            hideCursorInOverviewRuler: true,
-            overviewRulerBorder: false,
-            scrollbar: {
-              vertical: 'hidden',
-              horizontal: 'hidden',
-              handleMouseWheel: false,
-            },
-            scrollBeyondLastLine: false,
-            wordWrap: 'off',
-            // lineNumbers: 'off',
-            automaticLayout: true,
-          }}
-        />
-      </div>
-    );
+    blocks.push(<CodeSnippet key={lastIndex} code={code} language={language} />);
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < input.length) {
@@ -54,5 +24,9 @@ function parseCodeBlocks(input: string): Array<string | JSX.Element> {
 }
 
 export function CodeBlockParser({ input }: { input: string }): JSX.Element {
-  return <>{parseCodeBlocks(input)}</>;
+  return (
+    <Stack gap={2} style={{ whiteSpace: 'normal', lineHeight: '1.5' }}>
+      {parseCodeBlocks(input)}
+    </Stack>
+  );
 }

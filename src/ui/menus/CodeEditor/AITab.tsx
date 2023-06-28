@@ -217,8 +217,6 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
         </FormControl>
       </div>
       <div
-        contentEditable="true"
-        suppressContentEditableWarning={true}
         spellCheck={false}
         onKeyDown={(e) => {
           if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -257,14 +255,9 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
               <div
                 key={index}
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
                   borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
                   marginTop: '1rem',
                   paddingTop: index !== 0 ? '1rem' : '0',
-                  paddingLeft: '1rem',
-                  paddingRight: '1rem',
                 }}
               >
                 {message.role === 'user' ? (
@@ -295,7 +288,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
                     <AI sx={{ color: colors.languageAI }}></AI>
                   </Avatar>
                 )}
-                <span>{CodeBlockParser({ input: message.content })}</span>
+                <CodeBlockParser input={message.content} />
               </div>
             ))}
             <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
