@@ -1,9 +1,10 @@
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use super::FormulaErrorMsg;
 
 /// Size of a region or array.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ArraySize {
     /// Width (number of columns)
     pub w: u32,
@@ -47,7 +48,7 @@ impl ArraySize {
 }
 
 /// Horizontal or vertical axis.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Axis {
     /// Horizontal axis / columns
     X = 0,

@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 use std::fmt;
 
@@ -9,7 +10,7 @@ use super::{
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Value {
     Single(BasicValue),
     Array(Array),
@@ -209,7 +210,7 @@ impl Spanned<Value> {
 
 /// 2D array of values in the formula language. The array may be a single value
 /// (1x1) but must not be degenerate (zero width or zero height).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Array {
     /// Number of columns, which may be any positive integer (but not zero).
     width: u32,
@@ -474,7 +475,7 @@ impl Spanned<Array> {
 }
 
 /// Non-array value in the formula language.
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub enum BasicValue {
     /// Blank cell, which contains nothing.
     #[default]
@@ -649,6 +650,19 @@ impl BasicValue {
                 Err(FormulaErrorMsg::Infinity.with_span(span))
             }
             other_single_value => Ok(other_single_value),
+        }
+    }
+
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+    pub fn from_json(s: &str) -> Self {
+        match serde_json::from_str(s) {
+            Ok(v) => v,
+            Err(e) => BasicValue::Err(Box::new(internal_error_value!(
+                "error deserializing cell value: {}",
+                e,
+            ))),
         }
     }
 }

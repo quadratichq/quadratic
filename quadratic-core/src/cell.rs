@@ -1,28 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 use wasm_bindgen::prelude::*;
-
-/// Contents of a single spreadsheet cell.
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
-pub enum Cell {
-    #[default]
-    Empty,
-    Int(i64),
-    Text(String),
-}
-impl Cell {
-    pub fn is_empty(&self) -> bool {
-        matches!(self, Self::Empty)
-    }
-
-    pub fn string_value(&self) -> Cow<'_, str> {
-        match self {
-            Cell::Empty => "".into(),
-            Cell::Int(i) => i.to_string().into(),
-            Cell::Text(s) => s.into(),
-        }
-    }
-}
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct JsCell {

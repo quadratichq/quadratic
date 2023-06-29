@@ -9,11 +9,13 @@ use wasm_bindgen::prelude::*;
 
 #[macro_use]
 pub mod util;
-mod cell;
+#[macro_use]
 pub mod formulas;
+mod cell;
+mod grid;
 mod position;
 
-pub use cell::{Cell, CellTypes, JsCell};
+pub use cell::{CellTypes, JsCell};
 use formulas::{BasicValue, GridProxy, Value};
 pub use position::Pos;
 

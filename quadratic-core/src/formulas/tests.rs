@@ -298,15 +298,15 @@ fn test_formula_omit_required_argument() {
     );
     assert_eq!(
         FormulaErrorMsg::MissingRequiredArgument {
-            func_name: "ATAN2",
-            arg_name: "x"
+            func_name: "ATAN2".into(),
+            arg_name: "x".into(),
         },
         eval_to_err(g, "ATAN2()").msg,
     );
     assert_eq!(
         FormulaErrorMsg::MissingRequiredArgument {
-            func_name: "ATAN2",
-            arg_name: "y"
+            func_name: "ATAN2".into(),
+            arg_name: "y".into(),
         },
         eval_to_err(g, "ATAN2(1)").msg,
     );

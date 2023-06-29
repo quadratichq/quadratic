@@ -25,12 +25,13 @@ async-trait = "0.1.63"
 futures = "0.3.25"
 itertools = "0.10.5"
 lazy_static = "1.4"
+lib0 = "*" # version must match yrs
 regex = "1.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_repr = "0.1"
 serde-wasm-bindgen = "0.4.5"
-smallvec = { version = "1.10.0", features = ["union"] }
+smallvec = { version = "1.10.0", features = ["serde", "union"] }
 strum = "0.24.1"
 strum_macros = "0.24.3"
 wasm-bindgen = "0.2.83"
@@ -49,6 +50,7 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 # compared to the default allocator's ~10K. It is slower than the default
 # allocator, however.
 wee_alloc = { version = "0.4.5", optional = true }
+yrs = "0.16.9"
 
 [dev-dependencies]
 proptest = "1.0.0"
