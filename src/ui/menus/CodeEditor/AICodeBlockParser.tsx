@@ -1,6 +1,5 @@
 import { Stack } from '@mui/material';
 import { CodeSnippet } from '../../components/CodeSnippet';
-// import monaco from 'monaco-editor';
 
 const CODE_BLOCK_REGEX = /```([a-z]+)?\n([\s\S]+?)(?:\n```|$)/g;
 

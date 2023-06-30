@@ -1,13 +1,14 @@
 import { Box, Tabs, Tab, Chip } from '@mui/material';
-import { CSSProperties, useState } from 'react';
+import { useState } from 'react';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { colors } from '../../../theme/colors';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { useTheme } from '@mui/system';
 import { AITab } from './AITab';
 import { useAuth0 } from '@auth0/auth0-react';
+import { CodeSnippet } from '../../components/CodeSnippet';
+import { stripIndent } from 'common-tags';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
@@ -19,14 +20,7 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
-  const theme = useTheme();
   const { isAuthenticated } = useAuth0();
-
-  const codeSampleStyles: CSSProperties = {
-    backgroundColor: colors.lightGray,
-    padding: theme.spacing(1),
-    whiteSpace: 'pre-wrap',
-  };
 
   if (editorMode === 'AI') {
     if (activeTabIndex !== 1) setActiveTabIndex(1);
@@ -66,7 +60,7 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
           ) : null}
         </Tabs>
       </Box>
-      <div style={{ flex: '2', overflow: 'scroll' }}>
+      <div style={{ flex: '2', overflow: 'scroll', fontSize: '.875rem' }}>
         <TabPanel value={activeTabIndex} index={0}>
           <div
             contentEditable="true"
@@ -82,7 +76,6 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
             style={{
               outline: 'none',
               fontFamily: 'monospace',
-              fontSize: '.875rem',
               lineHeight: '1.3',
               whiteSpace: 'pre-wrap',
             }}
@@ -106,46 +99,48 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
         <TabPanel value={activeTabIndex} index={1}>
           {editorMode === 'PYTHON' ? (
             <div style={{ overflow: 'scroll' }}>
-              <h3>Logging</h3>
+              <h4>Logging</h4>
               <p>`print()` statements and errors are logged in the CONSOLE tab.</p>
-              <h3>Returning data to the sheet</h3>
+              <h4>Returning data to the sheet</h4>
               <p>The last statement in your code is returned to the sheet.</p>
               <p>Example:</p>
-              <pre style={codeSampleStyles}>
-                <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>2</span> *{' '}
-                <span style={{ color: 'blue' }}>2</span>
-                <br />
-                <span style={{ color: 'grey' }}>↳ 4 # number returned as the cell value</span>
-              </pre>
-              <p>Example:</p>
-              <pre style={codeSampleStyles}>
-                <span style={{ color: 'grey' }}>1</span> result = <span style={{ color: 'blue' }}>[]</span>
-                <br />
-                <span style={{ color: 'grey' }}>2</span> <span style={{ color: 'red' }}>for</span> x{' '}
-                <span style={{ color: 'red' }}>in </span>
-                <span style={{ color: 'blue' }}>range</span>(100):
-                <br></br>
-                <span style={{ color: 'grey' }}>3</span> {'  '}
-                result.<span style={{ color: 'blue' }}>append</span>(x)
-                <br />
-                <span style={{ color: 'grey' }}>4</span>
-                <br />
-                <span style={{ color: 'grey' }}>5</span> result
-                <br />
-                <span style={{ color: 'grey' }}>↳ [0, 1, 2, ..., 99] # returns 100 cells counting from 0 to 99</span>
-              </pre>
 
-              <h3>Referencing data from the sheet</h3>
+              <CodeSnippet
+                language="python"
+                code={stripIndent`
+                  2 * 2
+                  # Returns the value '4' to the active cell
+                `}
+              />
+
+              <p>Example:</p>
+
+              <CodeSnippet
+                language="python"
+                code={stripIndent`
+                  result = []
+                  for x in range(100):
+                      result.append(x)
+
+                  result
+                  # Returns a list of 100 numbers, from 0 to 99
+                  # [0, 1, 2, ..., 99]
+                `}
+              />
+
+              <h4>Referencing data from the sheet</h4>
               <p>Use the `cell(x, y)` function — or shorthand `c(x, y)` — to reference values in the sheet.</p>
               <p>Example:</p>
-              <pre style={codeSampleStyles}>
-                <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>c</span>(1, 1) +{' '}
-                <span style={{ color: 'blue' }}>c</span>(2, 2)
-                <br />
-                <span style={{ color: 'grey' }}>↳ The sum of the cell values at x:1 y:1 and x:2 y:2</span>
-              </pre>
 
-              <h3>Advanced topics</h3>
+              <CodeSnippet
+                language="python"
+                code={stripIndent`
+                  c(1, 1) + c(2, 2)
+                  # Returns the sum of the cell values at (x:1, y:1) and (x:2, y:2)
+                `}
+              />
+
+              <h4>Advanced topics</h4>
               <ul>
                 <li>Fetching data from an API.</li>
                 <li>Using Pandas DataFrames.</li>
@@ -161,24 +156,24 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
               <br></br>
               <Chip label="Experimental" size="small" color="warning" variant="outlined" />
               <p>
-                Warning: AI in Quadratic as a cell type is currently experimental.<br></br> The implementation may
-                change without notice.
-                <span
-                  style={{
-                    fontStyle: 'italic',
-                  }}
-                >
-                  <br></br>Data generated by AI models needs to be validated as it is often incorrect.
-                </span>
+                <strong>Warning</strong>: AI in Quadratic as a cell type is currently experimental. The implementation
+                may change without notice.
               </p>
-              <h3>AI Docs</h3>
-              <h5>Generating New Data</h5>
+              <p
+                style={{
+                  fontStyle: 'italic',
+                }}
+              >
+                Data generated by AI models needs to be validated as it is often incorrect.
+              </p>
+
+              <h4>Generating New Data</h4>
               <p>
                 With GPT AI as a cell type, GPT AI can directly generate data and return it to the sheet. Whether you
                 need to generate a list of names, dates, or any other type of data, GPT AI can do it for you quickly and
                 easily, saving you valuable time and resources.
               </p>
-              <h5>Working With Existing Data</h5>
+              <h4>Working With Existing Data</h4>
               <p>
                 When you use GPT AI as a cell type, it has access to the data in your sheet and can use it to generate
                 new data or update existing data. This means that GPT AI can analyze the data in your sheet and generate
@@ -189,188 +184,68 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
             </>
           ) : (
             <>
-              <h3>Spreadsheet formulas</h3>
+              <h4>Spreadsheet formulas</h4>
               <p>Use the familiar language of spreadsheet formulas.</p>
               <p>Example:</p>
-              <pre style={codeSampleStyles}>
-                <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>SUM</span>(A0:A99)
-                <br />
-                <span style={{ color: 'grey' }}>↳ Returns the SUM of cells A0 to A99</span>
-              </pre>
-              <h3>Referencing cells</h3>
+
+              <CodeSnippet language="formula" code={`SUM(A0:A99)`} />
+
+              <h4>Referencing cells</h4>
               <p>
                 In the positive quadrant, cells are referenced similar to other spreadsheets. In the negative quadrant,
                 cells are referenced using a `n` prefix.
               </p>
               <p>Examples:</p>
               <table>
+                <thead>
+                  <th style={{ textAlign: 'left' }}>
+                    <code>nAn0</code>
+                  </th>
+                  <th style={{ textAlign: 'left' }}>
+                    <code>(x, y)</code>
+                  </th>
+                </thead>
                 <tbody>
-                  <tr>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <strong>nAn0 notation</strong>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>
-                              <strong>(x, y)</strong>
-                            </code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>A0</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>(0, 0)</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>A1</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>(0, 1)</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>B1</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>(1, 1)</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>An1</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>(0, -1)</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>nA1</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>(-1, 1)</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>nAn1</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>
-                        <span>
-                          <span>
-                            <code>(-1, -1)</code>
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
+                  {[
+                    ['A0', '(0,0)'],
+                    ['A1', '(0, 1)'],
+                    ['B1', '(1, 1)'],
+                    ['An1', '(0, -1)'],
+                    ['nA1', '(-1, 1)'],
+                    ['nAn1', '(-1, -1)'],
+                  ].map(([key, val]) => (
+                    <tr>
+                      <td>
+                        <code>{key}</code>
+                      </td>
+                      <td>
+                        <code>{val}</code>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
-              <h3>Multiline formulas</h3>
+
+              <h4>Multiline formulas</h4>
               <p>
                 Line spaces are ignored when evaluating formulas. You can use them to make your formulas more readable.
               </p>
               <p>Example:</p>
-              <pre style={codeSampleStyles}>
-                <span style={{ color: 'grey' }}>1</span> <span style={{ color: 'blue' }}>IF</span>(A0 {'>'} 0,
-                <br></br>
-                <span style={{ color: 'grey' }}>2</span> <span style={{ color: 'blue' }}>&nbsp;&nbsp;IF</span>(B0 {'<'}{' '}
-                2,
-                <br></br>
-                <span style={{ color: 'grey' }}>3</span> &nbsp;&nbsp;&nbsp;&nbsp;"Valid Dataset",
-                <br></br>
-                <span style={{ color: 'grey' }}>3</span> &nbsp;&nbsp;&nbsp;&nbsp;"B0 is invalid",
-                <br></br>
-                <span style={{ color: 'grey' }}>4</span> &nbsp;&nbsp;),
-                <br></br>
-                <span style={{ color: 'grey' }}>3</span> &nbsp;&nbsp;"A0 is invalid",
-                <br></br>
-                <span style={{ color: 'grey' }}>5</span> )<br></br>
-              </pre>
-              <h3>More info</h3>
+
+              <CodeSnippet
+                language="formula"
+                code={stripIndent`
+                  IF(A0 > 0,
+                    IF(B0 < 2,
+                      "Valid Dataset",
+                      "B0 is invalid",
+                    ),
+                    "A0 is invalid",
+                  )
+                `}
+              />
+
+              <h4>More info</h4>
               <p>
                 <LinkNewTab href={DOCUMENTATION_FORMULAS_URL}>Check out the docs</LinkNewTab> to see a full list of
                 supported formulas and documentation for how to use specific formula functions.

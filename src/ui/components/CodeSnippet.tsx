@@ -39,8 +39,9 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
           backgroundColor: theme.palette.grey['100'],
           pt: theme.spacing(0.5),
           pb: theme.spacing(0.5),
-          pr: theme.spacing(2),
-          pl: theme.spacing(2),
+          // 10px on Monaco + 2px border
+          pr: '12px',
+          pl: '12px',
         }}
       >
         <Box sx={{ color: 'text.secondary' }}>{language}</Box>
@@ -80,6 +81,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
             lineNumbers: 'off',
             automaticLayout: true,
             folding: false,
+            renderLineHighlightOnlyWhenFocus: true,
           }}
           onMount={handleEditorDidMount}
         />
