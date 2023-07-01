@@ -1,7 +1,8 @@
 import { Cell } from '../../schemas';
+import { webWorkers } from '../../web-workers/webWorkers';
 import { runAI } from './ai/runAI';
 import { runFormula } from './formulas/runFormula';
-import { runPython } from './python/runPython';
+// import { runPython } from './python/runPython';
 import { CellEvaluationResult } from './types';
 
 export const runCellComputation = async (cell: Cell, pyodide?: any): Promise<CellEvaluationResult> => {
@@ -18,7 +19,8 @@ export const runCellComputation = async (cell: Cell, pyodide?: any): Promise<Cel
       error_span: null,
     };
   } else if (cell.type === 'PYTHON') {
-    let result = await runPython(cell.python_code || '', pyodide);
+    let result = await webWorkers.runPython(cell.python_code || '');
+    debugger;
     return {
       success: result.success,
       std_out: result.input_python_std_out,

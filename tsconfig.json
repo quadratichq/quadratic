@@ -6,11 +6,7 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext", "WebWorker"],
     "allowJs": false,
     "allowSyntheticDefaultImports": true,
     "noFallthroughCasesInSwitch": true,
@@ -19,12 +15,8 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "downlevelIteration": true,
+    "downlevelIteration": true
   },
-  "include": [
-    "src", "setupPixiTests.ts",
-  ],
-  "exclude": [
-    "node_modules/*"
-  ]
+  "include": ["src", "setupPixiTests.ts"],
+  "exclude": ["node_modules/*"]
 }

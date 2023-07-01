@@ -14,12 +14,12 @@ export async function runPython(python_code: string, pyodide: any = undefined): 
   // if pyodide is not passed in, try to get it from the global scope in the browser
   let pyodide_obj = pyodide;
 
-  if (pyodide_obj === undefined) {
-    if (typeof window !== 'undefined') {
-      // Browser environment, get pyodide from window
-      pyodide_obj = window.pyodide;
-    }
-  }
+  // if (pyodide_obj === undefined) {
+  //   if (typeof window !== 'undefined') {
+  //     // Browser environment, get pyodide from window
+  //     pyodide_obj = window.pyodide;
+  //   }
+  // }
 
   if (pyodide_obj === undefined) {
     throw new Error('Pyodide not found');
