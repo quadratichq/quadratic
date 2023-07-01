@@ -9,6 +9,7 @@ export class PythonWebWorker {
   constructor(webWorkers: WebWorkers) {
     this.webWorkers = webWorkers;
 
+    if (!import.meta?.url) throw new Error('cannot find import.meta.url');
     this.worker = new Worker(new URL('./loadPythonWebWorker.ts', import.meta.url));
 
     this.worker.onmessage = (e: MessageEvent<PythonMessage>) => {

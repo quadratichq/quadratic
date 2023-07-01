@@ -9,7 +9,6 @@ interface ArgsType {
   starting_cells: Cell[];
   sheetController: SheetController;
   app?: PixiApp;
-  pyodide?: any;
   delete_starting_cells?: boolean;
   create_transaction?: boolean;
 }
@@ -25,7 +24,7 @@ function addToSet(deps: [number, number][], set: Set<StringId>) {
 }
 
 export const updateCellAndDCells = async (args: ArgsType) => {
-  const { starting_cells, sheetController, app, pyodide, delete_starting_cells, create_transaction } = args;
+  const { starting_cells, sheetController, app, delete_starting_cells, create_transaction } = args;
 
   // start transaction
   if (create_transaction ?? true) sheetController.start_transaction();
@@ -90,7 +89,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       if (cell.type === 'PYTHON' || cell.type === 'FORMULA' || cell.type === 'AI') {
         // run cell and format results
         // let result = await runPython(cell.python_code || '', pyodide);
-        let result = await runCellComputation(cell, pyodide);
+        let result = await runCellComputation(cell);
         cell.evaluation_result = result;
 
         // collect output

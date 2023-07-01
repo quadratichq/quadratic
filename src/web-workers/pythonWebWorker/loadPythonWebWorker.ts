@@ -17,16 +17,15 @@ const getCellsDB = async (x0: number, y0: number, x1: number, y1: number): Promi
   });
 };
 
-let loaded = false;
+let pyodide: any | undefined;
 
 export async function loadPythonWebWorker() {
-  self.pyodide = await self.loadPyodide();
-  await self.pyodide.registerJsModule('GetCellsDB', getCellsDB);
-  await self.pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
+  pyodide = await (self as any).loadPyodide();
+  await pyodide.registerJsModule('GetCellsDB', getCellsDB);
+  await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
   const python_code = await (await fetch(define_run_python)).text();
-  await self.pyodide.runPython(python_code);
+  await pyodide.runPython(python_code);
 
-  loaded = true;
   console.log('[Python WebWorker] Initiated');
   self.postMessage({ type: 'python-loaded' } as PythonMessage);
 }
@@ -39,11 +38,11 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
     }
   } else if (event.type === 'execute') {
     // make sure loading is done
-    if (!loaded) {
+    if (!pyodide) {
       self.postMessage({ type: 'not-loaded' } as PythonMessage);
     }
 
-    const output = await self.pyodide.globals.get('run_python')(event.python);
+    const output = await pyodide.globals.get('run_python')(event.python);
 
     return self.postMessage({
       type: 'results',

@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import QuadraticUIContext from '../ui/QuadraticUIContext';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
-// import { loadPython } from '../grid/computations/python/loadPython';
 import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../gridGL/loadAssets';
-// import { IS_READONLY_MODE } from '../constants/app';
-// import { debugSkipPythonLoad } from '../debugFlags';
 import init, { hello } from 'quadratic-core';
 import { SheetController } from '../grid/controller/sheetController';
 import { useGenerateLocalFiles } from '../hooks/useGenerateLocalFiles';
