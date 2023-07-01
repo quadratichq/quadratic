@@ -28,11 +28,11 @@ export async function loadPythonWebWorker() {
 
   loaded = true;
   console.log('[Python WebWorker] Initiated');
+  self.postMessage({ type: 'python-loaded' } as PythonMessage);
 }
 
 self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   const event = e.data;
-  console.log('worker', event);
   if (event.type === 'get-cells') {
     if (event.cells && getCellsMessages) {
       getCellsMessages(event.cells);
@@ -40,7 +40,6 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   } else if (event.type === 'execute') {
     // make sure loading is done
     if (!loaded) {
-      console.log('not loaded...');
       self.postMessage({ type: 'not-loaded' } as PythonMessage);
     }
 

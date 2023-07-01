@@ -20,7 +20,6 @@ export const runCellComputation = async (cell: Cell, pyodide?: any): Promise<Cel
     };
   } else if (cell.type === 'PYTHON') {
     let result = await webWorkers.runPython(cell.python_code || '');
-    debugger;
     return {
       success: result.success,
       std_out: result.input_python_std_out,

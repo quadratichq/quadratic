@@ -10,6 +10,7 @@ export interface EditorInteractionState {
   showFileMenu: boolean;
   showFeedbackMenu: boolean;
   selectedCell: Coordinate;
+  pythonLoaded: boolean;
   mode: CellType;
 }
 
@@ -21,6 +22,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showFeedbackMenu: false,
   showFileMenu: false,
   selectedCell: { x: 0, y: 0 },
+  pythonLoaded: false,
   mode: 'TEXT',
 };
 

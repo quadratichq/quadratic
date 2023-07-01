@@ -40,7 +40,7 @@ interface CodeEditorProps {
 
 export const CodeEditor = (props: CodeEditorProps) => {
   const { editorInteractionState } = props;
-  const { showCodeEditor, mode: editorMode } = editorInteractionState;
+  const { showCodeEditor, mode: editorMode, pythonLoaded } = editorInteractionState;
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -189,6 +189,10 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const saveAndRunCell = async () => {
     if (!selectedCell) return;
     if (isRunningComputation) return;
+
+    if (editorMode === 'PYTHON' && !pythonLoaded) {
+      return;
+    }
 
     setIsRunningComputation(true);
 
@@ -356,6 +360,12 @@ export const CodeEditor = (props: CodeEditorProps) => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
           {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
+          {!pythonLoaded && editorMode === 'PYTHON' && (
+            <div style={{ color: 'orange', display: 'flex', alignItems: 'center' }}>
+              Python is still loading...
+              <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
+            </div>
+          )}
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
             <span>
               <IconButton
@@ -363,7 +373,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
                 size="small"
                 color="primary"
                 onClick={saveAndRunCell}
-                disabled={isRunningComputation}
+                disabled={isRunningComputation || (!pythonLoaded && editorMode === 'PYTHON')}
               >
                 <PlayArrow />
               </IconButton>
