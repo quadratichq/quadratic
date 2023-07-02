@@ -5,7 +5,7 @@ import { Cell } from '../../schemas';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 import define_run_python from './run_python.py';
 
-self.importScripts('https://cdn.jsdelivr.net/pyodide/v0.23.3/full/pyodide.js');
+self.importScripts('/pyodide/pyodide.js');
 
 let getCellsMessages: (cells: Cell[]) => void | undefined;
 
@@ -19,7 +19,7 @@ const getCellsDB = async (x0: number, y0: number, x1: number, y1: number): Promi
 
 let pyodide: any | undefined;
 
-export async function loadPythonWebWorker() {
+async function pythonWebWorker() {
   pyodide = await (self as any).loadPyodide();
   await pyodide.registerJsModule('GetCellsDB', getCellsDB);
   await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
@@ -51,4 +51,6 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   }
 };
 
-loadPythonWebWorker();
+pythonWebWorker();
+
+export {};

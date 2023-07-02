@@ -362,7 +362,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
           {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
           {!pythonLoaded && editorMode === 'PYTHON' && (
             <div style={{ color: 'orange', display: 'flex', alignItems: 'center' }}>
-              Python is still loading...
+              Python is loading...
               <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
             </div>
           )}

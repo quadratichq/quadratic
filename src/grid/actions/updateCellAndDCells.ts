@@ -88,7 +88,6 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       // We are evaluating a cell
       if (cell.type === 'PYTHON' || cell.type === 'FORMULA' || cell.type === 'AI') {
         // run cell and format results
-        // let result = await runPython(cell.python_code || '', pyodide);
         let result = await runCellComputation(cell);
         cell.evaluation_result = result;
 
