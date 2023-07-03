@@ -123,6 +123,12 @@ export class CellsLabels extends Container<CellLabel> {
     bounds.addRectangle(new Rectangle(label.x, label.y, width, label.height));
   }
 
+  private labelHash(data: LabelData): string {
+    return (
+      data.text + (data.format?.bold ? '1' : '0') + (data.format?.italic ? '1' : '0') + (data?.format?.textColor ?? '')
+    );
+  }
+
   private compareLabelData(label: CellLabel, data: LabelData): boolean {
     const isSame = (a?: boolean, b?: boolean): boolean => {
       return (!a && !b) || (a && b) ? true : false;
@@ -155,8 +161,11 @@ export class CellsLabels extends Container<CellLabel> {
     return new Point(data.x, data.y);
   }
 
-  private updateLabel(label: CellLabel, data: LabelData): void {
-    label.update(data);
+  private updateLabel(label: CellLabel, data: LabelData, update: boolean): void {
+    if (update) {
+      label.update(data);
+      label.hash = this.labelHash(data);
+    }
     label.visible = true;
 
     label.position = this.calculatePosition(label, data);
@@ -172,32 +181,46 @@ export class CellsLabels extends Container<CellLabel> {
    * add labels to headings using cached labels
    * @returns the visual bounds only if isQuadrant is defined (otherwise not worth the .width/.height call)
    */
-  update(): Rectangle | undefined {
+  update(isQuadrant?: boolean): Rectangle | undefined {
     const bounds = new Bounds();
 
     // keep current children to use as the cache
     this.children.forEach((child) => (child.visible = false));
 
-    const available = [...this.children] as CellLabel[];
+    const available = new Map<string, CellLabel>();
+    this.children.forEach((cellLabel) => available.set(cellLabel.hash, cellLabel));
     const leftovers: LabelData[] = [];
-    console.time('reuse');
+    // console.log(this.labelData.length);
+    // console.time('reuse');
+
     // reuse existing labels that have the same text
+    // let compare = 0,
+    //   compareCount = 0,
+    //   count = this.labelData.length,
+    //   update = 0;
+
     this.labelData.forEach((data) => {
-      const index = available.findIndex((label) => this.compareLabelData(label, data));
-      if (index === -1) {
-        leftovers.push(data);
+      // let now = performance.now();
+      const hash = this.labelHash(data);
+      const existing = available.get(hash);
+      if (existing) {
+        // now = performance.now();
+        this.updateLabel(existing, data, false);
+        available.delete(hash);
+        // update += performance.now() - now;
       } else {
-        this.updateLabel(available[index], data);
-        available.splice(index, 1);
+        leftovers.push(data);
       }
     });
-    console.timeEnd('reuse');
+    // console.log({ compare, compareCount, count, update });
+    // console.timeEnd('reuse');
 
-    console.time('create');
+    // console.time('create');
     // use existing labels but change the text
+    const remaining = Array.from(available.values());
     leftovers.forEach((data, i) => {
-      if (i < available.length) {
-        this.updateLabel(available[i], data);
+      if (i < available.size) {
+        this.updateLabel(remaining[i], data, true);
       }
 
       // otherwise create new labels
@@ -207,17 +230,19 @@ export class CellsLabels extends Container<CellLabel> {
         label.lastPosition = label.position.clone();
       }
     });
-    console.timeEnd('create');
+    // console.timeEnd('create');
 
-    console.time('clip');
-    // this.children.forEach((child) => {
-    //   const label = child as CellLabel;
-    //   if (label.visible) {
-    //     this.checkForClipping(label);
-    //     this.checkForOverflow({ label, bounds });
-    //   }
-    // });
-    console.timeEnd('clip');
+    // console.time('clip');
+    this.children.forEach((child) => {
+      const label = child as CellLabel;
+      if (label.visible) {
+        this.checkForClipping(label);
+        if (isQuadrant) {
+          this.checkForOverflow({ label, bounds });
+        }
+      }
+    });
+    // console.timeEnd('clip');
     if (!bounds.empty) {
       return bounds.toRectangle();
     }

@@ -228,7 +228,6 @@ export class Cells extends Container {
     isQuadrant?: boolean;
   }): Rectangle | undefined {
     const { boundsWithData, bounds, cellRectangle, ignoreInput, isQuadrant } = options;
-    if (!isQuadrant) console.time('drawBounds');
     const renderedCells = new Set<string>();
 
     const { gridOffsets, render_dependency, array_dependency, grid } = this.app.sheet;
@@ -304,7 +303,7 @@ export class Cells extends Container {
       });
     }
 
-    const rendered = this.cellLabels.update();
+    const rendered = this.cellLabels.update(isQuadrant);
     if (rendered) {
       const clipped = intersects.rectangleClip(rendered, clipRectangle);
       content = content ? intersects.rectangleUnion(content, clipped) : clipped;
@@ -315,7 +314,6 @@ export class Cells extends Container {
       this.handleOverflow();
       this.handleArrayCells(cellRectangle);
     }
-    if (!isQuadrant) console.timeEnd('drawBounds');
 
     return content;
   }

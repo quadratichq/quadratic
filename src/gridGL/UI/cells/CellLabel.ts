@@ -9,6 +9,7 @@ import { Point } from 'pixi.js';
 const fontSize = 14;
 
 export class CellLabel extends BitmapTextClip {
+  hash = '';
   overflowRight?: number;
   overflowLeft?: number;
   lastPosition?: Point;
