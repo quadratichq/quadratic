@@ -11,6 +11,7 @@ import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCoun
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ChatBubbleOutline } from '@mui/icons-material';
+import { CircularProgress } from '@mui/material';
 
 interface Props {
   sheet: Sheet;
@@ -137,7 +138,7 @@ export const BottomBar = (props: Props) => {
               <ChatBubbleOutline fontSize="inherit" />
               Feedback
             </span>
-            <span>✓ Python 3.9.5</span>
+            <span>{editorInteractionState.pythonLoaded ? '✓' : <CircularProgress size="0.5rem" />} Python 3.9.5</span>
           </>
         )}
         <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
