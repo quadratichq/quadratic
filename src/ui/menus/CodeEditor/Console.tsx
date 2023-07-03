@@ -60,7 +60,7 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
           ) : null}
         </Tabs>
       </Box>
-      <div style={{ flex: '2', overflow: 'scroll', fontSize: '.875rem' }}>
+      <div style={{ flex: '2', overflow: 'scroll', fontSize: '.875rem', lineHeight: '1.5' }}>
         <TabPanel value={activeTabIndex} index={0}>
           <div
             contentEditable="true"
@@ -76,7 +76,6 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
             style={{
               outline: 'none',
               fontFamily: 'monospace',
-              lineHeight: '1.3',
               whiteSpace: 'pre-wrap',
             }}
             // Disable Grammarly
@@ -255,7 +254,12 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
           )}
         </TabPanel>
         <TabPanel value={activeTabIndex} index={2}>
-          <AITab evalResult={evalResult} editorMode={editorMode} editorContent={editorContent}></AITab>
+          <AITab
+            evalResult={evalResult}
+            editorMode={editorMode}
+            editorContent={editorContent}
+            isActive={activeTabIndex === 2}
+          ></AITab>
         </TabPanel>
       </div>
     </>

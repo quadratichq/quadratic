@@ -28,8 +28,14 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
     editorRef.current = editor;
   };
 
+  // Mimic styles in the Monaco editor
+  const styles = {
+    fontFamily: `Menlo, Monaco, "Courier New", monospace`,
+    fontSize: '12px',
+  };
+
   return (
-    <Box>
+    <Box style={styles}>
       <Stack
         direction="row"
         justifyContent="space-between"

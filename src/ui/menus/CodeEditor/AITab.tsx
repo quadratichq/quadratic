@@ -1,7 +1,7 @@
 import { useAuth0 } from '@auth0/auth0-react';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, FormControl, IconButton, InputAdornment, OutlinedInput } from '@mui/material';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { CellEvaluationResult } from '../../../grid/computations/types';
@@ -16,6 +16,7 @@ interface Props {
   editorMode: EditorInteractionState['mode'];
   evalResult: CellEvaluationResult | undefined;
   editorContent: string | undefined;
+  isActive: boolean;
 }
 
 type Message = {
@@ -23,7 +24,7 @@ type Message = {
   content: string;
 };
 
-export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
+export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props) => {
   // TODO: Improve these messages. Pass current location and more docs.
   // store in a separate location for different cells
   const systemMessages = [
@@ -52,6 +53,14 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const controller = useRef<AbortController>();
   const { user } = useAuth0();
+  const inputRef = useRef<HTMLInputElement | undefined>(undefined);
+
+  // Focus the input when the tab comes into focus
+  useEffect(() => {
+    if (isActive && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isActive]);
 
   const abortPrompt = () => {
     controller.current?.abort();
@@ -211,7 +220,7 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
             }
             size="small"
             fullWidth
-            autoFocus
+            inputRef={inputRef}
             sx={{ py: '.25rem', pr: '1rem' }}
           />
         </FormControl>
@@ -227,9 +236,6 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
         }}
         style={{
           outline: 'none',
-          // fontFamily: 'monospace',
-          fontSize: '.875rem',
-          lineHeight: '1.3',
           whiteSpace: 'pre-wrap',
           paddingBottom: '5rem',
         }}
@@ -238,62 +244,49 @@ export const AITab = ({ evalResult, editorMode, editorContent }: Props) => {
         data-gramm_editor="false"
         data-enable-grammarly="false"
       >
-        {display_message.length === 0 ? (
-          <div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '1rem' }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: 500, marginBottom: '1rem' }}>
-                <AI sx={{ color: colors.languageAI }} fontSize="large"></AI>
-              </div>
-              <div style={{ fontSize: '1rem', fontWeight: 400, marginBottom: '1rem' }}>
-                Ask a question to get started.
-              </div>
+        <div id="ai-streaming-output">
+          {display_message.map((message, index) => (
+            <div
+              key={index}
+              style={{
+                borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
+                marginTop: '1rem',
+                paddingTop: index !== 0 ? '1rem' : '0',
+              }}
+            >
+              {message.role === 'user' ? (
+                <Avatar
+                  variant="rounded"
+                  sx={{
+                    bgcolor: colors.quadraticSecondary,
+                    width: 24,
+                    height: 24,
+                    fontSize: '0.8rem',
+                    marginBottom: '0.5rem',
+                  }}
+                  alt={user?.name}
+                  src={user?.picture}
+                ></Avatar>
+              ) : (
+                <Avatar
+                  variant="rounded"
+                  sx={{
+                    bgcolor: 'white',
+                    width: 24,
+                    height: 24,
+                    fontSize: '0.8rem',
+                    marginBottom: '0.5rem',
+                  }}
+                  alt="AI Assistant"
+                >
+                  <AI sx={{ color: colors.languageAI }}></AI>
+                </Avatar>
+              )}
+              <CodeBlockParser input={message.content} />
             </div>
-          </div>
-        ) : (
-          <div id="ai-streaming-output">
-            {display_message.map((message, index) => (
-              <div
-                key={index}
-                style={{
-                  borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
-                  marginTop: '1rem',
-                  paddingTop: index !== 0 ? '1rem' : '0',
-                }}
-              >
-                {message.role === 'user' ? (
-                  <Avatar
-                    variant="rounded"
-                    sx={{
-                      bgcolor: colors.quadraticSecondary,
-                      width: 24,
-                      height: 24,
-                      fontSize: '0.8rem',
-                      marginBottom: '0.5rem',
-                    }}
-                    alt={user?.name}
-                    src={user?.picture}
-                  ></Avatar>
-                ) : (
-                  <Avatar
-                    variant="rounded"
-                    sx={{
-                      bgcolor: 'white',
-                      width: 24,
-                      height: 24,
-                      fontSize: '0.8rem',
-                      marginBottom: '0.5rem',
-                    }}
-                    alt="AI Assistant"
-                  >
-                    <AI sx={{ color: colors.languageAI }}></AI>
-                  </Avatar>
-                )}
-                <CodeBlockParser input={message.content} />
-              </div>
-            ))}
-            <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
-          </div>
-        )}
+          ))}
+          <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
+        </div>
       </div>
     </>
   );
