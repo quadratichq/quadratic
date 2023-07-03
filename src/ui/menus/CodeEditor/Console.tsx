@@ -1,5 +1,5 @@
 import { Box, Tabs, Tab, Chip } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { colors } from '../../../theme/colors';
@@ -9,22 +9,25 @@ import { AITab } from './AITab';
 import { useAuth0 } from '@auth0/auth0-react';
 import { CodeSnippet } from '../../components/CodeSnippet';
 import { stripIndent } from 'common-tags';
+import { Cell } from '../../../schemas';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
   evalResult: CellEvaluationResult | undefined;
   editorContent: string | undefined;
+  selectedCell: Cell;
 }
 
-export function Console({ evalResult, editorMode, editorContent }: ConsoleProps) {
+export function Console({ evalResult, editorMode, editorContent, selectedCell }: ConsoleProps) {
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
   const { isAuthenticated } = useAuth0();
 
-  if (editorMode === 'AI') {
-    if (activeTabIndex !== 1) setActiveTabIndex(1);
-  }
+  // Whenever we change to a different cell, reset the active tab to the 1st
+  useEffect(() => {
+    setActiveTabIndex(0);
+  }, [selectedCell]);
 
   return (
     <>
@@ -197,12 +200,14 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
               <p>Examples:</p>
               <table>
                 <thead>
-                  <th style={{ textAlign: 'left' }}>
-                    <code>nAn0</code>
-                  </th>
-                  <th style={{ textAlign: 'left' }}>
-                    <code>(x, y)</code>
-                  </th>
+                  <tr>
+                    <th style={{ textAlign: 'left' }}>
+                      <code>nAn0</code>
+                    </th>
+                    <th style={{ textAlign: 'left' }}>
+                      <code>(x, y)</code>
+                    </th>
+                  </tr>
                 </thead>
                 <tbody>
                   {[
@@ -213,8 +218,8 @@ export function Console({ evalResult, editorMode, editorContent }: ConsoleProps)
                     ['nA1', '(-1, 1)'],
                     ['nAn1', '(-1, -1)'],
                   ].map(([key, val]) => (
-                    <tr>
-                      <td>
+                    <tr key={key}>
+                      <td style={{ minWidth: '5rem' }}>
                         <code>{key}</code>
                       </td>
                       <td>
