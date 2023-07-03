@@ -3,7 +3,6 @@ import { colors } from '../../../theme/colors';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { useEffect, useState } from 'react';
-import { Cell } from '../../../schemas';
 import { formatDistance } from 'date-fns';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { isMobileOnly } from 'react-device-detect';
@@ -11,6 +10,7 @@ import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCoun
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ChatBubbleOutline } from '@mui/icons-material';
+import { CellAndFormat } from '../../../grid/sheet/GridSparse';
 
 interface Props {
   sheet: Sheet;
@@ -19,7 +19,9 @@ interface Props {
 export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
+  const [selectedCellAndFormat, setSelectedCellAndFormat] = useState<CellAndFormat | undefined>();
+  const selectedCell = selectedCellAndFormat?.cell;
+  const selectedCellFormat = selectedCellAndFormat?.format;
 
   // Generate string describing cursor location
   const cursorPositionString = `(${interactionState.cursorPosition.x}, ${interactionState.cursorPosition.y})`;
@@ -35,14 +37,18 @@ export const BottomBar = (props: Props) => {
         return;
 
       // Get cell at position
-      const cell = props.sheet.getCellCopy(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
+      // const cell = props.sheet.getCellCopy(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
+      const cellAndFormat = props.sheet.getCellAndFormatCopy(
+        interactionState.cursorPosition.x,
+        interactionState.cursorPosition.y
+      );
 
       // If cell exists set selectedCell
       // Otherwise set to undefined
-      if (cell) {
-        setSelectedCell(cell);
+      if (cellAndFormat) {
+        setSelectedCellAndFormat(cellAndFormat);
       } else {
-        setSelectedCell(undefined);
+        setSelectedCellAndFormat(undefined);
       }
     };
     updateCellData();
@@ -57,6 +63,17 @@ export const BottomBar = (props: Props) => {
     // Set focus back to Grid
     focusGrid();
   };
+
+  let format = '';
+  if (selectedCell) {
+    format = 'text';
+    if (selectedCellFormat && selectedCellFormat.textFormat) {
+      format = selectedCellFormat.textFormat.type.toLowerCase();
+    }
+    if (selectedCell && selectedCell.type !== 'TEXT') {
+      format += ` (${selectedCell.type.toLowerCase()})`;
+    }
+  }
 
   return (
     <div
@@ -91,11 +108,14 @@ export const BottomBar = (props: Props) => {
         <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
           Cursor: {cursorPositionString}
         </span>
-        {interactionState.showMultiCursor && (
+        {interactionState.showMultiCursor ? (
           <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
             Selection: {multiCursorPositionString}
           </span>
-        )}
+        ) : format ? (
+          <span>Format: {format}</span>
+        ) : null}
+
         {selectedCell?.last_modified && (
           <span>You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}</span>
         )}
