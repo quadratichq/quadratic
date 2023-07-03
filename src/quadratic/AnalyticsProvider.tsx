@@ -56,7 +56,7 @@ const loadMixPanelAnalytics = async (user: User | undefined) => {
     return;
   }
 
-  mixpanel.init(process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY, { api_host: process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY });
+  mixpanel.init(process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY, { api_host: process.env.REACT_APP_MIXPANEL_ANALYTICS_URL });
 
   mixpanel.register({
     email: user?.email,
