@@ -3,7 +3,7 @@ import { CodeSnippet } from '../../components/CodeSnippet';
 
 const CODE_BLOCK_REGEX = /```([a-z]+)?\n([\s\S]+?)(?:\n```|$)/g;
 
-function parseCodeBlocks(input: string): Array<string | JSX.Element> {
+export function parseCodeBlocks(input: string): Array<string | JSX.Element> {
   const blocks: Array<string | JSX.Element> = [];
   let match;
   let lastIndex = 0;
