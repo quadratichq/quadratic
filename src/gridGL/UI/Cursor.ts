@@ -32,6 +32,7 @@ export class Cursor extends Graphics {
   }
 
   private drawCursor(): void {
+    if (!document.hasFocus()) return;
     const { settings, viewport } = this.app;
     const { gridOffsets } = this.app.sheet;
     const { editorInteractionState } = this.app.settings;
@@ -120,6 +121,7 @@ export class Cursor extends Graphics {
   }
 
   private drawCursorIndicator(): void {
+    if (!document.hasFocus()) return;
     const { viewport } = this.app;
 
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {

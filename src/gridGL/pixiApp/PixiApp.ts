@@ -133,6 +133,9 @@ export class PixiApp {
 
     window.addEventListener('resize', this.resize);
 
+    window.addEventListener('blur', this.handleFocus);
+    window.addEventListener('focus', this.handleFocus);
+
     console.log('[QuadraticGL] environment ready');
   }
 
@@ -192,6 +195,12 @@ export class PixiApp {
     this.viewport.destroy();
     this.destroyed = true;
   }
+
+  handleFocus = (): void => {
+    if (!this.parent || this.destroyed) return;
+    this.cursor.dirty = true;
+    // this.cells.dirty = true;
+  };
 
   resize = (): void => {
     if (!this.parent || this.destroyed) return;
