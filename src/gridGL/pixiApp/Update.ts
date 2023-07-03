@@ -150,7 +150,7 @@ export class Update {
 
         // if quadrants are not dirty then rerender cells so it's ready for user input
         else if (this.quadrantsRendered) {
-          app.cells.dirty = true;
+          // app.cells.dirty = true;
           this.quadrantsRendered = false;
         }
       }
@@ -218,7 +218,7 @@ export class Update {
 
         // if quadrants are not dirty then rerender cells so it's ready for user input
         else if (this.quadrantsRendered) {
-          app.cells.dirty = true;
+          // app.cells.dirty = true;
           this.quadrantsRendered = false;
         }
       }

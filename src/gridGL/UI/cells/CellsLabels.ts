@@ -17,7 +17,7 @@ export interface LabelData {
   alignment?: CellAlignment;
 }
 
-export class CellsLabels extends Container {
+export class CellsLabels extends Container<CellLabel> {
   private app: PixiApp;
   private labelData: LabelData[] = [];
 
@@ -180,7 +180,7 @@ export class CellsLabels extends Container {
 
     const available = [...this.children] as CellLabel[];
     const leftovers: LabelData[] = [];
-
+    console.time('reuse');
     // reuse existing labels that have the same text
     this.labelData.forEach((data) => {
       const index = available.findIndex((label) => this.compareLabelData(label, data));
@@ -191,7 +191,9 @@ export class CellsLabels extends Container {
         available.splice(index, 1);
       }
     });
+    console.timeEnd('reuse');
 
+    console.time('create');
     // use existing labels but change the text
     leftovers.forEach((data, i) => {
       if (i < available.length) {
@@ -205,15 +207,17 @@ export class CellsLabels extends Container {
         label.lastPosition = label.position.clone();
       }
     });
+    console.timeEnd('create');
 
-    this.children.forEach((child) => {
-      const label = child as CellLabel;
-      if (label.visible) {
-        this.checkForClipping(label);
-        this.checkForOverflow({ label, bounds });
-      }
-    });
-
+    console.time('clip');
+    // this.children.forEach((child) => {
+    //   const label = child as CellLabel;
+    //   if (label.visible) {
+    //     this.checkForClipping(label);
+    //     this.checkForOverflow({ label, bounds });
+    //   }
+    // });
+    console.timeEnd('clip');
     if (!bounds.empty) {
       return bounds.toRectangle();
     }
