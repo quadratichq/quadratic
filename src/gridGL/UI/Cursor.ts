@@ -93,6 +93,7 @@ export class Cursor extends Graphics {
   }
 
   private drawMultiCursor(): void {
+    if (!document.hasFocus()) return;
     const { settings } = this.app;
     const { gridOffsets } = this.app.sheet;
 

@@ -115,6 +115,9 @@ export const FloatingContextMenu = (props: Props) => {
     if (interactionState.boxCells) {
       visibility = 'hidden';
     }
+    if (!document.hasFocus()) {
+      visibility = 'hidden';
+    }
 
     // Hide if it's not 1) a multicursor or, 2) an active right click
     if (!(interactionState.showMultiCursor || showContextMenu)) visibility = 'hidden';
@@ -172,11 +175,15 @@ export const FloatingContextMenu = (props: Props) => {
     viewport.on('moved', updateContextMenuCSSTransform);
     viewport.on('moved-end', updateContextMenuCSSTransform);
     document.addEventListener('pointerup', updateContextMenuCSSTransform);
+    window.addEventListener('blur', updateContextMenuCSSTransform);
+    window.addEventListener('focus', updateContextMenuCSSTransform);
 
     return () => {
       viewport.removeListener('moved', updateContextMenuCSSTransform);
       viewport.removeListener('moved-end', updateContextMenuCSSTransform);
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
+      window.removeEventListener('blur', updateContextMenuCSSTransform);
+      window.removeEventListener('focus', updateContextMenuCSSTransform);
     };
   }, [viewport, updateContextMenuCSSTransform]);
 

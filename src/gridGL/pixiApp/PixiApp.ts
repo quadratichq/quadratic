@@ -199,7 +199,6 @@ export class PixiApp {
   handleFocus = (): void => {
     if (!this.parent || this.destroyed) return;
     this.cursor.dirty = true;
-    // this.cells.dirty = true;
   };
 
   resize = (): void => {
