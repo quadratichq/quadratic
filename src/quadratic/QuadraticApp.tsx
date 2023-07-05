@@ -7,10 +7,9 @@ import init, { hello } from 'quadratic-core';
 import { SheetController } from '../grid/controller/sheetController';
 import { useGenerateLocalFiles } from '../hooks/useGenerateLocalFiles';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import '../web-workers/webWorkers';
 import { webWorkers } from '../web-workers/webWorkers';
 import { useSetRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
+import { loadedStateAtom } from '../atoms/loadedStateAtom';
 
 type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-rust' | 'quadrants';
 const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-rust', 'quadrants'];
@@ -18,7 +17,7 @@ const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-rust'
 export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
-  const setEditorState = useSetRecoilState(editorInteractionStateAtom);
+  const setLoadedState = useSetRecoilState(loadedStateAtom);
   const didMount = useRef(false);
   const [sheetController] = useState<SheetController>(new SheetController());
   const localFiles = useGenerateLocalFiles(sheetController);
@@ -71,15 +70,15 @@ export const QuadraticApp = () => {
   // recoil tracks whether python is loaded
   useEffect(() => {
     const loaded = () =>
-      setEditorState((editorState) => {
+      setLoadedState((loaded) => {
         return {
-          ...editorState,
+          ...loaded,
           pythonLoaded: true,
         };
       });
     window.addEventListener('python-loaded', loaded);
     return () => window.removeEventListener('python-loaded', loaded);
-  }, [setEditorState]);
+  }, [setLoadedState]);
 
   return (
     <>

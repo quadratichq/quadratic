@@ -1,6 +1,6 @@
 import { Box } from '@mui/system';
 import { colors } from '../../../theme/colors';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { useEffect, useState } from 'react';
 import { Cell } from '../../../schemas';
@@ -12,6 +12,7 @@ import { Sheet } from '../../../grid/sheet/Sheet';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ChatBubbleOutline } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
+import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 
 interface Props {
   sheet: Sheet;
@@ -20,6 +21,7 @@ interface Props {
 export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const loadedState = useRecoilValue(loadedStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
   // Generate string describing cursor location
@@ -138,7 +140,7 @@ export const BottomBar = (props: Props) => {
               <ChatBubbleOutline fontSize="inherit" />
               Feedback
             </span>
-            <span>{editorInteractionState.pythonLoaded ? '✓' : <CircularProgress size="0.5rem" />} Python 3.9.5</span>
+            <span>{loadedState.pythonLoaded ? '✓' : <CircularProgress size="0.5rem" />} Python 3.9.5</span>
           </>
         )}
         <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
