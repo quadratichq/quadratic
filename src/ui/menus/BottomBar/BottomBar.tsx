@@ -151,7 +151,7 @@ export const BottomBar = (props: Props) => {
             {output && (
               <>
                 <span>Sum: {output.sum}</span>
-                <span>Avg.: {output.avg}</span>
+                <span>Avg: {output.avg}</span>
                 <span>Count: {output.count}</span>
               </>
             )}
