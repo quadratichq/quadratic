@@ -15,8 +15,8 @@ mod trigonometry;
 mod util;
 
 use super::{
-    Array, BasicValue, CellRef, CoerceInto, Criterion, Ctx, FormulaErrorMsg, FormulaResult, Param,
-    ParamKind, Span, Spanned, SpannedIterExt, Value,
+    Array, Axis, BasicValue, CellRef, CoerceInto, Criterion, Ctx, FormulaError, FormulaErrorMsg,
+    FormulaResult, Param, ParamKind, Span, Spanned, SpannedIterExt, Value,
 };
 
 pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
@@ -73,12 +73,18 @@ impl FormulaFnArgs {
             args_popped: 0,
         }
     }
-    /// Takes the next argument, or returns `None` if there is none.
-    pub fn take_next(&mut self) -> Option<Spanned<Value>> {
+    /// Takes the next argument.
+    fn take_next(&mut self) -> Option<Spanned<Value>> {
         if !self.values.is_empty() {
             self.args_popped += 1;
         }
         self.values.pop_front()
+    }
+    /// Takes the next argument, or returns `None` if there is none or the
+    /// argument is blank˙.
+    pub fn take_next_optional(&mut self) -> Option<Spanned<Value>> {
+        self.take_next()
+            .filter(|v| v.inner != Value::Single(BasicValue::Blank))
     }
     /// Takes the next argument, or returns an error if there is none.
     pub fn take_next_required(&mut self, arg_name: &'static str) -> FormulaResult<Spanned<Value>> {
@@ -116,7 +122,7 @@ pub type FormulaFn =
 /// Formula function with associated metadata.
 pub struct FormulaFunction {
     pub name: &'static str,
-    pub arg_completion: &'static str,
+    pub arg_completion: Option<&'static str>,
     pub usage: &'static str,
     pub examples: &'static [&'static str],
     pub doc: &'static str,
@@ -131,11 +137,19 @@ impl FormulaFunction {
         format!("{name}({args})")
     }
 
+    /// Returns the documentation string after stripping leading spaces. Leading
+    /// spaces show up because we define formula docs using `/// stuff` syntax.
+    pub fn docs_string(&self) -> String {
+        self.doc.replace("\n ", "\n")
+    }
+
     /// Returns the autocomplete snippet for this function.
     pub fn autocomplete_snippet(&self) -> String {
         let name = self.name;
-        let arg_completion = self.arg_completion;
-        format!("{name}({arg_completion})")
+        match self.arg_completion {
+            Some(arg_completion) => format!("{name}({arg_completion})"),
+            None => name.to_string(),
+        }
     }
 
     /// Returns the Markdown documentation for this function that should appear
@@ -161,4 +175,34 @@ pub struct FormulaFunctionCategory {
     pub name: &'static str,
     pub docs: &'static str,
     pub get_functions: fn() -> Vec<FormulaFunction>,
+}
+
+#[test]
+fn test_autocomplete_snippet() {
+    assert_eq!(
+        "TRUE",
+        ALL_FUNCTIONS.get("TRUE").unwrap().autocomplete_snippet(),
+    );
+    assert_eq!(
+        "PI()",
+        ALL_FUNCTIONS.get("PI").unwrap().autocomplete_snippet(),
+    );
+    assert_eq!(
+        "NOT(${1:boolean})",
+        ALL_FUNCTIONS.get("NOT").unwrap().autocomplete_snippet(),
+    );
+    assert_eq!(
+        "IF(${1:condition}, ${2:t}, ${3:f})",
+        ALL_FUNCTIONS.get("IF").unwrap().autocomplete_snippet(),
+    );
+    assert_eq!(
+        "IF(${1:condition}, ${2:t}, ${3:f})",
+        ALL_FUNCTIONS.get("IF").unwrap().autocomplete_snippet(),
+    );
+
+    // Optional
+    assert_eq!(
+        "SUMIF(${1:eval_range}, ${2:criteria}${3:, ${4:[numbers_range]}})",
+        ALL_FUNCTIONS.get("SUMIF").unwrap().autocomplete_snippet(),
+    );
 }

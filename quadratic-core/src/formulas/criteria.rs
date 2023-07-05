@@ -1,14 +1,14 @@
 //! Mimic Excel's criteria in functions such as `SUMIF()`.
 //!
-//! This entire file feels really janky and awful but this is my best the
-//! behavior Excel has.
+//! This entire file feels really janky and awful but this is my best attempt at
+//! mimicking the behavior Excel has.
 
 use itertools::Itertools;
-use regex::{Regex, RegexBuilder};
+use regex::Regex;
 
 use super::{
-    Array, BasicValue, CoerceInto, FormulaError, FormulaErrorMsg, FormulaResult, SpannableIterExt,
-    Spanned,
+    wildcard_pattern_to_regex, Array, BasicValue, CoerceInto, FormulaError, FormulaErrorMsg,
+    FormulaResult, SpannableIterExt, Spanned,
 };
 
 #[derive(Debug, Clone)]
@@ -135,36 +135,6 @@ impl Criterion {
             // Ignore blank values
             .filter_map_ok(|v| v.coerce_nonblank::<T>()))
     }
-}
-
-fn wildcard_pattern_to_regex(s: &str) -> Result<Regex, FormulaError> {
-    let mut chars = s.chars();
-    let mut regex_string = String::new();
-    regex_string.push('^'); // Match whole string using `^...$`.
-    while let Some(c) = chars.next() {
-        match c {
-            // Escape the next character, if there is one. Otherwise ignore.
-            '~' => {
-                if let Some(c) = chars.next() {
-                    regex_string.push_str(&regex::escape(&c.to_string()))
-                }
-            }
-
-            '?' => regex_string.push('.'),
-            '*' => regex_string.push_str(".*"),
-            _ => regex_string.push_str(&regex::escape(&c.to_string())),
-        }
-    }
-    regex_string.push('$'); // Match whole string using `^...$`.
-    RegexBuilder::new(&regex_string)
-        .case_insensitive(true)
-        .build()
-        .map_err(|e| {
-            FormulaErrorMsg::InternalError(
-                format!("error building regex for criterion {s:?}: {e}").into(),
-            )
-            .without_span()
-        })
 }
 
 fn strip_compare_fn_prefix(s: &str) -> Option<(CompareFn, &str)> {

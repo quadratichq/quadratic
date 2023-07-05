@@ -7,9 +7,22 @@
 /// user-specification of criteria used in `SUMIF`, `COUNTIF`, and `AVERAGEIF`.
 /// The string begins with a space.
 ///
-/// This is a macro instead of a constant so that it can be used with `concat!`.
+/// This is a macro instead of a constant so that it can be used with `concat!`
+/// or `#[doc]`.
 macro_rules! see_docs_for_more_about_criteria {
     () => { " See [the documentation](https://docs.quadratichq.com/formulas) for more details about how criteria work in formulas." };
+}
+
+/// Outputs a string containing a sentence linking to the documentation for
+/// user-specification of wildcards used in `SUMIF`, `COUNTIF`, `AVERAGEIF`, and
+/// `XLOOKUP`. The string begins with a space.
+///
+/// This is a macro instead of a constant so that it can be used with `concat!`
+/// or `#[doc]`.
+macro_rules! see_docs_for_more_about_wildcards {
+    () => {
+        " See [the documentation](https://docs.quadratichq.com/formulas#31e708d41a1a497f8677ff01dddff38b) for more details about how wildcards work in formulas."
+    };
 }
 
 /// Macro to generate a `FormulaFunction` which contains an implementation of a
@@ -107,7 +120,7 @@ macro_rules! formula_fn {
     ) => {
         $crate::formulas::functions::FormulaFunction {
             name: $fn_name,
-            arg_completion: "",
+            arg_completion: None,
             usage: "",
             examples: &[],
             doc: "",
@@ -122,14 +135,21 @@ macro_rules! formula_fn {
     (
         #[doc = $doc:expr]
         $(#[doc = $additional_doc:expr])*
+        $(#[include_args_in_completion($include_args_in_completion:expr)])?
         #[examples($($example_str:expr),+ $(,)?)]
         $(#[$($attr:tt)*])*
         fn $fn_name:ident( $($params:tt)* ) { $($body:tt)* }
     ) => {{
         let params_list = params_list!($($params)*);
+
+        // Default to `true`
+        let include_args_in_completion = [$($include_args_in_completion, )? true][0];
+
         $crate::formulas::functions::FormulaFunction {
             name: stringify!($fn_name),
-            arg_completion: $crate::formulas::params::arg_completion_string(&params_list),
+            arg_completion: include_args_in_completion.then(|| {
+                $crate::formulas::params::arg_completion_string(&params_list)
+            }),
             usage: $crate::formulas::params::usage_string(&params_list),
             examples: &[$($example_str),+],
             doc: concat!($doc $(, "\n", $additional_doc)*),
@@ -147,7 +167,8 @@ macro_rules! formula_fn_eval {
     ($($tok:tt)*) => {{
         #[allow(unused_mut)]
         let ret: FormulaFn = |_ctx, mut _args: FormulaFnArgs| {
-            // _ctx: &'a mut Ctx return value: LocalBoxFuture<'a, FormulaResult<Value>>
+            // _ctx: &'a mut Ctx
+            // return value: LocalBoxFuture<'a, FormulaResult<Value>>
             //
             // Unfortunately, we can't annotate those types because there's no
             // way to introduce the named lifetime `'a`.
@@ -308,7 +329,7 @@ macro_rules! formula_fn_arg {
 
     // Optional argument
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Option< $($arg_type:tt)*) => {
-        let $arg_name = match $args.take_next() {
+        let $arg_name = match $args.take_next_optional() {
             // $($arg_type)* will include an extra `>` at the end, and that's ok.
             Some(arg_value) => Some(formula_fn_convert_arg!(arg_value, Value -> $($arg_type)*)),
             None => None,
@@ -344,7 +365,7 @@ macro_rules! formula_fn_arg {
         // If the argument is present, store it in `$args_to_zip_map` and store
         // the index in `$arg_name`.
         let $arg_name: Option<usize>;
-        match $args.take_next() {
+        match $args.take_next_optional() {
             Some(arg_value) => {
                 $arg_name = Some($args_to_zip_map.len());
                 $args_to_zip_map.push(arg_value);
