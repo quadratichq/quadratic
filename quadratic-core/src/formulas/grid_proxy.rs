@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use super::BasicValue;
 use crate::Pos;
 
 /// Something that acts like a read-only spreadsheet grid.
@@ -12,5 +13,5 @@ use crate::Pos;
 pub trait GridProxy {
     /// Fetches the contents of the cell at `pos`, not checking whether it
     /// results in a circular reference.
-    async fn get(&mut self, pos: Pos) -> Option<String>;
+    async fn get(&mut self, pos: Pos) -> BasicValue;
 }

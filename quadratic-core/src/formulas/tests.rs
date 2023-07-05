@@ -1,49 +1,110 @@
 use async_trait::async_trait;
-use smallvec::smallvec;
 use std::fmt;
 
 pub(crate) use super::*;
+
+macro_rules! array {
+    ($( $( $value:expr ),+ );+ $(;)?) => {{
+        let values = [$( [$( BasicValue::from($value) ),+] ),+];
+        let height = values.len();
+        let width = values[0].len(); // This will generate a compile-time error if there are no values.
+        Array::new_row_major(
+            width as u32,
+            height as u32,
+            values.into_iter().flatten().collect(),
+        )
+        .unwrap()
+    }};
+}
+
+pub(crate) fn try_eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
+    println!("Evaluating formula {s:?}");
+    parse_formula(s, Pos::ORIGIN)?.eval_blocking(grid, Pos::ORIGIN)
+}
+#[track_caller]
+pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> Value {
+    try_eval(grid, s).expect("error evaluating formula")
+}
+#[track_caller]
+pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
+    eval(grid, s).to_string()
+}
+#[track_caller]
+pub(crate) fn eval_to_err(grid: &mut dyn GridProxy, s: &str) -> FormulaError {
+    try_eval(grid, s).expect_err("expected error")
+}
+
+#[track_caller]
+pub(crate) fn expect_val(value: impl Into<Value>, grid: &mut dyn GridProxy, s: &str) {
+    assert_eq!(value.into(), eval(grid, s));
+}
+#[track_caller]
+pub(crate) fn expect_err(error_msg: &FormulaErrorMsg, grid: &mut dyn GridProxy, s: &str) {
+    assert_eq!(*error_msg, eval_to_err(grid, s).msg);
+}
 
 /// `GridProxy` implementation that just panics whenever a cell is accessed.
 #[derive(Debug, Default, Copy, Clone)]
 pub(crate) struct NoGrid;
 #[async_trait(?Send)]
 impl GridProxy for NoGrid {
-    async fn get(&mut self, _pos: Pos) -> Option<String> {
+    async fn get(&mut self, _pos: Pos) -> BasicValue {
         panic!("no cell should be accessed")
     }
 }
 
-pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
-    eval(grid, s).unwrap().to_string()
-}
-pub(crate) fn eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult {
-    parse_formula(s, Pos::ORIGIN)?
-        .eval_blocking(grid, Pos::ORIGIN)
-        .map(|value| value.inner)
+/// `GridProxy` implementation that always returns empty cells.
+#[derive(Debug, Default, Copy, Clone)]
+pub(crate) struct BlankGrid;
+#[async_trait(?Send)]
+impl GridProxy for BlankGrid {
+    async fn get(&mut self, _pos: Pos) -> BasicValue {
+        BasicValue::Blank
+    }
 }
 
 /// `GridProxy` implementation that calls a function for grid access.
 #[derive(Copy, Clone)]
-pub(crate) struct FnGrid<F>(pub F)
+pub(crate) struct FnGrid<F, T>(pub F)
 // Include `where` bounds here to help type inference when constructing.
 where
-    F: FnMut(Pos) -> Option<String>;
-impl<F> fmt::Debug for FnGrid<F>
+    F: FnMut(Pos) -> T;
+impl<F, T> fmt::Debug for FnGrid<F, T>
 where
-    F: FnMut(Pos) -> Option<String>,
+    F: FnMut(Pos) -> T,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("FnGrid").finish_non_exhaustive()
     }
 }
 #[async_trait(?Send)]
-impl<F> GridProxy for FnGrid<F>
+impl<F, T> GridProxy for FnGrid<F, T>
 where
-    F: FnMut(Pos) -> Option<String>,
+    F: FnMut(Pos) -> T,
+    T: Into<BasicValue>,
 {
-    async fn get(&mut self, pos: Pos) -> Option<String> {
-        self.0(pos)
+    async fn get(&mut self, pos: Pos) -> BasicValue {
+        self.0(pos).into()
+    }
+}
+
+/// `GridProxy` implementation with an array starting at (x, y) and no values
+/// anywhere else in the sheet.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ArrayGrid(pub Pos, pub Array);
+#[async_trait(?Send)]
+impl GridProxy for ArrayGrid {
+    async fn get(&mut self, pos: Pos) -> BasicValue {
+        let x = pos.x - self.0.x;
+        let y = pos.y - self.0.y;
+
+        if x < 0 || y < 0 {
+            return BasicValue::Blank;
+        }
+        self.1
+            .get(x as u32, y as u32)
+            .cloned()
+            .unwrap_or(BasicValue::Blank)
     }
 }
 
@@ -85,7 +146,7 @@ fn test_formula_circular_array_ref() {
         if pos == pos![B2] {
             panic!("cell {pos} shouldn't be accessed")
         } else {
-            None
+            ()
         }
     });
 
@@ -113,55 +174,67 @@ fn test_formula_range_operator() {
 }
 
 #[test]
+fn test_formula_blank_array_parsing() {
+    let g = &mut BlankGrid;
+    const B: BasicValue = BasicValue::Blank;
+    assert_eq!(Value::from(array![B]), eval(g, "{}"));
+    assert_eq!(Value::from(array![B; B]), eval(g, "{;}"));
+    assert_eq!(Value::from(array![B, B]), eval(g, "{,}"));
+    assert_eq!(Value::from(array![B, B; B, B]), eval(g, "{,;,}"));
+    assert_eq!(
+        FormulaErrorMsg::NonRectangularArray,
+        eval_to_err(g, "{;,;}").msg,
+    );
+}
+
+#[test]
 fn test_formula_array_op() {
     let mut g = FnGrid(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
-    let f = |x| Value::Number(x as f64);
-
     assert_eq!((11 * 31).to_string(), eval_to_string(&mut g, "B1 * D1"));
     assert_eq!(
-        Value::Array(vec![
-            smallvec![f(11 * 31), f(21 * 31)],
-            smallvec![f(12 * 31), f(22 * 31)],
-            smallvec![f(13 * 31), f(23 * 31)],
-            smallvec![f(14 * 31), f(24 * 31)],
+        Value::from(array![
+            11 * 31, 21 * 31;
+            12 * 31, 22 * 31;
+            13 * 31, 23 * 31;
+            14 * 31, 24 * 31;
         ]),
-        eval(&mut g, "B1:C4 * D1").unwrap(),
+        eval(&mut g, "B1:C4 * D1"),
     );
     assert_eq!(
-        Value::Array(vec![
-            smallvec![f(11 * 31), f(11 * 41)],
-            smallvec![f(11 * 32), f(11 * 42)],
-            smallvec![f(11 * 33), f(11 * 43)],
-            smallvec![f(11 * 34), f(11 * 44)],
+        Value::from(array![
+            11 * 31, 11 * 41;
+            11 * 32, 11 * 42;
+            11 * 33, 11 * 43;
+            11 * 34, 11 * 44;
         ]),
-        eval(&mut g, "B1 * D1:E4").unwrap(),
+        eval(&mut g, "B1 * D1:E4"),
     );
     assert_eq!(
-        Value::Array(vec![
-            smallvec![f(11 * 31), f(21 * 41)],
-            smallvec![f(12 * 32), f(22 * 42)],
-            smallvec![f(13 * 33), f(23 * 43)],
-            smallvec![f(14 * 34), f(24 * 44)],
+        Value::from(array![
+            11 * 31, 21 * 41;
+            12 * 32, 22 * 42;
+            13 * 33, 23 * 43;
+            14 * 34, 24 * 44;
         ]),
-        eval(&mut g, "B1:C4 * D1:E4").unwrap(),
+        eval(&mut g, "B1:C4 * D1:E4"),
     );
     assert_eq!(
-        "Array size mismatch: expected (4, 2), got (5, 2)",
-        eval(&mut g, "B1:C4 * D1:E5").unwrap_err().msg.to_string(),
+        "Array height mismatch: expected value with 1 row or 4 rows, got 5 rows",
+        eval_to_err(&mut g, "B1:C4 * D1:E5").msg.to_string(),
     );
 }
 
 #[test]
 fn test_array_parsing() {
-    let f = |x| Value::Number(x as f64);
+    let f = |x| BasicValue::Number(x as f64);
     assert_eq!(
-        Value::Array(vec![
-            smallvec![f(11), f(12)],
-            smallvec![f(21), f(22)],
-            smallvec![f(31), f(32)],
+        Value::from(array![
+            f(11), f(12);
+            f(21), f(22);
+            f(31), f(32);
         ]),
-        eval(&mut NoGrid, "{11, 12; 21, 22; 31, 32}").unwrap(),
+        eval(&mut NoGrid, "{11, 12; 21, 22; 31, 32}"),
     );
 
     // Test stringification
@@ -179,15 +252,25 @@ fn test_array_parsing() {
     // Mismatched rows
     assert_eq!(
         FormulaErrorMsg::NonRectangularArray,
-        eval(&mut NoGrid, "{1; 3, 4}").unwrap_err().msg,
+        eval_to_err(&mut NoGrid, "{1; 3, 4}").msg,
     );
 
-    // Empty array
-    assert!(eval(&mut NoGrid, "{}").is_err());
-    assert!(eval(&mut NoGrid, "{ }").is_err());
+    // Blank values
+    assert_eq!("{}", eval_to_string(&mut NoGrid, "{}"));
+    assert_eq!("{}", eval_to_string(&mut NoGrid, "{ }"));
 
     // Empty row
-    assert!(eval(&mut NoGrid, "{ ; }").is_err());
+    assert_eq!("{; }", eval_to_string(&mut NoGrid, "{ ; }"));
+}
+
+#[test]
+fn test_bool_parsing() {
+    let g = &mut NoGrid;
+
+    assert_eq!("1", eval_to_string(g, "IF(TRUE, 1, 2)"));
+    assert_eq!("1", eval_to_string(g, "IF(true(), 1, 2)"));
+    assert_eq!("2", eval_to_string(g, "IF(False, 1, 2)"));
+    assert_eq!("2", eval_to_string(g, "IF(FALSE(), 1, 2)"));
 }
 
 #[test]
@@ -202,6 +285,37 @@ fn test_hyphen_after_cell_ref() {
     let mut g = FnGrid(|_| Some("30".to_string()));
     assert_eq!("25", eval_to_string(&mut g, "Z1 - 5"));
     assert_eq!("25", eval_to_string(&mut g, "Z1-5"));
+}
+
+#[test]
+fn test_formula_omit_required_argument() {
+    let g = &mut NoGrid;
+    assert!(eval_to_string(g, "ATAN2(,1)").starts_with("1.57"));
+    assert_eq!("0", eval_to_string(g, "ATAN2(1,)"));
+    assert_eq!(
+        FormulaErrorMsg::DivideByZero,
+        eval_to_err(g, "ATAN2(,)").msg,
+    );
+    assert_eq!(
+        FormulaErrorMsg::MissingRequiredArgument {
+            func_name: "ATAN2",
+            arg_name: "x"
+        },
+        eval_to_err(g, "ATAN2()").msg,
+    );
+    assert_eq!(
+        FormulaErrorMsg::MissingRequiredArgument {
+            func_name: "ATAN2",
+            arg_name: "y"
+        },
+        eval_to_err(g, "ATAN2(1)").msg,
+    );
+}
+
+#[test]
+fn test_formula_blank_to_string() {
+    let g = &mut NoGrid;
+    assert_eq!("", eval_to_string(g, "IF(1=1,,)"));
 }
 
 #[test]

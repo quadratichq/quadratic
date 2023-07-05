@@ -14,10 +14,18 @@ pub mod formulas;
 mod position;
 
 pub use cell::{Cell, CellTypes, JsCell};
-use formulas::{GridProxy, Value};
+use formulas::{BasicValue, GridProxy, Value};
 pub use position::Pos;
 
 pub const QUADRANT_SIZE: u64 = 16;
+
+pub mod limits {
+    /// Maximum integer range allowed.
+    pub const INTEGER_RANGE_LIMIT: f64 = 100_000.0;
+
+    /// Maximum cell range size allowed. Must be strictly less than `u32::MAX`.
+    pub const CELL_RANGE_LIMIT: u32 = 1_000_000;
+}
 
 #[wasm_bindgen]
 extern "C" {
@@ -37,7 +45,7 @@ pub fn hello() {
 struct JsFormulaResult {
     pub cells_accessed: Vec<[i64; 2]>,
     pub success: bool,
-    pub error_span: Option<[usize; 2]>,
+    pub error_span: Option<[u32; 2]>,
     pub error_msg: Option<String>,
     pub output_value: Option<String>,
     pub array_output: Option<Vec<Vec<String>>>,
@@ -70,15 +78,15 @@ pub async fn eval_formula(
         Ok(formula_output) => {
             let mut output_value = None;
             let mut array_output = None;
-            match formula_output.inner {
+            match formula_output {
                 Value::Array(a) => {
                     array_output = Some(
-                        a.iter()
+                        a.rows()
                             .map(|row| row.iter().map(|cell| cell.to_string()).collect())
                             .collect(),
                     );
                 }
-                non_array_value => output_value = Some(non_array_value.to_string()),
+                Value::Single(non_array_value) => output_value = Some(non_array_value.to_string()),
             };
             JsFormulaResult {
                 cells_accessed,
@@ -208,8 +216,24 @@ impl JsGridProxy {
 }
 #[async_trait(?Send)]
 impl GridProxy for JsGridProxy {
-    async fn get(&mut self, pos: Pos) -> Option<String> {
-        self.get_cell_jsvalue(pos).await.ok()?.as_string()
+    async fn get(&mut self, pos: Pos) -> BasicValue {
+        let jsvalue = match self.get_cell_jsvalue(pos).await {
+            Ok(v) => v,
+            Err(_) => return BasicValue::Blank,
+        };
+
+        let string = match jsvalue.as_string() {
+            Some(s) => s,
+            None => return BasicValue::Blank,
+        };
+
+        if let Ok(n) = string.parse::<f64>() {
+            BasicValue::Number(n)
+        } else if string.is_empty() {
+            BasicValue::Blank
+        } else {
+            BasicValue::String(string)
+        }
     }
 }
 

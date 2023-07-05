@@ -15,87 +15,72 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
-        FormulaFunction {
-            name: "TRUE",
-            arg_completion: "",
-            usages: &[""],
-            examples: &["TRUE()"],
-            doc: "Returns `TRUE`.",
-            eval: util::constant_fn(Value::Bool(true)),
-        },
-        FormulaFunction {
-            name: "FALSE",
-            arg_completion: "",
-            usages: &[""],
-            examples: &["FALSE()"],
-            doc: "Returns `FALSE`.",
-            eval: util::constant_fn(Value::Bool(false)),
-        },
-        FormulaFunction {
-            name: "NOT",
-            arg_completion: "${1:a}",
-            usages: &["a"],
-            examples: &["NOT(A113)"],
-            doc: "Returns `TRUE` if `a` is falsey and \
-                  `FALSE` if `a` is truthy.",
-            eval: util::array_mapped(|[a]| Ok(Value::Bool(!a.to_bool()?))),
-        },
-        FormulaFunction {
-            name: "AND",
-            arg_completion: "${1:a, b, ...}",
-            usages: &["a, b, ..."],
-            examples: &["AND(A1:C1)", "AND(A1, B12)"],
-            doc: "Returns `TRUE` if all values are truthy \
-                  and `FALSE` if any values is falsey.\n\\
-                  Returns `TRUE` if given no values.",
-            eval: util::pure_fn(|args| {
-                Ok(Value::Bool(
-                    util::flat_iter_bools(&args.inner).fold(true, |a, b| a & b),
-                ))
-            }),
-        },
-        FormulaFunction {
-            name: "OR",
-            arg_completion: "${1:a, b, ...}",
-            usages: &["a, b, ..."],
-            examples: &["OR(A1:C1)", "OR(A1, B12)"],
-            doc: "Returns `TRUE` if any value is truthy \
-                  and `FALSE` if any value is falsey.\n\
-                  Returns `FALSE` if given no values.",
-            eval: util::pure_fn(|args| {
-                Ok(Value::Bool(
-                    util::flat_iter_bools(&args.inner).fold(true, |a, b| a | b),
-                ))
-            }),
-        },
-        FormulaFunction {
-            name: "XOR",
-            arg_completion: "${1:a, b, ...}",
-            usages: &["a, b, ..."],
-            examples: &["XOR(A1:C1)", "XOR(A1, B12)"],
-            doc: "Returns `TRUE` if an odd number of values \
-                  are truthy and `FALSE` if an even number \
-                  of values are truthy.\n\
-                  Returns `FALSE` if given no values.",
-            eval: util::pure_fn(|args| {
-                Ok(Value::Bool(
-                    util::flat_iter_bools(&args.inner).fold(false, |a, b| a ^ b),
-                ))
-            }),
-        },
-        FormulaFunction {
-            name: "IF",
-            arg_completion: "${1:cond}, ${2:t}, ${3:f}",
-            usages: &["cond, t, f"],
-            examples: &[
+        formula_fn!(
+            /// Returns `TRUE`.
+            #[include_args_in_completion(false)]
+            #[examples("TRUE()")]
+            fn TRUE() {
+                true
+            }
+        ),
+        formula_fn!(
+            /// Returns `FALSE`.
+            #[include_args_in_completion(false)]
+            #[examples("FALSE()")]
+            fn FALSE() {
+                false
+            }
+        ),
+        formula_fn!(
+            /// Returns `TRUE` if `a` is falsey and `FALSE` if `a` is truthy.
+            #[examples("NOT(A113)")]
+            #[pure_zip_map]
+            fn NOT([boolean]: bool) {
+                !boolean
+            }
+        ),
+        formula_fn!(
+            /// Returns `TRUE` if all values are truthy and `FALSE` if any value
+            /// is falsey.
+            ///
+            /// Returns `TRUE` if given no values.
+            #[examples("AND(A1:C1)", "AND(A1, B12)")]
+            fn AND(booleans: (Iter<bool>)) {
+                booleans.try_fold(true, |a, b| Ok(a & b?))
+            }
+        ),
+        formula_fn!(
+            /// Returns `TRUE` if any value is truthy and `FALSE` if all values
+            /// are falsey.
+            ///
+            /// Returns `FALSE` if given no values.
+            #[examples("OR(A1:C1)", "OR(A1, B12)")]
+            fn OR(booleans: (Iter<bool>)) {
+                booleans.try_fold(false, |a, b| Ok(a | b?))
+            }
+        ),
+        formula_fn!(
+            /// Returns `TRUE` if an odd number of values are truthy and `FALSE`
+            /// if an even number of values are truthy.
+            ///
+            /// Returns `FALSE` if given no values.
+            #[examples("XOR(A1:C1)", "XOR(A1, B12)")]
+            fn XOR(booleans: (Iter<bool>)) {
+                booleans.try_fold(false, |a, b| Ok(a ^ b?))
+            }
+        ),
+        formula_fn!(
+            /// Returns `t` if `condition` is truthy and `f` if `condition` is
+            /// falsey.
+            #[examples(
                 "IF(A2<0, \"A2 is negative\", \"A2 is nonnegative\")",
-                "IF(A2<0, \"A2 is negative\", IF(A2>0, \"A2 is positive\", \"A2 is zero\"))",
-            ],
-            doc: "Returns `t` if `cond` is truthy and `f` if `cond` if falsey.",
-            eval: util::array_mapped(|[cond, t, f]| {
-                Ok(if cond.to_bool()? { t.inner } else { f.inner })
-            }),
-        },
+                "IF(A2<0, \"A2 is negative\", IF(A2>0, \"A2 is positive\", \"A2 is zero\"))"
+            )]
+            #[pure_zip_map]
+            fn IF([condition]: bool, [t]: BasicValue, [f]: BasicValue) {
+                if condition { t } else { f }.clone()
+            }
+        ),
     ]
 }
 
@@ -105,12 +90,12 @@ mod tests {
 
     #[test]
     fn test_formula_if() {
-        let form = parse_formula("IF(A1=2, 'yep', 'nope')", pos![A0]).unwrap();
+        let form = parse_formula("IF(A1='q', 'yep', 'nope')", pos![A0]).unwrap();
 
         let mut g = FnGrid(|pos| {
             Some(match (pos.x, pos.y) {
-                (0, 1) => "2".to_string(),
-                (1, 1) => "16".to_string(),
+                (0, 1) => "q".to_string(),
+                (1, 1) => "w".to_string(),
                 _ => panic!("cell {pos} shouldn't be accessed"),
             })
         });
