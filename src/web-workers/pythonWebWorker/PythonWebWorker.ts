@@ -8,7 +8,6 @@ export class PythonWebWorker {
   private loaded = false;
 
   constructor(webWorkers: WebWorkers) {
-    window.addEventListener('python-loaded', () => (this.loaded = true));
     this.webWorkers = webWorkers;
 
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
@@ -32,6 +31,7 @@ export class PythonWebWorker {
         this.worker.postMessage({ type: 'get-cells', cells } as PythonMessage);
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
+        this.loaded = true;
       } else {
         throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
       }
