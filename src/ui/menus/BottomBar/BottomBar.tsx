@@ -18,16 +18,12 @@ interface Props {
   sheet: Sheet;
 }
 
-interface Output {
-  sum: string;
-  avg: string;
-}
-
 export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
-  const [output, setOutput] = useState<Output | undefined>();
+  const [sum, setSum] = useState<string>('');
+  const [avg, setAvg] = useState<string>('');
   const { sheet } = props;
   const {
     showMultiCursor,
@@ -39,47 +35,54 @@ export const BottomBar = (props: Props) => {
   const cursorPositionString = `(${cursorPosition.x}, ${cursorPosition.y})`;
   const multiCursorPositionString = `(${originPosition.x}, ${originPosition.y}), (${terminalPosition.x}, ${terminalPosition.y})`;
 
-  // Get the number of cells with values
-  const count = sheet.grid.getNakedCells(
+  // Get the number of cells with at least some data
+  const countCellsWithData = sheet.grid.getNakedCells(
     originPosition.x,
     originPosition.y,
     terminalPosition.x,
     terminalPosition.y
   ).length;
 
+  // Run async calculations to get the count/avg/sum meta info
   useEffect(() => {
     if (showMultiCursor) {
       const runCalculationOnActiveSelection = async () => {
-        // Don't bother if we don't have at least two cells with values
-        if (count < 2) {
-          setOutput(undefined);
-          return;
-        }
-
-        // TODO only run the formulas if there are at least two with numbers
-        // at which point we can expect there to be a result
-
-        // Run a formula on the selected cells
+        // Get values around current selection
         const colStart = getColumnA1Notation(originPosition.x);
         const rowStart = getRowA1Notation(originPosition.y);
         const colEnd = getColumnA1Notation(terminalPosition.x);
         const rowEnd = getRowA1Notation(terminalPosition.y);
         const range = `${colStart}${rowStart}:${colEnd}${rowEnd}`;
         const pos = { x: originPosition.x - 1, y: originPosition.y - 1 };
-        const sum = await runFormula(`IF(COUNT(${range}) >= 1, SUM(${range}), "")`, pos);
-        const avg = await runFormula(`IF(COUNT(${range}) >= 1, AVERAGE(${range}), "")`, pos);
 
-        if (sum.success && sum.output_value && avg.success && avg.output_value) {
-          setOutput({ sum: sum.output_value, avg: avg.output_value });
+        // If we don't have at least 2 cells with data and one of those is a number, don't bother
+        const countReturn = await runFormula(`COUNT(${range})`, pos);
+        const countCellsWithNumbers = countReturn.success ? Number(countReturn.output_value) : 0;
+        if (countCellsWithData < 2 || countCellsWithNumbers < 1) {
+          setAvg('');
+          setSum('');
+          return;
+        }
+
+        // Run the formulas
+        const sumReturn = await runFormula(`SUM(${range})`, pos);
+        if (sumReturn.success && sumReturn.output_value) {
+          setSum(sumReturn.output_value);
         } else {
-          // TODO This shouldn't trigger, it's an unexpected error
-          console.log('formula message. sum: %s, avg: %s', sum.error_msg, avg.error_msg);
-          setOutput(undefined);
+          console.log('Error running `sum` formula: ', sumReturn.error_msg);
+          setSum('');
+        }
+        const avgReturn = await runFormula(`AVERAGE(${range})`, pos);
+        if (avgReturn.success && avgReturn.output_value) {
+          setAvg(avgReturn.output_value);
+        } else {
+          console.log('Error running `avg` formula: ', avgReturn.error_msg);
+          setAvg('');
         }
       };
       runCalculationOnActiveSelection();
     }
-  }, [count, originPosition, showMultiCursor, terminalPosition]);
+  }, [countCellsWithData, originPosition, showMultiCursor, terminalPosition]);
 
   useEffect(() => {
     const updateCellData = async () => {
@@ -152,11 +155,11 @@ export const BottomBar = (props: Props) => {
             <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
               Selection: {multiCursorPositionString}
             </span>
-            {count >= 2 && (
+            {countCellsWithData >= 2 && (
               <>
-                <span>Count: {count}</span>
-                {output && output.sum && <span>Sum: {output.sum}</span>}
-                {output && output.avg && <span>Avg: {output.avg}</span>}
+                <span>Count: {countCellsWithData}</span>
+                {sum && <span>Sum: {sum}</span>}
+                {avg && <span>Avg: {avg}</span>}
               </>
             )}
           </>
