@@ -58,6 +58,7 @@ export const BottomBar = (props: Props) => {
         // If we don't have at least 2 cells with data and one of those is a number, don't bother
         const countReturn = await runFormula(`COUNT(${range})`, pos);
         const countCellsWithNumbers = countReturn.success ? Number(countReturn.output_value) : 0;
+        console.log(countCellsWithData, countCellsWithNumbers);
         if (countCellsWithData < 2 || countCellsWithNumbers < 1) {
           setAvg('');
           setSum('');
