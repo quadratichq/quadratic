@@ -3,6 +3,8 @@ import { Cell } from '../../../schemas';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
 
+jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
+
 test('SheetController - cell error', async () => {
   const sc = new SheetController();
   GetCellsDBSetSheet(sc.sheet);

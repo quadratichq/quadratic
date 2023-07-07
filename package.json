@@ -115,6 +115,7 @@
     "electron": "^23.0.0",
     "electron-is-dev": "^2.0.0",
     "fs-extra": "^11.1.0",
+    "jest-environment-jsdom": "^29.6.1",
     "msdf-bmfont-xml": "^2.7.0",
     "prettier": "2.8.3",
     "pyodide": "^0.22.0",
