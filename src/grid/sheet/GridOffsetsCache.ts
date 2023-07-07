@@ -135,6 +135,9 @@ export class GridOffsetsCache {
       while (this.columnNegativeCache[cacheIndex + 1] > x) cacheIndex++;
       let position = this.columnNegativeCache[cacheIndex];
       let index = cacheIndex * GRID_OFFSETS_CACHE_SIZE;
+      if (index >= 1) {
+        index -= 1;
+      }
       while (position > x) {
         index++;
         position -= this.gridOffsets.getColumnWidth(-index);
@@ -240,6 +243,9 @@ export class GridOffsetsCache {
       while (this.rowNegativeCache[cacheIndex + 1] > y) cacheIndex++;
       let position = this.rowNegativeCache[cacheIndex];
       let index = cacheIndex * GRID_OFFSETS_CACHE_SIZE;
+      if (index >= 1) {
+        index -= 1;
+      }
       while (position > y) {
         index++;
         position -= this.gridOffsets.getRowHeight(-index);

@@ -188,6 +188,18 @@ describe('gridOffsets', () => {
     expect(gridOffsets.getRowPlacement(1000001).y).toBe(CELL_HEIGHT * 1000001);
   });
 
+  it('gets negative row position using cache', () => {
+    // double calls to check cache values
+    expect(gridOffsets.getRowPlacement(-1).y).toBe(-CELL_HEIGHT);
+    expect(gridOffsets.getRowPlacement(-1).y).toBe(-CELL_HEIGHT);
+
+    expect(gridOffsets.getRowPlacement(-1000).y).toBe(-CELL_HEIGHT * 1000);
+    expect(gridOffsets.getRowPlacement(-1000).y).toBe(-CELL_HEIGHT * 1000);
+
+    expect(gridOffsets.getRowPlacement(-1000001).y).toBe(-CELL_HEIGHT * 1000001);
+    expect(gridOffsets.getRowPlacement(-1000001).y).toBe(-CELL_HEIGHT * 1000001);
+  });
+
   it('gets the start and end of a range of columns (rows to negative)', () => {
     gridOffsets.populate(
       [],
@@ -309,10 +321,10 @@ describe('gridOffsets', () => {
     expect(gridOffsets.getRowIndex(rectangle.top).index).toBe(0);
   });
 
-  it('gets columnIndex for large index', () => {
+  it('gets columnIndex for large column index', () => {
     expect(gridOffsets.getColumnIndex(1000000).index).toBe(1000000 / CELL_WIDTH);
     expect(gridOffsets.getColumnIndex(1000000).position).toBe(1000000);
-    expect(gridOffsets.getColumnIndex(1000005).index).toBe(1000000 / CELL_WIDTH);
-    expect(gridOffsets.getColumnIndex(1000005).position).toBe(1000000);
+    expect(gridOffsets.getColumnIndex(1000005).index).toBe(1000005 / CELL_WIDTH);
+    expect(gridOffsets.getColumnIndex(1000005).position).toBe(1000005);
   });
 });
