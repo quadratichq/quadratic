@@ -3,6 +3,7 @@ import Editor from '@monaco-editor/react';
 import { Box, IconButton, Stack, useTheme } from '@mui/material';
 import { ContentCopy } from '@mui/icons-material';
 import { TooltipHint } from './TooltipHint';
+import { codeEditorBaseStyles } from '../menus/CodeEditor/styles';
 
 interface Props {
   code: string;
@@ -28,14 +29,8 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
     editorRef.current = editor;
   };
 
-  // Mimic styles in the Monaco editor
-  const styles = {
-    fontFamily: `Menlo, Monaco, "Courier New", monospace`,
-    fontSize: '12px',
-  };
-
   return (
-    <Box style={styles}>
+    <Box style={codeEditorBaseStyles}>
       <Stack
         direction="row"
         justifyContent="space-between"
