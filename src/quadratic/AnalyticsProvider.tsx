@@ -56,7 +56,7 @@ const loadMixPanelAnalytics = async (user: User | undefined) => {
     return;
   }
 
-  mixpanel.init(process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY, { api_host: "https://mixpanel-proxy.quadratichq.com" });
+  mixpanel.init(process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY, { api_host: 'https://mixpanel-proxy.quadratichq.com' });
 
   mixpanel.register({
     email: user?.email,
