@@ -1,4 +1,5 @@
 import { Box, Tabs, Tab, Chip } from '@mui/material';
+import { useTheme } from '@mui/system';
 import { useEffect, useState } from 'react';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { LinkNewTab } from '../../components/LinkNewTab';
@@ -10,6 +11,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { CodeSnippet } from '../../components/CodeSnippet';
 import { stripIndent } from 'common-tags';
 import { Cell } from '../../../schemas';
+import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
@@ -23,6 +25,7 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
   const { isAuthenticated } = useAuth0();
+  const theme = useTheme();
 
   // Whenever we change to a different cell, reset the active tab to the 1st
   useEffect(() => {
@@ -78,15 +81,15 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
             }}
             style={{
               outline: 'none',
-              fontFamily: 'monospace',
               whiteSpace: 'pre-wrap',
+              ...codeEditorBaseStyles,
             }}
             // Disable Grammarly
             data-gramm="false"
             data-gramm_editor="false"
             data-enable-grammarly="false"
           >
-            {hasOutput && (
+            {hasOutput ? (
               <>
                 {std_err && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
@@ -95,6 +98,12 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
                 )}
                 {std_out}
               </>
+            ) : (
+              <div style={{ ...codeEditorCommentStyles, marginTop: theme.spacing(0.5) }}>
+                {editorMode === 'PYTHON'
+                  ? 'Print statements, standard out, and errors will show here.'
+                  : 'Errors will show here.'}
+              </div>
             )}
           </div>
         </TabPanel>
