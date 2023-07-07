@@ -13,6 +13,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { ChatBubbleOutline } from '@mui/icons-material';
 import { runFormula } from '../../../grid/computations/formulas/runFormula';
 import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
+import { useMediaQuery } from '@mui/material';
 
 interface Props {
   sheet: Sheet;
@@ -24,6 +25,7 @@ export const BottomBar = (props: Props) => {
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
   const [sum, setSum] = useState<string>('');
   const [avg, setAvg] = useState<string>('');
+  const isBigEnoughForFormulaMeta = useMediaQuery('(min-width:1000px)');
   const { sheet } = props;
   const {
     showMultiCursor,
@@ -151,19 +153,10 @@ export const BottomBar = (props: Props) => {
         <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
           Cursor: {cursorPositionString}
         </span>
-        {interactionState.showMultiCursor && (
-          <>
-            <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
-              Selection: {multiCursorPositionString}
-            </span>
-            {countCellsWithData >= 2 && (
-              <>
-                <span>Count: {countCellsWithData}</span>
-                {sum && <span>Sum: {sum}</span>}
-                {avg && <span>Avg: {avg}</span>}
-              </>
-            )}
-          </>
+        {showMultiCursor && (
+          <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
+            Selection: {multiCursorPositionString}
+          </span>
         )}
         {selectedCell?.last_modified && (
           <span>You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}</span>
@@ -195,6 +188,13 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
+        {isBigEnoughForFormulaMeta && showMultiCursor && countCellsWithData >= 2 && (
+          <>
+            {sum && <span>Sum: {sum}</span>}
+            {avg && <span>Avg: {avg}</span>}
+            <span>Count: {countCellsWithData}</span>
+          </>
+        )}
         {!isMobileOnly && (
           <>
             <span
