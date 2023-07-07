@@ -242,9 +242,9 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
                   IF(A0 > 0,
                     IF(B0 < 2,
                       "Valid Dataset",
-                      "B0 is invalid",
+                      "B0 is invalid"
                     ),
-                    "A0 is invalid",
+                    "A0 is invalid"
                   )
                 `}
               />
