@@ -14,107 +14,103 @@ fn get_functions() -> Vec<FormulaFunction> {
             url: $url:literal;
             inverse_url: $inv_url:literal;
             $(
-                $short_name:literal, $full_name:literal, $f:expr, $inv_f:expr $(, $inv_range:literal)?
+                $full_name:literal($func_name:ident = $f:expr, $inv_func_name:ident = $inv_f:expr $(, $inv_range:literal)?)
             );+ $(;)?
         ) => {
             vec![
                 $(
-                    {
-                        let f: fn(f64) -> f64 = $f;
-                        FormulaFunction {
-                            name: $short_name,
-                            arg_completion: "${1:radians}",
-                            usages: &["radians"],
-                            examples: &[concat!($short_name, "(PI() * 2/3)")],
-                            doc: concat!(
-                                "Returns the [", $full_name, "](", $url, ") ",
-                                "of an angle in radians.",
-                            ),
-                            eval: util::array_mapped(move |[radians]| Ok(Value::Number(f(radians.to_number()?)))),
+                    formula_fn!(
+                        #[doc = concat!(
+                            "Returns the [", $full_name, "](", $url, ") ",
+                            "of an angle in radians.",
+                        )]
+                        #[examples(concat!(stringify!($func_name), "(PI() * 2/3)"))]
+                        #[pure_zip_map]
+                        fn $func_name([radians]: f64) {
+                            const F: fn(f64) -> f64 = $f;
+                            F(radians)
                         }
-                    },
-                    {
-                        let inv_f: fn(f64) -> f64 = $inv_f;
-                        FormulaFunction {
-                            name: concat!("A", $short_name),
-                            arg_completion: "${1:number}",
-                            usages: &["number"],
-                            examples: &[concat!($short_name, "(A1)")],
-                            doc: concat!(
-                                "Returns the [inverse ", $full_name, "](", $inv_url, ") ",
-                                "of a number, in radians", $(", ranging from ", $inv_range,)?
-                                ".",
-                            ),
-                            eval: util::array_mapped(move |[number]| Ok(Value::Number(inv_f(number.to_number()?)))),
+                    ),
+                    formula_fn!(
+                        #[doc = concat!(
+                            "Returns the [inverse ", $full_name, "](", $inv_url, ") ",
+                            "of a number, in radians", $(", ranging from ", $inv_range,)?
+                            ".",
+                        )]
+                        #[examples(concat!(stringify!($inv_func_name), "(A1)"))]
+                        #[pure_zip_map]
+                        fn $inv_func_name([number]: f64) {
+                            const F: fn(f64) -> f64 = $inv_f;
+                            F(number)
                         }
-                    },
+                    ),
                 )+
             ]
         };
     }
 
     let mut all_trig_functions = vec![
-        FormulaFunction {
-            name: "DEGREES",
-            arg_completion: "${1:radians}",
-            usages: &["radians"],
-            examples: &["DEGREES(PI() / 2)"],
-            doc: "Converts radians to degrees",
-            eval: util::array_mapped(|[radians]| {
-                Ok(Value::Number(radians.to_number()?.to_degrees()))
-            }),
-        },
-        FormulaFunction {
-            name: "RADIANS",
-            arg_completion: "${1:degrees}",
-            usages: &["degrees"],
-            examples: &["RADIANS(90)"],
-            doc: "Converts degrees to radians",
-            eval: util::array_mapped(|[degrees]| {
-                Ok(Value::Number(degrees.to_number()?.to_radians()))
-            }),
-        },
+        formula_fn!(
+            /// Converts radians to degrees.
+            #[examples("DEGREES(PI() / 2)")]
+            #[pure_zip_map]
+            fn DEGREES([radians]: f64) {
+                radians.to_degrees()
+            }
+        ),
+        formula_fn!(
+            /// Converts degrees to radians.
+            #[examples("RADIANS(90)")]
+            #[pure_zip_map]
+            fn RADIANS([degrees]: f64) {
+                degrees.to_radians()
+            }
+        ),
     ];
 
     all_trig_functions.extend(trig_functions_and_inverses![
         url: "https://en.wikipedia.org/wiki/Trigonometric_functions";
         inverse_url: "https://en.wikipedia.org/wiki/Inverse_trigonometric_functions";
-        //                              function,             inverse function,        inv_range;
-        "SIN",  "sine",                 |x| x.sin(),          |x| x.asin(),            "0 to π";
-        "COS",  "cosine",               |x| x.cos(),          |x| x.acos(),            "0 to π";
-        "TAN",  "tangent",              |x| x.tan(),          |x| x.atan(),         "-π/2 to π/2";
-        "CSC",  "cosecant",             |x| x.sin().recip(),  |x| x.recip().asin(), "-π/2 to π/2";
-        "SEC",  "secant",               |x| x.cos().recip(),  |x| x.recip().acos(),    "0 to π";
-        "COT",  "cotangent",            |x| x.tan().recip(),  arc_cotangent,           "0 to π";
+        //                      function,                  inverse function,               inv_range;
+        "sine"                 (SIN = |x| x.sin(),         ASIN = |x| x.asin(),            "0 to π");
+        "cosine"               (COS = |x| x.cos(),         ACOS = |x| x.acos(),            "0 to π");
+        "tangent"              (TAN = |x| x.tan(),         ATAN = |x| x.atan(),         "-π/2 to π/2");
+        "cosecant"             (CSC = |x| x.sin().recip(), ACSC = |x| x.recip().asin(), "-π/2 to π/2");
+        "secant"               (SEC = |x| x.cos().recip(), ASEC = |x| x.recip().acos(),    "0 to π");
+        "cotangent"            (COT = |x| x.tan().recip(), ACOT = arc_cotangent,           "0 to π");
     ]);
 
     all_trig_functions.extend(trig_functions_and_inverses![
         url: "https://en.wikipedia.org/wiki/Hyperbolic_functions";
         inverse_url: "https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions";
-        //                              function,             inverse function;
-        "SINH", "hyperbolic sine",      |x| x.sinh(),         |x| x.asinh();
-        "COSH", "hyperbolic cosine",    |x| x.cosh(),         |x| x.acosh();
-        "TANH", "hyperbolic tangent",   |x| x.tanh(),         |x| x.atanh();
-        "CSCH", "hyperbolic cosecant",  |x| x.sinh().recip(), |x| x.recip().asinh();
-        "SECH", "hyperbolic secant",    |x| x.cosh().recip(), |x| x.recip().acosh();
-        "COTH", "hyperbolic cotangent", |x| x.tanh().recip(), |x| x.recip().atanh();
+        //                      function,                    inverse function;
+        "hyperbolic sine"      (SINH = |x| x.sinh(),         ASINH = |x| x.asinh());
+        "hyperbolic cosine"    (COSH = |x| x.cosh(),         ACOSH = |x| x.acosh());
+        "hyperbolic tangent"   (TANH = |x| x.tanh(),         ATANH = |x| x.atanh());
+        "hyperbolic cosecant"  (CSCH = |x| x.sinh().recip(), ACSCH = |x| x.recip().asinh());
+        "hyperbolic secant"    (SECH = |x| x.cosh().recip(), ASECH = |x| x.recip().acosh());
+        "hyperbolic cotangent" (COTH = |x| x.tanh().recip(), ACOTH = |x| x.recip().atanh());
     ]);
 
     let index_of_atan = 5;
     all_trig_functions.insert(
         index_of_atan + 1,
-        FormulaFunction {
-            name: "ATAN2",
-            arg_completion: "{$1:x}, {$2:y}",
-            usages: &["x, y"],
-            examples: &["ATAN2(2, 1)"],
-            doc: "Returns the counterclockwise angle, in radians, from the X axis to the \
-                  point `(x, y)`. Note that the argument order is reversed compared to \
-                  the [typical `atan2()` function](https://en.wikipedia.org/wiki/Atan2).",
-            eval: util::array_mapped(|[x, y]| {
-                Ok(Value::Number(f64::atan2(y.to_number()?, x.to_number()?)))
-            }),
-        },
+        formula_fn!(
+            /// Returns the counterclockwise angle, in radians, from the X axis
+            /// to the point `(x, y)`. Note that the argument order is reversed
+            /// compared to the [typical `atan2()`
+            /// function](https://en.wikipedia.org/wiki/Atan2).
+            ///
+            /// If both arguments are zero, returns zero.
+            #[examples("ATAN2(2, 1)")]
+            #[pure_zip_map]
+            fn ATAN2(span: Span, [x]: f64, [y]: f64) {
+                if x == 0.0 && y == 0.0 {
+                    return Err(FormulaErrorMsg::DivideByZero.with_span(span));
+                }
+                f64::atan2(y, x)
+            }
+        ),
     );
 
     all_trig_functions
@@ -481,5 +477,18 @@ mod tests {
             (1.000161412, 1.5 * PI),
         ];
         test_trig_fn("ACOTH", test_cases);
+    }
+
+    #[test]
+    fn test_atan2() {
+        let g = &mut NoGrid;
+
+        assert_eq!("0", eval_to_string(g, "ATAN2(1, 0)"));
+        assert!(eval_to_string(g, "ATAN2(0, 1)").starts_with("1.57"));
+        assert!(eval_to_string(g, "ATAN2(1, 2)").starts_with("1.107"));
+        assert_eq!(
+            FormulaErrorMsg::DivideByZero,
+            eval_to_err(g, "ATAN2(0, 0)").msg,
+        );
     }
 }

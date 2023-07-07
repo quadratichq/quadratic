@@ -30,7 +30,11 @@ interface IResults {
 
 type CellFormatNoPosition = Omit<CellFormat, 'x' | 'y'>;
 
-export const useFormatCells = (sheet_controller: SheetController, app: PixiApp): IResults => {
+export const useFormatCells = (
+  sheet_controller: SheetController,
+  app?: PixiApp,
+  skipStartTransaction?: boolean
+): IResults => {
   const { start, end } = useGetSelection(sheet_controller.sheet);
 
   const onFormat = useCallback(
@@ -63,7 +67,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
         }
       }
       // Transaction to update formats
-      sheet_controller.start_transaction();
+      if (!skipStartTransaction) sheet_controller.start_transaction();
       formats.forEach((format) => {
         if (format.x !== undefined && format.y !== undefined)
           sheet_controller.execute_statement({
@@ -74,7 +78,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
             },
           });
       });
-      sheet_controller.end_transaction();
+      if (!skipStartTransaction) sheet_controller.end_transaction();
 
       if (app) {
         app.quadrants.quadrantChanged({ range: { start, end } });
@@ -84,7 +88,7 @@ export const useFormatCells = (sheet_controller: SheetController, app: PixiApp):
       // triggers an even to indicate selection's format change (see useGetSelection.ts)
       window.dispatchEvent(new CustomEvent(FORMAT_SELECTION_EVENT));
     },
-    [app, end, sheet_controller, start]
+    [app, end, sheet_controller, skipStartTransaction, start]
   );
 
   const changeFillColor = useCallback(

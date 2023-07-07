@@ -35,7 +35,27 @@ const v1File: GridFileV1 = {
 
 const v1_1File: GridFileV1_1 = {
   version: '1.1',
-  cells: [],
+  cells: [
+    // Test to allow `any` for `array_output`
+    {
+      x: 0,
+      y: 0,
+      type: 'PYTHON',
+      value: '1,2,3',
+      last_modified: '2023-06-27T16:54:40.619Z',
+      evaluation_result: {
+        success: true,
+        std_out: '',
+        output_value: '[[[1, 2, 3]]]',
+        cells_accessed: [],
+        array_output: [[[1, 2, 3]]],
+        formatted_code: '[[[1, 2, 3]]]\n',
+        error_span: null,
+      },
+      python_code: '[[[1,2,3]]]',
+      array_cells: [[0, 0]],
+    },
+  ],
   columns: [],
   rows: [],
   borders: [],
