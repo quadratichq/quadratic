@@ -11,6 +11,7 @@ use wasm_bindgen::prelude::*;
 pub mod util;
 mod cell;
 pub mod formulas;
+mod grid;
 mod position;
 
 pub use cell::{Cell, CellTypes, JsCell};
