@@ -28,6 +28,7 @@ import { AI, Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
+import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import mixpanel from 'mixpanel-browser';
 import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
 
@@ -386,6 +387,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
       {/* Editor Body */}
       <div
         style={{
+          position: 'relative',
           minHeight: '100px',
           flex: '2',
         }}
@@ -395,9 +397,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
           width="100%"
           language={editorMode === 'PYTHON' ? 'python' : editorMode === 'FORMULA' ? 'formula' : 'plaintext'}
           value={editorContent}
-          onChange={(value) => {
-            setEditorContent(value);
-          }}
+          onChange={setEditorContent}
           onMount={handleEditorDidMount}
           options={{
             minimap: { enabled: true },
@@ -412,6 +412,13 @@ export const CodeEditor = (props: CodeEditorProps) => {
             wordWrap: 'on',
           }}
         />
+        {selectedCell.type === 'PYTHON' && (
+          <CodeEditorPlaceholder
+            editorContent={editorContent}
+            setEditorContent={setEditorContent}
+            editorRef={editorRef}
+          />
+        )}
       </div>
 
       <ResizeControl setState={setConsoleHeight} position="TOP" />
@@ -430,7 +437,12 @@ export const CodeEditor = (props: CodeEditorProps) => {
         {(editorInteractionState.mode === 'PYTHON' ||
           editorInteractionState.mode === 'FORMULA' ||
           editorInteractionState.mode === 'AI') && (
-          <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
+          <Console
+            evalResult={evalResult}
+            editorMode={editorMode}
+            editorContent={editorContent}
+            selectedCell={selectedCell}
+          />
         )}
       </div>
     </div>

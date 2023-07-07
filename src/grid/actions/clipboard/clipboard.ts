@@ -137,7 +137,8 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
       }
     }
     return false; // unsuccessful
-  } catch {
+  } catch (e) {
+    console.warn(e);
     return false; // unsuccessful
   }
 };
@@ -196,7 +197,7 @@ const pasteFromText = async (sheet_controller: SheetController, pasteToCell: Coo
 
     return true; // unsuccessful
   } catch (e) {
-    console.log(e);
+    console.warn(e);
     return false; // unsuccessful
   }
 };
@@ -274,6 +275,11 @@ export const generateClipboardStrings = (sheet_controller: SheetController, cell
   };
 };
 
+// from https://stackoverflow.com/a/49124600
+function btoaFromCharCode(data: Uint8Array): string {
+  return btoa(data.reduce((data, byte) => data + String.fromCharCode(byte), ''));
+}
+
 export const copyToClipboard = async (sheet_controller: SheetController, cell0: Coordinate, cell1: Coordinate) => {
   // write selected cells to clipboard
   const { plainTextClipboardString, htmlClipboardString, quadraticClipboardString } = generateClipboardStrings(
@@ -281,15 +287,6 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
     cell0,
     cell1
   );
-
-  // const quadraticString = btoa(
-  //   JSON.stringify({
-  //     type: CLIPBOARD_FORMAT_VERSION,
-  //     data: quadraticClipboardString,
-  //     cell0,
-  //     cell1,
-  //   })
-  // );
 
   const encoder = new TextEncoder();
   const quadraticData = encoder.encode(
@@ -300,8 +297,7 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
       cell1,
     })
   );
-  const quadraticString = btoa(String.fromCharCode(...quadraticData));
-
+  const quadraticString = btoaFromCharCode(quadraticData);
   const clipboardHTMLString = `<span data-metadata="<--(quadratic)${quadraticString}(/quadratic)-->"></span>${htmlClipboardString}`;
 
   // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
