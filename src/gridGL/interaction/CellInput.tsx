@@ -22,7 +22,11 @@ interface CellInputProps {
 
 export const CellInput = (props: CellInputProps) => {
   const { interactionState, editorInteractionState, setInteractionState, app, container, sheetController } = props;
-  const { changeBold, changeItalic } = useFormatCells(sheetController, app, true);
+  const { changeBold, changeItalic, textFormatSetCurrency, changeAlignment } = useFormatCells(
+    sheetController,
+    app,
+    true
+  );
 
   const viewport = app?.viewport;
 
@@ -142,7 +146,7 @@ export const CellInput = (props: CellInputProps) => {
     if (closed || !textInput) return;
     closed = true;
 
-    const value = textInput.innerText;
+    let value = textInput.innerText;
 
     if (!cancel) {
       sheetController.start_transaction(saveInteractionState);
@@ -160,6 +164,12 @@ export const CellInput = (props: CellInputProps) => {
             create_transaction: false,
           });
       } else {
+        // convert to dollars
+        if (value[0] === '$' && !isNaN(parseFloat(value.substring(1).trim()))) {
+          value = value.substring(1);
+          textFormatSetCurrency();
+          changeAlignment('right');
+        }
         // create cell with value at input location
         await updateCellAndDCells({
           create_transaction: false,
@@ -174,6 +184,7 @@ export const CellInput = (props: CellInputProps) => {
           sheetController,
           app,
         });
+
         if (temporaryBold !== undefined && temporaryBold !== !!format?.bold) {
           changeBold(temporaryBold);
         }
