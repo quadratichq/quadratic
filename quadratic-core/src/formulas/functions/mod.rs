@@ -1,6 +1,7 @@
 use futures::{future::LocalBoxFuture, FutureExt};
 use itertools::Itertools;
 use lazy_static::lazy_static;
+use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
 
 #[macro_use]
@@ -87,11 +88,14 @@ impl FormulaFnArgs {
             .filter(|v| v.inner != Value::Single(BasicValue::Blank))
     }
     /// Takes the next argument, or returns an error if there is none.
-    pub fn take_next_required(&mut self, arg_name: &'static str) -> FormulaResult<Spanned<Value>> {
+    pub fn take_next_required(
+        &mut self,
+        arg_name: impl Into<Cow<'static, str>>,
+    ) -> FormulaResult<Spanned<Value>> {
         self.take_next().ok_or_else(|| {
             FormulaErrorMsg::MissingRequiredArgument {
-                func_name: self.func_name,
-                arg_name,
+                func_name: self.func_name.into(),
+                arg_name: arg_name.into(),
             }
             .with_span(self.span)
         })
@@ -105,7 +109,7 @@ impl FormulaFnArgs {
     pub fn error_if_more_args(&self) -> FormulaResult<()> {
         if let Some(next_arg) = self.values.front() {
             Err(FormulaErrorMsg::TooManyArguments {
-                func_name: self.func_name,
+                func_name: self.func_name.into(),
                 max_arg_count: self.args_popped,
             }
             .with_span(next_arg.span))

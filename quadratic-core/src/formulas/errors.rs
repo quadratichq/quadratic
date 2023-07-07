@@ -1,5 +1,6 @@
 //! Error reporting functionality for compilation and runtime.
 
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
@@ -7,7 +8,7 @@ use std::fmt;
 use super::{ArraySize, Axis, Span};
 
 /// Error message and accompanying span.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct FormulaError {
     /// Location of the source code where the error occurred (if any).
     pub span: Option<Span>,
@@ -34,7 +35,7 @@ impl FormulaError {
 }
 
 /// Information about the type of error that occurred.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum FormulaErrorMsg {
     // Miscellaneous errors
     Unimplemented,
@@ -42,19 +43,19 @@ pub enum FormulaErrorMsg {
     InternalError(Cow<'static, str>),
 
     // Compile errors
-    Unterminated(&'static str),
+    Unterminated(Cow<'static, str>),
     Expected {
         expected: Cow<'static, str>,
         got: Option<Cow<'static, str>>,
     },
     Unexpected(Cow<'static, str>),
     TooManyArguments {
-        func_name: &'static str,
+        func_name: Cow<'static, str>,
         max_arg_count: usize,
     },
     MissingRequiredArgument {
-        func_name: &'static str,
-        arg_name: &'static str,
+        func_name: Cow<'static, str>,
+        arg_name: Cow<'static, str>,
     },
     BadFunctionName,
     BadCellReference,

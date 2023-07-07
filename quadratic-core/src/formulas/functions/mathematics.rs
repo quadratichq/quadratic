@@ -173,8 +173,8 @@ mod tests {
         assert_eq!("10", eval_to_string(g, "ABS(10)"));
         assert_eq!(
             FormulaErrorMsg::MissingRequiredArgument {
-                func_name: "ABS",
-                arg_name: "number"
+                func_name: "ABS".into(),
+                arg_name: "number".into(),
             },
             parse_formula("ABS()", Pos::ORIGIN)
                 .unwrap()
@@ -184,8 +184,8 @@ mod tests {
         );
         assert_eq!(
             FormulaErrorMsg::TooManyArguments {
-                func_name: "ABS",
-                max_arg_count: 1
+                func_name: "ABS".into(),
+                max_arg_count: 1,
             },
             parse_formula("ABS(16, 17)", Pos::ORIGIN)
                 .unwrap()
@@ -202,8 +202,8 @@ mod tests {
         assert_eq!("4", eval_to_string(g, "SQRT(16)"));
         assert_eq!(
             FormulaErrorMsg::MissingRequiredArgument {
-                func_name: "SQRT",
-                arg_name: "number"
+                func_name: "SQRT".into(),
+                arg_name: "number".into(),
             },
             parse_formula("SQRT()", Pos::ORIGIN)
                 .unwrap()
@@ -213,8 +213,8 @@ mod tests {
         );
         assert_eq!(
             FormulaErrorMsg::TooManyArguments {
-                func_name: "SQRT",
-                max_arg_count: 1
+                func_name: "SQRT".into(),
+                max_arg_count: 1,
             },
             parse_formula("SQRT(16, 17)", Pos::ORIGIN)
                 .unwrap()
@@ -230,8 +230,8 @@ mod tests {
         assert!(eval_to_string(g, "PI()").starts_with("3.14159"));
         assert_eq!(
             FormulaErrorMsg::TooManyArguments {
-                func_name: "PI",
-                max_arg_count: 0
+                func_name: "PI".into(),
+                max_arg_count: 0,
             },
             parse_formula("PI(16)", Pos::ORIGIN)
                 .unwrap()
@@ -247,8 +247,8 @@ mod tests {
         assert!(eval_to_string(g, "TAU()").starts_with("6.283"));
         assert_eq!(
             FormulaErrorMsg::TooManyArguments {
-                func_name: "TAU",
-                max_arg_count: 0
+                func_name: "TAU".into(),
+                max_arg_count: 0,
             },
             parse_formula("TAU(16)", Pos::ORIGIN)
                 .unwrap()
