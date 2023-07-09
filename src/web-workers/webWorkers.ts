@@ -4,7 +4,7 @@ import { PythonReturnType } from './pythonWebWorker/pythonTypes';
 
 export class WebWorkers {
   app?: PixiApp;
-  private pythonWebWorker: PythonWebWorker;
+  pythonWebWorker: PythonWebWorker;
 
   constructor() {
     this.pythonWebWorker = new PythonWebWorker(this);

@@ -56,4 +56,8 @@ export class PythonWebWorker {
       }
     });
   }
+
+  async load() {
+    // this is used by the mock
+  }
 }
