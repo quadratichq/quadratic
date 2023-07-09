@@ -2,11 +2,16 @@ import { SheetController } from '../sheetController';
 import { Cell } from '../../../schemas';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
+import { webWorkers } from '../../../web-workers/webWorkers';
 
 jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
 
 const sc = new SheetController();
 GetCellsDBSetSheet(sc.sheet);
+
+beforeAll(() => {
+  webWorkers.init();
+});
 
 test('SheetController - cell error', async () => {
   const cell = {

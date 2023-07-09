@@ -30,6 +30,19 @@ export const QuadraticApp = () => {
     }
   }, [app, itemsLoaded]);
 
+  // recoil tracks whether python is loaded
+  useEffect(() => {
+    const loaded = () =>
+      setLoadedState((loaded) => {
+        return {
+          ...loaded,
+          pythonLoaded: true,
+        };
+      });
+    window.addEventListener('python-loaded', loaded);
+    return () => window.removeEventListener('python-loaded', loaded);
+  }, [setLoadedState]);
+
   // Loading Effect
   useEffect(() => {
     // Ensure this only runs once
@@ -49,7 +62,7 @@ export const QuadraticApp = () => {
     };
 
     // populate web workers
-    webWorkers.app = app;
+    webWorkers.init(app);
 
     loadAssets().then(() => {
       setItemsLoaded((old) => ['pixi-assets', ...old]);
@@ -66,19 +79,6 @@ export const QuadraticApp = () => {
       prerenderQuadrants();
     });
   }, [app, initialize]);
-
-  // recoil tracks whether python is loaded
-  useEffect(() => {
-    const loaded = () =>
-      setLoadedState((loaded) => {
-        return {
-          ...loaded,
-          pythonLoaded: true,
-        };
-      });
-    window.addEventListener('python-loaded', loaded);
-    return () => window.removeEventListener('python-loaded', loaded);
-  }, [setLoadedState]);
 
   return (
     <>

@@ -4,9 +4,10 @@ import { PythonReturnType } from './pythonWebWorker/pythonTypes';
 
 export class WebWorkers {
   app?: PixiApp;
-  pythonWebWorker: PythonWebWorker;
+  pythonWebWorker?: PythonWebWorker;
 
-  constructor() {
+  init(app?: PixiApp) {
+    this.app = app;
     this.pythonWebWorker = new PythonWebWorker(this);
   }
 

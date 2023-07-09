@@ -3,11 +3,15 @@ import { Cell } from '../../../schemas';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
 import { DeleteCells } from '../../actions/DeleteCells';
+import { webWorkers } from '../../../web-workers/webWorkers';
 
 jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
 
 const sc = new SheetController();
-GetCellsDBSetSheet(sc.sheet);
+beforeAll(() => {
+  GetCellsDBSetSheet(sc.sheet);
+  webWorkers.init();
+});
 
 test('SheetController - cell update when being deleted', async () => {
   const cell_0_0 = {
