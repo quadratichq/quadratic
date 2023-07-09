@@ -2,6 +2,7 @@ import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { PythonWebWorker } from './pythonWebWorker/PythonWebWorker';
 import { PythonReturnType } from './pythonWebWorker/pythonTypes';
 
+// todo: this will be moved to a top-level class within the app instead a singleton
 export class WebWorkers {
   app?: PixiApp;
   pythonWebWorker?: PythonWebWorker;
