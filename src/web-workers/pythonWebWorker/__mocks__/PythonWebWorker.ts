@@ -6,7 +6,9 @@ export class PythonWebWorker {
   private pyodide?: any;
 
   async load() {
-    this.pyodide = await setupPython();
+    if (!this.pyodide) {
+      this.pyodide = await setupPython();
+    }
   }
 
   async run(python: string): Promise<PythonReturnType> {

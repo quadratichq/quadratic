@@ -3,11 +3,12 @@ import { Cell } from '../../../schemas';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
 import { DeleteCells } from '../../actions/DeleteCells';
+import { webWorkers } from '../../../web-workers/webWorkers';
+
+jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
 
 beforeAll(async () => {
-  const { loadPyodide } = require('pyodide');
-  pyodide = await loadPyodide();
-  await setupPython(pyodide);
+  await webWorkers.pythonWebWorker.load();
 });
 
 test('SheetController - cell update when being deleted', async () => {
