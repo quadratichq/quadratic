@@ -447,7 +447,12 @@ export const CodeEditor = (props: CodeEditorProps) => {
         {(editorInteractionState.mode === 'PYTHON' ||
           editorInteractionState.mode === 'FORMULA' ||
           editorInteractionState.mode === 'AI') && (
-          <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
+          <Console
+            evalResult={evalResult}
+            editorMode={editorMode}
+            editorContent={editorContent}
+            selectedCell={selectedCell}
+          />
         )}
       </div>
     </div>
