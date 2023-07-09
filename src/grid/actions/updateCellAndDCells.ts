@@ -98,7 +98,6 @@ export const updateCellAndDCells = async (args: ArgsType) => {
         } else {
           cell.value = ''; // clear value if python code fails
         }
-
         // add new cell deps to graph
         if (result.cells_accessed.length) {
           // add new deps to graph

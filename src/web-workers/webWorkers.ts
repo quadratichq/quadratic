@@ -14,7 +14,7 @@ export class WebWorkers {
     if (!this.pythonWebWorker) {
       throw new Error('expected pythonWebWorker to be defined');
     }
-    return this.pythonWebWorker.run(python_code);
+    return await this.pythonWebWorker.run(python_code);
   }
 }
 
