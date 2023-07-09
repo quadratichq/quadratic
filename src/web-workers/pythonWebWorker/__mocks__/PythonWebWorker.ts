@@ -5,15 +5,9 @@ import { setupPython } from '../../../setupPythonTests';
 export class PythonWebWorker {
   private pyodide?: any;
 
-  async load() {
-    if (!this.pyodide) {
-      this.pyodide = await setupPython();
-    }
-  }
-
   async run(python: string): Promise<PythonReturnType> {
     if (!this.pyodide) {
-      throw new Error('Expected pyodide to be defined');
+      this.pyodide = await setupPython();
     }
     const output = await this.pyodide.globals.get('run_python')(python);
     return Object.fromEntries(output.toJs()) as PythonReturnType;
