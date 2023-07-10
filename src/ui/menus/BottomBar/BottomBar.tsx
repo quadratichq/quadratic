@@ -11,9 +11,8 @@ import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCoun
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ChatBubbleOutline } from '@mui/icons-material';
-import { runFormula } from '../../../grid/computations/formulas/runFormula';
-import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
 import { useMediaQuery } from '@mui/material';
+import { ActiveSelectionStats } from './ActiveSelectionStats';
 
 interface Props {
   sheet: Sheet;
@@ -23,10 +22,8 @@ export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
-  const [countA, setCountA] = useState<string>('');
-  const [sum, setSum] = useState<string>('');
-  const [avg, setAvg] = useState<string>('');
-  const isBigEnoughForFormulaMeta = useMediaQuery('(min-width:1000px)');
+  const isBigEnoughForActiveSelectionStats = useMediaQuery('(min-width:1000px)');
+
   const {
     showMultiCursor,
     cursorPosition,
@@ -36,54 +33,6 @@ export const BottomBar = (props: Props) => {
   // Generate string describing cursor location
   const cursorPositionString = `(${cursorPosition.x}, ${cursorPosition.y})`;
   const multiCursorPositionString = `(${originPosition.x}, ${originPosition.y}), (${terminalPosition.x}, ${terminalPosition.y})`;
-
-  // Run async calculations to get the count/avg/sum meta info
-  useEffect(() => {
-    if (showMultiCursor) {
-      const runCalculationOnActiveSelection = async () => {
-        // Get values around current selection
-        const colStart = getColumnA1Notation(originPosition.x);
-        const rowStart = getRowA1Notation(originPosition.y);
-        const colEnd = getColumnA1Notation(terminalPosition.x);
-        const rowEnd = getRowA1Notation(terminalPosition.y);
-        const range = `${colStart}${rowStart}:${colEnd}${rowEnd}`;
-        const pos = { x: originPosition.x - 1, y: originPosition.y - 1 };
-
-        // Get the number of cells with at least some data
-        const countaReturn = await runFormula(`COUNTA(${range})`, pos);
-        const counta = countaReturn.success ? Number(countaReturn.output_value) : 0;
-        setCountA(counta.toString());
-
-        // If we don't have at least 2 cells with data and one
-        // of those is a number, don't bother with sum and avg
-        const countReturn = await runFormula(`COUNT(${range})`, pos);
-        const countCellsWithNumbers = countReturn.success ? Number(countReturn.output_value) : 0;
-        console.log(counta, countCellsWithNumbers);
-        if (counta < 2 || countCellsWithNumbers < 1) {
-          setAvg('');
-          setSum('');
-          return;
-        }
-
-        // Run the formulas
-        const sumReturn = await runFormula(`SUM(${range})`, pos);
-        if (sumReturn.success && sumReturn.output_value) {
-          setSum(sumReturn.output_value);
-        } else {
-          console.log('Error running `sum` formula: ', sumReturn.error_msg);
-          setSum('');
-        }
-        const avgReturn = await runFormula(`AVERAGE(${range})`, pos);
-        if (avgReturn.success && avgReturn.output_value) {
-          setAvg(avgReturn.output_value);
-        } else {
-          console.log('Error running `avg` formula: ', avgReturn.error_msg);
-          setAvg('');
-        }
-      };
-      runCalculationOnActiveSelection();
-    }
-  }, [originPosition, showMultiCursor, terminalPosition]);
 
   useEffect(() => {
     const updateCellData = async () => {
@@ -186,12 +135,8 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
-        {isBigEnoughForFormulaMeta && showMultiCursor && (
-          <>
-            {sum && <span>Sum: {sum}</span>}
-            {avg && <span>Avg: {avg}</span>}
-            {countA && <span>Count: {countA}</span>}
-          </>
+        {isBigEnoughForActiveSelectionStats && showMultiCursor && (
+          <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
         )}
         {!isMobileOnly && (
           <>
