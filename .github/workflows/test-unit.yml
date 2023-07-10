@@ -16,24 +16,27 @@ jobs:
           node-version: '19'
           cache: 'npm'
 
+      - name: Install Rust and wasm-pack
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          echo "$HOME/.cargo/env" >> $GITHUB_PATH
+
       - name: Update local rust toolchain
         run: |
-          source "$HOME/.cargo/env"
           rustup update
           rustup component add clippy
           rustup install nightly
       - name: Toolchain info
         run: |
-          source $HOME/.cargo/env
           cargo --version --verbose
           rustc --version
           rustup component list | grep installed
 
       - name: Install wasm-pack
         run: |
-          source $HOME/.cargo/env
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - run: npm run build:wasm:nodejs
+          npm run build:wasm:nodejs
 
       - uses: actions/setup-python@v4
         with:
