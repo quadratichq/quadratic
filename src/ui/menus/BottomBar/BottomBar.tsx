@@ -13,6 +13,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { ChatBubbleOutline } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
+import { ActiveSelectionStats } from './ActiveSelectionStats';
 
 interface Props {
   sheet: Sheet;
@@ -24,9 +25,15 @@ export const BottomBar = (props: Props) => {
   const loadedState = useRecoilValue(loadedStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
+  const {
+    showMultiCursor,
+    cursorPosition,
+    multiCursorPosition: { originPosition, terminalPosition },
+  } = interactionState;
+
   // Generate string describing cursor location
-  const cursorPositionString = `(${interactionState.cursorPosition.x}, ${interactionState.cursorPosition.y})`;
-  const multiCursorPositionString = `(${interactionState.multiCursorPosition.originPosition.x}, ${interactionState.multiCursorPosition.originPosition.y}), (${interactionState.multiCursorPosition.terminalPosition.x}, ${interactionState.multiCursorPosition.terminalPosition.y})`;
+  const cursorPositionString = `(${cursorPosition.x}, ${cursorPosition.y})`;
+  const multiCursorPositionString = `(${originPosition.x}, ${originPosition.y}), (${terminalPosition.x}, ${terminalPosition.y})`;
 
   useEffect(() => {
     const updateCellData = async () => {
@@ -94,7 +101,7 @@ export const BottomBar = (props: Props) => {
         <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
           Cursor: {cursorPositionString}
         </span>
-        {interactionState.showMultiCursor && (
+        {showMultiCursor && (
           <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
             Selection: {multiCursorPositionString}
           </span>
@@ -129,21 +136,23 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
+        <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
         {!isMobileOnly && (
           <>
-            <span
-              style={{ display: 'flex', alignItems: 'center', gap: '.25rem', cursor: 'pointer' }}
-              onClick={() => {
-                setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
-              }}
-            >
-              <ChatBubbleOutline fontSize="inherit" />
-              Feedback
-            </span>
-            <span>{loadedState.pythonLoaded ? '✓' : <CircularProgress size="0.5rem" />} Python 3.9.5</span>
+            <span>✓ Python 3.9.5</span>
           </>
         )}
         <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
+        <span
+          style={{ display: 'flex', alignItems: 'center', gap: '.25rem', cursor: 'pointer' }}
+          onClick={() => {
+            setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
+          }}
+        >
+          <ChatBubbleOutline fontSize="inherit" />
+          Feedback
+        </span>
+        <span>{loadedState.pythonLoaded ? '✓' : <CircularProgress size="0.5rem" />} Python 3.9.5</span>
         <span
           style={{
             color: '#ffffff',
