@@ -60,6 +60,7 @@
   },
   "main": "public/electron.js",
   "scripts": {
+    "prestart": "npm run build:wasm",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "build:wasm": "cd quadratic-core && wasm-pack build --target web --out-dir pkg",
