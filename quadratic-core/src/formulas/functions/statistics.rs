@@ -44,10 +44,28 @@ fn get_functions() -> Vec<FormulaFunction> {
         ),
         formula_fn!(
             /// Returns the number of numeric values.
+            ///
+            /// - Blank cells are not counted.
+            /// - Cells containing an error are not counted.
             #[examples("COUNT(A1:C42, E17)", "SUM(A1:A10) / COUNT(A1:A10)")]
-            fn COUNT(numbers: (Iter<f64>)) {
+            fn COUNT(numbers: (Iter<BasicValue>)) {
                 // Ignore error values.
-                numbers.filter(|x| x.is_ok()).count() as f64
+                numbers
+                    .filter(|x| matches!(x, Ok(BasicValue::Number(_))))
+                    .count() as f64
+            }
+        ),
+        formula_fn!(
+            /// Returns the number of non-blank values.
+            ///
+            /// - Cells with formula or code output of an empty string are
+            ///   counted.
+            /// - Cells containing zero are counted.
+            /// - Cells with an error are counted.
+            #[examples("COUNTA(A1:A10)")]
+            fn COUNTA(range: (Iter<BasicValue>)) {
+                // Count error values.
+                range.filter_ok(|v| !v.is_blank()).count() as f64
             }
         ),
         formula_fn!(
@@ -68,11 +86,15 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// Counts how many values in the range are empty. Cells with
-            /// formula or code output of an empty string are also counted.
+            /// Counts how many values in the range are empty.
+            ///
+            /// - Cells with formula or code output of an empty string are
+            ///   counted.
+            /// - Cells containing zero are not counted.
+            /// - Cells with an error are not counted.
             #[examples("COUNTBLANK(A1:A10)")]
             fn COUNTBLANK(range: (Iter<BasicValue>)) {
-                // Do not count error values.
+                // Ignore error values.
                 range
                     .filter_map(|v| v.ok())
                     .filter(|v| v.is_blank_or_empty_string())
@@ -183,8 +205,10 @@ mod tests {
 
     #[test]
     fn test_count() {
-        let g = &mut NoGrid;
+        let g = &mut BlankGrid;
         assert_eq!("0", eval_to_string(g, "COUNT()"));
+        assert_eq!("0", eval_to_string(g, "COUNT(A1)"));
+        assert_eq!("0", eval_to_string(g, "COUNT(A1:B4)"));
         assert_eq!(
             "3",
             eval_to_string(g, "COUNT(\"_\", \"a\", 12, -3.5, 42.5)"),
@@ -192,6 +216,24 @@ mod tests {
         assert_eq!("1", eval_to_string(g, "COUNT(2)"));
         assert_eq!("10", eval_to_string(g, "COUNT(1..10)"));
         assert_eq!("11", eval_to_string(g, "COUNT(0..10)"));
+        assert_eq!("1", eval_to_string(g, "COUNT({\"\",1,,,})"));
+    }
+
+    #[test]
+    fn test_counta() {
+        let g = &mut BlankGrid;
+        assert_eq!("0", eval_to_string(g, "COUNTA()"));
+        assert_eq!("0", eval_to_string(g, "COUNTA(A1)"));
+        assert_eq!("0", eval_to_string(g, "COUNTA(A1:B4)"));
+        assert_eq!(
+            "5",
+            eval_to_string(g, "COUNTA(\"_\", \"a\", 12, -3.5, 42.5)"),
+        );
+        assert_eq!("1", eval_to_string(g, "COUNTA(\"\")"));
+        assert_eq!("1", eval_to_string(g, "COUNTA(2)"));
+        assert_eq!("10", eval_to_string(g, "COUNTA(1..10)"));
+        assert_eq!("11", eval_to_string(g, "COUNTA(0..10)"));
+        assert_eq!("2", eval_to_string(g, "COUNTA({\"\",1,,,})"));
     }
 
     #[test]
@@ -208,8 +250,14 @@ mod tests {
     #[test]
     fn test_countblank() {
         let g = &mut BlankGrid;
-        assert_eq!("1", eval_to_string(g, "COUNTBLANK(\"\", \"a\", 0, 1)"));
-        assert_eq!("2", eval_to_string(g, "COUNTBLANK(B3, \"\", \"a\", 0, 1)"));
+        assert_eq!("1", eval_to_string(g, "COUNTBLANK(\"\")"));
+        assert_eq!("0", eval_to_string(g, "COUNTBLANK(\"a\")"));
+        assert_eq!("0", eval_to_string(g, "COUNTBLANK(0)"));
+        assert_eq!("0", eval_to_string(g, "COUNTBLANK(1)"));
+        assert_eq!("1", eval_to_string(g, "COUNTBLANK({\"\", \"a\"; 0, 1})"));
+        assert_eq!("1", eval_to_string(g, "COUNTBLANK(B3)"));
+        assert_eq!("28", eval_to_string(g, "COUNTBLANK(B3:C16)"));
+        assert_eq!("3", eval_to_string(g, "COUNTBLANK({B3, \"\", C6, \"0\"})"));
     }
 
     #[test]

@@ -36,7 +36,7 @@ pub use grid_proxy::GridProxy;
 use params::{Param, ParamKind};
 pub use parser::{find_cell_references, parse_formula};
 pub use span::{Span, Spanned};
-pub use values::{Array, BasicValue, CoerceInto, Value};
+pub use values::{Array, BasicValue, CoerceInto, IsBlank, Value};
 use wildcards::wildcard_pattern_to_regex;
 
 /// Result of a `FormulaError`.
