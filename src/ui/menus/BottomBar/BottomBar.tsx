@@ -23,10 +23,10 @@ export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
+  const [countA, setCountA] = useState<string>('');
   const [sum, setSum] = useState<string>('');
   const [avg, setAvg] = useState<string>('');
   const isBigEnoughForFormulaMeta = useMediaQuery('(min-width:1000px)');
-  const { sheet } = props;
   const {
     showMultiCursor,
     cursorPosition,
@@ -36,14 +36,6 @@ export const BottomBar = (props: Props) => {
   // Generate string describing cursor location
   const cursorPositionString = `(${cursorPosition.x}, ${cursorPosition.y})`;
   const multiCursorPositionString = `(${originPosition.x}, ${originPosition.y}), (${terminalPosition.x}, ${terminalPosition.y})`;
-
-  // Get the number of cells with at least some data
-  const countCellsWithData = sheet.grid.getNakedCells(
-    originPosition.x,
-    originPosition.y,
-    terminalPosition.x,
-    terminalPosition.y
-  ).length;
 
   // Run async calculations to get the count/avg/sum meta info
   useEffect(() => {
@@ -57,11 +49,17 @@ export const BottomBar = (props: Props) => {
         const range = `${colStart}${rowStart}:${colEnd}${rowEnd}`;
         const pos = { x: originPosition.x - 1, y: originPosition.y - 1 };
 
-        // If we don't have at least 2 cells with data and one of those is a number, don't bother
+        // Get the number of cells with at least some data
+        const countaReturn = await runFormula(`COUNTA(${range})`, pos);
+        const counta = countaReturn.success ? Number(countaReturn.output_value) : 0;
+        setCountA(counta.toString());
+
+        // If we don't have at least 2 cells with data and one
+        // of those is a number, don't bother with sum and avg
         const countReturn = await runFormula(`COUNT(${range})`, pos);
         const countCellsWithNumbers = countReturn.success ? Number(countReturn.output_value) : 0;
-        console.log(countCellsWithData, countCellsWithNumbers);
-        if (countCellsWithData < 2 || countCellsWithNumbers < 1) {
+        console.log(counta, countCellsWithNumbers);
+        if (counta < 2 || countCellsWithNumbers < 1) {
           setAvg('');
           setSum('');
           return;
@@ -85,7 +83,7 @@ export const BottomBar = (props: Props) => {
       };
       runCalculationOnActiveSelection();
     }
-  }, [countCellsWithData, originPosition, showMultiCursor, terminalPosition]);
+  }, [originPosition, showMultiCursor, terminalPosition]);
 
   useEffect(() => {
     const updateCellData = async () => {
@@ -188,11 +186,11 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
-        {isBigEnoughForFormulaMeta && showMultiCursor && countCellsWithData >= 2 && (
+        {isBigEnoughForFormulaMeta && showMultiCursor && (
           <>
             {sum && <span>Sum: {sum}</span>}
             {avg && <span>Avg: {avg}</span>}
-            <span>Count: {countCellsWithData}</span>
+            {countA && <span>Count: {countA}</span>}
           </>
         )}
         {!isMobileOnly && (
