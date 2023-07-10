@@ -24,6 +24,7 @@ jobs:
           rustup install nightly
       - name: Toolchain info
         run: |
+          source $HOME/.cargo/env
           cargo --version --verbose
           rustc --version
           rustup component list | grep installed
