@@ -3,7 +3,9 @@ import { GetCellsDB } from './grid/sheet/Cells/GetCellsDB';
 import define_run_python from './web-workers/pythonWebWorker/run_python.py';
 
 export async function setupPython() {
+  console.log('*** before loadPyodide');
   const pyodide = await loadPyodide();
+  console.log('*** after loadPyodide');
   pyodide.registerJsModule('GetCellsDB', GetCellsDB);
   await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
 
