@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { runFormula } from '../../../grid/computations/formulas/runFormula';
 import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { useMediaQuery } from '@mui/material';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -13,6 +14,7 @@ export const ActiveSelectionStats = (props: Props) => {
     multiCursorPosition: { originPosition, terminalPosition },
   } = props.interactionState;
 
+  const isBigEnoughForActiveSelectionStats = useMediaQuery('(min-width:1000px)');
   const [countA, setCountA] = useState<string>('');
   const [sum, setSum] = useState<string>('');
   const [avg, setAvg] = useState<string>('');
@@ -64,11 +66,13 @@ export const ActiveSelectionStats = (props: Props) => {
     }
   }, [originPosition, showMultiCursor, terminalPosition]);
 
-  return (
-    <>
-      {sum && <span>Sum: {sum}</span>}
-      {avg && <span>Avg: {avg}</span>}
-      {countA && <span>Count: {countA}</span>}
-    </>
-  );
+  if (isBigEnoughForActiveSelectionStats && showMultiCursor)
+    return (
+      <>
+        {sum && <span>Sum: {sum}</span>}
+        {avg && <span>Avg: {avg}</span>}
+        {countA && <span>Count: {countA}</span>}
+      </>
+    );
+  else return null;
 };

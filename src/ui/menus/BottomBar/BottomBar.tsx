@@ -11,7 +11,6 @@ import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCoun
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ChatBubbleOutline } from '@mui/icons-material';
-import { useMediaQuery } from '@mui/material';
 import { ActiveSelectionStats } from './ActiveSelectionStats';
 
 interface Props {
@@ -22,7 +21,6 @@ export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
-  const isBigEnoughForActiveSelectionStats = useMediaQuery('(min-width:1000px)');
 
   const {
     showMultiCursor,
@@ -135,24 +133,22 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
-        {isBigEnoughForActiveSelectionStats && showMultiCursor && (
-          <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
-        )}
+        <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
         {!isMobileOnly && (
           <>
-            <span
-              style={{ display: 'flex', alignItems: 'center', gap: '.25rem', cursor: 'pointer' }}
-              onClick={() => {
-                setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
-              }}
-            >
-              <ChatBubbleOutline fontSize="inherit" />
-              Feedback
-            </span>
             <span>✓ Python 3.9.5</span>
           </>
         )}
         <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
+        <span
+          style={{ display: 'flex', alignItems: 'center', gap: '.25rem', cursor: 'pointer' }}
+          onClick={() => {
+            setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
+          }}
+        >
+          <ChatBubbleOutline fontSize="inherit" />
+          Feedback
+        </span>
         <span
           style={{
             color: '#ffffff',
