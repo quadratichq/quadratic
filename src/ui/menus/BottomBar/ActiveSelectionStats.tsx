@@ -8,6 +8,8 @@ interface Props {
   interactionState: GridInteractionState;
 }
 
+const SELECTION_SIZE_LIMIT = 100;
+
 export const ActiveSelectionStats = (props: Props) => {
   const {
     showMultiCursor,
@@ -23,6 +25,16 @@ export const ActiveSelectionStats = (props: Props) => {
   useEffect(() => {
     if (showMultiCursor) {
       const runCalculationOnActiveSelection = async () => {
+        const width = Math.abs(originPosition.x - terminalPosition.x) + 1;
+        const height = Math.abs(originPosition.y - terminalPosition.y) + 1;
+        const totalArea = width * height;
+        if (totalArea > SELECTION_SIZE_LIMIT) {
+          setCountA('');
+          setAvg('');
+          setSum('');
+          return;
+        }
+
         // Get values around current selection
         const colStart = getColumnA1Notation(originPosition.x);
         const rowStart = getRowA1Notation(originPosition.y);
