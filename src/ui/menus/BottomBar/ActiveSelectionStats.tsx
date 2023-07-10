@@ -8,7 +8,7 @@ interface Props {
   interactionState: GridInteractionState;
 }
 
-const SELECTION_SIZE_LIMIT = 100;
+const SELECTION_SIZE_LIMIT = 250;
 
 export const ActiveSelectionStats = (props: Props) => {
   const {
