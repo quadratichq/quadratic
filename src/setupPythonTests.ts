@@ -1,5 +1,5 @@
-import { GetCellsDB } from './grid/sheet/Cells/GetCellsDB';
 import { loadPyodide } from 'pyodide';
+import { GetCellsDB } from './grid/sheet/Cells/GetCellsDB';
 import define_run_python from './web-workers/pythonWebWorker/run_python.py';
 
 export async function setupPython() {

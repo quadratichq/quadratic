@@ -7,10 +7,12 @@ import { webWorkers } from '../../../web-workers/webWorkers';
 
 jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
 
-const sc = new SheetController();
-beforeAll(() => {
+let sc: SheetController;
+beforeAll(async () => {
+  sc = new SheetController();
   GetCellsDBSetSheet(sc.sheet);
   webWorkers.init();
+  await webWorkers.pythonWebWorker?.load();
 });
 
 test('SheetController - cell update when being deleted', async () => {

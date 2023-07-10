@@ -15,7 +15,7 @@ export class WebWorkers {
 
   async runPython(python_code: string): Promise<PythonReturnType> {
     if (!this.pythonWebWorker) {
-      throw new Error('expected pythonWebWorker to be defined');
+      throw new Error('Expected pythonWebWorker to be defined');
     }
     return await this.pythonWebWorker.run(python_code);
   }
