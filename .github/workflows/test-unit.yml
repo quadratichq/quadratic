@@ -19,7 +19,7 @@ jobs:
       - name: Update local rust toolchain
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
-          source "$HOME/.cargo/env"
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           rustup update
           rustup component add clippy
           rustup install nightly
