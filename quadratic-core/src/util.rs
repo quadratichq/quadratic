@@ -1,5 +1,6 @@
 use itertools::Itertools;
 use std::fmt;
+use std::ops::Range;
 
 /// Recursively evaluates an expression, mimicking JavaScript syntax. Assumes
 /// that `?` can throw an error of type `JsValue`.
@@ -162,6 +163,13 @@ macro_rules! impl_display {
             }
         }
     };
+}
+
+pub fn union_ranges(ranges: impl IntoIterator<Item = Option<Range<i64>>>) -> Option<Range<i64>> {
+    ranges
+        .into_iter()
+        .filter_map(|x| x)
+        .reduce(|a, b| std::cmp::min(a.start, b.start)..std::cmp::max(a.end, b.end))
 }
 
 #[cfg(test)]

@@ -1,22 +1,25 @@
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
-use std::ops::Range;
 
 use super::BlockContent;
-use crate::grid::{value::CellValue, CellId};
+use crate::grid::{value::CellValue, CellRef};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum CellValueOrSpill {
     CellValue(CellValue),
-    Spill {
-        source: CellId,
-        column: usize,
-        row: usize,
-    },
+    Spill { source: CellRef },
 }
 impl From<CellValue> for CellValueOrSpill {
     fn from(value: CellValue) -> Self {
         CellValueOrSpill::CellValue(value)
+    }
+}
+impl CellValueOrSpill {
+    pub fn unwrap_cell_value(self) -> CellValue {
+        match self {
+            CellValueOrSpill::CellValue(value) => value,
+            CellValueOrSpill::Spill { .. } => panic!("expected raw cell value; got spilled cell"),
+        }
     }
 }
 
@@ -24,11 +27,7 @@ impl From<CellValue> for CellValueOrSpill {
 pub enum CellValueBlockContent {
     // TODO: add float array, bool array, etc.
     Values(SmallVec<[CellValue; 1]>),
-    Spill {
-        source: CellId,
-        column: usize,
-        row_range: Range<usize>,
-    },
+    Spill { source: CellRef, len: usize },
 }
 impl BlockContent for CellValueBlockContent {
     type Item = CellValueOrSpill;
@@ -36,36 +35,20 @@ impl BlockContent for CellValueBlockContent {
     fn new(value: Self::Item) -> Self {
         match value {
             CellValueOrSpill::CellValue(value) => Self::Values(smallvec![value]),
-            CellValueOrSpill::Spill {
-                source,
-                column,
-                row,
-            } => Self::Spill {
-                source,
-                column,
-                row_range: row..row + 1,
-            },
+            CellValueOrSpill::Spill { source } => Self::Spill { source, len: 1 },
         }
     }
     fn len(&self) -> usize {
         match self {
             Self::Values(array) => array.len(),
-            Self::Spill { row_range, .. } => row_range.len(),
+            Self::Spill { len, .. } => *len,
         }
     }
 
     fn get(&self, index: usize) -> Self::Item {
         match self {
             Self::Values(array) => array[index].clone().into(),
-            &Self::Spill {
-                source,
-                column,
-                ref row_range,
-            } => CellValueOrSpill::Spill {
-                source,
-                column,
-                row: index - row_range.start,
-            },
+            &Self::Spill { source, .. } => CellValueOrSpill::Spill { source },
         }
     }
     fn set(mut self, index: usize, value: Self::Item) -> smallvec::SmallVec<[Self; 3]> {
@@ -95,7 +78,7 @@ impl BlockContent for CellValueBlockContent {
     }
 
     fn try_merge(self, other: Self) -> Result<Self, [Self; 2]> {
-        todo!("merge blocks")
+        todo!("merge blocks {self:?} and {other:?}")
     }
 
     fn split(self, split_point: usize) -> [Self; 2] {
@@ -105,25 +88,16 @@ impl BlockContent for CellValueBlockContent {
                 let left = array;
                 [Self::Values(left), Self::Values(right)]
             }
-            Self::Spill {
-                source,
-                column,
-                row_range,
-            } => {
-                let mid = split_point - row_range.start;
-                [
-                    Self::Spill {
-                        source,
-                        column,
-                        row_range: row_range.start..mid,
-                    },
-                    Self::Spill {
-                        source,
-                        column,
-                        row_range: mid..row_range.end,
-                    },
-                ]
-            }
+            Self::Spill { source, len } => [
+                Self::Spill {
+                    source,
+                    len: split_point,
+                },
+                Self::Spill {
+                    source,
+                    len: len - split_point,
+                },
+            ],
         }
     }
 }

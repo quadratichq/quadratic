@@ -1,14 +1,47 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+use crate::formulas::BasicValue;
+
+use super::js_structs::Any;
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub enum CellValue {
+    #[default]
     Blank,
     Text(String),
     Number(f64),
     Logical(bool),
-    Error,
+    Error, // TODO: what kind of information to include?
     Instant(Instant),
     Duration(Duration),
+}
+impl From<BasicValue> for CellValue {
+    fn from(basic_value: BasicValue) -> Self {
+        match basic_value {
+            BasicValue::Blank => CellValue::Blank,
+            BasicValue::String(s) => CellValue::Text(s),
+            BasicValue::Number(n) => CellValue::Number(n),
+            BasicValue::Bool(b) => CellValue::Logical(b),
+            BasicValue::Err(_e) => CellValue::Error,
+        }
+    }
+}
+impl From<Any> for CellValue {
+    fn from(value: Any) -> Self {
+        match value {
+            Any::Number(n) => CellValue::Number(n),
+            Any::String(s) => CellValue::Text(s),
+            Any::Boolean(b) => CellValue::Logical(b),
+        }
+    }
+}
+impl From<Option<Any>> for CellValue {
+    fn from(value: Option<Any>) -> Self {
+        match value {
+            Some(v) => v.into(),
+            None => CellValue::Blank,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]

@@ -1,11 +1,16 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::Range;
+use uuid::Uuid;
 
-use super::{formatting::*, Block, BlockContent, CellValueBlockContent, SameValue};
+use super::{
+    block::CellValueOrSpill, formatting::*, value::CellValue, Block, BlockContent,
+    CellValueBlockContent, ColumnId, SameValue,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Column {
+    pub id: ColumnId,
     pub values: ColumnData<CellValueBlockContent>,
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
@@ -15,6 +20,75 @@ pub struct Column {
     pub italic: ColumnData<SameValue<bool>>,
     pub text_color: ColumnData<SameValue<[u8; 3]>>,
     pub fill_color: ColumnData<SameValue<[u8; 3]>>,
+}
+impl Column {
+    pub fn new() -> Self {
+        Column::with_id(ColumnId(Uuid::new_v4()))
+    }
+    pub fn with_id(id: ColumnId) -> Self {
+        Column {
+            id,
+            values: ColumnData::default(),
+            align: ColumnData::default(),
+            wrap: ColumnData::default(),
+            borders: ColumnData::default(),
+            numeric_formats: ColumnData::default(),
+            bold: ColumnData::default(),
+            italic: ColumnData::default(),
+            text_color: ColumnData::default(),
+            fill_color: ColumnData::default(),
+        }
+    }
+
+    pub fn range(&self, ignore_formatting: bool) -> Option<Range<i64>> {
+        if ignore_formatting {
+            self.values.range()
+        } else {
+            crate::util::union_ranges([
+                self.values.range(),
+                self.align.range(),
+                self.wrap.range(),
+                self.borders.range(),
+                self.numeric_formats.range(),
+                self.bold.range(),
+                self.italic.range(),
+                self.text_color.range(),
+                self.fill_color.range(),
+            ])
+        }
+    }
+
+    pub fn has_data(&self) -> bool {
+        !self.values.0.is_empty()
+    }
+    pub fn has_anything(&self) -> bool {
+        self.has_data()
+            || !self.align.0.is_empty()
+            || !self.wrap.0.is_empty()
+            || !self.borders.0.is_empty()
+            || !self.numeric_formats.0.is_empty()
+            || !self.bold.0.is_empty()
+            || !self.italic.0.is_empty()
+            || !self.text_color.0.is_empty()
+            || !self.fill_color.0.is_empty()
+    }
+
+    pub fn has_data_in_row(&self, y: i64) -> bool {
+        self.values
+            .get(y)
+            .is_some_and(|v| v != CellValueOrSpill::CellValue(CellValue::Blank))
+    }
+    pub fn has_anything_in_row(&self, y: i64) -> bool {
+        self.has_data_in_row(y)
+            || self.align.get(y).is_some()
+            || self.wrap.get(y).is_some()
+            || self.borders.get(y).is_some()
+            || self.numeric_formats.get(y).is_some()
+            || self.bold.get(y).is_some()
+            || self.italic.get(y).is_some()
+            || self.text_color.get(y).is_some()
+            || self.fill_color.get(y).is_some()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -31,13 +105,6 @@ impl<B: BlockContent> ColumnData<B> {
     fn get_block_containing(&self, y: i64) -> Option<&Block<B>> {
         self.0
             .range(..=y)
-            .next_back()
-            .map(|(_, block)| block)
-            .filter(|block| block.contains(y))
-    }
-    fn get_block_containing_mut(&mut self, y: i64) -> Option<&mut Block<B>> {
-        self.0
-            .range_mut(..=y)
             .next_back()
             .map(|(_, block)| block)
             .filter(|block| block.contains(y))
@@ -64,6 +131,8 @@ impl<B: BlockContent> ColumnData<B> {
         &self,
         y_range: Range<i64>,
     ) -> impl Iterator<Item = &Block<B>> {
+        // There may be a block starting above `y_range.start` that contains
+        // `y_range`, so find that.
         let first_block = self
             .get_block_containing(y_range.start)
             // filter to avoid double-counting
@@ -87,5 +156,11 @@ impl<B: BlockContent> ColumnData<B> {
             self.add_block(Block::new(y, value));
         }
         // TODO: try merge with blocks above & below
+    }
+
+    pub fn range(&self) -> Option<Range<i64>> {
+        let min = *self.0.first_key_value()?.0;
+        let max = self.0.last_key_value()?.1.end();
+        Some(min..max)
     }
 }
