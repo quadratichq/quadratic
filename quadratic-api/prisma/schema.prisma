@@ -32,8 +32,8 @@ model QFile {
 }
 
 model QFeedback {
-    id            Int      @id @default(autoincrement())
-    feedback      String
-    created_date  DateTime @default(now())
-    qUserId       Int
+    id           Int      @id @default(autoincrement())
+    feedback     String
+    created_date DateTime @default(now())
+    qUserId      Int
 }

@@ -26,14 +26,20 @@ const FilesBackupRequestBody = z.object({
   fileContents: z.any(),
 });
 
-// type FilesBackupRequestBodyType = z.infer<typeof FilesBackupRequestBody>;
-
-files_router.post('/backup', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
+files_router.post('/:uuid', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
+  console.log('here1');
+  console.time('backup');
   const r_json = FilesBackupRequestBody.parse(request.body);
 
+  console.time('db-get');
   const user = await get_user(request);
   const file = await get_file(user, r_json.uuid);
+  if (file?.uuid !== request.params.uuid) {
+    return response.status(400).json({ message: 'URL UUID does not match file UUID.' });
+  }
+  console.timeEnd('db-get');
 
+  console.time('db-write');
   const file_contents = JSON.parse(r_json.fileContents);
   const file_metadata = get_file_metadata(file_contents);
 
@@ -65,8 +71,50 @@ files_router.post('/backup', validateAccessToken, ai_rate_limiter, async (reques
       },
     });
   }
+  console.timeEnd('db-write');
 
+  console.timeEnd('backup');
   response.status(200).json({ message: 'File backup successful.' });
+});
+
+files_router.get('/:uuid', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
+  console.time('read');
+  const r_json = FilesBackupRequestBody.parse(request.body);
+  const user = await get_user(request);
+  const file = await get_file(user, r_json.uuid);
+  if (file?.uuid !== request.params.uuid) {
+    return response.status(400).json({ message: 'URL UUID does not match file UUID.' });
+  }
+
+  if (!file) {
+    return response.status(404).json({ message: 'File not found.' });
+  }
+
+  console.timeEnd('read');
+  response.status(200).json(file);
+});
+
+files_router.get('/', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
+  console.time('listFiles');
+
+  // Ensure the user ID in the params matches the authenticated user ID from the token
+  const user = await get_user(request);
+
+  // Fetch files owned by the user from the database
+  const files = await prisma.qFile.findMany({
+    where: {
+      qUserId: user.id,
+    },
+    select: {
+      uuid: true,
+      name: true,
+      created_date: true,
+      updated_date: true,
+    },
+  });
+
+  console.timeEnd('listFiles');
+  response.status(200).json(files);
 });
 
 export default files_router;
