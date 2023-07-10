@@ -168,7 +168,9 @@ export const CellInput = (props: CellInputProps) => {
         if (value[0] === '$' && !isNaN(parseFloat(value.substring(1).trim()))) {
           value = value.substring(1);
           textFormatSetCurrency();
-          changeAlignment('right');
+          if (!copy?.format?.alignment) {
+            changeAlignment('right');
+          }
         }
         // create cell with value at input location
         await updateCellAndDCells({
