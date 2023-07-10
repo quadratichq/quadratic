@@ -139,7 +139,7 @@ export const BottomBar = (props: Props) => {
         <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
         {!isMobileOnly && (
           <>
-            <span>✓ Python 3.9.5</span>
+            <span>{loadedState.pythonLoaded ? '✓' : <CircularProgress size="0.5rem" />} Python 3.9.5</span>
           </>
         )}
         <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
@@ -152,7 +152,6 @@ export const BottomBar = (props: Props) => {
           <ChatBubbleOutline fontSize="inherit" />
           Feedback
         </span>
-        <span>{loadedState.pythonLoaded ? '✓' : <CircularProgress size="0.5rem" />} Python 3.9.5</span>
         <span
           style={{
             color: '#ffffff',
