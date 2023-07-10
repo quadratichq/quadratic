@@ -14,6 +14,11 @@ beforeAll(async () => {
   await webWorkers.pythonWebWorker?.load();
 });
 
+beforeEach(() => {
+  sc.clear();
+  sc.sheet.newFile();
+});
+
 test('SheetController - cell error', async () => {
   const cell = {
     x: 54,
@@ -38,9 +43,6 @@ test('SheetController - cell error', async () => {
 });
 
 test('SheetController - cell error prev array output', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   const cell_arr = {
     x: 54,
     y: 54,

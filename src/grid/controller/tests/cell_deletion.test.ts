@@ -15,6 +15,11 @@ beforeAll(async () => {
   await webWorkers.pythonWebWorker?.load();
 });
 
+beforeEach(() => {
+  sc.clear();
+  sc.sheet.newFile();
+});
+
 test('SheetController - cell update when being deleted', async () => {
   const cell_0_0 = {
     x: 0,
@@ -62,9 +67,6 @@ test('SheetController - cell update when being deleted', async () => {
 });
 
 test('SheetController - cell bulk update when deleting a range of cells', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet); // makes sheet available to Python
-
   const cell_0_0 = {
     x: 0,
     y: 0,
@@ -137,9 +139,6 @@ test('SheetController - cell bulk update when deleting a range of cells', async 
 });
 
 test('SheetController - delete cell and array cells', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet); // makes sheet available to Python
-
   const cell = {
     x: 0,
     y: 0,

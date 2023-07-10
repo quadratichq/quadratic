@@ -14,9 +14,12 @@ beforeAll(async () => {
   await webWorkers.pythonWebWorker?.load();
 });
 
-test('SheetController - code run correctly', async () => {
-  const sc = new SheetController();
+beforeEach(() => {
+  sc.clear();
+  sc.sheet.newFile();
+});
 
+test('SheetController - code run correctly', async () => {
   const cell = {
     x: 54,
     y: 54,
@@ -38,8 +41,6 @@ test('SheetController - code run correctly', async () => {
 });
 
 test('SheetController - array output undo redo', async () => {
-  const sc = new SheetController();
-
   const cell = {
     x: 0,
     y: 0,
@@ -90,8 +91,6 @@ test('SheetController - array output undo redo', async () => {
 });
 
 test('SheetController - array output length change', async () => {
-  const sc = new SheetController();
-
   const cell = {
     x: 0,
     y: 0,
@@ -206,9 +205,6 @@ test('SheetController - array output length change', async () => {
 });
 
 test('SheetController - test array formula', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   const cell_0_0 = {
     x: 0,
     y: 0,
@@ -261,9 +257,6 @@ test('SheetController - test array formula', async () => {
 });
 
 test('SheetController - test DataFrame resizing', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   const cell_0_0 = {
     x: 0,
     y: 0,
@@ -340,9 +333,6 @@ result`,
 });
 
 test('SheetController - test deleted array cells update dependent cells', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   const cell_1_2_dependent = {
     x: 1,
     y: 2,
@@ -389,9 +379,6 @@ test('SheetController - test deleted array cells update dependent cells', async 
 });
 
 test('SheetController - test formula dependencies', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   const cell_0_0_dependent = {
     x: 0,
     y: 0,
@@ -431,9 +418,6 @@ test('SheetController - test formula dependencies', async () => {
 });
 
 test('SheetController - test empty cell to be `null` in `array_output`', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   // Ensure that blank cells are `null`, e.g. (2,0) should be `null`
   // even when programtically getting cells
   //
