@@ -30,7 +30,9 @@ jobs:
           rustup component list | grep installed
 
       - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        run: |
+          source $HOME/.cargo/env
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - run: npm run build:wasm:nodejs
 
       - uses: actions/setup-python@v4
