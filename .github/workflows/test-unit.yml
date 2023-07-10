@@ -18,8 +18,7 @@ jobs:
 
       - name: Update local rust toolchain
         run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          source "$HOME/.cargo/env"
           rustup update
           rustup component add clippy
           rustup install nightly
@@ -27,7 +26,7 @@ jobs:
         run: |
           cargo --version --verbose
           rustc --version
-          cargo clippy --version
+          rustup component list | grep installed
 
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
