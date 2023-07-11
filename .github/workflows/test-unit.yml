@@ -33,10 +33,11 @@ jobs:
           cache: 'pip'
       - run: pip install -r requirements.txt
 
+      - run: npm install
+
       - name: Install wasm-pack
         run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           npm run build:wasm:nodejs
 
-      - run: npm install
       - run: npm run test:unit:ci
