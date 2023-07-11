@@ -1,6 +1,6 @@
 {
   "name": "pyodide",
-  "version": "0.23.4",
+  "version": "0.21.2",
   "description": "The Pyodide JavaScript package",
   "keywords": [
     "python",
@@ -35,12 +35,13 @@
     "npm-run-all": "^4.1.5",
     "nyc": "^15.1.0",
     "prettier": "^2.2.1",
+    "puppeteer": "^13.6.0",
     "rollup": "^2.48.0",
     "rollup-plugin-terser": "^7.0.2",
     "rollup-plugin-ts": "^2.0.5",
     "terser": "^5.7.0",
     "ts-mocha": "^9.0.2",
-    "tsd": "^0.24.1",
+    "tsd": "^0.15.1",
     "typedoc": "^0.22.15",
     "typescript": "^4.6.4"
   },
@@ -48,27 +49,17 @@
   "exports": {
     ".": {
       "require": "./pyodide.js",
-      "import": "./pyodide.mjs",
-      "types": "./pyodide.d.ts"
+      "import": "./pyodide.mjs"
     },
-    "./pyodide.asm.wasm": "./pyodide.asm.wasm",
-    "./pyodide.asm.js": "./pyodide.asm.js",
-    "./python_stdlib.zip": "./python_stdlib.zip",
     "./pyodide.mjs": "./pyodide.mjs",
     "./pyodide.js": "./pyodide.js",
     "./package.json": "./package.json",
     "./repodata.json": "./repodata.json"
   },
   "files": [
-    "pyodide.asm.js",
-    "pyodide.asm.wasm",
-    "python_stdlib.zip",
-    "pyodide.mjs",
-    "pyodide.js.map",
-    "pyodide.mjs.map",
-    "pyodide.d.ts",
-    "ffi.d.ts",
+    "pyodide*",
     "repodata.json",
+    "distutils.tar",
     "console.html"
   ],
   "browser": {
@@ -77,7 +68,6 @@
     "fs": false,
     "fs/promises": false,
     "path": false,
-    "url": false,
     "vm": false,
     "ws": false
   },
@@ -134,6 +124,5 @@
     "base-64": "^1.0.0",
     "node-fetch": "^2.6.1",
     "ws": "^8.5.0"
-  },
-  "types": "./pyodide.d.ts"
+  }
 }

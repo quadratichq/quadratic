@@ -119,8 +119,9 @@
     "fs-extra": "^11.1.0",
     "msdf-bmfont-xml": "^2.7.0",
     "prettier": "2.8.3",
-    "pyodide": "^0.23.4",
+    "pyodide": "^0.22.0",
     "ts-jest": "^29.0.3",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.1",
+    "wait-on": "^7.0.1"
   }
 }
