@@ -98,6 +98,31 @@ class APIClientSingleton {
       });
     }
   }
+
+  async postFeedback({ feedback, userEmail }: { feedback: string; userEmail?: string }): Promise<boolean> {
+    try {
+      const url = `${this.getAPIURL()}/v0/feedback`;
+      const body = JSON.stringify({ feedback, userEmail });
+      const token = await this.getAuth();
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body,
+      });
+      if (!response.ok) {
+        throw new Error(`Unexpected response: ${response.status} ${response.statusText}`);
+      }
+      return true;
+    } catch (error) {
+      Sentry.captureException({
+        message: `API Error Catch \`/v0/feedback\`: ${error}`,
+      });
+      return false;
+    }
+  }
 }
 
 export default APIClientSingleton.getInstance();

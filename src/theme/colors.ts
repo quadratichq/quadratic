@@ -16,6 +16,7 @@ export const colors = {
   boxCellsDeleteColor: Number(`0x${red['400'].replace('#', '')}`),
   boxCellsColor: 0x6cd4ff,
   boxCellsAlpha: 0.333,
+  gridHeadingBorder: 0xcfd7de,
   defaultBorderColor: 0,
   lightGray: '#f6f8fa',
   mediumGray: '#cfd7de',

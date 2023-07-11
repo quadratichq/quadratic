@@ -165,7 +165,7 @@ export class GridHeadings extends Container {
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
       currentWidth = gridOffsets.getColumnWidth(column);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
+        this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 0.5 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(x, bounds.top);
         this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
         this.gridLinesColumns.push({ column: column - 1, x, width: gridOffsets.getColumnWidth(column - 1) });
@@ -281,7 +281,7 @@ export class GridHeadings extends Container {
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = gridOffsets.getRowHeight(row);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(1, colors.cursorCell, 0.25 * gridAlpha, 0.5, true);
+        this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 0.5 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(bounds.left, y);
         this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
         this.gridLinesRows.push({ row: row - 1, y, height: gridOffsets.getRowHeight(row - 1) });
@@ -345,7 +345,7 @@ export class GridHeadings extends Container {
     const { viewport } = this.app;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
-    this.headingsGraphics.lineStyle(1, colors.cursorCell, 0.25, 0.5, true);
+    this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 1, 0.5, true);
     this.headingsGraphics.moveTo(bounds.left + this.rowWidth, viewport.top);
     this.headingsGraphics.lineTo(bounds.left + this.rowWidth, viewport.bottom);
     this.headingsGraphics.moveTo(bounds.left, bounds.top + cellHeight);
@@ -409,32 +409,16 @@ export class GridHeadings extends Container {
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
-          // resizing at origin is undefined
-          if (line.column === -1) return;
-
-          if (line.column < 0) {
-            const start = gridOffsets.getColumnPlacement(line.column);
-            return { start: start.x, column: line.column, width: start.width };
-          } else {
-            const start = gridOffsets.getColumnPlacement(line.column);
-            return { start: start.x, column: line.column, width: line.width };
-          }
+          const start = gridOffsets.getColumnPlacement(line.column);
+          return { start: start.x, column: line.column, width: line.width };
         }
       }
     }
     if (intersects.rectanglePoint(this.rowRect, world)) {
       for (const line of this.gridLinesRows) {
         if (Math.abs(world.y - line.y) < tolerance) {
-          // resizing at origin is undefined
-          if (line.row === -1) return;
-
-          if (line.row < 0) {
-            const start = gridOffsets.getRowPlacement(line.row + 1);
-            return { start: start.y, row: line.row + 1, height: start.height };
-          } else {
-            const start = gridOffsets.getRowPlacement(line.row);
-            return { start: start.y, row: line.row, height: line.height };
-          }
+          const start = gridOffsets.getRowPlacement(line.row);
+          return { start: start.y, row: line.row, height: line.height };
         }
       }
     }

@@ -106,8 +106,8 @@ export class PointerAutoComplete {
       if (!setInteractionState) throw new Error('Expected setInteractionState to be defined in PointerAutoComplete');
 
       // handle dragging from the corner
-      if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
-      } else if (this.active) {
+      // if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
+      if (this.active) {
         const { column, row } = this.app.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
         const { selection, screenSelection } = this;
         if (!selection || !screenSelection) {
@@ -135,6 +135,7 @@ export class PointerAutoComplete {
           rectangle.height = row - selection.y + 1;
         } else {
           this.stateVertical = undefined;
+          this.toVertical = undefined;
         }
 
         if (column === selection.left && selection.left === selection.right) {
@@ -164,6 +165,7 @@ export class PointerAutoComplete {
           rectangle.width = column - selection.x + 1;
         } else {
           this.stateHorizontal = undefined;
+          this.toHorizontal = undefined;
         }
         this.app.boxCells.populate({
           gridRectangle: rectangle,

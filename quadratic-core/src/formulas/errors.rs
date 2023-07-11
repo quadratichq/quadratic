@@ -4,10 +4,10 @@ use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
 
-use super::Span;
+use super::{ArraySize, Axis, Span};
 
 /// Error message and accompanying span.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FormulaError {
     /// Location of the source code where the error occurred (if any).
     pub span: Option<Span>,
@@ -48,23 +48,48 @@ pub enum FormulaErrorMsg {
         got: Option<Cow<'static, str>>,
     },
     Unexpected(Cow<'static, str>),
-    ArraySizeMismatch {
-        expected: (usize, usize),
-        got: (usize, usize),
+    TooManyArguments {
+        func_name: &'static str,
+        max_arg_count: usize,
     },
-    NonRectangularArray,
-    BadArgumentCount,
+    MissingRequiredArgument {
+        func_name: &'static str,
+        arg_name: &'static str,
+    },
     BadFunctionName,
     BadCellReference,
     BadNumber,
+
+    // Array size errors
+    ExactArraySizeMismatch {
+        expected: ArraySize,
+        got: ArraySize,
+    },
+    ExactArrayAxisMismatch {
+        axis: Axis,
+        expected: u32,
+        got: u32,
+    },
+    ArrayAxisMismatch {
+        axis: Axis,
+        expected: u32,
+        got: u32,
+    },
+    EmptyArray,
+    NonRectangularArray,
+    NonLinearArray,
+    ArrayTooBig,
 
     // Runtime errors
     CircularReference,
     Overflow,
     DivideByZero,
     NegativeExponent,
+    NotANumber,
+    Infinity,
     IndexOutOfBounds,
-    ArrayTooBig,
+    NoMatch,
+    InvalidArgument,
 }
 impl fmt::Display for FormulaErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -87,16 +112,25 @@ impl fmt::Display for FormulaErrorMsg {
                 None => write!(f, "Expected {expected}"),
             },
             Self::Unexpected(got) => write!(f, "Unexpected {got}"),
-            Self::ArraySizeMismatch { expected, got } => {
-                write!(f, "Array size mismatch: expected {expected:?}, got {got:?}")
+            Self::TooManyArguments {
+                func_name,
+                max_arg_count,
+            } => {
+                write!(
+                    f,
+                    "Too many arguments (`{func_name}` \
+                     expects at most {max_arg_count})",
+                )
             }
-            Self::NonRectangularArray => {
-                write!(f, "Array must be rectangular")
-            }
-            Self::BadArgumentCount => {
-                // TODO: give a nicer error message that says what the arguments
-                // should be
-                write!(f, "Bad argument count")
+            Self::MissingRequiredArgument {
+                func_name,
+                arg_name,
+            } => {
+                write!(
+                    f,
+                    "Function `{func_name}` is missing \
+                     required argument `{arg_name}`",
+                )
             }
             Self::BadFunctionName => {
                 write!(f, "There is no function with this name")
@@ -106,6 +140,57 @@ impl fmt::Display for FormulaErrorMsg {
             }
             Self::BadNumber => {
                 write!(f, "Bad numeric literal")
+            }
+
+            Self::ExactArraySizeMismatch { expected, got } => {
+                write!(
+                    f,
+                    "Array size mismatch: expected \
+                     {expected} array, got {got} array",
+                )
+            }
+            Self::ExactArrayAxisMismatch {
+                axis,
+                expected,
+                got,
+            } => {
+                write!(
+                    f,
+                    "Array {} mismatch: expected value with {}, got {}",
+                    axis.width_height_str(),
+                    axis.rows_cols_str(*expected),
+                    axis.rows_cols_str(*got),
+                )
+            }
+            Self::ArrayAxisMismatch {
+                axis,
+                expected,
+                got,
+            } => {
+                write!(
+                    f,
+                    "Array {} mismatch: expected value with {}{}, got {}",
+                    axis.width_height_str(),
+                    if *expected == 1 {
+                        String::new()
+                    } else {
+                        axis.rows_cols_str(1) + " or "
+                    },
+                    axis.rows_cols_str(*expected),
+                    axis.rows_cols_str(*got),
+                )
+            }
+            Self::EmptyArray => {
+                write!(f, "Array cannot be empty")
+            }
+            Self::NonRectangularArray => {
+                write!(f, "Array must be rectangular")
+            }
+            Self::NonLinearArray => {
+                write!(f, "Array must be a single row or column")
+            }
+            Self::ArrayTooBig => {
+                write!(f, "Array is too big")
             }
 
             Self::CircularReference => {
@@ -120,11 +205,20 @@ impl fmt::Display for FormulaErrorMsg {
             Self::NegativeExponent => {
                 write!(f, "Negative exponent")
             }
+            Self::NotANumber => {
+                write!(f, "NaN")
+            }
+            Self::Infinity => {
+                write!(f, "Infinite value")
+            }
             Self::IndexOutOfBounds => {
                 write!(f, "Index out of bounds")
             }
-            Self::ArrayTooBig => {
-                write!(f, "Array is too big")
+            Self::NoMatch => {
+                write!(f, "No match found")
+            }
+            Self::InvalidArgument => {
+                write!(f, "Invalid argument")
             }
         }
     }

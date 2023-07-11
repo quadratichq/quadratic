@@ -10,6 +10,8 @@ import { isMobileOnly } from 'react-device-detect';
 import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { ChatBubbleOutline } from '@mui/icons-material';
+import { ActiveSelectionStats } from './ActiveSelectionStats';
 
 interface Props {
   sheet: Sheet;
@@ -20,9 +22,15 @@ export const BottomBar = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
+  const {
+    showMultiCursor,
+    cursorPosition,
+    multiCursorPosition: { originPosition, terminalPosition },
+  } = interactionState;
+
   // Generate string describing cursor location
-  const cursorPositionString = `(${interactionState.cursorPosition.x}, ${interactionState.cursorPosition.y})`;
-  const multiCursorPositionString = `(${interactionState.multiCursorPosition.originPosition.x}, ${interactionState.multiCursorPosition.originPosition.y}), (${interactionState.multiCursorPosition.terminalPosition.x}, ${interactionState.multiCursorPosition.terminalPosition.y})`;
+  const cursorPositionString = `(${cursorPosition.x}, ${cursorPosition.y})`;
+  const multiCursorPositionString = `(${originPosition.x}, ${originPosition.y}), (${terminalPosition.x}, ${terminalPosition.y})`;
 
   useEffect(() => {
     const updateCellData = async () => {
@@ -90,7 +98,7 @@ export const BottomBar = (props: Props) => {
         <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
           Cursor: {cursorPositionString}
         </span>
-        {interactionState.showMultiCursor && (
+        {showMultiCursor && (
           <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
             Selection: {multiCursorPositionString}
           </span>
@@ -125,8 +133,22 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
-        {!isMobileOnly && <span>✓ Python 3.9.5</span>}
+        <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
+        {!isMobileOnly && (
+          <>
+            <span>✓ Python 3.9.5</span>
+          </>
+        )}
         <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
+        <span
+          style={{ display: 'flex', alignItems: 'center', gap: '.25rem', cursor: 'pointer' }}
+          onClick={() => {
+            setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
+          }}
+        >
+          <ChatBubbleOutline fontSize="inherit" />
+          Feedback
+        </span>
         <span
           style={{
             color: '#ffffff',

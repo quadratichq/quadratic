@@ -19,7 +19,7 @@ import { HEADING_SIZE } from '../../constants/gridConstants';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../constants/app';
-import { Wheel } from '../pixiOverride/Wheel';
+import { Wheel, ZOOM_KEY, HORIZONTAL_SCROLL_KEY } from '../pixiOverride/Wheel';
 import { BoxCells } from '../UI/boxCells';
 
 export class PixiApp {
@@ -95,7 +95,7 @@ export class PixiApp {
         trackpadPinch: true,
         wheelZoom: true,
         percent: 1.5,
-        keyToPress: ['ControlKey', 'ControlLeft', 'ControlRight', 'MetaKey', 'MetaLeft', 'MetaRight'],
+        keyToPress: [...ZOOM_KEY, ...HORIZONTAL_SCROLL_KEY],
       })
     );
 
@@ -221,7 +221,7 @@ export class PixiApp {
   }
 
   // called before and after a quadrant render
-  prepareForQuadrantRendering(options?: { gridLines: boolean }): Container {
+  prepareForCopying(options?: { gridLines: boolean }): Container {
     this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;
@@ -233,7 +233,7 @@ export class PixiApp {
     return this.viewportContents;
   }
 
-  cleanUpAfterQuadrantRendering(): void {
+  cleanUpAfterCopying(): void {
     this.gridLines.visible = true;
     this.axesLines.visible = true;
     this.cursor.visible = true;
@@ -273,5 +273,21 @@ export class PixiApp {
     }
     this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
     this.settings.setInteractionState?.(gridInteractionStateDefault);
+  }
+
+  // Pre-renders quadrants by cycling through one quadrant per frame
+  preRenderQuadrants(resolve?: () => void): Promise<void> {
+    return new Promise((_resolve) => {
+      if (!resolve) {
+        resolve = _resolve;
+      }
+      this.quadrants.update(0);
+      if (this.quadrants.needsUpdating()) {
+        // the timeout allows the quadratic logo animation to appear smooth
+        setTimeout(() => this.preRenderQuadrants(resolve), 100);
+      } else {
+        resolve();
+      }
+    });
   }
 }

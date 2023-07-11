@@ -21,6 +21,7 @@ import { IS_READONLY_MODE } from '../constants/app';
 import { useLocalFiles } from './contexts/LocalFiles';
 import ShareMenu from './menus/ShareMenu';
 import SharedFileAlert from './components/SharedFileAlert';
+import FeedbackMenu from './menus/FeedbackMenu';
 
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
@@ -73,6 +74,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       </div>
 
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
+      {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {presentationMode && <PresentationModeHint />}
       {hasInitialPageLoadError && <InitialPageLoadError />}
 

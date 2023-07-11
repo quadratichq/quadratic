@@ -14,7 +14,6 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import mixpanel from 'mixpanel-browser';
-import { focusGrid } from '../helpers/focusGrid';
 const INDEX = 'file-list';
 
 export interface LocalFile {

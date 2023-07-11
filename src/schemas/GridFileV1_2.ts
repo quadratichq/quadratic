@@ -2,7 +2,7 @@ import z from 'zod';
 import { GridFileV1_1 } from './GridFileV1_1';
 
 // Shared schemas
-const ArrayOutputSchema = z.array(z.union([z.string(), z.number(), z.boolean()]));
+const ArrayOutputBaseSchema = z.array(z.any());
 const BorderDirectionSchema = z.object({
   color: z.string().optional(),
   type: z.enum(['line1', 'line2', 'line3', 'dotted', 'dashed', 'double']).optional(),
@@ -37,7 +37,7 @@ export const GridFileSchemaV1_2 = z.object({
           std_err: z.string().optional(),
           output_value: z.string().or(z.null()).or(z.undefined()),
           cells_accessed: z.tuple([z.number(), z.number()]).array(),
-          array_output: z.union([ArrayOutputSchema, z.array(ArrayOutputSchema)]).optional(), // 1 or 2d array
+          array_output: z.union([ArrayOutputBaseSchema, z.array(ArrayOutputBaseSchema)]).optional(), // 1 or 2d array
           formatted_code: z.string(),
           error_span: z.tuple([z.number(), z.number()]).or(z.null()),
         })
@@ -97,6 +97,7 @@ export const GridFileSchemaV1_2 = z.object({
   version: z.literal('1.2'),
 });
 export type GridFileV1_2 = z.infer<typeof GridFileSchemaV1_2>;
+export type ArrayOutputBase = z.infer<typeof ArrayOutputBaseSchema>;
 
 /**
  * Given a v1_1 file, update it to a v1_2 file
