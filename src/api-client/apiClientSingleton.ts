@@ -1,6 +1,7 @@
 import { Auth0ContextInterface } from '@auth0/auth0-react';
 import { GridFile } from '../schemas';
 import * as Sentry from '@sentry/react';
+const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
 
 class APIClientSingleton {
   // Allow only one instance of the class to be created
@@ -30,13 +31,45 @@ class APIClientSingleton {
   }
 
   getAPIURL() {
-    if (!process.env.REACT_APP_QUADRATIC_API_URL) {
+    if (!API_URL) {
       throw new Error('REACT_APP_QUADRATIC_API_URL not set');
     }
-    return process.env.REACT_APP_QUADRATIC_API_URL;
+    return API_URL;
+  }
+
+  // Fetch a file from the DB
+  async getFile(id: string): Promise<GridFile | undefined> {
+    // TODO should we hide the share button when that is not configured? (e.g. locally)
+    if (!API_URL) return;
+
+    try {
+      const base_url = this.getAPIURL();
+
+      const response = await fetch(`${base_url}/v0/files/${id}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${await this.getAuth()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
+      }
+      const file: GridFile = await response.json();
+
+      return file;
+    } catch (error) {
+      console.error(error);
+      Sentry.captureException({
+        message: `API Error Catch: Failed to fetch \`/files\`. ${error}`,
+      });
+    }
   }
 
   async backupFile(id: string, fileContents: GridFile) {
+    if (!API_URL) return;
+
     try {
       const base_url = this.getAPIURL();
 

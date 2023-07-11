@@ -3,7 +3,7 @@ import { validateAccessToken } from '../middleware/auth';
 import { Request as JWTRequest } from 'express-jwt';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, QFile, QUser } from '@prisma/client';
 import { get_user } from '../helpers/get_user';
 import { get_file } from '../helpers/get_file';
 import { get_file_metadata } from '../helpers/read_file';
@@ -29,6 +29,7 @@ const FilesBackupRequestBody = z.object({
 files_router.post('/:uuid', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
   console.log('here1');
   console.time('backup');
+
   const r_json = FilesBackupRequestBody.parse(request.body);
 
   console.time('db-get');
