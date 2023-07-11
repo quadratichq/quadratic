@@ -1,6 +1,8 @@
 import { Auth0ContextInterface } from '@auth0/auth0-react';
 import { GridFile } from '../schemas';
 import * as Sentry from '@sentry/react';
+import { downloadFile } from '../helpers/downloadFile';
+import mixpanel from 'mixpanel-browser';
 const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
 
 class APIClientSingleton {
@@ -44,7 +46,6 @@ class APIClientSingleton {
 
     try {
       const base_url = this.getAPIURL();
-
       const response = await fetch(`${base_url}/v0/files/${id}`, {
         method: 'GET',
         headers: {
@@ -63,6 +64,25 @@ class APIClientSingleton {
       console.error(error);
       Sentry.captureException({
         message: `API Error Catch: Failed to fetch \`/files\`. ${error}`,
+      });
+    }
+  }
+
+  async downloadFile(id: string): Promise<void> {
+    mixpanel.track('[APIClient].downloadFile', { id });
+    try {
+      const file = await this.getFile(id);
+      if (!file) {
+        throw new Error('Failed to fetch file.');
+      }
+      // TODO types are wrong here
+      // file.name is from the db, file.filename is in the filecontents
+      // @ts-expect-error
+      downloadFile(file.name, JSON.stringify(file));
+    } catch (error) {
+      console.error(error);
+      Sentry.captureException({
+        message: `API Error Catch: Failed to download \`/files/${id}\`. ${error}`,
       });
     }
   }

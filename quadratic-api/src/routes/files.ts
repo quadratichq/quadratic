@@ -94,19 +94,24 @@ files_router.delete('/:uuid', validateAccessToken, ai_rate_limiter, async (reque
 });
 
 files_router.get('/:uuid', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
-  console.time('read');
-  const r_json = FilesBackupRequestBody.parse(request.body);
-  const user = await get_user(request);
-  const file = await get_file(user, r_json.uuid);
-  if (file?.uuid !== request.params.uuid) {
-    return response.status(400).json({ message: 'URL UUID does not match file UUID.' });
+  console.time('GET /files/:uuid');
+
+  // Validate request format
+  const schema = z.string().uuid();
+  const result = schema.safeParse(request.params.uuid);
+  if (!result.success) {
+    console.log(result.error.issues);
+    return response.status(400).json({ message: 'Invalid file UUID.' });
   }
 
+  // Ensure file exists and user can access it
+  const user = await get_user(request);
+  const file = await get_file(user, result.data);
   if (!file) {
     return response.status(404).json({ message: 'File not found.' });
   }
 
-  console.timeEnd('read');
+  console.timeEnd('GET /files/:uuid');
   response.status(200).json(file);
 });
 

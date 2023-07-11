@@ -19,6 +19,7 @@ import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-ma
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useLocalFiles } from '../../../contexts/LocalFiles';
 import { focusGrid } from '../../../../helpers/focusGrid';
+import apiClientSingleton from '../../../../api-client/apiClientSingleton';
 
 interface Props {
   sheetController: SheetController;
@@ -30,7 +31,10 @@ export const QuadraticMenu = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
 
-  const { createNewFile, downloadCurrentFile } = useLocalFiles();
+  const { createNewFile, currentFileId } = useLocalFiles();
+  const downloadCurrentFile = () => {
+    apiClientSingleton.downloadFile(currentFileId);
+  };
 
   const { isAuthenticated, user, logout } = useAuth0();
 

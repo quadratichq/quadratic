@@ -39,18 +39,11 @@ import {
 import { DOCUMENTATION_FILES_URL } from '../../../constants/urls';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
+import apiClientSingleton from '../../../api-client/apiClientSingleton';
 
 export function FileMenu() {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  const {
-    currentFileId,
-    currentFilename,
-    deleteFile,
-    downloadFileFromMemory,
-    fileList,
-    loadFileFromMemory,
-    createNewFile,
-  } = useLocalFiles();
+  const { currentFileId, currentFilename, deleteFile, fileList, loadFileFromMemory, createNewFile } = useLocalFiles();
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const onClose = () => {
@@ -154,7 +147,7 @@ export function FileMenu() {
                               <IconButton
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  downloadFileFromMemory(id);
+                                  apiClientSingleton.downloadFile(id);
                                 }}
                               >
                                 <FileDownloadOutlined />

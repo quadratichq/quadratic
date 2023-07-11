@@ -7,7 +7,6 @@ import { validateGridFile } from '../schemas/validateGridFile';
 import { debugShowFileIO } from '../debugFlags';
 import { v4 as uuid } from 'uuid';
 import { getSearchParams, updateSearchParamsInUrl } from '../helpers/searchParams';
-import { downloadFile } from '../helpers/downloadFile';
 import { SheetController } from '../grid/controller/sheetController';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
@@ -30,8 +29,6 @@ export interface LocalFiles {
   currentFileIsPublic: boolean;
   currentFileIsReadOnly: boolean;
   deleteFile: (id: string) => void;
-  downloadCurrentFile: () => void;
-  downloadFileFromMemory: (id: string) => void;
   fileList: LocalFile[];
   initialize: () => Promise<void>;
   loadFileFromMemory: (id: string) => Promise<boolean>;
@@ -221,37 +218,6 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     ]);
     resetSheet(newFile);
   }, [resetSheet, fileList]);
-
-  // Download the currently active file
-  const downloadCurrentFile = useCallback(() => {
-    if (!currentFileContents) return;
-    const data: GridFile = {
-      ...currentFileContents,
-      ...sheet.export_file(),
-    };
-
-    downloadFile(data.filename, JSON.stringify(data));
-  }, [currentFileContents, sheet]);
-
-  // Given a file ID, download it
-  const downloadFileFromMemory = useCallback(
-    async (id: string): Promise<void> => {
-      mixpanel.track('[Files].downloadFileFromMemory', { id });
-      try {
-        if (currentFileContents && currentFileContents.id === id) {
-          downloadCurrentFile();
-        }
-
-        const file = (await localforage.getItem(id)) as GridFile;
-        if (file) {
-          downloadFile(file.filename, JSON.stringify(file));
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    },
-    [currentFileContents, downloadCurrentFile]
-  );
 
   // Rename the current file open in the app
   const renameCurrentFile = useCallback(
@@ -517,8 +483,6 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     currentFileIsPublic,
     currentFileIsReadOnly,
     deleteFile,
-    downloadCurrentFile,
-    downloadFileFromMemory,
     fileList,
     initialize,
     loadFileFromDisk,

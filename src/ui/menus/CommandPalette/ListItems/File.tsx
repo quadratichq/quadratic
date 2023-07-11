@@ -6,6 +6,7 @@ import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useLocalFiles } from '../../../contexts/LocalFiles';
+import apiClientSingleton from '../../../../api-client/apiClientSingleton';
 
 const ListItems = [
   {
@@ -18,8 +19,11 @@ const ListItems = [
   {
     label: 'File: Download local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { downloadCurrentFile } = useLocalFiles();
-      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => downloadCurrentFile()} />;
+      const { currentFileId } = useLocalFiles();
+      const downloadCurrentFile = () => {
+        apiClientSingleton.downloadFile(currentFileId);
+      };
+      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={downloadCurrentFile} />;
     },
   },
   {
