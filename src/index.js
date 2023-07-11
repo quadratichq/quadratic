@@ -4,8 +4,10 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import * as Sentry from '@sentry/react';
+import { Route, RouterProvider, createRoutesFromElements, createBrowserRouter } from 'react-router-dom';
 import { BrowserTracing } from '@sentry/tracing';
-import { Auth0Provider } from '@auth0/auth0-react';
+
+import { Auth0ProviderWithNavigate } from './auth0-provider-with-navigate';
 
 // Enable sentry only if SENTRY_DSN is in ENV
 if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'none')
@@ -18,17 +20,22 @@ if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'no
     tracesSampleRate: 1.0,
   });
 
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route
+      path="/"
+      element={
+        <Auth0ProviderWithNavigate>
+          <App />
+        </Auth0ProviderWithNavigate>
+      }
+    ></Route>
+  )
+);
+
 ReactDOM.render(
   <React.StrictMode>
-    <Auth0Provider
-      domain={process.env.REACT_APP_AUTH0_DOMAIN}
-      clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
-      audience={process.env.REACT_APP_AUTH0_AUDIENCE}
-      issuer={process.env.REACT_APP_AUTH0_ISSUER}
-      redirectUri={window.location.origin}
-    >
-      <App />
-    </Auth0Provider>
+    <RouterProvider router={router} />
   </React.StrictMode>,
   document.getElementById('root')
 );
