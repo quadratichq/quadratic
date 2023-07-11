@@ -1,5 +1,5 @@
+import { isStringANumber } from '../../../../helpers/isStringANumber';
 import { Cell } from '../../../../schemas';
-import { isStringANumber } from '../../../helpers/isStringANumber';
 import { getSeriesNextKey, isSeriesKey, isSeriesNextKey, textSeries } from './textSeries';
 
 interface Series {
