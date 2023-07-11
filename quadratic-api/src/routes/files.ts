@@ -78,6 +78,21 @@ files_router.post('/:uuid', validateAccessToken, ai_rate_limiter, async (request
   response.status(200).json({ message: 'File backup successful.' });
 });
 
+files_router.delete('/:uuid', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
+  console.time('delete');
+  // const uuid = request.params.uuid;
+  console.log(request.params.uuid);
+
+  // TODO ensure user has ability to delete given file
+  // await prisma.qFile.delete({
+  //   where: {
+  //     id: uuid,
+  //   },
+  // })
+  response.status(200).json({ message: 'File delete successful.' });
+  console.timeEnd('delete');
+});
+
 files_router.get('/:uuid', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
   console.time('read');
   const r_json = FilesBackupRequestBody.parse(request.body);
