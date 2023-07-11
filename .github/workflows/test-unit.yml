@@ -7,7 +7,7 @@ on:
 
 jobs:
   test_unit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-4-cores
 
     steps:
       - uses: actions/checkout@v2
@@ -15,11 +15,6 @@ jobs:
         with:
           node-version: '19'
           cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential
 
       - name: Update local rust toolchain
         run: |
@@ -30,18 +25,12 @@ jobs:
         run: |
           cargo --version --verbose
           rustc --version
-          rustup component list | grep installed
+          cargo clippy --version
 
       - name: Install wasm-pack
         run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           npm run build:wasm:nodejs
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-          cache: 'pip'
-      - run: pip install -r requirements.txt
 
       - run: npm install
       - run: npm run test:unit:ci
