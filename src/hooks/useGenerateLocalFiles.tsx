@@ -106,7 +106,6 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       sheetController.sheet.load_file(grid);
       sheetController.app?.rebuild();
       sheetController.app?.reset();
-      focusGrid();
 
       // Update URL to the new file we just loaded
       const { id, isPublic } = grid;
