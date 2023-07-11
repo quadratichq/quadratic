@@ -8,6 +8,9 @@ export class PythonWebWorker {
   private loaded = false;
 
   constructor(webWorkers: WebWorkers) {
+    // do not initialize if we are running jest
+    if (process.env.JEST_WORKER_ID !== undefined) throw new Error('Jest is running');
+
     this.webWorkers = webWorkers;
 
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
