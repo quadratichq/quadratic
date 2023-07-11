@@ -10,7 +10,7 @@ import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
 import { CellFormat } from '../../schemas';
 import { useFormatCells } from '../../ui/menus/TopBar/SubMenus/useFormatCells';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
-import { isStringANumber } from '../../helpers/isStringANumber';
+import { isStringANumberWithCommas } from '../../helpers/isStringANumber';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -166,9 +166,8 @@ export const CellInput = (props: CellInputProps) => {
           });
       } else {
         // convert to dollars
-        if (value[0] === '$' && isStringANumber(value.substring(1).replaceAll(',', ''))) {
+        if (value[0] === '$' && isStringANumberWithCommas(value.substring(1))) {
           const amount = parseFloat(value.substring(1).replaceAll(',', ''));
-          console.log(amount, value, value.substring(1).trim());
           textFormatSetCurrency();
           if (!copy?.format?.alignment) {
             changeAlignment('right');

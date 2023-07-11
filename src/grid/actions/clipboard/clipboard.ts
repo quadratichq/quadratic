@@ -9,6 +9,7 @@ import { clearFormattingAction } from '../clearFormattingAction';
 import { clearBordersAction } from '../clearBordersAction';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
+import { isStringANumberWithCommas } from '../../../helpers/isStringANumber';
 
 const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.1';
 
@@ -151,8 +152,9 @@ const pasteFromText = async (sheet_controller: SheetController, pasteToCell: Coo
     // build api payload
     let cells_to_write: Cell[] = [];
     let cells_to_delete: Coordinate[] = [];
-
     let str_rows: string[] = clipboard_text.split('\n');
+
+    sheet_controller.start_transaction();
 
     // for each copied row
     str_rows.forEach((str_row) => {
@@ -160,6 +162,29 @@ const pasteFromText = async (sheet_controller: SheetController, pasteToCell: Coo
 
       // for each copied cell
       str_cells.forEach((str_cell) => {
+        // convert to currency when pasting
+        if (str_cell[0] === '$' && isStringANumberWithCommas(str_cell.substring(1))) {
+          const amount = parseFloat(str_cell.substring(1).replaceAll(',', ''));
+          const existingFormat = sheet_controller.sheet.getCellAndFormatCopy(cell_x, cell_y)?.format || {
+            x: cell_x,
+            y: cell_y,
+          };
+          const format: CellFormat = {
+            ...existingFormat,
+            textFormat: { type: 'CURRENCY', display: 'CURRENCY', symbol: 'USD' },
+          };
+          if (!existingFormat?.alignment) {
+            format.alignment = 'right';
+          }
+          sheet_controller.execute_statement({
+            type: 'SET_CELL_FORMAT',
+            data: {
+              position: [cell_x, cell_y],
+              value: format,
+            },
+          });
+          str_cell = amount.toString();
+        }
         // update or clear cell
         if (str_cell !== '') {
           cells_to_write.push({
@@ -191,7 +216,10 @@ const pasteFromText = async (sheet_controller: SheetController, pasteToCell: Coo
     await updateCellAndDCells({
       starting_cells: cells_to_write,
       sheetController: sheet_controller,
+      create_transaction: false,
     });
+
+    sheet_controller.end_transaction();
 
     // cells_to_delete
 
