@@ -101,7 +101,14 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
 
   // Reset the sheet to the current file in state, update the URL accordingly
   const resetSheet = useCallback(
-    (grid: GridFile) => {
+    (grid?: GridFile) => {
+      // If there's no new sheet, just update the URL
+      if (!grid) {
+        updateSearchParamsInUrl(new URLSearchParams());
+        return;
+      }
+
+      // Update the sheet with new data
       sheetController.clear();
       sheetController.sheet.load_file(grid);
       sheetController.app?.rebuild();
@@ -326,12 +333,19 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   );
 
   // Delete a file (cannot delete a file that's currently active)
-  const deleteFile = useCallback(async (id: string) => {
-    mixpanel.track('[Files].deleteFile', { id });
-    setFileList((oldFileList) => oldFileList.filter((entry) => entry.id !== id));
-    await localforage.removeItem(id);
-    log(`deleted file: ${id}`);
-  }, []);
+  const deleteFile = useCallback(
+    async (id: string) => {
+      mixpanel.track('[Files].deleteFile', { id });
+      if (currentFileId === id) {
+        setCurrentFileContents(null);
+        resetSheet();
+      }
+      setFileList((oldFileList) => oldFileList.filter((entry) => entry.id !== id));
+      await localforage.removeItem(id);
+      log(`deleted file: ${id}`);
+    },
+    [currentFileId, resetSheet]
+  );
 
   // Save the active file
   const save = useCallback(async (): Promise<void> => {

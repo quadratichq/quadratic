@@ -137,20 +137,19 @@ export function FileMenu() {
                         }}
                         secondaryAction={
                           <div style={styles.iconBtns}>
-                            {!fileIsOpen && (
-                              <TooltipHint title="Delete" enterDelay={1000}>
-                                <IconButton
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (window.confirm(`Please confirm you want to delete the file “${filename}”`)) {
-                                      deleteFile(id);
-                                    }
-                                  }}
-                                >
-                                  <DeleteOutline />
-                                </IconButton>
-                              </TooltipHint>
-                            )}
+                            <TooltipHint title="Delete" enterDelay={1000}>
+                              <IconButton
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`Please confirm you want to delete the file “${filename}”`)) {
+                                    deleteFile(id);
+                                  }
+                                }}
+                              >
+                                <DeleteOutline />
+                              </IconButton>
+                            </TooltipHint>
+
                             <TooltipHint title="Download local copy" enterDelay={1000}>
                               <IconButton
                                 onClick={(e) => {
