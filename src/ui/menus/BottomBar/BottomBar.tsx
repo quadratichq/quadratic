@@ -10,10 +10,12 @@ import { isMobileOnly } from 'react-device-detect';
 import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { ChatBubbleOutline } from '@mui/icons-material';
+import { ChatBubbleOutline, Check } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import { ActiveSelectionStats } from './ActiveSelectionStats';
+
+const stylesAlignCenter = { display: 'flex', alignItems: 'center', gap: '.25rem' };
 
 interface Props {
   sheet: Sheet;
@@ -139,12 +141,17 @@ export const BottomBar = (props: Props) => {
         <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
         {!isMobileOnly && (
           <>
-            <span>{loadedState.pythonLoaded ? '✓' : <CircularProgress size="0.5rem" />} Python 3.9.5</span>
+            <span style={stylesAlignCenter}>
+              {loadedState.pythonLoaded ? <Check fontSize="inherit" /> : <CircularProgress size="0.5rem" />} Python
+              3.9.5
+            </span>
           </>
         )}
-        <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
+        <span style={stylesAlignCenter}>
+          <Check fontSize="inherit" /> Quadratic {process.env.REACT_APP_VERSION}
+        </span>
         <span
-          style={{ display: 'flex', alignItems: 'center', gap: '.25rem', cursor: 'pointer' }}
+          style={{ ...stylesAlignCenter, cursor: 'pointer' }}
           onClick={() => {
             setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
           }}
