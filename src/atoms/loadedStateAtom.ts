@@ -1,7 +1,7 @@
 import { atom } from 'recoil';
 
 export interface LoadedState {
-  pythonLoaded: boolean;
+  pythonLoaded: boolean | 'error';
 }
 
 export const loadedStateDefault: LoadedState = {

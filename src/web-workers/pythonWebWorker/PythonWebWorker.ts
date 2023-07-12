@@ -32,6 +32,8 @@ export class PythonWebWorker {
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
         this.loaded = true;
+      } else if (event.type === 'python-error') {
+        window.dispatchEvent(new CustomEvent('python-error'));
       } else {
         throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
       }

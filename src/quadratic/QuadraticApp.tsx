@@ -39,8 +39,19 @@ export const QuadraticApp = () => {
           pythonLoaded: true,
         };
       });
+    const error = () =>
+      setLoadedState((loaded) => {
+        return {
+          ...loaded,
+          pythonLoaded: 'error',
+        };
+      });
     window.addEventListener('python-loaded', loaded);
-    return () => window.removeEventListener('python-loaded', loaded);
+    window.addEventListener('python-error', error);
+    return () => {
+      window.removeEventListener('python-loaded', loaded);
+      window.removeEventListener('python-error', error);
+    };
   }, [setLoadedState]);
 
   // Loading Effect

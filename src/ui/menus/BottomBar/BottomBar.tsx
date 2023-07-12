@@ -10,8 +10,8 @@ import { isMobileOnly } from 'react-device-detect';
 import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { ChatBubbleOutline, Check } from '@mui/icons-material';
-import { CircularProgress } from '@mui/material';
+import { ChatBubbleOutline, Check, ErrorOutline } from '@mui/icons-material';
+import { CircularProgress, Tooltip } from '@mui/material';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import { ActiveSelectionStats } from './ActiveSelectionStats';
 
@@ -142,8 +142,16 @@ export const BottomBar = (props: Props) => {
         {!isMobileOnly && (
           <>
             <span style={stylesAlignCenter}>
-              {loadedState.pythonLoaded ? <Check fontSize="inherit" /> : <CircularProgress size="0.5rem" />} Python
-              3.9.5
+              {loadedState.pythonLoaded === 'error' ? (
+                <Tooltip title="Error loading Python. Please refresh your browser.">
+                  <ErrorOutline style={{ color: 'red' }} fontSize="inherit" />
+                </Tooltip>
+              ) : loadedState.pythonLoaded ? (
+                <Check fontSize="inherit" />
+              ) : (
+                <CircularProgress size="0.5rem" />
+              )}{' '}
+              Python 3.9.5
             </span>
           </>
         )}
