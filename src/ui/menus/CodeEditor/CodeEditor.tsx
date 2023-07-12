@@ -52,6 +52,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
   const theme = useTheme();
+  const isLoadingPython = !pythonLoaded && editorMode === 'PYTHON';
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -192,10 +193,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const saveAndRunCell = async () => {
     if (!selectedCell) return;
     if (isRunningComputation) return;
-
-    if (editorMode === 'PYTHON' && !pythonLoaded) {
-      return;
-    }
+    if (isLoadingPython) return;
 
     setIsRunningComputation(true);
 
@@ -363,7 +361,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
           {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
-          {!pythonLoaded && editorMode === 'PYTHON' && (
+          {isLoadingPython && (
             <div style={{ color: theme.palette.warning.main, display: 'flex', alignItems: 'center' }}>
               Loading Python...
               <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
@@ -376,7 +374,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
                 size="small"
                 color="primary"
                 onClick={saveAndRunCell}
-                disabled={isRunningComputation || (!pythonLoaded && editorMode === 'PYTHON')}
+                disabled={isRunningComputation || isLoadingPython}
               >
                 <PlayArrow />
               </IconButton>
