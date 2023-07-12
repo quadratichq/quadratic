@@ -13,6 +13,7 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
+  useTheme,
 } from '@mui/material';
 import { Console } from './Console';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -50,6 +51,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [didMount, setDidMount] = useState(false);
 
   const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
+  const theme = useTheme();
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -362,7 +364,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
           {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
           {!pythonLoaded && editorMode === 'PYTHON' && (
-            <div style={{ color: 'orange', display: 'flex', alignItems: 'center' }}>
+            <div style={{ color: theme.palette.warning.main, display: 'flex', alignItems: 'center' }}>
               Python is loading...
               <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
             </div>
