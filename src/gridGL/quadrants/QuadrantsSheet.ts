@@ -69,7 +69,7 @@ export class QuadrantsSheet extends Container {
   }
 
   update(viewport: Viewport, timeStart: number): boolean | 'not dirty' {
-    const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0) - 1;
+    const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0);
     if (!dirtyCount) return 'not dirty';
     const firstDirty = this.children.find((child) => (child as Quadrant).dirty) as Quadrant;
     if (firstDirty) {

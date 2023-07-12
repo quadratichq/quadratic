@@ -9,6 +9,7 @@ import { CellAndFormat, GridSparse } from './GridSparse';
 import { Cell, CellFormat } from '../../schemas';
 import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../../gridGL/types/size';
+import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
   id: string; // used to connect Sheet to Quadrants (could be saved as part of Sheet if needed in the future)
@@ -16,6 +17,7 @@ export class Sheet {
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
+  cursor: SheetCursor;
   order: string;
   color?: string;
 
@@ -32,6 +34,7 @@ export class Sheet {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
+    this.cursor = new SheetCursor();
     this.render_dependency = new GridRenderDependency();
     this.array_dependency = new GridRenderDependency();
     this.cell_dependency = new CellDependencyManager();
