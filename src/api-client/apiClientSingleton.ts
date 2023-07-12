@@ -60,6 +60,8 @@ class APIClientSingleton {
       Sentry.captureException({
         message: `API Error Catch: Failed to fetch \`/files\`. ${error}`,
       });
+
+      return undefined;
     }
   }
 

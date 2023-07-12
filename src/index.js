@@ -12,8 +12,9 @@ import {
   useRouteError,
 } from 'react-router-dom';
 import { BrowserTracing } from '@sentry/tracing';
-
-import { Auth0ProviderWithNavigate } from './auth0-provider-with-navigate';
+import { QuadraticAnalytics } from './quadratic/QuadraticAnalytics';
+import { Auth0ProviderWithNavigate } from './quadratic/Auth0ProviderWithNavigate';
+import { QuadraticAuth } from './quadratic/QuadraticAuth';
 
 // Enable sentry only if SENTRY_DSN is in ENV
 if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'none')
@@ -32,26 +33,30 @@ const ErrorElement = () => {
   return <div>Oops. Something went wrong. Don't forget to add this component</div>;
 };
 
-const router = createBrowserRouter(
-  createRoutesFromElements(
-    <Route
-      path="/"
-      element={
-        <Auth0ProviderWithNavigate>
-          <Outlet />
-        </Auth0ProviderWithNavigate>
-      }
-      errorElement={<ErrorElement />}
-    >
-      <Route path="file" lazy={() => import('./routes/File')} />
-      <Route path="files" lazy={() => import('./routes/Files')} />
-    </Route>
-  )
-);
-
 ReactDOM.render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <RouterProvider
+      router={createBrowserRouter(
+        createRoutesFromElements(
+          <Route
+            path="/"
+            element={
+              <Auth0ProviderWithNavigate>
+                <QuadraticAuth>
+                  <QuadraticAnalytics>
+                    <Outlet />
+                  </QuadraticAnalytics>
+                </QuadraticAuth>
+              </Auth0ProviderWithNavigate>
+            }
+            errorElement={<ErrorElement />}
+          >
+            <Route path="file" lazy={() => import('./App')} />
+            <Route path="files" lazy={() => import('./AppDashboard')} />
+          </Route>
+        )
+      )}
+    />
   </React.StrictMode>,
   document.getElementById('root')
 );

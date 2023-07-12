@@ -1,25 +1,13 @@
 import { useLoaderData, useFetcher } from 'react-router-dom';
-import { GridFile } from '../schemas';
-// import apiClientSingleton from '../api-client/apiClientSingleton';
+import { GridFile } from './schemas';
+import apiClientSingleton from './api-client/apiClientSingleton';
 
 type LoaderData = {
-  files: GridFile[];
+  files?: GridFile[];
 };
 
 export const loader = async ({ request }: any): Promise<LoaderData> => {
-  console.log(request);
-  const res = await fetch('http://localhost:8000/v0/files', {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer `,
-    },
-  });
-  if (res.ok) {
-    const files = await res.json();
-    return { files };
-  }
-
-  return { files: [] };
+  return { files: await apiClientSingleton.getFiles() };
 };
 
 const ListItem = ({ uuid, name }: { uuid: string; name: string }) => {
@@ -38,16 +26,14 @@ const ListItem = ({ uuid, name }: { uuid: string; name: string }) => {
 
 export const Component = () => {
   const data = useLoaderData() as LoaderData;
-  console.log(data);
+
   return (
     <div>
       Files
       <ul>
         {
           //@ts-expect-error
-          data.files.map(({ uuid, name }) => (
-            <ListItem key={uuid} uuid={uuid} name={name} />
-          ))
+          data.files && data.files.map(({ uuid, name }) => <ListItem key={uuid} uuid={uuid} name={name} />)
         }
       </ul>
     </div>

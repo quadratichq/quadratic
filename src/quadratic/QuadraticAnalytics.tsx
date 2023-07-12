@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import * as amplitude from '@amplitude/analytics-browser';
 import { useAuth0, User } from '@auth0/auth0-react';
 import mixpanel from 'mixpanel-browser';
@@ -75,7 +75,7 @@ const loadMixPanelAnalytics = async (user: User | undefined) => {
   console.log('[Analytics] Mixpanel activated');
 };
 
-export const AnalyticsProvider = () => {
+export const QuadraticAnalytics = ({ children }: { children: ReactNode }) => {
   const [loaded, setLoaded] = useState(false);
   const { user } = useAuth0();
 
@@ -89,5 +89,5 @@ export const AnalyticsProvider = () => {
     loadMixPanelAnalytics(user);
   }, [loaded, setLoaded, user]);
 
-  return null;
+  return children;
 };
