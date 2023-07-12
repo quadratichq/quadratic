@@ -15,7 +15,6 @@ jobs:
         with:
           node-version: '19'
           cache: 'npm'
-
       - name: Update local rust toolchain
         run: |
           rustup update
@@ -39,5 +38,5 @@ jobs:
         run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           npm run build:wasm:nodejs
-
+      - run: node --version
       - run: npm run test:unit:ci
