@@ -39,6 +39,30 @@ class APIClientSingleton {
     return API_URL;
   }
 
+  async getFiles(): Promise<GridFile[] | undefined> {
+    try {
+      const base_url = this.getAPIURL();
+      const response = await fetch(`${base_url}/v0/files`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${await this.getAuth()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
+      }
+      const files: GridFile[] = await response.json();
+      return files;
+    } catch (error) {
+      console.error(error);
+      Sentry.captureException({
+        message: `API Error Catch: Failed to fetch \`/files\`. ${error}`,
+      });
+    }
+  }
+
   // Fetch a file from the DB
   async getFile(id: string): Promise<GridFile | undefined> {
     // TODO should we hide the share button when that is not configured? (e.g. locally)

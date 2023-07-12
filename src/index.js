@@ -1,10 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
 import reportWebVitals from './reportWebVitals';
 import * as Sentry from '@sentry/react';
-import { Route, RouterProvider, createRoutesFromElements, createBrowserRouter } from 'react-router-dom';
+import {
+  Route,
+  RouterProvider,
+  createRoutesFromElements,
+  createBrowserRouter,
+  Outlet,
+  useRouteError,
+} from 'react-router-dom';
 import { BrowserTracing } from '@sentry/tracing';
 
 import { Auth0ProviderWithNavigate } from './auth0-provider-with-navigate';
@@ -20,16 +26,26 @@ if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'no
     tracesSampleRate: 1.0,
   });
 
+const ErrorElement = () => {
+  let error = useRouteError();
+  console.error(error);
+  return <div>Oops. Something went wrong. Don't forget to add this component</div>;
+};
+
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route
       path="/"
       element={
         <Auth0ProviderWithNavigate>
-          <App />
+          <Outlet />
         </Auth0ProviderWithNavigate>
       }
-    ></Route>
+      errorElement={<ErrorElement />}
+    >
+      <Route path="file" lazy={() => import('./routes/File')} />
+      <Route path="files" lazy={() => import('./routes/Files')} />
+    </Route>
   )
 );
 
