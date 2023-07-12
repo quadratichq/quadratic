@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { ClipboardEvent, useCallback, useRef, useState } from 'react';
 import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { Coordinate } from '../types/size';
 import { focusGrid } from '../../helpers/focusGrid';
@@ -221,6 +221,15 @@ export const CellInput = (props: CellInputProps) => {
   // set input's initial position correctly
   const transform = updateInputCSSTransform();
 
+  const handlePaste = (event: ClipboardEvent) => {
+    const text = event.clipboardData.getData('text');
+    const parsed = new DOMParser().parseFromString(text, 'text/html');
+    const result = parsed.body.textContent || '';
+    // event.clipboardData.setData('text', result.replaceAll('\n', ''));
+    document.execCommand('insertHTML', false, result.replace(/(\r\n|\n|\r)/gm, ''));
+    event.preventDefault();
+  };
+
   return (
     <div
       id="cell-edit"
@@ -246,7 +255,7 @@ export const CellInput = (props: CellInputProps) => {
         fontFamily,
         fontSize: '14px',
         backgroundColor: format?.fillColor ?? 'white',
-        whiteSpace: 'break-spaces',
+        whiteSpace: 'nowrap',
       }}
       onInput={() => {
         // viewport should try to keep the input box in view
@@ -315,6 +324,7 @@ export const CellInput = (props: CellInputProps) => {
         // ensure the cell border is redrawn
         app.cursor.dirty = true;
       }}
+      onPaste={handlePaste}
     >
       {text.current}
     </div>
