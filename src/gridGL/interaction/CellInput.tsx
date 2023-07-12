@@ -225,7 +225,6 @@ export const CellInput = (props: CellInputProps) => {
     const text = event.clipboardData.getData('text');
     const parsed = new DOMParser().parseFromString(text, 'text/html');
     const result = parsed.body.textContent || '';
-    // event.clipboardData.setData('text', result.replaceAll('\n', ''));
     document.execCommand('insertHTML', false, result.replace(/(\r\n|\n|\r)/gm, ''));
     event.preventDefault();
   };
