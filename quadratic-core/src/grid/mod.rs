@@ -50,13 +50,59 @@ pub struct RegionRef {
     pub h: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 #[wasm_bindgen]
+#[serde(rename_all = "camelCase")]
 pub struct GridBounds {
-    pub x_min: i64,
-    pub x_max: i64,
-    pub y_min: i64,
-    pub y_max: i64,
+    pub empty: bool,
+
+    pub min_x: f64,
+    pub min_y: f64,
+    pub max_x: f64,
+    pub max_y: f64,
+}
+impl Default for GridBounds {
+    fn default() -> Self {
+        Self {
+            empty: true,
+
+            min_x: f64::INFINITY,
+            min_y: f64::INFINITY,
+            max_x: -f64::INFINITY,
+            max_y: -f64::INFINITY,
+        }
+    }
+}
+impl GridBounds {
+    pub fn empty() -> Self {
+        GridBounds::default()
+    }
+    pub fn clear(&mut self) {
+        *self = GridBounds::default()
+    }
+    pub fn add(&mut self, x: i64, y: i64) {
+        self.add_x(x);
+        self.add_y(y);
+    }
+    pub fn add_x(&mut self, x: i64) {
+        self.min_x = f64::min(self.min_x, x as f64);
+        self.max_x = f64::max(self.max_x, x as f64);
+        self.empty &= self.min_y.is_infinite();
+    }
+    pub fn add_y(&mut self, y: i64) {
+        self.min_y = f64::min(self.min_y, y as f64);
+        self.max_y = f64::max(self.max_y, y as f64);
+        self.empty &= self.min_x.is_infinite();
+    }
+    pub fn merge(a: Self, b: Self) -> Self {
+        GridBounds {
+            empty: a.empty && b.empty,
+            min_x: f64::min(a.min_x, b.min_x),
+            min_y: f64::min(a.min_y, b.min_y),
+            max_x: f64::max(a.max_x, b.max_x),
+            max_y: f64::max(a.max_y, b.max_y),
+        }
+    }
 }
 
 #[wasm_bindgen]
@@ -92,6 +138,9 @@ impl File {
             column_widths: BTreeMap::new(),
             row_heights: BTreeMap::new(),
             code_cells: HashMap::new(),
+
+            data_bounds: GridBounds::empty(),
+            format_bounds: GridBounds::empty(),
         });
         self.sheet_ids.add(id, 0);
         id
@@ -123,6 +172,27 @@ impl File {
             let cell_text_value = cell.value.clone();
 
             if let Some(cell_code) = CellCode::try_from_js_cell(cell, sheet) {
+                if let Some(output) = &cell_code.output {
+                    if let Ok(result) = &output.result {
+                        let spill_value = CellValueOrSpill::Spill { source: pos };
+                        match &result.output_value {
+                            Value::Single(_) => {
+                                sheet.set_cell_at_xy(cell_x, cell_y, spill_value)?;
+                            }
+                            Value::Array(array) => {
+                                for dy in 0..array.height() {
+                                    for dx in 0..array.width() {
+                                        sheet.set_cell_at_xy(
+                                            cell_x + dx as i64,
+                                            cell_y + dy as i64,
+                                            spill_value.clone(),
+                                        )?;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 sheet.code_cells.insert(pos, cell_code);
             } else {
                 match cell_type {
@@ -136,7 +206,83 @@ impl File {
                     _ => return Err("invalid cell data".into()),
                 }
             }
+
+            sheet.data_bounds.add(cell_x, cell_y);
         }
+
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "updateFormat")]
+    pub fn js_update_cell_formats(&mut self, js_cell_formats: JsValue) -> Result<(), JsValue> {
+        let sheet = &mut self.sheets[0];
+        let cell_formats: Vec<JsCellFormat> = serde_wasm_bindgen::from_value(js_cell_formats)?;
+        for cell in cell_formats {
+            let column_id = sheet.get_column_at(cell.x);
+            let column = sheet.column_mut(column_id).ok_or("bad column ID")?;
+
+            column.align.set(cell.y, cell.alignment);
+            column.bold.set(cell.y, cell.bold);
+            column.fill_color.set(cell.y, cell.fill_color);
+            column.italic.set(cell.y, cell.italic);
+            column.text_color.set(cell.y, cell.text_color);
+            column.numeric_format.set(cell.y, cell.text_format);
+            column.wrap.set(cell.y, cell.wrapping);
+
+            sheet.format_bounds.add(cell.x, cell.y);
+        }
+
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "deleteCells")]
+    pub fn js_clear_cells(&mut self, js_cells: JsValue) -> Result<(), JsValue> {
+        let sheet = &mut self.sheets[0];
+        let cells: Vec<JsCoordinate> = serde_wasm_bindgen::from_value(js_cells)?;
+        for cell in cells {
+            sheet.delete_cell_at_xy(cell.x, cell.y);
+        }
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "clearFormat")]
+    pub fn js_clear_cell_formats(&mut self, js_cell_formats: JsValue) -> Result<(), JsValue> {
+        let sheet = &mut self.sheets[0];
+        let cell_formats: Vec<JsCellFormat> = serde_wasm_bindgen::from_value(js_cell_formats)?;
+        for cell in cell_formats {
+            let column_id = sheet.get_column_at(cell.x);
+            let column = sheet.column_mut(column_id).ok_or("bad column ID")?;
+
+            column.align.set(cell.y, None);
+            column.bold.set(cell.y, None);
+            column.fill_color.set(cell.y, None);
+            column.italic.set(cell.y, None);
+            column.text_color.set(cell.y, None);
+            column.numeric_format.set(cell.y, None);
+            column.wrap.set(cell.y, None);
+        }
+
+        sheet.recalculate_bounds();
+
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "isEmpty")]
+    pub fn js_is_empty(&self) -> bool {
+        self.sheets[0].is_empty()
+    }
+
+    #[wasm_bindgen(js_name = "clear")]
+    pub fn js_clear(&mut self) {
+        self.sheets.truncate(1);
+        self.sheets[0].clear();
+    }
+
+    #[wasm_bindgen(js_name = "populate")]
+    pub fn js_populate(&mut self, values: JsValue, formats: JsValue) -> Result<(), JsValue> {
+        self.js_clear();
+        self.js_update_cells(values)?;
+        self.js_update_cell_formats(formats)?;
         Ok(())
     }
 
@@ -145,13 +291,71 @@ impl File {
         Ok(self.set_cell(pos, serde_wasm_bindgen::from_value(value)?)?)
     }
 
-    #[wasm_bindgen(js_name = "get_cell")]
-    pub fn js_get_cell(&mut self, pos: CellRef) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.get_cell(pos)?)?)
+    #[wasm_bindgen(js_name = "get")]
+    pub fn js_get_cell(&mut self, x: f64, y: f64) -> Result<JsValue, JsValue> {
+        let sheet = &self.sheets[0];
+        let x = x as i64;
+        let y = y as i64;
+        // IIFE to mimic try_block
+        let Some(column) = sheet.column_ids.id_at(x) else {
+            return Ok(JsValue::UNDEFINED);
+        };
+        let Some(row) = sheet.row_ids.id_at(y) else {
+            return Ok(JsValue::UNDEFINED);
+        };
+        let cell_ref = CellRef {
+            sheet: sheet.id,
+            column,
+            row,
+        };
+        let code_cell = sheet.code_cells.get(&cell_ref);
+        let code_cell_output =
+            code_cell.and_then(|code_cell| code_cell.output.as_ref()?.result.as_ref().ok());
+        let r#type = if let Some(code_cell) = code_cell {
+            match code_cell.language {
+                CellCodeLanguage::Python => JsCellType::Python,
+                CellCodeLanguage::Formula => JsCellType::Formula,
+                CellCodeLanguage::JavaScript => JsCellType::JavaScript,
+                CellCodeLanguage::Sql => JsCellType::Sql,
+            }
+        } else if let Some(column) = sheet.column(cell_ref.column) {
+            match column.values.get(y) {
+                Some(value) => match value {
+                    CellValueOrSpill::CellValue(_) => JsCellType::Text,
+                    CellValueOrSpill::Spill { .. } => JsCellType::Computed,
+                },
+                None => return Ok(JsValue::UNDEFINED),
+            }
+        } else {
+            return Ok(JsValue::UNDEFINED);
+        };
+        return Ok(serde_wasm_bindgen::to_value(&JsCell {
+            x,
+            y,
+            r#type,
+            value: sheet.get_cell(cell_ref)?.to_string(),
+            array_cells: None,       // TODO
+            dependent_cells: None,   // TODO
+            evaluation_result: None, // TODO
+            formula_code: None,      // TODO
+            last_modified: None,     // TODO
+            ai_prompt: None,         // TODO
+            python_code: None,       // TODO
+        })?);
     }
 
-    pub fn sheet_bounds(&mut self, sheet: SheetId, ignore_formatting: bool) -> Option<GridBounds> {
-        self.sheet(sheet)?.bounds(ignore_formatting)
+    pub fn sheet_bounds(&mut self, sheet: SheetId, ignore_formatting: bool) -> GridBounds {
+        match self.sheet(sheet) {
+            Some(sh) => sh.bounds(ignore_formatting),
+            None => GridBounds::empty(),
+        }
+    }
+
+    #[wasm_bindgen(js_name = "recalculateBounds")]
+    pub fn recalculate_bounds(&mut self) {
+        for sheet in &mut self.sheets {
+            sheet.recalculate_bounds()
+        }
     }
 }
 impl File {
@@ -166,7 +370,7 @@ impl File {
         let sheet = self.sheet_mut(pos.sheet).ok_or("bad sheet ID")?;
         let row_index = sheet.row_ids.index_of(pos.row).ok_or("bad row ID")?;
         let column = sheet.column_mut(pos.column).ok_or("bad column ID")?;
-        column.values.set(row_index, value.into());
+        column.values.set(row_index, Some(value.into()));
         Ok(())
     }
     pub fn get_cell(&self, pos: CellRef) -> Result<CellValue, &'static str> {
@@ -214,6 +418,9 @@ pub struct Sheet {
     row_heights: BTreeMap<i64, f32>,
 
     code_cells: HashMap<CellRef, CellCode>,
+
+    data_bounds: GridBounds,
+    format_bounds: GridBounds,
 }
 impl Sheet {
     pub fn column(&self, id: ColumnId) -> Option<&Column> {
@@ -246,14 +453,24 @@ impl Sheet {
         }
     }
 
-    pub fn set_cell_at_xy(&mut self, x: i64, y: i64, value: CellValue) -> Result<(), &'static str> {
+    pub fn set_cell_at_xy(
+        &mut self,
+        x: i64,
+        y: i64,
+        value: impl Into<CellValueOrSpill>,
+    ) -> Result<(), &'static str> {
         // Ensure the column and row exist.
         self.get_column_at(x);
         self.get_row_at(y);
 
         let column = self.columns.get_mut(&x).ok_or("bad column ID")?;
-        column.values.set(y, value.into());
+        column.values.set(y, Some(value.into()));
         Ok(())
+    }
+    pub fn delete_cell_at_xy(&mut self, x: i64, y: i64) {
+        if let Some(column) = self.columns.get_mut(&x) {
+            column.values.set(y, None);
+        }
     }
     pub fn get_cell(&self, pos: CellRef) -> Result<CellValue, &'static str> {
         let row_index = self.row_ids.index_of(pos.row).ok_or("bad row ID")?;
@@ -291,31 +508,22 @@ impl Sheet {
         }
     }
 
-    pub fn bounds(&self, ignore_formatting: bool) -> Option<GridBounds> {
-        let columns = self.columns.iter();
-        let mut nonempty_columns = columns.clone().filter(|(_x, column)| {
-            if ignore_formatting {
-                column.has_anything()
-            } else {
-                column.has_data()
-            }
-        });
-        let first_col = nonempty_columns.next()?;
-        let last_col = nonempty_columns.next_back().unwrap_or(first_col);
-        let x_min = *first_col.0;
-        let x_max = *last_col.0;
+    pub fn is_empty(&self) -> bool {
+        self.data_bounds.empty && self.format_bounds.empty
+    }
+    pub fn clear(&mut self) {
+        self.column_ids = IdMap::new();
+        self.row_ids = IdMap::new();
+        self.columns.clear();
+        self.code_cells.clear();
+        self.recalculate_bounds();
+    }
 
-        let y_range =
-            crate::util::union_ranges(columns.map(|(_x, column)| column.range(ignore_formatting)))?;
-        let y_min = y_range.start;
-        let y_max = y_range.end;
-
-        Some(GridBounds {
-            x_min,
-            x_max,
-            y_min,
-            y_max,
-        })
+    pub fn bounds(&self, ignore_formatting: bool) -> GridBounds {
+        match ignore_formatting {
+            true => self.data_bounds,
+            false => GridBounds::merge(self.data_bounds, self.format_bounds),
+        }
     }
     pub fn column_bounds(&self, x: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
         let column = self.columns.get(&x)?;
@@ -330,6 +538,24 @@ impl Sheet {
         let left = *self.columns.iter().find(column_has_row)?.0;
         let right = *self.columns.iter().rfind(column_has_row)?.0;
         Some((left, right))
+    }
+
+    pub fn recalculate_bounds(&mut self) {
+        self.data_bounds.clear();
+        self.format_bounds.clear();
+
+        for (&x, column) in &self.columns {
+            if let Some(data_range) = column.range(true) {
+                self.data_bounds.add_x(x);
+                self.data_bounds.add_y(data_range.start);
+                self.data_bounds.add_y(data_range.end - 1);
+            }
+            if let Some(format_range) = column.range(false) {
+                self.format_bounds.add_x(x);
+                self.format_bounds.add_y(format_range.start);
+                self.format_bounds.add_y(format_range.end - 1);
+            }
+        }
     }
 }
 
@@ -362,7 +588,6 @@ impl CellCode {
                 .evaluation_result
                 .as_ref()
                 .map(|result| result.formatted_code.clone()),
-            last_modified: cell.last_modified,
             output: cell.evaluation_result.and_then(|js_result| {
                 let result = match js_result.success {
                     true => Ok(CellCodeRunOk {

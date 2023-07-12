@@ -1,8 +1,9 @@
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
-use crate::formulas::BasicValue;
-
 use super::js_structs::Any;
+use crate::formulas::BasicValue;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub enum CellValue {
@@ -14,6 +15,19 @@ pub enum CellValue {
     Error, // TODO: what kind of information to include?
     Instant(Instant),
     Duration(Duration),
+}
+impl fmt::Display for CellValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CellValue::Blank => Ok(()),
+            CellValue::Text(s) => write!(f, "{s}"),
+            CellValue::Number(n) => write!(f, "{n}"),
+            CellValue::Logical(b) => write!(f, "{b}"),
+            CellValue::Error => write!(f, "#ERROR"),
+            CellValue::Instant(i) => todo!("format instant"),
+            CellValue::Duration(d) => todo!("format duration"),
+        }
+    }
 }
 impl From<BasicValue> for CellValue {
     fn from(basic_value: BasicValue) -> Self {

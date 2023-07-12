@@ -9,6 +9,11 @@ pub enum CellValueOrSpill {
     CellValue(CellValue),
     Spill { source: CellRef },
 }
+impl Default for CellValueOrSpill {
+    fn default() -> Self {
+        CellValueOrSpill::CellValue(CellValue::Blank)
+    }
+}
 impl From<CellValue> for CellValueOrSpill {
     fn from(value: CellValue) -> Self {
         CellValueOrSpill::CellValue(value)

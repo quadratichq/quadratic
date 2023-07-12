@@ -15,11 +15,11 @@ pub struct Column {
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
     pub borders: ColumnData<SameValue<CellBorders>>,
-    pub numeric_formats: ColumnData<SameValue<NumericFormat>>,
+    pub numeric_format: ColumnData<SameValue<NumericFormat>>,
     pub bold: ColumnData<SameValue<bool>>,
     pub italic: ColumnData<SameValue<bool>>,
-    pub text_color: ColumnData<SameValue<[u8; 3]>>,
-    pub fill_color: ColumnData<SameValue<[u8; 3]>>,
+    pub text_color: ColumnData<SameValue<String>>,
+    pub fill_color: ColumnData<SameValue<String>>,
 }
 impl Column {
     pub fn new() -> Self {
@@ -32,7 +32,7 @@ impl Column {
             align: ColumnData::default(),
             wrap: ColumnData::default(),
             borders: ColumnData::default(),
-            numeric_formats: ColumnData::default(),
+            numeric_format: ColumnData::default(),
             bold: ColumnData::default(),
             italic: ColumnData::default(),
             text_color: ColumnData::default(),
@@ -49,7 +49,7 @@ impl Column {
                 self.align.range(),
                 self.wrap.range(),
                 self.borders.range(),
-                self.numeric_formats.range(),
+                self.numeric_format.range(),
                 self.bold.range(),
                 self.italic.range(),
                 self.text_color.range(),
@@ -66,7 +66,7 @@ impl Column {
             || !self.align.0.is_empty()
             || !self.wrap.0.is_empty()
             || !self.borders.0.is_empty()
-            || !self.numeric_formats.0.is_empty()
+            || !self.numeric_format.0.is_empty()
             || !self.bold.0.is_empty()
             || !self.italic.0.is_empty()
             || !self.text_color.0.is_empty()
@@ -83,7 +83,7 @@ impl Column {
             || self.align.get(y).is_some()
             || self.wrap.get(y).is_some()
             || self.borders.get(y).is_some()
-            || self.numeric_formats.get(y).is_some()
+            || self.numeric_format.get(y).is_some()
             || self.bold.get(y).is_some()
             || self.italic.get(y).is_some()
             || self.text_color.get(y).is_some()
@@ -149,11 +149,16 @@ impl<B: BlockContent> ColumnData<B> {
     pub fn get(&self, y: i64) -> Option<B::Item> {
         self.get_block_containing(y)?.get(y)
     }
-    pub fn set(&mut self, y: i64, value: B::Item) {
-        if let Some(block) = self.remove_block_containing(y) {
-            self.add_blocks(block.set(y, value).expect("error setting value in column"));
-        } else {
-            self.add_block(Block::new(y, value));
+    pub fn set(&mut self, y: i64, value: Option<B::Item>) {
+        match (self.remove_block_containing(y), value) {
+            (None, None) => return,
+            (None, Some(value)) => self.add_block(Block::new(y, value)),
+            (Some(block), None) => {
+                self.add_blocks(block.remove(y).expect("error removing value from column"))
+            }
+            (Some(block), Some(value)) => {
+                self.add_blocks(block.set(y, value).expect("error setting value in column"))
+            }
         }
         // TODO: try merge with blocks above & below
     }

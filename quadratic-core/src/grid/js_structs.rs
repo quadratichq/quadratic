@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::formulas::BasicValue;
 
+use super::formatting::{CellAlign, CellWrap, NumericFormat};
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsCell {
     pub x: i64,
@@ -44,6 +46,26 @@ pub struct JsCellEvalResult {
 pub enum JsArrayOutput {
     Array(Vec<Option<Any>>),
     Block(Vec<Vec<Option<Any>>>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct JsCellFormat {
+    pub x: i64,
+    pub y: i64,
+    pub alignment: Option<CellAlign>,
+    pub bold: Option<bool>,
+    pub fill_color: Option<String>,
+    pub italic: Option<bool>,
+    pub text_color: Option<String>,
+    pub text_format: Option<NumericFormat>,
+    pub wrapping: Option<CellWrap>, // default is overflow
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct JsCoordinate {
+    pub x: i64,
+    pub y: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

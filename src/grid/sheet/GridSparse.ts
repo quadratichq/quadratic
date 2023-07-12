@@ -7,6 +7,7 @@ import { MinMax } from '../../gridGL/types/size';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Bounds } from './Bounds';
 import { cellHasContent } from '../../gridGL/helpers/selectCells';
+import { File } from 'quadratic-core';
 
 export interface CellAndFormat {
   cell?: Cell;
@@ -15,6 +16,8 @@ export interface CellAndFormat {
 
 /** Stores all cells and format locations */
 export class GridSparse {
+  private rustGrid: File = new File();
+
   private gridOffsets: GridOffsets;
   private cellBounds = new Bounds();
   private formatBounds = new Bounds();
@@ -29,87 +32,31 @@ export class GridSparse {
   }
 
   updateCells(cells: Cell[]): void {
-    cells.forEach((cell) => {
-      const update = this.cells.get(this.getKey(cell.x, cell.y));
-      if (update) {
-        update.cell = cell;
-      } else {
-        this.cells.set(this.getKey(cell.x, cell.y), { cell });
-        this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
-      }
-    });
-    this.recalculateBounds();
+    this.rustGrid.updateCells(cells);
   }
 
   recalculateBounds(): void {
-    this.cellBounds.clear();
-    this.cellFormatBounds.clear();
-    this.formatBounds.clear();
-    if (this.cells.size === 0) return;
-    this.cells.forEach((cell) => {
-      if (cell.cell) {
-        this.cellBounds.add(cell.cell.x, cell.cell.y);
-        this.cellBounds.add(cell.cell.x, cell.cell.y);
-      }
-      if (cell.format) {
-        this.formatBounds.add(cell.format.x, cell.format.y);
-      }
-    });
-    this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
+    this.rustGrid.recalculateBounds();
   }
 
   updateFormat(formats: CellFormat[]): void {
-    formats.forEach((format) => {
-      const update = this.cells.get(this.getKey(format.x, format.y));
-      if (update) {
-        update.format = format;
-      } else {
-        this.cells.set(this.getKey(format.x, format.y), { format });
-      }
-      this.formatBounds.add(format.x, format.y);
-      this.cellFormatBounds.add(format.x, format.y);
-    });
+    this.rustGrid.updateCellFormats(formats);
   }
 
   clearFormat(formats: CellFormat[]): void {
-    formats.forEach((format) => {
-      const key = this.getKey(format.x, format.y);
-      const clear = this.cells.get(key);
-      if (clear) {
-        delete clear.format;
-        if (Object.keys(clear).length === 0) {
-          this.cells.delete(key);
-        }
-      }
-    });
-    this.recalculateBounds();
+    this.rustGrid.clearFormat(formats);
   }
 
   deleteCells(cells: Coordinate[]): void {
-    cells.forEach((cell) => {
-      const candf = this.cells.get(this.getKey(cell.x, cell.y));
-      if (candf) {
-        // Delete cell
-        delete candf.cell;
-        // If cell has no format, also delete the key
-        if (candf.format === undefined) {
-          this.cells.delete(this.getKey(cell.x, cell.y));
-        }
-      }
-    });
-    this.recalculateBounds();
+    this.rustGrid.deleteCells(cells);
   }
 
   get empty(): boolean {
-    return this.cellFormatBounds.empty;
+    return this.rustGrid.isEmpty();
   }
 
   clear() {
-    this.cells.clear();
-    this.quadrants.clear();
-    this.cellBounds.clear();
-    this.formatBounds.clear();
-    this.cellFormatBounds.clear();
+    this.rustGrid.clear();
   }
 
   private getKey(x?: number, y?: number): string {
@@ -117,24 +64,7 @@ export class GridSparse {
   }
 
   populate(cells?: Cell[], formats?: CellFormat[]) {
-    this.clear();
-    if (!cells?.length && !formats?.length) return;
-    cells?.forEach((cell) => {
-      this.cells.set(this.getKey(cell.x, cell.y), { cell });
-      this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
-      this.cellBounds.add(cell.x, cell.y);
-    });
-    formats?.forEach((format) => {
-      const key = this.getKey(format.x, format.y);
-      const cell = this.cells.get(key);
-      if (cell) {
-        cell.format = format;
-      } else {
-        this.cells.set(key, { format });
-      }
-      this.formatBounds.add(format.x, format.y);
-    });
-    this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
+    this.rustGrid.populate(cells, formats);
   }
 
   get(x: number, y: number): CellAndFormat | undefined {

@@ -1,14 +1,17 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
 pub enum CellAlign {
     Center,
     Left,
     Right,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
 pub enum CellWrap {
+    #[default]
     Overflow,
     Wrap,
     Clip,
@@ -36,13 +39,16 @@ pub enum CellBorderStyle {
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct NumericFormat {
+    #[serde(flatten)]
     kind: NumericFormatKind,
+    #[serde(rename = "decimalPlaces")]
     decimals: Option<u32>,
 }
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[serde(tag = "type")]
 pub enum NumericFormatKind {
-    Default,
-    Currency,
+    Number,
+    Currency { symbol: Option<char> },
     Percentage,
     Exponential,
 }
