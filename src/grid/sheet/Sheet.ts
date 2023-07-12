@@ -34,7 +34,6 @@ export class Sheet {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
-    this.cursor = new SheetCursor();
     this.render_dependency = new GridRenderDependency();
     this.array_dependency = new GridRenderDependency();
     this.cell_dependency = new CellDependencyManager();
@@ -45,6 +44,7 @@ export class Sheet {
     this.id = uuid();
     this.name = name ?? 'Sheet';
     this.order = order;
+    this.cursor = new SheetCursor(this);
   }
 
   rename(name: string) {

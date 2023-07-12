@@ -27,7 +27,6 @@ export const CellInput = (props: CellInputProps) => {
   const viewport = app?.viewport;
 
   const cellLocation = interactionState.cursorPosition;
-  const [saveInteractionState, setSaveInteractionState] = useState<GridInteractionState>();
 
   const text = useRef('');
 
@@ -129,11 +128,6 @@ export const CellInput = (props: CellInputProps) => {
     return null;
   }
 
-  // copy interaction state when input starts
-  if (!saveInteractionState) {
-    setSaveInteractionState(interactionState);
-  }
-
   // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
   let closed = false;
 
@@ -145,7 +139,7 @@ export const CellInput = (props: CellInputProps) => {
     const value = textInput.innerText;
 
     if (!cancel) {
-      sheetController.start_transaction(saveInteractionState);
+      sheetController.start_transaction();
       // Update Cell and dependent cells
       if (value === '') {
         // delete cell if input is empty, and wasn't empty before
@@ -202,9 +196,6 @@ export const CellInput = (props: CellInputProps) => {
       showInput: false,
       inputInitialValue: '',
     });
-    // setValue(undefined);
-
-    setSaveInteractionState(undefined);
 
     // Set focus back to Grid
     focusGrid();

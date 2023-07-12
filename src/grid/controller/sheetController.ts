@@ -6,8 +6,8 @@ import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
 import { SheetSchema } from '../../schemas';
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { generateKeyBetween } from 'fractional-indexing';
+import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
 
 export class SheetController {
   app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
@@ -159,7 +159,7 @@ export class SheetController {
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
-  public start_transaction(interactionState?: GridInteractionState): void {
+  public start_transaction(sheetCursor?: SheetCursor): void {
     if (this.transaction_in_progress) {
       // during debug mode, throw an error
       // otherwise, capture the error and continue
@@ -172,11 +172,11 @@ export class SheetController {
 
     // This is useful when the user clicks outside of the active cell to another
     // cell, so the cursor moves to that new cell and the transaction finishes
-    let cursor = undefined;
-    if (interactionState) {
-      cursor = { ...interactionState, showInput: false };
-    } else if (this.app?.settings.interactionState) {
-      cursor = { ...this.app.settings.interactionState, showInput: false };
+    let cursor: SheetCursorSave;
+    if (sheetCursor) {
+      cursor = sheetCursor.save();
+    } else {
+      cursor = this.sheet.cursor.save();
     }
 
     // set transaction in progress to a new Transaction
@@ -279,7 +279,8 @@ export class SheetController {
 
     if (this.app) {
       if (transaction.cursor) {
-        this.app.settings.setInteractionState?.(transaction.cursor);
+        this.current = transaction.cursor.sheetId;
+        this.sheet.cursor.load(transaction.cursor);
       }
 
       // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
@@ -319,7 +320,8 @@ export class SheetController {
 
     if (this.app) {
       if (transaction.cursor) {
-        this.app.settings.setInteractionState?.(transaction.cursor);
+        this.current = transaction.cursor.sheetId;
+        this.sheet.cursor.load(transaction.cursor);
       }
 
       // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
