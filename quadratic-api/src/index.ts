@@ -7,7 +7,7 @@ import helmet from 'helmet';
 import files_router from './routes/files';
 import feedback_router from './routes/feedback';
 
-const app = express();
+export const app = express();
 
 // Configure Sentry
 const SENTRY_DSN = process.env.SENTRY_DSN || '';
@@ -69,7 +69,9 @@ if (SENTRY_DSN) {
 
 // Error-logging middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error(`[${new Date().toISOString()}] ${err.message}`);
+  if (err.status >= 500) {
+    console.error(`[${new Date().toISOString()}] ${err.message}`);
+  }
   next(err);
 });
 
