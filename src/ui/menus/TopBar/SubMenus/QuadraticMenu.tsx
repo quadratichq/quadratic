@@ -12,8 +12,7 @@ import { SheetController } from '../../../../grid/controller/sheetController';
 import { MenuLineItem } from '../MenuLineItem';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
+import { useRecoilState } from 'recoil';
 import { isMac } from '../../../../utils/isMac';
 import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
@@ -26,9 +25,9 @@ interface Props {
 
 export const QuadraticMenu = (props: Props) => {
   const { sheetController } = props;
-  const interactionState = useRecoilValue(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
+  const cursor = sheetController.sheet.cursor;
 
   const { createNewFile, downloadCurrentFile } = useLocalFiles();
 
@@ -110,35 +109,21 @@ export const QuadraticMenu = (props: Props) => {
           <MenuDivider />
           <MenuItem
             onClick={() => {
-              cutToClipboard(
-                sheetController,
-                {
-                  x: interactionState.multiCursorPosition.originPosition.x,
-                  y: interactionState.multiCursorPosition.originPosition.y,
-                },
-                {
-                  x: interactionState.multiCursorPosition.terminalPosition.x,
-                  y: interactionState.multiCursorPosition.terminalPosition.y,
-                }
-              );
+              cutToClipboard(sheetController, cursor.originPosition, cursor.terminalPosition);
             }}
           >
             <MenuLineItem primary="Cut" secondary={KeyboardSymbols.Command + 'X'} Icon={ContentCut}></MenuLineItem>
           </MenuItem>
           <MenuItem
             onClick={() => {
-              copyToClipboard(
-                props.sheetController,
-                interactionState.multiCursorPosition.originPosition,
-                interactionState.multiCursorPosition.terminalPosition
-              );
+              copyToClipboard(props.sheetController, cursor.originPosition, cursor.terminalPosition);
             }}
           >
             <MenuLineItem primary="Copy" secondary={KeyboardSymbols.Command + 'C'} Icon={ContentCopy}></MenuLineItem>
           </MenuItem>
           <MenuItem
             onClick={() => {
-              pasteFromClipboard(props.sheetController, interactionState.cursorPosition);
+              pasteFromClipboard(props.sheetController, cursor.cursorPosition);
             }}
           >
             <MenuLineItem primary="Paste" secondary={KeyboardSymbols.Command + 'V'} Icon={ContentPaste}></MenuLineItem>

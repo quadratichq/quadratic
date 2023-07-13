@@ -1,6 +1,4 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { useRecoilState } from 'recoil';
-import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { Coordinate } from '../../../../gridGL/types/size';
 import { Sheet } from '../../../../grid/sheet/Sheet';
 import { CellFormat } from '../../../../schemas';
@@ -79,8 +77,7 @@ const setFormat = (cells: CellFormat[]): MultipleFormat => {
 };
 
 export const useGetSelection = (sheet: Sheet): GetSelection => {
-  const [interactionState] = useRecoilState(gridInteractionStateAtom);
-  const multiCursor = interactionState.showMultiCursor;
+  const cursor = sheet.cursor;
 
   // used to trigger a new format calculation after a format change (see useFormatCells.ts)
   const [trigger, setTrigger] = useState(0);
@@ -98,13 +95,13 @@ export const useGetSelection = (sheet: Sheet): GetSelection => {
 
   return useMemo(() => {
     let start: Coordinate, end: Coordinate, format: MultipleFormat;
-    if (multiCursor) {
-      start = interactionState.multiCursorPosition.originPosition;
-      end = interactionState.multiCursorPosition.terminalPosition;
+    if (cursor.multiCursor) {
+      start = cursor.multiCursor.originPosition;
+      end = cursor.multiCursor.terminalPosition;
       format = setFormat(sheet.grid.getNakedFormat(start.x, start.y, end.x, end.y));
     } else {
-      start = interactionState.cursorPosition;
-      end = interactionState.cursorPosition;
+      start = cursor.cursorPosition;
+      end = cursor.cursorPosition;
       const cellFormat = sheet.grid.getFormat(start.x, start.y);
       if (cellFormat) {
         format = setFormat([cellFormat]);
@@ -112,15 +109,15 @@ export const useGetSelection = (sheet: Sheet): GetSelection => {
         format = setFormat([]);
       }
     }
-    return { start, end, multiCursor, format };
+    return { start, end, multiCursor: !!cursor.multiCursor, format };
 
     // this is needed for trigger to cause a useMemo change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    multiCursor,
-    interactionState.multiCursorPosition.originPosition,
-    interactionState.multiCursorPosition.terminalPosition,
-    interactionState.cursorPosition,
+    cursor.multiCursor,
+    cursor.multiCursor?.originPosition,
+    cursor.multiCursor?.terminalPosition,
+    cursor.cursorPosition,
     sheet.grid,
     trigger,
   ]);

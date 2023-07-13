@@ -28,10 +28,6 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
   const { presentationMode } = useGridSettings();
   const { hasInitialPageLoadError } = useLocalFiles();
 
-  useEffect(() => {
-    sheetController.setApp(app);
-  }, [sheetController, app]);
-
   // Temporary way to attach sheet to global for use in GetCellsDB function
   useEffect(() => {
     GetCellsDBSetSheet(sheetController.sheet);

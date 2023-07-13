@@ -1,12 +1,7 @@
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { isMac } from '../../../utils/isMac';
 
-export function keyboardUndoRedo(
-  event: React.KeyboardEvent<HTMLElement>,
-  interactionState: GridInteractionState,
-  sheetController: SheetController
-): boolean {
+export function keyboardUndoRedo(event: React.KeyboardEvent<HTMLElement>, sheetController: SheetController): boolean {
   // Redo
   if (
     ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'z') ||

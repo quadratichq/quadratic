@@ -4,7 +4,6 @@ import { Sheet } from '../../../grid/sheet/Sheet';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { Pointer } from '../pointer/Pointer';
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { LocalFiles } from '../../../ui/contexts/LocalFiles';
 import { PixiApp } from '../../pixiApp/PixiApp';
 
@@ -13,7 +12,6 @@ export function keyboardViewport(options: {
   event: KeyboardEvent;
   sheet: Sheet;
   viewport?: Viewport;
-  interactionState: GridInteractionState;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   clearAllFormatting: Function;
@@ -34,7 +32,6 @@ export function keyboardViewport(options: {
     format,
     sheet,
     viewport,
-    interactionState,
     editorInteractionState,
     setEditorInteractionState,
     presentationMode,
@@ -127,7 +124,7 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '8') {
-    zoomToSelection(interactionState, sheet, viewport);
+    zoomToSelection(sheet, viewport);
     return true;
   }
 

@@ -132,7 +132,7 @@ const ListItems = [
       <CommandPaletteListItem
         {...props}
         action={() => {
-          zoomToSelection(props.interactionState, props.app.sheet, props.app.viewport);
+          zoomToSelection(props.app.sheet, props.app.viewport);
         }}
         shortcut="8"
         shortcutModifiers={[KeyboardSymbols.Command]}

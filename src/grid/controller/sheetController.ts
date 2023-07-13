@@ -2,7 +2,6 @@ import { Sheet } from '../sheet/Sheet';
 import { Transaction } from './transaction';
 import { Statement } from './statement';
 import { StatementRunner } from './runners/runner';
-import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
 import { SheetSchema } from '../../schemas';
@@ -10,7 +9,6 @@ import { generateKeyBetween } from 'fractional-indexing';
 import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
 
 export class SheetController {
-  app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
   sheets: Sheet[];
   _current: string;
   saveLocalFiles: (() => void) | undefined;
@@ -39,7 +37,7 @@ export class SheetController {
   set current(value: string) {
     if (value !== this._current) {
       this._current = value;
-      this.app?.changeSheet();
+      window.dispatchEvent(new CustomEvent('change-sheet'));
     }
   }
 
@@ -117,7 +115,7 @@ export class SheetController {
 
   addSheet(sheet: Sheet): void {
     this.sheets.push(sheet);
-    this.app?.quadrants.addSheet(sheet);
+    window.dispatchEvent(new CustomEvent('add-sheet', { detail: sheet.id }));
     this.current = sheet.id;
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
@@ -129,7 +127,8 @@ export class SheetController {
     }
     const deletedSheet = this.sheets.splice(index, 1)[0];
     const order = deletedSheet.order;
-    this.app?.quadrants.deleteSheet(deletedSheet);
+    window.dispatchEvent(new CustomEvent('quadrants-delete', { detail: deletedSheet.id }));
+    // this.app?.quadrants.deleteSheet(deletedSheet);
 
     // set current to next sheet
     if (this.sheets.length) {
@@ -194,7 +193,7 @@ export class SheetController {
     this.transaction_in_progress.statements.push(statement);
 
     // run statement and add reverse statement to transaction_in_progress
-    const reverse_statement = StatementRunner(this.sheet, statement, this.app);
+    const reverse_statement = StatementRunner(this, statement);
 
     this.transaction_in_progress_reverse.statements.unshift(reverse_statement);
   }
@@ -277,16 +276,14 @@ export class SheetController {
     // add reverse transaction to redo stack
     this.redo_stack.push(reverse_transaction);
 
-    if (this.app) {
-      if (transaction.cursor) {
-        this.current = transaction.cursor.sheetId;
-        this.sheet.cursor.load(transaction.cursor);
-      }
-
-      // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
-      // This will be very inefficient on large files.
-      this.app.rebuild();
+    if (transaction.cursor) {
+      this.current = transaction.cursor.sheetId;
+      this.sheet.cursor.load(transaction.cursor);
     }
+
+    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
+    // This will be very inefficient on large files.
+    window.dispatchEvent(new CustomEvent('rebuild'));
   }
 
   public redo(): void {
@@ -318,16 +315,14 @@ export class SheetController {
     // add reverse transaction to undo stack
     this.undo_stack.push(reverse_transaction);
 
-    if (this.app) {
-      if (transaction.cursor) {
-        this.current = transaction.cursor.sheetId;
-        this.sheet.cursor.load(transaction.cursor);
-      }
-
-      // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
-      // This will be very inefficient on large files.
-      this.app.rebuild();
+    if (transaction.cursor) {
+      this.current = transaction.cursor.sheetId;
+      this.sheet.cursor.load(transaction.cursor);
     }
+
+    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
+    // This will be very inefficient on large files.
+    window.dispatchEvent(new CustomEvent('rebuild'));
   }
 
   public clear(): void {
@@ -335,10 +330,6 @@ export class SheetController {
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
-  }
-
-  public setApp(app: PixiApp): void {
-    this.app = app;
   }
 
   public logUndoStack(): void {

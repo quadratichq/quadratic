@@ -33,6 +33,20 @@ export class Quadrants extends Container {
     this.container = new Container();
     this.cells = this.container.addChild(new Cells(app));
     this.container.addChildAt(this.cells.cellsBackground, 0);
+    this.setupListeners();
+  }
+
+  // private quadrantsAddListener = (e: any): void => this.add(e.detail);
+  private quadrantsChangedListener = (e: any): void => this.quadrantChanged(e.detail);
+
+  private setupListeners() {
+    // window.addEventListener('quadrants-add', this.quadrantsAddListener);
+    window.addEventListener('quadrants-changed', this.quadrantsChangedListener);
+  }
+
+  destroy() {
+    super.destroy();
+    window.removeEventListener('quadrants-changed', this.quadrantsChangedListener);
   }
 
   static getKey(x: number, y: number): string {

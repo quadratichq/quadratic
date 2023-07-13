@@ -2,7 +2,6 @@ import { Rectangle, Point } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { ZOOM_ANIMATION_TIME_MS, ZOOM_BUFFER } from '../../constants/gridConstants';
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 
 export function zoomToFit(sheet: Sheet, viewport: Viewport): void {
   const gridBounds = sheet.getGridBounds(false);
@@ -56,10 +55,10 @@ export function zoomTo100(viewport: Viewport) {
   zoomInOut(viewport, 1);
 }
 
-export function zoomToSelection(interactionState: GridInteractionState, sheet: Sheet, viewport: Viewport): void {
+export function zoomToSelection(sheet: Sheet, viewport: Viewport): void {
   let screenRectangle: Rectangle;
-  if (interactionState.showMultiCursor) {
-    const cursor = interactionState.multiCursorPosition;
+  if (sheet.cursor.multiCursor) {
+    const cursor = sheet.cursor.multiCursor;
     screenRectangle = sheet.gridOffsets.getScreenRectangle(
       cursor.originPosition.x,
       cursor.originPosition.y,
@@ -67,7 +66,7 @@ export function zoomToSelection(interactionState: GridInteractionState, sheet: S
       cursor.terminalPosition.y - cursor.originPosition.y
     );
   } else {
-    const cursor = interactionState.cursorPosition;
+    const cursor = sheet.cursor.cursorPosition;
     screenRectangle = sheet.gridOffsets.getScreenRectangle(cursor.x, cursor.y, 1, 1);
   }
   // calc scale, and leave a little room on the top and sides

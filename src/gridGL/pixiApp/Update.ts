@@ -99,8 +99,6 @@ export class Update {
     app.cursor.update();
     debugTimeCheck('[Update] cursor');
 
-    app.settings.update();
-
     if (rendererDirty) {
       app.viewport.dirty = false;
 
@@ -182,8 +180,6 @@ export class Update {
     app.boxCells.update();
     app.cells.update();
     app.cursor.update();
-
-    app.settings.update();
 
     if (rendererDirty) {
       app.viewport.dirty = false;

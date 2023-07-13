@@ -1,6 +1,4 @@
 import { useCallback } from 'react';
-import { useRecoilState } from 'recoil';
-import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
 import { Coordinate } from '../../gridGL/types/size';
 import { HeadingResizing } from './GridOffsets';
@@ -22,20 +20,14 @@ export interface DeleteHeadings {
 }
 
 export const useHeadings = (props: Props) => {
-  const [interactionState] = useRecoilState(gridInteractionStateAtom);
-  const multiCursor = interactionState.showMultiCursor;
+  const { sheetController } = props;
 
   const getStartEnd = useCallback((): { start: Coordinate; end: Coordinate } => {
-    let start: Coordinate, end: Coordinate;
-    if (multiCursor) {
-      start = interactionState.multiCursorPosition.originPosition;
-      end = interactionState.multiCursorPosition.terminalPosition;
-    } else {
-      start = interactionState.cursorPosition;
-      end = interactionState.cursorPosition;
-    }
+    const cursor = sheetController.sheet.cursor;
+    const start = cursor.originPosition;
+    const end = cursor.terminalPosition;
     return { start, end };
-  }, [interactionState, multiCursor]);
+  }, [sheetController.sheet.cursor]);
 
   const updateHeadings = useCallback(
     (headingResizing: HeadingResizing) => {

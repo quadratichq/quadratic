@@ -357,7 +357,6 @@ export const cutToClipboard = async (sheet_controller: SheetController, cell0: C
     x1: cell1.x,
     y1: cell1.y,
     sheetController: sheet_controller,
-    app: sheet_controller.app,
     create_transaction: false,
   });
 

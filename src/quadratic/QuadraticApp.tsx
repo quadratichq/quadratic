@@ -24,10 +24,6 @@ export const QuadraticApp = () => {
   const { initialize } = localFiles;
 
   useEffect(() => {
-    sheetController.app = app;
-  }, [app, sheetController]);
-
-  useEffect(() => {
     if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
       setLoading(false);
     }

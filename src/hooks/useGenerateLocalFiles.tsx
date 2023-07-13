@@ -82,8 +82,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     (grid: GridFile) => {
       sheetController.clear();
       sheetController.loadSheets(grid.sheets);
-      sheetController.app?.rebuild();
-      sheetController.app?.reset();
+      window.dispatchEvent(new CustomEvent('rebuild'));
       const searchParams = new URLSearchParams(window.location.search);
       // If `file` is in there from an initial page load, remove it
       if (searchParams.get('file')) {

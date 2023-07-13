@@ -17,8 +17,6 @@ import {
 import { Tooltip } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { ColorResult } from 'react-color';
-import { useRecoilState } from 'recoil';
-import { gridInteractionStateAtom } from '../../../../../atoms/gridInteractionStateAtom';
 import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
 import { colors } from '../../../../../theme/colors';
@@ -47,8 +45,8 @@ enum BorderSelection {
 }
 
 export function useGetBorderMenu(props: Props): JSX.Element {
-  const [interactionState] = useRecoilState(gridInteractionStateAtom);
-  const multiCursor = interactionState.showMultiCursor;
+  const { sheet } = props;
+  const cursor = sheet.cursor;
 
   const [lineStyle, setLineStyle] = useState<BorderType | undefined>();
   const [borderSelection, setBorderSelection] = useState<BorderSelection>(BorderSelection.none);
@@ -57,10 +55,12 @@ export function useGetBorderMenu(props: Props): JSX.Element {
 
   const { changeBorders, clearBorders } = useBorders(props.sheet, props.app);
 
+  const clearSelection = useCallback(() => setBorderSelection(0), []);
   // clear border type when changing selection
   useEffect(() => {
-    setBorderSelection(0);
-  }, [interactionState]);
+    window.addEventListener('cursor-position', clearSelection);
+    return () => window.removeEventListener('cursor-position', clearSelection);
+  }, [clearSelection]);
 
   const handleChangeBorders = useCallback(
     (borderSelection: BorderSelection, color: string, lineStyle?: BorderType): void => {
@@ -164,20 +164,20 @@ export function useGetBorderMenu(props: Props): JSX.Element {
             type={BorderSelection.inner}
             title="Inner borders"
             label={<BorderInner />}
-            disabled={!multiCursor}
+            disabled={!cursor.multiCursor}
           />
           <BorderSelectionButton type={BorderSelection.outer} title="Outer borders" label={<BorderOuter />} />
           <BorderSelectionButton
             type={BorderSelection.horizontal}
             title="Horizontal borders"
             label={<BorderHorizontal />}
-            disabled={!multiCursor}
+            disabled={!cursor.multiCursor}
           />
           <BorderSelectionButton
             type={BorderSelection.vertical}
             title="Vertical borders"
             label={<BorderVertical />}
-            disabled={!multiCursor}
+            disabled={!cursor.multiCursor}
           />
         </div>
         <div className="borderMenuLine">

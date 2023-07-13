@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react';
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { Coordinate } from '../types/size';
 import { focusGrid } from '../../helpers/focusGrid';
 import { PixiApp } from '../pixiApp/PixiApp';
@@ -12,21 +11,19 @@ import { useFormatCells } from '../../ui/menus/TopBar/SubMenus/useFormatCells';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
 
 interface CellInputProps {
-  interactionState: GridInteractionState;
   editorInteractionState: EditorInteractionState;
-  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
   app?: PixiApp;
   sheetController: SheetController;
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { interactionState, editorInteractionState, setInteractionState, app, container, sheetController } = props;
+  const { editorInteractionState, app, container, sheetController } = props;
   const { changeBold, changeItalic } = useFormatCells(sheetController, app, true);
 
   const viewport = app?.viewport;
 
-  const cellLocation = interactionState.cursorPosition;
+  const cellLocation = sheetController.sheet.cursor.cursorPosition;
 
   const text = useRef('');
 
@@ -74,12 +71,12 @@ export const CellInput = (props: CellInputProps) => {
       if (!node) return;
       node.focus();
       setTextInput(node);
-      text.current = interactionState.inputInitialValue ?? (cell?.value || '');
+      text.current = sheetController.sheet.cursor.inputInitialValue ?? (cell?.value || '');
       if (document.hasFocus() && node.contains(document.activeElement)) {
         handleFocus({ target: node });
       }
     },
-    [cell?.value, handleFocus, interactionState.inputInitialValue]
+    [cell?.value, handleFocus, sheetController.sheet.cursor.inputInitialValue]
   );
 
   // If we don't have a viewport, we can't continue.
@@ -124,7 +121,7 @@ export const CellInput = (props: CellInputProps) => {
   }
 
   // If the input is not shown, we can do nothing and return null
-  if (!interactionState.showInput) {
+  if (!sheetController.sheet.cursor.showInput) {
     return null;
   }
 
@@ -150,7 +147,6 @@ export const CellInput = (props: CellInputProps) => {
             x1: cellLocation.x,
             y1: cellLocation.y,
             sheetController,
-            app,
             create_transaction: false,
           });
       } else {
@@ -166,7 +162,6 @@ export const CellInput = (props: CellInputProps) => {
             },
           ],
           sheetController,
-          app,
         });
         if (temporaryBold !== undefined && temporaryBold !== !!format?.bold) {
           changeBold(temporaryBold);
@@ -183,19 +178,14 @@ export const CellInput = (props: CellInputProps) => {
     }
 
     // Update Grid Interaction state, reset input value state
-    setInteractionState({
-      ...interactionState,
-      keyboardMovePosition: {
-        x: interactionState.cursorPosition.x + transpose.x,
-        y: interactionState.cursorPosition.y + transpose.y,
-      },
+    const position = sheetController.sheet.cursor.cursorPosition;
+    sheetController.sheet.cursor.changePosition({
       cursorPosition: {
-        x: interactionState.cursorPosition.x + transpose.x,
-        y: interactionState.cursorPosition.y + transpose.y,
+        x: position.x + transpose.x,
+        y: position.y + transpose.y,
       },
-      showInput: false,
-      inputInitialValue: '',
     });
+    sheetController.sheet.cursor.changeInput(false);
 
     // Set focus back to Grid
     focusGrid();

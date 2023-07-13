@@ -1,4 +1,3 @@
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PNG_MESSAGE } from '../../../constants/app';
 import {
   copySelectionToPNG,
@@ -12,18 +11,18 @@ import { PixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardClipboard(props: {
   event: React.KeyboardEvent<HTMLElement>;
-  interactionState: GridInteractionState;
   sheet_controller: SheetController;
   app: PixiApp;
   addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
 }): boolean {
-  const { addGlobalSnackbar, event, interactionState, sheet_controller, app } = props;
+  const { addGlobalSnackbar, event, sheet_controller, app } = props;
+  const cursor = sheet_controller.sheet.cursor;
 
   // Command + V
   if ((event.metaKey || event.ctrlKey) && event.key === 'v') {
     pasteFromClipboard(sheet_controller, {
-      x: interactionState.cursorPosition.x,
-      y: interactionState.cursorPosition.y,
+      x: cursor.cursorPosition.x,
+      y: cursor.cursorPosition.y,
     });
     return true;
   }
@@ -37,35 +36,18 @@ export function keyboardClipboard(props: {
     return true;
   }
 
+  const start = cursor.originPosition;
+  const end = cursor.terminalPosition;
+
   // Command + C
   if ((event.metaKey || event.ctrlKey) && event.key === 'c') {
-    copyToClipboard(
-      sheet_controller,
-      {
-        x: interactionState.multiCursorPosition.originPosition.x,
-        y: interactionState.multiCursorPosition.originPosition.y,
-      },
-      {
-        x: interactionState.multiCursorPosition.terminalPosition.x,
-        y: interactionState.multiCursorPosition.terminalPosition.y,
-      }
-    );
+    copyToClipboard(sheet_controller, start, end);
     return true;
   }
 
   // Command + X
   if ((event.metaKey || event.ctrlKey) && event.key === 'x') {
-    cutToClipboard(
-      sheet_controller,
-      {
-        x: interactionState.multiCursorPosition.originPosition.x,
-        y: interactionState.multiCursorPosition.originPosition.y,
-      },
-      {
-        x: interactionState.multiCursorPosition.terminalPosition.x,
-        y: interactionState.multiCursorPosition.terminalPosition.y,
-      }
-    );
+    cutToClipboard(sheet_controller, start, end);
     return true;
   }
 

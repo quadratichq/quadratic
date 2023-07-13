@@ -2,7 +2,6 @@ import React, { SyntheticEvent } from 'react';
 import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
@@ -18,7 +17,6 @@ interface Props {
 }
 
 export const GoTo = (props: Props) => {
-  const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showGoToMenu } = editorInteractionState;
   const [value, setValue] = React.useState<string>('');
@@ -37,16 +35,9 @@ export const GoTo = (props: Props) => {
     const [coor1, coor2] = coordinates;
 
     // GoTo Cell
-    let newInteractionState = {
-      ...interactionState,
-      cursorPosition: coor1,
-      keyboardMovePosition: coor1,
-      multiCursorPosition: {
-        originPosition: coor1,
-        terminalPosition: coor1,
-      },
-      showMultiCursor: false,
-    };
+    let cursorPosition = coor1;
+    let keyboardMovePosition = coor1;
+    let multiCursor: undefined | { originPosition: Coordinate; terminalPosition: Coordinate };
 
     // GoTo range
     if (coor2) {
@@ -55,34 +46,33 @@ export const GoTo = (props: Props) => {
       const originPosition: Coordinate = { x: Math.min(coor1.x, coor2.x), y: Math.min(coor1.y, coor2.y) };
       const terminalPosition: Coordinate = { x: Math.max(coor1.x, coor2.x), y: Math.max(coor1.y, coor2.y) };
 
-      newInteractionState = {
-        ...newInteractionState,
-        keyboardMovePosition: originPosition,
-        cursorPosition: originPosition,
-        multiCursorPosition: {
-          originPosition,
-          terminalPosition,
-        },
-        showMultiCursor: true,
+      keyboardMovePosition = originPosition;
+      cursorPosition = originPosition;
+      multiCursor = {
+        originPosition,
+        terminalPosition,
       };
     }
 
-    setInteractionState(newInteractionState);
+    props.sheetController.sheet.cursor.changePosition({
+      keyboardMovePosition,
+      cursorPosition,
+      multiCursor,
+    });
     if (coor1.x === 0 && coor1.y === 0 && !coor2)
       moveViewport({
         app: props.app,
-        topLeft: newInteractionState.cursorPosition,
+        topLeft: cursorPosition,
       });
     else if (
       !isVisible({
         app: props.app,
-        interactionState: newInteractionState,
         sheet: props.sheetController.sheet,
       })
     )
       moveViewport({
         app: props.app,
-        center: newInteractionState.cursorPosition,
+        center: cursorPosition,
       });
 
     closeMenu();

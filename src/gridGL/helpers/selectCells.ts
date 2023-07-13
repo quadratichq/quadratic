@@ -1,17 +1,9 @@
 import { Viewport } from 'pixi-viewport';
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { Coordinate } from '../types/size';
 import { Cell } from '../../schemas';
 
-export function selectAllCells(options: {
-  sheet: Sheet;
-  setInteractionState: (value: GridInteractionState) => void;
-  interactionState: GridInteractionState;
-  viewport?: Viewport;
-  column?: number;
-  row?: number;
-}): void {
+export function selectAllCells(options: { sheet: Sheet; viewport?: Viewport; column?: number; row?: number }): void {
   const { sheet } = options;
   let bounds: Coordinate[] | undefined;
   if (options.row !== undefined) {
@@ -24,14 +16,10 @@ export function selectAllCells(options: {
   if (!bounds) return;
   const cursorPosition = { x: bounds[0].x, y: bounds[0].y };
   if (bounds !== undefined) {
-    options.setInteractionState({
-      ...options.interactionState,
-      ...{
-        multiCursorPosition: {
-          originPosition: bounds[0],
-          terminalPosition: bounds[1],
-        },
-        showMultiCursor: true,
+    sheet.cursor.changePosition({
+      multiCursor: {
+        originPosition: bounds[0],
+        terminalPosition: bounds[1],
       },
       cursorPosition,
     });
@@ -39,14 +27,7 @@ export function selectAllCells(options: {
   }
 }
 
-export function selectColumns(options: {
-  sheet: Sheet;
-  setInteractionState: (value: GridInteractionState) => void;
-  interactionState: GridInteractionState;
-  viewport?: Viewport;
-  start: number;
-  end: number;
-}): void {
+export function selectColumns(options: { sheet: Sheet; viewport?: Viewport; start: number; end: number }): void {
   const { sheet } = options;
   let minX = Infinity,
     minY = Infinity,
@@ -62,14 +43,10 @@ export function selectColumns(options: {
     }
   }
   if (minX !== Infinity && minY !== Infinity) {
-    options.setInteractionState({
-      ...options.interactionState,
-      ...{
-        multiCursorPosition: {
-          originPosition: { x: minX, y: minY },
-          terminalPosition: { x: maxX, y: maxY },
-        },
-        showMultiCursor: true,
+    sheet.cursor.changePosition({
+      multiCursor: {
+        originPosition: { x: minX, y: minY },
+        terminalPosition: { x: maxX, y: maxY },
       },
     });
     if (options.viewport) options.viewport.dirty = true;
@@ -78,8 +55,6 @@ export function selectColumns(options: {
 
 export async function selectRows(options: {
   sheet: Sheet;
-  setInteractionState: (value: GridInteractionState) => void;
-  interactionState: GridInteractionState;
   viewport?: Viewport;
   start: number;
   end: number;
@@ -99,14 +74,10 @@ export async function selectRows(options: {
     }
   }
   if (minX !== Infinity && minY !== Infinity) {
-    options.setInteractionState({
-      ...options.interactionState,
-      ...{
-        multiCursorPosition: {
-          originPosition: { x: minX, y: minY },
-          terminalPosition: { x: maxX, y: maxY },
-        },
-        showMultiCursor: true,
+    sheet.cursor.changePosition({
+      multiCursor: {
+        originPosition: { x: minX, y: minY },
+        terminalPosition: { x: maxX, y: maxY },
       },
     });
     if (options.viewport) options.viewport.dirty = true;

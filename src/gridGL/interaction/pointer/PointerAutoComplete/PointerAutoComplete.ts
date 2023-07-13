@@ -2,10 +2,10 @@ import { Point, Rectangle } from 'pixi.js';
 import { IS_READONLY_MODE } from '../../../../constants/app';
 import { PixiApp } from '../../../pixiApp/PixiApp';
 import { Sheet } from '../../../../grid/sheet/Sheet';
-import { PanMode } from '../../../../atoms/gridInteractionStateAtom';
 import { intersects } from '../../../helpers/intersects';
 import { Coordinate } from '../../../types/size';
 import { expandDown, expandLeft, expandRight, expandUp, shrinkHorizontal, shrinkVertical } from './autoComplete';
+import { PanMode } from '../../../../grid/sheet/SheetCursor';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
 export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefined;
@@ -32,24 +32,22 @@ export class PointerAutoComplete {
 
   pointerDown(world: Point): boolean {
     if (IS_READONLY_MODE) return false;
-    const { interactionState, setInteractionState } = this.app.settings;
-    if (!setInteractionState) throw new Error('Expected setInteractionState to be defined in PointerAutoComplete');
-    if (interactionState.panMode !== PanMode.Disabled) return false;
+    const cursor = this.sheet.cursor;
+
+    if (cursor.panMode !== PanMode.Disabled) return false;
 
     // handle dragging from the corner
     if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
       this.active = true;
-      if (interactionState.multiCursorPosition) {
+      if (cursor.multiCursor) {
         this.selection = new Rectangle(
-          interactionState.multiCursorPosition.originPosition.x,
-          interactionState.multiCursorPosition.originPosition.y,
-          interactionState.multiCursorPosition.terminalPosition.x -
-            interactionState.multiCursorPosition.originPosition.x,
-          interactionState.multiCursorPosition.terminalPosition.y -
-            interactionState.multiCursorPosition.originPosition.y
+          cursor.multiCursor.originPosition.x,
+          cursor.multiCursor.originPosition.y,
+          cursor.multiCursor.terminalPosition.x - cursor.multiCursor.originPosition.x,
+          cursor.multiCursor.terminalPosition.y - cursor.multiCursor.originPosition.y
         );
       } else {
-        this.selection = new Rectangle(interactionState.cursorPosition.x, interactionState.cursorPosition.y, 1, 1);
+        this.selection = new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
       }
       this.screenSelection = this.app.sheet.gridOffsets.getScreenRectangle(
         this.selection.left,
@@ -57,11 +55,7 @@ export class PointerAutoComplete {
         this.selection.width + 1,
         this.selection.height + 1
       );
-
-      setInteractionState({
-        ...interactionState,
-        boxCells: true,
-      });
+      cursor.changeBoxCells(true);
 
       return true;
     }
@@ -79,21 +73,13 @@ export class PointerAutoComplete {
       this.screenSelection = undefined;
       this.active = false;
       this.app.boxCells.reset();
-
-      const { setInteractionState, interactionState } = this.app.settings;
-      if (!setInteractionState) throw new Error('Expected setInteractionState to be defined in PointerAutoComplete');
-
-      setInteractionState({
-        ...interactionState,
-        boxCells: false,
-      });
+      this.sheet.cursor.changeBoxCells(false);
     }
   }
 
   pointerMove(world: Point): boolean {
     if (IS_READONLY_MODE) return false;
-    const { interactionState, setInteractionState } = this.app.settings;
-    if (interactionState.panMode !== PanMode.Disabled) return false;
+    if (this.sheet.cursor.panMode !== PanMode.Disabled) return false;
     if (!this.active) {
       if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
         this.cursor = 'crosshair';
@@ -103,7 +89,6 @@ export class PointerAutoComplete {
       return false;
     } else {
       this.cursor = 'crosshair';
-      if (!setInteractionState) throw new Error('Expected setInteractionState to be defined in PointerAutoComplete');
 
       // handle dragging from the corner
       // if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
@@ -181,8 +166,7 @@ export class PointerAutoComplete {
 
   private setSelection(): void {
     const { selection } = this;
-    const { setInteractionState, interactionState } = this.app.settings;
-    if (!selection || !setInteractionState) return;
+    if (!selection) return;
 
     const top = this.toVertical !== undefined && this.stateVertical === 'expandUp' ? this.toVertical : selection.top;
     const bottom =
@@ -201,23 +185,20 @@ export class PointerAutoComplete {
     const width = bottom - top;
     const height = right - left;
 
+    const cursor = this.sheet.cursor;
+
     if (width === 1 && height === 1) {
-      setInteractionState({
-        ...interactionState,
-        showMultiCursor: false,
+      cursor.changePosition({
+        multiCursor: undefined,
       });
     } else {
-      setInteractionState({
-        ...interactionState,
-        showMultiCursor: true,
-        multiCursorPosition: {
+      this.sheet.cursor.changePosition({
+        multiCursor: {
           originPosition: {
-            ...interactionState.multiCursorPosition.originPosition,
             x: left,
             y: top,
           },
           terminalPosition: {
-            ...interactionState.multiCursorPosition.terminalPosition,
             x: right,
             y: bottom,
           },

@@ -76,27 +76,19 @@ export class GridHeadings extends Container {
 
   // creates arrays of selected columns and rows
   private createSelectedArrays(): { selectedColumns: number[]; selectedRows: number[] } {
-    const interactionState = this.app.settings.interactionState;
+    const cursor = this.app.sheet.cursor;
     const selectedColumns: number[] = [];
     const selectedRows: number[] = [];
-    if (interactionState.showMultiCursor) {
-      for (
-        let x = interactionState.multiCursorPosition.originPosition.x;
-        x <= interactionState.multiCursorPosition.terminalPosition.x;
-        x++
-      ) {
+    if (cursor.multiCursor) {
+      for (let x = cursor.multiCursor.originPosition.x; x <= cursor.multiCursor.terminalPosition.x; x++) {
         selectedColumns.push(x);
       }
-      for (
-        let y = interactionState.multiCursorPosition.originPosition.y;
-        y <= interactionState.multiCursorPosition.terminalPosition.y;
-        y++
-      ) {
+      for (let y = cursor.multiCursor.originPosition.y; y <= cursor.multiCursor.terminalPosition.y; y++) {
         selectedRows.push(y);
       }
     } else {
-      selectedColumns.push(interactionState.cursorPosition.x);
-      selectedRows.push(interactionState.cursorPosition.y);
+      selectedColumns.push(cursor.cursorPosition.x);
+      selectedRows.push(cursor.cursorPosition.y);
     }
     return { selectedColumns, selectedRows };
   }

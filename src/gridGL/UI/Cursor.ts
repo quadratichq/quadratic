@@ -32,12 +32,12 @@ export class Cursor extends Graphics {
   }
 
   private drawCursor(): void {
-    const { settings, viewport } = this.app;
+    const cursor = this.app.sheet.cursor;
+    const { viewport } = this.app;
     const { gridOffsets } = this.app.sheet;
     const { editorInteractionState } = this.app.settings;
-    const cell = settings.interactionState.cursorPosition;
-    const multiCursor = settings.interactionState.showMultiCursor;
-    const showInput = settings.interactionState.showInput;
+    const cell = cursor.cursorPosition;
+    const showInput = cursor.showInput;
 
     let { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
     const color = colors.cursorCell;
@@ -47,8 +47,7 @@ export class Cursor extends Graphics {
     const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
     this.indicator.width = this.indicator.height = indicatorSize;
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
-    const terminalPosition = settings.interactionState.multiCursorPosition.terminalPosition;
-    const cursorPosition = settings.interactionState.cursorPosition;
+    const cursorPosition = cursor.cursorPosition;
     let indicatorOffset = 0;
 
     // showInput changes after cellEdit is removed from DOM
@@ -58,7 +57,11 @@ export class Cursor extends Graphics {
         width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
       }
     } else {
-      if (!multiCursor || (terminalPosition.x === cursorPosition.x && terminalPosition.y === cursorPosition.y)) {
+      if (
+        !cursor.multiCursor ||
+        (cursor.multiCursor.terminalPosition.x === cursorPosition.x &&
+          cursor.multiCursor.terminalPosition.y === cursorPosition.y)
+      ) {
         indicatorOffset = indicatorSize / 2 + indicatorPadding;
       }
     }
@@ -92,15 +95,14 @@ export class Cursor extends Graphics {
   }
 
   private drawMultiCursor(): void {
-    const { settings } = this.app;
     const { gridOffsets } = this.app.sheet;
+    const cursor = this.app.sheet.cursor;
 
-    if (settings.interactionState.showMultiCursor) {
-      const multiCursor = settings.interactionState.multiCursorPosition;
+    if (cursor.multiCursor) {
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
       this.beginFill(colors.cursorCell, FILL_ALPHA);
-      this.startCell = gridOffsets.getCell(multiCursor.originPosition.x, multiCursor.originPosition.y);
-      this.endCell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
+      this.startCell = gridOffsets.getCell(cursor.originPosition.x, cursor.originPosition.y);
+      this.endCell = gridOffsets.getCell(cursor.terminalPosition.x, cursor.terminalPosition.y);
       this.drawRect(
         this.startCell.x,
         this.startCell.y,
@@ -108,24 +110,19 @@ export class Cursor extends Graphics {
         this.endCell.y + this.endCell.height - this.startCell.y
       );
     } else {
-      this.startCell = gridOffsets.getCell(
-        settings.interactionState.cursorPosition.x,
-        settings.interactionState.cursorPosition.y
-      );
-      this.endCell = gridOffsets.getCell(
-        settings.interactionState.cursorPosition.x,
-        settings.interactionState.cursorPosition.y
-      );
+      this.startCell = gridOffsets.getCell(cursor.cursorPosition.x, cursor.cursorPosition.y);
+      this.endCell = gridOffsets.getCell(cursor.cursorPosition.x, cursor.cursorPosition.y);
     }
   }
 
   private drawCursorIndicator(): void {
     const { viewport } = this.app;
+    const cursor = this.app.sheet.cursor;
 
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
       const { editorInteractionState } = this.app.settings;
       const editor_selected_cell = editorInteractionState.selectedCell;
-      const cell = this.app.settings.interactionState.cursorPosition;
+      const cell = cursor.cursorPosition;
 
       // draw cursor indicator
       const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
@@ -181,7 +178,7 @@ export class Cursor extends Graphics {
       this.dirty = false;
       this.clear();
       this.drawCursor();
-      if (this.app.settings.interactionState.showInput) return;
+      if (this.app.sheet.cursor.showInput) return;
       this.drawMultiCursor();
       this.drawCodeCursor();
       this.drawCursorIndicator();

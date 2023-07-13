@@ -1,29 +1,27 @@
-import { Sheet } from '../../sheet/Sheet';
 import { Statement } from '../statement';
 import { SetCellRunner } from './setCellRunner';
 import { AddCellDependenciesRunner, RemoveCellDependenciesRunner } from './setCellDependenciesRunner';
 import { SetCellFormatRunner } from './setCellFormatRunner';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SetHeadingSizeRunner } from './setHeadingSizeRunner';
 import { SetBorderRunner } from './setBorderRunner';
 import { sheetRunner } from './sheetRunner';
+import { SheetController } from '../sheetController';
 
-export const StatementRunner = (sheet: Sheet, statement: Statement, app?: PixiApp): Statement => {
+export const StatementRunner = (sheetController: SheetController, statement: Statement): Statement => {
   if (statement.type === 'SET_CELL') {
-    return SetCellRunner(sheet, statement, app);
+    return SetCellRunner(sheetController, statement);
   } else if (statement.type === 'ADD_CELL_DEPENDENCY') {
-    return AddCellDependenciesRunner(sheet, statement);
+    return AddCellDependenciesRunner(sheetController, statement);
   } else if (statement.type === 'REMOVE_CELL_DEPENDENCY') {
-    return RemoveCellDependenciesRunner(sheet, statement);
+    return RemoveCellDependenciesRunner(sheetController, statement);
   } else if (statement.type === 'SET_CELL_FORMAT') {
-    return SetCellFormatRunner(sheet, statement, app);
+    return SetCellFormatRunner(sheetController, statement);
   } else if (statement.type === 'SET_HEADING_SIZE') {
-    return SetHeadingSizeRunner(sheet, statement, app);
+    return SetHeadingSizeRunner(sheetController, statement);
   } else if (statement.type === 'SET_BORDER') {
-    return SetBorderRunner(sheet, statement, app);
+    return SetBorderRunner(sheetController, statement);
   } else if (statement.type.includes('SHEET')) {
-    if (!app) throw new Error('StatementRunner for Sheets needs app to complete');
-    return sheetRunner(statement, app);
+    return sheetRunner(sheetController, statement);
   } else {
     throw new Error('Statement type not recognized.');
   }

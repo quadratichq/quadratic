@@ -1,5 +1,4 @@
 import { Cell, ArrayOutputBase } from '../../schemas';
-import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 import { runCellComputation } from '../computations/runCellComputation';
@@ -8,7 +7,6 @@ import { StringId, getKey } from '../../helpers/getKey';
 interface ArgsType {
   starting_cells: Cell[];
   sheetController: SheetController;
-  app?: PixiApp;
   pyodide?: any;
   delete_starting_cells?: boolean;
   create_transaction?: boolean;
@@ -25,7 +23,7 @@ function addToSet(deps: [number, number][], set: Set<StringId>) {
 }
 
 export const updateCellAndDCells = async (args: ArgsType) => {
-  const { starting_cells, sheetController, app, pyodide, delete_starting_cells, create_transaction } = args;
+  const { starting_cells, sheetController, pyodide, delete_starting_cells, create_transaction } = args;
 
   // start transaction
   if (create_transaction ?? true) sheetController.start_transaction();
@@ -235,5 +233,6 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   // Pass updatedCells to the app so it can update the Grid Quadrants which changed.
   // TODO: move this to sheetController so it happens automatically with every transaction?
   // Maybe sheetController.end_transaction() should return a list of cells which updated in the transaction?
-  app?.quadrants.quadrantChanged({ cells: updatedCells });
+  window.dispatchEvent(new CustomEvent('quadrants-changed', { detail: { cells: updatedCells } }));
+  // app?.quadrants.quadrantChanged({ cells: updatedCells });
 };

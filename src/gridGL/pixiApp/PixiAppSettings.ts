@@ -1,5 +1,4 @@
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { GridInteractionState, gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
 import { defaultGridSettings, GridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { PixiApp } from './PixiApp';
 
@@ -8,13 +7,7 @@ export class PixiAppSettings {
   private settings!: GridSettings;
   private lastSettings?: GridSettings;
 
-  // throttle for setting recoil state
-  private interactionStateDirty = false;
-  private setInteractionStateRecoil?: (value: GridInteractionState) => void;
-  private lastShowInput = false;
-
   temporarilyHideCellTypeOutlines = false;
-  interactionState = gridInteractionStateDefault;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: (value: EditorInteractionState) => void;
 
@@ -49,34 +42,6 @@ export class PixiAppSettings {
     }
     this.lastSettings = this.settings;
   };
-
-  setInteractionState(value: GridInteractionState): void {
-    this.interactionState = value;
-    this.interactionStateDirty = true;
-  }
-
-  updateInteractionState(
-    interactionState: GridInteractionState,
-    setInteractionState: (value: GridInteractionState) => void
-  ): void {
-    this.interactionState = interactionState;
-    this.setInteractionStateRecoil = setInteractionState;
-    this.interactionStateDirty = false;
-    this.app.cursor.dirty = true;
-    this.app.headings.dirty = true;
-    if (interactionState.showInput !== this.lastShowInput) {
-      this.app.cells.dirty = true;
-      this.lastShowInput = interactionState.showInput;
-    }
-  }
-
-  update() {
-    // update recoil state only once per frame
-    if (this.interactionStateDirty) {
-      this.interactionStateDirty = false;
-      this.setInteractionStateRecoil?.(this.interactionState);
-    }
-  }
 
   updateEditorInteractionState(
     editorInteractionState: EditorInteractionState,

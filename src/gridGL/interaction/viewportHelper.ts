@@ -1,18 +1,18 @@
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 
-export function isVisible(options: { app: PixiApp; interactionState: GridInteractionState; sheet: Sheet }) {
+export function isVisible(options: { app: PixiApp; sheet: Sheet }) {
   // returns true if the cursor is visible in the viewport
-  const { interactionState, app, sheet } = options;
+  const { app, sheet } = options;
   const { viewport, headings } = app;
   const { gridOffsets } = sheet;
   const headingSize = headings.headingSize;
+  const cursor = sheet.cursor;
 
-  const column = interactionState.keyboardMovePosition.x;
-  const row = interactionState.keyboardMovePosition.y;
+  const column = cursor.keyboardMovePosition.x;
+  const row = cursor.keyboardMovePosition.y;
   const cell = gridOffsets.getCell(column, row);
   let is_off_screen = false;
 
@@ -36,10 +36,10 @@ export function isVisible(options: { app: PixiApp; interactionState: GridInterac
 }
 
 // Ensures the cursor is always visible
-export function ensureVisible(options: { app: PixiApp; interactionState: GridInteractionState; sheet: Sheet }): void {
-  const { interactionState, app, sheet } = options;
+export function ensureVisible(options: { app: PixiApp; sheet: Sheet }): void {
+  const { app, sheet } = options;
 
-  if (!isVisible({ app, interactionState, sheet })) {
+  if (!isVisible({ app, sheet })) {
     app.viewportChanged();
   }
 }

@@ -9,7 +9,7 @@ export const clearBordersAction = (args: {
   create_transaction?: boolean;
 }) => {
   const { sheet_controller, start, end, create_transaction } = args;
-  const { sheet, app } = sheet_controller;
+  const { sheet } = sheet_controller;
 
   // get all borders in the selection
   const borderUpdate: Border[] = [];
@@ -69,6 +69,6 @@ export const clearBordersAction = (args: {
   }
   if (create_transaction ?? true) sheet_controller.end_transaction();
 
-  if (app) app.cells.dirty = true;
-  app?.quadrants.quadrantChanged({ range: { start, end } });
+  window.dispatchEvent(new CustomEvent('quadrants-changed', { detail: { range: { start, end } } }));
+  window.dispatchEvent(new CustomEvent('set-dirty', { detail: { cells: true } }));
 };

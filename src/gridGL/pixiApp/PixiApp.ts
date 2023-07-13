@@ -17,7 +17,6 @@ import { Sheet } from '../../grid/sheet/Sheet';
 import { SheetController } from '../../grid/controller/sheetController';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../constants/app';
 import { Wheel, ZOOM_KEY, HORIZONTAL_SCROLL_KEY } from '../pixiOverride/Wheel';
 import { BoxCells } from '../UI/boxCells';
@@ -129,12 +128,41 @@ export class PixiApp {
 
     if (debugAlwaysShowCache) this.showCache();
 
-    window.addEventListener('resize', this.resize);
-
+    this.setupListeners();
     this.rebuild();
 
     console.log('[QuadraticGL] environment ready');
   }
+
+  private setupListeners() {
+    window.addEventListener('resize', this.resize);
+    window.addEventListener('change-sheet', this.changeSheet);
+    window.addEventListener('rebuild', this.rebuild);
+    window.addEventListener('set-dirty', this.setDirty);
+  }
+
+  private removeListeners() {
+    window.removeEventListener('resize', this.resize);
+    window.removeEventListener('change-sheet', this.changeSheet);
+    window.removeEventListener('rebuild', this.rebuild);
+    window.addEventListener('set-dirty', this.setDirty);
+  }
+
+  private setDirty = (e: any) => {
+    const options: { cells?: boolean; cursor?: boolean; headings?: boolean; gridLines?: boolean } = e.detail;
+    if (options.cells) {
+      this.cells.dirty = true;
+    }
+    if (options.cursor) {
+      this.cursor.dirty = true;
+    }
+    if (options.headings) {
+      this.headings.dirty = true;
+    }
+    if (options.gridLines) {
+      this.gridLines.dirty = true;
+    }
+  };
 
   get sheet(): Sheet {
     return this.sheet_controller.sheet;
@@ -194,6 +222,8 @@ export class PixiApp {
     this.update.destroy();
     this.renderer.destroy(true);
     this.viewport.destroy();
+    this.quadrants.destroy();
+    this.removeListeners();
     this.destroyed = true;
   }
 
@@ -221,7 +251,7 @@ export class PixiApp {
   }
 
   setZoomToSelection(): void {
-    zoomToSelection(this.settings.interactionState, this.sheet, this.viewport);
+    zoomToSelection(this.sheet, this.viewport);
   }
 
   // called before and after a quadrant render
@@ -257,7 +287,7 @@ export class PixiApp {
     this.canvas?.focus();
   }
 
-  changeSheet(): void {
+  changeSheet = () => {
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
     this.axesLines.dirty = true;
@@ -267,7 +297,7 @@ export class PixiApp {
     this.quadrants.changeSheet();
     this.boxCells.reset();
     window.dispatchEvent(new CustomEvent('sheet-change'));
-  }
+  };
 
   rebuild = (): void => {
     this.viewport.dirty = true;
@@ -288,7 +318,6 @@ export class PixiApp {
       this.viewport.position.set(0, 0);
     }
     this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
-    this.settings.setInteractionState?.(gridInteractionStateDefault);
   }
 
   // Pre-renders quadrants by cycling through one quadrant per frame

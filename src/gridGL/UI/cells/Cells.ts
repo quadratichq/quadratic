@@ -232,14 +232,14 @@ export class Cells extends Container {
     const { boundsWithData, bounds, cellRectangle, ignoreInput, isQuadrant, sheet } = options;
     const renderedCells = new Set<string>();
 
-    const { gridOffsets, render_dependency, array_dependency, grid } = sheet;
+    const { gridOffsets, render_dependency, array_dependency, grid, cursor } = sheet;
     this.clear();
 
     const input =
-      !ignoreInput && this.app.settings.interactionState.showInput
+      !ignoreInput && cursor.showInput
         ? {
-            column: this.app.settings.interactionState.cursorPosition.x,
-            row: this.app.settings.interactionState.cursorPosition.y,
+            column: cursor.cursorPosition.x,
+            row: cursor.cursorPosition.y,
           }
         : undefined;
 
@@ -321,7 +321,7 @@ export class Cells extends Container {
   }
 
   drawMultipleBounds(cellRectangles: CellRectangle[]): void {
-    const { gridOffsets, render_dependency, grid } = this.app.sheet;
+    const { gridOffsets, render_dependency, grid, cursor } = this.app.sheet;
     this.cellLabels.clear();
     this.cellsMarkers.clear();
     this.cellsArray.clear();
@@ -332,10 +332,10 @@ export class Cells extends Container {
     const renderedCells = new Set<string>();
     let content: Rectangle | undefined;
 
-    const input = this.app.settings.interactionState.showInput
+    const input = cursor.showInput
       ? {
-          column: this.app.settings.interactionState.cursorPosition.x,
-          row: this.app.settings.interactionState.cursorPosition.y,
+          column: cursor.cursorPosition.x,
+          row: cursor.cursorPosition.y,
         }
       : undefined;
 

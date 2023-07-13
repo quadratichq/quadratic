@@ -209,7 +209,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
     await updateCellAndDCells({
       starting_cells: [selectedCell],
       sheetController: props.sheet_controller,
-      app: props.sheet_controller.app,
     });
 
     const updated_cell = props.sheet_controller.sheet.getCellCopy(x, y);

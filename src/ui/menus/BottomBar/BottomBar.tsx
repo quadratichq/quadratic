@@ -1,7 +1,6 @@
 import { Box } from '@mui/system';
 import { colors } from '../../../theme/colors';
 import { useRecoilState } from 'recoil';
-import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { useEffect, useState } from 'react';
 import { Cell } from '../../../schemas';
 import { formatDistance } from 'date-fns';
@@ -17,25 +16,23 @@ interface Props {
 }
 
 export const BottomBar = (props: Props) => {
-  const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
+  const cursor = props.sheet.cursor;
   // Generate string describing cursor location
-  const cursorPositionString = `(${interactionState.cursorPosition.x}, ${interactionState.cursorPosition.y})`;
-  const multiCursorPositionString = `(${interactionState.multiCursorPosition.originPosition.x}, ${interactionState.multiCursorPosition.originPosition.y}), (${interactionState.multiCursorPosition.terminalPosition.x}, ${interactionState.multiCursorPosition.terminalPosition.y})`;
+  const cursorPositionString = `(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`;
+  const multiCursorPositionString = cursor.multiCursor
+    ? `(${cursor.multiCursor.originPosition.x}, ${cursor.multiCursor.originPosition.y}), (${cursor.multiCursor.terminalPosition.x}, ${cursor.multiCursor.terminalPosition.y})`
+    : '';
 
   useEffect(() => {
     const updateCellData = async () => {
       // Don't update if we have not moved cursor position
-      if (
-        selectedCell?.x === interactionState.cursorPosition.x &&
-        selectedCell?.y === interactionState.cursorPosition.y
-      )
-        return;
+      if (selectedCell?.x === cursor.cursorPosition.x && selectedCell?.y === cursor.cursorPosition.y) return;
 
       // Get cell at position
-      const cell = props.sheet.getCellCopy(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
+      const cell = props.sheet.getCellCopy(cursor.cursorPosition.x, cursor.cursorPosition.y);
 
       // If cell exists set selectedCell
       // Otherwise set to undefined
@@ -46,7 +43,7 @@ export const BottomBar = (props: Props) => {
       }
     };
     updateCellData();
-  }, [interactionState, selectedCell, props.sheet]);
+  }, [selectedCell, props.sheet, cursor.cursorPosition.x, cursor.cursorPosition.y]);
 
   const handleShowGoToMenu = () => {
     setEditorInteractionState({
@@ -91,7 +88,7 @@ export const BottomBar = (props: Props) => {
         <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
           Cursor: {cursorPositionString}
         </span>
-        {interactionState.showMultiCursor && (
+        {cursor.multiCursor && (
           <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
             Selection: {multiCursorPositionString}
           </span>
