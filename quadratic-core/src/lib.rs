@@ -16,7 +16,7 @@ mod position;
 
 pub use cell::{Cell, CellTypes, JsCell};
 use formulas::{BasicValue, GridProxy, Value};
-pub use position::Pos;
+pub use position::{Pos, Rect};
 
 pub const QUADRANT_SIZE: u64 = 16;
 

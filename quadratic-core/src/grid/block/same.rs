@@ -15,30 +15,38 @@ impl<T: fmt::Debug + Clone + PartialEq> BlockContent for SameValue<T> {
     fn new(value: Self::Item) -> Self {
         SameValue { len: 1, value }
     }
+    fn unwrap_single_value(self) -> Self::Item {
+        self.value
+    }
     fn len(&self) -> usize {
         self.len
     }
 
-    fn get(&self, _index: usize) -> Self::Item {
-        self.value.clone()
+    fn get(&self, index: usize) -> Option<Self::Item> {
+        (index < self.len()).then(|| self.value.clone())
     }
-    fn set(self, index: usize, value: Self::Item) -> SmallVec<[Self; 3]> {
-        if value == self.value {
-            smallvec![self]
-        } else {
-            let before = SameValue {
-                len: index,
-                value: self.value.clone(),
-            };
-            let after = SameValue {
-                len: self.len - index - 1,
-                value: self.value,
-            };
-            [before, SameValue::new(value), after]
-                .into_iter()
-                .filter(|block| !block.is_empty())
-                .collect()
+    fn set(self, index: usize, value: Self::Item) -> Result<(SmallVec<[Self; 3]>, T), Self> {
+        if index >= self.len() {
+            return Err(self);
         }
+
+        if value == self.value {
+            return Ok((smallvec![self], value));
+        }
+
+        let before = SameValue {
+            len: index,
+            value: self.value.clone(),
+        };
+        let after = SameValue {
+            len: self.len - index - 1,
+            value: self.value.clone(),
+        };
+        let new_contents = [before, SameValue::new(value), after]
+            .into_iter()
+            .filter(|block| !block.is_empty())
+            .collect();
+        Ok((new_contents, self.value))
     }
 
     fn push_top(self, value: Self::Item) -> SmallVec<[Self; 2]> {

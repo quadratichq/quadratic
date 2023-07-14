@@ -36,9 +36,33 @@ impl Pos {
         crate::util::column_name(self.x) + &self.y.to_string()
     }
 }
-
 impl fmt::Display for Pos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+/// Rectangular region of cells.
+#[derive(
+    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
+)]
+#[wasm_bindgen]
+pub struct Rect {
+    /// Upper-left corner.
+    pub min: Pos,
+    /// Lower-right corner.
+    pub max: Pos,
+}
+impl Rect {
+    /// Constructs a new rectangle containing only a single cell.
+    pub fn single_pos(pos: Pos) -> Rect {
+        Rect { min: pos, max: pos }
+    }
+    /// Extends the rectangle enough to include a cell.
+    pub fn extend_to(&mut self, pos: Pos) {
+        self.min.x = std::cmp::min(self.min.x, pos.x);
+        self.min.y = std::cmp::min(self.min.y, pos.y);
+        self.max.x = std::cmp::max(self.max.x, pos.x);
+        self.max.y = std::cmp::max(self.max.y, pos.y);
     }
 }

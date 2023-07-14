@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::BlockContent;
-use crate::grid::{value::CellValue, CellRef};
+use crate::grid::{CellRef, CellValue};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum CellValueOrSpill {
@@ -43,6 +43,13 @@ impl BlockContent for CellValueBlockContent {
             CellValueOrSpill::Spill { source } => Self::Spill { source, len: 1 },
         }
     }
+    fn unwrap_single_value(self) -> Self::Item {
+        assert!(self.len() == 1, "expected single value");
+        match self {
+            CellValueBlockContent::Values(values) => values.into_iter().next().unwrap().into(),
+            CellValueBlockContent::Spill { source, .. } => CellValueOrSpill::Spill { source },
+        }
+    }
     fn len(&self) -> usize {
         match self {
             Self::Values(array) => array.len(),
@@ -50,29 +57,37 @@ impl BlockContent for CellValueBlockContent {
         }
     }
 
-    fn get(&self, index: usize) -> Self::Item {
-        match self {
+    fn get(&self, index: usize) -> Option<Self::Item> {
+        (index < self.len()).then(|| match self {
             Self::Values(array) => array[index].clone().into(),
             &Self::Spill { source, .. } => CellValueOrSpill::Spill { source },
-        }
+        })
     }
-    fn set(mut self, index: usize, value: Self::Item) -> smallvec::SmallVec<[Self; 3]> {
+    fn set(
+        mut self,
+        index: usize,
+        value: Self::Item,
+    ) -> Result<(smallvec::SmallVec<[Self; 3]>, Self::Item), Self> {
+        if index >= self.len() {
+            return Err(self);
+        }
+
         match &mut self {
             Self::Values(array) => {
                 if let CellValueOrSpill::CellValue(value) = value {
-                    array[index] = value;
-                    return smallvec![self];
+                    let old_value = std::mem::replace(&mut array[index], value);
+                    return Ok((smallvec![self], old_value.into()));
                 }
             }
             Self::Spill { .. } => {
-                if self.get(index) == value {
-                    return smallvec![self];
+                if self.get(index).is_some_and(|v| v == value) {
+                    return Ok((smallvec![self], value));
                 }
             }
         }
 
-        let [left, right] = self.remove(index);
-        return smallvec![left, Self::new(value), right];
+        let ([left, right], removed) = self.remove(index);
+        return Ok((smallvec![left, Self::new(value), right], removed));
     }
 
     fn push_top(self, value: Self::Item) -> smallvec::SmallVec<[Self; 2]> {

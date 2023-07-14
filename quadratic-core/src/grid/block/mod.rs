@@ -42,14 +42,15 @@ impl<B: BlockContent> Block<B> {
     }
 
     pub fn get(&self, y: i64) -> Option<B::Item> {
-        Some(self.content.get(self.index(y)?))
+        self.content.get(self.index(y)?)
     }
-    pub fn set(self, y: i64, value: B::Item) -> Result<SmallVec<[Self; 3]>, Self> {
+    pub fn set(self, y: i64, value: B::Item) -> Result<(SmallVec<[Self; 3]>, B::Item), Self> {
         match self.index(y) {
-            Some(index) => Ok(build_contiguous_blocks(
-                self.y,
-                self.content.set(index, value),
-            )),
+            Some(index) => {
+                let (new_contents, old_value) = self.content.set(index, value).expect("bad index");
+                let new_blocks = build_contiguous_blocks(self.y, new_contents);
+                Ok((new_blocks, old_value))
+            }
             None => Err(self),
         }
     }
@@ -60,24 +61,24 @@ impl<B: BlockContent> Block<B> {
     pub fn push_bottom(self, value: B::Item) -> SmallVec<[Self; 2]> {
         build_contiguous_blocks(self.y, self.content.push_bottom(value))
     }
-    pub fn remove(self, y: i64) -> Result<SmallVec<[Self; 2]>, Self> {
+    pub fn remove(self, y: i64) -> Result<(SmallVec<[Self; 2]>, B::Item), Self> {
         match self.index(y) {
             Some(index) => {
-                let [left, right] = self.content.remove(index);
-                let mut ret = smallvec![];
+                let ([left, right], value_removed) = self.content.remove(index);
+                let mut resulting_blocks = smallvec![];
                 if !left.is_empty() {
-                    ret.push(Block {
+                    resulting_blocks.push(Block {
                         y: self.y,
                         content: left,
                     });
                 }
                 if !right.is_empty() {
-                    ret.push(Block {
+                    resulting_blocks.push(Block {
                         y: y + 1,
                         content: right,
                     })
                 }
-                Ok(ret)
+                Ok((resulting_blocks, value_removed))
             }
             None => Err(self),
         }
@@ -107,31 +108,62 @@ impl<B: BlockContent> Block<B> {
     }
 }
 
+/// Total content of a contiguous block in a column. Indexes start from zero at
+/// the top of the block.
 pub trait BlockContent: Sized + fmt::Debug {
     type Item: fmt::Debug + Clone;
 
+    /// Constructs a block containing a single value.
     fn new(value: Self::Item) -> Self;
+    /// Returns the single value in a block.
+    ///
+    /// # Panics
+    ///
+    /// This method may panic if the block does not contain exactly one value.
+    fn unwrap_single_value(self) -> Self::Item;
+    /// Returns the number of values in a block.
     fn len(&self) -> usize;
+    /// Returns whether the block contains zero values.
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    fn get(&self, index: usize) -> Self::Item;
-    fn set(self, index: usize, value: Self::Item) -> SmallVec<[Self; 3]>;
+    /// Returns a value in the block. Returns `None` if `index` is outside the
+    /// block.
+    fn get(&self, index: usize) -> Option<Self::Item>;
+    /// Sets a value in the block. Returns `Err` if `index` is outside the
+    /// block.
+    fn set(
+        self,
+        index: usize,
+        value: Self::Item,
+    ) -> Result<(SmallVec<[Self; 3]>, Self::Item), Self>;
 
+    /// Pushes an element to the top of a block and returns the new sequence of
+    /// blocks.
     fn push_top(self, value: Self::Item) -> SmallVec<[Self; 2]>;
+    /// Pushes an element to the bottom of a block and returns the new sequence
+    /// of blocks.
     fn push_bottom(self, value: Self::Item) -> SmallVec<[Self; 2]>;
-    fn remove(self, index: usize) -> [Self; 2] {
+    /// Removes an element from a block and returns the new sequence of blocks,
+    /// along with the removed element.
+    fn remove(self, index: usize) -> ([Self; 2], Self::Item) {
         let [left, right] = self.split(index + 1);
-        let [left, _removed] = left.split(index);
-        [left, right]
+        let [left, removed] = left.split(index);
+        let removed = removed.unwrap_single_value();
+        ([left, right], removed)
     }
 
+    /// Merges two adjacent blocks, or returns the two blocks if they cannot be
+    /// merged.
     fn try_merge(self, other: Self) -> Result<Self, [Self; 2]>;
 
+    /// Splits a block into two at `split_point`. The element at `split_point`
+    /// will be the first element of the second block.
     fn split(self, split_point: usize) -> [Self; 2];
 }
 
+/// Constructs a sequence of contiguous blocks starting at a given Y position.
 fn build_contiguous_blocks<B: BlockContent, C: FromIterator<Block<B>>>(
     mut y: i64,
     contents: impl IntoIterator<Item = B>,

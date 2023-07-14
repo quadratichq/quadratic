@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::Range;
-use uuid::Uuid;
 
 use super::{
     block::CellValueOrSpill, formatting::*, value::CellValue, Block, BlockContent,
@@ -11,6 +10,7 @@ use super::{
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Column {
     pub id: ColumnId,
+
     pub values: ColumnData<CellValueBlockContent>,
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
@@ -23,11 +23,12 @@ pub struct Column {
 }
 impl Column {
     pub fn new() -> Self {
-        Column::with_id(ColumnId(Uuid::new_v4()))
+        Column::with_id(ColumnId::new())
     }
     pub fn with_id(id: ColumnId) -> Self {
         Column {
             id,
+
             values: ColumnData::default(),
             align: ColumnData::default(),
             wrap: ColumnData::default(),
@@ -146,15 +147,24 @@ impl<B: BlockContent> ColumnData<B> {
     pub fn get(&self, y: i64) -> Option<B::Item> {
         self.get_block_containing(y)?.get(y)
     }
-    pub fn set(&mut self, y: i64, value: Option<B::Item>) {
+    pub fn set(&mut self, y: i64, value: Option<B::Item>) -> Option<B::Item> {
         match (self.remove_block_containing(y), value) {
-            (None, None) => return,
-            (None, Some(value)) => self.add_block(Block::new(y, value)),
+            (None, None) => return None,
+            (None, Some(value)) => {
+                self.add_block(Block::new(y, value));
+                return None;
+            }
             (Some(block), None) => {
-                self.add_blocks(block.remove(y).expect("error removing value from column"))
+                let (new_blocks, old_value) =
+                    block.remove(y).expect("error removing value from column");
+                self.add_blocks(new_blocks);
+                Some(old_value)
             }
             (Some(block), Some(value)) => {
-                self.add_blocks(block.set(y, value).expect("error setting value in column"))
+                let (new_blocks, old_value) =
+                    block.set(y, value).expect("error setting value in column");
+                self.add_blocks(new_blocks);
+                Some(old_value)
             }
         }
         // TODO: try merge with blocks above & below
