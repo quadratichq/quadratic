@@ -1,4 +1,4 @@
-import { red } from '@mui/material/colors';
+import { red, grey } from '@mui/material/colors';
 
 export const colors = {
   gridLines: 0xcb8999,
@@ -29,5 +29,8 @@ export const colors = {
   languagePython: '#3776ab',
   languageFormula: '#8c1a6a',
   languageAI: '#1a8c5d',
+  canvasLayer1: grey['50'],
+  canvasLayer2: '#fff',
+  canvasLayer3: grey['200'],
   error: '#f25f5c',
 };

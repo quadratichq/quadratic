@@ -136,7 +136,7 @@ class APIClientSingleton {
         fileContents: JSON.stringify(fileContents),
       };
 
-      const response = await fetch(`${base_url}/v0/files/backup`, {
+      const response = await fetch(`${base_url}/v0/files/${id}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${await authClient.getToken()}`,

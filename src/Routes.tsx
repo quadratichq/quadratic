@@ -12,6 +12,7 @@ import {
   RouterProvider,
   createRoutesFromElements,
   Route,
+  Navigate,
 } from 'react-router-dom';
 import { User } from '@auth0/auth0-spa-js';
 import { authClient } from './auth';
@@ -42,7 +43,14 @@ const router = createBrowserRouter(
       >
         <Route index element={<div>TODO This should redirect to the dashboard</div>} />
         <Route path="file" lazy={() => import('./App')} />
-        <Route path="files" lazy={() => import('./AppDashboard')} />
+
+        <Route path="files" lazy={() => import('./AppDashboard')}>
+          <Route index element={<Navigate to="/files/mine" replace />} />
+          <Route path="mine" lazy={() => import('./AppDashboardFiles')} />
+          <Route path="examples" lazy={() => import('./AppDashboardExamples')} />
+        </Route>
+
+        <Route path="*" element={<div>TODO Catch all route</div>} />
       </Route>
       <Route
         path="/login"
