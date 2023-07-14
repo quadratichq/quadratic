@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { gridInteractionStateAtom } from '../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { useRecoilState } from 'recoil';
 import { PixiApp } from './pixiApp/PixiApp';
@@ -28,9 +27,6 @@ export default function QuadraticGrid(props: IProps) {
     if (props.app && container) props.app.attach(container);
   }, [props.app, container]);
 
-  // Interaction State hook
-  const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
-
   const [panMode, setPanMode] = useState<PanMode>(PanMode.Disabled);
   useEffect(() => {
     const updatePanMode = (e: any) => {
@@ -56,14 +52,14 @@ export default function QuadraticGrid(props: IProps) {
   const onMouseUp = () => {
     mouseIsDown = false;
     if (panMode !== PanMode.Disabled) {
-      setInteractionState({ ...interactionState, panMode: spaceIsDown ? PanMode.Enabled : PanMode.Disabled });
+      props.app.settings.changePanMode(spaceIsDown ? PanMode.Enabled : PanMode.Disabled);
     }
     window.removeEventListener('mouseup', onMouseUp);
   };
   const onMouseDown = () => {
     mouseIsDown = true;
     if (panMode === PanMode.Enabled) {
-      setInteractionState({ ...interactionState, panMode: PanMode.Dragging });
+      props.app.settings.changePanMode(PanMode.Dragging);
     }
     window.addEventListener('mouseup', onMouseUp);
   };
@@ -71,10 +67,7 @@ export default function QuadraticGrid(props: IProps) {
     if (e.key === ' ') {
       spaceIsDown = true;
       if (panMode === PanMode.Disabled) {
-        setInteractionState({
-          ...interactionState,
-          panMode: PanMode.Enabled,
-        });
+        props.app.settings.changePanMode(PanMode.Enabled);
       }
     }
   };
@@ -82,10 +75,7 @@ export default function QuadraticGrid(props: IProps) {
     if (e.key === ' ') {
       spaceIsDown = false;
       if (panMode !== PanMode.Disabled && !mouseIsDown) {
-        setInteractionState({
-          ...interactionState,
-          panMode: PanMode.Disabled,
-        });
+        props.app.settings.changePanMode(PanMode.Disabled);
       }
     }
   };

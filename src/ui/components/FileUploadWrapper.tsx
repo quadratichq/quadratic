@@ -1,10 +1,8 @@
 import { useState, DragEvent, useRef } from 'react';
-import { useRecoilState } from 'recoil';
 import { InsertCSV } from '../../grid/actions/insertData/insertCSV';
 import { SheetController } from '../../grid/controller/sheetController';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
-import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
 import debounce from 'lodash.debounce';
 import { useGlobalSnackbar } from '../contexts/GlobalSnackbar';
 
@@ -18,7 +16,6 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
   // drag state
   const [dragActive, setDragActive] = useState(false);
   const divRef = useRef<HTMLDivElement>(null);
-  const [interactionState, setInteractionState] = useRecoilState(gridInteractionStateAtom);
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const moveCursor = debounce((e: DragEvent<HTMLDivElement>): void => {
@@ -28,11 +25,10 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
       e.pageY - (clientBoudingRect?.top || 0)
     );
     const { column, row } = props.sheetController.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
-    setInteractionState({
-      ...interactionState,
+    props.sheetController.sheet.cursor.changePosition({
       cursorPosition: { x: column, y: row },
       keyboardMovePosition: { x: column, y: row },
-      multiCursorPosition: {
+      multiCursor: {
         originPosition: { x: column, y: row },
         terminalPosition: { x: column, y: row },
       },

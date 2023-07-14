@@ -9,7 +9,6 @@ import BordersListItems from './ListItems/Borders';
 import SheetListItems from './ListItems/Sheets';
 import TextListItems from './ListItems/Text';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 
@@ -21,7 +20,6 @@ interface Commands {
 export const getCommandPaletteListItems = (props: {
   app: PixiApp;
   sheetController: SheetController;
-  interactionState: GridInteractionState;
   closeCommandPalette: Function;
   activeSearchValue: string;
   selectedListItemIndex: number;

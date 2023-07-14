@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
 import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
-import { useRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
@@ -20,9 +19,7 @@ interface Props {
 export const CommandPalette = (props: Props) => {
   const { app, sheetController, confirmSheetDelete } = props;
 
-  const [interactionState] = useRecoilState(gridInteractionStateAtom);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   const [activeSearchValue, setActiveSearchValue] = React.useState<string>('');
   const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
@@ -57,7 +54,6 @@ export const CommandPalette = (props: Props) => {
   const ListItems = getCommandPaletteListItems({
     app,
     sheetController,
-    interactionState,
     closeCommandPalette,
     activeSearchValue: activeSearchValue,
     selectedListItemIndex: selectedListItemIndex,
