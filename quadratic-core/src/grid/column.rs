@@ -114,10 +114,7 @@ impl<B: BlockContent> ColumnData<B> {
         self.0.remove(&key)
     }
     fn add_block(&mut self, block: Block<B>) {
-        debug_assert!(self
-            .get_blocks_covering_range(block.range())
-            .next()
-            .is_none());
+        debug_assert!(self.blocks_covering_range(block.range()).next().is_none());
         let key = block.start();
         self.0.insert(key, block);
     }
@@ -127,10 +124,10 @@ impl<B: BlockContent> ColumnData<B> {
         }
     }
 
-    pub fn get_blocks_covering_range(
-        &self,
-        y_range: Range<i64>,
-    ) -> impl Iterator<Item = &Block<B>> {
+    pub fn blocks(&self) -> impl Iterator<Item = &Block<B>> {
+        self.0.values()
+    }
+    pub fn blocks_covering_range(&self, y_range: Range<i64>) -> impl Iterator<Item = &Block<B>> {
         // There may be a block starting above `y_range.start` that contains
         // `y_range`, so find that.
         let first_block = self

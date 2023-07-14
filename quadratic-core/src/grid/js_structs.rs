@@ -5,7 +5,7 @@ use crate::formulas::BasicValue;
 use super::formatting::{CellAlign, CellWrap, NumericFormat};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JsCell {
+pub struct JsCellValue {
     pub x: i64,
     pub y: i64,
     pub r#type: JsCellType,
@@ -61,11 +61,36 @@ pub struct JsCellFormat {
     pub text_format: Option<NumericFormat>,
     pub wrapping: Option<CellWrap>, // default is overflow
 }
+impl JsCellFormat {
+    pub fn is_default(&self) -> bool {
+        self.alignment.is_none()
+            && self.bold.is_none()
+            && self.fill_color.is_none()
+            && self.italic.is_none()
+            && self.text_color.is_none()
+            && self.text_format.is_none()
+            && self.wrapping.is_none()
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct JsCoordinate {
     pub x: i64,
     pub y: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct JsMinMax {
+    pub min: i64,
+    pub max: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct JsRectangle {
+    pub x: i64,
+    pub y: i64,
+    pub width: i64,
+    pub height: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

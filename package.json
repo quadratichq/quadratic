@@ -74,7 +74,6 @@
     "test:e2e:debug": "playwright test --debug",
     "test:python": "python3 tests-python/test.py",
     "test:wasm": "cd quadratic-core && cargo test --workspace",
-    "test": "",
     "eject": "react-scripts eject",
     "dev": "concurrently \"BROWSER=none npm start\" \"electron .\"",
     "electron": "electron .",

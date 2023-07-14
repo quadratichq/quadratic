@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
@@ -120,7 +121,10 @@ impl Default for File {
 impl File {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        let mut ret = Self::default();
+        let mut ret = File {
+            sheet_ids: IdMap::new(),
+            sheets: vec![],
+        };
         ret.add_sheet();
         ret
     }
@@ -154,9 +158,9 @@ impl File {
     }
 
     #[wasm_bindgen(js_name = "updateCells")]
-    pub fn js_update_cells(&mut self, js_cells: JsValue) -> Result<(), JsValue> {
+    pub fn js_update_cell_values(&mut self, js_cells: JsValue) -> Result<(), JsValue> {
         let sheet = &mut self.sheets[0];
-        let cells: Vec<JsCell> = serde_wasm_bindgen::from_value(js_cells)?;
+        let cells: Vec<JsCellValue> = serde_wasm_bindgen::from_value(js_cells)?;
         for cell in cells {
             let column = sheet.get_column_at(cell.x);
             let row = sheet.get_row_at(cell.y);
@@ -213,7 +217,7 @@ impl File {
         Ok(())
     }
 
-    #[wasm_bindgen(js_name = "updateFormat")]
+    #[wasm_bindgen(js_name = "updateCellFormats")]
     pub fn js_update_cell_formats(&mut self, js_cell_formats: JsValue) -> Result<(), JsValue> {
         let sheet = &mut self.sheets[0];
         let cell_formats: Vec<JsCellFormat> = serde_wasm_bindgen::from_value(js_cell_formats)?;
@@ -280,29 +284,46 @@ impl File {
 
     #[wasm_bindgen(js_name = "populate")]
     pub fn js_populate(&mut self, values: JsValue, formats: JsValue) -> Result<(), JsValue> {
+        crate::log(&format!("{}", self.sheets.len()));
         self.js_clear();
-        self.js_update_cells(values)?;
+        self.js_update_cell_values(values)?;
         self.js_update_cell_formats(formats)?;
         Ok(())
     }
 
-    #[wasm_bindgen(js_name = "set_cell")]
-    pub fn js_set_cell(&mut self, pos: CellRef, value: JsValue) -> Result<(), JsValue> {
-        Ok(self.set_cell(pos, serde_wasm_bindgen::from_value(value)?)?)
-    }
-
     #[wasm_bindgen(js_name = "get")]
-    pub fn js_get_cell(&mut self, x: f64, y: f64) -> Result<JsValue, JsValue> {
-        let sheet = &self.sheets[0];
+    pub fn js_get_cell(&self, x: f64, y: f64) -> Result<JsValue, JsValue> {
+        #[derive(Serialize, Deserialize, Debug)]
+        struct JsCellAndFormat {
+            pub cell: Option<JsCellValue>,
+            pub format: Option<JsCellFormat>,
+        }
+
         let x = x as i64;
         let y = y as i64;
-        // IIFE to mimic try_block
-        let Some(column) = sheet.column_ids.id_at(x) else {
-            return Ok(JsValue::UNDEFINED);
-        };
-        let Some(row) = sheet.row_ids.id_at(y) else {
-            return Ok(JsValue::UNDEFINED);
-        };
+
+        Ok(serde_wasm_bindgen::to_value(&JsCellAndFormat {
+            cell: self.js_get_cell_value_internal(x, y),
+            format: self.js_get_cell_format_internal(x, y),
+        })?)
+    }
+    #[wasm_bindgen(js_name = "getCell")]
+    pub fn js_get_cell_value(&mut self, x: f64, y: f64) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.js_get_cell_value_internal(x as i64, y as i64),
+        )?)
+    }
+    #[wasm_bindgen(js_name = "getValue")]
+    pub fn js_get_cell_format(&self, x: f64, y: f64) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.js_get_cell_format_internal(x as i64, y as i64),
+        )?)
+    }
+
+    fn js_get_cell_value_internal(&self, x: i64, y: i64) -> Option<JsCellValue> {
+        let sheet = &self.sheets[0];
+        let column = sheet.column_ids.id_at(x)?;
+        let row = sheet.row_ids.id_at(y)?;
         let cell_ref = CellRef {
             sheet: sheet.id,
             column,
@@ -324,16 +345,17 @@ impl File {
                     CellValueOrSpill::CellValue(_) => JsCellType::Text,
                     CellValueOrSpill::Spill { .. } => JsCellType::Computed,
                 },
-                None => return Ok(JsValue::UNDEFINED),
+                None => return None,
             }
         } else {
-            return Ok(JsValue::UNDEFINED);
+            return None;
         };
-        return Ok(serde_wasm_bindgen::to_value(&JsCell {
+
+        Some(JsCellValue {
             x,
             y,
             r#type,
-            value: sheet.get_cell(cell_ref)?.to_string(),
+            value: sheet.get_cell(cell_ref).ok()?.to_string(),
             array_cells: None,       // TODO
             dependent_cells: None,   // TODO
             evaluation_result: None, // TODO
@@ -341,14 +363,140 @@ impl File {
             last_modified: None,     // TODO
             ai_prompt: None,         // TODO
             python_code: None,       // TODO
-        })?);
+        })
+    }
+    fn js_get_cell_format_internal(&self, x: i64, y: i64) -> Option<JsCellFormat> {
+        let x = x as i64;
+        let y = y as i64;
+        let sheet = &self.sheets[0];
+        let column = sheet.columns.get(&x)?;
+
+        Some(JsCellFormat {
+            x,
+            y,
+            alignment: column.align.get(y),
+            bold: column.bold.get(y),
+            fill_color: column.fill_color.get(y),
+            italic: column.italic.get(y),
+            text_color: column.text_color.get(y),
+            text_format: column.numeric_format.get(y),
+            wrapping: column.wrap.get(y),
+        })
+        .filter(|f| !f.is_default())
     }
 
-    pub fn sheet_bounds(&mut self, sheet: SheetId, ignore_formatting: bool) -> GridBounds {
+    #[wasm_bindgen(js_name = "getNakedCells")]
+    pub fn js_get_naked_cell_values(
+        &self,
+        x0: f64,
+        y0: f64,
+        x1: f64,
+        y1: f64,
+    ) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &itertools::iproduct!(y0 as i64..=y1 as i64, x0 as i64..=x1 as i64)
+                .filter_map(|(y, x)| self.js_get_cell_value_internal(x, y))
+                .collect_vec(),
+        )?)
+    }
+    #[wasm_bindgen(js_name = "getNakedFormat")]
+    pub fn js_get_naked_cell_format(
+        &self,
+        x0: f64,
+        y0: f64,
+        x1: f64,
+        y1: f64,
+    ) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &itertools::iproduct!(y0 as i64..=y1 as i64, x0 as i64..=x1 as i64)
+                .filter_map(|(y, x)| self.js_get_cell_format_internal(x, y))
+                .collect_vec(),
+        )?)
+    }
+
+    #[wasm_bindgen(js_name = "getGridBounds")]
+    pub fn js_get_grid_bounds(&self, ignore_formatting: bool) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.sheet_bounds(self.sheets[0].id, ignore_formatting),
+        )?)
+    }
+
+    #[wasm_bindgen(js_name = "getRowMinMax")]
+    pub fn js_get_row_min_max(
+        &self,
+        row: f64,
+        ignore_formatting: bool,
+    ) -> Result<JsValue, JsValue> {
+        match self.sheets[0].row_bounds(row as i64, ignore_formatting) {
+            Some((min, max)) => Ok(serde_wasm_bindgen::to_value(&JsMinMax { min, max })?),
+            None => Ok(JsValue::UNDEFINED),
+        }
+    }
+    #[wasm_bindgen(js_name = "getColumnMinMax")]
+    pub fn js_get_column_min_max(
+        &self,
+        column: f64,
+        ignore_formatting: bool,
+    ) -> Result<JsValue, JsValue> {
+        match self.sheets[0].column_bounds(column as i64, ignore_formatting) {
+            Some((min, max)) => Ok(serde_wasm_bindgen::to_value(&JsMinMax { min, max })?),
+            None => Ok(JsValue::UNDEFINED),
+        }
+    }
+
+    #[wasm_bindgen(js_name = "getAllCells")]
+    pub fn js_get_all_cells(&self) -> Result<JsValue, JsValue> {
+        let sheet = &self.sheets[0];
+        let bounds = sheet.data_bounds;
+        self.js_get_naked_cell_values(bounds.min_x, bounds.min_y, bounds.max_x, bounds.max_y)
+    }
+
+    pub fn sheet_bounds(&self, sheet: SheetId, ignore_formatting: bool) -> GridBounds {
         match self.sheet(sheet) {
             Some(sh) => sh.bounds(ignore_formatting),
             None => GridBounds::empty(),
         }
+    }
+
+    #[wasm_bindgen(js_name = "getArrays")]
+    pub fn js_get_arrays(&self) -> Result<JsValue, JsValue> {
+        let sheet = &self.sheets[0];
+
+        let cells = sheet
+            .columns
+            .iter()
+            .flat_map(|(&x, column)| {
+                column
+                    .values
+                    .blocks()
+                    .flat_map(|block| block.range())
+                    .map(move |y| (x, y))
+            })
+            .flat_map(|(x, y)| self.js_get_cell_value_internal(x, y))
+            .collect();
+
+        let bounds = sheet.format_bounds;
+        let formats = if bounds.empty {
+            vec![]
+        } else {
+            itertools::iproduct!(
+                bounds.min_y as i64..=bounds.max_y as i64,
+                bounds.min_x as i64..=bounds.max_x as i64
+            )
+            .flat_map(|(y, x)| self.js_get_cell_format_internal(x, y))
+            .collect()
+        };
+
+        #[derive(Serialize, Deserialize, Debug, Clone)]
+        struct JsCellsAndFormats {
+            pub cells: Vec<JsCellValue>,
+            pub formats: Vec<JsCellFormat>,
+        }
+
+        Ok(serde_wasm_bindgen::to_value(&JsCellsAndFormats {
+            cells,
+            formats,
+        })?)
     }
 
     #[wasm_bindgen(js_name = "recalculateBounds")]
@@ -568,7 +716,7 @@ pub struct CellCode {
     output: Option<CellCodeRunOutput>,
 }
 impl CellCode {
-    fn try_from_js_cell(cell: JsCell, sheet: &mut Sheet) -> Option<Self> {
+    fn try_from_js_cell(cell: JsCellValue, sheet: &mut Sheet) -> Option<Self> {
         let language = match cell.r#type {
             JsCellType::Text | JsCellType::Computed => return None,
             JsCellType::Formula => CellCodeLanguage::Formula,
@@ -588,6 +736,7 @@ impl CellCode {
                 .evaluation_result
                 .as_ref()
                 .map(|result| result.formatted_code.clone()),
+            last_modified: cell.last_modified,
             output: cell.evaluation_result.and_then(|js_result| {
                 let result = match js_result.success {
                     true => Ok(CellCodeRunOk {
@@ -664,3 +813,6 @@ pub struct CellCodeRunOk {
     output_value: Value,
     cells_accessed: Vec<CellRef>,
 }
+
+#[cfg(test)]
+mod tests;

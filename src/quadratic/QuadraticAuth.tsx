@@ -4,7 +4,8 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { captureException, setUser } from '@sentry/react';
 import { QuadraticApp } from './QuadraticApp';
 import apiClientSingleton from '../api-client/apiClientSingleton';
-import { useEffect } from 'react';
+import init, { hello } from 'quadratic-core';
+import { useEffect, useState } from 'react';
 import { debug } from '../debugFlags';
 import { FILE_PARAM_KEY } from '../constants/app';
 
@@ -18,6 +19,8 @@ export const QuadraticAuth = () => {
     getAccessTokenSilently,
     user,
   } = useAuth0();
+  const [wasmLoading, setWasmLoading] = useState(false);
+  const [wasmLoadingDone, setWasmLoadingDone] = useState(false);
 
   useEffect(() => {
     if (Auth0IsAuthenticated) {
@@ -63,6 +66,20 @@ export const QuadraticAuth = () => {
       return <QuadraticLoading></QuadraticLoading>;
     }
   }
+
+  // TODO: Move to component, has to happen before QuadraticApp is mounted
+  if (!wasmLoading){
+    setWasmLoading(true);
+    init().then(() => {
+      hello(); // let Rust say hello to console
+      setWasmLoadingDone(true);
+    });
+  }
+  if (!wasmLoadingDone) {
+    return <QuadraticLoading></QuadraticLoading>;
+  }
+  ////
+
 
   return (
     <RecoilRoot>

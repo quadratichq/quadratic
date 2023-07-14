@@ -6,13 +6,12 @@ import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../gridGL/loadAssets';
 import { IS_READONLY_MODE } from '../constants/app';
 import { debugSkipPythonLoad } from '../debugFlags';
-import init, { hello } from 'quadratic-core';
 import { SheetController } from '../grid/controller/sheetController';
 import { useGenerateLocalFiles } from '../hooks/useGenerateLocalFiles';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 
-type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-rust' | 'wasm-python' | 'quadrants';
-const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-rust', 'wasm-python', 'quadrants'];
+type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-python' | 'quadrants';
+const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-python', 'quadrants'];
 
 export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
@@ -58,10 +57,6 @@ export const QuadraticApp = () => {
       setItemsLoaded((old) => ['pixi-assets', ...old]);
       assets = true;
       prerenderQuadrants();
-    });
-    init().then(() => {
-      hello(); // let Rust say hello to console
-      setItemsLoaded((old) => ['wasm-rust', ...old]);
     });
     initialize().then(() => {
       setItemsLoaded((old) => ['local-files', ...old]);
