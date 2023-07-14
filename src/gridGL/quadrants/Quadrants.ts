@@ -33,21 +33,6 @@ export class Quadrants extends Container {
     this.container = new Container();
     this.cells = this.container.addChild(new Cells(app));
     this.container.addChildAt(this.cells.cellsBackground, 0);
-    this.setupListeners();
-  }
-
-  private addSheetListener = (e: any): void => this.addSheet(e.detail);
-  private quadrantsChangedListener = (e: any): void => this.quadrantChanged(e.detail);
-
-  private setupListeners() {
-    window.addEventListener('add-sheet', this.addSheetListener);
-    window.addEventListener('quadrants-changed', this.quadrantsChangedListener);
-  }
-
-  destroy() {
-    super.destroy();
-    window.removeEventListener('add-sheet', this.addSheetListener);
-    window.removeEventListener('quadrants-changed', this.quadrantsChangedListener);
   }
 
   static getKey(x: number, y: number): string {
@@ -57,12 +42,12 @@ export class Quadrants extends Container {
   changeSheet(): void {
     const quadrantsSheets = Array.from(this.quadrants.values());
     const activeId = this.app.sheet.id;
+    const quadrantsSheet = this.quadrants.get(activeId);
+    if (!quadrantsSheet) {
+      throw new Error('Expected to find QuadrantsSheet in Quadrants.changeSheet');
+    }
     quadrantsSheets.forEach((q) => (q.visible = q.sheet.id === activeId));
     if (debugShowCacheFlag) {
-      const quadrantsSheet = this.quadrants.get(activeId);
-      if (!quadrantsSheet) {
-        throw new Error('Expected to find QuadrantsSheet in Quadrants.changeSheet');
-      }
       const dirtyCount = quadrantsSheet.children.reduce(
         (count, child) => count + ((child as Quadrant).dirty ? 1 : 0),
         0

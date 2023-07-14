@@ -1,8 +1,8 @@
 import { clearBordersAction } from '../../../../grid/actions/clearBordersAction';
 import { Border, BorderType } from '../../../../schemas';
-import { Sheet } from '../../../../grid/sheet/Sheet';
-import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { useGetSelection } from './useGetSelection';
+import { SheetController } from '../../../../grid/controller/sheetController';
+import { pixiAppEvents } from '../../../../gridGL/pixiApp/PixiAppEvents';
 
 export interface ChangeBorder {
   borderAll?: boolean;
@@ -21,9 +21,9 @@ interface IResults {
   clearBorders: (args?: { create_transaction?: boolean }) => void;
 }
 
-export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
+export const useBorders = (sheetController: SheetController): IResults => {
+  const sheet = sheetController.sheet;
   const { start, end, multiCursor } = useGetSelection(sheet);
-  const { sheet_controller } = app;
 
   const changeBorders = (options: ChangeBorder): void => {
     const borderColor = options.color;
@@ -110,9 +110,9 @@ export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
     }
     if (borderUpdates.length) {
       // create transaction to update borders
-      sheet_controller.start_transaction();
+      sheetController.start_transaction();
       borderUpdates.forEach((border) => {
-        sheet_controller.execute_statement({
+        sheetController.execute_statement({
           type: 'SET_BORDER',
           data: {
             position: [border.x, border.y],
@@ -120,15 +120,13 @@ export const useBorders = (sheet: Sheet, app: PixiApp): IResults => {
           },
         });
       });
-      sheet_controller.end_transaction();
-
-      app.cells.dirty = true;
-      app.quadrants.quadrantChanged({ range: { start, end } });
+      sheetController.end_transaction();
+      pixiAppEvents.quadrantsChanged({ range: { start, end } });
     }
   };
 
   const clearBorders = (args?: { create_transaction?: boolean }): void => {
-    clearBordersAction({ sheet_controller, start, end, create_transaction: args?.create_transaction });
+    clearBordersAction({ sheet_controller: sheetController, start, end, create_transaction: args?.create_transaction });
   };
 
   return {

@@ -1,6 +1,7 @@
 import { Border } from '../../schemas';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
+import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 
 export const clearBordersAction = (args: {
   sheet_controller: SheetController;
@@ -69,6 +70,5 @@ export const clearBordersAction = (args: {
   }
   if (create_transaction ?? true) sheet_controller.end_transaction();
 
-  window.dispatchEvent(new CustomEvent('quadrants-changed', { detail: { range: { start, end } } }));
-  window.dispatchEvent(new CustomEvent('set-dirty', { detail: { cells: true } }));
+  pixiAppEvents.quadrantsChanged({ range: { start, end } });
 };

@@ -7,6 +7,7 @@ import { debug } from '../../debugFlags';
 import { SheetSchema } from '../../schemas';
 import { generateKeyBetween } from 'fractional-indexing';
 import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
+import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 
 export class SheetController {
   sheets: Sheet[];
@@ -37,7 +38,7 @@ export class SheetController {
   set current(value: string) {
     if (value !== this._current) {
       this._current = value;
-      window.dispatchEvent(new CustomEvent('change-sheet'));
+      pixiAppEvents.changeSheet();
     }
   }
 
@@ -55,8 +56,8 @@ export class SheetController {
     this.sortSheets();
     this._current = this.sheets[0].id;
 
-    // needed to ensure UI properly updates
-    window.dispatchEvent(new CustomEvent('sheet-change'));
+    // used by SheetBar to update current sheet tab
+    window.dispatchEvent(new CustomEvent('change-sheet'));
   }
 
   export(): SheetSchema[] {
@@ -115,7 +116,7 @@ export class SheetController {
 
   addSheet(sheet: Sheet): void {
     this.sheets.push(sheet);
-    window.dispatchEvent(new CustomEvent('add-sheet', { detail: sheet }));
+    pixiAppEvents.addSheet(sheet);
     this.current = sheet.id;
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
@@ -127,8 +128,7 @@ export class SheetController {
     }
     const deletedSheet = this.sheets.splice(index, 1)[0];
     const order = deletedSheet.order;
-    window.dispatchEvent(new CustomEvent('quadrants-delete', { detail: deletedSheet.id }));
-    // this.app?.quadrants.deleteSheet(deletedSheet);
+    pixiAppEvents.quadrantsDelete(deletedSheet);
 
     // set current to next sheet
     if (this.sheets.length) {
@@ -283,7 +283,7 @@ export class SheetController {
 
     // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
     // This will be very inefficient on large files.
-    window.dispatchEvent(new CustomEvent('rebuild'));
+    pixiAppEvents.rebuild();
   }
 
   public redo(): void {
@@ -322,7 +322,7 @@ export class SheetController {
 
     // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
     // This will be very inefficient on large files.
-    window.dispatchEvent(new CustomEvent('rebuild'));
+    pixiAppEvents.rebuild();
   }
 
   public clear(): void {

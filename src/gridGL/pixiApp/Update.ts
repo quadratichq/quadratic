@@ -51,6 +51,8 @@ export class Update {
     if (this.lastViewportScale !== viewport.scale.x) {
       this.lastViewportScale = viewport.scale.x;
       dirty = true;
+
+      // this is used to trigger changes to ZoomDropdown
       window.dispatchEvent(new CustomEvent<number>('zoom-event', { detail: viewport.scale.x }));
     }
     if (this.lastViewportPosition.x !== viewport.x || this.lastViewportPosition.y !== viewport.y) {

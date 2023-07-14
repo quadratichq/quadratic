@@ -16,6 +16,7 @@ const INPUT_ALPHA = 0.333;
 
 export class Cursor extends Graphics {
   private app: PixiApp;
+
   indicator: Rectangle;
   dirty = true;
 

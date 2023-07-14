@@ -21,13 +21,11 @@ import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
 import { colors } from '../../../../../theme/colors';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
-import { Sheet } from '../../../../../grid/sheet/Sheet';
-import { PixiApp } from '../../../../../gridGL/pixiApp/PixiApp';
 import { QColorPicker } from '../../../../components/qColorPicker';
+import { SheetController } from '../../../../../grid/controller/sheetController';
 
 interface Props extends SubMenuProps {
-  sheet: Sheet;
-  app: PixiApp;
+  sheetController: SheetController;
 }
 
 enum BorderSelection {
@@ -45,7 +43,7 @@ enum BorderSelection {
 }
 
 export function useGetBorderMenu(props: Props): JSX.Element {
-  const { sheet } = props;
+  const { sheet } = props.sheetController;
   const cursor = sheet.cursor;
 
   const [lineStyle, setLineStyle] = useState<BorderType | undefined>();
@@ -53,7 +51,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
   const defaultColor = convertTintToString(colors.defaultBorderColor);
   const [color, setColor] = useState<string>(defaultColor);
 
-  const { changeBorders, clearBorders } = useBorders(props.sheet, props.app);
+  const { changeBorders, clearBorders } = useBorders(props.sheetController);
 
   const clearSelection = useCallback(() => setBorderSelection(0), []);
   // clear border type when changing selection

@@ -5,16 +5,12 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { MenuLineItem } from './MenuLineItem';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { useCallback, useState } from 'react';
 import useEventListener from '../../../hooks/useEventListener';
 import mixpanel from 'mixpanel-browser';
+import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 
-interface Props {
-  app: PixiApp;
-}
-
-export const ZoomDropdown = (props: Props) => {
+export const ZoomDropdown = () => {
   const [zoom, setZoom] = useState(1);
   const handleZoom = useCallback(
     (event: CustomEvent<number>) => {
@@ -24,13 +20,10 @@ export const ZoomDropdown = (props: Props) => {
   );
   useEventListener('zoom-event', handleZoom);
 
-  const setZoomState = useCallback(
-    (value: number) => {
-      props.app.setZoomState(value);
-      focusGrid();
-    },
-    [props.app]
-  );
+  const setZoomState = useCallback((value: number) => {
+    pixiAppEvents.setZoomState(value);
+    focusGrid();
+  }, []);
 
   return (
     <Menu
@@ -60,7 +53,7 @@ export const ZoomDropdown = (props: Props) => {
       <MenuItem
         onClick={() => {
           mixpanel.track('[ZoomDropdown].zoomToSelection');
-          props.app.setZoomToSelection();
+          pixiAppEvents.setZoomTo('selection');
         }}
       >
         <MenuLineItem primary="Zoom to selection" secondary={KeyboardSymbols.Command + '8'} />
@@ -68,7 +61,7 @@ export const ZoomDropdown = (props: Props) => {
       <MenuItem
         onClick={() => {
           mixpanel.track('[ZoomDropdown].zoomToFit');
-          props.app.setZoomToFit();
+          pixiAppEvents.setZoomTo('fit');
         }}
       >
         <MenuLineItem primary="Zoom to fit" secondary={KeyboardSymbols.Command + '9'} />

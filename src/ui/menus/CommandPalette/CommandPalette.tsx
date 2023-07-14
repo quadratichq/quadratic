@@ -55,8 +55,8 @@ export const CommandPalette = (props: Props) => {
 
   // Otherwise, define vars and render the list
   const ListItems = getCommandPaletteListItems({
-    sheetController,
     app,
+    sheetController,
     interactionState,
     closeCommandPalette,
     activeSearchValue: activeSearchValue,

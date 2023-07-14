@@ -28,8 +28,8 @@ export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { wid
 export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void } => {
   const { editorInteractionState, setEditorInteractionState, app, sheetController } = props;
   const { format } = useGetSelection(sheetController.sheet);
-  const { changeBold, changeItalic } = useFormatCells(sheetController, app);
-  const { clearAllFormatting } = useClearAllFormatting(sheetController, app);
+  const { changeBold, changeItalic } = useFormatCells(sheetController);
+  const { clearAllFormatting } = useClearAllFormatting(sheetController);
   const { presentationMode, setPresentationMode } = useGridSettings();
   const { currentFileId } = useLocalFiles();
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -45,7 +45,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           event,
           editorInteractionState,
           setEditorInteractionState,
-          viewport: app?.viewport,
           sheet: sheetController.sheet,
           clearAllFormatting,
           changeBold,
@@ -115,7 +114,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
         event,
         editorInteractionState,
         setEditorInteractionState,
-        app,
       })
     )
       return;

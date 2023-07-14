@@ -52,7 +52,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
-      {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
+      {!presentationMode && <TopBar sheetController={sheetController} />}
       {editorInteractionState.showCommandPalette && (
         <CommandPalette
           app={app}

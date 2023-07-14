@@ -1,5 +1,6 @@
 import { Statement } from '../statement';
 import { SheetController } from '../sheetController';
+import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 
 export const SetHeadingSizeRunner = (sheetController: SheetController, statement: Statement): Statement => {
   if (statement.type !== 'SET_HEADING_SIZE') throw new Error('Incorrect statement type.');
@@ -21,13 +22,11 @@ export const SetHeadingSizeRunner = (sheetController: SheetController, statement
 
   // mark things as dirty
   // TODO: move to end_transaction
-  window.dispatchEvent(
-    new CustomEvent('set-dirty', { detail: { cells: true, gridLines: true, cursor: true, headings: true } })
-  );
+  pixiAppEvents.setDirty({ cells: true, gridLines: true, cursor: true, headings: true });
   if (heading_size.column !== undefined) {
-    window.dispatchEvent(new CustomEvent('quadrants-changed', { detail: { column: heading_size.column } }));
+    pixiAppEvents.quadrantsChanged({ column: heading_size.column });
   } else if (heading_size.row !== undefined) {
-    window.dispatchEvent(new CustomEvent('quadrants-changed', { detail: { row: heading_size.row } }));
+    pixiAppEvents.quadrantsChanged({ row: heading_size.row });
   }
 
   // return reverse statement

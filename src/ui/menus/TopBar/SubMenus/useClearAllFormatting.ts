@@ -1,4 +1,3 @@
-import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { useBorders } from './useBorders';
 import { useFormatCells } from './useFormatCells';
@@ -7,9 +6,9 @@ interface IResults {
   clearAllFormatting: () => void;
 }
 
-export const useClearAllFormatting = (sheet_controller: SheetController, app: PixiApp): IResults => {
-  const { clearFormatting } = useFormatCells(sheet_controller, app);
-  const { clearBorders } = useBorders(sheet_controller.sheet, app);
+export const useClearAllFormatting = (sheet_controller: SheetController): IResults => {
+  const { clearFormatting } = useFormatCells(sheet_controller);
+  const { clearBorders } = useBorders(sheet_controller);
 
   const clearAllFormatting = () => {
     sheet_controller.start_transaction();

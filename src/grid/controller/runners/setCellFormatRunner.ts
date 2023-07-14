@@ -1,6 +1,7 @@
 import { Statement } from '../statement';
 import { CellFormat } from '../../../schemas';
 import { SheetController } from '../sheetController';
+import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 
 const CopyCellFormat = (format: CellFormat | undefined): CellFormat | undefined => {
   if (format === undefined) return undefined;
@@ -18,10 +19,7 @@ export const SetCellFormatRunner = (sheetController: SheetController, statement:
   if (new_value === undefined) {
     // Clear the cell format
     if (old_value !== undefined) sheet.grid.clearFormat([old_value]);
-    window.dispatchEvent(
-      new CustomEvent('quadrants-changed', { detail: { cells: [{ x: position[0], y: position[1] }] } })
-    );
-    window.dispatchEvent(new CustomEvent('set-dirty', { detail: { cells: true } }));
+    pixiAppEvents.quadrantsChanged({ cells: [{ x: position[0], y: position[1] }] });
     return {
       type: 'SET_CELL_FORMAT',
       data: {
@@ -33,10 +31,7 @@ export const SetCellFormatRunner = (sheetController: SheetController, statement:
     // if we are setting formatting we update the grid
     // and return a statement that applies the old value.
     sheet.grid.updateFormat([{ ...new_value, x: position[0], y: position[1] }]);
-    window.dispatchEvent(
-      new CustomEvent('quadrants-changed', { detail: { cells: [{ x: position[0], y: position[1] }] } })
-    );
-    window.dispatchEvent(new CustomEvent('set-dirty', { detail: { cells: true } }));
+    pixiAppEvents.quadrantsChanged({ cells: [{ x: position[0], y: position[1] }] });
     return {
       type: 'SET_CELL_FORMAT',
       data: {

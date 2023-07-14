@@ -51,7 +51,7 @@ export const FloatingContextMenu = (props: Props) => {
   const moreMenu = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
-  const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
+  const borders = useGetBorderMenu({ sheetController: sheetController });
   const {
     changeFillColor,
     removeFillColor,
@@ -63,9 +63,9 @@ export const FloatingContextMenu = (props: Props) => {
     textFormatIncreaseDecimalPlaces,
     textFormatSetCurrency,
     textFormatSetPercentage,
-  } = useFormatCells(sheetController, props.app);
+  } = useFormatCells(sheetController);
   const { format } = useGetSelection(sheetController.sheet);
-  const { clearAllFormatting } = useClearAllFormatting(sheetController, props.app);
+  const { clearAllFormatting } = useClearAllFormatting(sheetController);
   const cursor = sheetController.sheet.cursor;
 
   // close moreMenu when context menu closes

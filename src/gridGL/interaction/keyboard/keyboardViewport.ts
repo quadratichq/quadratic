@@ -1,4 +1,3 @@
-import { Viewport } from 'pixi-viewport';
 import { MultipleFormat } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
@@ -11,7 +10,6 @@ export function keyboardViewport(options: {
   app: PixiApp;
   event: KeyboardEvent;
   sheet: Sheet;
-  viewport?: Viewport;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   clearAllFormatting: Function;
@@ -31,7 +29,6 @@ export function keyboardViewport(options: {
     event,
     format,
     sheet,
-    viewport,
     editorInteractionState,
     setEditorInteractionState,
     presentationMode,
@@ -39,7 +36,9 @@ export function keyboardViewport(options: {
     app,
   } = options;
 
-  if (!viewport || event.altKey) return false;
+  const { viewport } = app;
+
+  if (event.altKey) return false;
 
   // Should come before other shortcuts (opens file menu)
   if ((event.metaKey || event.ctrlKey) && event.key === 'o') {

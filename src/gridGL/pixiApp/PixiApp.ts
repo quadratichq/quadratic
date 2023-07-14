@@ -20,6 +20,7 @@ import { editorInteractionStateDefault } from '../../atoms/editorInteractionStat
 import { IS_READONLY_MODE } from '../../constants/app';
 import { Wheel, ZOOM_KEY, HORIZONTAL_SCROLL_KEY } from '../pixiOverride/Wheel';
 import { BoxCells } from '../UI/boxCells';
+import { pixiAppEvents } from './PixiAppEvents';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -129,40 +130,19 @@ export class PixiApp {
     if (debugAlwaysShowCache) this.showCache();
 
     this.setupListeners();
-    this.rebuild();
+    pixiAppEvents.rebuild();
 
     console.log('[QuadraticGL] environment ready');
   }
 
   private setupListeners() {
     window.addEventListener('resize', this.resize);
-    window.addEventListener('change-sheet', this.changeSheet);
-    window.addEventListener('rebuild', this.rebuild);
-    window.addEventListener('set-dirty', this.setDirty);
+    pixiAppEvents.app = this;
   }
 
   private removeListeners() {
     window.removeEventListener('resize', this.resize);
-    window.removeEventListener('change-sheet', this.changeSheet);
-    window.removeEventListener('rebuild', this.rebuild);
-    window.addEventListener('set-dirty', this.setDirty);
   }
-
-  private setDirty = (e: any) => {
-    const options: { cells?: boolean; cursor?: boolean; headings?: boolean; gridLines?: boolean } = e.detail;
-    if (options.cells) {
-      this.cells.dirty = true;
-    }
-    if (options.cursor) {
-      this.cursor.dirty = true;
-    }
-    if (options.headings) {
-      this.headings.dirty = true;
-    }
-    if (options.gridLines) {
-      this.gridLines.dirty = true;
-    }
-  };
 
   get sheet(): Sheet {
     return this.sheet_controller.sheet;
@@ -286,28 +266,6 @@ export class PixiApp {
   focus(): void {
     this.canvas?.focus();
   }
-
-  changeSheet = () => {
-    this.viewport.dirty = true;
-    this.gridLines.dirty = true;
-    this.axesLines.dirty = true;
-    this.headings.dirty = true;
-    this.cursor.dirty = true;
-    this.cells.dirty = true;
-    this.quadrants.changeSheet();
-    this.boxCells.reset();
-  };
-
-  rebuild = (): void => {
-    this.viewport.dirty = true;
-    this.gridLines.dirty = true;
-    this.axesLines.dirty = true;
-    this.headings.dirty = true;
-    this.cursor.dirty = true;
-    this.cells.dirty = true;
-    this.boxCells.reset();
-    this.quadrants.build();
-  };
 
   reset(): void {
     this.viewport.scale.set(1);

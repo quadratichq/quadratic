@@ -1,7 +1,6 @@
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { DeleteCells } from '../../../grid/actions/DeleteCells';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { PixiApp } from '../../pixiApp/PixiApp';
 import { isAllowedFirstChar } from './keyboardCellChars';
 
 export function keyboardCell(options: {
@@ -9,7 +8,6 @@ export function keyboardCell(options: {
   event: React.KeyboardEvent<HTMLElement>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  app: PixiApp;
 }): boolean {
   const { event, editorInteractionState, setEditorInteractionState, sheet_controller } = options;
 

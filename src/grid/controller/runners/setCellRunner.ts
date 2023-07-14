@@ -1,3 +1,4 @@
+import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 import { SheetController } from '../sheetController';
 import { Statement } from '../statement';
 
@@ -11,10 +12,7 @@ export const SetCellRunner = (sheetController: SheetController, statement: State
     // if we are deleting a cell, we need to delete it from the grid
     // and return a statement that applies the old value.
     sheet.grid.deleteCells([{ x: position[0], y: position[1] }]);
-    window.dispatchEvent(
-      new CustomEvent('quadrants-changed', { detail: { cells: [{ x: position[0], y: position[1] }] } })
-    );
-    window.dispatchEvent(new CustomEvent('set-dirty', { detail: { cells: true } }));
+    pixiAppEvents.quadrantsChanged({ cells: [{ x: position[0], y: position[1] }] });
     return {
       type: 'SET_CELL',
       data: {
@@ -26,10 +24,7 @@ export const SetCellRunner = (sheetController: SheetController, statement: State
     // if we are setting a cell, we need to update the grid
     // and return a statement that applies the old value.
     sheet.grid.updateCells([new_value]);
-    window.dispatchEvent(
-      new CustomEvent('quadrants-changed', { detail: { cells: [{ x: position[0], y: position[1] }] } })
-    );
-    window.dispatchEvent(new CustomEvent('set-dirty', { detail: { cells: true } }));
+    pixiAppEvents.quadrantsChanged({ cells: [{ x: position[0], y: position[1] }] });
     return {
       type: 'SET_CELL',
       data: {

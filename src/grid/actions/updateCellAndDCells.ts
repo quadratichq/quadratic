@@ -3,6 +3,7 @@ import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 import { runCellComputation } from '../computations/runCellComputation';
 import { StringId, getKey } from '../../helpers/getKey';
+import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 
 interface ArgsType {
   starting_cells: Cell[];
@@ -233,6 +234,5 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   // Pass updatedCells to the app so it can update the Grid Quadrants which changed.
   // TODO: move this to sheetController so it happens automatically with every transaction?
   // Maybe sheetController.end_transaction() should return a list of cells which updated in the transaction?
-  window.dispatchEvent(new CustomEvent('quadrants-changed', { detail: { cells: updatedCells } }));
-  // app?.quadrants.quadrantChanged({ cells: updatedCells });
+  pixiAppEvents.quadrantsChanged({ cells: updatedCells });
 };

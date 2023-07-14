@@ -15,6 +15,7 @@ import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/a
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import mixpanel from 'mixpanel-browser';
 import { generateKeyBetween } from 'fractional-indexing';
+import { pixiAppEvents } from '../gridGL/pixiApp/PixiAppEvents';
 
 const INDEX = 'file-list';
 
@@ -82,7 +83,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     (grid: GridFile) => {
       sheetController.clear();
       sheetController.loadSheets(grid.sheets);
-      window.dispatchEvent(new CustomEvent('rebuild'));
+      pixiAppEvents.rebuild();
       const searchParams = new URLSearchParams(window.location.search);
       // If `file` is in there from an initial page load, remove it
       if (searchParams.get('file')) {

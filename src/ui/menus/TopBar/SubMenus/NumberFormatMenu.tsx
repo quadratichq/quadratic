@@ -5,14 +5,12 @@ import { Menu, MenuItem, MenuDivider } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { Tooltip } from '@mui/material';
 import { useFormatCells } from './useFormatCells';
-import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import { AbcOutlined, AttachMoney, Functions, Percent } from '@mui/icons-material';
 import { MenuLineItem } from '../MenuLineItem';
 
 interface IProps {
-  app: PixiApp;
   sheet_controller: SheetController;
 }
 
@@ -25,7 +23,7 @@ export const NumberFormatMenu = (props: IProps) => {
     textFormatSetPercentage,
     textFormatSetNumber,
     textFormatSetExponential,
-  } = useFormatCells(props.sheet_controller, props.app);
+  } = useFormatCells(props.sheet_controller);
 
   return (
     <Menu

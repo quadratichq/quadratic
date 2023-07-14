@@ -1,3 +1,4 @@
+import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { Coordinate } from '../../gridGL/types/size';
 import { Sheet } from './Sheet';
 
@@ -71,15 +72,16 @@ export class SheetCursor {
     } else if (options.keyboardMovePosition) {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
-    window.dispatchEvent(new CustomEvent('set-dirty', { detail: { cursor: true, headings: true } }));
-    window.dispatchEvent(new CustomEvent('cursor-position'));
+    pixiAppEvents.cursorPosition();
   }
 
   changeInput(input: boolean, initialValue = '') {
     this.showInput = input;
     this.inputInitialValue = initialValue;
+    pixiAppEvents.setDirty({ cells: true, cursor: true });
+
+    // this is used by CellInput to control visibility
     window.dispatchEvent(new CustomEvent('change-input', { detail: { showInput: input } }));
-    window.dispatchEvent(new CustomEvent('set-dirty', { detail: { cells: true, cursor: true } }));
   }
 
   changeBoxCells(boxCells: boolean) {
@@ -91,6 +93,8 @@ export class SheetCursor {
   changePanMode(mode: PanMode): void {
     if (this.panMode !== mode) {
       this.panMode = mode;
+
+      // this is used by QuadraticGrid to trigger changes in pan mode
       window.dispatchEvent(new CustomEvent('pan-mode', { detail: mode }));
     }
   }

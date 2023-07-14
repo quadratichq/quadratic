@@ -19,7 +19,7 @@ interface CellInputProps {
 
 export const CellInput = (props: CellInputProps) => {
   const { editorInteractionState, app, container, sheetController } = props;
-  const { changeBold, changeItalic } = useFormatCells(sheetController, app, true);
+  const { changeBold, changeItalic } = useFormatCells(sheetController, true);
 
   const viewport = app?.viewport;
 

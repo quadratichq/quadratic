@@ -19,8 +19,8 @@ interface Commands {
 }
 
 export const getCommandPaletteListItems = (props: {
-  sheetController: SheetController;
   app: PixiApp;
+  sheetController: SheetController;
   interactionState: GridInteractionState;
   closeCommandPalette: Function;
   activeSearchValue: string;
