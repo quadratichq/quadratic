@@ -1,4 +1,4 @@
-import { useAuth0 } from '@auth0/auth0-react';
+import { authClient } from '../../../auth';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, FormControl, IconButton, InputAdornment, OutlinedInput } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
@@ -11,6 +11,8 @@ import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
 import ConditionalWrapper from '../../components/ConditionalWrapper';
 import './AITab.css';
+import { useRouteLoaderData } from 'react-router-dom';
+import { RootLoaderData } from '../../../Routes';
 
 interface Props {
   editorMode: EditorInteractionState['mode'];
@@ -52,7 +54,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
   const [loading, setLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const controller = useRef<AbortController>();
-  const { user } = useAuth0();
+  const { user } = useRouteLoaderData('data') as RootLoaderData;
   const inputRef = useRef<HTMLInputElement | undefined>(undefined);
 
   // Focus the input when the tab comes into focus
@@ -71,7 +73,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
     if (loading) return;
     controller.current = new AbortController();
     setLoading(true);
-    const token = await apiClientSingleton.getAuth();
+    const token = await authClient.getToken();
     const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
     const request_body = {
       model: 'gpt-4',

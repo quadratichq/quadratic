@@ -20,8 +20,9 @@ import { Python, Formula, JavaScript, Sql, AI } from '../../icons';
 import { colors } from '../../../theme/colors';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useRouteLoaderData } from 'react-router-dom';
 import mixpanel from 'mixpanel-browser';
+import { RootLoaderData } from '../../../Routes';
 
 export interface CellTypeOption {
   name: string;
@@ -82,7 +83,7 @@ export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [value, setValue] = React.useState<string>('');
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
-  const { isAuthenticated } = useAuth0();
+  const { isAuthenticated } = useRouteLoaderData('data') as RootLoaderData;
   const searchlabel = 'Choose a cell type…';
 
   if (!isAuthenticated) {

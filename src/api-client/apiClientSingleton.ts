@@ -1,20 +1,14 @@
-import { Auth0ContextInterface } from '@auth0/auth0-react';
 import { GridFile } from '../schemas';
 import * as Sentry from '@sentry/react';
 import { downloadFile } from '../helpers/downloadFile';
 import mixpanel from 'mixpanel-browser';
-import { auth0AuthProvider } from '../auth';
+import { authClient } from '../auth';
 const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
 
 class APIClientSingleton {
   // Allow only one instance of the class to be created
   // gives access to the api all over the app including pure js
   private static instance: APIClientSingleton;
-  private _getAccessTokenSilently: Auth0ContextInterface['getAccessTokenSilently'] | null;
-
-  private constructor() {
-    this._getAccessTokenSilently = null;
-  }
 
   public static getInstance(): APIClientSingleton {
     if (!APIClientSingleton.instance) {
@@ -22,15 +16,6 @@ class APIClientSingleton {
     }
 
     return APIClientSingleton.instance;
-  }
-
-  setAuth(_getAccessTokenSilently: Auth0ContextInterface['getAccessTokenSilently']): void {
-    this._getAccessTokenSilently = _getAccessTokenSilently;
-  }
-
-  getAuth() {
-    if (this._getAccessTokenSilently !== null) return this._getAccessTokenSilently();
-    else throw new Error('Auth0 not initialized');
   }
 
   getAPIURL() {
@@ -43,7 +28,7 @@ class APIClientSingleton {
   async getFiles(): Promise<GridFile[] | undefined> {
     try {
       const base_url = this.getAPIURL();
-      const token = await auth0AuthProvider.getToken();
+      const token = await authClient.getToken();
       const response = await fetch(`${base_url}/v0/files`, {
         method: 'GET',
         headers: {
@@ -77,7 +62,7 @@ class APIClientSingleton {
       const response = await fetch(`${base_url}/v0/files/${id}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${await this.getAuth()}`,
+          Authorization: `Bearer ${await authClient.getToken()}`,
           'Content-Type': 'application/json',
         },
       });
@@ -93,6 +78,31 @@ class APIClientSingleton {
       Sentry.captureException({
         message: `API Error Catch: Failed to fetch \`/files\`. ${error}`,
       });
+    }
+  }
+
+  async deleteFile(id: string): Promise<boolean> {
+    if (!API_URL) return false;
+
+    try {
+      const base_url = this.getAPIURL();
+      const response = await fetch(`${base_url}/v0/files/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${await authClient.getToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
+      }
+      return true;
+    } catch (error) {
+      console.error(error);
+      Sentry.captureException({
+        message: `API Error Catch: Failed to delete \`/files/${id}\`. ${error}`,
+      });
+      return false;
     }
   }
 
@@ -129,7 +139,7 @@ class APIClientSingleton {
       const response = await fetch(`${base_url}/v0/files/backup`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${await this.getAuth()}`,
+          Authorization: `Bearer ${await authClient.getToken()}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(request_body),
@@ -151,7 +161,7 @@ class APIClientSingleton {
     try {
       const url = `${this.getAPIURL()}/v0/feedback`;
       const body = JSON.stringify({ feedback, userEmail });
-      const token = await this.getAuth();
+      const token = await authClient.getToken();
       const response = await fetch(url, {
         method: 'POST',
         headers: {

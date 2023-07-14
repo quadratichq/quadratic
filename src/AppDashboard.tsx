@@ -1,32 +1,52 @@
-import { useLoaderData, useFetcher } from 'react-router-dom';
+import { useEffect } from 'react';
+import { json, useLoaderData, Form, useActionData, LoaderFunctionArgs } from 'react-router-dom';
 import { GridFile } from './schemas';
-// import apiClientSingleton from './api-client/apiClientSingleton';
-// import { protectedRouteLoaderWrapper } from './auth';
+import { protectedRouteLoaderWrapper } from './auth';
+import apiClientSingleton from './api-client/apiClientSingleton';
+import { useGlobalSnackbar } from './ui/contexts/GlobalSnackbar';
 
 type LoaderData = {
   files?: GridFile[];
 };
 
+type ActionData = {
+  deleteSuccess: boolean;
+  dt: number;
+};
+
 // export const loader = async ({ request }: any): Promise<LoaderData> => {
 //   return { files: await apiClientSingleton.getFiles() };
 // };
+export const loader = protectedRouteLoaderWrapper(async ({ request }: LoaderFunctionArgs) => {
+  return { files: await apiClientSingleton.getFiles() };
+});
 
 const ListItem = ({ uuid, name }: { uuid: string; name: string }) => {
-  const fetcher = useFetcher();
+  // const fetcher = useFetcher();
+
   return (
     <li key={uuid}>
       {uuid} {name}
-      <fetcher.Form method="delete">
+      <Form method="delete">
         <button name={'delete-file'} value={uuid}>
           Delete
         </button>
-      </fetcher.Form>
+      </Form>
     </li>
   );
 };
 
 export const Component = () => {
   const data = useLoaderData() as LoaderData;
+  const action = useActionData() as ActionData;
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  console.log('componentActionData', action);
+  useEffect(() => {
+    console.log(action);
+    if (action && !action.deleteSuccess) {
+      addGlobalSnackbar('Failed to delete file. Try again.');
+    }
+  }, [action, addGlobalSnackbar]);
 
   return (
     <div>
@@ -44,12 +64,10 @@ export const Component = () => {
 export const action = async ({ params, request }: any) => {
   const formData = await request.formData();
   const uuid = formData.get('delete-file');
-  console.warn('delete-file', uuid);
-  await fetch(`http://localhost:8000/v0/files/${uuid}`, {
-    method: 'DELETE',
-    headers: {
-      Authorization: `Bearer `,
-    },
-  });
-  return null;
+  const deleteSuccess = await apiClientSingleton.deleteFile(uuid);
+
+  const res = { deleteSuccess, dt: Date.now() };
+  console.log('actionData', res);
+  // TODO what if delete fails?
+  return json(res, { status: 400 });
 };

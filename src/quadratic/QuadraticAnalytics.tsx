@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as amplitude from '@amplitude/analytics-browser';
-import { User } from '@auth0/auth0-react';
+import { User } from '@auth0/auth0-spa-js';
 import mixpanel from 'mixpanel-browser';
 import { useRouteLoaderData } from 'react-router-dom';
 

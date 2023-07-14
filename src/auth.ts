@@ -1,29 +1,25 @@
-import { createAuth0Client, User } from '@auth0/auth0-spa-js';
+import { createAuth0Client, User, Auth0Client } from '@auth0/auth0-spa-js';
 import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
-
-interface AuthProvider {
-  isAuthenticated(): Promise<boolean>;
-  user(): Promise<undefined | User>;
-  signin(redirectTo: string): Promise<void>;
-  handleSigninRedirect(): Promise<void>;
-  signout(): Promise<void>;
-  getToken(): any;
-}
+import * as Sentry from '@sentry/browser';
 
 const domain = process.env.REACT_APP_AUTH0_DOMAIN || '';
 const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID || '';
-// TODO do we need these?
 const audience = process.env.REACT_APP_AUTH0_AUDIENCE;
 const issuer = process.env.REACT_APP_AUTH0_ISSUER;
+if (!(domain && clientId && audience && issuer)) {
+  const message = 'Auth0 variables are not configured correctly.';
+  Sentry.captureEvent({
+    message,
+    level: Sentry.Severity.Fatal,
+  });
+}
 
-// let auth0Client: Awaited<ReturnType<typeof createAuth0Client>>;
-let clientPromise: any; // TODO
-
+// Create the client as a module-scoped promise so all loaders will wait
+// for this one single isntance of client to resolve
+let auth0ClientPromise: Promise<Auth0Client>;
 async function getClient() {
-  console.log('getClient() run');
-  if (!clientPromise) {
-    console.log('getClient() initializing...');
-    clientPromise = createAuth0Client({
+  if (!auth0ClientPromise) {
+    auth0ClientPromise = createAuth0Client({
       domain,
       clientId,
       issuer,
@@ -32,13 +28,22 @@ async function getClient() {
       },
     });
   }
-  let client = await clientPromise;
-  // apiClientSingleton.setAuth(auth0AuthProvider.getToken());
-  console.log('getClient() return');
-  return client;
+  const auth0Client = await auth0ClientPromise;
+  return auth0Client;
 }
 
-export const auth0AuthProvider: AuthProvider = {
+// TODO handle login error case?
+
+interface AuthClient {
+  isAuthenticated(): Promise<boolean>;
+  user(): Promise<undefined | User>;
+  login(redirectTo: string): Promise<void>;
+  handleSigninRedirect(): Promise<void>;
+  logout(): Promise<void>;
+  getToken(): Promise<string>;
+}
+
+export const authClient: AuthClient = {
   async isAuthenticated() {
     let client = await getClient();
     return client.isAuthenticated();
@@ -48,7 +53,7 @@ export const auth0AuthProvider: AuthProvider = {
     let user = await client.getUser();
     return user;
   },
-  async signin(redirectTo: string) {
+  async login(redirectTo: string) {
     let client = await getClient();
     await client.loginWithRedirect({
       authorizationParams: {
@@ -64,7 +69,7 @@ export const auth0AuthProvider: AuthProvider = {
       await client.handleRedirectCallback();
     }
   },
-  async signout() {
+  async logout() {
     let client = await getClient();
     await client.logout();
   },
@@ -73,10 +78,6 @@ export const auth0AuthProvider: AuthProvider = {
     let token = await client.getTokenSilently();
     return token;
   },
-  //   async getTokken() {
-  //     let client = await getClient();
-  //     return client.getTokenSilently;
-  //   },
 };
 
 /**
@@ -88,7 +89,7 @@ export const auth0AuthProvider: AuthProvider = {
 export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFunction {
   return async (loaderFnArgs: LoaderFunctionArgs) => {
     const { request } = loaderFnArgs;
-    let isAuthenticated = await auth0AuthProvider.isAuthenticated();
+    let isAuthenticated = await authClient.isAuthenticated();
     if (!isAuthenticated) {
       let params = new URLSearchParams();
       params.set('from', new URL(request.url).pathname);

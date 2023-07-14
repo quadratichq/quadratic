@@ -17,7 +17,8 @@ import useLocalStorage from '../../../hooks/useLocalStorage';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { SocialDiscord, SocialGithub, SocialTwitter } from '../../icons';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useRouteLoaderData } from 'react-router-dom';
+import { RootLoaderData } from '../../../Routes';
 
 export const FeedbackMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -27,7 +28,7 @@ export const FeedbackMenu = () => {
   const [loadState, setLoadState] = useState<'INITIAL' | 'LOADING' | 'LOAD_ERROR'>('INITIAL');
   const theme = useTheme();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const { user } = useAuth0();
+  const { user } = useRouteLoaderData('root') as RootLoaderData;
 
   const closeMenu = () => {
     setEditorInteractionState((state) => ({

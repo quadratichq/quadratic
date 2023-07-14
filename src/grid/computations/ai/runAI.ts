@@ -1,5 +1,6 @@
 import { GetCellsDB } from '../../sheet/Cells/GetCellsDB';
 import { Coordinate } from '../../../gridGL/types/size';
+import { authClient } from '../../../auth';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 
 export interface runAIReturnType {
@@ -10,7 +11,7 @@ export interface runAIReturnType {
 }
 
 export async function runAI(prompt: string, pos: Coordinate): Promise<runAIReturnType> {
-  const token = await apiClientSingleton.getAuth();
+  const token = await authClient.getToken();
 
   const top_cells = await GetCellsDB(pos.x - 25, pos.y - 50, pos.x + 25, pos.y - 1);
   const left_cells = await GetCellsDB(pos.x - 25, pos.y - 25, pos.x - 1, pos.y + 50);
