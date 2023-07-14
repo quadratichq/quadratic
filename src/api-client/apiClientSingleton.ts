@@ -3,6 +3,7 @@ import { GridFile } from '../schemas';
 import * as Sentry from '@sentry/react';
 import { downloadFile } from '../helpers/downloadFile';
 import mixpanel from 'mixpanel-browser';
+import { auth0AuthProvider } from '../auth';
 const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
 
 class APIClientSingleton {
@@ -42,10 +43,11 @@ class APIClientSingleton {
   async getFiles(): Promise<GridFile[] | undefined> {
     try {
       const base_url = this.getAPIURL();
+      const token = await auth0AuthProvider.getToken();
       const response = await fetch(`${base_url}/v0/files`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${await this.getAuth()}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });

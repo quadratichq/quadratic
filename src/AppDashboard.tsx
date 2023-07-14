@@ -1,14 +1,15 @@
 import { useLoaderData, useFetcher } from 'react-router-dom';
 import { GridFile } from './schemas';
-import apiClientSingleton from './api-client/apiClientSingleton';
+// import apiClientSingleton from './api-client/apiClientSingleton';
+// import { protectedRouteLoaderWrapper } from './auth';
 
 type LoaderData = {
   files?: GridFile[];
 };
 
-export const loader = async ({ request }: any): Promise<LoaderData> => {
-  return { files: await apiClientSingleton.getFiles() };
-};
+// export const loader = async ({ request }: any): Promise<LoaderData> => {
+//   return { files: await apiClientSingleton.getFiles() };
+// };
 
 const ListItem = ({ uuid, name }: { uuid: string; name: string }) => {
   const fetcher = useFetcher();
