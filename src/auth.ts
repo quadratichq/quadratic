@@ -45,16 +45,16 @@ interface AuthClient {
 
 export const authClient: AuthClient = {
   async isAuthenticated() {
-    let client = await getClient();
+    const client = await getClient();
     return client.isAuthenticated();
   },
   async user() {
-    let client = await getClient();
-    let user = await client.getUser();
+    const client = await getClient();
+    const user = await client.getUser();
     return user;
   },
   async login(redirectTo: string) {
-    let client = await getClient();
+    const client = await getClient();
     await client.loginWithRedirect({
       authorizationParams: {
         redirect_uri:
@@ -65,17 +65,17 @@ export const authClient: AuthClient = {
   async handleSigninRedirect() {
     const query = window.location.search;
     if (query.includes('code=') && query.includes('state=')) {
-      let client = await getClient();
+      const client = await getClient();
       await client.handleRedirectCallback();
     }
   },
   async logout() {
-    let client = await getClient();
+    const client = await getClient();
     await client.logout();
   },
   async getToken() {
-    let client = await getClient();
-    let token = await client.getTokenSilently();
+    const client = await getClient();
+    const token = await client.getTokenSilently();
     return token;
   },
 };
