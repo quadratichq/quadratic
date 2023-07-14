@@ -152,7 +152,11 @@ export const SheetBar = (props: Props): JSX.Element => {
           originalOrder: sheet.order,
           actualOrder: sheet.order,
         };
-        tab.style.boxShadow = '0.25rem -0.25rem 0.5rem rgba(0,0,0,0.25)';
+        setTimeout(() => {
+          if (down.current) {
+            tab.style.boxShadow = '0.25rem -0.25rem 0.5rem rgba(0,0,0,0.25)';
+          }
+        }, 500);
         tab.style.zIndex = '2';
       }
       focusGrid();
