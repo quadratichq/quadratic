@@ -1,11 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
 import reportWebVitals from './reportWebVitals';
 import * as Sentry from '@sentry/react';
+import { Routes } from './Routes';
 import { BrowserTracing } from '@sentry/tracing';
-import { Auth0Provider } from '@auth0/auth0-react';
 
 // Enable sentry only if SENTRY_DSN is in ENV
 if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'none')
@@ -20,15 +19,7 @@ if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'no
 
 ReactDOM.render(
   <React.StrictMode>
-    <Auth0Provider
-      domain={process.env.REACT_APP_AUTH0_DOMAIN}
-      clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
-      audience={process.env.REACT_APP_AUTH0_AUDIENCE}
-      issuer={process.env.REACT_APP_AUTH0_ISSUER}
-      redirectUri={window.location.origin}
-    >
-      <App />
-    </Auth0Provider>
+    <Routes />
   </React.StrictMode>,
   document.getElementById('root')
 );

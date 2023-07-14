@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import QuadraticUIContext from '../ui/QuadraticUIContext';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { loadPython } from '../grid/computations/python/loadPython';
-import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../gridGL/loadAssets';
 import { IS_READONLY_MODE } from '../constants/app';
 import { debugSkipPythonLoad } from '../debugFlags';
@@ -70,14 +69,5 @@ export const QuadraticApp = () => {
     });
   }, [app, initialize]);
 
-  return (
-    <>
-      {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
-      <AnalyticsProvider />
-      {/* Provider of All React UI Components */}
-      {!loading && <QuadraticUIContext {...{ sheetController, localFiles, app }} />}
-      {/* Loading screen */}
-      {loading && <QuadraticLoading />}
-    </>
-  );
+  return loading ? <QuadraticLoading /> : <QuadraticUIContext {...{ sheetController, localFiles, app }} />;
 };

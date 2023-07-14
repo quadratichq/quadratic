@@ -68,3 +68,9 @@ export const debugShowCellsForDirtyQuadrants = debug && false;
 export const debugShowFileIO = debug && false;
 
 export const debugGridSettings = debug && false;
+
+// --------
+// Auth
+// --------
+
+export const debugLogAuth = true;
