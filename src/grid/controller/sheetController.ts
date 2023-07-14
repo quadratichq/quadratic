@@ -115,7 +115,7 @@ export class SheetController {
 
   addSheet(sheet: Sheet): void {
     this.sheets.push(sheet);
-    window.dispatchEvent(new CustomEvent('add-sheet', { detail: sheet.id }));
+    window.dispatchEvent(new CustomEvent('add-sheet', { detail: sheet }));
     this.current = sheet.id;
     if (this.saveLocalFiles) this.saveLocalFiles();
   }

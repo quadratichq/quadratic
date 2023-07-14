@@ -78,7 +78,8 @@ export class SheetCursor {
   changeInput(input: boolean, initialValue = '') {
     this.showInput = input;
     this.inputInitialValue = initialValue;
-    window.dispatchEvent(new CustomEvent('set-dirty', { detail: { cells: true } }));
+    window.dispatchEvent(new CustomEvent('change-input', { detail: { showInput: input } }));
+    window.dispatchEvent(new CustomEvent('set-dirty', { detail: { cells: true, cursor: true } }));
   }
 
   changeBoxCells(boxCells: boolean) {

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Coordinate } from '../types/size';
 import { focusGrid } from '../../helpers/focusGrid';
 import { PixiApp } from '../pixiApp/PixiApp';
@@ -26,6 +26,13 @@ export const CellInput = (props: CellInputProps) => {
   const cellLocation = sheetController.sheet.cursor.cursorPosition;
 
   const text = useRef('');
+
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const changeInput = (e: any) => setVisible(e.detail.showInput);
+    window.addEventListener('change-input', changeInput);
+    return () => window.removeEventListener('change-input', changeInput);
+  }, []);
 
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
   const copy = sheetController.sheet.getCellAndFormatCopy(cellLocation.x, cellLocation.y);
@@ -121,7 +128,7 @@ export const CellInput = (props: CellInputProps) => {
   }
 
   // If the input is not shown, we can do nothing and return null
-  if (!sheetController.sheet.cursor.showInput) {
+  if (!visible) {
     return null;
   }
 

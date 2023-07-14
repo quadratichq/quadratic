@@ -36,16 +36,17 @@ export class Quadrants extends Container {
     this.setupListeners();
   }
 
-  // private quadrantsAddListener = (e: any): void => this.add(e.detail);
+  private addSheetListener = (e: any): void => this.addSheet(e.detail);
   private quadrantsChangedListener = (e: any): void => this.quadrantChanged(e.detail);
 
   private setupListeners() {
-    // window.addEventListener('quadrants-add', this.quadrantsAddListener);
+    window.addEventListener('add-sheet', this.addSheetListener);
     window.addEventListener('quadrants-changed', this.quadrantsChangedListener);
   }
 
   destroy() {
     super.destroy();
+    window.removeEventListener('add-sheet', this.addSheetListener);
     window.removeEventListener('quadrants-changed', this.quadrantsChangedListener);
   }
 
