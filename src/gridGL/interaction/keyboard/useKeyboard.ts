@@ -34,11 +34,9 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { currentFileId } = useLocalFiles();
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const cursor = sheetController.sheet.cursor;
-
   const keyDownWindow = useCallback(
     (event: KeyboardEvent): void => {
-      if (cursor.showInput) return;
+      if (app.settings.input.show) return;
 
       if (
         keyboardViewport({
@@ -62,7 +60,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       }
     },
     [
-      cursor.showInput,
       editorInteractionState,
       setEditorInteractionState,
       app,
@@ -83,7 +80,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   }, [keyDownWindow]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (cursor.showInput) return;
+    if (app.settings.input.show) return;
 
     if (
       keyboardClipboard({

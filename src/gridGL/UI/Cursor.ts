@@ -38,7 +38,7 @@ export class Cursor extends Graphics {
     const { gridOffsets } = this.app.sheet;
     const { editorInteractionState } = this.app.settings;
     const cell = cursor.cursorPosition;
-    const showInput = cursor.showInput;
+    const showInput = this.app.settings.input.show;
 
     let { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
     const color = colors.cursorCell;
@@ -179,10 +179,12 @@ export class Cursor extends Graphics {
       this.dirty = false;
       this.clear();
       this.drawCursor();
-      if (this.app.sheet.cursor.showInput) return;
-      this.drawMultiCursor();
-      this.drawCodeCursor();
-      this.drawCursorIndicator();
+
+      if (!this.app.settings.input.show) {
+        this.drawMultiCursor();
+        this.drawCodeCursor();
+        this.drawCursorIndicator();
+      }
     }
   }
 }

@@ -78,12 +78,12 @@ export const CellInput = (props: CellInputProps) => {
       if (!node) return;
       node.focus();
       setTextInput(node);
-      text.current = sheetController.sheet.cursor.inputInitialValue ?? (cell?.value || '');
+      text.current = app?.settings.input.initialValue ?? (cell?.value || '');
       if (document.hasFocus() && node.contains(document.activeElement)) {
         handleFocus({ target: node });
       }
     },
-    [cell?.value, handleFocus, sheetController.sheet.cursor.inputInitialValue]
+    [app?.settings.input.initialValue, cell?.value, handleFocus]
   );
 
   // If we don't have a viewport, we can't continue.
@@ -192,7 +192,7 @@ export const CellInput = (props: CellInputProps) => {
         y: position.y + transpose.y,
       },
     });
-    sheetController.sheet.cursor.changeInput(false);
+    app.settings.changeInput(false);
 
     // Set focus back to Grid
     focusGrid();

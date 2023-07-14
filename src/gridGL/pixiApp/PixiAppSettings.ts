@@ -1,11 +1,21 @@
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { defaultGridSettings, GridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { PixiApp } from './PixiApp';
+import { pixiAppEvents } from './PixiAppEvents';
+
+export enum PanMode {
+  Disabled = 'DISABLED',
+  Enabled = 'ENABLED',
+  Dragging = 'DRAGGING',
+}
 
 export class PixiAppSettings {
   private app: PixiApp;
   private settings!: GridSettings;
   private lastSettings?: GridSettings;
+
+  input: { show: boolean; initialValue?: string };
+  panMode: PanMode;
 
   temporarilyHideCellTypeOutlines = false;
   editorInteractionState = editorInteractionStateDefault;
@@ -15,6 +25,8 @@ export class PixiAppSettings {
     this.app = app;
     this.getSettings();
     window.addEventListener('grid-settings', this.getSettings);
+    this.input = { show: false };
+    this.panMode = PanMode.Disabled;
   }
 
   destroy() {
@@ -77,5 +89,22 @@ export class PixiAppSettings {
       return true;
     }
     return this.settings.showA1Notation;
+  }
+
+  changeInput(input: boolean, initialValue = '') {
+    this.input = { show: input, initialValue };
+    pixiAppEvents.setDirty({ cells: true, cursor: true });
+
+    // this is used by CellInput to control visibility
+    window.dispatchEvent(new CustomEvent('change-input', { detail: { showInput: input } }));
+  }
+
+  changePanMode(mode: PanMode): void {
+    if (this.panMode !== mode) {
+      this.panMode = mode;
+
+      // this is used by QuadraticGrid to trigger changes in pan mode
+      window.dispatchEvent(new CustomEvent('pan-mode', { detail: mode }));
+    }
   }
 }

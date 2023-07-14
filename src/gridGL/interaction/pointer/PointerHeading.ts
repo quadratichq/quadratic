@@ -5,7 +5,7 @@ import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 import { HeadingSize } from '../../../grid/sheet/useHeadings';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
-import { PanMode } from '../../../grid/sheet/SheetCursor';
+import { PanMode } from '../../pixiApp/PixiAppSettings';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
@@ -147,7 +147,7 @@ export class PointerHeading {
     this.clicked = false;
 
     // Only style the heading resize cursor if panning mode is disabled
-    if (this.sheet.cursor.panMode === PanMode.Disabled) {
+    if (this.app.settings.panMode === PanMode.Disabled) {
       const headingResize = headings.intersectsHeadingGridLine(world);
       if (headingResize) {
         this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';

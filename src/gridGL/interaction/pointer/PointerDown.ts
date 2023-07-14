@@ -4,7 +4,7 @@ import { Sheet } from '../../../grid/sheet/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { PanMode } from '../../../grid/sheet/SheetCursor';
+import { PanMode } from '../../pixiApp/PixiAppSettings';
 
 const MINIMUM_MOVE_POSITION = 5;
 
@@ -31,13 +31,14 @@ export class PointerDown {
 
   pointerDown(world: Point, event: PointerEvent): void {
     if (IS_READONLY_MODE) return;
-    const cursor = this.sheet.cursor;
-    if (cursor.panMode !== PanMode.Disabled) return;
+    if (this.app.settings.panMode !== PanMode.Disabled) return;
+
+    const cursor = this.app.sheet.cursor;
 
     // note: directly call this.app.settings instead of locally defining it here; otherwise it dereferences this
 
     // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
-    if (cursor.showInput) {
+    if (this.app.settings.input.show) {
       this.afterShowInput = true;
       setTimeout(() => {
         this.pointerDown(world, event);
@@ -128,7 +129,7 @@ export class PointerDown {
   }
 
   pointerMove(world: Point): void {
-    if (this.sheet.cursor.panMode !== PanMode.Disabled) return;
+    if (this.app.settings.panMode !== PanMode.Disabled) return;
 
     if (!this.active) return;
 
@@ -161,7 +162,7 @@ export class PointerDown {
         keyboardMovePosition: { x: this.position.x, y: this.position.y },
         cursorPosition: { x: this.position.x, y: this.position.y },
       });
-      this.sheet.cursor.changeInput(false);
+      this.app.settings.changeInput(false);
     } else {
       // cursor origin and terminal are not in the same cell
 
@@ -191,7 +192,7 @@ export class PointerDown {
             terminalPosition: { x: termX, y: termY },
           },
         });
-        this.sheet.cursor.changeInput(false);
+        this.app.settings.changeInput(false);
 
         // update previousPosition
         this.previousPosition = {

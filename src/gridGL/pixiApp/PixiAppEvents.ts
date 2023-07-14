@@ -59,6 +59,7 @@ class PixiAppEvents {
     this.app.cells.dirty = true;
     this.app.quadrants.changeSheet();
     this.app.boxCells.reset();
+    this.app.settings.changeInput(false);
   }
 
   addSheet(sheet: Sheet): void {
@@ -100,6 +101,12 @@ class PixiAppEvents {
     } else if (type === 'fit') {
       this.app.setZoomToFit();
     }
+  }
+
+  changeInput(input: boolean, initialValue?: string): void {
+    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.changeInput');
+
+    this.app.settings.changeInput(input, initialValue);
   }
 }
 

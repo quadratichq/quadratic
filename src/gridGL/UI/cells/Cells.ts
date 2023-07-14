@@ -236,7 +236,7 @@ export class Cells extends Container {
     this.clear();
 
     const input =
-      !ignoreInput && cursor.showInput
+      !ignoreInput && this.app.settings.input.show
         ? {
             column: cursor.cursorPosition.x,
             row: cursor.cursorPosition.y,
@@ -332,7 +332,7 @@ export class Cells extends Container {
     const renderedCells = new Set<string>();
     let content: Rectangle | undefined;
 
-    const input = cursor.showInput
+    const input = this.app.settings.input.show
       ? {
           column: cursor.cursorPosition.x,
           row: cursor.cursorPosition.y,

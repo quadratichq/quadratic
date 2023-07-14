@@ -8,7 +8,7 @@ import { ensureVisible } from './interaction/viewportHelper';
 import { CellInput } from './interaction/CellInput';
 import { SheetController } from '../grid/controller/sheetController';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
-import { PanMode } from '../grid/sheet/SheetCursor';
+import { PanMode } from './pixiApp/PixiAppSettings';
 
 interface IProps {
   sheetController: SheetController;

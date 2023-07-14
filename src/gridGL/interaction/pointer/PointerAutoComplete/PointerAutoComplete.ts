@@ -5,7 +5,7 @@ import { Sheet } from '../../../../grid/sheet/Sheet';
 import { intersects } from '../../../helpers/intersects';
 import { Coordinate } from '../../../types/size';
 import { expandDown, expandLeft, expandRight, expandUp, shrinkHorizontal, shrinkVertical } from './autoComplete';
-import { PanMode } from '../../../../grid/sheet/SheetCursor';
+import { PanMode } from '../../../pixiApp/PixiAppSettings';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
 export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefined;
@@ -34,7 +34,7 @@ export class PointerAutoComplete {
     if (IS_READONLY_MODE) return false;
     const cursor = this.sheet.cursor;
 
-    if (cursor.panMode !== PanMode.Disabled) return false;
+    if (this.app.settings.panMode !== PanMode.Disabled) return false;
 
     // handle dragging from the corner
     if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
@@ -79,7 +79,7 @@ export class PointerAutoComplete {
 
   pointerMove(world: Point): boolean {
     if (IS_READONLY_MODE) return false;
-    if (this.sheet.cursor.panMode !== PanMode.Disabled) return false;
+    if (this.app.settings.panMode !== PanMode.Disabled) return false;
     if (!this.active) {
       if (intersects.rectanglePoint(this.app.cursor.indicator, world)) {
         this.cursor = 'crosshair';

@@ -1,5 +1,6 @@
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { cellHasContent } from '../../helpers/selectCells';
+import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
 
 export function keyboardPosition(options: { event: React.KeyboardEvent<HTMLElement>; sheet: Sheet }): boolean {
   const { event, sheet } = options;
@@ -220,7 +221,7 @@ export function keyboardPosition(options: { event: React.KeyboardEvent<HTMLEleme
           },
           keyboardMovePosition: newMovePosition,
         });
-        cursor.changeInput(false);
+        pixiAppEvents.changeInput(false);
       }
 
       // we are creating a new multiCursor
@@ -238,7 +239,7 @@ export function keyboardPosition(options: { event: React.KeyboardEvent<HTMLEleme
           },
           keyboardMovePosition: newMovePosition,
         });
-        cursor.changeInput(false);
+        pixiAppEvents.changeInput(false);
       }
     }
 

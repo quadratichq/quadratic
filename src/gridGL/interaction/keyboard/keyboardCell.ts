@@ -1,6 +1,7 @@
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { DeleteCells } from '../../../grid/actions/DeleteCells';
 import { SheetController } from '../../../grid/controller/sheetController';
+import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
 import { isAllowedFirstChar } from './keyboardCellChars';
 
 export function keyboardCell(options: {
@@ -49,7 +50,7 @@ export function keyboardCell(options: {
     if (cell) {
       if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
         // open single line
-        cursor.changeInput(true, cell.value);
+        pixiAppEvents.changeInput(true, cell.value);
       } else {
         // Open code editor, or move code editor if already open.
         setEditorInteractionState({
@@ -61,7 +62,7 @@ export function keyboardCell(options: {
         });
       }
     } else {
-      cursor.changeInput(true);
+      pixiAppEvents.changeInput(true);
     }
     event.preventDefault();
   }
@@ -82,7 +83,7 @@ export function keyboardCell(options: {
         });
       } else {
         // Open cell input for editing text
-        cursor.changeInput(true, cell.value);
+        pixiAppEvents.changeInput(true, cell.value);
       }
     } else {
       // Open cell type menu, close editor.
@@ -98,7 +99,7 @@ export function keyboardCell(options: {
   }
 
   if (isAllowedFirstChar(event.key)) {
-    cursor.changeInput(true, event.key);
+    pixiAppEvents.changeInput(true, event.key);
     event.preventDefault();
   }
 

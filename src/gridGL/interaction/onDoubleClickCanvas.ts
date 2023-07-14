@@ -1,5 +1,6 @@
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
 import { Sheet } from '../../grid/sheet/Sheet';
+import { pixiAppEvents } from '../pixiApp/PixiAppEvents';
 
 export const onDoubleClickCanvas = (
   event: PointerEvent,
@@ -16,7 +17,7 @@ export const onDoubleClickCanvas = (
   if (cell) {
     // open single line, for TEXT and COMPUTED
     if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
-      cursor.changeInput(true, cell.value);
+      pixiAppEvents.changeInput(true, cell.value);
     } else {
       // Open code editor, or move code editor if already open.
       setEditorInteractionState({
@@ -29,7 +30,7 @@ export const onDoubleClickCanvas = (
     }
   } else {
     // If no previous value, open single line Input
-    cursor.changeInput(true);
+    pixiAppEvents.changeInput(true);
   }
   event.preventDefault();
 };
