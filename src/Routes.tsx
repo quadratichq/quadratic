@@ -41,13 +41,14 @@ const router = createBrowserRouter(
         errorElement={<RootError />}
         id="root"
       >
-        <Route index element={<div>TODO This should redirect to the dashboard</div>} />
+        <Route index element={<Navigate to="/files" replace />} />
         <Route path="file" lazy={() => import('./App')} />
 
         <Route path="files" lazy={() => import('./AppDashboard')}>
           <Route index element={<Navigate to="/files/mine" replace />} />
           <Route path="mine" lazy={() => import('./AppDashboardFiles')} />
           <Route path="examples" lazy={() => import('./AppDashboardExamples')} />
+          {/* TODO catch all for here? */}
         </Route>
 
         <Route path="*" element={<div>TODO Catch all route</div>} />
