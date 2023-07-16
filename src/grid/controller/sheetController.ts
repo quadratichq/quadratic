@@ -118,6 +118,7 @@ export class SheetController {
     this.sheets.push(sheet);
     pixiAppEvents.addSheet(sheet);
     this.current = sheet.id;
+    window.dispatchEvent(new CustomEvent('change-sheet'));
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
