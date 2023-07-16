@@ -25,7 +25,7 @@ export const debugShowCacheFlag = debug && true;
 // ----------
 
 // shows rendering time
-export const debugShowTime = debug && false;
+export const debugShowTime = debug && true;
 
 // counts number of children and which are visible in the viewport
 export const debugShowCountRenderedObjects = debug && false;

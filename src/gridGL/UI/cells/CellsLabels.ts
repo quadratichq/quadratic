@@ -173,6 +173,8 @@ export class CellsLabels extends Container {
    * @returns the visual bounds only if isQuadrant is defined (otherwise not worth the .width/.height call)
    */
   update(): Rectangle | undefined {
+    const now = performance.now();
+
     const bounds = new Bounds();
 
     // keep current children to use as the cache
@@ -213,6 +215,9 @@ export class CellsLabels extends Container {
         this.checkForOverflow({ label, bounds });
       }
     });
+
+    const time = performance.now() - now;
+    if (time > 5) console.log('cellsLabels update', time);
 
     if (!bounds.empty) {
       return bounds.toRectangle();

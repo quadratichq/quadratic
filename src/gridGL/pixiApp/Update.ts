@@ -97,6 +97,7 @@ export class Update {
     app.boxCells.update();
     debugTimeCheck('[Update] boxCells');
     app.cells.update();
+
     debugTimeCheck('[Update] cells');
     app.cursor.update();
     debugTimeCheck('[Update] cursor');
