@@ -15,7 +15,7 @@ function complete(resolve: Function) {
 
 function loadFont(resolve: Function, fontName: string): void {
   const font = new FontFaceObserver(fontName);
-  font.load().then(() => complete(resolve));
+  font.load(null, 100000).then(() => complete(resolve));
 }
 
 export function loadAssets(): Promise<void> {
