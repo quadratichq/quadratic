@@ -1,7 +1,12 @@
 {
   "verbose": true,
   "preset": "ts-jest",
-  "testPathIgnorePatterns": ["<rootDir>/tests-e2e/*"],
+  "testPathIgnorePatterns": [
+    "<rootDir>/tests-e2e/*",
+    "<rootDir>/node_modules/",
+    "<rootDir>/quadratic-api/*",
+    "<rootDir>/quadratic-core/*"
+  ],
   "transform": {
     "^.+\\.(ts|tsx|js|jsx)?$": "ts-jest",
     "\\.py$": "<rootDir>/jest-transformer-py"
