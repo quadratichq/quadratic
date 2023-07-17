@@ -4,19 +4,20 @@ use std::hash::Hash;
 
 mod block;
 mod bounds;
+mod code;
 mod column;
 mod formatting;
 mod ids;
 mod value;
 
-use self::block::CellValueOrSpill;
-use crate::formulas::{FormulaError, Value};
-use crate::Pos;
-use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 pub use bounds::GridBounds;
-use column::Column;
+pub use code::*;
 pub use ids::*;
 pub use value::CellValue;
+
+use crate::Pos;
+use block::{Block, BlockContent, CellValueBlockContent, CellValueOrSpill, SameValue};
+use column::Column;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
@@ -71,31 +72,6 @@ impl File {
     }
     pub fn sheet_index_to_id(&self, index: usize) -> Option<SheetId> {
         self.sheet_ids.id_at(index)
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct IdMap<Id: Hash + Eq, Idx: Ord> {
-    id_to_index: HashMap<Id, Idx>,
-    index_to_id: BTreeMap<Idx, Id>,
-}
-impl<Id: Copy + Hash + Eq, Idx: Copy + Ord> IdMap<Id, Idx> {
-    pub fn new() -> Self {
-        Self {
-            id_to_index: HashMap::new(),
-            index_to_id: BTreeMap::new(),
-        }
-    }
-
-    pub fn add(&mut self, id: Id, index: Idx) {
-        self.id_to_index.insert(id, index);
-        self.index_to_id.insert(index, id);
-    }
-    pub fn index_of(&self, id: Id) -> Option<Idx> {
-        self.id_to_index.get(&id).copied()
-    }
-    pub fn id_at(&self, idx: Idx) -> Option<Id> {
-        self.index_to_id.get(&idx).copied()
     }
 }
 
@@ -227,34 +203,6 @@ impl Sheet {
             }
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CellCode {
-    language: CellCodeLanguage,
-    code_string: String,
-    formatted_code_string: Option<String>,
-    output: Option<CellCodeRunOutput>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum CellCodeLanguage {
-    Python,
-    Formula,
-    JavaScript,
-    Sql,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CellCodeRunOutput {
-    std_out: Option<String>,
-    std_err: Option<String>,
-    result: Result<CellCodeRunOk, FormulaError>,
-}
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CellCodeRunOk {
-    output_value: Value,
-    cells_accessed: Vec<CellRef>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
