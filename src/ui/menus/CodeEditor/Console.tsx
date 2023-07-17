@@ -7,11 +7,12 @@ import { colors } from '../../../theme/colors';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { AITab } from './AITab';
-import { useAuth0 } from '@auth0/auth0-react';
 import { CodeSnippet } from '../../components/CodeSnippet';
 import { stripIndent } from 'common-tags';
 import { Cell } from '../../../schemas';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
+import { useRouteLoaderData } from 'react-router-dom';
+import { RootLoaderData } from '../../../Routes';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
@@ -24,7 +25,7 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
-  const { isAuthenticated } = useAuth0();
+  const { isAuthenticated } = useRouteLoaderData('root') as RootLoaderData;
   const theme = useTheme();
 
   // Whenever we change to a different cell, reset the active tab to the 1st

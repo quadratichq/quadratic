@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import QuadraticUIContext from '../ui/QuadraticUIContext';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { loadPython } from '../grid/computations/python/loadPython';
-import { AnalyticsProvider } from './AnalyticsProvider';
 import { loadAssets } from '../gridGL/loadAssets';
 import { IS_READONLY_MODE } from '../constants/app';
 import { debugSkipPythonLoad } from '../debugFlags';
@@ -13,11 +12,11 @@ import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 
 type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-rust' | 'wasm-python' | 'quadrants';
 const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-rust', 'wasm-python', 'quadrants'];
-
+let didMount = false;
 export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
-  const didMount = useRef(false);
+  // const didMount = useRef(false);
   const [sheetController] = useState<SheetController>(new SheetController());
   const localFiles = useGenerateLocalFiles(sheetController);
   const [app] = useState(() => new PixiApp(sheetController, localFiles.save));
@@ -32,8 +31,11 @@ export const QuadraticApp = () => {
   // Loading Effect
   useEffect(() => {
     // Ensure this only runs once
-    if (didMount.current) return;
-    didMount.current = true;
+    if (didMount) {
+      setLoading(false);
+      return;
+    }
+    didMount = true;
 
     let assets = false,
       files = false;
@@ -70,14 +72,5 @@ export const QuadraticApp = () => {
     });
   }, [app, initialize]);
 
-  return (
-    <>
-      {/* Provider for Analytics. Only used when running in Quadratic Cloud. */}
-      <AnalyticsProvider />
-      {/* Provider of All React UI Components */}
-      {!loading && <QuadraticUIContext {...{ sheetController, localFiles, app }} />}
-      {/* Loading screen */}
-      {loading && <QuadraticLoading />}
-    </>
-  );
+  return loading ? <QuadraticLoading /> : <QuadraticUIContext {...{ sheetController, localFiles, app }} />;
 };

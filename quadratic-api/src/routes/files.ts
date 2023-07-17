@@ -128,6 +128,15 @@ files_router.delete('/:uuid', validateAccessToken, file_rate_limiter, async (req
     return response.status(400).json({ message: 'Invalid file UUID.' });
   }
 
+  // TODO to support the idea of public/private files
+  // this needs to be reconfigured roughly as:
+  // 1. See if file exists
+  // 2. If it exists, check if it's public
+  //    A. If it is, return it
+  //    B. If it's not, check if the current user is the file owner and can access it
+  //       If they are, return it.
+  // 3. Return a 404
+
   // Ensure file exists and user can access it
   const user = await get_user(request);
   const file = await get_file(user, result.data);

@@ -5,7 +5,6 @@ import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
 import { IS_READONLY_MODE } from '../../../../constants/app';
 import { useGridSettings } from './useGridSettings';
-import { useAuth0 } from '@auth0/auth0-react';
 import { Tooltip } from '@mui/material';
 import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { SheetController } from '../../../../grid/controller/sheetController';
@@ -20,6 +19,9 @@ import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionS
 import { useLocalFiles } from '../../../contexts/LocalFiles';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import apiClientSingleton from '../../../../api-client/apiClientSingleton';
+import { useRouteLoaderData } from 'react-router-dom';
+import { RootLoaderData } from '../../../../Routes';
+import { authClient } from '../../../../auth';
 
 interface Props {
   sheetController: SheetController;
@@ -36,7 +38,7 @@ export const QuadraticMenu = (props: Props) => {
     apiClientSingleton.downloadFile(currentFileId);
   };
 
-  const { isAuthenticated, user, logout } = useAuth0();
+  const { isAuthenticated, user } = useRouteLoaderData('root') as RootLoaderData;
 
   // For readonly, set Headers to not visible by default
   useEffect(() => {
@@ -52,7 +54,7 @@ export const QuadraticMenu = (props: Props) => {
         menuButton={
           <Tooltip title="Main menu" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
             <Button style={{ color: 'inherit' }}>
-              <img src="favicon.ico" height="22px" alt="Quadratic Icon" />
+              <img src="/favicon.ico" height="22px" alt="Quadratic Icon" />
               <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
             </Button>
           </Tooltip>
@@ -200,7 +202,7 @@ export const QuadraticMenu = (props: Props) => {
         {isAuthenticated && (
           <SubMenu label="Account">
             <MenuHeader>{user?.email}</MenuHeader>
-            <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>Log out</MenuItem>
+            <MenuItem onClick={() => authClient.logout()}>Log out</MenuItem>
           </SubMenu>
         )}
 

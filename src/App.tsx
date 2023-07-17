@@ -1,13 +1,14 @@
 import * as React from 'react';
 import './styles.css';
-import { QuadraticAuth } from './quadratic/QuadraticAuth';
+import { QuadraticApp } from './quadratic/QuadraticApp';
 import { isWASMSupported } from './utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';
 import { BrowserNotSupported } from './ui/overlays/BrowserNotSupported';
 import * as Sentry from '@sentry/browser';
 import { RecoilRoot } from 'recoil';
 
-export default function App() {
+export const Component = () => {
+  // TODO move this somewhere else
   // Check if browser supports WebGL and WASM
   if (!isWASMSupported || !isWebGLSupported()) {
     Sentry.captureEvent({
@@ -20,7 +21,7 @@ export default function App() {
 
   return (
     <RecoilRoot>
-      <QuadraticAuth />
+      <QuadraticApp />
     </RecoilRoot>
   );
-}
+};
