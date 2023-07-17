@@ -77,6 +77,8 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   }, [fileList]);
 
   // Persist current file data and update the tab title when it changes
+  // TODO useDocumentTitle()
+  // TODO rename to useCurrentFile() -> file,
   useEffect(() => {
     if (currentFileContents !== null) {
       const { filename, id } = currentFileContents;
@@ -106,6 +108,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       }
 
       // Update the sheet with new data
+      // TODO useEffect in root when useFile changes
       sheetController.clear();
       sheetController.sheet.load_file(grid);
       sheetController.app?.rebuild();
@@ -121,6 +124,8 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   // Given some contents, determine whether it's a valid file we can load into
   // Quadratic and, if it is, do what's necessary to load it.
   // Note: a new ID is always created when importing a file
+  // TODO POST /files/new - create new file
+  // TODO POST /files/import - create new file from user-uploaded fileimport
   const importQuadraticFile = useCallback(
     async (contents: string, filename: string, isNewFile: boolean = true): Promise<boolean> => {
       // Try to parse the contents as JSON
@@ -160,6 +165,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   );
 
   // Load a remote file over the network
+  // TODO deprecate
   const loadFileFromUrl = useCallback(
     async (url: string, filename?: string): Promise<boolean> => {
       mixpanel.track('[Files].loadFileFromUrl', { url, filename });
@@ -182,6 +188,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   );
 
   // Load an example file
+  // TODO POST /files/new - should clone? or allow user to clone as they deem necessary?
   const loadFileFromExamples = useCallback(
     async (sample: string, filename: string): Promise<boolean> => {
       return await loadFileFromUrl(`${window.location.origin}/examples/${sample}`, filename);
@@ -190,6 +197,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   );
 
   // Create a new file (and load it in the app)
+  // TODO move to server
   const createNewFile = useCallback(async (): Promise<void> => {
     const grid: GridFileData = {
       cells: [],
@@ -260,6 +268,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   );
 
   // Load a file from the user's computer
+  // TODO import, reads from computer, uploads to server
   const loadFileFromDisk = useCallback(
     async (file: File): Promise<boolean> => {
       return new Promise((resolve) => {
@@ -281,6 +290,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   );
 
   // Load a file from memory
+  // TODO delete
   const loadFileFromMemory = useCallback(
     async (id: string): Promise<boolean> => {
       const file: GridFiles | null = await localforage.getItem(id);
@@ -299,6 +309,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   );
 
   // Delete a file (cannot delete a file that's currently active)
+  // TODO DELETE /files/:id
   const deleteFile = useCallback(
     async (id: string) => {
       mixpanel.track('[Files].deleteFile', { id });
@@ -352,6 +363,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
 
     // Keep track of whether this is a first time visit to the app
     // (User clearing cache will look like first time visitor)
+    // TODO after first sign in, do we take to /files or /file/:default-id
     let isFirstVisit = true;
 
     // See if we have saved files and load them into memory
@@ -379,6 +391,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
 
     // Migrate files from old version of the app (one-time, if necessary thing)
     // Note: eventually this code can be removed
+    // TODO we can remove this entirely?
     const oldFileListKey = 'last-file-queue';
     let oldFileList: string[] | null = await localforage.getItem(oldFileListKey);
     let filesWithErrors: string[] = [];

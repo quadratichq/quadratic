@@ -4,11 +4,6 @@ import {
   Outlet,
   useRouteError,
   redirect,
-  // useLocation,
-  // Form,
-  Link,
-  useRouteLoaderData,
-  useFetcher,
   RouterProvider,
   createRoutesFromElements,
   Route,
@@ -44,10 +39,12 @@ const router = createBrowserRouter(
         <Route index element={<Navigate to="/files" replace />} />
         <Route path="file" lazy={() => import('./App')} />
 
-        <Route path="files" lazy={() => import('./AppDashboard')}>
-          <Route index element={<Navigate to="/files/mine" replace />} />
-          <Route path="mine" lazy={() => import('./AppDashboardFiles')} />
-          <Route path="examples" lazy={() => import('./AppDashboardExamples')} />
+        <Route lazy={() => import('./Dashboard')}>
+          <Route path="files" element={<Navigate to="/files/mine" replace />} />
+          <Route path="files/mine" lazy={() => import('./dashboard/RouteMine')} />
+          <Route path="files/examples" lazy={() => import('./dashboard/RouteExamples')} />
+          <Route path="files/teams" lazy={() => import('./dashboard/RouteTeams')} />
+          <Route path="account" lazy={() => import('./dashboard/RouteAccount')} />
           {/* TODO catch all for here? */}
         </Route>
 
@@ -90,6 +87,9 @@ const router = createBrowserRouter(
       />
       <Route
         path="/logout"
+        loader={async () => {
+          return redirect('/');
+        }}
         action={async () => {
           // We signout in a "resource route" that we can hit from a fetcher.Form
           await authClient.logout();
@@ -106,63 +106,9 @@ function Root() {
   return (
     <QuadraticAuth>
       <QuadraticAnalytics>
-        <>
-          <div
-            style={{
-              display: 'flex',
-              gap: '1rem',
-              alignItems: 'center',
-              height: '50px',
-              background: '#fff',
-              justifyContent: 'space-between',
-              padding: '0 16px',
-              zIndex: '1000000',
-              position: 'fixed',
-              top: '10px',
-              left: '25%',
-              width: '50%',
-              border: '1px solid #e9e9e9',
-              boxShadow: '0 3px 6px rgba(0,0,0,.1)',
-            }}
-          >
-            <span style={{ display: 'flex', gap: '1rem' }}>
-              <Link to="/">Home</Link>
-              <Link to="/file">App</Link>
-              <Link to="/files">Dashboard</Link>
-            </span>
-            <AuthStatus />
-          </div>
-          <Outlet />
-        </>
+        <Outlet />
       </QuadraticAnalytics>
     </QuadraticAuth>
-  );
-}
-
-function AuthStatus() {
-  // Get our logged in user, if they exist, from the root route loader data
-  let { user } = useRouteLoaderData('root') as RootLoaderData;
-  let fetcher = useFetcher();
-
-  if (!user) {
-    return (
-      <span>
-        You are not logged in. <Link to="/login">Log in</Link>
-      </span>
-    );
-  }
-
-  let isLoggingOut = fetcher.formData != null;
-
-  return (
-    <div>
-      <fetcher.Form method="post" action="/logout">
-        {user.name}
-        <button type="submit" disabled={isLoggingOut}>
-          {isLoggingOut ? 'Signing out...' : 'Sign out'}
-        </button>
-      </fetcher.Form>
-    </div>
   );
 }
 

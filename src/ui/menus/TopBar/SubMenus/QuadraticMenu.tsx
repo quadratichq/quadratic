@@ -19,7 +19,7 @@ import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionS
 import { useLocalFiles } from '../../../contexts/LocalFiles';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import apiClientSingleton from '../../../../api-client/apiClientSingleton';
-import { useRouteLoaderData } from 'react-router-dom';
+import { useNavigate, useRouteLoaderData } from 'react-router-dom';
 import { RootLoaderData } from '../../../../Routes';
 import { authClient } from '../../../../auth';
 
@@ -32,6 +32,7 @@ export const QuadraticMenu = (props: Props) => {
   const interactionState = useRecoilValue(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
+  const navigate = useNavigate();
 
   const { createNewFile, currentFileId } = useLocalFiles();
   const downloadCurrentFile = () => {
@@ -62,10 +63,10 @@ export const QuadraticMenu = (props: Props) => {
       >
         <MenuItem
           onClick={() => {
-            setEditorInteractionState((oldState) => ({ ...oldState, showFileMenu: true }));
+            navigate('/');
           }}
         >
-          <MenuLineItem primary="Back to files" secondary={KeyboardSymbols.Command + 'O'} />
+          <MenuLineItem primary="Back to files" />
         </MenuItem>
         <MenuDivider />
         <MenuItem
