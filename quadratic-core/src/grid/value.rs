@@ -28,9 +28,9 @@ impl fmt::Display for CellValue {
         }
     }
 }
-impl From<BasicValue> for CellValue {
-    fn from(basic_value: BasicValue) -> Self {
-        match basic_value {
+impl<T: Into<BasicValue>> From<T> for CellValue {
+    fn from(basic_value: T) -> Self {
+        match basic_value.into() {
             BasicValue::Blank => CellValue::Blank,
             BasicValue::String(s) => CellValue::Text(s),
             BasicValue::Number(n) => CellValue::Number(n),

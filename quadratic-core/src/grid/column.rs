@@ -112,7 +112,10 @@ impl<B: BlockContent> ColumnData<B> {
     }
     fn remove_block_containing(&mut self, y: i64) -> Option<Block<B>> {
         let key = self.get_block_containing(y)?.start();
-        self.0.remove(&key)
+        self.remove_block_at(key)
+    }
+    fn remove_block_at(&mut self, y: i64) -> Option<Block<B>> {
+        self.0.remove(&y)
     }
     fn add_block(&mut self, block: Block<B>) {
         debug_assert!(self.blocks_covering_range(block.range()).next().is_none());
@@ -151,8 +154,20 @@ impl<B: BlockContent> ColumnData<B> {
         match (self.remove_block_containing(y), value) {
             (None, None) => return None,
             (None, Some(value)) => {
-                self.add_block(Block::new(y, value));
-                return None;
+                if let Some(block_above) = self.remove_block_containing(y - 1) {
+                    // Push to bottom of block above.
+                    self.add_blocks(block_above.push_bottom(value));
+                    None
+                } else if let Some(block_below) = self.remove_block_at(y + 1) {
+                    // Push to top of block below.
+                    self.add_blocks(block_below.push_top(value));
+                    None
+                } else {
+                    // There are no adjacent blocks, so insert a new block and
+                    // don't run any other checks.
+                    self.add_block(Block::new(y, value));
+                    return None;
+                }
             }
             (Some(block), None) => {
                 let (new_blocks, old_value) =
@@ -167,8 +182,11 @@ impl<B: BlockContent> ColumnData<B> {
                 Some(old_value)
             }
         }
+
         // TODO: try merge with blocks above & below
     }
+
+    // TODO: set_range() function
 
     pub fn range(&self) -> Option<Range<i64>> {
         let min = *self.0.first_key_value()?.0;

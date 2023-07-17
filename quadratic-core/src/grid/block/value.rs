@@ -14,9 +14,9 @@ impl Default for CellValueOrSpill {
         CellValueOrSpill::CellValue(CellValue::Blank)
     }
 }
-impl From<CellValue> for CellValueOrSpill {
-    fn from(value: CellValue) -> Self {
-        CellValueOrSpill::CellValue(value)
+impl<T: Into<CellValue>> From<T> for CellValueOrSpill {
+    fn from(value: T) -> Self {
+        CellValueOrSpill::CellValue(value.into())
     }
 }
 impl CellValueOrSpill {

@@ -84,6 +84,10 @@ impl<B: BlockContent> Block<B> {
         }
     }
 
+    pub fn content(&self) -> &B {
+        &self.content
+    }
+
     fn try_merge(self, other: Self) -> SmallVec<[Self; 2]> {
         match self.content.try_merge(other.content) {
             Ok(merged) => smallvec![Block {

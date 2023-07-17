@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{btree_map, BTreeMap, HashMap};
 use std::hash::Hash;
+use wasm_bindgen::prelude::*;
 
 mod block;
 mod bounds;
@@ -8,6 +9,7 @@ mod code;
 mod column;
 mod formatting;
 mod ids;
+mod js_structs;
 mod value;
 
 pub use bounds::GridBounds;
@@ -15,11 +17,13 @@ pub use code::*;
 pub use ids::*;
 pub use value::CellValue;
 
-use crate::Pos;
+use crate::{Pos, Rect};
 use block::{Block, BlockContent, CellValueBlockContent, CellValueOrSpill, SameValue};
 use column::Column;
+use js_structs::{JsRenderCellsArray, JsRenderCellsBlock};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[wasm_bindgen]
 pub struct File {
     sheet_ids: IdMap<SheetId, usize>,
     sheets: Vec<Sheet>,
@@ -30,6 +34,16 @@ impl Default for File {
     }
 }
 impl File {
+    pub fn sheets(&self) -> &[Sheet] {
+        &self.sheets
+    }
+    pub fn sheets_mut(&mut self) -> &mut [Sheet] {
+        &mut self.sheets
+    }
+}
+#[wasm_bindgen]
+impl File {
+    #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         let mut ret = File {
             sheet_ids: IdMap::new(),
@@ -39,6 +53,7 @@ impl File {
         ret
     }
 
+    #[wasm_bindgen]
     pub fn add_sheet(&mut self) -> SheetId {
         let id = SheetId::new();
         self.sheets.push(Sheet {
@@ -60,18 +75,64 @@ impl File {
         id
     }
 
-    pub fn sheets(&self) -> &[Sheet] {
-        &self.sheets
-    }
-    pub fn sheets_mut(&mut self) -> &mut [Sheet] {
-        &mut self.sheets
-    }
-
+    #[wasm_bindgen]
     pub fn sheet_id_to_index(&self, id: SheetId) -> Option<usize> {
         self.sheet_ids.index_of(id)
     }
+    #[wasm_bindgen]
     pub fn sheet_index_to_id(&self, index: usize) -> Option<SheetId> {
         self.sheet_ids.id_at(index)
+    }
+
+    #[wasm_bindgen(js_name = "populateWithRandomFloats")]
+    pub fn populate_with_random_floats(&mut self, sheet_index: usize, region: Rect) {
+        let sheet = &mut self.sheets[sheet_index];
+        for x in region.x_range() {
+            let (_, column) = sheet.get_or_create_column(x);
+            for y in region.y_range() {
+                // Generate a random value with precision 0.1 in a range from
+                // -10 to +10.
+                let value = (js_sys::Math::random() * 201.0).floor() / 10.0 - 10.0;
+
+                column.values.set(y, Some(value.into()));
+            }
+        }
+    }
+
+    #[wasm_bindgen(js_name = "sayHi")]
+    pub fn say_hi(&self) {
+        crate::log("hi!");
+    }
+
+    #[wasm_bindgen(js_name = "getRenderCells")]
+    pub fn get_render_cells(&self, sheet_index: usize, region: Rect) -> Result<JsValue, JsValue> {
+        let mut ret = JsRenderCellsArray { columns: vec![] };
+        let sheet = &self.sheets[sheet_index];
+        for x in region.x_range() {
+            let mut ret_column = vec![];
+            if let Some(column) = sheet.get_column(x) {
+                for block in column
+                    .values
+                    .blocks_covering_range(region.min.y..region.max.y + 1)
+                {
+                    ret_column.push(JsRenderCellsBlock {
+                        start: block.start(),
+                        values: match block.content() {
+                            CellValueBlockContent::Values(values) => {
+                                values.iter().map(|v| v.to_string()).collect()
+                            }
+                            CellValueBlockContent::Spill { source, len } => {
+                                std::iter::repeat(format!("TODO spill from {source:?}"))
+                                    .take(*len)
+                                    .collect()
+                            }
+                        },
+                    });
+                }
+            }
+            ret.columns.push(ret_column)
+        }
+        Ok(serde_wasm_bindgen::to_value(&ret)?)
     }
 }
 

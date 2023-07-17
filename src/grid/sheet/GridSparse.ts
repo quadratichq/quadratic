@@ -7,7 +7,7 @@ import { MinMax } from '../../gridGL/types/size';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Bounds } from './Bounds';
 import { cellHasContent } from '../../gridGL/helpers/selectCells';
-import { File } from 'quadratic-core';
+import { File, Rect, Pos } from 'quadratic-core';
 
 export interface CellAndFormat {
   cell?: Cell;
@@ -28,94 +28,178 @@ export class GridSparse {
   quadrants = new Set<string>();
 
   constructor(gridOffsets: GridOffsets) {
-    console.log('constructor');
     this.gridOffsets = gridOffsets;
   }
 
   updateCells(cells: Cell[]): void {
-    console.log('updateCells');
-    this.rustGrid.updateCells(cells);
+    cells.forEach((cell) => {
+      const update = this.cells.get(this.getKey(cell.x, cell.y));
+      if (update) {
+        update.cell = cell;
+      } else {
+        this.cells.set(this.getKey(cell.x, cell.y), { cell });
+        this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
+      }
+    });
+    this.recalculateBounds();
   }
 
   recalculateBounds(): void {
-    console.log('recalculateBounds');
-    this.rustGrid.recalculateBounds();
+    this.cellBounds.clear();
+    this.cellFormatBounds.clear();
+    this.formatBounds.clear();
+    if (this.cells.size === 0) return;
+    this.cells.forEach((cell) => {
+      if (cell.cell) {
+        this.cellBounds.add(cell.cell.x, cell.cell.y);
+        this.cellBounds.add(cell.cell.x, cell.cell.y);
+      }
+      if (cell.format) {
+        this.formatBounds.add(cell.format.x, cell.format.y);
+      }
+    });
+    this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
   }
 
   updateFormat(formats: CellFormat[]): void {
-    console.log('updateFormat');
-    this.rustGrid.updateCellFormats(formats);
+    formats.forEach((format) => {
+      const update = this.cells.get(this.getKey(format.x, format.y));
+      if (update) {
+        update.format = format;
+      } else {
+        this.cells.set(this.getKey(format.x, format.y), { format });
+      }
+      this.formatBounds.add(format.x, format.y);
+      this.cellFormatBounds.add(format.x, format.y);
+    });
   }
 
   clearFormat(formats: CellFormat[]): void {
-    console.log('clearFormat');
-    this.rustGrid.clearFormat(formats);
+    formats.forEach((format) => {
+      const key = this.getKey(format.x, format.y);
+      const clear = this.cells.get(key);
+      if (clear) {
+        delete clear.format;
+        if (Object.keys(clear).length === 0) {
+          this.cells.delete(key);
+        }
+      }
+    });
+    this.recalculateBounds();
   }
 
   deleteCells(cells: Coordinate[]): void {
-    console.log('deleteCells');
-    this.rustGrid.deleteCells(cells);
+    cells.forEach((cell) => {
+      const candf = this.cells.get(this.getKey(cell.x, cell.y));
+      if (candf) {
+        // Delete cell
+        delete candf.cell;
+        // If cell has no format, also delete the key
+        if (candf.format === undefined) {
+          this.cells.delete(this.getKey(cell.x, cell.y));
+        }
+      }
+    });
+    this.recalculateBounds();
   }
 
   get empty(): boolean {
-    console.log('get');
-    return this.rustGrid.isEmpty();
+    return this.cellFormatBounds.empty;
   }
 
   clear() {
-    console.log('clear');
-    this.rustGrid.clear();
+    this.cells.clear();
+    this.quadrants.clear();
+    this.cellBounds.clear();
+    this.formatBounds.clear();
+    this.cellFormatBounds.clear();
   }
 
   private getKey(x?: number, y?: number): string {
-    console.log('private');
     return `${x ?? ''},${y ?? ''}`;
   }
 
   populate(cells?: Cell[], formats?: CellFormat[]) {
-    console.log('populate');
-    this.rustGrid.populate(cells, formats);
+    let r = new Rect(new Pos(BigInt(0), BigInt(0)), new Pos(BigInt(10), BigInt(10)));
+    this.rustGrid.populateWithRandomFloats(0, r);
+
+    this.clear();
+    if (!cells?.length && !formats?.length) return;
+    cells?.forEach((cell) => {
+      this.cells.set(this.getKey(cell.x, cell.y), { cell });
+      this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
+      this.cellBounds.add(cell.x, cell.y);
+    });
+    formats?.forEach((format) => {
+      const key = this.getKey(format.x, format.y);
+      const cell = this.cells.get(key);
+      if (cell) {
+        cell.format = format;
+      } else {
+        this.cells.set(key, { format });
+      }
+      this.formatBounds.add(format.x, format.y);
+    });
+    this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
   }
 
   get(x: number, y: number): CellAndFormat | undefined {
-    console.log('get');
     if (this.cellFormatBounds.contains(x, y)) {
       return this.cells.get(this.getKey(x, y));
     }
   }
 
   getCell(x: number, y: number): Cell | undefined {
-    console.log('getCell');
     if (this.cellBounds.contains(x, y)) {
       return this.cells.get(this.getKey(x, y))?.cell;
     }
   }
 
   getFormat(x: number, y: number): CellFormat | undefined {
-    console.log('getFormat');
     if (this.formatBounds.contains(x, y)) {
       return this.cells.get(this.getKey(x, y))?.format;
     }
   }
 
   getCells(rectangle: Rectangle): CellRectangle {
-    console.log('getCells');
     return new CellRectangle(rectangle, this);
   }
 
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
-    console.log('getNakedCells');
-    const cells: Cell[] = [];
-    this.cells.forEach((cell) => {
-      if (cell.cell && cell.cell.x >= x0 && cell.cell.x <= x1 && cell.cell.y >= y0 && cell.cell.y <= y1) {
-        cells.push(cell.cell);
-      }
+    console.log('nake');
+    let r = new Rect(new Pos(BigInt(x0), BigInt(y0)), new Pos(BigInt(x1), BigInt(y1)));
+    let columns = this.rustGrid.getRenderCells(0, r);
+
+    const ret: Cell[] = [];
+    let x = x0;
+    columns.columns.forEach((column: any) => {
+      column.forEach((block: any) => {
+        let y = block.start;
+        block.values.forEach((value: string) => {
+          ret.push({
+            x,
+            y,
+            type: 'TEXT',
+            value,
+          });
+          y += 1;
+        });
+        x += 1;
+      });
     });
-    return cells;
+
+    return ret;
+
+    // const cells: Cell[] = [];
+    // this.cells.forEach((cell) => {
+    //   if (cell.cell && cell.cell.x >= x0 && cell.cell.x <= x1 && cell.cell.y >= y0 && cell.cell.y <= y1) {
+    //     cells.push(cell.cell);
+    //   }
+    // });
+    // return cells;
   }
 
   getNakedFormat(x0: number, y0: number, x1: number, y1: number): CellFormat[] {
-    console.log('getNakedFormat');
     const cells: CellFormat[] = [];
     this.cells.forEach((cell) => {
       if (cell.format) {
@@ -128,8 +212,7 @@ export class GridSparse {
   }
 
   getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
-    console.log('getBounds');
-    const { minX, minY, maxX, maxY, empty } = this.rustGrid.getGridBounds(false);
+    const { minX, minY, maxX, maxY, empty } = this.cellFormatBounds;
     const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
     const columnStart = columnStartIndex.index > minX ? columnStartIndex.index : minX;
     const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
@@ -154,15 +237,14 @@ export class GridSparse {
   }
 
   getGridBounds(onlyData: boolean): Rectangle | undefined {
-    console.log('getGridBounds');
-    let rect = this.rustGrid.getGridBounds(onlyData);
-    if (rect.empty) return;
-    return new Rectangle(rect.minX, rect.minY, rect.maxX - rect.minX, rect.maxY - rect.minY);
+    if (onlyData) {
+      return this.cellBounds.toRectangle();
+    }
+    return this.cellFormatBounds.toRectangle();
   }
 
   /** finds the minimum and maximum location for content in a row */
   getRowMinMax(row: number, onlyData: boolean): MinMax | undefined {
-    console.log('getRowMinMax');
     const { minX, maxX, empty } = this.cellFormatBounds;
     if (empty) return;
     let min = Infinity;
@@ -187,7 +269,6 @@ export class GridSparse {
 
   /**finds the minimum and maximum location for content in a column */
   getColumnMinMax(column: number, onlyData: boolean): MinMax | undefined {
-    console.log('getColumnMinMax');
     const { minY, maxY, empty } = this.cellFormatBounds;
     if (empty) return;
     let min = Infinity;
@@ -211,7 +292,6 @@ export class GridSparse {
   }
 
   getAllCells(): Cell[] {
-    console.log('getAllCells');
     const array = Array.from(this.cells, ([_, value]) => value);
     return array.flatMap((entry) => {
       if (entry.cell) return [entry.cell];
@@ -220,7 +300,6 @@ export class GridSparse {
   }
 
   getArrays(): { cells: Cell[]; formats: CellFormat[] } {
-    console.log('getArrays');
     const array = Array.from(this.cells, ([_, value]) => value);
     return {
       cells: array.flatMap((entry) => {
@@ -235,7 +314,6 @@ export class GridSparse {
   }
 
   hasQuadrant(x: number, y: number): boolean {
-    console.log('hasQuadrant');
     return this.quadrants.has(Quadrants.getKey(x, y));
   }
 
@@ -249,7 +327,6 @@ export class GridSparse {
    * @returns the found column or the original column if nothing was found
    */
   findNextColumn(options: { xStart: number; y: number; delta: 1 | -1; withContent: boolean }): number {
-    console.log('findNextColumn');
     const { xStart, delta, y, withContent } = options;
     const bounds = this.cellBounds;
     if (!bounds) return xStart;
@@ -276,7 +353,6 @@ export class GridSparse {
    * @returns the found row or the original row if nothing was found
    */
   findNextRow(options: { yStart: number; x: number; delta: 1 | -1; withContent: boolean }): number {
-    console.log('findNextRow');
     const { yStart, delta, x, withContent } = options;
     const bounds = this.cellBounds;
     if (!bounds) return yStart;

@@ -3,11 +3,13 @@ use std::hash::Hash;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use wasm_bindgen::prelude::*;
 
 macro_rules! uuid_wrapper_struct {
     ($name:ident) => {
         #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
         #[serde(transparent)]
+        #[wasm_bindgen]
         pub struct $name(Uuid);
         impl $name {
             pub(super) fn new() -> Self {

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::ops::RangeInclusive;
 use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.
@@ -53,16 +54,46 @@ pub struct Rect {
     /// Lower-right corner.
     pub max: Pos,
 }
+#[wasm_bindgen]
 impl Rect {
+    /// Constructs a rectangle spanning two positions
+    #[wasm_bindgen(constructor)]
+    pub fn new_span(pos1: Pos, pos2: Pos) -> Rect {
+        use std::cmp::{max, min};
+
+        Rect {
+            min: Pos {
+                x: min(pos1.x, pos2.x),
+                y: min(pos1.y, pos2.y),
+            },
+            max: Pos {
+                x: max(pos1.x, pos2.x),
+                y: max(pos1.y, pos2.y),
+            },
+        }
+    }
+
     /// Constructs a new rectangle containing only a single cell.
+    #[wasm_bindgen]
     pub fn single_pos(pos: Pos) -> Rect {
         Rect { min: pos, max: pos }
     }
     /// Extends the rectangle enough to include a cell.
+    #[wasm_bindgen]
     pub fn extend_to(&mut self, pos: Pos) {
         self.min.x = std::cmp::min(self.min.x, pos.x);
         self.min.y = std::cmp::min(self.min.y, pos.y);
         self.max.x = std::cmp::max(self.max.x, pos.x);
         self.max.y = std::cmp::max(self.max.y, pos.y);
+    }
+}
+impl Rect {
+    /// Returns the inclusive range of X values in the rectangle.
+    pub fn x_range(self) -> RangeInclusive<i64> {
+        self.min.x..=self.max.x
+    }
+    /// Returns the inclusive range of Y values in the rectangle.
+    pub fn y_range(self) -> RangeInclusive<i64> {
+        self.min.y..=self.max.y
     }
 }
