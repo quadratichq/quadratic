@@ -1,4 +1,3 @@
-import * as React from 'react';
 import './styles.css';
 import { QuadraticAuth } from './quadratic/QuadraticAuth';
 import { isWASMSupported } from './utils/isWASMSupported';
