@@ -54,7 +54,7 @@ export const QuadraticMenu = (props: Props) => {
         menuButton={
           <Tooltip title="Main menu" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
             <Button style={{ color: 'inherit' }}>
-              <img src="favicon.ico" height="22px" alt="Quadratic Icon" />
+              <img src="/favicon.ico" height="22px" alt="Quadratic Icon" />
               <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
             </Button>
           </Tooltip>

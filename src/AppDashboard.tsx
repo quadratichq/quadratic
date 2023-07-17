@@ -56,7 +56,7 @@ function Navbar() {
           display: 'flex',
           alignItems: 'center',
           gap: theme.spacing(1),
-          padding: `${theme.spacing(0.5)} ${theme.spacing(1)}`,
+          padding: `${theme.spacing(1)} ${theme.spacing(2)}`,
           borderBottom: `1px solid ${colors.mediumGray}`,
         }}
       >

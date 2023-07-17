@@ -1,7 +1,8 @@
-import { json, useLoaderData, Form, Link, LoaderFunctionArgs } from 'react-router-dom';
+import { json, useLoaderData, Link, LoaderFunctionArgs, useFetcher } from 'react-router-dom';
 import { GridFile } from './schemas';
 import { protectedRouteLoaderWrapper } from './auth';
 import apiClientSingleton from './api-client/apiClientSingleton';
+import { useEffect } from 'react';
 // import { useGlobalSnackbar } from './ui/contexts/GlobalSnackbar';
 
 type LoaderData = {
@@ -43,7 +44,13 @@ export const action = async ({ params, request }: any) => {
 };
 
 function File({ uuid, name }: { uuid: string; name: string }) {
-  // const fetcher = useFetcher();
+  const fetcher = useFetcher();
+
+  useEffect(() => {
+    if (fetcher.data?.deleteSuccess) {
+      // TODO globalAlert provider
+    }
+  }, [fetcher.data]);
   return (
     <div
       key={uuid}
@@ -56,14 +63,12 @@ function File({ uuid, name }: { uuid: string; name: string }) {
         margin: '4px 0',
       }}
     >
-      <Link to={`/file?local=${uuid}`} reloadDocument>
-        {name}
-      </Link>
-      <Form method="delete">
+      <Link to={`/file?local=${uuid}`}>{name}</Link>
+      <fetcher.Form method="delete">
         <button name={'delete-file'} value={uuid}>
           Delete
         </button>
-      </Form>
+      </fetcher.Form>
     </div>
   );
 }
