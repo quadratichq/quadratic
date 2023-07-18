@@ -1,4 +1,3 @@
-import * as React from 'react';
 import './styles.css';
 import { QuadraticApp } from './quadratic/QuadraticApp';
 import { isWASMSupported } from './utils/isWASMSupported';

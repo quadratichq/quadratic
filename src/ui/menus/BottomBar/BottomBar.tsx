@@ -1,6 +1,6 @@
 import { Box } from '@mui/system';
 import { colors } from '../../../theme/colors';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { useEffect, useState } from 'react';
 import { Cell } from '../../../schemas';
@@ -10,8 +10,12 @@ import { isMobileOnly } from 'react-device-detect';
 import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { ChatBubbleOutline } from '@mui/icons-material';
+import { ChatBubbleOutline, Check, ErrorOutline } from '@mui/icons-material';
+import { CircularProgress, Tooltip } from '@mui/material';
+import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import { ActiveSelectionStats } from './ActiveSelectionStats';
+
+const stylesAlignCenter = { display: 'flex', alignItems: 'center', gap: '.25rem' };
 
 interface Props {
   sheet: Sheet;
@@ -20,6 +24,7 @@ interface Props {
 export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const loadedState = useRecoilValue(loadedStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
   const {
@@ -136,12 +141,25 @@ export const BottomBar = (props: Props) => {
         <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
         {!isMobileOnly && (
           <>
-            <span>✓ Python 3.9.5</span>
+            <span style={stylesAlignCenter}>
+              {loadedState.pythonLoaded === 'error' ? (
+                <Tooltip title="Error loading Python. Please refresh your browser.">
+                  <ErrorOutline style={{ color: 'red' }} fontSize="inherit" />
+                </Tooltip>
+              ) : loadedState.pythonLoaded ? (
+                <Check fontSize="inherit" />
+              ) : (
+                <CircularProgress size="0.5rem" />
+              )}{' '}
+              Python 3.9.5
+            </span>
           </>
         )}
-        <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
+        <span style={stylesAlignCenter}>
+          <Check fontSize="inherit" /> Quadratic {process.env.REACT_APP_VERSION}
+        </span>
         <span
-          style={{ display: 'flex', alignItems: 'center', gap: '.25rem', cursor: 'pointer' }}
+          style={{ ...stylesAlignCenter, cursor: 'pointer' }}
           onClick={() => {
             setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
           }}

@@ -2,6 +2,8 @@ import { SheetController } from '../../controller/sheetController';
 import { Cell } from '../../../schemas';
 import { generateClipboardStrings } from './clipboard';
 
+jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
+
 const createCell = (pos: [number, number], value: string): Cell => {
   return {
     x: pos[0],
