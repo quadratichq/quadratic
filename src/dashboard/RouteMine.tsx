@@ -1,13 +1,14 @@
-import { useLoaderData, LoaderFunctionArgs, Form } from 'react-router-dom';
+import { useLoaderData, LoaderFunctionArgs, Form, Link } from 'react-router-dom';
 import { protectedRouteLoaderWrapper } from '../auth';
 import apiClientSingleton from '../api-client/apiClientSingleton';
 // import { useEffect } from 'react';
 import PaneHeader from './PaneHeader';
 import File from './File';
 import { timeAgo } from './utils';
-import { Button, IconButton, useTheme } from '@mui/material';
-import { DeleteOutline, FileDownloadOutlined } from '@mui/icons-material';
+import { Alert, Box, Button, IconButton, useTheme } from '@mui/material';
+import { DeleteOutline, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
 import { TooltipHint } from '../ui/components/TooltipHint';
+import Empty from './Empty';
 // import { useGlobalSnackbar } from './ui/contexts/GlobalSnackbar';
 
 type FileData = {
@@ -19,7 +20,7 @@ type FileData = {
 };
 
 type LoaderData = {
-  files?: FileData[];
+  files: FileData[] | undefined;
 };
 
 // type ActionData = {
@@ -28,14 +29,14 @@ type LoaderData = {
 // };
 
 export const loader = protectedRouteLoaderWrapper(async ({ request }: LoaderFunctionArgs) => {
-  return { files: await apiClientSingleton.getFiles() };
+  const files = await apiClientSingleton.getFiles();
+  return { files };
 });
 
 export const Component = () => {
-  const data = useLoaderData() as LoaderData;
+  const { files } = useLoaderData() as LoaderData;
   const theme = useTheme();
-  console.log(data);
-  // TODO loading
+
   return (
     <>
       <PaneHeader
@@ -51,8 +52,19 @@ export const Component = () => {
           </Form>
         }
       />
-      {data.files ? (
-        data.files.map(({ uuid, name, updated_date }) => (
+
+      {!files ? (
+        <Box sx={{ maxWidth: '60ch', mx: 'auto', py: theme.spacing(2) }}>
+          <Alert severity="error">
+            An unexpected error occurred while retrieving your files. Try{' '}
+            <Link to="." reloadDocument>
+              refreshing the page
+            </Link>
+            . If the issue continues, contact us.
+          </Alert>
+        </Box>
+      ) : files.length ? (
+        files.map(({ uuid, name, updated_date }) => (
           <File
             key={uuid}
             to={`/file?local=${uuid}`}
@@ -92,7 +104,16 @@ export const Component = () => {
           />
         ))
       ) : (
-        <div>TODO No files yet</div>
+        <Empty
+          title="No files"
+          description={
+            <>
+              You don’t have any files. Using the buttons on this page, create a new one or import a <code>.grid</code>{' '}
+              file from your computer.
+            </>
+          }
+          Icon={InsertDriveFileOutlined}
+        />
       )}
     </>
   );
