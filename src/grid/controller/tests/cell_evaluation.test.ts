@@ -16,7 +16,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   sc.clear();
-  sc.sheet.newFile();
+  sc.sheet.clear();
 });
 
 test('SheetController - code run correctly', async () => {
