@@ -113,7 +113,7 @@ export const TopBar = (props: IProps) => {
             />
           ) : (
             <>
-              <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
+              <Typography variant="body2" color={colors.mediumGray}>
                 Local /&nbsp;
               </Typography>
               <Typography
@@ -121,7 +121,6 @@ export const TopBar = (props: IProps) => {
                   setIsRenaming(true);
                 }}
                 variant="body2"
-                fontFamily={'sans-serif'}
                 color={colors.darkGray}
                 style={{
                   display: 'block',
