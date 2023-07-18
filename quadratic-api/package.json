@@ -12,8 +12,8 @@
     "prisma:migrate": "prisma migrate dev",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "test:dev": "npm run docker:up && prisma migrate deploy && dotenv -e .env.test -- jest --watch && npm run docker:down",
-    "test:ci": "npm run docker:up && prisma migrate deploy && dotenv -e .env.test -- jest && npm run docker:down"
+    "test:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch && npm run docker:down",
+    "test:ci": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest && npm run docker:down"
   },
   "author": "David Kircos",
   "license": "MIT",
