@@ -1,4 +1,4 @@
-name: Unit Tests
+name: API Tests
 on:
   push:
     branches:
@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  test_unit:
+  test_api:
     runs-on: ubuntu-latest-4-cores
 
     steps:
@@ -16,10 +16,10 @@ jobs:
         with:
           node-version: '19'
           cache: 'npm'
+      - name: Setup Docker
+        uses: docker/setup-docker-buildx-action@v1
       - name: Install Dependencies
         run: |
           npm install
-      - uses: docker-practice/actions-setup-docker@master
-        timeout-minutes: 12
 
       - run: npm run test:ci
