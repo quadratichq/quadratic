@@ -3,13 +3,12 @@ import { validateAccessToken } from '../middleware/auth';
 import { Request as JWTRequest } from 'express-jwt';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
-import { PrismaClient } from '@prisma/client';
+import dbClient from '../dbClient';
 import { get_user } from '../helpers/get_user';
 import { get_file } from '../helpers/get_file';
 import { get_file_metadata } from '../helpers/read_file';
 
 const files_router = express.Router();
-const prisma = new PrismaClient();
 
 const file_rate_limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -37,7 +36,7 @@ files_router.get('/', validateAccessToken, file_rate_limiter, async (request: JW
   const user = await get_user(request);
 
   // Fetch files owned by the user from the database
-  const files = await prisma.qFile.findMany({
+  const files = await dbClient.qFile.findMany({
     where: {
       qUserId: user.id,
     },
@@ -98,7 +97,7 @@ files_router.post('/:uuid', validateAccessToken, file_rate_limiter, async (reque
   console.time('db-write');
   const file_contents = JSON.parse(r_json.contents);
   const file_metadata = get_file_metadata(file_contents);
-  await prisma.qFile.update({
+  await dbClient.qFile.update({
     where: {
       id: file.id,
     },
@@ -145,7 +144,7 @@ files_router.delete('/:uuid', validateAccessToken, file_rate_limiter, async (req
   }
 
   // Delete file from database
-  await prisma.qFile.delete({
+  await dbClient.qFile.delete({
     where: {
       id: file.id,
     },
@@ -162,7 +161,7 @@ files_router.post('/', validateAccessToken, file_rate_limiter, async (request: J
 
   // Create a new file in the database
   // use name and contents from request body if provided
-  const file = await prisma.qFile.create({
+  const file = await dbClient.qFile.create({
     data: {
       qUserId: user.id,
       name: request_json.name ?? 'Untitled',

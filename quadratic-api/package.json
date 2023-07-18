@@ -10,7 +10,10 @@
     "format": "eslint src/**/*.ts --fix",
     "pretty": "prettier --write \"src/**/*.ts\"",
     "prisma:migrate": "prisma migrate dev",
-    "test": "dotenv -e .env -- jest --watch"
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "test:dev": "npm run docker:up && prisma migrate deploy && dotenv -e .env -- jest --watch && npm run docker:down",
+    "test:ci": "npm run docker:up && prisma migrate deploy && dotenv -e .env -- jest && npm run docker:down"
   },
   "author": "David Kircos",
   "license": "MIT",
