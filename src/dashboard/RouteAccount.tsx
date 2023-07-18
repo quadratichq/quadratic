@@ -7,8 +7,8 @@ import { useRouteLoaderData } from 'react-router-dom';
 
 export const Component = () => {
   const { user } = useRouteLoaderData('root') as RootLoaderData;
-  const theme = useTheme();
-  const { toggleColorMode } = useContext(ColorModeContext);
+
+  const { colorModePreference, toggleColorMode } = useContext(ColorModeContext);
   return (
     <>
       <PaneHeader title="Account" />
@@ -33,14 +33,24 @@ export const Component = () => {
           Theme
         </Typography>
         <ButtonGroup disableElevation variant="outlined" aria-label="Disabled elevation buttons">
-          <Button variant={theme.palette.mode === 'light' ? 'contained' : 'outlined'} onClick={toggleColorMode}>
+          <Button
+            variant={colorModePreference === 'light' ? 'contained' : 'outlined'}
+            onClick={() => toggleColorMode('light')}
+          >
             Light
           </Button>
-          <Button variant={theme.palette.mode === 'dark' ? 'contained' : 'outlined'} onClick={toggleColorMode}>
+          <Button
+            variant={colorModePreference === 'dark' ? 'contained' : 'outlined'}
+            onClick={() => toggleColorMode('dark')}
+          >
             Dark
           </Button>
-          {/*  @ts-expect-error*/}
-          <Button variant={theme.palette.mode === 'system' ? 'contained' : 'outlined'}>System</Button>
+          <Button
+            variant={colorModePreference === 'system' ? 'contained' : 'outlined'}
+            onClick={() => toggleColorMode('system')}
+          >
+            System
+          </Button>
         </ButtonGroup>
       </Row>
     </>

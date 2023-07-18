@@ -11,7 +11,7 @@ export const Component = () => {
       <PaneHeader title="Coming soon" />
       <Empty
         title="Teams"
-        description="A space to share files and collaborate with others. Interested? Sign up for early access to Teams."
+        description="Teams is a collaborative space to work on files with other people. Interested? Sign up for early access."
         Icon={PeopleOutline}
         actions={<Button variant="outlined">Sign up for the beta</Button>}
       />
