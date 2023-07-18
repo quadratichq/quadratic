@@ -175,13 +175,12 @@ export const TopBar = (props: IProps) => {
                 setEditorInteractionState((prevState) => ({ ...prevState, showShareMenu: true }));
               }}
               style={{
-                color: colors.darkGray,
-                borderColor: colors.darkGray,
                 display: 'flex',
                 gap: '4px',
               }}
-              variant="outlined"
+              variant="contained"
               size="small"
+              disableElevation
             >
               {currentFileIsPublic && <Public fontSize="small" />} Share
             </Button>
