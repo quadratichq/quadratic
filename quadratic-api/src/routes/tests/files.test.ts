@@ -1,3 +1,5 @@
+import { Response, NextFunction } from 'express';
+import { Request as JWTRequest } from 'express-jwt';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
@@ -27,6 +29,21 @@ afterAll(async () => {
   await dbClient.$transaction([deleteFiles, deleteUsers]);
 });
 
+jest.mock('../../middleware/auth', () => {
+  return {
+    validateAccessToken: jest.fn().mockImplementation(async (req: JWTRequest, res: Response, next: NextFunction) => {
+      if (req.headers.authorization === 'Bearer ValidToken') {
+        req.auth = {
+          sub: 'test_user_1',
+        };
+        return next();
+      } else {
+        return res.status(401).json({ error: { message: 'No authorization token was found' } });
+      }
+    }),
+  };
+});
+
 describe('GET /v0/files/ no auth', () => {
   it('responds with json', async () => {
     const res = await request(app)
@@ -44,10 +61,10 @@ describe('GET /v0/files/ with auth', () => {
     const res = await request(app)
       .get('/v0/files/')
       .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ${process.env.TEST_TOKEN}`)
+      .set('Authorization', `Bearer ValidToken`)
       .expect('Content-Type', /json/)
       .expect(200); // OK
 
-    expect(res.body).toMatchObject({ error: { message: 'No authorization token was found' } });
+    expect(res.body.length).toEqual(1);
   });
 });
