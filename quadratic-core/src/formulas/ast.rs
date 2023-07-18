@@ -1,6 +1,7 @@
 use futures::future::{FutureExt, LocalBoxFuture};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use smallvec::smallvec;
 use std::fmt;
 
 use super::*;
@@ -149,7 +150,7 @@ impl AstNode {
                     return Err(FormulaErrorMsg::ArrayTooBig.with_span(self.span));
                 }
 
-                let mut flat_array = vec![];
+                let mut flat_array = smallvec![];
                 for y in y1..=y2 {
                     for x in x1..=x2 {
                         let cell_ref = CellRef::absolute(Pos { x, y });
@@ -157,7 +158,7 @@ impl AstNode {
                     }
                 }
 
-                Array::from_row_major_iter(width, height, flat_array)?.into()
+                Array::new_row_major(width, height, flat_array)?.into()
             }
 
             // Other operator/function
@@ -188,7 +189,7 @@ impl AstNode {
                 let width = a[0].len();
                 let height = a.len();
 
-                let mut flat_array = vec![];
+                let mut flat_array = smallvec![];
                 for row in a {
                     if row.len() != width {
                         return Err(FormulaErrorMsg::NonRectangularArray.with_span(self.span));
@@ -198,7 +199,7 @@ impl AstNode {
                     }
                 }
 
-                Array::from_row_major_iter(width as u32, height as u32, flat_array)?.into()
+                Array::new_row_major(width as u32, height as u32, flat_array)?.into()
             }
 
             // Single cell references return 1x1 arrays for Excel compatibility.

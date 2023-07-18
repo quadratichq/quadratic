@@ -4,7 +4,7 @@ import { v4 as uuid } from 'uuid';
 import { DEFAULT_FILE_NAME } from '../constants/app';
 
 // Shared schemas
-const ArrayOutputSchema = z.array(z.union([z.string(), z.number(), z.boolean()]));
+const ArrayOutputSchema = z.array(z.any());
 const BorderDirectionSchema = z.object({
   color: z.string().optional(),
   type: z.enum(['line1', 'line2', 'line3', 'dotted', 'dashed', 'double']).optional(),

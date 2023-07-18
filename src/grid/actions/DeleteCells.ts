@@ -7,12 +7,11 @@ interface DeleteCellsArgs {
   x1: number;
   y1: number;
   sheetController: SheetController;
-  pyodide?: any;
   create_transaction?: boolean;
 }
 
 export const DeleteCells = async (args: DeleteCellsArgs) => {
-  const { x0, y0, x1, y1, sheetController, pyodide, create_transaction } = args;
+  const { x0, y0, x1, y1, sheetController, create_transaction } = args;
 
   if (create_transaction ?? true) sheetController.start_transaction();
 
@@ -29,7 +28,6 @@ export const DeleteCells = async (args: DeleteCellsArgs) => {
       await updateCellAndDCells({
         starting_cells: cells_to_delete,
         sheetController,
-        pyodide,
         delete_starting_cells: true,
         create_transaction: false,
       });

@@ -13,11 +13,12 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
+  useTheme,
 } from '@mui/material';
 import { Console } from './Console';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { useSetRecoilState } from 'recoil';
-import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
@@ -28,20 +29,21 @@ import { AI, Formula, Python } from '../../icons';
 import { TooltipHint } from '../../components/TooltipHint';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { ResizeControl } from './ResizeControl';
+import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import mixpanel from 'mixpanel-browser';
 import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
+import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
 interface CodeEditorProps {
-  editorInteractionState: EditorInteractionState;
   sheet_controller: SheetController;
 }
 
 export const CodeEditor = (props: CodeEditorProps) => {
-  const { editorInteractionState } = props;
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const { pythonLoaded } = useRecoilValue(loadedStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
-
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
 
@@ -49,6 +51,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [didMount, setDidMount] = useState(false);
 
   const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
+  const theme = useTheme();
+  const isLoadingPython = !pythonLoaded && editorMode === 'PYTHON';
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -189,6 +193,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const saveAndRunCell = async () => {
     if (!selectedCell) return;
     if (isRunningComputation) return;
+    if (isLoadingPython) return;
 
     setIsRunningComputation(true);
 
@@ -355,6 +360,12 @@ export const CodeEditor = (props: CodeEditorProps) => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
           {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
+          {isLoadingPython && (
+            <div style={{ color: theme.palette.warning.main, display: 'flex', alignItems: 'center' }}>
+              Loading Python...
+              <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
+            </div>
+          )}
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
             <span>
               <IconButton
@@ -362,7 +373,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
                 size="small"
                 color="primary"
                 onClick={saveAndRunCell}
-                disabled={isRunningComputation}
+                disabled={isRunningComputation || isLoadingPython}
               >
                 <PlayArrow />
               </IconButton>
@@ -385,6 +396,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
       {/* Editor Body */}
       <div
         style={{
+          position: 'relative',
           minHeight: '100px',
           flex: '2',
         }}
@@ -394,9 +406,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
           width="100%"
           language={editorMode === 'PYTHON' ? 'python' : editorMode === 'FORMULA' ? 'formula' : 'plaintext'}
           value={editorContent}
-          onChange={(value) => {
-            setEditorContent(value);
-          }}
+          onChange={setEditorContent}
           onMount={handleEditorDidMount}
           options={{
             minimap: { enabled: true },
@@ -411,6 +421,13 @@ export const CodeEditor = (props: CodeEditorProps) => {
             wordWrap: 'on',
           }}
         />
+        {selectedCell.type === 'PYTHON' && (
+          <CodeEditorPlaceholder
+            editorContent={editorContent}
+            setEditorContent={setEditorContent}
+            editorRef={editorRef}
+          />
+        )}
       </div>
 
       <ResizeControl setState={setConsoleHeight} position="TOP" />
@@ -429,7 +446,12 @@ export const CodeEditor = (props: CodeEditorProps) => {
         {(editorInteractionState.mode === 'PYTHON' ||
           editorInteractionState.mode === 'FORMULA' ||
           editorInteractionState.mode === 'AI') && (
-          <Console evalResult={evalResult} editorMode={editorMode} editorContent={editorContent} />
+          <Console
+            evalResult={evalResult}
+            editorMode={editorMode}
+            editorContent={editorContent}
+            selectedCell={selectedCell}
+          />
         )}
       </div>
     </div>
