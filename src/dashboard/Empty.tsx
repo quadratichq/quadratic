@@ -16,16 +16,28 @@ export default function Empty({
 
   return (
     <Box sx={{ maxWidth: '30rem', my: theme.spacing(5), mx: 'auto', textAlign: 'center' }}>
-      <Box sx={{ mb: theme.spacing(2), color: theme.palette.text.secondary }}>
+      <Box
+        sx={{
+          mx: 'auto',
+          border: `1px solid ${theme.palette.divider}`,
+          mb: theme.spacing(3),
+          width: '72px',
+          height: '72px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: theme.palette.text.secondary,
+        }}
+      >
         <Icon fontSize="large" color="inherit" />
       </Box>
-      <Typography variant="subtitle1" sx={{ mb: theme.spacing(1) }}>
+      <Typography variant="h6" sx={{ mb: theme.spacing(0.5) }} color="text.primary">
         {title}
       </Typography>
       <Typography variant="body2" color="text.secondary">
         {description}
       </Typography>
-      {actions && <Box sx={{ mt: theme.spacing(2) }}>{actions}</Box>}
+      {actions && <Box sx={{ mt: theme.spacing(3) }}>{actions}</Box>}
     </Box>
   );
 }

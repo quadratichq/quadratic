@@ -1,9 +1,8 @@
 // import { useEffect } from 'react';
-import { NavLink, Outlet, useFetcher, useRouteLoaderData } from 'react-router-dom';
+import { NavLink, Outlet, useFetcher, useNavigation, useRouteLoaderData } from 'react-router-dom';
 import { RootLoaderData } from './Routes';
-import { Avatar, Box, ButtonBase, IconButton, Typography, useTheme } from '@mui/material';
+import { Avatar, Box, ButtonBase, CircularProgress, IconButton, Typography, useTheme } from '@mui/material';
 import { Close, FilterDramaOutlined, Logout, PeopleOutline, SchoolOutlined } from '@mui/icons-material';
-import { colors } from './theme/colors';
 // import { useGlobalSnackbar } from './ui/contexts/GlobalSnackbar';
 
 // type ActionData = {
@@ -13,16 +12,29 @@ import { colors } from './theme/colors';
 
 export const Component = () => {
   const theme = useTheme();
+  const navigation = useNavigation();
+  const isLoading = navigation.state === 'loading';
+
   return (
     <div
       style={{
         display: 'grid',
         gridTemplateColumns: '264px 1fr',
         height: '100%',
+        backgroundColor: theme.palette.background.default,
       }}
     >
       <Navbar />
-      <div style={{ padding: `0 ${theme.spacing(5)}`, overflow: 'scroll', paddingBottom: theme.spacing(5) }}>
+      <div
+        style={{
+          padding: `0 ${theme.spacing(5)}`,
+          overflow: isLoading ? 'hidden' : 'scroll',
+          paddingBottom: theme.spacing(5),
+          position: 'relative',
+          transition: '.2s ease opacity',
+          ...(isLoading ? { opacity: '.25', pointerEvents: 'none' } : {}),
+        }}
+      >
         <Outlet />
       </div>
     </div>
@@ -33,6 +45,7 @@ function Navbar() {
   const { user } = useRouteLoaderData('root') as RootLoaderData;
   const fetcher = useFetcher();
   const theme = useTheme();
+
   const linkStylesFn = ({ isActive }: { isActive: boolean }) => ({
     padding: `${theme.spacing(1)} ${theme.spacing(1)}`,
     color: 'inherit',
@@ -51,7 +64,7 @@ function Navbar() {
       component="nav"
       sx={{
         [theme.breakpoints.up('md')]: {
-          borderRight: `1px solid ${colors.mediumGray}`,
+          borderRight: `1px solid ${theme.palette.divider}`,
         },
         padding: theme.spacing(2),
         display: 'flex',
@@ -88,21 +101,24 @@ function Navbar() {
           <Typography variant="body2" color="text.primary">
             My files
           </Typography>
+          <Loader path="/files/mine" />
         </NavLink>
         <NavLink to="/files/examples" style={linkStylesFn}>
           <SchoolOutlined color="primary" />{' '}
           <Typography variant="body2" color="text.primary">
             Example files
           </Typography>
+          <Loader path="/files/examples" />
         </NavLink>
         <Typography variant="overline" color="text.secondary" style={labelStyles}>
-          Teams (Coming Soon)
+          Teams
         </Typography>
         <NavLink to="/files/teams" style={linkStylesFn}>
-          <PeopleOutline color="primary" />{' '}
-          <Typography variant="body2" color="text.primary">
-            My Team
+          <PeopleOutline color="disabled" />{' '}
+          <Typography variant="body2" color="text.secondary">
+            Coming soon…
           </Typography>
+          <Loader path="/files/teams" />
         </NavLink>
       </div>
       <div
@@ -116,7 +132,10 @@ function Navbar() {
         </Typography>
         <NavLink to="/account" style={linkStylesFn}>
           <Avatar alt={user?.name} src={user?.picture} sx={{ width: 24, height: 24 }} />
-          <Typography variant="body2">{user?.name || 'You'}</Typography>
+          <Typography variant="body2" color="text.primary">
+            {user?.name || 'You'}
+          </Typography>
+          <Loader path="/account" />
         </NavLink>
         <fetcher.Form method="post" action="/logout" style={{ color: theme.palette.text.secondary }}>
           <ButtonBase type="submit" style={linkStylesFn({ isActive: false })}>
@@ -129,4 +148,11 @@ function Navbar() {
       </div>
     </Box>
   );
+}
+
+function Loader({ path }: { path: string }) {
+  const navigation = useNavigation();
+  return navigation.state === 'loading' && navigation.location.pathname.includes(path) ? (
+    <CircularProgress size={18} sx={{ ml: 'auto' }} />
+  ) : null;
 }

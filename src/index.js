@@ -5,6 +5,7 @@ import reportWebVitals from './reportWebVitals';
 import * as Sentry from '@sentry/react';
 import { Routes } from './Routes';
 import { BrowserTracing } from '@sentry/tracing';
+import { Theme } from './quadratic/Theme';
 
 // Enable sentry only if SENTRY_DSN is in ENV
 if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'none')
@@ -19,7 +20,9 @@ if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'no
 
 ReactDOM.render(
   <React.StrictMode>
-    <Routes />
+    <Theme>
+      <Routes />
+    </Theme>
   </React.StrictMode>,
   document.getElementById('root')
 );
