@@ -16,8 +16,7 @@ jobs:
         with:
           node-version: '19'
           cache: 'npm'
-      - name: Setup Docker
-        uses: docker/setup-docker-buildx-action@v1
+
       - name: Install Dependencies
         run: |
           npm install
