@@ -22,4 +22,7 @@ jobs:
           cd quadratic-api
           npm install
 
-      - run: npm run test:ci
+      - name: Run Tests
+        run: |
+          cd quadratic-api
+          npm run test:ci
