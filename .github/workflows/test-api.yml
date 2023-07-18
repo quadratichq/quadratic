@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - share-file
   pull_request:
 
 jobs:
