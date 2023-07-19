@@ -1,8 +1,13 @@
-import { PrismaClient, QUser, Prisma } from '@prisma/client';
+import { PrismaClient, QUser, Prisma, QFile } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const get_file = async (user: QUser, uuid: string) => {
+interface getFileResult {
+  permission: boolean | null;
+  file: QFile | null;
+}
+
+export const get_file = async (user: QUser, uuid: string): Promise<getFileResult> => {
   // Get the file from the database by uuid
   const file = await prisma.qFile.findFirst({
     where: {
@@ -10,13 +15,23 @@ export const get_file = async (user: QUser, uuid: string) => {
     },
   });
 
-  if (!file) return null;
+  if (!file)
+    return {
+      permission: null,
+      file: null,
+    };
   const gridFile = file.contents as Prisma.JsonObject;
 
   // only return the file if the user is the owner OR if it's marked as public
   if (user.id === file.qUserId || gridFile.isPublic) {
-    return file;
+    return {
+      permission: true,
+      file,
+    };
   }
 
-  throw new Error('File owner does not match user request');
+  return {
+    permission: false,
+    file: null,
+  };
 };

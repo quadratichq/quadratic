@@ -17,7 +17,8 @@ beforeAll(async () => {
     data: {
       qUserId: user_1.id,
       name: 'test_file_1',
-      contents: {},
+      contents: { version: 1.0 },
+      uuid: '00000000-0000-4000-8000-000000000000',
     },
   });
 });
@@ -83,5 +84,43 @@ describe('GET /v0/files/ with auth and no files', () => {
       .expect(200); // OK
 
     expect(res.body.length).toEqual(0);
+  });
+});
+
+describe('GET /v0/files/:uuid no auth', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .get('/v0/files/00000000-0000-0000-0000-000000000000')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(401); // Unauthorized
+
+    expect(res.body).toMatchObject({ error: { message: 'No authorization token was found' } });
+  });
+});
+
+describe('GET /v0/files/:uuid with auth and file', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .get('/v0/files/00000000-0000-4000-8000-000000000000')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200); // OK
+
+    expect(res.body).toMatchObject({ name: 'test_file_1', contents: { version: 1.0 } });
+  });
+});
+
+describe('GET /v0/files/:uuid with auth and another users file', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .get('/v0/files/00000000-0000-4000-8000-000000000000')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_2`)
+      .expect('Content-Type', /json/)
+      .expect(403); // Forbidden
+
+    expect(res.body).toMatchObject({ message: 'Permission denied.' });
   });
 });
