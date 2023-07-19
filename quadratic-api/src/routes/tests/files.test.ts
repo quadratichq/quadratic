@@ -119,7 +119,7 @@ describe('GET /v0/files/:uuid file not found', () => {
       .expect('Content-Type', /json/)
       .expect(404); // Not Found
 
-    expect(res.body).toMatchObject({ message: 'File not found.' });
+    expect(res.body).toMatchObject({ error: { message: 'File not found' } });
   });
 });
 
@@ -164,6 +164,76 @@ describe('GET /v0/files/:uuid with auth and another users file not shared', () =
       .expect('Content-Type', /json/)
       .expect(403); // Forbidden
 
-    expect(res.body).toMatchObject({ message: 'Permission denied.' });
+    expect(res.body).toMatchObject({ error: { message: 'Permission denied' } });
   });
 });
+
+describe('POST /v0/files/:uuid no auth', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/00000000-0000-0000-0000-000000000000')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(401); // Unauthorized
+
+    expect(res.body).toMatchObject({ error: { message: 'No authorization token was found' } });
+  });
+});
+
+describe('POST /v0/files/:uuid file not found', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/00000000-0000-4000-8000-000000000009')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(404); // Not Found
+
+    expect(res.body).toMatchObject({ error: { message: 'File not found' } });
+  });
+});
+
+describe('POST /v0/files/:uuid with auth and owned file rename file', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/00000000-0000-4000-8000-000000000000')
+      .send({ name: 'new_name' })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/);
+    // .expect(200); // OK
+
+    console.log(res.body);
+
+    expect(res.body).toMatchObject({ message: 'File updated.' });
+  });
+});
+
+// describe('GET /v0/files/:uuid with auth and another users file shared readonly', () => {
+//   it('responds with json', async () => {
+//     const res = await request(app)
+//       .get('/v0/files/00000000-0000-4000-8000-000000000001')
+//       .set('Accept', 'application/json')
+//       .set('Authorization', `Bearer ValidToken test_user_2`)
+//       .expect('Content-Type', /json/)
+//       .expect(200); // OK
+
+//     expect(res.body).toHaveProperty('file');
+//     expect(res.body).toHaveProperty('permission');
+//     expect(res.body.permission).toEqual('READONLY');
+//     expect(res.body.file.contents).toEqual({ data: [99, 111, 110, 116, 101, 110, 116, 115, 95, 49], type: 'Buffer' });
+//   });
+// });
+
+// describe('GET /v0/files/:uuid with auth and another users file not shared', () => {
+//   it('responds with json', async () => {
+//     const res = await request(app)
+//       .get('/v0/files/00000000-0000-4000-8000-000000000000')
+//       .set('Accept', 'application/json')
+//       .set('Authorization', `Bearer ValidToken test_user_2`)
+//       .expect('Content-Type', /json/)
+//       .expect(403); // Forbidden
+
+//     expect(res.body).toMatchObject({ message: 'Permission denied.' });
+//   });
+// });
