@@ -37,3 +37,47 @@ model QFeedback {
     created_date DateTime @default(now())
     qUserId      Int
 }
+
+// Using new models becase beacuse the old ones with capital letters are annoying
+model User {
+    id       Int    @id @default(autoincrement())
+    auth0_id String @unique
+    files    File[]
+}
+
+enum LinkPermission {
+    NOT_SHARED
+    READONLY
+    EDIT
+}
+
+model File {
+    id                 Int            @id @default(autoincrement())
+    uuid               String         @unique @default(uuid())
+    name               String
+    created_date       DateTime       @default(now())
+    updated_date       DateTime       @default(now())
+    // Binary file contents
+    contents           Bytes
+    // Permissions
+    owner              User           @relation(fields: [ownerUserId], references: [id])
+    ownerUserId        Int
+    public_link_access LinkPermission @default(NOT_SHARED)
+    // analytics fields
+    times_updated      Int            @default(1)
+    version            String?
+}
+
+// model UserFileAccess {
+//   // This works for individual access
+//   // Team access will be a separate model
+//   id Int
+//   userId    Int
+//   fileId    Int
+//   user      User      @relation(fields: [userId], references: [id])
+//   file      File      @relation(fields: [fileId], references: [id])
+//   canRead   Boolean   @default(false)
+//   canEdit   Boolean   @default(false)
+
+//   @@unique([userId, fileId])
+// }

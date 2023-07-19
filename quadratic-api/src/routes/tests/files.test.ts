@@ -6,26 +6,37 @@ import dbClient from '../../dbClient';
 
 beforeAll(async () => {
   // Create a test user
-  const user_1 = await dbClient.qUser.create({
+  const user_1 = await dbClient.user.create({
     data: {
-      auth0_user_id: 'test_user_1',
+      auth0_id: 'test_user_1',
     },
   });
 
-  // Create a test file
-  await dbClient.qFile.create({
+  // Create a test files
+  await dbClient.file.create({
     data: {
-      qUserId: user_1.id,
+      ownerUserId: user_1.id,
       name: 'test_file_1',
-      contents: { version: 1.0 },
+      contents: Buffer.from('contents_0'),
       uuid: '00000000-0000-4000-8000-000000000000',
+      public_link_access: 'NOT_SHARED',
+    },
+  });
+
+  await dbClient.file.create({
+    data: {
+      ownerUserId: user_1.id,
+      name: 'test_file_1',
+      contents: Buffer.from('contents_1'),
+      uuid: '00000000-0000-4000-8000-000000000001',
+      public_link_access: 'READONLY',
     },
   });
 });
 
 afterAll(async () => {
-  const deleteUsers = dbClient.qUser.deleteMany();
-  const deleteFiles = dbClient.qFile.deleteMany();
+  const deleteUsers = dbClient.user.deleteMany();
+  const deleteFiles = dbClient.file.deleteMany();
 
   await dbClient.$transaction([deleteFiles, deleteUsers]);
 });
@@ -69,7 +80,7 @@ describe('GET /v0/files/ with auth and files', () => {
       .expect('Content-Type', /json/)
       .expect(200); // OK
 
-    expect(res.body.length).toEqual(1);
+    expect(res.body.length).toEqual(2);
     expect(res.body[0]).toMatchObject({ name: 'test_file_1' });
   });
 });
@@ -99,7 +110,20 @@ describe('GET /v0/files/:uuid no auth', () => {
   });
 });
 
-describe('GET /v0/files/:uuid with auth and file', () => {
+describe('GET /v0/files/:uuid file not found', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .get('/v0/files/00000000-0000-4000-8000-000000000009')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(404); // Not Found
+
+    expect(res.body).toMatchObject({ message: 'File not found.' });
+  });
+});
+
+describe('GET /v0/files/:uuid with auth and owned file', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000000')
@@ -108,11 +132,30 @@ describe('GET /v0/files/:uuid with auth and file', () => {
       .expect('Content-Type', /json/)
       .expect(200); // OK
 
-    expect(res.body).toMatchObject({ name: 'test_file_1', contents: { version: 1.0 } });
+    expect(res.body).toHaveProperty('file');
+    expect(res.body).toHaveProperty('permission');
+    expect(res.body.permission).toEqual('OWNER');
+    expect(res.body.file.contents).toEqual({ data: [99, 111, 110, 116, 101, 110, 116, 115, 95, 48], type: 'Buffer' }); // contents_1
   });
 });
 
-describe('GET /v0/files/:uuid with auth and another users file', () => {
+describe('GET /v0/files/:uuid with auth and another users file shared readonly', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .get('/v0/files/00000000-0000-4000-8000-000000000001')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_2`)
+      .expect('Content-Type', /json/)
+      .expect(200); // OK
+
+    expect(res.body).toHaveProperty('file');
+    expect(res.body).toHaveProperty('permission');
+    expect(res.body.permission).toEqual('READONLY');
+    expect(res.body.file.contents).toEqual({ data: [99, 111, 110, 116, 101, 110, 116, 115, 95, 49], type: 'Buffer' });
+  });
+});
+
+describe('GET /v0/files/:uuid with auth and another users file not shared', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000000')

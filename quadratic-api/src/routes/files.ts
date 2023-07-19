@@ -1,7 +1,6 @@
 import express, { Response } from 'express';
 import { validateAccessToken } from '../middleware/auth';
 import { Request as JWTRequest } from 'express-jwt';
-import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
 import dbClient from '../dbClient';
 import { get_user } from '../helpers/get_user';
@@ -38,15 +37,16 @@ files_router.get('/', validateAccessToken, file_rate_limiter, async (request: JW
   const user = await get_user(request);
 
   // Fetch files owned by the user from the database
-  const files = await dbClient.qFile.findMany({
+  const files = await dbClient.file.findMany({
     where: {
-      qUserId: user.id,
+      ownerUserId: user.id,
     },
     select: {
       uuid: true,
       name: true,
       created_date: true,
       updated_date: true,
+      public_link_access: true,
     },
   });
 
@@ -68,14 +68,14 @@ files_router.get(
     // Ensure file exists and user can access it
     const user = await get_user(request);
     const file_result = await get_file(user, request.params.uuid);
-    if (!file_result.permission) {
-      return response.status(403).json({ message: 'Permission denied.' });
-    }
-    if (!file_result.file) {
+    if (file_result.permission === undefined && !file_result.file) {
       return response.status(404).json({ message: 'File not found.' });
     }
+    if (file_result.permission === 'NOT_SHARED') {
+      return response.status(403).json({ message: 'Permission denied.' });
+    }
 
-    response.status(200).json(file_result.file);
+    response.status(200).json(file_result);
   }
 );
 
@@ -104,7 +104,7 @@ files_router.post(
 
     const file_contents = JSON.parse(request.body.contents);
     const file_metadata = get_file_metadata(file_contents);
-    await dbClient.qFile.update({
+    await dbClient.file.update({
       where: {
         id: file_result.file.id,
       },
@@ -178,9 +178,9 @@ files_router.post(
 
     // Create a new file in the database
     // use name and contents from request body if provided
-    const file = await dbClient.qFile.create({
+    const file = await dbClient.file.create({
       data: {
-        qUserId: user.id,
+        ownerUserId: user.id,
         name: request.body.name ?? 'Untitled',
         contents: request.body.contents ?? {},
       },
