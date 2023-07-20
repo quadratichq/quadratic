@@ -46,6 +46,7 @@ pub struct NumericFormat {
     decimals: Option<u32>,
 }
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[serde(tag = "type")]
 pub enum NumericFormatKind {
     Number,

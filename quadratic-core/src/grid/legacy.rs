@@ -56,6 +56,7 @@ pub struct JsCellEvalResult {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
 pub enum JsArrayOutput {
     Array(Vec<Option<Any>>),
     Block(Vec<Vec<Option<Any>>>),
@@ -111,7 +112,7 @@ pub struct JsHeadingSchema {
 pub enum JsCellType {
     Text,
     Formula,
-    JavaScript,
+    Javascript,
     Python,
     Sql,
     Computed,
@@ -172,7 +173,7 @@ impl JsCell {
         let language = match self.r#type {
             JsCellType::Text | JsCellType::Computed => return None,
             JsCellType::Formula => CellCodeLanguage::Formula,
-            JsCellType::JavaScript => CellCodeLanguage::JavaScript,
+            JsCellType::Javascript => CellCodeLanguage::JavaScript,
             JsCellType::Python => CellCodeLanguage::Python,
             JsCellType::Sql => CellCodeLanguage::Sql,
         };

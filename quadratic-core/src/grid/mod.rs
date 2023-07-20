@@ -105,6 +105,8 @@ impl File {
             column.wrap.set(js_format.y, js_format.wrapping);
         }
 
+        sheet.recalculate_bounds();
+
         Ok(ret)
     }
 
@@ -117,7 +119,7 @@ impl File {
 }
 #[wasm_bindgen]
 impl File {
-    #[wasm_bindgen(constructor)]
+    #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_from_legacy(file: JsValue) -> Result<File, JsValue> {
         let file = serde_wasm_bindgen::from_value(file)?;
         File::from_legacy(&file).map_err(|e| JsError::new(&e.to_string()).into())
