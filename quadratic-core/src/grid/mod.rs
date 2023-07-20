@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::{btree_map, BTreeMap, HashMap};
 use std::hash::Hash;
@@ -97,15 +98,12 @@ impl File {
                 column.values.set(y, Some(value.into()));
             }
         }
-    }
-
-    #[wasm_bindgen(js_name = "sayHi")]
-    pub fn say_hi(&self) {
-        crate::log("hi!");
+        sheet.recalculate_bounds();
     }
 
     #[wasm_bindgen(js_name = "getRenderCells")]
     pub fn get_render_cells(&self, sheet_index: usize, region: Rect) -> Result<JsValue, JsValue> {
+        let a = js_sys::Date::now();
         let mut ret = JsRenderCellsArray { columns: vec![] };
         let sheet = &self.sheets[sheet_index];
         for x in region.x_range() {
@@ -133,6 +131,25 @@ impl File {
             ret.columns.push(ret_column)
         }
         Ok(serde_wasm_bindgen::to_value(&ret)?)
+    }
+
+    #[wasm_bindgen(js_name = "getRenderCell")]
+    pub fn get_render_cell(&self, sheet_index: usize, pos: Pos) -> Option<String> {
+        match self.sheets[sheet_index].get_cell_value(pos) {
+            CellValueOrSpill::CellValue(value) => Some(value.to_string()),
+            CellValueOrSpill::Spill { source } => Some(format!("TODO spill from {source:?}")),
+        }
+    }
+
+    #[wasm_bindgen(js_name = "getGridBounds")]
+    pub fn get_grid_bounds(
+        &self,
+        sheet_index: usize,
+        ignore_formatting: bool,
+    ) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.sheets[sheet_index].bounds(ignore_formatting),
+        )?)
     }
 }
 
@@ -253,13 +270,13 @@ impl Sheet {
             if let Some(data_range) = column.range(true) {
                 let y = data_range.start;
                 self.data_bounds.add(Pos { x, y });
-                let y = data_range.end;
+                let y = data_range.end - 1;
                 self.data_bounds.add(Pos { x, y });
             }
             if let Some(format_range) = column.range(false) {
                 let y = format_range.start;
                 self.format_bounds.add(Pos { x, y });
-                let y = format_range.end;
+                let y = format_range.end - 1;
                 self.format_bounds.add(Pos { x, y });
             }
         }
