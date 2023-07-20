@@ -1,12 +1,12 @@
+import { useCallback } from 'react';
 import { ColorResult } from 'react-color';
 import { clearFormattingAction } from '../../../../grid/actions/clearFormattingAction';
-import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
-import { CellAlignment, CellFormat } from '../../../../schemas';
 import { SheetController } from '../../../../grid/controller/sheetController';
-import { convertReactColorToString } from '../../../../helpers/convertColor';
-import { useGetSelection } from './useGetSelection';
-import { useCallback } from 'react';
+import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
 import { pixiAppEvents } from '../../../../gridGL/pixiApp/PixiAppEvents';
+import { convertReactColorToString } from '../../../../helpers/convertColor';
+import { CellAlignment, CellFormat } from '../../../../schemas';
+import { useGetSelection } from './useGetSelection';
 
 export const FORMAT_SELECTION_EVENT = 'formatSelectionEvent';
 
@@ -64,15 +64,9 @@ export const useFormatCells = (sheet_controller: SheetController, skipStartTrans
       }
       // Transaction to update formats
       if (!skipStartTransaction) sheet_controller.start_transaction();
-      formats.forEach((format) => {
-        if (format.x !== undefined && format.y !== undefined)
-          sheet_controller.execute_statement({
-            type: 'SET_CELL_FORMAT',
-            data: {
-              position: [format.x, format.y],
-              value: format,
-            },
-          });
+      sheet_controller.execute_statement({
+        type: 'SET_CELL_FORMATS',
+        data: formats,
       });
       if (!skipStartTransaction) sheet_controller.end_transaction();
       pixiAppEvents.quadrantsChanged({ range: { start, end } });

@@ -24,11 +24,8 @@ export type Statement =
       };
     }
   | {
-      type: 'SET_CELL_FORMAT';
-      data: {
-        position: [number, number];
-        value: CellFormat | undefined; // TODO: Make this accept more than one CellFormat
-      };
+      type: 'SET_CELL_FORMATS';
+      data: CellFormat[];
     }
   | {
       type: 'SET_HEADING_SIZE';

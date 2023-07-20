@@ -59,17 +59,28 @@ export class GridSparse {
     this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
   }
 
-  updateFormat(formats: CellFormat[]): void {
+  hasNoFormatting(format: CellFormat): boolean {
+    const keys = Object.keys(format);
+    return keys.length > 2;
+  }
+
+  updateFormat(formats: CellFormat[], skipBoundsCalculation = false): void {
+    let needBoundsCalculation = false;
     formats.forEach((format) => {
-      const update = this.cells.get(this.getKey(format.x, format.y));
-      if (update) {
-        update.format = format;
+      const key = this.getKey(format.x, format.y);
+      if (this.hasNoFormatting(format)) {
+        this.cells.delete(key);
+        if (!skipBoundsCalculation) {
+          needBoundsCalculation ||= this.formatBounds.atBounds(format.x, format.y);
+        }
       } else {
-        this.cells.set(this.getKey(format.x, format.y), { format });
+        this.cells.set(key, { format });
+        this.formatBounds.add(format.x, format.y);
       }
-      this.formatBounds.add(format.x, format.y);
-      this.cellFormatBounds.add(format.x, format.y);
     });
+    if (needBoundsCalculation && !skipBoundsCalculation) {
+      this.recalculateBounds();
+    }
   }
 
   clearFormat(formats: CellFormat[]): void {

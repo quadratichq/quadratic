@@ -1,8 +1,8 @@
 import { Rectangle } from 'pixi.js';
-import { GridOffsets } from '../GridOffsets';
-import { GridSparse } from '../GridSparse';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
 import { Cell, CellFormat } from '../../../schemas';
+import { GridOffsets } from '../GridOffsets';
+import { GridSparse } from '../GridSparse';
 
 describe('gridSparse', () => {
   const gridOffsets = new GridOffsets();
@@ -390,5 +390,10 @@ describe('gridSparse', () => {
     expect(gridSparse.getFormat(2, -5)?.fillColor).toBe('6');
     expect(gridSparse.getFormat(-10, -11)?.fillColor).toBe('8');
     expect(gridSparse.getFormat(2, 5)?.fillColor).toBe('2');
+  });
+
+  it('checks if a CellFormat has formatting', () => {
+    const gridSparse = new GridSparse(gridOffsets);
+    expect(gridSparse.hasNoFormatting({ x: 1, y: 2 })).toBe(true);
   });
 });

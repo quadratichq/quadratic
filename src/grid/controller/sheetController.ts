@@ -1,13 +1,13 @@
-import { Sheet } from '../sheet/Sheet';
-import { Transaction } from './transaction';
-import { Statement } from './statement';
-import { StatementRunner } from './runners/runner';
 import * as Sentry from '@sentry/browser';
-import { debug } from '../../debugFlags';
-import { SheetSchema } from '../../schemas';
 import { generateKeyBetween } from 'fractional-indexing';
-import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
+import { debug } from '../../debugFlags';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
+import { SheetSchema } from '../../schemas';
+import { Sheet } from '../sheet/Sheet';
+import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
+import { StatementRunner } from './runners/runner';
+import { Statement } from './statement';
+import { Transaction } from './transaction';
 
 export class SheetController {
   sheets: Sheet[];
