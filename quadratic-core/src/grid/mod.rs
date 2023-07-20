@@ -43,6 +43,8 @@ impl File {
         let GridFile::V1_2(file) = file;
         let mut ret = File::new();
         let sheet = &mut ret.sheets_mut()[0];
+
+        // Load cell data
         for js_cell in &file.cells {
             let column = sheet.get_or_create_column(js_cell.x).0.id;
 
@@ -84,6 +86,25 @@ impl File {
                 sheet.code_cells.insert(code_cell_ref, cell_code);
             }
         }
+
+        for js_format in &file.formats {
+            let (_, column) = sheet.get_or_create_column(js_format.x);
+
+            column.align.set(js_format.y, js_format.alignment);
+            column.bold.set(js_format.y, js_format.bold);
+            column
+                .fill_color
+                .set(js_format.y, js_format.fill_color.clone());
+            column.italic.set(js_format.y, js_format.italic);
+            column
+                .text_color
+                .set(js_format.y, js_format.text_color.clone());
+            column
+                .numeric_format
+                .set(js_format.y, js_format.text_format);
+            column.wrap.set(js_format.y, js_format.wrapping);
+        }
+
         Ok(ret)
     }
 

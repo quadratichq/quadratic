@@ -28,6 +28,7 @@ pub struct CellBorder {
     style: CellBorderStyle,
 }
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[serde(rename_all = "lowercase")]
 pub enum CellBorderStyle {
     Line1,
     Line2,

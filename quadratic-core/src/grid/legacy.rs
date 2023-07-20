@@ -4,7 +4,7 @@ use uuid::Uuid;
 use crate::formulas::{Array, BasicValue, FormulaError, Value};
 
 use super::{
-    formatting::{CellAlign, CellWrap, NumericFormat},
+    formatting::{CellAlign, CellBorderStyle, CellWrap, NumericFormat},
     CellCode, CellCodeLanguage, CellCodeRunOk, CellCodeRunOutput, CellRef, CellValue, Sheet,
 };
 
@@ -97,18 +97,7 @@ pub struct JsBorders {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsBorderDirectionSchema {
     pub color: Option<String>,
-    pub r#type: Option<JsBorderType>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum JsBorderType {
-    Line1,
-    Line2,
-    Line3,
-    Dotted,
-    Dashed,
-    Double,
+    pub r#type: Option<CellBorderStyle>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
