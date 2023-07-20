@@ -1,12 +1,11 @@
 import { Rectangle } from 'pixi.js';
-import { Coordinate } from '../../gridGL/types/size';
+import { cellHasContent } from '../../gridGL/helpers/selectCells';
+import { Quadrants } from '../../gridGL/quadrants/Quadrants';
+import { Coordinate, MinMax } from '../../gridGL/types/size';
+import { Cell, CellFormat } from '../../schemas';
+import { Bounds } from './Bounds';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
-import { Cell, CellFormat } from '../../schemas';
-import { MinMax } from '../../gridGL/types/size';
-import { Quadrants } from '../../gridGL/quadrants/Quadrants';
-import { Bounds } from './Bounds';
-import { cellHasContent } from '../../gridGL/helpers/selectCells';
 
 export interface CellAndFormat {
   cell?: Cell;
@@ -28,7 +27,7 @@ export class GridSparse {
     this.gridOffsets = gridOffsets;
   }
 
-  updateCells(cells: Cell[]): void {
+  updateCells(cells: Cell[], skipBounds = false): void {
     cells.forEach((cell) => {
       const update = this.cells.get(this.getKey(cell.x, cell.y));
       if (update) {
@@ -38,7 +37,9 @@ export class GridSparse {
         this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
       }
     });
-    this.recalculateBounds();
+    if (!skipBounds) {
+      this.recalculateBounds();
+    }
   }
 
   recalculateBounds(): void {
@@ -85,7 +86,7 @@ export class GridSparse {
     this.recalculateBounds();
   }
 
-  deleteCells(cells: Coordinate[]): void {
+  deleteCells(cells: Coordinate[], skipBounds = false): void {
     cells.forEach((cell) => {
       const candf = this.cells.get(this.getKey(cell.x, cell.y));
       if (candf) {
@@ -97,7 +98,9 @@ export class GridSparse {
         }
       }
     });
-    this.recalculateBounds();
+    if (!skipBounds) {
+      this.recalculateBounds();
+    }
   }
 
   get empty(): boolean {

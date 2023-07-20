@@ -1,15 +1,15 @@
+import { SheetController } from '../sheetController';
 import { Statement } from '../statement';
-import { SetCellRunner } from './setCellRunner';
+import { SetBorderRunner } from './setBorderRunner';
 import { AddCellDependenciesRunner, RemoveCellDependenciesRunner } from './setCellDependenciesRunner';
 import { SetCellFormatRunner } from './setCellFormatRunner';
+import { SetCellsRunner } from './setCellsRunner';
 import { SetHeadingSizeRunner } from './setHeadingSizeRunner';
-import { SetBorderRunner } from './setBorderRunner';
 import { sheetRunner } from './sheetRunner';
-import { SheetController } from '../sheetController';
 
 export const StatementRunner = (sheetController: SheetController, statement: Statement): Statement => {
-  if (statement.type === 'SET_CELL') {
-    return SetCellRunner(sheetController, statement);
+  if (statement.type === 'SET_CELLS') {
+    return SetCellsRunner(sheetController, statement);
   } else if (statement.type === 'ADD_CELL_DEPENDENCY') {
     return AddCellDependenciesRunner(sheetController, statement);
   } else if (statement.type === 'REMOVE_CELL_DEPENDENCY') {

@@ -1,5 +1,5 @@
-import { SheetController } from '../../controller/sheetController';
 import { Cell } from '../../../schemas';
+import { SheetController } from '../../controller/sheetController';
 import { generateClipboardStrings } from './clipboard';
 
 jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
@@ -19,35 +19,23 @@ test('Clipboard - copy data', () => {
   sc.start_transaction();
 
   sc.execute_statement({
-    type: 'SET_CELL',
-    data: {
-      position: [0, 0],
-      value: createCell([0, 0], 'Hello'),
-    },
+    type: 'SET_CELLS',
+    data: [createCell([0, 0], 'Hello')],
   });
 
   sc.execute_statement({
-    type: 'SET_CELL',
-    data: {
-      position: [1, 0],
-      value: createCell([1, 0], 'World.'),
-    },
+    type: 'SET_CELLS',
+    data: [createCell([1, 0], 'World.')],
   });
 
   sc.execute_statement({
-    type: 'SET_CELL',
-    data: {
-      position: [0, 1],
-      value: createCell([0, 1], '3'),
-    },
+    type: 'SET_CELLS',
+    data: [createCell([0, 1], '3')],
   });
 
   sc.execute_statement({
-    type: 'SET_CELL',
-    data: {
-      position: [1, 1],
-      value: createCell([1, 1], '4'),
-    },
+    type: 'SET_CELLS',
+    data: [createCell([1, 1], '4')],
   });
 
   sc.end_transaction();

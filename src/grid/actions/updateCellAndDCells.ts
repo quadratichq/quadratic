@@ -1,9 +1,8 @@
-import { Cell, ArrayOutputBase } from '../../schemas';
 import { Coordinate } from '../../gridGL/types/size';
-import { SheetController } from '../controller/sheetController';
-import { runCellComputation } from '../computations/runCellComputation';
 import { StringId, getKey } from '../../helpers/getKey';
-import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
+import { ArrayOutputBase, Cell } from '../../schemas';
+import { runCellComputation } from '../computations/runCellComputation';
+import { SheetController } from '../controller/sheetController';
 
 interface ArgsType {
   starting_cells: Cell[];
@@ -28,8 +27,10 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   // start transaction
   if (create_transaction ?? true) sheetController.start_transaction();
 
+  const setCells: (Cell | Coordinate)[] = [];
+
   // keep track of cells that have been updated so we can update the quadrant cache
-  const updatedCells: Coordinate[] = [];
+  // const updatedCells: Coordinate[] = [];
 
   // start with a plan to just update the current cells
   const cells_to_update: Set<StringId> = new Set(starting_cells.map((c) => getKey(c.x, c.y)));
@@ -79,10 +80,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       // we are deleting one of the starting cells
       // with delete_starting_cells = true
       // delete cell
-      sheetController.execute_statement({
-        type: 'SET_CELL',
-        data: { position: [cell.x, cell.y], value: undefined },
-      });
+      setCells.push({ x: cell.x, y: cell.y });
     } else {
       // We are evaluating a cell
       if (cell.type === 'PYTHON' || cell.type === 'FORMULA' || cell.type === 'AI') {
@@ -157,13 +155,10 @@ export const updateCellAndDCells = async (args: ArgsType) => {
           cell.last_modified = new Date().toISOString();
 
           array_cells_to_output.forEach((cell) => {
-            sheetController.execute_statement({
-              type: 'SET_CELL',
-              data: { position: [cell.x, cell.y], value: cell },
-            });
+            setCells.push(cell);
           });
 
-          updatedCells.push(...array_cells_to_output);
+          // updatedCells.push(...array_cells_to_output);
         } else {
           // not array output
 
@@ -174,25 +169,19 @@ export const updateCellAndDCells = async (args: ArgsType) => {
           cell.dependent_cells = result.cells_accessed;
 
           cell.last_modified = new Date().toISOString();
-          sheetController.execute_statement({
-            type: 'SET_CELL',
-            data: { position: [cell.x, cell.y], value: cell },
-          });
+          setCells.push(cell);
         }
       } else {
         // not computed cell
 
         // update current cell
         cell.last_modified = new Date().toISOString();
-        sheetController.execute_statement({
-          type: 'SET_CELL',
-          data: { position: [cell.x, cell.y], value: cell },
-        });
+        setCells.push(cell);
       }
     }
 
     // we updated this cell
-    updatedCells.push(cell);
+    // updatedCells.push(cell);
 
     // for old array cells not in new array cells, delete them
     let array_cells_to_delete = old_array_cells.filter(
@@ -202,10 +191,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
     // delete old array cells
     array_cells_to_delete.forEach((aCell) => {
       if (aCell.x === cell?.x && aCell.y === cell?.y) return; // don't delete the cell we just updated (it's in array_cells_to_output)
-      sheetController.execute_statement({
-        type: 'SET_CELL',
-        data: { position: [aCell.x, aCell.y], value: undefined },
-      });
+      setCells.push({ x: aCell.x, y: aCell.y });
     });
 
     // if any updated cells have other cells depending on them, add to list to update
@@ -225,11 +211,17 @@ export const updateCellAndDCells = async (args: ArgsType) => {
     addToSet(deps, cells_to_update);
   }
 
+  if (setCells.length) {
+    sheetController.execute_statement({
+      type: 'SET_CELLS',
+      data: setCells,
+    });
+  }
+
   // Officially end the transaction
   if (create_transaction ?? true) sheetController.end_transaction();
 
   // Pass updatedCells to the app so it can update the Grid Quadrants which changed.
   // TODO: move this to sheetController so it happens automatically with every transaction?
   // Maybe sheetController.end_transaction() should return a list of cells which updated in the transaction?
-  pixiAppEvents.quadrantsChanged({ cells: updatedCells });
 };
