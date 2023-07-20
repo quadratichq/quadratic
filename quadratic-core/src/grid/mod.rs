@@ -101,7 +101,7 @@ impl File {
                 .set(js_format.y, js_format.text_color.clone());
             column
                 .numeric_format
-                .set(js_format.y, js_format.text_format);
+                .set(js_format.y, js_format.text_format.clone());
             column.wrap.set(js_format.y, js_format.wrapping);
         }
 
@@ -215,9 +215,30 @@ impl File {
 
     #[wasm_bindgen(js_name = "getRenderCell")]
     pub fn get_render_cell(&self, sheet_index: usize, pos: Pos) -> Option<String> {
-        match self.sheets[sheet_index].get_cell_value(pos) {
+        let sheet = &self.sheets[sheet_index];
+        match sheet.get_cell_value(pos) {
             CellValueOrSpill::CellValue(value) => Some(value.to_string()),
-            CellValueOrSpill::Spill { source } => Some(format!("TODO spill from {source:?}")),
+            CellValueOrSpill::Spill { source } => {
+                match &sheet
+                    .code_cells
+                    .get(&source)?
+                    .output
+                    .as_ref()?
+                    .result
+                    .as_ref()
+                    .ok()?
+                    .output_value
+                {
+                    Value::Single(v) => Some(v.to_string()),
+                    Value::Array(a) => {
+                        let source_x = sheet.column_ids.index_of(source.column)?;
+                        let source_y = sheet.row_ids.index_of(source.row)?;
+                        let dx = pos.x - source_x;
+                        let dy = pos.y - source_y;
+                        Some(a.get(dx as u32, dy as u32).ok()?.to_string())
+                    }
+                }
+            }
         }
     }
 
