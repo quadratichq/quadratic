@@ -67,7 +67,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
         <FileUploadWrapper sheetController={sheetController} app={app}>
           <QuadraticGrid sheetController={sheetController} app={app} />
         </FileUploadWrapper>
-        <CodeEditor editorInteractionState={editorInteractionState} sheet_controller={sheetController} />
+        <CodeEditor sheet_controller={sheetController} />
       </div>
 
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}

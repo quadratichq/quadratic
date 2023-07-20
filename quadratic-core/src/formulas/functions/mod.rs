@@ -16,7 +16,7 @@ mod util;
 
 use super::{
     Array, Axis, BasicValue, CellRef, CoerceInto, Criterion, Ctx, FormulaError, FormulaErrorMsg,
-    FormulaResult, Param, ParamKind, Span, Spanned, SpannedIterExt, Value,
+    FormulaResult, IsBlank, Param, ParamKind, Span, Spanned, SpannedIterExt, Value,
 };
 
 pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
