@@ -5,10 +5,11 @@ use crate::formulas::{FormulaError, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CellCode {
-    language: CellCodeLanguage,
-    code_string: String,
-    formatted_code_string: Option<String>,
-    output: Option<CellCodeRunOutput>,
+    pub language: CellCodeLanguage,
+    pub code_string: String,
+    pub formatted_code_string: Option<String>,
+    pub last_modified: String,
+    pub output: Option<CellCodeRunOutput>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -21,12 +22,12 @@ pub enum CellCodeLanguage {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CellCodeRunOutput {
-    std_out: Option<String>,
-    std_err: Option<String>,
-    result: Result<CellCodeRunOk, FormulaError>,
+    pub std_out: Option<String>,
+    pub std_err: Option<String>,
+    pub result: Result<CellCodeRunOk, FormulaError>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CellCodeRunOk {
-    output_value: Value,
-    cells_accessed: Vec<CellRef>,
+    pub output_value: Value,
+    pub cells_accessed: Vec<CellRef>,
 }

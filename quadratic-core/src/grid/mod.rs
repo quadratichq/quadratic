@@ -1,4 +1,4 @@
-use itertools::Itertools;
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{btree_map, BTreeMap, HashMap};
 use std::hash::Hash;
@@ -11,6 +11,7 @@ mod column;
 mod formatting;
 mod ids;
 mod js_structs;
+mod legacy;
 mod value;
 
 pub use bounds::GridBounds;
@@ -18,6 +19,7 @@ pub use code::*;
 pub use ids::*;
 pub use value::CellValue;
 
+use crate::formulas::Value;
 use crate::{Pos, Rect};
 use block::{Block, BlockContent, CellValueBlockContent, CellValueOrSpill, SameValue};
 use column::Column;
@@ -35,6 +37,56 @@ impl Default for File {
     }
 }
 impl File {
+    pub fn from_legacy(file: &legacy::GridFile) -> Result<Self> {
+        use legacy::*;
+
+        let GridFile::V1_2(file) = file;
+        let mut ret = File::new();
+        let sheet = &mut ret.sheets_mut()[0];
+        for js_cell in &file.cells {
+            let column = sheet.get_or_create_column(js_cell.x).0.id;
+
+            if let Some(cell_value) = js_cell.to_cell_value() {
+                let x = js_cell.x;
+                let y = js_cell.y;
+                sheet.set_cell_value(Pos { x, y }, Some(cell_value.into()));
+            }
+            if let Some(cell_code) = js_cell.to_cell_code(sheet) {
+                let row = sheet.get_or_create_row(js_cell.y).id;
+                let code_cell_ref = CellRef {
+                    sheet: sheet.id,
+                    column,
+                    row,
+                };
+                if let Some(output) = &cell_code.output {
+                    if let Ok(result) = &output.result {
+                        let spill_value = Some(CellValueOrSpill::Spill {
+                            source: code_cell_ref,
+                        });
+                        match &result.output_value {
+                            Value::Single(_) => {
+                                let x = js_cell.x;
+                                let y = js_cell.y;
+                                sheet.set_cell_value(Pos { x, y }, spill_value);
+                            }
+                            Value::Array(array) => {
+                                for dy in 0..array.height() {
+                                    for dx in 0..array.width() {
+                                        let x = js_cell.x + dx as i64;
+                                        let y = js_cell.y + dy as i64;
+                                        sheet.set_cell_value(Pos { x, y }, spill_value.clone());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                sheet.code_cells.insert(code_cell_ref, cell_code);
+            }
+        }
+        Ok(ret)
+    }
+
     pub fn sheets(&self) -> &[Sheet] {
         &self.sheets
     }
@@ -44,6 +96,12 @@ impl File {
 }
 #[wasm_bindgen]
 impl File {
+    #[wasm_bindgen(constructor)]
+    pub fn js_from_legacy(file: JsValue) -> Result<File, JsValue> {
+        let file = serde_wasm_bindgen::from_value(file)?;
+        File::from_legacy(&file).map_err(|e| JsError::new(&e.to_string()).into())
+    }
+
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         let mut ret = File {
@@ -103,7 +161,6 @@ impl File {
 
     #[wasm_bindgen(js_name = "getRenderCells")]
     pub fn get_render_cells(&self, sheet_index: usize, region: Rect) -> Result<JsValue, JsValue> {
-        let a = js_sys::Date::now();
         let mut ret = JsRenderCellsArray { columns: vec![] };
         let sheet = &self.sheets[sheet_index];
         for x in region.x_range() {
