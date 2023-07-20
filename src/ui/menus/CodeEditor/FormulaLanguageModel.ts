@@ -50,8 +50,8 @@ export const FormulaTokenizerConfig = {
   ],
   tokenizer: {
     root: [
-      // cell references
-      [/\$?n?[A-Z]+\$?n?\d+/, 'constant.other.cell'],
+      // cell reference
+      [/\$?n?[A-Z]+\$?n?\d+/, 'cell.reference'],
 
       [/[a-zA-Z_$][\w$]*/, { cases: { '@keywords': 'keyword', '@default': 'unknown' } }],
 
