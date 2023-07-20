@@ -11,7 +11,7 @@ interface ArgsType {
   create_transaction?: boolean;
 }
 
-function getCoordinatesFromStringId(stringId: StringId): [number, number] {
+export function getCoordinatesFromStringId(stringId: StringId): [number, number] {
   // required for type inference
   const [x, y] = stringId.split(',').map((val) => parseInt(val));
   return [x, y];
