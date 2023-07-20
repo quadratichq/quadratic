@@ -1,20 +1,17 @@
-import { useState, useEffect } from 'react';
-import { runFormula } from '../../../grid/computations/formulas/runFormula';
-import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { useMediaQuery } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { runFormula } from '../../../grid/computations/formulas/runFormula';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
 
 interface Props {
-  interactionState: GridInteractionState;
+  sheet: Sheet;
 }
 
 const SELECTION_SIZE_LIMIT = 250;
 
 export const ActiveSelectionStats = (props: Props) => {
-  const {
-    showMultiCursor,
-    multiCursorPosition: { originPosition, terminalPosition },
-  } = props.interactionState;
+  const cursor = props.sheet.cursor;
 
   const isBigEnoughForActiveSelectionStats = useMediaQuery('(min-width:1000px)');
   const [countA, setCountA] = useState<string>('');
@@ -23,10 +20,10 @@ export const ActiveSelectionStats = (props: Props) => {
 
   // Run async calculations to get the count/avg/sum meta info
   useEffect(() => {
-    if (showMultiCursor) {
+    if (cursor.multiCursor) {
       const runCalculationOnActiveSelection = async () => {
-        const width = Math.abs(originPosition.x - terminalPosition.x) + 1;
-        const height = Math.abs(originPosition.y - terminalPosition.y) + 1;
+        const width = Math.abs(cursor.originPosition.x - cursor.terminalPosition.x) + 1;
+        const height = Math.abs(cursor.originPosition.y - cursor.terminalPosition.y) + 1;
         const totalArea = width * height;
         if (totalArea > SELECTION_SIZE_LIMIT) {
           setCountA('');
@@ -36,12 +33,12 @@ export const ActiveSelectionStats = (props: Props) => {
         }
 
         // Get values around current selection
-        const colStart = getColumnA1Notation(originPosition.x);
-        const rowStart = getRowA1Notation(originPosition.y);
-        const colEnd = getColumnA1Notation(terminalPosition.x);
-        const rowEnd = getRowA1Notation(terminalPosition.y);
+        const colStart = getColumnA1Notation(cursor.originPosition.x);
+        const rowStart = getRowA1Notation(cursor.originPosition.y);
+        const colEnd = getColumnA1Notation(cursor.terminalPosition.x);
+        const rowEnd = getRowA1Notation(cursor.terminalPosition.y);
         const range = `${colStart}${rowStart}:${colEnd}${rowEnd}`;
-        const pos = { x: originPosition.x - 1, y: originPosition.y - 1 };
+        const pos = { x: cursor.originPosition.x - 1, y: cursor.originPosition.y - 1 };
 
         // Get the number of cells with at least some data
         const countAReturn = await runFormula(`COUNTA(${range})`, pos);
@@ -76,9 +73,15 @@ export const ActiveSelectionStats = (props: Props) => {
       };
       runCalculationOnActiveSelection();
     }
-  }, [originPosition, showMultiCursor, terminalPosition]);
+  }, [
+    cursor.multiCursor,
+    cursor.originPosition.x,
+    cursor.originPosition.y,
+    cursor.terminalPosition.x,
+    cursor.terminalPosition.y,
+  ]);
 
-  if (isBigEnoughForActiveSelectionStats && showMultiCursor)
+  if (isBigEnoughForActiveSelectionStats && cursor.multiCursor)
     return (
       <>
         {sum && <span>Sum: {sum}</span>}

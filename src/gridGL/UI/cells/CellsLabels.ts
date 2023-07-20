@@ -1,9 +1,9 @@
 import { Container, Point, Rectangle } from 'pixi.js';
+import { Bounds } from '../../../grid/sheet/Bounds';
+import { CellAlignment, CellFormat } from '../../../schemas';
+import { PixiApp } from '../../pixiApp/PixiApp';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
-import { Bounds } from '../../../grid/sheet/Bounds';
-import { CellFormat, CellAlignment } from '../../../schemas';
-import { PixiApp } from '../../pixiApp/PixiApp';
 
 export interface LabelData {
   text: string;
@@ -173,8 +173,6 @@ export class CellsLabels extends Container {
    * @returns the visual bounds only if isQuadrant is defined (otherwise not worth the .width/.height call)
    */
   update(): Rectangle | undefined {
-    const now = performance.now();
-
     const bounds = new Bounds();
 
     // keep current children to use as the cache
@@ -215,9 +213,6 @@ export class CellsLabels extends Container {
         this.checkForOverflow({ label, bounds });
       }
     });
-
-    const time = performance.now() - now;
-    if (time > 5) console.log('cellsLabels update', time);
 
     if (!bounds.empty) {
       return bounds.toRectangle();

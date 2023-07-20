@@ -1,14 +1,13 @@
-import { v4 as uuid } from 'uuid';
 import { Rectangle } from 'pixi.js';
-import { SheetSchema } from '../../schemas';
+import { v4 as uuid } from 'uuid';
 import { intersects } from '../../gridGL/helpers/intersects';
-import { GridBorders } from './GridBorders';
-import { GridRenderDependency } from './GridRenderDependency';
-import { GridOffsets } from './GridOffsets';
-import { CellAndFormat, GridSparse } from './GridSparse';
-import { Cell, CellFormat } from '../../schemas';
-import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../../gridGL/types/size';
+import { Cell, CellFormat, SheetSchema } from '../../schemas';
+import { CellDependencyManager } from './CellDependencyManager';
+import { GridBorders } from './GridBorders';
+import { GridOffsets } from './GridOffsets';
+import { GridRenderDependency } from './GridRenderDependency';
+import { CellAndFormat, GridSparse } from './GridSparse';
 import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
@@ -44,6 +43,17 @@ export class Sheet {
     this.id = uuid();
     this.name = name ?? 'Sheet';
     this.order = order;
+    this.cursor = new SheetCursor(this);
+  }
+
+  // for testing
+  clear() {
+    this.gridOffsets = new GridOffsets();
+    this.grid = new GridSparse(this.gridOffsets);
+    this.borders = new GridBorders(this.gridOffsets);
+    this.render_dependency = new GridRenderDependency();
+    this.array_dependency = new GridRenderDependency();
+    this.cell_dependency = new CellDependencyManager();
     this.cursor = new SheetCursor(this);
   }
 
