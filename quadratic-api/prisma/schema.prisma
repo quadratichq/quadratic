@@ -68,6 +68,17 @@ model File {
     version            String?
 }
 
+// model Team {
+//     id       Int    @id @default(autoincrement())
+//     name     String
+//     logo     Image?
+// }
+
+// enum SharePermission {
+//     READONLY
+//     EDIT
+// }
+
 // model UserFileAccess {
 //   // This works for individual access
 //   // Team access will be a separate model
@@ -76,8 +87,20 @@ model File {
 //   fileId    Int
 //   user      User      @relation(fields: [userId], references: [id])
 //   file      File      @relation(fields: [fileId], references: [id])
-//   canRead   Boolean   @default(false)
-//   canEdit   Boolean   @default(false)
+//   permission SharePermission @default(READONLY)
+
+//   @@unique([userId, fileId])
+// }
+
+// model TeamFileAccess {
+//   // This works for individual access
+//   // Team access will be a separate model
+//   id Int
+//   teamID    Int
+//   fileId    Int
+//   user      User      @relation(fields: [userId], references: [id])
+//   file      File      @relation(fields: [fileId], references: [id])
+//   permission SharePermission @default(READONLY)
 
 //   @@unique([userId, fileId])
 // }

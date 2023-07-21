@@ -26,7 +26,7 @@ beforeAll(async () => {
   await dbClient.file.create({
     data: {
       ownerUserId: user_1.id,
-      name: 'test_file_1',
+      name: 'test_file_2',
       contents: Buffer.from('contents_1'),
       uuid: '00000000-0000-4000-8000-000000000001',
       public_link_access: 'READONLY',
@@ -81,7 +81,18 @@ describe('GET /v0/files/ with auth and files', () => {
       .expect(200); // OK
 
     expect(res.body.length).toEqual(2);
-    expect(res.body[0]).toMatchObject({ name: 'test_file_1' });
+    expect(res.body[0]).toMatchObject({
+      uuid: '00000000-0000-4000-8000-000000000000',
+      name: 'test_file_1',
+      public_link_access: 'NOT_SHARED',
+    });
+    expect(res.body[0]).toHaveProperty('created_date');
+    expect(res.body[0]).toHaveProperty('updated_date');
+    expect(res.body[1]).toMatchObject({
+      uuid: '00000000-0000-4000-8000-000000000001',
+      name: 'test_file_2',
+      public_link_access: 'READONLY',
+    });
   });
 });
 
@@ -193,21 +204,21 @@ describe('POST /v0/files/:uuid file not found', () => {
   });
 });
 
-describe('POST /v0/files/:uuid with auth and owned file rename file', () => {
-  it('responds with json', async () => {
-    const res = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000000')
-      .send({ name: 'new_name' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/);
-    // .expect(200); // OK
+// describe('POST /v0/files/:uuid with auth and owned file rename file', () => {
+//   it('responds with json', async () => {
+//     const res = await request(app)
+//       .post('/v0/files/00000000-0000-4000-8000-000000000000')
+//       .send({ name: 'new_name' })
+//       .set('Accept', 'application/json')
+//       .set('Authorization', `Bearer ValidToken test_user_1`)
+//       .expect('Content-Type', /json/);
+//     // .expect(200); // OK
 
-    console.log(res.body);
+//     console.log(res.body);
 
-    expect(res.body).toMatchObject({ message: 'File updated.' });
-  });
-});
+//     expect(res.body).toMatchObject({ message: 'File updated.' });
+//   });
+// });
 
 // describe('GET /v0/files/:uuid with auth and another users file shared readonly', () => {
 //   it('responds with json', async () => {

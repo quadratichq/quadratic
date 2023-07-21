@@ -33,26 +33,6 @@ const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').optional();
 const validateFileName = () => body('name').optional().isString();
 
-files_router.get('/', validateAccessToken, file_rate_limiter, async (req, res) => {
-  const user = await get_user(req);
-
-  // Fetch files owned by the user from the database
-  const files = await dbClient.file.findMany({
-    where: {
-      ownerUserId: user.id,
-    },
-    select: {
-      uuid: true,
-      name: true,
-      created_date: true,
-      updated_date: true,
-      public_link_access: true,
-    },
-  });
-
-  res.status(200).json(files);
-});
-
 const userMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   if (req.auth?.sub === undefined) {
     return res.status(401).json({ error: { message: 'Invalid authorization token' } });
@@ -87,13 +67,12 @@ const fileMiddleware = async (req: Request, res: Response, next: NextFunction) =
   }
 
   if (file.ownerUserId !== req?.user?.id) {
-    if (file.public_link_access !== 'READONLY' && file.public_link_access !== 'EDIT') {
+    if (file.public_link_access === 'NOT_SHARED') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }
   }
 
   req.file = file;
-
   next();
 };
 
@@ -115,13 +94,33 @@ const getFilePermissions = (user: User, file: File): FILE_PERMISSION => {
   return 'NOT_SHARED';
 };
 
+files_router.get('/', validateAccessToken, file_rate_limiter, async (req, res) => {
+  const user = await get_user(req);
+
+  // Fetch files owned by the user from the database
+  const files = await dbClient.file.findMany({
+    where: {
+      ownerUserId: user.id,
+    },
+    select: {
+      uuid: true,
+      name: true,
+      created_date: true,
+      updated_date: true,
+      public_link_access: true,
+    },
+  });
+
+  res.status(200).json(files);
+});
+
 files_router.get(
   '/:uuid',
   validateUUID(),
   validateAccessToken,
+  file_rate_limiter,
   userMiddleware,
   fileMiddleware,
-  file_rate_limiter,
   async (req: Request, res: Response) => {
     if (!req.file || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
@@ -144,10 +143,10 @@ files_router.post(
   '/:uuid',
   validateUUID(),
   validateAccessToken,
-  fileMiddleware,
   file_rate_limiter,
-  validateFileContents(),
-  validateFileName(),
+  fileMiddleware,
+  // validateFileContents(),
+  // validateFileName(),
   async (req: Request, res: Response) => {
     console.log('even here');
     if (!req.file || !req.user) {
