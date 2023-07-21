@@ -1,8 +1,8 @@
-// import { useEffect } from 'react';
-import { NavLink, Outlet, useFetcher, useNavigation, useRouteLoaderData } from 'react-router-dom';
+import { NavLink, Outlet, useFetcher, useLocation, useNavigation, useRouteLoaderData } from 'react-router-dom';
 import { RootLoaderData } from './Routes';
 import { Avatar, Box, ButtonBase, CircularProgress, IconButton, Typography, useTheme } from '@mui/material';
 import { Close, FilterDramaOutlined, Logout, PeopleOutline, SchoolOutlined } from '@mui/icons-material';
+import { ReactNode } from 'react';
 // import { useGlobalSnackbar } from './ui/contexts/GlobalSnackbar';
 
 // type ActionData = {
@@ -46,19 +46,20 @@ function Navbar() {
   const fetcher = useFetcher();
   const theme = useTheme();
 
-  const linkStylesFn = ({ isActive }: { isActive: boolean }) => ({
-    padding: `${theme.spacing(1)} ${theme.spacing(1)}`,
-    color: 'inherit',
-    textDecoration: 'none',
-    display: 'flex',
+  const sidebarLinkStyles = {
     alignItems: 'center',
+    color: 'inherit',
+    display: 'flex',
     gap: theme.spacing(1),
-    // 14 = hex alpha opacity (TODO move into colors or custom theme)
-    backgroundColor: isActive ? theme.palette.primary.light + '14' : 'transparent',
-  });
-  const labelStyles = {
-    marginTop: theme.spacing(2),
+    padding: `${theme.spacing(1)} ${theme.spacing(1)}`,
+    textDecoration: 'none',
   };
+  const SidebarLabel = ({ children }: { children: ReactNode }) => (
+    <Typography variant="overline" color="text.secondary" style={{ marginTop: theme.spacing(2) }}>
+      {children}
+    </Typography>
+  );
+
   return (
     <Box
       component="nav"
@@ -92,34 +93,28 @@ function Navbar() {
             </IconButton>
           </Box>
         </Box>
-        <Typography variant="overline" color="text.secondary" style={labelStyles}>
-          Personal
-        </Typography>
 
-        <NavLink to="/files/mine" style={linkStylesFn}>
-          <FilterDramaOutlined color="primary" />{' '}
+        <SidebarLabel>Personal</SidebarLabel>
+        <SidebarNavLink to="/files/mine" style={sidebarLinkStyles}>
+          <FilterDramaOutlined color="primary" />
           <Typography variant="body2" color="text.primary">
             My files
           </Typography>
-          <Loader path="/files/mine" />
-        </NavLink>
-        <NavLink to="/files/examples" style={linkStylesFn}>
-          <SchoolOutlined color="primary" />{' '}
+        </SidebarNavLink>
+        <SidebarNavLink to="/files/examples" style={sidebarLinkStyles}>
+          <SchoolOutlined color="primary" />
           <Typography variant="body2" color="text.primary">
             Example files
           </Typography>
-          <Loader path="/files/examples" />
-        </NavLink>
-        <Typography variant="overline" color="text.secondary" style={labelStyles}>
-          Teams
-        </Typography>
-        <NavLink to="/files/teams" style={linkStylesFn}>
-          <PeopleOutline color="disabled" />{' '}
+        </SidebarNavLink>
+
+        <SidebarLabel>Teams</SidebarLabel>
+        <SidebarNavLink to="/files/teams" style={sidebarLinkStyles}>
+          <PeopleOutline color="disabled" />
           <Typography variant="body2" color="text.secondary">
             Coming soon…
           </Typography>
-          <Loader path="/files/teams" />
-        </NavLink>
+        </SidebarNavLink>
       </div>
       <div
         style={{
@@ -127,18 +122,15 @@ function Navbar() {
           flexDirection: 'column',
         }}
       >
-        <Typography variant="overline" color="text.secondary" style={labelStyles}>
-          Account
-        </Typography>
-        <NavLink to="/account" style={linkStylesFn}>
+        <SidebarLabel>Account</SidebarLabel>
+        <SidebarNavLink to="/account" style={sidebarLinkStyles}>
           <Avatar alt={user?.name} src={user?.picture} sx={{ width: 24, height: 24 }} />
           <Typography variant="body2" color="text.primary">
             {user?.name || 'You'}
           </Typography>
-          <Loader path="/account" />
-        </NavLink>
+        </SidebarNavLink>
         <fetcher.Form method="post" action="/logout" style={{ color: theme.palette.text.secondary }}>
-          <ButtonBase type="submit" style={linkStylesFn({ isActive: false })}>
+          <ButtonBase type="submit" style={sidebarLinkStyles}>
             <Logout color="inherit" />
             <Typography variant="body2" color="inherit">
               Log out
@@ -150,9 +142,36 @@ function Navbar() {
   );
 }
 
-function Loader({ path }: { path: string }) {
+function SidebarNavLink({ to, children, style }: any) {
+  const location = useLocation();
   const navigation = useNavigation();
-  return navigation.state === 'loading' && navigation.location.pathname.includes(path) ? (
-    <CircularProgress size={18} sx={{ ml: 'auto' }} />
-  ) : null;
+  const theme = useTheme();
+
+  const isActive =
+    // We're currently on this page and not navigating elsewhere
+    (to === location.pathname && navigation.state === 'idle') ||
+    // We're navigating to this page
+    to === navigation.location?.pathname;
+
+  return (
+    <NavLink to={to} style={{ ...style, position: 'relative' }}>
+      {isActive && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '0',
+            left: '0',
+            right: '0',
+            bottom: '0',
+            backgroundColor: theme.palette.primary.light,
+            opacity: '.14',
+          }}
+        />
+      )}
+      {children}
+      {navigation.state === 'loading' && navigation.location.pathname.includes(to) && (
+        <CircularProgress size={18} sx={{ ml: 'auto' }} />
+      )}
+    </NavLink>
+  );
 }
