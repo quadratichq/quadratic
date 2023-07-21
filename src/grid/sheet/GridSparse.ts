@@ -59,7 +59,7 @@ export class GridSparse {
     this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
   }
 
-  hasNoFormatting(format: CellFormat): boolean {
+  hasFormatting(format: CellFormat): boolean {
     const keys = Object.keys(format);
     return keys.length > 2;
   }
@@ -68,14 +68,14 @@ export class GridSparse {
     let needBoundsCalculation = false;
     formats.forEach((format) => {
       const key = this.getKey(format.x, format.y);
-      if (this.hasNoFormatting(format)) {
+      if (this.hasFormatting(format)) {
+        this.cells.set(key, { format });
+        this.formatBounds.add(format.x, format.y);
+      } else {
         this.cells.delete(key);
         if (!skipBoundsCalculation) {
           needBoundsCalculation ||= this.formatBounds.atBounds(format.x, format.y);
         }
-      } else {
-        this.cells.set(key, { format });
-        this.formatBounds.add(format.x, format.y);
       }
     });
     if (needBoundsCalculation && !skipBoundsCalculation) {
@@ -173,6 +173,15 @@ export class GridSparse {
     return new CellRectangle(rectangle, this);
   }
 
+  /**
+   *
+   * @param x0
+   * @param y0
+   * @param x1
+   * @param y1
+   * @param cellsToReplace allows overwriting of cells - used when updating
+   * @returns
+   */
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
     const cells: Cell[] = [];
     this.cells.forEach((cell) => {

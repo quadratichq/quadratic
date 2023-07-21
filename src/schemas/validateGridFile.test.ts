@@ -1,11 +1,11 @@
+import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { GridFiles } from '.';
 import { GridFileV1 } from './GridFileV1';
-import { validateGridFile } from './validateGridFile';
-import { GridFileV1_2 } from './GridFileV1_2';
 import { GridFileV1_1 } from './GridFileV1_1';
-import { randomUUID } from 'crypto';
+import { GridFileV1_2 } from './GridFileV1_2';
+import { validateGridFile } from './validateGridFile';
 const v = validateGridFile;
 const EXAMPLES_DIR = path.join(__dirname, '../../public/examples/');
 const exampleGridFiles: GridFiles[] = fs

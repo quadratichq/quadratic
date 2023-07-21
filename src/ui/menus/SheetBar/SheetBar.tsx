@@ -1,15 +1,15 @@
 import './SheetBar.css';
 
-import { SheetController } from '../../../grid/controller/sheetController';
-import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { SheetBarTab } from './SheetBarTab';
-import { ButtonUnstyled } from '@mui/material';
-import { Sheet } from '../../../grid/sheet/Sheet';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
-import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { generateKeyBetween } from 'fractional-indexing';
+import { ButtonUnstyled } from '@mui/material';
+import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { createSheet, updateSheet } from '../../../grid/actions/sheetsAction';
+import { SheetController } from '../../../grid/controller/sheetController';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { generateKeyBetween } from '../../../utils/fractionalIndexing';
+import { SheetBarTab } from './SheetBarTab';
+import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
 
 interface Props {
   sheetController: SheetController;

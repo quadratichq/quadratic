@@ -1,5 +1,5 @@
-import { generateKeyBetween } from 'fractional-indexing';
 import z from 'zod';
+import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { GridFileV1_2 } from './GridFileV1_2';
 
 // Shared schemas

@@ -394,6 +394,7 @@ describe('gridSparse', () => {
 
   it('checks if a CellFormat has formatting', () => {
     const gridSparse = new GridSparse(gridOffsets);
-    expect(gridSparse.hasNoFormatting({ x: 1, y: 2 })).toBe(true);
+    expect(gridSparse.hasFormatting({ x: 1, y: 2 })).toBe(false);
+    expect(gridSparse.hasFormatting({ x: 1, y: 2, fillColor: '1' })).toBe(true);
   });
 });

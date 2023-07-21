@@ -1,21 +1,21 @@
 import * as Sentry from '@sentry/browser';
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import localforage from 'localforage';
-import { GridFileData, GridFile, GridFileSchema, GridFiles } from '../schemas';
-import { GridFileV1 } from '../schemas/GridFileV1';
-import { validateGridFile } from '../schemas/validateGridFile';
-import { debugShowFileIO } from '../debugFlags';
-import { v4 as uuid } from 'uuid';
-import { getURLParameter } from '../helpers/getURL';
-import { downloadFile } from '../helpers/downloadFile';
-import { SheetController } from '../grid/controller/sheetController';
+import mixpanel from 'mixpanel-browser';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
+import { v4 as uuid } from 'uuid';
+import apiClientSingleton from '../api-client/apiClientSingleton';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
-import apiClientSingleton from '../api-client/apiClientSingleton';
-import mixpanel from 'mixpanel-browser';
-import { generateKeyBetween } from 'fractional-indexing';
+import { debugShowFileIO } from '../debugFlags';
+import { SheetController } from '../grid/controller/sheetController';
 import { pixiAppEvents } from '../gridGL/pixiApp/PixiAppEvents';
+import { downloadFile } from '../helpers/downloadFile';
+import { getURLParameter } from '../helpers/getURL';
+import { GridFile, GridFileData, GridFileSchema, GridFiles } from '../schemas';
+import { GridFileV1 } from '../schemas/GridFileV1';
+import { validateGridFile } from '../schemas/validateGridFile';
+import { generateKeyBetween } from '../utils/fractionalIndexing';
 
 const INDEX = 'file-list';
 

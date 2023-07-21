@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/browser';
-import { generateKeyBetween } from 'fractional-indexing';
 import { debug } from '../../debugFlags';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { SheetSchema } from '../../schemas';
@@ -8,6 +7,7 @@ import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
 import { StatementRunner } from './runners/runner';
 import { Statement } from './statement';
 import { Transaction } from './transaction';
+import { generateKeyBetween } from '../../utils/fractionalIndexing';
 
 export class SheetController {
   sheets: Sheet[];

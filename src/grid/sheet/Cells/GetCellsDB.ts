@@ -5,13 +5,13 @@ import { Sheet } from '../Sheet';
 let sheet: Sheet | undefined = undefined;
 
 // todo: this file goes away once we have rust backend
-export const GetCellsDB = async (
+export const GetCellsDB = (
   // sheetName = '',
   p0_x = -Infinity,
   p0_y = -Infinity,
   p1_x = Infinity,
   p1_y = Infinity
-): Promise<Cell[]> => {
+): Cell[] => {
   if (sheet !== undefined) {
     return sheet.grid.getNakedCells(p0_x, p0_y, p1_x, p1_y);
   }

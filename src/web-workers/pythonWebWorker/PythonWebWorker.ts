@@ -1,5 +1,6 @@
-import { PythonMessage, PythonReturnType } from './pythonTypes';
+import { GetCellsDB } from '../../grid/sheet/Cells/GetCellsDB';
 import { WebWorkers } from '../webWorkers';
+import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 export class PythonWebWorker {
   private webWorkers: WebWorkers;
@@ -27,7 +28,7 @@ export class PythonWebWorker {
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        const cells = this.webWorkers.app.sheet.grid.getNakedCells(range.x0, range.y0, range.x1, range.y1);
+        const cells = GetCellsDB(range.x0, range.y0, range.x1, range.y1);
         this.worker.postMessage({ type: 'get-cells', cells } as PythonMessage);
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));

@@ -1,4 +1,6 @@
+import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 import { Cell } from '../../../schemas';
+import { mockPixiApp } from '../../../setupPixiTests';
 import { SheetController } from '../../controller/sheetController';
 import { generateClipboardStrings } from './clipboard';
 
@@ -12,6 +14,10 @@ const createCell = (pos: [number, number], value: string): Cell => {
     type: 'TEXT',
   };
 };
+
+beforeAll(() => {
+  pixiAppEvents.app = mockPixiApp();
+});
 
 test('Clipboard - copy data', () => {
   const sc = new SheetController();

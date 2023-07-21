@@ -1,13 +1,13 @@
 import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
-import { SheetController } from '../../../grid/controller/sheetController';
 import { useState } from 'react';
-import { QColorPicker } from '../../components/qColorPicker';
-import { convertReactColorToString } from '../../../helpers/convertColor';
 import { ColorResult } from 'react-color';
-import { ConfirmDeleteSheet } from './ConfirmDeleteSheet';
-import { updateSheet, createSheet } from '../../../grid/actions/sheetsAction';
-import { generateKeyBetween } from 'fractional-indexing';
+import { createSheet, updateSheet } from '../../../grid/actions/sheetsAction';
+import { SheetController } from '../../../grid/controller/sheetController';
+import { convertReactColorToString } from '../../../helpers/convertColor';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { generateKeyBetween } from '../../../utils/fractionalIndexing';
+import { QColorPicker } from '../../components/qColorPicker';
+import { ConfirmDeleteSheet } from './ConfirmDeleteSheet';
 
 interface Props {
   sheetController: SheetController;

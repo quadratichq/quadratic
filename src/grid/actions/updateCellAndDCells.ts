@@ -27,8 +27,6 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   // start transaction
   if (create_transaction ?? true) sheetController.start_transaction();
 
-  const setCells: (Cell | Coordinate)[] = [];
-
   // keep track of cells that have been updated so we can update the quadrant cache
   // const updatedCells: Coordinate[] = [];
 
@@ -80,12 +78,15 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       // we are deleting one of the starting cells
       // with delete_starting_cells = true
       // delete cell
+      sheetController.execute_statement(cell_ass);
       setCells.push({ x: cell.x, y: cell.y });
     } else {
       // We are evaluating a cell
       if (cell.type === 'PYTHON' || cell.type === 'FORMULA' || cell.type === 'AI') {
         // run cell and format results
+        GetCellsDBCellsToReplace(setCells);
         let result = await runCellComputation(cell);
+        GetCellsDBCellsToReplace();
         cell.evaluation_result = result;
 
         // collect output

@@ -1,18 +1,17 @@
-import GetCellsDB
-
-import sys
-import re
-import traceback
-import pyodide
 import asyncio
-import micropip
-import pandas as pd
-import numpy as np
 import operator
-
-from io import StringIO
+import re
+import sys
+import traceback
 from contextlib import redirect_stdout
 from decimal import Decimal, DecimalException
+from io import StringIO
+
+import GetCellsDB
+import micropip
+import numpy as np
+import pandas as pd
+import pyodide
 
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
@@ -146,7 +145,7 @@ async def run_python(code):
                 cells_accessed.append([x, y])
 
         # Get Cells
-        cells = await GetCellsDB(p0[0], p0[1], p1[0], p1[1])
+        cells = GetCellsDB(p0[0], p0[1], p1[0], p1[1])
 
         # Create empty df of the correct size
         df = pd.DataFrame(
@@ -171,7 +170,7 @@ async def run_python(code):
     async def getCell(p_x, p_y):
         # mark cell this formula accesses
         cells_accessed.append([p_x, p_y])
-        result = await GetCellsDB(p_x, p_y, p_x, p_y)
+        result = GetCellsDB(p_x, p_y, p_x, p_y)
 
         if len(result):
             return Cell(result[0])
