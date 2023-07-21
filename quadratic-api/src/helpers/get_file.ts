@@ -1,22 +1,45 @@
-import { PrismaClient, QUser, Prisma } from '@prisma/client';
+import { PrismaClient, User, File } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const get_file = async (user: QUser, uuid: string) => {
+interface getFileResult {
+  permission: 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
+  file: File | undefined;
+}
+
+export const get_file = async (user: User, uuid: string): Promise<getFileResult> => {
   // Get the file from the database by uuid
-  const file = await prisma.qFile.findFirst({
+  const file = await prisma.file.findFirst({
     where: {
       uuid,
     },
   });
 
-  if (!file) return null;
-  const gridFile = file.contents as Prisma.JsonObject;
+  if (!file)
+    return {
+      permission: undefined,
+      file: undefined,
+    };
 
-  // only return the file if the user is the owner OR if it's marked as public
-  if (user.id === file.qUserId || gridFile.isPublic) {
-    return file;
+  // only return the file if the user is the owner
+  if (user.id === file.ownerUserId) {
+    return {
+      permission: 'OWNER',
+      file,
+    };
   }
 
-  throw new Error('File owner does not match user request');
+  // not the owner, if the file is marked as public, return it with the appropriate permission
+  if (file.public_link_access === 'READONLY' || file.public_link_access === 'EDIT') {
+    return {
+      permission: file.public_link_access,
+      file,
+    };
+  }
+
+  // permission not granted
+  return {
+    permission: 'NOT_SHARED',
+    file: undefined,
+  };
 };

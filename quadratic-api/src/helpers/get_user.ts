@@ -4,13 +4,14 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export const get_user = async (request: JWTRequest) => {
-  return await prisma.qUser.upsert({
+  if (request.auth?.sub === undefined) throw new Error('No auth0 sub found in request');
+  return await prisma.user.upsert({
     where: {
-      auth0_user_id: request.auth?.sub,
+      auth0_id: request.auth.sub,
     },
     update: {},
     create: {
-      auth0_user_id: request.auth?.sub,
+      auth0_id: request.auth.sub,
     },
   });
 };

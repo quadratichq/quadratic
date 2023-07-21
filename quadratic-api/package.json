@@ -9,8 +9,12 @@
     "lint": "eslint src/**/*.ts",
     "format": "eslint src/**/*.ts --fix",
     "pretty": "prettier --write \"src/**/*.ts\"",
-    "prisma:migrate": "prisma migrate dev",
-    "test": "dotenv -e .env -- jest --watch"
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:migrate:create": "npx prisma migrate dev --create-only",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "test:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch && npm run docker:down",
+    "test:ci": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest && npm run docker:down"
   },
   "author": "David Kircos",
   "license": "MIT",
@@ -27,6 +31,7 @@
     "express": "^4.18.2",
     "express-jwt": "^7.7.7",
     "express-rate-limit": "^6.7.0",
+    "express-validator": "^7.0.1",
     "helmet": "^6.0.1",
     "jest": "^29.6.1",
     "jest-mock-extended": "^3.0.4",

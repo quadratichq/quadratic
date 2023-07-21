@@ -34,7 +34,7 @@ files_router.post('/', validateAccessToken, async (request: JWTRequest, response
     const payload = {
       text: [
         `📣 ${process.env.NODE_ENV === 'production' ? '' : '[STAGING]'} New product feedback`,
-        `*From:* ${userEmail ? userEmail : `[no email]`} (${user.auth0_user_id})`,
+        `*From:* ${userEmail ? userEmail : `[no email]`} (${user.auth0_id})`,
         '*Message*:',
         feedback,
       ].join('\n\n'),

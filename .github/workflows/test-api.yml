@@ -1,0 +1,28 @@
+name: API Tests
+on:
+  push:
+    branches:
+      - main
+      - share-file
+  pull_request:
+
+jobs:
+  test_api:
+    runs-on: ubuntu-latest-4-cores
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '19'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          cd quadratic-api
+          npm install
+
+      - name: Run Tests
+        run: |
+          cd quadratic-api
+          npm run test:ci
