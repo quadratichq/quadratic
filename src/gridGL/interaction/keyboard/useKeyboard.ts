@@ -15,7 +15,6 @@ import { useGetSelection } from '../../../ui/menus/TopBar/SubMenus/useGetSelecti
 import { useClearAllFormatting } from '../../../ui/menus/TopBar/SubMenus/useClearAllFormatting';
 import { useGridSettings } from '../../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { useGlobalSnackbar } from '../../../ui/contexts/GlobalSnackbar';
-import { useLocalFiles } from '../../../ui/contexts/LocalFiles';
 
 interface IProps {
   interactionState: GridInteractionState;
@@ -41,7 +40,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { changeBold, changeItalic } = useFormatCells(sheetController, app);
   const { clearAllFormatting } = useClearAllFormatting(sheetController, app);
   const { presentationMode, setPresentationMode } = useGridSettings();
-  const { currentFileId } = useLocalFiles();
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const keyDownWindow = useCallback(
@@ -64,7 +62,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           presentationMode,
           setPresentationMode,
           app,
-          currentFileId,
         })
       ) {
         event.stopPropagation();
@@ -72,7 +69,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       }
     },
     [
-      currentFileId,
       interactionState,
       editorInteractionState,
       setEditorInteractionState,

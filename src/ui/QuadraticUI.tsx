@@ -8,11 +8,9 @@ import CommandPalette from './menus/CommandPalette';
 import GoTo from './menus/GoTo';
 import { useEffect } from 'react';
 import CellTypeMenu from './menus/CellTypeMenu';
-import FileMenu from './menus/FileMenu';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import PresentationModeHint from './components/PresentationModeHint';
-import InitialPageLoadError from './components/InitialPageLoadError';
 import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../grid/controller/sheetController';
@@ -26,7 +24,8 @@ import FeedbackMenu from './menus/FeedbackMenu';
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
-  const { currentFileId, currentFileIsReadOnly, hasInitialPageLoadError } = useLocalFiles();
+  const { file } = useLocalFiles();
+  console.log(file);
 
   useEffect(() => {
     sheetController.setApp(app);
@@ -55,7 +54,6 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
       {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
-      {editorInteractionState.showFileMenu && <FileMenu />}
       {editorInteractionState.showShareMenu && <ShareMenu />}
 
       <div
@@ -76,10 +74,9 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {presentationMode && <PresentationModeHint />}
-      {hasInitialPageLoadError && <InitialPageLoadError />}
 
       {IS_READONLY_MODE && <ReadOnlyDialog />}
-      {currentFileId && currentFileIsReadOnly && <SharedFileAlert />}
+      {false && <SharedFileAlert />}
     </div>
   );
 }

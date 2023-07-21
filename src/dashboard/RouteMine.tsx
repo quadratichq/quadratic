@@ -5,8 +5,8 @@ import apiClientSingleton from '../api-client/apiClientSingleton';
 import PaneHeader from './PaneHeader';
 import File from './File';
 import { timeAgo } from './utils';
-import { Alert, Box, Button, IconButton, useTheme } from '@mui/material';
-import { DeleteOutline, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
+import { Box, Button, IconButton, useTheme } from '@mui/material';
+import { DeleteOutline, ErrorOutline, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
 import { TooltipHint } from '../ui/components/TooltipHint';
 import Empty from './Empty';
 // import { useGlobalSnackbar } from './ui/contexts/GlobalSnackbar';
@@ -55,19 +55,26 @@ export const Component = () => {
 
       {!files ? (
         <Box sx={{ maxWidth: '60ch', mx: 'auto', py: theme.spacing(2) }}>
-          <Alert severity="error">
-            An unexpected error occurred while retrieving your files. Try{' '}
-            <Link to="." reloadDocument>
-              refreshing the page
-            </Link>
-            . If the issue continues, contact us.
-          </Alert>
+          <Empty
+            title="Unexpected error"
+            description={
+              <>
+                An unexpected error occurred while retrieving your files. Try{' '}
+                <Link to="." reloadDocument>
+                  refreshing the page
+                </Link>
+                . If the issue continues, contact us.
+              </>
+            }
+            Icon={ErrorOutline}
+            severity="error"
+          />
         </Box>
       ) : files.length ? (
         files.map(({ uuid, name, updated_date }) => (
           <File
             key={uuid}
-            to={`/file?local=${uuid}`}
+            to={`/file/${uuid}`}
             name={name}
             description={`Modified ${timeAgo(updated_date)}`}
             actions={

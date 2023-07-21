@@ -15,6 +15,7 @@ import { debugLogAuth } from './debugFlags';
 import { QuadraticAnalytics } from './quadratic/QuadraticAnalytics';
 import { QuadraticAuth } from './quadratic/QuadraticAuth';
 import { QuadraticLoading } from './ui/loading/QuadraticLoading';
+import BrowserCompatibility from './quadratic/BrowserCompatibility';
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
@@ -37,7 +38,13 @@ const router = createBrowserRouter(
         id="root"
       >
         <Route index element={<Navigate to="/files" replace />} />
-        <Route path="file" lazy={() => import('./App')} />
+        <Route path="file">
+          {/* TODO see if browser is supported _before_ we try to load anything from the API */}
+          <Route element={<BrowserCompatibility />}>
+            <Route index element={<Navigate to="/files" replace />} />
+            <Route path=":id" lazy={() => import('./App')} />
+          </Route>
+        </Route>
 
         <Route lazy={() => import('./Dashboard')}>
           <Route path="files" element={<Navigate to="/files/mine" replace />} />

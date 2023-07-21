@@ -7,7 +7,6 @@ export interface EditorInteractionState {
   showCodeEditor: boolean;
   showCommandPalette: boolean;
   showGoToMenu: boolean;
-  showFileMenu: boolean;
   showShareMenu: boolean;
   showFeedbackMenu: boolean;
   selectedCell: Coordinate;
@@ -20,7 +19,6 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showCommandPalette: false,
   showGoToMenu: false,
   showFeedbackMenu: false,
-  showFileMenu: false,
   showShareMenu: false,
   selectedCell: { x: 0, y: 0 },
   mode: 'TEXT',

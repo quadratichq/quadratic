@@ -1,26 +1,27 @@
 import { createContext, useContext } from 'react';
-import { LocalFiles } from '../../hooks/useGenerateLocalFiles';
 
-export type { LocalFiles };
+export type File = {
+  file: {
+    id: string;
+    filename: string;
+    isReadOnly: boolean;
+    isPublic: boolean;
+  };
+  setFile: any; // TODO
+};
 
 /**
  * Context
  */
 
-export const LocalFilesContext = createContext<LocalFiles>({} as LocalFiles);
+export const LocalFilesContext = createContext<File>({} as File);
 
 /**
  * Provider
  */
 
-export const LocalFilesProvider = ({
-  children,
-  localFiles,
-}: {
-  children: React.ReactElement;
-  localFiles: LocalFiles;
-}) => {
-  return <LocalFilesContext.Provider value={localFiles}>{children}</LocalFilesContext.Provider>;
+export const LocalFilesProvider = ({ children, value }: { children: React.ReactElement; value: File }) => {
+  return <LocalFilesContext.Provider value={value}>{children}</LocalFilesContext.Provider>;
 };
 
 /**

@@ -16,9 +16,9 @@ import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionState
 import { isMac } from '../../../../utils/isMac';
 import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { useLocalFiles } from '../../../contexts/LocalFiles';
+// import { useLocalFiles } from '../../../contexts/LocalFiles';
 import { focusGrid } from '../../../../helpers/focusGrid';
-import apiClientSingleton from '../../../../api-client/apiClientSingleton';
+// import apiClientSingleton from '../../../../api-client/apiClientSingleton';
 import { useNavigate, useRouteLoaderData } from 'react-router-dom';
 import { RootLoaderData } from '../../../../Routes';
 import { authClient } from '../../../../auth';
@@ -34,10 +34,10 @@ export const QuadraticMenu = (props: Props) => {
   const settings = useGridSettings();
   const navigate = useNavigate();
 
-  const { createNewFile, currentFileId } = useLocalFiles();
-  const downloadCurrentFile = () => {
-    apiClientSingleton.downloadFile(currentFileId);
-  };
+  // const { file: { currentFileId } } = useLocalFiles();
+  // const downloadCurrentFile = () => {
+  //   apiClientSingleton.downloadFile(currentFileId);
+  // };
 
   const { isAuthenticated, user } = useRouteLoaderData('root') as RootLoaderData;
 
@@ -82,17 +82,20 @@ export const QuadraticMenu = (props: Props) => {
         </MenuItem>
         <MenuDivider />
         <SubMenu label="File">
-          <MenuItem onClick={createNewFile}>New</MenuItem>
-          <MenuItem onClick={() => downloadCurrentFile()}>Download local copy</MenuItem>
           <MenuItem
             onClick={() => {
-              setEditorInteractionState({
-                ...editorInteractionState,
-                showFileMenu: true,
-              });
+              /* TODO */
             }}
           >
-            <MenuLineItem primary="Open…" secondary={KeyboardSymbols.Command + 'O'} />
+            New
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              // TODO
+              //downloadCurrentFile()
+            }}
+          >
+            Download local copy
           </MenuItem>
         </SubMenu>
         <SubMenu label="Edit">

@@ -13,7 +13,11 @@ export const Component = () => {
         title="Teams"
         description="Teams is a collaborative space to work on files with other people. Interested? Sign up for early access."
         Icon={PeopleOutline}
-        actions={<Button variant="outlined">Sign up for the beta</Button>}
+        actions={
+          <Button variant="contained" disableElevation>
+            Sign up for the beta
+          </Button>
+        }
       />
     </>
   );

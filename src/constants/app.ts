@@ -1,7 +1,6 @@
 import { isMobile } from 'react-device-detect';
 
 export const IS_READONLY_MODE = isMobile;
-export const FILE_PARAM_KEY = 'file-param-before-login';
 export const DEFAULT_FILE_NAME = 'Untitled';
 export const EXAMPLE_FILES = [
   {

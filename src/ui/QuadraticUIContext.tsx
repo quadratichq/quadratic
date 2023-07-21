@@ -6,10 +6,10 @@ import QuadraticUI from './QuadraticUI';
 // export const PixiAppContext = createContext<PixiApp>({} as PixiApp);
 // export const SheetControllerContext = createContext<SheetController>({} as SheetController);
 
-export default function QuadraticUIContext({ sheetController, localFiles, app }: any) {
+export default function QuadraticUIContext({ sheetController, file, setFile, app }: any) {
   return (
     <GlobalSnackbarProvider>
-      <LocalFilesProvider localFiles={localFiles}>
+      <LocalFilesProvider value={{ file, setFile }}>
         {/* <PixiAppContext.Provider value={app}><SheetControllerContext.Provider value={sheetController}> */}
         <QuadraticUI app={app} sheetController={sheetController} />
         {/* </SheetControllerContext.Provider></PixiAppContext.Provider> */}
