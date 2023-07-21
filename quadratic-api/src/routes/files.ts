@@ -32,6 +32,7 @@ const file_rate_limiter = rateLimit({
 const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').optional();
 const validateFileName = () => body('name').optional().isString();
+type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
 
 const userMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   if (req.auth?.sub === undefined) {
@@ -75,8 +76,6 @@ const fileMiddleware = async (req: Request, res: Response, next: NextFunction) =
   req.file = file;
   next();
 };
-
-type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
 
 const getFilePermissions = (user: User, file: File): FILE_PERMISSION => {
   if (file.ownerUserId === user.id) {
@@ -144,11 +143,11 @@ files_router.post(
   validateUUID(),
   validateAccessToken,
   file_rate_limiter,
+  userMiddleware,
   fileMiddleware,
   // validateFileContents(),
   // validateFileName(),
   async (req: Request, res: Response) => {
-    console.log('even here');
     if (!req.file || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
@@ -160,7 +159,6 @@ files_router.post(
 
     // ensure the user has EDIT access to the file
     const permissions = getFilePermissions(req.user, req.file);
-    console.log('permissions', permissions);
     if (permissions !== 'EDIT' && permissions !== 'OWNER') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }
