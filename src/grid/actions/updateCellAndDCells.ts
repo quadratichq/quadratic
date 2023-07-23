@@ -35,6 +35,25 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   // start with a plan to just update the current cells
   const cells_to_update: Set<StringId> = new Set(starting_cells.map((c) => getKey(c.x, c.y)));
 
+  // set all starting cells that do not require calculation first
+  if (!delete_starting_cells) {
+    // only store starting_cells that just have text
+    const date = new Date().toISOString();
+    const justText = starting_cells.flatMap((cell) => {
+      if (cell.type === 'TEXT') {
+        return [{ ...cell, last_modified: date }];
+      } else {
+        return [];
+      }
+    });
+    if (justText.length) {
+      sheetController.execute_statement({
+        type: 'SET_CELLS',
+        data: justText,
+      });
+    }
+  }
+
   // update cells, starting with the current cell
   for (const ref_current_cell of cells_to_update) {
     if (ref_current_cell === undefined) break;
@@ -157,10 +176,12 @@ export const updateCellAndDCells = async (args: ArgsType) => {
 
           cell.last_modified = new Date().toISOString();
 
-          sheetController.execute_statement({
-            type: 'SET_CELLS',
-            data: array_cells_to_output,
-          });
+          if (array_cells_to_output.length) {
+            sheetController.execute_statement({
+              type: 'SET_CELLS',
+              data: array_cells_to_output,
+            });
+          }
 
           updatedCells.push(...array_cells_to_output);
         } else {
@@ -181,12 +202,14 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       } else {
         // not computed cell
 
-        // update current cell
-        cell.last_modified = new Date().toISOString();
-        sheetController.execute_statement({
-          type: 'SET_CELLS',
-          data: [cell],
-        });
+        // only store cells that have are not part of the starting_cells (those were included above)
+        if (!starting_cells.includes(cell)) {
+          cell.last_modified = new Date().toISOString();
+          sheetController.execute_statement({
+            type: 'SET_CELLS',
+            data: [cell],
+          });
+        }
       }
     }
 
@@ -199,12 +222,15 @@ export const updateCellAndDCells = async (args: ArgsType) => {
     );
 
     // delete old array cells
-    sheetController.execute_statement({
-      type: 'SET_CELLS',
-      data: array_cells_to_delete.flatMap((aCell) =>
-        aCell.x === cell?.x && aCell.y === cell?.y ? [] : [{ x: aCell.x, y: aCell.y }]
-      ),
-    });
+    const deleteCells = array_cells_to_delete.flatMap((aCell) =>
+      aCell.x === cell?.x && aCell.y === cell?.y ? [] : [{ x: aCell.x, y: aCell.y }]
+    );
+    if (deleteCells.length) {
+      sheetController.execute_statement({
+        type: 'SET_CELLS',
+        data: deleteCells,
+      });
+    }
 
     // if any updated cells have other cells depending on them, add to list to update
     for (const array_cell of array_cells_to_output) {

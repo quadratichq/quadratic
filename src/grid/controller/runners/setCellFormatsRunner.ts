@@ -13,7 +13,6 @@ export const SetCellFormatsRunner = (sheetController: SheetController, statement
   if (statement.type !== 'SET_CELL_FORMATS') throw new Error('Incorrect statement type.');
   // Applies the SET_CELL_FORMAT statement to the sheet and returns the reverse statement
   const sheet = sheetController.sheet;
-  debugger;
   const cells: Coordinate[] = [];
   const old_values = statement.data.map((format) => {
     cells.push({ x: format.x, y: format.y });

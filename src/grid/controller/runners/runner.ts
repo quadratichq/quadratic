@@ -1,3 +1,4 @@
+import { debugShowTransactions } from '../../../debugFlags';
 import { SheetController } from '../sheetController';
 import { Statement } from '../statement';
 import { SetBorderRunner } from './setBorderRunner';
@@ -8,6 +9,11 @@ import { SetHeadingSizeRunner } from './setHeadingSizeRunner';
 import { sheetRunner } from './sheetRunner';
 
 export const StatementRunner = (sheetController: SheetController, statement: Statement): Statement => {
+  if (debugShowTransactions) {
+    console.log(
+      `[TRANSACTION] ${statement.type}${Array.isArray(statement.data) ? ` ${(statement.data as []).length} count` : ''}`
+    );
+  }
   if (statement.type === 'SET_CELLS') {
     return SetCellsRunner(sheetController, statement);
   } else if (statement.type === 'ADD_CELL_DEPENDENCY') {
