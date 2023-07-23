@@ -1,4 +1,4 @@
-import { Loader } from 'pixi.js';
+import { BitmapFont, Loader } from 'pixi.js';
 import FontFaceObserver from 'fontfaceobserver';
 import { createBorderTypes } from './dashedTextures';
 
@@ -9,6 +9,7 @@ let count = 0;
 function complete(resolve: Function) {
   count++;
   if (count === TOTAL) {
+    console.log(Loader.shared.resources, BitmapFont.available);
     resolve();
   }
 }
@@ -24,10 +25,10 @@ export function loadAssets(): Promise<void> {
     loadFont(resolve, 'OpenSans-Bold');
     loadFont(resolve, 'OpenSans-Italic');
     loadFont(resolve, 'OpenSans-BoldItalic');
-    Loader.shared.add('OpenSans', 'fonts/opensans/OpenSans.fnt');
-    Loader.shared.add('OpenSans-Bold', 'fonts/opensans/OpenSans-Bold.fnt');
-    Loader.shared.add('OpenSans-Italic', 'fonts/opensans/OpenSans-Italic.fnt');
-    Loader.shared.add('OpenSans-BoldItalic', 'fonts/opensans/OpenSans-BoldItalic.fnt');
+    Loader.shared.add('OpenSans', '/fonts/opensans/OpenSans.fnt');
+    Loader.shared.add('OpenSans-Bold', '/fonts/opensans/OpenSans-Bold.fnt');
+    Loader.shared.add('OpenSans-Italic', '/fonts/opensans/OpenSans-Italic.fnt');
+    Loader.shared.add('OpenSans-BoldItalic', '/fonts/opensans/OpenSans-BoldItalic.fnt');
     Loader.shared.load(() => complete(resolve));
     createBorderTypes();
   });
