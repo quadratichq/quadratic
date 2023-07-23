@@ -9,7 +9,6 @@ let count = 0;
 function complete(resolve: Function) {
   count++;
   if (count === TOTAL) {
-    console.log(Loader.shared.resources, BitmapFont.available);
     resolve();
   }
 }
