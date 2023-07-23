@@ -157,11 +157,9 @@ export const updateCellAndDCells = async (args: ArgsType) => {
 
           cell.last_modified = new Date().toISOString();
 
-          array_cells_to_output.forEach((cell) => {
-            sheetController.execute_statement({
-              type: 'SET_CELLS',
-              data: [cell],
-            });
+          sheetController.execute_statement({
+            type: 'SET_CELLS',
+            data: array_cells_to_output,
           });
 
           updatedCells.push(...array_cells_to_output);
@@ -201,12 +199,11 @@ export const updateCellAndDCells = async (args: ArgsType) => {
     );
 
     // delete old array cells
-    array_cells_to_delete.forEach((aCell) => {
-      if (aCell.x === cell?.x && aCell.y === cell?.y) return; // don't delete the cell we just updated (it's in array_cells_to_output)
-      sheetController.execute_statement({
-        type: 'SET_CELLS',
-        data: [{ x: aCell.x, y: aCell.y }],
-      });
+    sheetController.execute_statement({
+      type: 'SET_CELLS',
+      data: array_cells_to_delete.flatMap((aCell) =>
+        aCell.x === cell?.x && aCell.y === cell?.y ? [] : [{ x: aCell.x, y: aCell.y }]
+      ),
     });
 
     // if any updated cells have other cells depending on them, add to list to update
