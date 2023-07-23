@@ -1,4 +1,4 @@
-import { BitmapFont, Loader } from 'pixi.js';
+import { Loader } from 'pixi.js';
 import FontFaceObserver from 'fontfaceobserver';
 import { createBorderTypes } from './dashedTextures';
 
