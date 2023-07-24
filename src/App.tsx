@@ -1,5 +1,5 @@
 import './styles.css';
-import { QuadraticApp } from './quadratic/QuadraticApp';
+import { QuadraticApp } from './ui/QuadraticApp';
 import { RecoilRoot } from 'recoil';
 import { Link, LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
 import { GridFile } from './schemas';

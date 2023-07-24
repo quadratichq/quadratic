@@ -12,8 +12,7 @@ import {
 import { User } from '@auth0/auth0-spa-js';
 import { authClient } from './auth';
 import { debugLogAuth } from './debugFlags';
-import { QuadraticAnalytics } from './quadratic/QuadraticAnalytics';
-import { QuadraticAuth } from './quadratic/QuadraticAuth';
+import { Scripts } from './quadratic/Scripts';
 import { QuadraticLoading } from './ui/loading/QuadraticLoading';
 import BrowserCompatibility from './quadratic/BrowserCompatibility';
 import Empty from './dashboard/Empty';
@@ -121,11 +120,9 @@ export const Routes = () => <RouterProvider router={router} fallbackElement={<Qu
 
 function Root() {
   return (
-    <QuadraticAuth>
-      <QuadraticAnalytics>
-        <Outlet />
-      </QuadraticAnalytics>
-    </QuadraticAuth>
+    <Scripts>
+      <Outlet />
+    </Scripts>
   );
 }
 

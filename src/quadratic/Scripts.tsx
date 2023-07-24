@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import * as amplitude from '@amplitude/analytics-browser';
 import { User } from '@auth0/auth0-spa-js';
 import mixpanel from 'mixpanel-browser';
 import { useRouteLoaderData } from 'react-router-dom';
+import { RootLoaderData } from '../Routes';
+import { setUser } from '@sentry/react';
 
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 
@@ -76,20 +78,28 @@ const loadMixPanelAnalytics = async (user: User | undefined) => {
   console.log('[Analytics] Mixpanel activated');
 };
 
-export const QuadraticAnalytics = ({ children }: { children: JSX.Element }) => {
-  const [loaded, setLoaded] = useState(false);
-  const { user } = useRouteLoaderData('root') as any;
-  // console.log(user);
+export const Scripts = ({ children }: { children: JSX.Element }) => {
+  const didMount = useRef<boolean>(false);
+  const { isAuthenticated, user } = useRouteLoaderData('root') as RootLoaderData;
 
+  // Load analytics
   useEffect(() => {
     // Prevent loading twice
-    if (loaded) return;
-    setLoaded(true);
+    if (didMount.current) return;
+    didMount.current = true;
 
     loadGoogleAnalytics();
     loadAmplitudeAnalytics(user);
     loadMixPanelAnalytics(user);
-  }, [loaded, setLoaded, user]);
+  }, [user]);
+
+  // Set user in Sentry
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setUser({ email: user.email, id: user.sub });
+      console.log('[Sentry] user set');
+    }
+  }, [isAuthenticated, user]);
 
   return children;
 };
