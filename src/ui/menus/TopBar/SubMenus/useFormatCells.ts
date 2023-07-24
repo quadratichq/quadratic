@@ -8,7 +8,7 @@ import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { CellAlignment, CellFormat } from '../../../../schemas';
 import { useGetSelection } from './useGetSelection';
 
-export const FORMAT_SELECTION_EVENT = 'formatSelectionEvent';
+export const FORMAT_SELECTION_EVENT = 'format-selection-event';
 
 interface IResults {
   changeFillColor: (rgb: ColorResult) => void;

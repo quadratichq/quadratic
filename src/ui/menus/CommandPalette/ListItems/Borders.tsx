@@ -1,18 +1,17 @@
-import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { useBorders, ChangeBorder } from '../../TopBar/SubMenus/useBorders';
 import {
   BorderAll,
+  BorderBottom,
   BorderClear,
-  BorderOuter,
-  BorderInner,
-  BorderVertical,
   BorderHorizontal,
+  BorderInner,
   BorderLeft,
+  BorderOuter,
   BorderRight,
   BorderTop,
-  BorderBottom,
+  BorderVertical,
 } from '@mui/icons-material';
+import { ChangeBorder, useBorders } from '../../TopBar/SubMenus/useBorders';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 // import { BorderType } from '../../../../core/gridDB/gridTypes';
 // import { BorderDashed, BorderDouble, BorderDotted, BorderThin, BorderThick, BorderMedium } from '../../../icons';
 

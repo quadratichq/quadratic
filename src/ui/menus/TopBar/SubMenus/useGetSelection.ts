@@ -1,6 +1,6 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
-import { Coordinate } from '../../../../gridGL/types/size';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Sheet } from '../../../../grid/sheet/Sheet';
+import { Coordinate } from '../../../../gridGL/types/size';
 import { CellFormat } from '../../../../schemas';
 import { FORMAT_SELECTION_EVENT } from './useFormatCells';
 
@@ -87,9 +87,10 @@ export const useGetSelection = (sheet: Sheet): GetSelection => {
 
   useEffect(() => {
     window.addEventListener(FORMAT_SELECTION_EVENT, setTriggerCallback);
-
+    window.addEventListener('cursor-position', setTriggerCallback);
     return () => {
       window.removeEventListener(FORMAT_SELECTION_EVENT, setTriggerCallback);
+      window.removeEventListener('cursor-position', setTriggerCallback);
     };
   }, [setTriggerCallback]);
 
