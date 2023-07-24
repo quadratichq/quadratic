@@ -76,37 +76,3 @@ export const QuadraticApp = (props: { fileFromServer: GridFile }) => {
     <QuadraticUIContext sheetController={sheetController} fileFromServer={props.fileFromServer} app={app} />
   );
 };
-
-/*
-    NEW API
-
-    Store file in memory from initial props:
-      const [localFile, setLocalFile] = useState(props.file)
-
-    Create a context for getting values throughout app
-      const {
-        setLocalFile,
-        localFile: { uuid, name, isPublic, readOnly }
-      } = useFile();
-
-    apiClient for changing files
-      apiClient.createFile()
-      apiClient.deleteFile()
-      apiClient.importFile()
-        importFileFromDisk().then(apiClient.importFile)
-        importFileFromNetwork().then(apiClient.importFile)
-    
-    <FileContext>
-      useEffect(change tab title, sync)
-
-
-    
-
-
-    
-
-
-
-    
-      
-  */
