@@ -1,5 +1,4 @@
 import { Response, NextFunction } from 'express';
-import { Request as JWTRequest } from 'express-jwt';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';

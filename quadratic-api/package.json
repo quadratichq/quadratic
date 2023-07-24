@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "dotenv -e .env -- ts-node-dev --respawn --exit-child src/server.ts",
+    "start": "dotenv -e .env -- ts-node-dev --project ./tsconfig.json ./src/server.ts",
     "build": "tsc",
     "lint": "eslint src/**/*.ts",
     "format": "eslint src/**/*.ts --fix",
@@ -43,7 +43,7 @@
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.1.3",
+    "typescript": "^5.1.6",
     "zod": "^3.21.4"
   },
   "devDependencies": {
@@ -53,6 +53,6 @@
     "prisma": "^4.12.0"
   },
   "engines": {
-    "node": "20.x"
+    "node": "18.x"
   }
 }

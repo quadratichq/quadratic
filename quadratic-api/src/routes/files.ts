@@ -1,4 +1,5 @@
-import express, { NextFunction, Response, Request } from 'express';
+import express, { NextFunction, Response } from 'express';
+import { Request } from '../types/Request';
 import { validateAccessToken } from '../middleware/auth';
 import rateLimit from 'express-rate-limit';
 import dbClient from '../dbClient';
