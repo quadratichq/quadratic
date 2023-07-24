@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
+import { Request } from '../../../src/types/Request';
 
 beforeAll(async () => {
   // Create a test user
@@ -44,7 +45,7 @@ afterAll(async () => {
 // Bearer ValidToken {user.sub}
 jest.mock('../../middleware/auth', () => {
   return {
-    validateAccessToken: jest.fn().mockImplementation(async (req: JWTRequest, res: Response, next: NextFunction) => {
+    validateAccessToken: jest.fn().mockImplementation(async (req: Request, res: Response, next: NextFunction) => {
       // expected format is `Bearer ValidToken {user.sub}`
       if (req.headers.authorization?.substring(0, 17) === 'Bearer ValidToken') {
         req.auth = {
