@@ -1,6 +1,7 @@
 import express from 'express';
+import { Request } from '../types/Request';
 import { validateAccessToken } from '../middleware/auth';
-import { Request as JWTRequest } from 'express-jwt';
+
 import { z } from 'zod';
 import { Configuration, OpenAIApi } from 'openai';
 import rateLimit from 'express-rate-limit';
@@ -17,7 +18,7 @@ const ai_rate_limiter = rateLimit({
   max: Number(process.env.RATE_LIMIT_AI_REQUESTS_MAX) || 25, // Limit number of requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  keyGenerator: (request: JWTRequest, response) => {
+  keyGenerator: (request: Request, response) => {
     return request.auth?.sub || 'anonymous';
   },
 });
@@ -50,6 +51,7 @@ ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (reques
   try {
     const result = await openai.createChatCompletion({
       model: r_json.model || 'gpt-4',
+      //@ts-expect-error
       messages: r_json.messages,
     });
 
@@ -65,7 +67,7 @@ ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (reques
   }
 });
 
-ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async (request: JWTRequest, response) => {
+ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async (request: Request, response) => {
   const r_json = AIAutoCompleteRequestBody.parse(request.body);
 
   log_ai_request(request, r_json);
@@ -79,6 +81,7 @@ ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async 
       .createChatCompletion(
         {
           model: r_json.model || 'gpt-4',
+          //@ts-expect-error
           messages: r_json.messages,
           stream: true,
         },
