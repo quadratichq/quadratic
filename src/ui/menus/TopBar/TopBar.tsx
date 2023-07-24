@@ -108,7 +108,7 @@ export const TopBar = (props: IProps) => {
           {isRenaming ? (
             <FileRename
               setIsRenaming={setIsRenaming}
-              currentFilename={file.filename}
+              currentFilename={file.name}
               renameCurrentFile={
                 (value: string) => setFile((oldFile: any) => ({ ...oldFile, filename: value })) /* TODO */
               }
@@ -134,7 +134,7 @@ export const TopBar = (props: IProps) => {
                   maxWidth: '25vw',
                 }}
               >
-                {file.filename}
+                {file.name}
               </Typography>
             </>
           )}

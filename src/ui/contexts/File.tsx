@@ -1,12 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { GridFile } from '../../schemas';
 import { SheetController } from '../../grid/controller/sheetController';
 import mixpanel from 'mixpanel-browser';
+import { APIFile } from '../../api-client/apiClientSingleton';
 
 export type FileContextType = {
-  file: GridFile;
+  file: APIFile;
   renameFile: (newFilename: string) => void;
-  setFile: React.Dispatch<React.SetStateAction<GridFile>>;
+  setFile: React.Dispatch<React.SetStateAction<APIFile>>;
 };
 
 /**
@@ -23,25 +23,32 @@ export const FileProvider = ({
   sheetController,
 }: {
   children: React.ReactElement;
-  fileFromServer: GridFile;
+  fileFromServer: APIFile;
   sheetController: SheetController;
 }) => {
-  const [file, setFile] = useState<GridFile>(fileFromServer);
+  const [file, setFile] = useState<APIFile>(fileFromServer);
   let didMount = useRef<boolean>(false);
 
   const renameFile = useCallback(
     (newFilename: string) => {
       // TODO keep these same mixpanel actions?
       mixpanel.track('[Files].renameCurrentFile', { newFilename });
-      setFile((oldFile: GridFile) => ({ ...oldFile, filename: newFilename, modified: Date.now() }));
+      setFile((oldFile: APIFile) => ({ ...oldFile, name: newFilename, date_updated: Date.now() }));
     },
     [setFile]
   );
 
   // Create and save the fn used by the sheetController to save the file
   const save = useCallback(async (): Promise<void> => {
-    const modified = Date.now();
-    setFile((oldFile) => ({ ...oldFile, ...sheetController.sheet.export_file(), modified }));
+    // TODO
+    // setFile((oldFile: APIFile) => ({
+    //   ...oldFile,
+    //   date_updated: Date.now(),
+    //   contents: {
+    //     ...sheetController.sheet.export_file(),
+    //     version: oldFile.version
+    //   },
+    // }));
     console.log('[FileProvider] saving file...');
   }, [sheetController.sheet]);
   useEffect(() => {
@@ -56,14 +63,14 @@ export const FileProvider = ({
 
     // TODO true spa will clear/rebuild/reset
     // sheetController.clear();
-    sheetController.sheet.load_file(fileFromServer);
+    sheetController.sheet.load_file(fileFromServer.contents);
     // sheetController.app?.rebuild();
     // sheetController.app?.reset();
   }, [sheetController.sheet, fileFromServer]);
 
   // When the file changes, update document title and backup file
   useEffect(() => {
-    document.title = `${file.filename} - Quadratic`;
+    document.title = `${file.name} - Quadratic`;
 
     // TODO sync to API (if not read-only)
     // apiClientSingleton.backupFile(id, currentFileContents);

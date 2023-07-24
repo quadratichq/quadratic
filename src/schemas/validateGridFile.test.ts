@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { GridFiles } from '.';
-import { GridFileV1 } from './GridFileV1';
+import { GridFileV1_0 } from './GridFileV1_0';
 import { validateGridFile } from './validateGridFile';
 import { GridFileV1_2 } from './GridFileV1_2';
 import { GridFileV1_1 } from './GridFileV1_1';
@@ -13,7 +13,7 @@ const exampleGridFiles: GridFiles[] = fs
   .filter((name) => name.includes('.grid'))
   .map((name) => JSON.parse(fs.readFileSync(path.join(EXAMPLES_DIR, name)).toString()));
 
-const v1File: GridFileV1 = {
+const v1File: GridFileV1_0 = {
   version: '1.0',
   cells: [],
   columns: [],
@@ -125,6 +125,10 @@ describe('validateFile()', () => {
     expect(result).toHaveProperty('created');
     expect(result).toHaveProperty('id');
     expect(result).toHaveProperty('filename');
+  });
+
+  test('Upgrades a valid file from v1.2 to v1.3', () => {
+    // TODO write tests here
   });
 
   test('Returns the file when it matches the most recent schema', () => {
