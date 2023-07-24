@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "dotenv -e .env -- ts-node-dev --respawn --exit-child src/",
+    "start": "dotenv -e .env -- ts-node-dev --respawn --exit-child src/server.ts",
     "build": "tsc",
     "lint": "eslint src/**/*.ts",
     "format": "eslint src/**/*.ts --fix",

@@ -14,3 +14,7 @@ code {
 .szh-menu {
   color: inherit !important;
 }
+
+a {
+  color: inherit;
+}

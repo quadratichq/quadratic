@@ -44,6 +44,7 @@ export function Theme(props: any) {
             styleOverrides: {
               root: {
                 textTransform: 'none',
+                borderRadius: '0',
               },
             },
           },

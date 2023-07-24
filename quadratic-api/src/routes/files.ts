@@ -4,7 +4,6 @@ import rateLimit from 'express-rate-limit';
 import dbClient from '../dbClient';
 import { get_user } from '../helpers/get_user';
 import { get_file } from '../helpers/get_file';
-import { get_file_metadata } from '../helpers/read_file';
 import { body, validationResult, param } from 'express-validator';
 import { File, User } from '@prisma/client';
 

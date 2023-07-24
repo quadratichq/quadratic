@@ -1,4 +1,4 @@
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, Typography, useTheme, SvgIcon } from '@mui/material';
 import { ReactNode } from 'react';
 
 export default function Empty({
@@ -8,9 +8,9 @@ export default function Empty({
   Icon,
 }: {
   title: String;
-  description: String;
+  description: ReactNode;
   actions?: ReactNode;
-  Icon: any;
+  Icon: typeof SvgIcon;
 }) {
   const theme = useTheme();
 
