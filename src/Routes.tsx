@@ -43,7 +43,7 @@ const router = createBrowserRouter(
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibility />}>
             <Route index element={<Navigate to="/files" replace />} />
-            <Route path=":id" lazy={() => import('./App')} />
+            <Route path=":uuid" lazy={() => import('./App')} />
           </Route>
         </Route>
 

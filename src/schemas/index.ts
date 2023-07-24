@@ -35,6 +35,7 @@ export type GridFileData = z.infer<typeof GridFileDataSchema>;
 export const ArrayOutputSchema = GridFileSchema.shape.cells.element.shape.evaluation_result.unwrap().shape.array_output;
 export type ArrayOutput = z.infer<typeof ArrayOutputSchema>;
 export type { ArrayOutputBase };
+export const IdSchema = GridFileSchema.shape.id;
 export type Cell = GridFile['cells'][0];
 export type CellType = GridFile['cells'][0]['type'];
 export type CellFormat = GridFile['formats'][0];
