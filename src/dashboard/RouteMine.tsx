@@ -1,4 +1,4 @@
-import { useLoaderData, LoaderFunctionArgs, Form, Link } from 'react-router-dom';
+import { useLoaderData, LoaderFunctionArgs, Form, Link, redirect } from 'react-router-dom';
 import { protectedRouteLoaderWrapper } from '../auth';
 import apiClientSingleton from '../api-client/apiClientSingleton';
 // import { useEffect } from 'react';
@@ -129,12 +129,10 @@ export const action = async ({ params, request }: any) => {
 
   if (action === 'create') {
     console.warn('fired create action');
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        console.warn('created new record');
-      }, 5000);
-    });
-    return null;
+
+    const res = await apiClientSingleton.createFile();
+
+    return redirect(`/file/${res.uuid}`);
   }
 
   return null;

@@ -181,6 +181,47 @@ class APIClientSingleton {
       return false;
     }
   }
+
+  async createFile(name?: string, contents?: GridFile) {
+    if (!API_URL) return;
+
+    try {
+      const base_url = this.getAPIURL();
+
+      const request_body = {
+        name,
+        contents: contents,
+      };
+
+      const response = await fetch(`${base_url}/v0/files/`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${await authClient.getToken()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request_body),
+      });
+
+      console.log(
+        'API Response: ' + response.status + ' ' + response.statusText + ' ' + response.url + ' ' + response.type,
+        'Response body ' + response.body
+      );
+
+      if (!response.ok) {
+        Sentry.captureException({
+          message: `API Response Error: ${response.status} ${response.statusText}`,
+        });
+      }
+
+      // TODO: Verify that the response is what we expect
+
+      return await response.json();
+    } catch (error: any) {
+      Sentry.captureException({
+        message: `API Error Catch: ${error}`,
+      });
+    }
+  }
 }
 
 export default APIClientSingleton.getInstance();
