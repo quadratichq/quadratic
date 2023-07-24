@@ -53,6 +53,9 @@ export const Component = () => {
           </Button>
         </ButtonGroup>
       </Row>
+      <Typography variant="body2" color="text.secondary">
+        Additional account management coming in the future.
+      </Typography>
     </>
   );
 };

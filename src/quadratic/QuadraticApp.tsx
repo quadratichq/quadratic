@@ -5,30 +5,21 @@ import { loadedStateAtom } from '../atoms/loadedStateAtom';
 import { SheetController } from '../grid/controller/sheetController';
 import { loadAssets } from '../gridGL/loadAssets';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import { useGenerateLocalFiles } from '../hooks/useGenerateLocalFiles';
 import QuadraticUIContext from '../ui/QuadraticUIContext';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { webWorkers } from '../web-workers/webWorkers';
+import { GridFile } from '../schemas';
 
-type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-rust' | 'quadrants';
-const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-rust', 'quadrants'];
+type loadableItem = 'pixi-assets' | 'wasm-rust';
+const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'wasm-rust'];
 
-export const QuadraticApp = () => {
+export const QuadraticApp = (props: { fileFromServer: GridFile }) => {
   const [loading, setLoading] = useState(true);
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
   const setLoadedState = useSetRecoilState(loadedStateAtom);
-  const didMount = useRef(false);
+  const didMount = useRef<boolean>(false);
   const [sheetController] = useState<SheetController>(new SheetController());
-
-  const localFiles = useGenerateLocalFiles(sheetController);
-  const [app] = useState(() => new PixiApp(sheetController, localFiles.save));
-  const { initialize } = localFiles;
-
-  useEffect(() => {
-    if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
-      setLoading(false);
-    }
-  }, [app, itemsLoaded]);
+  const [app] = useState(() => new PixiApp(sheetController));
 
   // recoil tracks whether python is loaded
   useEffect(() => {
@@ -54,42 +45,68 @@ export const QuadraticApp = () => {
     };
   }, [setLoadedState]);
 
-  // Loading Effect
+  // Initialize loading of critical assets
   useEffect(() => {
     // Ensure this only runs once
     if (didMount.current) return;
     didMount.current = true;
-
-    let assets = false,
-      files = false;
-    const prerenderQuadrants = async () => {
-      // wait for local-files and pixi-assets to load before pre-rendering quadrants
-      if (!assets || !files) {
-        return;
-      }
-      app.preRenderQuadrants().then(() => {
-        setItemsLoaded((old) => ['quadrants', ...old]);
-      });
-    };
 
     // populate web workers
     webWorkers.init(app);
 
     loadAssets().then(() => {
       setItemsLoaded((old) => ['pixi-assets', ...old]);
-      assets = true;
-      prerenderQuadrants();
     });
     init().then(() => {
       hello(); // let Rust say hello to console
       setItemsLoaded((old) => ['wasm-rust', ...old]);
     });
-    initialize().then(() => {
-      setItemsLoaded((old) => ['local-files', ...old]);
-      files = true;
-      prerenderQuadrants();
-    });
-  }, [app, initialize]);
+  }, [app]);
 
-  return loading ? <QuadraticLoading /> : <QuadraticUIContext {...{ sheetController, localFiles, app }} />;
+  // Once everything loads, run this effect
+  useEffect(() => {
+    if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
+      setLoading(false);
+    }
+  }, [app, itemsLoaded, sheetController]);
+
+  return loading ? (
+    <QuadraticLoading />
+  ) : (
+    <QuadraticUIContext sheetController={sheetController} fileFromServer={props.fileFromServer} app={app} />
+  );
 };
+
+/*
+    NEW API
+
+    Store file in memory from initial props:
+      const [localFile, setLocalFile] = useState(props.file)
+
+    Create a context for getting values throughout app
+      const {
+        setLocalFile,
+        localFile: { uuid, name, isPublic, readOnly }
+      } = useFile();
+
+    apiClient for changing files
+      apiClient.createFile()
+      apiClient.deleteFile()
+      apiClient.importFile()
+        importFileFromDisk().then(apiClient.importFile)
+        importFileFromNetwork().then(apiClient.importFile)
+    
+    <FileContext>
+      useEffect(change tab title, sync)
+
+
+    
+
+
+    
+
+
+
+    
+      
+  */

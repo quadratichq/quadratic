@@ -6,11 +6,13 @@ export default function Empty({
   description,
   actions,
   Icon,
+  severity,
 }: {
   title: String;
   description: ReactNode;
   actions?: ReactNode;
   Icon: typeof SvgIcon;
+  severity?: 'error';
 }) {
   const theme = useTheme();
 
@@ -29,9 +31,9 @@ export default function Empty({
           color: theme.palette.text.secondary,
         }}
       >
-        <Icon fontSize="large" color="inherit" />
+        <Icon fontSize="large" color={severity === 'error' ? 'error' : 'inherit'} />
       </Box>
-      <Typography variant="h6" sx={{ mb: theme.spacing(0.5) }} color="text.primary">
+      <Typography variant="h6" sx={{ mb: theme.spacing(0.5) }} color={severity === 'error' ? 'error' : 'text.primary'}>
         {title}
       </Typography>
       <Typography variant="body2" color="text.secondary">

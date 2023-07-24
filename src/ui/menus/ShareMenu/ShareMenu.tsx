@@ -3,7 +3,7 @@ import { Button, Dialog, Paper, Switch, TextField, Typography, useTheme } from '
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { Public } from '@mui/icons-material';
-import { useLocalFiles } from '../../contexts/LocalFiles';
+// import { useLocalFiles } from '../../contexts/LocalFiles';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 import { focusGrid } from '../../../helpers/focusGrid';
 
@@ -18,7 +18,8 @@ export function ShareMenu() {
     focusGrid();
   };
   // const input = useRef<HTMLInputElement>();
-  const { currentFileIsPublic, shareCurrentFile } = useLocalFiles();
+  // const { file } = useLocalFiles();
+  const currentFileIsPublic = false; // TODO
   const theme = useTheme();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const shareLink = window.location.href;
@@ -52,11 +53,7 @@ export function ShareMenu() {
             </Typography>
           </div>
           {/* TODO Make this switch styled like the other */}
-          <Switch
-            sx={{ ml: 'auto' }}
-            checked={currentFileIsPublic}
-            onChange={() => shareCurrentFile(!currentFileIsPublic)}
-          />
+          <Switch sx={{ ml: 'auto' }} checked={currentFileIsPublic} onChange={() => {}} />
         </div>
         {currentFileIsPublic && (
           <div style={{ display: 'flex', gap: theme.spacing(2), marginTop: theme.spacing(2) }}>

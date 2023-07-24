@@ -3,7 +3,6 @@ import { setUser } from '@sentry/react';
 // import apiClientSingleton from '../api-client/apiClientSingleton';
 import { useEffect } from 'react';
 // import { debug } from '../debugFlags';
-// import { FILE_PARAM_KEY } from '../constants/app';
 import { useRouteLoaderData } from 'react-router-dom';
 import { RootLoaderData } from '../Routes';
 

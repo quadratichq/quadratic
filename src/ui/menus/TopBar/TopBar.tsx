@@ -19,7 +19,7 @@ import { ManageSearch, Public } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
-import { useLocalFiles } from '../../contexts/LocalFiles';
+import { useFile } from '../../contexts/File';
 
 interface IProps {
   app: PixiApp;
@@ -29,7 +29,7 @@ interface IProps {
 export const TopBar = (props: IProps) => {
   const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFilename, currentFileIsPublic, renameCurrentFile } = useLocalFiles();
+  const { file, setFile } = useFile();
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
 
   const settings = useGridSettings();
@@ -108,8 +108,10 @@ export const TopBar = (props: IProps) => {
           {isRenaming ? (
             <FileRename
               setIsRenaming={setIsRenaming}
-              currentFilename={currentFilename}
-              renameCurrentFile={renameCurrentFile}
+              currentFilename={file.filename}
+              renameCurrentFile={
+                (value: string) => setFile((oldFile: any) => ({ ...oldFile, filename: value })) /* TODO */
+              }
             />
           ) : (
             <>
@@ -132,7 +134,7 @@ export const TopBar = (props: IProps) => {
                   maxWidth: '25vw',
                 }}
               >
-                {currentFilename}
+                {file.filename}
               </Typography>
             </>
           )}
@@ -182,7 +184,7 @@ export const TopBar = (props: IProps) => {
               size="small"
               disableElevation
             >
-              {currentFileIsPublic && <Public fontSize="small" />} Share
+              {false && <Public fontSize="small" />} Share
             </Button>
             <TooltipHint title={`${settings.showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
               <CodeOutlinesSwitch

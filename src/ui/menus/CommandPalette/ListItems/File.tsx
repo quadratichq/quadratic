@@ -1,49 +1,29 @@
 import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { NoteAddOutlined, UploadFileOutlined } from '@mui/icons-material';
+import { NoteAddOutlined } from '@mui/icons-material';
 import { ShareFileOutlined, SaveFileOutlined } from '../../../icons';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { useLocalFiles } from '../../../contexts/LocalFiles';
-import apiClientSingleton from '../../../../api-client/apiClientSingleton';
+// import { useLocalFiles } from '../../../contexts/LocalFiles';
+// import apiClientSingleton from '../../../../api-client/apiClientSingleton';
 
 const ListItems = [
   {
     label: 'File: New',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { createNewFile } = useLocalFiles();
+      const createNewFile = () => {}; // TODO useLocalFiles();
       return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={createNewFile} />;
     },
   },
   {
     label: 'File: Download local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { currentFileId } = useLocalFiles();
+      // const { file } = useLocalFiles();
       const downloadCurrentFile = () => {
-        apiClientSingleton.downloadFile(currentFileId);
+        // TODO
+        // apiClientSingleton.downloadFile(file.id);
       };
       return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={downloadCurrentFile} />;
-    },
-  },
-  {
-    label: 'File: Open…',
-    Component: (props: CommandPaletteListItemSharedProps) => {
-      const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-      return (
-        <CommandPaletteListItem
-          {...props}
-          icon={<UploadFileOutlined />}
-          shortcut="O"
-          shortcutModifiers={[KeyboardSymbols.Command]}
-          action={() => {
-            setEditorInteractionState({
-              ...editorInteractionState,
-              showFileMenu: true,
-            });
-          }}
-        />
-      );
     },
   },
   {
