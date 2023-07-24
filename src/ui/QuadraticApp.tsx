@@ -5,8 +5,8 @@ import { loadedStateAtom } from '../atoms/loadedStateAtom';
 import { SheetController } from '../grid/controller/sheetController';
 import { loadAssets } from '../gridGL/loadAssets';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import QuadraticUIContext from '../ui/QuadraticUIContext';
-import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
+import QuadraticUIContext from './QuadraticUIContext';
+import { QuadraticLoading } from './loading/QuadraticLoading';
 import { webWorkers } from '../web-workers/webWorkers';
 import { GridFile } from '../schemas';
 
