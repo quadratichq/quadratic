@@ -17,24 +17,20 @@ export const QuadraticApp = (props: { file: GridFile }) => {
   const [loading, setLoading] = useState(true);
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
   const setLoadedState = useSetRecoilState(loadedStateAtom);
-  const didMount = useRef(false);
+  const didMount = useRef<boolean>(false);
   const [sheetController] = useState<SheetController>(new SheetController());
   const [file, setFile] = useState<GridFile>(props.file);
 
+  // TODO
   const save = useCallback(async (): Promise<void> => {
     const modified = Date.now();
     setFile((oldFile) => ({ ...oldFile, ...sheetController.sheet.export_file(), modified }));
+    console.log('[QuadraticApp] running save');
   }, [sheetController.sheet]);
   useEffect(() => {
-    sheetController.saveLocalFiles = save;
+    sheetController.saveFile = save;
   }, [sheetController, save]);
-  const [app] = useState(() => new PixiApp(sheetController, async () => {}));
-
-  useEffect(() => {
-    if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
-      setLoading(false);
-    }
-  }, [app, itemsLoaded, sheetController, file]);
+  const [app] = useState(() => new PixiApp(sheetController));
 
   // recoil tracks whether python is loaded
   useEffect(() => {
@@ -60,36 +56,35 @@ export const QuadraticApp = (props: { file: GridFile }) => {
     };
   }, [setLoadedState]);
 
-  // Loading Effect
+  // Initialize loading of critical assets
   useEffect(() => {
     // Ensure this only runs once
     if (didMount.current) return;
     didMount.current = true;
-
-    // let assets = false;
-    // const prerenderQuadrants = async () => {
-    //   // wait for local-files and pixi-assets to load before pre-rendering quadrants
-    //   if (!assets) {
-    //     return;
-    //   }
-    //   app.preRenderQuadrants().then(() => {
-    //     setItemsLoaded((old) => ['quadrants', ...old]);
-    //   });
-    // };
 
     // populate web workers
     webWorkers.init(app);
 
     loadAssets().then(() => {
       setItemsLoaded((old) => ['pixi-assets', ...old]);
-      // assets = true;
-      // prerenderQuadrants();
     });
     init().then(() => {
       hello(); // let Rust say hello to console
       setItemsLoaded((old) => ['wasm-rust', ...old]);
     });
   }, [app]);
+
+  // Once everything loads, run this effect
+  useEffect(() => {
+    if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
+      // TODO if we're gonna do true SPA, these should run too to clear the old stuff
+      // sheetController.clear();
+      sheetController.sheet.load_file(file);
+      // sheetController.app?.rebuild();
+      // sheetController.app?.reset();
+      setLoading(false);
+    }
+  }, [app, itemsLoaded, sheetController, file]);
 
   return loading ? <QuadraticLoading /> : <QuadraticUIContext {...{ sheetController, file, setFile, app }} />;
 };

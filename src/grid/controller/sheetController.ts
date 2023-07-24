@@ -10,7 +10,7 @@ import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 export class SheetController {
   app?: PixiApp; // TODO: Untangle PixiApp from SheetController.
   sheet: Sheet;
-  saveLocalFiles: (() => void) | undefined;
+  saveFile: (() => void) | undefined;
   transaction_in_progress: Transaction | undefined;
   transaction_in_progress_reverse: Transaction | undefined;
   undo_stack: Transaction[];
@@ -27,7 +27,7 @@ export class SheetController {
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
-    this.saveLocalFiles = undefined;
+    this.saveFile = undefined;
   }
 
   // starting a transaction is the only way to execute statements
@@ -93,7 +93,7 @@ export class SheetController {
 
     // TODO: This is a good place to do things like mark Quadrants as dirty, save the file, etc.
     // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
-    if (this.saveLocalFiles) this.saveLocalFiles();
+    if (this.saveFile) this.saveFile();
 
     return reverse_transaction;
   }
