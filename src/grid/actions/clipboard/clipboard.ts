@@ -108,15 +108,12 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
           });
 
           // update borders
-          borders_to_update.forEach((border) => {
+          if (borders_to_update.length) {
             sheet_controller.execute_statement({
-              type: 'SET_BORDER',
-              data: {
-                position: [border.x, border.y],
-                border,
-              },
+              type: 'SET_BORDERS',
+              data: borders_to_update,
             });
-          });
+          }
 
           sheet_controller.end_transaction();
 

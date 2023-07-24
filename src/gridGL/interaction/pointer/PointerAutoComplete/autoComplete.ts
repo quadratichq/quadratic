@@ -54,19 +54,18 @@ const updateFormatAndBorders = async (options: {
     starting_cells: cells,
     sheetController: sheet_controller,
   });
-  sheet_controller.execute_statement({
-    type: 'SET_CELL_FORMATS',
-    data: formats,
-  });
-  borders.forEach((border) => {
+  if (formats.length) {
     sheet_controller.execute_statement({
-      type: 'SET_BORDER',
-      data: {
-        position: [border.x, border.y],
-        border,
-      },
+      type: 'SET_CELL_FORMATS',
+      data: formats,
     });
-  });
+  }
+  if (borders.length) {
+    sheet_controller.execute_statement({
+      type: 'SET_BORDERS',
+      data: borders,
+    });
+  }
 };
 
 export const expandDown = async (options: {

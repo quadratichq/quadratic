@@ -34,11 +34,8 @@ export type Statement =
       };
     }
   | {
-      type: 'SET_BORDER';
-      data: {
-        position: [number, number];
-        border: Border | undefined; // TODO: Make this accept more than one border
-      };
+      type: 'SET_BORDERS';
+      data: (Border | Coordinate)[];
     }
   | {
       type: 'SET_SHEET';

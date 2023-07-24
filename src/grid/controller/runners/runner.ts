@@ -1,7 +1,7 @@
 import { debugShowTransactions } from '../../../debugFlags';
 import { SheetController } from '../sheetController';
 import { Statement } from '../statement';
-import { SetBorderRunner } from './setBorderRunner';
+import { SetBordersRunner } from './setBordersRunner';
 import { AddCellDependenciesRunner, RemoveCellDependenciesRunner } from './setCellDependenciesRunner';
 import { SetCellFormatsRunner } from './setCellFormatsRunner';
 import { SetCellsRunner } from './setCellsRunner';
@@ -24,8 +24,8 @@ export const StatementRunner = (sheetController: SheetController, statement: Sta
     return SetCellFormatsRunner(sheetController, statement);
   } else if (statement.type === 'SET_HEADING_SIZE') {
     return SetHeadingSizeRunner(sheetController, statement);
-  } else if (statement.type === 'SET_BORDER') {
-    return SetBorderRunner(sheetController, statement);
+  } else if (statement.type === 'SET_BORDERS') {
+    return SetBordersRunner(sheetController, statement);
   } else if (statement.type.includes('SHEET')) {
     return sheetRunner(sheetController, statement);
   } else {
