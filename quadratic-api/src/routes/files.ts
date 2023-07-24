@@ -30,7 +30,7 @@ const file_rate_limiter = rateLimit({
 // 3. Return a 404
 
 const validateUUID = () => param('uuid').isUUID(4);
-const validateFileContents = () => body('contents').optional().isString();
+const validateFileContents = () => body('contents').isString();
 const validateFileName = () => body('name').optional().isString();
 type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
 
@@ -150,7 +150,7 @@ files_router.post(
   file_rate_limiter,
   userMiddleware,
   fileMiddleware,
-  validateFileContents(),
+  validateFileContents().optional(),
   validateFileName(),
   async (req: Request, res: Response) => {
     if (!req.file || !req.user) {
@@ -263,15 +263,12 @@ files_router.post(
     const user = await get_user(request);
 
     // Create a new file in the database
-    // use name and contents from request body if provided
+    // use name and contents from request body
     let name = 'Untitled';
     if (request.body.name !== undefined) {
       name = request.body.name;
     }
-    let contents = Buffer.from('');
-    if (request.body.contents !== undefined) {
-      contents = Buffer.from(request.body.contents, 'base64');
-    }
+    const contents = Buffer.from(request.body.contents, 'base64');
 
     const file = await dbClient.file.create({
       data: {

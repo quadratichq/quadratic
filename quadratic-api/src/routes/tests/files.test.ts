@@ -306,12 +306,18 @@ describe('CREATE - POST /v0/files/ with auth (no file name, no contents)', () =>
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
-      .expect(201);
+      .expect(400);
 
-    expect(res.body).toMatchObject({ name: 'Untitled' });
-    expect(res.body).toHaveProperty('uuid');
-    expect(res.body).toHaveProperty('created_date');
-    expect(res.body).toHaveProperty('updated_date');
+    expect(res.body).toMatchObject({
+      errors: [
+        {
+          type: 'field',
+          msg: 'Invalid value',
+          path: 'contents',
+          location: 'body',
+        },
+      ],
+    });
   });
 });
 
@@ -323,12 +329,49 @@ describe('CREATE - POST /v0/files/ with auth (file name, no contents)', () => {
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(res.body).toMatchObject({
+      errors: [
+        {
+          type: 'field',
+          msg: 'Invalid value',
+          path: 'contents',
+          location: 'body',
+        },
+      ],
+    });
+  });
+});
+
+describe('CREATE - POST /v0/files/ with auth (no file name, contents)', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/')
+      .send({ contents: Buffer.from('new_file_contents').toString('base64') })
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
       .expect(201);
 
-    expect(res.body).toMatchObject({ name: 'new_file_with_name' });
+    expect(res.body).toMatchObject({ name: 'Untitled' });
     expect(res.body).toHaveProperty('uuid');
     expect(res.body).toHaveProperty('created_date');
     expect(res.body).toHaveProperty('updated_date');
+
+    // check file name changed
+    const res2 = await request(app)
+      .get(`/v0/files/${res.body.uuid}`)
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200); // OK
+
+    expect(res2.body).toHaveProperty('file');
+    expect(res2.body).toHaveProperty('permission');
+    expect(res2.body.permission).toEqual('OWNER');
+    expect(res2.body.file.name).toEqual('Untitled');
+    expect(Buffer.from(res2.body.file.contents).toString()).toEqual('new_file_contents');
   });
 });
 
