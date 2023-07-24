@@ -257,11 +257,20 @@ files_router.post(
 
     // Create a new file in the database
     // use name and contents from request body if provided
+    let name = 'Untitled';
+    if (request.body.name !== undefined) {
+      name = request.body.name;
+    }
+    let contents = Buffer.from('');
+    if (request.body.contents !== undefined) {
+      contents = Buffer.from(request.body.contents, 'base64');
+    }
+
     const file = await dbClient.file.create({
       data: {
         ownerUserId: user.id,
-        name: request.body.name ?? 'Untitled',
-        contents: request.body.contents ?? {},
+        name: name,
+        contents: contents,
       },
       select: {
         uuid: true,
