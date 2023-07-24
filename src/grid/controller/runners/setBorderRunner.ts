@@ -1,5 +1,5 @@
-import { Statement } from '../statement';
 import { SheetController } from '../sheetController';
+import { Statement } from '../statement';
 
 export const SetBorderRunner = (sheetController: SheetController, statement: Statement): Statement => {
   if (statement.type !== 'SET_BORDER') throw new Error('Incorrect statement type.');

@@ -1,8 +1,8 @@
 import { clearBordersAction } from '../../../../grid/actions/clearBordersAction';
-import { Border, BorderType } from '../../../../schemas';
-import { useGetSelection } from './useGetSelection';
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { pixiAppEvents } from '../../../../gridGL/pixiApp/PixiAppEvents';
+import { Border, BorderType } from '../../../../schemas';
+import { useGetSelection } from './useGetSelection';
 
 export interface ChangeBorder {
   borderAll?: boolean;

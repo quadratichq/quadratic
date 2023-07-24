@@ -1,14 +1,14 @@
+import { useCallback } from 'react';
 import { ColorResult } from 'react-color';
 import { clearFormattingAction } from '../../../../grid/actions/clearFormattingAction';
-import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
-import { CellAlignment, CellFormat } from '../../../../schemas';
 import { SheetController } from '../../../../grid/controller/sheetController';
-import { convertReactColorToString } from '../../../../helpers/convertColor';
-import { useGetSelection } from './useGetSelection';
-import { useCallback } from 'react';
+import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
 import { pixiAppEvents } from '../../../../gridGL/pixiApp/PixiAppEvents';
+import { convertReactColorToString } from '../../../../helpers/convertColor';
+import { CellAlignment, CellFormat } from '../../../../schemas';
+import { useGetSelection } from './useGetSelection';
 
-export const FORMAT_SELECTION_EVENT = 'formatSelectionEvent';
+export const FORMAT_SELECTION_EVENT = 'format-selection-event';
 
 interface IResults {
   changeFillColor: (rgb: ColorResult) => void;
