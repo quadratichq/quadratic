@@ -19,7 +19,7 @@ import { ManageSearch, Public } from '@mui/icons-material';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useGridSettings } from './SubMenus/useGridSettings';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
-import { useLocalFiles } from '../../contexts/LocalFiles';
+import { useFile } from '../../contexts/File';
 
 interface IProps {
   app: PixiApp;
@@ -29,7 +29,7 @@ interface IProps {
 export const TopBar = (props: IProps) => {
   const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { file, setFile } = useLocalFiles();
+  const { file, setFile } = useFile();
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
 
   const settings = useGridSettings();

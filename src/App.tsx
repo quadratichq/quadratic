@@ -22,6 +22,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       return res.json();
     })
     .then((file) => {
+      // TODO validate and upgrade file as necessary before passing into the app
       return {
         ...file,
         filename: 'Deafult (example)',
@@ -37,7 +38,7 @@ export const Component = () => {
 
   return (
     <RecoilRoot>
-      <QuadraticApp file={file} />
+      <QuadraticApp fileFromServer={file} />
     </RecoilRoot>
   );
 };

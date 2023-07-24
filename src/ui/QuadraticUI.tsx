@@ -16,7 +16,6 @@ import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../grid/controller/sheetController';
 import ReadOnlyDialog from './components/ReadOnlyDialog';
 import { IS_READONLY_MODE } from '../constants/app';
-import { useLocalFiles } from './contexts/LocalFiles';
 import ShareMenu from './menus/ShareMenu';
 import SharedFileAlert from './components/SharedFileAlert';
 import FeedbackMenu from './menus/FeedbackMenu';
@@ -24,8 +23,6 @@ import FeedbackMenu from './menus/FeedbackMenu';
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
-  const { file } = useLocalFiles();
-  console.log(file);
 
   useEffect(() => {
     sheetController.setApp(app);

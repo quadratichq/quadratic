@@ -1,5 +1,5 @@
 import init, { hello } from 'quadratic-core';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { loadedStateAtom } from '../atoms/loadedStateAtom';
 import { SheetController } from '../grid/controller/sheetController';
@@ -13,23 +13,12 @@ import { GridFile } from '../schemas';
 type loadableItem = 'pixi-assets' | 'wasm-rust';
 const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'wasm-rust'];
 
-export const QuadraticApp = (props: { file: GridFile }) => {
+export const QuadraticApp = (props: { fileFromServer: GridFile }) => {
   const [loading, setLoading] = useState(true);
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
   const setLoadedState = useSetRecoilState(loadedStateAtom);
   const didMount = useRef<boolean>(false);
   const [sheetController] = useState<SheetController>(new SheetController());
-  const [file, setFile] = useState<GridFile>(props.file);
-
-  // TODO
-  const save = useCallback(async (): Promise<void> => {
-    const modified = Date.now();
-    setFile((oldFile) => ({ ...oldFile, ...sheetController.sheet.export_file(), modified }));
-    console.log('[QuadraticApp] running save');
-  }, [sheetController.sheet]);
-  useEffect(() => {
-    sheetController.saveFile = save;
-  }, [sheetController, save]);
   const [app] = useState(() => new PixiApp(sheetController));
 
   // recoil tracks whether python is loaded
@@ -77,16 +66,15 @@ export const QuadraticApp = (props: { file: GridFile }) => {
   // Once everything loads, run this effect
   useEffect(() => {
     if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
-      // TODO if we're gonna do true SPA, these should run too to clear the old stuff
-      // sheetController.clear();
-      sheetController.sheet.load_file(file);
-      // sheetController.app?.rebuild();
-      // sheetController.app?.reset();
       setLoading(false);
     }
-  }, [app, itemsLoaded, sheetController, file]);
+  }, [app, itemsLoaded, sheetController]);
 
-  return loading ? <QuadraticLoading /> : <QuadraticUIContext {...{ sheetController, file, setFile, app }} />;
+  return loading ? (
+    <QuadraticLoading />
+  ) : (
+    <QuadraticUIContext sheetController={sheetController} fileFromServer={props.fileFromServer} app={app} />
+  );
 };
 
 /*

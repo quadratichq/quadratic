@@ -33,11 +33,7 @@ export default function Empty({
       >
         <Icon fontSize="large" color={severity === 'error' ? 'error' : 'inherit'} />
       </Box>
-      <Typography
-        variant="h6"
-        sx={{ mb: theme.spacing(0.5) }}
-        color={severity === 'error' ? 'error' : 'text.secondary'}
-      >
+      <Typography variant="h6" sx={{ mb: theme.spacing(0.5) }} color={severity === 'error' ? 'error' : 'text.primary'}>
         {title}
       </Typography>
       <Typography variant="body2" color="text.secondary">

@@ -57,14 +57,11 @@ export const Component = () => {
         <Box sx={{ maxWidth: '60ch', mx: 'auto', py: theme.spacing(2) }}>
           <Empty
             title="Unexpected error"
-            description={
-              <>
-                An unexpected error occurred while retrieving your files. Try{' '}
-                <Link to="." reloadDocument>
-                  refreshing the page
-                </Link>
-                . If the issue continues, contact us.
-              </>
+            description="An unexpected error occurred while retrieving your files. Try reloading the page. If the issue continues, contact us."
+            actions={
+              <Button variant="outlined" disableElevation component={Link} to="." reloadDocument>
+                Reload
+              </Button>
             }
             Icon={ErrorOutline}
             severity="error"

@@ -16,6 +16,8 @@ import { QuadraticAnalytics } from './quadratic/QuadraticAnalytics';
 import { QuadraticAuth } from './quadratic/QuadraticAuth';
 import { QuadraticLoading } from './ui/loading/QuadraticLoading';
 import BrowserCompatibility from './quadratic/BrowserCompatibility';
+import Empty from './dashboard/Empty';
+import { ErrorOutline, WarningAmber } from '@mui/icons-material';
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
@@ -39,7 +41,7 @@ const router = createBrowserRouter(
       >
         <Route index element={<Navigate to="/files" replace />} />
         <Route path="file">
-          {/* TODO see if browser is supported _before_ we try to load anything from the API */}
+          {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibility />}>
             <Route index element={<Navigate to="/files" replace />} />
             <Route path=":id" lazy={() => import('./App')} />
@@ -52,10 +54,18 @@ const router = createBrowserRouter(
           <Route path="files/examples" lazy={() => import('./dashboard/RouteExamples')} />
           <Route path="files/teams" lazy={() => import('./dashboard/RouteTeams')} />
           <Route path="account" lazy={() => import('./dashboard/RouteAccount')} />
-          {/* TODO catch all for here? */}
         </Route>
 
-        <Route path="*" element={<div>TODO Catch all route</div>} />
+        <Route
+          path="*"
+          element={
+            <Empty
+              title="404: resource not found"
+              description="What you’re looking for could not be found. Check the URL and try again."
+              Icon={WarningAmber}
+            />
+          }
+        />
       </Route>
       <Route
         path="/login"
@@ -122,5 +132,12 @@ function Root() {
 function RootError() {
   let error = useRouteError();
   console.error(error);
-  return <div>Oops. Something went wrong. Don't forget to add this component</div>;
+  // TODO sentry catch error
+  return (
+    <Empty
+      title="Something went wrong"
+      description="An unexpected error occurred. Try reloading the page or contact us if the error continues."
+      Icon={ErrorOutline}
+    />
+  );
 }
