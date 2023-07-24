@@ -30,7 +30,7 @@ const file_rate_limiter = rateLimit({
 // 3. Return a 404
 
 const validateUUID = () => param('uuid').isUUID(4);
-const validateFileContents = () => body('contents').optional();
+const validateFileContents = () => body('contents').optional().isString();
 const validateFileName = () => body('name').optional().isString();
 type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
 
@@ -145,8 +145,8 @@ files_router.post(
   file_rate_limiter,
   userMiddleware,
   fileMiddleware,
-  // validateFileContents(),
-  // validateFileName(),
+  validateFileContents(),
+  validateFileName(),
   async (req: Request, res: Response) => {
     if (!req.file || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
@@ -163,20 +163,40 @@ files_router.post(
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }
 
-    await dbClient.file.update({
-      where: {
-        uuid: req.params.uuid,
-      },
-      data: {
-        name: req.body.name,
-        contents: req.body.contents,
-        updated_date: new Date(),
-        version: 'unknown',
-        times_updated: {
-          increment: 1,
+    // Update the contents
+    if (req.body.contents !== undefined) {
+      const contents = Buffer.from(req.body.contents, 'base64');
+      await dbClient.file.update({
+        where: {
+          uuid: req.params.uuid,
         },
-      },
-    });
+        data: {
+          contents,
+          updated_date: new Date(),
+          version: 'unknown',
+          times_updated: {
+            increment: 1,
+          },
+        },
+      });
+    }
+
+    // update the file name
+    if (req.body.name !== undefined) {
+      await dbClient.file.update({
+        where: {
+          uuid: req.params.uuid,
+        },
+        data: {
+          name: req.body.name,
+          updated_date: new Date(),
+          version: 'unknown',
+          times_updated: {
+            increment: 1,
+          },
+        },
+      });
+    }
 
     res.status(200).json({ message: 'File updated.' });
   }
@@ -237,11 +257,20 @@ files_router.post(
 
     // Create a new file in the database
     // use name and contents from request body if provided
+    let name = 'Untitled';
+    if (request.body.name !== undefined) {
+      name = request.body.name;
+    }
+    let contents = Buffer.from('');
+    if (request.body.contents !== undefined) {
+      contents = Buffer.from(request.body.contents, 'base64');
+    }
+
     const file = await dbClient.file.create({
       data: {
         ownerUserId: user.id,
-        name: request.body.name ?? 'Untitled',
-        contents: request.body.contents ?? {},
+        name: name,
+        contents: contents,
       },
       select: {
         uuid: true,

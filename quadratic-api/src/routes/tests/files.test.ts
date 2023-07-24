@@ -59,7 +59,7 @@ jest.mock('../../middleware/auth', () => {
   };
 });
 
-describe('GET /v0/files/ no auth', () => {
+describe('READ - GET /v0/files/ no auth', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .get('/v0/files/')
@@ -71,7 +71,7 @@ describe('GET /v0/files/ no auth', () => {
   });
 });
 
-describe('GET /v0/files/ with auth and files', () => {
+describe('READ - GET /v0/files/ with auth and files', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .get('/v0/files/')
@@ -96,7 +96,7 @@ describe('GET /v0/files/ with auth and files', () => {
   });
 });
 
-describe('GET /v0/files/ with auth and no files', () => {
+describe('READ - GET /v0/files/ with auth and no files', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .get('/v0/files/')
@@ -109,7 +109,7 @@ describe('GET /v0/files/ with auth and no files', () => {
   });
 });
 
-describe('GET /v0/files/:uuid no auth', () => {
+describe('READ - GET /v0/files/:uuid no auth', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .get('/v0/files/00000000-0000-0000-0000-000000000000')
@@ -121,7 +121,7 @@ describe('GET /v0/files/:uuid no auth', () => {
   });
 });
 
-describe('GET /v0/files/:uuid file not found', () => {
+describe('READ - GET /v0/files/:uuid file not found', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000009')
@@ -134,7 +134,7 @@ describe('GET /v0/files/:uuid file not found', () => {
   });
 });
 
-describe('GET /v0/files/:uuid with auth and owned file', () => {
+describe('READ - GET /v0/files/:uuid with auth and owned file', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000000')
@@ -150,7 +150,7 @@ describe('GET /v0/files/:uuid with auth and owned file', () => {
   });
 });
 
-describe('GET /v0/files/:uuid with auth and another users file shared readonly', () => {
+describe('READ - GET /v0/files/:uuid with auth and another users file shared readonly', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000001')
@@ -166,7 +166,7 @@ describe('GET /v0/files/:uuid with auth and another users file shared readonly',
   });
 });
 
-describe('GET /v0/files/:uuid with auth and another users file not shared', () => {
+describe('READ - GET /v0/files/:uuid with auth and another users file not shared', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000000')
@@ -179,7 +179,7 @@ describe('GET /v0/files/:uuid with auth and another users file not shared', () =
   });
 });
 
-describe('POST /v0/files/:uuid no auth', () => {
+describe('UPDATE - POST /v0/files/:uuid no auth', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .post('/v0/files/00000000-0000-0000-0000-000000000000')
@@ -191,7 +191,7 @@ describe('POST /v0/files/:uuid no auth', () => {
   });
 });
 
-describe('POST /v0/files/:uuid file not found', () => {
+describe('UPDATE - POST /v0/files/:uuid file not found', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .post('/v0/files/00000000-0000-4000-8000-000000000009')
@@ -204,7 +204,7 @@ describe('POST /v0/files/:uuid file not found', () => {
   });
 });
 
-describe('POST /v0/files/:uuid with auth and owned file rename file', () => {
+describe('UPDATE - POST /v0/files/:uuid with auth and owned file rename file', () => {
   it('responds with json', async () => {
     // change file name
     const res = await request(app)
@@ -229,7 +229,35 @@ describe('POST /v0/files/:uuid with auth and owned file rename file', () => {
     expect(res2.body).toHaveProperty('permission');
     expect(res2.body.permission).toEqual('OWNER');
     expect(res2.body.file.name).toEqual('test_file_1_new_name');
-    expect(res2.body.file.contents).toEqual({ data: [99, 111, 110, 116, 101, 110, 116, 115, 95, 48], type: 'Buffer' }); // contents_1
+    expect(Buffer.from(res2.body.file.contents).toString()).toEqual('contents_0');
+  });
+});
+
+describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file contents', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/00000000-0000-4000-8000-000000000000')
+      .send({ contents: Buffer.from('contents_0_updated').toString('base64') })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200); // OK
+
+    expect(res.body).toMatchObject({ message: 'File updated.' });
+
+    // check file name changed
+    const res2 = await request(app)
+      .get('/v0/files/00000000-0000-4000-8000-000000000000')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200); // OK
+
+    expect(res2.body).toHaveProperty('file');
+    expect(res2.body).toHaveProperty('permission');
+    expect(res2.body.permission).toEqual('OWNER');
+    expect(res2.body.file.name).toEqual('test_file_1_new_name');
+    expect(Buffer.from(res2.body.file.contents).toString()).toEqual('contents_0_updated');
   });
 });
 
@@ -261,3 +289,79 @@ describe('POST /v0/files/:uuid with auth and owned file rename file', () => {
 //     expect(res.body).toMatchObject({ message: 'Permission denied.' });
 //   });
 // });
+
+describe('CREATE - POST /v0/files/ with no auth', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(401);
+
+    expect(res.body).toMatchObject({ error: { message: 'No authorization token was found' } });
+  });
+});
+
+describe('CREATE - POST /v0/files/ with auth (no file name, no contents)', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    expect(res.body).toMatchObject({ name: 'Untitled' });
+    expect(res.body).toHaveProperty('uuid');
+    expect(res.body).toHaveProperty('created_date');
+    expect(res.body).toHaveProperty('updated_date');
+  });
+});
+
+describe('CREATE - POST /v0/files/ with auth (file name, no contents)', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/')
+      .send({ name: 'new_file_with_name' })
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    expect(res.body).toMatchObject({ name: 'new_file_with_name' });
+    expect(res.body).toHaveProperty('uuid');
+    expect(res.body).toHaveProperty('created_date');
+    expect(res.body).toHaveProperty('updated_date');
+  });
+});
+
+describe('CREATE - POST /v0/files/ with auth (file name, contents)', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/')
+      .send({ name: 'new_file_with_name', contents: Buffer.from('new_file_contents').toString('base64') })
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(201);
+
+    expect(res.body).toMatchObject({ name: 'new_file_with_name' });
+    expect(res.body).toHaveProperty('uuid');
+    expect(res.body).toHaveProperty('created_date');
+    expect(res.body).toHaveProperty('updated_date');
+
+    // check file name changed
+    const res2 = await request(app)
+      .get(`/v0/files/${res.body.uuid}`)
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200); // OK
+
+    expect(res2.body).toHaveProperty('file');
+    expect(res2.body).toHaveProperty('permission');
+    expect(res2.body.permission).toEqual('OWNER');
+    expect(res2.body.file.name).toEqual('new_file_with_name');
+    expect(Buffer.from(res2.body.file.contents).toString()).toEqual('new_file_contents');
+  });
+});
