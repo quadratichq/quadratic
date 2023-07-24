@@ -86,7 +86,7 @@ function Navbar() {
             },
           }}
         >
-          <img src="/images/quadratic-logo.svg" alt="Quadratic logo" height="22" />
+          <img src={`/images/quadratic-logo-${theme.palette.mode}.svg`} alt="Quadratic logo" height="22" />
           <Box sx={{ [theme.breakpoints.up('md')]: { display: 'none' } }}>
             <IconButton>
               <Close />

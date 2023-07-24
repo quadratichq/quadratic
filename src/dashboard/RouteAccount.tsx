@@ -1,6 +1,5 @@
 import PaneHeader from './PaneHeader';
-import { ColorModeContext } from '../quadratic/Theme';
-import { useContext } from 'react';
+import { useColorMode } from '../quadratic/Theme';
 import { Box, Button, ButtonGroup, Typography, useTheme } from '@mui/material';
 import { RootLoaderData } from '../Routes';
 import { useRouteLoaderData } from 'react-router-dom';
@@ -8,7 +7,7 @@ import { useRouteLoaderData } from 'react-router-dom';
 export const Component = () => {
   const { user } = useRouteLoaderData('root') as RootLoaderData;
 
-  const { colorModePreference, toggleColorMode } = useContext(ColorModeContext);
+  const { colorModePreference, toggleColorMode } = useColorMode();
   return (
     <>
       <PaneHeader title="Account" />
