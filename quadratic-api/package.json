@@ -11,10 +11,10 @@
     "pretty": "prettier --write \"src/**/*.ts\"",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:migrate:create": "npx prisma migrate dev --create-only",
-    "docker:up": "docker-compose up -d",
+    "docker:up": "docker-compose up -d && sleep 1",
     "docker:down": "docker-compose down",
-    "test:dev": "npm run docker:up && ./wait-for-it.sh localhost:5433 -- dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch && npm run docker:down",
-    "test:ci": "npm run docker:up && ./wait-for-it.sh localhost:5433 -- dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest && npm run docker:down"
+    "test:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch --detectOpenHandles && npm run docker:down",
+    "test:ci": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest && npm run docker:down"
   },
   "author": "David Kircos",
   "license": "MIT",

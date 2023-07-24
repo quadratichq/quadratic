@@ -57,6 +57,8 @@ model File {
     name               String
     created_date       DateTime       @default(now())
     updated_date       DateTime       @default(now())
+    deleted            Boolean        @default(false)
+    deleted_date       DateTime?
     // Binary file contents
     contents           Bytes
     // Permissions

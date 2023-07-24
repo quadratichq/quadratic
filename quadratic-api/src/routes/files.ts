@@ -67,6 +67,10 @@ const fileMiddleware = async (req: Request, res: Response, next: NextFunction) =
     return res.status(404).json({ error: { message: 'File not found' } });
   }
 
+  if (file.deleted) {
+    return res.status(400).json({ error: { message: 'File has been deleted' } });
+  }
+
   if (file.ownerUserId !== req?.user?.id) {
     if (file.public_link_access === 'NOT_SHARED') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
@@ -100,6 +104,7 @@ files_router.get('/', validateAccessToken, file_rate_limiter, async (req, res) =
   const files = await dbClient.file.findMany({
     where: {
       ownerUserId: user.id,
+      deleted: false,
     },
     select: {
       uuid: true,
@@ -207,34 +212,36 @@ files_router.delete(
   validateUUID(),
   validateAccessToken,
   file_rate_limiter,
-  async (request: Request, response: Response) => {
+  userMiddleware,
+  fileMiddleware,
+  async (req: Request, res: Response) => {
     // Validate request format
-    const errors = validationResult(request);
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return response.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ errors: errors.array() });
     }
 
-    // Ensure file exists and user can access it
-    const user = await get_user(request);
-    const file_result = await get_file(user, request.params.uuid);
-    if (!file_result.permission) {
-      return response.status(403).json({ message: 'Permission denied.' });
-    }
-    if (!file_result.file) {
-      return response.status(404).json({ message: 'File not found.' });
+    if (!req.file || !req.user) {
+      return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
-    // raise error not implemented
-    throw new Error('Need to check if the user has permission to delete the file.');
+    const permissions = getFilePermissions(req.user, req.file);
+    if (permissions !== 'OWNER') {
+      return res.status(403).json({ error: { message: 'Permission denied' } });
+    }
 
-    // Delete file from database
-    // await dbClient.qFile.delete({
-    //   where: {
-    //     id: file_result.file.id,
-    //   },
-    // });
+    // Delete the file from the database
+    await dbClient.file.update({
+      where: {
+        uuid: req.params.uuid,
+      },
+      data: {
+        deleted: true,
+        deleted_date: new Date(),
+      },
+    });
 
-    // response.status(200);
+    return res.status(200).json({ message: 'File deleted' });
   }
 );
 

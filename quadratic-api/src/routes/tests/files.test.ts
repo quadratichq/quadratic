@@ -261,34 +261,31 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file con
   });
 });
 
-// describe('GET /v0/files/:uuid with auth and another users file shared readonly', () => {
-//   it('responds with json', async () => {
-//     const res = await request(app)
-//       .get('/v0/files/00000000-0000-4000-8000-000000000001')
-//       .set('Accept', 'application/json')
-//       .set('Authorization', `Bearer ValidToken test_user_2`)
-//       .expect('Content-Type', /json/)
-//       .expect(200); // OK
+describe('UPDATE - POST /v0/files/:uuid with auth and another users file shared readonly', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/00000000-0000-4000-8000-000000000001')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_2`)
+      .expect('Content-Type', /json/)
+      .expect(403); // OK
 
-//     expect(res.body).toHaveProperty('file');
-//     expect(res.body).toHaveProperty('permission');
-//     expect(res.body.permission).toEqual('READONLY');
-//     expect(res.body.file.contents).toEqual({ data: [99, 111, 110, 116, 101, 110, 116, 115, 95, 49], type: 'Buffer' });
-//   });
-// });
+    expect(res.body).toMatchObject({ error: { message: 'Permission denied' } });
+  });
+});
 
-// describe('GET /v0/files/:uuid with auth and another users file not shared', () => {
-//   it('responds with json', async () => {
-//     const res = await request(app)
-//       .get('/v0/files/00000000-0000-4000-8000-000000000000')
-//       .set('Accept', 'application/json')
-//       .set('Authorization', `Bearer ValidToken test_user_2`)
-//       .expect('Content-Type', /json/)
-//       .expect(403); // Forbidden
+describe('UPDATE - POST /v0/files/:uuid with auth and another users file not shared', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/00000000-0000-4000-8000-000000000000')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_2`)
+      .expect('Content-Type', /json/)
+      .expect(403); // Forbidden
 
-//     expect(res.body).toMatchObject({ message: 'Permission denied.' });
-//   });
-// });
+    expect(res.body).toMatchObject({ error: { message: 'Permission denied' } });
+  });
+});
 
 describe('CREATE - POST /v0/files/ with no auth', () => {
   it('responds with json', async () => {
@@ -363,5 +360,72 @@ describe('CREATE - POST /v0/files/ with auth (file name, contents)', () => {
     expect(res2.body.permission).toEqual('OWNER');
     expect(res2.body.file.name).toEqual('new_file_with_name');
     expect(Buffer.from(res2.body.file.contents).toString()).toEqual('new_file_contents');
+  });
+});
+
+describe('DELETE - DELETE /v0/files/:uuid with no auth', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .delete('/v0/files/00000000-0000-4000-8000-000000000000')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(401);
+
+    expect(res.body).toMatchObject({ error: { message: 'No authorization token was found' } });
+  });
+});
+
+describe('DELETE - DELETE /v0/files/:uuid file not found', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .delete('/v0/files/00000000-0000-4000-8000-000000000009')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(404); // Not Found
+
+    expect(res.body).toMatchObject({ error: { message: 'File not found' } });
+  });
+});
+
+describe('DELETE - DELETE /v0/files/:uuid with auth and owned file', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .delete('/v0/files/00000000-0000-4000-8000-000000000000')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200); // OK
+
+    expect(res.body).toMatchObject({ message: 'File deleted' });
+
+    // verify file deleted
+    const res2 = await request(app)
+      .get('/v0/files/00000000-0000-4000-8000-000000000000')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(400); // Not Found
+
+    expect(res2.body).toMatchObject({ error: { message: 'File has been deleted' } });
+  });
+});
+
+describe('DELETE - DELETE /v0/files/:uuid with auth and another users file', () => {
+  it('responds with json', async () => {
+    await request(app)
+      .delete('/v0/files/00000000-0000-4000-8000-000000000001')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_2`)
+      .expect('Content-Type', /json/)
+      .expect(403); // Forbidden
+
+    // verify file not deleted
+    await request(app)
+      .get('/v0/files/00000000-0000-4000-8000-000000000001')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200); // OK
   });
 });
