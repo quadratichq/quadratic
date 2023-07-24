@@ -2,7 +2,7 @@ import './styles.css';
 import { QuadraticApp } from './ui/QuadraticApp';
 import { RecoilRoot } from 'recoil';
 import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
-import { GridFile, IdSchema } from './schemas';
+import { GridFile } from './schemas';
 import Empty from './dashboard/Empty';
 import { ErrorOutline, QuestionMarkOutlined } from '@mui/icons-material';
 import { Button } from '@mui/material';
@@ -16,7 +16,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { uuid } = params;
 
   // Ensure we have an ID that matches the schema
-  if (!(uuid && IdSchema.safeParse(uuid).success)) {
+  if (!(uuid /*&& IdSchema.safeParse(uuid).success*/)) {
     throw new Response('Bad request. Expected a UUID string.', { status: 400 });
   }
 

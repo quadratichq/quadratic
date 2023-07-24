@@ -1,9 +1,30 @@
-import { GridFile } from '../schemas';
+import { GridFile, GridFileSchema } from '../schemas';
 import * as Sentry from '@sentry/react';
 import { downloadFile } from '../helpers/downloadFile';
 import mixpanel from 'mixpanel-browser';
 import { authClient } from '../auth';
+import z from 'zod';
 const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
+
+// TODO share this code with API
+export const APIFileSchema = z.object({
+  uuid: z.string().uuid(),
+  name: z.string(),
+  created_date: z.number(),
+  updated_date: z.number(),
+  // TODO pull these from the GridFilesSchema
+  version: z.union([z.literal('1.0'), z.literal('1.1'), z.literal('1.2'), z.literal('1.3')]),
+  // TODO one of <from API types>
+  public_link_access: z.string(),
+  // TODO guarantee this will be the _latest_
+  contents: GridFileSchema,
+});
+export type APIFile = z.infer<typeof APIFileSchema>;
+export const FileResSchema = {
+  // TODO one of?
+  permission: z.string(),
+  file: APIFileSchema,
+};
 
 class APIClientSingleton {
   // Allow only one instance of the class to be created
@@ -182,16 +203,22 @@ class APIClientSingleton {
     }
   }
 
-  async createFile(name?: string, contents?: GridFile) {
+  async createFile(
+    name?: string,
+    contents: GridFile = {
+      cells: [],
+      formats: [],
+      columns: [],
+      rows: [],
+      borders: [],
+      cell_dependency: '',
+      version: GridFileSchema.shape.version.value,
+    }
+  ): Promise<APIFile | undefined> {
     if (!API_URL) return;
 
     try {
       const base_url = this.getAPIURL();
-
-      const request_body = {
-        name,
-        contents: contents,
-      };
 
       const response = await fetch(`${base_url}/v0/files/`, {
         method: 'POST',
@@ -199,13 +226,11 @@ class APIClientSingleton {
           Authorization: `Bearer ${await authClient.getToken()}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(request_body),
+        body: JSON.stringify({
+          name,
+          contents,
+        }),
       });
-
-      console.log(
-        'API Response: ' + response.status + ' ' + response.statusText + ' ' + response.url + ' ' + response.type,
-        'Response body ' + response.body
-      );
 
       if (!response.ok) {
         Sentry.captureException({
@@ -214,7 +239,6 @@ class APIClientSingleton {
       }
 
       // TODO: Verify that the response is what we expect
-
       return await response.json();
     } catch (error: any) {
       Sentry.captureException({

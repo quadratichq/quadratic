@@ -132,7 +132,10 @@ export const action = async ({ params, request }: any) => {
 
     const res = await apiClientSingleton.createFile();
 
-    return redirect(`/file/${res.uuid}`);
+    // TODO handle doesn't create
+    if (res?.uuid) {
+      return redirect(`/file/${res.uuid}`);
+    }
   }
 
   return null;

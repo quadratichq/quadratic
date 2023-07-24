@@ -1,31 +1,19 @@
 import z from 'zod';
+import { GridFileV1_2 } from './GridFileV1_2';
 
-const ArrayOutputSchema = z.array(z.any());
-
-export enum BorderType {
-  line1 = 0,
-  line2 = 1,
-  line3 = 2,
-  dotted = 3,
-  dashed = 4,
-  double = 5,
-}
+// Shared schemas
+const ArrayOutputBaseSchema = z.array(z.any());
 const BorderDirectionSchema = z.object({
   color: z.string().optional(),
-  type: z.nativeEnum(BorderType).optional(),
+  type: z.enum(['line1', 'line2', 'line3', 'dotted', 'dashed', 'double']).optional(),
 });
-
-const CoordinateSchema = z.object({
-  x: z.number(),
-  y: z.number(),
-});
-
 const HeadingSchema = z.object({
   id: z.number(),
   size: z.number().optional(),
 });
 
-export const GridFileSchemaV1 = z.object({
+// File schema
+export const GridFileSchemaV1_3 = z.object({
   borders: z
     .object({
       x: z.number(),
@@ -38,7 +26,7 @@ export const GridFileSchemaV1 = z.object({
     .object({
       x: z.number(),
       y: z.number(),
-      type: z.enum(['TEXT', 'FORMULA', 'JAVASCRIPT', 'PYTHON', 'SQL', 'COMPUTED']),
+      type: z.enum(['TEXT', 'FORMULA', 'JAVASCRIPT', 'PYTHON', 'SQL', 'COMPUTED', 'AI']),
       value: z.string(),
       array_cells: z.tuple([z.number(), z.number()]).array().optional(), // list of output array cells created by this cell
       dependent_cells: z.tuple([z.number(), z.number()]).array().optional(),
@@ -49,13 +37,14 @@ export const GridFileSchemaV1 = z.object({
           std_err: z.string().optional(),
           output_value: z.string().or(z.null()).or(z.undefined()),
           cells_accessed: z.tuple([z.number(), z.number()]).array(),
-          array_output: z.union([ArrayOutputSchema, z.array(ArrayOutputSchema)]).optional(), // 1 or 2d array
+          array_output: z.union([ArrayOutputBaseSchema, z.array(ArrayOutputBaseSchema)]).optional(), // 1 or 2d array
           formatted_code: z.string(),
           error_span: z.tuple([z.number(), z.number()]).or(z.null()),
         })
         .optional(),
       formula_code: z.string().optional(),
       last_modified: z.string().optional(),
+      ai_prompt: z.string().optional(),
       python_code: z.string().optional(),
     })
     .array(),
@@ -65,7 +54,7 @@ export const GridFileSchemaV1 = z.object({
     .object({
       x: z.number(),
       y: z.number(),
-      alignment: z.enum(['right', 'center']).optional(), // default is left
+      alignment: z.enum(['left', 'right', 'center']).optional(),
       bold: z.boolean().optional(),
       fillColor: z.string().optional(),
       italic: z.boolean().optional(),
@@ -95,14 +84,48 @@ export const GridFileSchemaV1 = z.object({
       wrapping: z.enum(['wrap', 'clip']).optional(), // default is overflow
     })
     .array(),
-  render_dependency: z
-    .object({
-      location: CoordinateSchema,
-      needToRender: CoordinateSchema.array(), // these are cells that must be rendered when drawing this cell
-      renderThisCell: CoordinateSchema.array(), // these are cells that render this cell when drawing
-    })
-    .array(),
   rows: HeadingSchema.array(),
-  version: z.literal('1.0'),
+  version: z.literal('1.3'),
 });
-export type GridFileV1 = z.infer<typeof GridFileSchemaV1>;
+export type GridFileV1_3 = z.infer<typeof GridFileSchemaV1_3>;
+export type ArrayOutputBase = z.infer<typeof ArrayOutputBaseSchema>;
+
+/*
+
+// apiClient
+response = {
+  permission: "",
+  file: GridFile
+}
+
+// GridFile
+GridFile {
+  version,
+  ...
+}
+
+// download
+DiskFile {
+  version,
+  contents: GridFile
+  // read name from file
+}
+
+*/
+
+/**
+ * Given a v1_1 file, update it to a v1_2 file
+ */
+export function upgradeV1_2toV1_3(file: GridFileV1_2): GridFileV1_3 {
+  const result = {
+    ...file,
+    version: '1.3',
+  } as GridFileV1_3;
+
+  // TODO upgrade here
+  // `name` was `filename`
+  // 'created_date` was `created`
+  // 'updated_date` was `modified`
+
+  return result;
+}
