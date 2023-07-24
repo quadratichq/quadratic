@@ -233,6 +233,38 @@ describe('POST /v0/files/:uuid with auth and owned file rename file', () => {
   });
 });
 
+describe('POST /v0/files/:uuid with auth and owned file update file contents', () => {
+  it('responds with json', async () => {
+    // change file name
+    const res = await request(app)
+      .post('/v0/files/00000000-0000-4000-8000-000000000000')
+      .send({ contents: Buffer.from('contents_0_updated').toString('base64') })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200); // OK
+
+    expect(res.body).toMatchObject({ message: 'File updated.' });
+
+    // check file name changed
+    const res2 = await request(app)
+      .get('/v0/files/00000000-0000-4000-8000-000000000000')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200); // OK
+
+    expect(res2.body).toHaveProperty('file');
+    expect(res2.body).toHaveProperty('permission');
+    expect(res2.body.permission).toEqual('OWNER');
+    expect(res2.body.file.name).toEqual('test_file_1_new_name');
+    expect(res2.body.file.contents).toEqual({
+      data: [99, 111, 110, 116, 101, 110, 116, 115, 95, 48, 95, 117, 112, 100, 97, 116, 101, 100],
+      type: 'Buffer',
+    }); // contents_1
+  });
+});
+
 // describe('GET /v0/files/:uuid with auth and another users file shared readonly', () => {
 //   it('responds with json', async () => {
 //     const res = await request(app)
