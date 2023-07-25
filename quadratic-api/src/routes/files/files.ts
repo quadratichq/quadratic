@@ -113,6 +113,11 @@ files_router.get('/', validateAccessToken, file_rate_limiter, async (req, res) =
       updated_date: true,
       public_link_access: true,
     },
+    orderBy: [
+      {
+        updated_date: 'desc',
+      },
+    ],
   });
 
   res.status(200).json(files);

@@ -16,20 +16,20 @@ beforeAll(async () => {
   await dbClient.file.create({
     data: {
       ownerUserId: user_1.id,
-      name: 'test_file_1',
-      contents: Buffer.from('contents_0'),
-      uuid: '00000000-0000-4000-8000-000000000000',
-      public_link_access: 'NOT_SHARED',
+      name: 'test_file_2',
+      contents: Buffer.from('contents_1'),
+      uuid: '00000000-0000-4000-8000-000000000001',
+      public_link_access: 'READONLY',
     },
   });
 
   await dbClient.file.create({
     data: {
       ownerUserId: user_1.id,
-      name: 'test_file_2',
-      contents: Buffer.from('contents_1'),
-      uuid: '00000000-0000-4000-8000-000000000001',
-      public_link_access: 'READONLY',
+      name: 'test_file_1',
+      contents: Buffer.from('contents_0'),
+      uuid: '00000000-0000-4000-8000-000000000000',
+      public_link_access: 'NOT_SHARED',
     },
   });
 });

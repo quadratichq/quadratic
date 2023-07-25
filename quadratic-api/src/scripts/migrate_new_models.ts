@@ -19,6 +19,7 @@ export const migrateFiles = async () => {
   // Create new files from old files
   for (const old_file of old_files) {
     const new_file = await dbClient.file.create({
+      // Need to validate that we will do this correctly based on how Jim is reading files
       data: {
         // Set owner correctly to new user id
         name: old_file.name,
