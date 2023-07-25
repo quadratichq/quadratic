@@ -127,8 +127,6 @@ pub struct JsSheet {
     pub formats: Vec<JsCellFormat>,
 
     pub rows: Vec<JsHeadingSchema>,
-
-    pub created: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
