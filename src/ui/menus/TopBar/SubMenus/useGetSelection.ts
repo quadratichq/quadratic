@@ -115,11 +115,11 @@ export const useGetSelection = (sheet: Sheet): GetSelection => {
     // this is needed for trigger to cause a useMemo change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    trigger,
     cursor.multiCursor,
     cursor.multiCursor?.originPosition,
     cursor.multiCursor?.terminalPosition,
     cursor.cursorPosition,
     sheet.grid,
-    trigger,
   ]);
 };

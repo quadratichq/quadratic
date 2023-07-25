@@ -111,14 +111,9 @@ export const useBorders = (sheetController: SheetController): IResults => {
     if (borderUpdates.length) {
       // create transaction to update borders
       sheetController.start_transaction();
-      borderUpdates.forEach((border) => {
-        sheetController.execute_statement({
-          type: 'SET_BORDER',
-          data: {
-            position: [border.x, border.y],
-            border: border,
-          },
-        });
+      sheetController.execute_statement({
+        type: 'SET_BORDERS',
+        data: borderUpdates,
       });
       sheetController.end_transaction();
       pixiAppEvents.quadrantsChanged({ range: { start, end } });

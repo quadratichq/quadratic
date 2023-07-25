@@ -1,18 +1,19 @@
-import { SheetController } from '../sheetController';
+import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 import { Cell } from '../../../schemas';
-import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
-import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
-import { DeleteCells } from '../../actions/DeleteCells';
+import { mockPixiApp } from '../../../setupPixiTests';
 import { webWorkers } from '../../../web-workers/webWorkers';
+import { DeleteCells } from '../../actions/DeleteCells';
+import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
+import { SheetController } from '../sheetController';
+import { mockPythonOutput } from './mockPythonOutput';
 
 jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
 
-let sc: SheetController;
+const sc: SheetController = new SheetController();
 beforeAll(async () => {
-  sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-  webWorkers.init();
-  await webWorkers.pythonWebWorker?.load();
+  pixiAppEvents.app = mockPixiApp();
+  pixiAppEvents.app.sheet_controller = sc;
+  webWorkers.init(pixiAppEvents.app);
 });
 
 beforeEach(() => {
@@ -36,9 +37,12 @@ test('SheetController - cell update when being deleted', async () => {
     python_code: 'c(0,0) * 2',
   } as Cell;
 
+  mockPythonOutput({
+    'c(0,0) * 2': `{"output_value":"20","cells_accessed":[[0,0]],"input_python_std_out":"","success":true,"formatted_code":"c(0, 0) * 2\\n"}`,
+  });
+
   await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc });
   await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc });
-
   const cell_after = sc.sheet.grid.getCell(0, 1);
   expect(cell_after?.value).toBe('20');
 
@@ -50,14 +54,22 @@ test('SheetController - cell update when being deleted', async () => {
     type: 'TEXT',
   } as Cell;
 
+  mockPythonOutput({
+    'c(0,0) * 2': `{"output_value":"40","cells_accessed":[[0,0]],"input_python_std_out":"","success":true,"formatted_code":"c(0, 0) * 2\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc });
 
   const cell_after_update = sc.sheet.grid.getCell(0, 1);
   expect(cell_after_update?.value).toBe('40');
 
   // test deleting cell 0,0 update
+
+  mockPythonOutput({
+    'c(0,0) * 2': `{"cells_accessed":[[0,0]],"input_python_std_out":"","success":false,"input_python_stack_trace":"TypeError on line 1: unsupported operand type(s) for *: 'NoneType' and 'int'","formatted_code":"c(0,0) * 2"}`,
+  });
+
   await updateCellAndDCells({
-    starting_cells: [{ ...cell_0_0 }],
+    starting_cells: [cell_0_0],
     sheetController: sc,
     delete_starting_cells: true,
   });
@@ -107,6 +119,13 @@ test('SheetController - cell bulk update when deleting a range of cells', async 
     python_code: 'c(0,3) * 2',
   } as Cell;
 
+  mockPythonOutput({
+    '[2, 4, 6, 8]': `{"output_value":"[2, 4, 6, 8]","array_output":[2,4,6,8],"cells_accessed":[],"input_python_std_out":"","success":true,"formatted_code":"[2, 4, 6, 8]\\n"}`,
+    'c(0,0) * 2': `{"output_value":"4","cells_accessed":[[0,0]],"input_python_std_out":"","success":true,"formatted_code":"c(0, 0) * 2\\n"}`,
+    'c(0,1) * 2': `{"output_value":"8","cells_accessed":[[0,1]],"input_python_std_out":"","success":true,"formatted_code":"c(0, 1) * 2\\n"}`,
+    'c(0,2) * 2': `{"output_value":"12","cells_accessed":[[0,2]],"input_python_std_out":"","success":true,"formatted_code":"c(0, 2) * 2\\n"}`,
+    'c(0,3) * 2': `{"output_value":"16","cells_accessed":[[0,3]],"input_python_std_out":"","success":true,"formatted_code":"c(0, 3) * 2\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc });
   await updateCellAndDCells({ starting_cells: [cell_1_0], sheetController: sc });
   await updateCellAndDCells({ starting_cells: [cell_1_1], sheetController: sc });
@@ -123,6 +142,12 @@ test('SheetController - cell bulk update when deleting a range of cells', async 
   expect(cell_after_1_3?.value).toBe('16');
 
   // try deleting cell bulk cells
+  mockPythonOutput({
+    'c(0,0) * 2': `{"cells_accessed":[[0,0]],"input_python_std_out":"","success":false,"input_python_stack_trace":"TypeError on line 1: unsupported operand type(s) for *: 'NoneType' and 'int'","formatted_code":"c(0,0) * 2"}`,
+    'c(0,1) * 2': `{"cells_accessed":[[0,1]],"input_python_std_out":"","success":false,"input_python_stack_trace":"TypeError on line 1: unsupported operand type(s) for *: 'NoneType' and 'int'","formatted_code":"c(0,1) * 2"}`,
+    'c(0,2) * 2': `{"cells_accessed":[[0,2]],"input_python_std_out":"","success":false,"input_python_stack_trace":"TypeError on line 1: unsupported operand type(s) for *: 'NoneType' and 'int'","formatted_code":"c(0, 2) * 2"}`,
+    'c(0,3) * 2': `{"cells_accessed":[[0,3]],"input_python_std_out":"","success":false,"input_python_stack_trace":"TypeError on line 1: unsupported operand type(s) for *: 'NoneType' and 'int'","formatted_code":"c(0, 3) * 2"}`,
+  });
   const cells_to_delete = sc.sheet.grid.getNakedCells(0, 0, 0, 3);
   await updateCellAndDCells({
     starting_cells: cells_to_delete,
@@ -148,6 +173,9 @@ test('SheetController - delete cell and array cells', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
+  mockPythonOutput({
+    '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]': `{"output_value":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]","array_output":[1,2,3,4,5,6,7,8,9,10],"cells_accessed":[],"input_python_std_out":"","success":true,"formatted_code":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const code_cell = sc.sheet.grid.getNakedCells(0, 0, 0, 0);

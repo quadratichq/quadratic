@@ -1,12 +1,12 @@
 import { Rectangle } from 'pixi.js';
-import { Coordinate } from '../../gridGL/types/size';
+import { cellHasContent } from '../../gridGL/helpers/selectCells';
+import { Quadrants } from '../../gridGL/quadrants/Quadrants';
+import { Coordinate, MinMax } from '../../gridGL/types/size';
+import { Cell, CellFormat } from '../../schemas';
+import { Bounds } from './Bounds';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
-import { Cell, CellFormat } from '../../schemas';
-import { MinMax } from '../../gridGL/types/size';
-import { Quadrants } from '../../gridGL/quadrants/Quadrants';
-import { Bounds } from './Bounds';
-import { cellHasContent } from '../../gridGL/helpers/selectCells';
+import { Sheet } from './Sheet';
 
 export interface CellAndFormat {
   cell?: Cell;
@@ -15,7 +15,7 @@ export interface CellAndFormat {
 
 /** Stores all cells and format locations */
 export class GridSparse {
-  private gridOffsets: GridOffsets;
+  private sheet: Sheet;
   private cellBounds = new Bounds();
   private formatBounds = new Bounds();
   private cellFormatBounds = new Bounds();
@@ -24,11 +24,15 @@ export class GridSparse {
   // tracks which quadrants need to render based on GridSparse data
   quadrants = new Set<string>();
 
-  constructor(gridOffsets: GridOffsets) {
-    this.gridOffsets = gridOffsets;
+  constructor(sheet: Sheet) {
+    this.sheet = sheet;
   }
 
-  updateCells(cells: Cell[]): void {
+  get gridOffsets(): GridOffsets {
+    return this.sheet.gridOffsets;
+  }
+
+  updateCells(cells: Cell[], skipBounds = false): void {
     cells.forEach((cell) => {
       const update = this.cells.get(this.getKey(cell.x, cell.y));
       if (update) {
@@ -38,7 +42,9 @@ export class GridSparse {
         this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
       }
     });
-    this.recalculateBounds();
+    if (!skipBounds) {
+      this.recalculateBounds();
+    }
   }
 
   recalculateBounds(): void {
@@ -58,17 +64,28 @@ export class GridSparse {
     this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
   }
 
-  updateFormat(formats: CellFormat[]): void {
+  hasFormatting(format: CellFormat): boolean {
+    const keys = Object.keys(format);
+    return keys.length > 2;
+  }
+
+  updateFormat(formats: CellFormat[], skipBoundsCalculation = false): void {
+    let needBoundsCalculation = false;
     formats.forEach((format) => {
-      const update = this.cells.get(this.getKey(format.x, format.y));
-      if (update) {
-        update.format = format;
+      const key = this.getKey(format.x, format.y);
+      if (this.hasFormatting(format)) {
+        this.cells.set(key, { format });
+        this.formatBounds.add(format.x, format.y);
       } else {
-        this.cells.set(this.getKey(format.x, format.y), { format });
+        this.cells.delete(key);
+        if (!skipBoundsCalculation) {
+          needBoundsCalculation ||= this.formatBounds.atBounds(format.x, format.y);
+        }
       }
-      this.formatBounds.add(format.x, format.y);
-      this.cellFormatBounds.add(format.x, format.y);
     });
+    if (needBoundsCalculation && !skipBoundsCalculation) {
+      this.recalculateBounds();
+    }
   }
 
   clearFormat(formats: CellFormat[]): void {
@@ -85,7 +102,7 @@ export class GridSparse {
     this.recalculateBounds();
   }
 
-  deleteCells(cells: Coordinate[]): void {
+  deleteCells(cells: Coordinate[], skipBounds = false): void {
     cells.forEach((cell) => {
       const candf = this.cells.get(this.getKey(cell.x, cell.y));
       if (candf) {
@@ -97,7 +114,9 @@ export class GridSparse {
         }
       }
     });
-    this.recalculateBounds();
+    if (!skipBounds) {
+      this.recalculateBounds();
+    }
   }
 
   get empty(): boolean {

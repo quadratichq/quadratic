@@ -64,15 +64,9 @@ export const useFormatCells = (sheet_controller: SheetController, skipStartTrans
       }
       // Transaction to update formats
       if (!skipStartTransaction) sheet_controller.start_transaction();
-      formats.forEach((format) => {
-        if (format.x !== undefined && format.y !== undefined)
-          sheet_controller.execute_statement({
-            type: 'SET_CELL_FORMAT',
-            data: {
-              position: [format.x, format.y],
-              value: format,
-            },
-          });
+      sheet_controller.execute_statement({
+        type: 'SET_CELL_FORMATS',
+        data: formats,
       });
       if (!skipStartTransaction) sheet_controller.end_transaction();
       pixiAppEvents.quadrantsChanged({ range: { start, end } });

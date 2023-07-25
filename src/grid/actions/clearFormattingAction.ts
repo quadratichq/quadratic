@@ -1,7 +1,6 @@
-import { CellFormat } from '../../schemas';
 import { Coordinate } from '../../gridGL/types/size';
+import { CellFormat } from '../../schemas';
 import { SheetController } from '../controller/sheetController';
-import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 
 export const clearFormattingAction = (args: {
   sheet_controller: SheetController;
@@ -22,18 +21,10 @@ export const clearFormattingAction = (args: {
 
   // create transaction and statements to clear cell formats
   if (create_transaction ?? true) sheet_controller.start_transaction();
-  formats.forEach((format) => {
-    if (format.x !== undefined && format.y !== undefined)
-      sheet_controller.execute_statement({
-        type: 'SET_CELL_FORMAT',
-        data: {
-          position: [format.x, format.y],
-          value: undefined, // set to undefined to clear formatting
-        },
-      });
+  sheet_controller.execute_statement({
+    type: 'SET_CELL_FORMATS',
+    data: formats,
   });
-  if (create_transaction ?? true) sheet_controller.end_transaction();
 
-  // tell app what quadrants have changed
-  pixiAppEvents.quadrantsChanged({ range: { start, end } });
+  if (create_transaction ?? true) sheet_controller.end_transaction();
 };

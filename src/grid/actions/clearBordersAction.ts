@@ -1,7 +1,7 @@
-import { Border } from '../../schemas';
-import { Coordinate } from '../../gridGL/types/size';
-import { SheetController } from '../controller/sheetController';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
+import { Coordinate } from '../../gridGL/types/size';
+import { Border } from '../../schemas';
+import { SheetController } from '../controller/sheetController';
 
 export const clearBordersAction = (args: {
   sheet_controller: SheetController;
@@ -46,26 +46,22 @@ export const clearBordersAction = (args: {
 
   // create transaction to update borders
   if (create_transaction ?? true) sheet_controller.start_transaction();
+
+  const borders: (Border | Coordinate)[] = [];
   if (borderDelete.length) {
-    borderDelete.forEach((border_coord) => {
-      sheet_controller.execute_statement({
-        type: 'SET_BORDER',
-        data: {
-          position: [border_coord.x, border_coord.y],
-          border: undefined,
-        },
-      });
-    });
+    borders.push(
+      ...borderDelete.map((border) => {
+        return { x: border.x, y: border.y };
+      })
+    );
   }
   if (borderUpdate.length) {
-    borderUpdate.forEach((border) => {
-      sheet_controller.execute_statement({
-        type: 'SET_BORDER',
-        data: {
-          position: [border.x, border.y],
-          border: border,
-        },
-      });
+    borders.push(...borderUpdate);
+  }
+  if (borders.length) {
+    sheet_controller.execute_statement({
+      type: 'SET_BORDERS',
+      data: borders,
     });
   }
   if (create_transaction ?? true) sheet_controller.end_transaction();

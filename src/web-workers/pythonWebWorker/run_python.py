@@ -1,18 +1,17 @@
-import GetCellsDB
-
-import sys
-import re
-import traceback
-import pyodide
 import asyncio
-import micropip
-import pandas as pd
-import numpy as np
 import operator
-
-from io import StringIO
+import re
+import sys
+import traceback
 from contextlib import redirect_stdout
 from decimal import Decimal, DecimalException
+from io import StringIO
+
+import GetCellsDB
+import micropip
+import numpy as np
+import pandas as pd
+import pyodide
 
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html

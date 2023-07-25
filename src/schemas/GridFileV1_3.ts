@@ -1,6 +1,6 @@
 import z from 'zod';
+import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { GridFileV1_2 } from './GridFileV1_2';
-import { generateKeyBetween } from 'fractional-indexing';
 
 // Shared schemas
 const ArrayOutputSchema = z.array(z.union([z.string(), z.number(), z.boolean()]));

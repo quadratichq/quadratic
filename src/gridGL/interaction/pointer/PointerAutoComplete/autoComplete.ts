@@ -1,11 +1,11 @@
 import { Rectangle } from 'pixi.js';
+import { DeleteCells } from '../../../../grid/actions/DeleteCells';
+import { updateCellAndDCells } from '../../../../grid/actions/updateCellAndDCells';
+import { SheetController } from '../../../../grid/controller/sheetController';
+import { Border, Cell, CellFormat } from '../../../../schemas';
 import { PixiApp } from '../../../pixiApp/PixiApp';
 import { Coordinate } from '../../../types/size';
 import { findAutoComplete } from './findAutoComplete';
-import { updateCellAndDCells } from '../../../../grid/actions/updateCellAndDCells';
-import { Border, Cell, CellFormat } from '../../../../schemas';
-import { DeleteCells } from '../../../../grid/actions/DeleteCells';
-import { SheetController } from '../../../../grid/controller/sheetController';
 
 export const shrinkHorizontal = async (options: {
   app: PixiApp;
@@ -54,24 +54,18 @@ const updateFormatAndBorders = async (options: {
     starting_cells: cells,
     sheetController: sheet_controller,
   });
-  formats.forEach((format) => {
+  if (formats.length) {
     sheet_controller.execute_statement({
-      type: 'SET_CELL_FORMAT',
-      data: {
-        position: [format.x, format.y],
-        value: format,
-      },
+      type: 'SET_CELL_FORMATS',
+      data: formats,
     });
-  });
-  borders.forEach((border) => {
+  }
+  if (borders.length) {
     sheet_controller.execute_statement({
-      type: 'SET_BORDER',
-      data: {
-        position: [border.x, border.y],
-        border,
-      },
+      type: 'SET_BORDERS',
+      data: borders,
     });
-  });
+  }
 };
 
 export const expandDown = async (options: {

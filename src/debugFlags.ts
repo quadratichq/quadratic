@@ -17,6 +17,16 @@ export const debugShowCacheCount = debug && true;
 // add a CACHE flag to the footer to indicate when cache is visible instead of cells
 export const debugShowCacheFlag = debug && true;
 
+// ------------
+// Transactions
+// ------------
+
+// show number of transactions
+export const debugShowTransactions = debug && false;
+
+// show results of runComputation() in console
+export const debugShowRunComputation = debug && false;
+
 // ----------
 // Rendering
 // ----------

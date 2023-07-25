@@ -1,17 +1,20 @@
-import { SheetController } from '../sheetController';
+import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 import { Cell } from '../../../schemas';
+import { mockPixiApp } from '../../../setupPixiTests';
+import { webWorkers } from '../../../web-workers/webWorkers';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
-import { webWorkers } from '../../../web-workers/webWorkers';
+import { SheetController } from '../sheetController';
+import { mockPythonOutput } from './mockPythonOutput';
 
 jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
 
-let sc: SheetController;
+const sc: SheetController = new SheetController();
 beforeAll(async () => {
-  sc = new SheetController();
+  pixiAppEvents.app = mockPixiApp();
   GetCellsDBSetSheet(sc.sheet);
-  webWorkers.init();
-  await webWorkers.pythonWebWorker?.load();
+  pixiAppEvents.app.sheet_controller = sc;
+  webWorkers.init(pixiAppEvents.app);
 });
 
 beforeEach(() => {
@@ -29,6 +32,9 @@ test('SheetController - code run correctly', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
+  mockPythonOutput({
+    "print('hello')\n'world'": `{"output_value":"world","cells_accessed":[],"input_python_std_out":"hello\\n","success":true,"formatted_code":"print('hello')\\n'world'\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const cell_after = sc.sheet.grid.getCell(54, 54);
@@ -50,6 +56,9 @@ test('SheetController - array output undo redo', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
+  mockPythonOutput({
+    '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]': `{"output_value":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]","array_output":[1,2,3,4,5,6,7,8,9,10],"cells_accessed":[],"input_python_std_out":"","success":true,"formatted_code":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 10);
@@ -100,6 +109,9 @@ test('SheetController - array output length change', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
+  mockPythonOutput({
+    '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]': `{"output_value":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]","array_output":[1,2,3,4,5,6,7,8,9,10],"cells_accessed":[],"input_python_std_out":"","success":true,"formatted_code":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
@@ -126,7 +138,9 @@ test('SheetController - array output length change', async () => {
     python_code: '["1new", "2new", "3new", "4new", "5new"]',
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
-
+  mockPythonOutput({
+    '["1new", "2new", "3new", "4new", "5new"]': `{"output_value":"['1new', '2new', '3new', '4new', '5new']","array_output":["1new","2new","3new","4new","5new"],"cells_accessed":[],"input_python_std_out":"","success":true,"formatted_code":"[\\"1new\\", \\"2new\\", \\"3new\\", \\"4new\\", \\"5new\\"]\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell_update_1], sheetController: sc });
 
   const after_update_1 = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
@@ -280,6 +294,9 @@ result`,
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
+  mockPythonOutput({
+    'result = []\nrepeat = int(c(0,0))\nfor x in range(0, repeat):\n  result.append(x + repeat)\nresult': `{"output_value":"[10, 11, 12, 13, 14, 15, 16, 17, 18, 19]","array_output":[10,11,12,13,14,15,16,17,18,19],"cells_accessed":[[0,0]],"input_python_std_out":"","success":true,"formatted_code":"result = []\\nrepeat = int(c(0, 0))\\nfor x in range(0, repeat):\\n    result.append(x + repeat)\\nresult\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc });
 
   // Validate the dataframe is sized
@@ -308,6 +325,9 @@ result`,
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
+  mockPythonOutput({
+    'result = []\nrepeat = int(c(0,0))\nfor x in range(0, repeat):\n  result.append(x + repeat)\nresult': `{"output_value":"[5, 6, 7, 8, 9]","array_output":[5,6,7,8,9],"cells_accessed":[[0,0]],"input_python_std_out":"","success":true,"formatted_code":"result = []\\nrepeat = int(c(0, 0))\\nfor x in range(0, repeat):\\n    result.append(x + repeat)\\nresult\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc });
 
   // Validate the dataframe is resized
@@ -341,6 +361,9 @@ test('SheetController - test deleted array cells update dependent cells', async 
     python_code: `c(0,2) + 100`,
   } as Cell;
 
+  mockPythonOutput({
+    'c(0,2) + 100': `{"cells_accessed":[[0,2]],"input_python_std_out":"","success":false,"input_python_stack_trace":"TypeError on line 1: unsupported operand type(s) for +: 'NoneType' and 'int'","formatted_code":"c(0,2) + 100"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell_1_2_dependent], sheetController: sc });
 
   const cell_0_0 = {
@@ -351,6 +374,10 @@ test('SheetController - test deleted array cells update dependent cells', async 
     python_code: `[1,2,3,4,5,6,7,8,9,10]`,
   } as Cell;
 
+  mockPythonOutput({
+    '[1,2,3,4,5,6,7,8,9,10]': `{"output_value":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]","array_output":[1,2,3,4,5,6,7,8,9,10],"cells_accessed":[],"input_python_std_out":"","success":true,"formatted_code":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\\n"}`,
+    'c(0,2) + 100': `{"output_value":"103","cells_accessed":[[0,2]],"input_python_std_out":"","success":true,"formatted_code":"c(0, 2) + 100\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc });
 
   // validate that the dependent cell is updated
@@ -367,6 +394,10 @@ test('SheetController - test deleted array cells update dependent cells', async 
     python_code: `[1,2]`,
   } as Cell;
 
+  mockPythonOutput({
+    '[1,2]': `{"output_value":"[1, 2]","array_output":[1,2],"cells_accessed":[],"input_python_std_out":"","success":true,"formatted_code":"[1, 2]\\n"}`,
+    'c(0,2) + 100': `{"cells_accessed":[[0,2]],"input_python_std_out":"","success":false,"input_python_stack_trace":"TypeError on line 1: unsupported operand type(s) for +: 'NoneType' and 'int'","formatted_code":"c(0,2) + 100"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc });
 
   // validate that the dependent cell is updated
@@ -459,6 +490,9 @@ test('SheetController - test empty cell to be `null` in `array_output`', async (
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
+  mockPythonOutput({
+    'val=cells((0,0), (3,0))\nval': `{"output_value":"     0    1    2    3\\n0  foo  bar  NaN  baz","array_output":[["foo","bar",null,"baz"]],"cells_accessed":[[0,0],[1,0],[2,0],[3,0]],"input_python_std_out":"","success":true,"formatted_code":"val = cells((0, 0), (3, 0))\\nval\\n"}`,
+  });
   await updateCellAndDCells({
     starting_cells: [cell_0_0, cell_1_0, cell_3_0, cell_0_1],
     sheetController: sc,
@@ -466,9 +500,7 @@ test('SheetController - test empty cell to be `null` in `array_output`', async (
 
   const result = sc.sheet.grid.getNakedCells(0, 1, 3, 1);
   expect(result[0]?.value).toBe('foo');
-  // If you stringify this, it will actually be `['foo','bar',null,'baz']` but
-  // jest converts null to undefined so we test for that
-  expect(result[0]?.evaluation_result?.array_output).toStrictEqual([['foo', 'bar', undefined, 'baz']]);
+  expect(result[0]?.evaluation_result?.array_output).toStrictEqual([['foo', 'bar', null, 'baz']]);
   expect(result[1]?.value).toBe('bar');
   expect(result[1]?.type).toBe('COMPUTED');
   expect(result[2]?.value).toBe('baz');

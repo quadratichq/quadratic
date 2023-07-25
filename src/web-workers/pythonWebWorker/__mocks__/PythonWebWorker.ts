@@ -1,15 +1,19 @@
 import { PythonReturnType } from '../pythonTypes';
-import { setupPython } from '../../../setupPythonTests';
 
 export class PythonWebWorker {
-  pyodide: any;
+  private output?: Record<string, PythonReturnType>;
 
-  async load() {
-    this.pyodide = await setupPython();
+  changeOutput(output: Record<string, PythonReturnType>) {
+    this.output = output;
   }
 
-  async run(python: string): Promise<PythonReturnType> {
-    const output = await this.pyodide.globals.get('run_python')(python);
-    return Object.fromEntries(output.toJs()) as PythonReturnType;
+  async run(python_code: string): Promise<PythonReturnType> {
+    if (!this.output) {
+      throw new Error('Call webWorkers.pythonWebWorker.changeOutput to set mocked output');
+    }
+    if (!this.output[python_code]) {
+      throw new Error(`mocked python output not defined: ${python_code.replaceAll('\n', '\\\\n')}`);
+    }
+    return this.output[python_code];
   }
 }

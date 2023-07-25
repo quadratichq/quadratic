@@ -7,7 +7,7 @@
     "strict": true,
     "skipLibCheck": true,
     "lib": ["dom", "dom.iterable", "esnext", "WebWorker"],
-    "allowJs": false,
+    "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",

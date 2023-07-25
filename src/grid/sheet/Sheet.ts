@@ -31,7 +31,7 @@ export class Sheet {
 
   constructor(name: string | undefined, order: string, copyFrom?: Sheet) {
     this.gridOffsets = new GridOffsets();
-    this.grid = new GridSparse(this.gridOffsets);
+    this.grid = new GridSparse(this);
     this.borders = new GridBorders(this.gridOffsets);
     this.render_dependency = new GridRenderDependency();
     this.array_dependency = new GridRenderDependency();
@@ -49,7 +49,7 @@ export class Sheet {
   // for testing
   clear() {
     this.gridOffsets = new GridOffsets();
-    this.grid = new GridSparse(this.gridOffsets);
+    this.grid = new GridSparse(this);
     this.borders = new GridBorders(this.gridOffsets);
     this.render_dependency = new GridRenderDependency();
     this.array_dependency = new GridRenderDependency();

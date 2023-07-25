@@ -1,5 +1,7 @@
-import { SheetController } from '../sheetController';
+import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 import { Cell } from '../../../schemas';
+import { mockPixiApp } from '../../../setupPixiTests';
+import { SheetController } from '../sheetController';
 
 const createCell = (pos: [number, number], value: string): Cell => {
   return {
@@ -10,25 +12,23 @@ const createCell = (pos: [number, number], value: string): Cell => {
   };
 };
 
+beforeAll(() => {
+  pixiAppEvents.app = mockPixiApp();
+});
+
 test('SheetController', () => {
   const sc = new SheetController();
 
   sc.start_transaction();
 
   sc.execute_statement({
-    type: 'SET_CELL',
-    data: {
-      position: [0, 0],
-      value: createCell([0, 0], 'Hello'),
-    },
+    type: 'SET_CELLS',
+    data: [createCell([0, 0], 'Hello')],
   });
 
   sc.execute_statement({
-    type: 'SET_CELL',
-    data: {
-      position: [1, 0],
-      value: createCell([1, 0], 'World.'),
-    },
+    type: 'SET_CELLS',
+    data: [createCell([1, 0], 'World.')],
   });
 
   sc.end_transaction();
@@ -88,11 +88,8 @@ test('SheetController - code is saved from undo to redo', () => {
   } as Cell;
 
   sc.execute_statement({
-    type: 'SET_CELL',
-    data: {
-      position: [14, 34],
-      value: cell,
-    },
+    type: 'SET_CELLS',
+    data: [cell],
   });
 
   sc.end_transaction();
@@ -130,11 +127,8 @@ test('SheetController - multiple values set to cell in same transaction', () => 
   } as Cell;
 
   sc.execute_statement({
-    type: 'SET_CELL',
-    data: {
-      position: [0, 0],
-      value: cell,
-    },
+    type: 'SET_CELLS',
+    data: [cell],
   });
 
   sc.end_transaction();
@@ -149,18 +143,12 @@ test('SheetController - multiple values set to cell in same transaction', () => 
 
   sc.start_transaction();
   sc.execute_statement({
-    type: 'SET_CELL',
-    data: {
-      position: [0, 0],
-      value: undefined,
-    },
+    type: 'SET_CELLS',
+    data: [{ x: 0, y: 0 }],
   });
   sc.execute_statement({
-    type: 'SET_CELL',
-    data: {
-      position: [0, 0],
-      value: { ...cell, value: 'hello2' },
-    },
+    type: 'SET_CELLS',
+    data: [{ ...cell, value: 'hello2' }],
   });
   sc.end_transaction();
 

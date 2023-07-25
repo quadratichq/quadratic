@@ -90,4 +90,9 @@ export class Bounds {
     if (this.empty) return;
     return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
   }
+
+  // checks if either x or y are at the boundary - this is used to test whether a recalculation is necessary for a deleted value
+  atBounds(x: number, y: number): boolean {
+    return x <= this.minX || x >= this.maxX || y <= this.minY || y >= this.maxX;
+  }
 }

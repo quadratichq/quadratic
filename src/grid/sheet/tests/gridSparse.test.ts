@@ -1,14 +1,14 @@
 import { Rectangle } from 'pixi.js';
-import { GridOffsets } from '../GridOffsets';
-import { GridSparse } from '../GridSparse';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
 import { Cell, CellFormat } from '../../../schemas';
+import { GridSparse } from '../GridSparse';
+import { Sheet } from '../Sheet';
 
 describe('gridSparse', () => {
-  const gridOffsets = new GridOffsets();
+  const sheet = new Sheet('test', 'A0');
 
   it('creates an empty gridSparse', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate();
     expect(gridSparse.empty).toBe(true);
     expect(gridSparse.get(0, 0)).toBeUndefined();
@@ -26,7 +26,7 @@ describe('gridSparse', () => {
   });
 
   it('populates cells with 1 cell of data (positive)', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate([
       {
         x: 1,
@@ -53,7 +53,7 @@ describe('gridSparse', () => {
   });
 
   it('populates cells with 1 cell of data (negative)', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate([
       {
         x: -1,
@@ -80,7 +80,7 @@ describe('gridSparse', () => {
   });
 
   it('populates cells with multiple cells of data', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate([
       {
         x: -1,
@@ -112,7 +112,7 @@ describe('gridSparse', () => {
   });
 
   it('populates cells with 1 cell of format data (positive)', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate(
       [],
       [
@@ -142,7 +142,7 @@ describe('gridSparse', () => {
   });
 
   it('populates cells with 1 cell of format data (negative)', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate(
       [],
       [
@@ -173,7 +173,7 @@ describe('gridSparse', () => {
   });
 
   it('populates cells with multiple cells of format data', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate(
       [],
       [
@@ -209,7 +209,7 @@ describe('gridSparse', () => {
   });
 
   it('gets row min/max', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate([
       {
         x: 1,
@@ -231,7 +231,7 @@ describe('gridSparse', () => {
   });
 
   it('gets columns min/max', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate([
       {
         x: 2,
@@ -253,7 +253,7 @@ describe('gridSparse', () => {
   });
 
   it('gets all cells', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate([
       {
         x: 2,
@@ -273,7 +273,7 @@ describe('gridSparse', () => {
   });
 
   it('gets arrays', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate(
       [
         {
@@ -306,7 +306,7 @@ describe('gridSparse', () => {
   });
 
   it('updates cells', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate([
       {
         x: 2,
@@ -348,7 +348,7 @@ describe('gridSparse', () => {
   });
 
   it('updates formats', () => {
-    const gridSparse = new GridSparse(gridOffsets);
+    const gridSparse = new GridSparse(sheet);
     gridSparse.populate(
       [],
       [
@@ -390,5 +390,11 @@ describe('gridSparse', () => {
     expect(gridSparse.getFormat(2, -5)?.fillColor).toBe('6');
     expect(gridSparse.getFormat(-10, -11)?.fillColor).toBe('8');
     expect(gridSparse.getFormat(2, 5)?.fillColor).toBe('2');
+  });
+
+  it('checks if a CellFormat has formatting', () => {
+    const gridSparse = new GridSparse(sheet);
+    expect(gridSparse.hasFormatting({ x: 1, y: 2 })).toBe(false);
+    expect(gridSparse.hasFormatting({ x: 1, y: 2, fillColor: '1' })).toBe(true);
   });
 });

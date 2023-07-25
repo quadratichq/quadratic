@@ -1,14 +1,14 @@
+import { Rectangle } from 'pixi.js';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 import { Coordinate } from '../../../gridGL/types/size';
 import { Border, Cell, CellFormat } from '../../../schemas';
 import { SheetController } from '../../controller/sheetController';
-import { updateCellAndDCells } from '../updateCellAndDCells';
-import { DeleteCells } from '../DeleteCells';
 import { CellAndFormat } from '../../sheet/GridSparse';
-import { Rectangle } from 'pixi.js';
-import { clearFormattingAction } from '../clearFormattingAction';
+import { DeleteCells } from '../DeleteCells';
 import { clearBordersAction } from '../clearBordersAction';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
+import { clearFormattingAction } from '../clearFormattingAction';
+import { updateCellAndDCells } from '../updateCellAndDCells';
 
 const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.1';
 
@@ -102,27 +102,18 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
           });
 
           // update formats
-          formats_to_update.forEach((format) => {
-            if (format.x !== undefined && format.y !== undefined)
-              sheet_controller.execute_statement({
-                type: 'SET_CELL_FORMAT',
-                data: {
-                  position: [format.x, format.y],
-                  value: format,
-                },
-              });
+          sheet_controller.execute_statement({
+            type: 'SET_CELL_FORMATS',
+            data: formats_to_update,
           });
 
           // update borders
-          borders_to_update.forEach((border) => {
+          if (borders_to_update.length) {
             sheet_controller.execute_statement({
-              type: 'SET_BORDER',
-              data: {
-                position: [border.x, border.y],
-                border,
-              },
+              type: 'SET_BORDERS',
+              data: borders_to_update,
             });
-          });
+          }
 
           sheet_controller.end_transaction();
 

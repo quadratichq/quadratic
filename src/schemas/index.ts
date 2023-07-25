@@ -1,8 +1,8 @@
 import z from 'zod';
 import { GridFileV1 } from './GridFileV1';
-import { GridFileV1_3, GridFileSchemaV1_3 } from './GridFileV1_3';
-import { GridFileV1_2, ArrayOutputBase } from './GridFileV1_2';
 import { GridFileV1_1 } from './GridFileV1_1';
+import { ArrayOutputBase, GridFileV1_2 } from './GridFileV1_2';
+import { GridFileSchemaV1_3, GridFileV1_3 } from './GridFileV1_3';
 
 /**
  * Export types for the grid files
