@@ -9,18 +9,17 @@ import { mockPythonOutput } from './mockPythonOutput';
 
 jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
 
-let sc: SheetController;
+const sc: SheetController = new SheetController();
 beforeAll(async () => {
   pixiAppEvents.app = mockPixiApp();
-  sc = new SheetController();
   GetCellsDBSetSheet(sc.sheet);
   pixiAppEvents.app.sheet_controller = sc;
   webWorkers.init(pixiAppEvents.app);
 });
 
 beforeEach(() => {
-  pixiAppEvents.app?.sheet_controller.clear();
-  pixiAppEvents.app?.sheet_controller.sheet.clear();
+  sc.clear();
+  sc.sheet.clear();
 });
 
 test('SheetController - code run correctly', async () => {
