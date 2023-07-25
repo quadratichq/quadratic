@@ -22,10 +22,10 @@ export const debugShowCacheFlag = debug && true;
 // ------------
 
 // show number of transactions
-export const debugShowTransactions = debug && true;
+export const debugShowTransactions = debug && false;
 
 // show results of runComputation() in console
-export const debugShowRunComputation = debug && true;
+export const debugShowRunComputation = debug && false;
 
 // ----------
 // Rendering
