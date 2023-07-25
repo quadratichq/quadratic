@@ -2,16 +2,17 @@ import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { SheetSchema } from '../../schemas';
+import { generateKeyBetween } from '../../utils/fractionalIndexing';
 import { Sheet } from '../sheet/Sheet';
 import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
 import { StatementRunner } from './runners/runner';
 import { Statement } from './statement';
 import { Transaction } from './transaction';
-import { generateKeyBetween } from '../../utils/fractionalIndexing';
 
 export class SheetController {
+  private _current: string;
+
   sheets: Sheet[];
-  _current: string;
   saveLocalFiles: (() => void) | undefined;
   transaction_in_progress: Transaction | undefined;
   transaction_in_progress_reverse: Transaction | undefined;

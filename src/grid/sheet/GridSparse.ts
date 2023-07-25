@@ -6,6 +6,7 @@ import { Cell, CellFormat } from '../../schemas';
 import { Bounds } from './Bounds';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
+import { Sheet } from './Sheet';
 
 export interface CellAndFormat {
   cell?: Cell;
@@ -14,7 +15,7 @@ export interface CellAndFormat {
 
 /** Stores all cells and format locations */
 export class GridSparse {
-  private gridOffsets: GridOffsets;
+  private sheet: Sheet;
   private cellBounds = new Bounds();
   private formatBounds = new Bounds();
   private cellFormatBounds = new Bounds();
@@ -23,8 +24,12 @@ export class GridSparse {
   // tracks which quadrants need to render based on GridSparse data
   quadrants = new Set<string>();
 
-  constructor(gridOffsets: GridOffsets) {
-    this.gridOffsets = gridOffsets;
+  constructor(sheet: Sheet) {
+    this.sheet = sheet;
+  }
+
+  get gridOffsets(): GridOffsets {
+    return this.sheet.gridOffsets;
   }
 
   updateCells(cells: Cell[], skipBounds = false): void {
@@ -173,15 +178,6 @@ export class GridSparse {
     return new CellRectangle(rectangle, this);
   }
 
-  /**
-   *
-   * @param x0
-   * @param y0
-   * @param x1
-   * @param y1
-   * @param cellsToReplace allows overwriting of cells - used when updating
-   * @returns
-   */
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
     const cells: Cell[] = [];
     this.cells.forEach((cell) => {
