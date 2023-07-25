@@ -1,7 +1,8 @@
 import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
-import { SheetSchema } from '../../schemas';
+import { File as CoreFile } from '../../quadratic-core';
+import { GridFile, SheetSchema } from '../../schemas';
 import { generateKeyBetween } from '../../utils/fractionalIndexing';
 import { Sheet } from '../sheet/Sheet';
 import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
@@ -12,6 +13,8 @@ import { Transaction } from './transaction';
 export class SheetController {
   private _current: string;
 
+  file: CoreFile;
+
   sheets: Sheet[];
   saveLocalFiles: (() => void) | undefined;
   transaction_in_progress: Transaction | undefined;
@@ -20,11 +23,20 @@ export class SheetController {
   redo_stack: Transaction[];
 
   constructor(sheets?: Sheet[]) {
-    if (sheets === undefined) {
-      this.sheets = [new Sheet(undefined, generateKeyBetween(null, null))];
-    } else {
-      this.sheets = sheets;
-    }
+    // test code
+    this.file = new CoreFile();
+    // const sheetId = this.file.add_sheet();
+    // const index = this.file.sheet_id_to_index(sheetId) as number;
+    // console.time('random floats');
+    // this.file.populateWithRandomFloats(index, new Rect(new Pos(0, 0), new Pos(10, 10000)));
+    // console.timeEnd('random floats');
+    this.sheets = [new Sheet(undefined, 'A0')];
+
+    // if (sheets !== undefined) {
+    //   this.sheets = [new Sheet(undefined, generateKeyBetween(null, null))];
+    // } else {
+    //   this.sheets = sheets;
+    // }
     this._current = this.sheets[0].id;
     this.undo_stack = [];
     this.redo_stack = [];
@@ -43,16 +55,21 @@ export class SheetController {
     }
   }
 
+  loadFile(grid: GridFile) {
+    debugger;
+    this.file = CoreFile.newFromFile(grid);
+    debugger;
+  }
+
   loadSheets(sheets: SheetSchema[]): void {
-    this.sheets = [];
-    sheets.forEach((sheetSchema) => {
-      const sheet = new Sheet(undefined, sheetSchema.order);
-      sheet.load_file(sheetSchema);
-      this.sheets.push(sheet);
-    });
-    if (this.sheets.length === 0) {
-      this.sheets.push(new Sheet(undefined, generateKeyBetween(null, null)));
-    }
+    // sheets.forEach((sheetSchema) => {
+    //   const sheet = new Sheet(undefined, sheetSchema.order);
+    //   sheet.load_file(sheetSchema);
+    //   this.sheets.push(sheet);
+    // });
+    // if (this.sheets.length === 0) {
+    //   this.sheets.push(new Sheet(undefined, generateKeyBetween(null, null)));
+    // }
     // need to set internal value to avoid set current call
     this.sortSheets();
     this._current = this.sheets[0].id;
@@ -111,7 +128,7 @@ export class SheetController {
     }
     const name = `Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim();
     const next = this.getNextSheet(this.sheet.order);
-    const sheet = new Sheet(name, generateKeyBetween(this.sheet.order, next?.order), this.sheet);
+    const sheet = new Sheet(name, generateKeyBetween(this.sheet.order, next?.order));
     return sheet;
   }
 

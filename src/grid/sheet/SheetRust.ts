@@ -1,49 +1,21 @@
 import { Rectangle } from 'pixi.js';
-import { v4 as uuid } from 'uuid';
 import { intersects } from '../../gridGL/helpers/intersects';
 import { Coordinate } from '../../gridGL/types/size';
+import { File as CoreFile } from '../../quadratic-core';
 import { Cell, CellFormat, SheetSchema } from '../../schemas';
 import { CellDependencyManager } from './CellDependencyManager';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
 import { GridRenderDependency } from './GridRenderDependency';
 import { CellAndFormat, GridSparse } from './GridSparse';
+import { GridSparseRust } from './GridSparseRust';
+import { Sheet } from './Sheet';
 import { SheetCursor } from './SheetCursor';
 
-export class Sheet {
-  id: string; // used to connect Sheet to Quadrants (could be saved as part of Sheet if needed in the future)
-  name: string;
-  gridOffsets: GridOffsets;
-  grid: GridSparse;
-  borders: GridBorders;
-  cursor: SheetCursor;
-  order: string;
-  color?: string;
-
-  // visual dependency for overflowing cells
-  render_dependency: GridRenderDependency;
-
-  // visual dependency for drawing array lines
-  array_dependency: GridRenderDependency;
-
-  // cell calculation dependency
-  cell_dependency: CellDependencyManager;
-
-  constructor(name: string | undefined, order: string, copyFrom?: Sheet) {
-    this.gridOffsets = new GridOffsets();
-    this.grid = new GridSparse(this);
-    this.borders = new GridBorders(this.gridOffsets);
-    this.render_dependency = new GridRenderDependency();
-    this.array_dependency = new GridRenderDependency();
-    this.cell_dependency = new CellDependencyManager();
-    if (copyFrom) {
-      const save = copyFrom.export_file();
-      this.load_file(save);
-    }
-    this.id = uuid();
-    this.name = name ?? 'Sheet';
-    this.order = order;
-    this.cursor = new SheetCursor(this);
+export class SheetRust extends Sheet {
+  constructor(file: CoreFile, sheetIndex: number, name: string | undefined, order: string, copyFrom?: Sheet) {
+    super(name, order, copyFrom);
+    this.grid = new GridSparseRust(file, sheetIndex, this);
   }
 
   // for testing

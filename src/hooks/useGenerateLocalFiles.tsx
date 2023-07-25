@@ -82,7 +82,8 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   const resetSheet = useCallback(
     (grid: GridFile) => {
       sheetController.clear();
-      sheetController.loadSheets(grid.sheets);
+      sheetController.loadFile(grid);
+      // sheetController.loadSheets(grid.sheets);
       pixiAppEvents.rebuild();
       const searchParams = new URLSearchParams(window.location.search);
       // If `file` is in there from an initial page load, remove it

@@ -2,10 +2,11 @@ import { Rectangle } from 'pixi.js';
 import { cellHasContent } from '../../gridGL/helpers/selectCells';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Coordinate, MinMax } from '../../gridGL/types/size';
+import { File as CoreFile, Pos, Rect } from '../../quadratic-core';
 import { Cell, CellFormat } from '../../schemas';
-import { Bounds } from './Bounds';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
+import { GridSparse } from './GridSparse';
 import { Sheet } from './Sheet';
 
 export interface CellAndFormat {
@@ -14,155 +15,165 @@ export interface CellAndFormat {
 }
 
 /** Stores all cells and format locations */
-export class GridSparse {
-  protected sheet: Sheet;
-  protected cellBounds = new Bounds();
-  protected formatBounds = new Bounds();
-  protected cellFormatBounds = new Bounds();
-  cells = new Map<string, CellAndFormat>();
+export class GridSparseRust extends GridSparse {
+  private sheetIndex: number;
+  private file: CoreFile;
 
-  // tracks which quadrants need to render based on GridSparse data
-  quadrants = new Set<string>();
-
-  constructor(sheet: Sheet) {
-    this.sheet = sheet;
+  constructor(file: CoreFile, sheetIndex: number, sheet: Sheet) {
+    super(sheet);
+    this.file = file;
+    this.sheetIndex = sheetIndex;
   }
-
   get gridOffsets(): GridOffsets {
     return this.sheet.gridOffsets;
   }
 
   updateCells(cells: Cell[], skipBounds = false): void {
-    cells.forEach((cell) => {
-      const update = this.cells.get(this.getKey(cell.x, cell.y));
-      if (update) {
-        update.cell = cell;
-      } else {
-        this.cells.set(this.getKey(cell.x, cell.y), { cell });
-        this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
-      }
-    });
-    if (!skipBounds) {
-      this.recalculateBounds();
-    }
+    // cells.forEach((cell) => {
+    //   const update = this.cells.get(this.getKey(cell.x, cell.y));
+    //   if (update) {
+    //     update.cell = cell;
+    //   } else {
+    //     this.cells.set(this.getKey(cell.x, cell.y), { cell });
+    //     this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
+    //   }
+    // });
+    // if (!skipBounds) {
+    //   this.recalculateBounds();
+    // }
   }
 
   recalculateBounds(): void {
-    this.cellBounds.clear();
-    this.cellFormatBounds.clear();
-    this.formatBounds.clear();
-    if (this.cells.size === 0) return;
-    this.cells.forEach((cell) => {
-      if (cell.cell) {
-        this.cellBounds.add(cell.cell.x, cell.cell.y);
-        this.cellBounds.add(cell.cell.x, cell.cell.y);
-      }
-      if (cell.format) {
-        this.formatBounds.add(cell.format.x, cell.format.y);
-      }
-    });
-    this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
+    // this.cellBounds.clear();
+    // this.cellFormatBounds.clear();
+    // this.formatBounds.clear();
+    // if (this.cells.size === 0) return;
+    // this.cells.forEach((cell) => {
+    //   if (cell.cell) {
+    //     this.cellBounds.add(cell.cell.x, cell.cell.y);
+    //     this.cellBounds.add(cell.cell.x, cell.cell.y);
+    //   }
+    //   if (cell.format) {
+    //     this.formatBounds.add(cell.format.x, cell.format.y);
+    //   }
+    // });
+    // this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
   }
 
   hasFormatting(format: CellFormat): boolean {
-    const keys = Object.keys(format);
-    return keys.length > 2;
+    // const keys = Object.keys(format);
+    // return keys.length > 2;
+    return false;
   }
 
   updateFormat(formats: CellFormat[], skipBoundsCalculation = false): void {
-    let needBoundsCalculation = false;
-    formats.forEach((format) => {
-      const key = this.getKey(format.x, format.y);
-      if (this.hasFormatting(format)) {
-        this.cells.set(key, { format });
-        this.formatBounds.add(format.x, format.y);
-      } else {
-        this.cells.delete(key);
-        if (!skipBoundsCalculation) {
-          needBoundsCalculation ||= this.formatBounds.atBounds(format.x, format.y);
-        }
-      }
-    });
-    if (needBoundsCalculation && !skipBoundsCalculation) {
-      this.recalculateBounds();
-    }
+    // let needBoundsCalculation = false;
+    // formats.forEach((format) => {
+    //   const key = this.getKey(format.x, format.y);
+    //   if (this.hasFormatting(format)) {
+    //     this.cells.set(key, { format });
+    //     this.formatBounds.add(format.x, format.y);
+    //   } else {
+    //     this.cells.delete(key);
+    //     if (!skipBoundsCalculation) {
+    //       needBoundsCalculation ||= this.formatBounds.atBounds(format.x, format.y);
+    //     }
+    //   }
+    // });
+    // if (needBoundsCalculation && !skipBoundsCalculation) {
+    //   this.recalculateBounds();
+    // }
   }
 
   clearFormat(formats: CellFormat[]): void {
-    formats.forEach((format) => {
-      const key = this.getKey(format.x, format.y);
-      const clear = this.cells.get(key);
-      if (clear) {
-        delete clear.format;
-        if (Object.keys(clear).length === 0) {
-          this.cells.delete(key);
-        }
-      }
-    });
-    this.recalculateBounds();
+    // formats.forEach((format) => {
+    //   const key = this.getKey(format.x, format.y);
+    //   const clear = this.cells.get(key);
+    //   if (clear) {
+    //     delete clear.format;
+    //     if (Object.keys(clear).length === 0) {
+    //       this.cells.delete(key);
+    //     }
+    //   }
+    // });
+    // this.recalculateBounds();
   }
 
   deleteCells(cells: Coordinate[], skipBounds = false): void {
-    cells.forEach((cell) => {
-      const candf = this.cells.get(this.getKey(cell.x, cell.y));
-      if (candf) {
-        // Delete cell
-        delete candf.cell;
-        // If cell has no format, also delete the key
-        if (candf.format === undefined) {
-          this.cells.delete(this.getKey(cell.x, cell.y));
-        }
-      }
-    });
-    if (!skipBounds) {
-      this.recalculateBounds();
-    }
+    // cells.forEach((cell) => {
+    //   const candf = this.cells.get(this.getKey(cell.x, cell.y));
+    //   if (candf) {
+    //     // Delete cell
+    //     delete candf.cell;
+    //     // If cell has no format, also delete the key
+    //     if (candf.format === undefined) {
+    //       this.cells.delete(this.getKey(cell.x, cell.y));
+    //     }
+    //   }
+    // });
+    // if (!skipBounds) {
+    //   this.recalculateBounds();
+    // }
   }
 
   get empty(): boolean {
-    return this.cellFormatBounds.empty;
+    const bounds = this.file.getGridBounds(this.sheetIndex, false);
+    return bounds.width === 0 && bounds.height === 0;
   }
 
   clear() {
-    this.cells.clear();
-    this.quadrants.clear();
-    this.cellBounds.clear();
-    this.formatBounds.clear();
-    this.cellFormatBounds.clear();
-  }
-
-  protected getKey(x?: number, y?: number): string {
-    return `${x ?? ''},${y ?? ''}`;
+    // this.cells.clear();
+    // this.quadrants.clear();
+    // this.cellBounds.clear();
+    // this.formatBounds.clear();
+    // this.cellFormatBounds.clear();
   }
 
   populate(cells?: Cell[], formats?: CellFormat[]) {
-    this.clear();
-    if (!cells?.length && !formats?.length) return;
-    cells?.forEach((cell) => {
-      this.cells.set(this.getKey(cell.x, cell.y), { cell });
-      this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
-      this.cellBounds.add(cell.x, cell.y);
-    });
-    formats?.forEach((format) => {
-      const key = this.getKey(format.x, format.y);
-      const cell = this.cells.get(key);
-      if (cell) {
-        cell.format = format;
-      } else {
-        this.cells.set(key, { format });
-      }
-      this.formatBounds.add(format.x, format.y);
-    });
-    this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
+    // this.clear();
+    // if (!cells?.length && !formats?.length) return;
+    // cells?.forEach((cell) => {
+    //   this.cells.set(this.getKey(cell.x, cell.y), { cell });
+    //   this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
+    //   this.cellBounds.add(cell.x, cell.y);
+    // });
+    // formats?.forEach((format) => {
+    //   const key = this.getKey(format.x, format.y);
+    //   const cell = this.cells.get(key);
+    //   if (cell) {
+    //     cell.format = format;
+    //   } else {
+    //     this.cells.set(key, { format });
+    //   }
+    //   this.formatBounds.add(format.x, format.y);
+    // });
+    // this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
   }
 
   get(x: number, y: number): CellAndFormat | undefined {
-    if (this.cellFormatBounds.contains(x, y)) {
-      return this.cells.get(this.getKey(x, y));
+    const id = this.file.sheet_index_to_id(this.sheetIndex);
+    const json = this.file.getRenderCells(id as any, new Rect(new Pos(x, y), new Pos(x, y)));
+    const data = JSON.parse(json);
+    if (data.length) {
+      return {
+        cell: {
+          x,
+          y,
+          value: data[0].value.toString(),
+          type: 'TEXT',
+        },
+      };
     }
+    // if (this.cellFormatBounds.contains(x, y)) {
+    //   return this.cells.get(this.getKey(x, y));
+    // }
   }
 
   getCell(x: number, y: number): Cell | undefined {
+    const id = this.file.sheet_index_to_id(this.sheetIndex);
+    const result = this.file.getRenderCells(id as any, new Rect(new Pos(x, y), new Pos(1, 1)));
+    console.log(result);
+    debugger;
     if (this.cellBounds.contains(x, y)) {
       return this.cells.get(this.getKey(x, y))?.cell;
     }
@@ -175,7 +186,13 @@ export class GridSparse {
   }
 
   getCells(rectangle: Rectangle): CellRectangle {
-    return new CellRectangle(rectangle, this);
+    const id = this.file.sheet_index_to_id(this.sheetIndex);
+    const result = this.file.getRenderCells(
+      id as any,
+      new Rect(new Pos(rectangle.x, rectangle.y), new Pos(rectangle.right, rectangle.bottom))
+    );
+    return CellRectangle.fromRust(rectangle, result, this);
+    // return new CellRectangle(rectangle, this);
   }
 
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
@@ -201,7 +218,13 @@ export class GridSparse {
   }
 
   getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
-    const { minX, minY, maxX, maxY, empty } = this.cellFormatBounds;
+    const allBounds = this.file.getGridBounds(this.sheetIndex, false);
+    const minX = allBounds.nonEmpty?.min.x;
+    const minY = allBounds.nonEmpty?.min.y;
+    const maxX = allBounds.nonEmpty?.max.x;
+    const maxY = allBounds.nonEmpty?.max.y;
+    const empty = !allBounds.nonEmpty;
+    // const { minX, minY, maxX, maxY, empty } = this.cellFormatBounds;
     const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
     const columnStart = columnStartIndex.index > minX ? columnStartIndex.index : minX;
     const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);

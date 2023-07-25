@@ -18,7 +18,7 @@ export const QuadraticApp = () => {
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
   const setLoadedState = useSetRecoilState(loadedStateAtom);
   const didMount = useRef(false);
-  const [sheetController] = useState<SheetController>(new SheetController());
+  const [sheetController] = useState(() => new SheetController());
   const localFiles = useGenerateLocalFiles(sheetController);
   const [app] = useState(() => new PixiApp(sheetController, localFiles.save));
   const { initialize } = localFiles;

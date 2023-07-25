@@ -1,10 +1,10 @@
 import { useAuth0 } from '@auth0/auth0-react';
 import { captureException, setUser } from '@sentry/react';
-import init, { hello } from 'quadratic-core';
 import { useEffect, useState } from 'react';
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import { FILE_PARAM_KEY } from '../constants/app';
 import { debug } from '../debugFlags';
+import init, { hello } from '../quadratic-core';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { QuadraticApp } from './QuadraticApp';
 
@@ -32,6 +32,16 @@ export const QuadraticAuth = () => {
       setUser({ email: user.email, id: user.sub });
     }
   }, [Auth0IsAuthenticated, user]);
+
+  useEffect(() => {
+    if (!wasmLoading) {
+      setWasmLoading(true);
+      init().then(() => {
+        hello(); // let Rust say hello to console
+        setWasmLoadingDone(true);
+      });
+    }
+  }, [wasmLoading]);
 
   // Auth0 is Optional
   if (process.env.REACT_APP_AUTH0_DOMAIN && process.env.REACT_APP_AUTH0_DOMAIN !== 'none') {
@@ -66,21 +76,9 @@ export const QuadraticAuth = () => {
     }
   }
 
-  // TODO: Move to component, has to happen before QuadraticApp is mounted
-  if (!wasmLoading){
-    setWasmLoading(true);
-    init().then(() => {
-      hello(); // let Rust say hello to console
-      setWasmLoadingDone(true);
-    });
-  }
   if (!wasmLoadingDone) {
     return <QuadraticLoading></QuadraticLoading>;
   }
-  ////
 
-
-  return (
-    <QuadraticApp />
-  );
+  return <QuadraticApp />;
 };
