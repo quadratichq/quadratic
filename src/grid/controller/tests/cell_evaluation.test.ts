@@ -19,8 +19,8 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  sc.clear();
-  sc.sheet.clear();
+  pixiAppEvents.app?.sheet_controller.clear();
+  pixiAppEvents.app?.sheet_controller.sheet.clear();
 });
 
 test('SheetController - code run correctly', async () => {

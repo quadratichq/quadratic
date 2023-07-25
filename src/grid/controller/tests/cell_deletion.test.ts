@@ -18,8 +18,8 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  sc.clear();
-  sc.sheet.clear();
+  pixiAppEvents.app?.sheet_controller.clear();
+  pixiAppEvents.app?.sheet_controller.sheet.clear();
 });
 
 test('SheetController - cell update when being deleted', async () => {
