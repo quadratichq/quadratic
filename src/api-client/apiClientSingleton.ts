@@ -3,28 +3,8 @@ import * as Sentry from '@sentry/react';
 import { downloadFile } from '../helpers/downloadFile';
 import mixpanel from 'mixpanel-browser';
 import { authClient } from '../auth';
-import z from 'zod';
+import { GetFileRes, GetFileClientRes, GetFilesRes } from './types';
 const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
-
-// TODO share this code with API
-export const APIFileSchema = z.object({
-  uuid: z.string().uuid(),
-  name: z.string(),
-  created_date: z.number(),
-  updated_date: z.number(),
-  // TODO pull these from the GridFilesSchema
-  version: z.union([z.literal('1.0'), z.literal('1.1'), z.literal('1.2'), z.literal('1.3')]),
-  // TODO one of <from API types>
-  public_link_access: z.string(),
-  // TODO guarantee this will be the _latest_
-  contents: GridFileSchema,
-});
-export type APIFile = z.infer<typeof APIFileSchema>;
-export const FileResSchema = {
-  // TODO one of?
-  permission: z.string(),
-  file: APIFileSchema,
-};
 
 class APIClientSingleton {
   // Allow only one instance of the class to be created
@@ -46,7 +26,7 @@ class APIClientSingleton {
     return API_URL;
   }
 
-  async getFiles(): Promise<GridFile[] | undefined> {
+  async getFiles(): Promise<GetFilesRes> {
     try {
       const base_url = this.getAPIURL();
       const token = await authClient.getToken();
@@ -61,7 +41,7 @@ class APIClientSingleton {
       if (!response.ok) {
         throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
       }
-      const files: GridFile[] = await response.json();
+      const files = await response.json();
       return files;
     } catch (error) {
       console.error(error);
@@ -74,7 +54,7 @@ class APIClientSingleton {
   }
 
   // Fetch a file from the DB
-  async getFile(id: string): Promise<GridFile | undefined> {
+  async getFile(id: string): Promise<GetFileClientRes | undefined> {
     // TODO should we hide the share button when that is not configured? (e.g. locally)
     if (!API_URL) return;
 
@@ -91,9 +71,25 @@ class APIClientSingleton {
       if (!response.ok) {
         throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
       }
-      const file: GridFile = await response.json();
 
-      return file;
+      // TODO validate and upgrade files
+      const serverRes: GetFileRes = await response.json();
+
+      if (!serverRes) {
+        throw new Error('Unexpected file response');
+      }
+
+      // Pick out just the stuff we want/need
+      const clientRes: GetFileClientRes = {
+        uuid: serverRes.file.uuid,
+        name: serverRes.file.name,
+        created_date: serverRes.file.created_date,
+        updated_date: serverRes.file.updated_date,
+        permission: serverRes.permission,
+        contents: JSON.parse(serverRes.file.contents),
+      };
+
+      return clientRes;
     } catch (error) {
       console.error(error);
       Sentry.captureException({
@@ -127,22 +123,22 @@ class APIClientSingleton {
     }
   }
 
-  async downloadFile(id: string): Promise<void> {
+  async downloadFile(id: string): Promise<boolean> {
     mixpanel.track('[APIClient].downloadFile', { id });
     try {
       const file = await this.getFile(id);
       if (!file) {
         throw new Error('Failed to fetch file.');
       }
-      // TODO types are wrong here
-      // file.name is from the db, file.filename is in the filecontents
-      // @ts-expect-error
+      // TODO what do we want the exported file to be?
       downloadFile(file.name, JSON.stringify(file));
+      return true;
     } catch (error) {
       console.error(error);
       Sentry.captureException({
         message: `API Error Catch: Failed to download \`/files/${id}\`. ${error}`,
       });
+      return false;
     }
   }
 
@@ -214,7 +210,7 @@ class APIClientSingleton {
       cell_dependency: '',
       version: GridFileSchema.shape.version.value,
     }
-  ): Promise<APIFile | undefined> {
+  ): Promise<any | undefined> {
     if (!API_URL) return;
 
     try {
@@ -228,7 +224,7 @@ class APIClientSingleton {
         },
         body: JSON.stringify({
           name,
-          contents,
+          contents: JSON.stringify(contents),
         }),
       });
 

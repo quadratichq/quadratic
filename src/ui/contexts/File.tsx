@@ -1,12 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { SheetController } from '../../grid/controller/sheetController';
 import mixpanel from 'mixpanel-browser';
-import { APIFile } from '../../api-client/apiClientSingleton';
+import { GetFileClientRes } from '../../api-client/types';
 
 export type FileContextType = {
-  file: APIFile;
+  file: GetFileClientRes;
   renameFile: (newFilename: string) => void;
-  setFile: React.Dispatch<React.SetStateAction<APIFile>>;
+  setFile: React.Dispatch<React.SetStateAction<GetFileClientRes>>;
 };
 
 /**
@@ -23,17 +23,17 @@ export const FileProvider = ({
   sheetController,
 }: {
   children: React.ReactElement;
-  fileFromServer: APIFile;
+  fileFromServer: GetFileClientRes;
   sheetController: SheetController;
 }) => {
-  const [file, setFile] = useState<APIFile>(fileFromServer);
+  const [file, setFile] = useState<GetFileClientRes>(fileFromServer);
   let didMount = useRef<boolean>(false);
 
   const renameFile = useCallback(
     (newFilename: string) => {
       // TODO keep these same mixpanel actions?
       mixpanel.track('[Files].renameCurrentFile', { newFilename });
-      setFile((oldFile: APIFile) => ({ ...oldFile, name: newFilename, date_updated: Date.now() }));
+      setFile((oldFile: GetFileClientRes) => ({ ...oldFile, name: newFilename, date_updated: Date.now() }));
     },
     [setFile]
   );
@@ -49,8 +49,8 @@ export const FileProvider = ({
     //     version: oldFile.version
     //   },
     // }));
-    console.log('[FileProvider] saving file...');
-  }, [sheetController.sheet]);
+    console.log('[FileProvider] saving file...', file);
+  }, [file]);
   useEffect(() => {
     sheetController.saveFile = save;
   }, [sheetController, save]);
