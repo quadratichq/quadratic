@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { Request } from '../../../src/types/Request';
+import { Request } from '../../types/Request';
 
 beforeAll(async () => {
   // Create a test user

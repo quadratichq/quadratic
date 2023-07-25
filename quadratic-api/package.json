@@ -14,7 +14,8 @@
     "docker:up": "docker-compose up -d && sleep 1",
     "docker:down": "docker-compose down",
     "test:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch --detectOpenHandles && npm run docker:down",
-    "test:ci": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest && npm run docker:down"
+    "test:ci": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest && npm run docker:down",
+    "dev": "npm run docker:up && dotenv -e .env -- ts-node-dev --watch ./src --project ./tsconfig.json ./src/server.ts && npm run docker:down"
   },
   "author": "David Kircos",
   "license": "MIT",

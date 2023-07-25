@@ -1,10 +1,10 @@
 import express, { NextFunction, Response } from 'express';
-import { Request } from '../types/Request';
-import { validateAccessToken } from '../middleware/auth';
+import { Request } from '../../types/Request';
+import { validateAccessToken } from '../../middleware/auth';
 import rateLimit from 'express-rate-limit';
-import dbClient from '../dbClient';
-import { get_user } from '../helpers/get_user';
-import { get_file } from '../helpers/get_file';
+import dbClient from '../../dbClient';
+import { get_user } from '../../helpers/get_user';
+import { get_file } from '../../helpers/get_file';
 import { body, validationResult, param } from 'express-validator';
 import { File, User } from '@prisma/client';
 

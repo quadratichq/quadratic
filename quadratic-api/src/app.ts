@@ -4,7 +4,7 @@ import * as Tracing from '@sentry/tracing';
 import cors from 'cors';
 import ai_chat_router from './routes/ai_chat';
 import helmet from 'helmet';
-import files_router from './routes/files';
+import files_router from './routes/files/files';
 import feedback_router from './routes/feedback';
 
 export const app = express();
