@@ -156,7 +156,7 @@ files_router.post(
 
     // Update the contents
     if (req.body.contents !== undefined) {
-      const contents = Buffer.from(req.body.contents, 'base64');
+      const contents = Buffer.from(req.body.contents, 'utf-8');
       await dbClient.file.update({
         where: {
           uuid: req.params.uuid,
@@ -164,6 +164,7 @@ files_router.post(
         data: {
           contents,
           updated_date: new Date(),
+          // TODO this needs to be pulled from body.contents if that is posted
           version: 'unknown',
           times_updated: {
             increment: 1,

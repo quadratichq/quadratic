@@ -2,15 +2,11 @@ import './styles.css';
 import { QuadraticApp } from './ui/QuadraticApp';
 import { RecoilRoot } from 'recoil';
 import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
-import { GridFile } from './schemas';
 import Empty from './dashboard/Empty';
 import { ErrorOutline, QuestionMarkOutlined } from '@mui/icons-material';
 import { Button } from '@mui/material';
 import apiClientSingleton from './api-client/apiClientSingleton';
-
-type LoaderData = {
-  file: GridFile;
-};
+import { GetFileClientRes } from './api-client/types';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { uuid } = params;
@@ -21,41 +17,22 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   }
 
   // Fetch the file
-  const file = await apiClientSingleton.getFile(uuid as string);
-  if (!file) {
+  const data = await apiClientSingleton.getFile(uuid as string);
+  if (!data) {
     throw new Response('Unexpected response from the API.');
   }
 
-  // Parse resonse and make sure it's valid (should we do this in apiClient)
+  // TODO permissions
 
-  // TODO if file isn't valid
-
-  console.log(file);
-  // await fetch('/examples/default.grid')
-  //   .then((res) => {
-  //     if (!res.ok) {
-  //       throw new Error('Failed to fetch');
-  //     }
-  //     return res.json();
-  //   })
-  //   .then((file) => {
-  //     // TODO validate and upgrade file as necessary before passing into the app
-  //     return {
-  //       ...file,
-  //       filename: 'Deafult (example)',
-  //       id: uuid(),
-  //       modified: Date.now(),
-  //     };
-  //   });
-  return { file };
+  return data;
 };
 
 export const Component = () => {
-  const { file } = useLoaderData() as LoaderData;
+  const data = useLoaderData() as GetFileClientRes;
 
   return (
     <RecoilRoot>
-      <QuadraticApp fileFromServer={file} />
+      <QuadraticApp fileFromServer={data} />
     </RecoilRoot>
   );
 };

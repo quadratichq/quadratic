@@ -142,18 +142,18 @@ class APIClientSingleton {
     }
   }
 
-  async backupFile(id: string, fileContents: GridFile) {
-    if (!API_URL) return;
+  async postFile(uuid: string, name: string, contents: GridFile): Promise<boolean> {
+    if (!API_URL) return false;
 
     try {
       const base_url = this.getAPIURL();
 
       const request_body = {
-        uuid: id,
-        fileContents: JSON.stringify(fileContents),
+        name,
+        contents: JSON.stringify(contents),
       };
 
-      const response = await fetch(`${base_url}/v0/files/${id}`, {
+      const response = await fetch(`${base_url}/v0/files/${uuid}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${await authClient.getToken()}`,
@@ -167,10 +167,12 @@ class APIClientSingleton {
           message: `API Response Error: ${response.status} ${response.statusText}`,
         });
       }
+      return true;
     } catch (error: any) {
       Sentry.captureException({
         message: `API Error Catch: ${error}`,
       });
+      return false;
     }
   }
 

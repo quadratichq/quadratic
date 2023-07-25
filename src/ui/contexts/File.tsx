@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { SheetController } from '../../grid/controller/sheetController';
 import mixpanel from 'mixpanel-browser';
 import { GetFileClientRes } from '../../api-client/types';
+import apiClientSingleton from '../../api-client/apiClientSingleton';
 
 export type FileContextType = {
   file: GetFileClientRes;
@@ -26,6 +27,7 @@ export const FileProvider = ({
   fileFromServer: GetFileClientRes;
   sheetController: SheetController;
 }) => {
+  // TODO get rid of date_updated, date_created we don't need them
   const [file, setFile] = useState<GetFileClientRes>(fileFromServer);
   let didMount = useRef<boolean>(false);
 
@@ -40,17 +42,17 @@ export const FileProvider = ({
 
   // Create and save the fn used by the sheetController to save the file
   const save = useCallback(async (): Promise<void> => {
-    // TODO
-    // setFile((oldFile: APIFile) => ({
-    //   ...oldFile,
-    //   date_updated: Date.now(),
-    //   contents: {
-    //     ...sheetController.sheet.export_file(),
-    //     version: oldFile.version
-    //   },
-    // }));
-    console.log('[FileProvider] saving file...', file);
-  }, [file]);
+    setFile((oldFile: GetFileClientRes) => ({
+      ...oldFile,
+      date_updated: Date.now(),
+      contents: {
+        ...oldFile.contents, // version
+        ...sheetController.sheet.export_file(),
+      },
+    }));
+
+    console.log('[FileProvider] sheetController file save');
+  }, [setFile, sheetController.sheet]);
   useEffect(() => {
     sheetController.saveFile = save;
   }, [sheetController, save]);
@@ -72,8 +74,9 @@ export const FileProvider = ({
   useEffect(() => {
     document.title = `${file.name} - Quadratic`;
 
-    // TODO sync to API (if not read-only)
-    // apiClientSingleton.backupFile(id, currentFileContents);
+    // Sync to API
+    // TODO if not read-only, what happens if it fails?
+    apiClientSingleton.postFile(file.uuid, file.name, file.contents);
   }, [file]);
 
   return <FileContext.Provider value={{ file, renameFile, setFile }}>{children}</FileContext.Provider>;

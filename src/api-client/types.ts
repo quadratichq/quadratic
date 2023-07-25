@@ -41,3 +41,10 @@ const GetFileClientResSchema = z.object({
   permission: z.string(), // TODO one of:
 });
 export type GetFileClientRes = z.infer<typeof GetFileClientResSchema>;
+
+// POST /files/:uuid
+const PostFileReqSchema = z.object({
+  name: z.string().optional(),
+  contents: z.string().optional(),
+});
+export type PostFileReq = z.infer<typeof PostFileReqSchema>;
