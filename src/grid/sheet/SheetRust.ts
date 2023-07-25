@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { intersects } from '../../gridGL/helpers/intersects';
 import { Coordinate } from '../../gridGL/types/size';
-import { File as CoreFile } from '../../quadratic-core';
+import { File as CoreFile } from '../../quadratic-core/quadratic_core';
 import { Cell, CellFormat, SheetSchema } from '../../schemas';
 import { CellDependencyManager } from './CellDependencyManager';
 import { GridBorders } from './GridBorders';

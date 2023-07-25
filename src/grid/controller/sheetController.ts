@@ -1,11 +1,12 @@
 import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
-import { File as CoreFile } from '../../quadratic-core';
+import { File as CoreFile } from '../../quadratic-core/quadratic_core';
 import { GridFile, SheetSchema } from '../../schemas';
 import { generateKeyBetween } from '../../utils/fractionalIndexing';
 import { Sheet } from '../sheet/Sheet';
 import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
+import { SheetRust } from '../sheet/SheetRust';
 import { StatementRunner } from './runners/runner';
 import { Statement } from './statement';
 import { Transaction } from './transaction';
@@ -23,26 +24,19 @@ export class SheetController {
   redo_stack: Transaction[];
 
   constructor(sheets?: Sheet[]) {
-    // test code
-    this.file = new CoreFile();
-    // const sheetId = this.file.add_sheet();
-    // const index = this.file.sheet_id_to_index(sheetId) as number;
-    // console.time('random floats');
-    // this.file.populateWithRandomFloats(index, new Rect(new Pos(0, 0), new Pos(10, 10000)));
-    // console.timeEnd('random floats');
     this.sheets = [new Sheet(undefined, 'A0')];
-
-    // if (sheets !== undefined) {
-    //   this.sheets = [new Sheet(undefined, generateKeyBetween(null, null))];
-    // } else {
-    //   this.sheets = sheets;
-    // }
+    if (sheets === undefined) {
+      this.sheets = [new Sheet(undefined, generateKeyBetween(null, null))];
+    } else {
+      this.sheets = sheets;
+    }
     this._current = this.sheets[0].id;
     this.undo_stack = [];
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
     this.saveLocalFiles = undefined;
+    this.file = new CoreFile();
   }
 
   get current(): string {
@@ -56,20 +50,28 @@ export class SheetController {
   }
 
   loadFile(grid: GridFile) {
-    debugger;
     this.file = CoreFile.newFromFile(grid);
-    debugger;
+    this.sheets = [];
+    grid.sheets.forEach((sheet, index) => {
+      this.sheets.push(new SheetRust(this.file, index, sheet.name, sheet.order));
+    });
+    this.sortSheets();
+    this._current = this.sheets[0].id;
+
+    // used by SheetBar to update current sheet tab
+    window.dispatchEvent(new CustomEvent('change-sheet'));
   }
 
   loadSheets(sheets: SheetSchema[]): void {
-    // sheets.forEach((sheetSchema) => {
-    //   const sheet = new Sheet(undefined, sheetSchema.order);
-    //   sheet.load_file(sheetSchema);
-    //   this.sheets.push(sheet);
-    // });
-    // if (this.sheets.length === 0) {
-    //   this.sheets.push(new Sheet(undefined, generateKeyBetween(null, null)));
-    // }
+    this.sheets = [];
+    sheets.forEach((sheetSchema) => {
+      const sheet = new Sheet(undefined, sheetSchema.order);
+      sheet.load_file(sheetSchema);
+      this.sheets.push(sheet);
+    });
+    if (this.sheets.length === 0) {
+      this.sheets.push(new Sheet(undefined, generateKeyBetween(null, null)));
+    }
     // need to set internal value to avoid set current call
     this.sortSheets();
     this._current = this.sheets[0].id;

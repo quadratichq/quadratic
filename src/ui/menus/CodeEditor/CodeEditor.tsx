@@ -13,7 +13,6 @@ import {
 } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import monaco from 'monaco-editor';
-import { provideCompletionItems, provideHover } from 'quadratic-core';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import {
@@ -30,6 +29,7 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
 import { useEditorCellHighlights } from '../../../hooks/useEditorCellHighlights';
 import { useEditorOnSelectionChange } from '../../../hooks/useEditorOnSelectionChange';
+import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
 import { Cell } from '../../../schemas';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';

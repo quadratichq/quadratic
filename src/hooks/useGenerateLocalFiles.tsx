@@ -7,7 +7,7 @@ import { v4 as uuid } from 'uuid';
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
-import { debugShowFileIO } from '../debugFlags';
+import { debugShowFileIO, debugUseRustSheetController } from '../debugFlags';
 import { SheetController } from '../grid/controller/sheetController';
 import { pixiAppEvents } from '../gridGL/pixiApp/PixiAppEvents';
 import { downloadFile } from '../helpers/downloadFile';
@@ -82,8 +82,11 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   const resetSheet = useCallback(
     (grid: GridFile) => {
       sheetController.clear();
-      sheetController.loadFile(grid);
-      // sheetController.loadSheets(grid.sheets);
+      if (debugUseRustSheetController) {
+        sheetController.loadFile(grid);
+      } else {
+        sheetController.loadSheets(grid.sheets);
+      }
       pixiAppEvents.rebuild();
       const searchParams = new URLSearchParams(window.location.search);
       // If `file` is in there from an initial page load, remove it

@@ -60,6 +60,7 @@
   "main": "public/electron.js",
   "scripts": {
     "start": "npm run build:wasm:javascript && react-scripts start",
+    "start-no-build": "react-scripts start",
     "build": "react-scripts build",
     "build:wasm": "npm run build:wasm:javascript && npm run build:wasm:nodejs",
     "build:wasm:javascript": "cd quadratic-core && wasm-pack build --target web --out-dir ../src/quadratic-core",
@@ -92,7 +93,8 @@
     }
   },
   "eslintIgnore": [
-    "node_modules/*"
+    "node_modules/*",
+    "src/quadratic-core/*"
   ],
   "browserslist": {
     "production": [

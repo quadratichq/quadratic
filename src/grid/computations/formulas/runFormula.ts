@@ -1,5 +1,5 @@
-import { eval_formula } from 'quadratic-core';
 import { Coordinate } from '../../../gridGL/types/size';
+import { eval_formula } from '../../../quadratic-core/quadratic_core';
 import { GetCellsDB } from '../../sheet/Cells/GetCellsDB';
 
 export interface runFormulaReturnType {

@@ -4,4 +4,4 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
-jest.mock('src/quadratic-core');
+jest.mock('src/quadratic-core/quadratic-core');

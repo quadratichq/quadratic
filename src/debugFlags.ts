@@ -17,6 +17,11 @@ export const debugShowCacheCount = debug && true;
 // add a CACHE flag to the footer to indicate when cache is visible instead of cells
 export const debugShowCacheFlag = debug && true;
 
+// -------------
+// Feature Flags
+// -------------
+export const debugUseRustSheetController = debug && true;
+
 // ------------
 // Transactions
 // ------------
