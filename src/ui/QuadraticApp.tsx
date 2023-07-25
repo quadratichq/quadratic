@@ -8,12 +8,12 @@ import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 import { webWorkers } from '../web-workers/webWorkers';
-import { GridFile } from '../schemas';
+import { GetFileClientRes } from '../api-client/types';
 
 type loadableItem = 'pixi-assets' | 'wasm-rust';
 const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'wasm-rust'];
 
-export const QuadraticApp = (props: { fileFromServer: GridFile }) => {
+export const QuadraticApp = (props: { fileFromServer: GetFileClientRes }) => {
   const [loading, setLoading] = useState(true);
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
   const setLoadedState = useSetRecoilState(loadedStateAtom);

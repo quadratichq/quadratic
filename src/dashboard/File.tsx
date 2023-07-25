@@ -2,19 +2,20 @@ import { InsertDriveFileOutlined } from '@mui/icons-material';
 import { Box, Divider, Typography, useTheme } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { colors } from '../theme/colors';
+import { ReactNode } from 'react';
 
 export default function File({
   to,
   name,
   description,
   actions,
-  icon,
+  status,
 }: {
   to: string;
   name: string;
   description: string;
-  actions?: React.ReactNode;
-  icon?: React.ReactNode;
+  actions?: ReactNode;
+  status?: ReactNode;
 }) {
   const theme = useTheme();
   return (
@@ -35,9 +36,12 @@ export default function File({
           <InsertDriveFileOutlined color="primary" />
         </div>
         <div style={{ marginRight: 'auto' }}>
-          <Typography variant="body1" color="text.primary">
-            {name}
-          </Typography>
+          <div style={{ display: 'flex', gap: theme.spacing() }}>
+            <Typography variant="body1" color="text.primary">
+              {name}
+            </Typography>
+            {status && status}
+          </div>
           <Typography variant="caption" color="text.secondary">
             {description}
           </Typography>

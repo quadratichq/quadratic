@@ -1,12 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { SheetController } from '../../grid/controller/sheetController';
 import mixpanel from 'mixpanel-browser';
-import { APIFile } from '../../api-client/apiClientSingleton';
+import { GetFileClientRes } from '../../api-client/types';
+import apiClientSingleton from '../../api-client/apiClientSingleton';
 
 export type FileContextType = {
-  file: APIFile;
+  file: GetFileClientRes;
   renameFile: (newFilename: string) => void;
-  setFile: React.Dispatch<React.SetStateAction<APIFile>>;
+  setFile: React.Dispatch<React.SetStateAction<GetFileClientRes>>;
 };
 
 /**
@@ -23,34 +24,35 @@ export const FileProvider = ({
   sheetController,
 }: {
   children: React.ReactElement;
-  fileFromServer: APIFile;
+  fileFromServer: GetFileClientRes;
   sheetController: SheetController;
 }) => {
-  const [file, setFile] = useState<APIFile>(fileFromServer);
+  // TODO get rid of date_updated, date_created we don't need them
+  const [file, setFile] = useState<GetFileClientRes>(fileFromServer);
   let didMount = useRef<boolean>(false);
 
   const renameFile = useCallback(
     (newFilename: string) => {
       // TODO keep these same mixpanel actions?
       mixpanel.track('[Files].renameCurrentFile', { newFilename });
-      setFile((oldFile: APIFile) => ({ ...oldFile, name: newFilename, date_updated: Date.now() }));
+      setFile((oldFile: GetFileClientRes) => ({ ...oldFile, name: newFilename, date_updated: Date.now() }));
     },
     [setFile]
   );
 
   // Create and save the fn used by the sheetController to save the file
   const save = useCallback(async (): Promise<void> => {
-    // TODO
-    // setFile((oldFile: APIFile) => ({
-    //   ...oldFile,
-    //   date_updated: Date.now(),
-    //   contents: {
-    //     ...sheetController.sheet.export_file(),
-    //     version: oldFile.version
-    //   },
-    // }));
-    console.log('[FileProvider] saving file...');
-  }, [sheetController.sheet]);
+    setFile((oldFile: GetFileClientRes) => ({
+      ...oldFile,
+      date_updated: Date.now(),
+      contents: {
+        ...oldFile.contents, // version
+        ...sheetController.sheet.export_file(),
+      },
+    }));
+
+    console.log('[FileProvider] sheetController file save');
+  }, [setFile, sheetController.sheet]);
   useEffect(() => {
     sheetController.saveFile = save;
   }, [sheetController, save]);
@@ -72,8 +74,9 @@ export const FileProvider = ({
   useEffect(() => {
     document.title = `${file.name} - Quadratic`;
 
-    // TODO sync to API (if not read-only)
-    // apiClientSingleton.backupFile(id, currentFileContents);
+    // Sync to API
+    // TODO if not read-only, what happens if it fails?
+    apiClientSingleton.postFile(file.uuid, file.name, file.contents);
   }, [file]);
 
   return <FileContext.Provider value={{ file, renameFile, setFile }}>{children}</FileContext.Provider>;
