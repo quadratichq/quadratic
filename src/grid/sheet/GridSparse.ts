@@ -2,12 +2,11 @@ import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
-import { Cell, CellFormat, GridFile } from '../../schemas';
+import { Cell, CellFormat } from '../../schemas';
 import { MinMax } from '../../gridGL/types/size';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Bounds } from './Bounds';
 import { cellHasContent } from '../../gridGL/helpers/selectCells';
-import { File, Rect, Pos } from 'quadratic-core';
 
 export interface CellAndFormat {
   cell?: Cell;
@@ -16,8 +15,6 @@ export interface CellAndFormat {
 
 /** Stores all cells and format locations */
 export class GridSparse {
-  private rustGrid: File = new File();
-
   private gridOffsets: GridOffsets;
   private cellBounds = new Bounds();
   private formatBounds = new Bounds();
@@ -119,9 +116,6 @@ export class GridSparse {
     return `${x ?? ''},${y ?? ''}`;
   }
 
-  populateRust(file: GridFile) {
-    this.rustGrid = File.newFromFile(file);
-  }
   populate(cells?: Cell[], formats?: CellFormat[]) {
     this.clear();
     if (!cells?.length && !formats?.length) return;
@@ -145,14 +139,7 @@ export class GridSparse {
 
   get(x: number, y: number): CellAndFormat | undefined {
     if (this.cellFormatBounds.contains(x, y)) {
-      return {
-        cell: {
-          x,
-          y,
-          type: 'TEXT',
-          value: this.rustGrid.getRenderCell(0, new Pos(BigInt(x), BigInt(y))) || '',
-        },
-      };
+      return this.cells.get(this.getKey(x, y));
     }
   }
 
@@ -173,36 +160,13 @@ export class GridSparse {
   }
 
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
-    let r = new Rect(new Pos(BigInt(x0), BigInt(y0)), new Pos(BigInt(x1), BigInt(y1)));
-    let columns = this.rustGrid.getRenderCells(0, r);
-
-    const ret: Cell[] = [];
-    let x = x0;
-    columns.columns.forEach((column: any) => {
-      column.forEach((block: any) => {
-        let y = block.start;
-        block.values.forEach((value: string) => {
-          ret.push({
-            x,
-            y,
-            type: 'TEXT',
-            value,
-          });
-          y += 1;
-        });
-        x += 1;
-      });
+    const cells: Cell[] = [];
+    this.cells.forEach((cell) => {
+      if (cell.cell && cell.cell.x >= x0 && cell.cell.x <= x1 && cell.cell.y >= y0 && cell.cell.y <= y1) {
+        cells.push(cell.cell);
+      }
     });
-
-    return ret;
-
-    // const cells: Cell[] = [];
-    // this.cells.forEach((cell) => {
-    //   if (cell.cell && cell.cell.x >= x0 && cell.cell.x <= x1 && cell.cell.y >= y0 && cell.cell.y <= y1) {
-    //     cells.push(cell.cell);
-    //   }
-    // });
-    // return cells;
+    return cells;
   }
 
   getNakedFormat(x0: number, y0: number, x1: number, y1: number): CellFormat[] {
@@ -218,16 +182,35 @@ export class GridSparse {
   }
 
   getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
+    const { minX, minY, maxX, maxY, empty } = this.cellFormatBounds;
+    const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
+    const columnStart = columnStartIndex.index > minX ? columnStartIndex.index : minX;
+    const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
+    const columnEnd = columnEndIndex.index < maxX ? columnEndIndex.index : maxX;
+
+    const rowStartIndex = this.gridOffsets.getRowIndex(bounds.top);
+    const rowStart = rowStartIndex.index > minY ? rowStartIndex.index : minY;
+    const rowEndIndex = this.gridOffsets.getRowIndex(bounds.bottom);
+    const rowEnd = rowEndIndex.index < maxY ? rowEndIndex.index : maxY;
+
     return {
-      bounds: this.getGridBounds(false) || Rectangle.EMPTY,
-      boundsWithData: this.getGridBounds(true) || Rectangle.EMPTY,
+      bounds: new Rectangle(
+        columnStartIndex.index,
+        rowStartIndex.index,
+        columnEndIndex.index - columnStartIndex.index,
+        rowEndIndex.index - rowStartIndex.index
+      ),
+      boundsWithData: empty
+        ? undefined
+        : new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart),
     };
   }
 
   getGridBounds(onlyData: boolean): Rectangle | undefined {
-    let rect = this.rustGrid.getGridBounds(0, onlyData).nonEmpty;
-    if (!rect) return;
-    return new Rectangle(rect.min.x, rect.min.y, rect.max.x - rect.min.x + 1, rect.max.y - rect.min.y + 1);
+    if (onlyData) {
+      return this.cellBounds.toRectangle();
+    }
+    return this.cellFormatBounds.toRectangle();
   }
 
   /** finds the minimum and maximum location for content in a row */

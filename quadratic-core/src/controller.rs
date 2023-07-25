@@ -39,11 +39,3 @@ impl FileController {
 pub enum Transaction {
     SetCell { pos: CellRef, value: CellValue },
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JsRenderCells {
-    pub text: String,
-    // pub backgrounds: String,
-    // pub borders: String,
-    // pub borders: String,
-}

@@ -352,45 +352,47 @@ impl Sheet {
                 let cells_iter = blocks_iter.flat_map(move |block| {
                     let start = std::cmp::max(block.start(), region.min.y);
                     let end = std::cmp::min(block.end(), region.max.y + 1);
-                    let text_contents: Vec<String>;
+                    let values: Vec<CellValue>;
                     match block.content() {
-                        CellValueBlockContent::Values(values) => {
+                        CellValueBlockContent::Values(block_values) => {
                             let start = (start - block.start()) as usize;
-                            let end = (end - block.end()) as usize;
-                            text_contents =
-                                values[start..end].iter().map(|v| v.to_string()).collect();
+                            let end = (end - block.start()) as usize;
+                            values = block_values[start..end].to_vec();
                         }
                         CellValueBlockContent::Spill {
                             source,
                             x: spill_x,
                             y: spill_y,
-                            len,
+                            len: _,
                         } => {
                             let start = spill_y + (start - block.start()) as u32;
-                            let end = spill_y + (end - block.end()) as u32;
+                            let end = spill_y + (end - block.start()) as u32;
                             match self.code_cells.get(source) {
-                                None => text_contents = vec![],
+                                None => values = vec![],
                                 Some(code_cell) => {
-                                    text_contents = (start..end)
+                                    values = (start..end)
                                         .map(|y| match code_cell.get(*spill_x, y) {
-                                            None => String::new(),
-                                            Some(value) => value.to_string(),
+                                            None => CellValue::Blank,
+                                            Some(value) => CellValue::from(value.clone()),
                                         })
                                         .collect();
                                 }
                             }
                         }
                     };
-                    std::iter::zip(start..end, text_contents)
+                    std::iter::zip(start..end, values)
                 });
-                Some(cells_iter.map(move |(y, text)| JsRenderCell {
+                Some(cells_iter.map(move |(y, value)| JsRenderCell {
                     x,
                     y,
-                    text,
-                    wrap: column.wrap.get(y),
+                    value,
+
                     align: column.align.get(y),
+                    wrap: column.wrap.get(y),
                     bold: column.bold.get(y),
                     italic: column.italic.get(y),
+                    numeric_format: column.numeric_format.get(y),
+                    text_color: column.text_color.get(y),
                 }))
             })
             .flatten()

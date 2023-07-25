@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::formulas::BasicValue;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
-#[serde(tag = "type")]
+#[serde(tag = "type", content = "value")]
+#[serde(rename_all = "snake_case")]
 pub enum CellValue {
     #[default]
     Blank,

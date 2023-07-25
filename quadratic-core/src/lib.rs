@@ -3,7 +3,7 @@
 
 use async_trait::async_trait;
 use controller::FileController;
-use grid::File;
+use grid::{CellValue, File};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -291,4 +291,22 @@ mod tests {
 
         println!("{}", serde_json::to_string_pretty(&example_result).unwrap());
     }
+}
+
+#[test]
+fn test_serializing() {
+    let mut file = File::new();
+    file.sheets_mut()[0].set_cell_value(
+        Pos { x: 0, y: 0 },
+        Some(CellValue::Text("meow".to_string()).into()),
+    );
+    let sheet = &file.sheets()[0];
+    let region = Rect {
+        min: Pos { x: 0, y: 0 },
+        max: Pos { x: 1, y: 1 },
+    };
+    println!(
+        "{}",
+        serde_json::to_string(&sheet.get_render_cells(region)).unwrap()
+    );
 }

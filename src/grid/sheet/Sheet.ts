@@ -65,7 +65,6 @@ export class Sheet {
     this.name = sheet.name;
     this.color = sheet.color;
     this.gridOffsets.populate(sheet.columns, sheet.rows);
-    this.grid.populateRust(sheet);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
     this.cell_dependency.loadFromString(sheet.cell_dependency);
