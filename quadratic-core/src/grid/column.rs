@@ -1,4 +1,6 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use smallvec::{smallvec, SmallVec};
 use std::collections::BTreeMap;
 use std::ops::Range;
 
@@ -118,6 +120,9 @@ impl<B: BlockContent> ColumnData<B> {
         self.0.remove(&y)
     }
     fn add_block(&mut self, block: Block<B>) {
+        if block.is_empty() {
+            return;
+        }
         debug_assert!(self.blocks_covering_range(block.range()).next().is_none());
         let key = block.start();
         self.0.insert(key, block);
@@ -128,9 +133,6 @@ impl<B: BlockContent> ColumnData<B> {
         }
     }
 
-    pub fn blocks(&self) -> impl Iterator<Item = &Block<B>> {
-        self.0.values()
-    }
     pub fn blocks_covering_range(&self, y_range: Range<i64>) -> impl Iterator<Item = &Block<B>> {
         // There may be a block starting above `y_range.start` that contains
         // `y_range`, so find that.
@@ -146,6 +148,18 @@ impl<B: BlockContent> ColumnData<B> {
             .filter(move |block| block.start() < y_range.end);
 
         itertools::chain!(first_block, rest)
+    }
+    pub fn remove_blocks_covering_range(
+        &mut self,
+        y_range: Range<i64>,
+    ) -> impl '_ + Iterator<Item = Block<B>> {
+        let block_starts = self
+            .blocks_covering_range(y_range)
+            .map(|block| block.start())
+            .collect_vec();
+        block_starts
+            .into_iter()
+            .filter_map(|y| self.remove_block_at(y))
     }
     pub fn get(&self, y: i64) -> Option<B::Item> {
         self.get_block_containing(y)?.get(y)
@@ -184,6 +198,43 @@ impl<B: BlockContent> ColumnData<B> {
         }
 
         // TODO: try merge with blocks above & below
+    }
+
+    pub fn remove_range(&mut self, y_range: Range<i64>) -> Vec<Block<B>> {
+        let mut to_return = vec![];
+        let mut to_put_back: SmallVec<[Block<B>; 2]> = smallvec![];
+
+        for it in self
+            .remove_blocks_covering_range(y_range.clone())
+            .with_position()
+        {
+            match it {
+                itertools::Position::First(block) => {
+                    let [above, below] = block.split(y_range.start);
+                    to_put_back.extend(above);
+                    to_return.extend(below)
+                }
+                itertools::Position::Middle(block) => to_return.push(block),
+                itertools::Position::Last(block) => {
+                    let [above, below] = block.split(y_range.end);
+                    to_return.extend(above);
+                    to_put_back.extend(below);
+                }
+                itertools::Position::Only(block) => {
+                    let [above, rest] = block.split(y_range.start);
+                    to_put_back.extend(above);
+                    if let Some(rest) = rest {
+                        let [inside, below] = rest.split(y_range.end);
+                        to_return.extend(inside);
+                        to_put_back.extend(below);
+                    }
+                }
+            }
+        }
+
+        self.add_blocks(to_put_back);
+
+        to_return
     }
 
     // TODO: set_range() function

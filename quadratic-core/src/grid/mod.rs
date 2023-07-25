@@ -66,24 +66,23 @@ impl File {
                                 Value::Single(_) => {
                                     let x = js_cell.x;
                                     let y = js_cell.y;
-                                    sheet.set_cell_value(
-                                        Pos { x, y },
-                                        Some(CellValueOrSpill::Spill { source, x: 0, y: 0 }),
-                                    );
+                                    let spill_value =
+                                        CellValueOrSpill::Spill { source, x: 0, y: 0 };
+                                    let column = sheet.get_or_create_column(x).1;
+                                    column.values.set(y, Some(spill_value));
                                 }
                                 Value::Array(array) => {
                                     for dy in 0..array.height() {
                                         for dx in 0..array.width() {
                                             let x = js_cell.x + dx as i64;
                                             let y = js_cell.y + dy as i64;
-                                            sheet.set_cell_value(
-                                                Pos { x, y },
-                                                Some(CellValueOrSpill::Spill {
-                                                    source,
-                                                    x: dx,
-                                                    y: dy,
-                                                }),
-                                            );
+                                            let spill_value = CellValueOrSpill::Spill {
+                                                source,
+                                                x: dx,
+                                                y: dy,
+                                            };
+                                            let column = sheet.get_or_create_column(x).1;
+                                            column.values.set(y, Some(spill_value));
                                         }
                                     }
                                 }
@@ -94,7 +93,7 @@ impl File {
                 } else if let Some(cell_value) = js_cell.to_cell_value() {
                     let x = js_cell.x;
                     let y = js_cell.y;
-                    sheet.set_cell_value(Pos { x, y }, Some(cell_value.into()));
+                    sheet.set_cell_value(Pos { x, y }, cell_value);
                 }
             }
 
@@ -102,18 +101,21 @@ impl File {
                 let (_, column) = sheet.get_or_create_column(js_format.x);
 
                 column.align.set(js_format.y, js_format.alignment);
-                column.bold.set(js_format.y, js_format.bold);
+                column.wrap.set(js_format.y, js_format.wrapping);
+
                 column
-                    .fill_color
-                    .set(js_format.y, js_format.fill_color.clone());
+                    .numeric_format
+                    .set(js_format.y, js_format.text_format.clone());
+
+                column.bold.set(js_format.y, js_format.bold);
                 column.italic.set(js_format.y, js_format.italic);
+
                 column
                     .text_color
                     .set(js_format.y, js_format.text_color.clone());
                 column
-                    .numeric_format
-                    .set(js_format.y, js_format.text_format.clone());
-                column.wrap.set(js_format.y, js_format.wrapping);
+                    .fill_color
+                    .set(js_format.y, js_format.fill_color.clone());
             }
 
             sheet.recalculate_bounds();
@@ -127,6 +129,15 @@ impl File {
     }
     pub fn sheets_mut(&mut self) -> &mut [Sheet] {
         &mut self.sheets
+    }
+
+    pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {
+        let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
+        &self.sheets[sheet_index]
+    }
+    pub fn sheet_mut_from_id(&mut self, sheet_id: SheetId) -> &mut Sheet {
+        let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
+        &mut self.sheets[sheet_index]
     }
 }
 #[wasm_bindgen]
@@ -179,8 +190,8 @@ impl File {
     }
 
     #[wasm_bindgen(js_name = "populateWithRandomFloats")]
-    pub fn populate_with_random_floats(&mut self, sheet_index: usize, region: Rect) {
-        let sheet = &mut self.sheets[sheet_index];
+    pub fn populate_with_random_floats(&mut self, sheet_id: SheetId, region: Rect) {
+        let sheet = self.sheet_mut_from_id(sheet_id);
         for x in region.x_range() {
             let (_, column) = sheet.get_or_create_column(x);
             for y in region.y_range() {
@@ -194,22 +205,45 @@ impl File {
         sheet.recalculate_bounds();
     }
 
+    #[wasm_bindgen(js_name = "recalculateBounds")]
+    pub fn recalculate_bounds(&mut self, sheet_id: SheetId) {
+        self.sheet_mut_from_id(sheet_id).recalculate_bounds();
+    }
     #[wasm_bindgen(js_name = "getGridBounds")]
     pub fn get_grid_bounds(
         &self,
-        sheet_index: usize,
+        sheet_id: SheetId,
         ignore_formatting: bool,
     ) -> Result<JsValue, JsValue> {
         Ok(serde_wasm_bindgen::to_value(
-            &self.sheets[sheet_index].bounds(ignore_formatting),
+            &self.sheet_from_id(sheet_id).bounds(ignore_formatting),
         )?)
     }
 
     #[wasm_bindgen(js_name = "getRenderCells")]
-    pub fn get_render_cells(&self, sheet: SheetId, region: Rect) -> Result<String, JsValue> {
-        let sheet_index = self.sheet_id_to_index(sheet).ok_or("bad sheet ID")?;
+    pub fn get_render_cells(&self, sheet_id: SheetId, region: Rect) -> Result<String, JsValue> {
+        let sheet_index = self.sheet_id_to_index(sheet_id).ok_or("bad sheet ID")?;
         let sheet = &self.sheets()[sheet_index];
         Ok(serde_json::to_string(&sheet.get_render_cells(region)).map_err(|e| e.to_string())?)
+    }
+
+    #[wasm_bindgen(js_name = "setCellValue")]
+    pub fn set_cell_value(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        cell_value: JsValue,
+    ) -> Result<(), JsValue> {
+        let cell_value: CellValue = serde_wasm_bindgen::from_value(cell_value)?;
+        self.sheet_mut_from_id(sheet_id)
+            .set_cell_value(pos, cell_value);
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "deleteCellValues")]
+    pub fn delete_cell_values(&mut self, sheet_id: SheetId, region: Rect) -> Result<(), JsValue> {
+        self.sheet_mut_from_id(sheet_id).delete_cell_values(region);
+        Ok(())
     }
 }
 
@@ -241,25 +275,54 @@ impl Sheet {
     pub fn set_cell_value(
         &mut self,
         pos: Pos,
-        value: Option<CellValueOrSpill>,
+        value: CellValue,
     ) -> Option<SetCellResponse<CellValueOrSpill>> {
+        let value: Option<CellValueOrSpill> = if value.is_blank() {
+            Some(value.into())
+        } else {
+            None
+        };
         if value.is_none() && !self.columns.contains_key(&pos.x) {
             return None;
         }
 
         let (column_response, column) = self.get_or_create_column(pos.x);
         let old_value = column.values.set(pos.y, value).unwrap_or_default();
+
+        let mut unspill = None;
+        if let &CellValueOrSpill::Spill { source, .. } = &old_value {
+            self.unspill(source);
+            unspill = Some(source);
+        }
+
+        // TODO: check for new spills, if the cell was deleted
+        let spill = None;
+
         let row_response = self.get_or_create_row(pos.y);
         Some(SetCellResponse {
             column: column_response,
             row: row_response,
             old_value,
+
+            spill,
+            unspill,
         })
     }
     /// Returns a cell value.
     pub fn get_cell_value(&self, pos: Pos) -> Option<CellValueOrSpill> {
         self.get_column(pos.x)
             .and_then(|column| column.values.get(pos.y))
+    }
+
+    pub fn delete_cell_values(&mut self, region: Rect) {
+        for x in region.x_range() {
+            if let Some(column) = self.columns.get_mut(&x) {
+                let y_range = region.y_range();
+                column
+                    .values
+                    .remove_range(*y_range.start()..*y_range.end() + 1);
+            }
+        }
     }
 
     fn get_column(&self, index: i64) -> Option<&Column> {
@@ -398,6 +461,11 @@ impl Sheet {
             .flatten()
             .collect()
     }
+
+    fn unspill(&mut self, source: CellRef) {
+        // TODO: unspill cells
+        // let code_cell = self.code_cells.get(source).expect("bad code cell ID");
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -405,6 +473,9 @@ pub struct SetCellResponse<V> {
     pub column: GetIdResponse<ColumnId>,
     pub row: GetIdResponse<RowId>,
     pub old_value: V,
+
+    pub spill: Option<CellRef>,
+    pub unspill: Option<CellRef>,
 }
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct GetIdResponse<I> {

@@ -55,6 +55,23 @@ impl<B: BlockContent> Block<B> {
         }
     }
 
+    pub fn split(self, y: i64) -> [Option<Self>; 2] {
+        if y < self.start() {
+            [None, Some(self)]
+        } else if y >= self.end() {
+            [Some(self), None]
+        } else {
+            let [above, below] = self.content.split((y - self.y) as usize);
+            [
+                Some(Block {
+                    y: self.y,
+                    content: above,
+                }),
+                Some(Block { y, content: below }),
+            ]
+        }
+    }
+
     pub fn push_top(self, value: B::Item) -> SmallVec<[Self; 2]> {
         build_contiguous_blocks(self.y - 1, self.content.push_top(value))
     }
