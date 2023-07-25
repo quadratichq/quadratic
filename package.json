@@ -30,6 +30,7 @@
     "@types/react-color": "^3.0.6",
     "@types/react-dom": "^17.0.10",
     "@types/uuid": "^9.0.1",
+    "@y-presence/react": "^2.0.1",
     "ace-builds": "^1.4.13",
     "axios": "^0.24.0",
     "color": "^4.2.3",
@@ -57,6 +58,8 @@
     "typescript": "^4.4.4",
     "uuid": "^9.0.0",
     "web-vitals": "^1.0.1",
+    "y-websocket": "^1.5.0",
+    "yjs": "^13.6.7",
     "zod": "^3.21.4"
   },
   "main": "public/electron.js",

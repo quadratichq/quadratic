@@ -52,7 +52,6 @@ export const Component = () => {
           </Form>
         }
       />
-
       {!files ? (
         <Box sx={{ maxWidth: '60ch', mx: 'auto', py: theme.spacing(2) }}>
           <Empty
