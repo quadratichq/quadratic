@@ -11,7 +11,7 @@ jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
 let sc: SheetController;
 beforeAll(async () => {
   pixiAppEvents.app = mockPixiApp();
-  sc = new SheetController();
+  pixiAppEvents.app.sheet_controller = sc;
   webWorkers.init(pixiAppEvents.app);
 });
 

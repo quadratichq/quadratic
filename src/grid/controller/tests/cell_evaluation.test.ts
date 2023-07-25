@@ -4,6 +4,7 @@ import { mockPixiApp } from '../../../setupPixiTests';
 import { webWorkers } from '../../../web-workers/webWorkers';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { SheetController } from '../sheetController';
+import { mockPythonOutput } from './mockPythonOutput';
 
 jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
 
@@ -30,6 +31,9 @@ test('SheetController - code run correctly', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
+  mockPythonOutput({
+    "print('hello')\n'world'": `{"output_value":"world","cells_accessed":[],"input_python_std_out":"hello\\n","success":true,"formatted_code":"print('hello')\\n'world'\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const cell_after = sc.sheet.grid.getCell(54, 54);
@@ -51,6 +55,9 @@ test('SheetController - array output undo redo', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
+  mockPythonOutput({
+    '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]': `{"output_value":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]","array_output":[1,2,3,4,5,6,7,8,9,10],"cells_accessed":[],"input_python_std_out":"","success":true,"formatted_code":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 10);
@@ -101,6 +108,9 @@ test('SheetController - array output length change', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
+  mockPythonOutput({
+    '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]': `{"output_value":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]","array_output":[1,2,3,4,5,6,7,8,9,10],"cells_accessed":[],"input_python_std_out":"","success":true,"formatted_code":"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
@@ -127,7 +137,9 @@ test('SheetController - array output length change', async () => {
     python_code: '["1new", "2new", "3new", "4new", "5new"]',
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
-
+  mockPythonOutput({
+    '["1new", "2new", "3new", "4new", "5new"]': `{"output_value":"['1new', '2new', '3new', '4new', '5new']","array_output":["1new","2new","3new","4new","5new"],"cells_accessed":[],"input_python_std_out":"","success":true,"formatted_code":"[\\"1new\\", \\"2new\\", \\"3new\\", \\"4new\\", \\"5new\\"]\\n"}`,
+  });
   await updateCellAndDCells({ starting_cells: [cell_update_1], sheetController: sc });
 
   const after_update_1 = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
