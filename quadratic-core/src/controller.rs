@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    grid::{CellRef, CellValue, File, Sheet, SheetId},
+    grid::{CellRef, CellValue, File, SheetId},
     Rect,
 };
 

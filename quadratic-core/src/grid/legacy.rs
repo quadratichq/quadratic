@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use crate::formulas::{Array, BasicValue, FormulaError, Value};
 
@@ -119,6 +118,20 @@ pub enum JsCellType {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct JsSheet {
+    pub borders: Vec<JsBorders>,
+    pub cells: Vec<JsCell>,
+    pub cell_dependency: String,
+    pub columns: Vec<JsHeadingSchema>,
+
+    pub formats: Vec<JsCellFormat>,
+
+    pub rows: Vec<JsHeadingSchema>,
+
+    pub created: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum Any {
     Number(f64),
@@ -136,26 +149,21 @@ impl Into<BasicValue> for Any {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GridFileV1_2 {
-    pub borders: Vec<JsBorders>,
-    pub cells: Vec<JsCell>,
-    pub cell_dependency: String,
-    pub columns: Vec<JsHeadingSchema>,
+pub struct GridFileV1_3 {
+    pub sheets: Vec<JsSheet>,
     pub created: f64,
 
     pub filename: String,
 
-    pub formats: Vec<JsCellFormat>,
     pub id: String,
     pub modified: f64,
-    pub rows: Vec<JsHeadingSchema>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 pub enum GridFile {
-    #[serde(rename = "1.2")]
-    V1_2(GridFileV1_2),
+    #[serde(rename = "1.3")]
+    V1_3(GridFileV1_3),
 }
 
 impl JsCell {

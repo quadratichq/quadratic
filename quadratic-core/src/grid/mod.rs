@@ -8,7 +8,6 @@ mod block;
 mod bounds;
 mod code;
 mod column;
-mod dgraph;
 mod formatting;
 mod ids;
 mod js_structs;
@@ -41,79 +40,84 @@ impl File {
     pub fn from_legacy(file: &legacy::GridFile) -> Result<Self> {
         use legacy::*;
 
-        let GridFile::V1_2(file) = file;
+        let GridFile::V1_3(file) = file;
         let mut ret = File::new();
-        let sheet = &mut ret.sheets_mut()[0];
+        ret.sheets = vec![];
+        for js_sheet in &file.sheets {
+            let sheet_id = ret.add_sheet();
+            let sheet_index = ret.sheet_id_to_index(sheet_id).unwrap();
+            let sheet = &mut ret.sheets_mut()[sheet_index];
 
-        // Load cell data
-        for js_cell in &file.cells {
-            let column = sheet.get_or_create_column(js_cell.x).0.id;
+            // Load cell data
+            for js_cell in &js_sheet.cells {
+                let column = sheet.get_or_create_column(js_cell.x).0.id;
 
-            if let Some(cell_code) = js_cell.to_cell_code(sheet) {
-                let row = sheet.get_or_create_row(js_cell.y).id;
-                let code_cell_ref = CellRef {
-                    sheet: sheet.id,
-                    column,
-                    row,
-                };
-                if let Some(output) = &cell_code.output {
-                    if let Ok(result) = &output.result {
-                        let source = code_cell_ref;
-                        match &result.output_value {
-                            Value::Single(_) => {
-                                let x = js_cell.x;
-                                let y = js_cell.y;
-                                sheet.set_cell_value(
-                                    Pos { x, y },
-                                    Some(CellValueOrSpill::Spill { source, x: 0, y: 0 }),
-                                );
-                            }
-                            Value::Array(array) => {
-                                for dy in 0..array.height() {
-                                    for dx in 0..array.width() {
-                                        let x = js_cell.x + dx as i64;
-                                        let y = js_cell.y + dy as i64;
-                                        sheet.set_cell_value(
-                                            Pos { x, y },
-                                            Some(CellValueOrSpill::Spill {
-                                                source,
-                                                x: dx,
-                                                y: dy,
-                                            }),
-                                        );
+                if let Some(cell_code) = js_cell.to_cell_code(sheet) {
+                    let row = sheet.get_or_create_row(js_cell.y).id;
+                    let code_cell_ref = CellRef {
+                        sheet: sheet.id,
+                        column,
+                        row,
+                    };
+                    if let Some(output) = &cell_code.output {
+                        if let Ok(result) = &output.result {
+                            let source = code_cell_ref;
+                            match &result.output_value {
+                                Value::Single(_) => {
+                                    let x = js_cell.x;
+                                    let y = js_cell.y;
+                                    sheet.set_cell_value(
+                                        Pos { x, y },
+                                        Some(CellValueOrSpill::Spill { source, x: 0, y: 0 }),
+                                    );
+                                }
+                                Value::Array(array) => {
+                                    for dy in 0..array.height() {
+                                        for dx in 0..array.width() {
+                                            let x = js_cell.x + dx as i64;
+                                            let y = js_cell.y + dy as i64;
+                                            sheet.set_cell_value(
+                                                Pos { x, y },
+                                                Some(CellValueOrSpill::Spill {
+                                                    source,
+                                                    x: dx,
+                                                    y: dy,
+                                                }),
+                                            );
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                    sheet.code_cells.insert(code_cell_ref, cell_code);
+                } else if let Some(cell_value) = js_cell.to_cell_value() {
+                    let x = js_cell.x;
+                    let y = js_cell.y;
+                    sheet.set_cell_value(Pos { x, y }, Some(cell_value.into()));
                 }
-                sheet.code_cells.insert(code_cell_ref, cell_code);
-            } else if let Some(cell_value) = js_cell.to_cell_value() {
-                let x = js_cell.x;
-                let y = js_cell.y;
-                sheet.set_cell_value(Pos { x, y }, Some(cell_value.into()));
             }
+
+            for js_format in &js_sheet.formats {
+                let (_, column) = sheet.get_or_create_column(js_format.x);
+
+                column.align.set(js_format.y, js_format.alignment);
+                column.bold.set(js_format.y, js_format.bold);
+                column
+                    .fill_color
+                    .set(js_format.y, js_format.fill_color.clone());
+                column.italic.set(js_format.y, js_format.italic);
+                column
+                    .text_color
+                    .set(js_format.y, js_format.text_color.clone());
+                column
+                    .numeric_format
+                    .set(js_format.y, js_format.text_format.clone());
+                column.wrap.set(js_format.y, js_format.wrapping);
+            }
+
+            sheet.recalculate_bounds();
         }
-
-        for js_format in &file.formats {
-            let (_, column) = sheet.get_or_create_column(js_format.x);
-
-            column.align.set(js_format.y, js_format.alignment);
-            column.bold.set(js_format.y, js_format.bold);
-            column
-                .fill_color
-                .set(js_format.y, js_format.fill_color.clone());
-            column.italic.set(js_format.y, js_format.italic);
-            column
-                .text_color
-                .set(js_format.y, js_format.text_color.clone());
-            column
-                .numeric_format
-                .set(js_format.y, js_format.text_format.clone());
-            column.wrap.set(js_format.y, js_format.wrapping);
-        }
-
-        sheet.recalculate_bounds();
 
         Ok(ret)
     }
