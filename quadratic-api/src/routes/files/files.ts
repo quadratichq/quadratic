@@ -3,8 +3,7 @@ import { Request } from '../../types/Request';
 import { validateAccessToken } from '../../middleware/auth';
 import rateLimit from 'express-rate-limit';
 import dbClient from '../../dbClient';
-import { get_user } from '../../helpers/get_user';
-import { get_file } from '../../helpers/get_file';
+import { userMiddleware } from '../../middleware/user';
 import { body, validationResult, param } from 'express-validator';
 import { File, User } from '@prisma/client';
 
@@ -20,37 +19,10 @@ const file_rate_limiter = rateLimit({
   },
 });
 
-// TODO to support the idea of public/private files
-// this needs to be reconfigured roughly as:
-// 1. See if file exists
-// 2. If it exists, check if it's public
-//    A. If it is, return it
-//    B. If it's not, check if the current user is the file owner and can access it
-//       If they are, return it.
-// 3. Return a 404
-
 const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString();
 const validateFileName = () => body('name').optional().isString();
 type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
-
-const userMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  if (req.auth?.sub === undefined) {
-    return res.status(401).json({ error: { message: 'Invalid authorization token' } });
-  }
-
-  req.user = await dbClient.user.upsert({
-    where: {
-      auth0_id: req.auth.sub,
-    },
-    update: {},
-    create: {
-      auth0_id: req.auth.sub,
-    },
-  });
-
-  next();
-};
 
 const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   if (req.params.uuid === undefined) {
@@ -97,13 +69,15 @@ const getFilePermissions = (user: User, file: File): FILE_PERMISSION => {
   return 'NOT_SHARED';
 };
 
-files_router.get('/', validateAccessToken, file_rate_limiter, async (req, res) => {
-  const user = await get_user(req);
+files_router.get('/', validateAccessToken, file_rate_limiter, userMiddleware, async (req: Request, res) => {
+  if (!req.user) {
+    return res.status(500).json({ error: { message: 'Internal server error' } });
+  }
 
   // Fetch files owned by the user from the database
   const files = await dbClient.file.findMany({
     where: {
-      ownerUserId: user.id,
+      ownerUserId: req.user.id,
       deleted: false,
     },
     select: {
@@ -261,30 +235,33 @@ files_router.post(
   '/',
   validateAccessToken,
   file_rate_limiter,
+  userMiddleware,
   validateFileContents(),
   validateFileName(),
-  async (request: Request, response) => {
+  async (req: Request, res) => {
     // POST creates a new file called "Untitled"
     // You can optionally provide a name and contents in the request body
 
-    const errors = validationResult(request);
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return response.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ errors: errors.array() });
     }
 
-    const user = await get_user(request);
+    if (!req.user) {
+      return res.status(500).json({ error: { message: 'Internal server error' } });
+    }
 
     // Create a new file in the database
     // use name and contents from request body
     let name = 'Untitled';
-    if (request.body.name !== undefined) {
-      name = request.body.name;
+    if (req.body.name !== undefined) {
+      name = req.body.name;
     }
-    const contents = Buffer.from(request.body.contents, 'utf8');
+    const contents = Buffer.from(req.body.contents, 'utf8');
 
     const file = await dbClient.file.create({
       data: {
-        ownerUserId: user.id,
+        ownerUserId: req.user.id,
         name: name,
         contents: contents,
       },
@@ -296,7 +273,7 @@ files_router.post(
       },
     });
 
-    response.status(201).json(file); // CREATED
+    res.status(201).json(file); // CREATED
   }
 );
 
