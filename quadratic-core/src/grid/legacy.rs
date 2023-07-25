@@ -58,8 +58,8 @@ pub struct JsCellEvalResult {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum JsArrayOutput {
-    Array(Vec<Option<Any>>),
     Block(Vec<Vec<Option<Any>>>),
+    Array(Vec<Option<Any>>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -193,9 +193,7 @@ impl JsCell {
             output: self.evaluation_result.clone().and_then(|js_result| {
                 let result = match js_result.success {
                     true => Ok(CellCodeRunOk {
-                        output_value: if let Some(s) = js_result.output_value.clone() {
-                            Value::Single(BasicValue::String(s))
-                        } else if let Some(array) = js_result.array_output {
+                        output_value: if let Some(array) = js_result.array_output {
                             let width;
                             let height;
                             let array_contents;
@@ -206,16 +204,21 @@ impl JsCell {
                                     height = values.len() as u32;
                                     array_contents =
                                         values.iter().map(|v| v.clone().into()).collect();
+                                    crate::log(&format!("arrayyyy   = {:?}", array_contents));
                                 }
                                 JsArrayOutput::Block(values) => {
                                     width = values.get(0)?.len() as u32;
                                     height = values.len() as u32;
                                     array_contents =
                                         values.iter().flatten().map(|v| v.clone().into()).collect();
+                                    crate::log(&format!("blockk   = {:?}", array_contents));
                                 }
                             }
+                            crate::log(&format!("{:?}", (width, height)));
 
                             Value::Array(Array::new_row_major(width, height, array_contents).ok()?)
+                        } else if let Some(s) = js_result.output_value.clone() {
+                            Value::Single(BasicValue::String(s))
                         } else {
                             Value::Single(BasicValue::Blank)
                         },

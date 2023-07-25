@@ -1,15 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-use super::CellValue;
+use super::formatting::{CellAlign, CellWrap};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JsRenderCellsArray {
-    pub columns: Vec<Vec<JsRenderCellsBlock>>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type")]
-pub struct JsRenderCellsBlock {
-    pub start: i64,
-    pub values: Vec<String>,
+pub struct JsRenderCell {
+    pub x: i64,
+    pub y: i64,
+    pub text: String,
+    pub wrap: Option<CellWrap>,
+    pub align: Option<CellAlign>,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
 }

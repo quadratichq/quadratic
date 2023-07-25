@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::CellRef;
-use crate::formulas::{FormulaError, Value};
+use crate::formulas::{BasicValue, FormulaError, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CellCode {
@@ -10,6 +10,14 @@ pub struct CellCode {
     pub formatted_code_string: Option<String>,
     pub last_modified: String,
     pub output: Option<CellCodeRunOutput>,
+}
+impl CellCode {
+    pub fn get(&self, x: u32, y: u32) -> Option<&BasicValue> {
+        match &self.output.as_ref()?.result.as_ref().ok()?.output_value {
+            Value::Single(v) => Some(v),
+            Value::Array(a) => Some(a.get(x, y).ok()?),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]

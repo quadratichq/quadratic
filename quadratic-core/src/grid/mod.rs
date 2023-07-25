@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{btree_map, BTreeMap, HashMap};
 use std::hash::Hash;
@@ -8,6 +8,7 @@ mod block;
 mod bounds;
 mod code;
 mod column;
+mod dgraph;
 mod formatting;
 mod ids;
 mod js_structs;
@@ -23,7 +24,7 @@ use crate::formulas::Value;
 use crate::{Pos, Rect};
 use block::{Block, BlockContent, CellValueBlockContent, CellValueOrSpill, SameValue};
 use column::Column;
-use js_structs::{JsRenderCellsArray, JsRenderCellsBlock};
+use js_structs::JsRenderCell;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[wasm_bindgen]
@@ -48,11 +49,6 @@ impl File {
         for js_cell in &file.cells {
             let column = sheet.get_or_create_column(js_cell.x).0.id;
 
-            if let Some(cell_value) = js_cell.to_cell_value() {
-                let x = js_cell.x;
-                let y = js_cell.y;
-                sheet.set_cell_value(Pos { x, y }, Some(cell_value.into()));
-            }
             if let Some(cell_code) = js_cell.to_cell_code(sheet) {
                 let row = sheet.get_or_create_row(js_cell.y).id;
                 let code_cell_ref = CellRef {
@@ -62,21 +58,29 @@ impl File {
                 };
                 if let Some(output) = &cell_code.output {
                     if let Ok(result) = &output.result {
-                        let spill_value = Some(CellValueOrSpill::Spill {
-                            source: code_cell_ref,
-                        });
+                        let source = code_cell_ref;
                         match &result.output_value {
                             Value::Single(_) => {
                                 let x = js_cell.x;
                                 let y = js_cell.y;
-                                sheet.set_cell_value(Pos { x, y }, spill_value);
+                                sheet.set_cell_value(
+                                    Pos { x, y },
+                                    Some(CellValueOrSpill::Spill { source, x: 0, y: 0 }),
+                                );
                             }
                             Value::Array(array) => {
                                 for dy in 0..array.height() {
                                     for dx in 0..array.width() {
                                         let x = js_cell.x + dx as i64;
                                         let y = js_cell.y + dy as i64;
-                                        sheet.set_cell_value(Pos { x, y }, spill_value.clone());
+                                        sheet.set_cell_value(
+                                            Pos { x, y },
+                                            Some(CellValueOrSpill::Spill {
+                                                source,
+                                                x: dx,
+                                                y: dy,
+                                            }),
+                                        );
                                     }
                                 }
                             }
@@ -84,6 +88,10 @@ impl File {
                     }
                 }
                 sheet.code_cells.insert(code_cell_ref, cell_code);
+            } else if let Some(cell_value) = js_cell.to_cell_value() {
+                let x = js_cell.x;
+                let y = js_cell.y;
+                sheet.set_cell_value(Pos { x, y }, Some(cell_value.into()));
             }
         }
 
@@ -182,66 +190,6 @@ impl File {
         sheet.recalculate_bounds();
     }
 
-    #[wasm_bindgen(js_name = "getRenderCells")]
-    pub fn get_render_cells(&self, sheet_index: usize, region: Rect) -> Result<JsValue, JsValue> {
-        let mut ret = JsRenderCellsArray { columns: vec![] };
-        let sheet = &self.sheets[sheet_index];
-        for x in region.x_range() {
-            let mut ret_column = vec![];
-            if let Some(column) = sheet.get_column(x) {
-                for block in column
-                    .values
-                    .blocks_covering_range(region.min.y..region.max.y + 1)
-                {
-                    ret_column.push(JsRenderCellsBlock {
-                        start: block.start(),
-                        values: match block.content() {
-                            CellValueBlockContent::Values(values) => {
-                                values.iter().map(|v| v.to_string()).collect()
-                            }
-                            CellValueBlockContent::Spill { source, len } => {
-                                std::iter::repeat(format!("TODO spill from {source:?}"))
-                                    .take(*len)
-                                    .collect()
-                            }
-                        },
-                    });
-                }
-            }
-            ret.columns.push(ret_column)
-        }
-        Ok(serde_wasm_bindgen::to_value(&ret)?)
-    }
-
-    #[wasm_bindgen(js_name = "getRenderCell")]
-    pub fn get_render_cell(&self, sheet_index: usize, pos: Pos) -> Option<String> {
-        let sheet = &self.sheets[sheet_index];
-        match sheet.get_cell_value(pos) {
-            CellValueOrSpill::CellValue(value) => Some(value.to_string()),
-            CellValueOrSpill::Spill { source } => {
-                match &sheet
-                    .code_cells
-                    .get(&source)?
-                    .output
-                    .as_ref()?
-                    .result
-                    .as_ref()
-                    .ok()?
-                    .output_value
-                {
-                    Value::Single(v) => Some(v.to_string()),
-                    Value::Array(a) => {
-                        let source_x = sheet.column_ids.index_of(source.column)?;
-                        let source_y = sheet.row_ids.index_of(source.row)?;
-                        let dx = pos.x - source_x;
-                        let dy = pos.y - source_y;
-                        Some(a.get(dx as u32, dy as u32).ok()?.to_string())
-                    }
-                }
-            }
-        }
-    }
-
     #[wasm_bindgen(js_name = "getGridBounds")]
     pub fn get_grid_bounds(
         &self,
@@ -251,6 +199,13 @@ impl File {
         Ok(serde_wasm_bindgen::to_value(
             &self.sheets[sheet_index].bounds(ignore_formatting),
         )?)
+    }
+
+    #[wasm_bindgen(js_name = "getRenderCells")]
+    pub fn get_render_cells(&self, sheet: SheetId, region: Rect) -> Result<String, JsValue> {
+        let sheet_index = self.sheet_id_to_index(sheet).ok_or("bad sheet ID")?;
+        let sheet = &self.sheets()[sheet_index];
+        Ok(serde_json::to_string(&sheet.get_render_cells(region)).map_err(|e| e.to_string())?)
     }
 }
 
@@ -298,10 +253,9 @@ impl Sheet {
         })
     }
     /// Returns a cell value.
-    pub fn get_cell_value(&self, pos: Pos) -> CellValueOrSpill {
+    pub fn get_cell_value(&self, pos: Pos) -> Option<CellValueOrSpill> {
         self.get_column(pos.x)
             .and_then(|column| column.values.get(pos.y))
-            .unwrap_or_default()
     }
 
     fn get_column(&self, index: i64) -> Option<&Column> {
@@ -381,6 +335,62 @@ impl Sheet {
                 self.format_bounds.add(Pos { x, y });
             }
         }
+    }
+
+    pub fn get_render_cells(&self, region: Rect) -> Vec<JsRenderCell> {
+        region
+            .x_range()
+            .filter_map(move |x| {
+                let column = self.get_column(x)?;
+                let blocks_iter = column
+                    .values
+                    .blocks_covering_range(region.min.y..region.max.y + 1);
+                let cells_iter = blocks_iter.flat_map(move |block| {
+                    let start = std::cmp::max(block.start(), region.min.y);
+                    let end = std::cmp::min(block.end(), region.max.y + 1);
+                    let text_contents: Vec<String>;
+                    match block.content() {
+                        CellValueBlockContent::Values(values) => {
+                            let start = (start - block.start()) as usize;
+                            let end = (end - block.end()) as usize;
+                            text_contents =
+                                values[start..end].iter().map(|v| v.to_string()).collect();
+                        }
+                        CellValueBlockContent::Spill {
+                            source,
+                            x: spill_x,
+                            y: spill_y,
+                            len,
+                        } => {
+                            let start = spill_y + (start - block.start()) as u32;
+                            let end = spill_y + (end - block.end()) as u32;
+                            match self.code_cells.get(source) {
+                                None => text_contents = vec![],
+                                Some(code_cell) => {
+                                    text_contents = (start..end)
+                                        .map(|y| match code_cell.get(*spill_x, y) {
+                                            None => String::new(),
+                                            Some(value) => value.to_string(),
+                                        })
+                                        .collect();
+                                }
+                            }
+                        }
+                    };
+                    std::iter::zip(start..end, text_contents)
+                });
+                Some(cells_iter.map(move |(y, text)| JsRenderCell {
+                    x,
+                    y,
+                    text,
+                    wrap: column.wrap.get(y),
+                    align: column.align.get(y),
+                    bold: column.bold.get(y),
+                    italic: column.italic.get(y),
+                }))
+            })
+            .flatten()
+            .collect()
     }
 }
 

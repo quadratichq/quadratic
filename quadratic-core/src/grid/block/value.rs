@@ -7,7 +7,7 @@ use crate::grid::{CellRef, CellValue};
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum CellValueOrSpill {
     CellValue(CellValue),
-    Spill { source: CellRef },
+    Spill { source: CellRef, x: u32, y: u32 },
 }
 impl Default for CellValueOrSpill {
     fn default() -> Self {
@@ -32,7 +32,12 @@ impl CellValueOrSpill {
 pub enum CellValueBlockContent {
     // TODO: add float array, bool array, etc.
     Values(SmallVec<[CellValue; 1]>),
-    Spill { source: CellRef, len: usize },
+    Spill {
+        source: CellRef,
+        x: u32,
+        y: u32,
+        len: usize,
+    },
 }
 impl BlockContent for CellValueBlockContent {
     type Item = CellValueOrSpill;
@@ -40,14 +45,21 @@ impl BlockContent for CellValueBlockContent {
     fn new(value: Self::Item) -> Self {
         match value {
             CellValueOrSpill::CellValue(value) => Self::Values(smallvec![value]),
-            CellValueOrSpill::Spill { source } => Self::Spill { source, len: 1 },
+            CellValueOrSpill::Spill { source, x, y } => Self::Spill {
+                source,
+                x,
+                y,
+                len: 1,
+            },
         }
     }
     fn unwrap_single_value(self) -> Self::Item {
         assert!(self.len() == 1, "expected single value");
         match self {
             CellValueBlockContent::Values(values) => values.into_iter().next().unwrap().into(),
-            CellValueBlockContent::Spill { source, .. } => CellValueOrSpill::Spill { source },
+            CellValueBlockContent::Spill { source, x, y, .. } => {
+                CellValueOrSpill::Spill { source, x, y }
+            }
         }
     }
     fn len(&self) -> usize {
@@ -60,7 +72,11 @@ impl BlockContent for CellValueBlockContent {
     fn get(&self, index: usize) -> Option<Self::Item> {
         (index < self.len()).then(|| match self {
             Self::Values(array) => array[index].clone().into(),
-            &Self::Spill { source, .. } => CellValueOrSpill::Spill { source },
+            &Self::Spill { source, x, y, .. } => CellValueOrSpill::Spill {
+                source,
+                x,
+                y: y + index as u32,
+            },
         })
     }
     fn set(
@@ -108,13 +124,17 @@ impl BlockContent for CellValueBlockContent {
                 let left = array;
                 [Self::Values(left), Self::Values(right)]
             }
-            Self::Spill { source, len } => [
+            Self::Spill { source, x, y, len } => [
                 Self::Spill {
                     source,
+                    x,
+                    y,
                     len: split_point,
                 },
                 Self::Spill {
                     source,
+                    x,
+                    y: y + split_point as u32,
                     len: len - split_point,
                 },
             ],
