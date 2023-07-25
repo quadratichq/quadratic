@@ -137,7 +137,14 @@ files_router.get(
     }
 
     return res.status(200).json({
-      file: req.file,
+      file: {
+        uuid: req.file.uuid,
+        name: req.file.name,
+        created_date: req.file.created_date,
+        updated_date: req.file.updated_date,
+        version: req.file.version,
+        contents: req.file.contents.toString('utf8'),
+      },
       permission: getFilePermissions(req.user, req.file),
     });
   }
@@ -268,7 +275,7 @@ files_router.post(
     if (request.body.name !== undefined) {
       name = request.body.name;
     }
-    const contents = Buffer.from(request.body.contents, 'base64');
+    const contents = Buffer.from(request.body.contents, 'utf8');
 
     const file = await dbClient.file.create({
       data: {

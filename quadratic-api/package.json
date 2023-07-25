@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "dotenv -e .env -- ts-node-dev --project ./tsconfig.json ./src/server.ts",
+    "start": "dotenv -e .env -- ts-node-dev --watch ./src --project ./tsconfig.json ./src/server.ts ",
     "build": "tsc",
     "lint": "eslint src/**/*.ts",
     "format": "eslint src/**/*.ts --fix",
