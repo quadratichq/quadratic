@@ -2,6 +2,7 @@
   "verbose": true,
   "preset": "ts-jest",
   "testPathIgnorePatterns": ["<rootDir>/tests-e2e/*"],
+  "modulePathIgnorePatterns": ["quadratic-core/pkg/package.json"],
   "transform": {
     "^.+\\.(ts|tsx|js|jsx)?$": "ts-jest",
     "\\.py$": "<rootDir>/jest-transformer-py"

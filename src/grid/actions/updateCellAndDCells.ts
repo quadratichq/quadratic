@@ -36,7 +36,12 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   const cells_to_update: Set<StringId> = new Set(starting_cells.map((c) => getKey(c.x, c.y)));
 
   // set all starting cells that do not require calculation first
-  if (!delete_starting_cells) {
+  if (delete_starting_cells) {
+    sheetController.execute_statement({
+      type: 'SET_CELLS',
+      data: starting_cells.map((cell) => ({ x: cell.x, y: cell.y })),
+    });
+  } else {
     // only store starting_cells that just have text
     const date = new Date().toISOString();
     const justText = starting_cells.flatMap((cell) => {
@@ -82,7 +87,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
     if (cell === undefined) continue;
 
     // remove old deps from graph
-    if (cell.dependent_cells)
+    if (cell.dependent_cells) {
       cell.dependent_cells.forEach((dcell) => {
         sheetController.execute_statement({
           type: 'REMOVE_CELL_DEPENDENCY',
@@ -92,6 +97,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
           },
         });
       });
+    }
 
     // Compute cell value
     let array_cells_to_output: Cell[] = [];
@@ -99,19 +105,20 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       // we are deleting one of the starting cells
       // with delete_starting_cells = true
       // delete cell
-      sheetController.execute_statement({
-        type: 'SET_CELLS',
-        data: [{ x: cell.x, y: cell.y }],
-      });
+      // this is accomplished at the start
+      // sheetController.execute_statement({
+      //   type: 'SET_CELLS',
+      //   data: [{ x: cell.x, y: cell.y }],
+      // });
     } else {
       // We are evaluating a cell
       if (cell.type === 'PYTHON' || cell.type === 'FORMULA' || cell.type === 'AI') {
         // run cell and format results
-        let result = await runCellComputation(cell);
-        cell.evaluation_result = result;
+        const result = await runCellComputation(cell);
 
-        // collect output
+        cell.evaluation_result = result;
         if (result.success) {
+          // collect output
           cell.value = result.output_value || '';
           // if (cell.type === 'PYTHON') cell.python_code = result.formatted_code;
         } else {
@@ -175,7 +182,6 @@ export const updateCellAndDCells = async (args: ArgsType) => {
           cell.array_cells = array_cells_to_output.map((a_cell) => [a_cell.x, a_cell.y]);
 
           cell.last_modified = new Date().toISOString();
-
           if (array_cells_to_output.length) {
             sheetController.execute_statement({
               type: 'SET_CELLS',

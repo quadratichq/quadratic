@@ -3,7 +3,6 @@ import { Cell } from '../../../schemas';
 import { mockPixiApp } from '../../../setupPixiTests';
 import { webWorkers } from '../../../web-workers/webWorkers';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
-import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
 import { SheetController } from '../sheetController';
 
 jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
@@ -12,9 +11,7 @@ let sc: SheetController;
 beforeAll(async () => {
   pixiAppEvents.app = mockPixiApp();
   sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
   webWorkers.init();
-  await webWorkers.pythonWebWorker?.load();
 });
 
 beforeEach(() => {
