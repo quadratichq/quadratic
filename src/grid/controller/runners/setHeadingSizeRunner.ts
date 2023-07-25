@@ -1,10 +1,11 @@
-import { Sheet } from '../../sheet/Sheet';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { Statement } from '../statement';
+import { SheetController } from '../sheetController';
+import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 
-export const SetHeadingSizeRunner = (sheet: Sheet, statement: Statement, app?: PixiApp): Statement => {
+export const SetHeadingSizeRunner = (sheetController: SheetController, statement: Statement): Statement => {
   if (statement.type !== 'SET_HEADING_SIZE') throw new Error('Incorrect statement type.');
   // Applies the SET_HEADING_SIZE statement to the sheet and returns the reverse statement
+  const sheet = sheetController.sheet;
 
   const { heading_size } = statement.data;
 
@@ -21,13 +22,11 @@ export const SetHeadingSizeRunner = (sheet: Sheet, statement: Statement, app?: P
 
   // mark things as dirty
   // TODO: move to end_transaction
-  if (app) {
-    app.cells.dirty = true;
-    app.gridLines.dirty = true;
-    app.cursor.dirty = true;
-    app.headings.dirty = true;
-    if (heading_size.column !== undefined) app.quadrants.quadrantChanged({ column: heading_size.column });
-    else if (heading_size.row !== undefined) app.quadrants.quadrantChanged({ row: heading_size.row });
+  pixiAppEvents.setDirty({ cells: true, gridLines: true, cursor: true, headings: true });
+  if (heading_size.column !== undefined) {
+    pixiAppEvents.quadrantsChanged({ column: heading_size.column });
+  } else if (heading_size.row !== undefined) {
+    pixiAppEvents.quadrantsChanged({ row: heading_size.row });
   }
 
   // return reverse statement

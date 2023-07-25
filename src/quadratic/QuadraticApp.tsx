@@ -1,21 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSetRecoilState } from 'recoil';
+import { loadedStateAtom } from '../atoms/loadedStateAtom';
+import { SheetController } from '../grid/controller/sheetController';
+import { loadAssets } from '../gridGL/loadAssets';
+import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { useGenerateLocalFiles } from '../hooks/useGenerateLocalFiles';
 import QuadraticUIContext from '../ui/QuadraticUIContext';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
-import { loadPython } from '../grid/computations/python/loadPython';
+import { webWorkers } from '../web-workers/webWorkers';
 import { AnalyticsProvider } from './AnalyticsProvider';
-import { loadAssets } from '../gridGL/loadAssets';
-import { IS_READONLY_MODE } from '../constants/app';
-import { debugSkipPythonLoad } from '../debugFlags';
-import { SheetController } from '../grid/controller/sheetController';
-import { useGenerateLocalFiles } from '../hooks/useGenerateLocalFiles';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 
-type loadableItem = 'pixi-assets' | 'local-files' | 'wasm-python' | 'quadrants';
-const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'wasm-python', 'quadrants'];
+type loadableItem = 'pixi-assets' | 'local-files' | 'quadrants';
+const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'quadrants'];
 
 export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
+  const setLoadedState = useSetRecoilState(loadedStateAtom);
   const didMount = useRef(false);
   const [sheetController] = useState<SheetController>(new SheetController());
   const localFiles = useGenerateLocalFiles(sheetController);
@@ -27,6 +28,30 @@ export const QuadraticApp = () => {
       setLoading(false);
     }
   }, [app, itemsLoaded]);
+
+  // recoil tracks whether python is loaded
+  useEffect(() => {
+    const loaded = () =>
+      setLoadedState((loaded) => {
+        return {
+          ...loaded,
+          pythonLoaded: true,
+        };
+      });
+    const error = () =>
+      setLoadedState((loaded) => {
+        return {
+          ...loaded,
+          pythonLoaded: 'error',
+        };
+      });
+    window.addEventListener('python-loaded', loaded);
+    window.addEventListener('python-error', error);
+    return () => {
+      window.removeEventListener('python-loaded', loaded);
+      window.removeEventListener('python-error', error);
+    };
+  }, [setLoadedState]);
 
   // Loading Effect
   useEffect(() => {
@@ -46,13 +71,9 @@ export const QuadraticApp = () => {
       });
     };
 
-    if (!IS_READONLY_MODE && !debugSkipPythonLoad) {
-      loadPython().then(() => {
-        setItemsLoaded((old) => ['wasm-python', ...old]);
-      });
-    } else {
-      setItemsLoaded((old) => ['wasm-python', ...old]);
-    }
+    // populate web workers
+    webWorkers.init(app);
+
     loadAssets().then(() => {
       setItemsLoaded((old) => ['pixi-assets', ...old]);
       assets = true;

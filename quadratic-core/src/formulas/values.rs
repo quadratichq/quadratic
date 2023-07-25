@@ -74,27 +74,6 @@ impl Value {
         }
     }
 
-    /// Returns whether the value is blank. The empty string is considered
-    /// non-blank.
-    pub fn is_blank(&self) -> bool {
-        match self {
-            Value::Single(v) => v.is_blank(),
-            Value::Array(a) => a.values.iter().all(|v| v.is_blank()),
-        }
-    }
-
-    /// Coerces the value to a specific type; returns `None` if the conversion
-    /// fails or the original value is `None`.
-    pub fn coerce_nonblank<'a, T>(&'a self) -> Option<T>
-    where
-        &'a Value: TryInto<T>,
-    {
-        match self.is_blank() {
-            true => None,
-            false => self.try_into().ok(),
-        }
-    }
-
     /// Replaces NaN and Inf with errors; otherwise returns the value
     /// unchanged.
     pub fn purify_floats(self, span: Span) -> FormulaResult<Self> {
@@ -534,11 +513,6 @@ impl BasicValue {
         }
     }
 
-    /// Returns whether the value is a blank value. The empty string is considered
-    /// non-blank.
-    pub fn is_blank(&self) -> bool {
-        matches!(self, BasicValue::Blank)
-    }
     pub fn is_blank_or_empty_string(&self) -> bool {
         self.is_blank() || *self == BasicValue::String(String::new())
     }
@@ -868,6 +842,7 @@ impl TryFrom<Value> for BasicValue {
 pub trait CoerceInto: Sized + Unspan
 where
     for<'a> &'a Self: Into<Span>,
+    Self::Unspanned: IsBlank,
 {
     fn into_non_error_value(self) -> FormulaResult<Self::Unspanned>;
 
@@ -891,12 +866,10 @@ where
         let span = (&self).into();
 
         match self.into_non_error_value() {
+            // Propagate errors.
             Err(e) => Some(Err(e)),
-            Ok(value) => match value.try_into().with_span(span) {
-                Ok(result) => Some(Ok(result)),
-                // If coercion fails, return `None`.
-                Err(_) => None,
-            },
+            // If coercion fails, return `None`.
+            Ok(value) => value.coerce_nonblank().map(|v| Ok(v).with_span(span)),
         }
     }
 }
@@ -932,5 +905,43 @@ impl CoerceInto for Spanned<Value> {
             Value::Single(BasicValue::Err(e)) => Err(*e),
             other => Ok(other),
         }
+    }
+}
+
+pub trait IsBlank {
+    /// Returns whether the value is blank. The empty string is considered
+    /// non-blank.
+    fn is_blank(&self) -> bool;
+
+    /// Coerces the value to a specific type; returns `None` if the conversion
+    /// fails or the original value is blank.
+    fn coerce_nonblank<'a, T>(self) -> Option<T>
+    where
+        Self: TryInto<T>,
+    {
+        match self.is_blank() {
+            true => None,
+            false => self.try_into().ok(),
+        }
+    }
+}
+impl<T: IsBlank> IsBlank for &'_ T {
+    fn is_blank(&self) -> bool {
+        (*self).is_blank()
+    }
+}
+
+impl IsBlank for Value {
+    fn is_blank(&self) -> bool {
+        match self {
+            Value::Single(v) => v.is_blank(),
+            Value::Array(a) => a.values.iter().all(|v| v.is_blank()),
+        }
+    }
+}
+
+impl IsBlank for BasicValue {
+    fn is_blank(&self) -> bool {
+        matches!(self, BasicValue::Blank)
     }
 }

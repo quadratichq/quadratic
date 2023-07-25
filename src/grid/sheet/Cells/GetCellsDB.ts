@@ -6,6 +6,7 @@ let sheet: Sheet | undefined = undefined;
 
 // todo: this file goes away once we have rust backend
 export const GetCellsDB = async (
+  // sheetName = '',
   p0_x = -Infinity,
   p0_y = -Infinity,
   p1_x = Infinity,
@@ -14,7 +15,7 @@ export const GetCellsDB = async (
   if (sheet !== undefined) {
     return sheet.grid.getNakedCells(p0_x, p0_y, p1_x, p1_y);
   }
-  throw new Error('Expected `sheet` to be defined in GetCellsDB');
+  return [];
 };
 
 export const GetCellsDBSetSheet = (value: Sheet): void => {

@@ -5,15 +5,11 @@ export function doubleClickCell(options: { cell?: Cell; app: PixiApp }): void {
   const { cell, app } = options;
   const settings = app.settings;
 
-  if (!settings.setInteractionState || !settings.setEditorInteractionState) return;
+  if (!settings.setEditorInteractionState) return;
 
   if (cell) {
     if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
-      settings.setInteractionState({
-        ...settings.interactionState,
-        showInput: true,
-        inputInitialValue: cell.value,
-      });
+      settings.changeInput(true, cell.value);
     } else {
       // Open code editor, or move code editor if already open.
       settings.setEditorInteractionState({
@@ -26,10 +22,6 @@ export function doubleClickCell(options: { cell?: Cell; app: PixiApp }): void {
     }
   } else {
     // If no previous value, open single line Input
-    settings.setInteractionState({
-      ...settings.interactionState,
-      showInput: true,
-      inputInitialValue: '',
-    });
+    settings.changeInput(true);
   }
 }

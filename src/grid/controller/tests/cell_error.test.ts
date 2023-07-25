@@ -1,21 +1,25 @@
 import { SheetController } from '../sheetController';
 import { Cell } from '../../../schemas';
-import { setupPython } from '../../computations/python/loadPython';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
+import { webWorkers } from '../../../web-workers/webWorkers';
 
-// Setup Pyodide before tests
-let pyodide: any;
+jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
+
+let sc: SheetController;
 beforeAll(async () => {
-  const { loadPyodide } = require('pyodide');
-  pyodide = await loadPyodide();
-  await setupPython(pyodide);
+  sc = new SheetController();
+  GetCellsDBSetSheet(sc.sheet);
+  webWorkers.init();
+  await webWorkers.pythonWebWorker?.load();
+});
+
+beforeEach(() => {
+  sc.clear();
+  sc.sheet.clear();
 });
 
 test('SheetController - cell error', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   const cell = {
     x: 54,
     y: 54,
@@ -25,7 +29,7 @@ test('SheetController - cell error', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const cell_after = sc.sheet.grid.getCell(54, 54);
 
@@ -39,9 +43,6 @@ test('SheetController - cell error', async () => {
 });
 
 test('SheetController - cell error prev array output', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   const cell_arr = {
     x: 54,
     y: 54,
@@ -51,7 +52,7 @@ test('SheetController - cell error prev array output', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_arr], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_arr], sheetController: sc });
 
   const cell = {
     x: 54,
@@ -62,7 +63,7 @@ test('SheetController - cell error prev array output', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const cell_after = sc.sheet.grid.getCell(54, 54);
 

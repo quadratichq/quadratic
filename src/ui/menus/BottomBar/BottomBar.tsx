@@ -1,41 +1,44 @@
+import { ChatBubbleOutline, Check, ErrorOutline } from '@mui/icons-material';
+import { CircularProgress, Tooltip } from '@mui/material';
 import { Box } from '@mui/system';
-import { colors } from '../../../theme/colors';
-import { useRecoilState } from 'recoil';
-import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
-import { useEffect, useState } from 'react';
-import { Cell } from '../../../schemas';
 import { formatDistance } from 'date-fns';
-import { focusGrid } from '../../../helpers/focusGrid';
+import { useEffect, useState } from 'react';
 import { isMobileOnly } from 'react-device-detect';
-import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
-import { Sheet } from '../../../grid/sheet/Sheet';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { ChatBubbleOutline } from '@mui/icons-material';
+import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
+import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { Cell } from '../../../schemas';
+import { colors } from '../../../theme/colors';
+import { ActiveSelectionStats } from './ActiveSelectionStats';
+
+const stylesAlignCenter = { display: 'flex', alignItems: 'center', gap: '.25rem' };
 
 interface Props {
   sheet: Sheet;
 }
 
 export const BottomBar = (props: Props) => {
-  const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const loadedState = useRecoilValue(loadedStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
+  const cursor = props.sheet.cursor;
   // Generate string describing cursor location
-  const cursorPositionString = `(${interactionState.cursorPosition.x}, ${interactionState.cursorPosition.y})`;
-  const multiCursorPositionString = `(${interactionState.multiCursorPosition.originPosition.x}, ${interactionState.multiCursorPosition.originPosition.y}), (${interactionState.multiCursorPosition.terminalPosition.x}, ${interactionState.multiCursorPosition.terminalPosition.y})`;
+  const cursorPositionString = `(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`;
+  const multiCursorPositionString = cursor.multiCursor
+    ? `(${cursor.multiCursor.originPosition.x}, ${cursor.multiCursor.originPosition.y}), (${cursor.multiCursor.terminalPosition.x}, ${cursor.multiCursor.terminalPosition.y})`
+    : '';
 
   useEffect(() => {
     const updateCellData = async () => {
       // Don't update if we have not moved cursor position
-      if (
-        selectedCell?.x === interactionState.cursorPosition.x &&
-        selectedCell?.y === interactionState.cursorPosition.y
-      )
-        return;
+      if (selectedCell?.x === cursor.cursorPosition.x && selectedCell?.y === cursor.cursorPosition.y) return;
 
       // Get cell at position
-      const cell = props.sheet.getCellCopy(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
+      const cell = props.sheet.getCellCopy(cursor.cursorPosition.x, cursor.cursorPosition.y);
 
       // If cell exists set selectedCell
       // Otherwise set to undefined
@@ -46,7 +49,7 @@ export const BottomBar = (props: Props) => {
       }
     };
     updateCellData();
-  }, [interactionState, selectedCell, props.sheet]);
+  }, [selectedCell, props.sheet, cursor.cursorPosition.x, cursor.cursorPosition.y]);
 
   const handleShowGoToMenu = () => {
     setEditorInteractionState({
@@ -91,7 +94,7 @@ export const BottomBar = (props: Props) => {
         <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
           Cursor: {cursorPositionString}
         </span>
-        {interactionState.showMultiCursor && (
+        {cursor.multiCursor && (
           <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
             Selection: {multiCursorPositionString}
           </span>
@@ -126,21 +129,35 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
+        <ActiveSelectionStats sheet={props.sheet}></ActiveSelectionStats>
         {!isMobileOnly && (
           <>
-            <span
-              style={{ display: 'flex', alignItems: 'center', gap: '.25rem', cursor: 'pointer' }}
-              onClick={() => {
-                setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
-              }}
-            >
-              <ChatBubbleOutline fontSize="inherit" />
-              Feedback
+            <span style={stylesAlignCenter}>
+              {loadedState.pythonLoaded === 'error' ? (
+                <Tooltip title="Error loading Python. Please refresh your browser.">
+                  <ErrorOutline style={{ color: 'red' }} fontSize="inherit" />
+                </Tooltip>
+              ) : loadedState.pythonLoaded ? (
+                <Check fontSize="inherit" />
+              ) : (
+                <CircularProgress size="0.5rem" />
+              )}{' '}
+              Python 3.9.5
             </span>
-            <span>✓ Python 3.9.5</span>
           </>
         )}
-        <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
+        <span style={stylesAlignCenter}>
+          <Check fontSize="inherit" /> Quadratic {process.env.REACT_APP_VERSION}
+        </span>
+        <span
+          style={{ ...stylesAlignCenter, cursor: 'pointer' }}
+          onClick={() => {
+            setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
+          }}
+        >
+          <ChatBubbleOutline fontSize="inherit" />
+          Feedback
+        </span>
         <span
           style={{
             color: '#ffffff',

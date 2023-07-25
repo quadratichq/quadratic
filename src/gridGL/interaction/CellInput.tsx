@@ -1,5 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Coordinate } from '../types/size';
 import { focusGrid } from '../../helpers/focusGrid';
 import { PixiApp } from '../pixiApp/PixiApp';
@@ -12,24 +11,28 @@ import { useFormatCells } from '../../ui/menus/TopBar/SubMenus/useFormatCells';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
 
 interface CellInputProps {
-  interactionState: GridInteractionState;
   editorInteractionState: EditorInteractionState;
-  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
   app?: PixiApp;
   sheetController: SheetController;
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { interactionState, editorInteractionState, setInteractionState, app, container, sheetController } = props;
-  const { changeBold, changeItalic } = useFormatCells(sheetController, app, true);
+  const { editorInteractionState, app, container, sheetController } = props;
+  const { changeBold, changeItalic } = useFormatCells(sheetController, true);
 
   const viewport = app?.viewport;
 
-  const cellLocation = interactionState.cursorPosition;
-  const [saveInteractionState, setSaveInteractionState] = useState<GridInteractionState>();
+  const cellLocation = sheetController.sheet.cursor.cursorPosition;
 
   const text = useRef('');
+
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const changeInput = (e: any) => setVisible(e.detail.showInput);
+    window.addEventListener('change-input', changeInput);
+    return () => window.removeEventListener('change-input', changeInput);
+  }, []);
 
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
   const copy = sheetController.sheet.getCellAndFormatCopy(cellLocation.x, cellLocation.y);
@@ -75,12 +78,12 @@ export const CellInput = (props: CellInputProps) => {
       if (!node) return;
       node.focus();
       setTextInput(node);
-      text.current = interactionState.inputInitialValue ?? (cell?.value || '');
+      text.current = app?.settings.input.initialValue ?? (cell?.value || '');
       if (document.hasFocus() && node.contains(document.activeElement)) {
         handleFocus({ target: node });
       }
     },
-    [cell?.value, handleFocus, interactionState.inputInitialValue]
+    [app?.settings.input.initialValue, cell?.value, handleFocus]
   );
 
   // If we don't have a viewport, we can't continue.
@@ -125,13 +128,8 @@ export const CellInput = (props: CellInputProps) => {
   }
 
   // If the input is not shown, we can do nothing and return null
-  if (!interactionState.showInput) {
+  if (!visible) {
     return null;
-  }
-
-  // copy interaction state when input starts
-  if (!saveInteractionState) {
-    setSaveInteractionState(interactionState);
   }
 
   // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
@@ -145,7 +143,7 @@ export const CellInput = (props: CellInputProps) => {
     const value = textInput.innerText;
 
     if (!cancel) {
-      sheetController.start_transaction(saveInteractionState);
+      sheetController.start_transaction();
       // Update Cell and dependent cells
       if (value === '') {
         // delete cell if input is empty, and wasn't empty before
@@ -156,7 +154,6 @@ export const CellInput = (props: CellInputProps) => {
             x1: cellLocation.x,
             y1: cellLocation.y,
             sheetController,
-            app,
             create_transaction: false,
           });
       } else {
@@ -172,7 +169,6 @@ export const CellInput = (props: CellInputProps) => {
             },
           ],
           sheetController,
-          app,
         });
         if (temporaryBold !== undefined && temporaryBold !== !!format?.bold) {
           changeBold(temporaryBold);
@@ -189,22 +185,14 @@ export const CellInput = (props: CellInputProps) => {
     }
 
     // Update Grid Interaction state, reset input value state
-    setInteractionState({
-      ...interactionState,
-      keyboardMovePosition: {
-        x: interactionState.cursorPosition.x + transpose.x,
-        y: interactionState.cursorPosition.y + transpose.y,
-      },
+    const position = sheetController.sheet.cursor.cursorPosition;
+    sheetController.sheet.cursor.changePosition({
       cursorPosition: {
-        x: interactionState.cursorPosition.x + transpose.x,
-        y: interactionState.cursorPosition.y + transpose.y,
+        x: position.x + transpose.x,
+        y: position.y + transpose.y,
       },
-      showInput: false,
-      inputInitialValue: '',
     });
-    // setValue(undefined);
-
-    setSaveInteractionState(undefined);
+    app.settings.changeInput(false);
 
     // Set focus back to Grid
     focusGrid();

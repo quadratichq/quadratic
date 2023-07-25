@@ -51,6 +51,8 @@ export class Update {
     if (this.lastViewportScale !== viewport.scale.x) {
       this.lastViewportScale = viewport.scale.x;
       dirty = true;
+
+      // this is used to trigger changes to ZoomDropdown
       window.dispatchEvent(new CustomEvent<number>('zoom-event', { detail: viewport.scale.x }));
     }
     if (this.lastViewportPosition.x !== viewport.x || this.lastViewportPosition.y !== viewport.y) {
@@ -95,11 +97,10 @@ export class Update {
     app.boxCells.update();
     debugTimeCheck('[Update] boxCells');
     app.cells.update();
+
     debugTimeCheck('[Update] cells');
     app.cursor.update();
     debugTimeCheck('[Update] cursor');
-
-    app.settings.update();
 
     if (rendererDirty) {
       app.viewport.dirty = false;
@@ -183,11 +184,8 @@ export class Update {
     app.cells.update();
     app.cursor.update();
 
-    app.settings.update();
-
     if (rendererDirty) {
       app.viewport.dirty = false;
-
       // not sure why this is needed, but avoids a slowdown on first interaction
       if (!this.firstRender) {
         this.firstRender = true;

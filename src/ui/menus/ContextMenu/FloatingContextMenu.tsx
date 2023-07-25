@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
@@ -34,8 +33,6 @@ import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 import { PNG_MESSAGE } from '../../../constants/app';
 
 interface Props {
-  interactionState: GridInteractionState;
-  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
   app: PixiApp;
   sheetController: SheetController;
@@ -44,7 +41,6 @@ interface Props {
 
 export const FloatingContextMenu = (props: Props) => {
   const {
-    interactionState,
     app,
     app: { viewport },
     container,
@@ -55,7 +51,7 @@ export const FloatingContextMenu = (props: Props) => {
   const moreMenu = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
-  const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
+  const borders = useGetBorderMenu({ sheetController: sheetController });
   const {
     changeFillColor,
     removeFillColor,
@@ -67,9 +63,10 @@ export const FloatingContextMenu = (props: Props) => {
     textFormatIncreaseDecimalPlaces,
     textFormatSetCurrency,
     textFormatSetPercentage,
-  } = useFormatCells(sheetController, props.app);
+  } = useFormatCells(sheetController);
   const { format } = useGetSelection(sheetController.sheet);
-  const { clearAllFormatting } = useClearAllFormatting(sheetController, props.app);
+  const { clearAllFormatting } = useClearAllFormatting(sheetController);
+  const cursor = sheetController.sheet.cursor;
 
   // close moreMenu when context menu closes
   useEffect(() => {
@@ -83,16 +80,12 @@ export const FloatingContextMenu = (props: Props) => {
 
     // Calculate position of input based on cell
     const cell_offsets = sheetController.sheet.gridOffsets.getCell(
-      Math.min(
-        interactionState.cursorPosition.x,
-        interactionState.multiCursorPosition.originPosition.x,
-        interactionState.multiCursorPosition.terminalPosition.x
-      ),
-      Math.min(
-        interactionState.cursorPosition.y,
-        interactionState.multiCursorPosition.originPosition.y,
-        interactionState.multiCursorPosition.terminalPosition.y
-      )
+      cursor.multiCursor
+        ? Math.min(cursor.cursorPosition.x, cursor.multiCursor.originPosition.x, cursor.multiCursor.terminalPosition.x)
+        : cursor.cursorPosition.x,
+      cursor.multiCursor
+        ? Math.min(cursor.cursorPosition.y, cursor.multiCursor.originPosition.y, cursor.multiCursor.terminalPosition.y)
+        : cursor.cursorPosition.y
     );
     let cell_offset_scaled = viewport.toScreen(cell_offsets.x, cell_offsets.y);
 
@@ -112,12 +105,12 @@ export const FloatingContextMenu = (props: Props) => {
       visibility = 'hidden';
     }
     // hide if boxCells is active
-    if (interactionState.boxCells) {
+    if (cursor.boxCells) {
       visibility = 'hidden';
     }
 
     // Hide if it's not 1) a multicursor or, 2) an active right click
-    if (!(interactionState.showMultiCursor || showContextMenu)) visibility = 'hidden';
+    if (!(cursor.multiCursor || showContextMenu)) visibility = 'hidden';
 
     // Hide if currently selecting
     if (app?.pointer?.pointerDown?.active) visibility = 'hidden';
@@ -127,8 +120,8 @@ export const FloatingContextMenu = (props: Props) => {
 
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheetController.sheet.gridOffsets.getCell(
-      interactionState.multiCursorPosition.terminalPosition.x,
-      interactionState.multiCursorPosition.terminalPosition.y
+      cursor.multiCursor ? cursor.multiCursor.terminalPosition.x : cursor.cursorPosition.x,
+      cursor.multiCursor ? cursor.multiCursor.terminalPosition.y : cursor.cursorPosition.y
     );
     let multiselect_offset = viewport.toScreen(
       terminal_pos.x + terminal_pos.width,
@@ -165,7 +158,17 @@ export const FloatingContextMenu = (props: Props) => {
     } else menuDiv.current.style.pointerEvents = 'auto';
 
     return transform;
-  }, [app, viewport, container, sheetController.sheet.gridOffsets, interactionState, showContextMenu]);
+  }, [
+    app,
+    viewport,
+    container,
+    sheetController.sheet.gridOffsets,
+    cursor.multiCursor,
+    cursor.cursorPosition.x,
+    cursor.cursorPosition.y,
+    cursor.boxCells,
+    showContextMenu,
+  ]);
 
   useEffect(() => {
     if (!viewport) return;

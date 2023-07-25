@@ -4,7 +4,7 @@ import { Sheet } from '../../../grid/sheet/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { PanMode } from '../../../atoms/gridInteractionStateAtom';
+import { PanMode } from '../../pixiApp/PixiAppSettings';
 
 const MINIMUM_MOVE_POSITION = 5;
 
@@ -31,12 +31,14 @@ export class PointerDown {
 
   pointerDown(world: Point, event: PointerEvent): void {
     if (IS_READONLY_MODE) return;
-    if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
+    if (this.app.settings.panMode !== PanMode.Disabled) return;
+
+    const cursor = this.app.sheet.cursor;
 
     // note: directly call this.app.settings instead of locally defining it here; otherwise it dereferences this
 
     // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
-    if (this.app.settings.interactionState.showInput) {
+    if (this.app.settings.input.show) {
       this.afterShowInput = true;
       setTimeout(() => {
         this.pointerDown(world, event);
@@ -54,12 +56,12 @@ export class PointerDown {
 
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
-    if (rightClick && this.app.settings.interactionState.showMultiCursor) {
+    if (rightClick && cursor.multiCursor) {
       if (
-        column >= this.app.settings.interactionState.multiCursorPosition.originPosition.x &&
-        column <= this.app.settings.interactionState.multiCursorPosition.terminalPosition.x &&
-        row >= this.app.settings.interactionState.multiCursorPosition.originPosition.y &&
-        row <= this.app.settings.interactionState.multiCursorPosition.terminalPosition.y
+        column >= cursor.multiCursor.originPosition.x &&
+        column <= cursor.multiCursor.terminalPosition.x &&
+        row >= cursor.multiCursor.originPosition.y &&
+        row <= cursor.multiCursor.terminalPosition.y
       )
         // Ignore this click. User is accessing the RightClickMenu.
         return;
@@ -87,7 +89,7 @@ export class PointerDown {
     // select cells between pressed and cursor position
     if (event.shiftKey) {
       const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
-      const cursorPosition = this.app.settings.interactionState.cursorPosition;
+      const cursorPosition = cursor.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
         // make origin top left, and terminal bottom right
         const originX = cursorPosition.x < column ? cursorPosition.x : column;
@@ -95,14 +97,12 @@ export class PointerDown {
         const termX = cursorPosition.x > column ? cursorPosition.x : column;
         const termY = cursorPosition.y > row ? cursorPosition.y : row;
 
-        this.app.settings.setInteractionState({
-          ...this.app.settings.interactionState,
+        cursor.changePosition({
           keyboardMovePosition: { x: column, y: row },
-          multiCursorPosition: {
+          multiCursor: {
             originPosition: new Point(originX, originY),
             terminalPosition: new Point(termX, termY),
           },
-          showMultiCursor: true,
         });
       }
       return;
@@ -121,23 +121,19 @@ export class PointerDown {
 
     // Move cursor to mouse down position
     // For single click, hide multiCursor
-    this.app.settings.setInteractionState({
-      ...this.app.settings.interactionState,
+    cursor.changePosition({
       keyboardMovePosition: { x: column, y: row },
       cursorPosition: { x: column, y: row },
-      multiCursorPosition: previousPosition,
-      showMultiCursor: false,
-      showInput: false,
     });
     this.pointerMoved = false;
   }
 
   pointerMove(world: Point): void {
-    if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
+    if (this.app.settings.panMode !== PanMode.Disabled) return;
 
     if (!this.active) return;
 
-    const { viewport, settings } = this.app;
+    const { viewport } = this.app;
     const { gridOffsets } = this.sheet;
 
     // for determining if double click
@@ -152,13 +148,7 @@ export class PointerDown {
     }
 
     // cursor intersects bottom-corner indicator (disabled for now)
-    if (
-      !this.active ||
-      !this.position ||
-      !this.previousPosition ||
-      !this.positionRaw ||
-      !settings.setInteractionState
-    ) {
+    if (!this.active || !this.position || !this.previousPosition || !this.positionRaw) {
       return;
     }
 
@@ -168,18 +158,11 @@ export class PointerDown {
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {
       // hide multi cursor when only selecting one cell
-      settings.setInteractionState({
-        ...settings.interactionState,
+      this.sheet.cursor.changePosition({
         keyboardMovePosition: { x: this.position.x, y: this.position.y },
         cursorPosition: { x: this.position.x, y: this.position.y },
-        multiCursorPosition: {
-          originPosition: { x: this.position.x, y: this.position.y },
-          terminalPosition: { x: this.position.x, y: this.position.y },
-        },
-        showMultiCursor: false,
-        showInput: false,
-        inputInitialValue: '',
       });
+      this.app.settings.changeInput(false);
     } else {
       // cursor origin and terminal are not in the same cell
 
@@ -201,18 +184,15 @@ export class PointerDown {
       // this reduces the number of hooks fired
       if (hasMoved) {
         // update multiCursor
-        settings.setInteractionState({
-          ...settings.interactionState,
+        this.sheet.cursor.changePosition({
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
-          multiCursorPosition: {
+          multiCursor: {
             originPosition: { x: originX, y: originY },
             terminalPosition: { x: termX, y: termY },
           },
-          showMultiCursor: true,
-          showInput: false,
-          inputInitialValue: '',
         });
+        this.app.settings.changeInput(false);
 
         // update previousPosition
         this.previousPosition = {

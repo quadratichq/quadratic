@@ -1,20 +1,18 @@
 import { Cell, ArrayOutputBase } from '../../schemas';
-import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
 import { runCellComputation } from '../computations/runCellComputation';
 import { StringId, getKey } from '../../helpers/getKey';
+import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 
 interface ArgsType {
   starting_cells: Cell[];
   sheetController: SheetController;
-  app?: PixiApp;
-  pyodide?: any;
   delete_starting_cells?: boolean;
   create_transaction?: boolean;
 }
 
-function getCoordinatesFromStringId(stringId: StringId): [number, number] {
+export function getCoordinatesFromStringId(stringId: StringId): [number, number] {
   // required for type inference
   const [x, y] = stringId.split(',').map((val) => parseInt(val));
   return [x, y];
@@ -25,7 +23,7 @@ function addToSet(deps: [number, number][], set: Set<StringId>) {
 }
 
 export const updateCellAndDCells = async (args: ArgsType) => {
-  const { starting_cells, sheetController, app, pyodide, delete_starting_cells, create_transaction } = args;
+  const { starting_cells, sheetController, delete_starting_cells, create_transaction } = args;
 
   // start transaction
   if (create_transaction ?? true) sheetController.start_transaction();
@@ -89,8 +87,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       // We are evaluating a cell
       if (cell.type === 'PYTHON' || cell.type === 'FORMULA' || cell.type === 'AI') {
         // run cell and format results
-        // let result = await runPython(cell.python_code || '', pyodide);
-        let result = await runCellComputation(cell, pyodide);
+        let result = await runCellComputation(cell);
         cell.evaluation_result = result;
 
         // collect output
@@ -100,7 +97,6 @@ export const updateCellAndDCells = async (args: ArgsType) => {
         } else {
           cell.value = ''; // clear value if python code fails
         }
-
         // add new cell deps to graph
         if (result.cells_accessed.length) {
           // add new deps to graph
@@ -235,5 +231,5 @@ export const updateCellAndDCells = async (args: ArgsType) => {
   // Pass updatedCells to the app so it can update the Grid Quadrants which changed.
   // TODO: move this to sheetController so it happens automatically with every transaction?
   // Maybe sheetController.end_transaction() should return a list of cells which updated in the transaction?
-  app?.quadrants.quadrantChanged({ cells: updatedCells });
+  pixiAppEvents.quadrantsChanged({ cells: updatedCells });
 };

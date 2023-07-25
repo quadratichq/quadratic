@@ -20,7 +20,6 @@ export const shrinkHorizontal = async (options: {
     x1: selection.right,
     y1: selection.bottom,
     sheetController: sheet_controller,
-    app: sheet_controller.app,
     create_transaction: false,
   });
 };
@@ -39,7 +38,6 @@ export const shrinkVertical = async (options: {
     x1: selection.right,
     y1: selection.bottom,
     sheetController: sheet_controller,
-    app: sheet_controller.app,
     create_transaction: false,
   });
 };

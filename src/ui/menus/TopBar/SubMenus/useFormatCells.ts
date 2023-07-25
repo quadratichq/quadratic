@@ -1,14 +1,14 @@
+import { useCallback } from 'react';
 import { ColorResult } from 'react-color';
 import { clearFormattingAction } from '../../../../grid/actions/clearFormattingAction';
-import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
-import { CellAlignment, CellFormat } from '../../../../schemas';
-import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../grid/controller/sheetController';
+import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
+import { pixiAppEvents } from '../../../../gridGL/pixiApp/PixiAppEvents';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
+import { CellAlignment, CellFormat } from '../../../../schemas';
 import { useGetSelection } from './useGetSelection';
-import { useCallback } from 'react';
 
-export const FORMAT_SELECTION_EVENT = 'formatSelectionEvent';
+export const FORMAT_SELECTION_EVENT = 'format-selection-event';
 
 interface IResults {
   changeFillColor: (rgb: ColorResult) => void;
@@ -30,11 +30,7 @@ interface IResults {
 
 type CellFormatNoPosition = Omit<CellFormat, 'x' | 'y'>;
 
-export const useFormatCells = (
-  sheet_controller: SheetController,
-  app?: PixiApp,
-  skipStartTransaction?: boolean
-): IResults => {
+export const useFormatCells = (sheet_controller: SheetController, skipStartTransaction?: boolean): IResults => {
   const { start, end } = useGetSelection(sheet_controller.sheet);
 
   const onFormat = useCallback(
@@ -79,16 +75,12 @@ export const useFormatCells = (
           });
       });
       if (!skipStartTransaction) sheet_controller.end_transaction();
+      pixiAppEvents.quadrantsChanged({ range: { start, end } });
 
-      if (app) {
-        app.quadrants.quadrantChanged({ range: { start, end } });
-        app.cells.dirty = true;
-      }
-
-      // triggers an even to indicate selection's format change (see useGetSelection.ts)
+      // triggers an event to indicate selection's format change (see useGetSelection.ts)
       window.dispatchEvent(new CustomEvent(FORMAT_SELECTION_EVENT));
     },
-    [app, end, sheet_controller, skipStartTransaction, start]
+    [end, sheet_controller, skipStartTransaction, start]
   );
 
   const changeFillColor = useCallback(

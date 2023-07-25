@@ -4,8 +4,8 @@ import { zoomToFit } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 import { HeadingSize } from '../../../grid/sheet/useHeadings';
-import { PanMode } from '../../../atoms/gridInteractionStateAtom';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
+import { PanMode } from '../../pixiApp/PixiAppSettings';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
@@ -47,12 +47,9 @@ export class PointerHeading {
   }
 
   selectAll() {
-    const { viewport, settings, cursor } = this.app;
-    if (!settings.setInteractionState) return;
+    const { viewport, cursor } = this.app;
     selectAllCells({
       sheet: this.sheet,
-      setInteractionState: settings.setInteractionState,
-      interactionState: settings.interactionState,
       viewport,
     });
     cursor.dirty = true;
@@ -60,11 +57,8 @@ export class PointerHeading {
 
   pointerDown(world: Point, event: InteractivePointerEvent): boolean {
     clearTimeout(this.fitToColumnTimeout);
-    const { headings, viewport, settings, cursor } = this.app;
+    const { headings, viewport } = this.app;
     const { gridOffsets } = this.sheet;
-    if (!settings.setInteractionState) {
-      throw new Error('Expected pixiAppSettings.setInteractionState to be defined');
-    }
     const intersects = headings.intersectsHeadings(world);
     if (!intersects) return false;
 
@@ -109,55 +103,51 @@ export class PointerHeading {
         }
       }
 
+      const cursor = this.sheet.cursor;
+
       if (event.shiftKey) {
         if (intersects.column !== undefined) {
-          let x1 = settings.interactionState.cursorPosition.x;
+          let x1 = cursor.cursorPosition.x;
           let x2 = intersects.column;
           selectColumns({
-            setInteractionState: settings.setInteractionState,
-            interactionState: settings.interactionState,
             viewport,
             start: Math.min(x1, x2),
             end: Math.max(x1, x2),
             sheet: this.app.sheet,
           });
-          cursor.dirty = true;
+          this.app.cursor.dirty = true;
         } else if (intersects.row !== undefined) {
-          let y1 = settings.interactionState.cursorPosition.y;
+          let y1 = cursor.cursorPosition.y;
           let y2 = intersects.row;
           selectRows({
-            setInteractionState: settings.setInteractionState,
-            interactionState: settings.interactionState,
             viewport,
             start: Math.min(y1, y2),
             end: Math.max(y1, y2),
             sheet: this.app.sheet,
           });
-          cursor.dirty = true;
+          this.app.cursor.dirty = true;
         }
       } else {
         selectAllCells({
           sheet: this.sheet,
-          setInteractionState: settings.setInteractionState,
-          interactionState: settings.interactionState,
           viewport,
           column: intersects.column,
           row: intersects.row,
         });
-        cursor.dirty = true;
+        this.app.cursor.dirty = true;
       }
     }
     return true;
   }
 
   pointerMove(world: Point): boolean {
-    const { headings, cells, gridLines, cursor, settings } = this.app;
+    const { headings, cells, gridLines, cursor } = this.app;
     const { gridOffsets } = this.sheet;
     this.cursor = undefined;
     this.clicked = false;
 
     // Only style the heading resize cursor if panning mode is disabled
-    if (settings.interactionState.panMode === PanMode.Disabled) {
+    if (this.app.settings.panMode === PanMode.Disabled) {
       const headingResize = headings.intersectsHeadingGridLine(world);
       if (headingResize) {
         this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';

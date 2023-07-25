@@ -1,27 +1,37 @@
+import {
+  EditorHighlightedCellsState,
+  editorHighlightedCellsStateDefault,
+} from '../../atoms/editorHighlightedCellsStateAtom';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { GridInteractionState, gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
-import { defaultGridSettings, GridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
+import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { PixiApp } from './PixiApp';
+import { pixiAppEvents } from './PixiAppEvents';
+
+export enum PanMode {
+  Disabled = 'DISABLED',
+  Enabled = 'ENABLED',
+  Dragging = 'DRAGGING',
+}
 
 export class PixiAppSettings {
   private app: PixiApp;
   private settings!: GridSettings;
   private lastSettings?: GridSettings;
-
-  // throttle for setting recoil state
-  private interactionStateDirty = false;
-  private setInteractionStateRecoil?: (value: GridInteractionState) => void;
-  private lastShowInput = false;
+  private _panMode: PanMode;
+  private _input: { show: boolean; initialValue?: string };
 
   temporarilyHideCellTypeOutlines = false;
-  interactionState = gridInteractionStateDefault;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: (value: EditorInteractionState) => void;
+  editorHighlightedCellsState = editorHighlightedCellsStateDefault;
+  setEditorHighlightedCellsState?: (value: EditorHighlightedCellsState) => void;
 
   constructor(app: PixiApp) {
     this.app = app;
     this.getSettings();
     window.addEventListener('grid-settings', this.getSettings);
+    this._input = { show: false };
+    this._panMode = PanMode.Disabled;
   }
 
   destroy() {
@@ -50,34 +60,6 @@ export class PixiAppSettings {
     this.lastSettings = this.settings;
   };
 
-  setInteractionState = (value: GridInteractionState): void => {
-    this.interactionState = value;
-    this.interactionStateDirty = true;
-  };
-
-  updateInteractionState(
-    interactionState: GridInteractionState,
-    setInteractionState: (value: GridInteractionState) => void
-  ): void {
-    this.interactionState = interactionState;
-    this.setInteractionStateRecoil = setInteractionState;
-    this.interactionStateDirty = false;
-    this.app.cursor.dirty = true;
-    this.app.headings.dirty = true;
-    if (interactionState.showInput !== this.lastShowInput) {
-      this.app.cells.dirty = true;
-      this.lastShowInput = interactionState.showInput;
-    }
-  }
-
-  update() {
-    // update recoil state only once per frame
-    if (this.interactionStateDirty) {
-      this.interactionStateDirty = false;
-      this.setInteractionStateRecoil?.(this.interactionState);
-    }
-  }
-
   updateEditorInteractionState(
     editorInteractionState: EditorInteractionState,
     setEditorInteractionState: (value: EditorInteractionState) => void
@@ -87,6 +69,15 @@ export class PixiAppSettings {
     this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
     this.app.cells.dirty = true;
+  }
+
+  updateEditorHighlightedCellsState(
+    editorHighlightedCellsState: EditorHighlightedCellsState,
+    setEditorHighlightedCellsState: (value: EditorHighlightedCellsState) => void
+  ): void {
+    this.editorHighlightedCellsState = editorHighlightedCellsState;
+    this.setEditorHighlightedCellsState = setEditorHighlightedCellsState;
+    this.app.cursor.dirty = true;
   }
 
   get showGridLines(): boolean {
@@ -112,5 +103,30 @@ export class PixiAppSettings {
       return true;
     }
     return this.settings.showA1Notation;
+  }
+
+  changeInput(input: boolean, initialValue = '') {
+    this._input = { show: input, initialValue };
+    pixiAppEvents.setDirty({ cells: true, cursor: true });
+
+    // this is used by CellInput to control visibility
+    window.dispatchEvent(new CustomEvent('change-input', { detail: { showInput: input } }));
+  }
+
+  changePanMode(mode: PanMode): void {
+    if (this._panMode !== mode) {
+      this._panMode = mode;
+
+      // this is used by QuadraticGrid to trigger changes in pan mode
+      window.dispatchEvent(new CustomEvent('pan-mode', { detail: mode }));
+    }
+  }
+
+  get input() {
+    return this._input;
+  }
+
+  get panMode() {
+    return this._panMode;
   }
 }

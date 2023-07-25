@@ -1,9 +1,9 @@
 import { Container, Point, Rectangle } from 'pixi.js';
+import { Bounds } from '../../../grid/sheet/Bounds';
+import { CellAlignment, CellFormat } from '../../../schemas';
+import { PixiApp } from '../../pixiApp/PixiApp';
 import { Coordinate } from '../../types/size';
 import { CellLabel } from './CellLabel';
-import { Bounds } from '../../../grid/sheet/Bounds';
-import { CellFormat, CellAlignment } from '../../../schemas';
-import { PixiApp } from '../../pixiApp/PixiApp';
 
 export interface LabelData {
   text: string;

@@ -1,13 +1,12 @@
-import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
-import { RecoilRoot } from 'recoil';
 import { useAuth0 } from '@auth0/auth0-react';
 import { captureException, setUser } from '@sentry/react';
-import { QuadraticApp } from './QuadraticApp';
-import apiClientSingleton from '../api-client/apiClientSingleton';
 import init, { hello } from 'quadratic-core';
 import { useEffect, useState } from 'react';
-import { debug } from '../debugFlags';
+import apiClientSingleton from '../api-client/apiClientSingleton';
 import { FILE_PARAM_KEY } from '../constants/app';
+import { debug } from '../debugFlags';
+import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
+import { QuadraticApp } from './QuadraticApp';
 
 export const QuadraticAuth = () => {
   const {
@@ -82,8 +81,6 @@ export const QuadraticAuth = () => {
 
 
   return (
-    <RecoilRoot>
-      <QuadraticApp />
-    </RecoilRoot>
+    <QuadraticApp />
   );
 };

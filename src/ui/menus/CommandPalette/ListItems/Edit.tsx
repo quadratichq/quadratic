@@ -52,17 +52,8 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            cutToClipboard(
-              props.sheetController,
-              {
-                x: props.interactionState.multiCursorPosition.originPosition.x,
-                y: props.interactionState.multiCursorPosition.originPosition.y,
-              },
-              {
-                x: props.interactionState.multiCursorPosition.terminalPosition.x,
-                y: props.interactionState.multiCursorPosition.terminalPosition.y,
-              }
-            );
+            const cursor = props.sheetController.sheet.cursor;
+            cutToClipboard(props.sheetController, cursor.originPosition, cursor.terminalPosition);
           }}
           icon={<ContentCut />}
           shortcut="X"
@@ -78,11 +69,8 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            copyToClipboard(
-              props.sheetController,
-              props.interactionState.multiCursorPosition.originPosition,
-              props.interactionState.multiCursorPosition.terminalPosition
-            );
+            const cursor = props.sheetController.sheet.cursor;
+            copyToClipboard(props.sheetController, cursor.originPosition, cursor.terminalPosition);
           }}
           icon={<ContentCopy />}
           shortcut="C"
@@ -98,7 +86,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            pasteFromClipboard(props.sheetController, props.interactionState.cursorPosition);
+            pasteFromClipboard(props.sheetController, props.sheetController.sheet.cursor.cursorPosition);
           }}
           icon={<ContentPaste />}
           shortcut="V"

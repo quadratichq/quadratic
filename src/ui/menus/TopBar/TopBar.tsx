@@ -11,7 +11,6 @@ import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { ZoomDropdown } from './ZoomDropdown';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { IS_READONLY_MODE } from '../../../constants/app';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -22,12 +21,11 @@ import CodeOutlinesSwitch from './CodeOutlinesSwitch';
 import { useLocalFiles } from '../../contexts/LocalFiles';
 
 interface IProps {
-  app: PixiApp;
   sheetController: SheetController;
 }
 
 export const TopBar = (props: IProps) => {
-  const { app, sheetController } = props;
+  const { sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { currentFilename, renameCurrentFile } = useLocalFiles();
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
@@ -72,8 +70,8 @@ export const TopBar = (props: IProps) => {
         {!IS_READONLY_MODE && (
           <>
             <DataMenu></DataMenu>
-            <FormatMenu app={app} sheet_controller={sheetController} />
-            <NumberFormatMenu app={app} sheet_controller={sheetController}></NumberFormatMenu>
+            <FormatMenu sheet_controller={sheetController} />
+            <NumberFormatMenu sheet_controller={sheetController}></NumberFormatMenu>
           </>
         )}
       </Box>
@@ -209,7 +207,7 @@ export const TopBar = (props: IProps) => {
             </Tooltip> */}
           </>
         )}
-        <ZoomDropdown app={app} />
+        <ZoomDropdown />
       </Box>
     </div>
   );

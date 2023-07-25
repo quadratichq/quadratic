@@ -1,30 +1,26 @@
 import { Container, Rectangle } from 'pixi.js';
-import {
-  debugShowCacheFlag,
-  debugShowCacheInfo,
-  debugShowCellsForDirtyQuadrants,
-  debugSkipQuadrantRendering,
-} from '../../debugFlags';
+import { debugShowCacheFlag, debugShowCellsForDirtyQuadrants, debugSkipQuadrantRendering } from '../../debugFlags';
 import { CellRectangle } from '../../grid/sheet/CellRectangle';
 import { intersects } from '../helpers/intersects';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { Quadrant } from './Quadrant';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS } from './quadrantConstants';
+import { QuadrantsSheet } from './QuadrantsSheet';
+import { Sheet } from '../../grid/sheet/Sheet';
 import { Cells } from '../UI/cells/Cells';
 
-interface QuadrantChanged {
+export interface QuadrantChanged {
   row?: number;
   column?: number;
   cells?: Coordinate[];
   range?: { start: Coordinate; end: Coordinate };
 }
 
-// Parent for all quadrants - renders the cache in loop
+// QuadrantsSheet rendered for each Sheet in a file
 export class Quadrants extends Container {
   private app: PixiApp;
-  private complete = false;
-  private quadrants: Map<string, Quadrant>;
+  private quadrants: Map<string, QuadrantsSheet>;
 
   // used to render cells in Quadrant
   container: Container;
@@ -33,60 +29,105 @@ export class Quadrants extends Container {
   constructor(app: PixiApp) {
     super();
     this.app = app;
-    this.quadrants = new Map<string, Quadrant>();
+    this.quadrants = new Map();
     this.container = new Container();
     this.cells = this.container.addChild(new Cells(app));
     this.container.addChildAt(this.cells.cellsBackground, 0);
-  }
-
-  getQuadrantCoordinate(x: number, y: number): Coordinate {
-    return {
-      x: Math.floor(x / QUADRANT_COLUMNS),
-      y: Math.floor(y / QUADRANT_ROWS),
-    };
   }
 
   static getKey(x: number, y: number): string {
     return `${Math.floor(x / QUADRANT_COLUMNS)},${Math.floor(y / QUADRANT_ROWS)}`;
   }
 
-  build(): void {
-    this.removeChildren();
-    this.quadrants.clear();
-
-    const { grid, borders, render_dependency, array_dependency } = this.app.sheet;
-    const gridBounds = grid.getGridBounds(false);
-    const borderBounds = borders.getGridBounds();
-    const renderDependencyBounds = render_dependency.getGridBounds();
-    const arrayDependencyBounds = array_dependency.getGridBounds();
-    const bounds = intersects.rectangleUnion(gridBounds, borderBounds, renderDependencyBounds, arrayDependencyBounds);
-
-    if (!bounds) return;
-
-    // iterate through visible grid bounds and prepare quadrants
-    const yStart = Math.floor(bounds.top / QUADRANT_ROWS);
-    const yEnd = Math.floor(bounds.bottom / QUADRANT_ROWS);
-    const xStart = Math.floor(bounds.left / QUADRANT_COLUMNS);
-    const xEnd = Math.floor(bounds.right / QUADRANT_COLUMNS);
-    for (let y = yStart; y <= yEnd; y++) {
-      for (let x = xStart; x <= xEnd; x++) {
-        if (this.app.sheet.hasQuadrant(x, y)) {
-          const quadrant = this.addChild(new Quadrant(this.app, x, y));
-          this.quadrants.set(`${x},${y}`, quadrant);
-        }
-      }
+  changeSheet(): void {
+    const quadrantsSheets = Array.from(this.quadrants.values());
+    const activeId = this.app.sheet.id;
+    const quadrantsSheet = this.quadrants.get(activeId);
+    if (!quadrantsSheet) {
+      throw new Error('Expected to find QuadrantsSheet in Quadrants.changeSheet');
     }
-    if (debugShowCacheInfo) {
-      console.log(
-        `[Quadrants] Added ${
-          Math.ceil(bounds.width / QUADRANT_COLUMNS) * Math.ceil(bounds.height / QUADRANT_ROWS)
-        } quadrants to queue.`
+    quadrantsSheets.forEach((q) => (q.visible = q.sheet.id === activeId));
+    if (debugShowCacheFlag) {
+      const dirtyCount = quadrantsSheet.children.reduce(
+        (count, child) => count + ((child as Quadrant).dirty ? 1 : 0),
+        0
       );
+      (document.querySelector('.debug-show-cache-count') as HTMLSpanElement).innerHTML = `Quadrants: ${
+        quadrantsSheet.children.length - dirtyCount
+      }/${quadrantsSheet.children.length}`;
     }
   }
 
+  // adds a newly created sheet to the quadrants
+  addSheet(sheet: Sheet): void {
+    const quadrantsSheet = this.addChild(new QuadrantsSheet(this.app, sheet));
+    this.quadrants.set(sheet.id, quadrantsSheet);
+  }
+
+  // deletes the quadrants for a delete sheet
+  deleteSheet(sheet: Sheet): void {
+    const child = this.quadrants.get(sheet.id);
+    if (!child) {
+      throw new Error("Could not find sheet's quadrants to delete");
+    }
+    this.quadrants.delete(sheet.id);
+    this.removeChild(child);
+  }
+
+  // rebuilds all quadrants
+  build(): void {
+    this.removeChildren();
+    this.quadrants.clear();
+    this.app.sheet_controller.sheets.forEach((sheet) => {
+      const quadrantsSheet = this.addChild(new QuadrantsSheet(this.app, sheet));
+      this.quadrants.set(sheet.id, quadrantsSheet);
+    });
+  }
+
+  // sorts QuadrantsSheets based on distance to active sheet
+  private getSortedQuadrantsSheets(): QuadrantsSheet[] {
+    const quadrantsSheets = Array.from(this.quadrants.values());
+    const sheets = this.app.sheet_controller.sheets;
+    const currentIndex = sheets.indexOf(this.app.sheet);
+    if (currentIndex === -1) {
+      throw new Error('Expected to find index of current sheet in sheets');
+    }
+    quadrantsSheets.sort((q1: QuadrantsSheet, q2: QuadrantsSheet) => {
+      const q1Index = sheets.findIndex((search) => search.id === q1.sheet.id);
+      if (q1Index === -1) {
+        throw new Error('Expected to find index of current sheet in sheets');
+      }
+      const q2Index = sheets.findIndex((search) => search.id === q2.sheet.id);
+      if (q2Index === -1) {
+        throw new Error('Expected to find index of current sheet in sheets');
+      }
+
+      // use the minimum of actual and wrapped distance
+      const q1Distance = Math.min(Math.abs(q1Index - currentIndex), Math.abs(q1Index - currentIndex) % sheets.length);
+      const q2Distance = Math.min(Math.abs(q2Index - currentIndex), Math.abs(q2Index - currentIndex) % sheets.length);
+      return q1Distance - q2Distance;
+    });
+    return quadrantsSheets;
+  }
+
   needsUpdating(): boolean {
-    return !!this.children.find((child) => (child as Quadrant).dirty);
+    const quadrantsSheets = Array.from(this.quadrants.values());
+    const count = !!quadrantsSheets.find((child) => !(child as QuadrantsSheet).complete);
+    if (debugShowCacheFlag) {
+      const span = document.querySelector('.debug-show-cache-count') as HTMLSpanElement;
+      if (span) {
+        const currentSheet = quadrantsSheets.find((child) => child.sheet === this.app.sheet);
+        if (currentSheet) {
+          const dirtyCount = currentSheet.children.reduce(
+            (count, child) => count + ((child as Quadrant).dirty ? 1 : 0),
+            0
+          );
+          span.innerHTML = `Quadrants: ${currentSheet.children.length - dirtyCount}/${currentSheet.children.length}`;
+        }
+      }
+    }
+
+    return count;
   }
 
   /**
@@ -97,123 +138,41 @@ export class Quadrants extends Container {
   update(timeStart: number): boolean {
     if (debugSkipQuadrantRendering) return false;
 
-    const firstDirty = this.children.find((child) => (child as Quadrant).dirty) as Quadrant;
-    if (firstDirty) {
-      if (debugShowCacheInfo) {
-        const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0) - 1;
-        firstDirty.update(timeStart, `${this.children.length - dirtyCount}/${this.children.length}`);
-        if (dirtyCount === 0 && !this.complete) {
-          this.complete = true;
-          this.debugCacheStats();
-          this.app.sheet.gridOffsets.debugCache();
-        }
-      } else {
-        firstDirty.update();
-        this.complete = false;
-      }
-      if (debugShowCacheFlag) {
-        const cacheCount = document.querySelector('.debug-show-cache-count') as HTMLSpanElement;
-        if (cacheCount) {
-          const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0);
-          cacheCount.innerHTML = `Quadrants: ${this.children.length - dirtyCount}/${this.children.length}`;
+    const sortedQuadrantsSheet = this.getSortedQuadrantsSheets();
+    for (const quadrantsSheet of sortedQuadrantsSheet) {
+      const updated = quadrantsSheet.update(this.app.viewport, timeStart);
+      if (updated !== 'not dirty') {
+        // debug only if it is the active sheet
+        if (quadrantsSheet.sheet === this.app.sheet) {
+          return updated;
+        } else {
+          return false;
         }
       }
-      return (
-        this.visible && intersects.rectangleRectangle(this.app.viewport.getVisibleBounds(), firstDirty.visibleRectangle)
-      );
     }
     return false;
   }
 
-  private getQuadrant(row: number, column: number, create: boolean): Quadrant | undefined {
-    let quadrant = this.quadrants.get(`${row},${column}`);
-    if (quadrant) return quadrant;
-    if (!create) return;
-    quadrant = this.addChild(new Quadrant(this.app, row, column));
-    this.quadrants.set(`${row},${column}`, quadrant);
-    this.complete = false;
-    return quadrant;
-  }
-
   /** marks quadrants dirty based on what has changed */
-  quadrantChanged(options: QuadrantChanged): void {
-    const bounds = this.app.sheet.grid.getGridBounds(false);
-    if (!bounds) return;
-
-    if (options.row !== undefined) {
-      for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
-        const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, options.row);
-        const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
-        if (quadrant) quadrant.dirty = true;
-        const dependents = this.app.sheet.render_dependency.getDependents({ x, y: options.row });
-        dependents?.forEach((dependent) => {
-          const quadrant = this.getQuadrant(dependent.x, dependent.y, false);
-          if (quadrant) quadrant.dirty = true;
-        });
-      }
-
-      // reposition quadrants below the row
-      for (let y = options.row + 1; y <= bounds.bottom; y += QUADRANT_ROWS) {
-        for (let x = bounds.left; x <= bounds.right; x += QUADRANT_COLUMNS) {
-          const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
-          const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
-          quadrant?.reposition();
-        }
-      }
+  quadrantChanged(options: QuadrantChanged, sheet?: Sheet): void {
+    sheet = sheet ?? this.app.sheet;
+    const quadrantsSheet = this.quadrants.get(sheet.id);
+    if (!quadrantsSheet) {
+      throw new Error('Expected to find quadrantsSheet in quadrants.quadrantChanged');
     }
-    if (options.column !== undefined) {
-      for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
-        const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(options.column, y);
-        const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
-        if (quadrant) quadrant.dirty = true;
-      }
-
-      // reposition quadrants to the right of the column
-      for (let y = bounds.top; y <= bounds.bottom; y += QUADRANT_ROWS) {
-        for (let x = options.column + 1; x <= bounds.right; x += QUADRANT_COLUMNS) {
-          const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
-          const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
-          quadrant?.reposition(true);
-        }
-      }
-    }
-
-    // set quadrant of list of cells dirty
-    if (options.cells) {
-      const quadrants = new Set<string>();
-      options.cells.forEach((coordinate) => {
-        const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(coordinate.x, coordinate.y);
-        const key = `${quadrantX},${quadrantY}`;
-        const quadrant = this.getQuadrant(quadrantX, quadrantY, true);
-        if (quadrant) quadrant.dirty = true;
-        quadrants.add(key);
-      });
-    }
-
-    // set range of cells dirty
-    if (options.range) {
-      const { start, end } = options.range;
-      const quadrants = new Set<string>();
-      for (let y = start.y; y <= end.y; y++) {
-        for (let x = start.x; x <= end.x; x++) {
-          const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, y);
-          const key = `${quadrantX},${quadrantY}`;
-          if (!quadrants.has(key)) {
-            const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
-            if (quadrant) quadrant.dirty = true;
-            quadrants.add(key);
-          }
-        }
-      }
-    }
+    quadrantsSheet.quadrantChanged(options);
   }
 
   /** Returns CellRectangles for visible dirty quadrants */
   getCellsForDirtyQuadrants(): CellRectangle[] {
     const { viewport } = this.app;
-    const { grid, borders } = this.app.sheet;
+    const { grid, borders, id } = this.app.sheet;
+    const quadrantsSheet = this.quadrants.get(id);
+    if (!quadrantsSheet) {
+      throw new Error('Expected quadrantsSheet to be defined in getCellsForDirtyQuadrants');
+    }
     const screen = viewport.getVisibleBounds();
-    return this.children.flatMap((child) => {
+    return quadrantsSheet.children.flatMap((child) => {
       const quadrant = child as Quadrant;
       if (!quadrant.dirty && !debugShowCellsForDirtyQuadrants) return [];
       if (intersects.rectangleRectangle(screen, quadrant.visibleRectangle)) {

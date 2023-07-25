@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect } from 'react';
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { Size } from '../../types/size';
 import { keyboardClipboard } from './keyboardClipboard';
@@ -18,8 +17,6 @@ import { useGlobalSnackbar } from '../../../ui/contexts/GlobalSnackbar';
 import { useLocalFiles } from '../../../ui/contexts/LocalFiles';
 
 interface IProps {
-  interactionState: GridInteractionState;
-  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   app: PixiApp;
@@ -29,32 +26,23 @@ interface IProps {
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
 
 export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void } => {
-  const {
-    interactionState,
-    setInteractionState,
-    editorInteractionState,
-    setEditorInteractionState,
-    app,
-    sheetController,
-  } = props;
+  const { editorInteractionState, setEditorInteractionState, app, sheetController } = props;
   const { format } = useGetSelection(sheetController.sheet);
-  const { changeBold, changeItalic } = useFormatCells(sheetController, app);
-  const { clearAllFormatting } = useClearAllFormatting(sheetController, app);
+  const { changeBold, changeItalic } = useFormatCells(sheetController);
+  const { clearAllFormatting } = useClearAllFormatting(sheetController);
   const { presentationMode, setPresentationMode } = useGridSettings();
   const { currentFileId } = useLocalFiles();
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const keyDownWindow = useCallback(
     (event: KeyboardEvent): void => {
-      if (interactionState.showInput) return;
+      if (app.settings.input.show) return;
 
       if (
         keyboardViewport({
           event,
-          interactionState,
           editorInteractionState,
           setEditorInteractionState,
-          viewport: app?.viewport,
           sheet: sheetController.sheet,
           clearAllFormatting,
           changeBold,
@@ -72,8 +60,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       }
     },
     [
-      currentFileId,
-      interactionState,
       editorInteractionState,
       setEditorInteractionState,
       app,
@@ -84,6 +70,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       format,
       presentationMode,
       setPresentationMode,
+      currentFileId,
     ]
   );
 
@@ -93,28 +80,25 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   }, [keyDownWindow]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (interactionState.showInput) return;
+    if (app.settings.input.show) return;
 
     if (
       keyboardClipboard({
         event,
-        interactionState,
         sheet_controller: props.sheetController,
         app: props.app,
         addGlobalSnackbar,
       }) ||
-      keyboardUndoRedo(event, interactionState, props.sheetController) ||
+      keyboardUndoRedo(event, props.sheetController) ||
       keyboardSelect({
         event,
-        interactionState,
-        setInteractionState,
         viewport: app?.viewport,
         sheet: props.sheetController.sheet,
       })
     )
       return;
 
-    if (keyboardPosition({ event, interactionState, setInteractionState, sheet: sheetController.sheet })) return;
+    if (keyboardPosition({ event, sheet: sheetController.sheet })) return;
 
     // Prevent these commands if "command" key is being pressed
     if (event.metaKey || event.ctrlKey) {
@@ -125,11 +109,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       keyboardCell({
         sheet_controller: props.sheetController,
         event,
-        interactionState,
-        setInteractionState,
         editorInteractionState,
         setEditorInteractionState,
-        app,
       })
     )
       return;

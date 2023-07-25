@@ -1,18 +1,24 @@
 import { Rectangle } from 'pixi.js';
-import { GridFileData, GridFile } from '../../schemas';
+import { v4 as uuid } from 'uuid';
 import { intersects } from '../../gridGL/helpers/intersects';
-import { GridBorders } from './GridBorders';
-import { GridRenderDependency } from './GridRenderDependency';
-import { GridOffsets } from './GridOffsets';
-import { CellAndFormat, GridSparse } from './GridSparse';
-import { Cell, CellFormat } from '../../schemas';
-import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../../gridGL/types/size';
+import { Cell, CellFormat, SheetSchema } from '../../schemas';
+import { CellDependencyManager } from './CellDependencyManager';
+import { GridBorders } from './GridBorders';
+import { GridOffsets } from './GridOffsets';
+import { GridRenderDependency } from './GridRenderDependency';
+import { CellAndFormat, GridSparse } from './GridSparse';
+import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
+  id: string; // used to connect Sheet to Quadrants (could be saved as part of Sheet if needed in the future)
+  name: string;
   gridOffsets: GridOffsets;
   grid: GridSparse;
   borders: GridBorders;
+  cursor: SheetCursor;
+  order: string;
+  color?: string;
 
   // visual dependency for overflowing cells
   render_dependency: GridRenderDependency;
@@ -23,38 +29,54 @@ export class Sheet {
   // cell calculation dependency
   cell_dependency: CellDependencyManager;
 
-  onRebuild?: () => void;
-
-  constructor() {
+  constructor(name: string | undefined, order: string, copyFrom?: Sheet) {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
     this.render_dependency = new GridRenderDependency();
     this.array_dependency = new GridRenderDependency();
     this.cell_dependency = new CellDependencyManager();
+    if (copyFrom) {
+      const save = copyFrom.export_file();
+      this.load_file(save);
+    }
+    this.id = uuid();
+    this.name = name ?? 'Sheet';
+    this.order = order;
+    this.cursor = new SheetCursor(this);
   }
 
-  newFile(): void {
+  // for testing
+  clear() {
     this.gridOffsets = new GridOffsets();
     this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
     this.render_dependency = new GridRenderDependency();
+    this.array_dependency = new GridRenderDependency();
     this.cell_dependency = new CellDependencyManager();
-    this.onRebuild?.();
+    this.cursor = new SheetCursor(this);
   }
 
-  load_file(sheet: GridFile): void {
+  rename(name: string) {
+    this.name = name;
+  }
+
+  load_file(sheet: SheetSchema): void {
+    this.name = sheet.name;
+    this.color = sheet.color;
     this.gridOffsets.populate(sheet.columns, sheet.rows);
     this.grid.populateRust(sheet);
     this.grid.populate(sheet.cells, sheet.formats);
     this.borders.populate(sheet.borders);
     this.cell_dependency.loadFromString(sheet.cell_dependency);
-    this.onRebuild?.();
   }
 
-  export_file(): GridFileData {
+  export_file(): SheetSchema {
     const { cells, formats } = this.grid.getArrays();
     return {
+      name: this.name,
+      color: this.color,
+      order: this.order,
       columns: this.gridOffsets.getColumnsArray(),
       rows: this.gridOffsets.getRowsArray(),
       cells,

@@ -1,20 +1,25 @@
 import { SheetController } from '../sheetController';
 import { Cell } from '../../../schemas';
-import { setupPython } from '../../computations/python/loadPython';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
+import { webWorkers } from '../../../web-workers/webWorkers';
 
-// Setup Pyodide before tests
-let pyodide: any;
+jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
+
+let sc: SheetController;
 beforeAll(async () => {
-  const { loadPyodide } = require('pyodide');
-  pyodide = await loadPyodide();
-  await setupPython(pyodide);
+  sc = new SheetController();
+  GetCellsDBSetSheet(sc.sheet);
+  webWorkers.init();
+  await webWorkers.pythonWebWorker?.load();
+});
+
+beforeEach(() => {
+  sc.clear();
+  sc.sheet.clear();
 });
 
 test('SheetController - code run correctly', async () => {
-  const sc = new SheetController();
-
   const cell = {
     x: 54,
     y: 54,
@@ -24,7 +29,7 @@ test('SheetController - code run correctly', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const cell_after = sc.sheet.grid.getCell(54, 54);
 
@@ -36,8 +41,6 @@ test('SheetController - code run correctly', async () => {
 });
 
 test('SheetController - array output undo redo', async () => {
-  const sc = new SheetController();
-
   const cell = {
     x: 0,
     y: 0,
@@ -47,7 +50,7 @@ test('SheetController - array output undo redo', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 10);
   expect(after_code_run_cells[0]?.value).toBe('1');
@@ -88,8 +91,6 @@ test('SheetController - array output undo redo', async () => {
 });
 
 test('SheetController - array output length change', async () => {
-  const sc = new SheetController();
-
   const cell = {
     x: 0,
     y: 0,
@@ -99,7 +100,7 @@ test('SheetController - array output length change', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
   expect(after_code_run_cells[0]?.value).toBe('1');
@@ -126,7 +127,7 @@ test('SheetController - array output length change', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_update_1], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_update_1], sheetController: sc });
 
   const after_update_1 = sc.sheet.grid.getNakedCells(0, 0, 0, 20);
   expect(after_update_1.length).toBe(5);
@@ -204,9 +205,6 @@ test('SheetController - array output length change', async () => {
 });
 
 test('SheetController - test array formula', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   const cell_0_0 = {
     x: 0,
     y: 0,
@@ -240,7 +238,7 @@ test('SheetController - test array formula', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_0, cell_0_1, cell_0_2, cell_1_0], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0, cell_0_1, cell_0_2, cell_1_0], sheetController: sc });
 
   const after_code_run_cells = sc.sheet.grid.getNakedCells(1, 0, 1, 2);
   expect(after_code_run_cells[0]?.value).toBe('2');
@@ -259,9 +257,6 @@ test('SheetController - test array formula', async () => {
 });
 
 test('SheetController - test DataFrame resizing', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   const cell_0_0 = {
     x: 0,
     y: 0,
@@ -270,7 +265,7 @@ test('SheetController - test DataFrame resizing', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc });
 
   const cell_0_1 = {
     x: 0,
@@ -285,7 +280,7 @@ result`,
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc });
 
   // Validate the dataframe is sized
   const code_cell_first_run = sc.sheet.grid.getNakedCells(0, 1, 0, 1)[0];
@@ -313,7 +308,7 @@ result`,
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc });
 
   // Validate the dataframe is resized
   const code_cell_after_run = sc.sheet.grid.getNakedCells(0, 1, 0, 1)[0];
@@ -338,9 +333,6 @@ result`,
 });
 
 test('SheetController - test deleted array cells update dependent cells', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   const cell_1_2_dependent = {
     x: 1,
     y: 2,
@@ -349,7 +341,7 @@ test('SheetController - test deleted array cells update dependent cells', async 
     python_code: `c(0,2) + 100`,
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_1_2_dependent], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_1_2_dependent], sheetController: sc });
 
   const cell_0_0 = {
     x: 0,
@@ -359,7 +351,7 @@ test('SheetController - test deleted array cells update dependent cells', async 
     python_code: `[1,2,3,4,5,6,7,8,9,10]`,
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc });
 
   // validate that the dependent cell is updated
   const after_code_run_cell = sc.sheet.grid.getNakedCells(1, 2, 1, 2);
@@ -375,7 +367,7 @@ test('SheetController - test deleted array cells update dependent cells', async 
     python_code: `[1,2]`,
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc });
 
   // validate that the dependent cell is updated
   const after_code_run_cell_update = sc.sheet.grid.getNakedCells(1, 2, 1, 2);
@@ -387,9 +379,6 @@ test('SheetController - test deleted array cells update dependent cells', async 
 });
 
 test('SheetController - test formula dependencies', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   const cell_0_0_dependent = {
     x: 0,
     y: 0,
@@ -398,7 +387,7 @@ test('SheetController - test formula dependencies', async () => {
     formula_code: 'A1+A2',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_0_dependent], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0_dependent], sheetController: sc });
 
   let after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 0);
   expect(after_code_run_cells[0]?.value).toBe('0');
@@ -410,7 +399,7 @@ test('SheetController - test formula dependencies', async () => {
     type: 'TEXT',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc });
 
   after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 0);
   expect(after_code_run_cells[0]?.value).toBe('10');
@@ -422,16 +411,13 @@ test('SheetController - test formula dependencies', async () => {
     type: 'TEXT',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_2], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_2], sheetController: sc });
 
   after_code_run_cells = sc.sheet.grid.getNakedCells(0, 0, 0, 0);
   expect(after_code_run_cells[0]?.value).toBe('30');
 });
 
 test('SheetController - test empty cell to be `null` in `array_output`', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet);
-
   // Ensure that blank cells are `null`, e.g. (2,0) should be `null`
   // even when programtically getting cells
   //
@@ -476,7 +462,6 @@ test('SheetController - test empty cell to be `null` in `array_output`', async (
   await updateCellAndDCells({
     starting_cells: [cell_0_0, cell_1_0, cell_3_0, cell_0_1],
     sheetController: sc,
-    pyodide,
   });
 
   const result = sc.sheet.grid.getNakedCells(0, 1, 3, 1);

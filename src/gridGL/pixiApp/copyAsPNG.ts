@@ -18,16 +18,16 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   }
 
   let column, width, row, height;
-  const interaction = app.settings.interactionState;
-  if (interaction.showMultiCursor) {
-    const { originPosition, terminalPosition } = interaction.multiCursorPosition;
+  const cursor = app.sheet.cursor;
+  if (cursor.multiCursor) {
+    const { originPosition, terminalPosition } = cursor.multiCursor;
     column = originPosition.x;
     row = originPosition.y;
     width = terminalPosition.x - column + 1;
     height = terminalPosition.y - row + 1;
   } else {
-    column = interaction.cursorPosition.x;
-    row = interaction.cursorPosition.y;
+    column = cursor.cursorPosition.x;
+    row = cursor.cursorPosition.y;
     width = height = 1;
   }
   const rectangle = app.sheet.gridOffsets.getScreenRectangle(column, row, width, height);
@@ -52,7 +52,7 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   renderer.view.height = imageHeight;
   app.prepareForCopying();
   app.settings.temporarilyHideCellTypeOutlines = true;
-  app.cells.drawCells(rectangle, false);
+  app.cells.drawCells(app.sheet, rectangle, false);
   const transform = new Matrix();
   transform.translate(-rectangle.x + borderSize / 2, -rectangle.y + borderSize / 2);
   const scale = imageWidth / (rectangle.width * resolution);

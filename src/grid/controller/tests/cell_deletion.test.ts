@@ -1,22 +1,26 @@
 import { SheetController } from '../sheetController';
 import { Cell } from '../../../schemas';
-import { setupPython } from '../../computations/python/loadPython';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
 import { DeleteCells } from '../../actions/DeleteCells';
+import { webWorkers } from '../../../web-workers/webWorkers';
 
-// Setup Pyodide before tests
-let pyodide: any;
+jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
+
+let sc: SheetController;
 beforeAll(async () => {
-  const { loadPyodide } = require('pyodide');
-  pyodide = await loadPyodide();
-  await setupPython(pyodide);
+  sc = new SheetController();
+  GetCellsDBSetSheet(sc.sheet);
+  webWorkers.init();
+  await webWorkers.pythonWebWorker?.load();
+});
+
+beforeEach(() => {
+  sc.clear();
+  sc.sheet.clear();
 });
 
 test('SheetController - cell update when being deleted', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet); // makes sheet available to Python
-
   const cell_0_0 = {
     x: 0,
     y: 0,
@@ -32,8 +36,8 @@ test('SheetController - cell update when being deleted', async () => {
     python_code: 'c(0,0) * 2',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc });
+  await updateCellAndDCells({ starting_cells: [cell_0_1], sheetController: sc });
 
   const cell_after = sc.sheet.grid.getCell(0, 1);
   expect(cell_after?.value).toBe('20');
@@ -46,7 +50,7 @@ test('SheetController - cell update when being deleted', async () => {
     type: 'TEXT',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0_update], sheetController: sc });
 
   const cell_after_update = sc.sheet.grid.getCell(0, 1);
   expect(cell_after_update?.value).toBe('40');
@@ -55,7 +59,6 @@ test('SheetController - cell update when being deleted', async () => {
   await updateCellAndDCells({
     starting_cells: [{ ...cell_0_0 }],
     sheetController: sc,
-    pyodide,
     delete_starting_cells: true,
   });
 
@@ -64,9 +67,6 @@ test('SheetController - cell update when being deleted', async () => {
 });
 
 test('SheetController - cell bulk update when deleting a range of cells', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet); // makes sheet available to Python
-
   const cell_0_0 = {
     x: 0,
     y: 0,
@@ -107,11 +107,11 @@ test('SheetController - cell bulk update when deleting a range of cells', async 
     python_code: 'c(0,3) * 2',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cells: [cell_1_0], sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cells: [cell_1_1], sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cells: [cell_1_2], sheetController: sc, pyodide });
-  await updateCellAndDCells({ starting_cells: [cell_1_3], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell_0_0], sheetController: sc });
+  await updateCellAndDCells({ starting_cells: [cell_1_0], sheetController: sc });
+  await updateCellAndDCells({ starting_cells: [cell_1_1], sheetController: sc });
+  await updateCellAndDCells({ starting_cells: [cell_1_2], sheetController: sc });
+  await updateCellAndDCells({ starting_cells: [cell_1_3], sheetController: sc });
 
   const cell_after_1_0 = sc.sheet.grid.getCell(1, 0);
   expect(cell_after_1_0?.value).toBe('4');
@@ -127,7 +127,6 @@ test('SheetController - cell bulk update when deleting a range of cells', async 
   await updateCellAndDCells({
     starting_cells: cells_to_delete,
     sheetController: sc,
-    pyodide,
     delete_starting_cells: true,
   });
 
@@ -140,9 +139,6 @@ test('SheetController - cell bulk update when deleting a range of cells', async 
 });
 
 test('SheetController - delete cell and array cells', async () => {
-  const sc = new SheetController();
-  GetCellsDBSetSheet(sc.sheet); // makes sheet available to Python
-
   const cell = {
     x: 0,
     y: 0,
@@ -152,7 +148,7 @@ test('SheetController - delete cell and array cells', async () => {
     last_modified: '2023-01-19T19:12:21.745Z',
   } as Cell;
 
-  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc, pyodide });
+  await updateCellAndDCells({ starting_cells: [cell], sheetController: sc });
 
   const code_cell = sc.sheet.grid.getNakedCells(0, 0, 0, 0);
   expect(code_cell[0]?.value).toBe('1');
@@ -175,7 +171,6 @@ test('SheetController - delete cell and array cells', async () => {
     x1: 0,
     y1: 10,
     sheetController: sc,
-    pyodide,
     create_transaction: true,
   });
 

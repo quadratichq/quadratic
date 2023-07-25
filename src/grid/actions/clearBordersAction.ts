@@ -1,6 +1,7 @@
 import { Border } from '../../schemas';
 import { Coordinate } from '../../gridGL/types/size';
 import { SheetController } from '../controller/sheetController';
+import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 
 export const clearBordersAction = (args: {
   sheet_controller: SheetController;
@@ -9,7 +10,7 @@ export const clearBordersAction = (args: {
   create_transaction?: boolean;
 }) => {
   const { sheet_controller, start, end, create_transaction } = args;
-  const { sheet, app } = sheet_controller;
+  const { sheet } = sheet_controller;
 
   // get all borders in the selection
   const borderUpdate: Border[] = [];
@@ -69,6 +70,5 @@ export const clearBordersAction = (args: {
   }
   if (create_transaction ?? true) sheet_controller.end_transaction();
 
-  if (app) app.cells.dirty = true;
-  app?.quadrants.quadrantChanged({ range: { start, end } });
+  pixiAppEvents.quadrantsChanged({ range: { start, end } });
 };

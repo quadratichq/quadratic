@@ -17,10 +17,10 @@ import { Sheet } from '../../grid/sheet/Sheet';
 import { SheetController } from '../../grid/controller/sheetController';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../constants/app';
 import { Wheel, ZOOM_KEY, HORIZONTAL_SCROLL_KEY } from '../pixiOverride/Wheel';
 import { BoxCells } from '../UI/boxCells';
+import { pixiAppEvents } from './PixiAppEvents';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -29,7 +29,6 @@ export class PixiApp {
   save: () => Promise<void>;
 
   sheet_controller: SheetController;
-  sheet: Sheet;
 
   canvas: HTMLCanvasElement;
   viewport: Viewport;
@@ -39,6 +38,7 @@ export class PixiApp {
   headings: GridHeadings;
   boxCells: BoxCells;
   cells: Cells;
+
   quadrants: Quadrants;
 
   pointer: Pointer;
@@ -54,8 +54,6 @@ export class PixiApp {
 
   constructor(sheet_controller: SheetController, save: () => Promise<void>) {
     this.sheet_controller = sheet_controller;
-    this.sheet = sheet_controller.sheet;
-    this.sheet.onRebuild = this.rebuild;
     this.save = save;
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
@@ -131,9 +129,23 @@ export class PixiApp {
 
     if (debugAlwaysShowCache) this.showCache();
 
-    window.addEventListener('resize', this.resize);
+    this.setupListeners();
+    pixiAppEvents.rebuild();
 
     console.log('[QuadraticGL] environment ready');
+  }
+
+  private setupListeners() {
+    window.addEventListener('resize', this.resize);
+    pixiAppEvents.app = this;
+  }
+
+  private removeListeners() {
+    window.removeEventListener('resize', this.resize);
+  }
+
+  get sheet(): Sheet {
+    return this.sheet_controller.sheet;
   }
 
   private showCache(): void {
@@ -190,6 +202,8 @@ export class PixiApp {
     this.update.destroy();
     this.renderer.destroy(true);
     this.viewport.destroy();
+    this.quadrants.destroy();
+    this.removeListeners();
     this.destroyed = true;
   }
 
@@ -217,7 +231,7 @@ export class PixiApp {
   }
 
   setZoomToSelection(): void {
-    zoomToSelection(this.settings.interactionState, this.sheet, this.viewport);
+    zoomToSelection(this.sheet, this.viewport);
   }
 
   // called before and after a quadrant render
@@ -253,17 +267,6 @@ export class PixiApp {
     this.canvas?.focus();
   }
 
-  rebuild = (): void => {
-    this.viewport.dirty = true;
-    this.gridLines.dirty = true;
-    this.axesLines.dirty = true;
-    this.headings.dirty = true;
-    this.cursor.dirty = true;
-    this.cells.dirty = true;
-    this.boxCells.reset();
-    this.quadrants.build();
-  };
-
   reset(): void {
     this.viewport.scale.set(1);
     if (this.settings.showHeadings) {
@@ -272,7 +275,6 @@ export class PixiApp {
       this.viewport.position.set(0, 0);
     }
     this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
-    this.settings.setInteractionState?.(gridInteractionStateDefault);
   }
 
   // Pre-renders quadrants by cycling through one quadrant per frame
