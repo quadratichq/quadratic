@@ -13,7 +13,7 @@ export class PythonWebWorker {
 
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
 
-    this.worker.onmessage = (e: MessageEvent<PythonMessage>) => {
+    this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
       if (event.type === 'results') {
         if (this.callback && event.results) {
@@ -28,7 +28,7 @@ export class PythonWebWorker {
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        const cells = GetCellsDB(range.x0, range.y0, range.x1, range.y1);
+        const cells = await GetCellsDB(range.x0, range.y0, range.x1, range.y1);
         this.worker.postMessage({ type: 'get-cells', cells } as PythonMessage);
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
