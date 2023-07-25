@@ -146,7 +146,7 @@ describe('READ - GET /v0/files/:uuid with auth and owned file', () => {
     expect(res.body).toHaveProperty('file');
     expect(res.body).toHaveProperty('permission');
     expect(res.body.permission).toEqual('OWNER');
-    expect(res.body.file.contents).toEqual({ data: [99, 111, 110, 116, 101, 110, 116, 115, 95, 48], type: 'Buffer' }); // contents_1
+    expect(res.body.file.contents).toEqual('contents_0');
   });
 });
 
@@ -162,7 +162,7 @@ describe('READ - GET /v0/files/:uuid with auth and another users file shared rea
     expect(res.body).toHaveProperty('file');
     expect(res.body).toHaveProperty('permission');
     expect(res.body.permission).toEqual('READONLY');
-    expect(res.body.file.contents).toEqual({ data: [99, 111, 110, 116, 101, 110, 116, 115, 95, 49], type: 'Buffer' });
+    expect(res.body.file.contents).toEqual('contents_1');
   });
 });
 
@@ -348,7 +348,7 @@ describe('CREATE - POST /v0/files/ with auth (no file name, contents)', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .post('/v0/files/')
-      .send({ contents: Buffer.from('new_file_contents').toString('base64') })
+      .send({ contents: 'new_file_contents' })
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
@@ -371,7 +371,7 @@ describe('CREATE - POST /v0/files/ with auth (no file name, contents)', () => {
     expect(res2.body).toHaveProperty('permission');
     expect(res2.body.permission).toEqual('OWNER');
     expect(res2.body.file.name).toEqual('Untitled');
-    expect(Buffer.from(res2.body.file.contents).toString()).toEqual('new_file_contents');
+    expect(res2.body.file.contents).toEqual('new_file_contents');
   });
 });
 
@@ -379,7 +379,7 @@ describe('CREATE - POST /v0/files/ with auth (file name, contents)', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .post('/v0/files/')
-      .send({ name: 'new_file_with_name', contents: Buffer.from('new_file_contents').toString('base64') })
+      .send({ name: 'new_file_with_name', contents: 'new_file_contents' })
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
@@ -402,7 +402,7 @@ describe('CREATE - POST /v0/files/ with auth (file name, contents)', () => {
     expect(res2.body).toHaveProperty('permission');
     expect(res2.body.permission).toEqual('OWNER');
     expect(res2.body.file.name).toEqual('new_file_with_name');
-    expect(Buffer.from(res2.body.file.contents).toString()).toEqual('new_file_contents');
+    expect(res2.body.file.contents).toEqual('new_file_contents');
   });
 });
 
