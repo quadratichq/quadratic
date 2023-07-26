@@ -48,9 +48,9 @@ export const Cursor = React.memo(({ cursor, color, name }: CursorProps) => {
         <span
           style={{
             whiteSpace: 'nowrap',
-            fontSize: 11,
+            fontSize: 12,
             color: 'white',
-            lineHeight: '1em',
+            lineHeight: '1',
           }}
         >
           {name}
