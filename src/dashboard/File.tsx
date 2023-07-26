@@ -1,35 +1,29 @@
 import { InsertDriveFileOutlined } from '@mui/icons-material';
 import { Box, Divider, Typography, useTheme } from '@mui/material';
-import { Link } from 'react-router-dom';
 import { colors } from '../theme/colors';
 import { ReactNode } from 'react';
 
 export default function File({
-  to,
   name,
   description,
   actions,
   status,
 }: {
-  to: string;
   name: string;
   description: string;
   actions?: ReactNode;
   status?: ReactNode;
 }) {
   const theme = useTheme();
+
   return (
-    <Box sx={{ '&:hover': { background: colors.canvasLayer2 } }}>
-      <Link
-        to={to}
-        reloadDocument
+    <Box sx={{ '&:hover': { background: colors.canvasLayer2, cursor: 'pointer' } }}>
+      <div
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: theme.spacing(2),
           padding: `${theme.spacing(2)} ${theme.spacing(3)}`,
-          textDecoration: 'none',
-          color: 'inherit',
         }}
       >
         <div>
@@ -47,7 +41,7 @@ export default function File({
           </Typography>
         </div>
         {actions}
-      </Link>
+      </div>
       <Divider />
     </Box>
   );
