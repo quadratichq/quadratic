@@ -1,25 +1,25 @@
+import { ManageSearch, Public } from '@mui/icons-material';
+import { Box, Button, IconButton, InputBase, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { Box, Typography, IconButton, InputBase, Button } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
+import { IS_READONLY_MODE } from '../../../constants/app';
+import { SheetController } from '../../../grid/controller/sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
-import { DataMenu } from './SubMenus/DataMenu';
-import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
-import { ZoomDropdown } from './ZoomDropdown';
-import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { IS_READONLY_MODE } from '../../../constants/app';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
-import { ManageSearch, Public } from '@mui/icons-material';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { useGridSettings } from './SubMenus/useGridSettings';
-import CodeOutlinesSwitch from './CodeOutlinesSwitch';
 import { useFile } from '../../contexts/File';
+import CodeOutlinesSwitch from './CodeOutlinesSwitch';
+import { DataMenu } from './SubMenus/DataMenu';
+import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
+import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
+import { QuadraticMenu } from './SubMenus/QuadraticMenu';
+import { useGridSettings } from './SubMenus/useGridSettings';
+import { ZoomDropdown } from './ZoomDropdown';
 
 interface IProps {
   app: PixiApp;
@@ -60,7 +60,7 @@ export const TopBar = (props: IProps) => {
         if (event.target === event.currentTarget) electronMaximizeCurrentWindow();
       }}
     >
-      <Box
+      <div
         style={{
           //@ts-expect-error
           WebkitAppRegion: 'no-drag',
@@ -76,7 +76,7 @@ export const TopBar = (props: IProps) => {
             <NumberFormatMenu app={app} sheet_controller={sheetController}></NumberFormatMenu>
           </>
         )}
-      </Box>
+      </div>
 
       {IS_READONLY_MODE ? (
         <Box
@@ -136,16 +136,14 @@ export const TopBar = (props: IProps) => {
           {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
         </Box>
       )}
-      <Box
-        sx={{
+      <div
+        style={{
+          // @ts-expect-error
+          WebkitAppRegion: 'no-drag',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-end',
           gap: '1rem',
-        }}
-        style={{
-          //@ts-expect-error
-          WebkitAppRegion: 'no-drag',
         }}
       >
         {!IS_READONLY_MODE && (
@@ -205,7 +203,7 @@ export const TopBar = (props: IProps) => {
           </>
         )}
         <ZoomDropdown app={app} />
-      </Box>
+      </div>
     </div>
   );
 };
