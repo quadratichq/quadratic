@@ -110,7 +110,7 @@ export const TopBar = (props: IProps) => {
           ) : (
             <>
               <Typography variant="body2" color={colors.mediumGray}>
-                Local /&nbsp;
+                My files /&nbsp;
               </Typography>
               <Typography
                 onClick={() => {

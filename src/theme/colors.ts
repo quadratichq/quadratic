@@ -1,4 +1,4 @@
-import { red, grey } from '@mui/material/colors';
+import * as muiColors from '@mui/material/colors';
 
 export const colors = {
   gridLines: 0xcb8999,
@@ -13,7 +13,7 @@ export const colors = {
   headerBackgroundColor: 0xffffff,
   headerSelectedBackgroundColor: 0xe7f7ff,
   headerCornerBackgroundColor: 0xffffff,
-  boxCellsDeleteColor: Number(`0x${red['400'].replace('#', '')}`),
+  boxCellsDeleteColor: Number(`0x${muiColors.red['400'].replace('#', '')}`),
   boxCellsColor: 0x6cd4ff,
   boxCellsAlpha: 0.333,
   gridHeadingBorder: 0xcfd7de,
@@ -30,7 +30,18 @@ export const colors = {
   languageFormula: '#8c1a6a',
   languageAI: '#1a8c5d',
   canvasLayer1: '#fff',
-  canvasLayer2: grey['50'],
-  canvasLayer3: grey['200'],
+  canvasLayer2: muiColors.grey['50'],
+  canvasLayer3: muiColors.grey['200'],
   error: '#f25f5c',
+  cellHighlightColor: [
+    muiColors.orange['900'],
+    muiColors.purple['500'],
+    muiColors.cyan['800'],
+    muiColors.green['800'],
+    muiColors.indigo['500'],
+    muiColors.pink['600'],
+    muiColors.blueGrey['600'],
+    muiColors.lime['900'],
+    muiColors.brown['500'],
+  ],
 };

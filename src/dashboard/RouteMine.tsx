@@ -3,9 +3,9 @@ import {
   LoaderFunctionArgs,
   Form,
   Link,
-  redirect,
   useFetcher,
   useFetchers,
+  useSubmit,
   Fetcher,
   ActionFunctionArgs,
 } from 'react-router-dom';
@@ -29,6 +29,7 @@ export const Component = () => {
   const files = useLoaderData() as GetFilesRes;
   const theme = useTheme();
   const fetchers = useFetchers();
+  const submit = useSubmit();
 
   let filesUI;
   if (!files) {
@@ -84,9 +85,35 @@ export const Component = () => {
         title="My files"
         actions={
           <Form method="post" style={{ display: 'flex', gap: theme.spacing(1) }}>
-            <Button variant="outlined" name="action" value="import" type="submit">
+            <Button variant="outlined" component="label">
+              <input
+                type="file"
+                name="file"
+                accept=".grid"
+                onChange={async (e: any) => {
+                  if (!e.target.files) {
+                    return;
+                  }
+                  const file: File = e.target.files[0];
+                  const contents = await file.text().catch((e) => '');
+                  if (!contents) {
+                    return;
+                  }
+                  // TODO validate that it's a .grid file, update it to the latest version
+
+                  const name = file.name ? file.name.replace('.grid', '') : 'Untitled';
+
+                  let formData = new FormData();
+                  formData.append('action', 'import');
+                  formData.append('name', name);
+                  formData.append('contents', contents);
+                  submit(formData, { method: 'POST' });
+                }}
+                hidden
+              />
               Import
             </Button>
+
             <Button variant="contained" disableElevation name="action" value="create" type="submit">
               Create
             </Button>
@@ -171,11 +198,12 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
   if (action === 'create') {
     const res = await apiClientSingleton.createFile();
-
-    // TODO handle doesn't create
     if (res?.uuid) {
-      return redirect(`/file/${res.uuid}`);
+      window.location.href = `/file/${res.uuid}`;
+      // This will do a SPA navigation, but we want a hard reload ATM
+      // return redirect(`/file/${res.uuid}`);
     }
+    // TODO handle doesn't create
   }
 
   if (action === 'delete') {
@@ -192,6 +220,13 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
   // TODO
   if (action === 'import') {
+    const name = formData.get('name') as string;
+    const contents = formData.get('contents') as string;
+    const res = await apiClientSingleton.createFile(name, contents);
+    if (res?.uuid) {
+      window.location.href = `/file/${res.uuid}`;
+    }
+    // TODO handle doesn't create
   }
 
   return null;
@@ -210,57 +245,56 @@ function FileWithActions({ file }: { file: NonNullable<GetFilesRes>[0] }) {
   const failedToDelete = fetcherDelete.data && !fetcherDelete.data.success;
 
   return (
-    <File
-      key={uuid}
-      to={`/file/${uuid}`}
-      name={name}
-      status={failedToDelete && <Chip label="Failed to delete" size="small" color="error" variant="outlined" />}
-      description={`Modified ${timeAgo(updated_date)}`}
-      actions={
-        <div style={{ display: 'flex', gap: theme.spacing(1) }}>
-          <fetcherDelete.Form method="post">
-            <input type="hidden" name="uuid" value={uuid} />
-            <TooltipHint title="Delete" enterDelay={1000}>
-              <span>
-                <IconButton
-                  name="action"
-                  value="delete"
-                  type="submit"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // TODO ux enhancement:
-                    // rather than prompt for confirmation, go ahead and delete and give chance to undo
-                    if (!window.confirm(`Confirm you want to delete the file: “${name}”`)) {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  <DeleteOutline />
-                </IconButton>
-              </span>
-            </TooltipHint>
-          </fetcherDelete.Form>
-          <fetcherDownload.Form method="post">
-            <input type="hidden" name="uuid" value={uuid} />
-            <TooltipHint title="Download local copy" enterDelay={1000}>
-              <span>
-                <IconButton
-                  name="action"
-                  value="download"
-                  type="submit"
-                  disabled={false}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  {fetcherDownload.state !== 'idle' ? <CircularProgress size={24} /> : <FileDownloadOutlined />}
-                </IconButton>
-              </span>
-            </TooltipHint>
-          </fetcherDownload.Form>
-        </div>
-      }
-    />
+    <Link to={`/file/${uuid}`} reloadDocument style={{ textDecoration: 'none', color: 'inherit' }}>
+      <File
+        key={uuid}
+        name={name}
+        status={failedToDelete && <Chip label="Failed to delete" size="small" color="error" variant="outlined" />}
+        description={`Updated ${timeAgo(updated_date)}`}
+        actions={
+          <div style={{ display: 'flex', gap: theme.spacing(1) }}>
+            <fetcherDelete.Form method="post">
+              <input type="hidden" name="uuid" value={uuid} />
+              <TooltipHint title="Delete" enterDelay={1000}>
+                <span>
+                  <IconButton
+                    name="action"
+                    value="delete"
+                    type="submit"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!window.confirm(`Confirm you want to delete the file: “${name}”`)) {
+                        e.preventDefault();
+                      }
+                    }}
+                  >
+                    <DeleteOutline />
+                  </IconButton>
+                </span>
+              </TooltipHint>
+            </fetcherDelete.Form>
+            <fetcherDownload.Form method="post">
+              <input type="hidden" name="uuid" value={uuid} />
+              <TooltipHint title="Download local copy" enterDelay={1000}>
+                <span>
+                  <IconButton
+                    name="action"
+                    value="download"
+                    type="submit"
+                    disabled={false}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    {fetcherDownload.state !== 'idle' ? <CircularProgress size={24} /> : <FileDownloadOutlined />}
+                  </IconButton>
+                </span>
+              </TooltipHint>
+            </fetcherDownload.Form>
+          </div>
+        }
+      />
+    </Link>
   );
 }
 

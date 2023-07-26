@@ -43,6 +43,8 @@ export const ErrorBoundary = () => {
 
   if (isRouteErrorResponse(error)) {
     console.error(error.data);
+    // TODO differentiate between different kind of file loading errors?
+    // e.g. file came in but didn't validate. file couldn't be found. file...
     return (
       <Empty
         title="404: file not found"

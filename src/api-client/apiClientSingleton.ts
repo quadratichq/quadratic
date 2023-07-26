@@ -201,9 +201,10 @@ class APIClientSingleton {
     }
   }
 
-  async createFile(
-    name?: string,
-    contents: GridFile = {
+  async createFile(name?: string, contents?: string): Promise<any | undefined> {
+    if (!API_URL) return;
+
+    const defaultContents: GridFile = {
       cells: [],
       formats: [],
       columns: [],
@@ -211,9 +212,7 @@ class APIClientSingleton {
       borders: [],
       cell_dependency: '',
       version: GridFileSchema.shape.version.value,
-    }
-  ): Promise<any | undefined> {
-    if (!API_URL) return;
+    };
 
     try {
       const base_url = this.getAPIURL();
@@ -226,7 +225,7 @@ class APIClientSingleton {
         },
         body: JSON.stringify({
           name,
-          contents: JSON.stringify(contents),
+          contents: contents ? contents : JSON.stringify(defaultContents),
         }),
       });
 
@@ -236,7 +235,7 @@ class APIClientSingleton {
         });
       }
 
-      // TODO: Verify that the response is what we expect
+      // TODO: Verify that the response is what we expect and return the type
       return await response.json();
     } catch (error: any) {
       Sentry.captureException({
