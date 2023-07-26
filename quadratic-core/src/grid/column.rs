@@ -2,7 +2,8 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 use std::collections::BTreeMap;
-use std::ops::Range;
+use std::hash::Hash;
+use std::ops::{BitOr, BitOrAssign, Range};
 
 use super::{
     formatting::*, Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue,
@@ -240,5 +241,52 @@ impl<B: BlockContent> ColumnData<B> {
                 let end = std::cmp::max(y_range.end, block.end());
                 (start..end).filter_map(|y| Some((y, block.get(y)?)))
             })
+    }
+}
+
+impl ColumnData<SameValue<bool>> {
+    pub fn bool_summary(&self, y_range: Range<i64>) -> BoolSummary {
+        let mut last_block_end = y_range.start;
+        let mut ret = BoolSummary::default();
+
+        for block in self.blocks_covering_range(y_range) {
+            match block.content().value {
+                true => ret.is_any_true = true,
+                false => ret.is_any_false = true,
+            }
+
+            if block.start() > last_block_end {
+                ret.is_any_false = true;
+            }
+            last_block_end = block.end();
+
+            if ret.is_any_true && ret.is_any_false {
+                break;
+            }
+        }
+
+        ret
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+pub struct BoolSummary {
+    pub is_any_true: bool,
+    pub is_any_false: bool,
+}
+impl BitOr for BoolSummary {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        BoolSummary {
+            is_any_true: self.is_any_true | rhs.is_any_true,
+            is_any_false: self.is_any_false | rhs.is_any_false,
+        }
+    }
+}
+impl BitOrAssign for BoolSummary {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs;
     }
 }

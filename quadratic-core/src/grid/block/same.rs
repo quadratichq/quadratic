@@ -7,7 +7,7 @@ use super::BlockContent;
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct SameValue<T> {
     len: usize,
-    value: T,
+    pub value: T,
 }
 impl<T: fmt::Debug + Clone + PartialEq> BlockContent for SameValue<T> {
     type Item = T;

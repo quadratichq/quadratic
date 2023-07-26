@@ -20,10 +20,11 @@ pub use ids::*;
 pub use value::CellValue;
 
 use crate::formulas::Value;
+use crate::grid::column::BoolSummary;
 use crate::{Pos, Rect};
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 use column::Column;
-use js_structs::JsRenderCell;
+use js_structs::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[wasm_bindgen]
@@ -264,6 +265,38 @@ impl File {
         sheet.code_cells.insert(cell_ref, code_cell_value);
         // TODO: return old code cell
         Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "getFormattingSummary")]
+    pub fn get_formatting_summary(
+        &self,
+        sheet_id: SheetId,
+        region: Rect,
+    ) -> Result<JsValue, JsValue> {
+        let y_range = region.min.y..region.max.y + 1;
+
+        let sheet = self.sheet_from_id(sheet_id);
+
+        let mut bold = BoolSummary::default();
+        let mut italic = BoolSummary::default();
+
+        for x in region.x_range() {
+            match sheet.columns.get(&x) {
+                None => {
+                    bold.is_any_false = true;
+                    italic.is_any_false = true;
+                }
+                Some(column) => {
+                    bold |= column.bold.bool_summary(y_range.clone());
+                    italic |= column.italic.bool_summary(y_range.clone());
+                }
+            };
+        }
+
+        Ok(serde_wasm_bindgen::to_value(&JsFormattingSummary {
+            bold,
+            italic,
+        })?)
     }
 }
 

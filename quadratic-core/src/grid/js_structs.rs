@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use super::column::BoolSummary;
 use super::formatting::{CellAlign, CellBorders, CellWrap, NumericFormat};
 use super::CellValue;
 
@@ -28,4 +29,10 @@ pub struct JsRenderCell {
 
     #[serde(flatten)]
     pub value: CellValue,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct JsFormattingSummary {
+    pub bold: BoolSummary,
+    pub italic: BoolSummary,
 }
