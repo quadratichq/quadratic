@@ -40,7 +40,7 @@ import {
 } from '../../../atoms/editorHighlightedCellsStateAtom';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 
-loader.config({ paths: { vs: '/monaco/vs' } });
+loader.config({ paths: { vs: './monaco/vs' } });
 
 interface CodeEditorProps {
   sheet_controller: SheetController;
@@ -90,6 +90,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState<boolean>(false);
 
   const hasUnsavedChanges =
+    !!selectedCell &&
     // new cell and no content
     !(cell === undefined && !editorContent) &&
     // existing cell and content has changed

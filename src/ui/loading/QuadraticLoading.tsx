@@ -38,7 +38,7 @@ export function QuadraticLoading() {
         }}
       >
         <div className="loadingContainer">
-          <img className="loadingLogoGif" src="/images/logo_loading.gif" alt="Loading Quadratic Grid"></img>
+          <img className="loadingLogoGif" src="./images/logo_loading.gif" alt="Loading Quadratic Grid"></img>
           <Box sx={{ width: '100px', marginTop: '15px' }}>
             <LinearProgress variant="determinate" value={progress} />
           </Box>

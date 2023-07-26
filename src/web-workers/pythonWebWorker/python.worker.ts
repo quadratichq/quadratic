@@ -3,11 +3,11 @@
 
 import { Cell } from '../../schemas';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
-import define_run_python from './run_python.py';
+const runPythonURL = new URL('./run_python.py', import.meta.url);
 
 const TRY_AGAIN_TIMEOUT = 500;
 
-self.importScripts('/pyodide/pyodide.js');
+self.importScripts('../../pyodide/pyodide.js');
 
 let getCellsMessages: (cells: Cell[]) => void | undefined;
 
@@ -26,7 +26,7 @@ async function pythonWebWorker() {
     pyodide = await (self as any).loadPyodide();
     await pyodide.registerJsModule('GetCellsDB', getCellsDB);
     await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
-    const python_code = await (await fetch(define_run_python)).text();
+    const python_code = await (await fetch(runPythonURL)).text();
     await pyodide.runPython(python_code);
   } catch (e) {
     self.postMessage({ type: 'python-error' } as PythonMessage);
