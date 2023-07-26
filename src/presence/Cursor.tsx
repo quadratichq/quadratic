@@ -14,7 +14,7 @@ export const Cursor = React.memo(({ cursor, color, name }: CursorProps) => {
         userSelect: 'none',
         left: 0,
         top: 0,
-        transition: 'transform 0.5s cubic-bezier(.17,.93,.38,1)',
+        transition: 'transform 0.25s cubic-bezier(.17,.93,.38,1)',
         transform: `translateX(${x}px) translateY(${y}px) scale(${visible ? 1 : 0})`,
         zIndex: 1000000,
       }}

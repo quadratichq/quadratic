@@ -160,7 +160,7 @@ export const TopBar = (props: IProps) => {
                 display: 'flex',
                 gap: '4px',
               }}
-              variant="contained"
+              variant="outlined"
               size="small"
               disableElevation
             >
