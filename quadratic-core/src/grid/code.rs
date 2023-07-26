@@ -4,14 +4,14 @@ use super::{CellRef, CellValue};
 use crate::formulas::{FormulaError, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CellCode {
+pub struct CodeCellValue {
     pub language: CellCodeLanguage,
     pub code_string: String,
     pub formatted_code_string: Option<String>,
     pub last_modified: String,
     pub output: Option<CellCodeRunOutput>,
 }
-impl CellCode {
+impl CodeCellValue {
     pub fn get(&self, x: u32, y: u32) -> Option<CellValue> {
         match &self.output.as_ref()?.result.as_ref().ok()?.output_value {
             Value::Single(v) => Some(v.clone().into()),

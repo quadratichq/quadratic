@@ -238,6 +238,33 @@ impl File {
         self.sheet_mut_from_id(sheet_id).delete_cell_values(region);
         Ok(())
     }
+
+    #[wasm_bindgen(js_name = "getCodeCellValue")]
+    pub fn get_code_cell_value(&mut self, sheet_id: SheetId, pos: Pos) -> Result<JsValue, JsValue> {
+        let sheet = self.sheet_from_id(sheet_id);
+        let Some(cell_ref) = sheet.get_cell_ref(pos) else {
+            return Ok(JsValue::UNDEFINED);
+        };
+        let Some(code_cell) = sheet.code_cells.get(&cell_ref) else {
+            return Ok(JsValue::UNDEFINED);
+        };
+        Ok(serde_wasm_bindgen::to_value(&code_cell)?)
+    }
+
+    #[wasm_bindgen(js_name = "setCodeCellValue")]
+    pub fn set_code_cell_value(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        code_cell_value: JsValue,
+    ) -> Result<(), JsValue> {
+        let code_cell_value: CodeCellValue = serde_wasm_bindgen::from_value(code_cell_value)?;
+        let sheet = self.sheet_mut_from_id(sheet_id);
+        let cell_ref = sheet.get_or_create_cell_ref(pos);
+        sheet.code_cells.insert(cell_ref, code_cell_value);
+        // TODO: return old code cell
+        Ok(())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -254,7 +281,7 @@ pub struct Sheet {
     column_widths: BTreeMap<i64, f32>,
     row_heights: BTreeMap<i64, f32>,
 
-    code_cells: HashMap<CellRef, CellCode>,
+    code_cells: HashMap<CellRef, CodeCellValue>,
 
     data_bounds: GridBounds,
     format_bounds: GridBounds,
@@ -341,6 +368,23 @@ impl Sheet {
                 self.row_ids.add(id, index);
                 GetIdResponse::new(id)
             }
+        }
+    }
+    /// Create a `CellRef` if the column and row already exist.
+    fn get_cell_ref(&self, pos: Pos) -> Option<CellRef> {
+        Some(CellRef {
+            sheet: self.id,
+            column: self.column_ids.id_at(pos.x)?,
+            row: self.row_ids.id_at(pos.y)?,
+        })
+    }
+    /// Create a `CellRef`, creating the column and row if they do not already
+    /// exist.
+    fn get_or_create_cell_ref(&mut self, pos: Pos) -> CellRef {
+        CellRef {
+            sheet: self.id,
+            column: self.get_or_create_column(pos.x).0.id,
+            row: self.get_or_create_row(pos.y).id,
         }
     }
 
@@ -462,6 +506,7 @@ impl Sheet {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[must_use]
 pub struct SetCellResponse<V> {
     pub column: GetIdResponse<ColumnId>,
     pub row: GetIdResponse<RowId>,
@@ -471,6 +516,7 @@ pub struct SetCellResponse<V> {
     pub unspill: Option<CellRef>,
 }
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[must_use]
 pub struct GetIdResponse<I> {
     pub id: I,
     pub is_new: bool,
