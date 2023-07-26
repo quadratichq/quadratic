@@ -1,9 +1,5 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
-import monaco from 'monaco-editor';
-import { colors } from '../../../theme/colors';
-import { QuadraticEditorTheme } from './quadraticEditorTheme';
-import { Cell } from '../../../schemas';
+import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
 import {
   Button,
   CircularProgress,
@@ -15,30 +11,34 @@ import {
   IconButton,
   useTheme,
 } from '@mui/material';
-import { Console } from './Console';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
-import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
-import { provideCompletionItems, provideHover } from 'quadratic-core';
-import { CellEvaluationResult } from '../../../grid/computations/types';
-import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
-import { AI, Formula, Python } from '../../icons';
-import { TooltipHint } from '../../components/TooltipHint';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { ResizeControl } from './ResizeControl';
-import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import mixpanel from 'mixpanel-browser';
-import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
-import { useEditorCellHighlights } from '../../../hooks/useEditorCellHighlights';
-import { useEditorOnSelectionChange } from '../../../hooks/useEditorOnSelectionChange';
+import monaco from 'monaco-editor';
+import { provideCompletionItems, provideHover } from 'quadratic-core';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import {
   editorHighlightedCellsStateAtom,
   editorHighlightedCellsStateDefault,
 } from '../../../atoms/editorHighlightedCellsStateAtom';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
+import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
+import { CellEvaluationResult } from '../../../grid/computations/types';
+import { SheetController } from '../../../grid/controller/sheetController';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
+import { useEditorCellHighlights } from '../../../hooks/useEditorCellHighlights';
+import { useEditorOnSelectionChange } from '../../../hooks/useEditorOnSelectionChange';
+import { Cell } from '../../../schemas';
+import { colors } from '../../../theme/colors';
+import { TooltipHint } from '../../components/TooltipHint';
+import { AI, Formula, Python } from '../../icons';
+import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
+import { Console } from './Console';
+import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
+import { ResizeControl } from './ResizeControl';
+import { QuadraticEditorTheme } from './quadraticEditorTheme';
 
 loader.config({ paths: { vs: './monaco/vs' } });
 
@@ -90,7 +90,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState<boolean>(false);
 
   const hasUnsavedChanges =
-    !!selectedCell &&
+    // can't have unsaved changes with no cell selected
+    selectedCell !== undefined &&
     // new cell and no content
     !(cell === undefined && !editorContent) &&
     // existing cell and content has changed

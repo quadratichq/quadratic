@@ -15,10 +15,11 @@ export default function useAlertOnUnsavedChanges(hasUnsavedChanges: boolean | un
     if (hasUnsavedChanges) {
       window.addEventListener('beforeunload', beforeUnloadListener);
       sendToElectronHasUnsavedChanges(true);
-      return;
+    } else {
+      window.removeEventListener('beforeunload', beforeUnloadListener);
+      sendToElectronHasUnsavedChanges(false);
     }
-    window.removeEventListener('beforeunload', beforeUnloadListener);
-    sendToElectronHasUnsavedChanges(false);
+
     return () => {
       window.removeEventListener('beforeunload', beforeUnloadListener);
       sendToElectronHasUnsavedChanges(false);
