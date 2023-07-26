@@ -2,6 +2,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 use std::collections::BTreeMap;
+use std::fmt;
 use std::hash::Hash;
 use std::ops::{BitOr, BitOrAssign, Range};
 
@@ -225,8 +226,6 @@ impl<B: BlockContent> ColumnData<B> {
         to_return
     }
 
-    // TODO: set_range() function
-
     pub fn range(&self) -> Option<Range<i64>> {
         let min = *self.0.first_key_value()?.0;
         let max = self.0.last_key_value()?.1.end();
@@ -241,6 +240,20 @@ impl<B: BlockContent> ColumnData<B> {
                 let end = std::cmp::max(y_range.end, block.end());
                 (start..end).filter_map(|y| Some((y, block.get(y)?)))
             })
+    }
+}
+
+impl<T: fmt::Debug + Clone + PartialEq> ColumnData<SameValue<T>> {
+    pub fn set_range(&mut self, y_range: Range<i64>, value: T) -> Vec<Block<SameValue<T>>> {
+        let removed = self.remove_range(y_range.clone());
+        self.add_block(Block {
+            y: y_range.start,
+            content: SameValue {
+                value,
+                len: (y_range.end - y_range.start) as usize,
+            },
+        });
+        removed
     }
 }
 

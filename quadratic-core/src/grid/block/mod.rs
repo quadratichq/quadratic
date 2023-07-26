@@ -11,8 +11,8 @@ pub use value::CellValueBlockContent;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block<B> {
-    y: i64,
-    content: B,
+    pub y: i64,
+    pub content: B,
 }
 impl<B: BlockContent> Block<B> {
     pub fn new(y: i64, value: B::Item) -> Self {

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{btree_map, BTreeMap, HashMap};
+use std::fmt;
 use std::hash::Hash;
 use wasm_bindgen::prelude::*;
 
@@ -20,10 +21,11 @@ pub use ids::*;
 pub use value::CellValue;
 
 use crate::formulas::Value;
-use crate::grid::column::BoolSummary;
 use crate::{Pos, Rect};
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 use column::Column;
+use column::{BoolSummary, ColumnData};
+use formatting::{CellAlign, CellBorders, CellWrap, NumericFormat};
 use js_structs::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -132,6 +134,21 @@ impl File {
     pub fn sheet_mut_from_id(&mut self, sheet_id: SheetId) -> &mut Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
         &mut self.sheets[sheet_index]
+    }
+
+    fn set_same_values<T: fmt::Debug + Clone + PartialEq>(
+        &mut self,
+        sheet_id: SheetId,
+        region: Rect,
+        pick_column_data: fn(&mut Column) -> &mut ColumnData<SameValue<T>>,
+        value: T,
+    ) {
+        let y_range = region.min.y..region.max.y + 1;
+        let sheet = self.sheet_mut_from_id(sheet_id);
+        for x in region.x_range() {
+            let column = sheet.get_or_create_column(x).1;
+            pick_column_data(column).set_range(y_range.clone(), value.clone());
+        }
     }
 }
 #[wasm_bindgen]
@@ -297,6 +314,67 @@ impl File {
             bold,
             italic,
         })?)
+    }
+
+    #[wasm_bindgen(js_name = "setCellAlign")]
+    pub fn set_cell_align(
+        &mut self,
+        sheet_id: SheetId,
+        region: Rect,
+        value: JsValue,
+    ) -> Result<(), JsValue> {
+        let value: CellAlign = serde_wasm_bindgen::from_value(value)?;
+        self.set_same_values(sheet_id, region, |column| &mut column.align, value);
+        Ok(())
+    }
+    #[wasm_bindgen(js_name = "setCellWrap")]
+    pub fn set_cell_wrap(
+        &mut self,
+        sheet_id: SheetId,
+        region: Rect,
+        value: JsValue,
+    ) -> Result<(), JsValue> {
+        let value: CellWrap = serde_wasm_bindgen::from_value(value)?;
+        self.set_same_values(sheet_id, region, |column| &mut column.wrap, value);
+        Ok(())
+    }
+    #[wasm_bindgen(js_name = "setCellBorders")]
+    pub fn set_cell_borders(
+        &mut self,
+        sheet_id: SheetId,
+        region: Rect,
+        value: JsValue,
+    ) -> Result<(), JsValue> {
+        let value: CellBorders = serde_wasm_bindgen::from_value(value)?;
+        self.set_same_values(sheet_id, region, |column| &mut column.borders, value);
+        Ok(())
+    }
+    #[wasm_bindgen(js_name = "setCellNumericFormat")]
+    pub fn set_cell_numeric_format(
+        &mut self,
+        sheet_id: SheetId,
+        region: Rect,
+        value: JsValue,
+    ) -> Result<(), JsValue> {
+        let value: NumericFormat = serde_wasm_bindgen::from_value(value)?;
+        self.set_same_values(sheet_id, region, |column| &mut column.numeric_format, value);
+        Ok(())
+    }
+    #[wasm_bindgen(js_name = "setCellBold")]
+    pub fn set_cell_bold(&mut self, sheet_id: SheetId, region: Rect, value: bool) {
+        self.set_same_values(sheet_id, region, |column| &mut column.bold, value);
+    }
+    #[wasm_bindgen(js_name = "setCellItalic")]
+    pub fn set_cell_italic(&mut self, sheet_id: SheetId, region: Rect, value: bool) {
+        self.set_same_values(sheet_id, region, |column| &mut column.italic, value);
+    }
+    #[wasm_bindgen(js_name = "setCellTextColor")]
+    pub fn set_cell_text_color(&mut self, sheet_id: SheetId, region: Rect, value: String) {
+        self.set_same_values(sheet_id, region, |column| &mut column.text_color, value);
+    }
+    #[wasm_bindgen(js_name = "setCellFillColor")]
+    pub fn set_cell_fill_color(&mut self, sheet_id: SheetId, region: Rect, value: String) {
+        self.set_same_values(sheet_id, region, |column| &mut column.fill_color, value);
     }
 }
 

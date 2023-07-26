@@ -6,14 +6,14 @@ use super::BlockContent;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct SameValue<T> {
-    len: usize,
     pub value: T,
+    pub len: usize,
 }
 impl<T: fmt::Debug + Clone + PartialEq> BlockContent for SameValue<T> {
     type Item = T;
 
     fn new(value: Self::Item) -> Self {
-        SameValue { len: 1, value }
+        SameValue { value, len: 1 }
     }
     fn unwrap_single_value(self) -> Self::Item {
         self.value
@@ -35,12 +35,12 @@ impl<T: fmt::Debug + Clone + PartialEq> BlockContent for SameValue<T> {
         }
 
         let before = SameValue {
-            len: index,
             value: self.value.clone(),
+            len: index,
         };
         let after = SameValue {
-            len: self.len - index - 1,
             value: self.value.clone(),
+            len: self.len - index - 1,
         };
         let new_contents = [before, SameValue::new(value), after]
             .into_iter()
@@ -52,8 +52,8 @@ impl<T: fmt::Debug + Clone + PartialEq> BlockContent for SameValue<T> {
     fn push_top(self, value: Self::Item) -> SmallVec<[Self; 2]> {
         if value == self.value {
             smallvec![SameValue {
-                len: self.len + 1,
                 value,
+                len: self.len + 1,
             }]
         } else {
             smallvec![SameValue::new(value), self]
@@ -73,8 +73,8 @@ impl<T: fmt::Debug + Clone + PartialEq> BlockContent for SameValue<T> {
     fn try_merge(self, other: Self) -> Result<Self, [Self; 2]> {
         if self.value == other.value {
             Ok(SameValue {
-                len: self.len + other.len,
                 value: self.value,
+                len: self.len + other.len,
             })
         } else {
             Err([self, other])
@@ -84,12 +84,12 @@ impl<T: fmt::Debug + Clone + PartialEq> BlockContent for SameValue<T> {
     fn split(self, split_point: usize) -> [Self; 2] {
         [
             SameValue {
-                len: split_point,
                 value: self.value.clone(),
+                len: split_point,
             },
             SameValue {
-                len: self.len - split_point - 1,
                 value: self.value,
+                len: self.len - split_point - 1,
             },
         ]
     }
