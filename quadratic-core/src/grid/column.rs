@@ -5,8 +5,7 @@ use std::collections::BTreeMap;
 use std::ops::Range;
 
 use super::{
-    block::CellValueOrSpill, formatting::*, value::CellValue, Block, BlockContent,
-    CellValueBlockContent, ColumnId, SameValue,
+    formatting::*, Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -14,6 +13,8 @@ pub struct Column {
     pub id: ColumnId,
 
     pub values: ColumnData<CellValueBlockContent>,
+    pub spills: ColumnData<SameValue<CellRef>>,
+
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
     pub borders: ColumnData<SameValue<CellBorders>>,
@@ -32,6 +33,8 @@ impl Column {
             id,
 
             values: ColumnData::default(),
+            spills: ColumnData::default(),
+
             align: ColumnData::default(),
             wrap: ColumnData::default(),
             borders: ColumnData::default(),
@@ -45,10 +48,11 @@ impl Column {
 
     pub fn range(&self, ignore_formatting: bool) -> Option<Range<i64>> {
         if ignore_formatting {
-            self.values.range()
+            crate::util::union_ranges([self.values.range(), self.spills.range()])
         } else {
             crate::util::union_ranges([
                 self.values.range(),
+                self.spills.range(),
                 self.align.range(),
                 self.wrap.range(),
                 self.borders.range(),
@@ -61,25 +65,8 @@ impl Column {
         }
     }
 
-    pub fn has_data(&self) -> bool {
-        !self.values.0.is_empty()
-    }
-    pub fn has_anything(&self) -> bool {
-        self.has_data()
-            || !self.align.0.is_empty()
-            || !self.wrap.0.is_empty()
-            || !self.borders.0.is_empty()
-            || !self.numeric_format.0.is_empty()
-            || !self.bold.0.is_empty()
-            || !self.italic.0.is_empty()
-            || !self.text_color.0.is_empty()
-            || !self.fill_color.0.is_empty()
-    }
-
     pub fn has_data_in_row(&self, y: i64) -> bool {
-        self.values
-            .get(y)
-            .is_some_and(|v| v != CellValueOrSpill::CellValue(CellValue::Blank))
+        self.values.get(y).is_some_and(|v| !v.is_blank()) || self.spills.get(y).is_some()
     }
     pub fn has_anything_in_row(&self, y: i64) -> bool {
         self.has_data_in_row(y)
@@ -243,5 +230,15 @@ impl<B: BlockContent> ColumnData<B> {
         let min = *self.0.first_key_value()?.0;
         let max = self.0.last_key_value()?.1.end();
         Some(min..max)
+    }
+
+    /// Iterates over a range, skipping cells with no data.
+    pub fn iter_range(&self, y_range: Range<i64>) -> impl '_ + Iterator<Item = (i64, B::Item)> {
+        self.blocks_covering_range(y_range.clone())
+            .flat_map(move |block| {
+                let start = std::cmp::max(y_range.start, block.start());
+                let end = std::cmp::max(y_range.end, block.end());
+                (start..end).filter_map(|y| Some((y, block.get(y)?)))
+            })
     }
 }

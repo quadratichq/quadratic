@@ -2,81 +2,34 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::BlockContent;
-use crate::grid::{CellRef, CellValue};
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum CellValueOrSpill {
-    CellValue(CellValue),
-    Spill { source: CellRef, x: u32, y: u32 },
-}
-impl Default for CellValueOrSpill {
-    fn default() -> Self {
-        CellValueOrSpill::CellValue(CellValue::Blank)
-    }
-}
-impl<T: Into<CellValue>> From<T> for CellValueOrSpill {
-    fn from(value: T) -> Self {
-        CellValueOrSpill::CellValue(value.into())
-    }
-}
-impl CellValueOrSpill {
-    pub fn unwrap_cell_value(self) -> CellValue {
-        match self {
-            CellValueOrSpill::CellValue(value) => value,
-            CellValueOrSpill::Spill { .. } => panic!("expected raw cell value; got spilled cell"),
-        }
-    }
-}
+use crate::grid::CellValue;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum CellValueBlockContent {
     // TODO: add float array, bool array, etc.
     Values(SmallVec<[CellValue; 1]>),
-    Spill {
-        source: CellRef,
-        x: u32,
-        y: u32,
-        len: usize,
-    },
 }
 impl BlockContent for CellValueBlockContent {
-    type Item = CellValueOrSpill;
+    type Item = CellValue;
 
     fn new(value: Self::Item) -> Self {
-        match value {
-            CellValueOrSpill::CellValue(value) => Self::Values(smallvec![value]),
-            CellValueOrSpill::Spill { source, x, y } => Self::Spill {
-                source,
-                x,
-                y,
-                len: 1,
-            },
-        }
+        Self::Values(smallvec![value])
     }
     fn unwrap_single_value(self) -> Self::Item {
         assert!(self.len() == 1, "expected single value");
         match self {
             CellValueBlockContent::Values(values) => values.into_iter().next().unwrap().into(),
-            CellValueBlockContent::Spill { source, x, y, .. } => {
-                CellValueOrSpill::Spill { source, x, y }
-            }
         }
     }
     fn len(&self) -> usize {
         match self {
             Self::Values(array) => array.len(),
-            Self::Spill { len, .. } => *len,
         }
     }
 
     fn get(&self, index: usize) -> Option<Self::Item> {
         (index < self.len()).then(|| match self {
             Self::Values(array) => array[index].clone().into(),
-            &Self::Spill { source, x, y, .. } => CellValueOrSpill::Spill {
-                source,
-                x,
-                y: y + index as u32,
-            },
         })
     }
     fn set(
@@ -90,27 +43,23 @@ impl BlockContent for CellValueBlockContent {
 
         match &mut self {
             Self::Values(array) => {
-                if let CellValueOrSpill::CellValue(value) = value {
-                    let old_value = std::mem::replace(&mut array[index], value);
-                    return Ok((smallvec![self], old_value.into()));
-                }
-            }
-            Self::Spill { .. } => {
-                if self.get(index).is_some_and(|v| v == value) {
-                    return Ok((smallvec![self], value));
-                }
+                let old_value = std::mem::replace(&mut array[index], value);
+                Ok((smallvec![self], old_value.into()))
             }
         }
-
-        let ([left, right], removed) = self.remove(index);
-        return Ok((smallvec![left, Self::new(value), right], removed));
     }
 
-    fn push_top(self, value: Self::Item) -> smallvec::SmallVec<[Self; 2]> {
-        smallvec![Self::new(value), self] // TODO: optimize
+    fn push_top(mut self, value: Self::Item) -> smallvec::SmallVec<[Self; 2]> {
+        match &mut self {
+            CellValueBlockContent::Values(array) => array.insert(0, value),
+        }
+        smallvec![self]
     }
-    fn push_bottom(self, value: Self::Item) -> smallvec::SmallVec<[Self; 2]> {
-        smallvec![self, Self::new(value)] // TODO: optimize
+    fn push_bottom(mut self, value: Self::Item) -> smallvec::SmallVec<[Self; 2]> {
+        match &mut self {
+            CellValueBlockContent::Values(array) => array.push(value),
+        }
+        smallvec![self]
     }
 
     fn try_merge(self, other: Self) -> Result<Self, [Self; 2]> {
@@ -124,20 +73,6 @@ impl BlockContent for CellValueBlockContent {
                 let left = array;
                 [Self::Values(left), Self::Values(right)]
             }
-            Self::Spill { source, x, y, len } => [
-                Self::Spill {
-                    source,
-                    x,
-                    y,
-                    len: split_point,
-                },
-                Self::Spill {
-                    source,
-                    x,
-                    y: y + split_point as u32,
-                    len: len - split_point,
-                },
-            ],
         }
     }
 }

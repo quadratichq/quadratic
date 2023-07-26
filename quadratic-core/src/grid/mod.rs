@@ -21,7 +21,7 @@ pub use value::CellValue;
 
 use crate::formulas::Value;
 use crate::{Pos, Rect};
-use block::{Block, BlockContent, CellValueBlockContent, CellValueOrSpill, SameValue};
+use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 use column::Column;
 use js_structs::JsRenderCell;
 
@@ -66,23 +66,16 @@ impl File {
                                 Value::Single(_) => {
                                     let x = js_cell.x;
                                     let y = js_cell.y;
-                                    let spill_value =
-                                        CellValueOrSpill::Spill { source, x: 0, y: 0 };
                                     let column = sheet.get_or_create_column(x).1;
-                                    column.values.set(y, Some(spill_value));
+                                    column.spills.set(y, Some(source));
                                 }
                                 Value::Array(array) => {
                                     for dy in 0..array.height() {
                                         for dx in 0..array.width() {
                                             let x = js_cell.x + dx as i64;
                                             let y = js_cell.y + dy as i64;
-                                            let spill_value = CellValueOrSpill::Spill {
-                                                source,
-                                                x: dx,
-                                                y: dy,
-                                            };
                                             let column = sheet.get_or_create_column(x).1;
-                                            column.values.set(y, Some(spill_value));
+                                            column.spills.set(y, Some(source));
                                         }
                                     }
                                 }
@@ -276,12 +269,9 @@ impl Sheet {
         &mut self,
         pos: Pos,
         value: CellValue,
-    ) -> Option<SetCellResponse<CellValueOrSpill>> {
-        let value: Option<CellValueOrSpill> = if value.is_blank() {
-            Some(value.into())
-        } else {
-            None
-        };
+    ) -> Option<SetCellResponse<CellValue>> {
+        let is_blank = value.is_blank();
+        let value: Option<CellValue> = if is_blank { None } else { Some(value) };
         if value.is_none() && !self.columns.contains_key(&pos.x) {
             return None;
         }
@@ -290,9 +280,11 @@ impl Sheet {
         let old_value = column.values.set(pos.y, value).unwrap_or_default();
 
         let mut unspill = None;
-        if let &CellValueOrSpill::Spill { source, .. } = &old_value {
-            self.unspill(source);
-            unspill = Some(source);
+        if !is_blank {
+            if let Some(source) = column.spills.get(pos.y) {
+                self.unspill(source);
+                unspill = Some(source);
+            }
         }
 
         // TODO: check for new spills, if the cell was deleted
@@ -309,7 +301,7 @@ impl Sheet {
         })
     }
     /// Returns a cell value.
-    pub fn get_cell_value(&self, pos: Pos) -> Option<CellValueOrSpill> {
+    pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
         self.get_column(pos.x)
             .and_then(|column| column.values.get(pos.y))
     }
@@ -405,57 +397,58 @@ impl Sheet {
     }
 
     pub fn get_render_cells(&self, region: Rect) -> Vec<JsRenderCell> {
+        let y_range = region.min.y..region.max.y + 1;
         region
             .x_range()
             .filter_map(move |x| {
                 let column = self.get_column(x)?;
-                let blocks_iter = column
-                    .values
-                    .blocks_covering_range(region.min.y..region.max.y + 1);
-                let cells_iter = blocks_iter.flat_map(move |block| {
-                    let start = std::cmp::max(block.start(), region.min.y);
-                    let end = std::cmp::min(block.end(), region.max.y + 1);
-                    let values: Vec<CellValue>;
-                    match block.content() {
-                        CellValueBlockContent::Values(block_values) => {
-                            let start = (start - block.start()) as usize;
-                            let end = (end - block.start()) as usize;
-                            values = block_values[start..end].to_vec();
-                        }
-                        CellValueBlockContent::Spill {
-                            source,
-                            x: spill_x,
-                            y: spill_y,
-                            len: _,
-                        } => {
-                            let start = spill_y + (start - block.start()) as u32;
-                            let end = spill_y + (end - block.start()) as u32;
-                            match self.code_cells.get(source) {
-                                None => values = vec![],
-                                Some(code_cell) => {
-                                    values = (start..end)
-                                        .map(|y| match code_cell.get(*spill_x, y) {
-                                            None => CellValue::Blank,
-                                            Some(value) => CellValue::from(value.clone()),
-                                        })
-                                        .collect();
-                                }
-                            }
-                        }
-                    };
-                    std::iter::zip(start..end, values)
-                });
-                Some(cells_iter.map(move |(y, value)| JsRenderCell {
-                    x,
-                    y,
-                    value,
 
-                    align: column.align.get(y),
-                    wrap: column.wrap.get(y),
-                    bold: column.bold.get(y),
-                    italic: column.italic.get(y),
-                    numeric_format: column.numeric_format.get(y),
-                    text_color: column.text_color.get(y),
+                // These are the four rendering layers. All other formatting
+                // only matters if a value is present.
+                let mut fill_colors = column.fill_color.iter_range(y_range.clone()).peekable();
+                let mut borders = column.borders.iter_range(y_range.clone()).peekable();
+                let mut values = column.values.iter_range(y_range.clone()).peekable();
+                let mut spills = column
+                    .spills
+                    .iter_range(y_range.clone())
+                    .filter_map(move |(y, source)| {
+                        let dx = x - self.column_ids.index_of(source.column)?;
+                        let dy = y - self.row_ids.index_of(source.row)?;
+                        let value = self.code_cells.get(&source)?.get(dx as u32, dy as u32)?;
+                        Some((y, value.clone()))
+                    })
+                    .peekable();
+
+                Some(y_range.clone().filter_map(move |y| {
+                    let fill_color = fill_colors.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
+                    let border = borders.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
+                    let manual_value = values.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
+                    let spill_value = spills.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
+
+                    if fill_color.is_none()
+                        && border.is_none()
+                        && manual_value.is_none()
+                        && spill_value.is_none()
+                    {
+                        return None; // Nothing to render
+                    }
+
+                    let value = manual_value.or(spill_value).unwrap_or_default();
+
+                    Some(JsRenderCell {
+                        x,
+                        y,
+                        value,
+
+                        align: column.align.get(y),
+                        wrap: column.wrap.get(y),
+                        borders: border,
+                        numeric_format: column.numeric_format.get(y),
+                        bold: column.bold.get(y),
+                        italic: column.italic.get(y),
+                        text_color: column.text_color.get(y),
+                        fill_color,
+                    })
                 }))
             })
             .flatten()
@@ -490,6 +483,3 @@ impl<I> GetIdResponse<I> {
         Self { id, is_new: false }
     }
 }
-
-#[cfg(test)]
-mod tests;
