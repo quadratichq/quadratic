@@ -9,5 +9,8 @@
         "pixiapp",
         "subquadrant",
         "subquadrants"
-    ]
+    ],
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true,
+    }
 }

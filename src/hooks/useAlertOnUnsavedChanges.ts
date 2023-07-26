@@ -9,9 +9,10 @@ export default function useAlertOnUnsavedChanges(hasUnsavedChanges: boolean) {
   useEffect(() => {
     if (hasUnsavedChanges) {
       window.addEventListener('beforeunload', beforeUnloadListener);
-      return;
+    } else {
+      window.removeEventListener('beforeunload', beforeUnloadListener);
     }
-    window.removeEventListener('beforeunload', beforeUnloadListener);
+
     return () => window.removeEventListener('beforeunload', beforeUnloadListener);
   }, [hasUnsavedChanges]);
 }

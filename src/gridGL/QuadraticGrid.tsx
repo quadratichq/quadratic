@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gridInteractionStateAtom } from '../atoms/gridInteractionStateAtom';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
+import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
 import { useRecoilState } from 'recoil';
 import { PixiApp } from './pixiApp/PixiApp';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
@@ -54,6 +55,11 @@ export default function QuadraticGrid(props: IProps) {
   useEffect(() => {
     props.app?.settings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
   }, [props.app?.settings, editorInteractionState, setEditorInteractionState]);
+
+  const [editorHighlightedCellsState, setEditorHighlightedCellsState] = useRecoilState(editorHighlightedCellsStateAtom);
+  useEffect(() => {
+    props.app?.settings.updateEditorHighlightedCellsState(editorHighlightedCellsState, setEditorHighlightedCellsState);
+  }, [props.app?.settings, editorHighlightedCellsState, setEditorHighlightedCellsState]);
 
   // Right click menu
   const [showContextMenu, setShowContextMenu] = useState(false);
