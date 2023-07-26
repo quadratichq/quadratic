@@ -40,3 +40,4 @@ quadratic-api/node_modules/
 quadratic-api/.env
 quadratic-api/.env.local
 quadratic-api/dist
+out
