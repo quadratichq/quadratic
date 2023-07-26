@@ -4,7 +4,7 @@ import { UserPresence as CursorProps } from './types';
 export const Cursor = React.memo(({ cursor, color, name }: CursorProps) => {
   if (!cursor) return null;
 
-  const { x, y } = { x: cursor.x, y: cursor.y };
+  const { x, y, visible } = cursor;
 
   return (
     <div
@@ -15,7 +15,7 @@ export const Cursor = React.memo(({ cursor, color, name }: CursorProps) => {
         left: 0,
         top: 0,
         transition: 'transform 0.5s cubic-bezier(.17,.93,.38,1)',
-        transform: `translateX(${x}px) translateY(${y}px)`,
+        transform: `translateX(${x}px) translateY(${y}px) scale(${visible ? 1 : 0})`,
         zIndex: 1000000,
       }}
     >
@@ -37,22 +37,24 @@ export const Cursor = React.memo(({ cursor, color, name }: CursorProps) => {
       <div
         style={{
           backgroundColor: color,
-          borderRadius: 4,
+          borderRadius: 2,
           position: 'absolute',
-          top: 20,
-          left: 10,
-          padding: '0px 15px',
+          top: 18,
+          left: 8,
+          display: 'flex',
+          padding: '0.25rem',
         }}
       >
-        <p
+        <span
           style={{
             whiteSpace: 'nowrap',
-            fontSize: 13,
+            fontSize: 11,
             color: 'white',
+            lineHeight: '1em',
           }}
         >
           {name}
-        </p>
+        </span>
       </div>
     </div>
   );

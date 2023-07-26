@@ -41,6 +41,7 @@ export const MultiplayerRoom = () => {
         cursor: {
           x: e.pageX,
           y: e.pageY,
+          visible: true,
         },
         name: user?.name,
         email: user?.email,
@@ -50,7 +51,11 @@ export const MultiplayerRoom = () => {
 
     const handlePointLeave = (e: PointerEvent) => {
       awareness.setLocalState({
-        cursor: undefined,
+        cursor: {
+          x: e.pageX,
+          y: e.pageY,
+          visible: false,
+        },
         name: user?.name,
         email: user?.email,
         color,
@@ -64,7 +69,7 @@ export const MultiplayerRoom = () => {
       document.removeEventListener('pointermove', handlePointMove);
       document.removeEventListener('pointerleave', handlePointLeave);
     };
-  }, []);
+  }, [user]);
 
   return (
     <div>
