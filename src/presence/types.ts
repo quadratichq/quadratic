@@ -4,5 +4,6 @@ export interface UserPresence {
     y: number;
   };
   name: string;
+  email: string;
   color: string;
 }

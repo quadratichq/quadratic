@@ -4,7 +4,7 @@ import { UserPresence as CursorProps } from './types';
 export const Cursor = React.memo(({ cursor, color, name }: CursorProps) => {
   if (!cursor) return null;
 
-  const { x, y } = { x: cursor.x - 265, y: cursor.y };
+  const { x, y } = { x: cursor.x, y: cursor.y };
 
   return (
     <div
@@ -41,7 +41,7 @@ export const Cursor = React.memo(({ cursor, color, name }: CursorProps) => {
           position: 'absolute',
           top: 20,
           left: 10,
-          padding: '5px 10px',
+          padding: '0px 15px',
         }}
       >
         <p

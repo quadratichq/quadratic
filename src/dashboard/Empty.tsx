@@ -1,6 +1,5 @@
-import { Box, Typography, useTheme, SvgIcon } from '@mui/material';
+import { Box, SvgIcon, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
-import { ColabRoom } from '../presence/ColabRoom';
 
 export default function Empty({
   title,
@@ -19,7 +18,6 @@ export default function Empty({
 
   return (
     <Box sx={{ maxWidth: '30rem', my: theme.spacing(5), mx: 'auto', textAlign: 'center' }}>
-      <ColabRoom></ColabRoom>
       <Box
         sx={{
           mx: 'auto',

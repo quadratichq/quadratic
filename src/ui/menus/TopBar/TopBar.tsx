@@ -1,25 +1,26 @@
+import { ManageSearch, Public } from '@mui/icons-material';
+import { Box, Button, IconButton, InputBase, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { Box, Typography, IconButton, InputBase, Button } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
+import { IS_READONLY_MODE } from '../../../constants/app';
+import { SheetController } from '../../../grid/controller/sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import { MultiplayerRoom } from '../../../presence/MultiplayerRoom';
 import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
-import { DataMenu } from './SubMenus/DataMenu';
-import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
-import { ZoomDropdown } from './ZoomDropdown';
-import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { IS_READONLY_MODE } from '../../../constants/app';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
-import { ManageSearch, Public } from '@mui/icons-material';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { useGridSettings } from './SubMenus/useGridSettings';
-import CodeOutlinesSwitch from './CodeOutlinesSwitch';
 import { useFile } from '../../contexts/File';
+import CodeOutlinesSwitch from './CodeOutlinesSwitch';
+import { DataMenu } from './SubMenus/DataMenu';
+import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
+import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
+import { QuadraticMenu } from './SubMenus/QuadraticMenu';
+import { useGridSettings } from './SubMenus/useGridSettings';
+import { ZoomDropdown } from './ZoomDropdown';
 
 interface IProps {
   app: PixiApp;
@@ -150,22 +151,7 @@ export const TopBar = (props: IProps) => {
       >
         {!IS_READONLY_MODE && (
           <>
-            {/* {user !== undefined && (
-              <AvatarGroup>
-                <Avatar
-                  sx={{
-                    bgcolor: colors.quadraticSecondary,
-                    width: 24,
-                    height: 24,
-                    fontSize: '0.8rem',
-                  }}
-                  alt={user?.name}
-                  src={user?.picture}
-                >
-                  {user?.name && user?.name[0]}
-                </Avatar>
-              </AvatarGroup>
-            )} */}
+            <MultiplayerRoom></MultiplayerRoom>
             <Button
               onClick={() => {
                 setEditorInteractionState((prevState) => ({ ...prevState, showShareMenu: true }));

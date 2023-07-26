@@ -9,5 +9,3 @@ export const USER_COLORS = [
   '#F06292',
   '#7986CB',
 ];
-
-export const USER_NAMES = ['Daniel', 'John', 'Mary', 'Harry', 'Nico', 'Ricky', 'Sam', 'Tom'];
