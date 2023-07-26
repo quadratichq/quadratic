@@ -52,6 +52,7 @@ export class BitmapTextClip extends BitmapText {
     const lineSpaces = [];
     const text = this._text.replace(/(?:\r\n|\r)/g, '\n') || ' ';
     const charsInput = splitTextToCharacters(text);
+    //@ts-expect-error
     const maxWidth = (this._maxWidth * data.size) / this._fontSize;
 
     let prevCharCode = null;
@@ -156,6 +157,7 @@ export class BitmapTextClip extends BitmapText {
   /** Renders text and updates it when needed. This should only be called if the BitmapFont is regenerated. */
   public updateText(): void {
     const data = BitmapFont.available[this._fontName];
+    //@ts-expect-error
     const scale = this._fontSize / data.size;
     const pos = new Point();
     const chars: CharRenderData[] = [];
@@ -163,6 +165,7 @@ export class BitmapTextClip extends BitmapText {
     const lineSpaces = [];
     const text = this._text.replace(/(?:\r\n|\r)/g, '\n') || ' ';
     const charsInput = splitTextToCharacters(text);
+    //@ts-expect-error
     const maxWidth = (this._maxWidth * data.size) / this._fontSize;
     const pageMeshDataPool =
       data.distanceFieldType === 'none' ? pageMeshDataDefaultPageMeshData : pageMeshDataMSDFPageMeshData;

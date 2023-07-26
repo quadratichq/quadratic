@@ -60,9 +60,9 @@ export const TopBar = (props: IProps) => {
         if (event.target === event.currentTarget) electronMaximizeCurrentWindow();
       }}
     >
+      {/* @ts-expect-error */}
       <Box
         style={{
-          //@ts-expect-error
           WebkitAppRegion: 'no-drag',
           display: 'flex',
           alignItems: 'center',
@@ -136,6 +136,7 @@ export const TopBar = (props: IProps) => {
           {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
         </Box>
       )}
+      {/* @ts-expect-error */}
       <Box
         sx={{
           display: 'flex',
@@ -144,7 +145,6 @@ export const TopBar = (props: IProps) => {
           gap: '1rem',
         }}
         style={{
-          //@ts-expect-error
           WebkitAppRegion: 'no-drag',
         }}
       >
