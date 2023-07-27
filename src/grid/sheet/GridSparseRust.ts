@@ -47,7 +47,9 @@ export class GridSparseRust extends GridSparse {
       } else {
         debugger;
       }
+      this.quadrants.add(this.getKey(cell.x, cell.y));
     });
+    this.file.recalculateBounds(this.sheetId);
   }
 
   recalculateBounds(): void {}
@@ -86,6 +88,7 @@ export class GridSparseRust extends GridSparse {
       }
       this.quadrants.add(this.getKey(format.x, format.y));
     });
+    this.file.recalculateBounds(this.sheetId);
   }
 
   clearFormat(formats: CellFormat[]): void {
