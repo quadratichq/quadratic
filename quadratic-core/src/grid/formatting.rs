@@ -17,15 +17,15 @@ pub enum CellWrap {
     Clip,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CellBorders {
-    h: CellBorder,
-    v: CellBorder,
+    pub h: CellBorder,
+    pub v: CellBorder,
 }
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CellBorder {
-    color: [u8; 3],
-    style: CellBorderStyle,
+    pub color: Option<String>,
+    pub style: Option<CellBorderStyle>,
 }
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]

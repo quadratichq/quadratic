@@ -232,6 +232,12 @@ impl<B: BlockContent> ColumnData<B> {
         Some(min..max)
     }
 
+    /// Iterates over all values, skipping cells with no data.
+    pub fn iter(&self) -> impl '_ + Iterator<Item = (i64, B::Item)> {
+        self.range()
+            .into_iter()
+            .flat_map(|y_range| self.iter_range(y_range))
+    }
     /// Iterates over a range, skipping cells with no data.
     pub fn iter_range(&self, y_range: Range<i64>) -> impl '_ + Iterator<Item = (i64, B::Item)> {
         self.blocks_covering_range(y_range.clone())
