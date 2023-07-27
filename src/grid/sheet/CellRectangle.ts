@@ -34,6 +34,17 @@ export class CellRectangle {
               type: 'TEXT',
               value: search.value.toString(),
             },
+            format: {
+              x,
+              y,
+              bold: search.bold,
+              italic: search.italic,
+              alignment: search.alignment,
+              fillColor: search.fillColor,
+              textColor: search.textColor,
+              textFormat: search.textFormat,
+              wrapping: search.wrapping,
+            },
           };
           r.cells[y * (size.width + 1) + x] = cell;
         }

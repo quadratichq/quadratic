@@ -118,9 +118,10 @@ export class GridSparseRust extends GridSparse {
   }
 
   get empty(): boolean {
-    return true;
-    // const bounds = this.file.getGridBounds(this.sheet.id, false);
-    // return bounds.width === 0 && bounds.height === 0;
+    const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+    const bounds = this.file.getGridBounds(sheetId, false);
+    return bounds.width === 0 && bounds.height === 0;
   }
 
   clear() {
@@ -165,28 +166,50 @@ export class GridSparseRust extends GridSparse {
           value: data[0].value.toString(),
           type: 'TEXT',
         },
+        format: {
+          x,
+          y,
+          bold: data[0].bold,
+          italic: data[0].italic,
+          alignment: data[0].alignment,
+          fillColor: data[0].fillColor,
+          textColor: data[0].textColor,
+          textFormat: data[0].textFormat,
+          wrapping: data[0].wrapping,
+        },
       };
     }
-    // if (this.cellFormatBounds.contains(x, y)) {
-    //   return this.cells.get(this.getKey(x, y));
-    // }
   }
 
   getCell(x: number, y: number): Cell | undefined {
     const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
     if (!sheetId) throw new Error('Expected sheetId to be defined');
-    const result = this.file.getRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(1, 1)));
-    console.log(result);
-    debugger;
-    if (this.cellBounds.contains(x, y)) {
-      return this.cells.get(this.getKey(x, y))?.cell;
-    }
+    const json = this.file.getRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(1, 1)));
+    const data = JSON.parse(json);
+    return {
+      x,
+      y,
+      value: data[0].value.toString(),
+      type: 'TEXT',
+    };
   }
 
   getFormat(x: number, y: number): CellFormat | undefined {
-    if (this.formatBounds.contains(x, y)) {
-      return this.cells.get(this.getKey(x, y))?.format;
-    }
+    const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+    const json = this.file.getRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(1, 1)));
+    const data = JSON.parse(json);
+    return {
+      x,
+      y,
+      bold: data[0].bold,
+      italic: data[0].italic,
+      alignment: data[0].alignment,
+      fillColor: data[0].fillColor,
+      textColor: data[0].textColor,
+      textFormat: data[0].textFormat,
+      wrapping: data[0].wrapping,
+    };
   }
 
   getCells(rectangle: Rectangle): CellRectangle {
@@ -198,26 +221,46 @@ export class GridSparseRust extends GridSparse {
       new Rect(new Pos(rectangle.x, rectangle.y), new Pos(rectangle.right, rectangle.bottom))
     );
     return CellRectangle.fromRust(rectangle, result, this);
-    // return new CellRectangle(rectangle, this);
   }
 
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
+    const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+    const json = this.file.getRenderCells(sheetId, new Rect(new Pos(x0, y0), new Pos(x1, y1)));
+    const data = JSON.parse(json);
     const cells: Cell[] = [];
-    this.cells.forEach((cell) => {
-      if (cell.cell && cell.cell.x >= x0 && cell.cell.x <= x1 && cell.cell.y >= y0 && cell.cell.y <= y1) {
-        cells.push(cell.cell);
+    data.forEach((entry: any) => {
+      if (entry.x >= x0 && entry.x <= x1 && entry.y >= y0 && entry.y <= y1) {
+        cells.push({
+          x: entry.x,
+          y: entry.y,
+          type: 'TEXT',
+          value: entry[0].value,
+        });
       }
     });
     return cells;
   }
 
   getNakedFormat(x0: number, y0: number, x1: number, y1: number): CellFormat[] {
+    const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+    const json = this.file.getRenderCells(sheetId, new Rect(new Pos(x0, y0), new Pos(x1, y1)));
+    const data = JSON.parse(json);
     const cells: CellFormat[] = [];
-    this.cells.forEach((cell) => {
-      if (cell.format) {
-        if (cell.format.x >= x0 && cell.format.x <= x1 && cell.format.y >= y0 && cell.format.y <= y1) {
-          cells.push(cell.format);
-        }
+    data.forEach((entry: any) => {
+      if (entry.x >= x0 && entry.x <= x1 && entry.y >= y0 && entry.y <= y1) {
+        cells.push({
+          x: entry.x,
+          y: entry.y,
+          bold: entry.bold,
+          italic: entry.italic,
+          alignment: entry.alignment,
+          fillColor: entry.fillColor,
+          textColor: entry.textColor,
+          textFormat: entry.textFormat,
+          wrapping: entry.wrapping,
+        });
       }
     });
     return cells;
@@ -232,7 +275,6 @@ export class GridSparseRust extends GridSparse {
     const maxX = allBounds.nonEmpty?.max.x;
     const maxY = allBounds.nonEmpty?.max.y;
     const empty = !allBounds.nonEmpty;
-    // const { minX, minY, maxX, maxY, empty } = this.cellFormatBounds;
     const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
     const columnStart = columnStartIndex.index > minX ? columnStartIndex.index : minX;
     const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
