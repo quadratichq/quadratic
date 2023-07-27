@@ -13,9 +13,9 @@ import { Sheet } from './Sheet';
 import { SheetCursor } from './SheetCursor';
 
 export class SheetRust extends Sheet {
-  constructor(file: CoreFile, sheetIndex: number, name: string | undefined, order: string, copyFrom?: Sheet) {
+  constructor(file: CoreFile, index: number, name: string | undefined, order: string, copyFrom?: Sheet) {
     super(name, order, copyFrom);
-    this.grid = new GridSparseRust(file, sheetIndex, this);
+    this.grid = new GridSparseRust(file, index, this);
   }
 
   // for testing

@@ -19,11 +19,12 @@ export class GridSparseRust extends GridSparse {
   private sheetIndex: number;
   private file: CoreFile;
 
-  constructor(file: CoreFile, sheetIndex: number, sheet: Sheet) {
+  constructor(file: CoreFile, index: number, sheet: Sheet) {
     super(sheet);
     this.file = file;
-    this.sheetIndex = sheetIndex;
+    this.sheetIndex = index;
   }
+
   get gridOffsets(): GridOffsets {
     return this.sheet.gridOffsets;
   }
@@ -117,8 +118,9 @@ export class GridSparseRust extends GridSparse {
   }
 
   get empty(): boolean {
-    const bounds = this.file.getGridBounds(this.sheetIndex, false);
-    return bounds.width === 0 && bounds.height === 0;
+    return true;
+    // const bounds = this.file.getGridBounds(this.sheet.id, false);
+    // return bounds.width === 0 && bounds.height === 0;
   }
 
   clear() {
@@ -151,8 +153,9 @@ export class GridSparseRust extends GridSparse {
   }
 
   get(x: number, y: number): CellAndFormat | undefined {
-    const id = this.file.sheet_index_to_id(this.sheetIndex);
-    const json = this.file.getRenderCells(id as any, new Rect(new Pos(x, y), new Pos(x, y)));
+    const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+    const json = this.file.getRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
     const data = JSON.parse(json);
     if (data.length) {
       return {
@@ -170,8 +173,9 @@ export class GridSparseRust extends GridSparse {
   }
 
   getCell(x: number, y: number): Cell | undefined {
-    const id = this.file.sheet_index_to_id(this.sheetIndex);
-    const result = this.file.getRenderCells(id as any, new Rect(new Pos(x, y), new Pos(1, 1)));
+    const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+    const result = this.file.getRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(1, 1)));
     console.log(result);
     debugger;
     if (this.cellBounds.contains(x, y)) {
@@ -186,9 +190,11 @@ export class GridSparseRust extends GridSparse {
   }
 
   getCells(rectangle: Rectangle): CellRectangle {
-    const id = this.file.sheet_index_to_id(this.sheetIndex);
+    const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+
     const result = this.file.getRenderCells(
-      id as any,
+      sheetId,
       new Rect(new Pos(rectangle.x, rectangle.y), new Pos(rectangle.right, rectangle.bottom))
     );
     return CellRectangle.fromRust(rectangle, result, this);
@@ -218,7 +224,9 @@ export class GridSparseRust extends GridSparse {
   }
 
   getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
-    const allBounds = this.file.getGridBounds(this.sheetIndex, false);
+    const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+    const allBounds = this.file.getGridBounds(sheetId, false);
     const minX = allBounds.nonEmpty?.min.x;
     const minY = allBounds.nonEmpty?.min.y;
     const maxX = allBounds.nonEmpty?.max.x;
