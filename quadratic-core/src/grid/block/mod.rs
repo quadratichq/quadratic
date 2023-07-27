@@ -7,12 +7,12 @@ mod same;
 mod value;
 
 pub use same::SameValue;
-pub use value::{CellValueBlockContent, CellValueOrSpill};
+pub use value::CellValueBlockContent;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block<B> {
-    y: i64,
-    content: B,
+    pub y: i64,
+    pub content: B,
 }
 impl<B: BlockContent> Block<B> {
     pub fn new(y: i64, value: B::Item) -> Self {
@@ -52,6 +52,23 @@ impl<B: BlockContent> Block<B> {
                 Ok((new_blocks, old_value))
             }
             None => Err(self),
+        }
+    }
+
+    pub fn split(self, y: i64) -> [Option<Self>; 2] {
+        if y < self.start() {
+            [None, Some(self)]
+        } else if y >= self.end() {
+            [Some(self), None]
+        } else {
+            let [above, below] = self.content.split((y - self.y) as usize);
+            [
+                Some(Block {
+                    y: self.y,
+                    content: above,
+                }),
+                Some(Block { y, content: below }),
+            ]
         }
     }
 

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{btree_map, BTreeMap, HashMap};
+use std::fmt;
 use std::hash::Hash;
 use wasm_bindgen::prelude::*;
 
@@ -21,9 +22,11 @@ pub use value::CellValue;
 
 use crate::formulas::Value;
 use crate::{Pos, Rect};
-use block::{Block, BlockContent, CellValueBlockContent, CellValueOrSpill, SameValue};
+use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 use column::Column;
-use js_structs::JsRenderCell;
+use column::{BoolSummary, ColumnData};
+use formatting::{CellAlign, CellBorders, CellWrap, NumericFormat};
+use js_structs::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[wasm_bindgen]
@@ -66,24 +69,16 @@ impl File {
                                 Value::Single(_) => {
                                     let x = js_cell.x;
                                     let y = js_cell.y;
-                                    sheet.set_cell_value(
-                                        Pos { x, y },
-                                        Some(CellValueOrSpill::Spill { source, x: 0, y: 0 }),
-                                    );
+                                    let column = sheet.get_or_create_column(x).1;
+                                    column.spills.set(y, Some(source));
                                 }
                                 Value::Array(array) => {
                                     for dy in 0..array.height() {
                                         for dx in 0..array.width() {
                                             let x = js_cell.x + dx as i64;
                                             let y = js_cell.y + dy as i64;
-                                            sheet.set_cell_value(
-                                                Pos { x, y },
-                                                Some(CellValueOrSpill::Spill {
-                                                    source,
-                                                    x: dx,
-                                                    y: dy,
-                                                }),
-                                            );
+                                            let column = sheet.get_or_create_column(x).1;
+                                            column.spills.set(y, Some(source));
                                         }
                                     }
                                 }
@@ -94,7 +89,7 @@ impl File {
                 } else if let Some(cell_value) = js_cell.to_cell_value() {
                     let x = js_cell.x;
                     let y = js_cell.y;
-                    sheet.set_cell_value(Pos { x, y }, Some(cell_value.into()));
+                    sheet.set_cell_value(Pos { x, y }, cell_value);
                 }
             }
 
@@ -102,18 +97,21 @@ impl File {
                 let (_, column) = sheet.get_or_create_column(js_format.x);
 
                 column.align.set(js_format.y, js_format.alignment);
-                column.bold.set(js_format.y, js_format.bold);
+                column.wrap.set(js_format.y, js_format.wrapping);
+
                 column
-                    .fill_color
-                    .set(js_format.y, js_format.fill_color.clone());
+                    .numeric_format
+                    .set(js_format.y, js_format.text_format.clone());
+
+                column.bold.set(js_format.y, js_format.bold);
                 column.italic.set(js_format.y, js_format.italic);
+
                 column
                     .text_color
                     .set(js_format.y, js_format.text_color.clone());
                 column
-                    .numeric_format
-                    .set(js_format.y, js_format.text_format.clone());
-                column.wrap.set(js_format.y, js_format.wrapping);
+                    .fill_color
+                    .set(js_format.y, js_format.fill_color.clone());
             }
 
             sheet.recalculate_bounds();
@@ -127,6 +125,30 @@ impl File {
     }
     pub fn sheets_mut(&mut self) -> &mut [Sheet] {
         &mut self.sheets
+    }
+
+    pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {
+        let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
+        &self.sheets[sheet_index]
+    }
+    pub fn sheet_mut_from_id(&mut self, sheet_id: SheetId) -> &mut Sheet {
+        let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
+        &mut self.sheets[sheet_index]
+    }
+
+    fn set_same_values<T: fmt::Debug + Clone + PartialEq>(
+        &mut self,
+        sheet_id: SheetId,
+        region: Rect,
+        pick_column_data: fn(&mut Column) -> &mut ColumnData<SameValue<T>>,
+        value: T,
+    ) {
+        let y_range = region.min.y..region.max.y + 1;
+        let sheet = self.sheet_mut_from_id(sheet_id);
+        for x in region.x_range() {
+            let column = sheet.get_or_create_column(x).1;
+            pick_column_data(column).set_range(y_range.clone(), value.clone());
+        }
     }
 }
 #[wasm_bindgen]
@@ -179,8 +201,8 @@ impl File {
     }
 
     #[wasm_bindgen(js_name = "populateWithRandomFloats")]
-    pub fn populate_with_random_floats(&mut self, sheet_index: usize, region: Rect) {
-        let sheet = &mut self.sheets[sheet_index];
+    pub fn populate_with_random_floats(&mut self, sheet_id: SheetId, region: Rect) {
+        let sheet = self.sheet_mut_from_id(sheet_id);
         for x in region.x_range() {
             let (_, column) = sheet.get_or_create_column(x);
             for y in region.y_range() {
@@ -194,22 +216,165 @@ impl File {
         sheet.recalculate_bounds();
     }
 
+    #[wasm_bindgen(js_name = "recalculateBounds")]
+    pub fn recalculate_bounds(&mut self, sheet_id: SheetId) {
+        self.sheet_mut_from_id(sheet_id).recalculate_bounds();
+    }
     #[wasm_bindgen(js_name = "getGridBounds")]
     pub fn get_grid_bounds(
         &self,
-        sheet_index: usize,
+        sheet_id: SheetId,
         ignore_formatting: bool,
     ) -> Result<JsValue, JsValue> {
         Ok(serde_wasm_bindgen::to_value(
-            &self.sheets[sheet_index].bounds(ignore_formatting),
+            &self.sheet_from_id(sheet_id).bounds(ignore_formatting),
         )?)
     }
 
     #[wasm_bindgen(js_name = "getRenderCells")]
-    pub fn get_render_cells(&self, sheet: SheetId, region: Rect) -> Result<String, JsValue> {
-        let sheet_index = self.sheet_id_to_index(sheet).ok_or("bad sheet ID")?;
+    pub fn get_render_cells(&self, sheet_id: SheetId, region: Rect) -> Result<String, JsValue> {
+        let sheet_index = self.sheet_id_to_index(sheet_id).ok_or("bad sheet ID")?;
         let sheet = &self.sheets()[sheet_index];
         Ok(serde_json::to_string(&sheet.get_render_cells(region)).map_err(|e| e.to_string())?)
+    }
+
+    #[wasm_bindgen(js_name = "setCellValue")]
+    pub fn set_cell_value(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        cell_value: JsValue,
+    ) -> Result<(), JsValue> {
+        let cell_value: CellValue = serde_wasm_bindgen::from_value(cell_value)?;
+        self.sheet_mut_from_id(sheet_id)
+            .set_cell_value(pos, cell_value);
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "deleteCellValues")]
+    pub fn delete_cell_values(&mut self, sheet_id: SheetId, region: Rect) -> Result<(), JsValue> {
+        self.sheet_mut_from_id(sheet_id).delete_cell_values(region);
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "getCodeCellValue")]
+    pub fn get_code_cell_value(&mut self, sheet_id: SheetId, pos: Pos) -> Result<JsValue, JsValue> {
+        let sheet = self.sheet_from_id(sheet_id);
+        let Some(cell_ref) = sheet.get_cell_ref(pos) else {
+            return Ok(JsValue::UNDEFINED);
+        };
+        let Some(code_cell) = sheet.code_cells.get(&cell_ref) else {
+            return Ok(JsValue::UNDEFINED);
+        };
+        Ok(serde_wasm_bindgen::to_value(&code_cell)?)
+    }
+
+    #[wasm_bindgen(js_name = "setCodeCellValue")]
+    pub fn set_code_cell_value(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        code_cell_value: JsValue,
+    ) -> Result<(), JsValue> {
+        let code_cell_value: CodeCellValue = serde_wasm_bindgen::from_value(code_cell_value)?;
+        let sheet = self.sheet_mut_from_id(sheet_id);
+        let cell_ref = sheet.get_or_create_cell_ref(pos);
+        sheet.code_cells.insert(cell_ref, code_cell_value);
+        // TODO: return old code cell
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "getFormattingSummary")]
+    pub fn get_formatting_summary(
+        &self,
+        sheet_id: SheetId,
+        region: Rect,
+    ) -> Result<JsValue, JsValue> {
+        let y_range = region.min.y..region.max.y + 1;
+
+        let sheet = self.sheet_from_id(sheet_id);
+
+        let mut bold = BoolSummary::default();
+        let mut italic = BoolSummary::default();
+
+        for x in region.x_range() {
+            match sheet.columns.get(&x) {
+                None => {
+                    bold.is_any_false = true;
+                    italic.is_any_false = true;
+                }
+                Some(column) => {
+                    bold |= column.bold.bool_summary(y_range.clone());
+                    italic |= column.italic.bool_summary(y_range.clone());
+                }
+            };
+        }
+
+        Ok(serde_wasm_bindgen::to_value(&JsFormattingSummary {
+            bold,
+            italic,
+        })?)
+    }
+
+    #[wasm_bindgen(js_name = "setCellAlign")]
+    pub fn set_cell_align(
+        &mut self,
+        sheet_id: SheetId,
+        region: Rect,
+        value: JsValue,
+    ) -> Result<(), JsValue> {
+        let value: CellAlign = serde_wasm_bindgen::from_value(value)?;
+        self.set_same_values(sheet_id, region, |column| &mut column.align, value);
+        Ok(())
+    }
+    #[wasm_bindgen(js_name = "setCellWrap")]
+    pub fn set_cell_wrap(
+        &mut self,
+        sheet_id: SheetId,
+        region: Rect,
+        value: JsValue,
+    ) -> Result<(), JsValue> {
+        let value: CellWrap = serde_wasm_bindgen::from_value(value)?;
+        self.set_same_values(sheet_id, region, |column| &mut column.wrap, value);
+        Ok(())
+    }
+    #[wasm_bindgen(js_name = "setCellBorders")]
+    pub fn set_cell_borders(
+        &mut self,
+        sheet_id: SheetId,
+        region: Rect,
+        value: JsValue,
+    ) -> Result<(), JsValue> {
+        let value: CellBorders = serde_wasm_bindgen::from_value(value)?;
+        self.set_same_values(sheet_id, region, |column| &mut column.borders, value);
+        Ok(())
+    }
+    #[wasm_bindgen(js_name = "setCellNumericFormat")]
+    pub fn set_cell_numeric_format(
+        &mut self,
+        sheet_id: SheetId,
+        region: Rect,
+        value: JsValue,
+    ) -> Result<(), JsValue> {
+        let value: NumericFormat = serde_wasm_bindgen::from_value(value)?;
+        self.set_same_values(sheet_id, region, |column| &mut column.numeric_format, value);
+        Ok(())
+    }
+    #[wasm_bindgen(js_name = "setCellBold")]
+    pub fn set_cell_bold(&mut self, sheet_id: SheetId, region: Rect, value: bool) {
+        self.set_same_values(sheet_id, region, |column| &mut column.bold, value);
+    }
+    #[wasm_bindgen(js_name = "setCellItalic")]
+    pub fn set_cell_italic(&mut self, sheet_id: SheetId, region: Rect, value: bool) {
+        self.set_same_values(sheet_id, region, |column| &mut column.italic, value);
+    }
+    #[wasm_bindgen(js_name = "setCellTextColor")]
+    pub fn set_cell_text_color(&mut self, sheet_id: SheetId, region: Rect, value: String) {
+        self.set_same_values(sheet_id, region, |column| &mut column.text_color, value);
+    }
+    #[wasm_bindgen(js_name = "setCellFillColor")]
+    pub fn set_cell_fill_color(&mut self, sheet_id: SheetId, region: Rect, value: String) {
+        self.set_same_values(sheet_id, region, |column| &mut column.fill_color, value);
     }
 }
 
@@ -227,7 +392,7 @@ pub struct Sheet {
     column_widths: BTreeMap<i64, f32>,
     row_heights: BTreeMap<i64, f32>,
 
-    code_cells: HashMap<CellRef, CellCode>,
+    code_cells: HashMap<CellRef, CodeCellValue>,
 
     data_bounds: GridBounds,
     format_bounds: GridBounds,
@@ -241,25 +406,53 @@ impl Sheet {
     pub fn set_cell_value(
         &mut self,
         pos: Pos,
-        value: Option<CellValueOrSpill>,
-    ) -> Option<SetCellResponse<CellValueOrSpill>> {
+        value: CellValue,
+    ) -> Option<SetCellResponse<CellValue>> {
+        let is_blank = value.is_blank();
+        let value: Option<CellValue> = if is_blank { None } else { Some(value) };
         if value.is_none() && !self.columns.contains_key(&pos.x) {
             return None;
         }
 
         let (column_response, column) = self.get_or_create_column(pos.x);
         let old_value = column.values.set(pos.y, value).unwrap_or_default();
+
+        let mut unspill = None;
+        if !is_blank {
+            if let Some(source) = column.spills.get(pos.y) {
+                self.unspill(source);
+                unspill = Some(source);
+            }
+        }
+
+        // TODO: check for new spills, if the cell was deleted
+        let spill = None;
+
         let row_response = self.get_or_create_row(pos.y);
         Some(SetCellResponse {
             column: column_response,
             row: row_response,
             old_value,
+
+            spill,
+            unspill,
         })
     }
     /// Returns a cell value.
-    pub fn get_cell_value(&self, pos: Pos) -> Option<CellValueOrSpill> {
+    pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
         self.get_column(pos.x)
             .and_then(|column| column.values.get(pos.y))
+    }
+
+    pub fn delete_cell_values(&mut self, region: Rect) {
+        for x in region.x_range() {
+            if let Some(column) = self.columns.get_mut(&x) {
+                let y_range = region.y_range();
+                column
+                    .values
+                    .remove_range(*y_range.start()..*y_range.end() + 1);
+            }
+        }
     }
 
     fn get_column(&self, index: i64) -> Option<&Column> {
@@ -286,6 +479,23 @@ impl Sheet {
                 self.row_ids.add(id, index);
                 GetIdResponse::new(id)
             }
+        }
+    }
+    /// Create a `CellRef` if the column and row already exist.
+    fn get_cell_ref(&self, pos: Pos) -> Option<CellRef> {
+        Some(CellRef {
+            sheet: self.id,
+            column: self.column_ids.id_at(pos.x)?,
+            row: self.row_ids.id_at(pos.y)?,
+        })
+    }
+    /// Create a `CellRef`, creating the column and row if they do not already
+    /// exist.
+    fn get_or_create_cell_ref(&mut self, pos: Pos) -> CellRef {
+        CellRef {
+            sheet: self.id,
+            column: self.get_or_create_column(pos.x).0.id,
+            row: self.get_or_create_row(pos.y).id,
         }
     }
 
@@ -342,71 +552,82 @@ impl Sheet {
     }
 
     pub fn get_render_cells(&self, region: Rect) -> Vec<JsRenderCell> {
+        let y_range = region.min.y..region.max.y + 1;
         region
             .x_range()
             .filter_map(move |x| {
                 let column = self.get_column(x)?;
-                let blocks_iter = column
-                    .values
-                    .blocks_covering_range(region.min.y..region.max.y + 1);
-                let cells_iter = blocks_iter.flat_map(move |block| {
-                    let start = std::cmp::max(block.start(), region.min.y);
-                    let end = std::cmp::min(block.end(), region.max.y + 1);
-                    let values: Vec<CellValue>;
-                    match block.content() {
-                        CellValueBlockContent::Values(block_values) => {
-                            let start = (start - block.start()) as usize;
-                            let end = (end - block.start()) as usize;
-                            values = block_values[start..end].to_vec();
-                        }
-                        CellValueBlockContent::Spill {
-                            source,
-                            x: spill_x,
-                            y: spill_y,
-                            len: _,
-                        } => {
-                            let start = spill_y + (start - block.start()) as u32;
-                            let end = spill_y + (end - block.start()) as u32;
-                            match self.code_cells.get(source) {
-                                None => values = vec![],
-                                Some(code_cell) => {
-                                    values = (start..end)
-                                        .map(|y| match code_cell.get(*spill_x, y) {
-                                            None => CellValue::Blank,
-                                            Some(value) => CellValue::from(value.clone()),
-                                        })
-                                        .collect();
-                                }
-                            }
-                        }
-                    };
-                    std::iter::zip(start..end, values)
-                });
-                Some(cells_iter.map(move |(y, value)| JsRenderCell {
-                    x,
-                    y,
-                    value,
 
-                    align: column.align.get(y),
-                    wrap: column.wrap.get(y),
-                    bold: column.bold.get(y),
-                    italic: column.italic.get(y),
-                    numeric_format: column.numeric_format.get(y),
-                    text_color: column.text_color.get(y),
+                // These are the four rendering layers. All other formatting
+                // only matters if a value is present.
+                let mut fill_colors = column.fill_color.iter_range(y_range.clone()).peekable();
+                let mut borders = column.borders.iter_range(y_range.clone()).peekable();
+                let mut values = column.values.iter_range(y_range.clone()).peekable();
+                let mut spills = column
+                    .spills
+                    .iter_range(y_range.clone())
+                    .filter_map(move |(y, source)| {
+                        let dx = x - self.column_ids.index_of(source.column)?;
+                        let dy = y - self.row_ids.index_of(source.row)?;
+                        let value = self.code_cells.get(&source)?.get(dx as u32, dy as u32)?;
+                        Some((y, value.clone()))
+                    })
+                    .peekable();
+
+                Some(y_range.clone().filter_map(move |y| {
+                    let fill_color = fill_colors.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
+                    let border = borders.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
+                    let manual_value = values.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
+                    let spill_value = spills.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
+
+                    if fill_color.is_none()
+                        && border.is_none()
+                        && manual_value.is_none()
+                        && spill_value.is_none()
+                    {
+                        return None; // Nothing to render
+                    }
+
+                    let value = manual_value.or(spill_value).unwrap_or_default();
+
+                    Some(JsRenderCell {
+                        x,
+                        y,
+                        value,
+
+                        align: column.align.get(y),
+                        wrap: column.wrap.get(y),
+                        borders: border,
+                        numeric_format: column.numeric_format.get(y),
+                        bold: column.bold.get(y),
+                        italic: column.italic.get(y),
+                        text_color: column.text_color.get(y),
+                        fill_color,
+                    })
                 }))
             })
             .flatten()
             .collect()
     }
+
+    fn unspill(&mut self, source: CellRef) {
+        // TODO: unspill cells
+        // let code_cell = self.code_cells.get(source).expect("bad code cell ID");
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[must_use]
 pub struct SetCellResponse<V> {
     pub column: GetIdResponse<ColumnId>,
     pub row: GetIdResponse<RowId>,
     pub old_value: V,
+
+    pub spill: Option<CellRef>,
+    pub unspill: Option<CellRef>,
 }
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[must_use]
 pub struct GetIdResponse<I> {
     pub id: I,
     pub is_new: bool,
@@ -419,6 +640,3 @@ impl<I> GetIdResponse<I> {
         Self { id, is_new: false }
     }
 }
-
-#[cfg(test)]
-mod tests;

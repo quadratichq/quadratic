@@ -11,6 +11,7 @@ macro_rules! uuid_wrapper_struct {
         #[serde(transparent)]
         #[wasm_bindgen]
         pub struct $name(Uuid);
+
         impl $name {
             pub(super) fn new() -> Self {
                 $name(Uuid::new_v4())

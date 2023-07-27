@@ -41,6 +41,11 @@ impl<T: Into<BasicValue>> From<T> for CellValue {
         }
     }
 }
+impl CellValue {
+    pub fn is_blank(&self) -> bool {
+        *self == Self::Blank
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub struct Instant {

@@ -4,7 +4,7 @@ use crate::formulas::{Array, BasicValue, FormulaError, Value};
 
 use super::{
     formatting::{CellAlign, CellBorderStyle, CellWrap, NumericFormat},
-    CellCode, CellCodeLanguage, CellCodeRunOk, CellCodeRunOutput, CellRef, CellValue, Sheet,
+    CellCodeLanguage, CellCodeRunOk, CellCodeRunOutput, CellRef, CellValue, CodeCellValue, Sheet,
 };
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -175,7 +175,7 @@ impl JsCell {
             _ => None,
         }
     }
-    pub fn to_cell_code(&self, sheet: &mut Sheet) -> Option<CellCode> {
+    pub fn to_cell_code(&self, sheet: &mut Sheet) -> Option<CodeCellValue> {
         let language = match self.r#type {
             JsCellType::Text | JsCellType::Computed => return None,
             JsCellType::Formula => CellCodeLanguage::Formula,
@@ -184,7 +184,7 @@ impl JsCell {
             JsCellType::Sql => CellCodeLanguage::Sql,
         };
 
-        Some(CellCode {
+        Some(CodeCellValue {
             language,
             code_string: match language {
                 CellCodeLanguage::Python => self.python_code.clone().unwrap_or_default(),

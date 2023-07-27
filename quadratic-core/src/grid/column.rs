@@ -1,10 +1,13 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use smallvec::{smallvec, SmallVec};
 use std::collections::BTreeMap;
-use std::ops::Range;
+use std::fmt;
+use std::hash::Hash;
+use std::ops::{BitOr, BitOrAssign, Range};
 
 use super::{
-    block::CellValueOrSpill, formatting::*, value::CellValue, Block, BlockContent,
-    CellValueBlockContent, ColumnId, SameValue,
+    formatting::*, Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -12,6 +15,8 @@ pub struct Column {
     pub id: ColumnId,
 
     pub values: ColumnData<CellValueBlockContent>,
+    pub spills: ColumnData<SameValue<CellRef>>,
+
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
     pub borders: ColumnData<SameValue<CellBorders>>,
@@ -30,6 +35,8 @@ impl Column {
             id,
 
             values: ColumnData::default(),
+            spills: ColumnData::default(),
+
             align: ColumnData::default(),
             wrap: ColumnData::default(),
             borders: ColumnData::default(),
@@ -43,10 +50,11 @@ impl Column {
 
     pub fn range(&self, ignore_formatting: bool) -> Option<Range<i64>> {
         if ignore_formatting {
-            self.values.range()
+            crate::util::union_ranges([self.values.range(), self.spills.range()])
         } else {
             crate::util::union_ranges([
                 self.values.range(),
+                self.spills.range(),
                 self.align.range(),
                 self.wrap.range(),
                 self.borders.range(),
@@ -59,25 +67,8 @@ impl Column {
         }
     }
 
-    pub fn has_data(&self) -> bool {
-        !self.values.0.is_empty()
-    }
-    pub fn has_anything(&self) -> bool {
-        self.has_data()
-            || !self.align.0.is_empty()
-            || !self.wrap.0.is_empty()
-            || !self.borders.0.is_empty()
-            || !self.numeric_format.0.is_empty()
-            || !self.bold.0.is_empty()
-            || !self.italic.0.is_empty()
-            || !self.text_color.0.is_empty()
-            || !self.fill_color.0.is_empty()
-    }
-
     pub fn has_data_in_row(&self, y: i64) -> bool {
-        self.values
-            .get(y)
-            .is_some_and(|v| v != CellValueOrSpill::CellValue(CellValue::Blank))
+        self.values.get(y).is_some_and(|v| !v.is_blank()) || self.spills.get(y).is_some()
     }
     pub fn has_anything_in_row(&self, y: i64) -> bool {
         self.has_data_in_row(y)
@@ -118,6 +109,9 @@ impl<B: BlockContent> ColumnData<B> {
         self.0.remove(&y)
     }
     fn add_block(&mut self, block: Block<B>) {
+        if block.is_empty() {
+            return;
+        }
         debug_assert!(self.blocks_covering_range(block.range()).next().is_none());
         let key = block.start();
         self.0.insert(key, block);
@@ -128,9 +122,6 @@ impl<B: BlockContent> ColumnData<B> {
         }
     }
 
-    pub fn blocks(&self) -> impl Iterator<Item = &Block<B>> {
-        self.0.values()
-    }
     pub fn blocks_covering_range(&self, y_range: Range<i64>) -> impl Iterator<Item = &Block<B>> {
         // There may be a block starting above `y_range.start` that contains
         // `y_range`, so find that.
@@ -146,6 +137,18 @@ impl<B: BlockContent> ColumnData<B> {
             .filter(move |block| block.start() < y_range.end);
 
         itertools::chain!(first_block, rest)
+    }
+    pub fn remove_blocks_covering_range(
+        &mut self,
+        y_range: Range<i64>,
+    ) -> impl '_ + Iterator<Item = Block<B>> {
+        let block_starts = self
+            .blocks_covering_range(y_range)
+            .map(|block| block.start())
+            .collect_vec();
+        block_starts
+            .into_iter()
+            .filter_map(|y| self.remove_block_at(y))
     }
     pub fn get(&self, y: i64) -> Option<B::Item> {
         self.get_block_containing(y)?.get(y)
@@ -186,11 +189,117 @@ impl<B: BlockContent> ColumnData<B> {
         // TODO: try merge with blocks above & below
     }
 
-    // TODO: set_range() function
+    pub fn remove_range(&mut self, y_range: Range<i64>) -> Vec<Block<B>> {
+        let mut to_return = vec![];
+        let mut to_put_back: SmallVec<[Block<B>; 2]> = smallvec![];
+
+        for it in self
+            .remove_blocks_covering_range(y_range.clone())
+            .with_position()
+        {
+            match it {
+                itertools::Position::First(block) => {
+                    let [above, below] = block.split(y_range.start);
+                    to_put_back.extend(above);
+                    to_return.extend(below)
+                }
+                itertools::Position::Middle(block) => to_return.push(block),
+                itertools::Position::Last(block) => {
+                    let [above, below] = block.split(y_range.end);
+                    to_return.extend(above);
+                    to_put_back.extend(below);
+                }
+                itertools::Position::Only(block) => {
+                    let [above, rest] = block.split(y_range.start);
+                    to_put_back.extend(above);
+                    if let Some(rest) = rest {
+                        let [inside, below] = rest.split(y_range.end);
+                        to_return.extend(inside);
+                        to_put_back.extend(below);
+                    }
+                }
+            }
+        }
+
+        self.add_blocks(to_put_back);
+
+        to_return
+    }
 
     pub fn range(&self) -> Option<Range<i64>> {
         let min = *self.0.first_key_value()?.0;
         let max = self.0.last_key_value()?.1.end();
         Some(min..max)
+    }
+
+    /// Iterates over a range, skipping cells with no data.
+    pub fn iter_range(&self, y_range: Range<i64>) -> impl '_ + Iterator<Item = (i64, B::Item)> {
+        self.blocks_covering_range(y_range.clone())
+            .flat_map(move |block| {
+                let start = std::cmp::max(y_range.start, block.start());
+                let end = std::cmp::max(y_range.end, block.end());
+                (start..end).filter_map(|y| Some((y, block.get(y)?)))
+            })
+    }
+}
+
+impl<T: fmt::Debug + Clone + PartialEq> ColumnData<SameValue<T>> {
+    pub fn set_range(&mut self, y_range: Range<i64>, value: T) -> Vec<Block<SameValue<T>>> {
+        let removed = self.remove_range(y_range.clone());
+        self.add_block(Block {
+            y: y_range.start,
+            content: SameValue {
+                value,
+                len: (y_range.end - y_range.start) as usize,
+            },
+        });
+        removed
+    }
+}
+
+impl ColumnData<SameValue<bool>> {
+    pub fn bool_summary(&self, y_range: Range<i64>) -> BoolSummary {
+        let mut last_block_end = y_range.start;
+        let mut ret = BoolSummary::default();
+
+        for block in self.blocks_covering_range(y_range) {
+            match block.content().value {
+                true => ret.is_any_true = true,
+                false => ret.is_any_false = true,
+            }
+
+            if block.start() > last_block_end {
+                ret.is_any_false = true;
+            }
+            last_block_end = block.end();
+
+            if ret.is_any_true && ret.is_any_false {
+                break;
+            }
+        }
+
+        ret
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+pub struct BoolSummary {
+    pub is_any_true: bool,
+    pub is_any_false: bool,
+}
+impl BitOr for BoolSummary {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        BoolSummary {
+            is_any_true: self.is_any_true | rhs.is_any_true,
+            is_any_false: self.is_any_false | rhs.is_any_false,
+        }
+    }
+}
+impl BitOrAssign for BoolSummary {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs;
     }
 }
