@@ -19,8 +19,8 @@ pub enum CellWrap {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CellBorders {
-    pub h: CellBorder,
-    pub v: CellBorder,
+    pub h: Option<CellBorder>,
+    pub v: Option<CellBorder>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CellBorder {

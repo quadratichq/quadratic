@@ -27,12 +27,6 @@ impl FileController {
             redo_stack: vec![],
         }
     }
-
-    pub fn get_render_cells(&self, sheet: &SheetId, region: &Rect) -> Result<String, JsValue> {
-        let sheet_index = self.file.sheet_id_to_index(sheet).ok_or("bad sheet ID")?;
-        let sheet = &self.file.sheets()[sheet_index];
-        Ok(serde_json::to_string(&sheet.get_render_cells(region)).map_err(|e| e.to_string())?)
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

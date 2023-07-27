@@ -173,13 +173,17 @@ impl File {
                                 .map(move |(y, border)| legacy::JsBorders {
                                     x,
                                     y,
-                                    horizontal: Some(legacy::JsBorderDirectionSchema {
-                                        color: border.h.color,
-                                        r#type: border.h.style,
+                                    horizontal: border.h.clone().map(|h| {
+                                        legacy::JsBorderDirectionSchema {
+                                            color: h.color,
+                                            r#type: h.style,
+                                        }
                                     }),
-                                    vertical: Some(legacy::JsBorderDirectionSchema {
-                                        color: border.v.color,
-                                        r#type: border.v.style,
+                                    vertical: border.v.clone().map(|v| {
+                                        legacy::JsBorderDirectionSchema {
+                                            color: v.color,
+                                            r#type: v.style,
+                                        }
                                     }),
                                 })
                         })
@@ -366,6 +370,20 @@ impl File {
         let sheet_index = self.sheet_id_to_index(sheet_id).ok_or("bad sheet ID")?;
         let sheet = &self.sheets()[sheet_index];
         Ok(serde_json::to_string(&sheet.get_render_cells(region)).map_err(|e| e.to_string())?)
+    }
+
+    #[wasm_bindgen(js_name = "getRenderFills")]
+    pub fn get_render_fills(&self, sheet_id: &SheetId, region: &Rect) -> Result<String, JsValue> {
+        let sheet_index = self.sheet_id_to_index(sheet_id).ok_or("bad sheet ID")?;
+        let sheet = &self.sheets()[sheet_index];
+        Ok(serde_json::to_string(&sheet.get_render_fills(region)).map_err(|e| e.to_string())?)
+    }
+
+    #[wasm_bindgen(js_name = "getRenderBorders")]
+    pub fn get_render_borders(&self, sheet_id: &SheetId, region: &Rect) -> Result<String, JsValue> {
+        let sheet_index = self.sheet_id_to_index(sheet_id).ok_or("bad sheet ID")?;
+        let sheet = &self.sheets()[sheet_index];
+        Ok(serde_json::to_string(&sheet.get_render_borders(region)).map_err(|e| e.to_string())?)
     }
 
     #[wasm_bindgen(js_name = "setCellValue")]
@@ -767,6 +785,53 @@ impl Sheet {
             })
             .flatten()
             .collect()
+    }
+
+    pub fn get_render_fills(&self, region: &Rect) -> Vec<JsRenderFill> {
+        let y_range = region.min.y..region.max.y + 1;
+        let mut ret = vec![];
+        for (&x, column) in self.columns.range(region.x_range()) {
+            for block in column.fill_color.blocks_covering_range(y_range.clone()) {
+                ret.push(JsRenderFill {
+                    x,
+                    y: block.y,
+                    w: 1,
+                    h: block.len() as u32,
+                    color: block.content().value.clone(),
+                });
+            }
+        }
+        ret
+    }
+
+    pub fn get_render_borders(&self, region: &Rect) -> Vec<JsRenderBorder> {
+        let y_range = region.min.y..region.max.y + 1;
+        let mut ret = vec![];
+        for (&x, column) in self.columns.range(region.x_range()) {
+            for block in column.borders.blocks_covering_range(y_range.clone()) {
+                if let Some(v) = &block.content().value.v {
+                    for y in block.range() {
+                        ret.push(JsRenderBorder {
+                            x,
+                            y,
+                            w: Some(1),
+                            h: None,
+                            style: v.clone(),
+                        });
+                    }
+                }
+                if let Some(h) = &block.content().value.v {
+                    ret.push(JsRenderBorder {
+                        x,
+                        y: block.y,
+                        w: None,
+                        h: Some(block.len() as u32),
+                        style: h.clone(),
+                    })
+                }
+            }
+        }
+        ret
     }
 
     fn unspill(&mut self, source: CellRef) {
