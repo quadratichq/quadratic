@@ -3,6 +3,7 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "target": "es6",
+    "allowJs": true,
     "noImplicitAny": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
@@ -17,9 +18,7 @@
     "typeRoots" : ["./node_modules/@types", "./src/types"]
   },
   "include": [
-    "src/**/*.ts", 
-    "src/**/*.d.ts",
-    "src/**/*.test.ts",
+    "src/**/*", 
   ],
   "exclude": ["node_modules"]
 }
