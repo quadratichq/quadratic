@@ -279,8 +279,8 @@ impl File {
         File::from_legacy(&file).map_err(|e| JsError::new(&e.to_string()).into())
     }
 
-    #[wasm_bindgen(js_name = "save")]
-    pub fn js_to_file(&self) -> Result<JsValue, JsValue> {
+    #[wasm_bindgen(js_name = "exportToFile")]
+    pub fn js_export_to_file(&self) -> Result<JsValue, JsValue> {
         Ok(serde_wasm_bindgen::to_value(&self.to_file())?)
     }
 
