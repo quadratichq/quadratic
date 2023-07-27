@@ -23,6 +23,17 @@ export class GridSparseRust extends GridSparse {
     super(sheet);
     this.file = file;
     this.sheetIndex = index;
+
+    // todo: this should be done in rust
+    const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+    const bounds = this.getGridBounds(false);
+    if (!bounds) return;
+    for (let y = bounds.top; y <= bounds.bottom; y++) {
+      for (let x = bounds.left; x <= bounds.right; x++) {
+        this.quadrants.add(this.getKey(x, y));
+      }
+    }
   }
 
   get gridOffsets(): GridOffsets {
@@ -299,10 +310,17 @@ export class GridSparseRust extends GridSparse {
   }
 
   getGridBounds(onlyData: boolean): Rectangle | undefined {
-    if (onlyData) {
-      return this.cellBounds.toRectangle();
+    const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+    const bounds = this.file.getGridBounds(sheetId, onlyData);
+    if (bounds.nonEmpty) {
+      return new Rectangle(
+        bounds.nonEmpty.min.x,
+        bounds.nonEmpty.min.y,
+        bounds.nonEmpty.max.x - bounds.nonEmpty.min.x,
+        bounds.nonEmpty.max.y - bounds.nonEmpty.min.y
+      );
     }
-    return this.cellFormatBounds.toRectangle();
   }
 
   /** finds the minimum and maximum location for content in a row */

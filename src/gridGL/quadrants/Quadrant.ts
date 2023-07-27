@@ -1,10 +1,10 @@
 import { Container, Graphics, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
 import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowSubCacheInfo, debugShowTime } from '../../debugFlags';
+import { Sheet } from '../../grid/sheet/Sheet';
+import { intersects } from '../helpers/intersects';
+import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS, QUADRANT_SCALE, QUADRANT_TEXTURE_SIZE } from './quadrantConstants';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { PixiApp } from '../pixiApp/PixiApp';
-import { intersects } from '../helpers/intersects';
 
 // subquadrants are sprites that live within a quadrant mapped to a rendered texture size
 interface SubQuadrant extends Sprite {
