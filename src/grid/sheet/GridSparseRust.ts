@@ -73,7 +73,10 @@ export class GridSparseRust extends GridSparse {
         this.file.setCellAlign(this.sheetId, region, format.alignment);
       }
       if (format.fillColor !== undefined && format.fillColor !== original.fillColor) {
-        this.file.setCellFillColor(this.sheetId, region, format.fillColor ?? '');
+        this.file.setCellFillColor(this.sheetId, region, format.fillColor);
+      }
+      if (format.textColor !== undefined && format.textColor !== original.textColor) {
+        this.file.setCellTextColor(this.sheetId, region, format.textColor);
       }
       if (format.textFormat !== undefined && format.textFormat !== original.textFormat) {
         this.file.setCellNumericFormat(this.sheetId, region, format.textFormat);
