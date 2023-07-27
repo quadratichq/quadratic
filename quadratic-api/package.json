@@ -36,12 +36,16 @@
     "jest-mock-extended": "^3.0.4",
     "jsonwebtoken": "^9.0.1",
     "jwks-rsa": "^3.0.0",
+    "lib0": "^0.2.78",
+    "lodash": "^4.17.21",
     "nodemon": "^2.0.20",
     "openai": "^3.2.1",
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.1",
     "ts-node-dev": "^2.0.0",
     "ws": "^8.13.0",
+    "y-protocols": "^1.0.5",
+    "yjs": "^13.6.7",
     "zod": "^3.21.4"
   },
   "devDependencies": {
