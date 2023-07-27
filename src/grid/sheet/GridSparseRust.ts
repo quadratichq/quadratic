@@ -41,6 +41,11 @@ export class GridSparseRust extends GridSparse {
   }
 
   updateCells(cells: Cell[], skipBounds = false): void {
+    const sheetId = this.file.sheet_index_to_id(this.sheetIndex);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+    cells.forEach((cell) => {
+      this.file.setCellValue(sheetId, new Pos(cell.x, cell.y), { type: 'text', value: cell.value });
+    });
     // cells.forEach((cell) => {
     //   const update = this.cells.get(this.getKey(cell.x, cell.y));
     //   if (update) {
@@ -210,6 +215,7 @@ export class GridSparseRust extends GridSparse {
     if (!sheetId) throw new Error('Expected sheetId to be defined');
     const json = this.file.getRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(1, 1)));
     const data = JSON.parse(json);
+    if (!data[0]) return;
     return {
       x,
       y,
