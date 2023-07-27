@@ -63,23 +63,22 @@ export class GridSparseRust extends GridSparse {
       const region = new Rect(new Pos(format.x, format.y), new Pos(format.x, format.y));
       const originalRange = this.file.getRenderCells(this.sheetId, region);
       const original = JSON.parse(originalRange)?.[0] ?? {};
-      if (format.bold !== original.bold) {
-        debugger;
+      if (format.bold !== undefined && format.bold !== original.bold) {
         this.file.setCellBold(this.sheetId, region, !!format.bold);
       }
-      if (format.italic !== original.italic) {
+      if (format.italic !== undefined && format.italic !== original.italic) {
         this.file.setCellItalic(this.sheetId, region, !!format.italic);
       }
-      if (format.alignment !== original.alignment) {
-        this.file.setCellAlign(this.sheetId, region, !!format.alignment);
+      if (format.alignment !== undefined && format.alignment !== original.align) {
+        this.file.setCellAlign(this.sheetId, region, format.alignment);
       }
-      if (format.fillColor !== original.fillColor) {
+      if (format.fillColor !== undefined && format.fillColor !== original.fillColor) {
         this.file.setCellFillColor(this.sheetId, region, format.fillColor ?? '');
       }
-      if (format.textFormat !== original.textFormat) {
+      if (format.textFormat !== undefined && format.textFormat !== original.textFormat) {
         this.file.setCellNumericFormat(this.sheetId, region, format.textFormat);
       }
-      if (format.wrapping !== original.wrapping) {
+      if (format.wrapping !== undefined && format.wrapping !== original.wrapping) {
         this.file.setCellWrap(this.sheetId, region, format.textFormat);
       }
       this.quadrants.add(this.getKey(format.x, format.y));
@@ -167,7 +166,7 @@ export class GridSparseRust extends GridSparse {
           y,
           bold: data[0].bold,
           italic: data[0].italic,
-          alignment: data[0].alignment,
+          alignment: data[0].align,
           fillColor: data[0].fillColor,
           textColor: data[0].textColor,
           textFormat: data[0].textFormat,
@@ -178,7 +177,7 @@ export class GridSparseRust extends GridSparse {
   }
 
   getCell(x: number, y: number): Cell | undefined {
-    const json = this.file.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(1, 1)));
+    const json = this.file.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
     const data = JSON.parse(json);
     return {
       x,
@@ -189,7 +188,7 @@ export class GridSparseRust extends GridSparse {
   }
 
   getFormat(x: number, y: number): CellFormat | undefined {
-    const json = this.file.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(1, 1)));
+    const json = this.file.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
     const data = JSON.parse(json);
     if (!data[0]) return;
     return {
@@ -197,7 +196,7 @@ export class GridSparseRust extends GridSparse {
       y,
       bold: data[0].bold,
       italic: data[0].italic,
-      alignment: data[0].alignment,
+      alignment: data[0].align,
       fillColor: data[0].fillColor,
       textColor: data[0].textColor,
       textFormat: data[0].textFormat,
@@ -241,7 +240,7 @@ export class GridSparseRust extends GridSparse {
           y: entry.y,
           bold: entry.bold,
           italic: entry.italic,
-          alignment: entry.alignment,
+          alignment: entry.align,
           fillColor: entry.fillColor,
           textColor: entry.textColor,
           textFormat: entry.textFormat,

@@ -89,7 +89,7 @@ impl File {
                 } else if let Some(cell_value) = js_cell.to_cell_value() {
                     let x = js_cell.x;
                     let y = js_cell.y;
-                    sheet.set_cell_value(Pos { x, y }, cell_value);
+                    sheet.set_cell_value(&Pos { x, y }, cell_value);
                 }
             }
 
@@ -139,7 +139,7 @@ impl File {
     fn set_same_values<T: fmt::Debug + Clone + PartialEq>(
         &mut self,
         sheet_id: &SheetId,
-        region: Rect,
+        region: &Rect,
         pick_column_data: fn(&mut Column) -> &mut ColumnData<SameValue<T>>,
         value: T,
     ) {
@@ -201,7 +201,7 @@ impl File {
     }
 
     #[wasm_bindgen(js_name = "populateWithRandomFloats")]
-    pub fn populate_with_random_floats(&mut self, sheet_id: &SheetId, region: Rect) {
+    pub fn populate_with_random_floats(&mut self, sheet_id: &SheetId, region: &Rect) {
         let sheet = self.sheet_mut_from_id(sheet_id);
         for x in region.x_range() {
             let (_, column) = sheet.get_or_create_column(x);
@@ -232,7 +232,7 @@ impl File {
     }
 
     #[wasm_bindgen(js_name = "getRenderCells")]
-    pub fn get_render_cells(&self, sheet_id: &SheetId, region: Rect) -> Result<String, JsValue> {
+    pub fn get_render_cells(&self, sheet_id: &SheetId, region: &Rect) -> Result<String, JsValue> {
         let sheet_index = self.sheet_id_to_index(sheet_id).ok_or("bad sheet ID")?;
         let sheet = &self.sheets()[sheet_index];
         Ok(serde_json::to_string(&sheet.get_render_cells(region)).map_err(|e| e.to_string())?)
@@ -242,7 +242,7 @@ impl File {
     pub fn set_cell_value(
         &mut self,
         sheet_id: &SheetId,
-        pos: Pos,
+        pos: &Pos,
         cell_value: JsValue,
     ) -> Result<(), JsValue> {
         let cell_value: CellValue = serde_wasm_bindgen::from_value(cell_value)?;
@@ -252,13 +252,13 @@ impl File {
     }
 
     #[wasm_bindgen(js_name = "deleteCellValues")]
-    pub fn delete_cell_values(&mut self, sheet_id: &SheetId, region: Rect) -> Result<(), JsValue> {
+    pub fn delete_cell_values(&mut self, sheet_id: &SheetId, region: &Rect) -> Result<(), JsValue> {
         self.sheet_mut_from_id(sheet_id).delete_cell_values(region);
         Ok(())
     }
 
     #[wasm_bindgen(js_name = "getCodeCellValue")]
-    pub fn get_code_cell_value(&mut self, sheet_id: &SheetId, pos: Pos) -> Result<JsValue, JsValue> {
+    pub fn get_code_cell_value(&mut self, sheet_id: &SheetId, pos: &Pos) -> Result<JsValue, JsValue> {
         let sheet = self.sheet_from_id(sheet_id);
         let Some(cell_ref) = sheet.get_cell_ref(pos) else {
             return Ok(JsValue::UNDEFINED);
@@ -273,7 +273,7 @@ impl File {
     pub fn set_code_cell_value(
         &mut self,
         sheet_id: &SheetId,
-        pos: Pos,
+        pos: &Pos,
         code_cell_value: JsValue,
     ) -> Result<(), JsValue> {
         let code_cell_value: CodeCellValue = serde_wasm_bindgen::from_value(code_cell_value)?;
@@ -288,7 +288,7 @@ impl File {
     pub fn get_formatting_summary(
         &self,
         sheet_id: &SheetId,
-        region: Rect,
+        region: &Rect,
     ) -> Result<JsValue, JsValue> {
         let y_range = region.min.y..region.max.y + 1;
 
@@ -320,7 +320,7 @@ impl File {
     pub fn set_cell_align(
         &mut self,
         sheet_id: &SheetId,
-        region: Rect,
+        region: &Rect,
         value: JsValue,
     ) -> Result<(), JsValue> {
         let value: CellAlign = serde_wasm_bindgen::from_value(value)?;
@@ -331,7 +331,7 @@ impl File {
     pub fn set_cell_wrap(
         &mut self,
         sheet_id: &SheetId,
-        region: Rect,
+        region: &Rect,
         value: JsValue,
     ) -> Result<(), JsValue> {
         let value: CellWrap = serde_wasm_bindgen::from_value(value)?;
@@ -342,7 +342,7 @@ impl File {
     pub fn set_cell_borders(
         &mut self,
         sheet_id: &SheetId,
-        region: Rect,
+        region: &Rect,
         value: JsValue,
     ) -> Result<(), JsValue> {
         let value: CellBorders = serde_wasm_bindgen::from_value(value)?;
@@ -353,7 +353,7 @@ impl File {
     pub fn set_cell_numeric_format(
         &mut self,
         sheet_id: &SheetId,
-        region: Rect,
+        region: &Rect,
         value: JsValue,
     ) -> Result<(), JsValue> {
         let value: NumericFormat = serde_wasm_bindgen::from_value(value)?;
@@ -361,19 +361,19 @@ impl File {
         Ok(())
     }
     #[wasm_bindgen(js_name = "setCellBold")]
-    pub fn set_cell_bold(&mut self, sheet_id: &SheetId, region: Rect, value: bool) {
+    pub fn set_cell_bold(&mut self, sheet_id: &SheetId, region: &Rect, value: bool) {
         self.set_same_values(sheet_id, region, |column| &mut column.bold, value);
     }
     #[wasm_bindgen(js_name = "setCellItalic")]
-    pub fn set_cell_italic(&mut self, sheet_id: &SheetId, region: Rect, value: bool) {
+    pub fn set_cell_italic(&mut self, sheet_id: &SheetId, region: &Rect, value: bool) {
         self.set_same_values(sheet_id, region, |column| &mut column.italic, value);
     }
     #[wasm_bindgen(js_name = "setCellTextColor")]
-    pub fn set_cell_text_color(&mut self, sheet_id: &SheetId, region: Rect, value: String) {
+    pub fn set_cell_text_color(&mut self, sheet_id: &SheetId, region: &Rect, value: String) {
         self.set_same_values(sheet_id, region, |column| &mut column.text_color, value);
     }
     #[wasm_bindgen(js_name = "setCellFillColor")]
-    pub fn set_cell_fill_color(&mut self, sheet_id: &SheetId, region: Rect, value: String) {
+    pub fn set_cell_fill_color(&mut self, sheet_id: &SheetId, region: &Rect, value: String) {
         self.set_same_values(sheet_id, region, |column| &mut column.fill_color, value);
     }
 }
@@ -405,7 +405,7 @@ impl Sheet {
     /// because there's no need.
     pub fn set_cell_value(
         &mut self,
-        pos: Pos,
+        pos: &Pos,
         value: CellValue,
     ) -> Option<SetCellResponse<CellValue>> {
         let is_blank = value.is_blank();
@@ -444,7 +444,7 @@ impl Sheet {
             .and_then(|column| column.values.get(pos.y))
     }
 
-    pub fn delete_cell_values(&mut self, region: Rect) {
+    pub fn delete_cell_values(&mut self, region: &Rect) {
         for x in region.x_range() {
             if let Some(column) = self.columns.get_mut(&x) {
                 let y_range = region.y_range();
@@ -482,7 +482,7 @@ impl Sheet {
         }
     }
     /// Create a `CellRef` if the column and row already exist.
-    fn get_cell_ref(&self, pos: Pos) -> Option<CellRef> {
+    fn get_cell_ref(&self, pos: &Pos) -> Option<CellRef> {
         Some(CellRef {
             sheet: self.id,
             column: self.column_ids.id_at(pos.x)?,
@@ -491,7 +491,7 @@ impl Sheet {
     }
     /// Create a `CellRef`, creating the column and row if they do not already
     /// exist.
-    fn get_or_create_cell_ref(&mut self, pos: Pos) -> CellRef {
+    fn get_or_create_cell_ref(&mut self, pos: &Pos) -> CellRef {
         CellRef {
             sheet: self.id,
             column: self.get_or_create_column(pos.x).0.id,
@@ -551,7 +551,7 @@ impl Sheet {
         }
     }
 
-    pub fn get_render_cells(&self, region: Rect) -> Vec<JsRenderCell> {
+    pub fn get_render_cells(&self, region: &Rect) -> Vec<JsRenderCell> {
         let y_range = region.min.y..region.max.y + 1;
         region
             .x_range()

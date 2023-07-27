@@ -39,7 +39,7 @@ export class CellRectangle {
               y,
               bold: search.bold,
               italic: search.italic,
-              alignment: search.alignment,
+              alignment: search.align,
               fillColor: search.fillColor,
               textColor: search.textColor,
               textFormat: search.textFormat,
