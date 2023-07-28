@@ -93,6 +93,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState<boolean>(false);
 
   const hasUnsavedChanges =
+    // can't have unsaved changes with no cell selected
+    selectedCell !== undefined &&
     // new cell and no content
     !(cell === undefined && !editorContent) &&
     // existing cell and content has changed
