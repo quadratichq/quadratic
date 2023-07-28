@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { removeItems } from '@pixi/utils';
 import {
   BLEND_MODES,
   BitmapFont,
@@ -10,9 +11,8 @@ import {
   Program,
   Texture,
 } from 'pixi.js';
-import { splitTextToCharacters, extractCharCode } from './bitmapTextUtils';
+import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 import { msdfFrag, msdfVert } from './shader';
-import { removeItems } from '@pixi/utils';
 
 interface PageMeshData {
   index: number;
@@ -150,7 +150,8 @@ export class BitmapTextClip extends BitmapText {
       maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
       lineSpaces.push(-1);
     }
-    return maxLineWidth;
+    const scale = this._fontSize / data.size;
+    return maxLineWidth * scale;
   }
 
   /** Renders text and updates it when needed. This should only be called if the BitmapFont is regenerated. */

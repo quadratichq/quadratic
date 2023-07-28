@@ -1,19 +1,19 @@
 import { Container, Rectangle } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP } from '../../../constants/gridConstants';
-import { colors } from '../../../theme/colors';
 import { CellTextFormatter } from '../../../grid/formatting/cellTextFormatter';
 import { CellRectangle } from '../../../grid/sheet/CellRectangle';
 import { CellAndFormat } from '../../../grid/sheet/GridSparse';
+import { Sheet } from '../../../grid/sheet/Sheet';
 import { Cell, CellFormat } from '../../../schemas';
+import { colors } from '../../../theme/colors';
 import { intersects } from '../../helpers/intersects';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { Coordinate } from '../../types/size';
 import { CellsArray } from './CellsArray';
-import { CellsBackground } from './cellsBackground';
 import { CellsBorder } from './CellsBorder';
 import { CellsLabels } from './CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
-import { Sheet } from '../../../grid/sheet/Sheet';
+import { CellsBackground } from './cellsBackground';
 
 export interface CellsBounds {
   minX: number;
@@ -67,7 +67,6 @@ export class Cells extends Container {
     const { quadrants } = this.app;
     const { render_dependency, gridOffsets } = sheet;
     const changes: Coordinate[] = [];
-
     labels.forEach((label) => {
       if (!label.data.location) return;
       if (!label.overflowLeft && !label.overflowRight) {
@@ -100,7 +99,6 @@ export class Cells extends Container {
         changes.push(...dependencies);
       }
     });
-
     // mark quadrants of changed cells dirty
     if (changes.length) {
       quadrants.quadrantChanged({ cells: changes });

@@ -99,7 +99,6 @@ export class CellsLabels extends Container {
 
     // track overflowed widths
     const width = label.textWidth;
-
     if (width > data.expectedWidth) {
       if (alignment === 'left' && !label.clipRight) {
         label.overflowRight = width - data.expectedWidth;
