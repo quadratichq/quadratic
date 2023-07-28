@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::ops::RangeInclusive;
+use std::ops::Range;
 use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.
@@ -91,12 +91,12 @@ impl Rect {
     }
 }
 impl Rect {
-    /// Returns the inclusive range of X values in the rectangle.
-    pub fn x_range(self) -> RangeInclusive<i64> {
-        self.min.x..=self.max.x
+    /// Returns the range of X values in the rectangle.
+    pub fn x_range(self) -> Range<i64> {
+        self.min.x..self.max.x + 1
     }
-    /// Returns the inclusive range of Y values in the rectangle.
-    pub fn y_range(self) -> RangeInclusive<i64> {
-        self.min.y..=self.max.y
+    /// Returns the range of Y values in the rectangle.
+    pub fn y_range(self) -> Range<i64> {
+        self.min.y..self.max.y + 1
     }
 }

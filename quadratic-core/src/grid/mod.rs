@@ -149,11 +149,10 @@ impl File {
         pick_column_data: fn(&mut Column) -> &mut ColumnData<SameValue<T>>,
         value: T,
     ) {
-        let y_range = region.min.y..region.max.y + 1;
         let sheet = self.sheet_mut_from_id(sheet_id);
         for x in region.x_range() {
             let column = sheet.get_or_create_column(x).1;
-            pick_column_data(column).set_range(y_range.clone(), value.clone());
+            pick_column_data(column).set_range(region.y_range(), value.clone());
         }
     }
 
@@ -281,11 +280,10 @@ impl File {
         region: &Rect,
         pick_column_data: fn(&mut Column) -> &mut ColumnData<SameValue<T>>,
     ) {
-        let y_range = region.min.y..region.max.y + 1;
         let sheet = self.sheet_mut_from_id(sheet_id);
         for x in region.x_range() {
             let column = sheet.get_or_create_column(x).1;
-            pick_column_data(column).remove_range(y_range.clone());
+            pick_column_data(column).remove_range(region.y_range());
         }
     }
 }
@@ -382,16 +380,14 @@ impl File {
 
     #[wasm_bindgen(js_name = "getRenderCells")]
     pub fn get_render_cells(&self, sheet_id: &SheetId, region: &Rect) -> Result<String, JsValue> {
-        let sheet_index = self.sheet_id_to_index(sheet_id).ok_or("bad sheet ID")?;
-        let sheet = &self.sheets()[sheet_index];
-        Ok(serde_json::to_string(&sheet.get_render_cells(region)).map_err(|e| e.to_string())?)
+        let output = self.sheet_from_id(sheet_id).get_render_cells(region);
+        Ok(serde_json::to_string::<[JsRenderCell]>(&output).map_err(|e| e.to_string())?)
     }
 
     #[wasm_bindgen(js_name = "getRenderFills")]
     pub fn get_render_fills(&self, sheet_id: &SheetId, region: &Rect) -> Result<String, JsValue> {
-        let sheet_index = self.sheet_id_to_index(sheet_id).ok_or("bad sheet ID")?;
-        let sheet = &self.sheets()[sheet_index];
-        Ok(serde_json::to_string(&sheet.get_render_fills(region)).map_err(|e| e.to_string())?)
+        let output = self.sheet_from_id(sheet_id).get_render_fills(region);
+        Ok(serde_json::to_string::<[JsRenderFill]>(&output).map_err(|e| e.to_string())?)
     }
 
     #[wasm_bindgen(js_name = "getRenderBorders")]
@@ -457,8 +453,6 @@ impl File {
         sheet_id: &SheetId,
         region: &Rect,
     ) -> Result<JsValue, JsValue> {
-        let y_range = region.min.y..region.max.y + 1;
-
         let sheet = self.sheet_from_id(sheet_id);
 
         let mut bold = BoolSummary::default();
@@ -471,8 +465,8 @@ impl File {
                     italic.is_any_false = true;
                 }
                 Some(column) => {
-                    bold |= column.bold.bool_summary(y_range.clone());
-                    italic |= column.italic.bool_summary(y_range.clone());
+                    bold |= column.bold.bool_summary(region.y_range());
+                    italic |= column.italic.bool_summary(region.y_range());
                 }
             };
         }
@@ -543,7 +537,7 @@ impl File {
     pub fn set_cell_fill_color(&mut self, sheet_id: &SheetId, region: &Rect, value: String) {
         self.set_same_values(sheet_id, region, |column| &mut column.fill_color, value);
     }
-    #[wasm_bindgen(js_name="clearFormatting")]
+    #[wasm_bindgen(js_name = "clearFormatting")]
     pub fn clear_formatting(&mut self, sheet_id: &SheetId, region: &Rect) {
         self.delete_cell_columns(sheet_id, region, |column| &mut column.fill_color);
         self.delete_cell_columns(sheet_id, region, |column| &mut column.align);
@@ -624,10 +618,7 @@ impl Sheet {
     pub fn delete_cell_values(&mut self, region: &Rect) {
         for x in region.x_range() {
             if let Some(column) = self.columns.get_mut(&x) {
-                let y_range = region.y_range();
-                column
-                    .values
-                    .remove_range(*y_range.start()..*y_range.end() + 1);
+                column.values.remove_range(region.y_range());
             }
         }
     }
@@ -754,7 +745,6 @@ impl Sheet {
     }
 
     pub fn get_render_cells(&self, region: &Rect) -> Vec<JsRenderCell> {
-        let y_range = region.min.y..region.max.y + 1;
         region
             .x_range()
             .filter_map(move |x| {
@@ -762,12 +752,11 @@ impl Sheet {
 
                 // These are the four rendering layers. All other formatting
                 // only matters if a value is present.
-                let mut fill_colors = column.fill_color.iter_range(y_range.clone()).peekable();
-                let mut borders = column.borders.iter_range(y_range.clone()).peekable();
-                let mut values = column.values.iter_range(y_range.clone()).peekable();
+                let mut fill_colors = column.fill_color.iter_range(region.y_range()).peekable();
+                let mut values = column.values.iter_range(region.y_range()).peekable();
                 let mut spills = column
                     .spills
-                    .iter_range(y_range.clone())
+                    .iter_range(region.y_range())
                     .filter_map(move |(y, source)| {
                         let dx = x - self.column_ids.index_of(source.column)?;
                         let dy = y - self.row_ids.index_of(source.row)?;
@@ -776,7 +765,7 @@ impl Sheet {
                     })
                     .peekable();
 
-                Some(y_range.clone().filter_map(move |y| {
+                Some(region.y_range().filter_map(move |y| {
                     let fill_color = fill_colors.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
                     let border = borders.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
                     let manual_value = values.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
@@ -813,10 +802,9 @@ impl Sheet {
     }
 
     pub fn get_render_fills(&self, region: &Rect) -> Vec<JsRenderFill> {
-        let y_range = region.min.y..region.max.y + 1;
         let mut ret = vec![];
         for (&x, column) in self.columns.range(region.x_range()) {
-            for block in column.fill_color.blocks_covering_range(y_range.clone()) {
+            for block in column.fill_color.blocks_covering_range(region.y_range()) {
                 ret.push(JsRenderFill {
                     x,
                     y: block.y,
