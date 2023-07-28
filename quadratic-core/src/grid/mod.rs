@@ -782,36 +782,12 @@ impl Sheet {
     pub fn get_render_cells(&self, region: &Rect) -> Vec<JsRenderCell> {
         region
             .x_range()
-            .filter_map(move |x| {
-                let column = self.get_column(x)?;
-
-                // These are the four rendering layers. All other formatting
-                // only matters if a value is present.
-                let mut fill_colors = column.fill_color.iter_range(region.y_range()).peekable();
-                let mut values = column.values.iter_range(region.y_range()).peekable();
-                let mut spills = column
-                    .spills
+            .filter_map(|x| Some((x, self.get_column(x)?)))
+            .flat_map(move |(x, column)| {
+                column
+                    .values
                     .iter_range(region.y_range())
-                    .filter_map(move |(y, source)| {
-                        let dx = x - self.column_ids.index_of(source.column)?;
-                        let dy = y - self.row_ids.index_of(source.row)?;
-                        let value = self.code_cells.get(&source)?.get(dx as u32, dy as u32)?;
-                        Some((y, value.clone()))
-                    })
-                    .peekable();
-
-                Some(region.y_range().filter_map(move |y| {
-                    let fill_color = fill_colors.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
-                    let manual_value = values.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
-                    let spill_value = spills.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
-
-                    if fill_color.is_none() && manual_value.is_none() && spill_value.is_none() {
-                        return None; // Nothing to render
-                    }
-
-                    let value = manual_value.or(spill_value).unwrap_or_default();
-
-                    Some(JsRenderCell {
+                    .map(move |(y, value)| JsRenderCell {
                         x,
                         y,
                         value,
@@ -822,11 +798,9 @@ impl Sheet {
                         bold: column.bold.get(y),
                         italic: column.italic.get(y),
                         text_color: column.text_color.get(y),
-                        fill_color,
+                        fill_color: None,
                     })
-                }))
             })
-            .flatten()
             .collect()
     }
 
