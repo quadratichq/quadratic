@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::formulas::{Array, BasicValue, FormulaError, Value};
 
 use super::{
-    formatting::{CellAlign, CellBorderStyle, CellWrap, NumericFormat},
+    borders::CellBorder,
+    formatting::{CellAlign, CellWrap, NumericFormat},
     CellCodeLanguage, CellCodeRunOk, CellCodeRunOutput, CellRef, CellValue, CodeCellValue, Sheet,
 };
 
@@ -109,14 +110,10 @@ impl JsCellFormat {
 pub struct JsBorders {
     pub x: i64,
     pub y: i64,
-    pub horizontal: Option<JsBorderDirectionSchema>,
-    pub vertical: Option<JsBorderDirectionSchema>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JsBorderDirectionSchema {
-    pub color: Option<String>,
-    pub r#type: Option<CellBorderStyle>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub horizontal: Option<CellBorder>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vertical: Option<CellBorder>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]

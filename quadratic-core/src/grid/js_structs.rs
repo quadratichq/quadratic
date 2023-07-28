@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+use super::borders::CellBorder;
 use super::column::BoolSummary;
-use super::formatting::{CellAlign, CellBorder, CellBorders, CellWrap, NumericFormat};
+use super::formatting::{CellAlign, CellWrap, NumericFormat};
 use super::CellValue;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -14,8 +15,6 @@ pub struct JsRenderCell {
     pub align: Option<CellAlign>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wrap: Option<CellWrap>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub borders: Option<CellBorders>, // TODO: remove (needed for exporting to old file format)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub numeric_format: Option<NumericFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -45,8 +44,10 @@ pub struct JsRenderFill {
 pub struct JsRenderBorder {
     pub x: i64,
     pub y: i64,
-    pub w: Option<u32>,
-    pub h: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub w: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub h: Option<usize>,
     pub style: CellBorder,
 }
 

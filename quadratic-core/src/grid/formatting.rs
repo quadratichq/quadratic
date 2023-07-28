@@ -18,27 +18,6 @@ pub enum CellWrap {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CellBorders {
-    pub h: Option<CellBorder>,
-    pub v: Option<CellBorder>,
-}
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CellBorder {
-    pub color: Option<String>,
-    pub style: Option<CellBorderStyle>,
-}
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[serde(rename_all = "lowercase")]
-pub enum CellBorderStyle {
-    Line1,
-    Line2,
-    Line3,
-    Dotted,
-    Dashed,
-    Double,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NumericFormat {
     #[serde(flatten)]
     kind: NumericFormatKind,

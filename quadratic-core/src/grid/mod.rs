@@ -7,6 +7,7 @@ use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 
 mod block;
+mod borders;
 mod bounds;
 mod code;
 mod column;
@@ -24,9 +25,9 @@ pub use value::CellValue;
 use crate::formulas::{Array, ArraySize, Value};
 use crate::{Pos, Rect};
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
-use column::Column;
-use column::{BoolSummary, ColumnData};
-use formatting::{CellAlign, CellBorders, CellWrap, NumericFormat};
+use borders::{CellBorder, SheetBorders};
+use column::{BoolSummary, Column, ColumnData};
+use formatting::{CellAlign, CellWrap, NumericFormat};
 use js_structs::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -162,31 +163,7 @@ impl File {
                 .sheets
                 .iter()
                 .map(|sheet| legacy::JsSheet {
-                    borders: sheet
-                        .columns
-                        .iter()
-                        .flat_map(|(&x, column)| {
-                            column
-                                .borders
-                                .iter()
-                                .map(move |(y, border)| legacy::JsBorders {
-                                    x,
-                                    y,
-                                    horizontal: border.h.clone().map(|h| {
-                                        legacy::JsBorderDirectionSchema {
-                                            color: h.color,
-                                            r#type: h.style,
-                                        }
-                                    }),
-                                    vertical: border.v.clone().map(|v| {
-                                        legacy::JsBorderDirectionSchema {
-                                            color: v.color,
-                                            r#type: v.style,
-                                        }
-                                    }),
-                                })
-                        })
-                        .collect(),
+                    borders: sheet.borders.export_to_js_file(),
                     cells: match sheet.bounds(false) {
                         GridBounds::Empty => vec![],
                         GridBounds::NonEmpty(region) => sheet
@@ -326,9 +303,14 @@ impl File {
 
             column_ids: IdMap::new(),
             row_ids: IdMap::new(),
+
             columns: BTreeMap::new(),
+
+            borders: SheetBorders::new(),
+
             column_widths: BTreeMap::new(),
             row_heights: BTreeMap::new(),
+
             code_cells: HashMap::new(),
 
             data_bounds: GridBounds::Empty,
@@ -390,11 +372,29 @@ impl File {
         Ok(serde_json::to_string::<[JsRenderFill]>(&output).map_err(|e| e.to_string())?)
     }
 
-    #[wasm_bindgen(js_name = "getRenderBorders")]
-    pub fn get_render_borders(&self, sheet_id: &SheetId, region: &Rect) -> Result<String, JsValue> {
-        let sheet_index = self.sheet_id_to_index(sheet_id).ok_or("bad sheet ID")?;
-        let sheet = &self.sheets()[sheet_index];
-        Ok(serde_json::to_string(&sheet.get_render_borders(region)).map_err(|e| e.to_string())?)
+    #[wasm_bindgen(js_name = "getRenderHorizontalBorders")]
+    pub fn get_render_horizontal_borders(
+        &self,
+        sheet_id: &SheetId,
+        region: &Rect,
+    ) -> Result<String, JsValue> {
+        let output = self
+            .sheet_from_id(sheet_id)
+            .borders
+            .get_render_horizontal_borders(region);
+        Ok(serde_json::to_string::<[JsRenderBorder]>(&output).map_err(|e| e.to_string())?)
+    }
+    #[wasm_bindgen(js_name = "getRenderVerticalBorders")]
+    pub fn get_render_vertical_borders(
+        &self,
+        sheet_id: &SheetId,
+        region: &Rect,
+    ) -> Result<String, JsValue> {
+        let output = self
+            .sheet_from_id(sheet_id)
+            .borders
+            .get_render_vertical_borders(region);
+        Ok(serde_json::to_string::<[JsRenderBorder]>(&output).map_err(|e| e.to_string())?)
     }
 
     #[wasm_bindgen(js_name = "setCellValue")]
@@ -499,15 +499,30 @@ impl File {
         self.set_same_values(sheet_id, region, |column| &mut column.wrap, value);
         Ok(())
     }
-    #[wasm_bindgen(js_name = "setCellBorders")]
-    pub fn set_cell_borders(
+    #[wasm_bindgen(js_name = "setHorizontalCellBorder")]
+    pub fn set_horizontal_cell_border(
         &mut self,
         sheet_id: &SheetId,
         region: &Rect,
         value: JsValue,
     ) -> Result<(), JsValue> {
-        let value: CellBorders = serde_wasm_bindgen::from_value(value)?;
-        self.set_same_values(sheet_id, region, |column| &mut column.borders, value);
+        let value: CellBorder = serde_wasm_bindgen::from_value(value)?;
+        self.sheet_mut_from_id(sheet_id)
+            .borders
+            .set_horizontal_border(region, value);
+        Ok(())
+    }
+    #[wasm_bindgen(js_name = "setVerticalCellBorder")]
+    pub fn set_vertical_cell_border(
+        &mut self,
+        sheet_id: &SheetId,
+        region: &Rect,
+        value: JsValue,
+    ) -> Result<(), JsValue> {
+        let value: CellBorder = serde_wasm_bindgen::from_value(value)?;
+        self.sheet_mut_from_id(sheet_id)
+            .borders
+            .set_vertical_border(region, value);
         Ok(())
     }
     #[wasm_bindgen(js_name = "setCellNumericFormat")]
@@ -559,6 +574,8 @@ pub struct Sheet {
     row_ids: IdMap<RowId, i64>,
 
     columns: BTreeMap<i64, Column>,
+
+    borders: SheetBorders,
 
     column_widths: BTreeMap<i64, f32>,
     row_heights: BTreeMap<i64, f32>,
@@ -767,15 +784,10 @@ impl Sheet {
 
                 Some(region.y_range().filter_map(move |y| {
                     let fill_color = fill_colors.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
-                    let border = borders.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
                     let manual_value = values.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
                     let spill_value = spills.next_if(|&(y2, _)| y2 == y).map(|(_, v)| v);
 
-                    if fill_color.is_none()
-                        && border.is_none()
-                        && manual_value.is_none()
-                        && spill_value.is_none()
-                    {
+                    if fill_color.is_none() && manual_value.is_none() && spill_value.is_none() {
                         return None; // Nothing to render
                     }
 
@@ -788,7 +800,6 @@ impl Sheet {
 
                         align: column.align.get(y),
                         wrap: column.wrap.get(y),
-                        borders: border,
                         numeric_format: column.numeric_format.get(y),
                         bold: column.bold.get(y),
                         italic: column.italic.get(y),
@@ -812,36 +823,6 @@ impl Sheet {
                     h: block.len() as u32,
                     color: block.content().value.clone(),
                 });
-            }
-        }
-        ret
-    }
-
-    pub fn get_render_borders(&self, region: &Rect) -> Vec<JsRenderBorder> {
-        let y_range = region.min.y..region.max.y + 1;
-        let mut ret = vec![];
-        for (&x, column) in self.columns.range(region.x_range()) {
-            for block in column.borders.blocks_covering_range(y_range.clone()) {
-                if let Some(v) = &block.content().value.v {
-                    for y in block.range() {
-                        ret.push(JsRenderBorder {
-                            x,
-                            y,
-                            w: Some(1),
-                            h: None,
-                            style: v.clone(),
-                        });
-                    }
-                }
-                if let Some(h) = &block.content().value.v {
-                    ret.push(JsRenderBorder {
-                        x,
-                        y: block.y,
-                        w: None,
-                        h: Some(block.len() as u32),
-                        style: h.clone(),
-                    })
-                }
             }
         }
         ret
