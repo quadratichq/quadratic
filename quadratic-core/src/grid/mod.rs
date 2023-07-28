@@ -545,7 +545,6 @@ impl File {
     }
     #[wasm_bindgen(js_name="clearFormatting")]
     pub fn clear_formatting(&mut self, sheet_id: &SheetId, region: &Rect) {
-        crate::log(&format!("test   = {:?}", "hello"));
         self.delete_cell_columns(sheet_id, region, |column| &mut column.fill_color);
         self.delete_cell_columns(sheet_id, region, |column| &mut column.align);
         self.delete_cell_columns(sheet_id, region, |column| &mut column.bold);
