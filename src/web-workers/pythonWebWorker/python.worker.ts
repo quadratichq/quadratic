@@ -1,8 +1,9 @@
 /* eslint-disable no-restricted-globals */
 /* eslint-disable no-undef */
 
+import inspect_python from '../../grid/computations/python/inspect_python.py';
 import { Cell } from '../../schemas';
-import { PythonMessage, PythonReturnType } from './pythonTypes';
+import { InspectPythonReturnType, PythonMessage, PythonReturnType } from './pythonTypes';
 import define_run_python from './run_python.py';
 
 const TRY_AGAIN_TIMEOUT = 500;
@@ -26,8 +27,10 @@ async function pythonWebWorker() {
     pyodide = await (self as any).loadPyodide();
     await pyodide.registerJsModule('GetCellsDB', getCellsDB);
     await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
-    const python_code = await (await fetch(define_run_python)).text();
-    await pyodide.runPython(python_code);
+    let micropip = pyodide.pyimport('micropip');
+    await micropip.install('autopep8');
+    await pyodide.runPython(await (await fetch(define_run_python)).text());
+    await pyodide.runPython(await (await fetch(inspect_python)).text());
   } catch (e) {
     self.postMessage({ type: 'python-error' } as PythonMessage);
     console.warn(`[Python WebWorker] failed to load`, e);
@@ -41,22 +44,29 @@ async function pythonWebWorker() {
 
 self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   const event = e.data;
-  if (event.type === 'get-cells') {
-    if (event.cells && getCellsMessages) {
-      getCellsMessages(event.cells);
+  switch (event.type) {
+    case 'get-cells': {
+      if (event.cells && getCellsMessages) getCellsMessages(event.cells);
+      break;
     }
-  } else if (event.type === 'execute') {
-    // make sure loading is done
-    if (!pyodide) {
-      self.postMessage({ type: 'not-loaded' } as PythonMessage);
+    case 'execute': {
+      // make sure loading is done
+      if (!pyodide) return self.postMessage({ type: 'not-loaded' } as PythonMessage);
+
+      const output = await pyodide.globals.get('run_python')(event.python);
+      return self.postMessage({
+        type: 'results',
+        results: Object.fromEntries(output.toJs()) as PythonReturnType,
+      } as PythonMessage);
     }
-
-    const output = await pyodide.globals.get('run_python')(event.python);
-
-    return self.postMessage({
-      type: 'results',
-      results: Object.fromEntries(output.toJs()) as PythonReturnType,
-    } as PythonMessage);
+    case 'inspect-python': {
+      if (!pyodide) return self.postMessage({ type: 'not-loaded' } as PythonMessage);
+      const output = await pyodide.globals.get('inspect_python')(event.python);
+      return self.postMessage({
+        type: 'results',
+        results: output !== undefined ? (Object.fromEntries(output.toJs()) as InspectPythonReturnType) : undefined,
+      });
+    }
   }
 };
 

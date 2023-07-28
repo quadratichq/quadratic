@@ -1,10 +1,10 @@
-import { PythonMessage, PythonReturnType } from './pythonTypes';
 import { WebWorkers } from '../webWorkers';
+import { InspectPythonReturnType, PythonMessage, PythonReturnType } from './pythonTypes';
 
 export class PythonWebWorker {
   private webWorkers: WebWorkers;
   private worker: Worker;
-  private callback?: (results: PythonReturnType) => void;
+  private callback?: <TResultType extends PythonReturnType | InspectPythonReturnType>(results: TResultType) => void;
   private loaded = false;
 
   constructor(webWorkers: WebWorkers) {
@@ -48,14 +48,24 @@ export class PythonWebWorker {
           success: false,
           input_python_stack_trace: 'Error: Python not loaded',
           input_python_std_out: '',
+          output_type: null,
           output_value: null,
           array_output: [],
           formatted_code: '',
         });
       } else {
-        this.callback = (results: PythonReturnType) => resolve(results);
+        this.callback = (results) => resolve(results as PythonReturnType);
         this.worker.postMessage({ type: 'execute', python } as PythonMessage);
       }
+    });
+  }
+
+  inspectPythonReturnType(python: string): Promise<InspectPythonReturnType> {
+    return new Promise((resolve) => {
+      if (!this.loaded) resolve({ error: 'Python not loaded' });
+
+      this.callback = (results) => resolve(results as InspectPythonReturnType);
+      this.worker.postMessage({ type: 'inspect-python', python } as PythonMessage);
     });
   }
 
