@@ -25,8 +25,8 @@ impl fmt::Display for CellValue {
             CellValue::Number(n) => write!(f, "{n}"),
             CellValue::Logical(b) => write!(f, "{b}"),
             CellValue::Error => write!(f, "#ERROR"),
-            CellValue::Instant(i) => todo!("format instant"),
-            CellValue::Duration(d) => todo!("format duration"),
+            CellValue::Instant(i) => todo!("format instant {i:?}"),
+            CellValue::Duration(d) => todo!("format duration {d:?}"),
         }
     }
 }

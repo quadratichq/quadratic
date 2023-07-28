@@ -156,6 +156,8 @@ impl<B: BlockContent> ColumnData<B> {
                 if let Some(block_above) = self.remove_block_containing(y - 1) {
                     // Push to bottom of block above.
                     self.add_blocks(block_above.push_bottom(value));
+                    // Try to merge with block below.
+                    self.try_merge_at(y + 1);
                     None
                 } else if let Some(block_below) = self.remove_block_at(y + 1) {
                     // Push to top of block below.
@@ -181,8 +183,15 @@ impl<B: BlockContent> ColumnData<B> {
                 Some(old_value)
             }
         }
+    }
 
-        // TODO: try merge with blocks above & below
+    fn try_merge_at(&mut self, y: i64) {
+        if self.0.contains_key(&y) {
+            if let Some(block_above) = self.remove_block_containing(y - 1) {
+                let block_below = self.remove_block_at(y).expect("block should not vanish");
+                self.add_blocks(Block::try_merge(block_above, block_below));
+            }
+        }
     }
 
     pub fn remove_range(&mut self, y_range: Range<i64>) -> Vec<Block<B>> {

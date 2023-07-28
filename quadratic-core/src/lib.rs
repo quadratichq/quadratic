@@ -10,7 +10,7 @@ use wasm_bindgen::prelude::*;
 #[macro_use]
 pub mod util;
 mod cell;
-mod controller;
+// mod controller;
 pub mod formulas;
 pub mod grid;
 mod position;

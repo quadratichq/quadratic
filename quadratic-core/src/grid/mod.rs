@@ -838,8 +838,7 @@ impl Sheet {
     }
 
     fn unspill(&mut self, source: CellRef) {
-        // TODO: unspill cells
-        // let code_cell = self.code_cells.get(source).expect("bad code cell ID");
+        todo!("unspill cells from {source:?}")
     }
 }
 
