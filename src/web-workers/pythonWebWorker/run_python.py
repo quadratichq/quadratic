@@ -9,9 +9,10 @@ import micropip
 import pandas as pd
 import numpy as np
 import operator
+import ast
 
 from io import StringIO
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 from decimal import Decimal, DecimalException
 
 # todo separate this file out into a Python Package
@@ -247,17 +248,20 @@ async def run_python(code):
     }
 
     sout = StringIO()
+    serr = StringIO()
     output_value = None
 
+    # eval user code
     try:
-        # Capture STDOut to sout
         with redirect_stdout(sout):
-            output_value = await pyodide.code.eval_code_async(
-                attempt_fix_await(code),
-                globals=globals,
-                return_mode="last_expr_or_assign",
-                quiet_trailing_semicolon=False,
-            )
+            with redirect_stderr(serr):
+                # preprocess and fix code
+                output_value = await pyodide.code.eval_code_async(
+                    attempt_fix_await(code),
+                    globals=globals,
+                    return_mode="last_expr_or_assign",
+                    quiet_trailing_semicolon=False,
+                )
 
     except SyntaxError as err:
         error_class = err.__class__.__name__
@@ -271,11 +275,12 @@ async def run_python(code):
         line_number = traceback.extract_tb(tb)[-1][1]
         # full_trace = traceback.format_exc()
     else:
-        # Successfully Created a Result
         await micropip.install(
             "autopep8"
         )  # fixes a timing bug where autopep8 is not yet installed when attempting to import
         import autopep8
+
+        # Successfully Created a Result
 
         # return array_output if output is an array
         array_output = None
@@ -301,9 +306,11 @@ async def run_python(code):
 
         return {
             "output_value": str(output_value),
+            "output_type": type(output_value).__name__,
             "array_output": array_output,
             "cells_accessed": cells_accessed,
             "input_python_std_out": sout.getvalue(),
+            "input_python_std_err": serr.getvalue(),
             "success": True,
             "input_python_stack_trace": None,
             "formatted_code": autopep8.fix_code(
@@ -314,8 +321,10 @@ async def run_python(code):
     return {
         "output_value": output_value,
         "array_output": None,
+        "output_type": type(output_value).__name__,
         "cells_accessed": cells_accessed,
         "input_python_std_out": sout.getvalue(),
+        "input_python_std_err": serr.getvalue(),
         "success": False,
         "input_python_stack_trace": "{} on line {}: {}".format(
             error_class, line_number, detail
