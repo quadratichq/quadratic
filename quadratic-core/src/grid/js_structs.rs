@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use super::borders::CellBorder;
 use super::column::BoolSummary;
 use super::formatting::{CellAlign, CellWrap, NumericFormat};
-use super::CellValue;
+use super::{CellCodeLanguage, CellCodeRunOutput, CellValue};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -55,4 +55,10 @@ pub struct JsRenderBorder {
 pub struct JsFormattingSummary {
     pub bold: BoolSummary,
     pub italic: BoolSummary,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct JsRenderCodeCell {
+    pub language: CellCodeLanguage,
+    pub output: Option<CellCodeRunOutput>,
 }

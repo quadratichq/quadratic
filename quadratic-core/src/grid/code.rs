@@ -7,8 +7,10 @@ use crate::formulas::{FormulaError, Value};
 pub struct CodeCellValue {
     pub language: CellCodeLanguage,
     pub code_string: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub formatted_code_string: Option<String>,
     pub last_modified: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub output: Option<CellCodeRunOutput>,
 }
 impl CodeCellValue {
@@ -67,7 +69,9 @@ pub enum CellCodeLanguage {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CellCodeRunOutput {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
     pub result: Result<CellCodeRunOk, FormulaError>,
 }

@@ -1,6 +1,7 @@
 use anyhow::Result;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::collections::{btree_map, BTreeMap, HashMap};
+use std::collections::{btree_map, BTreeMap, HashMap, HashSet};
 use std::fmt;
 use std::hash::Hash;
 use uuid::Uuid;
@@ -370,6 +371,23 @@ impl File {
     pub fn get_render_fills(&self, sheet_id: &SheetId, region: &Rect) -> Result<String, JsValue> {
         let output = self.sheet_from_id(sheet_id).get_render_fills(region);
         Ok(serde_json::to_string::<[JsRenderFill]>(&output).map_err(|e| e.to_string())?)
+    }
+
+    #[wasm_bindgen(js_name = "getRenderCodeCells")]
+    pub fn get_render_code_cells(
+        &self,
+        sheet_id: &SheetId,
+        region: &Rect,
+    ) -> Result<String, JsValue> {
+        let output = self
+            .sheet_from_id(sheet_id)
+            .iter_code_cells(region)
+            .map(|code_cell| JsRenderCodeCell {
+                language: code_cell.language,
+                output: code_cell.output.clone(),
+            })
+            .collect_vec();
+        Ok(serde_json::to_string::<[JsRenderCodeCell]>(&output).map_err(|e| e.to_string())?)
     }
 
     #[wasm_bindgen(js_name = "getRenderHorizontalBorders")]
@@ -826,6 +844,23 @@ impl Sheet {
             }
         }
         ret
+    }
+
+    pub fn iter_code_cells(&self, region: &Rect) -> impl Iterator<Item = &CodeCellValue> {
+        let code_cell_refs: HashSet<CellRef> = self
+            .columns
+            .range(region.x_range())
+            .flat_map(|(_x, column)| {
+                column
+                    .spills
+                    .blocks_covering_range(region.y_range())
+                    .map(|block| block.content().value)
+            })
+            .collect();
+
+        code_cell_refs
+            .into_iter()
+            .filter_map(|cell_ref| self.code_cells.get(&cell_ref))
     }
 
     fn unspill(&mut self, source: CellRef) {
