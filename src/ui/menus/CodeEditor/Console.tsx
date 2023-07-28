@@ -1,16 +1,18 @@
-import { Box, Tabs, Tab, Chip } from '@mui/material';
-import { useTheme } from '@mui/system';
-import { useEffect, useState } from 'react';
-import { CellEvaluationResult } from '../../../grid/computations/types';
-import { LinkNewTab } from '../../components/LinkNewTab';
-import { colors } from '../../../theme/colors';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { AITab } from './AITab';
 import { useAuth0 } from '@auth0/auth0-react';
-import { CodeSnippet } from '../../components/CodeSnippet';
+import { Box, Chip, Tab, Tabs } from '@mui/material';
+import { useTheme } from '@mui/system';
 import { stripIndent } from 'common-tags';
+import { useEffect, useState } from 'react';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
+import { CellEvaluationResult } from '../../../grid/computations/types';
 import { Cell } from '../../../schemas';
+import { colors } from '../../../theme/colors';
+import { InspectPythonReturnType } from '../../../web-workers/pythonWebWorker/pythonTypes';
+import { CodeSnippet } from '../../components/CodeSnippet';
+import { LinkNewTab } from '../../components/LinkNewTab';
+import { AITab } from './AITab';
+import PythonReturnType from './PythonReturnType';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 interface ConsoleProps {
@@ -18,9 +20,20 @@ interface ConsoleProps {
   evalResult: CellEvaluationResult | undefined;
   editorContent: string | undefined;
   selectedCell: Cell;
+  pythonReturnType: InspectPythonReturnType | undefined;
+  hasUnsavedChanges: boolean;
+  isRunningComputation: boolean;
 }
 
-export function Console({ evalResult, editorMode, editorContent, selectedCell }: ConsoleProps) {
+export function Console({
+  evalResult,
+  editorMode,
+  editorContent,
+  selectedCell,
+  pythonReturnType,
+  hasUnsavedChanges,
+  isRunningComputation,
+}: ConsoleProps) {
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
@@ -105,6 +118,13 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
                   : 'Errors will show here.'}
               </div>
             )}
+            <PythonReturnType
+              hasUnsavedChanges={hasUnsavedChanges}
+              pythonReturnType={pythonReturnType}
+              selectedCell={selectedCell}
+              std_err={std_err}
+              isRunningComputation={isRunningComputation}
+            />
           </div>
         </TabPanel>
         <TabPanel value={activeTabIndex} index={1}>
