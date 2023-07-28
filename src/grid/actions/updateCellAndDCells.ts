@@ -94,7 +94,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
         // collect output
         if (result.success) {
           cell.value = result.output_value || '';
-          // if (cell.type === 'PYTHON') cell.python_code = result.formatted_code;
+          if (cell.type === 'PYTHON') cell.python_code = result.formatted_code;
         } else {
           cell.value = ''; // clear value if python code fails
         }
