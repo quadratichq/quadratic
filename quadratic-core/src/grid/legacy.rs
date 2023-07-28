@@ -33,24 +33,36 @@ pub struct JsCell {
     pub y: i64,
     pub r#type: JsCellType,
     pub value: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub array_cells: Option<Vec<(i64, i64)>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub dependent_cells: Option<Vec<(i64, i64)>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub evaluation_result: Option<JsCellEvalResult>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub formula_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_modified: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ai_prompt: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub python_code: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsCellEvalResult {
     pub success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub output_value: Option<String>,
     pub cells_accessed: Vec<(i64, i64)>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub array_output: Option<JsArrayOutput>,
     pub formatted_code: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error_span: Option<(u32, u32)>,
 }
 
@@ -66,12 +78,19 @@ pub enum JsArrayOutput {
 pub struct JsCellFormat {
     pub x: i64,
     pub y: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub alignment: Option<CellAlign>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bold: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fill_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub italic: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub text_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub text_format: Option<NumericFormat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub wrapping: Option<CellWrap>, // default is overflow
 }
 impl JsCellFormat {
@@ -103,6 +122,7 @@ pub struct JsBorderDirectionSchema {
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct JsHeadingSchema {
     pub id: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<f64>,
 }
 
