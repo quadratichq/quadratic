@@ -1,6 +1,17 @@
 {
   "editor.formatOnSave": true,
-  "cSpell.words": ["dcell", "dgraph", "Fuzzysort", "hljs", "openai", "pixi", "pixiapp", "subquadrant", "subquadrants"],
+  "cSpell.words": [
+    "dcell",
+    "dgraph",
+    "Fuzzysort",
+    "hljs",
+    "openai",
+    "peekable",
+    "pixi",
+    "pixiapp",
+    "subquadrant",
+    "subquadrants"
+  ],
   "editor.codeActionsOnSave": {
     "source.organizeImports": true
   }

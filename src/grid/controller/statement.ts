@@ -28,6 +28,10 @@ export type Statement =
       data: CellFormat[];
     }
   | {
+      type: 'CLEAR_CELL_FORMATS';
+      data: Coordinate[];
+    }
+  | {
       type: 'SET_HEADING_SIZE';
       data: {
         heading_size: HeadingSize;

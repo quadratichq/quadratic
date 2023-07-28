@@ -15,7 +15,7 @@ export const clearFormattingAction = (args: {
   for (let y = start.y; y <= end.y; y++) {
     for (let x = start.x; x <= end.x; x++) {
       const format = sheet_controller.sheet.grid.getFormat(x, y);
-      if (format) formats.push({ ...format });
+      if (format) formats.push({ x, y });
     }
   }
 

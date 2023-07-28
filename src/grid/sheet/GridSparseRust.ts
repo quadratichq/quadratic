@@ -65,26 +65,30 @@ export class GridSparseRust extends GridSparse {
       const region = new Rect(new Pos(format.x, format.y), new Pos(format.x, format.y));
       const originalRange = this.file.getRenderCells(this.sheetId, region);
       const original = JSON.parse(originalRange)?.[0] ?? {};
-      if (format.bold !== undefined && format.bold !== original.bold) {
-        this.file.setCellBold(this.sheetId, region, !!format.bold);
-      }
-      if (format.italic !== undefined && format.italic !== original.italic) {
-        this.file.setCellItalic(this.sheetId, region, !!format.italic);
-      }
-      if (format.alignment !== undefined && format.alignment !== original.align) {
-        this.file.setCellAlign(this.sheetId, region, format.alignment);
-      }
-      if (format.fillColor !== undefined && format.fillColor !== original.fillColor) {
-        this.file.setCellFillColor(this.sheetId, region, format.fillColor);
-      }
-      if (format.textColor !== undefined && format.textColor !== original.textColor) {
-        this.file.setCellTextColor(this.sheetId, region, format.textColor);
-      }
-      if (format.textFormat !== undefined && format.textFormat !== original.textFormat) {
-        this.file.setCellNumericFormat(this.sheetId, region, format.textFormat);
-      }
-      if (format.wrapping !== undefined && format.wrapping !== original.wrapping) {
-        this.file.setCellWrap(this.sheetId, region, format.textFormat);
+      if (this.hasFormatting(format)) {
+        if (format.bold !== undefined && format.bold !== original.bold) {
+          this.file.setCellBold(this.sheetId, region, !!format.bold);
+        }
+        if (format.italic !== undefined && format.italic !== original.italic) {
+          this.file.setCellItalic(this.sheetId, region, !!format.italic);
+        }
+        if (format.alignment !== undefined && format.alignment !== original.align) {
+          this.file.setCellAlign(this.sheetId, region, format.alignment);
+        }
+        if (format.fillColor !== undefined && format.fillColor !== original.fillColor) {
+          this.file.setCellFillColor(this.sheetId, region, format.fillColor);
+        }
+        if (format.textColor !== undefined && format.textColor !== original.textColor) {
+          this.file.setCellTextColor(this.sheetId, region, format.textColor);
+        }
+        if (format.textFormat !== undefined && format.textFormat !== original.textFormat) {
+          this.file.setCellNumericFormat(this.sheetId, region, format.textFormat);
+        }
+        if (format.wrapping !== undefined && format.wrapping !== original.wrapping) {
+          this.file.setCellWrap(this.sheetId, region, format.textFormat);
+        }
+      } else {
+        this.file.clearFormatting(this.sheetId, region);
       }
       this.quadrants.add(this.getKey(format.x, format.y));
     });
@@ -92,34 +96,21 @@ export class GridSparseRust extends GridSparse {
   }
 
   clearFormat(formats: CellFormat[]): void {
-    // formats.forEach((format) => {
-    //   const key = this.getKey(format.x, format.y);
-    //   const clear = this.cells.get(key);
-    //   if (clear) {
-    //     delete clear.format;
-    //     if (Object.keys(clear).length === 0) {
-    //       this.cells.delete(key);
-    //     }
-    //   }
-    // });
-    // this.recalculateBounds();
+    formats.forEach((format) => {
+      const region = new Rect(new Pos(format.x, format.y), new Pos(format.x, format.y));
+      this.file.clearFormatting(this.sheetId, region);
+    });
+    this.recalculateBounds();
   }
 
   deleteCells(cells: Coordinate[], skipBounds = false): void {
-    // cells.forEach((cell) => {
-    //   const candf = this.cells.get(this.getKey(cell.x, cell.y));
-    //   if (candf) {
-    //     // Delete cell
-    //     delete candf.cell;
-    //     // If cell has no format, also delete the key
-    //     if (candf.format === undefined) {
-    //       this.cells.delete(this.getKey(cell.x, cell.y));
-    //     }
-    //   }
-    // });
-    // if (!skipBounds) {
-    //   this.recalculateBounds();
-    // }
+    cells.forEach((cell) => {
+      const region = new Rect(new Pos(cell.x, cell.y), new Pos(cell.x, cell.y));
+      this.file.deleteCellValues(this.sheetId, region);
+    });
+    if (!skipBounds) {
+      this.recalculateBounds();
+    }
   }
 
   get empty(): boolean {
@@ -228,7 +219,7 @@ export class GridSparseRust extends GridSparse {
           x: entry.x,
           y: entry.y,
           type: 'TEXT',
-          value: entry[0].value,
+          value: entry.value,
         });
       }
     });

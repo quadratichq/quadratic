@@ -274,7 +274,22 @@ impl File {
             modified: self.modified,
         }
     }
+
+    fn delete_cell_columns<T: fmt::Debug + Clone + PartialEq>(
+        &mut self,
+        sheet_id: &SheetId,
+        region: &Rect,
+        pick_column_data: fn(&mut Column) -> &mut ColumnData<SameValue<T>>,
+    ) {
+        let y_range = region.min.y..region.max.y + 1;
+        let sheet = self.sheet_mut_from_id(sheet_id);
+        for x in region.x_range() {
+            let column = sheet.get_or_create_column(x).1;
+            pick_column_data(column).remove_range(y_range.clone());
+        }
+    }
 }
+
 #[wasm_bindgen]
 impl File {
     #[wasm_bindgen(js_name = "newFromFile")]
@@ -527,6 +542,17 @@ impl File {
     #[wasm_bindgen(js_name = "setCellFillColor")]
     pub fn set_cell_fill_color(&mut self, sheet_id: &SheetId, region: &Rect, value: String) {
         self.set_same_values(sheet_id, region, |column| &mut column.fill_color, value);
+    }
+    #[wasm_bindgen(js_name="clearFormatting")]
+    pub fn clear_formatting(&mut self, sheet_id: &SheetId, region: &Rect) {
+        crate::log(&format!("test   = {:?}", "hello"));
+        self.delete_cell_columns(sheet_id, region, |column| &mut column.fill_color);
+        self.delete_cell_columns(sheet_id, region, |column| &mut column.align);
+        self.delete_cell_columns(sheet_id, region, |column| &mut column.bold);
+        self.delete_cell_columns(sheet_id, region, |column| &mut column.italic);
+        self.delete_cell_columns(sheet_id, region, |column| &mut column.numeric_format);
+        self.delete_cell_columns(sheet_id, region, |column| &mut column.text_color);
+        self.delete_cell_columns(sheet_id, region, |column| &mut column.wrap);
     }
 }
 
