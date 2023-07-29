@@ -6,7 +6,6 @@ export function doubleClickCell(options: { cell?: Cell; app: PixiApp }): void {
   const settings = app.settings;
 
   if (!settings.setEditorInteractionState) return;
-
   if (cell) {
     if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
       settings.changeInput(true, cell.value);

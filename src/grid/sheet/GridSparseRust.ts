@@ -1,4 +1,5 @@
 import { Rectangle } from 'pixi.js';
+import { CellRust } from '../../gridGL/cells/CellsTypes';
 import { cellHasContent } from '../../gridGL/helpers/selectCells';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Coordinate, MinMax } from '../../gridGL/types/size';
@@ -199,6 +200,14 @@ export class GridSparseRust extends GridSparse {
       textFormat: data[0].textFormat,
       wrapping: data[0].wrapping,
     };
+  }
+
+  getCellList(rectangle: Rectangle): CellRust[] {
+    const json = this.file.getRenderCells(
+      this.sheetId,
+      new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom))
+    );
+    return JSON.parse(json);
   }
 
   getCells(rectangle: Rectangle): CellRectangle {
