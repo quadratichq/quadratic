@@ -1,154 +1,133 @@
 import { Container, Point, Rectangle } from 'pixi.js';
 import { Bounds } from '../../grid/sheet/Bounds';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { SheetRust } from '../../grid/sheet/SheetRust';
 import { CellLabel } from './CellLabel';
 import { CellsHash } from './CellsHash';
-import { CellRust, CellsHashBounds, Hash } from './CellsTypes';
+import { CellHash, CellRust, CellsHashBounds } from './CellsTypes';
 
 // holds all CellLabels within a sheet
-export class CellsLabels extends Container implements Hash {
-  private app: PixiApp;
+export class CellsLabels extends Container implements CellHash {
+  private sheet: SheetRust;
 
   AABB?: Rectangle;
   hashes: Set<CellsHash>;
   oldBounds?: CellsHashBounds;
 
-  constructor(app: PixiApp) {
+  constructor(sheet: SheetRust) {
     super();
-    this.app = app;
+    this.sheet = sheet;
     this.hashes = new Set();
   }
 
-  add(cells: CellRust[]): void {
-    cells.forEach(cell => {
-      const cellLabel = new CellLabel()
-    })
+  add(cells: CellRust[]): CellLabel[] {
+    return cells.map((cell) => {
+      const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
+      const cellLabel = this.addChild(new CellLabel(cell, rectangle));
+      return cellLabel;
+    });
   }
 
   private getClipRight(label: CellLabel, textWidth: number): number | undefined {
-    const rightEnd = label.x + textWidth;
-    let column = label.data.location.x + 1;
-    const row = label.data.location.y;
-    let neighborOffset = this.app.sheet.gridOffsets.getCell(column, row).x;
-    while (neighborOffset < rightEnd) {
-      const cell = this.app.sheet.grid.get(column, row)?.cell;
-      if (cell?.value || (cell?.evaluation_result && cell?.evaluation_result?.success === false)) {
-        return neighborOffset;
-      }
-      const neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
-      neighborOffset += neighborWidth;
-      column++;
-    }
+    // const rightEnd = label.x + textWidth;
+    // let column = label.data.location.x + 1;
+    // const row = label.data.location.y;
+    // let neighborOffset = this.sheet.gridOffsets.getCell(column, row).x;
+    // while (neighborOffset < rightEnd) {
+    //   const cell = this.sheet.grid.get(column, row)?.cell;
+    //   if (cell?.value || (cell?.evaluation_result && cell?.evaluation_result?.success === false)) {
+    //     return neighborOffset;
+    //   }
+    //   const neighborWidth = this.sheet.gridOffsets.getColumnWidth(column);
+    //   neighborOffset += neighborWidth;
+    //   column++;
+    // }
   }
 
   private getClipLeft(label: CellLabel): number | undefined {
-    const leftEnd = label.x;
-    let column = label.data.location.x - 1;
-    const row = label.data.location.y;
-    let neighbor = this.app.sheet.gridOffsets.getCell(column, row);
-    let neighborWidth = neighbor.width;
-    let neighborOffset = neighbor.x + neighbor.width;
-    while (neighborOffset > leftEnd) {
-      const cell = this.app.sheet.grid.get(column, row)?.cell;
-      if (cell?.value || (cell?.evaluation_result && cell?.evaluation_result?.success === false)) {
-        return neighborOffset;
-      }
-      neighborOffset -= neighborWidth;
-      column--;
-      neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
-    }
+    // const leftEnd = label.x;
+    // let column = label.data.location.x - 1;
+    // const row = label.data.location.y;
+    // let neighbor = this.app.sheet.gridOffsets.getCell(column, row);
+    // let neighborWidth = neighbor.width;
+    // let neighborOffset = neighbor.x + neighbor.width;
+    // while (neighborOffset > leftEnd) {
+    //   const cell = this.app.sheet.grid.get(column, row)?.cell;
+    //   if (cell?.value || (cell?.evaluation_result && cell?.evaluation_result?.success === false)) {
+    //     return neighborOffset;
+    //   }
+    //   neighborOffset -= neighborWidth;
+    //   column--;
+    //   neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
+    // }
   }
 
   // checks to see if the label needs to be clipped based on other labels
   private checkForClipping(label: CellLabel): void {
-    const data = label.data;
-    if (!data) {
-      throw new Error('Expected label.data to be defined in checkForClipping');
-    }
-    const textWidth = label.getFullTextWidth();
-    if (textWidth > data.expectedWidth) {
-      let clipLeft: number | undefined, clipRight: number | undefined;
-      if (data.alignment === 'right') {
-        clipLeft = this.getClipLeft(label);
-      } else if (data.alignment === 'center') {
-        clipLeft = this.getClipLeft(label);
-        clipRight = this.getClipRight(label, textWidth);
-      } else {
-        clipRight = this.getClipRight(label, textWidth);
-      }
-      label.setClip({ clipLeft, clipRight });
-    } else {
-      label.setClip();
-    }
+    // const data = label.data;
+    // if (!data) {
+    //   throw new Error('Expected label.data to be defined in checkForClipping');
+    // }
+    // const textWidth = label.getFullTextWidth();
+    // if (textWidth > data.expectedWidth) {
+    //   let clipLeft: number | undefined, clipRight: number | undefined;
+    //   if (data.alignment === 'right') {
+    //     clipLeft = this.getClipLeft(label);
+    //   } else if (data.alignment === 'center') {
+    //     clipLeft = this.getClipLeft(label);
+    //     clipRight = this.getClipRight(label, textWidth);
+    //   } else {
+    //     clipRight = this.getClipRight(label, textWidth);
+    //   }
+    //   label.setClip({ clipLeft, clipRight });
+    // } else {
+    //   label.setClip();
+    // }
   }
 
   private checkForOverflow(options: { label: CellLabel; bounds: Bounds }): void {
-    const { label, bounds } = options;
-    const { data } = label;
-    const { alignment } = data;
+    // const { label, bounds } = options;
+    // const { data } = label;
+    // const { alignment } = data;
+    // // track overflowed widths
+    // const width = label.textWidth;
+    // if (width > data.expectedWidth) {
+    //   if (alignment === 'left' && !label.clipRight) {
+    //     label.overflowRight = width - data.expectedWidth;
+    //     label.overflowLeft = undefined;
+    //   } else if (alignment === 'right' && !label.clipLeft) {
+    //     label.overflowLeft = width - data.expectedWidth;
+    //     label.overflowRight = undefined;
+    //   } else if (alignment === 'center') {
+    //     const overflow = (width - data.expectedWidth) / 2;
+    //     if (!label.clipLeft) {
+    //       label.overflowLeft = overflow;
+    //     }
+    //     if (!label.clipRight) {
+    //       label.overflowRight = overflow;
+    //     }
+    //   }
+    // } else {
+    //   label.overflowRight = undefined;
+    //   label.overflowLeft = undefined;
+    // }
+    // bounds.addRectangle(new Rectangle(label.x, label.y, width, label.height));
+  }
 
-    // track overflowed widths
-    const width = label.textWidth;
-    if (width > data.expectedWidth) {
-      if (alignment === 'left' && !label.clipRight) {
-        label.overflowRight = width - data.expectedWidth;
-        label.overflowLeft = undefined;
-      } else if (alignment === 'right' && !label.clipLeft) {
-        label.overflowLeft = width - data.expectedWidth;
-        label.overflowRight = undefined;
-      } else if (alignment === 'center') {
-        const overflow = (width - data.expectedWidth) / 2;
-        if (!label.clipLeft) {
-          label.overflowLeft = overflow;
-        }
-        if (!label.clipRight) {
-          label.overflowRight = overflow;
-        }
-      }
-    } else {
-      label.overflowRight = undefined;
-      label.overflowLeft = undefined;
+  // todo: update AABB based on position
+  private calculatePosition(label: CellLabel): Point {
+    let alignment = label.alignment ?? 'left';
+    if (alignment === 'right') {
+      return new Point(label.topLeft.x + label.right - label.textWidth, label.topLeft.y);
+    } else if (alignment === 'center') {
+      return new Point(label.topLeft.x + label.right / 2 - label.textWidth / 2, label.topLeft.y);
     }
-    bounds.addRectangle(new Rectangle(label.x, label.y, width, label.height));
+    return label.topLeft;
   }
 
-  private compareLabelData(label: CellLabel, data: LabelData): boolean {
-    const isSame = (a?: boolean, b?: boolean): boolean => {
-      return (!a && !b) || (a && b) ? true : false;
-    };
-
-    if (
-      label.data?.text !== data.text ||
-      !isSame(label.data?.format?.bold, data.format?.bold) ||
-      !isSame(label.data?.format?.italic, data.format?.italic) ||
-      label.data?.format?.textColor !== data.format?.textColor
-    )
-      return false;
-
-    const position = this.calculatePosition(label, data);
-    if (!label.lastPosition || !label.lastPosition.equals(position)) return false;
-
-    return true;
-  }
-
-  private calculatePosition(label: CellLabel, data: LabelData): Point {
-    data.alignment = 'left';
-    if (data.format?.alignment === 'right') data.alignment = 'right';
-    else if (data.format?.alignment === 'center') data.alignment = 'center';
-    else if (data.format?.alignment === 'left') data.alignment = 'left';
-    if (data.alignment === 'right') {
-      return new Point(data.x + data.expectedWidth - label.textWidth, data.y);
-    } else if (data.alignment === 'center') {
-      return new Point(data.x + data.expectedWidth / 2 - label.textWidth / 2, data.y);
-    }
-    return new Point(data.x, data.y);
-  }
-
-  private updateLabel(label: CellLabel, data: LabelData): void {
-    label.update(data);
+  private updateLabel(label: CellLabel): void {
     label.visible = true;
 
-    label.position = this.calculatePosition(label, data);
+    label.position = this.calculatePosition(label);
 
     // this ensures that the text is redrawn during column resize (otherwise clipping will not work properly)
     if (!label.lastPosition || !label.lastPosition.equals(label.position)) {

@@ -1,9 +1,9 @@
 import { Container, Rectangle } from 'pixi.js';
 import { CellsBackground } from './CellsBackground';
-import { Hash, sheetHashSize } from './CellsTypes';
+import { CellHash, sheetHashSize } from './CellsTypes';
 
 export class CellsHash extends Container {
-  private entries: Set<Hash>;
+  private entries: Set<CellHash>;
   private cellsBackground: CellsBackground;
   // private cellsArray: CellsArray;
   // private cellsBorder: CellsBorder;
@@ -24,12 +24,12 @@ export class CellsHash extends Container {
     this.cellsBackground = this.addChild(new CellsBackground());
   }
 
-  add(entry: Hash): void {
+  add(entry: CellHash): void {
     this.entries.add(entry);
     entry.hashes.add(this);
   }
 
-  delete(entry: Hash): void {
+  delete(entry: CellHash): void {
     this.entries.delete(entry);
     entry.hashes.delete(this);
   }

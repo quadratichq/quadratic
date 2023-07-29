@@ -5,7 +5,7 @@ import { intersects } from '../helpers/intersects';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { CellsHash } from './CellsHash';
 import { CellsLabels } from './CellsLabels';
-import { CellsHashBounds, Hash, sheetHashSize } from './CellsTypes';
+import { CellHash, CellsHashBounds, sheetHashSize } from './CellsTypes';
 
 export class CellsSheet extends Container {
   // all labels within the sheet (needed b/c CellLabels can cross hash boundaries)
@@ -21,7 +21,7 @@ export class CellsSheet extends Container {
     super();
     this.cellsHash = new Map();
     this.cellsHashContainer = this.addChild(new Container());
-    this.cellsLabels = this.addChild(new CellsLabels(app));
+    this.cellsLabels = this.addChild(new CellsLabels(sheet));
 
     this.populate(sheet);
   }
@@ -37,7 +37,7 @@ export class CellsSheet extends Container {
             const cellsHash = this.cellsHashContainer.addChild(new CellsHash(x, y));
             this.cellsHash.set(cellsHash.key, cellsHash);
             const cellLabels = this.cellsLabels.add(cells);
-            // cellsHash.add(cellLabels);
+            cellLabels.forEach((cellLabel) => cellsHash.add(cellLabel));
           }
         }
       }
@@ -52,7 +52,7 @@ export class CellsSheet extends Container {
     return { xStart, yStart, xEnd, yEnd };
   }
 
-  protected add(hash: Hash, x: number, y: number): void {
+  protected add(hash: CellHash, x: number, y: number): void {
     const key = CellsHash.getKey(x, y);
     let cellsHash = this.cellsHash.get(key);
     if (!cellsHash) {
@@ -63,7 +63,7 @@ export class CellsSheet extends Container {
     hash.hashes.add(cellsHash);
   }
 
-  protected remove(hash: Hash): void {
+  protected remove(hash: CellHash): void {
     hash.hashes.forEach((cellHash) => {
       cellHash.delete(hash);
     });
@@ -80,7 +80,7 @@ export class CellsSheet extends Container {
     });
   }
 
-  updateHash(hash: Hash, AABB: Rectangle): void {
+  updateHash(hash: CellHash, AABB: Rectangle): void {
     hash.AABB = AABB;
     const bounds = this.getHashBounds(hash.AABB);
     this.remove(hash);

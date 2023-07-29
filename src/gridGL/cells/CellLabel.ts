@@ -1,40 +1,55 @@
-import { Point } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 import { convertColorStringToTint } from '../../helpers/convertColor';
+import { CellAlignment } from '../../schemas';
 import { BitmapTextClip } from '../pixiOverride/BitmapTextClip';
-import { CellRust } from './CellsTypes';
+import { CellsHash } from './CellsHash';
+import { CellHash, CellRust } from './CellsTypes';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
 // todo: make this part of the cell's style data structure
 const fontSize = 14;
 
-export class CellLabel extends BitmapTextClip {
+export class CellLabel extends BitmapTextClip implements CellHash {
   overflowRight?: number;
   overflowLeft?: number;
   lastPosition?: Point;
 
+  // the topLeft position of the cell
+  topLeft: Point;
+
+  // the right position of the cell
+  right: number;
+
+  // used by CellHash
+  AABB?: Rectangle;
+  alignment: CellAlignment;
+  hashes = new Set<CellsHash>();
+
   private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
 
-  constructor(cell: CellRust) {
+  constructor(cell: CellRust, rectangle: Rectangle) {
     super(cell.value, {
       fontName: 'OpenSans',
       fontSize,
       tint: 0,
       align: 'left',
     });
-    this.setFormat(cell);
-  }
+    this.AABB = rectangle;
+    this.topLeft = new Point(rectangle.x, rectangle.y);
+    this.right = rectangle.right;
+    this.position.set(rectangle.x, rectangle.y);
 
-  private setFormat(cell: CellRust): void {
-    const format = data?.format;
-    const bold = format?.bold ? 'Bold' : '';
-    const italic = format?.italic ? 'Italic' : '';
+    const bold = cell?.bold ? 'Bold' : '';
+    const italic = cell?.italic ? 'Italic' : '';
     const fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
     if (this.fontName !== fontName) this.fontName = fontName;
-    const textColor = format?.textColor;
+
+    const textColor = cell?.textColor;
     const tint = textColor ? convertColorStringToTint(textColor) : 0;
     if (this.tint !== tint) this.tint = tint;
-    this.data = data;
+
+    this.alignment = cell.align;
   }
 
   set text(text: string) {
@@ -46,11 +61,6 @@ export class CellLabel extends BitmapTextClip {
   }
   get text() {
     return this._text;
-  }
-
-  update(data: LabelData): void {
-    this.text = data.text;
-    this.setFormat(data);
   }
 
   /**

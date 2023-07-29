@@ -8,7 +8,7 @@ export interface CellsHashBounds {
   yEnd: number;
 }
 
-export interface Hash {
+export interface CellHash {
   AABB?: Rectangle;
   hashes: Set<CellsHash>;
   visible: boolean;

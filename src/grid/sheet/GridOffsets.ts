@@ -1,8 +1,8 @@
 import { Rectangle } from 'pixi.js';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
 import { Heading } from '../../schemas';
-import { HeadingSize } from './useHeadings';
 import { GridOffsetsCache } from './GridOffsetsCache';
+import { HeadingSize } from './useHeadings';
 
 export interface HeadingResizing {
   x: number;
@@ -133,15 +133,10 @@ export class GridOffsets {
    * @param row
    * @returns
    */
-  getCell(column: number, row: number): { x: number; y: number; width: number; height: number } {
+  getCell(column: number, row: number): Rectangle {
     const columnPlacement = this.getColumnPlacement(column);
     const rowPlacement = this.getRowPlacement(row);
-    return {
-      x: columnPlacement.x,
-      y: rowPlacement.y,
-      width: columnPlacement.width,
-      height: rowPlacement.height,
-    };
+    return new Rectangle(columnPlacement.x, rowPlacement.y, columnPlacement.width, rowPlacement.height);
   }
 
   /**
