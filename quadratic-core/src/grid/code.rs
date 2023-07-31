@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::{legacy, CellRef, CellValue};
-use crate::formulas::{FormulaError, Value};
+use crate::formulas::{ArraySize, FormulaError, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CodeCellValue {
@@ -14,7 +14,7 @@ pub struct CodeCellValue {
     pub output: Option<CellCodeRunOutput>,
 }
 impl CodeCellValue {
-    pub fn get(&self, x: u32, y: u32) -> Option<CellValue> {
+    pub fn get_output_value(&self, x: u32, y: u32) -> Option<CellValue> {
         match &self.output.as_ref()?.result.as_ref().ok()?.output_value {
             Value::Single(v) => Some(v.clone().into()),
             Value::Array(a) => Some(a.get(x, y).ok()?.clone().into()),
@@ -56,6 +56,19 @@ impl CodeCellValue {
                 error_span: None,
             }
         })
+    }
+
+    pub fn output_size(&self) -> ArraySize {
+        match &self.output {
+            Some(output) => match &output.result {
+                Ok(ok) => match &ok.output_value {
+                    Value::Single(_) => ArraySize { w: 1, h: 1 },
+                    Value::Array(a) => a.array_size(),
+                },
+                Err(_) => ArraySize { w: 1, h: 1 },
+            },
+            None => ArraySize { w: 1, h: 1 },
+        }
     }
 }
 

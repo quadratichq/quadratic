@@ -3,13 +3,19 @@ use serde::{Deserialize, Serialize};
 use super::borders::CellBorder;
 use super::column::BoolSummary;
 use super::formatting::{CellAlign, CellWrap, NumericFormat};
-use super::{CellCodeLanguage, CellCodeRunOutput, CellValue};
+use super::{CellCodeLanguage, CellValue};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
     pub x: i64,
     pub y: i64,
+
+    #[serde(flatten)]
+    pub value: CellValue,
+    /// Code language, set only for the top left cell of a code output.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub language: Option<CellCodeLanguage>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub align: Option<CellAlign>,
@@ -25,9 +31,6 @@ pub struct JsRenderCell {
     pub text_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fill_color: Option<String>, // TODO: remove (needed for exporting to old file format)
-
-    #[serde(flatten)]
-    pub value: CellValue,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -61,6 +64,7 @@ pub struct JsFormattingSummary {
 pub struct JsRenderCodeCell {
     pub x: i64,
     pub y: i64,
+    pub w: u32,
+    pub h: u32,
     pub language: CellCodeLanguage,
-    pub output: Option<CellCodeRunOutput>,
 }

@@ -131,7 +131,7 @@ impl<B: BlockContent> Block<B> {
 
 /// Total content of a contiguous block in a column. Indexes start from zero at
 /// the top of the block.
-pub trait BlockContent: Sized + fmt::Debug {
+pub trait BlockContent: Sized + fmt::Debug + Clone {
     type Item: fmt::Debug + Clone;
 
     /// Constructs a block containing a single value.
