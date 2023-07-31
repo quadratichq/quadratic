@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::hash::Hash;
@@ -194,6 +195,28 @@ impl<B: BlockContent> ColumnData<B> {
         }
     }
 
+    pub fn blocks_of_range(&self, y_range: Range<i64>) -> impl Iterator<Item = Cow<'_, Block<B>>> {
+        self.blocks_covering_range(y_range.clone())
+            .with_position()
+            .filter_map(move |it| {
+                Some(match it {
+                    itertools::Position::First(block) => {
+                        let [_, b] = block.clone().split(y_range.start);
+                        Cow::Owned(b?)
+                    }
+                    itertools::Position::Middle(block) => Cow::Borrowed(block),
+                    itertools::Position::Last(block) => {
+                        let [a, _] = block.clone().split(y_range.end);
+                        Cow::Owned(a?)
+                    }
+                    itertools::Position::Only(block) => {
+                        let [_, b] = block.clone().split(y_range.start);
+                        let [mid, _] = b?.split(y_range.end);
+                        Cow::Owned(mid?)
+                    }
+                })
+            })
+    }
     pub fn remove_range(&mut self, y_range: Range<i64>) -> Vec<Block<B>> {
         let mut to_return = vec![];
         let mut to_put_back: SmallVec<[Block<B>; 2]> = smallvec![];

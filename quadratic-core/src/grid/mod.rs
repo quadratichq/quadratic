@@ -176,7 +176,7 @@ impl Grid {
                                     y: cell.y,
                                 };
                                 let code_cell = sheet
-                                    .try_cell_ref_to_pos(&pos)
+                                    .try_create_cell_ref(&pos)
                                     .and_then(|cell_ref| sheet.code_cells.get(&cell_ref));
                                 legacy::JsCell {
                                     x: cell.x,
@@ -380,11 +380,15 @@ impl Grid {
         let output = self
             .sheet_from_id(sheet_id)
             .iter_code_cells(region)
-            .map(|(pos, code_cell)| JsRenderCodeCell {
-                x: pos.x,
-                y: pos.y,
-                language: code_cell.language,
-                output: code_cell.output.clone(),
+            .map(|(pos, code_cell)| {
+                let ArraySize { w, h } = code_cell.output_size();
+                JsRenderCodeCell {
+                    x: pos.x,
+                    y: pos.y,
+                    w,
+                    h,
+                    language: code_cell.language,
+                }
             })
             .collect_vec();
         Ok(serde_json::to_string::<[JsRenderCodeCell]>(&output).map_err(|e| e.to_string())?)
@@ -441,7 +445,7 @@ impl Grid {
         pos: &Pos,
     ) -> Result<JsValue, JsValue> {
         let sheet = self.sheet_from_id(sheet_id);
-        let Some(cell_ref) = sheet.try_cell_ref_to_pos(pos) else {
+        let Some(cell_ref) = sheet.try_create_cell_ref(pos) else {
             return Ok(JsValue::UNDEFINED);
         };
         let Some(code_cell) = sheet.code_cells.get(&cell_ref) else {
@@ -663,7 +667,7 @@ impl Sheet {
             .is_some()
         {
             let code_cell = self
-                .try_cell_ref_to_pos(pos)
+                .try_create_cell_ref(pos)
                 .and_then(|cell_ref| self.code_cells.get(&cell_ref));
 
             if let Some(code_cell) = code_cell {
@@ -715,7 +719,7 @@ impl Sheet {
         })
     }
     /// Create a `CellRef` if the column and row already exist.
-    fn try_cell_ref_to_pos(&self, pos: &Pos) -> Option<CellRef> {
+    fn try_create_cell_ref(&self, pos: &Pos) -> Option<CellRef> {
         Some(CellRef {
             sheet: self.id,
             column: self.column_ids.id_at(pos.x)?,
@@ -785,26 +789,59 @@ impl Sheet {
     }
 
     pub fn get_render_cells(&self, region: &Rect) -> Vec<JsRenderCell> {
-        region
+        let columns_iter = region
             .x_range()
-            .filter_map(|x| Some((x, self.get_column(x)?)))
-            .flat_map(move |(x, column)| {
-                column
-                    .values
-                    .iter_range(region.y_range())
-                    .map(move |(y, value)| JsRenderCell {
-                        x,
-                        y,
-                        value,
+            .filter_map(|x| Some((x, self.get_column(x)?)));
 
-                        align: column.align.get(y),
-                        wrap: column.wrap.get(y),
-                        numeric_format: column.numeric_format.get(y),
-                        bold: column.bold.get(y),
-                        italic: column.italic.get(y),
-                        text_color: column.text_color.get(y),
-                        fill_color: None,
-                    })
+        // Fetch ordinary value cells.
+        let ordinary_cells = columns_iter.clone().flat_map(|(x, column)| {
+            column
+                .values
+                .iter_range(region.y_range())
+                .map(move |(y, value)| (x, y, column, value, None))
+        });
+
+        // Fetch values from code cells.
+        let code_output_cells = columns_iter.flat_map(move |(x, column)| {
+            column
+                .spills
+                .blocks_of_range(region.y_range())
+                .filter_map(move |block| {
+                    let code_cell_pos = self.cell_ref_to_pos(block.content.value)?;
+                    let code_cell = self.code_cells.get(&block.content.value)?;
+                    let dx = (code_cell_pos.x - x) as u32;
+                    let dy = (code_cell_pos.y - block.y) as u32;
+
+                    Some((0..block.len()).filter_map(move |y_within_block| {
+                        let y = block.y + y_within_block as i64;
+                        let dy = dy + y_within_block as u32;
+                        Some((
+                            x,
+                            y,
+                            column,
+                            code_cell.get_output_value(dx, dy)?,
+                            ((dx, dy) == (0, 0)).then_some(code_cell.language),
+                        ))
+                    }))
+                })
+                .flatten()
+        });
+
+        itertools::chain(ordinary_cells, code_output_cells)
+            .map(|(x, y, column, value, language)| JsRenderCell {
+                x,
+                y,
+
+                value,
+                language,
+
+                align: column.align.get(y),
+                wrap: column.wrap.get(y),
+                numeric_format: column.numeric_format.get(y),
+                bold: column.bold.get(y),
+                italic: column.italic.get(y),
+                text_color: column.text_color.get(y),
+                fill_color: None,
             })
             .collect()
     }
