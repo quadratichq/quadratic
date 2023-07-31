@@ -202,20 +202,17 @@ export class GridSparseRust extends GridSparse {
     };
   }
 
-  getCellList(rectangle: Rectangle): CellRust[] {
-    const json = this.file.getRenderCells(
-      this.sheetId,
-      new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom))
-    );
-    return JSON.parse(json);
+  getCellList(rectangle: Rectangle): { cells: CellRust[]; code: any } {
+    const rect = new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
+    const cells = this.file.getRenderCells(this.sheetId, rect);
+    const code = this.file.getRenderCodeCells(this.sheetId, rect);
+    return { cells: JSON.parse(cells), code: JSON.parse(code) };
   }
 
   getCells(rectangle: Rectangle): CellRectangle {
-    const result = this.file.getRenderCells(
-      this.sheetId,
-      new Rect(new Pos(rectangle.x, rectangle.y), new Pos(rectangle.right, rectangle.bottom))
-    );
-    return CellRectangle.fromRust(rectangle, result, this);
+    const rect = new Rect(new Pos(rectangle.x, rectangle.y), new Pos(rectangle.right, rectangle.bottom));
+    const data = this.file.getRenderCells(this.sheetId, rect);
+    return CellRectangle.fromRust(rectangle, data, this);
   }
 
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
