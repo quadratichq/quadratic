@@ -18,7 +18,9 @@ server.on('upgrade', (request, socket, head) => {
   // };
   // wss.handleUpgrade(request, socket, head, handleAuth);
 
-  if (request.url === '/ws') {
+  // if request.url begins with '/ws', call wss.handleUpgrade
+  console.log('request.url', request.url);
+  if (request.url?.startsWith('/ws')) {
     wss.handleUpgrade(request, socket, head, function done(ws) {
       wss.emit('connection', ws, request);
     });
