@@ -1,5 +1,4 @@
 import { Sheet } from '../../grid/sheet/Sheet';
-import { SheetRust } from '../../grid/sheet/SheetRust';
 import { QuadrantChanged } from '../quadrants/Quadrants';
 import { PixiApp } from './PixiApp';
 
@@ -110,9 +109,9 @@ class PixiAppEvents {
     this.app.settings.changeInput(input, initialValue);
   }
 
-  loadSheets(sheets: SheetRust[]) {
+  loadSheets() {
     if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.loadSheets');
-    this.app?.cellsSheets.create(sheets);
+    this.app?.cellsSheets.create();
   }
 }
 

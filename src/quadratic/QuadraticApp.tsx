@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { loadedStateAtom } from '../atoms/loadedStateAtom';
+import { debugUseRustSheetController } from '../debugFlags';
 import { SheetController } from '../grid/controller/sheetController';
 import { loadAssets } from '../gridGL/loadAssets';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
@@ -66,9 +67,15 @@ export const QuadraticApp = () => {
       if (!assets || !files) {
         return;
       }
-      app.preRenderQuadrants().then(() => {
+      if (debugUseRustSheetController) {
+        if (!app.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in QuadraticApp');
+        app.cellsSheets.create();
         setItemsLoaded((old) => ['quadrants', ...old]);
-      });
+      } else {
+        app.preRenderQuadrants().then(() => {
+          setItemsLoaded((old) => ['quadrants', ...old]);
+        });
+      }
     };
 
     // populate web workers

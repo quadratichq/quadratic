@@ -112,7 +112,8 @@ export class PixiApp {
     // useful for debugging at viewport locations
     this.debug = this.viewportContents.addChild(new Graphics());
 
-    this.quadrants = this.viewportContents.addChild(new Quadrants(this));
+    // todo...
+    this.quadrants = new Quadrants(this); //this.viewportContents.addChild(new Quadrants(this));
     this.quadrants.visible = false;
 
     this.gridLines = this.viewportContents.addChild(new GridLines(this));
@@ -120,7 +121,7 @@ export class PixiApp {
     // this.cells = this.viewportContents.addChild(new Cells(this));
 
     if (debugUseRustSheetController) {
-      this.cellsSheets = this.viewportContents.addChild(new CellsSheets());
+      this.cellsSheets = this.viewportContents.addChild(new CellsSheets(this));
     }
 
     // ensure the cell's background color is drawn first

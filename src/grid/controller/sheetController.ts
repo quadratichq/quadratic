@@ -58,8 +58,6 @@ export class SheetController {
     this.sortSheets();
     this._current = this.sheets[0].id;
 
-    pixiAppEvents.loadSheets(this.sheets as SheetRust[]);
-
     // used by SheetBar to update current sheet tab
     window.dispatchEvent(new CustomEvent('change-sheet'));
   }
