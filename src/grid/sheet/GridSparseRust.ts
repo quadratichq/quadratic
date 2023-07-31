@@ -3,7 +3,7 @@ import { CellRust } from '../../gridGL/cells/CellsTypes';
 import { cellHasContent } from '../../gridGL/helpers/selectCells';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Coordinate, MinMax } from '../../gridGL/types/size';
-import { File as CoreFile, Pos, Rect, SheetId } from '../../quadratic-core/quadratic_core';
+import { Grid, Pos, Rect, SheetId } from '../../quadratic-core/quadratic_core';
 import { Cell, CellFormat } from '../../schemas';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
@@ -18,13 +18,13 @@ export interface CellAndFormat {
 /** Stores all cells and format locations */
 export class GridSparseRust extends GridSparse {
   private sheetId: SheetId;
-  private file: CoreFile;
+  private grid: Grid;
 
-  constructor(file: CoreFile, index: number, sheet: Sheet) {
+  constructor(file: Grid, index: number, sheet: Sheet) {
     super(sheet);
-    this.file = file;
+    this.grid = file;
 
-    const sheetId = this.file.sheet_index_to_id(index);
+    const sheetId = this.grid.sheet_index_to_id(index);
     if (!sheetId) throw new Error('Expected sheetId to be defined');
     this.sheetId = sheetId;
 
@@ -43,13 +43,13 @@ export class GridSparseRust extends GridSparse {
   updateCells(cells: Cell[], _: boolean): void {
     cells.forEach((cell) => {
       if (cell.type === 'TEXT') {
-        this.file.setCellValue(this.sheetId, new Pos(cell.x, cell.y), { type: 'text', value: cell.value });
+        this.grid.setCellValue(this.sheetId, new Pos(cell.x, cell.y), { type: 'text', value: cell.value });
       } else {
         debugger;
       }
       this.quadrants.add(this.getKey(cell.x, cell.y));
     });
-    this.file.recalculateBounds(this.sheetId);
+    this.grid.recalculateBounds(this.sheetId);
   }
 
   recalculateBounds(): void {}
@@ -63,42 +63,42 @@ export class GridSparseRust extends GridSparse {
   updateFormat(formats: CellFormat[], _ = false): void {
     formats.forEach((format) => {
       const region = new Rect(new Pos(format.x, format.y), new Pos(format.x, format.y));
-      const originalRange = this.file.getRenderCells(this.sheetId, region);
+      const originalRange = this.grid.getRenderCells(this.sheetId, region);
       const original = JSON.parse(originalRange)?.[0] ?? {};
       if (this.hasFormatting(format)) {
         if (format.bold !== undefined && format.bold !== original.bold) {
-          this.file.setCellBold(this.sheetId, region, !!format.bold);
+          this.grid.setCellBold(this.sheetId, region, !!format.bold);
         }
         if (format.italic !== undefined && format.italic !== original.italic) {
-          this.file.setCellItalic(this.sheetId, region, !!format.italic);
+          this.grid.setCellItalic(this.sheetId, region, !!format.italic);
         }
         if (format.alignment !== undefined && format.alignment !== original.align) {
-          this.file.setCellAlign(this.sheetId, region, format.alignment);
+          this.grid.setCellAlign(this.sheetId, region, format.alignment);
         }
         if (format.fillColor !== undefined && format.fillColor !== original.fillColor) {
-          this.file.setCellFillColor(this.sheetId, region, format.fillColor);
+          this.grid.setCellFillColor(this.sheetId, region, format.fillColor);
         }
         if (format.textColor !== undefined && format.textColor !== original.textColor) {
-          this.file.setCellTextColor(this.sheetId, region, format.textColor);
+          this.grid.setCellTextColor(this.sheetId, region, format.textColor);
         }
         if (format.textFormat !== undefined && format.textFormat !== original.textFormat) {
-          this.file.setCellNumericFormat(this.sheetId, region, format.textFormat);
+          this.grid.setCellNumericFormat(this.sheetId, region, format.textFormat);
         }
         if (format.wrapping !== undefined && format.wrapping !== original.wrapping) {
-          this.file.setCellWrap(this.sheetId, region, format.textFormat);
+          this.grid.setCellWrap(this.sheetId, region, format.textFormat);
         }
       } else {
-        this.file.clearFormatting(this.sheetId, region);
+        this.grid.clearFormatting(this.sheetId, region);
       }
       this.quadrants.add(this.getKey(format.x, format.y));
     });
-    this.file.recalculateBounds(this.sheetId);
+    this.grid.recalculateBounds(this.sheetId);
   }
 
   clearFormat(formats: CellFormat[]): void {
     formats.forEach((format) => {
       const region = new Rect(new Pos(format.x, format.y), new Pos(format.x, format.y));
-      this.file.clearFormatting(this.sheetId, region);
+      this.grid.clearFormatting(this.sheetId, region);
     });
     this.recalculateBounds();
   }
@@ -106,7 +106,7 @@ export class GridSparseRust extends GridSparse {
   deleteCells(cells: Coordinate[], skipBounds = false): void {
     cells.forEach((cell) => {
       const region = new Rect(new Pos(cell.x, cell.y), new Pos(cell.x, cell.y));
-      this.file.deleteCellValues(this.sheetId, region);
+      this.grid.deleteCellValues(this.sheetId, region);
     });
     if (!skipBounds) {
       this.recalculateBounds();
@@ -114,7 +114,7 @@ export class GridSparseRust extends GridSparse {
   }
 
   get empty(): boolean {
-    const bounds = this.file.getGridBounds(this.sheetId, false);
+    const bounds = this.grid.getGridBounds(this.sheetId, false);
     return bounds.width === 0 && bounds.height === 0;
   }
 
@@ -127,7 +127,6 @@ export class GridSparseRust extends GridSparse {
   }
 
   populate(cells?: Cell[], formats?: CellFormat[]) {
-    console.log('hi');
     // this.clear();
     // if (!cells?.length && !formats?.length) return;
     // cells?.forEach((cell) => {
@@ -149,7 +148,7 @@ export class GridSparseRust extends GridSparse {
   }
 
   get(x: number, y: number): CellAndFormat | undefined {
-    const json = this.file.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
+    const json = this.grid.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
     const data = JSON.parse(json);
     if (data.length) {
       return {
@@ -175,7 +174,7 @@ export class GridSparseRust extends GridSparse {
   }
 
   getCell(x: number, y: number): Cell | undefined {
-    const json = this.file.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
+    const json = this.grid.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
     const data = JSON.parse(json);
     return {
       x,
@@ -186,7 +185,7 @@ export class GridSparseRust extends GridSparse {
   }
 
   getFormat(x: number, y: number): CellFormat | undefined {
-    const json = this.file.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
+    const json = this.grid.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
     const data = JSON.parse(json);
     if (!data[0]) return;
     return {
@@ -204,19 +203,19 @@ export class GridSparseRust extends GridSparse {
 
   getCellList(rectangle: Rectangle): { cells: CellRust[]; code: any } {
     const rect = new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
-    const cells = this.file.getRenderCells(this.sheetId, rect);
-    const code = this.file.getRenderCodeCells(this.sheetId, rect);
+    const cells = this.grid.getRenderCells(this.sheetId, rect);
+    const code = this.grid.getRenderCodeCells(this.sheetId, rect);
     return { cells: JSON.parse(cells), code: JSON.parse(code) };
   }
 
   getCells(rectangle: Rectangle): CellRectangle {
     const rect = new Rect(new Pos(rectangle.x, rectangle.y), new Pos(rectangle.right, rectangle.bottom));
-    const data = this.file.getRenderCells(this.sheetId, rect);
+    const data = this.grid.getRenderCells(this.sheetId, rect);
     return CellRectangle.fromRust(rectangle, data, this);
   }
 
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
-    const json = this.file.getRenderCells(this.sheetId, new Rect(new Pos(x0, y0), new Pos(x1, y1)));
+    const json = this.grid.getRenderCells(this.sheetId, new Rect(new Pos(x0, y0), new Pos(x1, y1)));
     const data = JSON.parse(json);
     const cells: Cell[] = [];
     data.forEach((entry: any) => {
@@ -233,7 +232,7 @@ export class GridSparseRust extends GridSparse {
   }
 
   getNakedFormat(x0: number, y0: number, x1: number, y1: number): CellFormat[] {
-    const json = this.file.getRenderCells(this.sheetId, new Rect(new Pos(x0, y0), new Pos(x1, y1)));
+    const json = this.grid.getRenderCells(this.sheetId, new Rect(new Pos(x0, y0), new Pos(x1, y1)));
     const data = JSON.parse(json);
     const cells: CellFormat[] = [];
     data.forEach((entry: any) => {
@@ -255,7 +254,7 @@ export class GridSparseRust extends GridSparse {
   }
 
   getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
-    const allBounds = this.file.getGridBounds(this.sheetId, false);
+    const allBounds = this.grid.getGridBounds(this.sheetId, false);
     const minX = allBounds.nonEmpty?.min.x;
     const minY = allBounds.nonEmpty?.min.y;
     const maxX = allBounds.nonEmpty?.max.x;
@@ -285,7 +284,7 @@ export class GridSparseRust extends GridSparse {
   }
 
   getGridBounds(onlyData: boolean): Rectangle | undefined {
-    const bounds = this.file.getGridBounds(this.sheetId, onlyData);
+    const bounds = this.grid.getGridBounds(this.sheetId, onlyData);
     if (bounds.nonEmpty) {
       return new Rectangle(
         bounds.nonEmpty.min.x,

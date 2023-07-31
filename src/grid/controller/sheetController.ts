@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/browser';
 import { debug } from '../../debugFlags';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
-import { File as CoreFile } from '../../quadratic-core/quadratic_core';
+import { Grid } from '../../quadratic-core/quadratic_core';
 import { GridFile, SheetSchema } from '../../schemas';
 import { generateKeyBetween } from '../../utils/fractionalIndexing';
 import { Sheet } from '../sheet/Sheet';
@@ -14,7 +14,7 @@ import { Transaction } from './transaction';
 export class SheetController {
   private _current: string;
 
-  file: CoreFile;
+  grid: Grid;
 
   sheets: Sheet[];
   saveLocalFiles: (() => void) | undefined;
@@ -36,7 +36,7 @@ export class SheetController {
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
     this.saveLocalFiles = undefined;
-    this.file = new CoreFile();
+    this.grid = new Grid();
   }
 
   get current(): string {
@@ -50,10 +50,10 @@ export class SheetController {
   }
 
   loadFile(grid: GridFile) {
-    this.file = CoreFile.newFromFile(grid);
+    this.grid = Grid.newFromFile(grid);
     this.sheets = [];
     grid.sheets.forEach((sheet, index) => {
-      this.sheets.push(new SheetRust(this.file, index, sheet.name, sheet.order));
+      this.sheets.push(new SheetRust(this.grid, index, sheet.name, sheet.order));
     });
     this.sortSheets();
     this._current = this.sheets[0].id;

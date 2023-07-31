@@ -331,7 +331,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
 
     // todo
     const modified = Date.now();
-    const exported = sheetController.file.exportToFile();
+    const exported = sheetController.grid.exportToFile();
     const updatedFile = { ...currentFileContents, sheets: exported.sheets, modified };
     // const updatedFile = { ...currentFileContents, sheets: sheetController.export(), modified };
     setCurrentFileContents(updatedFile);

@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { intersects } from '../../gridGL/helpers/intersects';
 import { Coordinate } from '../../gridGL/types/size';
-import { File as CoreFile } from '../../quadratic-core/quadratic_core';
+import { Grid } from '../../quadratic-core/quadratic_core';
 import { Cell, CellFormat, SheetSchema } from '../../schemas';
 import { CellDependencyManager } from './CellDependencyManager';
 import { GridBorders } from './GridBorders';
@@ -13,9 +13,9 @@ import { Sheet } from './Sheet';
 import { SheetCursor } from './SheetCursor';
 
 export class SheetRust extends Sheet {
-  constructor(file: CoreFile, index: number, name: string | undefined, order: string, copyFrom?: Sheet) {
+  constructor(grid: Grid, index: number, name: string | undefined, order: string, copyFrom?: Sheet) {
     super(name, order, copyFrom);
-    this.grid = new GridSparseRust(file, index, this);
+    this.grid = new GridSparseRust(grid, index, this);
   }
 
   // for testing

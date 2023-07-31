@@ -25,4 +25,21 @@ export interface CellRust {
   textColor?: string;
 }
 
+export interface CodeRust {
+  x: number;
+  y: number;
+  language: string;
+  output: {
+    result: {
+      Ok?: {
+        output_value: {
+          width: number;
+          height: number;
+          values: string[];
+        };
+      };
+    };
+  };
+}
+
 export const sheetHashSize = 1000;

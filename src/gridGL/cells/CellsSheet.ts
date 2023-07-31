@@ -38,10 +38,9 @@ export class CellsSheet extends Container {
             new Rectangle(x, y, sheetHashSize, sheetHashSize)
           );
           if (cells.length || code.length) {
-            console.log(code);
             const cellsHash = this.cellsHashContainer.addChild(new CellsHash(x, y));
             this.cellsHash.set(cellsHash.key, cellsHash);
-            const cellLabels = this.cellsLabels.add(cells);
+            const cellLabels = this.cellsLabels.add(cells, code);
             cellLabels.forEach((cellLabel) => cellsHash.add(cellLabel));
           }
         }
