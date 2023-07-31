@@ -5,13 +5,13 @@ use crate::formulas::{ArraySize, FormulaError, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CodeCellValue {
-    pub language: CellCodeLanguage,
+    pub language: CodeCellLanguage,
     pub code_string: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub formatted_code_string: Option<String>,
     pub last_modified: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub output: Option<CellCodeRunOutput>,
+    pub output: Option<CodeCellRunOutput>,
 }
 impl CodeCellValue {
     pub fn get_output_value(&self, x: u32, y: u32) -> Option<CellValue> {
@@ -73,7 +73,7 @@ impl CodeCellValue {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum CellCodeLanguage {
+pub enum CodeCellLanguage {
     Python,
     Formula,
     JavaScript,
@@ -81,15 +81,15 @@ pub enum CellCodeLanguage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CellCodeRunOutput {
+pub struct CodeCellRunOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
-    pub result: Result<CellCodeRunOk, FormulaError>,
+    pub result: Result<CodeCellRunOk, FormulaError>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CellCodeRunOk {
+pub struct CodeCellRunOk {
     pub output_value: Value,
     pub cells_accessed: Vec<CellRef>,
 }
