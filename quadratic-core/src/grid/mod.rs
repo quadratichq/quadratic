@@ -33,7 +33,7 @@ use js_structs::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[wasm_bindgen]
-pub struct File {
+pub struct Grid {
     sheet_ids: IdMap<SheetId, usize>,
     sheets: Vec<Sheet>,
 
@@ -42,17 +42,17 @@ pub struct File {
     id: Uuid,
     modified: f64,
 }
-impl Default for File {
+impl Default for Grid {
     fn default() -> Self {
         Self::new()
     }
 }
-impl File {
+impl Grid {
     pub fn from_legacy(file: &legacy::GridFile) -> Result<Self> {
         use legacy::*;
 
         let GridFile::V1_3(file) = file;
-        let mut ret = File::new();
+        let mut ret = Grid::new();
         ret.sheets = vec![];
         for js_sheet in &file.sheets {
             let sheet_id = ret.add_sheet();
@@ -176,7 +176,7 @@ impl File {
                                     y: cell.y,
                                 };
                                 let code_cell = sheet
-                                    .get_cell_ref(&pos)
+                                    .try_cell_ref_to_pos(&pos)
                                     .and_then(|cell_ref| sheet.code_cells.get(&cell_ref));
                                 legacy::JsCell {
                                     x: cell.x,
@@ -267,11 +267,11 @@ impl File {
 }
 
 #[wasm_bindgen]
-impl File {
+impl Grid {
     #[wasm_bindgen(js_name = "newFromFile")]
-    pub fn js_new_from_file(file: JsValue) -> Result<File, JsValue> {
+    pub fn js_new_from_file(file: JsValue) -> Result<Grid, JsValue> {
         let file = serde_wasm_bindgen::from_value(file)?;
-        File::from_legacy(&file).map_err(|e| JsError::new(&e.to_string()).into())
+        Grid::from_legacy(&file).map_err(|e| JsError::new(&e.to_string()).into())
     }
 
     #[wasm_bindgen(js_name = "exportToFile")]
@@ -281,7 +281,7 @@ impl File {
 
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        let mut ret = File {
+        let mut ret = Grid {
             sheet_ids: IdMap::new(),
             sheets: vec![],
 
@@ -305,13 +305,11 @@ impl File {
             column_ids: IdMap::new(),
             row_ids: IdMap::new(),
 
-            columns: BTreeMap::new(),
-
-            borders: SheetBorders::new(),
-
             column_widths: BTreeMap::new(),
             row_heights: BTreeMap::new(),
 
+            columns: BTreeMap::new(),
+            borders: SheetBorders::new(),
             code_cells: HashMap::new(),
 
             data_bounds: GridBounds::Empty,
@@ -382,7 +380,9 @@ impl File {
         let output = self
             .sheet_from_id(sheet_id)
             .iter_code_cells(region)
-            .map(|code_cell| JsRenderCodeCell {
+            .map(|(pos, code_cell)| JsRenderCodeCell {
+                x: pos.x,
+                y: pos.y,
                 language: code_cell.language,
                 output: code_cell.output.clone(),
             })
@@ -441,7 +441,7 @@ impl File {
         pos: &Pos,
     ) -> Result<JsValue, JsValue> {
         let sheet = self.sheet_from_id(sheet_id);
-        let Some(cell_ref) = sheet.get_cell_ref(pos) else {
+        let Some(cell_ref) = sheet.try_cell_ref_to_pos(pos) else {
             return Ok(JsValue::UNDEFINED);
         };
         let Some(code_cell) = sheet.code_cells.get(&cell_ref) else {
@@ -591,13 +591,11 @@ pub struct Sheet {
     column_ids: IdMap<ColumnId, i64>,
     row_ids: IdMap<RowId, i64>,
 
-    columns: BTreeMap<i64, Column>,
-
-    borders: SheetBorders,
-
     column_widths: BTreeMap<i64, f32>,
     row_heights: BTreeMap<i64, f32>,
 
+    columns: BTreeMap<i64, Column>,
+    borders: SheetBorders,
     code_cells: HashMap<CellRef, CodeCellValue>,
 
     data_bounds: GridBounds,
@@ -665,7 +663,7 @@ impl Sheet {
             .is_some()
         {
             let code_cell = self
-                .get_cell_ref(pos)
+                .try_cell_ref_to_pos(pos)
                 .and_then(|cell_ref| self.code_cells.get(&cell_ref));
 
             if let Some(code_cell) = code_cell {
@@ -709,8 +707,15 @@ impl Sheet {
             }
         }
     }
+    /// Returns the position for a `CellRef`.
+    fn cell_ref_to_pos(&self, cell_ref: CellRef) -> Option<Pos> {
+        Some(Pos {
+            x: self.column_ids.index_of(cell_ref.column)?,
+            y: self.row_ids.index_of(cell_ref.row)?,
+        })
+    }
     /// Create a `CellRef` if the column and row already exist.
-    fn get_cell_ref(&self, pos: &Pos) -> Option<CellRef> {
+    fn try_cell_ref_to_pos(&self, pos: &Pos) -> Option<CellRef> {
         Some(CellRef {
             sheet: self.id,
             column: self.column_ids.id_at(pos.x)?,
@@ -820,7 +825,7 @@ impl Sheet {
         ret
     }
 
-    pub fn iter_code_cells(&self, region: &Rect) -> impl Iterator<Item = &CodeCellValue> {
+    pub fn iter_code_cells(&self, region: &Rect) -> impl Iterator<Item = (Pos, &CodeCellValue)> {
         let code_cell_refs: HashSet<CellRef> = self
             .columns
             .range(region.x_range())
@@ -832,9 +837,12 @@ impl Sheet {
             })
             .collect();
 
-        code_cell_refs
-            .into_iter()
-            .filter_map(|cell_ref| self.code_cells.get(&cell_ref))
+        code_cell_refs.into_iter().filter_map(|cell_ref| {
+            Some((
+                self.cell_ref_to_pos(cell_ref)?,
+                self.code_cells.get(&cell_ref)?,
+            ))
+        })
     }
 
     fn unspill(&mut self, source: CellRef) {
