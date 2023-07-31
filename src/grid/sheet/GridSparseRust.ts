@@ -23,18 +23,17 @@ export class GridSparseRust extends GridSparse {
   constructor(file: CoreFile, index: number, sheet: Sheet) {
     super(sheet);
     this.file = file;
+
     const sheetId = this.file.sheet_index_to_id(index);
     if (!sheetId) throw new Error('Expected sheetId to be defined');
     this.sheetId = sheetId;
 
-    // todo: this should be done in rust
-    const bounds = this.getGridBounds(false);
-    if (!bounds) return;
-    for (let y = bounds.top; y <= bounds.bottom; y++) {
-      for (let x = bounds.left; x <= bounds.right; x++) {
-        this.quadrants.add(this.getKey(x, y));
-      }
-    }
+    // if (!bounds) return;
+    // for (let y = bounds.top; y <= bounds.bottom; y++) {
+    //   for (let x = bounds.left; x <= bounds.right; x++) {
+    //     this.quadrants.add(this.getKey(x, y));
+    //   }
+    // }
   }
 
   get gridOffsets(): GridOffsets {
@@ -128,6 +127,7 @@ export class GridSparseRust extends GridSparse {
   }
 
   populate(cells?: Cell[], formats?: CellFormat[]) {
+    console.log('hi');
     // this.clear();
     // if (!cells?.length && !formats?.length) return;
     // cells?.forEach((cell) => {

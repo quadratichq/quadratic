@@ -41,6 +41,7 @@ export class CellsLabels extends Container implements CellHash {
     //   neighborOffset += neighborWidth;
     //   column++;
     // }
+    return;
   }
 
   private getClipLeft(label: CellLabel): number | undefined {
@@ -59,6 +60,7 @@ export class CellsLabels extends Container implements CellHash {
     //   column--;
     //   neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
     // }
+    return;
   }
 
   // checks to see if the label needs to be clipped based on other labels
@@ -140,52 +142,52 @@ export class CellsLabels extends Container implements CellHash {
    * add labels to headings using cached labels
    * @returns the visual bounds only if isQuadrant is defined (otherwise not worth the .width/.height call)
    */
-  update(): Rectangle | undefined {
-    const bounds = new Bounds();
+  // update(): Rectangle | undefined {
+  //   const bounds = new Bounds();
 
-    // keep current children to use as the cache
-    this.children.forEach((child) => (child.visible = false));
+  //   // keep current children to use as the cache
+  //   this.children.forEach((child) => (child.visible = false));
 
-    const available = [...this.children] as CellLabel[];
-    const leftovers: LabelData[] = [];
+  //   const available = [...this.children] as CellLabel[];
+  //   const leftovers: LabelData[] = [];
 
-    // reuse existing labels that have the same text
-    this.labelData.forEach((data) => {
-      const index = available.findIndex((label) => this.compareLabelData(label, data));
-      if (index === -1) {
-        leftovers.push(data);
-      } else {
-        this.updateLabel(available[index], data);
-        available.splice(index, 1);
-      }
-    });
+  //   // reuse existing labels that have the same text
+  //   this.labelData.forEach((data) => {
+  //     const index = available.findIndex((label) => this.compareLabelData(label, data));
+  //     if (index === -1) {
+  //       leftovers.push(data);
+  //     } else {
+  //       this.updateLabel(available[index], data);
+  //       available.splice(index, 1);
+  //     }
+  //   });
 
-    // use existing labels but change the text
-    leftovers.forEach((data, i) => {
-      if (i < available.length) {
-        this.updateLabel(available[i], data);
-      }
+  //   // use existing labels but change the text
+  //   leftovers.forEach((data, i) => {
+  //     if (i < available.length) {
+  //       this.updateLabel(available[i], data);
+  //     }
 
-      // otherwise create new labels
-      else {
-        const label = this.addChild(new CellLabel(data));
-        label.position = this.calculatePosition(label, data);
-        label.lastPosition = label.position.clone();
-      }
-    });
+  //     // otherwise create new labels
+  //     else {
+  //       const label = this.addChild(new CellLabel(data));
+  //       label.position = this.calculatePosition(label, data);
+  //       label.lastPosition = label.position.clone();
+  //     }
+  //   });
 
-    this.children.forEach((child) => {
-      const label = child as CellLabel;
-      if (label.visible) {
-        this.checkForClipping(label);
-        this.checkForOverflow({ label, bounds });
-      }
-    });
+  //   this.children.forEach((child) => {
+  //     const label = child as CellLabel;
+  //     if (label.visible) {
+  //       this.checkForClipping(label);
+  //       this.checkForOverflow({ label, bounds });
+  //     }
+  //   });
 
-    if (!bounds.empty) {
-      return bounds.toRectangle();
-    }
-  }
+  //   if (!bounds.empty) {
+  //     return bounds.toRectangle();
+  //   }
+  // }
 
   get(): CellLabel[] {
     return this.children as CellLabel[];

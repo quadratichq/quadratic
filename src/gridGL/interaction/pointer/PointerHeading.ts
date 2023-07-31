@@ -1,11 +1,11 @@
 import { InteractivePointerEvent, Point } from 'pixi.js';
+import { CELL_HEIGHT } from '../../../constants/gridConstants';
+import { HeadingSize } from '../../../grid/sheet/useHeadings';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
-import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { HeadingSize } from '../../../grid/sheet/useHeadings';
-import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
 import { PanMode } from '../../pixiApp/PixiAppSettings';
+import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
@@ -32,7 +32,7 @@ export class PointerHeading {
     if (this.active) {
       this.active = false;
       this.sheet.gridOffsets.headingResizing = undefined;
-      this.app.cells.dirty = true;
+      // this.app.cells.dirty = true;
       this.app.gridLines.dirty = true;
       this.app.cursor.dirty = true;
       this.app.headings.dirty = true;
@@ -141,7 +141,7 @@ export class PointerHeading {
   }
 
   pointerMove(world: Point): boolean {
-    const { headings, cells, gridLines, cursor } = this.app;
+    const { headings, gridLines, cursor } = this.app;
     const { gridOffsets } = this.sheet;
     this.cursor = undefined;
     this.clicked = false;
@@ -174,7 +174,7 @@ export class PointerHeading {
 
         if (size !== headingResizing.width) {
           headingResizing.width = size;
-          cells.dirty = true;
+          // cells.dirty = true;
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
@@ -195,7 +195,7 @@ export class PointerHeading {
 
         if (size !== headingResizing.height) {
           headingResizing.height = size;
-          cells.dirty = true;
+          // cells.dirty = true;
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
@@ -247,25 +247,24 @@ export class PointerHeading {
   }
 
   private onDoubleClickColumn(column: number): void {
-    const cellsColumnContent = this.app.cells.getCellsContentWidth().filter((cell) => cell.location.x === column);
-
-    if (cellsColumnContent.length === 0) return;
-    const maxWidth = cellsColumnContent.reduce((max, cell) => (cell.textWidth > max ? cell.textWidth : max), 0);
-    const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
-    const size = Math.max(contentSizePlusMargin, MINIMUM_COLUMN_SIZE);
-
-    this.app.quadrants.quadrantChanged({ column });
-    this.app.sheet_controller.predefined_transaction([
-      {
-        type: 'SET_HEADING_SIZE',
-        data: {
-          heading_size: {
-            column,
-            size,
-          },
-        },
-      },
-    ]);
+    // todo
+    // const cellsColumnContent = this.app.cells.getCellsContentWidth().filter((cell) => cell.location.x === column);
+    // if (cellsColumnContent.length === 0) return;
+    // const maxWidth = cellsColumnContent.reduce((max, cell) => (cell.textWidth > max ? cell.textWidth : max), 0);
+    // const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
+    // const size = Math.max(contentSizePlusMargin, MINIMUM_COLUMN_SIZE);
+    // this.app.quadrants.quadrantChanged({ column });
+    // this.app.sheet_controller.predefined_transaction([
+    //   {
+    //     type: 'SET_HEADING_SIZE',
+    //     data: {
+    //       heading_size: {
+    //         column,
+    //         size,
+    //       },
+    //     },
+    //   },
+    // ]);
   }
 
   private onDoubleClickRow(row: number): void {

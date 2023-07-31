@@ -1,4 +1,5 @@
 import { Sheet } from '../../grid/sheet/Sheet';
+import { SheetRust } from '../../grid/sheet/SheetRust';
 import { QuadrantChanged } from '../quadrants/Quadrants';
 import { PixiApp } from './PixiApp';
 
@@ -18,14 +19,14 @@ class PixiAppEvents {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.quadrantsChanged');
 
     this.app.quadrants.quadrantChanged(quadrantChanged);
-    this.app.cells.dirty = true;
+    // this.app.cells.dirty = true;
   }
 
   setDirty(dirty: SetDirty): void {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.setDirty');
 
     if (dirty.cells) {
-      this.app.cells.dirty = true;
+      // this.app.cells.dirty = true;
     }
     if (dirty.cursor) {
       this.app.cursor.dirty = true;
@@ -56,7 +57,7 @@ class PixiAppEvents {
     this.app.axesLines.dirty = true;
     this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
-    this.app.cells.dirty = true;
+    // this.app.cells.dirty = true;
     this.app.quadrants.changeSheet();
     this.app.boxCells.reset();
     this.app.settings.changeInput(false);
@@ -82,7 +83,7 @@ class PixiAppEvents {
     this.app.axesLines.dirty = true;
     this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
-    this.app.cells.dirty = true;
+    // this.app.cells.dirty = true;
     this.app.boxCells.reset();
     this.app.quadrants.build();
   }
@@ -107,6 +108,11 @@ class PixiAppEvents {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.changeInput');
 
     this.app.settings.changeInput(input, initialValue);
+  }
+
+  loadSheets(sheets: SheetRust[]) {
+    if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.loadSheets');
+    this.app?.cellsSheets.create(sheets);
   }
 }
 

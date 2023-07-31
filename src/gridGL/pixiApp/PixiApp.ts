@@ -3,15 +3,20 @@ import { Container, Graphics, Renderer } from 'pixi.js';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../constants/app';
 import { HEADING_SIZE } from '../../constants/gridConstants';
-import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../debugFlags';
+import {
+  debugAlwaysShowCache,
+  debugNeverShowCache,
+  debugShowCacheFlag,
+  debugUseRustSheetController,
+} from '../../debugFlags';
 import { SheetController } from '../../grid/controller/sheetController';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
 import { BoxCells } from '../UI/boxCells';
-import { Cells } from '../UI/cells/Cells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
+import { CellsSheets } from '../cells/CellsSheets';
 import { zoomInOut, zoomToFit, zoomToSelection } from '../helpers/zoom';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
@@ -37,7 +42,8 @@ export class PixiApp {
   cursor: Cursor;
   headings: GridHeadings;
   boxCells: BoxCells;
-  cells: Cells;
+  // cells: Cells;
+  cellsSheets?: CellsSheets;
 
   quadrants: Quadrants;
 
@@ -111,10 +117,14 @@ export class PixiApp {
 
     this.gridLines = this.viewportContents.addChild(new GridLines(this));
     this.axesLines = this.viewportContents.addChild(new AxesLines(this));
-    this.cells = this.viewportContents.addChild(new Cells(this));
+    // this.cells = this.viewportContents.addChild(new Cells(this));
+
+    if (debugUseRustSheetController) {
+      this.cellsSheets = this.viewportContents.addChild(new CellsSheets());
+    }
 
     // ensure the cell's background color is drawn first
-    this.viewportContents.addChildAt(this.cells.cellsBackground, 0);
+    // this.viewportContents.addChildAt(this.cells.cellsBackground, 0);
 
     this.boxCells = this.viewportContents.addChild(new BoxCells(this));
     this.cursor = this.viewportContents.addChild(new Cursor(this));
@@ -155,20 +165,20 @@ export class PixiApp {
         (cacheOn as HTMLSpanElement).innerHTML = 'CACHE';
       }
     }
-    this.cells.changeVisibility(false);
+    // this.cells.changeVisibility(false);
     this.quadrants.visible = true;
     this.cacheIsVisible = true;
   }
 
   private showCells(): void {
-    if (debugShowCacheFlag && !this.cells.visible) {
-      const cacheOn = document.querySelector('.debug-show-cache-on') as HTMLSpanElement;
-      if (cacheOn) {
-        cacheOn.innerHTML = '';
-      }
-    }
-    this.cells.dirty = true;
-    this.cells.changeVisibility(true);
+    // if (debugShowCacheFlag && !this.cells.visible) {
+    //   const cacheOn = document.querySelector('.debug-show-cache-on') as HTMLSpanElement;
+    //   if (cacheOn) {
+    //     cacheOn.innerHTML = '';
+    //   }
+    // }
+    // this.cells.dirty = true;
+    // this.cells.changeVisibility(true);
     this.quadrants.visible = false;
     this.cacheIsVisible = false;
   }
@@ -219,7 +229,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
-    this.cells.dirty = true;
+    // this.cells.dirty = true;
   };
 
   setZoomState(value: number): void {
@@ -242,8 +252,8 @@ export class PixiApp {
     this.headings.visible = false;
     this.quadrants.visible = false;
     this.boxCells.visible = false;
-    this.cells.changeVisibility(true);
-    this.cells.dirty = true;
+    // this.cells.changeVisibility(true);
+    // this.cells.dirty = true;
     return this.viewportContents;
   }
 
@@ -254,8 +264,8 @@ export class PixiApp {
     this.headings.visible = true;
     this.boxCells.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
-    this.cells.changeVisibility(!this.cacheIsVisible);
-    if (!this.cacheIsVisible) this.cells.dirty = true;
+    // this.cells.changeVisibility(!this.cacheIsVisible);
+    // if (!this.cacheIsVisible) this.cells.dirty = true;
   }
 
   // helper for playwright

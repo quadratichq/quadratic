@@ -48,7 +48,7 @@ export class PixiAppSettings {
     this.app.gridLines.dirty = true;
     this.app.axesLines.dirty = true;
     this.app.headings.dirty = true;
-    this.app.cells.dirty = true;
+    // this.app.cells.dirty = true;
 
     // only rebuild quadrants if showCellTypeOutlines change
     if (
@@ -68,7 +68,7 @@ export class PixiAppSettings {
     this.setEditorInteractionState = setEditorInteractionState;
     this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
-    this.app.cells.dirty = true;
+    // this.app.cells.dirty = true;
   }
 
   updateEditorHighlightedCellsState(

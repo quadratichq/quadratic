@@ -2,12 +2,13 @@ import { Container, Rectangle } from 'pixi.js';
 import { GridSparseRust } from '../../grid/sheet/GridSparseRust';
 import { SheetRust } from '../../grid/sheet/SheetRust';
 import { intersects } from '../helpers/intersects';
-import { PixiApp } from '../pixiApp/PixiApp';
 import { CellsHash } from './CellsHash';
 import { CellsLabels } from './CellsLabels';
 import { CellHash, CellsHashBounds, sheetHashSize } from './CellsTypes';
 
 export class CellsSheet extends Container {
+  sheet: SheetRust;
+
   // all labels within the sheet (needed b/c CellLabels can cross hash boundaries)
   private cellsLabels: CellsLabels;
 
@@ -17,8 +18,9 @@ export class CellsSheet extends Container {
   // index into cellsHashContainer
   private cellsHash: Map<string, CellsHash>;
 
-  constructor(app: PixiApp, sheet: SheetRust) {
+  constructor(sheet: SheetRust) {
     super();
+    this.sheet = sheet;
     this.cellsHash = new Map();
     this.cellsHashContainer = this.addChild(new Container());
     this.cellsLabels = this.addChild(new CellsLabels(sheet));
@@ -71,6 +73,7 @@ export class CellsSheet extends Container {
   }
 
   show(bounds: Rectangle): void {
+    this.visible = false;
     this.cellsHash.forEach((cellsHash) => {
       if (intersects.rectangleRectangle(bounds, cellsHash.AABB)) {
         cellsHash.show();
@@ -78,6 +81,10 @@ export class CellsSheet extends Container {
         cellsHash.hide();
       }
     });
+  }
+
+  hide() {
+    this.visible = false;
   }
 
   updateHash(hash: CellHash, AABB: Rectangle): void {

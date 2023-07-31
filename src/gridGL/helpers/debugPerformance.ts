@@ -1,10 +1,5 @@
 import * as PIXI from 'pixi.js';
-import {
-  debugShowCachedSpriteCounts,
-  debugShowCountRenderedObjects,
-  debugShowRenderer,
-  debugShowTime,
-} from '../../debugFlags';
+import { debugShowCountRenderedObjects, debugShowRenderer, debugShowTime } from '../../debugFlags';
 import { PixiApp } from '../pixiApp/PixiApp';
 
 const MINIMUM_MS_TO_DISPLAY = 10;
@@ -55,6 +50,6 @@ export function debugShowChildren(parent: PIXI.Container, name?: string): void {
 }
 
 export function debugShowCachedCounts(app: PixiApp): void {
-  if (!debugShowCachedSpriteCounts) return;
-  app.cells.debugShowCachedCounts();
+  // if (!debugShowCachedSpriteCounts) return;
+  // app.cells.debugShowCachedCounts();
 }

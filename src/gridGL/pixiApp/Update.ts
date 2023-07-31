@@ -1,5 +1,6 @@
 import { Point } from 'pixi.js';
-import { debug, debugShowCellsForDirtyQuadrants, debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
+import { debug, debugShowCellsForDirtyQuadrants, debugShowFPS } from '../../debugFlags';
+import { FPS } from '../helpers/Fps';
 import {
   debugRendererLight,
   debugShowCachedCounts,
@@ -7,7 +8,6 @@ import {
   debugTimeCheck,
   debugTimeReset,
 } from '../helpers/debugPerformance';
-import { FPS } from '../helpers/Fps';
 import { QUADRANT_RENDER_WAIT } from '../quadrants/quadrantConstants';
 import { PixiApp } from './PixiApp';
 
@@ -76,16 +76,16 @@ export class Update {
       app.axesLines.dirty ||
       app.headings.dirty ||
       app.boxCells.dirty ||
-      app.cells.dirty ||
+      // app.cells.dirty ||
       app.cursor.dirty;
 
-    if (rendererDirty && debugShowWhyRendering) {
-      console.log(
-        `dirty: ${app.viewport.dirty ? 'viewport ' : ''}${app.gridLines.dirty ? 'gridLines ' : ''}${
-          app.axesLines.dirty ? 'axesLines ' : ''
-        }${app.headings.dirty ? 'headings ' : ''}${app.cells.dirty ? 'cells ' : ''}${app.cursor.dirty ? 'cursor ' : ''}`
-      );
-    }
+    // if (rendererDirty && debugShowWhyRendering) {
+    //   console.log(
+    //     `dirty: ${app.viewport.dirty ? 'viewport ' : ''}${app.gridLines.dirty ? 'gridLines ' : ''}${
+    //       app.axesLines.dirty ? 'axesLines ' : ''
+    //     }${app.headings.dirty ? 'headings ' : ''}${app.cells.dirty ? 'cells ' : ''}${app.cursor.dirty ? 'cursor ' : ''}`
+    //   );
+    // }
 
     debugTimeReset();
     app.gridLines.update();
@@ -96,9 +96,8 @@ export class Update {
     debugTimeCheck('[Update] headings');
     app.boxCells.update();
     debugTimeCheck('[Update] boxCells');
-    app.cells.update();
-
-    debugTimeCheck('[Update] cells');
+    // app.cells.update();
+    // debugTimeCheck('[Update] cells');
     app.cursor.update();
     debugTimeCheck('[Update] cursor');
 
@@ -114,9 +113,9 @@ export class Update {
       // forces the temporary replacement cells to render instead of the cache or cells (used for debugging only)
       if (debugShowCellsForDirtyQuadrants) {
         app.quadrants.visible = false;
-        const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
-        app.cells.changeVisibility(true);
-        app.cells.drawMultipleBounds(cellRectangles);
+        // const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
+        // app.cells.changeVisibility(true);
+        // app.cells.drawMultipleBounds(cellRectangles);
       }
 
       // normal rendering
@@ -124,13 +123,13 @@ export class Update {
         app.quadrants.cull();
 
         // forces real rendering for dirty quadrants
-        const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
-        if (cellRectangles.length) {
-          app.cells.changeVisibility(true);
-          app.cells.drawMultipleBounds(cellRectangles);
-        } else {
-          app.cells.changeVisibility(false);
-        }
+        // const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
+        // if (cellRectangles.length) {
+        //   app.cells.changeVisibility(true);
+        //   app.cells.drawMultipleBounds(cellRectangles);
+        // } else {
+        //   app.cells.changeVisibility(false);
+        // }
       }
       debugTimeReset();
       app.renderer.render(app.stage);
@@ -151,7 +150,7 @@ export class Update {
 
         // if quadrants are not dirty then rerender cells so it's ready for user input
         else if (this.quadrantsRendered) {
-          app.cells.dirty = true;
+          // app.cells.dirty = true;
           this.quadrantsRendered = false;
         }
       }
@@ -174,14 +173,14 @@ export class Update {
       app.axesLines.dirty ||
       app.headings.dirty ||
       app.boxCells.dirty ||
-      app.cells.dirty ||
+      // app.cells.dirty ||
       app.cursor.dirty;
 
     app.gridLines.update();
     app.axesLines.update();
     app.headings.update();
     app.boxCells.update();
-    app.cells.update();
+    // app.cells.update();
     app.cursor.update();
 
     if (rendererDirty) {
@@ -196,13 +195,13 @@ export class Update {
         app.quadrants.cull();
 
         // forces real rendering for dirty quadrants
-        const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
-        if (cellRectangles.length) {
-          app.cells.changeVisibility(true);
-          app.cells.drawMultipleBounds(cellRectangles);
-        } else {
-          app.cells.changeVisibility(false);
-        }
+        // const cellRectangles = app.quadrants.getCellsForDirtyQuadrants();
+        // if (cellRectangles.length) {
+        //   app.cells.changeVisibility(true);
+        //   app.cells.drawMultipleBounds(cellRectangles);
+        // } else {
+        //   app.cells.changeVisibility(false);
+        // }
       }
       app.renderer.render(app.stage);
       this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
@@ -216,7 +215,7 @@ export class Update {
 
         // if quadrants are not dirty then rerender cells so it's ready for user input
         else if (this.quadrantsRendered) {
-          app.cells.dirty = true;
+          // app.cells.dirty = true;
           this.quadrantsRendered = false;
         }
       }

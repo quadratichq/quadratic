@@ -1,6 +1,5 @@
 import { Viewport } from 'pixi-viewport';
 import { ImageResource, settings } from 'pixi.js';
-import { Cells } from './gridGL/UI/cells/Cells';
 import { PixiApp } from './gridGL/pixiApp/PixiApp';
 import { QuadrantChanged, Quadrants } from './gridGL/quadrants/Quadrants';
 
@@ -79,9 +78,9 @@ export const mockPixiApp = (): PixiApp => {
       quadrantChanged: (options: QuadrantChanged) => undefined,
       build: () => undefined,
     } as Quadrants,
-    cells: {
-      dirty: false,
-    } as Cells,
+    // cells: {
+    //   dirty: false,
+    // } as Cells,
     viewport: {
       dirty: false,
     } as Viewport,
