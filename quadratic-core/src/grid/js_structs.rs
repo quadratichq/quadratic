@@ -59,6 +59,8 @@ pub struct JsFormattingSummary {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsRenderCodeCell {
+    pub x: i64,
+    pub y: i64,
     pub language: CellCodeLanguage,
     pub output: Option<CellCodeRunOutput>,
 }
