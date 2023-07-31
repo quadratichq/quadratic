@@ -1,4 +1,4 @@
-import { Box, SvgIcon, Typography, useTheme } from '@mui/material';
+import { Box, Typography, useTheme, SvgIcon } from '@mui/material';
 import { ReactNode } from 'react';
 
 export default function Empty({

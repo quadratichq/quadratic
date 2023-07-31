@@ -1,24 +1,24 @@
-import { DeleteOutline, ErrorOutline, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
-import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
 import {
-  ActionFunctionArgs,
-  Fetcher,
+  useLoaderData,
+  LoaderFunctionArgs,
   Form,
   Link,
-  LoaderFunctionArgs,
   useFetcher,
   useFetchers,
-  useLoaderData,
   useSubmit,
+  Fetcher,
+  ActionFunctionArgs,
 } from 'react-router-dom';
-import apiClientSingleton from '../api-client/apiClientSingleton';
-import { GetFilesRes } from '../api-client/types';
 import { protectedRouteLoaderWrapper } from '../auth';
+import apiClientSingleton from '../api-client/apiClientSingleton';
+import PaneHeader from './PaneHeader';
+import File from './File';
+import { timeAgo } from './utils';
+import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
+import { DeleteOutline, ErrorOutline, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
 import { TooltipHint } from '../ui/components/TooltipHint';
 import Empty from './Empty';
-import File from './File';
-import PaneHeader from './PaneHeader';
-import { timeAgo } from './utils';
+import { GetFilesRes } from '../api-client/types';
 
 export const loader = protectedRouteLoaderWrapper(async ({ request }: LoaderFunctionArgs) => {
   const files = await apiClientSingleton.getFiles();
@@ -120,72 +120,7 @@ export const Component = () => {
           </Form>
         }
       />
-      {!files ? (
-        <Box sx={{ maxWidth: '60ch', mx: 'auto', py: theme.spacing(2) }}>
-          <Empty
-            title="Unexpected error"
-            description="An unexpected error occurred while retrieving your files. Try reloading the page. If the issue continues, contact us."
-            actions={
-              <Button variant="outlined" disableElevation component={Link} to="." reloadDocument>
-                Reload
-              </Button>
-            }
-            Icon={ErrorOutline}
-            severity="error"
-          />
-        </Box>
-      ) : files.length ? (
-        files.map(({ uuid, name, updated_date }) => (
-          <File
-            key={uuid}
-            // to={`/file/${uuid}`}
-            name={name}
-            description={`Modified ${timeAgo(updated_date)}`}
-            actions={
-              <form method="post" style={{ display: 'flex', gap: theme.spacing(1) }}>
-                <input type="hidden" name="action" />
-                <TooltipHint title="Delete" enterDelay={1000}>
-                  <IconButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      console.log(e);
-                      // if (window.confirm(`Please confirm you want to delete the file “${filename}”`)) {
-                      //   TODO
-                      // }
-                    }}
-                  >
-                    <DeleteOutline />
-                  </IconButton>
-                </TooltipHint>
 
-                <TooltipHint title="Download local copy" enterDelay={1000}>
-                  <IconButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      // apiClientSingleton.downloadFile(id);
-                    }}
-                  >
-                    <FileDownloadOutlined />
-                  </IconButton>
-                </TooltipHint>
-              </form>
-            }
-          />
-        ))
-      ) : (
-        <Empty
-          title="No files"
-          description={
-            <>
-              You don’t have any files. Using the buttons on this page, create a new one or import a <code>.grid</code>{' '}
-              file from your computer.
-            </>
-          }
-          Icon={InsertDriveFileOutlined}
-        />
-      )}
       {filesUI}
     </>
   );
