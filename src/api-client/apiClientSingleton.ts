@@ -1,9 +1,9 @@
-import { GridFile, GridFileSchema } from '../schemas';
 import * as Sentry from '@sentry/react';
-import { downloadFile } from '../helpers/downloadFile';
 import mixpanel from 'mixpanel-browser';
 import { authClient } from '../auth';
-import { GetFileRes, GetFileClientRes, GetFilesRes } from './types';
+import { downloadFile } from '../helpers/downloadFile';
+import { GridFile, GridFileSchema } from '../schemas';
+import { GetFileClientRes, GetFileRes, GetFilesRes, PostFilesReq } from './types';
 const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
 
 class APIClientSingleton {
@@ -201,7 +201,8 @@ class APIClientSingleton {
     }
   }
 
-  async createFile(name?: string, contents?: string): Promise<any | undefined> {
+  /** Creates a new file and returns the new file's uuid */
+  async createFile(name?: string, contents?: string): Promise<string | undefined> {
     if (!API_URL) return;
 
     const defaultContents: GridFile = {
@@ -217,16 +218,18 @@ class APIClientSingleton {
     try {
       const base_url = this.getAPIURL();
 
+      const body: PostFilesReq = {
+        name,
+        contents: contents ? contents : JSON.stringify(defaultContents),
+      };
+
       const response = await fetch(`${base_url}/v0/files/`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${await authClient.getToken()}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name,
-          contents: contents ? contents : JSON.stringify(defaultContents),
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -236,7 +239,10 @@ class APIClientSingleton {
       }
 
       // TODO: Verify that the response is what we expect and return the type
-      return await response.json();
+      // TODO document return type for create
+      const json = await response.json();
+
+      return json.uuid;
     } catch (error: any) {
       Sentry.captureException({
         message: `API Error Catch: ${error}`,

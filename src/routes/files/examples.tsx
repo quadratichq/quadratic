@@ -6,6 +6,7 @@ import Header from 'shared/dashboard/Header';
 
 export const Component = () => {
   const submit = useSubmit();
+
   return (
     <>
       <Header title="Example files" />
@@ -23,21 +24,25 @@ export const Component = () => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
-  const file = formData.get('file');
+  const file = formData.get('file') as string;
   const name = formData.get('name') as string;
 
-  const contents = await fetch(`/examples/${file}`)
+  const uuid = await fetch(`/examples/${file}`)
     .then((res) => res.text())
-    .catch(() => '');
-  if (!contents) {
-    // TODO Handle can't fetch file
-    return null;
-  }
-  const res = await apiClientSingleton.createFile(name, contents);
-  if (res?.uuid) {
-    window.location.href = `/file/${res.uuid}`;
-  }
-  // TODO handle not created
+    .then((contents) => {
+      if (!contents) {
+        throw new Error('Failed to fetch example file');
+      }
+      return apiClientSingleton.createFile(name, contents);
+    })
+    .catch((err) => {
+      return undefined;
+    });
 
+  if (uuid) {
+    window.location.href = `/file/${uuid}`;
+  }
+
+  // TODO handle not created
   return null;
 };

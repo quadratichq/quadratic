@@ -48,3 +48,10 @@ const PostFileReqSchema = z.object({
   contents: z.string().optional(),
 });
 export type PostFileReq = z.infer<typeof PostFileReqSchema>;
+
+// POST /files
+const PostFilesReqSchema = z.object({
+  name: z.string().optional(),
+  contents: z.string().optional(),
+});
+export type PostFilesReq = z.infer<typeof PostFilesReqSchema>;

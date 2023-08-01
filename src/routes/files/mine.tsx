@@ -130,11 +130,10 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   const action = formData.get('action');
 
   if (action === 'create') {
-    const res = await apiClientSingleton.createFile();
-    if (res?.uuid) {
-      window.location.href = `/file/${res.uuid}`;
-      // This will do a SPA navigation, but we want a hard reload ATM
-      // return redirect(`/file/${res.uuid}`);
+    const uuid = await apiClientSingleton.createFile();
+    if (uuid) {
+      // This will do a hard reload rather than a SPA navigation
+      window.location.href = `/file/${uuid}`;
     }
     // TODO handle doesn't create
   }
@@ -155,9 +154,9 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   if (action === 'import') {
     const name = formData.get('name') as string;
     const contents = formData.get('contents') as string;
-    const res = await apiClientSingleton.createFile(name, contents);
-    if (res?.uuid) {
-      window.location.href = `/file/${res.uuid}`;
+    const uuid = await apiClientSingleton.createFile(name, contents);
+    if (uuid) {
+      window.location.href = `/file/${uuid}`;
     }
     // TODO handle doesn't create
   }
