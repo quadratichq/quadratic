@@ -15,6 +15,7 @@ import Empty from './dashboard/Empty';
 import { debugLogAuth } from './debugFlags';
 import BrowserCompatibility from './quadratic/BrowserCompatibility';
 import { Scripts } from './quadratic/Scripts';
+import { Theme } from './quadratic/Theme';
 import { QuadraticLoading } from './ui/loading/QuadraticLoading';
 
 export type RootLoaderData = {
@@ -119,9 +120,11 @@ export const Routes = () => <RouterProvider router={router} fallbackElement={<Qu
 
 function Root() {
   return (
-    <Scripts>
-      <Outlet />
-    </Scripts>
+    <Theme>
+      <Scripts>
+        <Outlet />
+      </Scripts>
+    </Theme>
   );
 }
 

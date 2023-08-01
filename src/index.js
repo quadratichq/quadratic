@@ -1,11 +1,9 @@
-import { CssBaseline } from '@mui/material';
 import * as Sentry from '@sentry/react';
 import { BrowserTracing } from '@sentry/tracing';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Routes } from './Routes';
 import './index.css';
-import { Theme } from './quadratic/Theme';
 import reportWebVitals from './reportWebVitals';
 
 // Enable sentry only if SENTRY_DSN is in ENV
@@ -23,10 +21,7 @@ const container = document.getElementById('root');
 const root = createRoot(container);
 root.render(
   <React.StrictMode>
-    <CssBaseline />
-    <Theme>
-      <Routes />
-    </Theme>
+    <Routes />
   </React.StrictMode>
 );
 
