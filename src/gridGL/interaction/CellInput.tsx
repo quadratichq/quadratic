@@ -1,15 +1,15 @@
 import { useCallback, useRef, useState } from 'react';
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
-import { Coordinate } from '../types/size';
-import { focusGrid } from '../../helpers/focusGrid';
-import { PixiApp } from '../pixiApp/PixiApp';
-import { SheetController } from '../../grid/controller/sheetController';
-import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
-import { DeleteCells } from '../../grid/actions/DeleteCells';
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
+import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
+import { DeleteCells } from '../../grid/actions/DeleteCells';
+import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
+import { SheetController } from '../../grid/controller/sheetController';
+import { focusGrid } from '../../helpers/focusGrid';
 import { CellFormat } from '../../schemas';
 import { useFormatCells } from '../../ui/menus/TopBar/SubMenus/useFormatCells';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
+import { PixiApp } from '../pixiApp/PixiApp';
+import { Coordinate } from '../types/size';
 
 interface CellInputProps {
   interactionState: GridInteractionState;
@@ -51,7 +51,7 @@ export const CellInput = (props: CellInputProps) => {
   }
 
   // moves the cursor to the end of the input (since we're placing a single character that caused the input to open)
-  const handleFocus = useCallback((e) => {
+  const handleFocus = useCallback((e: any) => {
     const div = e.target;
     window.setTimeout(() => {
       if (!document.hasFocus() || !div.contains(document.activeElement)) return;
@@ -71,7 +71,7 @@ export const CellInput = (props: CellInputProps) => {
   // Effect for sizing the input width to the length of the value
   const [textInput, setTextInput] = useState<HTMLDivElement>();
   const textInputRef = useCallback(
-    (node) => {
+    (node: any) => {
       if (!node) return;
       node.focus();
       setTextInput(node);

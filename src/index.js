@@ -1,12 +1,12 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
-import reportWebVitals from './reportWebVitals';
-import * as Sentry from '@sentry/react';
-import { Routes } from './Routes';
-import { BrowserTracing } from '@sentry/tracing';
-import { Theme } from './quadratic/Theme';
 import { CssBaseline } from '@mui/material';
+import * as Sentry from '@sentry/react';
+import { BrowserTracing } from '@sentry/tracing';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { Routes } from './Routes';
+import './index.css';
+import { Theme } from './quadratic/Theme';
+import reportWebVitals from './reportWebVitals';
 
 // Enable sentry only if SENTRY_DSN is in ENV
 if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'none')
@@ -19,14 +19,15 @@ if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'no
     tracesSampleRate: 1.0,
   });
 
-ReactDOM.render(
+const container = document.getElementById('root');
+const root = createRoot(container);
+root.render(
   <React.StrictMode>
     <CssBaseline />
     <Theme>
       <Routes />
     </Theme>
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 );
 
 // If you want to start measuring performance in your app, pass a function

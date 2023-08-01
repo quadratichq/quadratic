@@ -1,31 +1,31 @@
-import { ClickEvent, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
-import { BorderType, BorderTypeEnum } from '../../../../../schemas';
 import {
-  BorderColor,
-  LineStyle,
   BorderAll,
-  BorderOuter,
-  BorderTop,
-  BorderRight,
-  BorderLeft,
   BorderBottom,
-  BorderInner,
-  BorderHorizontal,
-  BorderVertical,
   BorderClear,
+  BorderColor,
+  BorderHorizontal,
+  BorderInner,
+  BorderLeft,
+  BorderOuter,
+  BorderRight,
+  BorderTop,
+  BorderVertical,
+  LineStyle,
 } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
+import { ClickEvent, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
 import { useCallback, useEffect, useState } from 'react';
 import { ColorResult } from 'react-color';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../../../../atoms/gridInteractionStateAtom';
-import { ChangeBorder, useBorders } from '../useBorders';
-import './useGetBorderMenu.css';
-import { colors } from '../../../../../theme/colors';
-import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
 import { Sheet } from '../../../../../grid/sheet/Sheet';
 import { PixiApp } from '../../../../../gridGL/pixiApp/PixiApp';
+import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
+import { BorderType, BorderTypeEnum } from '../../../../../schemas';
+import { colors } from '../../../../../theme/colors';
 import { QColorPicker } from '../../../../components/qColorPicker';
+import { ChangeBorder, useBorders } from '../useBorders';
+import './useGetBorderMenu.css';
 
 interface Props extends SubMenuProps {
   sheet: Sheet;
@@ -192,7 +192,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
         <SubMenu
           className="borderSubmenu color-picker-submenu"
           id="FillBorderColorMenuID"
-          menuStyles={{
+          menuStyle={{
             padding: '0px',
           }}
           label={<BorderColor style={{ marginRight: '0.25rem' }}></BorderColor>}
