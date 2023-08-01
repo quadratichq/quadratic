@@ -40,7 +40,7 @@ macro_rules! see_docs_for_more_about_wildcards {
 ///     /// Returns `0` if given no values.
 ///     #[example("SUM(B2:C6, 15, E1)")]
 ///     fn SUM(numbers: (Iter<f64>)) {
-///         numbers.sum::<FormulaResult<f64>>()
+///         numbers.sum::<CodeResult<f64>>()
 ///     }
 /// );
 /// ```
@@ -86,9 +86,9 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// must be parsed as a single `tt` because `ty` makes the original tokens
 /// inaccessible.)
 ///
-/// Basic types:
+/// Primitive types:
 /// - `Value` - keep as `Value` (do not coerce)
-/// - `BasicValue` - coerce to `BasicValue` (reject or flatten arrays)
+/// - `CellValue` - coerce to `CellValue` (reject or flatten arrays)
 /// - `Array` - coerce to `Array`
 /// - `String` - coerce to `String`
 /// - `f64` - coerce to `f64`
@@ -168,7 +168,7 @@ macro_rules! formula_fn_eval {
         #[allow(unused_mut)]
         let ret: FormulaFn = |_ctx, mut _args: FormulaFnArgs| {
             // _ctx: &'a mut Ctx
-            // return value: LocalBoxFuture<'a, FormulaResult<Value>>
+            // return value: LocalBoxFuture<'a, CodeResult<Value>>
             //
             // Unfortunately, we can't annotate those types because there's no
             // way to introduce the named lifetime `'a`.
@@ -194,11 +194,11 @@ macro_rules! formula_fn_eval_inner {
 
         $ctx.zip_map(
             &args_to_zip_map,
-            move |_ctx, zipped_args| -> FormulaResult<BasicValue> {
+            move |_ctx, zipped_args| -> CodeResult<CellValue> {
                 formula_fn_args!(@unzip(_ctx, zipped_args); $($params)*);
 
                 // Evaluate the body of the function.
-                FormulaResult::Ok(BasicValue::from($body))
+                CodeResult::Ok(CellValue::from($body))
             },
         )
     }};
@@ -222,7 +222,7 @@ macro_rules! formula_fn_eval_inner {
                     formula_fn_args!(@unzip(ctx, zipped_args); $($params)*);
 
                     // Evaluate the body of the function.
-                    FormulaResult::Ok(BasicValue::from($body))
+                    CodeResult::Ok(CellValue::from($body))
                 }
                 .boxed_local()
             }
@@ -294,7 +294,7 @@ macro_rules! formula_fn_arg {
     // Non zip-mapped argument in zip-mapped function
     (@zip($ctx:ident, $args:ident, $args_to_zip_map:ident); $arg_name:ident: Iter< $($arg_type:tt)*) => {
         formula_fn_arg!(@assign($ctx, $args); $arg_name: Iter< $($arg_type)*);
-        let $arg_name = $arg_name.collect::<FormulaResult<Vec<_>>>()?;
+        let $arg_name = $arg_name.collect::<CodeResult<Vec<_>>>()?;
     };
     (@zip($ctx:ident, $args:ident, $args_to_zip_map:ident); $arg_name:ident: $($arg_type:tt)*) => {
         formula_fn_arg!(@assign($ctx, $args); $arg_name: $($arg_type)*)
@@ -308,11 +308,11 @@ macro_rules! formula_fn_arg {
     // Repeating argument
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Value > >) => {
         // Do not flatten `Value`s.
-        let mut $arg_name = $args.take_rest().map(FormulaResult::Ok);
+        let mut $arg_name = $args.take_rest().map(CodeResult::Ok);
     };
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Array > >) => {
         // Do not flatten arrays.
-        let mut $arg_name = $args.take_rest().map(Array::from).map(FormulaResult::Ok);
+        let mut $arg_name = $args.take_rest().map(Array::from).map(CodeResult::Ok);
     };
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< $($arg_type:tt)*) => {
         // Flatten into iterator over non-array type.
@@ -356,7 +356,7 @@ macro_rules! formula_fn_arg {
         // where the user of the macro expects it to be.
         let $arg_name = $zipped_args[$arg_name].iter().map(|arg_value| {
             // There's an extra trailing `>` in `$($arg_type)*` but that's ok.
-            formula_fn_convert_arg!(arg_value, BasicValue -> $($arg_type)*)
+            formula_fn_convert_arg!(arg_value, CellValue -> $($arg_type)*)
         });
     };
 
@@ -378,7 +378,7 @@ macro_rules! formula_fn_arg {
         // where the user of the macro expects it to be.
         let $arg_name = match $arg_name {
             // There's an extra trailing `>` in `$($arg_type)*` but that's ok.
-            Some(i) => Some(formula_fn_convert_arg!(&$zipped_args[i], BasicValue -> $($arg_type)*)),
+            Some(i) => Some(formula_fn_convert_arg!(&$zipped_args[i], CellValue -> $($arg_type)*)),
             None => None,
         };
     };
@@ -394,7 +394,7 @@ macro_rules! formula_fn_arg {
         // Grab the index stored above and unpack the argument into `$arg_name`
         // where the user of the macro expects it to be.
         let arg_value = &$zipped_args[$arg_name];
-        let $arg_name = formula_fn_convert_arg!(arg_value, BasicValue -> $($arg_type)*);
+        let $arg_name = formula_fn_convert_arg!(arg_value, CellValue -> $($arg_type)*);
     };
 }
 
@@ -423,17 +423,17 @@ macro_rules! formula_fn_convert_arg {
     (@convert $value:expr, Value -> Spanned< Value > $(>)?) => {
         $value
     };
-    (@convert $value:expr, BasicValue -> Spanned< BasicValue > $(>)?) => {
+    (@convert $value:expr, CellValue -> Spanned< CellValue > $(>)?) => {
         $value
     };
-    (@convert $value:expr, BasicValue -> Spanned< Value > $(>)?) => {
-        compile_error!("unnecessary conversion from `BasicValue` to `Value`; \
-                        change the argument to have type `BasicValue`")
+    (@convert $value:expr, CellValue -> Spanned< Value > $(>)?) => {
+        compile_error!("unnecessary conversion from `CellValue` to `Value`; \
+                        change the argument to have type `CellValue`")
     };
 
     // Iterate
-    (@convert $value:expr, Value -> Iter< Spanned< BasicValue > > $(>)*) => {
-        $value.into_iter_basic_values()
+    (@convert $value:expr, Value -> Iter< Spanned< CellValue > > $(>)*) => {
+        $value.into_iter_cell_values()
     };
     (@convert $value:expr, Value -> Iter< Spanned< $inner_type:ty > > $(>)*) => {
         $value.into_iter::<$inner_type>()
@@ -443,8 +443,8 @@ macro_rules! formula_fn_convert_arg {
     };
 
     // Generic conversion
-    (@convert $value:expr, Value -> Spanned< BasicValue > $(>)?) => {
-        $value.into_basic_value()?
+    (@convert $value:expr, Value -> Spanned< CellValue > $(>)?) => {
+        $value.into_cell_value()?
     };
     (@convert $value:expr, Value -> Spanned< Array > $(>)?) => {
         $value.map(Array::from)
@@ -452,7 +452,7 @@ macro_rules! formula_fn_convert_arg {
     (@convert $value:expr, Value -> Spanned< $arg_type:ty > $(>)?) => {
         $value.try_coerce::<$arg_type>()?
     };
-    (@convert $value:expr, BasicValue -> Spanned< $arg_type:ty > $(>)?) => {
+    (@convert $value:expr, CellValue -> Spanned< $arg_type:ty > $(>)?) => {
         $value.try_coerce::<$arg_type>()?
     };
 

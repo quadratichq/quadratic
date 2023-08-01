@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
 use strum_macros::Display;
 
-use super::{Span, Spanned};
+use crate::{Span, Spanned};
 
 pub fn tokenize(input_str: &str) -> impl '_ + Iterator<Item = Spanned<Token>> {
     let mut token_start = 0;

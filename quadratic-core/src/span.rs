@@ -1,8 +1,9 @@
 //! Structs for tracking locations and substrings within strings.
 
-use serde::{Deserialize, Serialize};
 use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
+
+use serde::{Deserialize, Serialize};
 
 /// A contiguous span of text from one byte index to another in a formula.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]

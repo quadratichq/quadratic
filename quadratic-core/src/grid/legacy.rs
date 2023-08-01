@@ -1,12 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::formulas::{Array, BasicValue, FormulaError, Value};
-
-use super::{
-    borders::CellBorder,
-    formatting::{CellAlign, CellWrap, NumericFormat},
-    CellRef, CellValue, CodeCellLanguage, CodeCellRunOk, CodeCellRunOutput, CodeCellValue, Sheet,
-};
+use super::borders::CellBorder;
+use super::formatting::{CellAlign, CellWrap, NumericFormat};
+use super::{CellRef, CodeCellLanguage, CodeCellRunOk, CodeCellRunOutput, CodeCellValue, Sheet};
+use crate::{Array, CellValue, Error, ErrorMsg, Span, Value};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct JsCoordinate {
@@ -153,12 +150,12 @@ pub enum Any {
     String(String),
     Boolean(bool),
 }
-impl Into<BasicValue> for Any {
-    fn into(self) -> BasicValue {
+impl Into<CellValue> for Any {
+    fn into(self) -> CellValue {
         match self {
-            Any::Number(n) => BasicValue::Number(n),
-            Any::String(s) => BasicValue::String(s),
-            Any::Boolean(b) => BasicValue::Bool(b),
+            Any::Number(n) => CellValue::Number(n),
+            Any::String(s) => CellValue::Text(s),
+            Any::Boolean(b) => CellValue::Logical(b),
         }
     }
 }
@@ -238,9 +235,9 @@ impl JsCell {
 
                             Value::Array(Array::new_row_major(width, height, array_contents).ok()?)
                         } else if let Some(s) = js_result.output_value.clone() {
-                            Value::Single(BasicValue::String(s))
+                            Value::Single(CellValue::Text(s))
                         } else {
-                            Value::Single(BasicValue::Blank)
+                            Value::Single(CellValue::Blank)
                         },
                         cells_accessed: js_result
                             .cells_accessed
@@ -252,11 +249,9 @@ impl JsCell {
                             })
                             .collect(),
                     }),
-                    false => Err(FormulaError {
-                        span: js_result
-                            .error_span
-                            .map(|(start, end)| crate::formulas::Span { start, end }),
-                        msg: crate::formulas::FormulaErrorMsg::UnknownError,
+                    false => Err(Error {
+                        span: js_result.error_span.map(|(start, end)| Span { start, end }),
+                        msg: ErrorMsg::UnknownError,
                     }),
                 };
 

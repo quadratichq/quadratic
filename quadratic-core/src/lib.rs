@@ -1,23 +1,31 @@
 #![warn(rust_2018_idioms, clippy::semicolon_if_nothing_returned)]
 #![allow(clippy::diverging_sub_expression, clippy::match_like_matches_macro)]
 
+use std::collections::HashSet;
+
 use async_trait::async_trait;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
 #[macro_use]
 pub mod util;
-mod cell;
+#[macro_use]
+mod error;
+pub mod ext;
 // mod controller;
 pub mod formulas;
 pub mod grid;
 mod position;
+mod span;
+mod values;
 
-pub use cell::{Cell, CellTypes, JsCell};
-use formulas::{BasicValue, GridProxy, Value};
-pub use position::{Pos, Rect};
+pub use error::*;
+pub use ext::*;
+use formulas::GridProxy;
+pub use position::*;
+pub use span::*;
+pub use values::*;
 
 pub const QUADRANT_SIZE: u64 = 16;
 
@@ -44,7 +52,7 @@ pub fn hello() {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct JsFormulaResult {
+struct JsCodeResult {
     pub cells_accessed: Vec<[i64; 2]>,
     pub success: bool,
     pub error_span: Option<[u32; 2]>,
@@ -90,7 +98,7 @@ pub async fn eval_formula(
                 }
                 Value::Single(non_array_value) => output_value = Some(non_array_value.to_string()),
             };
-            JsFormulaResult {
+            JsCodeResult {
                 cells_accessed,
                 success: true,
                 error_span: None,
@@ -99,7 +107,7 @@ pub async fn eval_formula(
                 array_output,
             }
         }
-        Err(error) => JsFormulaResult {
+        Err(error) => JsCodeResult {
             cells_accessed,
             success: false,
             error_span: error.span.map(|span| [span.start, span.end]),
@@ -115,17 +123,17 @@ pub async fn eval_formula(
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct JsFormulaParseResult {
     pub parse_error_msg: Option<String>,
-    pub parse_error_span: Option<formulas::Span>,
+    pub parse_error_span: Option<Span>,
 
     pub cell_refs: Vec<JsCellRefSpan>,
 }
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct JsCellRefSpan {
-    pub span: formulas::Span,
+    pub span: Span,
     pub cell_ref: formulas::RangeRef,
 }
-impl From<formulas::Spanned<formulas::RangeRef>> for JsCellRefSpan {
-    fn from(value: formulas::Spanned<formulas::RangeRef>) -> Self {
+impl From<Spanned<formulas::RangeRef>> for JsCellRefSpan {
+    fn from(value: Spanned<formulas::RangeRef>) -> Self {
         JsCellRefSpan {
             span: value.span,
             cell_ref: value.inner,
@@ -218,23 +226,23 @@ impl JsGridProxy {
 }
 #[async_trait(?Send)]
 impl GridProxy for JsGridProxy {
-    async fn get(&mut self, pos: Pos) -> BasicValue {
+    async fn get(&mut self, pos: Pos) -> CellValue {
         let jsvalue = match self.get_cell_jsvalue(pos).await {
             Ok(v) => v,
-            Err(_) => return BasicValue::Blank,
+            Err(_) => return CellValue::Blank,
         };
 
         let string = match jsvalue.as_string() {
             Some(s) => s,
-            None => return BasicValue::Blank,
+            None => return CellValue::Blank,
         };
 
         if let Ok(n) = string.parse::<f64>() {
-            BasicValue::Number(n)
+            CellValue::Number(n)
         } else if string.is_empty() {
-            BasicValue::Blank
+            CellValue::Blank
         } else {
-            BasicValue::String(string)
+            CellValue::Text(string)
         }
     }
 }
@@ -258,7 +266,8 @@ mod tests {
     /// `parse_formula()` docs.
     #[test]
     fn example_parse_formula_output() {
-        use crate::formulas::{CellRef, CellRefCoord, RangeRef, Span};
+        use crate::formulas::{CellRef, CellRefCoord, RangeRef};
+        use crate::Span;
 
         let example_result = JsFormulaParseResult {
             parse_error_msg: Some("Bad argument count".to_string()),

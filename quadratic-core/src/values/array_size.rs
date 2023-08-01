@@ -1,7 +1,8 @@
-use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use super::FormulaErrorMsg;
+use serde::{Deserialize, Serialize};
+
+use super::ErrorMsg;
 
 /// Size of a region or array.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -36,13 +37,13 @@ impl std::ops::IndexMut<Axis> for ArraySize {
     }
 }
 impl ArraySize {
-    pub fn flatten_index(self, x: u32, y: u32) -> Result<usize, FormulaErrorMsg> {
+    pub fn flatten_index(self, x: u32, y: u32) -> Result<usize, ErrorMsg> {
         let x = if self.w > 1 { x } else { 0 };
         let y = if self.h > 1 { y } else { 0 };
         if x < self.w && y < self.h {
             Ok((x + y * self.w) as usize)
         } else {
-            Err(FormulaErrorMsg::IndexOutOfBounds)
+            Err(ErrorMsg::IndexOutOfBounds)
         }
     }
 }

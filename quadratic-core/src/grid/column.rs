@@ -1,15 +1,16 @@
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::hash::Hash;
 use std::ops::{BitOr, BitOrAssign, Range};
 
-use super::{
-    formatting::*, Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue,
-};
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
+use smallvec::{smallvec, SmallVec};
+
+use super::formatting::*;
+use super::{Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue};
+use crate::IsBlank;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Column {

@@ -2,9 +2,11 @@ use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Serialize};
 
+use super::block::SameValue;
+use super::column::ColumnData;
+use super::js_structs::JsRenderBorder;
+use super::legacy;
 use crate::Rect;
-
-use super::{block::SameValue, column::ColumnData, js_structs::JsRenderBorder, legacy};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SheetBorders {

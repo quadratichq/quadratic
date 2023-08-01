@@ -1,6 +1,7 @@
-use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::Range;
+
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.

@@ -1,7 +1,8 @@
+use std::fmt;
+
 use anyhow::Result;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::fmt;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 
@@ -16,21 +17,18 @@ mod js_structs;
 mod legacy;
 mod response;
 mod sheet;
-mod value;
 
-pub use bounds::GridBounds;
-pub use code::*;
-pub use ids::*;
-pub use value::CellValue;
-
-use crate::formulas::{Array, ArraySize, Value};
-use crate::{Pos, Rect};
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 use borders::CellBorder;
+pub use bounds::GridBounds;
+pub use code::*;
 use column::{BoolSummary, Column, ColumnData};
 use formatting::{CellAlign, CellWrap, NumericFormat};
+pub use ids::*;
 use js_structs::*;
 use sheet::Sheet;
+
+use crate::{Array, ArraySize, CellValue, Pos, Rect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[wasm_bindgen]

@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::collections::{btree_map, BTreeMap, HashMap, HashSet};
+
+use serde::{Deserialize, Serialize};
 
 use super::borders::SheetBorders;
 use super::bounds::GridBounds;
@@ -9,8 +10,7 @@ use super::ids::{CellRef, ColumnId, IdMap, RowId, SheetId};
 use super::js_structs::{JsRenderCell, JsRenderFill};
 use super::legacy;
 use super::response::{GetIdResponse, SetCellResponse};
-use super::value::CellValue;
-use crate::{Pos, Rect};
+use crate::{CellValue, IsBlank, Pos, Rect};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Sheet {

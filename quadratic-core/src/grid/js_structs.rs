@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use super::borders::CellBorder;
 use super::column::BoolSummary;
 use super::formatting::{CellAlign, CellWrap, NumericFormat};
-use super::{CellValue, CodeCellLanguage};
+use super::CodeCellLanguage;
+use crate::CellValue;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
