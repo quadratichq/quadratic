@@ -3,12 +3,7 @@ import { Container, Graphics, Renderer } from 'pixi.js';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../constants/app';
 import { HEADING_SIZE } from '../../constants/gridConstants';
-import {
-  debugAlwaysShowCache,
-  debugNeverShowCache,
-  debugShowCacheFlag,
-  debugUseRustSheetController,
-} from '../../debugFlags';
+import { debugAlwaysShowCache, debugShowCacheFlag, debugUseRustSheetController } from '../../debugFlags';
 import { SheetController } from '../../grid/controller/sheetController';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { AxesLines } from '../UI/AxesLines';
@@ -21,7 +16,6 @@ import { zoomInOut, zoomToFit, zoomToSelection } from '../helpers/zoom';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { Quadrants } from '../quadrants/Quadrants';
-import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
 import { pixiAppEvents } from './PixiAppEvents';
 import { PixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
@@ -194,11 +188,12 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
-    if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
-      this.showCache();
-    } else {
-      this.showCells();
-    }
+    this.cellsSheets?.cull(this.viewport.getVisibleBounds());
+    // if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
+    //   this.showCache();
+    // } else {
+    //   this.showCells();
+    // }
   };
 
   attach(parent: HTMLDivElement): void {

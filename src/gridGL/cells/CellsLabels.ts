@@ -3,7 +3,7 @@ import { Bounds } from '../../grid/sheet/Bounds';
 import { SheetRust } from '../../grid/sheet/SheetRust';
 import { CellLabel } from './CellLabel';
 import { CellsHash } from './CellsHash';
-import { CellHash, CellRust, CellsHashBounds, CodeRust } from './CellsTypes';
+import { CellHash, CellRust, CellsHashBounds } from './CellsTypes';
 
 // holds all CellLabels within a sheet
 export class CellsLabels extends Container implements CellHash {
@@ -19,25 +19,12 @@ export class CellsLabels extends Container implements CellHash {
     this.hashes = new Set();
   }
 
-  add(cells: CellRust[], code: CodeRust[]): CellLabel[] {
-    const cellLabels: CellLabel[] = cells.map((cell) => {
+  add(cells: CellRust[]): CellLabel[] {
+    return cells.map((cell) => {
       const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
       const cellLabel = this.addChild(new CellLabel(cell, rectangle));
       return cellLabel;
     });
-    code.forEach((code) => {
-      const ok = code.output.result.Ok;
-      if (ok) {
-        for (let y = code.y; y <= code.y + ok.output_value.height; y++) {
-          for (let x = code.x; x <= code.x + ok.output_value.width; x++) {
-            // todo: this should be + width, + height instead of a lookup
-            const rectangle = this.sheet.gridOffsets.getCell(x, y);
-            const cellLabel = this.addChild(new CellLabel());
-          }
-        }
-      }
-    });
-    return cellLabels;
   }
 
   private getClipRight(label: CellLabel, textWidth: number): number | undefined {

@@ -153,6 +153,18 @@ export class GridOffsets {
     return new Rectangle(xStart, yStart, xEnd - xStart, yEnd - yStart);
   }
 
+  /**
+   * converts screen rectangle to column/row rectangle
+   * @param rectangle
+   */
+  getColumnRowRectangleFromScreen(rectangle: Rectangle): Rectangle {
+    const columnStart = this.getColumnIndex(rectangle.left).index;
+    const columnEnd = this.getColumnIndex(rectangle.right).index;
+    const rowStart = this.getRowIndex(rectangle.top).index;
+    const rowEnd = this.getRowIndex(rectangle.bottom).index;
+    return new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart);
+  }
+
   delete(options: { rows: number[]; columns: number[] }): void {
     options.rows.forEach((row) => this.rows.delete(row));
     options.columns.forEach((column) => this.columns.delete(column));

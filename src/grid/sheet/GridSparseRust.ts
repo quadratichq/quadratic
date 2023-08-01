@@ -201,11 +201,10 @@ export class GridSparseRust extends GridSparse {
     };
   }
 
-  getCellList(rectangle: Rectangle): { cells: CellRust[]; code: any } {
+  getCellList(rectangle: Rectangle): CellRust[] {
     const rect = new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
     const cells = this.grid.getRenderCells(this.sheetId, rect);
-    const code = this.grid.getRenderCodeCells(this.sheetId, rect);
-    return { cells: JSON.parse(cells), code: JSON.parse(code) };
+    return JSON.parse(cells);
   }
 
   getCells(rectangle: Rectangle): CellRectangle {

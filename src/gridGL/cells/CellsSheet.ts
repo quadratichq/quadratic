@@ -34,13 +34,11 @@ export class CellsSheet extends Container {
       const hashBounds = this.getHashBounds(bounds);
       for (let y = hashBounds.yStart; y <= hashBounds.yEnd; y++) {
         for (let x = hashBounds.xStart; x <= hashBounds.xEnd; x++) {
-          const { cells, code } = (sheet.grid as GridSparseRust).getCellList(
-            new Rectangle(x, y, sheetHashSize, sheetHashSize)
-          );
-          if (cells.length || code.length) {
+          const cells = (sheet.grid as GridSparseRust).getCellList(new Rectangle(x, y, sheetHashSize, sheetHashSize));
+          if (cells.length) {
             const cellsHash = this.cellsHashContainer.addChild(new CellsHash(x, y));
             this.cellsHash.set(cellsHash.key, cellsHash);
-            const cellLabels = this.cellsLabels.add(cells, code);
+            const cellLabels = this.cellsLabels.add(cells);
             cellLabels.forEach((cellLabel) => cellsHash.add(cellLabel));
           }
         }
@@ -75,18 +73,14 @@ export class CellsSheet extends Container {
   }
 
   show(bounds: Rectangle): void {
-    this.visible = false;
+    const hashBounds = this.sheet.gridOffsets.getColumnRowRectangleFromScreen(bounds);
     this.cellsHash.forEach((cellsHash) => {
-      if (intersects.rectangleRectangle(bounds, cellsHash.AABB)) {
+      if (intersects.rectangleRectangle(hashBounds, cellsHash.AABB)) {
         cellsHash.show();
       } else {
         cellsHash.hide();
       }
     });
-  }
-
-  hide() {
-    this.visible = false;
   }
 
   updateHash(hash: CellHash, AABB: Rectangle): void {

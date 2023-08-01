@@ -1,10 +1,11 @@
-import { Container } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 import { SheetRust } from '../../grid/sheet/SheetRust';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
   private app: PixiApp;
+  private current?: CellsSheet;
 
   constructor(app: PixiApp) {
     super();
@@ -20,6 +21,18 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   show(id: string): void {
-    this.children.forEach((child) => (child.visible = child.sheet.id === id));
+    this.children.forEach((child) => {
+      if (child.sheet.id === id) {
+        this.current = child;
+        child.visible = true;
+      } else {
+        child.visible = false;
+      }
+    });
+  }
+
+  cull(bounds: Rectangle): void {
+    if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
+    this.current.show(bounds);
   }
 }
