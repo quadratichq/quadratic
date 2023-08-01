@@ -263,8 +263,8 @@ impl Sheet {
                 .filter_map(move |block| {
                     let code_cell_pos = self.cell_ref_to_pos(block.content.value)?;
                     let code_cell = self.code_cells.get(&block.content.value)?;
-                    let dx = (code_cell_pos.x - x) as u32;
-                    let dy = (code_cell_pos.y - block.y) as u32;
+                    let dx = (x - code_cell_pos.x) as u32;
+                    let dy = (block.y - code_cell_pos.y) as u32;
 
                     Some((0..block.len()).filter_map(move |y_within_block| {
                         let y = block.y + y_within_block as i64;
