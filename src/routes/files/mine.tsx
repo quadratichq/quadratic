@@ -12,6 +12,7 @@ import {
   useFetcher,
   useFetchers,
   useLoaderData,
+  useNavigation,
   useSubmit,
 } from 'react-router-dom';
 import Empty from 'shared/Empty';
@@ -29,6 +30,8 @@ export const Component = () => {
   const theme = useTheme();
   const fetchers = useFetchers();
   const submit = useSubmit();
+  const navigation = useNavigation();
+  const isDisabled = navigation.state !== 'idle';
 
   let filesUI;
   if (!files) {
@@ -84,7 +87,7 @@ export const Component = () => {
         title="My files"
         actions={
           <Form method="post" style={{ display: 'flex', gap: theme.spacing(1) }}>
-            <Button variant="outlined" component="label">
+            <Button variant="outlined" component="label" disabled={isDisabled}>
               <input
                 type="file"
                 name="file"
@@ -113,7 +116,14 @@ export const Component = () => {
               Import
             </Button>
 
-            <Button variant="contained" disableElevation name="action" value="create" type="submit">
+            <Button
+              variant="contained"
+              disableElevation
+              name="action"
+              value="create"
+              type="submit"
+              disabled={isDisabled}
+            >
               Create
             </Button>
           </Form>
@@ -150,7 +160,6 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     // TODO should we handle this not working?
   }
 
-  // TODO
   if (action === 'import') {
     const name = formData.get('name') as string;
     const contents = formData.get('contents') as string;
