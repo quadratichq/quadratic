@@ -1,24 +1,24 @@
+import { DeleteOutline, ErrorOutline, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
+import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
 import {
-  useLoaderData,
-  LoaderFunctionArgs,
+  ActionFunctionArgs,
+  Fetcher,
   Form,
   Link,
+  LoaderFunctionArgs,
   useFetcher,
   useFetchers,
+  useLoaderData,
   useSubmit,
-  Fetcher,
-  ActionFunctionArgs,
 } from 'react-router-dom';
-import { protectedRouteLoaderWrapper } from '../auth';
-import apiClientSingleton from '../api-client/apiClientSingleton';
-import PaneHeader from './PaneHeader';
-import File from './File';
-import { timeAgo } from './utils';
-import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
-import { DeleteOutline, ErrorOutline, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
-import { TooltipHint } from '../ui/components/TooltipHint';
-import Empty from './Empty';
-import { GetFilesRes } from '../api-client/types';
+import apiClientSingleton from '../../../api-client/apiClientSingleton';
+import { GetFilesRes } from '../../../api-client/types';
+import { protectedRouteLoaderWrapper } from '../../../auth';
+import { TooltipHint } from '../../../ui/components/TooltipHint';
+import Empty from '../../Empty';
+import File from '../../File';
+import PaneHeader from '../../PaneHeader';
+import { timeAgo } from '../../utils';
 
 export const loader = protectedRouteLoaderWrapper(async ({ request }: LoaderFunctionArgs) => {
   const files = await apiClientSingleton.getFiles();

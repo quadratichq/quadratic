@@ -1,7 +1,7 @@
-import PaneHeader from './PaneHeader';
-import Empty from './Empty';
 import { PeopleOutline } from '@mui/icons-material';
 import { Button } from '@mui/material';
+import Empty from '../Empty';
+import PaneHeader from '../PaneHeader';
 
 export const Component = () => {
   // const data = useLoaderData() as LoaderData;

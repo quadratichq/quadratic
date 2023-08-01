@@ -1,22 +1,21 @@
-import React from 'react';
-import {
-  createBrowserRouter,
-  Outlet,
-  useRouteError,
-  redirect,
-  RouterProvider,
-  createRoutesFromElements,
-  Route,
-  Navigate,
-} from 'react-router-dom';
 import { User } from '@auth0/auth0-spa-js';
+import { ErrorOutline, WarningAmber } from '@mui/icons-material';
+import {
+  Navigate,
+  Outlet,
+  Route,
+  RouterProvider,
+  createBrowserRouter,
+  createRoutesFromElements,
+  redirect,
+  useRouteError,
+} from 'react-router-dom';
 import { authClient } from './auth';
+import Empty from './dashboard/Empty';
 import { debugLogAuth } from './debugFlags';
+import BrowserCompatibility from './quadratic/BrowserCompatibility';
 import { Scripts } from './quadratic/Scripts';
 import { QuadraticLoading } from './ui/loading/QuadraticLoading';
-import BrowserCompatibility from './quadratic/BrowserCompatibility';
-import Empty from './dashboard/Empty';
-import { ErrorOutline, WarningAmber } from '@mui/icons-material';
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
@@ -47,12 +46,12 @@ const router = createBrowserRouter(
           </Route>
         </Route>
 
-        <Route lazy={() => import('./Dashboard')}>
+        <Route lazy={() => import('./dashboard/Layout')}>
           <Route path="files" element={<Navigate to="/files/mine" replace />} />
-          <Route path="files/mine" lazy={() => import('./dashboard/RouteMine')} />
-          <Route path="files/examples" lazy={() => import('./dashboard/RouteExamples')} />
-          <Route path="files/teams" lazy={() => import('./dashboard/RouteTeams')} />
-          <Route path="account" lazy={() => import('./dashboard/RouteAccount')} />
+          <Route path="files/mine" lazy={() => import('./dashboard/routes/files/mine')} />
+          <Route path="files/examples" lazy={() => import('./dashboard/routes/files/examples')} />
+          <Route path="files/teams" lazy={() => import('./dashboard/routes/teams')} />
+          <Route path="account" lazy={() => import('./dashboard/routes/account')} />
         </Route>
 
         <Route
