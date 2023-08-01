@@ -142,7 +142,7 @@ class APIClientSingleton {
     }
   }
 
-  async postFile(uuid: string, name: string, contents: GridFile): Promise<boolean> {
+  async postFile(uuid: string, { name, contents }: { name?: string; contents?: GridFile } = {}): Promise<boolean> {
     if (!API_URL) return false;
 
     try {

@@ -29,7 +29,7 @@ interface IProps {
 export const TopBar = (props: IProps) => {
   const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { file, renameFile } = useFile();
+  const { name, renameFile } = useFile();
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
 
   const settings = useGridSettings();
@@ -106,7 +106,7 @@ export const TopBar = (props: IProps) => {
           }}
         >
           {isRenaming ? (
-            <FileRename setIsRenaming={setIsRenaming} currentFilename={file.name} renameCurrentFile={renameFile} />
+            <FileRename setIsRenaming={setIsRenaming} currentFilename={name} renameCurrentFile={renameFile} />
           ) : (
             <>
               <Typography variant="body2" color={colors.mediumGray}>
@@ -128,7 +128,7 @@ export const TopBar = (props: IProps) => {
                   maxWidth: '25vw',
                 }}
               >
-                {file.name}
+                {name}
               </Typography>
             </>
           )}
