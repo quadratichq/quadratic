@@ -1,11 +1,25 @@
 import apiClientSingleton from 'api-client/apiClientSingleton';
 import { EXAMPLE_FILES } from 'constants/app';
-import { ActionFunctionArgs, Form, useSubmit } from 'react-router-dom';
+import { useEffect } from 'react';
+import { ActionFunctionArgs, Form, useActionData, useSubmit } from 'react-router-dom';
+import { useGlobalSnackbar } from 'shared/GlobalSnackbar';
 import File from 'shared/dashboard/File';
 import Header from 'shared/dashboard/Header';
 
+type ActionData = {
+  ok?: boolean;
+};
+
 export const Component = () => {
   const submit = useSubmit();
+  const data = useActionData() as ActionData;
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+
+  useEffect(() => {
+    if (data && !data.ok) {
+      addGlobalSnackbar('Failed to load example file. Try again.', { severity: 'error' });
+    }
+  }, [data, addGlobalSnackbar]);
 
   return (
     <>
@@ -14,7 +28,6 @@ export const Component = () => {
         <Form key={file} method="post" onClick={(e) => submit(e.currentTarget)}>
           <input type="hidden" name="file" value={file} />
           <input type="hidden" name="name" value={name} />
-
           <File key={file} name={name} description={description} />
         </Form>
       ))}
@@ -22,7 +35,7 @@ export const Component = () => {
   );
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs): Promise<ActionData> => {
   const formData = await request.formData();
   const file = formData.get('file') as string;
   const name = formData.get('name') as string;
@@ -36,6 +49,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return apiClientSingleton.createFile(name, contents);
     })
     .catch((err) => {
+      console.error(err);
       return undefined;
     });
 
@@ -43,6 +57,5 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     window.location.href = `/file/${uuid}`;
   }
 
-  // TODO handle not created
-  return null;
+  return { ok: false };
 };
