@@ -68,14 +68,22 @@ export class CellsSheet extends Container {
   // }
 
   show(bounds: Rectangle): void {
+    this.visible = true;
     const hashBounds = this.sheet.gridOffsets.getColumnRowRectangleFromScreen(bounds);
+    let count = 0;
     this.cellsHash.forEach((cellsHash) => {
       if (intersects.rectangleRectangle(hashBounds, cellsHash.AABB)) {
         cellsHash.show();
+        count++;
       } else {
         cellsHash.hide();
       }
     });
+    console.log(`[CellsSheet] visible: ${count}/${Object.keys(this.cellsHash).length}`);
+  }
+
+  hide(): void {
+    this.visible = false;
   }
 
   updateHash(hash: CellHash, AABB: Rectangle): void {

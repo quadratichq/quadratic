@@ -204,7 +204,15 @@ export class GridSparseRust extends GridSparse {
   getCellList(rectangle: Rectangle): CellRust[] {
     const rect = new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
     const cells = this.grid.getRenderCells(this.sheetId, rect);
-    return JSON.parse(cells);
+    const parsed = JSON.parse(cells);
+    // console.log({
+    //   x0: rectangle.left,
+    //   y0: rectangle.top,
+    //   x1: rectangle.right,
+    //   y1: rectangle.bottom,
+    //   size: parsed.length,
+    // });
+    return parsed;
   }
 
   getCells(rectangle: Rectangle): CellRectangle {

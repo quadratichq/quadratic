@@ -24,9 +24,9 @@ export class CellsSheets extends Container<CellsSheet> {
     this.children.forEach((child) => {
       if (child.sheet.id === id) {
         this.current = child;
-        child.visible = true;
+        child.show(this.app.viewport.getVisibleBounds());
       } else {
-        child.visible = false;
+        child.hide();
       }
     });
   }
