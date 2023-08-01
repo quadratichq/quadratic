@@ -1,8 +1,8 @@
-import * as React from 'react';
-import Snackbar from '@mui/material/Snackbar';
-import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import { SnackbarProps } from '@mui/material/Snackbar';
+import { Alert, AlertColor } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import Snackbar from '@mui/material/Snackbar';
+import * as React from 'react';
 
 const DURATION = 6000;
 
@@ -11,7 +11,7 @@ const DURATION = 6000;
  */
 
 export interface GlobalSnackbar {
-  addGlobalSnackbar: (message: string /* options: {} */) => void;
+  addGlobalSnackbar: (message: string, options?: { severity?: 'error' | 'warning' }) => void;
 }
 const defaultContext: GlobalSnackbar = {
   addGlobalSnackbar: () => {
@@ -34,7 +34,9 @@ export const useGlobalSnackbar: () => GlobalSnackbar = () => React.useContext(Gl
 
 interface Message {
   key: number;
-  snackbarProps: SnackbarProps;
+  message: string;
+  // snackbarProps: SnackbarProps;
+  severity?: AlertColor;
 }
 
 export function GlobalSnackbarProvider({ children }: { children: React.ReactElement }) {
@@ -59,32 +61,29 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
    * after a certain amount of time and is dismissable
    *
    * Example: `showSnackbar("Copied as PNG")`
+   * Example: `showSnackbar("My message here", { severity: 'error' })
    *
    * Future: customize the snackbar by passing your own props to override the defaults:
-   *
-   * Example: `showSnackbar({ message: "Thing completed", action: <Button>Undo</Button> })`
-   *
-   * Or
-   * ```
-   * showSnackbar(
-   *   children:
-   *     <Alert severity="error" onClose={onClose} elevation={6}>
-   *       Failed to load the file specified in URL.
-   *     </Alert>
-   * )
-   * ```
+   * Example: `showSnackbar("Thing completed", { action: <Button>Undo</Button> })`
    */
-  const addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] = (message) => {
+  const addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] = React.useCallback((message, options = {}) => {
     if (typeof message === 'string') {
-      setMessageQueue((prev) => [...prev, { snackbarProps: { message }, key: new Date().getTime() }]);
+      setMessageQueue((prev) => [
+        ...prev,
+        {
+          message,
+          key: new Date().getTime(),
+          ...(options.severity ? { severity: options.severity } : {}),
+        },
+      ]);
     }
-    //else if (arg && (arg.children || arg.message || arg.action)) {
-    // Handle customization
-    //}
+    // else if (arg && (arg.children || arg.message || arg.action)) {
+    //   Handle customization
+    // }
     else {
       throw new Error('Unexpected arguments to `addGlobalSnackbar`');
     }
-  };
+  }, []);
 
   const handleClose = (event: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') {
@@ -99,6 +98,18 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
 
   const value: GlobalSnackbar = { addGlobalSnackbar };
 
+  // If we have the `severity`, we'll make it look like an Alert. Otherwise,
+  // we'll use the default Snackbar styling.
+  const otherProps = activeMessage?.severity
+    ? {
+        children: (
+          <Alert severity={activeMessage.severity} variant="filled" onClose={handleClose}>
+            {activeMessage.message}
+          </Alert>
+        ),
+      }
+    : { message: activeMessage?.message };
+
   return (
     <GlobalSnackbarContext.Provider value={value}>
       {children}
@@ -109,7 +120,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
         open={open}
         onClose={handleClose}
         TransitionProps={{ onExited: handleExited }}
-        message={activeMessage ? activeMessage.snackbarProps.message : undefined}
+        {...otherProps}
         action={
           <React.Fragment>
             {/* if activeMessage.snackbarProps.action <Button color="secondary" size="small" onClick={handleClose}>

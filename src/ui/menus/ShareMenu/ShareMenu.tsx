@@ -1,11 +1,11 @@
-import { useCallback } from 'react';
+import { Public } from '@mui/icons-material';
 import { Button, Dialog, Paper, Switch, TextField, Typography, useTheme } from '@mui/material';
+import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { Public } from '@mui/icons-material';
 // import { useLocalFiles } from '../../contexts/LocalFiles';
-import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { useGlobalSnackbar } from '../../../shared/GlobalSnackbar';
 
 export function ShareMenu() {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);

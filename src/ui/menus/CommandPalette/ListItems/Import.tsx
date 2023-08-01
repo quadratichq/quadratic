@@ -1,8 +1,7 @@
-import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { UploadFile } from '@mui/icons-material';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/app';
-import { useGlobalSnackbar } from '../../../contexts/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../../shared/GlobalSnackbar';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {

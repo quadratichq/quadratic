@@ -7,7 +7,7 @@ import {
   pasteFromClipboard,
 } from '../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { GlobalSnackbar } from '../../../ui/contexts/GlobalSnackbar';
+import { GlobalSnackbar } from '../../../shared/GlobalSnackbar';
 import { PixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardClipboard(props: {

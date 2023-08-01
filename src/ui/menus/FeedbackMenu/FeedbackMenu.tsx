@@ -17,7 +17,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { BUG_REPORT_URL, DISCORD, TWITTER } from '../../../constants/urls';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { RootLoaderData } from '../../../routes';
-import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../shared/GlobalSnackbar';
 import { SocialDiscord, SocialGithub, SocialTwitter } from '../../icons';
 
 export const FeedbackMenu = () => {

@@ -10,6 +10,7 @@ import {
   redirect,
   useRouteError,
 } from 'react-router-dom';
+import { GlobalSnackbarProvider } from 'shared/GlobalSnackbar';
 import { authClient } from '../auth';
 import { debugLogAuth } from '../debugFlags';
 import Empty from '../shared/Empty';
@@ -122,7 +123,9 @@ function Root() {
   return (
     <Theme>
       <Scripts>
-        <Outlet />
+        <GlobalSnackbarProvider>
+          <Outlet />
+        </GlobalSnackbarProvider>
       </Scripts>
     </Theme>
   );
