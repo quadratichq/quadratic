@@ -63,7 +63,12 @@ impl BlockContent for CellValueBlockContent {
     }
 
     fn try_merge(self, other: Self) -> Result<Self, [Self; 2]> {
-        todo!("merge blocks {self:?} and {other:?}")
+        match (self, other) {
+            (CellValueBlockContent::Values(mut a), CellValueBlockContent::Values(b)) => {
+                a.extend(b);
+                Ok(CellValueBlockContent::Values(a))
+            }
+        }
     }
 
     fn split(self, split_point: usize) -> [Self; 2] {
