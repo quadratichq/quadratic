@@ -1,6 +1,6 @@
-import { createContext, useState, useMemo, useContext } from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { PaletteMode, useMediaQuery } from '@mui/material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { createContext, useContext, useMemo, useState } from 'react';
 
 type ColorModePreference = PaletteMode | 'system';
 export const ColorModeContext = createContext({
@@ -10,7 +10,7 @@ export const ColorModeContext = createContext({
 
 export const useColorMode = () => useContext(ColorModeContext);
 
-export function Theme(props: any) {
+export default function Theme(props: any) {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   // TODO store this _somewhere_
   const [colorModePreference, setColorModePreference] = useState<ColorModePreference>('light');

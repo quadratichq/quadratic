@@ -1,7 +1,7 @@
 import { InsertDriveFileOutlined } from '@mui/icons-material';
 import { Box, Divider, Typography, useTheme } from '@mui/material';
-import { colors } from '../theme/colors';
 import { ReactNode } from 'react';
+import { colors } from '../../theme/colors';
 
 export default function File({
   name,

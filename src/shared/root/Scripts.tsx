@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
 import * as amplitude from '@amplitude/analytics-browser';
 import { User } from '@auth0/auth0-spa-js';
-import mixpanel from 'mixpanel-browser';
-import { useRouteLoaderData } from 'react-router-dom';
-import { RootLoaderData } from '../Routes';
 import { setUser } from '@sentry/react';
+import mixpanel from 'mixpanel-browser';
+import { useEffect, useRef } from 'react';
+import { useRouteLoaderData } from 'react-router-dom';
+import { RootLoaderData } from '../../routes';
 
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 
@@ -78,7 +78,7 @@ const loadMixPanelAnalytics = async (user: User | undefined) => {
   console.log('[Analytics] Mixpanel activated');
 };
 
-export const Scripts = ({ children }: { children: JSX.Element }) => {
+export default function Scripts({ children }: { children: JSX.Element }) {
   const didMount = useRef<boolean>(false);
   const { isAuthenticated, user } = useRouteLoaderData('root') as RootLoaderData;
 
@@ -102,4 +102,4 @@ export const Scripts = ({ children }: { children: JSX.Element }) => {
   }, [isAuthenticated, user]);
 
   return children;
-};
+}

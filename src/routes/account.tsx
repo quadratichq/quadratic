@@ -1,8 +1,8 @@
 import { Box, Button, ButtonGroup, Typography, useTheme } from '@mui/material';
 import { useRouteLoaderData } from 'react-router-dom';
-import { RootLoaderData } from '../../Routes';
-import { useColorMode } from '../../quadratic/Theme';
-import PaneHeader from '../PaneHeader';
+import { RootLoaderData } from 'routes/index';
+import PaneHeader from 'shared/dashboard/Header';
+import { useColorMode } from 'shared/root/Theme';
 
 export const Component = () => {
   const { user } = useRouteLoaderData('root') as RootLoaderData;

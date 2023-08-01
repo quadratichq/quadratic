@@ -1,28 +1,28 @@
-import React, { useCallback, useEffect } from 'react';
 import {
+  Chip,
+  Dialog,
   Divider,
+  InputBase,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Dialog,
   Paper,
-  InputBase,
-  Chip,
 } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
+import React, { useCallback, useEffect } from 'react';
+import { useRouteLoaderData } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { CellType } from '../../../schemas';
-import '../../styles/floating-dialog.css';
+import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { Python, Formula, JavaScript, Sql, AI } from '../../icons';
+import { RootLoaderData } from '../../../routes';
+import { CellType } from '../../../schemas';
 import { colors } from '../../../theme/colors';
 import { LinkNewTab } from '../../components/LinkNewTab';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
-import { useRouteLoaderData } from 'react-router-dom';
-import mixpanel from 'mixpanel-browser';
-import { RootLoaderData } from '../../../Routes';
+import { AI, Formula, JavaScript, Python, Sql } from '../../icons';
+import '../../styles/floating-dialog.css';
 
 export interface CellTypeOption {
   name: string;

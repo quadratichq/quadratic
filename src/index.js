@@ -2,9 +2,9 @@ import * as Sentry from '@sentry/react';
 import { BrowserTracing } from '@sentry/tracing';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { Routes } from './Routes';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
+import { Routes } from './routes/index';
 
 // Enable sentry only if SENTRY_DSN is in ENV
 if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'none')

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Button,
   Dialog,
@@ -10,15 +9,16 @@ import {
   TextField,
 } from '@mui/material';
 import { useTheme } from '@mui/system';
+import { useState } from 'react';
+import { useRouteLoaderData } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
+import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { BUG_REPORT_URL, DISCORD, TWITTER } from '../../../constants/urls';
 import useLocalStorage from '../../../hooks/useLocalStorage';
+import { RootLoaderData } from '../../../routes';
 import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
-import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { SocialDiscord, SocialGithub, SocialTwitter } from '../../icons';
-import { useRouteLoaderData } from 'react-router-dom';
-import { RootLoaderData } from '../../../Routes';
 
 export const FeedbackMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);

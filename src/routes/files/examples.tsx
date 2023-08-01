@@ -1,8 +1,8 @@
+import apiClientSingleton from 'api-client/apiClientSingleton';
+import { EXAMPLE_FILES } from 'constants/app';
 import { ActionFunctionArgs, Form, useSubmit } from 'react-router-dom';
-import apiClientSingleton from '../../../api-client/apiClientSingleton';
-import { EXAMPLE_FILES } from '../../../constants/app';
-import File from '../../File';
-import PaneHeader from '../../PaneHeader';
+import File from 'shared/dashboard/File';
+import PaneHeader from 'shared/dashboard/Header';
 
 export const Component = () => {
   const submit = useSubmit();

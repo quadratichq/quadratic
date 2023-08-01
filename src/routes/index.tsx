@@ -10,13 +10,13 @@ import {
   redirect,
   useRouteError,
 } from 'react-router-dom';
-import { authClient } from './auth';
-import Empty from './dashboard/Empty';
-import { debugLogAuth } from './debugFlags';
-import BrowserCompatibility from './quadratic/BrowserCompatibility';
-import { Scripts } from './quadratic/Scripts';
-import { Theme } from './quadratic/Theme';
-import { QuadraticLoading } from './ui/loading/QuadraticLoading';
+import { authClient } from '../auth';
+import { debugLogAuth } from '../debugFlags';
+import Empty from '../shared/Empty';
+import BrowserCompatibility from '../shared/root/BrowserCompatibility';
+import Scripts from '../shared/root/Scripts';
+import Theme from '../shared/root/Theme';
+import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
@@ -43,16 +43,16 @@ const router = createBrowserRouter(
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibility />}>
             <Route index element={<Navigate to="/files" replace />} />
-            <Route path=":uuid" lazy={() => import('./App')} />
+            <Route path=":uuid" lazy={() => import('./file')} />
           </Route>
         </Route>
 
-        <Route lazy={() => import('./dashboard/Layout')}>
+        <Route lazy={() => import('../shared/dashboard/Layout')}>
           <Route path="files" element={<Navigate to="/files/mine" replace />} />
-          <Route path="files/mine" lazy={() => import('./dashboard/routes/files/mine')} />
-          <Route path="files/examples" lazy={() => import('./dashboard/routes/files/examples')} />
-          <Route path="files/teams" lazy={() => import('./dashboard/routes/teams')} />
-          <Route path="account" lazy={() => import('./dashboard/routes/account')} />
+          <Route path="files/mine" lazy={() => import('./files/mine')} />
+          <Route path="files/examples" lazy={() => import('./files/examples')} />
+          <Route path="files/teams" lazy={() => import('./teams')} />
+          <Route path="account" lazy={() => import('./account')} />
         </Route>
 
         <Route

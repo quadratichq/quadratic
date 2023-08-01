@@ -1,18 +1,18 @@
-import { authClient } from '../../../auth';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, FormControl, IconButton, InputAdornment, OutlinedInput } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
+import { useRouteLoaderData } from 'react-router-dom';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { authClient } from '../../../auth';
 import { CellEvaluationResult } from '../../../grid/computations/types';
+import { RootLoaderData } from '../../../routes';
 import { colors } from '../../../theme/colors';
+import ConditionalWrapper from '../../components/ConditionalWrapper';
 import { TooltipHint } from '../../components/TooltipHint';
 import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
-import ConditionalWrapper from '../../components/ConditionalWrapper';
 import './AITab.css';
-import { useRouteLoaderData } from 'react-router-dom';
-import { RootLoaderData } from '../../../Routes';
 
 interface Props {
   editorMode: EditorInteractionState['mode'];

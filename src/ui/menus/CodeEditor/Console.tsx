@@ -1,18 +1,18 @@
-import { Box, Tabs, Tab, Chip } from '@mui/material';
+import { Box, Chip, Tab, Tabs } from '@mui/material';
 import { useTheme } from '@mui/system';
-import { useEffect, useState } from 'react';
-import { CellEvaluationResult } from '../../../grid/computations/types';
-import { LinkNewTab } from '../../components/LinkNewTab';
-import { colors } from '../../../theme/colors';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { AITab } from './AITab';
-import { CodeSnippet } from '../../components/CodeSnippet';
 import { stripIndent } from 'common-tags';
-import { Cell } from '../../../schemas';
-import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
+import { useEffect, useState } from 'react';
 import { useRouteLoaderData } from 'react-router-dom';
-import { RootLoaderData } from '../../../Routes';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
+import { CellEvaluationResult } from '../../../grid/computations/types';
+import { RootLoaderData } from '../../../routes';
+import { Cell } from '../../../schemas';
+import { colors } from '../../../theme/colors';
+import { CodeSnippet } from '../../components/CodeSnippet';
+import { LinkNewTab } from '../../components/LinkNewTab';
+import { AITab } from './AITab';
+import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];

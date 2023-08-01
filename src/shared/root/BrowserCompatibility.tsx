@@ -1,10 +1,10 @@
 // import { ReactNode } from 'react';
-import * as Sentry from '@sentry/browser';
-import { isWebGLSupported } from '@pixi/utils';
-import { isWASMSupported } from '../utils/isWASMSupported';
-import Empty from '../dashboard/Empty';
-import { Outlet } from 'react-router-dom';
 import { ErrorOutline } from '@mui/icons-material';
+import { isWebGLSupported } from '@pixi/utils';
+import * as Sentry from '@sentry/browser';
+import { Outlet } from 'react-router-dom';
+import { isWASMSupported } from '../../utils/isWASMSupported';
+import Empty from '../Empty';
 
 export default function BrowserCompatibility() {
   if (!isWASMSupported || !isWebGLSupported()) {

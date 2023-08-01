@@ -1,12 +1,11 @@
-import './styles.css';
-import { QuadraticApp } from './ui/QuadraticApp';
-import { RecoilRoot } from 'recoil';
-import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
-import Empty from './dashboard/Empty';
 import { ErrorOutline, QuestionMarkOutlined } from '@mui/icons-material';
 import { Button } from '@mui/material';
-import apiClientSingleton from './api-client/apiClientSingleton';
-import { GetFileClientRes } from './api-client/types';
+import apiClientSingleton from 'api-client/apiClientSingleton';
+import { GetFileClientRes } from 'api-client/types';
+import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
+import { RecoilRoot } from 'recoil';
+import Empty from 'shared/Empty';
+import { QuadraticApp } from 'ui/QuadraticApp';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { uuid } = params;
