@@ -38,10 +38,52 @@ pub struct RegionRef {
     pub h: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdMap<Id: Hash + Eq, Idx: Ord> {
     id_to_index: HashMap<Id, Idx>,
     index_to_id: BTreeMap<Idx, Id>,
+}
+impl<Id: Hash + Eq, Idx: Ord> Serialize for IdMap<Id, Idx>
+where
+    Id: Copy + Serialize,
+    Idx: Copy + Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let map: HashMap<String, Idx> = self
+            .id_to_index
+            .iter()
+            .map(|(id, idx)| (serde_json::to_string(id).unwrap(), *idx))
+            .collect();
+        map.serialize(serializer)
+    }
+}
+impl<'de, Id: Hash + Eq, Idx: Ord> Deserialize<'de> for IdMap<Id, Idx>
+where
+    Id: Copy + for<'a> Deserialize<'a>,
+    Idx: Copy + for<'a> Deserialize<'a>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let map = HashMap::<&'de str, Idx>::deserialize(deserializer)?;
+        let mut ret = Self::new();
+        for (k, v) in map {
+            ret.add(serde_json::from_str(k).unwrap(), v);
+        }
+        Ok(ret)
+    }
+}
+impl<Id: Hash + Eq, Idx: Ord> Default for IdMap<Id, Idx> {
+    fn default() -> Self {
+        Self {
+            id_to_index: HashMap::default(),
+            index_to_id: BTreeMap::default(),
+        }
+    }
 }
 impl<Id: Copy + Hash + Eq, Idx: Copy + Ord> IdMap<Id, Idx> {
     pub fn new() -> Self {
@@ -49,6 +91,10 @@ impl<Id: Copy + Hash + Eq, Idx: Copy + Ord> IdMap<Id, Idx> {
             id_to_index: HashMap::new(),
             index_to_id: BTreeMap::new(),
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.id_to_index.len()
     }
 
     pub fn add(&mut self, id: Id, index: Idx) {
