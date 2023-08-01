@@ -21,11 +21,15 @@ pub struct Sheet {
     column_ids: IdMap<ColumnId, i64>,
     row_ids: IdMap<RowId, i64>,
 
+    #[serde(with = "crate::util::btreemap_serde")]
     column_widths: BTreeMap<i64, f32>,
+    #[serde(with = "crate::util::btreemap_serde")]
     row_heights: BTreeMap<i64, f32>,
 
+    #[serde(with = "crate::util::btreemap_serde")]
     pub(super) columns: BTreeMap<i64, Column>,
     pub(super) borders: SheetBorders,
+    #[serde(with = "crate::util::hashmap_serde")]
     pub(super) code_cells: HashMap<CellRef, CodeCellValue>,
 
     data_bounds: GridBounds,

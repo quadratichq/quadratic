@@ -227,17 +227,14 @@ impl JsCell {
                                     height = values.len() as u32;
                                     array_contents =
                                         values.iter().map(|v| v.clone().into()).collect();
-                                    crate::log(&format!("arrayyyy   = {:?}", array_contents));
                                 }
                                 JsArrayOutput::Block(values) => {
                                     width = values.get(0)?.len() as u32;
                                     height = values.len() as u32;
                                     array_contents =
                                         values.iter().flatten().map(|v| v.clone().into()).collect();
-                                    crate::log(&format!("blockk   = {:?}", array_contents));
                                 }
                             }
-                            crate::log(&format!("{:?}", (width, height)));
 
                             Value::Array(Array::new_row_major(width, height, array_contents).ok()?)
                         } else if let Some(s) = js_result.output_value.clone() {
