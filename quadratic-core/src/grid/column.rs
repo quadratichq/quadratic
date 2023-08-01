@@ -271,7 +271,7 @@ impl<B: BlockContent> ColumnData<B> {
         self.blocks_covering_range(y_range.clone())
             .flat_map(move |block| {
                 let start = std::cmp::max(y_range.start, block.start());
-                let end = std::cmp::max(y_range.end, block.end());
+                let end = std::cmp::min(y_range.end, block.end());
                 (start..end).filter_map(|y| Some((y, block.get(y)?)))
             })
     }
