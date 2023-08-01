@@ -1,3 +1,4 @@
+import { BitmapFont } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { QuadrantChanged } from '../quadrants/Quadrants';
 import { PixiApp } from './PixiApp';
@@ -84,7 +85,12 @@ class PixiAppEvents {
     this.app.cursor.dirty = true;
     // this.app.cells.dirty = true;
     this.app.boxCells.reset();
-    this.app.quadrants.build();
+    // this.app.quadrants.build();
+
+    // todo: hack!!! (this avoids loading the sheets during initial load b/c PIXI is not set up yet)
+    if (BitmapFont.available['OpenSans']) {
+      this.loadSheets();
+    }
   }
 
   setZoomState(zoom: number): void {
