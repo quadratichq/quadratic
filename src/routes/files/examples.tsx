@@ -2,13 +2,13 @@ import apiClientSingleton from 'api-client/apiClientSingleton';
 import { EXAMPLE_FILES } from 'constants/app';
 import { ActionFunctionArgs, Form, useSubmit } from 'react-router-dom';
 import File from 'shared/dashboard/File';
-import PaneHeader from 'shared/dashboard/Header';
+import Header from 'shared/dashboard/Header';
 
 export const Component = () => {
   const submit = useSubmit();
   return (
     <>
-      <PaneHeader title="Example files" />
+      <Header title="Example files" />
       {EXAMPLE_FILES.map(({ name, description, file }) => (
         <Form key={file} method="post" onClick={(e) => submit(e.currentTarget)}>
           <input type="hidden" name="file" value={file} />

@@ -1,7 +1,7 @@
 import { Box, Button, ButtonGroup, Typography, useTheme } from '@mui/material';
 import { useRouteLoaderData } from 'react-router-dom';
 import { RootLoaderData } from 'routes/index';
-import PaneHeader from 'shared/dashboard/Header';
+import Header from 'shared/dashboard/Header';
 import { useColorMode } from 'shared/root/Theme';
 
 export const Component = () => {
@@ -10,7 +10,7 @@ export const Component = () => {
   const { colorModePreference, toggleColorMode } = useColorMode();
   return (
     <>
-      <PaneHeader title="Account" />
+      <Header title="Account" />
       <Row>
         <Typography variant="body1" color="text.primary" fontWeight="bold">
           Name
