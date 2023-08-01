@@ -5,7 +5,7 @@ use crate::formulas::{Array, BasicValue, FormulaError, Value};
 use super::{
     borders::CellBorder,
     formatting::{CellAlign, CellWrap, NumericFormat},
-    CellCodeLanguage, CellCodeRunOk, CellCodeRunOutput, CellRef, CellValue, CodeCellValue, Sheet,
+    CellRef, CellValue, CodeCellLanguage, CodeCellRunOk, CodeCellRunOutput, CodeCellValue, Sheet,
 };
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -195,18 +195,18 @@ impl JsCell {
     pub fn to_cell_code(&self, sheet: &mut Sheet) -> Option<CodeCellValue> {
         let language = match self.r#type {
             JsCellType::Text | JsCellType::Computed => return None,
-            JsCellType::Formula => CellCodeLanguage::Formula,
-            JsCellType::Javascript => CellCodeLanguage::JavaScript,
-            JsCellType::Python => CellCodeLanguage::Python,
-            JsCellType::Sql => CellCodeLanguage::Sql,
+            JsCellType::Formula => CodeCellLanguage::Formula,
+            JsCellType::Javascript => CodeCellLanguage::JavaScript,
+            JsCellType::Python => CodeCellLanguage::Python,
+            JsCellType::Sql => CodeCellLanguage::Sql,
         };
 
         Some(CodeCellValue {
             language,
             code_string: match language {
-                CellCodeLanguage::Python => self.python_code.clone().unwrap_or_default(),
-                CellCodeLanguage::Formula => self.formula_code.clone().unwrap_or_default(),
-                CellCodeLanguage::JavaScript | CellCodeLanguage::Sql => String::new(),
+                CodeCellLanguage::Python => self.python_code.clone().unwrap_or_default(),
+                CodeCellLanguage::Formula => self.formula_code.clone().unwrap_or_default(),
+                CodeCellLanguage::JavaScript | CodeCellLanguage::Sql => String::new(),
             },
             formatted_code_string: self
                 .evaluation_result
@@ -215,7 +215,7 @@ impl JsCell {
             last_modified: self.last_modified.clone().unwrap_or_default(),
             output: self.evaluation_result.clone().and_then(|js_result| {
                 let result = match js_result.success {
-                    true => Ok(CellCodeRunOk {
+                    true => Ok(CodeCellRunOk {
                         output_value: if let Some(array) = js_result.array_output {
                             let width;
                             let height;
@@ -263,7 +263,7 @@ impl JsCell {
                     }),
                 };
 
-                Some(CellCodeRunOutput {
+                Some(CodeCellRunOutput {
                     std_out: js_result.std_out,
                     std_err: js_result.std_err,
                     result,
