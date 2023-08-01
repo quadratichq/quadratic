@@ -14,7 +14,7 @@ import {
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 import { msdfFrag, msdfVert } from './shader';
 
-interface PageMeshData {
+export interface PageMeshData {
   index: number;
   indexCount: number;
   vertexCount: number;
@@ -25,7 +25,7 @@ interface PageMeshData {
   uvs?: Float32Array;
   indices?: Uint16Array;
 }
-interface CharRenderData {
+export interface CharRenderData {
   texture: Texture;
   line: number;
   charCode: number;

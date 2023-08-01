@@ -42,4 +42,4 @@ export interface CodeRust {
   };
 }
 
-export const sheetHashSize = 1000;
+export const sheetHashSize = 20;

@@ -3,14 +3,10 @@ import { GridSparseRust } from '../../grid/sheet/GridSparseRust';
 import { SheetRust } from '../../grid/sheet/SheetRust';
 import { intersects } from '../helpers/intersects';
 import { CellsHash } from './CellsHash';
-import { CellsLabels } from './CellsLabels';
 import { CellHash, CellsHashBounds, sheetHashSize } from './CellsTypes';
 
 export class CellsSheet extends Container {
   sheet: SheetRust;
-
-  // all labels within the sheet (needed b/c CellLabels can cross hash boundaries)
-  private cellsLabels: CellsLabels;
 
   // individual hash containers (eg, CellsBackground, CellsArray)
   private cellsHashContainer: Container;
@@ -23,7 +19,6 @@ export class CellsSheet extends Container {
     this.sheet = sheet;
     this.cellsHash = new Map();
     this.cellsHashContainer = this.addChild(new Container());
-    this.cellsLabels = this.addChild(new CellsLabels(sheet));
 
     this.populate(sheet);
   }
@@ -34,12 +29,12 @@ export class CellsSheet extends Container {
       const hashBounds = this.getHashBounds(bounds);
       for (let y = hashBounds.yStart; y <= hashBounds.yEnd; y++) {
         for (let x = hashBounds.xStart; x <= hashBounds.xEnd; x++) {
-          const cells = (sheet.grid as GridSparseRust).getCellList(new Rectangle(x, y, sheetHashSize, sheetHashSize));
+          const cells = (sheet.grid as GridSparseRust).getCellList(
+            new Rectangle(x * sheetHashSize, y * sheetHashSize, sheetHashSize - 1, sheetHashSize - 1)
+          );
           if (cells.length) {
-            const cellsHash = this.cellsHashContainer.addChild(new CellsHash(x, y));
+            const cellsHash = this.cellsHashContainer.addChild(new CellsHash(x, y, sheet, cells));
             this.cellsHash.set(cellsHash.key, cellsHash);
-            const cellLabels = this.cellsLabels.add(cells);
-            cellLabels.forEach((cellLabel) => cellsHash.add(cellLabel));
           }
         }
       }
@@ -54,23 +49,23 @@ export class CellsSheet extends Container {
     return { xStart, yStart, xEnd, yEnd };
   }
 
-  protected add(hash: CellHash, x: number, y: number): void {
-    const key = CellsHash.getKey(x, y);
-    let cellsHash = this.cellsHash.get(key);
-    if (!cellsHash) {
-      cellsHash = this.cellsHashContainer.addChild(new CellsHash(x, y));
-      this.cellsHash.set(key, cellsHash);
-    }
-    cellsHash.add(hash);
-    hash.hashes.add(cellsHash);
-  }
+  // protected add(hash: CellHash, x: number, y: number): void {
+  //   const key = CellsHash.getKey(x, y);
+  //   let cellsHash = this.cellsHash.get(key);
+  //   if (!cellsHash) {
+  //     cellsHash = this.cellsHashContainer.addChild(new CellsHash(x, y));
+  //     this.cellsHash.set(key, cellsHash);
+  //   }
+  //   cellsHash.add(hash);
+  //   hash.hashes.add(cellsHash);
+  // }
 
-  protected remove(hash: CellHash): void {
-    hash.hashes.forEach((cellHash) => {
-      cellHash.delete(hash);
-    });
-    hash.hashes.clear();
-  }
+  // protected remove(hash: CellHash): void {
+  //   hash.hashes.forEach((cellHash) => {
+  //     cellHash.delete(hash);
+  //   });
+  //   hash.hashes.clear();
+  // }
 
   show(bounds: Rectangle): void {
     const hashBounds = this.sheet.gridOffsets.getColumnRowRectangleFromScreen(bounds);
@@ -84,13 +79,13 @@ export class CellsSheet extends Container {
   }
 
   updateHash(hash: CellHash, AABB: Rectangle): void {
-    hash.AABB = AABB;
-    const bounds = this.getHashBounds(hash.AABB);
-    this.remove(hash);
-    for (let y = bounds.yStart; y <= bounds.yEnd; y++) {
-      for (let x = bounds.xStart; x <= bounds.xEnd; x++) {
-        this.add(hash, x, y);
-      }
-    }
+    // hash.AABB = AABB;
+    // const bounds = this.getHashBounds(hash.AABB);
+    // this.remove(hash);
+    // for (let y = bounds.yStart; y <= bounds.yEnd; y++) {
+    //   for (let x = bounds.xStart; x <= bounds.xEnd; x++) {
+    //     this.add(hash, x, y);
+    //   }
+    // }
   }
 }

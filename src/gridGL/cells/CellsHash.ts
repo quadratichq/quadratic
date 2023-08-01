@@ -1,10 +1,14 @@
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
+import { SheetRust } from '../../grid/sheet/SheetRust';
 import { CellsBackground } from './CellsBackground';
-import { CellHash, sheetHashSize } from './CellsTypes';
+import { CellsLabels } from './CellsLabels';
+import { CellHash, CellRust, sheetHashSize } from './CellsTypes';
 
 export class CellsHash extends Container {
   private entries: Set<CellHash>;
+  private test: Graphics;
   private cellsBackground: CellsBackground;
+  private cellsLabels: CellsLabels;
   // private cellsArray: CellsArray;
   // private cellsBorder: CellsBorder;
   // private cellsMarkers: CellsMarkers;
@@ -16,11 +20,24 @@ export class CellsHash extends Container {
     return `${x},${y}`;
   }
 
-  constructor(x: number, y: number) {
+  constructor(x: number, y: number, sheet: SheetRust, cells: CellRust[]) {
     super();
     this.key = CellsHash.getKey(x, y);
     this.entries = new Set();
     this.AABB = new Rectangle(x * sheetHashSize, y * sheetHashSize, sheetHashSize, sheetHashSize);
+    this.test = this.addChild(new Graphics());
+    const screen = sheet.gridOffsets.getScreenRectangle(
+      this.AABB.left,
+      this.AABB.top,
+      this.AABB.width,
+      this.AABB.height
+    );
+    this.test
+      .beginFill(Math.floor(Math.random() * 0xffffff))
+      .drawShape(screen)
+      .endFill();
+    this.cellsLabels = this.addChild(new CellsLabels(sheet));
+    this.cellsLabels.add(cells);
     this.cellsBackground = this.addChild(new CellsBackground());
   }
 
@@ -37,14 +54,14 @@ export class CellsHash extends Container {
   show(): void {
     if (!this.visible) {
       this.visible = true;
-      this.entries.forEach((hash) => (hash.visible = true));
+      // this.entries.forEach((hash) => (hash.visible = true));
     }
   }
 
   hide(): void {
     if (this.visible) {
       this.visible = false;
-      this.entries.forEach((hash) => (hash.visible = false));
+      // this.entries.forEach((hash) => (hash.visible = false));
     }
   }
 }
