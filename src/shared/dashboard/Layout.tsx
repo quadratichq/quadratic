@@ -2,7 +2,10 @@ import { Close, FilterDramaOutlined, Logout, PeopleOutline, SchoolOutlined } fro
 import { Avatar, Box, ButtonBase, CircularProgress, IconButton, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
 import { NavLink, Outlet, useFetcher, useLocation, useNavigation, useRouteLoaderData } from 'react-router-dom';
+import { colors } from 'theme/colors';
 import { RootLoaderData } from '../../routes';
+import { ReactComponent as QuadraticLogo } from './quadratic-logo.svg';
+import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';
 
 export const Component = () => {
   const theme = useTheme();
@@ -77,9 +80,9 @@ function Navbar() {
           }}
         >
           <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/images/quadratic-glyph.svg" height="22" alt="Quadratic logo" />
+            <QuadraticLogo />
           </div>
-          <img src={`/images/quadratic-logo-${theme.palette.mode}.svg`} alt="Quadratic logotype" height="22" />
+          <QuadraticLogotype fill={theme.palette.mode === 'light' ? colors.darkGray : '#fff'} />
 
           <Box sx={{ marginLeft: 'auto', [theme.breakpoints.up('md')]: { display: 'none' } }}>
             <IconButton>
