@@ -1,6 +1,7 @@
 import { ManageSearch, Public } from '@mui/icons-material';
 import { Box, Button, IconButton, InputBase, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../../constants/app';
@@ -110,7 +111,10 @@ export const TopBar = (props: IProps) => {
           ) : (
             <>
               <Typography variant="body2" color={colors.mediumGray}>
-                My files /&nbsp;
+                <Link to="/" style={{ textDecoration: 'none', color: colors.mediumGray }}>
+                  My files
+                </Link>{' '}
+                /&nbsp;
               </Typography>
               <Typography
                 onClick={() => {
