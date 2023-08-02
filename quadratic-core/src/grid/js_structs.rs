@@ -1,8 +1,9 @@
+use std::ops::{BitOr, BitOrAssign};
+
 use serde::{Deserialize, Serialize};
 
 use super::borders::CellBorder;
-use super::column::BoolSummary;
-use super::formatting::{CellAlign, CellWrap, NumericFormat};
+use super::formatting::{BoolSummary, CellAlign, CellWrap, NumericFormat};
 use super::CodeCellLanguage;
 use crate::CellValue;
 
@@ -55,10 +56,25 @@ pub struct JsRenderBorder {
     pub style: CellBorder,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct JsFormattingSummary {
     pub bold: BoolSummary,
     pub italic: BoolSummary,
+}
+impl BitOr for JsFormattingSummary {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        JsFormattingSummary {
+            bold: self.bold | rhs.bold,
+            italic: self.italic | rhs.italic,
+        }
+    }
+}
+impl BitOrAssign for JsFormattingSummary {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs;
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
