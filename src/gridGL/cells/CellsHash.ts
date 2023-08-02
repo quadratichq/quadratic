@@ -1,12 +1,13 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
+import { debugShowCellsHashBoxes } from '../../debugFlags';
 import { SheetRust } from '../../grid/sheet/SheetRust';
 import { CellsBackground } from './CellsBackground';
 import { CellsLabels } from './CellsLabels';
-import { CellHash, CellRust, sheetHashSize } from './CellsTypes';
+import { CellHash, CellRust, sheetHashHeight, sheetHashWidth } from './CellsTypes';
 
 export class CellsHash extends Container {
   private entries: Set<CellHash>;
-  private test: Graphics;
+  private test?: Graphics;
   private cellsBackground: CellsBackground;
   private cellsLabels: CellsLabels;
   // private cellsArray: CellsArray;
@@ -24,18 +25,21 @@ export class CellsHash extends Container {
     super();
     this.key = CellsHash.getKey(x, y);
     this.entries = new Set();
-    this.AABB = new Rectangle(x * sheetHashSize, y * sheetHashSize, sheetHashSize, sheetHashSize);
-    this.test = this.addChild(new Graphics());
+    this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth, sheetHashHeight);
     const screen = sheet.gridOffsets.getScreenRectangle(
       this.AABB.left,
       this.AABB.top,
       this.AABB.width,
       this.AABB.height
     );
-    this.test
-      .beginFill(Math.floor(Math.random() * 0xffffff))
-      .drawShape(screen)
-      .endFill();
+
+    if (debugShowCellsHashBoxes) {
+      this.test = this.addChild(new Graphics());
+      this.test
+        .beginFill(Math.floor(Math.random() * 0xffffff))
+        .drawShape(screen)
+        .endFill();
+    }
     this.cellsLabels = this.addChild(new CellsLabels(sheet));
     this.cellsLabels.add(cells);
     this.cellsBackground = this.addChild(new CellsBackground());

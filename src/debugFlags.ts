@@ -48,6 +48,12 @@ export const debugShowCachedSpriteCounts = debug && false;
 // shows why renderer is rendering
 export const debugShowWhyRendering = debug && false;
 
+// shows CellsSheet culling
+export const debugShowCellsSheetCulling = debug && false;
+
+// shows CellsHash boxes
+export const debugShowCellsHashBoxes = debug && false;
+
 // ----------------
 // Quadrant caching
 // ----------------

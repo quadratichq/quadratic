@@ -5,6 +5,7 @@
     "dgraph",
     "Fuzzysort",
     "hljs",
+    "msdf",
     "openai",
     "peekable",
     "pixi",

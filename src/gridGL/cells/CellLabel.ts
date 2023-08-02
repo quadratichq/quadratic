@@ -1,7 +1,7 @@
 import { Point, Rectangle } from 'pixi.js';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { CellAlignment } from '../../schemas';
-import { BitmapTextClip } from '../pixiOverride/BitmapTextClip';
+import { TextMesh } from '../pixiOverride/TextMesh';
 import { CellsHash } from './CellsHash';
 import { CellHash, CellRust } from './CellsTypes';
 
@@ -10,7 +10,10 @@ import { CellHash, CellRust } from './CellsTypes';
 // todo: make this part of the cell's style data structure
 const fontSize = 14;
 
-export class CellLabel extends BitmapTextClip implements CellHash {
+export class CellLabel extends TextMesh implements CellHash {
+  textSizeWidth: number = 0;
+  textSizeHeight: number = 0;
+
   overflowRight?: number;
   overflowLeft?: number;
   lastPosition?: Point;
@@ -29,7 +32,7 @@ export class CellLabel extends BitmapTextClip implements CellHash {
   private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
 
   constructor(cell: CellRust, rectangle: Rectangle) {
-    super(cell.value, {
+    super(cell.value.toString(), {
       fontName: 'OpenSans',
       fontSize,
       tint: 0,
@@ -52,16 +55,16 @@ export class CellLabel extends BitmapTextClip implements CellHash {
     this.alignment = cell.align;
   }
 
-  set text(text: string) {
-    text = String(text === null || text === undefined ? '' : text);
-    if (this._text !== text) {
-      this._text = text;
-      this.dirty = true;
-    }
-  }
-  get text() {
-    return this._text;
-  }
+  // set text(text: string) {
+  //   text = String(text === null || text === undefined ? '' : text);
+  //   if (this._text !== text) {
+  //     this._text = text;
+  //     this.dirty = true;
+  //   }
+  // }
+  // get text() {
+  //   return this._text;
+  // }
 
   /**
    * Changes the clip settings for the text -- only forces a redraw of the text if the clipOptions have changed

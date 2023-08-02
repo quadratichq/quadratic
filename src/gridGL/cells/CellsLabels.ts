@@ -1,12 +1,15 @@
-import { Container, Point, Rectangle } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { SheetRust } from '../../grid/sheet/SheetRust';
+import { ContainerBitmapText } from '../pixiOverride/ContainerBitmapText';
 import { CellLabel } from './CellLabel';
 import { CellsHash } from './CellsHash';
 import { CellHash, CellRust, CellsHashBounds } from './CellsTypes';
 
+// running around 30ms w/normal container
+
 // holds all CellLabels within a sheet
-export class CellsLabels extends Container implements CellHash {
+export class CellsLabels extends ContainerBitmapText implements CellHash {
   private sheet: SheetRust;
 
   AABB?: Rectangle;
@@ -22,7 +25,7 @@ export class CellsLabels extends Container implements CellHash {
   add(cells: CellRust[]): CellLabel[] {
     return cells.map((cell) => {
       const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
-      const cellLabel = this.addChild(new CellLabel(cell, rectangle));
+      const cellLabel = this.addLabel(new CellLabel(cell, rectangle));
       return cellLabel;
     });
   }
@@ -189,11 +192,13 @@ export class CellsLabels extends Container implements CellHash {
   //   }
   // }
 
+  // todo: this is probably also not interesting
   get(): CellLabel[] {
-    return this.children as CellLabel[];
+    return this.cellLabels;
   }
 
+  // todo: this is not interesting
   getVisible(): CellLabel[] {
-    return this.children.filter((child) => child.visible) as CellLabel[];
+    return this.cellLabels.filter((child) => child.visible) as CellLabel[];
   }
 }
