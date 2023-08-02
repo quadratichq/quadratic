@@ -3,12 +3,6 @@ import { Avatar, Box, ButtonBase, CircularProgress, IconButton, Typography, useT
 import { ReactNode } from 'react';
 import { NavLink, Outlet, useFetcher, useLocation, useNavigation, useRouteLoaderData } from 'react-router-dom';
 import { RootLoaderData } from '../../routes';
-// import { useGlobalSnackbar } from './ui/contexts/GlobalSnackbar';
-
-// type ActionData = {
-//   deleteSuccess: boolean;
-//   dt: number;
-// };
 
 export const Component = () => {
   const theme = useTheme();
@@ -47,9 +41,9 @@ function Navbar() {
   const theme = useTheme();
 
   const sidebarLinkStyles = {
+    display: 'flex',
     alignItems: 'center',
     color: 'inherit',
-    display: 'flex',
     gap: theme.spacing(1),
     padding: `${theme.spacing(1)} ${theme.spacing(1)}`,
     textDecoration: 'none',
@@ -76,18 +70,18 @@ function Navbar() {
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-
+            ...sidebarLinkStyles,
             [theme.breakpoints.up('md')]: {
               // mb: theme.spacing(3),
-              padding: `${theme.spacing(1)} 0`,
             },
           }}
         >
-          <img src={`/images/quadratic-logo-${theme.palette.mode}.svg`} alt="Quadratic logo" height="22" />
-          <Box sx={{ [theme.breakpoints.up('md')]: { display: 'none' } }}>
+          <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/images/quadratic-glyph.svg" height="22" alt="Quadratic logo" />
+          </div>
+          <img src={`/images/quadratic-logo-${theme.palette.mode}.svg`} alt="Quadratic logotype" height="22" />
+
+          <Box sx={{ marginLeft: 'auto', [theme.breakpoints.up('md')]: { display: 'none' } }}>
             <IconButton>
               <Close />
             </IconButton>
