@@ -21,6 +21,16 @@ const PythonReturnType = ({
   const theme = useTheme();
   const outputType = selectedCell.evaluation_result?.output_type;
 
+  const getHeightAndWidth = () => {
+    const arrayOutput = selectedCell.evaluation_result?.array_output;
+    if (!arrayOutput) return null;
+    const rowsLength = arrayOutput.length;
+    const rows = `${rowsLength} ${rowsLength === 1 ? 'row' : 'rows'}`;
+    if (!arrayOutput[0] || !arrayOutput[0].length || arrayOutput[0].length === 1) return rows;
+
+    return `${rows} x ${arrayOutput[0].length} columns`;
+  };
+
   if (!pythonReturnType || 'error' in pythonReturnType) return null;
 
   return (
@@ -32,6 +42,7 @@ const PythonReturnType = ({
         display: 'flex',
         alignItems: 'center',
         gap: theme.spacing(1),
+        flexWrap: 'wrap',
       }}
     >
       <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} />{' '}
@@ -61,6 +72,7 @@ const PythonReturnType = ({
             line: {pythonReturnType?.lineno}
           </a>
           ] {pythonReturnType?.value_type}
+          <span>{getHeightAndWidth()}</span>
         </>
       )}
     </div>
