@@ -50,7 +50,7 @@ const router = createBrowserRouter(
           </Route>
         </Route>
 
-        <Route loader={protectedRouteLoaderWrapper(async () => {})} lazy={() => import('../shared/dashboard/Layout')}>
+        <Route loader={protectedRouteLoaderWrapper(async () => null)} lazy={() => import('../shared/dashboard/Layout')}>
           <Route path="files" element={<Navigate to="/files/mine" replace />} />
           <Route path="files/mine" lazy={() => import('./files/mine')} />
           <Route path="files/examples" lazy={() => import('./files/examples')} />
