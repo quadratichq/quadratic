@@ -18,7 +18,7 @@ import {
 } from 'react-router-dom';
 import Empty from 'shared/Empty';
 import { useGlobalSnackbar } from 'shared/GlobalSnackbar';
-import File from 'shared/dashboard/File';
+import File from 'shared/dashboard/FileListItem';
 import Header from 'shared/dashboard/Header';
 import { TooltipHint } from 'ui/components/TooltipHint';
 

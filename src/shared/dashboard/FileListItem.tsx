@@ -3,7 +3,7 @@ import { Box, Divider, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
 import { colors } from '../../theme/colors';
 
-export default function File({
+export default function FileListItem({
   name,
   description,
   actions,
@@ -15,15 +15,23 @@ export default function File({
   status?: ReactNode;
 }) {
   const theme = useTheme();
+  console.log(theme);
 
   return (
     <Box sx={{ '&:hover': { background: colors.canvasLayer2, cursor: 'pointer' } }}>
-      <div
-        style={{
+      <Box
+        sx={{
           display: 'flex',
           alignItems: 'center',
           gap: theme.spacing(2),
-          padding: `${theme.spacing(2)} ${theme.spacing(3)}`,
+
+          [theme.breakpoints.down('md')]: {
+            p: theme.spacing(1),
+          },
+
+          [theme.breakpoints.up('md')]: {
+            p: theme.spacing(2),
+          },
         }}
       >
         <div>
@@ -41,7 +49,7 @@ export default function File({
           </Typography>
         </div>
         {actions}
-      </div>
+      </Box>
       <Divider />
     </Box>
   );

@@ -3,7 +3,7 @@ import { EXAMPLE_FILES } from 'constants/app';
 import { useEffect } from 'react';
 import { ActionFunctionArgs, Form, useActionData, useSubmit } from 'react-router-dom';
 import { useGlobalSnackbar } from 'shared/GlobalSnackbar';
-import File from 'shared/dashboard/File';
+import File from 'shared/dashboard/FileListItem';
 import Header from 'shared/dashboard/Header';
 
 type ActionData = {

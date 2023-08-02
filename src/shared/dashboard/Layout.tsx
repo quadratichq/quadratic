@@ -1,44 +1,104 @@
-import { Close, FilterDramaOutlined, Logout, PeopleOutline, SchoolOutlined } from '@mui/icons-material';
-import { Avatar, Box, ButtonBase, CircularProgress, IconButton, Typography, useTheme } from '@mui/material';
-import { ReactNode } from 'react';
+import { Close, FilterDramaOutlined, Logout, Menu, PeopleOutline, SchoolOutlined } from '@mui/icons-material';
+import { Avatar, Box, ButtonBase, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
+import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useFetcher, useLocation, useNavigation, useRouteLoaderData } from 'react-router-dom';
 import { colors } from 'theme/colors';
 import { RootLoaderData } from '../../routes';
 import { ReactComponent as QuadraticLogo } from './quadratic-logo.svg';
 import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';
 
+const drawerWidth = 264;
+
 export const Component = () => {
   const theme = useTheme();
   const navigation = useNavigation();
+  const location = useLocation();
   const isLoading = navigation.state === 'loading';
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+
+  const handleDrawerToggle = () => {
+    setIsOpen((prev) => !prev);
+  };
+
+  const navbar = <Navbar handleDrawerToggle={handleDrawerToggle} />;
+
+  // When the location changes, close the menu (if it's already open)
+  useEffect(() => {
+    setIsOpen((prevIsOpen) => (prevIsOpen ? false : prevIsOpen));
+  }, [location.pathname]);
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '264px 1fr',
-        height: '100%',
+    <Box
+      sx={{
         backgroundColor: theme.palette.background.default,
+        height: '100%',
+        [theme.breakpoints.up('md')]: {
+          display: 'flex',
+          ml: drawerWidth + 'px',
+        },
       }}
     >
-      <Navbar />
-      <div
-        style={{
-          padding: `0 ${theme.spacing(5)}`,
+      <Drawer
+        variant="temporary"
+        open={isOpen}
+        onClose={handleDrawerToggle}
+        anchor={'right'}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile.
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+        }}
+      >
+        {navbar}
+      </Drawer>
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+        }}
+        open
+      >
+        {navbar}
+      </Drawer>
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          px: theme.spacing(2),
           overflow: isLoading ? 'hidden' : 'scroll',
           paddingBottom: theme.spacing(5),
           position: 'relative',
           transition: '.2s ease opacity',
           ...(isLoading ? { opacity: '.25', pointerEvents: 'none' } : {}),
+
+          [theme.breakpoints.up('md')]: {
+            px: theme.spacing(5),
+          },
         }}
       >
+        <Box
+          sx={{
+            display: { xs: 'block', md: 'none' },
+            position: 'absolute',
+            top: theme.spacing(1.5),
+            right: theme.spacing(2),
+            zIndex: 100,
+          }}
+        >
+          <IconButton onClick={handleDrawerToggle}>
+            <Menu />
+          </IconButton>
+        </Box>
         <Outlet />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 
-function Navbar() {
+function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
   const { user } = useRouteLoaderData('root') as RootLoaderData;
   const fetcher = useFetcher();
   const theme = useTheme();
@@ -61,31 +121,26 @@ function Navbar() {
     <Box
       component="nav"
       sx={{
-        [theme.breakpoints.up('md')]: {
-          borderRight: `1px solid ${theme.palette.divider}`,
-        },
-        padding: theme.spacing(2),
+        px: theme.spacing(2),
+        py: theme.spacing(0.5),
         display: 'flex',
         justifyContent: 'space-between',
         flexDirection: 'column',
+
+        [theme.breakpoints.up('md')]: {
+          p: theme.spacing(2),
+        },
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <Box
-          sx={{
-            ...sidebarLinkStyles,
-            [theme.breakpoints.up('md')]: {
-              // mb: theme.spacing(3),
-            },
-          }}
-        >
+        <Box sx={sidebarLinkStyles}>
           <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <QuadraticLogo />
           </div>
           <QuadraticLogotype fill={theme.palette.mode === 'light' ? colors.darkGray : '#fff'} />
 
           <Box sx={{ marginLeft: 'auto', [theme.breakpoints.up('md')]: { display: 'none' } }}>
-            <IconButton>
+            <IconButton onClick={() => handleDrawerToggle()}>
               <Close />
             </IconButton>
           </Box>

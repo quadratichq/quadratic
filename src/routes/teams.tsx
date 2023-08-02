@@ -4,13 +4,12 @@ import Empty from '../shared/Empty';
 import Header from '../shared/dashboard/Header';
 
 export const Component = () => {
-  // const data = useLoaderData() as LoaderData;
-  // const theme = useTheme();
+  // TODO what happens when you click the button
   return (
     <>
-      <Header title="Coming soon" />
+      <Header title="Teams" />
       <Empty
-        title="Teams"
+        title="Coming soon…"
         description="Teams is a collaborative space to work on files with other people. Interested? Sign up for early access."
         Icon={PeopleOutline}
         actions={
