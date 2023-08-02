@@ -83,7 +83,7 @@ export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [value, setValue] = React.useState<string>('');
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
-  const { isAuthenticated } = useRouteLoaderData('data') as RootLoaderData;
+  const { isAuthenticated } = useRouteLoaderData('root') as RootLoaderData;
   const searchlabel = 'Choose a cell type…';
 
   if (!isAuthenticated) {
