@@ -1,6 +1,8 @@
 import { User } from '@auth0/auth0-spa-js';
 import { ErrorOutline, WarningAmber } from '@mui/icons-material';
+import { Button } from '@mui/material';
 import {
+  Link,
   Navigate,
   Outlet,
   Route,
@@ -11,7 +13,7 @@ import {
   useRouteError,
 } from 'react-router-dom';
 import { GlobalSnackbarProvider } from 'shared/GlobalSnackbar';
-import { authClient } from '../auth';
+import { authClient, protectedRouteLoaderWrapper } from '../auth';
 import { debugLogAuth } from '../debugFlags';
 import Empty from '../shared/Empty';
 import BrowserCompatibility from '../shared/root/BrowserCompatibility';
@@ -48,7 +50,7 @@ const router = createBrowserRouter(
           </Route>
         </Route>
 
-        <Route lazy={() => import('../shared/dashboard/Layout')}>
+        <Route loader={protectedRouteLoaderWrapper(async () => {})} lazy={() => import('../shared/dashboard/Layout')}>
           <Route path="files" element={<Navigate to="/files/mine" replace />} />
           <Route path="files/mine" lazy={() => import('./files/mine')} />
           <Route path="files/examples" lazy={() => import('./files/examples')} />
@@ -60,9 +62,14 @@ const router = createBrowserRouter(
           path="*"
           element={
             <Empty
-              title="404: resource not found"
+              title="404: not found"
               description="What you’re looking for could not be found. Check the URL and try again."
               Icon={WarningAmber}
+              actions={
+                <Button component={Link} to="/" variant="contained" disableElevation>
+                  Go home
+                </Button>
+              }
             />
           }
         />

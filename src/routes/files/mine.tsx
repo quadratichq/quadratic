@@ -2,7 +2,7 @@ import { DeleteOutline, ErrorOutline, FileDownloadOutlined, InsertDriveFileOutli
 import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
 import apiClientSingleton from 'api-client/apiClientSingleton';
 import { GetFilesRes } from 'api-client/types';
-import { protectedRouteLoaderWrapper } from 'auth';
+
 import {
   ActionFunctionArgs,
   Fetcher,
@@ -20,10 +20,10 @@ import File from 'shared/dashboard/File';
 import Header from 'shared/dashboard/Header';
 import { TooltipHint } from 'ui/components/TooltipHint';
 
-export const loader = protectedRouteLoaderWrapper(async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
   const files = await apiClientSingleton.getFiles();
   return files;
-});
+};
 
 export const Component = () => {
   const files = useLoaderData() as GetFilesRes;

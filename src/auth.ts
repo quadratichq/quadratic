@@ -1,6 +1,6 @@
-import { createAuth0Client, User, Auth0Client } from '@auth0/auth0-spa-js';
-import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
+import { Auth0Client, User, createAuth0Client } from '@auth0/auth0-spa-js';
 import * as Sentry from '@sentry/browser';
+import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
 
 const domain = process.env.REACT_APP_AUTH0_DOMAIN || '';
 const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID || '';
@@ -72,6 +72,11 @@ export const authClient: AuthClient = {
   async logout() {
     const client = await getClient();
     await client.logout();
+    // Not sure why this is the case, but manually waiting for this is what
+    // makes it work. Auth0 will redirect once it actually does the logout,
+    // otherwise this doesn't wait and it "logs out" too fast and you don't
+    // actually log out
+    await new Promise((resolve) => setTimeout(resolve, 20000));
   },
   async getToken() {
     const client = await getClient();
