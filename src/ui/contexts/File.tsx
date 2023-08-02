@@ -6,10 +6,16 @@ import apiClientSingleton from '../../api-client/apiClientSingleton';
 import { GetFileClientRes } from '../../api-client/types';
 import { SheetController } from '../../grid/controller/sheetController';
 
+type Sync = {
+  id: number;
+  state: 'idle' | 'syncing' | 'error';
+};
+
 export type FileContextType = {
   name: string;
   renameFile: (newName: string) => void;
   contents: GridFile;
+  syncState: Sync['state'];
 };
 
 /**
@@ -33,6 +39,8 @@ export const FileProvider = ({
   const [name, setName] = useState<FileContextType['name']>(fileFromServer.name);
   const [contents, setContents] = useState<FileContextType['contents']>(fileFromServer.contents);
   let didMount = useRef<boolean>(false);
+  const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
+  const syncState = latestSync.state;
 
   const renameFile: FileContextType['renameFile'] = useCallback(
     (newName) => {
@@ -68,22 +76,31 @@ export const FileProvider = ({
     // sheetController.app?.reset();
   }, [sheetController.sheet, fileFromServer]);
 
+  // TODO debounce file changes so changes sync only every X milliseconds
+  const syncChanges = useCallback(
+    async (changes: any) => {
+      if (uuid) {
+        const id = Date.now();
+        setLatestSync({ id, state: 'syncing' });
+        const ok = await apiClientSingleton.postFile(uuid, changes);
+        setLatestSync((prev) => (prev.id === id ? { id, state: ok ? 'idle' : 'error' } : prev));
+      }
+    },
+    [setLatestSync, uuid]
+  );
+
   // When the file name changes, update document title and sync to server
   useEffect(() => {
-    if (uuid) {
-      document.title = `${name} - Quadratic`;
-      apiClientSingleton.postFile(uuid, { name });
-    }
-  }, [name, uuid]);
+    document.title = `${name} - Quadratic`;
+    syncChanges({ name });
+  }, [name, syncChanges]);
 
   // When the contents of the file changes, sync to server
   useEffect(() => {
-    if (uuid) {
-      apiClientSingleton.postFile(uuid, { contents });
-    }
-  }, [contents, uuid]);
+    syncChanges({ contents });
+  }, [contents, syncChanges]);
 
-  return <FileContext.Provider value={{ name, renameFile, contents }}>{children}</FileContext.Provider>;
+  return <FileContext.Provider value={{ name, renameFile, contents, syncState }}>{children}</FileContext.Provider>;
 };
 
 /**

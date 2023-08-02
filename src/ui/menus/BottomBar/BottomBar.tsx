@@ -1,19 +1,20 @@
-import { Box } from '@mui/system';
-import { colors } from '../../../theme/colors';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
-import { useEffect, useState } from 'react';
-import { Cell } from '../../../schemas';
-import { formatDistance } from 'date-fns';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { isMobileOnly } from 'react-device-detect';
-import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ChatBubbleOutline, Check, ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip } from '@mui/material';
+import { Box } from '@mui/system';
+import { formatDistance } from 'date-fns';
+import { useEffect, useState } from 'react';
+import { isMobileOnly } from 'react-device-detect';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
+import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { Cell } from '../../../schemas';
+import { colors } from '../../../theme/colors';
 import { ActiveSelectionStats } from './ActiveSelectionStats';
+import SyncState from './SyncState';
 
 const stylesAlignCenter = { display: 'flex', alignItems: 'center', gap: '.25rem' };
 
@@ -139,6 +140,8 @@ export const BottomBar = (props: Props) => {
         }}
       >
         <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
+        <SyncState />
+
         {!isMobileOnly && (
           <>
             <span style={stylesAlignCenter}>
