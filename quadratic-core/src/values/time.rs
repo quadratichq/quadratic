@@ -2,8 +2,10 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Instant {
+    #[cfg_attr(test, proptest(strategy = "0.0..(i32::MAX as f64)"))]
     pub seconds: f64,
 }
 
@@ -30,10 +32,12 @@ impl Ord for Instant {
     }
 }
 
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Duration {
     pub years: i32,
     pub months: i32,
+    #[cfg_attr(test, proptest(strategy = "(i32::MIN as f64)..(i32::MAX as f64)"))]
     pub seconds: f64,
 }
 

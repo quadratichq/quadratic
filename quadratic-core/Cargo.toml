@@ -25,6 +25,7 @@ async-trait = "0.1.63"
 futures = "0.3.25"
 itertools = "0.10.5"
 lazy_static = "1.4"
+rand = "0.8.5"
 getrandom = { version = "*", features = ["js"] }
 regex = "1.7"
 serde = { version = "1.0", features = ["derive"] }
@@ -36,7 +37,6 @@ strum = "0.24.1"
 strum_macros = "0.24.3"
 wasm-bindgen = "0.2.83"
 wasm-bindgen-futures = "0.4.33"
-petgraph = "0.6.2"
 pollster = "0.2.5"
 uuid = { version = "1.4.0", features = ["v4", "serde"] }
 js-sys = "0.3.60"
@@ -53,7 +53,8 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
 
 [dev-dependencies]
-proptest = "1.0.0"
+proptest = "1.2.0"
+proptest-derive = "0.3.0"
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

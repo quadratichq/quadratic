@@ -6,6 +6,7 @@ use super::{Duration, ErrorMsg, Instant, IsBlank};
 use crate::{CodeResult, Error, Span};
 
 /// Non-array value in the formula language.
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 #[serde(tag = "type", content = "value")]
 #[serde(rename_all = "snake_case")]
@@ -24,6 +25,7 @@ pub enum CellValue {
     /// Duration of time.
     Duration(Duration),
     /// Error value.
+    #[cfg_attr(test, proptest(skip))]
     Error(Box<Error>),
 }
 impl fmt::Display for CellValue {

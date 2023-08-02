@@ -5,15 +5,22 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(
     Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
 )]
 #[wasm_bindgen]
 pub struct Pos {
     /// Column
+    #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
     pub x: i64,
+
     /// Row
+    #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
     pub y: i64,
+    //
+    // We use a small range for proptest because most tests want to see what
+    // happens when values are nearby.
 }
 #[wasm_bindgen]
 impl Pos {
@@ -89,6 +96,12 @@ impl Rect {
         self.min.y = std::cmp::min(self.min.y, pos.y);
         self.max.x = std::cmp::max(self.max.x, pos.x);
         self.max.y = std::cmp::max(self.max.y, pos.y);
+    }
+
+    /// Returns whether a position is contained within the rectangle.
+    #[wasm_bindgen]
+    pub fn contains(&self, pos: Pos) -> bool {
+        self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
     }
 }
 impl Rect {

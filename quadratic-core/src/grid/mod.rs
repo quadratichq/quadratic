@@ -114,7 +114,7 @@ impl Grid {
                 } else if let Some(cell_value) = js_cell.to_cell_value() {
                     let x = js_cell.x;
                     let y = js_cell.y;
-                    sheet.set_cell_value(&Pos { x, y }, cell_value);
+                    sheet.set_cell_value(Pos { x, y }, cell_value);
                 }
             }
 
@@ -317,7 +317,7 @@ impl Grid {
     ) -> Result<(), JsValue> {
         let cell_value: CellValue = serde_wasm_bindgen::from_value(cell_value)?;
         self.sheet_mut_from_id(sheet_id)
-            .set_cell_value(pos, cell_value);
+            .set_cell_value(*pos, cell_value);
         Ok(())
     }
 
@@ -447,3 +447,6 @@ impl Grid {
         self.delete_cell_columns(sheet_id, region, |column| &mut column.wrap);
     }
 }
+
+#[cfg(test)]
+mod tests;

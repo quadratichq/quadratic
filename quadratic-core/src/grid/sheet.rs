@@ -1,5 +1,6 @@
 use std::collections::{btree_map, BTreeMap, HashMap, HashSet};
 
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use super::borders::{CellBorder, SheetBorders};
@@ -63,17 +64,19 @@ impl Sheet {
 
     /// Constructs a new sheet with a region populated with random float values.
     pub fn with_random_floats(id: SheetId, name: String, region: Rect) -> Self {
+        let mut rng = rand::thread_rng();
         let mut sheet = Self::new(id, name);
         for x in region.x_range() {
             let (_, column) = sheet.get_or_create_column(x);
             for y in region.y_range() {
                 // Generate a random value with precision 0.1 in a range from
                 // -10 to +10.
-                let value = (js_sys::Math::random() * 201.0).floor() / 10.0 - 10.0;
+                let value = rng.gen_range(-100..=100) as f64 / 10.0;
 
                 column.values.set(y, Some(value.into()));
             }
         }
+        sheet.recalculate_bounds();
         sheet
     }
 
@@ -84,7 +87,7 @@ impl Sheet {
     /// because there's no need.
     pub fn set_cell_value(
         &mut self,
-        pos: &Pos,
+        pos: Pos,
         value: CellValue,
     ) -> Option<SetCellResponse<CellValue>> {
         let is_blank = value.is_blank();
@@ -503,6 +506,9 @@ impl Sheet {
         self.iter_code_cells_locations(region)
             .filter_map(|cell_ref| {
                 let pos = self.cell_ref_to_pos(cell_ref)?;
+                if !region.contains(pos) {
+                    return None;
+                }
                 let code_cell = self.code_cells.get(&cell_ref)?;
                 let ArraySize { w, h } = code_cell.output_size();
                 Some(JsRenderCodeCell {
