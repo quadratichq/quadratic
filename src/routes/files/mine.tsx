@@ -2,13 +2,14 @@ import { DeleteOutline, ErrorOutline, FileDownloadOutlined, InsertDriveFileOutli
 import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
 import apiClientSingleton from 'api-client/apiClientSingleton';
 import { GetFilesRes } from 'api-client/types';
-
+import { useEffect } from 'react';
 import {
   ActionFunctionArgs,
   Fetcher,
   Form,
   Link,
   LoaderFunctionArgs,
+  useActionData,
   useFetcher,
   useFetchers,
   useLoaderData,
@@ -16,9 +17,14 @@ import {
   useSubmit,
 } from 'react-router-dom';
 import Empty from 'shared/Empty';
+import { useGlobalSnackbar } from 'shared/GlobalSnackbar';
 import File from 'shared/dashboard/File';
 import Header from 'shared/dashboard/Header';
 import { TooltipHint } from 'ui/components/TooltipHint';
+
+type ActionData = {
+  ok: boolean;
+} | null;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const files = await apiClientSingleton.getFiles();
@@ -27,11 +33,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const Component = () => {
   const files = useLoaderData() as GetFilesRes;
+  const actionData = useActionData() as ActionData;
   const theme = useTheme();
   const fetchers = useFetchers();
   const submit = useSubmit();
   const navigation = useNavigation();
   const isDisabled = navigation.state !== 'idle';
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+
+  useEffect(() => {
+    if (actionData && !actionData.ok) {
+      addGlobalSnackbar('An error occurred. Try again.', { severity: 'error' });
+    }
+  }, [actionData, addGlobalSnackbar]);
 
   let filesUI;
   if (!files) {
@@ -135,29 +149,17 @@ export const Component = () => {
   );
 };
 
-export const action = async ({ params, request }: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs): Promise<ActionData> => {
   const formData = await request.formData();
   const action = formData.get('action');
 
   if (action === 'create') {
     const uuid = await apiClientSingleton.createFile();
     if (uuid) {
-      // This will do a hard reload rather than a SPA navigation
+      // Hard reload instead of SPA navigation
       window.location.href = `/file/${uuid}`;
     }
-    // TODO handle doesn't create
-  }
-
-  if (action === 'delete') {
-    const uuid = formData.get('uuid');
-    const success = await apiClientSingleton.deleteFile(uuid as string);
-    return { success };
-  }
-
-  if (action === 'download') {
-    const uuid = formData.get('uuid');
-    await apiClientSingleton.downloadFile(uuid as string);
-    // TODO should we handle this not working?
+    return { ok: false };
   }
 
   if (action === 'import') {
@@ -165,9 +167,23 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     const contents = formData.get('contents') as string;
     const uuid = await apiClientSingleton.createFile(name, contents);
     if (uuid) {
+      // Hard reload instead of SPA navigation
       window.location.href = `/file/${uuid}`;
     }
-    // TODO handle doesn't create
+    return { ok: false };
+  }
+
+  if (action === 'delete') {
+    const uuid = formData.get('uuid');
+    const ok = await apiClientSingleton.deleteFile(uuid as string);
+    return { ok };
+  }
+
+  if (action === 'download') {
+    const uuid = formData.get('uuid');
+    const ok = await apiClientSingleton.downloadFile(uuid as string);
+    console.log({ ok });
+    return { ok };
   }
 
   return null;
@@ -178,12 +194,19 @@ function FileWithActions({ file }: { file: NonNullable<GetFilesRes>[0] }) {
   const theme = useTheme();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+
+  useEffect(() => {
+    if (fetcherDownload.data && !fetcherDownload.data.ok) {
+      addGlobalSnackbar('Failed to download file. Try again.', { severity: 'error' });
+    }
+  }, [addGlobalSnackbar, fetcherDownload.data]);
 
   if (optimisticallyHideFileBeingDeleted(fetcherDelete)) {
     return null;
   }
 
-  const failedToDelete = fetcherDelete.data && !fetcherDelete.data.success;
+  const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
 
   return (
     <Link to={`/file/${uuid}`} reloadDocument style={{ textDecoration: 'none', color: 'inherit' }}>

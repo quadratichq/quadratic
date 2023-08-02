@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
+import { downloadFile } from 'helpers/downloadFile';
 import mixpanel from 'mixpanel-browser';
 import { authClient } from '../auth';
-import { downloadFile } from '../helpers/downloadFile';
 import { GridFile, GridFileSchema } from '../schemas';
 import { GetFileClientRes, GetFileRes, GetFilesRes, PostFilesReq } from './types';
 const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
@@ -130,6 +130,7 @@ class APIClientSingleton {
       if (!file) {
         throw new Error('Failed to fetch file.');
       }
+
       // TODO what do we want the exported file to be?
       downloadFile(file.name, JSON.stringify(file));
       return true;
