@@ -8,4 +8,13 @@ module.exports = {
       name: '@electron-forge/maker-squirrel',
     },
   ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-s3',
+      config: {
+        bucket: 'my-bucket',
+        public: true,
+      },
+    },
+  ],
 };
