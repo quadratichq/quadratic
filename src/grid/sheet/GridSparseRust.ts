@@ -24,9 +24,11 @@ export class GridSparseRust extends GridSparse {
     super(sheet);
     this.grid = file;
 
-    const sheetId = this.grid.sheet_index_to_id(index);
+    const sheetId = this.grid.sheetIndexToId(index);
     if (!sheetId) throw new Error('Expected sheetId to be defined');
     this.sheetId = sheetId;
+
+    // this.grid.populateWithRandomFloats(this.sheetId, new Rect(new Pos(0, 0), new Pos(100, 10000)));
 
     // if (!bounds) return;
     // for (let y = bounds.top; y <= bounds.bottom; y++) {

@@ -71,7 +71,7 @@ impl Sheet {
             for y in region.y_range() {
                 // Generate a random value with precision 0.1 in a range from
                 // -10 to +10.
-                let value = rng.gen_range(-100..=100) as f64 / 10.0;
+                let value = rng.gen_range(-10000..=10000) as f64;
 
                 column.values.set(y, Some(value.into()));
             }
