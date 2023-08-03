@@ -13,19 +13,21 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     benchmark_grids(c, &inputs, "get_render_cells_all", |b, grid| {
         b.iter(|| {
-            grid.sheets()[0].get_render_cells(Rect {
+            let output = grid.sheets()[0].get_render_cells(Rect {
                 min: Pos { x: -1000, y: -1000 },
                 max: Pos { x: 1000, y: 1000 },
-            })
+            });
+            serde_json::to_string(&output)
         });
     });
 
     benchmark_grids(c, &inputs, "get_render_cells_10x40", |b, grid| {
         b.iter(|| {
-            grid.sheets()[0].get_render_cells(Rect {
+            let output = grid.sheets()[0].get_render_cells(Rect {
                 min: Pos { x: 11, y: 11 },
                 max: Pos { x: 20, y: 50 },
-            })
+            });
+            serde_json::to_string(&output)
         });
     });
 
