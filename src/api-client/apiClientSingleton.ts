@@ -4,7 +4,16 @@ import mixpanel from 'mixpanel-browser';
 import { authClient } from '../auth';
 import { GridFile, GridFileSchema } from '../schemas';
 import { GetFileClientRes, GetFileRes, GetFilesRes, PostFilesReq } from './types';
-const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
+
+// When running on a preview branch, point to the corresponding API URL
+let API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
+if (
+  process.env.VERCEL_ENV === 'preview' &&
+  process.env.VERCEL_GIT_PULL_REQUEST_ID !== undefined &&
+  process.env.VERCEL_GIT_PULL_REQUEST_ID !== ''
+) {
+  API_URL = `quadratic-api-dev-pr-${process.env.REACT_APP_QUADRATIC_API_URL_PR}.herokuapp.com`;
+}
 
 class APIClientSingleton {
   // Allow only one instance of the class to be created
