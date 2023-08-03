@@ -1,7 +1,7 @@
-import { Close, FilterDramaOutlined, Logout, Menu, PeopleOutline, SchoolOutlined } from '@mui/icons-material';
-import { Avatar, Box, ButtonBase, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
+import { Close, FilterDramaOutlined, Menu, PeopleOutline, SchoolOutlined } from '@mui/icons-material';
+import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
 import { ReactNode, useEffect, useState } from 'react';
-import { NavLink, Outlet, useFetcher, useLocation, useNavigation, useRouteLoaderData } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigation, useRouteLoaderData } from 'react-router-dom';
 import { colors } from 'theme/colors';
 import { RootLoaderData } from '../../routes';
 import { ReactComponent as QuadraticLogo } from './quadratic-logo.svg';
@@ -100,7 +100,7 @@ export const Component = () => {
 
 function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
   const { user } = useRouteLoaderData('root') as RootLoaderData;
-  const fetcher = useFetcher();
+
   const theme = useTheme();
 
   const sidebarLinkStyles = {
@@ -138,7 +138,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
           <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <QuadraticLogo />
           </div>
-          <QuadraticLogotype fill={theme.palette.mode === 'light' ? colors.darkGray : '#fff'} />
+          <QuadraticLogotype fill={theme.palette.mode === 'light' ? colors.quadraticFifth : '#fff'} />
 
           <Box sx={{ marginLeft: 'auto', [theme.breakpoints.up('md')]: { display: 'none' } }}>
             <IconButton onClick={() => handleDrawerToggle()}>
@@ -169,27 +169,20 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
           </Typography>
         </SidebarNavLink>
       </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <SidebarLabel>Account</SidebarLabel>
+      <div>
         <SidebarNavLink to="/account" style={sidebarLinkStyles}>
           <Avatar alt={user?.name} src={user?.picture} sx={{ width: 24, height: 24 }} />
-          <Typography variant="body2" color="text.primary">
-            {user?.name || 'You'}
-          </Typography>
-        </SidebarNavLink>
-        <fetcher.Form method="post" action="/logout" style={{ color: theme.palette.text.secondary }}>
-          <ButtonBase type="submit" style={sidebarLinkStyles}>
-            <Logout color="inherit" />
-            <Typography variant="body2" color="inherit">
-              Log out
+          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <Typography variant="body2" color="text.primary">
+              {user?.name || 'You'}
             </Typography>
-          </ButtonBase>
-        </fetcher.Form>
+            {user?.email && (
+              <Typography noWrap variant="caption" color="text.secondary">
+                {user?.email}
+              </Typography>
+            )}
+          </div>
+        </SidebarNavLink>
       </div>
     </Box>
   );
