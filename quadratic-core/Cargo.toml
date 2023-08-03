@@ -53,8 +53,13 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
 
 [dev-dependencies]
+criterion = { version = "0.4" }
 proptest = "1.2.0"
 proptest-derive = "0.3.0"
+
+[[bench]]
+name = "grid_benchmark"
+harness = false
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

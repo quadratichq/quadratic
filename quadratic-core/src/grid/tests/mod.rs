@@ -8,9 +8,9 @@ use super::*;
 
 #[test]
 fn test_airports() {
-    let grid =
-        Grid::from_legacy(&serde_json::from_str(include_str!("airports_example.json")).unwrap())
-            .unwrap();
+    let grid = Grid::from_legacy(
+        &serde_json::from_str(include_str!("../../../examples/airports.json")).unwrap(),
+    );
 
     let sheet = &grid.sheets()[0];
 

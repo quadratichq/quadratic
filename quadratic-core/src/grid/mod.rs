@@ -59,7 +59,7 @@ impl Grid {
         ret.add_sheet();
         ret
     }
-    pub fn from_legacy(file: &legacy::GridFile) -> Result<Self> {
+    pub fn from_legacy(file: &legacy::GridFile) -> Self {
         use legacy::*;
 
         let GridFile::V1_3(file) = file;
@@ -142,7 +142,7 @@ impl Grid {
             sheet.recalculate_bounds();
         }
 
-        Ok(ret)
+        ret
     }
 
     pub fn sheets(&self) -> &[Sheet] {
@@ -214,8 +214,7 @@ impl Grid {
 impl Grid {
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(file: JsValue) -> Result<Grid, JsValue> {
-        let file = serde_wasm_bindgen::from_value(file)?;
-        Grid::from_legacy(&file).map_err(|e| JsError::new(&e.to_string()).into())
+        Ok(Grid::from_legacy(&serde_wasm_bindgen::from_value(file)?))
     }
 
     #[wasm_bindgen(js_name = "exportToFile")]
