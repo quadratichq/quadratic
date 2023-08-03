@@ -5,13 +5,7 @@ import { authClient } from '../auth';
 import { GridFile, GridFileSchema } from '../schemas';
 import { GetFileClientRes, GetFileRes, GetFilesRes, PostFilesReq } from './types';
 
-// When running on a preview branch, point to the corresponding API URL
-let API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
-if (process.env.REACT_APP_PULL_REQUEST_ID) {
-  API_URL = `quadratic-api-dev-pr-${process.env.REACT_APP_PULL_REQUEST_ID}.herokuapp.com`;
-}
-console.log('API_URL', API_URL);
-console.log('REACT_APP_QUADRATIC_API_URL', process.env.REACT_APP_QUADRATIC_API_URL);
+const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
 
 class APIClientSingleton {
   // Allow only one instance of the class to be created

@@ -1,7 +1,6 @@
-
 if [ "$VERCEL_ENV" == "preview" ]; then
-  export REACT_APP_PULL_REQUEST_ID="$VERCEL_GIT_PULL_REQUEST_ID"
-  echo "Environment is preview, setting REACT_APP_PULL_REQUEST_ID to $REACT_APP_PULL_REQUEST_ID"
+  export REACT_APP_QUADRATIC_API_URL="quadratic-api-dev-pr-$VERCEL_GIT_PULL_REQUEST_ID.herokuapp.com"
+  echo "On preview branch. Setting REACT_APP_QUADRATIC_API_URL to quadratic-api-dev-pr-$VERCEL_GIT_PULL_REQUEST_ID.herokuapp.com"
 fi
 
 echo 'Installing rustup...'
