@@ -55,7 +55,6 @@ class APIClientSingleton {
 
   // Fetch a file from the DB
   async getFile(id: string): Promise<GetFileClientRes | undefined> {
-    // TODO should we hide the share button when that is not configured? (e.g. locally)
     if (!API_URL) return;
 
     try {

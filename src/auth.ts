@@ -32,8 +32,6 @@ async function getClient() {
   return auth0Client;
 }
 
-// TODO handle login error case?
-
 interface AuthClient {
   isAuthenticated(): Promise<boolean>;
   user(): Promise<undefined | User>;
