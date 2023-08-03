@@ -1,0 +1,18 @@
+{
+  "addons": [
+    {
+      "plan": "heroku-postgresql",
+      "options": {
+        "version": "15"
+      }
+    }
+  ],
+  "buildpacks": [
+    {
+      "url": "https://github.com/timanovsky/subdir-heroku-buildpack"
+    },
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
