@@ -205,6 +205,7 @@ class APIClientSingleton {
   /** Creates a new file and returns the new file's uuid */
   async createFile(name?: string, contents?: string): Promise<string | undefined> {
     if (!API_URL) return;
+    mixpanel.track('[Files].newFile');
 
     const defaultContents: GridFile = {
       cells: [],
