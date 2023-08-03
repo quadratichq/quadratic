@@ -1,7 +1,9 @@
 import apiClientSingleton from 'api-client/apiClientSingleton';
 import { EXAMPLE_FILES } from 'constants/app';
+import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import { ActionFunctionArgs, Form, useActionData, useSubmit } from 'react-router-dom';
+import { validateAndUpgradeGridFile } from 'schemas/validateAndUpgradeGridFile';
 import { useGlobalSnackbar } from 'shared/GlobalSnackbar';
 import File from 'shared/dashboard/FileListItem';
 import Header from 'shared/dashboard/Header';
@@ -40,13 +42,13 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionDat
   const file = formData.get('file') as string;
   const name = formData.get('name') as string;
 
+  mixpanel.track('[Files].loadExample', { file });
+
   const uuid = await fetch(`/examples/${file}`)
     .then((res) => res.text())
     .then((contents) => {
-      if (!contents) {
-        throw new Error('Failed to fetch example file');
-      }
-      return apiClientSingleton.createFile(name, contents);
+      const file = validateAndUpgradeGridFile(contents);
+      return apiClientSingleton.createFile(name, JSON.stringify(file));
     })
     .catch((err) => {
       console.error(err);

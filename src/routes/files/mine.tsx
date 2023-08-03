@@ -2,6 +2,7 @@ import { DeleteOutline, ErrorOutline, FileDownloadOutlined, InsertDriveFileOutli
 import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
 import apiClientSingleton from 'api-client/apiClientSingleton';
 import { GetFilesRes } from 'api-client/types';
+import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import {
   ActionFunctionArgs,
@@ -16,6 +17,7 @@ import {
   useNavigation,
   useSubmit,
 } from 'react-router-dom';
+import { validateAndUpgradeGridFile } from 'schemas/validateAndUpgradeGridFile';
 import Empty from 'shared/Empty';
 import { useGlobalSnackbar } from 'shared/GlobalSnackbar';
 import File from 'shared/dashboard/FileListItem';
@@ -105,23 +107,25 @@ export const Component = () => {
                 type="file"
                 name="file"
                 accept=".grid"
-                onChange={async (e: any) => {
+                onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
                   if (!e.target.files) {
                     return;
                   }
                   const file: File = e.target.files[0];
-                  const contents = await file.text().catch((e) => '');
-                  if (!contents) {
+                  const contents = await file.text().catch((e) => null);
+
+                  const validFile = validateAndUpgradeGridFile(contents);
+                  if (!validFile) {
+                    addGlobalSnackbar('Import failed: invalid `.grid` file.', { severity: 'error' });
                     return;
                   }
-                  // TODO validate that it's a .grid file, update it to the latest version
 
                   const name = file.name ? file.name.replace('.grid', '') : 'Untitled';
 
                   let formData = new FormData();
                   formData.append('action', 'import');
                   formData.append('name', name);
-                  formData.append('contents', contents);
+                  formData.append('contents', JSON.stringify(validFile));
                   submit(formData, { method: 'POST' });
                 }}
                 hidden
@@ -154,6 +158,9 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'create') {
     const uuid = await apiClientSingleton.createFile();
+
+    mixpanel.track('[Files].newFile');
+
     if (uuid) {
       // Hard reload instead of SPA navigation
       window.location.href = `/file/${uuid}`;
@@ -165,6 +172,9 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     const name = formData.get('name') as string;
     const contents = formData.get('contents') as string;
     const uuid = await apiClientSingleton.createFile(name, contents);
+
+    mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
+
     if (uuid) {
       // Hard reload instead of SPA navigation
       window.location.href = `/file/${uuid}`;
@@ -175,13 +185,18 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   if (action === 'delete') {
     const uuid = formData.get('uuid');
     const ok = await apiClientSingleton.deleteFile(uuid as string);
+
+    mixpanel.track('[Files].deleteFile', { id: uuid });
+
     return { ok };
   }
 
   if (action === 'download') {
     const uuid = formData.get('uuid');
     const ok = await apiClientSingleton.downloadFile(uuid as string);
-    console.log({ ok });
+
+    mixpanel.track('[Files].downloadFile', { id: uuid });
+
     return { ok };
   }
 

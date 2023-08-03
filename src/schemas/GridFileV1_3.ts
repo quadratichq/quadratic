@@ -92,40 +92,42 @@ export type ArrayOutputBase = z.infer<typeof ArrayOutputBaseSchema>;
 
 /*
 
-// apiClient
+
 response = {
   permission: "",
-  file: GridFile
+  file: {
+    name,
+    version,
+    contents: GridFile
+  }
 }
 
-// GridFile
-GridFile {
-  version,
-  ...
-}
-
-// download
-DiskFile {
-  version,
+request = {
+  name,
   contents: GridFile
-  // read name from file
 }
+
+GridFile is what the sheet takes
+GridFile is what you download
 
 */
 
 /**
- * Given a v1_1 file, update it to a v1_2 file
+ * Given a v1_2 file, update it to a v1_3 file
  */
 export function upgradeV1_2toV1_3(file: GridFileV1_2): GridFileV1_3 {
-  const result = {
-    ...file,
-    version: '1.3',
-  } as GridFileV1_3;
+  // File meta information was removed from the file and added as column
+  // information in the database. This includes:
+  // `filename` - removed from file, renamed to `name` in db
+  // `id` - removed from file, renamed to `uuid` in db
+  // `created` - removed from file, renamed to `created_date` in db
+  // `modified` - removed from file, renamed to `updated_date` in db
+  const { filename, created, modified, id, ...rest } = file;
 
-  // TODO upgrade here
-  // `name` was `filename`
-  // 'created_date` was `created`
-  // 'updated_date` was `modified`
+  const result: GridFileV1_3 = {
+    ...rest,
+    version: '1.3',
+  };
 
   return result;
 }

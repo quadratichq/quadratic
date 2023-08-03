@@ -93,7 +93,6 @@ export const GridFileSchemaV1_2 = z.object({
   id: z.string().uuid(),
   modified: z.number(),
   rows: HeadingSchema.array(),
-  isPublic: z.boolean().optional(),
   version: z.literal('1.2'),
 });
 export type GridFileV1_2 = z.infer<typeof GridFileSchemaV1_2>;
