@@ -44,7 +44,8 @@ interface AuthClient {
 export const authClient: AuthClient = {
   async isAuthenticated() {
     const client = await getClient();
-    return client.isAuthenticated();
+    const isAuthenticated = await client.isAuthenticated();
+    return isAuthenticated;
   },
   async user() {
     const client = await getClient();
