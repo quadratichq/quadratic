@@ -58,11 +58,6 @@ export const Component = () => {
         <Empty
           title="Unexpected error"
           description="An unexpected error occurred while retrieving your files. Try reloading the page. If the issue continues, contact us."
-          actions={
-            <Button variant="outlined" disableElevation component={Link} to="." reloadDocument>
-              Reload
-            </Button>
-          }
           Icon={ErrorOutline}
           severity="error"
         />
