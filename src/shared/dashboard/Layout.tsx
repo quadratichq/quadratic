@@ -126,6 +126,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
         display: 'flex',
         justifyContent: 'space-between',
         flexDirection: 'column',
+        height: '100%',
 
         [theme.breakpoints.up('md')]: {
           p: theme.spacing(2),

@@ -28,7 +28,11 @@ type ActionData = {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const files = await apiClientSingleton.getFiles();
-  return files;
+  if (files) {
+    return files;
+  }
+
+  return null;
 };
 
 export const Component = () => {

@@ -15,7 +15,6 @@ export default function FileListItem({
   status?: ReactNode;
 }) {
   const theme = useTheme();
-  console.log(theme);
 
   return (
     <Box sx={{ '&:hover': { background: colors.canvasLayer2, cursor: 'pointer' } }}>
@@ -37,7 +36,7 @@ export default function FileListItem({
         <div>
           <InsertDriveFileOutlined color="primary" />
         </div>
-        <div style={{ marginRight: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto' }}>
           <div style={{ display: 'flex', gap: theme.spacing() }}>
             <Typography variant="body1" color="text.primary">
               {name}
