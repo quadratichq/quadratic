@@ -4,17 +4,20 @@ import Empty from '../shared/Empty';
 import Header from '../shared/dashboard/Header';
 
 export const Component = () => {
-  // TODO what happens when you click the button
+  const mailto =
+    'mailto:support@quadratichq.com?subject=Early%20access%20to%20teams&body=Please%20sign%20me%20up%20for%20early%20access%20to%20teams!';
   return (
     <>
       <Header title="Teams" />
       <Empty
         title="Coming soon…"
-        description="Teams is a collaborative space to work on files with other people. Interested? Sign up for early access."
+        description={
+          <>Teams will be a collaborative space where you can invite other people and work on files together.</>
+        }
         Icon={PeopleOutline}
         actions={
-          <Button variant="contained" disableElevation>
-            Sign up for the beta
+          <Button href={mailto} variant="contained" disableElevation>
+            Email us for early access
           </Button>
         }
       />
