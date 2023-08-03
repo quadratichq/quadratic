@@ -1,5 +1,5 @@
 import { Rectangle } from 'pixi.js';
-import { CellRust } from '../../gridGL/cells/CellsTypes';
+import { CellFill, CellRust } from '../../gridGL/cells/CellsTypes';
 import { cellHasContent } from '../../gridGL/helpers/selectCells';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Coordinate, MinMax } from '../../gridGL/types/size';
@@ -29,9 +29,9 @@ export class GridSparseRust extends GridSparse {
     this.sheetId = sheetId;
 
     // use to test large sheets
-    console.time('random');
-    this.grid.populateWithRandomFloats(this.sheetId, new Rect(new Pos(0, 0), new Pos(100, 10000)));
-    console.timeEnd('random');
+    // console.time('random');
+    // this.grid.populateWithRandomFloats(this.sheetId, new Rect(new Pos(0, 0), new Pos(100, 10000)));
+    // console.timeEnd('random');
 
     // if (!bounds) return;
     // for (let y = bounds.top; y <= bounds.bottom; y++) {
@@ -209,15 +209,13 @@ export class GridSparseRust extends GridSparse {
   getCellList(rectangle: Rectangle): CellRust[] {
     const rect = new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
     const cells = this.grid.getRenderCells(this.sheetId, rect);
-    const parsed = JSON.parse(cells);
-    // console.log({
-    //   x0: rectangle.left,
-    //   y0: rectangle.top,
-    //   x1: rectangle.right,
-    //   y1: rectangle.bottom,
-    //   size: parsed.length,
-    // });
-    return parsed;
+    return JSON.parse(cells);
+  }
+
+  getCellBackground(rectangle: Rectangle): CellFill[] {
+    const rect = new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
+    const background = this.grid.getRenderFills(this.sheetId, rect);
+    return JSON.parse(background);
   }
 
   getCells(rectangle: Rectangle): CellRectangle {

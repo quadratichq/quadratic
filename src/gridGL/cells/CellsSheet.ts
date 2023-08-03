@@ -30,11 +30,11 @@ export class CellsSheet extends Container {
       const hashBounds = this.getHashBounds(bounds);
       for (let y = hashBounds.yStart; y <= hashBounds.yEnd; y++) {
         for (let x = hashBounds.xStart; x <= hashBounds.xEnd; x++) {
-          const cells = (sheet.grid as GridSparseRust).getCellList(
-            new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1)
-          );
-          if (cells.length) {
-            const cellsHash = this.cellsHashContainer.addChild(new CellsHash(x, y, sheet, cells));
+          const rect = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
+          const cells = (sheet.grid as GridSparseRust).getCellList(rect);
+          const background = (sheet.grid as GridSparseRust).getCellBackground(rect);
+          if (cells.length || background) {
+            const cellsHash = this.cellsHashContainer.addChild(new CellsHash(x, y, { sheet, cells, background }));
             this.cellsHash.set(cellsHash.key, cellsHash);
           }
         }

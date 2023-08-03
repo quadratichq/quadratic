@@ -25,6 +25,14 @@ export interface CellRust {
   textColor?: string;
 }
 
+export interface CellFill {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  color: string;
+}
+
 export interface CodeRust {
   x: number;
   y: number;

@@ -22,7 +22,7 @@ export class CellsLabels extends ContainerBitmapText implements CellHash {
     this.hashes = new Set();
   }
 
-  add(cells: CellRust[]): CellLabel[] {
+  create(cells: CellRust[]): CellLabel[] {
     return cells.map((cell) => {
       const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
       const cellLabel = this.addLabel(new CellLabel(cell, rectangle));

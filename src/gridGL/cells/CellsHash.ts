@@ -23,12 +23,12 @@ export class CellsHash extends Container {
     return `${x},${y}`;
   }
 
-  constructor(x: number, y: number, sheet: SheetRust, cells: CellRust[]) {
+  constructor(x: number, y: number, options: { sheet: SheetRust; cells: CellRust[]; background: any[] }) {
     super();
     this.key = CellsHash.getKey(x, y);
     this.entries = new Set();
     this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth, sheetHashHeight);
-    const screen = sheet.gridOffsets.getScreenRectangle(
+    const screen = options.sheet.gridOffsets.getScreenRectangle(
       this.AABB.left,
       this.AABB.top,
       this.AABB.width,
@@ -42,10 +42,12 @@ export class CellsHash extends Container {
         .drawShape(screen)
         .endFill();
     }
-    this.cellsLabels = this.addChild(new CellsLabels(sheet));
-    this.cellsLabels.add(cells);
+    this.cellsBackground = this.addChild(new CellsBackground(options.sheet));
+    this.cellsBackground.create(options.background);
+
+    this.cellsLabels = this.addChild(new CellsLabels(options.sheet));
+    this.cellsLabels.create(options.cells);
     this.cellsLabels.updateText();
-    this.cellsBackground = this.addChild(new CellsBackground());
 
     this.viewBounds = this.getBounds();
   }
