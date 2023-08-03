@@ -42,7 +42,7 @@ const router = createBrowserRouter(
         id="root"
       >
         <Route index element={<Navigate to="/files" replace />} />
-        <Route path="file">
+        <Route loader={protectedRouteLoaderWrapper(async () => null)} path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibility />}>
             <Route index element={<Navigate to="/files" replace />} />
