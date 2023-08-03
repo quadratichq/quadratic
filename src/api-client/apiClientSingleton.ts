@@ -100,6 +100,7 @@ class APIClientSingleton {
 
   async deleteFile(id: string): Promise<boolean> {
     if (!API_URL) return false;
+    mixpanel.track('[Files].deleteFile', { id });
 
     try {
       const base_url = this.getAPIURL();
