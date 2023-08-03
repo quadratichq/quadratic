@@ -42,6 +42,7 @@ export class CellsHash extends Container {
     }
     this.cellsLabels = this.addChild(new CellsLabels(sheet));
     this.cellsLabels.add(cells);
+    this.cellsLabels.updateText();
     this.cellsBackground = this.addChild(new CellsBackground());
   }
 

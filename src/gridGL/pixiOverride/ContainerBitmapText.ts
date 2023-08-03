@@ -54,7 +54,6 @@ export class ContainerBitmapText extends Container {
     }
 
     if (this.dirty) {
-      this.dirty = false;
       this.updateText();
     }
 
@@ -77,6 +76,7 @@ export class ContainerBitmapText extends Container {
   }
 
   public updateText(): void {
+    this.dirty = false;
     this.finalBitmapText.removeChildren();
 
     this.cellLabels.forEach((child) => child.updateText());
