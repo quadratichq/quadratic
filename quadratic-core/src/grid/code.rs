@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use super::{legacy, CellRef, CellValue};
-use crate::formulas::{ArraySize, FormulaError, Value};
+use super::{legacy, CellRef};
+use crate::{ArraySize, CellValue, Error, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CodeCellValue {
@@ -33,7 +33,7 @@ impl CodeCellValue {
                     Value::Array(array) => {
                         array_output = Some(legacy::JsArrayOutput::Block(
                             array
-                                .basic_values_slice()
+                                .cell_values_slice()
                                 .chunks(array.width() as usize)
                                 .map(|row| {
                                     row.into_iter()
@@ -86,7 +86,7 @@ pub struct CodeCellRunOutput {
     pub std_out: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
-    pub result: Result<CodeCellRunOk, FormulaError>,
+    pub result: Result<CodeCellRunOk, Error>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CodeCellRunOk {

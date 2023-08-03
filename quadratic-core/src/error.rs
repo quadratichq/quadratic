@@ -1,21 +1,24 @@
 //! Error reporting functionality for compilation and runtime.
 
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::error::Error;
 use std::fmt;
 
-use super::{ArraySize, Axis, Span};
+use serde::{Deserialize, Serialize};
+
+use crate::{ArraySize, Axis, Span, Spanned, Value};
+
+/// Result of a [`crate::Error`].
+pub type CodeResult<T = Spanned<Value>> = Result<T, Error>;
 
 /// Error message and accompanying span.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct FormulaError {
+pub struct Error {
     /// Location of the source code where the error occurred (if any).
     pub span: Option<Span>,
     /// Type of error.
-    pub msg: FormulaErrorMsg,
+    pub msg: ErrorMsg,
 }
-impl fmt::Display for FormulaError {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.span {
             Some(span) => write!(f, "column {} to {}: {}", span.start, span.end, self.msg),
@@ -23,9 +26,9 @@ impl fmt::Display for FormulaError {
         }
     }
 }
-impl Error for FormulaError {}
-impl FormulaError {
-    /// Attaches a span to this FormulaError, if it does not already have one.
+impl std::error::Error for Error {}
+impl Error {
+    /// Attaches a span to this Error, if it does not already have one.
     pub fn with_span(mut self, span: impl Into<Span>) -> Self {
         if self.span.is_none() {
             self.span = Some(span.into());
@@ -36,7 +39,7 @@ impl FormulaError {
 
 /// Information about the type of error that occurred.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub enum FormulaErrorMsg {
+pub enum ErrorMsg {
     // Miscellaneous errors
     Unimplemented,
     UnknownError,
@@ -92,7 +95,7 @@ pub enum FormulaErrorMsg {
     NoMatch,
     InvalidArgument,
 }
-impl fmt::Display for FormulaErrorMsg {
+impl fmt::Display for ErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Unimplemented => {
@@ -224,24 +227,24 @@ impl fmt::Display for FormulaErrorMsg {
         }
     }
 }
-impl FormulaErrorMsg {
-    /// Attaches a span to this error message, returning a FormulaError.
-    pub fn with_span(self, span: impl Into<Span>) -> FormulaError {
-        FormulaError {
+impl ErrorMsg {
+    /// Attaches a span to this error message, returning a Error.
+    pub fn with_span(self, span: impl Into<Span>) -> Error {
+        Error {
             span: Some(span.into()),
             msg: self,
         }
     }
-    /// Returns a FormulaError from this error message, without a span.
-    pub const fn without_span(self) -> FormulaError {
-        FormulaError {
+    /// Returns a Error from this error message, without a span.
+    pub const fn without_span(self) -> Error {
+        Error {
             span: None,
             msg: self,
         }
     }
 }
 
-impl<T: Into<FormulaErrorMsg>> From<T> for FormulaError {
+impl<T: Into<ErrorMsg>> From<T> for Error {
     fn from(msg: T) -> Self {
         msg.into().without_span()
     }
@@ -260,11 +263,11 @@ macro_rules! internal_error_value {
         // Panic in a debug build (for stack trace).
         #[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
         #[allow(unused)]
-        let ret: crate::formulas::FormulaError = panic!("{}", $msg);
+        let ret: $crate::Error = panic!("{}", $msg);
         // Give nice error message for user in release build.
         #[cfg(not(all(debug_assertions, not(target_arch = "wasm32"))))]
         #[allow(unused)]
-        let ret: crate::formulas::FormulaError = crate::formulas::FormulaErrorMsg::InternalError(
+        let ret: $crate::Error = $crate::ErrorMsg::InternalError(
             std::borrow::Cow::Borrowed($msg),
         )
         .without_span();
@@ -276,12 +279,12 @@ macro_rules! internal_error_value {
         // Panic in a debug build (for stack trace).
         #[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
         #[allow(unused)]
-        let ret: crate::formulas::FormulaError = panic!($( $args ),+);
+        let ret: $crate::Error = panic!($( $args ),+);
         // Give nice error message for user in release build.
         #[cfg(not(all(debug_assertions, not(target_arch = "wasm32"))))]
         #[allow(unused)]
-        let ret: crate::formulas::FormulaError =
-            crate::formulas::FormulaErrorMsg::InternalError(format!($( $args ),+).into()).without_span();
+        let ret: $crate::Error =
+            $crate::ErrorMsg::InternalError(format!($( $args ),+).into()).without_span();
         #[allow(unreachable_code)]
         ret
     }};

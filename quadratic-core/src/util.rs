@@ -1,11 +1,13 @@
-use itertools::Itertools;
 use std::fmt;
 use std::ops::Range;
+
+use itertools::Itertools;
 
 pub(crate) mod btreemap_serde {
     use std::collections::{BTreeMap, HashMap};
 
-    use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
+    use serde::ser::SerializeMap;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
         map: &BTreeMap<K, V>,
@@ -36,7 +38,8 @@ pub(crate) mod hashmap_serde {
     use std::collections::HashMap;
     use std::hash::Hash;
 
-    use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
+    use serde::ser::SerializeMap;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
         map: &HashMap<K, V>,

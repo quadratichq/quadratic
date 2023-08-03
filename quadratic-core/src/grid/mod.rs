@@ -1,7 +1,7 @@
-use anyhow::Result;
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
 use std::fmt;
+
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 
@@ -16,21 +16,18 @@ mod js_structs;
 mod legacy;
 mod response;
 mod sheet;
-mod value;
 
-pub use bounds::GridBounds;
-pub use code::*;
-pub use ids::*;
-pub use value::CellValue;
-
-use crate::formulas::{Array, ArraySize, Value};
-use crate::{Pos, Rect};
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 use borders::CellBorder;
-use column::{BoolSummary, Column, ColumnData};
+pub use bounds::GridBounds;
+pub use code::*;
+use column::{Column, ColumnData};
 use formatting::{CellAlign, CellWrap, NumericFormat};
+pub use ids::*;
 use js_structs::*;
 use sheet::Sheet;
+
+use crate::{CellValue, Pos, Rect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[wasm_bindgen]
@@ -49,7 +46,20 @@ impl Default for Grid {
     }
 }
 impl Grid {
-    pub fn from_legacy(file: &legacy::GridFile) -> Result<Self> {
+    pub fn new() -> Self {
+        let mut ret = Grid {
+            sheet_ids: IdMap::new(),
+            sheets: vec![],
+
+            created: 0.0, // TODO: creation time
+            filename: "Untitled".to_string(),
+            id: Uuid::new_v4(),
+            modified: 0.0, // TODO: modification time
+        };
+        ret.add_sheet();
+        ret
+    }
+    pub fn from_legacy(file: &legacy::GridFile) -> Self {
         use legacy::*;
 
         let GridFile::V1_3(file) = file;
@@ -94,11 +104,17 @@ impl Grid {
                             }
                         }
                     }
-                    sheet.code_cells.insert(code_cell_ref, cell_code);
+                    sheet.set_code_cell_value(
+                        Pos {
+                            x: js_cell.x,
+                            y: js_cell.y,
+                        },
+                        Some(cell_code),
+                    );
                 } else if let Some(cell_value) = js_cell.to_cell_value() {
                     let x = js_cell.x;
                     let y = js_cell.y;
-                    sheet.set_cell_value(&Pos { x, y }, cell_value);
+                    sheet.set_cell_value(Pos { x, y }, cell_value);
                 }
             }
 
@@ -126,7 +142,7 @@ impl Grid {
             sheet.recalculate_bounds();
         }
 
-        Ok(ret)
+        ret
     }
 
     pub fn sheets(&self) -> &[Sheet] {
@@ -134,6 +150,13 @@ impl Grid {
     }
     pub fn sheets_mut(&mut self) -> &mut [Sheet] {
         &mut self.sheets
+    }
+    pub fn add_sheet(&mut self) -> SheetId {
+        let id = SheetId::new();
+        let name = format!("Sheet {}", self.sheets.len() + 1);
+        self.sheet_ids.add(id, self.sheets.len());
+        self.sheets.push(Sheet::new(id, name));
+        id
     }
 
     pub fn sheet_from_id(&self, sheet_id: &SheetId) -> &Sheet {
@@ -159,92 +182,12 @@ impl Grid {
         }
     }
 
-    pub fn to_file(&self) -> legacy::GridFileV1_3 {
+    pub fn to_legacy_file_format(&self) -> legacy::GridFileV1_3 {
         legacy::GridFileV1_3 {
             sheets: self
                 .sheets
                 .iter()
-                .map(|sheet| legacy::JsSheet {
-                    borders: sheet.borders.export_to_js_file(),
-                    cells: match sheet.bounds(false) {
-                        GridBounds::Empty => vec![],
-                        GridBounds::NonEmpty(region) => sheet
-                            .get_render_cells(&region)
-                            .into_iter()
-                            .map(|cell| {
-                                let pos = Pos {
-                                    x: cell.x,
-                                    y: cell.y,
-                                };
-                                let code_cell = sheet
-                                    .try_create_cell_ref(&pos)
-                                    .and_then(|cell_ref| sheet.code_cells.get(&cell_ref));
-                                legacy::JsCell {
-                                    x: cell.x,
-                                    y: cell.y,
-                                    r#type: sheet.get_legacy_cell_type(&pos),
-                                    value: cell.value.to_string(),
-                                    array_cells: code_cell.and_then(|code_cell| {
-                                        let array_output = &code_cell
-                                            .output
-                                            .as_ref()?
-                                            .result
-                                            .as_ref()
-                                            .ok()?
-                                            .output_value;
-                                        match array_output {
-                                            Value::Single(_) => None,
-                                            Value::Array(array) => {
-                                                let ArraySize { w, h } = array.array_size();
-                                                Some(
-                                                    Array::indices(w, h)
-                                                        .map(|(dx, dy)| {
-                                                            (cell.x + dx as i64, cell.y + dy as i64)
-                                                        })
-                                                        .collect(),
-                                                )
-                                            }
-                                        }
-                                    }),
-                                    dependent_cells: None,
-                                    evaluation_result: code_cell
-                                        .and_then(|code_cell| code_cell.js_evaluation_result()),
-                                    formula_code: code_cell.as_ref().and_then(|code_cell| {
-                                        (code_cell.language == CodeCellLanguage::Formula)
-                                            .then(|| code_cell.code_string.clone())
-                                    }),
-                                    last_modified: None, // TODO: last modified
-                                    ai_prompt: None,
-                                    python_code: code_cell.as_ref().and_then(|code_cell| {
-                                        (code_cell.language == CodeCellLanguage::Python)
-                                            .then(|| code_cell.code_string.clone())
-                                    }),
-                                }
-                            })
-                            .collect(),
-                    },
-                    cell_dependency: "{}".to_string(), // TODO: cell dependencies
-                    columns: vec![],                   // TODO: column headers
-                    formats: match sheet.bounds(false) {
-                        GridBounds::Empty => vec![],
-                        GridBounds::NonEmpty(region) => sheet
-                            .get_render_cells(&region)
-                            .into_iter()
-                            .map(|cell| legacy::JsCellFormat {
-                                x: cell.x,
-                                y: cell.y,
-                                alignment: cell.align,
-                                bold: cell.bold,
-                                fill_color: cell.fill_color,
-                                italic: cell.italic,
-                                text_color: cell.text_color,
-                                text_format: cell.numeric_format,
-                                wrapping: cell.wrap,
-                            })
-                            .collect(),
-                    },
-                    rows: vec![], // TODO: row headers
-                })
+                .map(|sheet| sheet.export_to_legacy_file_format())
                 .collect(),
             created: self.created,
             filename: self.filename.clone(),
@@ -271,44 +214,29 @@ impl Grid {
 impl Grid {
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(file: JsValue) -> Result<Grid, JsValue> {
-        let file = serde_wasm_bindgen::from_value(file)?;
-        Grid::from_legacy(&file).map_err(|e| JsError::new(&e.to_string()).into())
+        Ok(Grid::from_legacy(&serde_wasm_bindgen::from_value(file)?))
     }
 
     #[wasm_bindgen(js_name = "exportToFile")]
     pub fn js_export_to_file(&self) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.to_file())?)
+        Ok(serde_wasm_bindgen::to_value(&self.to_legacy_file_format())?)
     }
 
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
-        let mut ret = Grid {
-            sheet_ids: IdMap::new(),
-            sheets: vec![],
-
-            created: 0.0, // TODO: creation time
-            filename: "Untitled".to_string(),
-            id: Uuid::new_v4(),
-            modified: 0.0, // TODO: modification time
-        };
-        ret.add_sheet();
-        ret
+    pub fn js_new() -> Self {
+        Self::new()
     }
 
-    #[wasm_bindgen]
-    pub fn add_sheet(&mut self) -> SheetId {
-        let id = SheetId::new();
-        let name = format!("Sheet {}", self.sheets.len() + 1);
-        self.sheet_ids.add(id, self.sheets.len());
-        self.sheets.push(Sheet::new(id, name));
-        id
+    #[wasm_bindgen(js_name = "addSheet")]
+    pub fn js_add_sheet(&mut self) -> SheetId {
+        self.add_sheet()
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "sheetIdToIndex")]
     pub fn sheet_id_to_index(&self, id: &SheetId) -> Option<usize> {
         self.sheet_ids.index_of(*id)
     }
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = "sheetIndexToId")]
     pub fn sheet_index_to_id(&self, index: usize) -> Option<SheetId> {
         self.sheet_ids.id_at(index)
     }
@@ -316,17 +244,7 @@ impl Grid {
     #[wasm_bindgen(js_name = "populateWithRandomFloats")]
     pub fn populate_with_random_floats(&mut self, sheet_id: &SheetId, region: &Rect) {
         let sheet = self.sheet_mut_from_id(sheet_id);
-        for x in region.x_range() {
-            let (_, column) = sheet.get_or_create_column(x);
-            for y in region.y_range() {
-                // Generate a random value with precision 0.1 in a range from
-                // -10 to +10.
-                let value = (js_sys::Math::random() * 201.0).floor() / 10.0 - 10.0;
-
-                column.values.set(y, Some(value.into()));
-            }
-        }
-        sheet.recalculate_bounds();
+        *sheet = Sheet::with_random_floats(sheet.id, sheet.name.clone(), *region);
     }
 
     #[wasm_bindgen(js_name = "recalculateBounds")]
@@ -345,14 +263,14 @@ impl Grid {
     }
 
     #[wasm_bindgen(js_name = "getRenderCells")]
-    pub fn get_render_cells(&self, sheet_id: &SheetId, region: &Rect) -> Result<String, JsValue> {
+    pub fn get_render_cells(&self, sheet_id: &SheetId, &region: &Rect) -> Result<String, JsValue> {
         let output = self.sheet_from_id(sheet_id).get_render_cells(region);
         Ok(serde_json::to_string::<[JsRenderCell]>(&output).map_err(|e| e.to_string())?)
     }
 
     #[wasm_bindgen(js_name = "getRenderFills")]
     pub fn get_render_fills(&self, sheet_id: &SheetId, region: &Rect) -> Result<String, JsValue> {
-        let output = self.sheet_from_id(sheet_id).get_render_fills(region);
+        let output = self.sheet_from_id(sheet_id).get_render_fills(*region);
         Ok(serde_json::to_string::<[JsRenderFill]>(&output).map_err(|e| e.to_string())?)
     }
 
@@ -362,20 +280,7 @@ impl Grid {
         sheet_id: &SheetId,
         region: &Rect,
     ) -> Result<String, JsValue> {
-        let output = self
-            .sheet_from_id(sheet_id)
-            .iter_code_cells(region)
-            .map(|(pos, code_cell)| {
-                let ArraySize { w, h } = code_cell.output_size();
-                JsRenderCodeCell {
-                    x: pos.x,
-                    y: pos.y,
-                    w,
-                    h,
-                    language: code_cell.language,
-                }
-            })
-            .collect_vec();
+        let output = self.sheet_from_id(sheet_id).get_render_code_cells(*region);
         Ok(serde_json::to_string::<[JsRenderCodeCell]>(&output).map_err(|e| e.to_string())?)
     }
 
@@ -387,8 +292,7 @@ impl Grid {
     ) -> Result<String, JsValue> {
         let output = self
             .sheet_from_id(sheet_id)
-            .borders
-            .get_render_horizontal_borders(region);
+            .get_render_horizontal_borders(*region);
         Ok(serde_json::to_string::<[JsRenderBorder]>(&output).map_err(|e| e.to_string())?)
     }
     #[wasm_bindgen(js_name = "getRenderVerticalBorders")]
@@ -399,8 +303,7 @@ impl Grid {
     ) -> Result<String, JsValue> {
         let output = self
             .sheet_from_id(sheet_id)
-            .borders
-            .get_render_vertical_borders(region);
+            .get_render_vertical_borders(*region);
         Ok(serde_json::to_string::<[JsRenderBorder]>(&output).map_err(|e| e.to_string())?)
     }
 
@@ -413,13 +316,13 @@ impl Grid {
     ) -> Result<(), JsValue> {
         let cell_value: CellValue = serde_wasm_bindgen::from_value(cell_value)?;
         self.sheet_mut_from_id(sheet_id)
-            .set_cell_value(pos, cell_value);
+            .set_cell_value(*pos, cell_value);
         Ok(())
     }
 
     #[wasm_bindgen(js_name = "deleteCellValues")]
     pub fn delete_cell_values(&mut self, sheet_id: &SheetId, region: &Rect) -> Result<(), JsValue> {
-        self.sheet_mut_from_id(sheet_id).delete_cell_values(region);
+        self.sheet_mut_from_id(sheet_id).delete_cell_values(*region);
         Ok(())
     }
 
@@ -429,14 +332,10 @@ impl Grid {
         sheet_id: &SheetId,
         pos: &Pos,
     ) -> Result<JsValue, JsValue> {
-        let sheet = self.sheet_from_id(sheet_id);
-        let Some(cell_ref) = sheet.try_create_cell_ref(pos) else {
-            return Ok(JsValue::UNDEFINED);
-        };
-        let Some(code_cell) = sheet.code_cells.get(&cell_ref) else {
-            return Ok(JsValue::UNDEFINED);
-        };
-        Ok(serde_wasm_bindgen::to_value(&code_cell)?)
+        match self.sheet_from_id(sheet_id).get_code_cell(*pos) {
+            Some(code_cell) => Ok(serde_wasm_bindgen::to_value(&code_cell)?),
+            None => Ok(JsValue::UNDEFINED),
+        }
     }
 
     #[wasm_bindgen(js_name = "setCodeCellValue")]
@@ -447,9 +346,8 @@ impl Grid {
         code_cell_value: JsValue,
     ) -> Result<(), JsValue> {
         let code_cell_value: CodeCellValue = serde_wasm_bindgen::from_value(code_cell_value)?;
-        let sheet = self.sheet_mut_from_id(sheet_id);
-        let cell_ref = sheet.get_or_create_cell_ref(pos);
-        sheet.code_cells.insert(cell_ref, code_cell_value);
+        self.sheet_mut_from_id(sheet_id)
+            .set_code_cell_value(*pos, Some(code_cell_value));
         // TODO: return old code cell
         Ok(())
     }
@@ -460,28 +358,8 @@ impl Grid {
         sheet_id: &SheetId,
         region: &Rect,
     ) -> Result<JsValue, JsValue> {
-        let sheet = self.sheet_from_id(sheet_id);
-
-        let mut bold = BoolSummary::default();
-        let mut italic = BoolSummary::default();
-
-        for x in region.x_range() {
-            match sheet.columns.get(&x) {
-                None => {
-                    bold.is_any_false = true;
-                    italic.is_any_false = true;
-                }
-                Some(column) => {
-                    bold |= column.bold.bool_summary(region.y_range());
-                    italic |= column.italic.bool_summary(region.y_range());
-                }
-            };
-        }
-
-        Ok(serde_wasm_bindgen::to_value(&JsFormattingSummary {
-            bold,
-            italic,
-        })?)
+        let output = self.sheet_from_id(sheet_id).get_formatting_summary(*region);
+        Ok(serde_wasm_bindgen::to_value(&output)?)
     }
 
     #[wasm_bindgen(js_name = "setCellAlign")]
@@ -515,8 +393,7 @@ impl Grid {
     ) -> Result<(), JsValue> {
         let value: CellBorder = serde_wasm_bindgen::from_value(value)?;
         self.sheet_mut_from_id(sheet_id)
-            .borders
-            .set_horizontal_border(region, value);
+            .set_horizontal_border(*region, value);
         Ok(())
     }
     #[wasm_bindgen(js_name = "setVerticalCellBorder")]
@@ -528,8 +405,7 @@ impl Grid {
     ) -> Result<(), JsValue> {
         let value: CellBorder = serde_wasm_bindgen::from_value(value)?;
         self.sheet_mut_from_id(sheet_id)
-            .borders
-            .set_vertical_border(region, value);
+            .set_vertical_border(*region, value);
         Ok(())
     }
     #[wasm_bindgen(js_name = "setCellNumericFormat")]
@@ -570,3 +446,6 @@ impl Grid {
         self.delete_cell_columns(sheet_id, region, |column| &mut column.wrap);
     }
 }
+
+#[cfg(test)]
+mod tests;

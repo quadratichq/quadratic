@@ -106,7 +106,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[pure_zip_map]
             fn ATAN2(span: Span, [x]: f64, [y]: f64) {
                 if x == 0.0 && y == 0.0 {
-                    return Err(FormulaErrorMsg::DivideByZero.with_span(span));
+                    return Err(ErrorMsg::DivideByZero.with_span(span));
                 }
                 f64::atan2(y, x)
             }
@@ -486,9 +486,6 @@ mod tests {
         assert_eq!("0", eval_to_string(g, "ATAN2(1, 0)"));
         assert!(eval_to_string(g, "ATAN2(0, 1)").starts_with("1.57"));
         assert!(eval_to_string(g, "ATAN2(1, 2)").starts_with("1.107"));
-        assert_eq!(
-            FormulaErrorMsg::DivideByZero,
-            eval_to_err(g, "ATAN2(0, 0)").msg,
-        );
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "ATAN2(0, 0)").msg,);
     }
 }

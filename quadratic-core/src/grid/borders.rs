@@ -2,9 +2,11 @@ use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Serialize};
 
+use super::block::SameValue;
+use super::column::ColumnData;
+use super::js_structs::JsRenderBorder;
+use super::legacy;
 use crate::Rect;
-
-use super::{block::SameValue, column::ColumnData, js_structs::JsRenderBorder, legacy};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SheetBorders {
@@ -23,7 +25,7 @@ impl SheetBorders {
         }
     }
 
-    pub fn set_horizontal_border(&mut self, region: &Rect, value: CellBorder) {
+    pub fn set_horizontal_border(&mut self, region: Rect, value: CellBorder) {
         // The horizontal borders structure is transposed, so this code is
         // intentionally swapping X and Y everywhere.
         for y in region.y_range() {
@@ -33,7 +35,7 @@ impl SheetBorders {
                 .set_range(region.x_range(), value.clone());
         }
     }
-    pub fn set_vertical_border(&mut self, region: &Rect, value: CellBorder) {
+    pub fn set_vertical_border(&mut self, region: Rect, value: CellBorder) {
         for x in region.x_range() {
             self.vertical
                 .entry(x)
@@ -42,7 +44,7 @@ impl SheetBorders {
         }
     }
 
-    pub fn get_render_horizontal_borders(&self, region: &Rect) -> Vec<JsRenderBorder> {
+    pub fn get_render_horizontal_borders(&self, region: Rect) -> Vec<JsRenderBorder> {
         self.horizontal
             .range(region.y_range())
             .flat_map(|(&y, row)| {
@@ -57,7 +59,7 @@ impl SheetBorders {
             })
             .collect()
     }
-    pub fn get_render_vertical_borders(&self, region: &Rect) -> Vec<JsRenderBorder> {
+    pub fn get_render_vertical_borders(&self, region: Rect) -> Vec<JsRenderBorder> {
         self.vertical
             .range(region.x_range())
             .flat_map(|(&x, column)| {

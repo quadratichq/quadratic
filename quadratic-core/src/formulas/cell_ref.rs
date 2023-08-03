@@ -1,10 +1,11 @@
-use lazy_static::lazy_static;
-use regex::Regex;
-use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
 
-use super::Pos;
+use lazy_static::lazy_static;
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+
+use crate::Pos;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum RangeRef {

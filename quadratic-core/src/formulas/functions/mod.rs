@@ -1,8 +1,10 @@
-use futures::{future::LocalBoxFuture, FutureExt};
-use itertools::Itertools;
-use lazy_static::lazy_static;
 use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
+
+use futures::future::LocalBoxFuture;
+use futures::FutureExt;
+use itertools::Itertools;
+use lazy_static::lazy_static;
 
 #[macro_use]
 mod macros;
@@ -15,9 +17,10 @@ mod string;
 mod trigonometry;
 mod util;
 
-use super::{
-    Array, Axis, BasicValue, CellRef, CoerceInto, Criterion, Ctx, FormulaError, FormulaErrorMsg,
-    FormulaResult, IsBlank, Param, ParamKind, Span, Spanned, SpannedIterExt, Value,
+use super::{CellRef, Criterion, Ctx, Param, ParamKind};
+use crate::{
+    Array, Axis, CellValue, CodeResult, CoerceInto, Error, ErrorMsg, IsBlank, Span, Spanned,
+    SpannedIterExt, Value,
 };
 
 pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
@@ -85,15 +88,15 @@ impl FormulaFnArgs {
     /// argument is blank˙.
     pub fn take_next_optional(&mut self) -> Option<Spanned<Value>> {
         self.take_next()
-            .filter(|v| v.inner != Value::Single(BasicValue::Blank))
+            .filter(|v| v.inner != Value::Single(CellValue::Blank))
     }
     /// Takes the next argument, or returns an error if there is none.
     pub fn take_next_required(
         &mut self,
         arg_name: impl Into<Cow<'static, str>>,
-    ) -> FormulaResult<Spanned<Value>> {
+    ) -> CodeResult<Spanned<Value>> {
         self.take_next().ok_or_else(|| {
-            FormulaErrorMsg::MissingRequiredArgument {
+            ErrorMsg::MissingRequiredArgument {
                 func_name: self.func_name.into(),
                 arg_name: arg_name.into(),
             }
@@ -106,9 +109,9 @@ impl FormulaFnArgs {
     }
 
     /// Returns an error if there are any arguments that have not been taken.
-    pub fn error_if_more_args(&self) -> FormulaResult<()> {
+    pub fn error_if_more_args(&self) -> CodeResult<()> {
         if let Some(next_arg) = self.values.front() {
-            Err(FormulaErrorMsg::TooManyArguments {
+            Err(ErrorMsg::TooManyArguments {
                 func_name: self.func_name.into(),
                 max_arg_count: self.args_popped,
             }
@@ -121,7 +124,7 @@ impl FormulaFnArgs {
 
 /// Function pointer that represents the body of a formula function.
 pub type FormulaFn =
-    for<'a> fn(&'a mut Ctx<'_>, FormulaFnArgs) -> LocalBoxFuture<'a, FormulaResult<Value>>;
+    for<'a> fn(&'a mut Ctx<'_>, FormulaFnArgs) -> LocalBoxFuture<'a, CodeResult<Value>>;
 
 /// Formula function with associated metadata.
 pub struct FormulaFunction {

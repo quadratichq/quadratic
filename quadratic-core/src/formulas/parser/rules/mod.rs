@@ -4,10 +4,12 @@ mod atoms;
 mod combinators;
 mod expression;
 
-use super::*;
 pub use atoms::*;
 pub use combinators::*;
 pub use expression::*;
+
+use super::*;
+use crate::{CodeResult, ErrorMsg, Span, Spanned};
 
 /// A grammar rule that produces an AST node from tokens.
 pub trait SyntaxRule: fmt::Debug + fmt::Display {
@@ -20,7 +22,7 @@ pub trait SyntaxRule: fmt::Debug + fmt::Display {
     fn prefix_matches(&self, p: Parser<'_>) -> bool;
     /// Consumes the tokens that are part of this syntax structure, returning
     /// the AST node produced. Does NOT restore the `Parser` if matching fails.
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output>;
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output>;
 
     /// Applies a function to the output of this syntax rule.
     fn map<B, F: Fn(Self::Output) -> B>(self, f: F) -> TokenMapper<Self, F>
@@ -37,7 +39,7 @@ impl<O, T: SyntaxRule<Output = O> + ?Sized> SyntaxRule for Box<T> {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         self.as_ref().prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         self.as_ref().consume_match(p)
     }
 }
@@ -49,7 +51,7 @@ impl SyntaxRule for Token {
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(*self)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         if p.next() == Some(*self) {
             Ok(())
         } else {
@@ -63,7 +65,7 @@ impl<T: SyntaxRule> SyntaxRule for &T {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         (*self).prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         (*self).consume_match(p)
     }
 }

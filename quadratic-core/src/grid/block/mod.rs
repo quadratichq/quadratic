@@ -1,7 +1,8 @@
-use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
 use std::fmt;
 use std::ops::Range;
+
+use serde::{Deserialize, Serialize};
+use smallvec::{smallvec, SmallVec};
 
 mod same;
 mod value;

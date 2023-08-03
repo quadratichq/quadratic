@@ -6,17 +6,19 @@ use itertools::Itertools;
 mod macros;
 pub mod rules;
 
-use super::*;
 use lexer::Token;
 use rules::SyntaxRule;
 
-pub fn parse_formula(source: &str, pos: Pos) -> FormulaResult<ast::Formula> {
+use super::*;
+use crate::{CodeResult, Error, ErrorMsg, Pos, Span, Spanned};
+
+pub fn parse_formula(source: &str, pos: Pos) -> CodeResult<ast::Formula> {
     Ok(Formula {
         ast: parse_exactly_one(source, pos, rules::Expression)?,
     })
 }
 
-fn parse_exactly_one<R: SyntaxRule>(source: &str, pos: Pos, rule: R) -> FormulaResult<R::Output> {
+fn parse_exactly_one<R: SyntaxRule>(source: &str, pos: Pos, rule: R) -> CodeResult<R::Output> {
     let tokens = lexer::tokenize(source).collect_vec();
     let mut p = Parser::new(source, &tokens, pos);
     p.parse(rule).and_then(|output| p.ok_if_not_eof(output))
@@ -168,13 +170,13 @@ impl<'a> Parser<'a> {
     /// error if it fails. This should only be used when this syntax rule
     /// represents the only valid parse; if there are other options,
     /// `try_parse()` is preferred.
-    pub fn parse<R: SyntaxRule>(&mut self, rule: R) -> FormulaResult<R::Output> {
+    pub fn parse<R: SyntaxRule>(&mut self, rule: R) -> CodeResult<R::Output> {
         self.try_parse(&rule).unwrap_or_else(|| self.expected(rule))
     }
     /// Applies a syntax rule starting at the cursor, returning `None` if the
     /// syntax rule definitely doesn't match (i.e., its `might_match()`
     /// implementation returned false).
-    pub fn try_parse<R: SyntaxRule>(&mut self, rule: R) -> Option<FormulaResult<R::Output>> {
+    pub fn try_parse<R: SyntaxRule>(&mut self, rule: R) -> Option<CodeResult<R::Output>> {
         rule.prefix_matches(*self).then(|| {
             let old_state = *self; // Save state.
             let ret = rule.consume_match(self);
@@ -187,23 +189,23 @@ impl<'a> Parser<'a> {
     }
 
     /// Returns an error describing that `expected` was expected.
-    pub fn expected<T>(self, expected: impl ToString) -> FormulaResult<T> {
+    pub fn expected<T>(self, expected: impl ToString) -> CodeResult<T> {
         // TODO: when #[feature(never_type)] stabalizes, use that here and
-        // return FormulaResult<!>.
+        // return CodeResult<!>.
         Err(self.expected_err(expected))
     }
     /// Returns an error describing that EOF was expected.
-    pub fn ok_if_not_eof<T>(mut self, or_else: T) -> FormulaResult<T> {
+    pub fn ok_if_not_eof<T>(mut self, or_else: T) -> CodeResult<T> {
         if let Some(tok) = self.next() {
-            Err(FormulaErrorMsg::Unexpected(tok.to_string().into()).with_span(self.span()))
+            Err(ErrorMsg::Unexpected(tok.to_string().into()).with_span(self.span()))
         } else {
             Ok(or_else)
         }
     }
     /// Returns an error describing that `expected` was expected.
-    pub fn expected_err(mut self, expected: impl ToString) -> FormulaError {
+    pub fn expected_err(mut self, expected: impl ToString) -> Error {
         self.next();
-        FormulaErrorMsg::Expected {
+        ErrorMsg::Expected {
             expected: expected.to_string().into(),
             got: None,
         }

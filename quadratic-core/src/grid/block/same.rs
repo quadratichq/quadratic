@@ -1,6 +1,7 @@
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
-use std::fmt;
 
 use super::BlockContent;
 

@@ -15,7 +15,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns `0` if given no values.
             #[examples("SUM(B2:C6, 15, E1)")]
             fn SUM(numbers: (Iter<f64>)) {
-                numbers.sum::<FormulaResult<f64>>()
+                numbers.sum::<CodeResult<f64>>()
             }
         ),
         formula_fn!(
@@ -32,13 +32,13 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[pure_zip_map]
             fn SUMIF(
                 eval_range: (Spanned<Array>),
-                [criteria]: (Spanned<BasicValue>),
+                [criteria]: (Spanned<CellValue>),
                 numbers_range: (Option<Spanned<Array>>),
             ) {
                 let criteria = Criterion::try_from(*criteria)?;
                 let numbers =
                     criteria.iter_matching_coerced::<f64>(eval_range, numbers_range.as_ref())?;
-                numbers.sum::<FormulaResult<f64>>()
+                numbers.sum::<CodeResult<f64>>()
             }
         ),
         formula_fn!(
@@ -46,7 +46,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns `1` if given no values.
             #[examples("PRODUCT(B2:C6, 0.002, E1)")]
             fn PRODUCT(numbers: (Iter<f64>)) {
-                numbers.product::<FormulaResult<f64>>()
+                numbers.product::<CodeResult<f64>>()
             }
         ),
         formula_fn!(
@@ -91,20 +91,14 @@ mod tests {
     fn test_sum() {
         let g = &mut NoGrid;
         assert_eq!(
-            FormulaErrorMsg::Expected {
+            ErrorMsg::Expected {
                 expected: "number".into(),
                 got: Some("text".into()),
             },
             eval_to_err(g, "SUM(\"abc\")").msg,
         );
-        assert_eq!(
-            FormulaErrorMsg::DivideByZero,
-            eval_to_err(g, "SUM(1/0)").msg
-        );
-        assert_eq!(
-            FormulaErrorMsg::DivideByZero,
-            eval_to_err(g, "SUM({1/0})").msg
-        );
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "SUM(1/0)").msg);
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "SUM({1/0})").msg);
         assert_eq!("0", eval_to_string(g, "SUM()"));
         assert_eq!("12", eval_to_string(g, "SUM(12)"));
         assert_eq!("27", eval_to_string(g, "SUM(0..5, 12)"));
@@ -120,7 +114,7 @@ mod tests {
         // But doing an operation on it converts it to a single value, which
         // does cause an error.
         assert_eq!(
-            FormulaErrorMsg::Expected {
+            ErrorMsg::Expected {
                 expected: "number".into(),
                 got: Some("text".into())
             },
@@ -172,7 +166,7 @@ mod tests {
         assert_eq!("10", eval_to_string(g, "ABS(-10)"));
         assert_eq!("10", eval_to_string(g, "ABS(10)"));
         assert_eq!(
-            FormulaErrorMsg::MissingRequiredArgument {
+            ErrorMsg::MissingRequiredArgument {
                 func_name: "ABS".into(),
                 arg_name: "number".into(),
             },
@@ -183,7 +177,7 @@ mod tests {
                 .msg,
         );
         assert_eq!(
-            FormulaErrorMsg::TooManyArguments {
+            ErrorMsg::TooManyArguments {
                 func_name: "ABS".into(),
                 max_arg_count: 1,
             },
@@ -201,7 +195,7 @@ mod tests {
         crate::util::assert_f64_approx_eq(3.0_f64.sqrt(), &eval_to_string(g, "SQRT(3)"));
         assert_eq!("4", eval_to_string(g, "SQRT(16)"));
         assert_eq!(
-            FormulaErrorMsg::MissingRequiredArgument {
+            ErrorMsg::MissingRequiredArgument {
                 func_name: "SQRT".into(),
                 arg_name: "number".into(),
             },
@@ -212,7 +206,7 @@ mod tests {
                 .msg,
         );
         assert_eq!(
-            FormulaErrorMsg::TooManyArguments {
+            ErrorMsg::TooManyArguments {
                 func_name: "SQRT".into(),
                 max_arg_count: 1,
             },
@@ -229,7 +223,7 @@ mod tests {
         let g = &mut NoGrid;
         assert!(eval_to_string(g, "PI()").starts_with("3.14159"));
         assert_eq!(
-            FormulaErrorMsg::TooManyArguments {
+            ErrorMsg::TooManyArguments {
                 func_name: "PI".into(),
                 max_arg_count: 0,
             },
@@ -246,7 +240,7 @@ mod tests {
         let g = &mut NoGrid;
         assert!(eval_to_string(g, "TAU()").starts_with("6.283"));
         assert_eq!(
-            FormulaErrorMsg::TooManyArguments {
+            ErrorMsg::TooManyArguments {
                 func_name: "TAU".into(),
                 max_arg_count: 0,
             },

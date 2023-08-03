@@ -1,15 +1,15 @@
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
-use std::hash::Hash;
-use std::ops::{BitOr, BitOrAssign, Range};
+use std::ops::Range;
 
-use super::{
-    formatting::*, Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue,
-};
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
+use smallvec::{smallvec, SmallVec};
+
+use super::formatting::*;
+use super::{Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue};
+use crate::IsBlank;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Column {
@@ -313,27 +313,5 @@ impl ColumnData<SameValue<bool>> {
         }
 
         ret
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
-#[serde(rename_all = "camelCase")]
-pub struct BoolSummary {
-    pub is_any_true: bool,
-    pub is_any_false: bool,
-}
-impl BitOr for BoolSummary {
-    type Output = Self;
-
-    fn bitor(self, rhs: Self) -> Self::Output {
-        BoolSummary {
-            is_any_true: self.is_any_true | rhs.is_any_true,
-            is_any_false: self.is_any_false | rhs.is_any_false,
-        }
-    }
-}
-impl BitOrAssign for BoolSummary {
-    fn bitor_assign(&mut self, rhs: Self) {
-        *self = *self | rhs;
     }
 }

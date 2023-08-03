@@ -1,16 +1,20 @@
-use serde::{Deserialize, Serialize};
 use std::collections::{btree_map, BTreeMap, HashMap, HashSet};
 
-use super::borders::SheetBorders;
+use rand::Rng;
+use serde::{Deserialize, Serialize};
+
+use super::borders::{CellBorder, SheetBorders};
 use super::bounds::GridBounds;
 use super::code::{CodeCellLanguage, CodeCellValue};
 use super::column::Column;
+use super::formatting::BoolSummary;
 use super::ids::{CellRef, ColumnId, IdMap, RowId, SheetId};
-use super::js_structs::{JsRenderCell, JsRenderFill};
+use super::js_structs::{
+    JsFormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderFill,
+};
 use super::legacy;
 use super::response::{GetIdResponse, SetCellResponse};
-use super::value::CellValue;
-use crate::{Pos, Rect};
+use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Sheet {
@@ -27,15 +31,16 @@ pub struct Sheet {
     row_heights: BTreeMap<i64, f32>,
 
     #[serde(with = "crate::util::btreemap_serde")]
-    pub(super) columns: BTreeMap<i64, Column>,
-    pub(super) borders: SheetBorders,
+    columns: BTreeMap<i64, Column>,
+    borders: SheetBorders,
     #[serde(with = "crate::util::hashmap_serde")]
-    pub(super) code_cells: HashMap<CellRef, CodeCellValue>,
+    code_cells: HashMap<CellRef, CodeCellValue>,
 
     data_bounds: GridBounds,
     format_bounds: GridBounds,
 }
 impl Sheet {
+    /// Constructs a new empty sheet.
     pub fn new(id: SheetId, name: String) -> Self {
         Sheet {
             id,
@@ -57,6 +62,24 @@ impl Sheet {
         }
     }
 
+    /// Constructs a new sheet with a region populated with random float values.
+    pub fn with_random_floats(id: SheetId, name: String, region: Rect) -> Self {
+        let mut rng = rand::thread_rng();
+        let mut sheet = Self::new(id, name);
+        for x in region.x_range() {
+            let (_, column) = sheet.get_or_create_column(x);
+            for y in region.y_range() {
+                // Generate a random value with precision 0.1 in a range from
+                // -10 to +10.
+                let value = rng.gen_range(-100..=100) as f64 / 10.0;
+
+                column.values.set(y, Some(value.into()));
+            }
+        }
+        sheet.recalculate_bounds();
+        sheet
+    }
+
     /// Sets a cell value and returns a response object, which contains column &
     /// row IDs and the old cell value. Returns `None` if the cell was deleted
     /// and did not previously exist (so no change is needed). The reason for
@@ -64,7 +87,7 @@ impl Sheet {
     /// because there's no need.
     pub fn set_cell_value(
         &mut self,
-        pos: &Pos,
+        pos: Pos,
         value: CellValue,
     ) -> Option<SetCellResponse<CellValue>> {
         let is_blank = value.is_blank();
@@ -97,28 +120,165 @@ impl Sheet {
             unspill,
         })
     }
-    /// Returns a cell value.
-    pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        self.get_column(pos.x)
-            .and_then(|column| column.values.get(pos.y))
-    }
-
-    pub fn delete_cell_values(&mut self, region: &Rect) {
+    /// Deletes all cell values in a region. This does not affect:
+    ///
+    /// - Formatting
+    /// - Spilled cells (unless the source is within `region`)
+    pub fn delete_cell_values(&mut self, region: Rect) {
         for x in region.x_range() {
             if let Some(column) = self.columns.get_mut(&x) {
                 column.values.remove_range(region.y_range());
             }
         }
+        for cell_ref in self.iter_code_cells_locations(region) {
+            // TODO: unspill!
+            self.code_cells.remove(&cell_ref);
+        }
+    }
+    /// Sets or deletes a code cell value.
+    pub fn set_code_cell_value(&mut self, pos: Pos, code_cell: Option<CodeCellValue>) {
+        let cell_ref = self.get_or_create_cell_ref(pos);
+        // TODO: unspill!
+        self.code_cells.remove(&cell_ref);
+        if let Some(code_cell) = code_cell {
+            self.code_cells.insert(cell_ref, code_cell);
+        }
+        // TODO: spill (or have some other way to handle new code results)
     }
 
-    pub(super) fn get_legacy_cell_type(&self, pos: &Pos) -> legacy::JsCellType {
+    /// Sets or deletes horizontal borders in a region.
+    pub fn set_horizontal_border(&mut self, region: Rect, value: CellBorder) {
+        self.borders.set_horizontal_border(region, value);
+    }
+    /// Sets or deletes vertical borders in a region.
+    pub fn set_vertical_border(&mut self, region: Rect, value: CellBorder) {
+        self.borders.set_vertical_border(region, value);
+    }
+
+    /// Returns the value of a cell (i.e., what would be returned if code asked
+    /// for it).
+    pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
+        self.get_column(pos.x)
+            .and_then(|column| column.values.get(pos.y))
+    }
+    /// Returns a code cell value.
+    pub fn get_code_cell(&self, pos: Pos) -> Option<&CodeCellValue> {
+        self.code_cells.get(&self.try_get_cell_ref(pos)?)
+    }
+
+    /// Returns a summary of formatting in a region.
+    pub fn get_formatting_summary(&self, region: Rect) -> JsFormattingSummary {
+        let mut bold = BoolSummary::default();
+        let mut italic = BoolSummary::default();
+
+        for x in region.x_range() {
+            match self.columns.get(&x) {
+                None => {
+                    bold.is_any_false = true;
+                    italic.is_any_false = true;
+                }
+                Some(column) => {
+                    bold |= column.bold.bool_summary(region.y_range());
+                    italic |= column.italic.bool_summary(region.y_range());
+                }
+            };
+        }
+
+        JsFormattingSummary { bold, italic }
+    }
+
+    pub fn export_to_legacy_file_format(&self) -> legacy::JsSheet {
+        legacy::JsSheet {
+            borders: self.borders.export_to_js_file(),
+            cells: match self.bounds(false) {
+                GridBounds::Empty => vec![],
+                GridBounds::NonEmpty(region) => self
+                    .get_render_cells(region)
+                    .into_iter()
+                    .map(|cell| {
+                        let pos = Pos {
+                            x: cell.x,
+                            y: cell.y,
+                        };
+                        let code_cell = self
+                            .try_get_cell_ref(pos)
+                            .and_then(|cell_ref| self.code_cells.get(&cell_ref));
+                        legacy::JsCell {
+                            x: cell.x,
+                            y: cell.y,
+                            r#type: self.get_legacy_cell_type(pos),
+                            value: cell.value.to_string(),
+                            array_cells: code_cell.and_then(|code_cell| {
+                                let array_output = &code_cell
+                                    .output
+                                    .as_ref()?
+                                    .result
+                                    .as_ref()
+                                    .ok()?
+                                    .output_value;
+                                match array_output {
+                                    Value::Single(_) => None,
+                                    Value::Array(array) => {
+                                        let ArraySize { w, h } = array.array_size();
+                                        Some(
+                                            Array::indices(w, h)
+                                                .map(|(dx, dy)| {
+                                                    (cell.x + dx as i64, cell.y + dy as i64)
+                                                })
+                                                .collect(),
+                                        )
+                                    }
+                                }
+                            }),
+                            dependent_cells: None,
+                            evaluation_result: code_cell
+                                .and_then(|code_cell| code_cell.js_evaluation_result()),
+                            formula_code: code_cell.as_ref().and_then(|code_cell| {
+                                (code_cell.language == CodeCellLanguage::Formula)
+                                    .then(|| code_cell.code_string.clone())
+                            }),
+                            last_modified: None, // TODO: last modified
+                            ai_prompt: None,
+                            python_code: code_cell.as_ref().and_then(|code_cell| {
+                                (code_cell.language == CodeCellLanguage::Python)
+                                    .then(|| code_cell.code_string.clone())
+                            }),
+                        }
+                    })
+                    .collect(),
+            },
+            cell_dependency: "{}".to_string(), // TODO: cell dependencies
+            columns: vec![],                   // TODO: column headers
+            formats: match self.bounds(false) {
+                GridBounds::Empty => vec![],
+                GridBounds::NonEmpty(region) => self
+                    .get_render_cells(region)
+                    .into_iter()
+                    .map(|cell| legacy::JsCellFormat {
+                        x: cell.x,
+                        y: cell.y,
+                        alignment: cell.align,
+                        bold: cell.bold,
+                        fill_color: cell.fill_color,
+                        italic: cell.italic,
+                        text_color: cell.text_color,
+                        text_format: cell.numeric_format,
+                        wrapping: cell.wrap,
+                    })
+                    .collect(),
+            },
+            rows: vec![], // TODO: row headers
+        }
+    }
+    /// Returns the type of a cell, according to the legacy file format.
+    fn get_legacy_cell_type(&self, pos: Pos) -> legacy::JsCellType {
         if self
             .get_column(pos.x)
             .and_then(|column| column.spills.get(pos.y))
             .is_some()
         {
             let code_cell = self
-                .try_create_cell_ref(pos)
+                .try_get_cell_ref(pos)
                 .and_then(|cell_ref| self.code_cells.get(&cell_ref));
 
             if let Some(code_cell) = code_cell {
@@ -136,9 +296,12 @@ impl Sheet {
         }
     }
 
+    /// Returns a column of a sheet from its index.
     fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get(&index)
     }
+    /// Returns a column of a sheet from its index, or creates a new column at
+    /// that index.
     pub(super) fn get_or_create_column(
         &mut self,
         index: i64,
@@ -155,6 +318,8 @@ impl Sheet {
             }
         }
     }
+    /// Returns a row of a sheet from its index, or creates a new row at that
+    /// index.
     pub(super) fn get_or_create_row(&mut self, index: i64) -> GetIdResponse<RowId> {
         match self.row_ids.id_at(index) {
             Some(id) => GetIdResponse::old(id),
@@ -165,24 +330,24 @@ impl Sheet {
             }
         }
     }
-    /// Returns the position for a `CellRef`.
+    /// Returns the position references by a `CellRef`.
     fn cell_ref_to_pos(&self, cell_ref: CellRef) -> Option<Pos> {
         Some(Pos {
             x: self.column_ids.index_of(cell_ref.column)?,
             y: self.row_ids.index_of(cell_ref.row)?,
         })
     }
-    /// Create a `CellRef` if the column and row already exist.
-    pub(super) fn try_create_cell_ref(&self, pos: &Pos) -> Option<CellRef> {
+    /// Creates a `CellRef` if the column and row already exist.
+    pub(super) fn try_get_cell_ref(&self, pos: Pos) -> Option<CellRef> {
         Some(CellRef {
             sheet: self.id,
             column: self.column_ids.id_at(pos.x)?,
             row: self.row_ids.id_at(pos.y)?,
         })
     }
-    /// Create a `CellRef`, creating the column and row if they do not already
+    /// Creates a `CellRef`, creating the column and row if they do not already
     /// exist.
-    pub(super) fn get_or_create_cell_ref(&mut self, pos: &Pos) -> CellRef {
+    pub(super) fn get_or_create_cell_ref(&mut self, pos: Pos) -> CellRef {
         CellRef {
             sheet: self.id,
             column: self.get_or_create_column(pos.x).0.id,
@@ -190,9 +355,11 @@ impl Sheet {
         }
     }
 
+    /// Returns whether the sheet is completely empty.
     pub fn is_empty(&self) -> bool {
         self.data_bounds.is_empty() && self.format_bounds.is_empty()
     }
+    /// Deletes all data and formatting in the sheet, effectively recreating it.
     pub fn clear(&mut self) {
         self.column_ids = IdMap::new();
         self.row_ids = IdMap::new();
@@ -201,17 +368,31 @@ impl Sheet {
         self.recalculate_bounds();
     }
 
+    /// Returns the bounds of the sheet.
+    ///
+    /// If `ignore_formatting` is `true`, only data is considered; if it is
+    /// `false`, then data and formatting are both considered.
     pub fn bounds(&self, ignore_formatting: bool) -> GridBounds {
         match ignore_formatting {
             true => self.data_bounds,
             false => GridBounds::merge(self.data_bounds, self.format_bounds),
         }
     }
+    /// Returns the lower and upper bounds of a column, or `None` if the column
+    /// is empty.
+    ///
+    /// If `ignore_formatting` is `true`, only data is considered; if it is
+    /// `false`, then data and formatting are both considered.
     pub fn column_bounds(&self, x: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
         let column = self.columns.get(&x)?;
         let range = column.range(ignore_formatting)?;
         Some((range.start, range.end - 1))
     }
+    /// Returns the lower and upper bounds of a row, or `None` if the column is
+    /// empty.
+    ///
+    /// If `ignore_formatting` is `true`, only data is considered; if it
+    /// is `false`, then data and formatting are both considered.
     pub fn row_bounds(&self, y: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
         let column_has_row = |(_x, column): &(&i64, &Column)| match ignore_formatting {
             true => column.has_anything_in_row(y),
@@ -222,6 +403,9 @@ impl Sheet {
         Some((left, right))
     }
 
+    /// Recalculates all bounds of the sheet.
+    ///
+    /// This should be called whenever data in the sheet is modified.
     pub fn recalculate_bounds(&mut self) {
         self.data_bounds.clear();
         self.format_bounds.clear();
@@ -242,7 +426,9 @@ impl Sheet {
         }
     }
 
-    pub fn get_render_cells(&self, region: &Rect) -> Vec<JsRenderCell> {
+    /// Returns cell data in a format useful for rendering. This includes only
+    /// the data necessary to render raw text values
+    pub fn get_render_cells(&self, region: Rect) -> Vec<JsRenderCell> {
         let columns_iter = region
             .x_range()
             .filter_map(|x| Some((x, self.get_column(x)?)));
@@ -299,8 +485,8 @@ impl Sheet {
             })
             .collect()
     }
-
-    pub fn get_render_fills(&self, region: &Rect) -> Vec<JsRenderFill> {
+    /// Returns data for rendering cell fill color.
+    pub fn get_render_fills(&self, region: Rect) -> Vec<JsRenderFill> {
         let mut ret = vec![];
         for (&x, column) in self.columns.range(region.x_range()) {
             for block in column.fill_color.blocks_covering_range(region.y_range()) {
@@ -315,8 +501,40 @@ impl Sheet {
         }
         ret
     }
+    /// Returns data for rendering code cells.
+    pub fn get_render_code_cells(&self, region: Rect) -> Vec<JsRenderCodeCell> {
+        self.iter_code_cells_locations(region)
+            .filter_map(|cell_ref| {
+                let pos = self.cell_ref_to_pos(cell_ref)?;
+                if !region.contains(pos) {
+                    return None;
+                }
+                let code_cell = self.code_cells.get(&cell_ref)?;
+                let ArraySize { w, h } = code_cell.output_size();
+                Some(JsRenderCodeCell {
+                    x: pos.x,
+                    y: pos.y,
+                    w,
+                    h,
+                    language: code_cell.language,
+                })
+            })
+            .collect()
+    }
+    /// Returns data for rendering horizontal borders.
+    pub fn get_render_horizontal_borders(&self, region: Rect) -> Vec<JsRenderBorder> {
+        self.borders.get_render_horizontal_borders(region)
+    }
+    /// Returns data for rendering vertical borders.
+    pub fn get_render_vertical_borders(&self, region: Rect) -> Vec<JsRenderBorder> {
+        self.borders.get_render_vertical_borders(region)
+    }
 
-    pub fn iter_code_cells(&self, region: &Rect) -> impl Iterator<Item = (Pos, &CodeCellValue)> {
+    /// Returns an iterator over all locations containing code cells that may
+    /// spill into `region`.
+    fn iter_code_cells_locations(&self, region: Rect) -> impl Iterator<Item = CellRef> {
+        // Scan spilled cells to find code cells. TODO: this won't work for
+        // unspilled code cells
         let code_cell_refs: HashSet<CellRef> = self
             .columns
             .range(region.x_range())
@@ -328,12 +546,7 @@ impl Sheet {
             })
             .collect();
 
-        code_cell_refs.into_iter().filter_map(|cell_ref| {
-            Some((
-                self.cell_ref_to_pos(cell_ref)?,
-                self.code_cells.get(&cell_ref)?,
-            ))
-        })
+        code_cell_refs.into_iter()
     }
 
     fn unspill(&mut self, source: CellRef) {
