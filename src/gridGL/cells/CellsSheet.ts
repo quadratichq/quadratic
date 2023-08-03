@@ -70,10 +70,9 @@ export class CellsSheet extends Container {
 
   show(bounds: Rectangle): void {
     this.visible = true;
-    const hashBounds = this.sheet.gridOffsets.getColumnRowRectangleFromScreen(bounds);
     let count = 0;
     this.cellsHash.forEach((cellsHash) => {
-      if (intersects.rectangleRectangle(hashBounds, cellsHash.AABB)) {
+      if (intersects.rectangleRectangle(bounds, cellsHash.viewBounds)) {
         cellsHash.show();
         count++;
       } else {

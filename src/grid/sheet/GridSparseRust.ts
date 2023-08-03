@@ -29,9 +29,9 @@ export class GridSparseRust extends GridSparse {
     this.sheetId = sheetId;
 
     // use to test large sheets
-    console.time('random');
-    this.grid.populateWithRandomFloats(this.sheetId, new Rect(new Pos(0, 0), new Pos(100, 10000)));
-    console.timeEnd('random');
+    // console.time('random');
+    // this.grid.populateWithRandomFloats(this.sheetId, new Rect(new Pos(0, 0), new Pos(100, 10000)));
+    // console.timeEnd('random');
 
     // if (!bounds) return;
     // for (let y = bounds.top; y <= bounds.bottom; y++) {

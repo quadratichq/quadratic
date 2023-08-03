@@ -10,11 +10,13 @@ export class CellsHash extends Container {
   private test?: Graphics;
   private cellsBackground: CellsBackground;
   private cellsLabels: CellsLabels;
-  // private cellsArray: CellsArray;
-  // private cellsBorder: CellsBorder;
-  // private cellsMarkers: CellsMarkers;
 
+  // column/row bounds (does not include overflow cells)
   AABB: Rectangle;
+
+  // x,y bounds (includes overflow cells)
+  viewBounds: Rectangle;
+
   key: string;
 
   static getKey(x: number, y: number): string {
@@ -44,6 +46,8 @@ export class CellsHash extends Container {
     this.cellsLabels.add(cells);
     this.cellsLabels.updateText();
     this.cellsBackground = this.addChild(new CellsBackground());
+
+    this.viewBounds = this.getBounds();
   }
 
   add(entry: CellHash): void {
