@@ -1,5 +1,5 @@
 if [ "$VERCEL_ENV" == "preview" ]; then
-  export REACT_APP_QUADRATIC_API_URL="quadratic-api-dev-pr-$VERCEL_GIT_PULL_REQUEST_ID.herokuapp.com"
+  export REACT_APP_QUADRATIC_API_URL="https://quadratic-api-dev-pr-$VERCEL_GIT_PULL_REQUEST_ID.herokuapp.com"
   echo "On preview branch. Setting REACT_APP_QUADRATIC_API_URL to quadratic-api-dev-pr-$VERCEL_GIT_PULL_REQUEST_ID.herokuapp.com"
 fi
 
