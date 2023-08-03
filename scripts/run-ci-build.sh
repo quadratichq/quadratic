@@ -1,3 +1,9 @@
+
+if [ "$VERCEL_ENV" == "preview" ]; then
+  export REACT_APP_PULL_REQUEST_ID="$VERCEL_GIT_PULL_REQUEST_ID"
+  echo "Environment is preview, setting REACT_APP_PULL_REQUEST_ID to $REACT_APP_PULL_REQUEST_ID"
+fi
+
 echo 'Installing rustup...'
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
