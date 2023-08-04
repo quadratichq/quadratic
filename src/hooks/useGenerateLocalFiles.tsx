@@ -323,17 +323,10 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     if (!currentFileContents) {
       throw new Error('Expected state `currentFileContents` to be defined when saving a file');
     }
-
-    if (debugUseRustSheetController) {
-      console.log('Cannot save file...waiting on rust export() function');
-      return;
-    }
-
-    // todo
+    debugger;
     const modified = Date.now();
     const exported = sheetController.grid.exportToFile();
     const updatedFile = { ...currentFileContents, sheets: exported.sheets, modified };
-    // const updatedFile = { ...currentFileContents, sheets: sheetController.export(), modified };
     setCurrentFileContents(updatedFile);
     setFileList((oldFileList) =>
       oldFileList

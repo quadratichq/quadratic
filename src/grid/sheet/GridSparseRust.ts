@@ -83,6 +83,7 @@ export class GridSparseRust extends GridSparse {
         if (format.fillColor !== undefined && format.fillColor !== original.fillColor) {
           this.grid.setCellFillColor(this.sheetId, region, format.fillColor);
         }
+        console.log(format.textColor, original.textColor);
         if (format.textColor !== undefined && format.textColor !== original.textColor) {
           this.grid.setCellTextColor(this.sheetId, region, format.textColor);
         }
@@ -429,5 +430,10 @@ export class GridSparseRust extends GridSparse {
       y += delta;
     }
     return yStart;
+  }
+
+  exportToFile(): Sheet[] {
+    const file = this.grid.exportToFile().sheets;
+    return [];
   }
 }

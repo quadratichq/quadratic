@@ -32,10 +32,12 @@ export class CellLabel extends TextMesh implements CellHash {
   private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
 
   constructor(cell: CellRust, rectangle: Rectangle) {
+    const textColor = cell?.textColor;
+    const tint = textColor ? convertColorStringToTint(textColor) : 0;
     super(cell.value.toString(), {
       fontName: 'OpenSans',
       fontSize,
-      tint: 0,
+      tint,
       align: 'left',
     });
     this.AABB = rectangle;
@@ -47,10 +49,6 @@ export class CellLabel extends TextMesh implements CellHash {
     const italic = cell?.italic ? 'Italic' : '';
     const fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
     if (this.fontName !== fontName) this.fontName = fontName;
-
-    const textColor = cell?.textColor;
-    const tint = textColor ? convertColorStringToTint(textColor) : 0;
-    if (this.tint !== tint) this.tint = tint;
 
     this.alignment = cell.align;
   }

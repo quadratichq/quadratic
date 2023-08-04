@@ -155,12 +155,12 @@ export class Quadrants extends Container {
 
   /** marks quadrants dirty based on what has changed */
   quadrantChanged(options: QuadrantChanged, sheet?: Sheet): void {
-    sheet = sheet ?? this.app.sheet;
-    const quadrantsSheet = this.quadrants.get(sheet.id);
-    if (!quadrantsSheet) {
-      throw new Error('Expected to find quadrantsSheet in quadrants.quadrantChanged');
-    }
-    quadrantsSheet.quadrantChanged(options);
+    // sheet = sheet ?? this.app.sheet;
+    // const quadrantsSheet = this.quadrants.get(sheet.id);
+    // if (!quadrantsSheet) {
+    //   throw new Error('Expected to find quadrantsSheet in quadrants.quadrantChanged');
+    // }
+    // quadrantsSheet.quadrantChanged(options);
   }
 
   /** Returns CellRectangles for visible dirty quadrants */

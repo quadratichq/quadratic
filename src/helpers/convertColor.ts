@@ -1,5 +1,5 @@
-import { ColorResult } from 'react-color';
 import Color from 'color';
+import { ColorResult } from 'react-color';
 
 export function convertReactColorToString(color: ColorResult): string {
   const rgb = color.rgb;

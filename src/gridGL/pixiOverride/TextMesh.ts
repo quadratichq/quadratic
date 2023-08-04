@@ -4,6 +4,8 @@ import { BitmapFont, Container, Mesh, Point, Texture } from 'pixi.js';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 
 export interface PageMeshData {
+  fontName: string;
+  fontSize: number;
   index: number;
   indexCount: number;
   vertexCount: number;
@@ -81,9 +83,11 @@ export class TextMesh extends Container {
       const xPos = this.position.x + offset * scale;
       const yPos = this.position.y + char.position.y * scale;
       const texture = char.texture;
-      const pageMesh = pagesMeshData[texture.baseTexture.uid];
+      const key = `${texture.baseTexture.uid}-${this.tint ?? 0}`;
+      const pageMesh = pagesMeshData[key];
       const textureFrame = texture.frame;
       const textureUvs = texture._uvs;
+
       // remove letters that are outside the clipping bounds
       if (
         (this.clipRight !== undefined && xPos + textureFrame.width * scale + this.x >= this.clipRight) ||
@@ -122,9 +126,11 @@ export class TextMesh extends Container {
       const vertexBuffer = pageMeshData.mesh.geometry.getBuffer('aVertexPosition');
       const textureBuffer = pageMeshData.mesh.geometry.getBuffer('aTextureCoord');
       const indexBuffer = pageMeshData.mesh.geometry.getIndex();
+
       vertexBuffer.data = pageMeshData.vertices!;
       textureBuffer.data = pageMeshData.uvs!;
       indexBuffer.data = pageMeshData.indices!;
+
       vertexBuffer.update();
       textureBuffer.update();
       indexBuffer.update();

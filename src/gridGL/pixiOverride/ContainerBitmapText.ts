@@ -10,21 +10,8 @@ import {
   Texture,
 } from 'pixi.js';
 import { CellLabel } from '../cells/CellLabel';
+import { PageMeshData } from './TextMesh';
 import { msdfFrag, msdfVert } from './shader';
-
-interface PageMeshData {
-  index: number;
-  indexCount: number;
-  vertexCount: number;
-  uvsCount: number;
-  total: number;
-  mesh: Mesh;
-  fontName: string;
-  fontSize: number;
-  vertices?: Float32Array;
-  uvs?: Float32Array;
-  indices?: Uint16Array;
-}
 
 export class ContainerBitmapText extends Container {
   private textureCache: Texture[] = [];
@@ -32,7 +19,7 @@ export class ContainerBitmapText extends Container {
 
   // this is used to render all bitmapText within this region
   private finalBitmapText: Container;
-  private pagesMeshData: Record<number, PageMeshData> = {};
+  private pagesMeshData: Record<string, PageMeshData> = {};
 
   dirty = true;
 
@@ -88,9 +75,10 @@ export class ContainerBitmapText extends Container {
       for (let i = 0; i < lenChars; i++) {
         const texture = cellLabel.chars[i].texture;
         const baseTextureUid = texture.baseTexture.uid;
-
-        let pageMeshData = this.pagesMeshData[baseTextureUid];
+        const key = `${baseTextureUid}-${cellLabel.tint ?? 0}`;
+        let pageMeshData = this.pagesMeshData[key];
         if (!pageMeshData) {
+          console.log(key);
           const geometry = new MeshGeometry();
           let material: MeshMaterial;
           let meshBlendMode: BLEND_MODES;
@@ -102,7 +90,7 @@ export class ContainerBitmapText extends Container {
           meshBlendMode = BLEND_MODES.NORMAL_NPM;
 
           const mesh = new Mesh(geometry, material);
-
+          mesh.tint = cellLabel.tint ?? 0;
           mesh.blendMode = meshBlendMode;
 
           const pageMeshData = {
@@ -121,14 +109,11 @@ export class ContainerBitmapText extends Container {
 
           this.textureCache[baseTextureUid] = this.textureCache[baseTextureUid] || new Texture(texture.baseTexture);
           pageMeshData.mesh.texture = this.textureCache[baseTextureUid];
-          this.pagesMeshData[baseTextureUid] = pageMeshData;
+          this.pagesMeshData[key] = pageMeshData;
           this.finalBitmapText.addChild(pageMeshData.mesh);
-
-          // todo: can't tint -- will need to have separate batches based on tinting.... :(
-          pageMeshData.mesh.tint = 0; //this.tint;
         }
 
-        this.pagesMeshData[baseTextureUid].total++;
+        this.pagesMeshData[key].total++;
       }
     });
 
