@@ -13,3 +13,16 @@ export function convertColorStringToTint(color: string): number {
 export function convertTintToString(color: number): string {
   return Color(color).rgb().toString();
 }
+
+export function convertTintToArray(color: number): [number, number, number, number] {
+  let s = color.toString(16);
+  while (s.length < 6) {
+    s = '0' + s;
+  }
+  return [
+    parseInt(s.substring(0, 1), 16) / 256,
+    parseInt(s.substring(2, 3), 16) / 256,
+    parseInt(s.substring(4, 5), 16) / 256,
+    1,
+  ];
+}

@@ -32,9 +32,7 @@ export class CellsLabels extends Container implements CellHash {
 
   // this is used to render all bitmapText within this region
   private finalBitmapText: Container;
-  private pagesMeshData: Record<string, PageMeshData> = {};
-
-  dirty = false;
+  private pagesMeshData: Record<number, PageMeshData> = {};
 
   constructor(cellsHash: CellsHash) {
     super();
@@ -67,10 +65,6 @@ export class CellsLabels extends Container implements CellHash {
       return;
     }
 
-    if (this.dirty) {
-      this.updateText();
-    }
-
     // Inject the shader code with the correct value
     const { a, b, c, d } = this.transform.worldTransform;
 
@@ -90,7 +84,6 @@ export class CellsLabels extends Container implements CellHash {
   }
 
   public updateText(): void {
-    this.dirty = false;
     this.finalBitmapText.removeChildren();
 
     this.cellLabels.forEach((child) => child.updateText());
@@ -102,8 +95,7 @@ export class CellsLabels extends Container implements CellHash {
       for (let i = 0; i < lenChars; i++) {
         const texture = cellLabel.chars[i].texture;
         const baseTextureUid = texture.baseTexture.uid;
-        const key = `${baseTextureUid}-${cellLabel.tint ?? 0}`;
-        let pageMeshData = this.pagesMeshData[key];
+        let pageMeshData = this.pagesMeshData[baseTextureUid];
         if (!pageMeshData) {
           const geometry = new MeshGeometry();
           let material: MeshMaterial;
@@ -116,7 +108,6 @@ export class CellsLabels extends Container implements CellHash {
           meshBlendMode = BLEND_MODES.NORMAL_NPM;
 
           const mesh = new Mesh(geometry, material);
-          mesh.tint = cellLabel.tint ?? 0;
           mesh.blendMode = meshBlendMode;
 
           const pageMeshData = {
@@ -131,15 +122,16 @@ export class CellsLabels extends Container implements CellHash {
             vertices: undefined,
             uvs: undefined,
             indices: undefined,
+            colors: undefined,
           };
 
           this.textureCache[baseTextureUid] = this.textureCache[baseTextureUid] || new Texture(texture.baseTexture);
           pageMeshData.mesh.texture = this.textureCache[baseTextureUid];
-          this.pagesMeshData[key] = pageMeshData;
+          this.pagesMeshData[baseTextureUid] = pageMeshData;
           this.finalBitmapText.addChild(pageMeshData.mesh);
         }
 
-        this.pagesMeshData[key].total++;
+        this.pagesMeshData[baseTextureUid].total++;
       }
     });
 
@@ -149,6 +141,8 @@ export class CellsLabels extends Container implements CellHash {
       pageMeshData.vertices = new Float32Array(4 * 2 * total);
       pageMeshData.uvs = new Float32Array(4 * 2 * total);
       pageMeshData.indices = new Uint16Array(6 * total);
+      pageMeshData.colors = new Float32Array(4 * 4 * total);
+      pageMeshData.mesh.geometry.addAttribute('aColors', pageMeshData.colors, 4);
 
       // as a buffer maybe bigger than the current word, we set the size of the meshMaterial
       // to match the number of letters needed
@@ -164,15 +158,18 @@ export class CellsLabels extends Container implements CellHash {
 
       const vertexBuffer = pageMeshData.mesh.geometry.getBuffer('aVertexPosition');
       const textureBuffer = pageMeshData.mesh.geometry.getBuffer('aTextureCoord');
+      const colorBuffer = pageMeshData.mesh.geometry.getBuffer('aColors');
       const indexBuffer = pageMeshData.mesh.geometry.getIndex();
 
       vertexBuffer.data = pageMeshData.vertices!;
       textureBuffer.data = pageMeshData.uvs!;
       indexBuffer.data = pageMeshData.indices!;
+      colorBuffer.data = pageMeshData.colors!;
 
       vertexBuffer.update();
       textureBuffer.update();
       indexBuffer.update();
+      colorBuffer.update();
     }
   }
 

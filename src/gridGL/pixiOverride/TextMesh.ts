@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { removeItems } from '@pixi/utils';
 import { BitmapFont, Container, Mesh, Point, Texture } from 'pixi.js';
+import { convertTintToArray } from '../../helpers/convertColor';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 
 export interface PageMeshData {
@@ -15,6 +16,7 @@ export interface PageMeshData {
   vertices?: Float32Array;
   uvs?: Float32Array;
   indices?: Uint16Array;
+  colors?: Float32Array;
 }
 
 export interface CharRenderData {
@@ -71,9 +73,10 @@ export class TextMesh extends Container {
     this.tint = options.tint;
   }
 
-  updatePageMesh(pagesMeshData: Record<string, PageMeshData>): void {
+  updatePageMesh(pagesMeshData: Record<number, PageMeshData>): void {
     const data = BitmapFont.available[this.fontName];
     const scale = this.fontSize / data.size;
+    const color = convertTintToArray(this.tint ?? 0);
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
       let offset =
@@ -84,9 +87,7 @@ export class TextMesh extends Container {
       const xPos = this.position.x + offset * scale;
       const yPos = this.position.y + char.position.y * scale;
       const texture = char.texture;
-      if (this.tint) console.log('found 1');
-      const key = `${texture.baseTexture.uid}-${this.tint ?? 0}`;
-      const pageMesh = pagesMeshData[key];
+      const pageMesh = pagesMeshData[texture.baseTexture.uid];
       const textureFrame = texture.frame;
       const textureUvs = texture._uvs;
 
@@ -121,21 +122,23 @@ export class TextMesh extends Container {
         pageMesh.uvs![index * 8 + 5] = textureUvs.y2;
         pageMesh.uvs![index * 8 + 6] = textureUvs.x3;
         pageMesh.uvs![index * 8 + 7] = textureUvs.y3;
+        pageMesh.colors![index * 16 + 0] = color[0];
+        pageMesh.colors![index * 16 + 1] = color[1];
+        pageMesh.colors![index * 16 + 2] = color[2];
+        pageMesh.colors![index * 16 + 3] = color[3];
+        pageMesh.colors![index * 16 + 4] = color[0];
+        pageMesh.colors![index * 16 + 5] = color[1];
+        pageMesh.colors![index * 16 + 6] = color[2];
+        pageMesh.colors![index * 16 + 7] = color[3];
+        pageMesh.colors![index * 16 + 8] = color[0];
+        pageMesh.colors![index * 16 + 9] = color[1];
+        pageMesh.colors![index * 16 + 10] = color[2];
+        pageMesh.colors![index * 16 + 11] = color[3];
+        pageMesh.colors![index * 16 + 12] = color[0];
+        pageMesh.colors![index * 16 + 13] = color[1];
+        pageMesh.colors![index * 16 + 14] = color[2];
+        pageMesh.colors![index * 16 + 15] = color[3];
       }
-    }
-    for (const i in pagesMeshData) {
-      const pageMeshData = pagesMeshData[i];
-      const vertexBuffer = pageMeshData.mesh.geometry.getBuffer('aVertexPosition');
-      const textureBuffer = pageMeshData.mesh.geometry.getBuffer('aTextureCoord');
-      const indexBuffer = pageMeshData.mesh.geometry.getIndex();
-
-      vertexBuffer.data = pageMeshData.vertices!;
-      textureBuffer.data = pageMeshData.uvs!;
-      indexBuffer.data = pageMeshData.indices!;
-
-      vertexBuffer.update();
-      textureBuffer.update();
-      indexBuffer.update();
     }
   }
 
