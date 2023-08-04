@@ -4,6 +4,7 @@ import mixpanel from 'mixpanel-browser';
 import { authClient } from '../auth';
 import { GridFile, GridFileSchema } from '../schemas';
 import { GetFileClientRes, GetFileRes, GetFilesRes, PostFilesReq } from './types';
+
 const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
 
 class APIClientSingleton {

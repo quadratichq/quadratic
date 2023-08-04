@@ -1,4 +1,4 @@
-import { Response, NextFunction } from 'express';
+import { NextFunction, Response } from 'express';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
@@ -237,7 +237,7 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file con
   it('responds with json', async () => {
     const res = await request(app)
       .post('/v0/files/00000000-0000-4000-8000-000000000000')
-      .send({ contents: Buffer.from('contents_0_updated').toString('base64') })
+      .send({ contents: 'contents_0_updated' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -257,7 +257,7 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file con
     expect(res2.body).toHaveProperty('permission');
     expect(res2.body.permission).toEqual('OWNER');
     expect(res2.body.file.name).toEqual('test_file_1_new_name');
-    expect(Buffer.from(res2.body.file.contents).toString()).toEqual('contents_0_updated');
+    expect(res2.body.file.contents).toEqual('contents_0_updated');
   });
 });
 
