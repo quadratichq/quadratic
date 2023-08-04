@@ -136,7 +136,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
     >
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <SidebarNavLink to="/" style={sidebarLinkStyles}>
+          <SidebarNavLink to="/" style={sidebarLinkStyles} isLogo={true}>
             <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <QuadraticLogo />
             </div>
@@ -191,7 +191,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
   );
 }
 
-function SidebarNavLink({ to, children, style }: any) {
+function SidebarNavLink({ to, children, style, isLogo }: any) {
   const location = useLocation();
   const navigation = useNavigation();
   const theme = useTheme();
@@ -218,7 +218,7 @@ function SidebarNavLink({ to, children, style }: any) {
         />
       )}
       {children}
-      {navigation.state === 'loading' && navigation.location.pathname.includes(to) && (
+      {navigation.state === 'loading' && navigation.location.pathname.includes(to) && !isLogo && (
         <CircularProgress size={18} sx={{ ml: 'auto' }} />
       )}
     </NavLink>
