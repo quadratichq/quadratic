@@ -1,24 +1,23 @@
-import TopBar from '../ui/menus/TopBar';
-import CodeEditor from '../ui/menus/CodeEditor';
+import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import BottomBar from './menus/BottomBar';
-import QuadraticGrid from '../gridGL/QuadraticGrid';
-import CommandPalette from './menus/CommandPalette';
-import GoTo from './menus/GoTo';
-import { useEffect } from 'react';
-import CellTypeMenu from './menus/CellTypeMenu';
-import { FileUploadWrapper } from './components/FileUploadWrapper';
-import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
-import PresentationModeHint from './components/PresentationModeHint';
-import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import { SheetController } from '../grid/controller/sheetController';
-import ReadOnlyDialog from './components/ReadOnlyDialog';
 import { IS_READONLY_MODE } from '../constants/app';
-import ShareMenu from './menus/ShareMenu';
-import SharedFileAlert from './components/SharedFileAlert';
+import { SheetController } from '../grid/controller/sheetController';
+import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
+import QuadraticGrid from '../gridGL/QuadraticGrid';
+import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import CodeEditor from '../ui/menus/CodeEditor';
+import TopBar from '../ui/menus/TopBar';
+import { FileUploadWrapper } from './components/FileUploadWrapper';
+import PresentationModeHint from './components/PresentationModeHint';
+import ReadOnlyDialog from './components/ReadOnlyDialog';
+import BottomBar from './menus/BottomBar';
+import CellTypeMenu from './menus/CellTypeMenu';
+import CommandPalette from './menus/CommandPalette';
 import FeedbackMenu from './menus/FeedbackMenu';
+import GoTo from './menus/GoTo';
+import ShareMenu from './menus/ShareMenu';
+import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
@@ -47,7 +46,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
         flexDirection: 'column',
       }}
     >
-      {editorInteractionState.showCellTypeMenu && <CellTypeMenu></CellTypeMenu>}
+      {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
       {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
       {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
@@ -73,7 +72,6 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {presentationMode && <PresentationModeHint />}
 
       {IS_READONLY_MODE && <ReadOnlyDialog />}
-      {false && <SharedFileAlert />}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { ErrorOutline, QuestionMarkOutlined } from '@mui/icons-material';
 import { Button } from '@mui/material';
+import * as Sentry from '@sentry/react';
 import apiClientSingleton from 'api-client/apiClientSingleton';
 import { GetFileResSchema } from 'api-client/types';
 import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
@@ -31,8 +32,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
   // Validate and upgrade file to the latest version
   const contents = validateAndUpgradeGridFile(data.file.contents);
   if (!contents) {
+    Sentry.captureEvent({
+      message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
+      level: Sentry.Severity.Critical,
+    });
     throw new Response('Invalid file that could not be upgraded.', { status: 400 });
-    // TODO sentry...
   }
 
   // If the file version is newer than what is supported by the current version
@@ -55,14 +59,14 @@ export const Component = () => {
   );
 };
 
-// TODO catch 404, don't have permission for file, generic error
 export const ErrorBoundary = () => {
   const error = useRouteError();
 
   if (isRouteErrorResponse(error)) {
     console.error(error.data);
-    // TODO differentiate between different kind of file loading errors?
-    // e.g. file came in but didn't validate. file couldn't be found. file...
+    // If the future, we can differentiate between the different kinds of file
+    // loading errors and be as granular in the message as we like.
+    // e.g. file found but didn't validate. file couldn't be found. file...
     return (
       <Empty
         title="404: file not found"
@@ -77,7 +81,7 @@ export const ErrorBoundary = () => {
     );
   }
 
-  // TODO log this case to sentry
+  // Maybe we log this to Sentry someday...
   console.log(error);
   return (
     <Empty
