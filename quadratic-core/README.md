@@ -9,3 +9,9 @@ Documentation for formula functions can be found in next to the Rust implementat
 ### Rebuilding formula function documentation
 
 Run `cargo run --bin docgen`, then copy/paste from `formula_docs_output.md` into Notion. Copying from VSCode will include formatting, so you may have to first paste it into a plaintext editor like Notepad, then copy/paste from there into Notion.
+
+## Running benchmarks
+
+### Pure Rust benchmark
+
+To run benchmarks in pure compiled Rust, run `cargo bench`
