@@ -1,5 +1,6 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
-use quadratic_core::{grid::Grid, Pos, Rect};
+use quadratic_core::grid::Grid;
+use quadratic_core::{Pos, Rect};
 
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);

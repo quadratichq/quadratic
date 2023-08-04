@@ -22,16 +22,6 @@ pub struct Pos {
     // We use a small range for proptest because most tests want to see what
     // happens when values are nearby.
 }
-#[wasm_bindgen]
-impl Pos {
-    #[wasm_bindgen(constructor)]
-    pub fn new(x: f64, y: f64) -> Self {
-        Self {
-            x: x as i64,
-            y: y as i64,
-        }
-    }
-}
 impl Pos {
     pub const ORIGIN: Self = Self { x: 0, y: 0 };
 
@@ -65,10 +55,8 @@ pub struct Rect {
     /// Lower-right corner.
     pub max: Pos,
 }
-#[wasm_bindgen]
 impl Rect {
     /// Constructs a rectangle spanning two positions
-    #[wasm_bindgen(constructor)]
     pub fn new_span(pos1: Pos, pos2: Pos) -> Rect {
         use std::cmp::{max, min};
 
@@ -85,12 +73,10 @@ impl Rect {
     }
 
     /// Constructs a new rectangle containing only a single cell.
-    #[wasm_bindgen]
     pub fn single_pos(pos: Pos) -> Rect {
         Rect { min: pos, max: pos }
     }
     /// Extends the rectangle enough to include a cell.
-    #[wasm_bindgen]
     pub fn extend_to(&mut self, pos: Pos) {
         self.min.x = std::cmp::min(self.min.x, pos.x);
         self.min.y = std::cmp::min(self.min.y, pos.y);
@@ -99,12 +85,10 @@ impl Rect {
     }
 
     /// Returns whether a position is contained within the rectangle.
-    #[wasm_bindgen]
     pub fn contains(&self, pos: Pos) -> bool {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
     }
-}
-impl Rect {
+
     /// Returns the range of X values in the rectangle.
     pub fn x_range(self) -> Range<i64> {
         self.min.x..self.max.x + 1

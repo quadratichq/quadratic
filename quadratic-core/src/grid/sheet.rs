@@ -9,7 +9,7 @@ use super::code::{CodeCellLanguage, CodeCellValue};
 use super::column::Column;
 use super::formatting::BoolSummary;
 use super::ids::{CellRef, ColumnId, IdMap, RowId, SheetId};
-use super::js_structs::{
+use super::js_types::{
     JsFormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderFill,
 };
 use super::legacy;

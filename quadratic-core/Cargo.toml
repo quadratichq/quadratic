@@ -53,7 +53,9 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
 
 [dev-dependencies]
-criterion = { version = "0.4" }
+criterion = { version = "0.4", default-features = false }
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"
 proptest-derive = "0.3.0"
 
