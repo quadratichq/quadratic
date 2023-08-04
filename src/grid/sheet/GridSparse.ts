@@ -96,13 +96,13 @@ export class GridSparse {
     if (!skipBounds) {
       this.grid.recalculateBounds(this.sheetId);
     }
-
     pixiAppEvents.changeCells(
       this.sheet,
       formats.map((format) => ({ x: format.x, y: format.y })),
       { labels: true }
     );
   }
+
   clearFormat(formats: CellFormat[], skipBounds = false): void {
     formats.forEach((format) => {
       const region = new Rect(new Pos(format.x, format.y), new Pos(format.x, format.y));

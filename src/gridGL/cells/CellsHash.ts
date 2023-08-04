@@ -86,8 +86,10 @@ export class CellsHash extends Container {
 
   changeCells(options: { labels?: boolean; background?: boolean }): void {
     if (options.labels) {
-      const cells = this.sheet.grid.getCellList(this.rect);
-      this.cellsLabels.create(cells);
+      this.cellsLabels.create();
+    }
+    if (options.background) {
+      this.cellsBackground.create();
     }
   }
 }
