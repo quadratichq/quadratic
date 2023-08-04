@@ -1,3 +1,4 @@
+import { GridFileSchema } from 'schemas';
 import z from 'zod';
 
 // TODO share these with the API
@@ -32,11 +33,15 @@ export const GetFileResSchema = z.object({
 export type GetFileRes = z.infer<typeof GetFileResSchema>;
 
 // POST /files/:uuid
-const PostFileReqSchema = z.object({
-  name: z.string().optional(),
-  contents: z.string().optional(),
+const PostFileContentsReqSchema = z.object({
+  contents: z.string(),
+  version: GridFileSchema.shape.version,
 });
-export type PostFileReq = z.infer<typeof PostFileReqSchema>;
+export type PostFileContentsReq = z.infer<typeof PostFileContentsReqSchema>;
+const PostFileNameReqSchema = z.object({
+  name: z.string(),
+});
+export type PostFileNameReq = z.infer<typeof PostFileNameReqSchema>;
 
 // POST /files
 const PostFilesReqSchema = z.object({

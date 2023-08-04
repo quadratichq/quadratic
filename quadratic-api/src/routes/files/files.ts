@@ -158,7 +158,7 @@ files_router.post(
 
     // Update the contents
     if (req.body.contents !== undefined) {
-      if (req.body.version !== undefined) {
+      if (req.body.version === undefined) {
         return res.status(400).json({ error: { message: 'Updating `contents` requires `version` in body' } });
       }
 

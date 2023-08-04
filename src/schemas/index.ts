@@ -2,7 +2,7 @@ import z from 'zod';
 import { GridFileSchemaV1_0 } from './GridFileV1_0';
 import { GridFileSchemaV1_1 } from './GridFileV1_1';
 import { GridFileSchemaV1_2 } from './GridFileV1_2';
-import { GridFileSchemaV1_3, GridFileV1_3, ArrayOutputBase } from './GridFileV1_3';
+import { ArrayOutputBase, GridFileSchemaV1_3, GridFileV1_3 } from './GridFileV1_3';
 
 /**
  * Export types for the grid files
@@ -27,15 +27,9 @@ export const GridFileSchema = GridFileSchemaV1_3;
  * from the grid file schema.
  */
 
-// Parts of the file schema used by the sheet
-const GridFileDataSchema = GridFileSchema.pick({
-  borders: true,
-  cells: true,
-  cell_dependency: true,
-  columns: true,
-  formats: true,
-  render_dependency: true,
-  rows: true,
+// Sheet uses everything except these values
+const GridFileDataSchema = GridFileSchema.omit({
+  version: true,
 });
 export type GridFileData = z.infer<typeof GridFileDataSchema>;
 

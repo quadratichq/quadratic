@@ -1,3 +1,4 @@
+import { PostFileContentsReq, PostFileNameReq } from 'api-client/types';
 import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
@@ -52,10 +53,13 @@ export const FileProvider = ({
 
   // Create and save the fn used by the sheetController to save the file
   const save = useCallback(async (): Promise<void> => {
-    setContents((oldContents) => ({
-      ...oldContents, // version
-      ...sheetController.sheet.export_file(),
-    }));
+    setContents((oldContents) => {
+      let newContents = {
+        ...oldContents,
+        ...sheetController.sheet.export_file(),
+      };
+      return newContents;
+    });
 
     console.log('[FileProvider] sheetController file save');
   }, [setContents, sheetController.sheet]);
@@ -78,7 +82,7 @@ export const FileProvider = ({
 
   // TODO debounce file changes so changes sync only every X milliseconds
   const syncChanges = useCallback(
-    async (changes: any) => {
+    async (changes: PostFileContentsReq | PostFileNameReq) => {
       if (uuid) {
         const id = Date.now();
         setLatestSync({ id, state: 'syncing' });
@@ -93,11 +97,11 @@ export const FileProvider = ({
   useEffect(() => {
     document.title = `${name} - Quadratic`;
     syncChanges({ name });
-  }, [name, syncChanges]);
+  }, [name, syncChanges, uuid]);
 
   // When the contents of the file changes, sync to server
   useEffect(() => {
-    syncChanges({ contents });
+    syncChanges({ contents: JSON.stringify(contents), version: contents.version });
   }, [contents, syncChanges]);
 
   return <FileContext.Provider value={{ name, renameFile, contents, syncState }}>{children}</FileContext.Provider>;

@@ -3,7 +3,7 @@ import { downloadFile } from 'helpers/downloadFile';
 import mixpanel from 'mixpanel-browser';
 import { authClient } from '../auth';
 import { GridFile, GridFileSchema } from '../schemas';
-import { GetFileRes, GetFilesRes, PostFilesReq } from './types';
+import { GetFileRes, GetFilesRes, PostFileContentsReq, PostFileNameReq, PostFilesReq } from './types';
 
 const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
 
@@ -126,24 +126,16 @@ class APIClientSingleton {
     }
   }
 
-  async postFile(uuid: string, { name, contents }: { name?: string; contents?: GridFile } = {}): Promise<boolean> {
-    if (!API_URL) return false;
-
+  async postFile(uuid: string, body: PostFileContentsReq | PostFileNameReq): Promise<boolean> {
     try {
       const base_url = this.getAPIURL();
-
-      const request_body = {
-        name,
-        contents: JSON.stringify(contents),
-      };
-
       const response = await fetch(`${base_url}/v0/files/${uuid}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${await authClient.getToken()}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(request_body),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
