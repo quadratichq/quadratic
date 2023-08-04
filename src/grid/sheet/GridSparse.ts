@@ -53,6 +53,12 @@ export class GridSparse {
     if (!skipBounds) {
       this.grid.recalculateBounds(this.sheetId);
     }
+
+    pixiAppEvents.changeCells(
+      this.sheet,
+      cells.map((cell) => ({ x: cell.x, y: cell.y })),
+      { labels: true }
+    );
   }
 
   hasFormatting(format: CellFormat): boolean {
