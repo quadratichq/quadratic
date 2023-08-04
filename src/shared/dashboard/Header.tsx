@@ -31,6 +31,7 @@ export default function Header({ title, actions }: { title: string; actions?: Re
         <Box
           sx={{
             [theme.breakpoints.down('md')]: {
+              display: 'none',
               paddingBottom: theme.spacing(1),
             },
           }}

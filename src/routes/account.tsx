@@ -68,10 +68,5 @@ export const Component = () => {
 };
 
 function Row(props: any) {
-  const theme = useTheme();
-  return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: '160px 1fr', alignItems: 'center', my: theme.spacing(3) }}>
-      {props.children}
-    </Box>
-  );
+  return <Box sx={{ display: 'grid', gridTemplateColumns: '160px 1fr', alignItems: 'center' }}>{props.children}</Box>;
 }

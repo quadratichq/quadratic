@@ -122,7 +122,8 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
       component="nav"
       sx={{
         px: theme.spacing(2),
-        py: theme.spacing(0.5),
+        pt: theme.spacing(0.5),
+        pb: theme.spacing(1),
         display: 'flex',
         justifyContent: 'space-between',
         flexDirection: 'column',
