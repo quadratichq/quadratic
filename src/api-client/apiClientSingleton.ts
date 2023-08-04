@@ -3,7 +3,7 @@ import { downloadFile } from 'helpers/downloadFile';
 import mixpanel from 'mixpanel-browser';
 import { authClient } from '../auth';
 import { GridFile, GridFileSchema } from '../schemas';
-import { GetFileClientRes, GetFileRes, GetFilesRes, PostFilesReq } from './types';
+import { GetFileRes, GetFilesRes, PostFilesReq } from './types';
 
 const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
 
@@ -55,7 +55,7 @@ class APIClientSingleton {
   }
 
   // Fetch a file from the DB
-  async getFile(id: string): Promise<GetFileClientRes | undefined> {
+  async getFile(id: string): Promise<GetFileRes | undefined> {
     if (!API_URL) return;
 
     try {
@@ -72,24 +72,7 @@ class APIClientSingleton {
         throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
       }
 
-      // TODO validate and upgrade files
-      const serverRes: GetFileRes = await response.json();
-
-      if (!serverRes) {
-        throw new Error('Unexpected file response');
-      }
-
-      // Pick out just the stuff we want/need
-      const clientRes: GetFileClientRes = {
-        uuid: serverRes.file.uuid,
-        name: serverRes.file.name,
-        created_date: serverRes.file.created_date,
-        updated_date: serverRes.file.updated_date,
-        permission: serverRes.permission,
-        contents: JSON.parse(serverRes.file.contents),
-      };
-
-      return clientRes;
+      return await response.json();
     } catch (error) {
       console.error(error);
       Sentry.captureException({
@@ -127,13 +110,12 @@ class APIClientSingleton {
   async downloadFile(id: string): Promise<boolean> {
     mixpanel.track('[APIClient].downloadFile', { id });
     try {
-      const file = await this.getFile(id);
-      if (!file) {
+      const res = await this.getFile(id);
+      if (!res) {
         throw new Error('Failed to fetch file.');
       }
 
-      // TODO what do we want the exported file to be?
-      downloadFile(file.name, JSON.stringify(file));
+      downloadFile(res.file.name, res.file.contents);
       return true;
     } catch (error) {
       console.error(error);

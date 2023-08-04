@@ -1,9 +1,9 @@
 import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
+import { InitialFile } from 'routes/file';
 import { GridFile } from 'schemas';
 import apiClientSingleton from '../../api-client/apiClientSingleton';
-import { GetFileClientRes } from '../../api-client/types';
 import { SheetController } from '../../grid/controller/sheetController';
 
 type Sync = {
@@ -28,16 +28,16 @@ const FileContext = createContext<FileContextType>({} as FileContextType);
  */
 export const FileProvider = ({
   children,
-  fileFromServer,
+  initialFile,
   sheetController,
 }: {
   children: React.ReactElement;
-  fileFromServer: GetFileClientRes;
+  initialFile: InitialFile;
   sheetController: SheetController;
 }) => {
   const { uuid } = useParams();
-  const [name, setName] = useState<FileContextType['name']>(fileFromServer.name);
-  const [contents, setContents] = useState<FileContextType['contents']>(fileFromServer.contents);
+  const [name, setName] = useState<FileContextType['name']>(initialFile.name);
+  const [contents, setContents] = useState<FileContextType['contents']>(initialFile.contents);
   let didMount = useRef<boolean>(false);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
   const syncState = latestSync.state;
@@ -63,7 +63,7 @@ export const FileProvider = ({
     sheetController.saveFile = save;
   }, [sheetController, save]);
 
-  // On mounting, (re)load the sheet
+  // On mounting, load the sheet
   useEffect(() => {
     if (didMount.current) return;
     didMount.current = true;
@@ -71,10 +71,10 @@ export const FileProvider = ({
 
     // TODO true spa will clear/rebuild/reset
     // sheetController.clear();
-    sheetController.sheet.load_file(fileFromServer.contents);
+    sheetController.sheet.load_file(initialFile.contents);
     // sheetController.app?.rebuild();
     // sheetController.app?.reset();
-  }, [sheetController.sheet, fileFromServer]);
+  }, [sheetController.sheet, initialFile.contents]);
 
   // TODO debounce file changes so changes sync only every X milliseconds
   const syncChanges = useCallback(

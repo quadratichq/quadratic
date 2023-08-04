@@ -1,5 +1,4 @@
 import z from 'zod';
-import { GridFileSchema } from '../schemas';
 
 // TODO share these with the API
 
@@ -21,26 +20,16 @@ const GetFilesResSchema = z
   .optional();
 export type GetFilesRes = z.infer<typeof GetFilesResSchema>;
 
-// GET /files/:uuid
-const GetFileResSchema = z
-  .object({
-    file: z.object({
-      ...fileMeta,
-      contents: z.string(), // Stringified Gridfile
-      version: z.string(), // TODO one of: ...
-    }),
-    permission: z.string(), // TODO one of:
-  })
-  .optional();
-export type GetFileRes = z.infer<typeof GetFileResSchema>;
-
-// TODO rename to FileContext
-const GetFileClientResSchema = z.object({
-  ...fileMeta,
-  contents: GridFileSchema,
+// GET /file/:uuid
+export const GetFileResSchema = z.object({
+  file: z.object({
+    ...fileMeta,
+    contents: z.string(), // Stringified Gridfile
+    version: z.string(), // TODO one of: ...
+  }),
   permission: z.string(), // TODO one of:
 });
-export type GetFileClientRes = z.infer<typeof GetFileClientResSchema>;
+export type GetFileRes = z.infer<typeof GetFileResSchema>;
 
 // POST /files/:uuid
 const PostFileReqSchema = z.object({

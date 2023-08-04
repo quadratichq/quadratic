@@ -1,37 +1,56 @@
 import { ErrorOutline, QuestionMarkOutlined } from '@mui/icons-material';
 import { Button } from '@mui/material';
 import apiClientSingleton from 'api-client/apiClientSingleton';
-import { GetFileClientRes } from 'api-client/types';
+import { GetFileResSchema } from 'api-client/types';
 import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
+import { GridFile, GridFileSchema } from 'schemas';
+import { validateAndUpgradeGridFile } from 'schemas/validateAndUpgradeGridFile';
 import Empty from 'shared/Empty';
-import { QuadraticApp } from 'ui/QuadraticApp';
+import QuadraticApp from 'ui/QuadraticApp';
 
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export type InitialFile = {
+  name: string;
+  contents: GridFile;
+};
+
+export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<InitialFile> => {
   const { uuid } = params;
 
-  // Ensure we have an ID that matches the schema
-  if (!(uuid /*&& IdSchema.safeParse(uuid).success*/)) {
+  // Ensure we have an UUID that matches the schema
+  if (!GetFileResSchema.shape.file.shape.uuid.safeParse(uuid).success) {
     throw new Response('Bad request. Expected a UUID string.', { status: 400 });
   }
 
   // Fetch the file
   const data = await apiClientSingleton.getFile(uuid as string);
   if (!data) {
-    throw new Response('Unexpected response from the API.');
+    throw new Response('Unexpected response from the API.', { status: 500 });
   }
 
-  // TODO permissions
+  // Validate and upgrade file to the latest version
+  const contents = validateAndUpgradeGridFile(data.file.contents);
+  if (!contents) {
+    throw new Response('Invalid file that could not be upgraded.', { status: 400 });
+    // TODO sentry...
+  }
 
-  return data;
+  // If the file version is newer than what is supported by the current version
+  // of the app, do a (hard) reload.
+  if (contents.version > GridFileSchema.shape.version.value) {
+    // @ts-expect-error
+    window.location.reload(true);
+  }
+
+  return { contents, name: data.file.name };
 };
 
 export const Component = () => {
-  const data = useLoaderData() as GetFileClientRes;
+  const initialFile = useLoaderData() as InitialFile;
 
   return (
     <RecoilRoot>
-      <QuadraticApp fileFromServer={data} />
+      <QuadraticApp initialFile={initialFile} />
     </RecoilRoot>
   );
 };
