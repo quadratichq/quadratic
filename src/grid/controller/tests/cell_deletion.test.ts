@@ -1,9 +1,9 @@
-import { SheetController } from '../sheetController';
 import { Cell } from '../../../schemas';
+import { webWorkers } from '../../../web-workers/webWorkers';
+import { DeleteCells } from '../../actions/DeleteCells';
 import { updateCellAndDCells } from '../../actions/updateCellAndDCells';
 import { GetCellsDBSetSheet } from '../../sheet/Cells/GetCellsDB';
-import { DeleteCells } from '../../actions/DeleteCells';
-import { webWorkers } from '../../../web-workers/webWorkers';
+import { SheetController } from '../sheetController';
 
 jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
 
@@ -183,7 +183,7 @@ test('SheetController - delete cell and array cells', async () => {
 
   const after_undo_code_cell = sc.sheet.grid.getNakedCells(0, 0, 0, 0);
   expect(after_undo_code_cell[0]?.value).toBe('1');
-  expect(after_undo_code_cell[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]');
+  expect(after_undo_code_cell[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
   expect(after_undo_code_cell[0]?.evaluation_result?.std_out).toBe('');
   expect(after_undo_code_cell[0]?.last_modified).toBeDefined();
   expect(after_undo_code_cell[0]?.type).toBe('PYTHON');
