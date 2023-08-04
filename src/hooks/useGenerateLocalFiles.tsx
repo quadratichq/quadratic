@@ -339,7 +339,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
     //     })
     //     .sort((a, b) => b.modified - a.modified)
     // );
-  }, [currentFileContents, sheetController]);
+  }, [currentFileContents]);
 
   useEffect(() => {
     sheetController.saveLocalFiles = save;

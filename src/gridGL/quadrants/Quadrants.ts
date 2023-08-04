@@ -2,7 +2,6 @@ import { Container, Rectangle } from 'pixi.js';
 import { debugShowCacheFlag, debugShowCellsForDirtyQuadrants, debugSkipQuadrantRendering } from '../../debugFlags';
 import { CellRectangle } from '../../grid/sheet/CellRectangle';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { Cells } from '../UI/cells/Cells';
 import { intersects } from '../helpers/intersects';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
@@ -24,15 +23,14 @@ export class Quadrants extends Container {
 
   // used to render cells in Quadrant
   container: Container;
-  cells: Cells;
 
   constructor(app: PixiApp) {
     super();
     this.app = app;
     this.quadrants = new Map();
     this.container = new Container();
-    this.cells = this.container.addChild(new Cells(app));
-    this.container.addChildAt(this.cells.cellsBackground, 0);
+    // this.cells = this.container.addChild(new Cells(app));
+    // this.container.addChildAt(this.cells.cellsBackground, 0);
   }
 
   static getKey(x: number, y: number): string {
