@@ -20,9 +20,9 @@ export function convertTintToArray(color: number): [number, number, number, numb
     s = '0' + s;
   }
   return [
-    parseInt(s.substring(0, 1), 16) / 256,
-    parseInt(s.substring(2, 3), 16) / 256,
-    parseInt(s.substring(4, 5), 16) / 256,
+    parseInt(s.substring(0, 2), 16) / 256,
+    parseInt(s.substring(2, 4), 16) / 256,
+    parseInt(s.substring(4, 6), 16) / 256,
     1,
   ];
 }
