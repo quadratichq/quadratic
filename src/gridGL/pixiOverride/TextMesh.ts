@@ -16,6 +16,7 @@ export interface PageMeshData {
   uvs?: Float32Array;
   indices?: Uint16Array;
 }
+
 export interface CharRenderData {
   texture: Texture;
   line: number;
