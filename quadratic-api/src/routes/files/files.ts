@@ -21,7 +21,7 @@ const file_rate_limiter = rateLimit({
 
 const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
-const validateFileName = () => body('name').optional().isString().not().isEmpty();
+const validateFileName = () => body('name').isString().not().isEmpty();
 const validateFileVersion = () => body('version').isString().not().isEmpty();
 type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
 
@@ -139,7 +139,7 @@ files_router.post(
   fileMiddleware,
   validateFileContents().optional(),
   validateFileVersion().optional(),
-  validateFileName(),
+  validateFileName().optional(),
   async (req: Request, res: Response) => {
     if (!req.file || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
@@ -245,8 +245,7 @@ files_router.post(
   validateFileVersion(),
   validateFileName(),
   async (req: Request, res) => {
-    // POST creates a new file called "Untitled"
-    // You can optionally provide a name and contents in the request body
+    // POST creates a new file with the provided name, contents, and version
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -257,18 +256,12 @@ files_router.post(
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
-    // Create a new file in the database
-    // use name and contents from request body
-    let name = 'Untitled';
-    if (req.body.name !== undefined) {
-      name = req.body.name;
-    }
     const contents = Buffer.from(req.body.contents, 'utf8');
 
     const file = await dbClient.file.create({
       data: {
         ownerUserId: req.user.id,
-        name: name,
+        name: req.body.name,
         contents: contents,
         version: req.body.version,
       },

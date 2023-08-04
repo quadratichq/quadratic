@@ -5,6 +5,16 @@ import { authClient } from '../auth';
 import { GridFile, GridFileSchema } from '../schemas';
 import { GetFileRes, GetFilesRes, PostFileContentsReq, PostFileNameReq, PostFilesReq } from './types';
 
+const DEFAULT_FILE: GridFile = {
+  cells: [],
+  formats: [],
+  columns: [],
+  rows: [],
+  borders: [],
+  cell_dependency: '',
+  version: GridFileSchema.shape.version.value,
+};
+
 const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
 
 class APIClientSingleton {
@@ -56,8 +66,6 @@ class APIClientSingleton {
 
   // Fetch a file from the DB
   async getFile(id: string): Promise<GetFileRes | undefined> {
-    if (!API_URL) return;
-
     try {
       const base_url = this.getAPIURL();
       const response = await fetch(`${base_url}/v0/files/${id}`, {
@@ -82,7 +90,6 @@ class APIClientSingleton {
   }
 
   async deleteFile(id: string): Promise<boolean> {
-    if (!API_URL) return false;
     mixpanel.track('[Files].deleteFile', { id });
 
     try {
@@ -178,27 +185,17 @@ class APIClientSingleton {
   }
 
   /** Creates a new file and returns the new file's uuid */
-  async createFile(name?: string, contents?: string): Promise<string | undefined> {
-    if (!API_URL) return;
+  async createFile(
+    body: PostFilesReq = {
+      name: 'Untitled',
+      contents: JSON.stringify(DEFAULT_FILE),
+      version: DEFAULT_FILE.version,
+    }
+  ): Promise<string | undefined> {
     mixpanel.track('[Files].newFile');
-
-    const defaultContents: GridFile = {
-      cells: [],
-      formats: [],
-      columns: [],
-      rows: [],
-      borders: [],
-      cell_dependency: '',
-      version: GridFileSchema.shape.version.value,
-    };
 
     try {
       const base_url = this.getAPIURL();
-
-      const body: PostFilesReq = {
-        name,
-        contents: contents ? contents : JSON.stringify(defaultContents),
-      };
 
       const response = await fetch(`${base_url}/v0/files/`, {
         method: 'POST',

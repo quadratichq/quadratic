@@ -125,6 +125,7 @@ export const Component = () => {
                   let formData = new FormData();
                   formData.append('action', 'import');
                   formData.append('name', name);
+                  formData.append('version', validFile.version);
                   formData.append('contents', JSON.stringify(validFile));
                   submit(formData, { method: 'POST' });
                 }}
@@ -171,7 +172,8 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   if (action === 'import') {
     const name = formData.get('name') as string;
     const contents = formData.get('contents') as string;
-    const uuid = await apiClientSingleton.createFile(name, contents);
+    const version = formData.get('version') as string;
+    const uuid = await apiClientSingleton.createFile({ name, contents, version });
 
     mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
 

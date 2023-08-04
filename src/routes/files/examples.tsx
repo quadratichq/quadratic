@@ -48,7 +48,10 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionDat
     .then((res) => res.text())
     .then((contents) => {
       const file = validateAndUpgradeGridFile(contents);
-      return apiClientSingleton.createFile(name, JSON.stringify(file));
+      if (!file) {
+        throw new Error('Failed to create a new file because the example files are corrupt.');
+      }
+      return apiClientSingleton.createFile({ name, contents: JSON.stringify(file), version: file.version });
     })
     .catch((err) => {
       console.error(err);
