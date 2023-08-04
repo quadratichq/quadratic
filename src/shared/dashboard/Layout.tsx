@@ -122,7 +122,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
       component="nav"
       sx={{
         px: theme.spacing(2),
-        pt: theme.spacing(0.5),
+        pt: theme.spacing(1.5),
         pb: theme.spacing(1),
         display: 'flex',
         justifyContent: 'space-between',
@@ -135,11 +135,13 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <Box sx={sidebarLinkStyles}>
-          <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <QuadraticLogo />
-          </div>
-          <QuadraticLogotype fill={theme.palette.mode === 'light' ? colors.quadraticFifth : '#fff'} />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <SidebarNavLink to="/" style={sidebarLinkStyles}>
+            <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <QuadraticLogo />
+            </div>
+            <QuadraticLogotype fill={theme.palette.mode === 'light' ? colors.quadraticFifth : '#fff'} />
+          </SidebarNavLink>
 
           <Box sx={{ marginLeft: 'auto', [theme.breakpoints.up('md')]: { display: 'none' } }}>
             <IconButton onClick={() => handleDrawerToggle()}>
