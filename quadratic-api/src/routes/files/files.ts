@@ -1,11 +1,11 @@
-import express, { NextFunction, Response } from 'express';
-import { Request } from '../../types/Request';
-import { validateAccessToken } from '../../middleware/auth';
-import rateLimit from 'express-rate-limit';
-import dbClient from '../../dbClient';
-import { userMiddleware } from '../../middleware/user';
-import { body, validationResult, param } from 'express-validator';
 import { File, User } from '@prisma/client';
+import express, { NextFunction, Response } from 'express';
+import rateLimit from 'express-rate-limit';
+import { body, param, validationResult } from 'express-validator';
+import dbClient from '../../dbClient';
+import { validateAccessToken } from '../../middleware/auth';
+import { userMiddleware } from '../../middleware/user';
+import { Request } from '../../types/Request';
 
 const files_router = express.Router();
 
@@ -20,8 +20,9 @@ const file_rate_limiter = rateLimit({
 });
 
 const validateUUID = () => param('uuid').isUUID(4);
-const validateFileContents = () => body('contents').isString();
-const validateFileName = () => body('name').optional().isString();
+const validateFileContents = () => body('contents').isString().not().isEmpty();
+const validateFileName = () => body('name').optional().isString().not().isEmpty();
+const validateFileVersion = () => body('version').isString().not().isEmpty();
 type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
 
 const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
@@ -137,6 +138,7 @@ files_router.post(
   userMiddleware,
   fileMiddleware,
   validateFileContents().optional(),
+  validateFileVersion().optional(),
   validateFileName(),
   async (req: Request, res: Response) => {
     if (!req.file || !req.user) {
@@ -156,6 +158,10 @@ files_router.post(
 
     // Update the contents
     if (req.body.contents !== undefined) {
+      if (req.body.version !== undefined) {
+        return res.status(400).json({ error: { message: 'Updating `contents` requires `version` in body' } });
+      }
+
       const contents = Buffer.from(req.body.contents, 'utf-8');
       await dbClient.file.update({
         where: {
@@ -164,8 +170,7 @@ files_router.post(
         data: {
           contents,
           updated_date: new Date(),
-          // TODO this needs to be pulled from body.contents if that is posted
-          version: 'unknown',
+          version: req.body.version,
           times_updated: {
             increment: 1,
           },
@@ -182,7 +187,6 @@ files_router.post(
         data: {
           name: req.body.name,
           updated_date: new Date(),
-          version: 'unknown',
           times_updated: {
             increment: 1,
           },
@@ -238,6 +242,7 @@ files_router.post(
   file_rate_limiter,
   userMiddleware,
   validateFileContents(),
+  validateFileVersion(),
   validateFileName(),
   async (req: Request, res) => {
     // POST creates a new file called "Untitled"
@@ -265,6 +270,7 @@ files_router.post(
         ownerUserId: req.user.id,
         name: name,
         contents: contents,
+        version: req.body.version,
       },
       select: {
         uuid: true,

@@ -299,7 +299,7 @@ describe('CREATE - POST /v0/files/ with no auth', () => {
   });
 });
 
-describe('CREATE - POST /v0/files/ with auth (no file name, no contents)', () => {
+describe('CREATE - POST /v0/files/ with auth (no file name, no contents, no version)', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .post('/v0/files/')
@@ -308,20 +308,16 @@ describe('CREATE - POST /v0/files/ with auth (no file name, no contents)', () =>
       .expect('Content-Type', /json/)
       .expect(400);
 
-    expect(res.body).toMatchObject({
-      errors: [
-        {
-          type: 'field',
-          msg: 'Invalid value',
-          path: 'contents',
-          location: 'body',
-        },
-      ],
-    });
+    expect(res.body.errors).toEqual([
+      { location: 'body', msg: 'Invalid value', path: 'contents', type: 'field' },
+      { location: 'body', msg: 'Invalid value', path: 'contents', type: 'field' },
+      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
+      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
+    ]);
   });
 });
 
-describe('CREATE - POST /v0/files/ with auth (file name, no contents)', () => {
+describe('CREATE - POST /v0/files/ with auth (file name, no contents, no version)', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .post('/v0/files/')
@@ -331,24 +327,37 @@ describe('CREATE - POST /v0/files/ with auth (file name, no contents)', () => {
       .expect('Content-Type', /json/)
       .expect(400);
 
-    expect(res.body).toMatchObject({
-      errors: [
-        {
-          type: 'field',
-          msg: 'Invalid value',
-          path: 'contents',
-          location: 'body',
-        },
-      ],
-    });
+    expect(res.body.errors).toEqual([
+      { location: 'body', msg: 'Invalid value', path: 'contents', type: 'field' },
+      { location: 'body', msg: 'Invalid value', path: 'contents', type: 'field' },
+      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
+      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
+    ]);
   });
 });
 
-describe('CREATE - POST /v0/files/ with auth (no file name, contents)', () => {
+describe('CREATE - POST /v0/files/ with auth (no file name, contents, no version)', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .post('/v0/files/')
       .send({ contents: 'new_file_contents' })
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(res.body.errors).toEqual([
+      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
+      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
+    ]);
+  });
+});
+
+describe('CREATE - POST /v0/files/ with auth (no file name, contents, with version)', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/')
+      .send({ contents: 'new_file_contents', version: '1.0.0' })
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
@@ -372,14 +381,32 @@ describe('CREATE - POST /v0/files/ with auth (no file name, contents)', () => {
     expect(res2.body.permission).toEqual('OWNER');
     expect(res2.body.file.name).toEqual('Untitled');
     expect(res2.body.file.contents).toEqual('new_file_contents');
+    expect(res2.body.file.version).toEqual('1.0.0');
   });
 });
 
-describe('CREATE - POST /v0/files/ with auth (file name, contents)', () => {
+describe('CREATE - POST /v0/files/ with auth (file name, contents, no version)', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .post('/v0/files/')
       .send({ name: 'new_file_with_name', contents: 'new_file_contents' })
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(res.body.errors).toEqual([
+      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
+      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
+    ]);
+  });
+});
+
+describe('CREATE - POST /v0/files/ with auth (file name, contents, version)', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/')
+      .send({ name: 'new_file_with_name', contents: 'new_file_contents', version: '1.0.0' })
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
@@ -403,6 +430,7 @@ describe('CREATE - POST /v0/files/ with auth (file name, contents)', () => {
     expect(res2.body.permission).toEqual('OWNER');
     expect(res2.body.file.name).toEqual('new_file_with_name');
     expect(res2.body.file.contents).toEqual('new_file_contents');
+    expect(res2.body.file.version).toEqual('1.0.0');
   });
 });
 
