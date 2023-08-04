@@ -1,5 +1,6 @@
 import { Point, Rectangle } from 'pixi.js';
 import { Bounds } from '../../grid/sheet/Bounds';
+import { GridSparseRust } from '../../grid/sheet/GridSparseRust';
 import { SheetRust } from '../../grid/sheet/SheetRust';
 import { ContainerBitmapText } from '../pixiOverride/ContainerBitmapText';
 import { CellLabel } from './CellLabel';
@@ -10,24 +11,32 @@ import { CellHash, CellRust, CellsHashBounds } from './CellsTypes';
 
 // holds all CellLabels within a sheet
 export class CellsLabels extends ContainerBitmapText implements CellHash {
-  private sheet: SheetRust;
+  private cellsHash: CellsHash;
 
   AABB?: Rectangle;
   hashes: Set<CellsHash>;
   oldBounds?: CellsHashBounds;
 
-  constructor(sheet: SheetRust) {
+  constructor(cellsHash: CellsHash) {
     super();
-    this.sheet = sheet;
+    this.cellsHash = cellsHash;
     this.hashes = new Set();
   }
 
-  create(cells: CellRust[]): CellLabel[] {
-    return cells.map((cell) => {
+  get sheet(): SheetRust {
+    return this.cellsHash.sheet;
+  }
+
+  create(cells?: CellRust[]): CellLabel[] {
+    this.cellLabels = [];
+    cells = cells ?? (this.sheet.grid as GridSparseRust).getCellList(this.cellsHash.AABB);
+    const cellLabels = cells.map((cell) => {
       const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
       const cellLabel = this.addLabel(new CellLabel(cell, rectangle));
       return cellLabel;
     });
+    this.updateText();
+    return cellLabels;
   }
 
   private getClipRight(label: CellLabel, textWidth: number): number | undefined {

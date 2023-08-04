@@ -83,6 +83,7 @@ export class TextMesh extends Container {
       const xPos = this.position.x + offset * scale;
       const yPos = this.position.y + char.position.y * scale;
       const texture = char.texture;
+      if (this.tint) console.log('found 1');
       const key = `${texture.baseTexture.uid}-${this.tint ?? 0}`;
       const pageMesh = pagesMeshData[key];
       const textureFrame = texture.frame;

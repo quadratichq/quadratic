@@ -1,6 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { CellFill, CellRust } from '../../gridGL/cells/CellsTypes';
 import { cellHasContent } from '../../gridGL/helpers/selectCells';
+import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Coordinate, MinMax } from '../../gridGL/types/size';
 import { Grid, Pos, Rect, SheetId } from '../../quadratic-core/quadratic_core';
@@ -9,6 +10,7 @@ import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
 import { GridSparse } from './GridSparse';
 import { Sheet } from './Sheet';
+import { SheetRust } from './SheetRust';
 
 export interface CellAndFormat {
   cell?: Cell;
@@ -83,7 +85,6 @@ export class GridSparseRust extends GridSparse {
         if (format.fillColor !== undefined && format.fillColor !== original.fillColor) {
           this.grid.setCellFillColor(this.sheetId, region, format.fillColor);
         }
-        console.log(format.textColor, original.textColor);
         if (format.textColor !== undefined && format.textColor !== original.textColor) {
           this.grid.setCellTextColor(this.sheetId, region, format.textColor);
         }
@@ -99,6 +100,12 @@ export class GridSparseRust extends GridSparse {
       this.quadrants.add(this.getKey(format.x, format.y));
     });
     this.grid.recalculateBounds(this.sheetId);
+
+    pixiAppEvents.changeCells(
+      this.sheet as SheetRust,
+      formats.map((format) => ({ x: format.x, y: format.y })),
+      { labels: true }
+    );
   }
 
   clearFormat(formats: CellFormat[]): void {
@@ -430,10 +437,5 @@ export class GridSparseRust extends GridSparse {
       y += delta;
     }
     return yStart;
-  }
-
-  exportToFile(): Sheet[] {
-    const file = this.grid.exportToFile().sheets;
-    return [];
   }
 }

@@ -1,6 +1,7 @@
 import { Container, Rectangle } from 'pixi.js';
 import { SheetRust } from '../../grid/sheet/SheetRust';
 import { PixiApp } from '../pixiApp/PixiApp';
+import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
@@ -34,5 +35,13 @@ export class CellsSheets extends Container<CellsSheet> {
   cull(bounds: Rectangle): void {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
     this.current.show(bounds);
+  }
+
+  changeCells(sheet: SheetRust, cells: Coordinate[], options: { labels?: boolean; background?: boolean }) {
+    const cellsSheet = this.children.find((search) => search.sheet.id === sheet.id);
+    if (!cellsSheet) {
+      throw new Error('Expected to find sheet in changeCells');
+    }
+    cellsSheet.changeCells(cells, options);
   }
 }

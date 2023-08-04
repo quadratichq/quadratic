@@ -78,7 +78,6 @@ export class ContainerBitmapText extends Container {
         const key = `${baseTextureUid}-${cellLabel.tint ?? 0}`;
         let pageMeshData = this.pagesMeshData[key];
         if (!pageMeshData) {
-          console.log(key);
           const geometry = new MeshGeometry();
           let material: MeshMaterial;
           let meshBlendMode: BLEND_MODES;
