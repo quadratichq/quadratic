@@ -1,5 +1,5 @@
 import { Container, Rectangle } from 'pixi.js';
-import { SheetRust } from '../../grid/sheet/SheetRust';
+import { Sheet } from '../../grid/sheet/Sheet';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
@@ -16,7 +16,7 @@ export class CellsSheets extends Container<CellsSheet> {
   create(): void {
     this.removeChildren();
     this.app.sheet_controller.sheets.forEach((sheet) => {
-      this.addChild(new CellsSheet(sheet as SheetRust));
+      this.addChild(new CellsSheet(sheet));
     });
     this.show(this.app.sheet_controller.sheet.id);
   }
@@ -37,7 +37,7 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current.show(bounds);
   }
 
-  changeCells(sheet: SheetRust, cells: Coordinate[], options: { labels?: boolean; background?: boolean }) {
+  changeCells(sheet: Sheet, cells: Coordinate[], options: { labels?: boolean; background?: boolean }) {
     const cellsSheet = this.children.find((search) => search.sheet.id === sheet.id);
     if (!cellsSheet) {
       throw new Error('Expected to find sheet in changeCells');

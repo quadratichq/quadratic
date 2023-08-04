@@ -1,14 +1,13 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { debugShowCellsHashBoxes } from '../../debugFlags';
-import { GridSparseRust } from '../../grid/sheet/GridSparseRust';
-import { SheetRust } from '../../grid/sheet/SheetRust';
+import { Sheet } from '../../grid/sheet/Sheet';
 import { Pos, Rect } from '../../quadratic-core/quadratic_core';
 import { CellsBackground } from './CellsBackground';
 import { CellsLabels } from './CellsLabels';
 import { CellFill, CellHash, CellRust, sheetHashHeight, sheetHashWidth } from './CellsTypes';
 
 export class CellsHash extends Container {
-  sheet: SheetRust;
+  sheet: Sheet;
 
   private entries: Set<CellHash>;
   private test?: Graphics;
@@ -30,7 +29,7 @@ export class CellsHash extends Container {
     return `${x},${y}`;
   }
 
-  constructor(x: number, y: number, options: { sheet: SheetRust; cells?: CellRust[]; background?: CellFill[] }) {
+  constructor(x: number, y: number, options: { sheet: Sheet; cells?: CellRust[]; background?: CellFill[] }) {
     super();
     this.sheet = options.sheet;
     this.key = CellsHash.getKey(x, y);
@@ -87,7 +86,7 @@ export class CellsHash extends Container {
 
   changeCells(options: { labels?: boolean; background?: boolean }): void {
     if (options.labels) {
-      const cells = (this.sheet.grid as GridSparseRust).getCellList(this.rect);
+      const cells = this.sheet.grid.getCellList(this.rect);
       this.cellsLabels.create(cells);
     }
   }

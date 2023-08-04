@@ -1,7 +1,6 @@
 import { Point, Rectangle } from 'pixi.js';
 import { Bounds } from '../../grid/sheet/Bounds';
-import { GridSparseRust } from '../../grid/sheet/GridSparseRust';
-import { SheetRust } from '../../grid/sheet/SheetRust';
+import { Sheet } from '../../grid/sheet/Sheet';
 import { ContainerBitmapText } from '../pixiOverride/ContainerBitmapText';
 import { CellLabel } from './CellLabel';
 import { CellsHash } from './CellsHash';
@@ -23,13 +22,13 @@ export class CellsLabels extends ContainerBitmapText implements CellHash {
     this.hashes = new Set();
   }
 
-  get sheet(): SheetRust {
+  get sheet(): Sheet {
     return this.cellsHash.sheet;
   }
 
   create(cells?: CellRust[]): CellLabel[] {
     this.cellLabels = [];
-    cells = cells ?? (this.sheet.grid as GridSparseRust).getCellList(this.cellsHash.AABB);
+    cells = cells ?? this.sheet.grid.getCellList(this.cellsHash.AABB);
     const cellLabels = cells.map((cell) => {
       const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
       const cellLabel = this.addLabel(new CellLabel(cell, rectangle));

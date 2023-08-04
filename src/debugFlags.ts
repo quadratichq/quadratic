@@ -20,7 +20,6 @@ export const debugShowCacheFlag = debug && true;
 // -------------
 // Feature Flags
 // -------------
-export const debugUseRustSheetController = debug && true;
 
 // ------------
 // Transactions

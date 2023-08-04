@@ -6,7 +6,6 @@ import { GridFile, SheetSchema } from '../../schemas';
 import { generateKeyBetween } from '../../utils/fractionalIndexing';
 import { Sheet } from '../sheet/Sheet';
 import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
-import { SheetRust } from '../sheet/SheetRust';
 import { StatementRunner } from './runners/runner';
 import { Statement } from './statement';
 import { Transaction } from './transaction';
@@ -23,20 +22,15 @@ export class SheetController {
   undo_stack: Transaction[];
   redo_stack: Transaction[];
 
-  constructor(sheets?: Sheet[]) {
-    this.sheets = [new Sheet(undefined, 'A0')];
-    if (sheets === undefined) {
-      this.sheets = [new Sheet(undefined, generateKeyBetween(null, null))];
-    } else {
-      this.sheets = sheets;
-    }
+  constructor() {
+    this.grid = new Grid();
+    this.sheets = [new Sheet(this.grid, 0, undefined, generateKeyBetween(null, null))];
     this._current = this.sheets[0].id;
     this.undo_stack = [];
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
     this.transaction_in_progress_reverse = undefined;
     this.saveLocalFiles = undefined;
-    this.grid = new Grid();
   }
 
   get current(): string {
@@ -53,7 +47,7 @@ export class SheetController {
     this.grid = Grid.newFromFile(grid);
     this.sheets = [];
     grid.sheets.forEach((sheet, index) => {
-      this.sheets.push(new SheetRust(this.grid, index, sheet.name, sheet.order));
+      this.sheets.push(new Sheet(this.grid, index, sheet.name, sheet.order));
     });
     this.sortSheets();
     this._current = this.sheets[0].id;
@@ -62,26 +56,27 @@ export class SheetController {
     window.dispatchEvent(new CustomEvent('change-sheet'));
   }
 
-  loadSheets(sheets: SheetSchema[]): void {
-    this.sheets = [];
-    sheets.forEach((sheetSchema) => {
-      const sheet = new Sheet(undefined, sheetSchema.order);
-      sheet.load_file(sheetSchema);
-      this.sheets.push(sheet);
-    });
-    if (this.sheets.length === 0) {
-      this.sheets.push(new Sheet(undefined, generateKeyBetween(null, null)));
-    }
-    // need to set internal value to avoid set current call
-    this.sortSheets();
-    this._current = this.sheets[0].id;
+  // loadSheets(sheets: SheetSchema[]): void {
+  //   this.sheets = [];
+  //   sheets.forEach((sheetSchema) => {
+  //     const sheet = new Sheet(undefined, sheetSchema.order);
+  //     sheet.load_file(sheetSchema);
+  //     this.sheets.push(sheet);
+  //   });
+  //   if (this.sheets.length === 0) {
+  //     this.sheets.push(new Sheet(undefined, generateKeyBetween(null, null)));
+  //   }
+  //   // need to set internal value to avoid set current call
+  //   this.sortSheets();
+  //   this._current = this.sheets[0].id;
 
-    // used by SheetBar to update current sheet tab
-    window.dispatchEvent(new CustomEvent('change-sheet'));
-  }
+  //   // used by SheetBar to update current sheet tab
+  //   window.dispatchEvent(new CustomEvent('change-sheet'));
+  // }
 
   export(): SheetSchema[] {
-    return this.sheets.map((sheet) => sheet.export_file());
+    const schema = this.grid.exportToFile();
+    return schema.sheets;
   }
 
   get sheet(): Sheet {
@@ -119,19 +114,21 @@ export class SheetController {
     } else {
       order = generateKeyBetween(last.order, null);
     }
-    const sheet = new Sheet(`Sheet${i}`, order);
+    const sheet = new Sheet(this.grid, this.sheets.length, `Sheet${i}`, order);
     return sheet;
   }
 
   createDuplicateSheet(): Sheet {
-    let i = 0;
-    while (this.sheetNameExists(`Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim())) {
-      i++;
-    }
-    const name = `Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim();
-    const next = this.getNextSheet(this.sheet.order);
-    const sheet = new Sheet(name, generateKeyBetween(this.sheet.order, next?.order));
-    return sheet;
+    // let i = 0;
+    // while (this.sheetNameExists(`Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim())) {
+    //   i++;
+    // }
+    // const name = `Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim();
+    // const next = this.getNextSheet(this.sheet.order);
+    // const sheet = new Sheet(name, generateKeyBetween(this.sheet.order, next?.order));
+    // return sheet;
+    console.warn('todo...');
+    return new Sheet(this.grid, 0, undefined, generateKeyBetween(null, null));
   }
 
   addSheet(sheet: Sheet): void {

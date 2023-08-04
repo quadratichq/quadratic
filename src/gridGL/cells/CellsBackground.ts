@@ -1,6 +1,5 @@
 import { ParticleContainer, Sprite, Texture } from 'pixi.js';
-import { GridSparseRust } from '../../grid/sheet/GridSparseRust';
-import { SheetRust } from '../../grid/sheet/SheetRust';
+import { Sheet } from '../../grid/sheet/Sheet';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { CellsHash } from './CellsHash';
 import { CellFill, sheetHashHeight, sheetHashWidth } from './CellsTypes';
@@ -13,13 +12,13 @@ export class CellsBackground extends ParticleContainer {
     this.cellsHash = cellsHash;
   }
 
-  get sheet(): SheetRust {
+  get sheet(): Sheet {
     return this.cellsHash.sheet;
   }
 
   create(background?: CellFill[]): void {
     this.removeChildren();
-    background = background ?? (this.sheet.grid as GridSparseRust).getCellBackground(this.cellsHash.AABB);
+    background = background ?? this.sheet.grid.getCellBackground(this.cellsHash.AABB);
     background.forEach((fill) => {
       const sprite = this.addChild(new Sprite(Texture.WHITE));
       sprite.tint = convertColorStringToTint(fill.color);

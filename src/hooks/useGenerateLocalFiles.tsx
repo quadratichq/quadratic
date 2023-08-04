@@ -7,7 +7,7 @@ import { v4 as uuid } from 'uuid';
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
-import { debugShowFileIO, debugUseRustSheetController } from '../debugFlags';
+import { debugShowFileIO } from '../debugFlags';
 import { SheetController } from '../grid/controller/sheetController';
 import { pixiAppEvents } from '../gridGL/pixiApp/PixiAppEvents';
 import { downloadFile } from '../helpers/downloadFile';
@@ -82,11 +82,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   const resetSheet = useCallback(
     (grid: GridFile) => {
       sheetController.clear();
-      if (debugUseRustSheetController) {
-        sheetController.loadFile(grid);
-      } else {
-        sheetController.loadSheets(grid.sheets);
-      }
+      sheetController.loadFile(grid);
       pixiAppEvents.rebuild();
       const searchParams = new URLSearchParams(window.location.search);
       // If `file` is in there from an initial page load, remove it
@@ -324,28 +320,25 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
       throw new Error('Expected state `currentFileContents` to be defined when saving a file');
     }
 
-    if (debugUseRustSheetController) {
-      console.log('Unable to save rust file');
-      return;
-    }
+    console.log('Unable to save rust file');
 
-    const modified = Date.now();
-    const exported = sheetController.grid.exportToFile();
-    const updatedFile = { ...currentFileContents, sheets: exported.sheets, modified };
-    setCurrentFileContents(updatedFile);
-    setFileList((oldFileList) =>
-      oldFileList
-        .map((entry) => {
-          if (entry.id === currentFileContents?.id) {
-            return {
-              ...entry,
-              modified,
-            };
-          }
-          return entry;
-        })
-        .sort((a, b) => b.modified - a.modified)
-    );
+    // const modified = Date.now();
+    // const exported = sheetController.grid.exportToFile();
+    // const updatedFile = { ...currentFileContents, sheets: exported.sheets, modified };
+    // setCurrentFileContents(updatedFile);
+    // setFileList((oldFileList) =>
+    //   oldFileList
+    //     .map((entry) => {
+    //       if (entry.id === currentFileContents?.id) {
+    //         return {
+    //           ...entry,
+    //           modified,
+    //         };
+    //       }
+    //       return entry;
+    //     })
+    //     .sort((a, b) => b.modified - a.modified)
+    // );
   }, [currentFileContents, sheetController]);
 
   useEffect(() => {

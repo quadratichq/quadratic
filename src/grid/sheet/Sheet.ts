@@ -2,7 +2,8 @@ import { Rectangle } from 'pixi.js';
 import { v4 as uuid } from 'uuid';
 import { intersects } from '../../gridGL/helpers/intersects';
 import { Coordinate } from '../../gridGL/types/size';
-import { Cell, CellFormat, SheetSchema } from '../../schemas';
+import { Grid } from '../../quadratic-core/quadratic_core';
+import { Cell, CellFormat } from '../../schemas';
 import { CellDependencyManager } from './CellDependencyManager';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
@@ -29,17 +30,19 @@ export class Sheet {
   // cell calculation dependency
   cell_dependency: CellDependencyManager;
 
-  constructor(name: string | undefined, order: string, copyFrom?: Sheet) {
+  constructor(grid: Grid, index: number, name: string | undefined, order: string, copyFrom?: Sheet) {
     this.gridOffsets = new GridOffsets();
-    this.grid = new GridSparse(this);
+    this.grid = new GridSparse(grid, index, this);
     this.borders = new GridBorders(this.gridOffsets);
     this.render_dependency = new GridRenderDependency();
     this.array_dependency = new GridRenderDependency();
     this.cell_dependency = new CellDependencyManager();
-    if (copyFrom) {
-      const save = copyFrom.export_file();
-      this.load_file(save);
-    }
+
+    // todo
+    // if (copyFrom) {
+    //   const save = copyFrom.export_file();
+    //   this.load_file(save);
+    // }
     this.id = uuid();
     this.name = name ?? 'Sheet';
     this.order = order;
@@ -48,41 +51,17 @@ export class Sheet {
 
   // for testing
   clear() {
-    this.gridOffsets = new GridOffsets();
-    this.grid = new GridSparse(this);
-    this.borders = new GridBorders(this.gridOffsets);
-    this.render_dependency = new GridRenderDependency();
-    this.array_dependency = new GridRenderDependency();
-    this.cell_dependency = new CellDependencyManager();
-    this.cursor = new SheetCursor(this);
+    // this.gridOffsets = new GridOffsets();
+    // this.grid = new GridSparse(this);
+    // this.borders = new GridBorders(this.gridOffsets);
+    // this.render_dependency = new GridRenderDependency();
+    // this.array_dependency = new GridRenderDependency();
+    // this.cell_dependency = new CellDependencyManager();
+    // this.cursor = new SheetCursor(this);
   }
 
   rename(name: string) {
     this.name = name;
-  }
-
-  load_file(sheet: SheetSchema): void {
-    this.name = sheet.name;
-    this.color = sheet.color;
-    this.gridOffsets.populate(sheet.columns, sheet.rows);
-    this.grid.populate(sheet.cells, sheet.formats);
-    this.borders.populate(sheet.borders);
-    this.cell_dependency.loadFromString(sheet.cell_dependency);
-  }
-
-  export_file(): SheetSchema {
-    const { cells, formats } = this.grid.getArrays();
-    return {
-      name: this.name,
-      color: this.color,
-      order: this.order,
-      columns: this.gridOffsets.getColumnsArray(),
-      rows: this.gridOffsets.getRowsArray(),
-      cells,
-      formats,
-      borders: this.borders.getArray(),
-      cell_dependency: this.cell_dependency.exportToString(),
-    };
   }
 
   protected copyCell(cell: Cell | undefined): Cell | undefined {
@@ -205,7 +184,7 @@ export class Sheet {
     );
   }
 
-  debugGetCells(): Cell[] {
-    return this.grid.getAllCells();
+  recalculateBounds(): void {
+    this.grid.recalculateBounds();
   }
 }

@@ -1,14 +1,13 @@
 import { Container, Rectangle } from 'pixi.js';
 import { debugShowCellsSheetCulling } from '../../debugFlags';
-import { GridSparseRust } from '../../grid/sheet/GridSparseRust';
-import { SheetRust } from '../../grid/sheet/SheetRust';
+import { Sheet } from '../../grid/sheet/Sheet';
 import { intersects } from '../helpers/intersects';
 import { Coordinate } from '../types/size';
 import { CellsHash } from './CellsHash';
 import { CellFill, CellHash, CellRust, CellsHashBounds, sheetHashHeight, sheetHashWidth } from './CellsTypes';
 
 export class CellsSheet extends Container {
-  sheet: SheetRust;
+  sheet: Sheet;
 
   // individual hash containers (eg, CellsBackground, CellsArray)
   private cellsHashContainer: Container;
@@ -16,7 +15,7 @@ export class CellsSheet extends Container {
   // index into cellsHashContainer
   private cellsHash: Map<string, CellsHash>;
 
-  constructor(sheet: SheetRust) {
+  constructor(sheet: Sheet) {
     super();
     this.sheet = sheet;
     this.cellsHash = new Map();
@@ -33,7 +32,7 @@ export class CellsSheet extends Container {
     return cellsHash;
   }
 
-  protected populate(sheet: SheetRust): void {
+  protected populate(sheet: Sheet): void {
     const bounds = sheet.grid.getGridBounds(false);
     if (bounds) {
       const hashBounds = this.getHashBounds(bounds);
@@ -41,8 +40,8 @@ export class CellsSheet extends Container {
         for (let x = hashBounds.xStart; x <= hashBounds.xEnd; x++) {
           const rect = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
 
-          const cells = (sheet.grid as GridSparseRust).getCellList(rect);
-          const background = (sheet.grid as GridSparseRust).getCellBackground(rect);
+          const cells = sheet.grid.getCellList(rect);
+          const background = sheet.grid.getCellBackground(rect);
           if (cells.length || background.length) {
             this.addHash(x, y, cells, background);
           }

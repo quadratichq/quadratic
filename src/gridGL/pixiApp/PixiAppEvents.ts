@@ -1,6 +1,5 @@
 import { BitmapFont } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { SheetRust } from '../../grid/sheet/SheetRust';
 import { QuadrantChanged } from '../quadrants/Quadrants';
 import { Coordinate } from '../types/size';
 import { PixiApp } from './PixiApp';
@@ -122,7 +121,7 @@ class PixiAppEvents {
     this.app?.cellsSheets.create();
   }
 
-  changeCells(sheet: SheetRust, cells: Coordinate[], options: { labels?: boolean; background?: boolean }): void {
+  changeCells(sheet: Sheet, cells: Coordinate[], options: { labels?: boolean; background?: boolean }): void {
     if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.changeCells');
     this.app.cellsSheets.changeCells(sheet, cells, options);
     this.app.setViewportDirty();

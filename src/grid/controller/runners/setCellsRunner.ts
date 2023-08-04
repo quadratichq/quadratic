@@ -31,7 +31,7 @@ export const SetCellsRunner = (sheetController: SheetController, statement: Stat
   if (cellsToUpdate.length) {
     sheet.grid.updateCells(cellsToUpdate, true);
   }
-  sheet.grid.recalculateBounds();
+  sheet.recalculateBounds();
   pixiAppEvents.quadrantsChanged({ cells: changedCells });
   return {
     type: 'SET_CELLS',

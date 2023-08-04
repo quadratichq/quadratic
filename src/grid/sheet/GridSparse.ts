@@ -1,9 +1,10 @@
 import { Rectangle } from 'pixi.js';
-import { cellHasContent } from '../../gridGL/helpers/selectCells';
+import { CellFill, CellRust } from '../../gridGL/cells/CellsTypes';
+import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Coordinate, MinMax } from '../../gridGL/types/size';
+import { Grid, Pos, Rect, SheetId } from '../../quadratic-core/quadratic_core';
 import { Cell, CellFormat } from '../../schemas';
-import { Bounds } from './Bounds';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
 import { Sheet } from './Sheet';
@@ -15,17 +16,25 @@ export interface CellAndFormat {
 
 /** Stores all cells and format locations */
 export class GridSparse {
-  protected sheet: Sheet;
-  protected cellBounds = new Bounds();
-  protected formatBounds = new Bounds();
-  protected cellFormatBounds = new Bounds();
-  cells = new Map<string, CellAndFormat>();
+  private sheet: Sheet;
+  private sheetId: SheetId;
+  private grid: Grid;
 
   // tracks which quadrants need to render based on GridSparse data
   quadrants = new Set<string>();
 
-  constructor(sheet: Sheet) {
+  constructor(grid: Grid, index: number, sheet: Sheet) {
     this.sheet = sheet;
+    this.grid = grid;
+
+    const sheetId = this.grid.sheetIndexToId(index);
+    if (!sheetId) throw new Error('Expected sheetId to be defined');
+    this.sheetId = sheetId;
+
+    // use to test large sheets
+    // console.time('random');
+    // this.grid.populateWithRandomFloats(this.sheetId, new Rect(new Pos(0, 0), new Pos(100, 10000)));
+    // console.timeEnd('random');
   }
 
   get gridOffsets(): GridOffsets {
@@ -34,34 +43,16 @@ export class GridSparse {
 
   updateCells(cells: Cell[], skipBounds = false): void {
     cells.forEach((cell) => {
-      const update = this.cells.get(this.getKey(cell.x, cell.y));
-      if (update) {
-        update.cell = cell;
+      if (cell.type === 'TEXT') {
+        this.grid.setCellValue(this.sheetId, new Pos(cell.x, cell.y), { type: 'text', value: cell.value });
       } else {
-        this.cells.set(this.getKey(cell.x, cell.y), { cell });
-        this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
+        debugger;
       }
+      this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
     });
     if (!skipBounds) {
-      this.recalculateBounds();
+      this.grid.recalculateBounds(this.sheetId);
     }
-  }
-
-  recalculateBounds(): void {
-    this.cellBounds.clear();
-    this.cellFormatBounds.clear();
-    this.formatBounds.clear();
-    if (this.cells.size === 0) return;
-    this.cells.forEach((cell) => {
-      if (cell.cell) {
-        this.cellBounds.add(cell.cell.x, cell.cell.y);
-        this.cellBounds.add(cell.cell.x, cell.cell.y);
-      }
-      if (cell.format) {
-        this.formatBounds.add(cell.format.x, cell.format.y);
-      }
-    });
-    this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
   }
 
   hasFormatting(format: CellFormat): boolean {
@@ -69,139 +60,200 @@ export class GridSparse {
     return keys.length > 2;
   }
 
-  updateFormat(formats: CellFormat[], skipBoundsCalculation = false): void {
-    let needBoundsCalculation = false;
+  // todo: this should be separated into its components
+  updateFormat(formats: CellFormat[], skipBounds = false): void {
     formats.forEach((format) => {
-      const key = this.getKey(format.x, format.y);
+      const region = new Rect(new Pos(format.x, format.y), new Pos(format.x, format.y));
+      const originalRange = this.grid.getRenderCells(this.sheetId, region);
+      const original = JSON.parse(originalRange)?.[0] ?? {};
       if (this.hasFormatting(format)) {
-        this.cells.set(key, { format });
-        this.formatBounds.add(format.x, format.y);
+        if (format.bold !== undefined && format.bold !== original.bold) {
+          this.grid.setCellBold(this.sheetId, region, !!format.bold);
+        }
+        if (format.italic !== undefined && format.italic !== original.italic) {
+          this.grid.setCellItalic(this.sheetId, region, !!format.italic);
+        }
+        if (format.alignment !== undefined && format.alignment !== original.align) {
+          this.grid.setCellAlign(this.sheetId, region, format.alignment);
+        }
+        if (format.fillColor !== undefined && format.fillColor !== original.fillColor) {
+          this.grid.setCellFillColor(this.sheetId, region, format.fillColor);
+        }
+        if (format.textColor !== undefined && format.textColor !== original.textColor) {
+          this.grid.setCellTextColor(this.sheetId, region, format.textColor);
+        }
+        if (format.textFormat !== undefined && format.textFormat !== original.textFormat) {
+          this.grid.setCellNumericFormat(this.sheetId, region, format.textFormat);
+        }
+        if (format.wrapping !== undefined && format.wrapping !== original.wrapping) {
+          this.grid.setCellWrap(this.sheetId, region, format.textFormat);
+        }
       } else {
-        this.cells.delete(key);
-        if (!skipBoundsCalculation) {
-          needBoundsCalculation ||= this.formatBounds.atBounds(format.x, format.y);
-        }
+        this.grid.clearFormatting(this.sheetId, region);
       }
+      this.quadrants.add(Quadrants.getKey(format.x, format.y));
     });
-    if (needBoundsCalculation && !skipBoundsCalculation) {
-      this.recalculateBounds();
+    if (!skipBounds) {
+      this.grid.recalculateBounds(this.sheetId);
     }
-  }
 
-  clearFormat(formats: CellFormat[]): void {
+    pixiAppEvents.changeCells(
+      this.sheet,
+      formats.map((format) => ({ x: format.x, y: format.y })),
+      { labels: true }
+    );
+  }
+  clearFormat(formats: CellFormat[], skipBounds = false): void {
     formats.forEach((format) => {
-      const key = this.getKey(format.x, format.y);
-      const clear = this.cells.get(key);
-      if (clear) {
-        delete clear.format;
-        if (Object.keys(clear).length === 0) {
-          this.cells.delete(key);
-        }
-      }
+      const region = new Rect(new Pos(format.x, format.y), new Pos(format.x, format.y));
+      this.grid.clearFormatting(this.sheetId, region);
     });
-    this.recalculateBounds();
+    if (!skipBounds) {
+      this.grid.recalculateBounds(this.sheetId);
+    }
   }
 
   deleteCells(cells: Coordinate[], skipBounds = false): void {
     cells.forEach((cell) => {
-      const candf = this.cells.get(this.getKey(cell.x, cell.y));
-      if (candf) {
-        // Delete cell
-        delete candf.cell;
-        // If cell has no format, also delete the key
-        if (candf.format === undefined) {
-          this.cells.delete(this.getKey(cell.x, cell.y));
-        }
-      }
+      const region = new Rect(new Pos(cell.x, cell.y), new Pos(cell.x, cell.y));
+      this.grid.deleteCellValues(this.sheetId, region);
     });
     if (!skipBounds) {
-      this.recalculateBounds();
+      this.grid.recalculateBounds(this.sheetId);
     }
   }
 
   get empty(): boolean {
-    return this.cellFormatBounds.empty;
+    const bounds = this.grid.getGridBounds(this.sheetId, false);
+    return bounds.width === 0 && bounds.height === 0;
   }
 
   clear() {
-    this.cells.clear();
-    this.quadrants.clear();
-    this.cellBounds.clear();
-    this.formatBounds.clear();
-    this.cellFormatBounds.clear();
-  }
-
-  protected getKey(x?: number, y?: number): string {
-    return `${x ?? ''},${y ?? ''}`;
-  }
-
-  populate(cells?: Cell[], formats?: CellFormat[]) {
-    this.clear();
-    if (!cells?.length && !formats?.length) return;
-    cells?.forEach((cell) => {
-      this.cells.set(this.getKey(cell.x, cell.y), { cell });
-      this.quadrants.add(Quadrants.getKey(cell.x, cell.y));
-      this.cellBounds.add(cell.x, cell.y);
-    });
-    formats?.forEach((format) => {
-      const key = this.getKey(format.x, format.y);
-      const cell = this.cells.get(key);
-      if (cell) {
-        cell.format = format;
-      } else {
-        this.cells.set(key, { format });
-      }
-      this.formatBounds.add(format.x, format.y);
-    });
-    this.cellFormatBounds.mergeInto(this.cellBounds, this.formatBounds);
+    // this.cells.clear();
+    // this.quadrants.clear();
+    // this.cellBounds.clear();
+    // this.formatBounds.clear();
+    // this.cellFormatBounds.clear();
   }
 
   get(x: number, y: number): CellAndFormat | undefined {
-    if (this.cellFormatBounds.contains(x, y)) {
-      return this.cells.get(this.getKey(x, y));
+    const json = this.grid.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
+    const data = JSON.parse(json);
+    if (data.length) {
+      return {
+        cell: {
+          x,
+          y,
+          value: data[0].value.toString(),
+          type: 'TEXT',
+        },
+        format: {
+          x,
+          y,
+          bold: data[0].bold,
+          italic: data[0].italic,
+          alignment: data[0].align,
+          fillColor: data[0].fillColor,
+          textColor: data[0].textColor,
+          textFormat: data[0].textFormat,
+          wrapping: data[0].wrapping,
+        },
+      };
     }
   }
 
   getCell(x: number, y: number): Cell | undefined {
-    if (this.cellBounds.contains(x, y)) {
-      return this.cells.get(this.getKey(x, y))?.cell;
-    }
+    const json = this.grid.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
+    const data = JSON.parse(json);
+    return {
+      x,
+      y,
+      value: data[0].value.toString(),
+      type: 'TEXT',
+    };
   }
 
   getFormat(x: number, y: number): CellFormat | undefined {
-    if (this.formatBounds.contains(x, y)) {
-      return this.cells.get(this.getKey(x, y))?.format;
-    }
+    const json = this.grid.getRenderCells(this.sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
+    const data = JSON.parse(json);
+    if (!data[0]) return;
+    return {
+      x,
+      y,
+      bold: data[0].bold,
+      italic: data[0].italic,
+      alignment: data[0].align,
+      fillColor: data[0].fillColor,
+      textColor: data[0].textColor,
+      textFormat: data[0].textFormat,
+      wrapping: data[0].wrapping,
+    };
+  }
+
+  getCellList(rectangle: Rectangle): CellRust[] {
+    const rect = new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
+    const cells = this.grid.getRenderCells(this.sheetId, rect);
+    return JSON.parse(cells);
+  }
+
+  getCellBackground(rectangle: Rectangle): CellFill[] {
+    const rect = new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
+    const background = this.grid.getRenderFills(this.sheetId, rect);
+    return JSON.parse(background);
   }
 
   getCells(rectangle: Rectangle): CellRectangle {
-    return new CellRectangle(rectangle, this);
+    const rect = new Rect(new Pos(rectangle.x, rectangle.y), new Pos(rectangle.right, rectangle.bottom));
+    const data = this.grid.getRenderCells(this.sheetId, rect);
+    return CellRectangle.fromRust(rectangle, data, this);
   }
 
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
+    const json = this.grid.getRenderCells(this.sheetId, new Rect(new Pos(x0, y0), new Pos(x1, y1)));
+    const data = JSON.parse(json);
     const cells: Cell[] = [];
-    this.cells.forEach((cell) => {
-      if (cell.cell && cell.cell.x >= x0 && cell.cell.x <= x1 && cell.cell.y >= y0 && cell.cell.y <= y1) {
-        cells.push(cell.cell);
+    data.forEach((entry: any) => {
+      if (entry.x >= x0 && entry.x <= x1 && entry.y >= y0 && entry.y <= y1) {
+        cells.push({
+          x: entry.x,
+          y: entry.y,
+          type: 'TEXT',
+          value: entry.value,
+        });
       }
     });
     return cells;
   }
 
   getNakedFormat(x0: number, y0: number, x1: number, y1: number): CellFormat[] {
+    const json = this.grid.getRenderCells(this.sheetId, new Rect(new Pos(x0, y0), new Pos(x1, y1)));
+    const data = JSON.parse(json);
     const cells: CellFormat[] = [];
-    this.cells.forEach((cell) => {
-      if (cell.format) {
-        if (cell.format.x >= x0 && cell.format.x <= x1 && cell.format.y >= y0 && cell.format.y <= y1) {
-          cells.push(cell.format);
-        }
+    data.forEach((entry: any) => {
+      if (entry.x >= x0 && entry.x <= x1 && entry.y >= y0 && entry.y <= y1) {
+        cells.push({
+          x: entry.x,
+          y: entry.y,
+          bold: entry.bold,
+          italic: entry.italic,
+          alignment: entry.align,
+          fillColor: entry.fillColor,
+          textColor: entry.textColor,
+          textFormat: entry.textFormat,
+          wrapping: entry.wrapping,
+        });
       }
     });
     return cells;
   }
 
   getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
-    const { minX, minY, maxX, maxY, empty } = this.cellFormatBounds;
+    const allBounds = this.grid.getGridBounds(this.sheetId, false);
+    const minX = allBounds.nonEmpty?.min.x;
+    const minY = allBounds.nonEmpty?.min.y;
+    const maxX = allBounds.nonEmpty?.max.x;
+    const maxY = allBounds.nonEmpty?.max.y;
+    const empty = !allBounds.nonEmpty;
     const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
     const columnStart = columnStartIndex.index > minX ? columnStartIndex.index : minX;
     const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
@@ -226,80 +278,65 @@ export class GridSparse {
   }
 
   getGridBounds(onlyData: boolean): Rectangle | undefined {
-    if (onlyData) {
-      return this.cellBounds.toRectangle();
+    const bounds = this.grid.getGridBounds(this.sheetId, onlyData);
+    if (bounds.nonEmpty) {
+      return new Rectangle(
+        bounds.nonEmpty.min.x,
+        bounds.nonEmpty.min.y,
+        bounds.nonEmpty.max.x - bounds.nonEmpty.min.x,
+        bounds.nonEmpty.max.y - bounds.nonEmpty.min.y
+      );
     }
-    return this.cellFormatBounds.toRectangle();
   }
 
   /** finds the minimum and maximum location for content in a row */
   getRowMinMax(row: number, onlyData: boolean): MinMax | undefined {
-    const { minX, maxX, empty } = this.cellFormatBounds;
-    if (empty) return;
-    let min = Infinity;
-    let max = -Infinity;
-    for (let x = minX; x <= maxX; x++) {
-      const entry = this.get(x, row);
-      if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
-        min = x;
-        break;
-      }
-    }
-    for (let x = maxX; x >= minX; x--) {
-      const entry = this.get(x, row);
-      if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
-        max = x;
-        break;
-      }
-    }
-    if (min === Infinity) return;
-    return { min, max };
+    // const { minX, maxX, empty } = this.cellFormatBounds;
+    // if (empty) return;
+    // let min = Infinity;
+    // let max = -Infinity;
+    // for (let x = minX; x <= maxX; x++) {
+    //   const entry = this.get(x, row);
+    //   if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
+    //     min = x;
+    //     break;
+    //   }
+    // }
+    // for (let x = maxX; x >= minX; x--) {
+    //   const entry = this.get(x, row);
+    //   if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
+    //     max = x;
+    //     break;
+    //   }
+    // }
+    // if (min === Infinity) return;
+    // return { min, max };
+    return;
   }
 
   /**finds the minimum and maximum location for content in a column */
   getColumnMinMax(column: number, onlyData: boolean): MinMax | undefined {
-    const { minY, maxY, empty } = this.cellFormatBounds;
-    if (empty) return;
-    let min = Infinity;
-    let max = -Infinity;
-    for (let y = minY; y <= maxY; y++) {
-      const entry = this.get(column, y);
-      if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
-        min = y;
-        break;
-      }
-    }
-    for (let y = maxY; y >= minY; y--) {
-      const entry = this.get(column, y);
-      if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
-        max = y;
-        break;
-      }
-    }
-    if (min === Infinity) return;
-    return { min, max };
-  }
-
-  getAllCells(): Cell[] {
-    const array = Array.from(this.cells, ([_, value]) => value);
-    return array.flatMap((entry) => {
-      if (entry.cell) return [entry.cell];
-      return [];
-    });
-  }
-
-  getArrays(): { cells: Cell[]; formats: CellFormat[] } {
-    const array = Array.from(this.cells, ([_, value]) => value);
-    return {
-      cells: array.flatMap((entry) => {
-        if (entry.cell) return [entry.cell];
-        return [];
-      }),
-      formats: array.flatMap((entry) => {
-        if (entry.format) return [entry.format];
-        return [];
-      }),
-    };
+    // const { minY, maxY, empty } = this.cellFormatBounds;
+    // if (empty) return;
+    // let min = Infinity;
+    // let max = -Infinity;
+    // for (let y = minY; y <= maxY; y++) {
+    //   const entry = this.get(column, y);
+    //   if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
+    //     min = y;
+    //     break;
+    //   }
+    // }
+    // for (let y = maxY; y >= minY; y--) {
+    //   const entry = this.get(column, y);
+    //   if (entry && ((onlyData && entry.cell) || (!onlyData && entry))) {
+    //     max = y;
+    //     break;
+    //   }
+    // }
+    // if (min === Infinity) return;
+    // return { min, max };
+    return;
   }
 
   hasQuadrant(x: number, y: number): boolean {
@@ -316,20 +353,21 @@ export class GridSparse {
    * @returns the found column or the original column if nothing was found
    */
   findNextColumn(options: { xStart: number; y: number; delta: 1 | -1; withContent: boolean }): number {
-    const { xStart, delta, y, withContent } = options;
-    const bounds = this.cellBounds;
-    if (!bounds) return xStart;
-    let x = delta === 1 ? Math.max(xStart, bounds.minX) : Math.min(xStart, bounds.maxX);
+    // const { xStart, delta, y, withContent } = options;
+    // const bounds = this.cellBounds;
+    // if (!bounds) return xStart;
+    // let x = delta === 1 ? Math.max(xStart, bounds.minX) : Math.min(xStart, bounds.maxX);
 
-    // -1 and +1 are to cover where the cell at the bounds should be returned
-    while (x >= bounds.minX - 1 && x <= bounds.maxX + 1) {
-      const hasContent = cellHasContent(this.get(x, y)?.cell);
-      if ((withContent && hasContent) || (!withContent && !hasContent)) {
-        return x;
-      }
-      x += delta;
-    }
-    return xStart;
+    // // -1 and +1 are to cover where the cell at the bounds should be returned
+    // while (x >= bounds.minX - 1 && x <= bounds.maxX + 1) {
+    //   const hasContent = cellHasContent(this.get(x, y)?.cell);
+    //   if ((withContent && hasContent) || (!withContent && !hasContent)) {
+    //     return x;
+    //   }
+    //   x += delta;
+    // }
+    // return xStart;
+    return 0;
   }
 
   /**
@@ -342,19 +380,24 @@ export class GridSparse {
    * @returns the found row or the original row if nothing was found
    */
   findNextRow(options: { yStart: number; x: number; delta: 1 | -1; withContent: boolean }): number {
-    const { yStart, delta, x, withContent } = options;
-    const bounds = this.cellBounds;
-    if (!bounds) return yStart;
-    let y = delta === 1 ? Math.max(yStart, bounds.minY) : Math.min(yStart, bounds.maxY);
+    // const { yStart, delta, x, withContent } = options;
+    // const bounds = this.cellBounds;
+    // if (!bounds) return yStart;
+    // let y = delta === 1 ? Math.max(yStart, bounds.minY) : Math.min(yStart, bounds.maxY);
 
-    // -1 and +1 are to cover where the cell at the bounds should be returned
-    while (y >= bounds.minY - 1 && y <= bounds.maxY + 1) {
-      const hasContent = cellHasContent(this.get(x, y)?.cell);
-      if ((withContent && hasContent) || (!withContent && !hasContent)) {
-        return y;
-      }
-      y += delta;
-    }
-    return yStart;
+    // // -1 and +1 are to cover where the cell at the bounds should be returned
+    // while (y >= bounds.minY - 1 && y <= bounds.maxY + 1) {
+    //   const hasContent = cellHasContent(this.get(x, y)?.cell);
+    //   if ((withContent && hasContent) || (!withContent && !hasContent)) {
+    //     return y;
+    //   }
+    //   y += delta;
+    // }
+    // return yStart;
+    return 0;
+  }
+
+  recalculateBounds(): void {
+    this.grid.recalculateBounds(this.sheetId);
   }
 }
