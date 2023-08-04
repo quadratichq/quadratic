@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::block::SameValue;
 use super::column::ColumnData;
-use super::js_structs::JsRenderBorder;
+use super::js_types::JsRenderBorder;
 use super::legacy;
 use crate::Rect;
 

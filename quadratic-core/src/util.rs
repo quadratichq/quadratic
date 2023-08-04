@@ -68,6 +68,7 @@ pub(crate) mod hashmap_serde {
 
 /// Recursively evaluates an expression, mimicking JavaScript syntax. Assumes
 /// that `?` can throw an error of type `JsValue`.
+#[cfg(all(target_arch = "wasm32"))]
 macro_rules! jsexpr {
     // Recursive base cases
     ($value:ident) => { $value };

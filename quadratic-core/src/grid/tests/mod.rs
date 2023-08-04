@@ -2,9 +2,8 @@ use std::collections::HashMap;
 
 use proptest::prelude::*;
 
-use crate::IsBlank;
-
 use super::*;
+use crate::IsBlank;
 
 #[test]
 fn test_airports() {
