@@ -52,3 +52,5 @@ const PostFilesReqSchema = z
   })
   .optional();
 export type PostFilesReq = z.infer<typeof PostFilesReqSchema>;
+const PostFilesResSchema = z.object(fileMeta);
+export type PostFilesRes = z.infer<typeof PostFilesResSchema>;

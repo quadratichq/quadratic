@@ -3,7 +3,7 @@ import { downloadFile } from 'helpers/downloadFile';
 import mixpanel from 'mixpanel-browser';
 import { authClient } from '../auth';
 import { GridFile, GridFileSchema } from '../schemas';
-import { GetFileRes, GetFilesRes, PostFileContentsReq, PostFileNameReq, PostFilesReq } from './types';
+import { GetFileRes, GetFilesRes, PostFileContentsReq, PostFileNameReq, PostFilesReq, PostFilesRes } from './types';
 
 const DEFAULT_FILE: GridFile = {
   cells: [],
@@ -52,6 +52,7 @@ class APIClientSingleton {
       if (!response.ok) {
         throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
       }
+
       const files = await response.json();
       return files;
     } catch (error) {
@@ -146,10 +147,9 @@ class APIClientSingleton {
       });
 
       if (!response.ok) {
-        Sentry.captureException({
-          message: `API Response Error: ${response.status} ${response.statusText}`,
-        });
+        throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
       }
+
       return true;
     } catch (error: any) {
       Sentry.captureException({
@@ -184,7 +184,10 @@ class APIClientSingleton {
     }
   }
 
-  /** Creates a new file and returns the new file's uuid */
+  /**
+   * Create new file manually by passing its data, or create a blank file and
+   * return the new file's UUID.
+   */
   async createFile(
     body: PostFilesReq = {
       name: 'Untitled',
@@ -196,7 +199,6 @@ class APIClientSingleton {
 
     try {
       const base_url = this.getAPIURL();
-
       const response = await fetch(`${base_url}/v0/files/`, {
         method: 'POST',
         headers: {
@@ -207,14 +209,10 @@ class APIClientSingleton {
       });
 
       if (!response.ok) {
-        Sentry.captureException({
-          message: `API Response Error: ${response.status} ${response.statusText}`,
-        });
+        throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
       }
 
-      // TODO: Verify that the response is what we expect and return the type
-      // TODO document return type for create
-      const json = await response.json();
+      const json: PostFilesRes = await response.json();
 
       return json.uuid;
     } catch (error: any) {
