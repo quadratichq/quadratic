@@ -152,7 +152,7 @@ test('SheetController - delete cell and array cells', async () => {
 
   const code_cell = sc.sheet.grid.getNakedCells(0, 0, 0, 0);
   expect(code_cell[0]?.value).toBe('1');
-  expect(code_cell[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]');
+  expect(code_cell[0]?.python_code).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n');
   expect(code_cell[0]?.evaluation_result?.std_out).toBe('');
   expect(code_cell[0]?.last_modified).toBeDefined();
   expect(code_cell[0]?.type).toBe('PYTHON');
