@@ -59,7 +59,7 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
   updateText(): void {
     this.labelMeshes.clear();
 
-    // prepares glyph and sets size of labelMeshes
+    // place glyphs and sets size of labelMeshes
     this.cellLabels.forEach((child) => child.updateText(this.labelMeshes));
 
     // creates labelMeshes webGL buffers based on size
