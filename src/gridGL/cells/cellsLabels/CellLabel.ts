@@ -4,8 +4,18 @@ import { convertColorStringToTint, convertTintToArray } from '../../../helpers/c
 import { CellAlignment } from '../../../schemas';
 import { CellsHash } from '../CellsHash';
 import { CellHash, CellRust } from '../CellsTypes';
+import { CellsLabels } from './CellsLabels';
+import { LabelMeshes } from './LabelMeshes';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
-import { CharRenderData, PageMeshData } from './pageMeshData';
+
+interface CharRenderData {
+  texture: Texture;
+  labelMeshId: string;
+  line: number;
+  charCode: number;
+  position: Point;
+  prevSpaces: number;
+}
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -13,6 +23,8 @@ import { CharRenderData, PageMeshData } from './pageMeshData';
 const fontSize = 14;
 
 export class CellLabel extends Container implements CellHash {
+  private cellsLabels: CellsLabels;
+
   text: string;
   fontName: string;
   fontSize: number;
@@ -55,8 +67,9 @@ export class CellLabel extends Container implements CellHash {
   // cache for clip to avoid recalculation of same clip
   private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
 
-  constructor(cell: CellRust, rectangle: Rectangle) {
+  constructor(cellsLabels: CellsLabels, cell: CellRust, rectangle: Rectangle) {
     super();
+    this.cellsLabels = cellsLabels;
     this.text = cell.value.toString();
     this.fontSize = fontSize;
     this.roundPixels = true;
@@ -107,7 +120,7 @@ export class CellLabel extends Container implements CellHash {
   }
 
   /** Calculates the text glyphs and positions and tracks whether the text overflows the cell */
-  public updateText(): void {
+  public updateText(labelMeshes: LabelMeshes): void {
     if (!this.dirty) return;
     this.dirty = false;
 
@@ -129,6 +142,7 @@ export class CellLabel extends Container implements CellHash {
     let maxLineHeight = 0;
     let spaceCount = 0;
     let i: number;
+
     for (i = 0; i < charsInput.length; i++) {
       const char = charsInput[i];
       const charCode = extractCharCode(char);
@@ -150,25 +164,20 @@ export class CellLabel extends Container implements CellHash {
         continue;
       }
       const charData = data.chars[charCode];
-      if (!charData) {
-        continue;
-      }
+      if (!charData) continue;
+
+      const labelMeshId = labelMeshes.add(this.fontName, fontSize, charData.texture);
       if (prevCharCode && charData.kerning[prevCharCode]) {
         pos.x += charData.kerning[prevCharCode];
       }
       const charRenderData: CharRenderData = {
-        texture: Texture.EMPTY,
-        line: 0,
-        charCode: 0,
-        prevSpaces: 0,
-        position: new Point(),
+        labelMeshId,
+        texture: charData.texture,
+        line: line,
+        charCode: charCode,
+        prevSpaces: spaceCount,
+        position: new Point(pos.x + charData.xOffset + this.letterSpacing / 2, pos.y + charData.yOffset),
       };
-      charRenderData.texture = charData.texture;
-      charRenderData.line = line;
-      charRenderData.charCode = charCode;
-      charRenderData.position.x = pos.x + charData.xOffset + this.letterSpacing / 2;
-      charRenderData.position.y = pos.y + charData.yOffset;
-      charRenderData.prevSpaces = spaceCount;
       this.chars.push(charRenderData);
       lastLineWidth = charRenderData.position.x + Math.max(charData.xAdvance, charData.texture.orig.width);
       pos.x += charData.xAdvance + this.letterSpacing;
@@ -219,7 +228,7 @@ export class CellLabel extends Container implements CellHash {
   }
 
   /** Adds the glyphs to the CellsLabels container */
-  updatePageMesh(pagesMeshData: Record<number, PageMeshData>): void {
+  updateLabelMesh(labelMeshes: LabelMeshes): void {
     const data = BitmapFont.available[this.fontName];
     const scale = this.fontSize / data.size;
     const color = convertTintToArray(this.tint ?? 0);
@@ -232,8 +241,8 @@ export class CellLabel extends Container implements CellHash {
       }
       const xPos = this.position.x + offset * scale;
       const yPos = this.position.y + char.position.y * scale;
+      const labelMesh = labelMeshes.get(char.labelMeshId);
       const texture = char.texture;
-      const pageMesh = pagesMeshData[texture.baseTexture.uid];
       const textureFrame = texture.frame;
       const textureUvs = texture._uvs;
 
@@ -242,52 +251,54 @@ export class CellLabel extends Container implements CellHash {
         (this.clipRight !== undefined && xPos + textureFrame.width * scale + this.x >= this.clipRight) ||
         (this.clipLeft !== undefined && xPos + this.x <= this.clipLeft)
       ) {
+        // todo: this should remove the correct size from the array...
         // this removes extra characters from the mesh after a clip
-        pageMesh.mesh.size -= 6;
+        labelMesh.size -= 6;
       } else {
-        const index = pageMesh.index++;
+        const index = labelMesh.index++;
+        const buffers = labelMesh;
 
-        pageMesh.indices![index * 6 + 0] = 0 + index * 4;
-        pageMesh.indices![index * 6 + 1] = 1 + index * 4;
-        pageMesh.indices![index * 6 + 2] = 2 + index * 4;
-        pageMesh.indices![index * 6 + 3] = 0 + index * 4;
-        pageMesh.indices![index * 6 + 4] = 2 + index * 4;
-        pageMesh.indices![index * 6 + 5] = 3 + index * 4;
+        buffers.indices![index * 6 + 0] = 0 + index * 4;
+        buffers.indices![index * 6 + 1] = 1 + index * 4;
+        buffers.indices![index * 6 + 2] = 2 + index * 4;
+        buffers.indices![index * 6 + 3] = 0 + index * 4;
+        buffers.indices![index * 6 + 4] = 2 + index * 4;
+        buffers.indices![index * 6 + 5] = 3 + index * 4;
 
-        pageMesh.vertices![index * 8 + 0] = xPos;
-        pageMesh.vertices![index * 8 + 1] = yPos;
-        pageMesh.vertices![index * 8 + 2] = xPos + textureFrame.width * scale;
-        pageMesh.vertices![index * 8 + 3] = yPos;
-        pageMesh.vertices![index * 8 + 4] = xPos + textureFrame.width * scale;
-        pageMesh.vertices![index * 8 + 5] = yPos + textureFrame.height * scale;
-        pageMesh.vertices![index * 8 + 6] = xPos;
-        pageMesh.vertices![index * 8 + 7] = yPos + textureFrame.height * scale;
+        buffers.vertices![index * 8 + 0] = xPos;
+        buffers.vertices![index * 8 + 1] = yPos;
+        buffers.vertices![index * 8 + 2] = xPos + textureFrame.width * scale;
+        buffers.vertices![index * 8 + 3] = yPos;
+        buffers.vertices![index * 8 + 4] = xPos + textureFrame.width * scale;
+        buffers.vertices![index * 8 + 5] = yPos + textureFrame.height * scale;
+        buffers.vertices![index * 8 + 6] = xPos;
+        buffers.vertices![index * 8 + 7] = yPos + textureFrame.height * scale;
 
-        pageMesh.uvs![index * 8 + 0] = textureUvs.x0;
-        pageMesh.uvs![index * 8 + 1] = textureUvs.y0;
-        pageMesh.uvs![index * 8 + 2] = textureUvs.x1;
-        pageMesh.uvs![index * 8 + 3] = textureUvs.y1;
-        pageMesh.uvs![index * 8 + 4] = textureUvs.x2;
-        pageMesh.uvs![index * 8 + 5] = textureUvs.y2;
-        pageMesh.uvs![index * 8 + 6] = textureUvs.x3;
-        pageMesh.uvs![index * 8 + 7] = textureUvs.y3;
+        buffers.uvs![index * 8 + 0] = textureUvs.x0;
+        buffers.uvs![index * 8 + 1] = textureUvs.y0;
+        buffers.uvs![index * 8 + 2] = textureUvs.x1;
+        buffers.uvs![index * 8 + 3] = textureUvs.y1;
+        buffers.uvs![index * 8 + 4] = textureUvs.x2;
+        buffers.uvs![index * 8 + 5] = textureUvs.y2;
+        buffers.uvs![index * 8 + 6] = textureUvs.x3;
+        buffers.uvs![index * 8 + 7] = textureUvs.y3;
 
-        pageMesh.colors![index * 16 + 0] = color[0];
-        pageMesh.colors![index * 16 + 1] = color[1];
-        pageMesh.colors![index * 16 + 2] = color[2];
-        pageMesh.colors![index * 16 + 3] = color[3];
-        pageMesh.colors![index * 16 + 4] = color[0];
-        pageMesh.colors![index * 16 + 5] = color[1];
-        pageMesh.colors![index * 16 + 6] = color[2];
-        pageMesh.colors![index * 16 + 7] = color[3];
-        pageMesh.colors![index * 16 + 8] = color[0];
-        pageMesh.colors![index * 16 + 9] = color[1];
-        pageMesh.colors![index * 16 + 10] = color[2];
-        pageMesh.colors![index * 16 + 11] = color[3];
-        pageMesh.colors![index * 16 + 12] = color[0];
-        pageMesh.colors![index * 16 + 13] = color[1];
-        pageMesh.colors![index * 16 + 14] = color[2];
-        pageMesh.colors![index * 16 + 15] = color[3];
+        buffers.colors![index * 16 + 0] = color[0];
+        buffers.colors![index * 16 + 1] = color[1];
+        buffers.colors![index * 16 + 2] = color[2];
+        buffers.colors![index * 16 + 3] = color[3];
+        buffers.colors![index * 16 + 4] = color[0];
+        buffers.colors![index * 16 + 5] = color[1];
+        buffers.colors![index * 16 + 6] = color[2];
+        buffers.colors![index * 16 + 7] = color[3];
+        buffers.colors![index * 16 + 8] = color[0];
+        buffers.colors![index * 16 + 9] = color[1];
+        buffers.colors![index * 16 + 10] = color[2];
+        buffers.colors![index * 16 + 11] = color[3];
+        buffers.colors![index * 16 + 12] = color[0];
+        buffers.colors![index * 16 + 13] = color[1];
+        buffers.colors![index * 16 + 14] = color[2];
+        buffers.colors![index * 16 + 15] = color[3];
       }
     }
   }

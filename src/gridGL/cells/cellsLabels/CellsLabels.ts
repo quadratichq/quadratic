@@ -1,33 +1,18 @@
-import {
-  BLEND_MODES,
-  BitmapFont,
-  Container,
-  Mesh,
-  MeshGeometry,
-  MeshMaterial,
-  Program,
-  Rectangle,
-  Renderer,
-  Texture,
-} from 'pixi.js';
+import { Container, Rectangle, Renderer, Texture } from 'pixi.js';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { CellsHash } from '../CellsHash';
 import { CellHash, CellRust } from '../CellsTypes';
 import { CellLabel } from './CellLabel';
-import { PageMeshData } from './pageMeshData';
-import { msdfFrag, msdfVert } from './shader';
+import { LabelMeshes } from './LabelMeshes';
 
 // holds all CellLabels within a sheet
-export class CellsLabels extends Container implements CellHash {
+export class CellsLabels extends Container<LabelMeshes> implements CellHash {
   private cellsHash: CellsHash;
   private textureCache: Texture[] = [];
 
-  // this is used to render all bitmapText within this region
-  private finalBitmapText: Container<Mesh>;
-
   // holds the meshes for font/style combinations
-  private pagesMeshData: Record<number, PageMeshData> = {};
+  private labelMeshes: LabelMeshes;
 
   cellLabels: Map<string, CellLabel>;
 
@@ -40,7 +25,7 @@ export class CellsLabels extends Container implements CellHash {
     this.cellsHash = cellsHash;
     this.cellLabels = new Map();
     this.hashes = new Set();
-    this.finalBitmapText = this.addChild(new Container<Mesh>());
+    this.labelMeshes = this.addChild(new LabelMeshes());
   }
 
   get sheet(): Sheet {
@@ -56,7 +41,7 @@ export class CellsLabels extends Container implements CellHash {
     cells = cells ?? this.sheet.grid.getCellList(this.cellsHash.AABB);
     const cellLabels = cells.map((cell) => {
       const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
-      const cellLabel = new CellLabel(cell, rectangle);
+      const cellLabel = new CellLabel(this, cell, rectangle);
       this.cellLabels.set(this.getKey(cell), cellLabel);
       return cellLabel;
     });
@@ -68,109 +53,23 @@ export class CellsLabels extends Container implements CellHash {
     if (!this.visible || this.worldAlpha <= 0 || !this.renderable) {
       return;
     }
-
-    // Inject the shader code with the correct value
-    const { a, b, c, d } = this.transform.worldTransform;
-
-    const dx = Math.sqrt(a * a + b * b);
-    const dy = Math.sqrt(c * c + d * d);
-    const worldScale = (Math.abs(dx) + Math.abs(dy)) / 2;
-
-    const resolution = renderer.resolution;
-
-    for (const id in this.pagesMeshData) {
-      const pagesMeshData = this.pagesMeshData[id];
-      const { distanceFieldRange, size } = BitmapFont.available[pagesMeshData.fontName];
-      const fontScale = pagesMeshData.fontSize / size;
-      pagesMeshData.mesh.shader.uniforms.uFWidth = worldScale * distanceFieldRange * fontScale * resolution;
-    }
-    this.finalBitmapText.render(renderer);
+    this.labelMeshes.render(renderer);
   }
 
-  public updateText(): void {
-    this.finalBitmapText.removeChildren();
+  updateText(): void {
+    this.labelMeshes.clear();
 
-    this.cellLabels.forEach((child) => child.updateText());
-    this.pagesMeshData = {};
+    // prepares glyph and sets size of labelMeshes
+    this.cellLabels.forEach((child) => child.updateText(this.labelMeshes));
 
-    this.cellLabels.forEach((cellLabel) => {
-      const lenChars = cellLabel.chars.length;
+    // creates labelMeshes webGL buffers based on size
+    this.labelMeshes.prepare();
 
-      for (let i = 0; i < lenChars; i++) {
-        const texture = cellLabel.chars[i].texture;
-        const baseTextureUid = texture.baseTexture.uid;
-        let pageMeshData = this.pagesMeshData[baseTextureUid];
-        if (!pageMeshData) {
-          const geometry = new MeshGeometry();
-          let material: MeshMaterial;
-          let meshBlendMode: BLEND_MODES;
+    // populate labelMeshes webGL buffers
+    this.cellLabels.forEach((cellLabel) => cellLabel.updateLabelMesh(this.labelMeshes));
 
-          material = new MeshMaterial(Texture.EMPTY, {
-            program: Program.from(msdfVert, msdfFrag),
-            uniforms: { uFWidth: 0 },
-          });
-          meshBlendMode = BLEND_MODES.NORMAL_NPM;
-
-          const mesh = new Mesh(geometry, material);
-          mesh.blendMode = meshBlendMode;
-
-          const pageMeshData = {
-            fontName: cellLabel.fontName,
-            fontSize: cellLabel.fontSize,
-            index: 0,
-            indexCount: 0,
-            vertexCount: 0,
-            uvsCount: 0,
-            total: 0,
-            mesh,
-          };
-
-          this.textureCache[baseTextureUid] = this.textureCache[baseTextureUid] || new Texture(texture.baseTexture);
-          pageMeshData.mesh.texture = this.textureCache[baseTextureUid];
-          this.pagesMeshData[baseTextureUid] = pageMeshData;
-          this.finalBitmapText.addChild(pageMeshData.mesh);
-        }
-
-        this.pagesMeshData[baseTextureUid].total++;
-      }
-    });
-
-    for (const id in this.pagesMeshData) {
-      const pageMeshData = this.pagesMeshData[id];
-      const total = pageMeshData.total;
-      pageMeshData.vertices = new Float32Array(4 * 2 * total);
-      pageMeshData.uvs = new Float32Array(4 * 2 * total);
-      pageMeshData.indices = new Uint16Array(6 * total);
-      pageMeshData.colors = new Float32Array(4 * 4 * total);
-      pageMeshData.mesh.geometry.addAttribute('aColors', pageMeshData.colors, 4);
-
-      // as a buffer maybe bigger than the current word, we set the size of the meshMaterial
-      // to match the number of letters needed
-      pageMeshData.mesh.size = 6 * total;
-    }
-
-    this.cellLabels.forEach((cellLabel) => cellLabel.updatePageMesh(this.pagesMeshData));
-
-    for (const id in this.pagesMeshData) {
-      const pageMeshData = this.pagesMeshData[id];
-
-      // cellLabel.maxLineHeight = maxLineHeight * scale;
-
-      const vertexBuffer = pageMeshData.mesh.geometry.getBuffer('aVertexPosition');
-      const textureBuffer = pageMeshData.mesh.geometry.getBuffer('aTextureCoord');
-      const colorBuffer = pageMeshData.mesh.geometry.getBuffer('aColors');
-      const indexBuffer = pageMeshData.mesh.geometry.getIndex();
-
-      vertexBuffer.data = pageMeshData.vertices!;
-      textureBuffer.data = pageMeshData.uvs!;
-      indexBuffer.data = pageMeshData.indices!;
-      colorBuffer.data = pageMeshData.colors!;
-
-      vertexBuffer.update();
-      textureBuffer.update();
-      indexBuffer.update();
-      colorBuffer.update();
-    }
+    // finalizes webGL buffers
+    this.labelMeshes.finalize();
   }
 
   private getClipRight(label: CellLabel, textWidth: number): number | undefined {

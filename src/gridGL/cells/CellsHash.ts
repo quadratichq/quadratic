@@ -54,7 +54,6 @@ export class CellsHash extends Container {
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
     this.cellsLabels.create(options.cells);
-    this.cellsLabels.updateText();
 
     this.viewBounds = this.getBounds();
     this.rect = new Rect(new Pos(this.AABB.left, this.AABB.top), new Pos(this.AABB.right, this.AABB.bottom));
