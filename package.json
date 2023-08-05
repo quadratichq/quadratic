@@ -1,6 +1,7 @@
 {
   "name": "quadratic",
   "version": "0.3.0",
+  "homepage": ".",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -11,6 +12,7 @@
   "dependencies": {
     "@amplitude/analytics-browser": "^1.9.4",
     "@auth0/auth0-react": "^1.11.0",
+    "@electron-forge/publisher-s3": "^6.2.1",
     "@emotion/react": "^11.7.0",
     "@emotion/styled": "^11.6.0",
     "@monaco-editor/react": "^4.3.1",
@@ -77,6 +79,10 @@
     "eject": "react-scripts eject",
     "dev": "concurrently \"BROWSER=none npm start\" \"electron .\"",
     "electron": "electron .",
+    "electron:start": "electron-forge start",
+    "electron:package": "electron-forge package",
+    "electron:make": "electron-forge make",
+    "electron:publish": "electron-forge publish",
     "lint:ts": "tsc --noemit",
     "lint:eslint": "eslint --ext .ts,.tsx src",
     "lint:prettier": "prettier --check src",
@@ -108,6 +114,9 @@
     ]
   },
   "devDependencies": {
+    "@electron-forge/cli": "^6.2.1",
+    "@electron-forge/maker-dmg": "^6.2.1",
+    "@electron-forge/maker-squirrel": "^6.2.1",
     "@playwright/test": "^1.22.2",
     "@types/common-tags": "^1.8.1",
     "@types/lodash.debounce": "^4.0.7",

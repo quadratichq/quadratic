@@ -40,7 +40,7 @@ import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguage
 import { ResizeControl } from './ResizeControl';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 
-loader.config({ paths: { vs: '/monaco/vs' } });
+loader.config({ paths: { vs: './monaco/vs' } });
 
 interface CodeEditorProps {
   sheet_controller: SheetController;
