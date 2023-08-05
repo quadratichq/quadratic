@@ -5,54 +5,59 @@ import {
   Mesh,
   MeshGeometry,
   MeshMaterial,
-  Point,
   Program,
   Rectangle,
   Renderer,
   Texture,
 } from 'pixi.js';
-import { Bounds } from '../../grid/sheet/Bounds';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { PageMeshData } from '../pixiOverride/TextMesh';
-import { msdfFrag, msdfVert } from '../pixiOverride/shader';
+import { Bounds } from '../../../grid/sheet/Bounds';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { CellsHash } from '../CellsHash';
+import { CellHash, CellRust } from '../CellsTypes';
 import { CellLabel } from './CellLabel';
-import { CellsHash } from './CellsHash';
-import { CellHash, CellRust } from './CellsTypes';
+import { PageMeshData } from './pageMeshData';
+import { msdfFrag, msdfVert } from './shader';
 
 // holds all CellLabels within a sheet
 export class CellsLabels extends Container implements CellHash {
   private cellsHash: CellsHash;
   private textureCache: Texture[] = [];
 
-  cellLabels: CellLabel[];
+  // this is used to render all bitmapText within this region
+  private finalBitmapText: Container<Mesh>;
+
+  // holds the meshes for font/style combinations
+  private pagesMeshData: Record<number, PageMeshData> = {};
+
+  cellLabels: Map<string, CellLabel>;
 
   // this is used by CellsHash
   hashes: Set<CellsHash>;
   AABB?: Rectangle;
 
-  // this is used to render all bitmapText within this region
-  private finalBitmapText: Container;
-  private pagesMeshData: Record<number, PageMeshData> = {};
-
   constructor(cellsHash: CellsHash) {
     super();
     this.cellsHash = cellsHash;
-    this.cellLabels = [];
+    this.cellLabels = new Map();
     this.hashes = new Set();
-    this.finalBitmapText = this.addChild(new Container());
+    this.finalBitmapText = this.addChild(new Container<Mesh>());
   }
 
   get sheet(): Sheet {
     return this.cellsHash.sheet;
   }
 
+  private getKey(cell: CellRust): string {
+    return `${cell.x},${cell.y}`;
+  }
+
   create(cells?: CellRust[]): CellLabel[] {
-    this.cellLabels = [];
+    this.cellLabels = new Map();
     cells = cells ?? this.sheet.grid.getCellList(this.cellsHash.AABB);
     const cellLabels = cells.map((cell) => {
       const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
       const cellLabel = new CellLabel(cell, rectangle);
-      this.cellLabels.push(cellLabel);
+      this.cellLabels.set(this.getKey(cell), cellLabel);
       return cellLabel;
     });
     this.updateText();
@@ -60,7 +65,6 @@ export class CellsLabels extends Container implements CellHash {
   }
 
   render(renderer: Renderer) {
-    // if the object is not visible or the alpha is 0 then no need to render this element
     if (!this.visible || this.worldAlpha <= 0 || !this.renderable) {
       return;
     }
@@ -119,10 +123,6 @@ export class CellsLabels extends Container implements CellHash {
             uvsCount: 0,
             total: 0,
             mesh,
-            vertices: undefined,
-            uvs: undefined,
-            indices: undefined,
-            colors: undefined,
           };
 
           this.textureCache[baseTextureUid] = this.textureCache[baseTextureUid] || new Texture(texture.baseTexture);
@@ -259,89 +259,5 @@ export class CellsLabels extends Container implements CellHash {
     //   label.overflowLeft = undefined;
     // }
     // bounds.addRectangle(new Rectangle(label.x, label.y, width, label.height));
-  }
-
-  // todo: update AABB based on position
-  private calculatePosition(label: CellLabel): Point {
-    let alignment = label.alignment ?? 'left';
-    if (alignment === 'right') {
-      return new Point(label.topLeft.x + label.right - label.textWidth, label.topLeft.y);
-    } else if (alignment === 'center') {
-      return new Point(label.topLeft.x + label.right / 2 - label.textWidth / 2, label.topLeft.y);
-    }
-    return label.topLeft;
-  }
-
-  private updateLabel(label: CellLabel): void {
-    label.visible = true;
-
-    label.position = this.calculatePosition(label);
-
-    // this ensures that the text is redrawn during column resize (otherwise clipping will not work properly)
-    if (!label.lastPosition || !label.lastPosition.equals(label.position)) {
-      label.dirty = true;
-      label.lastPosition = label.position.clone();
-    }
-  }
-
-  /**
-   * add labels to headings using cached labels
-   * @returns the visual bounds only if isQuadrant is defined (otherwise not worth the .width/.height call)
-   */
-  // update(): Rectangle | undefined {
-  //   const bounds = new Bounds();
-
-  //   // keep current children to use as the cache
-  //   this.children.forEach((child) => (child.visible = false));
-
-  //   const available = [...this.children] as CellLabel[];
-  //   const leftovers: LabelData[] = [];
-
-  //   // reuse existing labels that have the same text
-  //   this.labelData.forEach((data) => {
-  //     const index = available.findIndex((label) => this.compareLabelData(label, data));
-  //     if (index === -1) {
-  //       leftovers.push(data);
-  //     } else {
-  //       this.updateLabel(available[index], data);
-  //       available.splice(index, 1);
-  //     }
-  //   });
-
-  //   // use existing labels but change the text
-  //   leftovers.forEach((data, i) => {
-  //     if (i < available.length) {
-  //       this.updateLabel(available[i], data);
-  //     }
-
-  //     // otherwise create new labels
-  //     else {
-  //       const label = this.addChild(new CellLabel(data));
-  //       label.position = this.calculatePosition(label, data);
-  //       label.lastPosition = label.position.clone();
-  //     }
-  //   });
-
-  //   this.children.forEach((child) => {
-  //     const label = child as CellLabel;
-  //     if (label.visible) {
-  //       this.checkForClipping(label);
-  //       this.checkForOverflow({ label, bounds });
-  //     }
-  //   });
-
-  //   if (!bounds.empty) {
-  //     return bounds.toRectangle();
-  //   }
-  // }
-
-  // todo: this is probably also not interesting
-  get(): CellLabel[] {
-    return this.cellLabels;
-  }
-
-  // todo: this is not interesting
-  getVisible(): CellLabel[] {
-    return this.cellLabels.filter((child) => child.visible) as CellLabel[];
   }
 }

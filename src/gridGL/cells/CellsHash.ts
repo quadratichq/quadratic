@@ -3,8 +3,8 @@ import { debugShowCellsHashBoxes } from '../../debugFlags';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { Pos, Rect } from '../../quadratic-core/quadratic_core';
 import { CellsBackground } from './CellsBackground';
-import { CellsLabels } from './CellsLabels';
 import { CellFill, CellHash, CellRust, sheetHashHeight, sheetHashWidth } from './CellsTypes';
+import { CellsLabels } from './cellsLabels/CellsLabels';
 
 export class CellsHash extends Container {
   sheet: Sheet;
