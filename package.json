@@ -82,6 +82,7 @@
     "electron:start": "electron-forge start",
     "electron:package": "electron-forge package",
     "electron:make": "electron-forge make",
+    "electron:publish": "electron-forge publish",
     "lint:ts": "tsc --noemit",
     "lint:eslint": "eslint --ext .ts,.tsx src",
     "lint:prettier": "prettier --check src",
