@@ -11,6 +11,7 @@ import {
   Renderer,
   Texture,
 } from 'pixi.js';
+import { debugShowCellHashesInfo } from '../../../debugFlags';
 import { msdfFrag, msdfVert } from './cellLabelShader';
 
 class LabelMesh extends Mesh {
@@ -76,6 +77,10 @@ class LabelMesh extends Mesh {
     textureBuffer.update();
     colorBuffer.update();
     indexBuffer.update();
+
+    if (debugShowCellHashesInfo) {
+      console.log(`[LabelMeshes] buffer size: ${this.size}`);
+    }
   }
 
   specialRender(renderer: Renderer, scale: number): void {

@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/browser';
-import { debug } from '../../debugFlags';
+import { debug, debugMockLargeData } from '../../debugFlags';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
-import { Grid } from '../../quadratic-core/quadratic_core';
+import { Grid, Pos, Rect } from '../../quadratic-core/quadratic_core';
 import { GridFile, SheetSchema } from '../../schemas';
 import { generateKeyBetween } from '../../utils/fractionalIndexing';
 import { Sheet } from '../sheet/Sheet';
@@ -51,6 +51,13 @@ export class SheetController {
     });
     this.sortSheets();
     this._current = this.sheets[0].id;
+
+    // use to test large sheets
+    if (debugMockLargeData) {
+      console.time('random');
+      this.grid.populateWithRandomFloats(this.sheets[0].grid.sheetId, new Rect(new Pos(0, 0), new Pos(100, 10000)));
+      console.timeEnd('random');
+    }
 
     // used by SheetBar to update current sheet tab
     window.dispatchEvent(new CustomEvent('change-sheet'));

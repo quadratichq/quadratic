@@ -21,6 +21,8 @@ export const debugShowCacheFlag = debug && true;
 // Feature Flags
 // -------------
 
+export const debugMockLargeData = debug && false;
+
 // ------------
 // Transactions
 // ------------
@@ -52,6 +54,9 @@ export const debugShowCellsSheetCulling = debug && false;
 
 // shows CellsHash boxes
 export const debugShowCellsHashBoxes = debug && false;
+
+// shows CellsHash information
+export const debugShowCellHashesInfo = debug && false;
 
 // ----------------
 // Quadrant caching

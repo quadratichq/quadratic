@@ -1,6 +1,7 @@
 import { Container, Rectangle, Renderer, Texture } from 'pixi.js';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { Sheet } from '../../../grid/sheet/Sheet';
+import { debugTimeCheck, debugTimeReset } from '../../helpers/debugPerformance';
 import { CellsHash } from '../CellsHash';
 import { CellHash, CellRust } from '../CellsTypes';
 import { CellLabel } from './CellLabel';
@@ -37,6 +38,7 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
   }
 
   create(cells?: CellRust[]): CellLabel[] {
+    debugTimeReset();
     this.cellLabels = new Map();
     cells = cells ?? this.sheet.grid.getCellList(this.cellsHash.AABB);
     const cellLabels = cells.map((cell) => {
@@ -46,6 +48,7 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
       return cellLabel;
     });
     this.updateText();
+    debugTimeCheck('cellsLabel');
     return cellLabels;
   }
 

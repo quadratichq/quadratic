@@ -17,8 +17,9 @@ export interface CellAndFormat {
 /** Stores all cells and format locations */
 export class GridSparse {
   private sheet: Sheet;
-  private sheetId: SheetId;
   private grid: Grid;
+
+  sheetId: SheetId;
 
   // tracks which quadrants need to render based on GridSparse data
   quadrants = new Set<string>();
@@ -30,11 +31,6 @@ export class GridSparse {
     const sheetId = this.grid.sheetIndexToId(index);
     if (!sheetId) throw new Error('Expected sheetId to be defined');
     this.sheetId = sheetId;
-
-    // use to test large sheets
-    // console.time('random');
-    // this.grid.populateWithRandomFloats(this.sheetId, new Rect(new Pos(0, 0), new Pos(100, 10000)));
-    // console.timeEnd('random');
   }
 
   get gridOffsets(): GridOffsets {

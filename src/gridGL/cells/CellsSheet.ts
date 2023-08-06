@@ -4,7 +4,7 @@ import { Sheet } from '../../grid/sheet/Sheet';
 import { intersects } from '../helpers/intersects';
 import { Coordinate } from '../types/size';
 import { CellsHash } from './CellsHash';
-import { CellFill, CellHash, CellRust, CellsHashBounds, sheetHashHeight, sheetHashWidth } from './CellsTypes';
+import { CellFill, CellRust, CellsHashBounds, sheetHashHeight, sheetHashWidth } from './CellsTypes';
 
 export class CellsSheet extends Container {
   sheet: Sheet;
@@ -65,24 +65,6 @@ export class CellsSheet extends Container {
     return { xStart, yStart, xEnd, yEnd };
   }
 
-  // protected add(hash: CellHash, x: number, y: number): void {
-  //   const key = CellsHash.getKey(x, y);
-  //   let cellsHash = this.cellsHash.get(key);
-  //   if (!cellsHash) {
-  //     cellsHash = this.cellsHashContainer.addChild(new CellsHash(x, y));
-  //     this.cellsHash.set(key, cellsHash);
-  //   }
-  //   cellsHash.add(hash);
-  //   hash.hashes.add(cellsHash);
-  // }
-
-  // protected remove(hash: CellHash): void {
-  //   hash.hashes.forEach((cellHash) => {
-  //     cellHash.delete(hash);
-  //   });
-  //   hash.hashes.clear();
-  // }
-
   show(bounds: Rectangle): void {
     this.visible = true;
     let count = 0;
@@ -101,17 +83,6 @@ export class CellsSheet extends Container {
 
   hide(): void {
     this.visible = false;
-  }
-
-  updateHash(hash: CellHash, AABB: Rectangle): void {
-    // hash.AABB = AABB;
-    // const bounds = this.getHashBounds(hash.AABB);
-    // this.remove(hash);
-    // for (let y = bounds.yStart; y <= bounds.yEnd; y++) {
-    //   for (let x = bounds.xStart; x <= bounds.xEnd; x++) {
-    //     this.add(hash, x, y);
-    //   }
-    // }
   }
 
   changeCells(cells: Coordinate[], options: { labels?: boolean; background?: boolean }) {
