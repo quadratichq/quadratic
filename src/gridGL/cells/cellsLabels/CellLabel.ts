@@ -166,7 +166,7 @@ export class CellLabel extends Container implements CellHash {
       const charData = data.chars[charCode];
       if (!charData) continue;
 
-      const labelMeshId = labelMeshes.add(this.fontName, fontSize, charData.texture);
+      const labelMeshId = labelMeshes.add(this.fontName, fontSize, charData.texture, !!this.tint);
       if (prevCharCode && charData.kerning[prevCharCode]) {
         pos.x += charData.kerning[prevCharCode];
       }
@@ -231,7 +231,7 @@ export class CellLabel extends Container implements CellHash {
   updateLabelMesh(labelMeshes: LabelMeshes): void {
     const data = BitmapFont.available[this.fontName];
     const scale = this.fontSize / data.size;
-    const color = convertTintToArray(this.tint ?? 0);
+    const color = this.tint ? convertTintToArray(this.tint) : undefined;
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
       let offset =
@@ -283,22 +283,24 @@ export class CellLabel extends Container implements CellHash {
         buffers.uvs![index * 8 + 6] = textureUvs.x3;
         buffers.uvs![index * 8 + 7] = textureUvs.y3;
 
-        buffers.colors![index * 16 + 0] = color[0];
-        buffers.colors![index * 16 + 1] = color[1];
-        buffers.colors![index * 16 + 2] = color[2];
-        buffers.colors![index * 16 + 3] = color[3];
-        buffers.colors![index * 16 + 4] = color[0];
-        buffers.colors![index * 16 + 5] = color[1];
-        buffers.colors![index * 16 + 6] = color[2];
-        buffers.colors![index * 16 + 7] = color[3];
-        buffers.colors![index * 16 + 8] = color[0];
-        buffers.colors![index * 16 + 9] = color[1];
-        buffers.colors![index * 16 + 10] = color[2];
-        buffers.colors![index * 16 + 11] = color[3];
-        buffers.colors![index * 16 + 12] = color[0];
-        buffers.colors![index * 16 + 13] = color[1];
-        buffers.colors![index * 16 + 14] = color[2];
-        buffers.colors![index * 16 + 15] = color[3];
+        if (color) {
+          buffers.colors![index * 16 + 0] = color[0];
+          buffers.colors![index * 16 + 1] = color[1];
+          buffers.colors![index * 16 + 2] = color[2];
+          buffers.colors![index * 16 + 3] = color[3];
+          buffers.colors![index * 16 + 4] = color[0];
+          buffers.colors![index * 16 + 5] = color[1];
+          buffers.colors![index * 16 + 6] = color[2];
+          buffers.colors![index * 16 + 7] = color[3];
+          buffers.colors![index * 16 + 8] = color[0];
+          buffers.colors![index * 16 + 9] = color[1];
+          buffers.colors![index * 16 + 10] = color[2];
+          buffers.colors![index * 16 + 11] = color[3];
+          buffers.colors![index * 16 + 12] = color[0];
+          buffers.colors![index * 16 + 13] = color[1];
+          buffers.colors![index * 16 + 14] = color[2];
+          buffers.colors![index * 16 + 15] = color[3];
+        }
       }
     }
   }
