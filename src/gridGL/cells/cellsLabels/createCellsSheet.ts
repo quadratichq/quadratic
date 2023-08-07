@@ -12,6 +12,7 @@ class CreateCellsSheet {
   private y?: number;
 
   populate(cellsSheet: CellsSheet): Promise<void> {
+    console.log('*** populate...');
     return new Promise((resolve) => {
       this.cellsSheet = cellsSheet;
       const bounds = this.sheet.grid.getGridBounds(false);
@@ -43,6 +44,7 @@ class CreateCellsSheet {
     ) {
       throw new Error('Expected variables to be defined in createCellsSheet.next');
     }
+    console.log(`nextHash ${this.x}, ${this.y}`);
     const rect = new Rectangle(
       this.x * sheetHashWidth,
       this.y * sheetHashHeight,
@@ -72,6 +74,7 @@ class CreateCellsSheet {
     }
     this.cellsSheet.cellsHash.forEach((hash) => hash.overflowClip());
     setTimeout(this.updateText, 0);
+    console.log('clip');
   };
 
   private updateText = () => {
@@ -80,6 +83,7 @@ class CreateCellsSheet {
     }
     this.cellsSheet.cellsHash.forEach((hash) => hash.updateTextAfterClip());
     setTimeout(this.updateBuffers, 0);
+    console.log('updateText');
   };
 
   private updateBuffers = () => {
@@ -87,6 +91,7 @@ class CreateCellsSheet {
       throw new Error('Expected cellsSheet and resolve to be defined in createCellsSheet.updateBuffers');
     }
     this.cellsSheet.cellsHash.forEach((hash) => hash.updateBuffers());
+    console.log('updateBuffers');
     this.resolve();
   };
 }
