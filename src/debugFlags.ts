@@ -1,3 +1,5 @@
+const url = new URLSearchParams(window.location.search);
+
 // set this in .env (if set to false then all debug flags are turned off)
 export const debug = process.env.REACT_APP_DEBUG === '1' ? true : false;
 
@@ -9,7 +11,7 @@ export const debug = process.env.REACT_APP_DEBUG === '1' ? true : false;
 export const debugShowRenderer = debug && true;
 
 // shows FPS meter
-export const debugShowFPS = debug && true;
+export const debugShowFPS = (debug && true) || url.has('fps');
 
 // add a CACHE render count to the footer
 export const debugShowCacheCount = debug && true;
@@ -20,8 +22,6 @@ export const debugShowCacheFlag = debug && true;
 // -------------
 // Feature Flags
 // -------------
-
-const url = new URLSearchParams(window.location.search);
 
 export const debugMockLargeData = (debug && false) || url.has('mock-large-data');
 
