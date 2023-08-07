@@ -8,7 +8,6 @@ import {
   debugTimeCheck,
   debugTimeReset,
 } from '../helpers/debugPerformance';
-import { QUADRANT_RENDER_WAIT } from '../quadrants/quadrantConstants';
 import { PixiApp } from './PixiApp';
 
 export class Update {
@@ -67,6 +66,12 @@ export class Update {
   private updateDebug = (timeStart: number): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
+
+    if (app.paused) {
+      this.raf = requestAnimationFrame(this.updateDebug);
+      this.fps?.update();
+      return;
+    }
 
     this.updateViewport();
 
@@ -134,26 +139,26 @@ export class Update {
       debugTimeReset();
       app.renderer.render(app.stage);
       debugTimeCheck('[Update] render');
-      this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
+      // this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
       debugRendererLight(true);
       debugShowChildren(app.stage, 'stage');
       debugShowCachedCounts(app);
     } else {
       debugRendererLight(false);
 
-      // only render quadrants when the viewport hasn't been dirty for a while
-      if (timeStart > this.nextQuadrantRender) {
-        if (app.quadrants.needsUpdating()) {
-          this.quadrantsRendered = true;
-          app.quadrants.update(timeStart);
-        }
+      // // only render quadrants when the viewport hasn't been dirty for a while
+      // if (timeStart > this.nextQuadrantRender) {
+      //   if (app.quadrants.needsUpdating()) {
+      //     this.quadrantsRendered = true;
+      //     app.quadrants.update(timeStart);
+      //   }
 
-        // if quadrants are not dirty then rerender cells so it's ready for user input
-        else if (this.quadrantsRendered) {
-          // app.cells.dirty = true;
-          this.quadrantsRendered = false;
-        }
-      }
+      //   // if quadrants are not dirty then rerender cells so it's ready for user input
+      //   else if (this.quadrantsRendered) {
+      //     // app.cells.dirty = true;
+      //     this.quadrantsRendered = false;
+      //   }
+      // }
     }
 
     this.raf = requestAnimationFrame(this.updateDebug);
@@ -164,6 +169,12 @@ export class Update {
   private update = (timeStart: number): void => {
     const app = this.pixiApp;
     if (app.destroyed) return;
+
+    if (app.paused) {
+      this.raf = requestAnimationFrame(this.updateDebug);
+      this.fps?.update();
+      return;
+    }
 
     this.updateViewport();
 
@@ -204,21 +215,20 @@ export class Update {
         // }
       }
       app.renderer.render(app.stage);
-      this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
+      // this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
     } else {
       // only render quadrants when the viewport hasn't been dirty for a while
-      if (timeStart > this.nextQuadrantRender) {
-        if (app.quadrants.needsUpdating()) {
-          this.quadrantsRendered = true;
-          app.quadrants.update(timeStart);
-        }
-
-        // if quadrants are not dirty then rerender cells so it's ready for user input
-        else if (this.quadrantsRendered) {
-          // app.cells.dirty = true;
-          this.quadrantsRendered = false;
-        }
-      }
+      // if (timeStart > this.nextQuadrantRender) {
+      //   if (app.quadrants.needsUpdating()) {
+      //     this.quadrantsRendered = true;
+      //     app.quadrants.update(timeStart);
+      //   }
+      //   // if quadrants are not dirty then rerender cells so it's ready for user input
+      //   else if (this.quadrantsRendered) {
+      //     // app.cells.dirty = true;
+      //     this.quadrantsRendered = false;
+      //   }
+      // }
     }
 
     this.raf = requestAnimationFrame(this.update);

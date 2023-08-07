@@ -76,9 +76,9 @@ class PixiAppEvents {
     this.app.quadrants.deleteSheet(sheet);
   }
 
-  rebuild(): void {
+  async rebuild() {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.rebuild');
-
+    this.app.clear();
     this.app.viewport.dirty = true;
     this.app.gridLines.dirty = true;
     this.app.axesLines.dirty = true;
@@ -88,10 +88,12 @@ class PixiAppEvents {
     this.app.boxCells.reset();
     // this.app.quadrants.build();
 
+    this.app.paused = true;
     // todo: hack!!! (this avoids loading the sheets during initial load b/c PIXI is not set up yet)
     if (BitmapFont.available['OpenSans']) {
-      this.loadSheets();
+      await this.loadSheets();
     }
+    this.app.paused = false;
   }
 
   setZoomState(zoom: number): void {
@@ -116,9 +118,10 @@ class PixiAppEvents {
     this.app.settings.changeInput(input, initialValue);
   }
 
-  loadSheets() {
+  async loadSheets() {
     if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.loadSheets');
-    this.app?.cellsSheets.create();
+    await this.app?.cellsSheets.create();
+    this.app.viewport.dirty = true;
   }
 
   changeCells(sheet: Sheet, cells: Coordinate[], options: { labels?: boolean; background?: boolean }): void {

@@ -13,11 +13,12 @@ export class CellsSheets extends Container<CellsSheet> {
     this.app = app;
   }
 
-  create(): void {
+  async create(): Promise<void> {
     this.removeChildren();
-    this.app.sheet_controller.sheets.forEach((sheet) => {
-      this.addChild(new CellsSheet(sheet));
-    });
+    for (const sheet of this.app.sheet_controller.sheets) {
+      const child = this.addChild(new CellsSheet(sheet));
+      await child.create();
+    }
     this.show(this.app.sheet_controller.sheet.id);
   }
 

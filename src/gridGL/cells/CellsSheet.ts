@@ -5,51 +5,32 @@ import { intersects } from '../helpers/intersects';
 import { Coordinate } from '../types/size';
 import { CellsHash } from './CellsHash';
 import { CellFill, CellRust, CellsHashBounds, sheetHashHeight, sheetHashWidth } from './CellsTypes';
+import { createCellsSheet } from './cellsLabels/createCellsSheet';
 
 export class CellsSheet extends Container {
-  sheet: Sheet;
-
   // individual hash containers (eg, CellsBackground, CellsArray)
   private cellsHashContainer: Container;
 
+  // friends of createCellsSheet.ts
+  sheet: Sheet;
   // index into cellsHashContainer
-  private cellsHash: Map<string, CellsHash>;
+  cellsHash: Map<string, CellsHash>;
 
   constructor(sheet: Sheet) {
     super();
     this.sheet = sheet;
     this.cellsHash = new Map();
     this.cellsHashContainer = this.addChild(new Container());
-
-    this.populate(sheet);
   }
 
-  private addHash(hashX: number, hashY: number, cells?: CellRust[], background?: CellFill[]): CellsHash {
+  async create(): Promise<void> {
+    await createCellsSheet.populate(this);
+  }
+
+  addHash(hashX: number, hashY: number, cells?: CellRust[], background?: CellFill[]): CellsHash {
     const cellsHash = this.cellsHashContainer.addChild(new CellsHash(this, hashX, hashY, { cells, background }));
     this.cellsHash.set(cellsHash.key, cellsHash);
     return cellsHash;
-  }
-
-  // creates the cellsHashes on initial load
-  protected populate(sheet: Sheet): void {
-    const bounds = sheet.grid.getGridBounds(false);
-    if (bounds) {
-      const hashBounds = this.getHashBounds(bounds);
-      for (let y = hashBounds.yStart; y <= hashBounds.yEnd; y++) {
-        for (let x = hashBounds.xStart; x <= hashBounds.xEnd; x++) {
-          const rect = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-
-          const cells = sheet.grid.getCellList(rect);
-          const background = sheet.grid.getCellBackground(rect);
-          if (cells.length || background.length) {
-            this.addHash(x, y, cells, background);
-          }
-        }
-      }
-    }
-    this.cellsHash.forEach((hash) => hash.overflowClip());
-    this.cellsHash.forEach((hash) => hash.updateTextAfterClip());
-    this.cellsHash.forEach((hash) => hash.updateBuffers());
   }
 
   getHash(x: number, y: number): { x: number; y: number } {
@@ -59,7 +40,7 @@ export class CellsSheet extends Container {
     };
   }
 
-  protected getHashBounds(bounds: Rectangle): CellsHashBounds {
+  getHashBounds(bounds: Rectangle): CellsHashBounds {
     const xStart = Math.floor(bounds.left / sheetHashWidth);
     const yStart = Math.floor(bounds.top / sheetHashHeight);
     const xEnd = Math.floor(bounds.right / sheetHashWidth);

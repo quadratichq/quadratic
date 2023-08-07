@@ -52,6 +52,8 @@ export class PixiApp {
   // for testing purposes
   debug: Graphics;
 
+  paused = false;
+
   constructor(sheet_controller: SheetController, save: () => Promise<void>) {
     this.sheet_controller = sheet_controller;
     this.save = save;
@@ -290,5 +292,9 @@ export class PixiApp {
         resolve();
       }
     });
+  }
+
+  clear(): void {
+    this.renderer.render(new Container());
   }
 }

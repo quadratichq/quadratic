@@ -53,7 +53,7 @@ export const QuadraticApp = () => {
     };
   }, [setLoadedState]);
 
-  // Loading Effect
+  // Loading
   useEffect(() => {
     // Ensure this only runs once
     if (didMount.current) return;
@@ -67,13 +67,8 @@ export const QuadraticApp = () => {
         return;
       }
       if (!app.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in QuadraticApp');
-      app.cellsSheets.create();
+      await app.cellsSheets.create();
       setItemsLoaded((old) => ['quadrants', ...old]);
-
-      // todo...
-      // app.preRenderQuadrants().then(() => {
-      //   setItemsLoaded((old) => ['quadrants', ...old]);
-      // });
     };
 
     // populate web workers
