@@ -3,6 +3,9 @@ import { Sheet } from '../../../grid/sheet/Sheet';
 import { CellsSheet } from '../CellsSheet';
 import { CellsHashBounds, sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 
+// populate cellsSheets at a minimum of 15fps (allows javascript to remain responsive)
+const MAXIMUM_FRAME_TIME = 1000 / 15;
+
 // async populating of a CellsSheet
 class CreateCellsSheet {
   private cellsSheet?: CellsSheet;
@@ -24,7 +27,7 @@ class CreateCellsSheet {
       this.resolve = resolve;
       this.x = this.hashBounds!.xStart;
       this.y = this.hashBounds!.yStart;
-      this.nextHash();
+      this.nextHash(performance.now());
     });
   }
 
@@ -35,7 +38,7 @@ class CreateCellsSheet {
     return this.cellsSheet.sheet;
   }
 
-  private nextHash = (): void => {
+  private nextHash = (time: number): void => {
     if (
       this.cellsSheet === undefined ||
       this.x === undefined ||
@@ -65,7 +68,12 @@ class CreateCellsSheet {
         return;
       }
     }
-    setTimeout(this.nextHash, 0);
+    const now = performance.now();
+    if (time - now < MAXIMUM_FRAME_TIME) {
+      this.nextHash(time);
+    } else {
+      setTimeout(() => this.nextHash(time), 0);
+    }
   };
 
   private clip = () => {
