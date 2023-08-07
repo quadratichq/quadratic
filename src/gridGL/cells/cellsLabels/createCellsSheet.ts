@@ -4,7 +4,7 @@ import { CellsSheet } from '../CellsSheet';
 import { CellsHashBounds, sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 
 // number of meshes to measure per frame (since MAXIMUM_FRAME_TIME is limited by the coarseness in performance.now())
-const meshesPerFrame = 2;
+const meshesPerFrame = 3;
 
 // async populating of a CellsSheet
 class CreateCellsSheet {
@@ -13,10 +13,14 @@ class CreateCellsSheet {
   private hashBounds?: CellsHashBounds;
   private x?: number;
   private y?: number;
+  private timeout?: number;
 
   populate(cellsSheet: CellsSheet): Promise<void> {
-    console.log('*** populate...');
+    if (this.timeout) {
+      window.clearTimeout(this.timeout);
+    }
     return new Promise((resolve) => {
+      console.time('createCellsSheet.populate');
       this.cellsSheet = cellsSheet;
       const bounds = this.sheet.grid.getGridBounds(false);
       if (!bounds) {
@@ -65,12 +69,12 @@ class CreateCellsSheet {
         this.x = this.hashBounds.xStart;
         this.y++;
         if (this.y > this.hashBounds.yEnd) {
-          setTimeout(this.clip, 0);
+          this.timeout = window.setTimeout(this.clip, 0);
           return;
         }
       }
     }
-    setTimeout(this.nextHash, 0);
+    this.timeout = window.setTimeout(this.nextHash, 0);
   };
 
   private clip = () => {
@@ -78,7 +82,7 @@ class CreateCellsSheet {
       throw new Error('Expected cellsSheet to be defined in createCellsSheet.clip');
     }
     this.cellsSheet.cellsHash.forEach((hash) => hash.overflowClip());
-    setTimeout(this.updateText, 0);
+    this.timeout = window.setTimeout(this.updateText, 0);
     console.log('clip');
   };
 
@@ -87,7 +91,7 @@ class CreateCellsSheet {
       throw new Error('Expected cellsSheet to be defined in createCellsSheet.updateText');
     }
     this.cellsSheet.cellsHash.forEach((hash) => hash.updateTextAfterClip());
-    setTimeout(this.updateBuffers, 0);
+    this.timeout = window.setTimeout(this.updateBuffers, 0);
     console.log('updateText');
   };
 
@@ -98,6 +102,8 @@ class CreateCellsSheet {
     this.cellsSheet.cellsHash.forEach((hash) => hash.updateBuffers());
     console.log('updateBuffers');
     this.resolve();
+    console.log(`MeshesPerFrame: ${meshesPerFrame}`);
+    console.timeEnd('createCellsSheet.populate');
   };
 }
 
