@@ -2,6 +2,7 @@ import { removeItems } from '@pixi/utils';
 import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
 import { convertColorStringToTint, convertTintToArray } from '../../../helpers/convertColor';
 import { CellAlignment } from '../../../schemas';
+import { Coordinate } from '../../types/size';
 import { CellsHash } from '../CellsHash';
 import { CellHash, CellRust } from '../CellsTypes';
 import { CellsLabels } from './CellsLabels';
@@ -31,6 +32,7 @@ export class CellLabel extends Container implements CellHash {
   tint?: number;
   maxWidth: number;
   roundPixels?: boolean;
+  location: Coordinate;
 
   clipLeft: number | undefined;
   clipRight: number | undefined;
@@ -59,7 +61,7 @@ export class CellLabel extends Container implements CellHash {
   alignment: CellAlignment;
 
   // used by CellHash
-  AABB?: Rectangle;
+  AABB: Rectangle;
   hashes = new Set<CellsHash>();
 
   dirty = true;
@@ -77,6 +79,7 @@ export class CellLabel extends Container implements CellHash {
     this.letterSpacing = 0;
     this.tint = cell?.textColor ? convertColorStringToTint(cell.textColor) : 0;
 
+    this.location = { x: cell.x, y: cell.y };
     this.AABB = rectangle;
     this.cellWidth = rectangle.width;
     this.topLeft = new Point(rectangle.x, rectangle.y);
@@ -109,12 +112,42 @@ export class CellLabel extends Container implements CellHash {
     this.dirty = true;
   }
 
+  checkLeftClip(left: number): void {
+    if (this.AABB.left < left) {
+      this.setClip({ clipLeft: left });
+    }
+  }
+
+  checkRightClip(nextLeft: number): void {
+    if (this.right > nextLeft) {
+      this.setClip({ clipRight: nextLeft });
+    }
+  }
+
   private calculatePosition(): Point {
+    this.overflowLeft = 0;
+    this.overflowRight = 0;
     let alignment = this.alignment ?? 'left';
     if (alignment === 'right') {
-      return new Point(this.topLeft.x + this.right - this.textWidth, this.topLeft.y);
+      const actualLeft = this.topLeft.x + this.right - this.textWidth;
+      if (actualLeft < this.topLeft.x) {
+        this.overflowLeft = this.topLeft.x - actualLeft;
+      }
+      return new Point(actualLeft, this.topLeft.y);
     } else if (alignment === 'center') {
-      return new Point(this.topLeft.x + this.right / 2 - this.textWidth / 2, this.topLeft.y);
+      const actualLeft = this.topLeft.x + this.right / 2 - this.textWidth / 2;
+      const actualRight = actualLeft + this.textWidth;
+      if (actualLeft < this.topLeft.x) {
+        this.overflowLeft = this.topLeft.x - actualLeft;
+      }
+      if (actualRight > this.right) {
+        this.overflowRight = actualRight - this.right;
+      }
+      return new Point(actualLeft, this.topLeft.y);
+    }
+    const actualRight = this.topLeft.x + this.textWidth;
+    if (actualRight > this.right) {
+      this.overflowRight = actualRight - this.right;
     }
     return this.topLeft;
   }
@@ -225,6 +258,7 @@ export class CellLabel extends Container implements CellHash {
     this.textHeight = (pos.y + data.lineHeight) * scale;
 
     this.position = this.calculatePosition();
+    this.right = this.position.x + this.textWidth;
   }
 
   /** Adds the glyphs to the CellsLabels container */
@@ -248,8 +282,8 @@ export class CellLabel extends Container implements CellHash {
 
       // remove letters that are outside the clipping bounds
       if (
-        (this.clipRight !== undefined && xPos + textureFrame.width * scale + this.x >= this.clipRight) ||
-        (this.clipLeft !== undefined && xPos + this.x <= this.clipLeft)
+        (this.clipRight !== undefined && xPos + textureFrame.width * scale >= this.clipRight) ||
+        (this.clipLeft !== undefined && xPos <= this.clipLeft)
       ) {
         // todo: this should remove the correct size from the array...
         // this removes extra characters from the mesh after a clip

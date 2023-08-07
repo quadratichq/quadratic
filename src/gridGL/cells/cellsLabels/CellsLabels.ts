@@ -1,4 +1,4 @@
-import { Container, Rectangle, Renderer, Texture } from 'pixi.js';
+import { Container, Rectangle, Renderer } from 'pixi.js';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { debugTimeCheck, debugTimeReset } from '../../helpers/debugPerformance';
@@ -10,7 +10,6 @@ import { LabelMeshes } from './LabelMeshes';
 // holds all CellLabels within a sheet
 export class CellsLabels extends Container<LabelMeshes> implements CellHash {
   private cellsHash: CellsHash;
-  private textureCache: Texture[] = [];
 
   // holds the meshes for font/style combinations
   private labelMeshes: LabelMeshes;
@@ -64,7 +63,13 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
 
     // place glyphs and sets size of labelMeshes
     this.cellLabels.forEach((child) => child.updateText(this.labelMeshes));
+  }
 
+  updateTextAfterClip(): void {
+    this.cellLabels.forEach((child) => child.updateText(this.labelMeshes));
+  }
+
+  updateBuffers(): void {
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare();
 
@@ -75,40 +80,42 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
     this.labelMeshes.finalize();
   }
 
-  private getClipRight(label: CellLabel, textWidth: number): number | undefined {
-    // const rightEnd = label.x + textWidth;
-    // let column = label.data.location.x + 1;
-    // const row = label.data.location.y;
-    // let neighborOffset = this.sheet.gridOffsets.getCell(column, row).x;
-    // while (neighborOffset < rightEnd) {
-    //   const cell = this.sheet.grid.get(column, row)?.cell;
-    //   if (cell?.value || (cell?.evaluation_result && cell?.evaluation_result?.success === false)) {
-    //     return neighborOffset;
-    //   }
-    //   const neighborWidth = this.sheet.gridOffsets.getColumnWidth(column);
-    //   neighborOffset += neighborWidth;
-    //   column++;
-    // }
-    return;
+  /** clips overflows for CellLabels */
+  overflowClip(): void {
+    const bounds = this.cellsHash.sheet.grid.getSheetBounds(true);
+    if (!bounds) {
+      throw new Error('Expected bounds to exist in overflowClip for CellsLabels');
+    }
+    this.cellLabels.forEach((cellLabel) => this.checkClip(bounds, cellLabel));
   }
 
-  private getClipLeft(label: CellLabel): number | undefined {
-    // const leftEnd = label.x;
-    // let column = label.data.location.x - 1;
-    // const row = label.data.location.y;
-    // let neighbor = this.app.sheet.gridOffsets.getCell(column, row);
-    // let neighborWidth = neighbor.width;
-    // let neighborOffset = neighbor.x + neighbor.width;
-    // while (neighborOffset > leftEnd) {
-    //   const cell = this.app.sheet.grid.get(column, row)?.cell;
-    //   if (cell?.value || (cell?.evaluation_result && cell?.evaluation_result?.success === false)) {
-    //     return neighborOffset;
-    //   }
-    //   neighborOffset -= neighborWidth;
-    //   column--;
-    //   neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
-    // }
-    return;
+  private checkClip(bounds: Rectangle, label: CellLabel): void {
+    // if (label.location.x === 3 && label.location.y === 4) debugger;
+    let column = label.location.x - 1;
+    const row = label.location.y;
+    let currentHash: CellsHash | undefined = this.cellsHash;
+    while (column >= bounds.left) {
+      if (column < this.cellsHash.AABB.x) {
+        // find hash to the left of current hash (skip over empty hashes)
+        currentHash = this.cellsHash.findPreviousHash(column, row, bounds);
+        if (!currentHash) return;
+      }
+      const neighborLabel = currentHash.getLabel(column, row);
+      if (neighborLabel) {
+        neighborLabel.checkRightClip(label.topLeft.x);
+        label.checkLeftClip(neighborLabel.AABB.right);
+        return;
+      }
+      column--;
+      //   const cell = this.app.sheet.grid.get(column, row)?.cell;
+      //   if (cell?.value || (cell?.evaluation_result && cell?.evaluation_result?.success === false)) {
+      //     return neighborOffset;
+      //   }
+      //   neighborOffset -= neighborWidth;
+      //   column--;
+      //   neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
+      // }
+    }
   }
 
   // checks to see if the label needs to be clipped based on other labels
@@ -161,5 +168,9 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
     //   label.overflowLeft = undefined;
     // }
     // bounds.addRectangle(new Rectangle(label.x, label.y, width, label.height));
+  }
+
+  getLabel(column: number, row: number): CellLabel | undefined {
+    return this.cellLabels.get(`${column},${row}`);
   }
 }

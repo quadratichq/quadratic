@@ -3,11 +3,13 @@ import { debugShowCellsHashBoxes } from '../../debugFlags';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { Pos, Rect } from '../../quadratic-core/quadratic_core';
 import { CellsBackground } from './CellsBackground';
+import { CellsSheet } from './CellsSheet';
 import { CellFill, CellHash, CellRust, sheetHashHeight, sheetHashWidth } from './CellsTypes';
+import { CellLabel } from './cellsLabels/CellLabel';
 import { CellsLabels } from './cellsLabels/CellsLabels';
 
 export class CellsHash extends Container {
-  sheet: Sheet;
+  cellsSheet: CellsSheet;
 
   private entries: Set<CellHash>;
   private test?: Graphics;
@@ -18,7 +20,7 @@ export class CellsHash extends Container {
   AABB: Rectangle;
 
   // x,y bounds (includes overflow cells)
-  viewBounds: Rectangle;
+  viewBounds!: Rectangle;
 
   // quadratic-core/rect
   rect: any;
@@ -29,13 +31,13 @@ export class CellsHash extends Container {
     return `${x},${y}`;
   }
 
-  constructor(x: number, y: number, options: { sheet: Sheet; cells?: CellRust[]; background?: CellFill[] }) {
+  constructor(cellsSheet: CellsSheet, x: number, y: number, options: { cells?: CellRust[]; background?: CellFill[] }) {
     super();
-    this.sheet = options.sheet;
+    this.cellsSheet = cellsSheet;
     this.key = CellsHash.getKey(x, y);
     this.entries = new Set();
     this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth, sheetHashHeight);
-    const screen = options.sheet.gridOffsets.getScreenRectangle(
+    const screen = this.sheet.gridOffsets.getScreenRectangle(
       this.AABB.left,
       this.AABB.top,
       this.AABB.width,
@@ -54,9 +56,18 @@ export class CellsHash extends Container {
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
     this.cellsLabels.create(options.cells);
+  }
 
-    this.viewBounds = this.getBounds();
-    this.rect = new Rect(new Pos(this.AABB.left, this.AABB.top), new Pos(this.AABB.right, this.AABB.bottom));
+  get sheet(): Sheet {
+    return this.cellsSheet.sheet;
+  }
+
+  findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsHash | undefined {
+    return this.cellsSheet.findPreviousHash(column, row, bounds);
+  }
+
+  getLabel(column: number, row: number): CellLabel | undefined {
+    return this.cellsLabels.getLabel(column, row);
   }
 
   add(entry: CellHash): void {
@@ -72,15 +83,28 @@ export class CellsHash extends Container {
   show(): void {
     if (!this.visible) {
       this.visible = true;
-      // this.entries.forEach((hash) => (hash.visible = true));
     }
   }
 
   hide(): void {
     if (this.visible) {
       this.visible = false;
-      // this.entries.forEach((hash) => (hash.visible = false));
     }
+  }
+
+  overflowClip(): void {
+    this.cellsLabels.overflowClip();
+  }
+
+  updateTextAfterClip(): void {
+    this.cellsLabels.updateTextAfterClip();
+  }
+
+  updateBuffers(): void {
+    this.cellsLabels.updateBuffers();
+
+    this.viewBounds = this.getBounds();
+    this.rect = new Rect(new Pos(this.AABB.left, this.AABB.top), new Pos(this.AABB.right, this.AABB.bottom));
   }
 
   changeCells(options: { labels?: boolean; background?: boolean }): void {

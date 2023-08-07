@@ -249,6 +249,17 @@ export class GridSparse {
     return cells;
   }
 
+  getSheetBounds(onlyData: boolean): Rectangle | undefined {
+    const bounds = this.grid.getGridBounds(this.sheetId, onlyData);
+    if (!bounds) return;
+    return new Rectangle(
+      bounds.nonEmpty.min.x,
+      bounds.nonEmpty.min.y,
+      bounds.nonEmpty.max.x - bounds.nonEmpty.min.x,
+      bounds.nonEmpty.max.y - bounds.nonEmpty.min.y
+    );
+  }
+
   getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
     const allBounds = this.grid.getGridBounds(this.sheetId, false);
     const minX = allBounds.nonEmpty?.min.x;

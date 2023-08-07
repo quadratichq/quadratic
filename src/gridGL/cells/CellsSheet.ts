@@ -25,13 +25,12 @@ export class CellsSheet extends Container {
   }
 
   private addHash(hashX: number, hashY: number, cells?: CellRust[], background?: CellFill[]): CellsHash {
-    const cellsHash = this.cellsHashContainer.addChild(
-      new CellsHash(hashX, hashY, { sheet: this.sheet, cells, background })
-    );
+    const cellsHash = this.cellsHashContainer.addChild(new CellsHash(this, hashX, hashY, { cells, background }));
     this.cellsHash.set(cellsHash.key, cellsHash);
     return cellsHash;
   }
 
+  // creates the cellsHashes on initial load
   protected populate(sheet: Sheet): void {
     const bounds = sheet.grid.getGridBounds(false);
     if (bounds) {
@@ -48,6 +47,9 @@ export class CellsSheet extends Container {
         }
       }
     }
+    this.cellsHash.forEach((hash) => hash.overflowClip());
+    this.cellsHash.forEach((hash) => hash.updateTextAfterClip());
+    this.cellsHash.forEach((hash) => hash.updateBuffers());
   }
 
   getHash(x: number, y: number): { x: number; y: number } {
@@ -83,6 +85,22 @@ export class CellsSheet extends Container {
 
   hide(): void {
     this.visible = false;
+  }
+
+  getCellsHash(column: number, row: number): CellsHash | undefined {
+    const { x, y } = this.getHash(column, row);
+    const key = CellsHash.getKey(x, y);
+    return this.cellsHash.get(key);
+  }
+
+  findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsHash | undefined {
+    bounds = bounds ?? this.sheet.grid.getGridBounds(true);
+    if (!bounds) {
+      throw new Error('Expected bounds to be defined in findPreviousHash of CellsSheet');
+    }
+    let hash = this.getCellsHash(column, row);
+    while (!hash && column >= bounds.left) {}
+    return hash;
   }
 
   changeCells(cells: Coordinate[], options: { labels?: boolean; background?: boolean }) {
