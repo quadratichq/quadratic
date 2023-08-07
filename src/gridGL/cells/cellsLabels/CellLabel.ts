@@ -283,7 +283,6 @@ export class CellLabel extends Container implements CellHash {
         (this.clipRight !== undefined && xPos + textureFrame.width * scale >= this.clipRight) ||
         (this.clipLeft !== undefined && xPos <= this.clipLeft)
       ) {
-        // todo: this should remove the correct size from the array...
         // this removes extra characters from the mesh after a clip
         labelMesh.size -= 6;
       } else {

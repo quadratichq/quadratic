@@ -1,5 +1,6 @@
 import { Rectangle } from 'pixi.js';
 import { Sheet } from '../../../grid/sheet/Sheet';
+import { debugTimeCheck, debugTimeReset } from '../../helpers/debugPerformance';
 import { CellsSheet } from '../CellsSheet';
 import { CellsHashBounds, sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 
@@ -59,10 +60,13 @@ class CreateCellsSheet {
         sheetHashWidth - 1,
         sheetHashHeight - 1
       );
+      debugTimeReset();
       const cells = this.sheet.grid.getCellList(rect);
       const background = this.sheet.grid.getCellBackground(rect);
+      debugTimeCheck('getCells');
       if (cells.length || background.length) {
         this.cellsSheet.addHash(this.x, this.y, cells, background);
+        debugTimeCheck('addHash');
       }
       this.x++;
       if (this.x > this.hashBounds.xEnd) {
