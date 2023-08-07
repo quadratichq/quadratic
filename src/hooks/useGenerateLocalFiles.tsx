@@ -63,6 +63,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   // Persist `currentFileContents` to localStorage and update the tab title
   // when it changes
   useEffect(() => {
+    if (debugMockLargeData) return;
     if (currentFileContents !== null) {
       const { filename, id } = currentFileContents;
       localforage.setItem(id, currentFileContents).then(() => {
@@ -72,8 +73,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
 
       // If we are running with Quadratic in the cloud
       // Backup the file to the cloud
-      if (process.env.REACT_APP_QUADRATIC_API_URL && !debugMockLargeData)
-        apiClientSingleton.backupFile(id, currentFileContents);
+      if (process.env.REACT_APP_QUADRATIC_API_URL) apiClientSingleton.backupFile(id, currentFileContents);
     } else {
       document.title = 'Quadratic';
     }
