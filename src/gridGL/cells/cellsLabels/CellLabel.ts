@@ -5,7 +5,6 @@ import { CellAlignment } from '../../../schemas';
 import { Coordinate } from '../../types/size';
 import { CellsHash } from '../CellsHash';
 import { CellHash, CellRust } from '../CellsTypes';
-import { CellsLabels } from './CellsLabels';
 import { LabelMeshes } from './LabelMeshes';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 
@@ -24,8 +23,6 @@ interface CharRenderData {
 const fontSize = 14;
 
 export class CellLabel extends Container implements CellHash {
-  private cellsLabels: CellsLabels;
-
   text: string;
   fontName: string;
   fontSize: number;
@@ -69,9 +66,9 @@ export class CellLabel extends Container implements CellHash {
   // cache for clip to avoid recalculation of same clip
   private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
 
-  constructor(cellsLabels: CellsLabels, cell: CellRust, rectangle: Rectangle) {
+  constructor(cell: CellRust, rectangle: Rectangle) {
     super();
-    this.cellsLabels = cellsLabels;
+    if (!rectangle) debugger;
     this.text = cell.value.toString();
     this.fontSize = fontSize;
     this.roundPixels = true;
@@ -158,6 +155,7 @@ export class CellLabel extends Container implements CellHash {
     this.dirty = false;
 
     const data = BitmapFont.available[this.fontName];
+    if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateText');
     const pos = new Point();
     this.chars = [];
     const lineWidths = [];

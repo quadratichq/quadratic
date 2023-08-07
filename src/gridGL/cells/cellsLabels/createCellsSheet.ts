@@ -108,29 +108,3 @@ class CreateCellsSheet {
 }
 
 export const createCellsSheet = new CreateCellsSheet();
-
-// export const cellsSheetPopulate = (cellsSheet: CellsSheet): Promise<void> => {
-//   return new Promise((resolve) => {
-//     const sheet = cellsSheet.sheet;
-//     const bounds = sheet.grid.getGridBounds(false);
-//     if (bounds) {
-//       const hashBounds = cellsSheet.getHashBounds(bounds);
-//       for (let y = hashBounds.yStart; y <= hashBounds.yEnd; y++) {
-//         for (let x = hashBounds.xStart; x <= hashBounds.xEnd; x++) {
-//           const rect = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-
-//           const cells = sheet.grid.getCellList(rect);
-//           const background = sheet.grid.getCellBackground(rect);
-//           if (cells.length || background.length) {
-//             this.addHash(x, y, cells, background);
-//           }
-//         }
-//       }
-//       this.cellsHash.forEach((hash) => hash.overflowClip());
-//       this.cellsHash.forEach((hash) => hash.updateTextAfterClip());
-//       this.cellsHash.forEach((hash) => hash.updateBuffers());
-//     } else {
-//       resolve();
-//     }
-//   });
-// };

@@ -42,7 +42,7 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
     cells = cells ?? this.sheet.grid.getCellList(this.cellsHash.AABB);
     const cellLabels = cells.map((cell) => {
       const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
-      const cellLabel = new CellLabel(this, cell, rectangle);
+      const cellLabel = new CellLabel(cell, rectangle);
       this.cellLabels.set(this.getKey(cell), cellLabel);
       return cellLabel;
     });

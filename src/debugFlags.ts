@@ -1,7 +1,7 @@
 const url = new URLSearchParams(window.location.search);
 
 // set this in .env (if set to false then all debug flags are turned off)
-export const debug = true; //process.env.REACT_APP_DEBUG === '1' ? true : false;
+export const debug = url.has('debug') || process.env.REACT_APP_DEBUG === '1' ? true : false;
 
 // ------------------
 // Debug footer marks
