@@ -25,7 +25,7 @@ export const Component = () => {
 
   return (
     <>
-      <Header title="Example files" />
+      <Header title="Examples" />
       {EXAMPLE_FILES.map(({ name, description, file }) => (
         <Form key={file} method="post" onClick={(e) => submit(e.currentTarget)}>
           <input type="hidden" name="file" value={file} />

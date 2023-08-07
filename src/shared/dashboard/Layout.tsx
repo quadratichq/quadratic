@@ -1,4 +1,4 @@
-import { Close, FilterDramaOutlined, Menu, PeopleOutline, SchoolOutlined } from '@mui/icons-material';
+import { Close, ExtensionOutlined, Inbox, Menu, PeopleOutline } from '@mui/icons-material';
 import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation, useRouteLoaderData } from 'react-router-dom';
@@ -152,23 +152,23 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
 
         <SidebarLabel>Personal</SidebarLabel>
         <SidebarNavLink to="/files/mine" style={sidebarLinkStyles}>
-          <FilterDramaOutlined color="primary" />
+          <Inbox />
           <Typography variant="body2" color="text.primary">
             My files
           </Typography>
         </SidebarNavLink>
         <SidebarNavLink to="/files/examples" style={sidebarLinkStyles}>
-          <SchoolOutlined color="primary" />
+          <ExtensionOutlined />
           <Typography variant="body2" color="text.primary">
-            Example files
+            Examples
           </Typography>
         </SidebarNavLink>
 
         <SidebarLabel>Teams</SidebarLabel>
         <SidebarNavLink to="/files/teams" style={sidebarLinkStyles}>
-          <PeopleOutline color="disabled" />
-          <Typography variant="body2" color="text.secondary">
-            Coming soon…
+          <PeopleOutline />
+          <Typography variant="body2" color="text.primary">
+            Learn more
           </Typography>
         </SidebarNavLink>
       </div>
@@ -203,20 +203,25 @@ function SidebarNavLink({ to, children, style, isLogo }: any) {
     to === navigation.location?.pathname;
 
   return (
-    <NavLink to={to} style={{ ...style, position: 'relative' }}>
-      {isActive && (
-        <div
-          style={{
+    <NavLink to={to} style={{ ...style, position: 'relative' }} className={'navLinkQuadratic'}>
+      <Box
+        sx={[
+          {
             position: 'absolute',
             top: '0',
             left: '0',
             right: '0',
             bottom: '0',
-            backgroundColor: theme.palette.primary.light,
+            backgroundColor: isActive ? theme.palette.grey[400] : 'inherit',
             opacity: '.14',
-          }}
-        />
-      )}
+          },
+          {
+            '&:hover': {
+              backgroundColor: theme.palette.grey[400],
+            },
+          },
+        ]}
+      />
       {children}
       {navigation.state === 'loading' && navigation.location.pathname.includes(to) && !isLogo && (
         <CircularProgress size={18} sx={{ ml: 'auto' }} />

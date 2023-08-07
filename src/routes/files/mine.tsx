@@ -1,4 +1,10 @@
-import { DeleteOutline, ErrorOutline, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
+import {
+  AddOutlined,
+  DeleteOutline,
+  ErrorOutline,
+  FileDownloadOutlined,
+  InsertDriveFileOutlined,
+} from '@mui/icons-material';
 import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
 import apiClientSingleton from 'api-client/apiClientSingleton';
 import { GetFilesRes } from 'api-client/types';
@@ -102,6 +108,18 @@ export const Component = () => {
         title="My files"
         actions={
           <Form method="post" style={{ display: 'flex', gap: theme.spacing(1) }}>
+            <Button
+              startIcon={<AddOutlined />}
+              variant="contained"
+              disableElevation
+              name="action"
+              value="create"
+              type="submit"
+              disabled={isDisabled}
+            >
+              Create
+            </Button>
+
             <Button variant="outlined" component="label" disabled={isDisabled}>
               <input
                 type="file"
@@ -132,17 +150,6 @@ export const Component = () => {
                 hidden
               />
               Import
-            </Button>
-
-            <Button
-              variant="contained"
-              disableElevation
-              name="action"
-              value="create"
-              type="submit"
-              disabled={isDisabled}
-            >
-              Create
             </Button>
           </Form>
         }
