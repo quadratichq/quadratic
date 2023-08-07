@@ -2,6 +2,7 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 mod block;
@@ -28,7 +29,7 @@ pub use sheet::Sheet;
 use crate::{CellValue, Pos, Rect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Grid {
     sheet_ids: IdMap<SheetId, usize>,
     sheets: Vec<Sheet>,

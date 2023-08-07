@@ -2,6 +2,7 @@ use std::fmt;
 use std::ops::Range;
 
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.
@@ -9,7 +10,7 @@ use wasm_bindgen::prelude::*;
 #[derive(
     Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
 )]
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Pos {
     /// Column
     #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
@@ -48,7 +49,7 @@ impl fmt::Display for Pos {
 #[derive(
     Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
 )]
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Rect {
     /// Upper-left corner.
     pub min: Pos,

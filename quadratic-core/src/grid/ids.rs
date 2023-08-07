@@ -3,13 +3,14 @@ use std::hash::Hash;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 macro_rules! uuid_wrapper_struct {
     ($name:ident) => {
         #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
         #[serde(transparent)]
-        #[wasm_bindgen]
+        #[cfg_attr(feature = "js", wasm_bindgen)]
         pub struct $name(Uuid);
 
         impl $name {
