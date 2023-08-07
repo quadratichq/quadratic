@@ -69,10 +69,10 @@ class CreateCellsSheet {
       }
     }
     const now = performance.now();
-    if (time - now < MAXIMUM_FRAME_TIME) {
+    if (now - time < MAXIMUM_FRAME_TIME) {
       this.nextHash(time);
     } else {
-      setTimeout(() => this.nextHash(time), 0);
+      setTimeout(() => this.nextHash(now), 0);
     }
   };
 
