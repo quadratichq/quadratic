@@ -1,5 +1,5 @@
 import { Point } from 'pixi.js';
-import { debug, debugShowCellsForDirtyQuadrants, debugShowFPS } from '../../debugFlags';
+import { debugShowCellsForDirtyQuadrants, debugShowFPS } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
 import {
   debugRendererLight,
@@ -33,7 +33,8 @@ export class Update {
 
   start(): void {
     if (!this.raf) {
-      this.raf = requestAnimationFrame(debug ? this.updateDebug : this.update);
+      // this.raf = requestAnimationFrame(debug ? this.updateDebug : this.update);
+      this.raf = requestAnimationFrame(this.updateDebug);
     }
   }
 

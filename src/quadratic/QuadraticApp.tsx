@@ -4,6 +4,7 @@ import { loadedStateAtom } from '../atoms/loadedStateAtom';
 import { SheetController } from '../grid/controller/sheetController';
 import { loadAssets } from '../gridGL/loadAssets';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { pixiAppEvents } from '../gridGL/pixiApp/PixiAppEvents';
 import { useGenerateLocalFiles } from '../hooks/useGenerateLocalFiles';
 import QuadraticUIContext from '../ui/QuadraticUIContext';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
@@ -66,8 +67,9 @@ export const QuadraticApp = () => {
       if (!assets || !files) {
         return;
       }
-      if (!app.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in QuadraticApp');
-      await app.cellsSheets.create();
+      pixiAppEvents.rebuild();
+      // if (!app.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in QuadraticApp');
+      // await app.cellsSheets.create();
       setItemsLoaded((old) => ['quadrants', ...old]);
     };
 
