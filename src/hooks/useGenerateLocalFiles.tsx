@@ -7,7 +7,7 @@ import { v4 as uuid } from 'uuid';
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
-import { debugShowFileIO } from '../debugFlags';
+import { debugMockLargeData, debugShowFileIO } from '../debugFlags';
 import { SheetController } from '../grid/controller/sheetController';
 import { pixiAppEvents } from '../gridGL/pixiApp/PixiAppEvents';
 import { downloadFile } from '../helpers/downloadFile';
@@ -72,7 +72,8 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
 
       // If we are running with Quadratic in the cloud
       // Backup the file to the cloud
-      if (process.env.REACT_APP_QUADRATIC_API_URL) apiClientSingleton.backupFile(id, currentFileContents);
+      if (process.env.REACT_APP_QUADRATIC_API_URL && !debugMockLargeData)
+        apiClientSingleton.backupFile(id, currentFileContents);
     } else {
       document.title = 'Quadratic';
     }
