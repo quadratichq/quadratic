@@ -21,7 +21,9 @@ export const debugShowCacheFlag = debug && true;
 // Feature Flags
 // -------------
 
-export const debugMockLargeData = debug && false;
+const url = new URLSearchParams(window.location.search);
+
+export const debugMockLargeData = debug && (false || url.has('mock-large-data'));
 
 // ------------
 // Transactions
