@@ -18,6 +18,7 @@ class CreateCellsSheet {
 
   populate(cellsSheet: CellsSheet): Promise<void> {
     if (this.timeout) {
+      console.log('**** clearing timeout...');
       window.clearTimeout(this.timeout);
     }
     return new Promise((resolve) => {
@@ -72,6 +73,8 @@ class CreateCellsSheet {
       if (this.x > this.hashBounds.xEnd) {
         this.x = this.hashBounds.xStart;
         this.y++;
+
+        // start clipping when we've populated all cellHashes
         if (this.y > this.hashBounds.yEnd) {
           this.timeout = window.setTimeout(this.clip, 0);
           return;
@@ -104,6 +107,7 @@ class CreateCellsSheet {
       throw new Error('Expected cellsSheet and resolve to be defined in createCellsSheet.updateBuffers');
     }
     this.cellsSheet.cellsHash.forEach((hash) => hash.updateBuffers());
+    this.timeout = undefined;
     console.log('updateBuffers');
     this.resolve();
     console.log(`MeshesPerFrame: ${meshesPerFrame}`);
