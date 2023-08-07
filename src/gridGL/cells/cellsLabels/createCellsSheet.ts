@@ -3,8 +3,8 @@ import { Sheet } from '../../../grid/sheet/Sheet';
 import { CellsSheet } from '../CellsSheet';
 import { CellsHashBounds, sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 
-// populate cellsSheets at a minimum of 15fps (allows javascript to remain responsive)
-const MAXIMUM_FRAME_TIME = 1000 / 15;
+// number of meshes to measure per frame (since MAXIMUM_FRAME_TIME is limited by the coarseness in performance.now())
+const meshesPerFrame = 2;
 
 // async populating of a CellsSheet
 class CreateCellsSheet {
@@ -27,7 +27,7 @@ class CreateCellsSheet {
       this.resolve = resolve;
       this.x = this.hashBounds!.xStart;
       this.y = this.hashBounds!.yStart;
-      this.nextHash(performance.now());
+      this.nextHash();
     });
   }
 
@@ -38,7 +38,7 @@ class CreateCellsSheet {
     return this.cellsSheet.sheet;
   }
 
-  private nextHash = (time: number): void => {
+  private nextHash = (): void => {
     if (
       this.cellsSheet === undefined ||
       this.x === undefined ||
@@ -47,33 +47,30 @@ class CreateCellsSheet {
     ) {
       throw new Error('Expected variables to be defined in createCellsSheet.next');
     }
-    console.log(`nextHash ${this.x}, ${this.y}`);
-    const rect = new Rectangle(
-      this.x * sheetHashWidth,
-      this.y * sheetHashHeight,
-      sheetHashWidth - 1,
-      sheetHashHeight - 1
-    );
-    const cells = this.sheet.grid.getCellList(rect);
-    const background = this.sheet.grid.getCellBackground(rect);
-    if (cells.length || background.length) {
-      this.cellsSheet.addHash(this.x, this.y, cells, background);
-    }
-    this.x++;
-    if (this.x > this.hashBounds.xEnd) {
-      this.x = this.hashBounds.xStart;
-      this.y++;
-      if (this.y > this.hashBounds.yEnd) {
-        setTimeout(this.clip, 0);
-        return;
+    for (let i = 0; i < meshesPerFrame; i++) {
+      console.log(`nextHash ${this.x}, ${this.y}`);
+      const rect = new Rectangle(
+        this.x * sheetHashWidth,
+        this.y * sheetHashHeight,
+        sheetHashWidth - 1,
+        sheetHashHeight - 1
+      );
+      const cells = this.sheet.grid.getCellList(rect);
+      const background = this.sheet.grid.getCellBackground(rect);
+      if (cells.length || background.length) {
+        this.cellsSheet.addHash(this.x, this.y, cells, background);
+      }
+      this.x++;
+      if (this.x > this.hashBounds.xEnd) {
+        this.x = this.hashBounds.xStart;
+        this.y++;
+        if (this.y > this.hashBounds.yEnd) {
+          setTimeout(this.clip, 0);
+          return;
+        }
       }
     }
-    const now = performance.now();
-    if (now - time < MAXIMUM_FRAME_TIME) {
-      this.nextHash(time);
-    } else {
-      setTimeout(() => this.nextHash(now), 0);
-    }
+    setTimeout(this.nextHash, 0);
   };
 
   private clip = () => {
