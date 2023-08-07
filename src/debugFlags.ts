@@ -23,7 +23,7 @@ export const debugShowCacheFlag = debug && true;
 
 const url = new URLSearchParams(window.location.search);
 
-export const debugMockLargeData = debug && (false || url.has('mock-large-data'));
+export const debugMockLargeData = (debug && false) || url.has('mock-large-data');
 
 // ------------
 // Transactions
