@@ -11,8 +11,8 @@ import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { webWorkers } from '../web-workers/webWorkers';
 import { AnalyticsProvider } from './AnalyticsProvider';
 
-type loadableItem = 'pixi-assets' | 'local-files' | 'quadrants';
-const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files', 'quadrants'];
+type loadableItem = 'pixi-assets' | 'local-files';
+const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'local-files'];
 
 export const QuadraticApp = () => {
   const [loading, setLoading] = useState(true);
@@ -25,8 +25,13 @@ export const QuadraticApp = () => {
   const { initialize } = localFiles;
 
   useEffect(() => {
-    if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
+    const finalize = async () => {
+      await pixiAppEvents.rebuild();
       setLoading(false);
+    };
+
+    if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
+      finalize();
     }
   }, [app, itemsLoaded]);
 
@@ -60,31 +65,31 @@ export const QuadraticApp = () => {
     if (didMount.current) return;
     didMount.current = true;
 
-    let assets = false,
-      files = false;
-    const prerenderQuadrants = async () => {
-      // wait for local-files and pixi-assets to load before pre-rendering quadrants
-      if (!assets || !files) {
-        return;
-      }
-      pixiAppEvents.rebuild();
-      // if (!app.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in QuadraticApp');
-      // await app.cellsSheets.create();
-      setItemsLoaded((old) => ['quadrants', ...old]);
-    };
+    // let assets = false,
+    //   files = false;
+    // const prerenderQuadrants = async () => {
+    //   // wait for local-files and pixi-assets to load before pre-rendering quadrants
+    //   if (!assets || !files) {
+    //     return;
+    //   }
+    //   pixiAppEvents.rebuild();
+    //   // if (!app.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in QuadraticApp');
+    //   // await app.cellsSheets.create();
+    //   setItemsLoaded((old) => ['quadrants', ...old]);
+    // };
 
     // populate web workers
     webWorkers.init(app);
 
     loadAssets().then(() => {
       setItemsLoaded((old) => ['pixi-assets', ...old]);
-      assets = true;
-      prerenderQuadrants();
+      // assets = true;
+      // prerenderQuadrants();
     });
     initialize().then(() => {
       setItemsLoaded((old) => ['local-files', ...old]);
-      files = true;
-      prerenderQuadrants();
+      // files = true;
+      // prerenderQuadrants();
     });
   }, [app, initialize]);
 
