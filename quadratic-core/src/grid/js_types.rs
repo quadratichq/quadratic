@@ -8,12 +8,12 @@ use super::CodeCellLanguage;
 use crate::CellValue;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
     pub x: i64,
     pub y: i64,
 
-    #[serde(flatten)]
     pub value: CellValue,
     /// Code language, set only for the top left cell of a code output.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -36,6 +36,7 @@ pub struct JsRenderCell {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
 pub struct JsRenderFill {
     pub x: i64,
     pub y: i64,
@@ -46,6 +47,7 @@ pub struct JsRenderFill {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
 pub struct JsRenderBorder {
     pub x: i64,
     pub y: i64,
@@ -57,27 +59,29 @@ pub struct JsRenderBorder {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct JsFormattingSummary {
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+pub struct FormattingSummary {
     pub bold: BoolSummary,
     pub italic: BoolSummary,
 }
-impl BitOr for JsFormattingSummary {
+impl BitOr for FormattingSummary {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        JsFormattingSummary {
+        FormattingSummary {
             bold: self.bold | rhs.bold,
             italic: self.italic | rhs.italic,
         }
     }
 }
-impl BitOrAssign for JsFormattingSummary {
+impl BitOrAssign for FormattingSummary {
     fn bitor_assign(&mut self, rhs: Self) {
         *self = *self | rhs;
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
 pub struct JsRenderCodeCell {
     pub x: i64,
     pub y: i64,

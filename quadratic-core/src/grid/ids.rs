@@ -9,13 +9,14 @@ use wasm_bindgen::prelude::*;
 macro_rules! uuid_wrapper_struct {
     ($name:ident) => {
         #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-        #[serde(transparent)]
-        #[cfg_attr(feature = "js", wasm_bindgen)]
-        pub struct $name(Uuid);
+        #[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS), ts(export))]
+        pub struct $name {
+            id: Uuid,
+        }
 
         impl $name {
             pub(super) fn new() -> Self {
-                $name(Uuid::new_v4())
+                $name { id: Uuid::new_v4() }
             }
         }
     };
@@ -26,6 +27,7 @@ uuid_wrapper_struct!(RowId);
 uuid_wrapper_struct!(ColumnId);
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
 pub struct CellRef {
     pub sheet: SheetId,
     pub column: ColumnId,

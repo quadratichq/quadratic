@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use super::borders::CellBorder;
 use super::formatting::{CellAlign, CellWrap, NumericFormat};
-use super::{CellRef, CodeCellLanguage, CodeCellRunOk, CodeCellRunOutput, CodeCellValue, Sheet};
+use super::{
+    CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Sheet,
+};
 use crate::{Array, CellValue, Error, ErrorMsg, Span, Value};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -212,7 +214,7 @@ impl JsCell {
             last_modified: self.last_modified.clone().unwrap_or_default(),
             output: self.evaluation_result.clone().and_then(|js_result| {
                 let result = match js_result.success {
-                    true => Ok(CodeCellRunOk {
+                    true => CodeCellRunResult::Ok {
                         output_value: if let Some(array) = js_result.array_output {
                             let width;
                             let height;
@@ -248,11 +250,13 @@ impl JsCell {
                                 row: sheet.get_or_create_row(y).id,
                             })
                             .collect(),
-                    }),
-                    false => Err(Error {
-                        span: js_result.error_span.map(|(start, end)| Span { start, end }),
-                        msg: ErrorMsg::UnknownError,
-                    }),
+                    },
+                    false => CodeCellRunResult::Err {
+                        error: Error {
+                            span: js_result.error_span.map(|(start, end)| Span { start, end }),
+                            msg: ErrorMsg::UnknownError,
+                        },
+                    },
                 };
 
                 Some(CodeCellRunOutput {

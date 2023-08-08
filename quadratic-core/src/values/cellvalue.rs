@@ -8,8 +8,9 @@ use crate::{CodeResult, Error, Span};
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
 #[serde(tag = "type", content = "value")]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum CellValue {
     /// Blank cell, which contains nothing.
     #[default]

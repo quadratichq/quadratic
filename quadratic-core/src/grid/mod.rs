@@ -80,24 +80,26 @@ impl Grid {
                         column,
                         row,
                     };
-                    if let Some(output) = &cell_code.output {
-                        if let Ok(result) = &output.result {
-                            let source = code_cell_ref;
-                            match &result.output_value {
-                                Value::Single(_) => {
-                                    let x = js_cell.x;
-                                    let y = js_cell.y;
-                                    let column = sheet.get_or_create_column(x).1;
-                                    column.spills.set(y, Some(source));
-                                }
-                                Value::Array(array) => {
-                                    for dy in 0..array.height() {
-                                        for dx in 0..array.width() {
-                                            let x = js_cell.x + dx as i64;
-                                            let y = js_cell.y + dy as i64;
-                                            let column = sheet.get_or_create_column(x).1;
-                                            column.spills.set(y, Some(source));
-                                        }
+                    if let Some(output) = cell_code
+                        .output
+                        .as_ref()
+                        .and_then(CodeCellRunOutput::output_value)
+                    {
+                        let source = code_cell_ref;
+                        match output {
+                            Value::Single(_) => {
+                                let x = js_cell.x;
+                                let y = js_cell.y;
+                                let column = sheet.get_or_create_column(x).1;
+                                column.spills.set(y, Some(source));
+                            }
+                            Value::Array(array) => {
+                                for dy in 0..array.height() {
+                                    for dx in 0..array.width() {
+                                        let x = js_cell.x + dx as i64;
+                                        let y = js_cell.y + dy as i64;
+                                        let column = sheet.get_or_create_column(x).1;
+                                        column.spills.set(y, Some(source));
                                     }
                                 }
                             }

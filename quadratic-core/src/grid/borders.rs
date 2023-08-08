@@ -100,6 +100,7 @@ impl SheetBorders {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
 pub struct CellBorders {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub h: Option<CellBorder>,
@@ -108,6 +109,7 @@ pub struct CellBorders {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
 pub struct CellBorder {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
@@ -115,6 +117,7 @@ pub struct CellBorder {
     pub style: Option<CellBorderStyle>,
 }
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "lowercase")]
 pub enum CellBorderStyle {
     Line1,

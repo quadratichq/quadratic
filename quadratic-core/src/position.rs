@@ -11,6 +11,8 @@ use wasm_bindgen::prelude::*;
     Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
 )]
 #[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+
 pub struct Pos {
     /// Column
     #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
@@ -49,7 +51,7 @@ impl fmt::Display for Pos {
 #[derive(
     Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
 )]
-#[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS), ts(export))]
 pub struct Rect {
     /// Upper-left corner.
     pub min: Pos,

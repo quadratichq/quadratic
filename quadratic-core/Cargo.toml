@@ -19,7 +19,13 @@ path = "src/bin/docgen.rs"
 [features]
 default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
-js = ["serde-wasm-bindgen", "js-sys", "wasm-bindgen", "wasm-bindgen-futures"]
+js = [
+    "js-sys",
+    "serde-wasm-bindgen",
+    "ts-rs",
+    "wasm-bindgen",
+    "wasm-bindgen-futures",
+]
 
 [dependencies]
 anyhow = "1.0"
@@ -33,7 +39,7 @@ regex = "1.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_repr = "0.1"
-smallvec = { version = "1.10.0", features = ["serde", "union"] }
+smallvec = { version = "1.11.0", features = ["serde", "union"] }
 strum = "0.24.1"
 strum_macros = "0.24.3"
 pollster = "0.2.5"
@@ -46,8 +52,12 @@ uuid = { version = "1.4.0", features = ["v4", "serde"] }
 console_error_panic_hook = { version = "0.1.7", optional = true }
 
 # JS dependencies that break the WASI build (which we need for benchmarks)
-serde-wasm-bindgen = { version = "0.4.5", optional = true }
 js-sys = { version = "0.3.60", optional = true }
+serde-wasm-bindgen = { version = "0.4.5", optional = true }
+ts-rs = { git = "https://github.com/HactarCE/ts-rs/", rev = "812c1a8", optional = true, features = [
+    "uuid-impl",
+    "smallvec-impl",
+] }
 wasm-bindgen = { version = "0.2.83", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
 
