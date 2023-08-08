@@ -1,5 +1,6 @@
 import { BitmapFont } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
+import { ensureVisible } from '../interaction/viewportHelper';
 import { QuadrantChanged } from '../quadrants/Quadrants';
 import { Coordinate } from '../types/size';
 import { PixiApp } from './PixiApp';
@@ -45,6 +46,8 @@ class PixiAppEvents {
 
     this.app.cursor.dirty = true;
     this.app.headings.dirty = true;
+
+    ensureVisible({ app: this.app, sheet: this.app.sheet });
 
     // triggers useGetBorderMenu clearSelection()
     window.dispatchEvent(new CustomEvent('cursor-position'));
