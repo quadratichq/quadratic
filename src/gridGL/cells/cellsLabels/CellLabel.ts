@@ -64,7 +64,7 @@ export class CellLabel extends Container {
 
   constructor(cell: CellRust, rectangle: Rectangle) {
     super();
-    this.text = cell.value.toString();
+    this.text = cell.value.value.toString();
     this.fontSize = fontSize;
     this.roundPixels = true;
     this.maxWidth = 0;

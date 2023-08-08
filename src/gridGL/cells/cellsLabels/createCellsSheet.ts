@@ -24,6 +24,7 @@ class CreateCellsSheet {
     return new Promise((resolve) => {
       this.cellsSheet = cellsSheet;
       const bounds = this.sheet.grid.getGridBounds(false);
+      console.log({ bounds });
       if (!bounds) {
         resolve();
         return;

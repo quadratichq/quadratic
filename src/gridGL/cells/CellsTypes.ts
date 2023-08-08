@@ -17,7 +17,10 @@ export interface CellHash {
 export interface CellRust {
   x: number;
   y: number;
-  value: string;
+  value: {
+    type: string;
+    value: string;
+  };
   align?: 'center' | 'left' | 'right';
   wrap?: 'overflow' | 'wrap' | 'clip';
   bold?: boolean;

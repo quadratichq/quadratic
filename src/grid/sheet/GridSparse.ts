@@ -245,54 +245,45 @@ export class GridSparse {
 
   getSheetBounds(onlyData: boolean): Rectangle | undefined {
     const bounds = this.grid.getGridBounds(this.sheetId, onlyData);
-    if (!bounds) return;
-    return new Rectangle(
-      bounds.nonEmpty.min.x,
-      bounds.nonEmpty.min.y,
-      bounds.nonEmpty.max.x - bounds.nonEmpty.min.x,
-      bounds.nonEmpty.max.y - bounds.nonEmpty.min.y
-    );
+    if (bounds.type !== 'nonEmpty') return;
+    return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
   }
 
-  getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
-    const allBounds = this.grid.getGridBounds(this.sheetId, false);
-    const minX = allBounds.nonEmpty?.min.x;
-    const minY = allBounds.nonEmpty?.min.y;
-    const maxX = allBounds.nonEmpty?.max.x;
-    const maxY = allBounds.nonEmpty?.max.y;
-    const empty = !allBounds.nonEmpty;
-    const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
-    const columnStart = columnStartIndex.index > minX ? columnStartIndex.index : minX;
-    const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
-    const columnEnd = columnEndIndex.index < maxX ? columnEndIndex.index : maxX;
+  // getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
+  //   const allBounds = this.grid.getGridBounds(this.sheetId, false);
+  //   const minX = allBounds.nonEmpty?.min.x;
+  //   const minY = allBounds.nonEmpty?.min.y;
+  //   const maxX = allBounds.nonEmpty?.max.x;
+  //   const maxY = allBounds.nonEmpty?.max.y;
+  //   const empty = !allBounds.nonEmpty;
+  //   const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
+  //   const columnStart = columnStartIndex.index > minX ? columnStartIndex.index : minX;
+  //   const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
+  //   const columnEnd = columnEndIndex.index < maxX ? columnEndIndex.index : maxX;
 
-    const rowStartIndex = this.gridOffsets.getRowIndex(bounds.top);
-    const rowStart = rowStartIndex.index > minY ? rowStartIndex.index : minY;
-    const rowEndIndex = this.gridOffsets.getRowIndex(bounds.bottom);
-    const rowEnd = rowEndIndex.index < maxY ? rowEndIndex.index : maxY;
+  //   const rowStartIndex = this.gridOffsets.getRowIndex(bounds.top);
+  //   const rowStart = rowStartIndex.index > minY ? rowStartIndex.index : minY;
+  //   const rowEndIndex = this.gridOffsets.getRowIndex(bounds.bottom);
+  //   const rowEnd = rowEndIndex.index < maxY ? rowEndIndex.index : maxY;
 
-    return {
-      bounds: new Rectangle(
-        columnStartIndex.index,
-        rowStartIndex.index,
-        columnEndIndex.index - columnStartIndex.index,
-        rowEndIndex.index - rowStartIndex.index
-      ),
-      boundsWithData: empty
-        ? undefined
-        : new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart),
-    };
-  }
+  //   return {
+  //     bounds: new Rectangle(
+  //       columnStartIndex.index,
+  //       rowStartIndex.index,
+  //       columnEndIndex.index - columnStartIndex.index,
+  //       rowEndIndex.index - rowStartIndex.index
+  //     ),
+  //     boundsWithData: empty
+  //       ? undefined
+  //       : new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart),
+  //   };
+  // }
 
   getGridBounds(onlyData: boolean): Rectangle | undefined {
     const bounds = this.grid.getGridBounds(this.sheetId, onlyData);
-    if (bounds.nonEmpty) {
-      return new Rectangle(
-        bounds.nonEmpty.min.x,
-        bounds.nonEmpty.min.y,
-        bounds.nonEmpty.max.x - bounds.nonEmpty.min.x,
-        bounds.nonEmpty.max.y - bounds.nonEmpty.min.y
-      );
+    console.log('gridSpars', bounds);
+    if (bounds.type === 'nonEmpty') {
+      return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
     }
   }
 
