@@ -195,8 +195,6 @@ class APIClientSingleton {
       version: DEFAULT_FILE.version,
     }
   ): Promise<string | undefined> {
-    mixpanel.track('[Files].newFile');
-
     try {
       const base_url = this.getAPIURL();
       const response = await fetch(`${base_url}/v0/files/`, {

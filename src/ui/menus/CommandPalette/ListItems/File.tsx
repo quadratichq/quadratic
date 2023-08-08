@@ -1,18 +1,17 @@
-import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { NoteAddOutlined } from '@mui/icons-material';
-import { ShareFileOutlined, SaveFileOutlined } from '../../../icons';
+import { useNavigate } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-// import { useLocalFiles } from '../../../contexts/LocalFiles';
-// import apiClientSingleton from '../../../../api-client/apiClientSingleton';
+import { SaveFileOutlined, ShareFileOutlined } from '../../../icons';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
     label: 'File: New',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const createNewFile = () => {}; // TODO useLocalFiles();
-      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={createNewFile} />;
+      const navigate = useNavigate();
+      const action = () => navigate('/files/create');
+      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={action} />;
     },
   },
   {

@@ -15,6 +15,7 @@ import {
 import { GlobalSnackbarProvider } from 'shared/GlobalSnackbar';
 import { authClient, protectedRouteLoaderWrapper } from '../auth';
 import { debugLogAuth } from '../debugFlags';
+import * as Create from '../routes/files/create';
 import Empty from '../shared/Empty';
 import BrowserCompatibility from '../shared/root/BrowserCompatibility';
 import Scripts from '../shared/root/Scripts';
@@ -31,18 +32,18 @@ const router = createBrowserRouter(
     <>
       <Route
         path="/"
-        loader={async (): Promise<RootLoaderData> => {
+        loader={protectedRouteLoaderWrapper(async (): Promise<RootLoaderData> => {
           let isAuthenticated = await authClient.isAuthenticated();
           let user = await authClient.user();
           if (debugLogAuth) console.log('[auth] / <loader>: isAuthenticated: %s', isAuthenticated);
           return { isAuthenticated, user };
-        }}
+        })}
         element={<Root />}
         errorElement={<RootError />}
         id="root"
       >
         <Route index element={<Navigate to="/files" replace />} />
-        <Route loader={protectedRouteLoaderWrapper(async () => null)} path="file">
+        <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibility />}>
             <Route index element={<Navigate to="/files" replace />} />
@@ -50,11 +51,19 @@ const router = createBrowserRouter(
           </Route>
         </Route>
 
-        <Route loader={protectedRouteLoaderWrapper(async () => null)} lazy={() => import('../shared/dashboard/Layout')}>
+        <Route
+          path="files/create"
+          id="create"
+          loader={Create.loader}
+          action={Create.action}
+          shouldRevalidate={() => false}
+        />
+
+        <Route lazy={() => import('../shared/dashboard/Layout')}>
           <Route path="files" element={<Navigate to="/files/mine" replace />} />
           <Route path="files/mine" lazy={() => import('./files/mine')} />
           <Route path="files/examples" lazy={() => import('./files/examples')} />
-          <Route path="files/teams" lazy={() => import('./teams')} />
+          <Route path="teams" lazy={() => import('./teams')} />
           <Route path="account" lazy={() => import('./account')} />
         </Route>
 

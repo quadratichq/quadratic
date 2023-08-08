@@ -5,23 +5,21 @@ import Button from '@mui/material/Button';
 import { Menu, MenuDivider, MenuHeader, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useEffect } from 'react';
+import { useRouteLoaderData } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
+import { authClient } from '../../../../auth';
 import { IS_READONLY_MODE } from '../../../../constants/app';
 import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../../grid/controller/sheetController';
+import { focusGrid } from '../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { RootLoaderData } from '../../../../routes';
 import { isMac } from '../../../../utils/isMac';
 import { MenuLineItem } from '../MenuLineItem';
 import { useGridSettings } from './useGridSettings';
-// import { useLocalFiles } from '../../../contexts/LocalFiles';
-import { focusGrid } from '../../../../helpers/focusGrid';
-// import apiClientSingleton from '../../../../api-client/apiClientSingleton';
-import { useNavigate, useRouteLoaderData } from 'react-router-dom';
-import { authClient } from '../../../../auth';
-import { RootLoaderData } from '../../../../routes';
 
 interface Props {
   sheetController: SheetController;
@@ -32,7 +30,6 @@ export const QuadraticMenu = (props: Props) => {
   const interactionState = useRecoilValue(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
-  const navigate = useNavigate();
 
   // const { file: { currentFileId } } = useLocalFiles();
   // const downloadCurrentFile = () => {
@@ -61,12 +58,8 @@ export const QuadraticMenu = (props: Props) => {
           </Tooltip>
         }
       >
-        <MenuItem
-          onClick={() => {
-            navigate('/');
-          }}
-        >
-          <MenuLineItem primary="Back to files" />
+        <MenuItem href="/" style={{ textDecoration: 'none' }}>
+          Back to files
         </MenuItem>
         <MenuDivider />
         <MenuItem
@@ -82,11 +75,7 @@ export const QuadraticMenu = (props: Props) => {
         </MenuItem>
         <MenuDivider />
         <SubMenu label="File">
-          <MenuItem
-            onClick={() => {
-              /* TODO */
-            }}
-          >
+          <MenuItem href="/files/create" style={{ textDecoration: 'none' }}>
             New
           </MenuItem>
           <MenuItem
