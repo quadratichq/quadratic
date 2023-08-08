@@ -8,20 +8,38 @@ use serde::{Deserialize, Serialize};
 use crate::Pos;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[serde(tag = "type")]
 pub enum RangeRef {
-    RowRange(CellRefCoord, CellRefCoord),
-    ColRange(CellRefCoord, CellRefCoord),
-    CellRange(CellRef, CellRef),
-    Cell(CellRef),
+    RowRange {
+        start: CellRefCoord,
+        end: CellRefCoord,
+    },
+    ColRange {
+        start: CellRefCoord,
+        end: CellRefCoord,
+    },
+    CellRange {
+        start: CellRef,
+        end: CellRef,
+    },
+    Cell {
+        pos: CellRef,
+    },
 }
 impl fmt::Display for RangeRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RangeRef::RowRange(start, end) => write!(f, "R{start}:R{end}"),
-            RangeRef::ColRange(start, end) => write!(f, "C{start}:C{end}"),
-            RangeRef::CellRange(start, end) => write!(f, "{start}:{end}"),
-            RangeRef::Cell(cell) => write!(f, "{cell}"),
+            RangeRef::RowRange { start, end } => write!(f, "R{start}:R{end}"),
+            RangeRef::ColRange { start, end } => write!(f, "C{start}:C{end}"),
+            RangeRef::CellRange { start, end } => write!(f, "{start}:{end}"),
+            RangeRef::Cell { pos } => write!(f, "{pos}"),
         }
+    }
+}
+impl From<CellRef> for RangeRef {
+    fn from(pos: CellRef) -> Self {
+        RangeRef::Cell { pos }
     }
 }
 impl RangeRef {
@@ -29,21 +47,23 @@ impl RangeRef {
     /// A1-style notation.
     pub fn a1_string(self, base: Pos) -> String {
         match self {
-            RangeRef::RowRange(start, end) => {
+            RangeRef::RowRange { start, end } => {
                 format!("{}:{}", start.row_string(base.y), end.row_string(base.y))
             }
-            RangeRef::ColRange(start, end) => {
+            RangeRef::ColRange { start, end } => {
                 format!("{}:{}", start.col_string(base.x), end.col_string(base.x))
             }
-            RangeRef::CellRange(start, end) => {
+            RangeRef::CellRange { start, end } => {
                 format!("{}:{}", start.a1_string(base), end.a1_string(base))
             }
-            RangeRef::Cell(cell) => cell.a1_string(base),
+            RangeRef::Cell { pos } => pos.a1_string(base),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+
 pub struct CellRef {
     pub x: CellRefCoord,
     pub y: CellRefCoord,
@@ -126,6 +146,8 @@ impl CellRef {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[serde(tag = "type", content = "coord")]
 pub enum CellRefCoord {
     Relative(i64),
     Absolute(i64),

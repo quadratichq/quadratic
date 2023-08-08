@@ -18,35 +18,22 @@ To run benchmarks in pure compiled Rust, run `cargo bench`
 
 ### WASM benchmarks
 
-We don't currently have WASM benchmarks working, but below are the steps we've tried in case you'd like to give it a try.
-
-Setup:
-
 1. `rustup target add wasm32-wasi`
-2. `cargo build --bench=grid_benchmark --release --target wasm32-wasi`
-3. `cp target/wasm32-wasi/release/deps/quadratic_core.wasm .`
+2. `cargo install cargo-wasi`
+3. `cargo wasi build --bench=grid_benchmark --release --no-default-features`
+4. ``cp target/wasm32-wasi/release/deps/grid_benchmark-*.wasm .``
+5. `ls`
+6. There should be three WASM files (perhaps more if you have done prior builds). Ignore the ones with `.rustc.wasm` and `.wasi.wasm`. Rename the remaining `.wasm` file to `benchmark.wasm`.
+
+We include `--no-default-features` specifically to disable the `js` feature of `quadratic-core`, because the benchmark suite uses only WASI APIs and cannot depend on JS.
 
 To run in NodeJS:
 
 1. `npm install -g @wasmer/cli`
-2. `wasmer-js run --dir=. quadratic_core.wasm -- --bench`
+2. `wasmer-js run --dir=. benchmark.wasm -- --bench`
 
 To run in browser:
 
 1. Go to <https://webassembly.sh/>
-2. Drag `quadratic_core.wasm` into the browser window
-3. In the browser, `quadratic_core --bench --export=base | download`
-
-Neither of these seems to work. Nor does using a different generated WASM file, such as one with `grid_benchmark` in the name.
-
-Instead of `cargo build`, it should be possible to build using `cargo-wasi`:
-
-1. `cargo install cargo-wasi`
-2. `cargo wasi build --bench=grid_benchmark --release`
-
-But the build fails, probably for the same reason that there's an error when running the `.wasm` file through either of the other methods.
-
-#### Things that help but don't fix everything
-
-- Removing dependencies `rand` and `getrandom`
-- Removing all uses `#[wasm_bindgen]`
+2. Drag `benchmark.wasm` into the browser window
+3. In the browser, `benchmark --bench | download`

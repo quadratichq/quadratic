@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 /// A contiguous span of text from one byte index to another in a formula.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
 pub struct Span {
     /// The byte index of the first character.
     pub start: u32,

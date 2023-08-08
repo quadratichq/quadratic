@@ -313,28 +313,28 @@ fn test_find_cell_references() {
     // $C$4
     assert_eq!(
         iter.next(),
-        Some(RangeRef::Cell(CellRef::absolute(pos![C4]))),
+        Some(RangeRef::from(CellRef::absolute(pos![C4]))),
     );
 
     // $A0:nQ7
     assert_eq!(
         iter.next(),
-        Some(RangeRef::CellRange(
-            CellRef {
+        Some(RangeRef::CellRange {
+            start: CellRef {
                 x: Absolute(col![A]),
                 y: Relative(0 - base.y),
             },
-            CellRef {
+            end: CellRef {
                 x: Relative(col![nQ] - base.x),
                 y: Relative(7 - base.y),
             },
-        )),
+        }),
     );
 
     // D$n6
     assert_eq!(
         iter.next(),
-        Some(RangeRef::Cell(CellRef {
+        Some(RangeRef::from(CellRef {
             x: Relative(col![D] - base.x),
             y: Absolute(-6),
         })),
@@ -343,7 +343,7 @@ fn test_find_cell_references() {
     // A0
     assert_eq!(
         iter.next(),
-        Some(RangeRef::Cell(CellRef {
+        Some(RangeRef::from(CellRef {
             x: Relative(col![A] - base.x),
             y: Relative(0 - base.y),
         })),
@@ -352,7 +352,7 @@ fn test_find_cell_references() {
     // ZB2
     assert_eq!(
         iter.next(),
-        Some(RangeRef::Cell(CellRef {
+        Some(RangeRef::from(CellRef {
             x: Relative(col![ZB] - base.x),
             y: Relative(2 - base.y),
         })),

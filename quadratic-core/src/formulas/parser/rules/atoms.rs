@@ -103,18 +103,19 @@ impl SyntaxRule for CellRangeReference {
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         p.next();
-        let Some(cell_ref) = CellRef::parse_a1(p.token_str(), p.pos) else {
+        let Some(pos) = CellRef::parse_a1(p.token_str(), p.pos) else {
             return Err(ErrorMsg::BadCellReference.with_span(p.span()));
         };
         let span = p.span();
 
         // Check for a range reference.
         if p.try_parse(Token::CellRangeOp).is_some() {
+            let start = pos;
             p.next();
-            if let Some(cell_ref2) = CellRef::parse_a1(p.token_str(), p.pos) {
+            if let Some(end) = CellRef::parse_a1(p.token_str(), p.pos) {
                 return Ok(Spanned {
                     span: Span::merge(span, p.span()),
-                    inner: RangeRef::CellRange(cell_ref, cell_ref2),
+                    inner: RangeRef::CellRange { start, end },
                 });
             }
             p.prev();
@@ -123,7 +124,7 @@ impl SyntaxRule for CellRangeReference {
 
         Ok(Spanned {
             span,
-            inner: RangeRef::Cell(cell_ref),
+            inner: RangeRef::Cell { pos },
         })
     }
 }

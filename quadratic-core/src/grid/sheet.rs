@@ -10,7 +10,7 @@ use super::column::Column;
 use super::formatting::BoolSummary;
 use super::ids::{CellRef, ColumnId, IdMap, RowId, SheetId};
 use super::js_types::{
-    JsFormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderFill,
+    FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderFill,
 };
 use super::legacy;
 use super::response::{GetIdResponse, SetCellResponse};
@@ -167,7 +167,7 @@ impl Sheet {
     }
 
     /// Returns a summary of formatting in a region.
-    pub fn get_formatting_summary(&self, region: Rect) -> JsFormattingSummary {
+    pub fn get_formatting_summary(&self, region: Rect) -> FormattingSummary {
         let mut bold = BoolSummary::default();
         let mut italic = BoolSummary::default();
 
@@ -184,7 +184,7 @@ impl Sheet {
             };
         }
 
-        JsFormattingSummary { bold, italic }
+        FormattingSummary { bold, italic }
     }
 
     pub fn export_to_legacy_file_format(&self) -> legacy::JsSheet {
@@ -209,13 +209,7 @@ impl Sheet {
                             r#type: self.get_legacy_cell_type(pos),
                             value: cell.value.to_string(),
                             array_cells: code_cell.and_then(|code_cell| {
-                                let array_output = &code_cell
-                                    .output
-                                    .as_ref()?
-                                    .result
-                                    .as_ref()
-                                    .ok()?
-                                    .output_value;
+                                let array_output = code_cell.output.as_ref()?.output_value()?;
                                 match array_output {
                                     Value::Single(_) => None,
                                     Value::Array(array) => {
@@ -427,7 +421,7 @@ impl Sheet {
     }
 
     /// Returns cell data in a format useful for rendering. This includes only
-    /// the data necessary to render raw text values
+    /// the data necessary to render raw text values.
     pub fn get_render_cells(&self, region: Rect) -> Vec<JsRenderCell> {
         let columns_iter = region
             .x_range()

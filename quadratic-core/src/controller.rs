@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -15,6 +16,7 @@ impl GridController {
     pub fn new() -> Self {
         Self::from_grid(Grid::new())
     }
+    #[cfg(feature = "js")]
     pub fn load(file: JsValue) -> Result<Self, JsValue> {
         let grid =
             Grid::from_legacy(&serde_wasm_bindgen::from_value(file)?).map_err(|e| e.to_string())?;

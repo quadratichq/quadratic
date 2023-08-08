@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use async_trait::async_trait;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
 pub mod grid;
@@ -32,7 +33,8 @@ pub fn column_from_name(s: &str) -> Option<f64> {
     Some(util::column_from_name(s)? as f64)
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[ts(export)]
 pub struct JsCodeResult {
     pub cells_accessed: Vec<[i64; 2]>,
     pub success: bool,
@@ -101,14 +103,16 @@ pub async fn eval_formula(
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, TS)]
+#[ts(export)]
 pub struct JsFormulaParseResult {
     pub parse_error_msg: Option<String>,
     pub parse_error_span: Option<Span>,
 
     pub cell_refs: Vec<JsCellRefSpan>,
 }
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, TS)]
+#[ts(export)]
 pub struct JsCellRefSpan {
     pub span: Span,
     pub cell_ref: formulas::RangeRef,
@@ -244,23 +248,23 @@ mod tests {
             cell_refs: vec![
                 JsCellRefSpan {
                     span: Span { start: 1, end: 4 },
-                    cell_ref: RangeRef::Cell(CellRef {
+                    cell_ref: RangeRef::from(CellRef {
                         x: CellRefCoord::Relative(0),
                         y: CellRefCoord::Absolute(1),
                     }),
                 },
                 JsCellRefSpan {
                     span: Span { start: 15, end: 25 },
-                    cell_ref: RangeRef::CellRange(
-                        CellRef {
+                    cell_ref: RangeRef::CellRange {
+                        start: CellRef {
                             x: CellRefCoord::Absolute(0),
                             y: CellRefCoord::Relative(-2),
                         },
-                        CellRef {
+                        end: CellRef {
                             x: CellRefCoord::Absolute(0),
                             y: CellRefCoord::Relative(2),
                         },
-                    ),
+                    },
                 },
             ],
         };

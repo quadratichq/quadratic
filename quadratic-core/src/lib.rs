@@ -12,7 +12,7 @@ pub mod grid;
 mod position;
 mod span;
 mod values;
-#[cfg(all(target_arch = "wasm32"))]
+#[cfg(feature = "js")]
 pub mod wasm_bindings;
 
 pub use error::*;
