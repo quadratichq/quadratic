@@ -151,7 +151,7 @@ export class GridSparse {
         cell: {
           x,
           y,
-          value: data[0].value.toString(),
+          value: data[0].value.value.toString(),
           type: 'TEXT',
         },
         format: {

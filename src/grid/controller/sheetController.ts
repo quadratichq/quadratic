@@ -307,10 +307,6 @@ export class SheetController {
       this.current = transaction.cursor.sheetId;
       this.sheet.cursor.load(transaction.cursor);
     }
-
-    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
-    // This will be very inefficient on large files.
-    pixiAppEvents.rebuild();
   }
 
   public redo(): void {
@@ -346,10 +342,6 @@ export class SheetController {
       this.current = transaction.cursor.sheetId;
       this.sheet.cursor.load(transaction.cursor);
     }
-
-    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
-    // This will be very inefficient on large files.
-    pixiAppEvents.rebuild();
   }
 
   public clear(): void {

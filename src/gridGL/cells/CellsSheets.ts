@@ -36,9 +36,11 @@ export class CellsSheets extends Container<CellsSheet> {
   show(id: string): void {
     this.children.forEach((child) => {
       if (child.sheet.id === id) {
-        this.current = child;
-        child.show(this.app.viewport.getVisibleBounds());
-        pixiAppEvents.loadViewport();
+        if (this.current?.sheet.id !== child?.sheet.id) {
+          this.current = child;
+          child.show(this.app.viewport.getVisibleBounds());
+          pixiAppEvents.loadViewport();
+        }
       } else {
         child.hide();
       }
