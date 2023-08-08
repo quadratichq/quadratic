@@ -4,14 +4,13 @@ import { Sheet } from '../../grid/sheet/Sheet';
 import { Pos, Rect } from '../../quadratic-core/quadratic_core';
 import { CellsBackground } from './CellsBackground';
 import { CellsSheet } from './CellsSheet';
-import { CellFill, CellHash, CellRust, sheetHashHeight, sheetHashWidth } from './CellsTypes';
+import { CellFill, CellRust, sheetHashHeight, sheetHashWidth } from './CellsTypes';
 import { CellLabel } from './cellsLabels/CellLabel';
 import { CellsLabels } from './cellsLabels/CellsLabels';
 
 export class CellsHash extends Container {
   cellsSheet: CellsSheet;
 
-  private entries: Set<CellHash>;
   private test?: Graphics;
   private cellsBackground: CellsBackground;
   private cellsLabels: CellsLabels;
@@ -35,7 +34,6 @@ export class CellsHash extends Container {
     super();
     this.cellsSheet = cellsSheet;
     this.key = CellsHash.getKey(x, y);
-    this.entries = new Set();
     this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth, sheetHashHeight);
     const screen = this.sheet.gridOffsets.getScreenRectangle(
       this.AABB.left,
@@ -70,16 +68,6 @@ export class CellsHash extends Container {
 
   getLabel(column: number, row: number): CellLabel | undefined {
     return this.cellsLabels.getLabel(column, row);
-  }
-
-  add(entry: CellHash): void {
-    this.entries.add(entry);
-    entry.hashes.add(this);
-  }
-
-  delete(entry: CellHash): void {
-    this.entries.delete(entry);
-    entry.hashes.delete(this);
   }
 
   show(): void {
