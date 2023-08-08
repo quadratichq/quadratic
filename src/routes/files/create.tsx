@@ -9,7 +9,7 @@ const failUrl = encodeURI('/files/mine?snackbar-msg=Failed to create file. Try a
 // https://github.com/remix-run/react-router/pull/10705
 // Hard reload instead of SPA navigation and replace current stack
 const navigate = async (uuid: string) => {
-  window.location.replace(`/file/${uuid}`);
+  window.location.href = `/file/${uuid}`;
   await new Promise((resolve) => setTimeout(resolve, 10000));
   return redirect('/');
 };
