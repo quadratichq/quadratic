@@ -3,8 +3,7 @@ import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
 import { convertColorStringToTint, convertTintToArray } from '../../../helpers/convertColor';
 import { CellAlignment } from '../../../schemas';
 import { Coordinate } from '../../types/size';
-import { CellsHash } from '../CellsHash';
-import { CellHash, CellRust } from '../CellsTypes';
+import { CellRust } from '../CellsTypes';
 import { LabelMeshes } from './LabelMeshes';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 
@@ -22,7 +21,7 @@ interface CharRenderData {
 // todo: make this part of the cell's style data structure
 const fontSize = 14;
 
-export class CellLabel extends Container implements CellHash {
+export class CellLabel extends Container {
   text: string;
   fontName: string;
   fontSize: number;
@@ -30,6 +29,7 @@ export class CellLabel extends Container implements CellHash {
   maxWidth: number;
   roundPixels?: boolean;
   location: Coordinate;
+  AABB: Rectangle;
 
   clipLeft: number | undefined;
   clipRight: number | undefined;
@@ -57,10 +57,6 @@ export class CellLabel extends Container implements CellHash {
 
   alignment: CellAlignment;
 
-  // used by CellHash
-  AABB: Rectangle;
-  hashes = new Set<CellsHash>();
-
   dirty = true;
 
   // cache for clip to avoid recalculation of same clip
@@ -68,7 +64,6 @@ export class CellLabel extends Container implements CellHash {
 
   constructor(cell: CellRust, rectangle: Rectangle) {
     super();
-    if (!rectangle) debugger;
     this.text = cell.value.toString();
     this.fontSize = fontSize;
     this.roundPixels = true;

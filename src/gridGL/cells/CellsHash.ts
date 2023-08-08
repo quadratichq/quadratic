@@ -13,7 +13,7 @@ export class CellsHash extends Container {
 
   private test?: Graphics;
   private cellsBackground: CellsBackground;
-  private cellsLabels: CellsLabels;
+  cellsLabels: CellsLabels;
 
   // column/row bounds (does not include overflow cells)
   AABB: Rectangle;
@@ -54,8 +54,6 @@ export class CellsHash extends Container {
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
     this.cellsLabels.create(options.cells);
-
-    console.log(`cellsLabels: ${Array.from(this.cellsLabels.cellLabels).length}`);
   }
 
   get sheet(): Sheet {

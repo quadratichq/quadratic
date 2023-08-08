@@ -39,19 +39,13 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
   create(cells?: CellRust[]): void {
     debugTimeReset();
     this.cellLabels = new Map();
-    console.time('create');
     cells = cells ?? this.sheet.grid.getCellList(this.cellsHash.AABB);
-    console.timeEnd('create');
-    console.time('foreach');
     cells.forEach((cell) => {
       const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
       const cellLabel = new CellLabel(cell, rectangle);
       this.cellLabels.set(this.getKey(cell), cellLabel);
     });
-    console.timeEnd('foreach');
-    console.time('updateText');
     this.updateText();
-    console.timeEnd('updateText');
     debugTimeCheck('cellsLabel');
   }
 

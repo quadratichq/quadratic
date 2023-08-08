@@ -1,6 +1,5 @@
 import { Rectangle } from 'pixi.js';
 import { Sheet } from '../../../grid/sheet/Sheet';
-import { debugTimeCheck, debugTimeReset } from '../../helpers/debugPerformance';
 import { CellsSheet } from '../CellsSheet';
 import { CellsHashBounds, sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 
@@ -18,11 +17,9 @@ class CreateCellsSheet {
 
   populate(cellsSheet: CellsSheet): Promise<void> {
     if (this.timeout) {
-      console.log('**** clearing timeout...');
       window.clearTimeout(this.timeout);
     }
     return new Promise((resolve) => {
-      console.time('createCellsSheet.populate');
       this.cellsSheet = cellsSheet;
       const bounds = this.sheet.grid.getGridBounds(false);
       if (!bounds) {
@@ -54,20 +51,16 @@ class CreateCellsSheet {
       throw new Error('Expected variables to be defined in createCellsSheet.next');
     }
     for (let i = 0; i < meshesPerFrame; i++) {
-      console.log(`nextHash ${this.x}, ${this.y}`);
       const rect = new Rectangle(
         this.x * sheetHashWidth,
         this.y * sheetHashHeight,
         sheetHashWidth - 1,
         sheetHashHeight - 1
       );
-      debugTimeReset();
       const cells = this.sheet.grid.getCellList(rect);
       const background = this.sheet.grid.getCellBackground(rect);
-      debugTimeCheck('getCells');
       if (cells.length || background.length) {
         this.cellsSheet.addHash(this.x, this.y, cells, background);
-        debugTimeCheck('addHash');
       }
       this.x++;
       if (this.x > this.hashBounds.xEnd) {
@@ -76,12 +69,12 @@ class CreateCellsSheet {
 
         // start clipping when we've populated all cellHashes
         if (this.y > this.hashBounds.yEnd) {
-          this.timeout = window.setTimeout(this.clip, 0);
+          this.timeout = window.setTimeout(this.clip);
           return;
         }
       }
     }
-    this.timeout = window.setTimeout(this.nextHash, 0);
+    this.timeout = window.setTimeout(this.nextHash);
   };
 
   private clip = () => {
@@ -89,8 +82,7 @@ class CreateCellsSheet {
       throw new Error('Expected cellsSheet to be defined in createCellsSheet.clip');
     }
     this.cellsSheet.cellsHash.forEach((hash) => hash.overflowClip());
-    this.timeout = window.setTimeout(this.updateText, 0);
-    console.log('clip');
+    this.timeout = window.setTimeout(this.updateText);
   };
 
   private updateText = () => {
@@ -98,8 +90,7 @@ class CreateCellsSheet {
       throw new Error('Expected cellsSheet to be defined in createCellsSheet.updateText');
     }
     this.cellsSheet.cellsHash.forEach((hash) => hash.updateTextAfterClip());
-    this.timeout = window.setTimeout(this.updateBuffers, 0);
-    console.log('updateText');
+    this.timeout = window.setTimeout(this.updateBuffers);
   };
 
   private updateBuffers = () => {
@@ -108,10 +99,7 @@ class CreateCellsSheet {
     }
     this.cellsSheet.cellsHash.forEach((hash) => hash.updateBuffers());
     this.timeout = undefined;
-    console.log('updateBuffers');
     this.resolve();
-    console.log(`MeshesPerFrame: ${meshesPerFrame}`);
-    console.timeEnd('createCellsSheet.populate');
   };
 }
 

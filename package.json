@@ -66,6 +66,7 @@
     "build:wasm:javascript": "cd quadratic-core && wasm-pack build --target web --out-dir ../src/quadratic-core",
     "build:wasm:nodejs": "cd quadratic-core && wasm-pack build --target nodejs --out-dir ../src/quadratic-core/__mocks__",
     "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --debug --target web --out-dir ../src/quadratic-core'",
+    "start:production": "npm run build && serve build",
     "build:ci": "./scripts/run-ci-build.sh",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\" \"npm run test:python\"",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
@@ -99,9 +100,7 @@
   ],
   "browserslist": {
     "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
+      "defaults and supports es6-module"
     ],
     "development": [
       "last 1 chrome version",
@@ -124,6 +123,7 @@
     "nodemon": "^3.0.1",
     "prettier": "2.8.3",
     "pyodide": "^0.22.0",
+    "serve": "^14.2.0",
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
     "wait-on": "^7.0.1"
