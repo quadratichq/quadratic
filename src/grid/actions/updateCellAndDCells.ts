@@ -1,9 +1,9 @@
-import { Cell, ArrayOutputBase } from '../../schemas';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
-import { SheetController } from '../controller/sheetController';
-import { runCellComputation } from '../computations/runCellComputation';
 import { StringId, getKey } from '../../helpers/getKey';
+import { ArrayOutputBase, Cell } from '../../schemas';
+import { runCellComputation } from '../computations/runCellComputation';
+import { SheetController } from '../controller/sheetController';
 
 interface ArgsType {
   starting_cells: Cell[];
@@ -94,7 +94,7 @@ export const updateCellAndDCells = async (args: ArgsType) => {
         // collect output
         if (result.success) {
           cell.value = result.output_value || '';
-          if (cell.type === 'PYTHON') cell.python_code = result.formatted_code;
+          if (cell.type === 'PYTHON' && result.formatted_code) cell.python_code = result.formatted_code;
         } else {
           cell.value = ''; // clear value if python code fails
         }
