@@ -8,7 +8,6 @@ import { PixiApp } from './PixiApp';
 // this is a helper for the sheetController and react to communicate with PixiApp
 
 export interface SetDirty {
-  cells?: boolean;
   cursor?: boolean;
   headings?: boolean;
   gridLines?: boolean;
@@ -20,16 +19,12 @@ class PixiAppEvents {
   quadrantsChanged(quadrantChanged: QuadrantChanged): void {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.quadrantsChanged');
 
-    this.app.quadrants.quadrantChanged(quadrantChanged);
-    // this.app.cells.dirty = true;
+    // this.app.quadrants.quadrantChanged(quadrantChanged);
   }
 
   setDirty(dirty: SetDirty): void {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.setDirty');
 
-    if (dirty.cells) {
-      // this.app.cells.dirty = true;
-    }
     if (dirty.cursor) {
       this.app.cursor.dirty = true;
     }
@@ -61,22 +56,22 @@ class PixiAppEvents {
     this.app.axesLines.dirty = true;
     this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
-    // this.app.cells.dirty = true;
-    this.app.quadrants.changeSheet();
+    // this.app.quadrants.changeSheet();
     this.app.boxCells.reset();
     this.app.settings.changeInput(false);
+    this.app.cellsSheets.show(this.app.sheet.id);
   }
 
   addSheet(sheet: Sheet): void {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.addSheet');
-
-    this.app.quadrants.addSheet(sheet);
+    this.app.cellsSheets.addSheet(sheet.id);
+    // this.app.quadrants.addSheet(sheet);
   }
 
   quadrantsDelete(sheet: Sheet): void {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.quadrantsDelete');
 
-    this.app.quadrants.deleteSheet(sheet);
+    // this.app.quadrants.deleteSheet(sheet);
   }
 
   async rebuild() {
@@ -87,7 +82,6 @@ class PixiAppEvents {
     this.app.axesLines.dirty = true;
     this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
-    // this.app.cells.dirty = true;
     this.app.boxCells.reset();
     // this.app.quadrants.build();
 

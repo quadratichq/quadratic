@@ -107,7 +107,7 @@ export class PixiAppSettings {
 
   changeInput(input: boolean, initialValue = '') {
     this._input = { show: input, initialValue };
-    pixiAppEvents.setDirty({ cells: true, cursor: true });
+    pixiAppEvents.setDirty({ cursor: true });
 
     // this is used by CellInput to control visibility
     window.dispatchEvent(new CustomEvent('change-input', { detail: { showInput: input } }));

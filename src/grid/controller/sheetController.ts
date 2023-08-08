@@ -121,7 +121,9 @@ export class SheetController {
     } else {
       order = generateKeyBetween(last.order, null);
     }
+    const sheetId = this.grid.addSheet();
     const sheet = new Sheet(this.grid, this.sheets.length, `Sheet${i}`, order);
+    sheet.grid.sheetId = sheetId;
     return sheet;
   }
 

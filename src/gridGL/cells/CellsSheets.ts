@@ -22,15 +22,31 @@ export class CellsSheets extends Container<CellsSheet> {
     this.show(this.app.sheet_controller.sheet.id);
   }
 
+  async addSheet(id: string): Promise<void> {
+    const sheet = this.app.sheet_controller.sheets.find((sheet) => sheet.id === id);
+    if (!sheet) {
+      throw new Error('Expected to find new sheet in cellSheet');
+    }
+    const cellsSheet = this.addChild(new CellsSheet(sheet));
+    await cellsSheet.create();
+    this.show(sheet.id);
+  }
+
   show(id: string): void {
+    let visible = 0,
+      hidden = 0;
+    console.log(this.children.length);
     this.children.forEach((child) => {
       if (child.sheet.id === id) {
         this.current = child;
         child.show(this.app.viewport.getVisibleBounds());
+        visible++;
       } else {
         child.hide();
+        hidden++;
       }
     });
+    console.log({ visible, hidden });
   }
 
   cull(bounds: Rectangle): void {

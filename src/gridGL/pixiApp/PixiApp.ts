@@ -37,7 +37,7 @@ export class PixiApp {
   headings: GridHeadings;
   boxCells: BoxCells;
   // cells: Cells;
-  cellsSheets?: CellsSheets;
+  cellsSheets: CellsSheets;
 
   quadrants: Quadrants;
 
