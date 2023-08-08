@@ -251,7 +251,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
     // Format code and restore cursor position
     const position: any = editorRef.current?.getPosition();
-    setEditorContent(updated_cell?.evaluation_result?.formatted_code);
+    if (updated_cell?.evaluation_result?.formatted_code)
+      setEditorContent(updated_cell?.evaluation_result?.formatted_code);
     editorRef.current?.setPosition(position);
     setSelectedCell(updated_cell);
     setIsRunningComputation(false);
