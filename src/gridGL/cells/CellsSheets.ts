@@ -1,6 +1,7 @@
 import { Container, Rectangle } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { PixiApp } from '../pixiApp/PixiApp';
+import { pixiAppEvents } from '../pixiApp/PixiAppEvents';
 import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
 
@@ -33,20 +34,15 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   show(id: string): void {
-    let visible = 0,
-      hidden = 0;
-    console.log(this.children.length);
     this.children.forEach((child) => {
       if (child.sheet.id === id) {
         this.current = child;
         child.show(this.app.viewport.getVisibleBounds());
-        visible++;
+        pixiAppEvents.loadViewport();
       } else {
         child.hide();
-        hidden++;
       }
     });
-    console.log({ visible, hidden });
   }
 
   cull(bounds: Rectangle): void {

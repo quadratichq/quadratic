@@ -1,4 +1,5 @@
 import { BitmapFont } from 'pixi.js';
+import { HEADING_SIZE } from '../../constants/gridConstants';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { QuadrantChanged } from '../quadrants/Quadrants';
@@ -126,6 +127,25 @@ class PixiAppEvents {
     if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.changeCells');
     this.app.cellsSheets.changeCells(sheet, cells, options);
     this.app.setViewportDirty();
+  }
+
+  getStartingViewport(): { x: number; y: number } {
+    if (!this.app) throw new Error('Expected app to be defined in getStartingViewport');
+    if (this.app.settings.showHeadings) {
+      return { x: HEADING_SIZE, y: HEADING_SIZE };
+    } else {
+      return { x: 0, y: 0 };
+    }
+  }
+
+  loadViewport(): void {
+    if (!this.app) throw new Error('Expected app to be defined in saveViewport');
+    const lastViewport = this.app.sheet.cursor.viewport;
+    if (lastViewport) {
+      this.app.viewport.position.set(lastViewport.x, lastViewport.y);
+      this.app.viewport.scale.set(lastViewport.scaleX, lastViewport.scaleY);
+      this.app.viewport.dirty = true;
+    }
   }
 }
 

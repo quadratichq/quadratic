@@ -1,3 +1,4 @@
+import { IViewportTransformState } from 'pixi-viewport';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { Coordinate } from '../../gridGL/types/size';
 import { Sheet } from './Sheet';
@@ -17,6 +18,8 @@ export interface SheetCursorSave {
 }
 
 export class SheetCursor {
+  private _viewport?: IViewportTransformState;
+
   sheetId: string;
   boxCells: boolean;
   keyboardMovePosition: Coordinate;
@@ -29,6 +32,17 @@ export class SheetCursor {
     this.keyboardMovePosition = { x: 0, y: 0 };
     this.cursorPosition = { x: 0, y: 0 };
     this.multiCursor = undefined;
+  }
+
+  set viewport(save: IViewportTransformState) {
+    this._viewport = save;
+  }
+  get viewport(): IViewportTransformState {
+    if (!this._viewport) {
+      const { x, y } = pixiAppEvents.getStartingViewport();
+      return { x, y, scaleX: 1, scaleY: 1 };
+    }
+    return this._viewport;
   }
 
   save(): SheetCursorSave {

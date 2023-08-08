@@ -184,6 +184,8 @@ export class PixiApp {
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
+    this.sheet.cursor.viewport = this.viewport.lastViewport!;
+
     // if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
     //   this.showCache();
     // } else {

@@ -60,7 +60,9 @@ export class Update {
       this.lastViewportPosition.y = viewport.y;
       dirty = true;
     }
-    if (dirty) this.pixiApp.viewportChanged();
+    if (dirty) {
+      this.pixiApp.viewportChanged();
+    }
   }
 
   // update loop w/debug checks
