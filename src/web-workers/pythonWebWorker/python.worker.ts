@@ -27,8 +27,6 @@ async function pythonWebWorker() {
     pyodide = await (self as any).loadPyodide();
     await pyodide.registerJsModule('GetCellsDB', getCellsDB);
     await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
-    let micropip = pyodide.pyimport('micropip');
-    await micropip.install('autopep8');
     await pyodide.runPython(await (await fetch(define_run_python)).text());
     await pyodide.runPython(await (await fetch(inspect_python)).text());
   } catch (e) {
