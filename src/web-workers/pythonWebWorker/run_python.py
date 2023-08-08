@@ -303,6 +303,14 @@ async def run_python(code):
         # Convert Pandas.Series to array_output
         if isinstance(output_value, pd.Series):
             array_output = output_value.to_numpy().tolist()
+        
+        formatted_code = None 
+        try:
+            formatted_code = autopep8.fix_code(
+                code, options={"ignore": ["E402"]}
+            )  # Ignore E402 : otherwise breaks imports
+        except Exception:
+            pass
 
         return {
             "output_value": str(output_value),
@@ -313,9 +321,7 @@ async def run_python(code):
             "input_python_std_err": serr.getvalue(),
             "success": True,
             "input_python_stack_trace": None,
-            "formatted_code": autopep8.fix_code(
-                code, options={"ignore": ["E402"]}
-            ),  # Ignore E402 : otherwise breaks imports
+            "formatted_code": formatted_code,
         }
 
     return {
