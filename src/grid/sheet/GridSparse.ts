@@ -58,6 +58,8 @@ export class GridSparse {
 
   // todo: this should be separated into its components
   updateFormat(formats: CellFormat[], skipBounds = false): void {
+    let background = false;
+    let labels = false;
     formats.forEach((format) => {
       const region = new Rect(new Pos(format.x, format.y), new Pos(format.x, format.y));
       const originalRange = this.grid.getRenderCells(this.sheetId, region);
@@ -65,27 +67,36 @@ export class GridSparse {
       if (this.hasFormatting(format)) {
         if (format.bold !== undefined && format.bold !== original.bold) {
           this.grid.setCellBold(this.sheetId, region, !!format.bold);
+          labels = true;
         }
         if (format.italic !== undefined && format.italic !== original.italic) {
           this.grid.setCellItalic(this.sheetId, region, !!format.italic);
+          labels = true;
         }
         if (format.alignment !== undefined && format.alignment !== original.align) {
           this.grid.setCellAlign(this.sheetId, region, format.alignment);
+          labels = true;
         }
         if (format.fillColor !== undefined && format.fillColor !== original.fillColor) {
           this.grid.setCellFillColor(this.sheetId, region, format.fillColor);
+          background = true;
         }
         if (format.textColor !== undefined && format.textColor !== original.textColor) {
           this.grid.setCellTextColor(this.sheetId, region, format.textColor);
+          labels = true;
         }
         if (format.textFormat !== undefined && format.textFormat !== original.textFormat) {
           this.grid.setCellNumericFormat(this.sheetId, region, format.textFormat);
+          labels = true;
         }
         if (format.wrapping !== undefined && format.wrapping !== original.wrapping) {
           this.grid.setCellWrap(this.sheetId, region, format.textFormat);
+          labels = true;
         }
       } else {
         this.grid.clearFormatting(this.sheetId, region);
+        labels = true;
+        background = true;
       }
       this.quadrants.add(Quadrants.getKey(format.x, format.y));
     });
@@ -95,7 +106,7 @@ export class GridSparse {
     pixiAppEvents.changeCells(
       this.sheet,
       formats.map((format) => ({ x: format.x, y: format.y })),
-      { labels: true }
+      { labels, background }
     );
   }
 

@@ -33,6 +33,7 @@ export const SetCellsRunner = (sheetController: SheetController, statement: Stat
   }
   sheet.recalculateBounds();
   pixiAppEvents.changeCells(sheetController.sheet, changedCells, { labels: true });
+
   // pixiAppEvents.quadrantsChanged({ cells: changedCells });
   return {
     type: 'SET_CELLS',
