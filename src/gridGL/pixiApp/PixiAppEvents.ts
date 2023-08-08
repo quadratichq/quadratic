@@ -128,7 +128,6 @@ class PixiAppEvents {
   }
 
   changeCells(sheet: Sheet, cells: Coordinate[], options: { labels?: boolean; background?: boolean }): void {
-    console.log(options);
     if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.changeCells');
     this.app.cellsSheets.changeCells(sheet, cells, options);
     this.app.setViewportDirty();

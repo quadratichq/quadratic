@@ -292,7 +292,6 @@ export class GridSparse {
 
   getGridBounds(onlyData: boolean): Rectangle | undefined {
     const bounds = this.grid.getGridBounds(this.sheetId, onlyData);
-    console.log('gridSpars', bounds);
     if (bounds.type === 'nonEmpty') {
       return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
     }
