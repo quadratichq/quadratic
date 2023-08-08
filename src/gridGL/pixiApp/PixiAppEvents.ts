@@ -97,6 +97,7 @@ class PixiAppEvents {
       await this.loadSheets();
     }
     this.app.paused = false;
+    this.app.reset();
   }
 
   setZoomState(zoom: number): void {
