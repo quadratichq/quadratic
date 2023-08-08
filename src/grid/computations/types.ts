@@ -9,7 +9,7 @@ export const CellEvaluationResultSchema = z.object({
   output_type: z.string().or(z.null()).or(z.undefined()),
   cells_accessed: z.tuple([z.number(), z.number()]).array(),
   array_output: ArrayOutputSchema,
-  formatted_code: z.string(),
+  formatted_code: z.string().or(z.null()),
   error_span: z.tuple([z.number(), z.number()]).or(z.null()),
 });
 

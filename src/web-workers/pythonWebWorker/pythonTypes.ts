@@ -8,7 +8,7 @@ export interface PythonReturnType {
   output_value: string | null;
   output_type: string | null | undefined;
   array_output: ArrayOutput;
-  formatted_code: string;
+  formatted_code: string | null;
 }
 
 export type InspectPythonReturnType =

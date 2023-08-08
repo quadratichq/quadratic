@@ -39,7 +39,7 @@ export const GridFileSchemaV1_2 = z.object({
           output_type: z.string().or(z.null()).or(z.undefined()),
           cells_accessed: z.tuple([z.number(), z.number()]).array(),
           array_output: z.union([ArrayOutputBaseSchema, z.array(ArrayOutputBaseSchema)]).optional(), // 1 or 2d array
-          formatted_code: z.string(),
+          formatted_code: z.string().or(z.null()),
           error_span: z.tuple([z.number(), z.number()]).or(z.null()),
         })
         .optional(),
