@@ -1,4 +1,4 @@
-import { BorderInnerOutlined } from '@mui/icons-material';
+import { InsertDriveFileOutlined } from '@mui/icons-material';
 import { Box, Divider, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
 
@@ -33,7 +33,7 @@ export default function FileListItem({
         }}
       >
         <div>
-          <BorderInnerOutlined />
+          <InsertDriveFileOutlined />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto' }}>
           <div style={{ display: 'flex', gap: theme.spacing() }}>
