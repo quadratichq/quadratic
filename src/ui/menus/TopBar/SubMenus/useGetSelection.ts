@@ -1,3 +1,4 @@
+import debounce from 'lodash.debounce';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Sheet } from '../../../../grid/sheet/Sheet';
 import { Coordinate } from '../../../../gridGL/types/size';
@@ -86,11 +87,12 @@ export const useGetSelection = (sheet: Sheet): GetSelection => {
   }, []);
 
   useEffect(() => {
-    window.addEventListener(FORMAT_SELECTION_EVENT, setTriggerCallback);
-    window.addEventListener('cursor-position', setTriggerCallback);
+    const throttled = debounce(setTriggerCallback);
+    window.addEventListener(FORMAT_SELECTION_EVENT, throttled);
+    window.addEventListener('cursor-position', throttled);
     return () => {
-      window.removeEventListener(FORMAT_SELECTION_EVENT, setTriggerCallback);
-      window.removeEventListener('cursor-position', setTriggerCallback);
+      window.removeEventListener(FORMAT_SELECTION_EVENT, throttled);
+      window.removeEventListener('cursor-position', throttled);
     };
   }, [setTriggerCallback]);
 
