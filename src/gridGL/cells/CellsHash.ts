@@ -98,6 +98,9 @@ export class CellsHash extends Container {
   changeCells(options: { labels?: boolean; background?: boolean }): void {
     if (options.labels) {
       this.cellsLabels.create();
+      this.cellsLabels.overflowClip();
+      this.cellsLabels.updateTextAfterClip();
+      this.updateBuffers();
     }
     if (options.background) {
       this.cellsBackground.create();
