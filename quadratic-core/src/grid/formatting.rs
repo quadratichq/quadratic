@@ -24,17 +24,18 @@ pub enum CellWrap {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct NumericFormat {
+    #[serde(rename = "type")]
     kind: NumericFormatKind,
     #[serde(rename = "decimalPlaces")]
     decimals: Option<u32>,
+    symbol: Option<String>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-#[serde(tag = "type")]
+#[serde(rename_all = "UPPERCASE")]
 pub enum NumericFormatKind {
     Number,
-    Currency { symbol: String }, // TODO: would be nice if this were just a single char (and it could be)
+    Currency, // { symbol: String }, // TODO: would be nice if this were just a single char (and it could be)
     Percentage,
     Exponential,
 }

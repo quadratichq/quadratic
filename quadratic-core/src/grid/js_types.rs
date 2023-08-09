@@ -24,6 +24,7 @@ pub struct JsRenderCell {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wrap: Option<CellWrap>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "textFormat")]
     pub numeric_format: Option<NumericFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bold: Option<bool>,

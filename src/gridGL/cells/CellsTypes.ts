@@ -26,6 +26,7 @@ export interface CellRust {
   bold?: boolean;
   italic?: boolean;
   textColor?: string;
+  textFormat?: { type: 'CURRENCY' | 'PERCENTAGE' | 'NUMBER' | 'EXPONENTIAL'; decimalPlaces: number; symbol?: string };
 }
 
 export interface CellFill {
