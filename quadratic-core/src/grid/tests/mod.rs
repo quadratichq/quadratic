@@ -41,6 +41,34 @@ fn test_airports() {
 }
 
 #[test]
+fn test_startup_portfolio() {
+    let grid = Grid::from_legacy(
+        &serde_json::from_str(include_str!("../../../examples/startup_portfolio.json")).unwrap(),
+    );
+
+    let sheet = &grid.sheets()[0];
+
+    // This region grabs some of the first table and some of the "filter by
+    // state" table.
+    let region = Rect {
+        min: Pos { x: 0, y: 0 },
+        max: Pos { x: 0, y: 0 },
+    };
+    let render_cells = sheet.get_render_cells(region);
+    assert_eq!(1, render_cells.len());
+    for cell in &render_cells {
+        assert!(region.contains(Pos {
+            x: cell.x,
+            y: cell.y
+        }));
+    }
+    assert_eq!(
+        "Portfolio Valuation analysis by revenue multiple",
+        render_cells[0].value.to_string()
+    );
+}
+
+#[test]
 fn test_read_write() {
     let region = Rect {
         min: Pos::ORIGIN,

@@ -68,7 +68,7 @@ impl Grid {
     /// Returns a string containing a JSON array of [`JsRenderCell`].
     #[wasm_bindgen(js_name = "getRenderCells")]
     pub fn get_render_cells(&self, sheet_id: &SheetId, &region: &Rect) -> Result<String, JsValue> {
-        let output = self.sheet_from_id(*sheet_id).get_render_cells(region);
+        let output: Vec<JsRenderCell> = self.sheet_from_id(*sheet_id).get_render_cells(region);
         Ok(serde_json::to_string::<[JsRenderCell]>(&output).map_err(|e| e.to_string())?)
     }
     /// Returns data for rendering cell fill color as a string containing a JSON
