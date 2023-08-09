@@ -1,16 +1,6 @@
 import z from 'zod';
-import { ArrayOutputSchema } from '../../schemas';
+import { GridFileSchemaV1_2 } from '../../schemas/GridFileV1_2';
 
-export const CellEvaluationResultSchema = z.object({
-  success: z.boolean(),
-  std_out: z.string().optional(),
-  std_err: z.string().optional(),
-  output_value: z.string().or(z.null()).or(z.undefined()),
-  output_type: z.string().or(z.null()).or(z.undefined()),
-  cells_accessed: z.tuple([z.number(), z.number()]).array(),
-  array_output: ArrayOutputSchema,
-  formatted_code: z.string().or(z.null()),
-  error_span: z.tuple([z.number(), z.number()]).or(z.null()),
-});
-
-export type CellEvaluationResult = z.infer<typeof CellEvaluationResultSchema>;
+export type CellEvaluationResult = NonNullable<
+  z.infer<typeof GridFileSchemaV1_2>['cells'][number]['evaluation_result']
+>;
