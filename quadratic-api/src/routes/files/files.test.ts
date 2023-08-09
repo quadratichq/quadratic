@@ -233,11 +233,11 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file rename file', (
   });
 });
 
-describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file contents', () => {
+describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file contents w version', () => {
   it('responds with json', async () => {
     const res = await request(app)
       .post('/v0/files/00000000-0000-4000-8000-000000000000')
-      .send({ contents: 'contents_0_updated' })
+      .send({ contents: 'contents_0_updated', version: '1.0.0' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -309,10 +309,12 @@ describe('CREATE - POST /v0/files/ with auth (no file name, no contents, no vers
       .expect(400);
 
     expect(res.body.errors).toEqual([
-      { location: 'body', msg: 'Invalid value', path: 'contents', type: 'field' },
-      { location: 'body', msg: 'Invalid value', path: 'contents', type: 'field' },
-      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
-      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
+      { type: 'field', msg: 'Invalid value', path: 'contents', location: 'body' },
+      { type: 'field', msg: 'Invalid value', path: 'contents', location: 'body' },
+      { type: 'field', msg: 'Invalid value', path: 'version', location: 'body' },
+      { type: 'field', msg: 'Invalid value', path: 'version', location: 'body' },
+      { type: 'field', msg: 'Invalid value', path: 'name', location: 'body' },
+      { type: 'field', msg: 'Invalid value', path: 'name', location: 'body' },
     ]);
   });
 });
@@ -349,6 +351,8 @@ describe('CREATE - POST /v0/files/ with auth (no file name, contents, no version
     expect(res.body.errors).toEqual([
       { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
       { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
+      { type: 'field', msg: 'Invalid value', path: 'name', location: 'body' },
+      { type: 'field', msg: 'Invalid value', path: 'name', location: 'body' },
     ]);
   });
 });
@@ -361,27 +365,22 @@ describe('CREATE - POST /v0/files/ with auth (no file name, contents, with versi
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
-      .expect(201);
+      .expect(400);
 
-    expect(res.body).toMatchObject({ name: 'Untitled' });
-    expect(res.body).toHaveProperty('uuid');
-    expect(res.body).toHaveProperty('created_date');
-    expect(res.body).toHaveProperty('updated_date');
-
-    // check file name changed
-    const res2 = await request(app)
-      .get(`/v0/files/${res.body.uuid}`)
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res2.body).toHaveProperty('file');
-    expect(res2.body).toHaveProperty('permission');
-    expect(res2.body.permission).toEqual('OWNER');
-    expect(res2.body.file.name).toEqual('Untitled');
-    expect(res2.body.file.contents).toEqual('new_file_contents');
-    expect(res2.body.file.version).toEqual('1.0.0');
+    expect(res.body.errors).toMatchObject([
+      {
+        type: 'field',
+        msg: 'Invalid value',
+        path: 'name',
+        location: 'body',
+      },
+      {
+        type: 'field',
+        msg: 'Invalid value',
+        path: 'name',
+        location: 'body',
+      },
+    ]);
   });
 });
 

@@ -35,14 +35,17 @@ model QFeedback {
     id           Int      @id @default(autoincrement())
     feedback     String
     created_date DateTime @default(now())
-    qUserId      Int
+    qUserId      Int? // Linked to the old QUser object
+    userId       Int
+    user         User     @relation(fields: [userId], references: [id])
 }
 
 // Using new models becase beacuse the old ones with capital letters are annoying
 model User {
-    id       Int    @id @default(autoincrement())
-    auth0_id String @unique
-    files    File[]
+    id        Int         @id @default(autoincrement())
+    auth0_id  String      @unique
+    files     File[]
+    QFeedback QFeedback[]
 }
 
 enum LinkPermission {
