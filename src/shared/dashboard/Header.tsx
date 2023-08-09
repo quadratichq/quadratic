@@ -1,8 +1,12 @@
 import { Box, Typography, useTheme } from '@mui/material';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 
 export default function Header({ title, actions }: { title: string; actions?: ReactNode }) {
   const theme = useTheme();
+
+  useEffect(() => {
+    document.title = `${title} - Quadratic`;
+  }, [title]);
 
   return (
     <Box
