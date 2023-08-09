@@ -99,6 +99,7 @@ export const Component = () => {
           // If it reaches here, we’re good!
         } catch (e) {
           // TODO log to sentry
+          console.error(e);
           fileIdsThatFailed.push(localFile.id);
         }
 
@@ -106,7 +107,7 @@ export const Component = () => {
         const oldFileList = (await localforage.getItem(LOCAL_FILES_KEY)) as LocalFile[];
         const newFileList = oldFileList.map((item) => ({
           ...item,
-          migrationStatus: fileIdsThatFailed.includes(localFile.id) ? 'v1-success' : 'v1-fail',
+          migrationStatus: fileIdsThatFailed.includes(item.id) ? 'v1-fail' : 'v1-success',
         }));
         await localforage.setItem(LOCAL_FILES_KEY, newFileList);
 
