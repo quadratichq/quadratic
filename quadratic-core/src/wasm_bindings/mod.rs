@@ -16,6 +16,11 @@ use crate::formulas::GridProxy;
 use crate::grid::*;
 use crate::*;
 
+#[wasm_bindgen(typescript_custom_section)]
+const TYPESCRIPT_IMPORT: &str = r#"
+import * as types from './types';
+"#;
+
 #[wasm_bindgen]
 pub fn hello() {
     // say hello, when loaded successfully

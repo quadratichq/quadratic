@@ -3,13 +3,13 @@ use crate::grid::js_types::*;
 
 #[wasm_bindgen]
 impl Grid {
-    /// Imports a [`Grid`] from a file.
+    /// Imports a [`Grid`] from a file (that fits the schema defined in JS).
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(file: JsValue) -> Result<Grid, JsValue> {
         Ok(Grid::from_legacy(&serde_wasm_bindgen::from_value(file)?))
     }
 
-    /// Exports a [`Grid`] to a file. Returns a [`GridFileV1_3`].
+    /// Exports a [`Grid`] to a file. Returns a `GridFile` (fits JS schema).
     #[wasm_bindgen(js_name = "exportToFile")]
     pub fn js_export_to_file(&self) -> Result<JsValue, JsValue> {
         Ok(serde_wasm_bindgen::to_value(&self.to_legacy_file_format())?)
@@ -50,7 +50,7 @@ impl Grid {
     pub fn recalculate_bounds(&mut self, sheet_id: &SheetId) {
         self.sheet_mut_from_id(*sheet_id).recalculate_bounds();
     }
-    /// Returns a sheet's bounds as a [`GridBounds`].
+    /// Returns a sheet's bounds.
     #[wasm_bindgen(js_name = "getGridBounds")]
     pub fn get_grid_bounds(
         &self,

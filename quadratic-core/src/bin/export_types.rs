@@ -3,7 +3,7 @@ use ts_rs::TS;
 
 macro_rules! generate_type_declarations {
     ($($type:ty),+ $(,)?) => {
-        String::new() $(+ &<$type>::decl() + "\n")+
+        String::new() $(+ "export " + &<$type>::decl() + "\n")+
     };
 }
 
