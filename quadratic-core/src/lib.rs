@@ -5,8 +5,8 @@
 pub mod util;
 #[macro_use]
 mod error;
+mod controller;
 pub mod ext;
-// mod controller;
 pub mod formulas;
 pub mod grid;
 mod position;

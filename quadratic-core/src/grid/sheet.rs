@@ -325,14 +325,14 @@ impl Sheet {
         }
     }
     /// Returns the position references by a `CellRef`.
-    fn cell_ref_to_pos(&self, cell_ref: CellRef) -> Option<Pos> {
+    pub(crate) fn cell_ref_to_pos(&self, cell_ref: CellRef) -> Option<Pos> {
         Some(Pos {
             x: self.column_ids.index_of(cell_ref.column)?,
             y: self.row_ids.index_of(cell_ref.row)?,
         })
     }
     /// Creates a `CellRef` if the column and row already exist.
-    pub(super) fn try_get_cell_ref(&self, pos: Pos) -> Option<CellRef> {
+    pub(crate) fn try_get_cell_ref(&self, pos: Pos) -> Option<CellRef> {
         Some(CellRef {
             sheet: self.id,
             column: self.column_ids.id_at(pos.x)?,
@@ -341,7 +341,7 @@ impl Sheet {
     }
     /// Creates a `CellRef`, creating the column and row if they do not already
     /// exist.
-    pub(super) fn get_or_create_cell_ref(&mut self, pos: Pos) -> CellRef {
+    pub(crate) fn get_or_create_cell_ref(&mut self, pos: Pos) -> CellRef {
         CellRef {
             sheet: self.id,
             column: self.get_or_create_column(pos.x).0.id,
