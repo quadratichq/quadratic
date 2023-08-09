@@ -1,5 +1,5 @@
-import { ManageSearch, Public } from '@mui/icons-material';
-import { Box, Button, IconButton, InputBase, Typography } from '@mui/material';
+import { ManageSearch } from '@mui/icons-material';
+import { Box, IconButton, InputBase, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
@@ -168,20 +168,6 @@ export const TopBar = (props: IProps) => {
                 </Avatar>
               </AvatarGroup>
             )} */}
-            <Button
-              onClick={() => {
-                setEditorInteractionState((prevState) => ({ ...prevState, showShareMenu: true }));
-              }}
-              style={{
-                display: 'flex',
-                gap: '4px',
-              }}
-              variant="contained"
-              size="small"
-              disableElevation
-            >
-              {false && <Public fontSize="small" />} Share
-            </Button>
             <TooltipHint title={`${settings.showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
               <CodeOutlinesSwitch
                 onClick={() => {
