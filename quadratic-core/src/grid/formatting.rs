@@ -3,7 +3,7 @@ use std::ops::{BitOr, BitOrAssign};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum CellAlign {
     Center,
@@ -12,7 +12,7 @@ pub enum CellAlign {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum CellWrap {
     #[default]
@@ -22,14 +22,14 @@ pub enum CellWrap {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct NumericFormat {
     kind: NumericFormatKind,
     #[serde(rename = "decimalPlaces")]
     decimals: Option<u32>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[serde(tag = "type")]
 pub enum NumericFormatKind {
@@ -41,7 +41,7 @@ pub enum NumericFormatKind {
 
 /// Whether a set of booleans has any `true` values and/or any `false` values.
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct BoolSummary {
     /// Whether any values are true.

@@ -9,7 +9,7 @@ use wasm_bindgen::prelude::*;
 macro_rules! uuid_wrapper_struct {
     ($name:ident) => {
         #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-        #[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS), ts(export))]
+        #[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
         pub struct $name {
             id: Uuid,
         }
@@ -27,7 +27,7 @@ uuid_wrapper_struct!(RowId);
 uuid_wrapper_struct!(ColumnId);
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellRef {
     pub sheet: SheetId,
     pub column: ColumnId,

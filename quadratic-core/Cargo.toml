@@ -16,6 +16,10 @@ crate-type = ["cdylib", "rlib"]
 name = "docgen"
 path = "src/bin/docgen.rs"
 
+[[bin]]
+name = "export_types"
+path = "src/bin/export_types.rs"
+
 [features]
 default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)

@@ -18,11 +18,11 @@ mod response;
 mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
-pub use borders::CellBorder;
+pub use borders::{CellBorder, CellBorderStyle, CellBorders};
 pub use bounds::GridBounds;
 pub use code::*;
 pub use column::{Column, ColumnData};
-pub use formatting::{CellAlign, CellWrap, NumericFormat};
+pub use formatting::{BoolSummary, CellAlign, CellWrap, NumericFormat, NumericFormatKind};
 pub use ids::*;
 pub use sheet::Sheet;
 

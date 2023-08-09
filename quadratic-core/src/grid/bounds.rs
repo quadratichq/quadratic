@@ -4,7 +4,7 @@ use crate::{Pos, Rect};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(tag = "type", rename_all = "camelCase")]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 
 pub enum GridBounds {
     Empty,

@@ -20,7 +20,7 @@ pub use time::{Duration, Instant};
 use crate::{CodeResult, CodeResultExt, ErrorMsg, Span, SpannableIterExt, Spanned};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum Value {
     Single(CellValue),
     Array(Array),

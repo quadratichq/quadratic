@@ -8,7 +8,7 @@ use super::CodeCellLanguage;
 use crate::CellValue;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
     pub x: i64,
@@ -36,7 +36,7 @@ pub struct JsRenderCell {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderFill {
     pub x: i64,
     pub y: i64,
@@ -47,7 +47,7 @@ pub struct JsRenderFill {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderBorder {
     pub x: i64,
     pub y: i64,
@@ -59,7 +59,7 @@ pub struct JsRenderBorder {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct FormattingSummary {
     pub bold: BoolSummary,
     pub italic: BoolSummary,
@@ -81,7 +81,7 @@ impl BitOrAssign for FormattingSummary {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderCodeCell {
     pub x: i64,
     pub y: i64,

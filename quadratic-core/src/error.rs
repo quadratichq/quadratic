@@ -12,7 +12,7 @@ pub type CodeResult<T = Spanned<Value>> = Result<T, Error>;
 
 /// Error message and accompanying span.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Error {
     /// Location of the source code where the error occurred (if any).
     pub span: Option<Span>,
@@ -40,7 +40,7 @@ impl Error {
 
 /// Information about the type of error that occurred.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(tag = "type")]
 pub enum ErrorMsg {
     // Miscellaneous errors

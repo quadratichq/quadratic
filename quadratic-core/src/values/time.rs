@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Instant {
     #[cfg_attr(test, proptest(strategy = "0.0..(i32::MAX as f64)"))]
     pub seconds: f64,
@@ -35,7 +35,7 @@ impl Ord for Instant {
 
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Duration {
     pub years: i32,
     pub months: i32,

@@ -4,7 +4,7 @@ use super::{legacy, CellRef};
 use crate::{ArraySize, CellValue, Error, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CodeCellValue {
     pub language: CodeCellLanguage,
     pub code_string: String,
@@ -68,7 +68,7 @@ impl CodeCellValue {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CodeCellLanguage {
     Python,
     Formula,
@@ -77,7 +77,7 @@ pub enum CodeCellLanguage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CodeCellRunOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
@@ -94,7 +94,7 @@ impl CodeCellRunOutput {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(untagged)]
 pub enum CodeCellRunResult {
     Ok {

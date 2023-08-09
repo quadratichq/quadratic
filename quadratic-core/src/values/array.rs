@@ -25,7 +25,7 @@ macro_rules! array {
 /// 2D array of values in the formula language. The array may be a single value
 /// (1x1) but must not be degenerate (zero width or zero height).
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Array {
     /// Number of columns, which may be any positive integer (but not zero).
     width: u32,

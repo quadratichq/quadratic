@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::Pos;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(tag = "type")]
 pub enum RangeRef {
     RowRange {
@@ -62,8 +62,7 @@ impl RangeRef {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
-
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellRef {
     pub x: CellRefCoord,
     pub y: CellRefCoord,
@@ -146,7 +145,7 @@ impl CellRef {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(tag = "type", content = "coord")]
 pub enum CellRefCoord {
     Relative(i64),

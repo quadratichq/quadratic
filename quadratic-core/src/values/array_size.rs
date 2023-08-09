@@ -6,7 +6,7 @@ use super::ErrorMsg;
 
 /// Size of a region or array.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ArraySize {
     /// Width (number of columns)
     pub w: u32,
@@ -51,7 +51,7 @@ impl ArraySize {
 
 /// Horizontal or vertical axis.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum Axis {
     /// Horizontal axis / columns
     X = 0,

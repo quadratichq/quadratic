@@ -34,7 +34,6 @@ pub fn column_from_name(s: &str) -> Option<f64> {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
-#[ts(export)]
 pub struct JsCodeResult {
     pub cells_accessed: Vec<[i64; 2]>,
     pub success: bool,
@@ -104,7 +103,6 @@ pub async fn eval_formula(
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, TS)]
-#[ts(export)]
 pub struct JsFormulaParseResult {
     pub parse_error_msg: Option<String>,
     pub parse_error_span: Option<Span>,
@@ -112,7 +110,6 @@ pub struct JsFormulaParseResult {
     pub cell_refs: Vec<JsCellRefSpan>,
 }
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, TS)]
-#[ts(export)]
 pub struct JsCellRefSpan {
     pub span: Span,
     pub cell_ref: formulas::RangeRef,
