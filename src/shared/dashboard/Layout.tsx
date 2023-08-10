@@ -1,4 +1,4 @@
-import { Close, ExtensionOutlined, Inbox, Menu, PeopleOutline } from '@mui/icons-material';
+import { Close, ExtensionOutlined, FolderOpenOutlined, Menu, PeopleOutline } from '@mui/icons-material';
 import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
 import { ROUTES } from 'constants/routes';
 import { ReactNode, useEffect, useState } from 'react';
@@ -155,7 +155,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
 
         <SidebarLabel>Personal</SidebarLabel>
         <SidebarNavLink to={ROUTES.MY_FILES} style={sidebarLinkStyles}>
-          <Inbox />
+          <FolderOpenOutlined />
           <Typography variant="body2" color="text.primary">
             My files
           </Typography>
