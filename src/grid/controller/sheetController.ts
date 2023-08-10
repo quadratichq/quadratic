@@ -57,7 +57,16 @@ export class SheetController {
     // use to test large sheets
     if (debugMockLargeData) {
       console.time('random');
-      this.grid.populateWithRandomFloats(this.sheets[0].grid.sheetId, new Rect(new Pos(0, 0), new Pos(100, 10000)));
+      const url = new URLSearchParams(window.location.search);
+      let x = 10;
+      let y = 3000;
+      const params = url.get('mock-large-data');
+      if (params?.includes(',')) {
+        const n = params.split(',');
+        x = parseInt(n[0]);
+        y = parseInt(n[1]);
+      }
+      this.grid.populateWithRandomFloats(this.sheets[0].grid.sheetId, new Rect(new Pos(0, 0), new Pos(x, y)));
       console.timeEnd('random');
     }
 
