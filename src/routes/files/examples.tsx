@@ -1,5 +1,6 @@
 import { ButtonBase } from '@mui/material';
 import { EXAMPLE_FILES } from 'constants/app';
+import { ROUTES } from 'constants/routes';
 import { Form } from 'react-router-dom';
 import File from 'shared/dashboard/FileListItem';
 import Header from 'shared/dashboard/Header';
@@ -9,7 +10,7 @@ export const Component = () => {
     <>
       <Header title="Examples" />
       {EXAMPLE_FILES.map(({ name, description, file }) => (
-        <Form key={file} method="POST" action="/files/create">
+        <Form key={file} method="POST" action={ROUTES.CREATE_FILE}>
           <input type="hidden" name="action" value="clone-example" />
           <input type="hidden" name="file" value={file} />
           <input type="hidden" name="name" value={name} />

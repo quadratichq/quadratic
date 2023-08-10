@@ -1,9 +1,10 @@
 import { Close, ExtensionOutlined, Inbox, Menu, PeopleOutline } from '@mui/icons-material';
 import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
+import { ROUTES } from 'constants/routes';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation, useRouteLoaderData } from 'react-router-dom';
+import { RootLoaderData } from 'routes';
 import { colors } from 'theme/colors';
-import { RootLoaderData } from '../../routes';
 import { ReactComponent as QuadraticLogo } from './quadratic-logo.svg';
 import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';
 
@@ -153,13 +154,13 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
         </Box>
 
         <SidebarLabel>Personal</SidebarLabel>
-        <SidebarNavLink to="/files/mine" style={sidebarLinkStyles}>
+        <SidebarNavLink to={ROUTES.MY_FILES} style={sidebarLinkStyles}>
           <Inbox />
           <Typography variant="body2" color="text.primary">
             My files
           </Typography>
         </SidebarNavLink>
-        <SidebarNavLink to="/files/examples" style={sidebarLinkStyles}>
+        <SidebarNavLink to={ROUTES.EXAMPLES} style={sidebarLinkStyles}>
           <ExtensionOutlined />
           <Typography variant="body2" color="text.primary">
             Examples
@@ -167,7 +168,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
         </SidebarNavLink>
 
         <SidebarLabel>Teams</SidebarLabel>
-        <SidebarNavLink to="/teams" style={sidebarLinkStyles}>
+        <SidebarNavLink to={ROUTES.TEAMS} style={sidebarLinkStyles}>
           <PeopleOutline />
           <Typography variant="body2" color="text.primary">
             My team
@@ -175,7 +176,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
         </SidebarNavLink>
       </div>
       <div>
-        <SidebarNavLink to="/account" style={sidebarLinkStyles}>
+        <SidebarNavLink to={ROUTES.ACCOUNT} style={sidebarLinkStyles}>
           <Avatar alt={user?.name} src={user?.picture} sx={{ width: 24, height: 24 }} />
           <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <Typography variant="body2" color="text.primary">

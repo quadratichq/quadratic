@@ -1,6 +1,7 @@
 import { Box, Button, ButtonGroup, Typography, useTheme } from '@mui/material';
+import { ROUTES } from 'constants/routes';
 import { Form, useRouteLoaderData } from 'react-router-dom';
-import { RootLoaderData } from 'routes/index';
+import { RootLoaderData } from 'routes';
 import Header from 'shared/dashboard/Header';
 import { useColorMode } from 'shared/root/Theme';
 
@@ -57,7 +58,7 @@ export const Component = () => {
         <Typography variant="body2" color="text.secondary">
           Additional account management coming in the future.
         </Typography>
-        <Form method="post" action="/logout">
+        <Form method="post" action={ROUTES.LOGOUT}>
           <Button variant="outlined" type="submit">
             Log out
           </Button>

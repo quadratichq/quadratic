@@ -4,6 +4,7 @@ import { Tooltip } from '@mui/material';
 import Button from '@mui/material/Button';
 import { Menu, MenuDivider, MenuHeader, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
+import { ROUTES } from 'constants/routes';
 import { useEffect } from 'react';
 import { useRouteLoaderData } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -75,7 +76,7 @@ export const QuadraticMenu = (props: Props) => {
         </MenuItem>
         <MenuDivider />
         <SubMenu label="File">
-          <MenuItem href="/files/create" style={{ textDecoration: 'none' }}>
+          <MenuItem href={ROUTES.CREATE_FILE} style={{ textDecoration: 'none' }}>
             New
           </MenuItem>
           <MenuItem

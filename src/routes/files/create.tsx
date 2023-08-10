@@ -1,21 +1,21 @@
 import apiClientSingleton from 'api-client/apiClientSingleton';
+import { ROUTES } from 'constants/routes';
 import mixpanel from 'mixpanel-browser';
 import { ActionFunctionArgs, redirect } from 'react-router-dom';
 import { validateAndUpgradeGridFile } from 'schemas/validateAndUpgradeGridFile';
 
-const failUrl = encodeURI('/files/mine?snackbar-msg=Failed to create file. Try again.&snackbar-severity=error');
+const failUrl = encodeURI(`${ROUTES.MY_FILES}?snackbar-msg=Failed to create file. Try again.&snackbar-severity=error`);
 
 // FYI the `await new Promise()` code is a hack until this ships in react-router
 // https://github.com/remix-run/react-router/pull/10705
 // Hard reload instead of SPA navigation and replace current stack
 const navigate = async (uuid: string) => {
-  window.location.href = `/file/${uuid}`;
+  window.location.href = ROUTES.FILE(uuid);
   await new Promise((resolve) => setTimeout(resolve, 10000));
   return redirect('/');
 };
 
 export const loader = async (thing: any) => {
-  console.warn('fired loader');
   mixpanel.track('[Files].newFileGet');
   const uuid = await apiClientSingleton.createFile();
   if (uuid) {
@@ -28,7 +28,6 @@ export const loader = async (thing: any) => {
 export const action = async ({ params, request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const action = formData.get('action');
-  console.warn('fired action');
 
   if (action === 'create') {
     mixpanel.track('[Files].newFile');

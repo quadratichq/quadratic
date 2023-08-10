@@ -8,6 +8,7 @@ import {
 import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
 import apiClientSingleton from 'api-client/apiClientSingleton';
 import { GetFilesRes } from 'api-client/types';
+import { ROUTES } from 'constants/routes';
 import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import {
@@ -108,7 +109,7 @@ export const Component = () => {
         title="My files"
         actions={
           <div style={{ display: 'flex', gap: theme.spacing(1) }}>
-            <Form method="POST" action="/files/create">
+            <Form method="POST" action={ROUTES.CREATE_FILE}>
               <input type="hidden" name="action" value="create" />
               <Button
                 startIcon={<AddOutlined />}
@@ -122,7 +123,7 @@ export const Component = () => {
                 Create
               </Button>
             </Form>
-            <Form method="POST" action="/files/create">
+            <Form method="POST" action={ROUTES.CREATE_FILE}>
               <Button variant="outlined" component="label" disabled={isDisabled}>
                 <input type="hidden" name="action" value="import" />
                 <input
@@ -149,7 +150,7 @@ export const Component = () => {
                     formData.append('name', name);
                     formData.append('version', validFile.version);
                     formData.append('contents', JSON.stringify(validFile));
-                    submit(formData, { method: 'POST', action: '/files/create' });
+                    submit(formData, { method: 'POST', action: ROUTES.CREATE_FILE });
                   }}
                   hidden
                 />
@@ -210,7 +211,7 @@ function FileWithActions({ file }: { file: NonNullable<GetFilesRes>[0] }) {
   const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
 
   return (
-    <Link to={`/file/${uuid}`} reloadDocument style={{ textDecoration: 'none', color: 'inherit' }}>
+    <Link to={ROUTES.FILE(uuid)} reloadDocument style={{ textDecoration: 'none', color: 'inherit' }}>
       <File
         key={uuid}
         name={name}

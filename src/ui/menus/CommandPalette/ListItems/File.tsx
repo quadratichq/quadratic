@@ -1,4 +1,5 @@
 import { NoteAddOutlined } from '@mui/icons-material';
+import { ROUTES } from 'constants/routes';
 import { useNavigate } from 'react-router-dom';
 import { SaveFileOutlined } from '../../../icons';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
@@ -8,7 +9,7 @@ const ListItems = [
     label: 'File: New',
     Component: (props: CommandPaletteListItemSharedProps) => {
       const navigate = useNavigate();
-      const action = () => navigate('/files/create');
+      const action = () => navigate(ROUTES.CREATE_FILE);
       return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={action} />;
     },
   },

@@ -1,5 +1,6 @@
 import { ManageSearch } from '@mui/icons-material';
 import { Box, IconButton, InputBase, Typography } from '@mui/material';
+import { ROUTES } from 'constants/routes';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
@@ -111,7 +112,7 @@ export const TopBar = (props: IProps) => {
           ) : (
             <>
               <Typography variant="body2" color={colors.mediumGray}>
-                <Link to="/" style={{ textDecoration: 'none', color: colors.mediumGray }}>
+                <Link to={ROUTES.MY_FILES} reloadDocument style={{ textDecoration: 'none', color: colors.mediumGray }}>
                   My files
                 </Link>{' '}
                 /&nbsp;

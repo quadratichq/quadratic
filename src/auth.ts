@@ -1,5 +1,6 @@
 import { Auth0Client, User, createAuth0Client } from '@auth0/auth0-spa-js';
 import * as Sentry from '@sentry/browser';
+import { ROUTES } from 'constants/routes';
 import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
 
 const domain = process.env.REACT_APP_AUTH0_DOMAIN || '';
@@ -57,7 +58,10 @@ export const authClient: AuthClient = {
     await client.loginWithRedirect({
       authorizationParams: {
         redirect_uri:
-          window.location.origin + '/login-result?' + new URLSearchParams([['redirectTo', redirectTo]]).toString(),
+          window.location.origin +
+          ROUTES.LOGIN_RESULT +
+          '?' +
+          new URLSearchParams([['redirectTo', redirectTo]]).toString(),
       },
     });
   },
@@ -87,7 +91,7 @@ export const authClient: AuthClient = {
 /**
  * Utility function for use in route loaders.
  * If the user is not logged in and tries to access a protected route, we redirect
- * them to `/login` with a `from` parameter that allows login to redirect back
+ * them to the login page with a `from` parameter that allows login to redirect back
  * to current page upon successful authentication
  */
 export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFunction {
@@ -97,7 +101,7 @@ export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFun
     if (!isAuthenticated) {
       let params = new URLSearchParams();
       params.set('from', new URL(request.url).pathname);
-      return redirect('/login?' + params.toString());
+      return redirect(ROUTES.LOGIN + '?' + params.toString());
     }
     return loaderFn(loaderFnArgs);
   };

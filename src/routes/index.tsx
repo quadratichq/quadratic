@@ -1,6 +1,7 @@
 import { User } from '@auth0/auth0-spa-js';
 import { ErrorOutline, WarningAmber } from '@mui/icons-material';
 import { Button } from '@mui/material';
+import { ROUTES } from 'constants/routes';
 import localforage from 'localforage';
 import {
   Link,
@@ -76,11 +77,11 @@ const router = createBrowserRouter(
         />
 
         <Route lazy={() => import('../shared/dashboard/Layout')}>
-          <Route path="files" element={<Navigate to="/files/mine" replace />} />
-          <Route path="files/mine" lazy={() => import('./files/mine')} />
-          <Route path="files/examples" lazy={() => import('./files/examples')} />
-          <Route path="teams" lazy={() => import('./teams')} />
-          <Route path="account" lazy={() => import('./account')} />
+          <Route path="files" element={<Navigate to={ROUTES.MY_FILES} replace />} />
+          <Route path={ROUTES.MY_FILES} lazy={() => import('./files/mine')} />
+          <Route path={ROUTES.EXAMPLES} lazy={() => import('./files/examples')} />
+          <Route path={ROUTES.TEAMS} lazy={() => import('./teams')} />
+          <Route path={ROUTES.ACCOUNT} lazy={() => import('./account')} />
         </Route>
 
         <Route
@@ -106,21 +107,20 @@ const router = createBrowserRouter(
         />
       </Route>
       <Route
-        path="/login"
+        path={ROUTES.LOGIN}
         loader={async ({ request }) => {
           let isAuthenticated = await authClient.isAuthenticated();
-          if (debugLogAuth) console.log('[auth] /login <loader>: isAuthenticated: %s', isAuthenticated);
 
           // If they’re authenticated, redirect home
           if (isAuthenticated) {
-            if (debugLogAuth) console.log('[auth] /login redirect to home');
+            if (debugLogAuth) console.log('[auth] redirect to home after login');
             return redirect('/');
           }
 
           // If they’re not authenticated, send them to Auth0
           // Watch for a `from` query param, as unprotected routes will redirect
           // to here for them to auth first
-          if (debugLogAuth) console.log('[auth] /login send to auth0');
+          if (debugLogAuth) console.log('[auth] send to auth0 for login');
           const url = new URL(request.url);
           const redirectTo = url.searchParams.get('from') || '';
           await authClient.login(redirectTo);
@@ -129,7 +129,7 @@ const router = createBrowserRouter(
         }}
       />
       <Route
-        path="/login-result"
+        path={ROUTES.LOGIN_RESULT}
         loader={async () => {
           await authClient.handleSigninRedirect();
           let isAuthenticated = await authClient.isAuthenticated();
@@ -141,7 +141,7 @@ const router = createBrowserRouter(
         }}
       />
       <Route
-        path="/logout"
+        path={ROUTES.LOGOUT}
         loader={async () => {
           return redirect('/');
         }}
