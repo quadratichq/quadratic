@@ -170,7 +170,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
         <SidebarNavLink to="/teams" style={sidebarLinkStyles}>
           <PeopleOutline />
           <Typography variant="body2" color="text.primary">
-            Learn more
+            My team
           </Typography>
         </SidebarNavLink>
       </div>

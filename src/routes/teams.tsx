@@ -3,25 +3,20 @@ import Empty from '../shared/Empty';
 import Header from '../shared/dashboard/Header';
 
 export const Component = () => {
-  // const mailto =
-  //   'mailto:support@quadratichq.com?subject=Early%20access%20to%20teams&body=Please%20sign%20me%20up%20for%20early%20access%20to%20teams!';
+  const mailto =
+    'mailto:support@quadratichq.com?subject=Early%20access%20to%20teams&body=Please%20sign%20me%20up%20for%20early%20access%20to%20teams!';
   return (
     <>
-      <Header title="Teams" />
+      <Header title="My team" />
       <Empty
-        title="Teams is coming soon"
+        title="Coming soon…"
         description={
           <>
             Quadratic Teams is a collaborative space where your team can work on files together. If you are interested
-            in being the first to use teams, contact us at support@quadratichq.com
+            in being the first to use teams, contact us at <a href={mailto}>support@quadratichq.com</a>
           </>
         }
         Icon={PeopleOutline}
-        // actions={
-        //   <Button href={mailto} variant="contained" disableElevation>
-        //     Email us for early access
-        //   </Button>
-        // }
       />
     </>
   );
