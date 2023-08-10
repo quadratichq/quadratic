@@ -52,11 +52,24 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current.show(bounds);
   }
 
-  changeCells(sheet: Sheet, cells: Coordinate[], options: { labels?: boolean; background?: boolean }) {
+  changed(options: {
+    sheet?: Sheet;
+    column?: number;
+    row?: number;
+    cells?: Coordinate[];
+    labels: boolean;
+    background: boolean;
+  }): void {
+    const sheet = options.sheet ?? this.app.sheet;
+
     const cellsSheet = this.children.find((search) => search.sheet.id === sheet.id);
-    if (!cellsSheet) {
-      throw new Error('Expected to find sheet in changeCells');
-    }
-    cellsSheet.changeCells(cells, options);
+    if (!cellsSheet) throw new Error('Expected to find cellsSheet in changed');
+    cellsSheet.changed({
+      cells: options.cells,
+      column: options.column,
+      row: options.row,
+      labels: options.labels,
+      background: options.background,
+    });
   }
 }

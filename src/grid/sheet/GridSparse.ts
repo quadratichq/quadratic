@@ -103,11 +103,12 @@ export class GridSparse {
     if (!skipBounds) {
       this.grid.recalculateBounds(this.sheetId);
     }
-    pixiAppEvents.changeCells(
-      this.sheet,
-      formats.map((format) => ({ x: format.x, y: format.y })),
-      { labels, background }
-    );
+    pixiAppEvents.changed({
+      sheet: this.sheet,
+      cells: formats.map((format) => ({ x: format.x, y: format.y })),
+      labels,
+      background,
+    });
   }
 
   clearFormat(formats: CellFormat[], skipBounds = false): void {
@@ -259,36 +260,6 @@ export class GridSparse {
     if (bounds.type !== 'nonEmpty') return;
     return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
   }
-
-  // getBounds(bounds: Rectangle): { bounds: Rectangle; boundsWithData: Rectangle | undefined } {
-  //   const allBounds = this.grid.getGridBounds(this.sheetId, false);
-  //   const minX = allBounds.nonEmpty?.min.x;
-  //   const minY = allBounds.nonEmpty?.min.y;
-  //   const maxX = allBounds.nonEmpty?.max.x;
-  //   const maxY = allBounds.nonEmpty?.max.y;
-  //   const empty = !allBounds.nonEmpty;
-  //   const columnStartIndex = this.gridOffsets.getColumnIndex(bounds.left);
-  //   const columnStart = columnStartIndex.index > minX ? columnStartIndex.index : minX;
-  //   const columnEndIndex = this.gridOffsets.getColumnIndex(bounds.right);
-  //   const columnEnd = columnEndIndex.index < maxX ? columnEndIndex.index : maxX;
-
-  //   const rowStartIndex = this.gridOffsets.getRowIndex(bounds.top);
-  //   const rowStart = rowStartIndex.index > minY ? rowStartIndex.index : minY;
-  //   const rowEndIndex = this.gridOffsets.getRowIndex(bounds.bottom);
-  //   const rowEnd = rowEndIndex.index < maxY ? rowEndIndex.index : maxY;
-
-  //   return {
-  //     bounds: new Rectangle(
-  //       columnStartIndex.index,
-  //       rowStartIndex.index,
-  //       columnEndIndex.index - columnStartIndex.index,
-  //       rowEndIndex.index - rowStartIndex.index
-  //     ),
-  //     boundsWithData: empty
-  //       ? undefined
-  //       : new Rectangle(columnStart, rowStart, columnEnd - columnStart, rowEnd - rowStart),
-  //   };
-  // }
 
   getGridBounds(onlyData: boolean): Rectangle | undefined {
     const bounds = this.grid.getGridBounds(this.sheetId, onlyData);

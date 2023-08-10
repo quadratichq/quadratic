@@ -33,7 +33,7 @@ export class CellsSheet extends Container {
     return cellsHash;
   }
 
-  getHash(x: number, y: number): { x: number; y: number } {
+  static getHash(x: number, y: number): { x: number; y: number } {
     return {
       x: Math.floor(x / sheetHashWidth),
       y: Math.floor(y / sheetHashHeight),
@@ -69,9 +69,31 @@ export class CellsSheet extends Container {
   }
 
   getCellsHash(column: number, row: number): CellsHash | undefined {
-    const { x, y } = this.getHash(column, row);
+    const { x, y } = CellsSheet.getHash(column, row);
     const key = CellsHash.getKey(x, y);
     return this.cellsHash.get(key);
+  }
+
+  getColumnHashes(column: number): CellsHash[] {
+    const hashX = Math.floor(column / sheetHashWidth);
+    const hashes: CellsHash[] = [];
+    this.cellsHash.forEach((cellsHash) => {
+      if (cellsHash.hashX === hashX) {
+        hashes.push(cellsHash);
+      }
+    });
+    return hashes;
+  }
+
+  getRowHashes(row: number): CellsHash[] {
+    const hashY = Math.floor(row / sheetHashHeight);
+    const hashes: CellsHash[] = [];
+    this.cellsHash.forEach((cellsHash) => {
+      if (cellsHash.hashY === hashY) {
+        hashes.push(cellsHash);
+      }
+    });
+    return hashes;
   }
 
   findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsHash | undefined {
@@ -84,16 +106,32 @@ export class CellsSheet extends Container {
     return hash;
   }
 
-  changeCells(cells: Coordinate[], options: { labels?: boolean; background?: boolean }) {
+  changed(options: { cells?: Coordinate[]; column?: number; row?: number; labels?: boolean; background?: boolean }) {
     const hashes = new Set<CellsHash>();
-    cells.forEach((cell) => {
-      const { x, y } = this.getHash(cell.x, cell.y);
-      const key = CellsHash.getKey(x, y);
-      const hash: CellsHash = this.cellsHash.get(key) ?? this.addHash(x, y);
-      hashes.add(hash);
-    });
-    hashes.forEach((hash) => {
-      hash.changeCells(options);
-    });
+    if (options.cells) {
+      options.cells.forEach((cell) => {
+        const hash = this.getCellsHash(cell.x, cell.y);
+        if (hash) {
+          hashes.add(hash);
+        }
+      });
+    } else if (options.column) {
+      const columnHashes = this.getColumnHashes(options.column);
+      columnHashes.forEach((hash) => hashes.add(hash));
+    } else if (options.row) {
+      const rowHashes = this.getRowHashes(options.row);
+      rowHashes.forEach((hash) => hashes.add(hash));
+    }
+    if (hashes.size) {
+      if (options.background) {
+        hashes.forEach((hash) => hash.updateBackgrounds());
+      }
+      if (options.labels) {
+        hashes.forEach((hash) => hash.createLabels());
+        hashes.forEach((hash) => hash.overflowClip());
+        hashes.forEach((hash) => hash.updateTextAfterClip());
+        hashes.forEach((hash) => hash.updateBuffers());
+      }
+    }
   }
 }
