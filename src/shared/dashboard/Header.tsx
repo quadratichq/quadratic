@@ -28,7 +28,7 @@ export default function Header({ title, actions }: { title: string; actions?: Re
         },
       }}
     >
-      <Typography variant="h5" sx={{ py: theme.spacing(2) }} color="text.primary">
+      <Typography variant="h6" sx={{ py: theme.spacing(2) }} color="text.primary">
         {title}
       </Typography>
       {actions && (

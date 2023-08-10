@@ -7,7 +7,7 @@ import Header from 'shared/dashboard/Header';
 export const Component = () => {
   return (
     <>
-      <Header title="Example files" />
+      <Header title="Examples" />
       {EXAMPLE_FILES.map(({ name, description, file }) => (
         <Form key={file} method="POST" action="/files/create">
           <input type="hidden" name="action" value="clone-example" />

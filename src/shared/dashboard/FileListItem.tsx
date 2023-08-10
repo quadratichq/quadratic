@@ -1,7 +1,6 @@
 import { InsertDriveFileOutlined } from '@mui/icons-material';
 import { Box, Divider, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
-import { colors } from '../../theme/colors';
 
 export default function FileListItem({
   name,
@@ -17,7 +16,17 @@ export default function FileListItem({
   const theme = useTheme();
 
   return (
-    <Box sx={{ '&:hover': { background: colors.canvasLayer2, cursor: 'pointer' } }}>
+    <Box
+      sx={{
+        '&:hover': { background: theme.palette.action.hover, cursor: 'pointer' },
+        '.FileListItem-icon svg': {
+          fill: theme.palette.text.secondary,
+        },
+        '&:hover .FileListItem-icon svg': {
+          fill: theme.palette.text.primary,
+        },
+      }}
+    >
       <Box
         sx={{
           display: 'flex',
@@ -29,12 +38,12 @@ export default function FileListItem({
           },
 
           [theme.breakpoints.up('md')]: {
-            p: theme.spacing(2),
+            p: theme.spacing(1.5),
           },
         }}
       >
-        <div>
-          <InsertDriveFileOutlined color="primary" />
+        <div className="FileListItem-icon">
+          <InsertDriveFileOutlined />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto' }}>
           <div style={{ display: 'flex', gap: theme.spacing() }}>

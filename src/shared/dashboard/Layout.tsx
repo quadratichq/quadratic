@@ -1,4 +1,4 @@
-import { Close, FilterDramaOutlined, Menu, PeopleOutline, SchoolOutlined } from '@mui/icons-material';
+import { Close, ExtensionOutlined, Inbox, Menu, PeopleOutline } from '@mui/icons-material';
 import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation, useRouteLoaderData } from 'react-router-dom';
@@ -109,7 +109,9 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
     color: 'inherit',
     gap: theme.spacing(1),
     padding: `${theme.spacing(1)} ${theme.spacing(1)}`,
+    borderBottom: '2px solid transparent',
     textDecoration: 'none',
+    borderRadius: theme.shape.borderRadius,
   };
   const SidebarLabel = ({ children }: { children: ReactNode }) => (
     <Typography variant="overline" color="text.secondary" style={{ marginTop: theme.spacing(2) }}>
@@ -136,7 +138,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
     >
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <SidebarNavLink to="/" style={sidebarLinkStyles} isLogo={true}>
+          <SidebarNavLink to="/" style={{ ...sidebarLinkStyles, paddingRight: theme.spacing(1.5) }} isLogo={true}>
             <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <QuadraticLogo />
             </div>
@@ -152,23 +154,23 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
 
         <SidebarLabel>Personal</SidebarLabel>
         <SidebarNavLink to="/files/mine" style={sidebarLinkStyles}>
-          <FilterDramaOutlined color="primary" />
+          <Inbox />
           <Typography variant="body2" color="text.primary">
             My files
           </Typography>
         </SidebarNavLink>
         <SidebarNavLink to="/files/examples" style={sidebarLinkStyles}>
-          <SchoolOutlined color="primary" />
+          <ExtensionOutlined />
           <Typography variant="body2" color="text.primary">
-            Example files
+            Examples
           </Typography>
         </SidebarNavLink>
 
         <SidebarLabel>Teams</SidebarLabel>
         <SidebarNavLink to="/teams" style={sidebarLinkStyles}>
-          <PeopleOutline color="disabled" />
-          <Typography variant="body2" color="text.secondary">
-            Coming soon…
+          <PeopleOutline />
+          <Typography variant="body2" color="text.primary">
+            My team
           </Typography>
         </SidebarNavLink>
       </div>
@@ -203,24 +205,38 @@ function SidebarNavLink({ to, children, style, isLogo }: any) {
     to === navigation.location?.pathname;
 
   return (
-    <NavLink to={to} style={{ ...style, position: 'relative' }}>
-      {isActive && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            right: '0',
-            bottom: '0',
-            backgroundColor: theme.palette.primary.light,
-            opacity: '.14',
-          }}
+    <Box
+      sx={{
+        '.MuiSvgIcon-root': {
+          fill: theme.palette.text.secondary,
+        },
+        '&:hover .MuiSvgIcon-root': {
+          fill: theme.palette.text.primary,
+        },
+      }}
+    >
+      <NavLink to={to} style={{ ...style, position: 'relative' }}>
+        <Box
+          sx={[
+            {
+              position: 'absolute',
+              top: '0',
+              left: '0',
+              right: '0',
+              bottom: '0',
+              backgroundColor: isActive ? theme.palette.action.hover : 'inherit',
+
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
+            },
+          ]}
         />
-      )}
-      {children}
-      {navigation.state === 'loading' && navigation.location.pathname.includes(to) && !isLogo && (
-        <CircularProgress size={18} sx={{ ml: 'auto' }} />
-      )}
-    </NavLink>
+        {children}
+        {navigation.state === 'loading' && navigation.location.pathname.includes(to) && !isLogo && (
+          <CircularProgress size={18} sx={{ ml: 'auto' }} />
+        )}
+      </NavLink>
+    </Box>
   );
 }
