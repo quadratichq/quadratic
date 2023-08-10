@@ -178,7 +178,8 @@ export class PointerHeading {
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
-          this.app.quadrants.quadrantChanged({ column: headingResizing.column });
+          this.app.cellsSheets.changed({ column: headingResizing.column, labels: true, background: true });
+          // this.app.quadrants.quadrantChanged({ column: headingResizing.column });
         }
       } else if (headingResizing.row !== undefined) {
         let size: number;
@@ -199,7 +200,8 @@ export class PointerHeading {
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
-          this.app.quadrants.quadrantChanged({ row: headingResizing.row });
+          this.app.cellsSheets.changed({ row: headingResizing.row, labels: true, background: true });
+          // this.app.quadrants.quadrantChanged({ row: headingResizing.row });
         }
       }
     }

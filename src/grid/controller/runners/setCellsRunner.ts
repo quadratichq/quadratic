@@ -32,7 +32,12 @@ export const SetCellsRunner = (sheetController: SheetController, statement: Stat
     sheet.grid.updateCells(cellsToUpdate, true);
   }
   sheet.recalculateBounds();
-  pixiAppEvents.changeCells(sheetController.sheet, changedCells, { labels: true });
+  pixiAppEvents.changed({
+    sheet: sheetController.sheet,
+    cells: changedCells,
+    labels: true,
+    background: false,
+  });
 
   // pixiAppEvents.quadrantsChanged({ cells: changedCells });
   return {

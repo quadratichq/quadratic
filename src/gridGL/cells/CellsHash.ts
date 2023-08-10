@@ -15,6 +15,9 @@ export class CellsHash extends Container {
   private cellsBackground: CellsBackground;
   cellsLabels: CellsLabels;
 
+  hashX: number;
+  hashY: number;
+
   // column/row bounds (does not include overflow cells)
   AABB: Rectangle;
 
@@ -30,9 +33,13 @@ export class CellsHash extends Container {
     return `${x},${y}`;
   }
 
+  dirty = false;
+
   constructor(cellsSheet: CellsSheet, x: number, y: number, options: { cells?: CellRust[]; background?: CellFill[] }) {
     super();
     this.cellsSheet = cellsSheet;
+    this.hashX = x;
+    this.hashY = y;
     this.key = CellsHash.getKey(x, y);
     this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth, sheetHashHeight);
     const screen = this.sheet.gridOffsets.getScreenRectangle(
@@ -80,6 +87,10 @@ export class CellsHash extends Container {
     }
   }
 
+  createLabels(): void {
+    this.cellsLabels.create();
+  }
+
   overflowClip(): void {
     this.cellsLabels.overflowClip();
   }
@@ -95,15 +106,7 @@ export class CellsHash extends Container {
     this.rect = new Rect(new Pos(this.AABB.left, this.AABB.top), new Pos(this.AABB.right, this.AABB.bottom));
   }
 
-  changeCells(options: { labels?: boolean; background?: boolean }): void {
-    if (options.labels) {
-      this.cellsLabels.create();
-      this.cellsLabels.overflowClip();
-      this.cellsLabels.updateTextAfterClip();
-      this.updateBuffers();
-    }
-    if (options.background) {
-      this.cellsBackground.create();
-    }
+  updateBackgrounds(): void {
+    this.cellsBackground.create();
   }
 }

@@ -46,8 +46,10 @@ export class SheetController {
   loadFile(grid: GridFile) {
     this.grid = Grid.newFromFile(grid);
     this.sheets = [];
-    grid.sheets.forEach((sheet, index) => {
-      this.sheets.push(new Sheet(this.grid, index, sheet.name, sheet.order));
+    grid.sheets.forEach((gridSheet, index) => {
+      const sheet = new Sheet(this.grid, index, gridSheet.name, gridSheet.order);
+      sheet.gridOffsets.populate(gridSheet.columns, gridSheet.rows);
+      this.sheets.push(sheet);
     });
     this.sortSheets();
     this._current = this.sheets[0].id;

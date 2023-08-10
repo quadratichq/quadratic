@@ -65,31 +65,14 @@ export const QuadraticApp = () => {
     if (didMount.current) return;
     didMount.current = true;
 
-    // let assets = false,
-    //   files = false;
-    // const prerenderQuadrants = async () => {
-    //   // wait for local-files and pixi-assets to load before pre-rendering quadrants
-    //   if (!assets || !files) {
-    //     return;
-    //   }
-    //   pixiAppEvents.rebuild();
-    //   // if (!app.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in QuadraticApp');
-    //   // await app.cellsSheets.create();
-    //   setItemsLoaded((old) => ['quadrants', ...old]);
-    // };
-
     // populate web workers
     webWorkers.init(app);
 
     loadAssets().then(() => {
       setItemsLoaded((old) => ['pixi-assets', ...old]);
-      // assets = true;
-      // prerenderQuadrants();
     });
     initialize().then(() => {
       setItemsLoaded((old) => ['local-files', ...old]);
-      // files = true;
-      // prerenderQuadrants();
     });
   }, [app, initialize]);
 

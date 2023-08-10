@@ -123,9 +123,16 @@ class PixiAppEvents {
     this.app.viewport.dirty = true;
   }
 
-  changeCells(sheet: Sheet, cells: Coordinate[], options: { labels?: boolean; background?: boolean }): void {
+  changed(options: {
+    sheet: Sheet;
+    cells?: Coordinate[];
+    labels: boolean;
+    background: boolean;
+    column?: number;
+    row?: number;
+  }): void {
     if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.changeCells');
-    this.app.cellsSheets.changeCells(sheet, cells, options);
+    this.app.cellsSheets.changed(options);
     this.app.setViewportDirty();
   }
 
