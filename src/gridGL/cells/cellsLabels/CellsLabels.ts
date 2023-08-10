@@ -20,12 +20,15 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
   hashes: Set<CellsHash>;
   AABB?: Rectangle;
 
+  viewBounds: Bounds;
+
   constructor(cellsHash: CellsHash) {
     super();
     this.cellsHash = cellsHash;
     this.cellLabels = new Map();
     this.hashes = new Set();
     this.labelMeshes = this.addChild(new LabelMeshes());
+    this.viewBounds = new Bounds();
   }
 
   get sheet(): Sheet {
@@ -72,7 +75,11 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
     this.labelMeshes.prepare();
 
     // populate labelMeshes webGL buffers
-    this.cellLabels.forEach((cellLabel) => cellLabel.updateLabelMesh(this.labelMeshes));
+    this.viewBounds.clear();
+    this.cellLabels.forEach((cellLabel) => {
+      const bounds = cellLabel.updateLabelMesh(this.labelMeshes);
+      this.viewBounds.mergeInto(bounds);
+    });
 
     // finalizes webGL buffers
     this.labelMeshes.finalize();

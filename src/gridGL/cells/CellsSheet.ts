@@ -1,7 +1,6 @@
 import { Container, Rectangle } from 'pixi.js';
 import { debugShowCellsSheetCulling } from '../../debugFlags';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { intersects } from '../helpers/intersects';
 import { Coordinate } from '../types/size';
 import { CellsHash } from './CellsHash';
 import { CellFill, CellRust, CellsHashBounds, sheetHashHeight, sheetHashWidth } from './CellsTypes';
@@ -52,7 +51,7 @@ export class CellsSheet extends Container {
     this.visible = true;
     let count = 0;
     this.cellsHash.forEach((cellsHash) => {
-      if (intersects.rectangleRectangle(bounds, cellsHash.viewBounds)) {
+      if (cellsHash.viewBounds.intersectsRectangle(bounds)) {
         cellsHash.show();
         count++;
       } else {

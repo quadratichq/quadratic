@@ -1,5 +1,6 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { debugShowCellsHashBoxes } from '../../debugFlags';
+import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { Pos, Rect } from '../../quadratic-core/quadratic_core';
 import { CellsBackground } from './CellsBackground';
@@ -22,7 +23,7 @@ export class CellsHash extends Container {
   AABB: Rectangle;
 
   // x,y bounds (includes overflow cells)
-  viewBounds!: Rectangle;
+  viewBounds: Bounds;
 
   // quadratic-core/rect
   rect: any;
@@ -48,6 +49,7 @@ export class CellsHash extends Container {
       this.AABB.width,
       this.AABB.height
     );
+    this.viewBounds = new Bounds();
 
     if (debugShowCellsHashBoxes) {
       this.test = this.addChild(new Graphics());
@@ -61,6 +63,11 @@ export class CellsHash extends Container {
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
     this.cellsLabels.create(options.cells);
+  }
+
+  updateBounds() {
+    this.viewBounds.clear();
+    this.viewBounds.mergeInto(this.cellsLabels.viewBounds, this.cellsBackground.viewBounds);
   }
 
   get sheet(): Sheet {
@@ -102,8 +109,8 @@ export class CellsHash extends Container {
   updateBuffers(): void {
     this.cellsLabels.updateBuffers();
 
-    this.viewBounds = this.getBounds();
     this.rect = new Rect(new Pos(this.AABB.left, this.AABB.top), new Pos(this.AABB.right, this.AABB.bottom));
+    this.updateBounds();
   }
 
   updateBackgrounds(): void {

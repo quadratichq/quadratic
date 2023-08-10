@@ -1,6 +1,7 @@
 import { removeItems } from '@pixi/utils';
 import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
 import { cellTextFormatterRust } from '../../../grid/formatting/cellTextFormatter';
+import { Bounds } from '../../../grid/sheet/Bounds';
 import { convertColorStringToTint, convertTintToArray } from '../../../helpers/convertColor';
 import { CellAlignment } from '../../../schemas';
 import { Coordinate } from '../../types/size';
@@ -266,7 +267,9 @@ export class CellLabel extends Container {
   }
 
   /** Adds the glyphs to the CellsLabels container */
-  updateLabelMesh(labelMeshes: LabelMeshes): void {
+  updateLabelMesh(labelMeshes: LabelMeshes): Bounds {
+    const bounds = new Bounds();
+
     const data = BitmapFont.available[this.fontName];
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
@@ -304,12 +307,14 @@ export class CellLabel extends Container {
 
         buffers.vertices![index * 8 + 0] = xPos;
         buffers.vertices![index * 8 + 1] = yPos;
-        buffers.vertices![index * 8 + 2] = xPos + textureFrame.width * scale;
+        const right = xPos + textureFrame.width * scale;
+        buffers.vertices![index * 8 + 2] = right;
         buffers.vertices![index * 8 + 3] = yPos;
-        buffers.vertices![index * 8 + 4] = xPos + textureFrame.width * scale;
-        buffers.vertices![index * 8 + 5] = yPos + textureFrame.height * scale;
+        buffers.vertices![index * 8 + 4] = right;
+        const bottom = yPos + textureFrame.height * scale;
+        buffers.vertices![index * 8 + 5] = bottom;
         buffers.vertices![index * 8 + 6] = xPos;
-        buffers.vertices![index * 8 + 7] = yPos + textureFrame.height * scale;
+        buffers.vertices![index * 8 + 7] = bottom;
 
         buffers.uvs![index * 8 + 0] = textureUvs.x0;
         buffers.uvs![index * 8 + 1] = textureUvs.y0;
@@ -319,6 +324,8 @@ export class CellLabel extends Container {
         buffers.uvs![index * 8 + 5] = textureUvs.y2;
         buffers.uvs![index * 8 + 6] = textureUvs.x3;
         buffers.uvs![index * 8 + 7] = textureUvs.y3;
+
+        bounds.addRectanglePoints(xPos, yPos, right, bottom);
 
         if (color) {
           buffers.colors![index * 16 + 0] = color[0];
@@ -340,5 +347,6 @@ export class CellLabel extends Container {
         }
       }
     }
+    return bounds;
   }
 }

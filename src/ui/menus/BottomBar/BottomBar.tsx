@@ -7,7 +7,7 @@ import { isMobileOnly } from 'react-device-detect';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
-import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
+import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { Cell } from '../../../schemas';
@@ -102,7 +102,7 @@ export const BottomBar = (props: Props) => {
         {selectedCell?.last_modified && (
           <span>You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}</span>
         )}
-        {debugShowRenderer && (
+        {debugShowFPS && (
           <span
             className="debug-show-renderer"
             style={{

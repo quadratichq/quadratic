@@ -7,10 +7,7 @@ export const debug = url.has('debug') || process.env.REACT_APP_DEBUG === '1' ? t
 // Debug footer marks
 // ------------------
 
-// shows renderer light
-export const debugShowRenderer = debug && true;
-
-// shows FPS meter
+// shows FPS meter & renderer light
 export const debugShowFPS = (debug && true) || url.has('fps');
 
 // add a CACHE render count to the footer
