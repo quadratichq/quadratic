@@ -38,12 +38,12 @@ export const CellTextFormatter = (cell: Cell, format: CellFormat | undefined) =>
 };
 
 export const cellTextFormatterRust = (cell: CellRust) => {
-  if (!cell.textFormat) return cell.value.value;
+  const value = cell.value.value.toString();
+  if (!cell.textFormat) return value;
   const number_of_decimals = cell.textFormat.decimalPlaces ?? DEFAULT_NUMBER_OF_DECIMAL_PLACES;
   const decimal_string = getDecimalPlacesString(number_of_decimals);
 
   try {
-    const value = cell.value.value.toString();
     if (cell.textFormat.type === 'CURRENCY' && isStringANumber(value)) {
       return formatNumber(value, `$0,0${decimal_string}`, { currency: cell.textFormat.symbol });
     } else if (cell.textFormat.type === 'PERCENTAGE' && isStringANumber(value)) {
