@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{CellRef, Grid},
-    CellValue,
+    grid::{CellRef, Grid, SheetId},
+    CellValue, Pos,
 };
 
 pub struct GridController {
@@ -22,11 +22,19 @@ impl GridController {
         }
     }
 
-    pub fn set_cell(&mut self, pos: CellRef, value: CellValue) {
+    pub fn set_cell(&mut self, sheet_id: SheetId, pos: Pos, value: CellValue) {
+        let sheet = self.grid.sheet_mut_from_id(sheet_id);
+        let cell_ref = sheet.get_or_create_cell_ref(pos);
         let transaction = Transaction {
-            ops: vec![Operation::SetCell { pos, value }],
+            ops: vec![Operation::SetCell { cell_ref, value }],
         };
-        let rev_transaction = self.transact(transaction);
+        self.transact_forward(transaction);
+    }
+    pub fn get_cell(&self, sheet_id: SheetId, pos: Pos) -> CellValue {
+        self.grid
+            .sheet_from_id(sheet_id)
+            .get_cell_value(pos)
+            .unwrap_or(CellValue::Blank)
     }
 
     fn transact_forward(&mut self, transaction: Transaction) {
@@ -57,14 +65,14 @@ impl GridController {
         let mut rev_ops = vec![];
         for op in transaction.ops {
             match op {
-                Operation::SetCell { pos, value } => {
-                    let sheet = self.grid.sheet_mut_from_id(pos.sheet);
-                    let cell_xy = sheet.cell_ref_to_pos(pos).expect("bad cell reference");
+                Operation::SetCell { cell_ref, value } => {
+                    let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
+                    let cell_xy = sheet.cell_ref_to_pos(cell_ref).expect("bad cell reference");
                     let response = sheet
                         .set_cell_value(cell_xy, value)
                         .expect("error setting cell");
                     rev_ops.push(Operation::SetCell {
-                        pos,
+                        cell_ref,
                         value: response.old_value,
                     });
                 }
@@ -82,5 +90,36 @@ pub struct Transaction {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Operation {
-    SetCell { pos: CellRef, value: CellValue },
+    SetCell { cell_ref: CellRef, value: CellValue },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_set_cell_undo_redo() {
+        let mut g = GridController::new();
+        let sheet_id = g.grid.sheets()[0].id;
+        let pos = Pos { x: 3, y: 6 };
+        assert_eq!(g.get_cell(sheet_id, pos), CellValue::Blank);
+        g.set_cell(sheet_id, pos, "a".into());
+        assert_eq!(g.get_cell(sheet_id, pos), "a".into());
+        g.set_cell(sheet_id, pos, "b".into());
+        assert_eq!(g.get_cell(sheet_id, pos), "b".into());
+        assert!(g.undo());
+        assert_eq!(g.get_cell(sheet_id, pos), "a".into());
+        assert!(g.redo());
+        assert_eq!(g.get_cell(sheet_id, pos), "b".into());
+        assert!(g.undo());
+        assert_eq!(g.get_cell(sheet_id, pos), "a".into());
+        assert!(g.undo());
+        assert_eq!(g.get_cell(sheet_id, pos), CellValue::Blank);
+        assert!(g.redo());
+        assert_eq!(g.get_cell(sheet_id, pos), "a".into());
+        assert!(g.redo());
+        assert_eq!(g.get_cell(sheet_id, pos), "b".into());
+        assert!(!g.redo());
+        assert_eq!(g.get_cell(sheet_id, pos), "b".into());
+    }
 }
