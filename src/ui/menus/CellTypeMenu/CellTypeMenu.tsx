@@ -14,6 +14,7 @@ import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
 import { useRouteLoaderData } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
+import inputRef from 'utils/inputRef';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -161,7 +162,7 @@ export default function CellTypeMenu() {
           sx={{ width: '100%', padding: '8px 16px' }}
           placeholder={searchlabel}
           inputProps={{ 'aria-label': searchlabel }}
-          autoFocus
+          inputRef={inputRef}
           autoComplete="off"
           value={value}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {

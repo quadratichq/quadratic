@@ -1,6 +1,7 @@
 import { User } from '@auth0/auth0-spa-js';
 import { ErrorOutline, WarningAmber } from '@mui/icons-material';
 import { Button } from '@mui/material';
+import localforage from 'localforage';
 import {
   Link,
   Navigate,
@@ -12,14 +13,18 @@ import {
   redirect,
   useRouteError,
 } from 'react-router-dom';
+import * as CloudFilesMigration from 'shared/CloudFilesMigration';
 import { GlobalSnackbarProvider } from 'shared/GlobalSnackbar';
 import { authClient, protectedRouteLoaderWrapper } from '../auth';
 import { debugLogAuth } from '../debugFlags';
+import * as Create from '../routes/files/create';
 import Empty from '../shared/Empty';
 import BrowserCompatibility from '../shared/root/BrowserCompatibility';
 import Scripts from '../shared/root/Scripts';
 import Theme from '../shared/root/Theme';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
+// @ts-expect-error - for testing purposes
+window.lf = localforage;
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
@@ -31,18 +36,30 @@ const router = createBrowserRouter(
     <>
       <Route
         path="/"
-        loader={async (): Promise<RootLoaderData> => {
+        loader={protectedRouteLoaderWrapper(async ({ request, params }): Promise<RootLoaderData | Response> => {
+          // This is where we determine whether we need to run a migration
+          // This redirect should trigger for every route _except_ the migration
+          // route (this prevents an infinite loop of redirects).
+          const url = new URL(request.url);
+          if (!url.pathname.startsWith('/cloud-migration')) {
+            if (await CloudFilesMigration.needsMigration()) {
+              return redirect('/cloud-migration');
+            }
+          }
+
+          // All other routes get the same data
           let isAuthenticated = await authClient.isAuthenticated();
           let user = await authClient.user();
           if (debugLogAuth) console.log('[auth] / <loader>: isAuthenticated: %s', isAuthenticated);
           return { isAuthenticated, user };
-        }}
+        })}
         element={<Root />}
         errorElement={<RootError />}
         id="root"
       >
         <Route index element={<Navigate to="/files" replace />} />
-        <Route loader={protectedRouteLoaderWrapper(async () => null)} path="file">
+
+        <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibility />}>
             <Route index element={<Navigate to="/files" replace />} />
@@ -50,13 +67,27 @@ const router = createBrowserRouter(
           </Route>
         </Route>
 
-        <Route loader={protectedRouteLoaderWrapper(async () => null)} lazy={() => import('../shared/dashboard/Layout')}>
+        <Route
+          path="files/create"
+          id="create"
+          loader={Create.loader}
+          action={Create.action}
+          shouldRevalidate={() => false}
+        />
+
+        <Route lazy={() => import('../shared/dashboard/Layout')}>
           <Route path="files" element={<Navigate to="/files/mine" replace />} />
           <Route path="files/mine" lazy={() => import('./files/mine')} />
           <Route path="files/examples" lazy={() => import('./files/examples')} />
-          <Route path="files/teams" lazy={() => import('./teams')} />
+          <Route path="teams" lazy={() => import('./teams')} />
           <Route path="account" lazy={() => import('./account')} />
         </Route>
+
+        <Route
+          path="/cloud-migration"
+          element={<CloudFilesMigration.Component />}
+          loader={CloudFilesMigration.loader}
+        />
 
         <Route
           path="*"

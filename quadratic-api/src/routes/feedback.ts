@@ -1,7 +1,7 @@
-import express from 'express';
-import axios from 'axios';
-import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
+import axios from 'axios';
+import express from 'express';
+import { z } from 'zod';
 import { validateAccessToken } from '../middleware/auth';
 import { userMiddleware } from '../middleware/user';
 import { Request } from '../types/Request';
@@ -26,7 +26,7 @@ files_router.post('/', validateAccessToken, userMiddleware, async (req: Request,
   await prisma.qFeedback.create({
     data: {
       feedback,
-      qUserId: req.user.id,
+      userId: req.user.id,
       created_date: new Date(),
     },
   });

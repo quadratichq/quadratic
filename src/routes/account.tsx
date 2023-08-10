@@ -11,7 +11,7 @@ export const Component = () => {
 
   return (
     <>
-      <Header title="Account" />
+      <Header title="My account" />
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: theme.spacing(3), mt: theme.spacing(3) }}>
         <Row>
           <Typography variant="body1" color="text.primary" fontWeight="bold">

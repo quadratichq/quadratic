@@ -13,7 +13,7 @@ export const Component = () => {
   const theme = useTheme();
   const navigation = useNavigation();
   const location = useLocation();
-  const isLoading = navigation.state === 'loading';
+  const isLoading = navigation.state !== 'idle';
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const handleDrawerToggle = () => {
@@ -165,7 +165,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
         </SidebarNavLink>
 
         <SidebarLabel>Teams</SidebarLabel>
-        <SidebarNavLink to="/files/teams" style={sidebarLinkStyles}>
+        <SidebarNavLink to="/teams" style={sidebarLinkStyles}>
           <PeopleOutline />
           <Typography variant="body2" color="text.primary">
             Learn more
@@ -198,7 +198,7 @@ function SidebarNavLink({ to, children, style, isLogo }: any) {
 
   const isActive =
     // We're currently on this page and not navigating elsewhere
-    (to === location.pathname && navigation.state === 'idle') ||
+    (to === location.pathname && navigation.state !== 'loading') ||
     // We're navigating to this page
     to === navigation.location?.pathname;
 

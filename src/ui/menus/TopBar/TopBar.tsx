@@ -168,20 +168,6 @@ export const TopBar = (props: IProps) => {
                 </Avatar>
               </AvatarGroup>
             )} */}
-            {/* <Button
-              onClick={() => {
-                setEditorInteractionState((prevState) => ({ ...prevState, showShareMenu: true }));
-              }}
-              style={{
-                display: 'flex',
-                gap: '4px',
-              }}
-              variant="contained"
-              size="small"
-              disableElevation
-            >
-              {false && <Public fontSize="small" />} Share
-            </Button> */}
             <TooltipHint title={`${settings.showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
               <CodeOutlinesSwitch
                 onClick={() => {

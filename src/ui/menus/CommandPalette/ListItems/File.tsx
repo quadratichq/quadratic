@@ -1,18 +1,15 @@
-import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { NoteAddOutlined } from '@mui/icons-material';
-import { ShareFileOutlined, SaveFileOutlined } from '../../../icons';
-import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-// import { useLocalFiles } from '../../../contexts/LocalFiles';
-// import apiClientSingleton from '../../../../api-client/apiClientSingleton';
+import { useNavigate } from 'react-router-dom';
+import { SaveFileOutlined } from '../../../icons';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
     label: 'File: New',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const createNewFile = () => {}; // TODO useLocalFiles();
-      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={createNewFile} />;
+      const navigate = useNavigate();
+      const action = () => navigate('/files/create');
+      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={action} />;
     },
   },
   {
@@ -24,24 +21,6 @@ const ListItems = [
         // apiClientSingleton.downloadFile(file.id);
       };
       return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={downloadCurrentFile} />;
-    },
-  },
-  {
-    label: 'File: Share…',
-    Component: (props: CommandPaletteListItemSharedProps) => {
-      const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-      return (
-        <CommandPaletteListItem
-          {...props}
-          icon={<ShareFileOutlined />}
-          action={() => {
-            setEditorInteractionState({
-              ...editorInteractionState,
-              showShareMenu: true,
-            });
-          }}
-        />
-      );
     },
   },
 ];

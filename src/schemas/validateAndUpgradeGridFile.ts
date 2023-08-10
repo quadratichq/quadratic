@@ -24,7 +24,6 @@ export function validateAndUpgradeGridFile(input: any, logOutput: boolean = true
         '[validateAndUpgradeFile] Failed to validate and upgrade file. Expected a string, received: %s',
         typeof input
       );
-    // TODO log sentry error
     return null;
   }
 
@@ -35,7 +34,6 @@ export function validateAndUpgradeGridFile(input: any, logOutput: boolean = true
   } catch (e) {
     if (logOutput)
       console.error('[validateAndUpgradeFile] Failed to validated and upgrade file. Could not parse input as JSON.', e);
-    // TODO sentry
     return null;
   }
 
