@@ -38,7 +38,7 @@ export default function FileListItem({
           },
 
           [theme.breakpoints.up('md')]: {
-            p: theme.spacing(2),
+            p: theme.spacing(1.5),
           },
         }}
       >
