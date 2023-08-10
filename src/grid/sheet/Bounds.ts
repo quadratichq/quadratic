@@ -40,6 +40,14 @@ export class Bounds {
     }
   }
 
+  addRectanglePoints(x0: number, y0: number, x1: number, y1: number): void {
+    this.minX = Math.min(x0, this.minX);
+    this.maxX = Math.max(x1, this.maxX);
+    this.minY = Math.min(y0, this.minY);
+    this.maxY = Math.max(y1, this.maxY);
+    this.empty = false;
+  }
+
   addRectangle(rectangle: Rectangle): void {
     this.minX = Math.min(rectangle.left, this.minX);
     this.maxX = Math.max(rectangle.right, this.maxX);
@@ -80,6 +88,15 @@ export class Bounds {
   contains(x: number, y: number): boolean {
     if (this.empty) return false;
     return x >= this.minX && x <= this.maxX && y >= this.minY && y <= this.maxY;
+  }
+
+  intersectsRectangle(rectangle: Rectangle): boolean {
+    return (
+      rectangle.left < this.maxX &&
+      rectangle.right > this.minX &&
+      rectangle.top < this.maxY &&
+      rectangle.bottom > this.minY
+    );
   }
 
   containsCoordinate(coordinate: Coordinate): boolean {

@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { debugShowCountRenderedObjects, debugShowRenderer, debugShowTime } from '../../debugFlags';
+import { debugShowCountRenderedObjects, debugShowFPS, debugShowTime } from '../../debugFlags';
 import { PixiApp } from '../pixiApp/PixiApp';
 
 const MINIMUM_MS_TO_DISPLAY = 10;
@@ -20,7 +20,7 @@ export function debugTimeCheck(name: string, minimum = MINIMUM_MS_TO_DISPLAY): v
 }
 
 export function debugRendererLight(on: boolean): void {
-  if (!debugShowRenderer) return;
+  if (!debugShowFPS) return;
   const span = document.querySelector('.debug-show-renderer') as HTMLSpanElement;
   if (span) {
     span.style.backgroundColor = on ? '#aa0000' : '#00aa00';
