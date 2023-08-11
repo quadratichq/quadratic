@@ -17,7 +17,7 @@ If you have any problems getting the project to run locally, please create an is
 
 ## Run Quadratic
 
-In order to run the front-end and/or the server locally, you must have all the appropriate environment variables configured in `.env.local`. You can grab the values from [our team Notion page](https://www.notion.so/Env-Variables-78b1a1da19d0421993abe8c449e51496?pvs=4) or by asking a team member.
+In order to run the front-end and/or the server locally, you must have all the environment variables configured in `.env.local` (and `quadratic-api/.env.local` if you’re running a local server). You can grab the values from [our team Notion page](https://www.notion.so/Env-Variables-78b1a1da19d0421993abe8c449e51496?pvs=4) or by asking a team member.
 
 ### Run front-end locally
 
