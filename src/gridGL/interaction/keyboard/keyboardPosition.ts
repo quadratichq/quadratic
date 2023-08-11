@@ -26,7 +26,7 @@ export function keyboardPosition(options: { event: React.KeyboardEvent<HTMLEleme
     //   the above checks are always made relative to the original cursor position (the highlighted cell)
 
     if (event.metaKey || event.ctrlKey) {
-      const bounds = sheet.grid.getGridBounds(true);
+      const bounds = sheet.grid.getSheetBounds(true);
       if (!bounds) {
         event.preventDefault();
         return;

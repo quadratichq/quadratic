@@ -5,7 +5,7 @@ import { Sheet } from '../../grid/sheet/Sheet';
 import { Pos, Rect } from '../../quadratic-core/quadratic_core';
 import { CellsBackground } from './CellsBackground';
 import { CellsSheet } from './CellsSheet';
-import { CellFill, CellRust, sheetHashHeight, sheetHashWidth } from './CellsTypes';
+import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 import { CellLabel } from './cellsLabels/CellLabel';
 import { CellsLabels } from './cellsLabels/CellsLabels';
 
@@ -14,7 +14,7 @@ export class CellsHash extends Container {
 
   private test?: Graphics;
   private cellsBackground: CellsBackground;
-  cellsLabels: CellsLabels;
+  private cellsLabels: CellsLabels;
 
   hashX: number;
   hashY: number;
@@ -36,22 +36,24 @@ export class CellsHash extends Container {
 
   dirty = false;
 
-  constructor(cellsSheet: CellsSheet, x: number, y: number, options: { cells?: CellRust[]; background?: CellFill[] }) {
+  static times = { updateText: 0, overflowClip: 0, updateTextAfterClip: 0 };
+
+  constructor(cellsSheet: CellsSheet, x: number, y: number) {
     super();
     this.cellsSheet = cellsSheet;
     this.hashX = x;
     this.hashY = y;
     this.key = CellsHash.getKey(x, y);
-    this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth, sheetHashHeight);
-    const screen = this.sheet.gridOffsets.getScreenRectangle(
-      this.AABB.left,
-      this.AABB.top,
-      this.AABB.width,
-      this.AABB.height
-    );
+    this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
     this.viewBounds = new Bounds();
 
     if (debugShowCellsHashBoxes) {
+      const screen = this.sheet.gridOffsets.getScreenRectangle(
+        this.AABB.left,
+        this.AABB.top,
+        this.AABB.width,
+        this.AABB.height
+      );
       this.test = this.addChild(new Graphics());
       this.test
         .beginFill(Math.floor(Math.random() * 0xffffff))
@@ -59,10 +61,7 @@ export class CellsHash extends Container {
         .endFill();
     }
     this.cellsBackground = this.addChild(new CellsBackground(this));
-    this.cellsBackground.create(options.background);
-
     this.cellsLabels = this.addChild(new CellsLabels(this));
-    this.cellsLabels.create(options.cells);
   }
 
   updateBounds() {
@@ -100,10 +99,6 @@ export class CellsHash extends Container {
 
   overflowClip(): void {
     this.cellsLabels.overflowClip();
-  }
-
-  updateTextAfterClip(): void {
-    this.cellsLabels.updateTextAfterClip();
   }
 
   updateBuffers(): void {

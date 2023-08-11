@@ -1,34 +1,50 @@
 import { Container, Rectangle } from 'pixi.js';
 import { debugShowCellsSheetCulling } from '../../debugFlags';
 import { Sheet } from '../../grid/sheet/Sheet';
+import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { Coordinate } from '../types/size';
 import { CellsHash } from './CellsHash';
-import { CellFill, CellRust, CellsHashBounds, sheetHashHeight, sheetHashWidth } from './CellsTypes';
-import { createCellsSheet } from './cellsLabels/createCellsSheet';
+import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
+
+const MAXIMUM_FRAME_TIME = 1000 / 15;
 
 export class CellsSheet extends Container {
   // individual hash containers (eg, CellsBackground, CellsArray)
   private cellsHashContainer: Container;
 
-  // friends of createCellsSheet.ts
-  sheet: Sheet;
-  // index into cellsHashContainer
+  // (x, y) index into cellsHashContainer
   cellsHash: Map<string, CellsHash>;
+
+  // row index into cellsHashContainer (used for clipping)
+  private cellsRows: Map<number, CellsHash[]>;
+
+  // set of rows that need updating
+  private dirtyRows: Set<number>;
+
+  private resolveTick?: () => void;
+
+  // friend of CellsHash and CellsSheets
+  sheet: Sheet;
 
   constructor(sheet: Sheet) {
     super();
     this.sheet = sheet;
     this.cellsHash = new Map();
+    this.cellsRows = new Map();
+    this.dirtyRows = new Set();
     this.cellsHashContainer = this.addChild(new Container());
   }
 
-  async create(): Promise<void> {
-    await createCellsSheet.populate(this);
-  }
-
-  addHash(hashX: number, hashY: number, cells?: CellRust[], background?: CellFill[]): CellsHash {
-    const cellsHash = this.cellsHashContainer.addChild(new CellsHash(this, hashX, hashY, { cells, background }));
+  addHash(hashX: number, hashY: number): CellsHash {
+    const cellsHash = this.cellsHashContainer.addChild(new CellsHash(this, hashX, hashY));
     this.cellsHash.set(cellsHash.key, cellsHash);
+    const row = this.cellsRows.get(hashY);
+    if (row) {
+      row.push(cellsHash);
+    } else {
+      this.cellsRows.set(hashY, [cellsHash]);
+      this.dirtyRows.add(hashY);
+    }
     return cellsHash;
   }
 
@@ -39,12 +55,26 @@ export class CellsSheet extends Container {
     };
   }
 
-  getHashBounds(bounds: Rectangle): CellsHashBounds {
+  createHashes(): boolean {
+    debugTimeReset();
+    const bounds = this.sheet.grid.getSheetBounds(false);
+    if (!bounds) return false;
     const xStart = Math.floor(bounds.left / sheetHashWidth);
     const yStart = Math.floor(bounds.top / sheetHashHeight);
     const xEnd = Math.floor(bounds.right / sheetHashWidth);
     const yEnd = Math.floor(bounds.bottom / sheetHashHeight);
-    return { xStart, yStart, xEnd, yEnd };
+    for (let y = yStart; y <= yEnd; y++) {
+      for (let x = xStart; x <= xEnd; x++) {
+        const rect = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
+        const cells = this.sheet.grid.getCellValue(rect);
+        const background = this.sheet.grid.getCellBackground(rect);
+        if (cells.length || background.length) {
+          this.addHash(x, y);
+        }
+      }
+    }
+    debugTimeCheck('createHashes');
+    return true;
   }
 
   show(bounds: Rectangle): void {
@@ -95,8 +125,9 @@ export class CellsSheet extends Container {
     return hashes;
   }
 
+  // used for clipping to find neighboring hash - clipping always works from right to left
   findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsHash | undefined {
-    bounds = bounds ?? this.sheet.grid.getGridBounds(true);
+    bounds = bounds ?? this.sheet.grid.getSheetBounds(true);
     if (!bounds) {
       throw new Error('Expected bounds to be defined in findPreviousHash of CellsSheet');
     }
@@ -128,9 +159,47 @@ export class CellsSheet extends Container {
       if (options.labels) {
         hashes.forEach((hash) => hash.createLabels());
         hashes.forEach((hash) => hash.overflowClip());
-        hashes.forEach((hash) => hash.updateTextAfterClip());
         hashes.forEach((hash) => hash.updateBuffers());
       }
     }
+  }
+
+  // preloads one row of hashes per tick
+  private preloadTick = (time?: number): void => {
+    if (!this.dirtyRows.size) {
+      if (!this.resolveTick) throw new Error('Expected resolveTick to be defined in preloadTick');
+      this.resolveTick();
+      this.resolveTick = undefined;
+      return;
+    }
+    time = time ?? performance.now();
+    debugTimeReset();
+    const nextRow = this.dirtyRows.values().next().value;
+    this.dirtyRows.delete(nextRow);
+    const hashes = this.cellsRows.get(nextRow);
+    if (!hashes) throw new Error('Expected hashes to be defined in preload');
+    hashes.forEach((hash) => hash.createLabels());
+    hashes.forEach((hash) => hash.overflowClip());
+    hashes.forEach((hash) => hash.updateBuffers());
+    const now = performance.now();
+    if (now - time < MAXIMUM_FRAME_TIME) {
+      this.preloadTick(time);
+    } else {
+      debugTimeCheck('preloadTick');
+      setTimeout(this.preloadTick);
+    }
+  };
+
+  preload(): Promise<void> {
+    return new Promise((resolve) => {
+      // if there are no bounds in this sheet, then there's nothing to do
+      if (!this.createHashes()) {
+        resolve();
+      } else {
+        this.resolveTick = resolve;
+        debugTimeReset();
+        this.preloadTick();
+      }
+    });
   }
 }

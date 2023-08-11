@@ -37,7 +37,7 @@ export class QuadrantsSheet extends Container {
     this.removeChildren();
     this.quadrants.clear();
     const { grid, borders, render_dependency, array_dependency } = this.sheet;
-    const gridBounds = grid.getGridBounds(false);
+    const gridBounds = grid.getSheetBounds(false);
     const borderBounds = borders.getGridBounds();
     const renderDependencyBounds = render_dependency.getGridBounds();
     const arrayDependencyBounds = array_dependency.getGridBounds();
@@ -101,7 +101,7 @@ export class QuadrantsSheet extends Container {
   }
 
   quadrantChanged(options: QuadrantChanged): void {
-    const bounds = this.sheet.grid.getGridBounds(false);
+    const bounds = this.sheet.grid.getSheetBounds(false);
     if (!bounds) return;
 
     if (options.row !== undefined) {

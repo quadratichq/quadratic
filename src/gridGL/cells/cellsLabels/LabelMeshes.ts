@@ -28,10 +28,12 @@ export class LabelMeshes extends Container<LabelMesh> {
     return mesh;
   }
 
+  // prepares the buffers for each labelMesh
   prepare(): void {
     this.children.forEach((labelMesh) => labelMesh.prepare());
   }
 
+  // finalizes the buffers after populated
   finalize(): void {
     this.children.forEach((labelMesh) => labelMesh.finalize());
   }

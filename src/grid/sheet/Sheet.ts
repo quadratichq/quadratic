@@ -99,10 +99,10 @@ export class Sheet {
   /** finds grid bounds based on GridSparse, GridBounds, and GridRenderDependency */
   getGridBounds(onlyData: boolean): Rectangle | undefined {
     if (onlyData) {
-      return this.grid.getGridBounds(true);
+      return this.grid.getSheetBounds(true);
     }
     return intersects.rectangleUnion(
-      this.grid.getGridBounds(false),
+      this.grid.getSheetBounds(false),
       this.borders.getGridBounds(),
       this.render_dependency.getGridBounds()
     );

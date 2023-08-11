@@ -18,7 +18,7 @@ export class CellsSheets extends Container<CellsSheet> {
     this.removeChildren();
     for (const sheet of this.app.sheet_controller.sheets) {
       const child = this.addChild(new CellsSheet(sheet));
-      await child.create();
+      await child.preload();
     }
     this.show(this.app.sheet_controller.sheet.id);
   }
@@ -29,7 +29,7 @@ export class CellsSheets extends Container<CellsSheet> {
       throw new Error('Expected to find new sheet in cellSheet');
     }
     const cellsSheet = this.addChild(new CellsSheet(sheet));
-    await cellsSheet.create();
+    await cellsSheet.preload();
     this.show(sheet.id);
   }
 
