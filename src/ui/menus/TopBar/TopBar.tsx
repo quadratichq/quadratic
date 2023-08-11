@@ -1,5 +1,5 @@
 import { ManageSearch } from '@mui/icons-material';
-import { Box, IconButton, InputBase, Typography } from '@mui/material';
+import { Box, IconButton, InputBase, Typography, useTheme } from '@mui/material';
 import { ROUTES } from 'constants/routes';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -33,7 +33,7 @@ export const TopBar = (props: IProps) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { name, renameFile } = useFile();
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
-
+  const theme = useTheme();
   const settings = useGridSettings();
   // const { user } = useAuth0();
 
@@ -111,11 +111,17 @@ export const TopBar = (props: IProps) => {
             <FileRename setIsRenaming={setIsRenaming} currentFilename={name} renameCurrentFile={renameFile} />
           ) : (
             <>
-              <Typography variant="body2" color={colors.mediumGray}>
-                <Link to={ROUTES.MY_FILES} reloadDocument style={{ textDecoration: 'none', color: colors.mediumGray }}>
+              <Typography
+                variant="body2"
+                color={theme.palette.text.disabled}
+                sx={{
+                  '&:hover a': { color: theme.palette.text.primary },
+                  '&::after': { content: '"/"', mx: theme.spacing(1) },
+                }}
+              >
+                <Link to={ROUTES.MY_FILES} reloadDocument style={{ textDecoration: 'none' }}>
                   My files
-                </Link>{' '}
-                /&nbsp;
+                </Link>
               </Typography>
               <Typography
                 onClick={() => {
