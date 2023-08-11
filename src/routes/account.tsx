@@ -1,14 +1,14 @@
-import { Box, Button, ButtonGroup, Typography, useTheme } from '@mui/material';
+import { Box, Button, Typography, useTheme } from '@mui/material';
 import { ROUTES } from 'constants/routes';
 import { Form, useRouteLoaderData } from 'react-router-dom';
 import { RootLoaderData } from 'routes';
 import Header from 'shared/dashboard/Header';
-import { useColorMode } from 'shared/root/Theme';
+// import { useColorMode } from 'shared/root/Theme';
 
 export const Component = () => {
   const { user } = useRouteLoaderData('root') as RootLoaderData;
   const theme = useTheme();
-  const { colorModePreference, toggleColorMode } = useColorMode();
+  // const { colorModePreference, toggleColorMode } = useColorMode();
 
   return (
     <>
@@ -30,6 +30,7 @@ export const Component = () => {
             {user?.email}
           </Typography>
         </Row>
+        {/*
         <Row>
           <Typography variant="body1" color="text.primary" fontWeight="bold">
             Theme
@@ -54,7 +55,7 @@ export const Component = () => {
               System
             </Button>
           </ButtonGroup>
-        </Row>
+  </Row> */}
         <Typography variant="body2" color="text.secondary">
           Additional account management coming in the future.
         </Typography>
