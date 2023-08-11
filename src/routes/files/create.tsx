@@ -59,7 +59,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // If there's no query params for the kind of file to create, just create a blank new one
 
   // TODO this crashes the app
-  // mixpanel.track('[Files].newFileGet');
+  mixpanel.track('[Files].newFile', undefined, undefined, () => {
+    console.warn('tracking event recoreded by mixpanel');
+  });
   const uuid = await apiClientSingleton.createFile();
   if (uuid) {
     return navigate(uuid);

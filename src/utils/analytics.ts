@@ -2,13 +2,23 @@ import * as amplitude from '@amplitude/analytics-browser';
 import { User } from '@auth0/auth0-spa-js';
 import { setUser } from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { useEffect, useRef } from 'react';
-import { useRouteLoaderData } from 'react-router-dom';
-import { RootLoaderData } from '../../routes';
 
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 
-const loadGoogleAnalytics = async () => {
+type Options = {
+  isAuthenticated: boolean;
+  user: User | undefined;
+};
+
+// This runs in the root loader, so analytics calls can run inside loaders.
+export function initializeAnalytics({ isAuthenticated, user }: Options) {
+  loadGoogleAnalytics();
+  initAmplitudeAnalytics(user);
+  initMixpanelAnalytics(user);
+  configureSentry({ isAuthenticated, user });
+}
+
+function loadGoogleAnalytics() {
   if (!process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG && process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG !== 'none') {
     return;
   }
@@ -31,11 +41,11 @@ const loadGoogleAnalytics = async () => {
     document.head.appendChild(script_1);
     document.head.appendChild(script_2);
 
-    console.log('[Analytics] Google Analytics activated');
+    console.log('[Analytics] Google activated');
   }
-};
+}
 
-const loadAmplitudeAnalytics = async (user: User | undefined) => {
+function initAmplitudeAnalytics(user: Options['user']) {
   if (
     !process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY &&
     process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY !== 'none'
@@ -48,9 +58,9 @@ const loadAmplitudeAnalytics = async (user: User | undefined) => {
   });
 
   console.log('[Analytics] Amplitude activated');
-};
+}
 
-const loadMixPanelAnalytics = async (user: User | undefined) => {
+function initMixpanelAnalytics(user: Options['user']) {
   if (!process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY && process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY !== 'none') {
     // Without init Mixpanel, all mixpanel events throw an error and break the app.
     // So we have to init Mixpanel with a fake key, and disable Mixpanel.
@@ -59,7 +69,13 @@ const loadMixPanelAnalytics = async (user: User | undefined) => {
     return;
   }
 
-  mixpanel.init(process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY, { api_host: 'https://mixpanel-proxy.quadratichq.com' });
+  mixpanel.init(process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY, {
+    api_host: 'https://mixpanel-proxy.quadratichq.com',
+    loaded: (mp) => {
+      var distinct_id = mp.get_distinct_id();
+      console.log(distinct_id);
+    },
+  });
 
   mixpanel.register({
     email: user?.email,
@@ -76,30 +92,11 @@ const loadMixPanelAnalytics = async (user: User | undefined) => {
   });
 
   console.log('[Analytics] Mixpanel activated');
-};
+}
 
-export default function Scripts({ children }: { children: JSX.Element }) {
-  const didMount = useRef<boolean>(false);
-  const { isAuthenticated, user } = useRouteLoaderData('root') as RootLoaderData;
-
-  // Load analytics
-  useEffect(() => {
-    // Prevent loading twice
-    if (didMount.current) return;
-    didMount.current = true;
-
-    loadGoogleAnalytics();
-    loadAmplitudeAnalytics(user);
-    loadMixPanelAnalytics(user);
-  }, [user]);
-
-  // Set user in Sentry
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      setUser({ email: user.email, id: user.sub });
-      console.log('[Sentry] user set');
-    }
-  }, [isAuthenticated, user]);
-
-  return children;
+function configureSentry({ isAuthenticated, user }: Options) {
+  if (isAuthenticated && user) {
+    setUser({ email: user.email, id: user.sub });
+    console.log('[Analytics] Sentry user set');
+  }
 }
