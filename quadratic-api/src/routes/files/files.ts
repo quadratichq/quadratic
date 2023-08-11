@@ -1,6 +1,5 @@
 import { File, User } from '@prisma/client';
 import express, { NextFunction, Response } from 'express';
-import rateLimit from 'express-rate-limit';
 import { body, param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
 import { validateAccessToken } from '../../middleware/auth';
@@ -8,16 +7,6 @@ import { userMiddleware } from '../../middleware/user';
 import { Request } from '../../types/Request';
 
 const files_router = express.Router();
-
-const file_rate_limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 30, // Limit number of requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  keyGenerator: (req: Request, response) => {
-    return req.auth?.sub || 'anonymous';
-  },
-});
 
 const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
@@ -70,7 +59,7 @@ const getFilePermissions = (user: User, file: File): FILE_PERMISSION => {
   return 'NOT_SHARED';
 };
 
-files_router.get('/', validateAccessToken, file_rate_limiter, userMiddleware, async (req: Request, res) => {
+files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, res) => {
   if (!req.user) {
     return res.status(500).json({ error: { message: 'Internal server error' } });
   }
@@ -102,7 +91,6 @@ files_router.get(
   '/:uuid',
   validateUUID(),
   validateAccessToken,
-  file_rate_limiter,
   userMiddleware,
   fileMiddleware,
   async (req: Request, res: Response) => {
@@ -134,7 +122,6 @@ files_router.post(
   '/:uuid',
   validateUUID(),
   validateAccessToken,
-  file_rate_limiter,
   userMiddleware,
   fileMiddleware,
   validateFileContents().optional(),
@@ -202,7 +189,6 @@ files_router.delete(
   '/:uuid',
   validateUUID(),
   validateAccessToken,
-  file_rate_limiter,
   userMiddleware,
   fileMiddleware,
   async (req: Request, res: Response) => {
@@ -239,7 +225,6 @@ files_router.delete(
 files_router.post(
   '/',
   validateAccessToken,
-  file_rate_limiter,
   userMiddleware,
   validateFileContents(),
   validateFileVersion(),
