@@ -198,7 +198,7 @@ export class GridSparse {
     };
   }
 
-  getCellList(rectangle: Rectangle): CellRust[] {
+  getCellValue(rectangle: Rectangle): CellRust[] {
     const rect = new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
     const cells = this.grid.getRenderCells(this.sheetId, rect);
     return JSON.parse(cells);
@@ -259,13 +259,6 @@ export class GridSparse {
     const bounds = this.grid.getGridBounds(this.sheetId, onlyData);
     if (bounds.type !== 'nonEmpty') return;
     return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
-  }
-
-  getGridBounds(onlyData: boolean): Rectangle | undefined {
-    const bounds = this.grid.getGridBounds(this.sheetId, onlyData);
-    if (bounds.type === 'nonEmpty') {
-      return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
-    }
   }
 
   /** finds the minimum and maximum location for content in a row */

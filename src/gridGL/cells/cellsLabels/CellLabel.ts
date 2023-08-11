@@ -113,7 +113,6 @@ export class CellLabel extends Container {
     this.clipLeft = options?.clipLeft;
     this.clipRight = options?.clipRight;
     this.lastClip = options;
-    this.dirty = true;
   }
 
   checkLeftClip(left: number): void {

@@ -42,14 +42,14 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
   create(cells?: CellRust[]): void {
     debugTimeReset();
     this.cellLabels = new Map();
-    cells = cells ?? this.sheet.grid.getCellList(this.cellsHash.AABB);
+    cells = cells ?? this.sheet.grid.getCellValue(this.cellsHash.AABB);
     cells.forEach((cell) => {
       const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
       const cellLabel = new CellLabel(cell, rectangle);
       this.cellLabels.set(this.getKey(cell), cellLabel);
     });
     this.updateText();
-    debugTimeCheck('cellsLabel');
+    debugTimeCheck('cellsLabels');
   }
 
   render(renderer: Renderer) {
@@ -63,10 +63,6 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
     this.labelMeshes.clear();
 
     // place glyphs and sets size of labelMeshes
-    this.cellLabels.forEach((child) => child.updateText(this.labelMeshes));
-  }
-
-  updateTextAfterClip(): void {
     this.cellLabels.forEach((child) => child.updateText(this.labelMeshes));
   }
 
@@ -112,67 +108,7 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
         return;
       }
       column--;
-      //   const cell = this.app.sheet.grid.get(column, row)?.cell;
-      //   if (cell?.value || (cell?.evaluation_result && cell?.evaluation_result?.success === false)) {
-      //     return neighborOffset;
-      //   }
-      //   neighborOffset -= neighborWidth;
-      //   column--;
-      //   neighborWidth = this.app.sheet.gridOffsets.getColumnWidth(column);
-      // }
     }
-  }
-
-  // checks to see if the label needs to be clipped based on other labels
-  private checkForClipping(label: CellLabel): void {
-    // const data = label.data;
-    // if (!data) {
-    //   throw new Error('Expected label.data to be defined in checkForClipping');
-    // }
-    // const textWidth = label.getFullTextWidth();
-    // if (textWidth > data.expectedWidth) {
-    //   let clipLeft: number | undefined, clipRight: number | undefined;
-    //   if (data.alignment === 'right') {
-    //     clipLeft = this.getClipLeft(label);
-    //   } else if (data.alignment === 'center') {
-    //     clipLeft = this.getClipLeft(label);
-    //     clipRight = this.getClipRight(label, textWidth);
-    //   } else {
-    //     clipRight = this.getClipRight(label, textWidth);
-    //   }
-    //   label.setClip({ clipLeft, clipRight });
-    // } else {
-    //   label.setClip();
-    // }
-  }
-
-  private checkForOverflow(options: { label: CellLabel; bounds: Bounds }): void {
-    // const { label, bounds } = options;
-    // const { data } = label;
-    // const { alignment } = data;
-    // // track overflowed widths
-    // const width = label.textWidth;
-    // if (width > data.expectedWidth) {
-    //   if (alignment === 'left' && !label.clipRight) {
-    //     label.overflowRight = width - data.expectedWidth;
-    //     label.overflowLeft = undefined;
-    //   } else if (alignment === 'right' && !label.clipLeft) {
-    //     label.overflowLeft = width - data.expectedWidth;
-    //     label.overflowRight = undefined;
-    //   } else if (alignment === 'center') {
-    //     const overflow = (width - data.expectedWidth) / 2;
-    //     if (!label.clipLeft) {
-    //       label.overflowLeft = overflow;
-    //     }
-    //     if (!label.clipRight) {
-    //       label.overflowRight = overflow;
-    //     }
-    //   }
-    // } else {
-    //   label.overflowRight = undefined;
-    //   label.overflowLeft = undefined;
-    // }
-    // bounds.addRectangle(new Rectangle(label.x, label.y, width, label.height));
   }
 
   getLabel(column: number, row: number): CellLabel | undefined {
