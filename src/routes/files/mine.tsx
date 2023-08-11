@@ -109,20 +109,16 @@ export const Component = () => {
         title="My files"
         actions={
           <div style={{ display: 'flex', gap: theme.spacing(1) }}>
-            <Form method="POST" action={ROUTES.CREATE_FILE}>
-              <input type="hidden" name="action" value="create" />
-              <Button
-                startIcon={<AddOutlined />}
-                variant="contained"
-                disableElevation
-                name="action"
-                value="create"
-                type="submit"
-                disabled={isDisabled}
-              >
-                Create
-              </Button>
-            </Form>
+            <Button
+              startIcon={<AddOutlined />}
+              variant="contained"
+              disableElevation
+              disabled={isDisabled}
+              component={Link}
+              to={ROUTES.CREATE_FILE}
+            >
+              Create
+            </Button>
             <Form method="POST" action={ROUTES.CREATE_FILE}>
               <Button variant="outlined" component="label" disabled={isDisabled}>
                 <input type="hidden" name="action" value="import" />
@@ -146,7 +142,6 @@ export const Component = () => {
                     const name = file.name ? file.name.replace('.grid', '') : 'Untitled';
 
                     let formData = new FormData();
-                    formData.append('action', 'import');
                     formData.append('name', name);
                     formData.append('version', validFile.version);
                     formData.append('contents', JSON.stringify(validFile));

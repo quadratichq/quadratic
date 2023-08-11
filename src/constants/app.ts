@@ -2,50 +2,46 @@ import { isMobile } from 'react-device-detect';
 
 export const IS_READONLY_MODE = isMobile;
 export const DEFAULT_FILE_NAME = 'Untitled';
-export const EXAMPLE_FILES = [
-  {
+export const EXAMPLE_FILES: { [id: string]: { name: string; description: string } } = {
+  'default.grid': {
     name: 'Default (example)',
     description: 'Quick overview of basic usage of the app.',
-    file: 'default.grid',
   },
-  {
+  'python.grid': {
     name: 'Python (example)',
-    file: 'python.grid',
     description: 'Advanced examples of how to use Python in the app.',
   },
-  {
+  'npm_downloads.grid': {
     name: 'NPM downloads (example)',
-    file: 'npm_downloads.grid',
     description: 'Example of pulling download stats from the NPM API.',
   },
-  {
+  'mercury_bank.grid': {
     name: 'Mercury bank transactions (example)',
-    file: 'mercury_bank.grid',
     description: 'Example of pulling data from the Mercury API.',
   },
-  {
+  'open_ai.grid': {
     name: 'OpenAI (example)',
-    file: 'open_ai.grid',
+
     description: 'Example prompt querying the OpenAI API.',
   },
   // Leaving this one out, as it has nothing useful for users
-  // { name: 'Airports large (example)', file: 'airports_large.grid', description: 'Lorem ipsum santa dolor.' },
-  {
+  // 'airports_large.grid': { name: 'Airports large (example)', description: 'Lorem ipsum santa dolor.' },
+  'airports_distance.grid': {
     name: 'Airports distance (example)',
-    file: 'airports_distance.grid',
     description: 'Example of filtering data and calculating values in the app.',
   },
-  { name: 'Expenses (example)', file: 'expenses.grid', description: 'Example of spreadsheet-style budgeting.' },
-  {
+  'expenses.grid': {
+    name: 'Expenses (example)',
+    description: 'Example of spreadsheet-style budgeting.',
+  },
+  'monte_carlo_simulation.grid': {
     name: 'Monte Carlo simulation (example)',
-    file: 'monte_carlo_simulation.grid',
     description: 'Example of working with large sets of data.',
   },
-  {
+  'startup_portfolio.grid': {
     name: 'Startup portfolio (example)',
-    file: 'startup_portfolio.grid',
     description: 'Example with calculations from formulas and Python.',
   },
-];
-export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV file on the grid to import it.';
+};
+export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV id on the grid to import it.';
 export const PNG_MESSAGE = 'Copied selection as PNG to clipboard';
