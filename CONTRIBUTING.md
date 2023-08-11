@@ -15,18 +15,23 @@ If you have any problems getting the project to run locally, please create an is
 3. Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 4. `rustup target add wasm32-unknown-unknown` to install the WASM toolchain
 
-## Run Quadratic front-end locally
+## Run Quadratic
+
+In order to run the front-end and/or the server locally, you must have all the environment variables configured in `.env.local` (and `quadratic-api/.env.local` if you’re running a local server). You can grab the values from [our team Notion page](https://www.notion.so/Env-Variables-78b1a1da19d0421993abe8c449e51496?pvs=4) or by asking a team member.
+
+### Run front-end locally
 
 1. `npm run build:wasm` to compile the Rust code
 2. `npm install` to install dependencies (run again when updating Rust)
-3. `npm start` to run in browser or `npm run dev` to run with Electron
+3. Configure `.env.local` values.
+4. `npm start` to run in browser or `npm run dev` to run with Electron
 
-### Run Quadrtic server locally
+### Run server locally
 
 1. `cd quadratic-api`
 2. `npm i`
 3. Install [postgress.app](https://postgresapp.com/) (follow instructions on website)
-4. Configure `./.env` & `./quadratic-api/.env` values, including update to `DATABASE_ENV` variable to point at your local postgres db.
+4. Configure `.env.local` & `quadratic-api/.env.local` values, including the `DATABASE_ENV` variable to point at your local postgres db.
 5. `npm run prisma:migrate`
 6. `npm start`
 
