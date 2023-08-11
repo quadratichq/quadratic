@@ -61,8 +61,8 @@
   },
   "main": "public/electron.js",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-scripts start",
+    "build": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-scripts build",
     "build:wasm": "cd quadratic-core && wasm-pack build --target web --out-dir pkg",
     "build:wasm:nodejs": "cd quadratic-core && wasm-pack build --target nodejs --out-dir pkg",
     "build:ci": "./scripts/run-ci-build.sh",

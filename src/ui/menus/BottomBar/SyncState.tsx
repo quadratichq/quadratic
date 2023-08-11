@@ -1,7 +1,8 @@
 import { ErrorOutline } from '@mui/icons-material';
-import { CircularProgress, useTheme } from '@mui/material';
+import { CircularProgress, Tooltip, useTheme } from '@mui/material';
 import ShowAfter from 'shared/ShowAfter';
 import { useFile } from 'ui/contexts/File';
+import BottomBarItem from './BottomBarItem';
 
 export default function SyncState() {
   const theme = useTheme();
@@ -12,19 +13,22 @@ export default function SyncState() {
   }
 
   return (
-    <ShowAfter delay={300}>
-      <span style={{ display: 'flex', alignItems: 'center', gap: theme.spacing(0.5) }}>
-        {syncState === 'error' && (
-          <>
-            <ErrorOutline style={{ color: 'red' }} fontSize="inherit" /> Sync error
-          </>
-        )}
-        {syncState === 'syncing' && (
-          <>
-            <CircularProgress size="0.5rem" /> Syncing…
-          </>
-        )}
-      </span>
-    </ShowAfter>
+    <>
+      <ShowAfter delay={300}>
+        <>
+          {syncState === 'error' && (
+            <Tooltip title="Your recent changes haven’t been saved. Make sure you’re connected to the internet.">
+              <BottomBarItem
+                icon={<ErrorOutline color="inherit" fontSize="inherit" />}
+                style={{ color: theme.palette.error.main }}
+              >
+                Syncing error
+              </BottomBarItem>
+            </Tooltip>
+          )}
+          {syncState === 'syncing' && <BottomBarItem icon={<CircularProgress size="0.5rem" />}>Syncing…</BottomBarItem>}
+        </>
+      </ShowAfter>
+    </>
   );
 }
