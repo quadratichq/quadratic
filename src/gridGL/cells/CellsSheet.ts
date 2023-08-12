@@ -143,25 +143,45 @@ export class CellsSheet extends Container {
         const hash = this.getCellsHash(cell.x, cell.y);
         if (hash) {
           hashes.add(hash);
+          if (options.labels) {
+            this.dirtyRows.add(hash.hashY);
+          }
         }
       });
     } else if (options.column) {
       const columnHashes = this.getColumnHashes(options.column);
-      columnHashes.forEach((hash) => hashes.add(hash));
+      columnHashes.forEach((hash) => {
+        hashes.add(hash);
+        if (options.labels) {
+          this.dirtyRows.add(hash.hashY);
+        }
+      });
     } else if (options.row) {
       const rowHashes = this.getRowHashes(options.row);
       rowHashes.forEach((hash) => hashes.add(hash));
-    }
-    if (hashes.size) {
-      if (options.background) {
-        hashes.forEach((hash) => hash.updateBackgrounds());
-      }
       if (options.labels) {
-        hashes.forEach((hash) => hash.createLabels());
-        hashes.forEach((hash) => hash.overflowClip());
-        hashes.forEach((hash) => hash.updateBuffers());
+        this.dirtyRows.add(Math.floor(options.row / sheetHashHeight));
       }
     }
+    if (hashes.size && options.background) {
+      hashes.forEach((hash) => hash.updateBackgrounds());
+    }
+    // if (options.labels) {
+    //   hashes.forEach((hash) => hash.createLabels());
+    //   hashes.forEach((hash) => hash.overflowClip());
+    //   hashes.forEach((hash) => hash.updateBuffers());
+    // }
+  }
+
+  // this assumes that dirtyRows has a size (checked in calling functions)
+  private updateNextDirtyRow(): void {
+    const nextRow = this.dirtyRows.values().next().value;
+    this.dirtyRows.delete(nextRow);
+    const hashes = this.cellsRows.get(nextRow);
+    if (!hashes) throw new Error('Expected hashes to be defined in preload');
+    hashes.forEach((hash) => hash.createLabels());
+    hashes.forEach((hash) => hash.overflowClip());
+    hashes.forEach((hash) => hash.updateBuffers());
   }
 
   // preloads one row of hashes per tick
@@ -174,13 +194,7 @@ export class CellsSheet extends Container {
     }
     time = time ?? performance.now();
     debugTimeReset();
-    const nextRow = this.dirtyRows.values().next().value;
-    this.dirtyRows.delete(nextRow);
-    const hashes = this.cellsRows.get(nextRow);
-    if (!hashes) throw new Error('Expected hashes to be defined in preload');
-    hashes.forEach((hash) => hash.createLabels());
-    hashes.forEach((hash) => hash.overflowClip());
-    hashes.forEach((hash) => hash.updateBuffers());
+    this.updateNextDirtyRow();
     const now = performance.now();
     if (now - time < MAXIMUM_FRAME_TIME) {
       this.preloadTick(time);
@@ -201,5 +215,14 @@ export class CellsSheet extends Container {
         this.preloadTick();
       }
     });
+  }
+
+  update(): boolean {
+    if (this.dirtyRows.size) {
+      this.updateNextDirtyRow();
+      return true;
+    } else {
+      return false;
+    }
   }
 }

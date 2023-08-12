@@ -72,4 +72,15 @@ export class CellsSheets extends Container<CellsSheet> {
       background: options.background,
     });
   }
+
+  // this updates the first dirty CellsSheet, always starting with the current sheet
+  update(): void {
+    if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
+    if (this.current.update()) return;
+    for (const child of this.children) {
+      if (this.current !== child) {
+        if (child.update()) return;
+      }
+    }
+  }
 }
