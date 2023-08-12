@@ -219,11 +219,6 @@ pub struct Transaction {
     ops: Vec<Operation>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
-pub struct TransactionSummary {
-    pub regions_modified: Vec<(SheetId, Rect)>,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Operation {
     SetCell {
@@ -244,6 +239,12 @@ impl Operation {
             Operation::SetCells { sheet_id, .. } => Some(*sheet_id),
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct TransactionSummary {
+    pub regions_modified: Vec<(SheetId, Rect)>,
 }
 
 #[cfg(test)]

@@ -16,6 +16,8 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
+        // controller.rs
+        controller::TransactionSummary,
         // grid/cell_ref.rs
         formulas::RangeRef,
         formulas::CellRef,
