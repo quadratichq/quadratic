@@ -66,7 +66,7 @@
     "build:wasm:types": "cd quadratic-core && cargo run --bin export_types",
     "build:wasm:javascript": "cd quadratic-core && wasm-pack build --target web --out-dir ../src/quadratic-core",
     "build:wasm:nodejs": "cd quadratic-core && wasm-pack build --target nodejs --out-dir ../src/quadratic-core/__mocks__",
-    "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --debug --target web --out-dir ../src/quadratic-core'",
+    "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../src/quadratic-core'",
     "start:production": "npm run build && serve build",
     "build:ci": "./scripts/run-ci-build.sh",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\" \"npm run test:python\"",

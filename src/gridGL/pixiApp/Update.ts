@@ -14,7 +14,7 @@ export class Update {
   private pixiApp: PixiApp;
   private raf?: number;
   private fps?: FPS;
-  private nextQuadrantRender = 0;
+  // private nextIdle = 0;
   private lastViewportPosition: Point = new Point();
   private lastViewportScale = 1;
 
@@ -140,9 +140,10 @@ export class Update {
         // }
       }
       debugTimeReset();
+      app.cellsSheets.update();
       app.renderer.render(app.stage);
       debugTimeCheck('[Update] render');
-      // this.nextQuadrantRender = performance.now() + QUADRANT_RENDER_WAIT;
+      // this.idle = performance.now() + QUADRANT_RENDER_WAIT;
       debugRendererLight(true);
       debugShowChildren(app.stage, 'stage');
       debugShowCachedCounts(app);
