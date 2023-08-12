@@ -25,6 +25,19 @@ impl GridController {
         Self::new()
     }
 
+    /// Undoes one transaction. Returns a [`TransactionSummary`], or `null` if
+    /// there was nothing to undo.
+    #[wasm_bindgen(js_name = "undo")]
+    pub fn js_undo(&mut self) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.undo())?)
+    }
+    /// Redoes one transaction. Returns a [`TransactionSummary`], or `null` if
+    /// there was nothing to redo.
+    #[wasm_bindgen(js_name = "redo")]
+    pub fn js_redo(&mut self) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.redo())?)
+    }
+
     // /// Adds an empty sheet to the grid.
     // #[wasm_bindgen(js_name = "addSheet")]
     // pub fn js_add_sheet(&mut self) -> SheetId {
