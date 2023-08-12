@@ -1,6 +1,7 @@
 use std::fmt;
 use std::ops::Range;
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
@@ -86,6 +87,17 @@ impl Rect {
         self.max.x = std::cmp::max(self.max.x, pos.x);
         self.max.y = std::cmp::max(self.max.y, pos.y);
     }
+    pub fn from_xs_and_ys(
+        xs: impl Iterator<Item = i64>,
+        ys: impl Iterator<Item = i64>,
+    ) -> Option<Rect> {
+        let (min_x, max_x) = xs.into_iter().minmax().into_option()?;
+        let (min_y, max_y) = ys.into_iter().minmax().into_option()?;
+        Some(Rect {
+            min: Pos { x: min_x, y: min_y },
+            max: Pos { x: max_x, y: max_y },
+        })
+    }
 
     /// Returns whether a position is contained within the rectangle.
     pub fn contains(&self, pos: Pos) -> bool {
@@ -99,5 +111,14 @@ impl Rect {
     /// Returns the range of Y values in the rectangle.
     pub fn y_range(self) -> Range<i64> {
         self.min.y..self.max.y + 1
+    }
+
+    /// Returns the width of the region.
+    pub fn width(&self) -> u32 {
+        (self.max.x - self.min.x + 1) as u32
+    }
+    /// Returns the height of the region.
+    pub fn height(&self) -> u32 {
+        (self.max.y - self.min.y + 1) as u32
     }
 }

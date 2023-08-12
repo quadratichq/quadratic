@@ -1,5 +1,6 @@
 use std::collections::{btree_map, BTreeMap, HashMap, HashSet};
 
+use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -10,10 +11,11 @@ use super::column::Column;
 use super::formatting::BoolSummary;
 use super::ids::{CellRef, ColumnId, IdMap, RowId, SheetId};
 use super::js_types::{
-    FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderFill,
+    FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
+    JsRenderFill,
 };
-use super::legacy;
 use super::response::{GetIdResponse, SetCellResponse};
+use super::{legacy, CodeCellRunResult};
 use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -124,16 +126,40 @@ impl Sheet {
     ///
     /// - Formatting
     /// - Spilled cells (unless the source is within `region`)
-    pub fn delete_cell_values(&mut self, region: Rect) {
+    pub fn delete_cell_values(&mut self, region: Rect) -> (Vec<ColumnId>, Vec<RowId>, Array) {
+        let row_ids = region
+            .y_range()
+            .filter_map(|y| self.get_row(y))
+            .collect_vec();
+        let mut column_ids = vec![];
+
+        let width = column_ids.len() as u32;
+        let height = row_ids.len() as u32;
+        let mut old_cell_values_array =
+            Array::new_empty(width, height).expect("error constructing array for old cell values");
+
         for x in region.x_range() {
-            if let Some(column) = self.columns.get_mut(&x) {
-                column.values.remove_range(region.y_range());
+            let Some(column) = self.columns.get_mut(&x) else {continue};
+            column_ids.push(column.id);
+            let removed = column.values.remove_range(region.y_range());
+            for block in removed {
+                for y in block.range() {
+                    let array_x = (x - region.min.x) as u32;
+                    let array_y = (y - region.min.y) as u32;
+                    let Some(value) = block.get(y) else { continue };
+                    old_cell_values_array
+                        .set(array_x, array_y, value)
+                        .expect("error inserting value into array of old cell values");
+                }
             }
         }
+
         for cell_ref in self.iter_code_cells_locations(region) {
             // TODO: unspill!
             self.code_cells.remove(&cell_ref);
         }
+
+        (column_ids, row_ids, old_cell_values_array)
     }
     /// Sets or deletes a code cell value.
     pub fn set_code_cell_value(&mut self, pos: Pos, code_cell: Option<CodeCellValue>) {
@@ -290,13 +316,13 @@ impl Sheet {
         }
     }
 
-    /// Returns a column of a sheet from its index.
-    fn get_column(&self, index: i64) -> Option<&Column> {
+    /// Returns a column of a sheet from the column index.
+    pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get(&index)
     }
     /// Returns a column of a sheet from its index, or creates a new column at
     /// that index.
-    pub(super) fn get_or_create_column(
+    pub(crate) fn get_or_create_column(
         &mut self,
         index: i64,
     ) -> (GetIdResponse<ColumnId>, &mut Column) {
@@ -312,9 +338,13 @@ impl Sheet {
             }
         }
     }
+    /// Returns the ID of a row of a sheet from the row index.
+    pub(crate) fn get_row(&self, index: i64) -> Option<RowId> {
+        self.row_ids.id_at(index)
+    }
     /// Returns a row of a sheet from its index, or creates a new row at that
     /// index.
-    pub(super) fn get_or_create_row(&mut self, index: i64) -> GetIdResponse<RowId> {
+    pub(crate) fn get_or_create_row(&mut self, index: i64) -> GetIdResponse<RowId> {
         match self.row_ids.id_at(index) {
             Some(id) => GetIdResponse::old(id),
             None => {
@@ -347,6 +377,13 @@ impl Sheet {
             column: self.get_or_create_column(pos.x).0.id,
             row: self.get_or_create_row(pos.y).id,
         }
+    }
+
+    pub(crate) fn get_column_index(&self, column_id: ColumnId) -> Option<i64> {
+        self.column_ids.index_of(column_id)
+    }
+    pub(crate) fn get_row_index(&self, row_id: RowId) -> Option<i64> {
+        self.row_ids.index_of(row_id)
     }
 
     /// Returns whether the sheet is completely empty.
@@ -505,12 +542,20 @@ impl Sheet {
                 }
                 let code_cell = self.code_cells.get(&cell_ref)?;
                 let ArraySize { w, h } = code_cell.output_size();
+                let state = match &code_cell.output {
+                    Some(output) => match output.result {
+                        CodeCellRunResult::Ok { .. } => JsRenderCodeCellState::Success,
+                        CodeCellRunResult::Err { .. } => JsRenderCodeCellState::RunError,
+                    },
+                    None => JsRenderCodeCellState::NotYetRun,
+                };
                 Some(JsRenderCodeCell {
                     x: pos.x,
                     y: pos.y,
                     w,
                     h,
                     language: code_cell.language,
+                    state,
                 })
             })
             .collect()

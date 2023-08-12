@@ -88,4 +88,15 @@ pub struct JsRenderCodeCell {
     pub w: u32,
     pub h: u32,
     pub language: CodeCellLanguage,
+    pub state: JsRenderCodeCellState,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub enum JsRenderCodeCellState {
+    #[default]
+    NotYetRun,
+    RunError,
+    SpillError,
+    Success,
 }

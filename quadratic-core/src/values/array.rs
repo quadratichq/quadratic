@@ -1,6 +1,7 @@
 use std::fmt;
 
 use itertools::Itertools;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
@@ -79,7 +80,21 @@ impl From<Value> for Array {
 }
 
 impl Array {
-    /// Constructs an array from an iterator in row-major order.
+    /// Constructs an array of blank values.
+    pub fn new_empty(width: u32, height: u32) -> CodeResult<Self> {
+        let values = smallvec![CellValue::Blank; (width * height) as usize];
+        Self::new_row_major(width, height, values)
+    }
+    /// Constructs an array of random float values.
+    pub fn from_random_floats(width: u32, height: u32) -> CodeResult<Self> {
+        let mut rng = rand::thread_rng();
+        let values =
+            std::iter::from_fn(|| Some(CellValue::Number(rng.gen_range(-100..=100) as f64)))
+                .take((width * height) as usize)
+                .collect();
+        Self::new_row_major(width, height, values)
+    }
+    /// Constructs an array from a list of values in row-major order.
     pub fn new_row_major(
         width: u32,
         height: u32,
@@ -190,6 +205,13 @@ impl Array {
     pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, ErrorMsg> {
         let i = self.array_size().flatten_index(x, y)?;
         Ok(&self.values[i])
+    }
+    /// Sets the value at a given position in an array. Returns an error if `x`
+    /// or `y` is out of range.
+    pub fn set(&mut self, x: u32, y: u32, value: CellValue) -> Result<(), ErrorMsg> {
+        let i = self.array_size().flatten_index(x, y)?;
+        self.values[i] = value;
+        Ok(())
     }
     /// Returns a flat slice of cell values in the array.
     pub fn cell_values_slice(&self) -> &[CellValue] {
