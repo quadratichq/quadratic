@@ -1,15 +1,15 @@
-import { Container, Sprite, Texture } from 'pixi.js';
+import { ParticleContainer, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { JsRenderCodeCell } from '../../quadratic-core/types';
 import { colors } from '../../theme/colors';
 import { CellsSheet } from './CellsSheet';
-import { drawBorder } from './drawBorders';
+import { borderLineWidth, drawBorder, drawLine } from './drawBorders';
 
-export class CellsArray extends Container {
+export class CellsArray extends ParticleContainer {
   private cellsSheet: CellsSheet;
 
   constructor(cellsSheet: CellsSheet) {
-    super();
+    super(undefined, { vertices: true, tint: true }, undefined, true);
     this.cellsSheet = cellsSheet;
   }
 
@@ -55,19 +55,30 @@ export class CellsArray extends Container {
       bottom: true,
       right: true,
     });
-    drawBorder({
-      alpha: 0.5,
-      tint,
-      x: start.x,
-      y: start.y,
-      width: start.width,
-      height: start.height,
-      getSprite: this.getSprite,
-      top: false,
-      left: false,
-      bottom: true,
-      right: true,
-    });
+    const right = end.x !== start.x + start.width;
+    if (right) {
+      drawLine({
+        x: start.x + start.width - borderLineWidth / 2,
+        y: start.y + borderLineWidth / 2,
+        width: borderLineWidth,
+        height: start.height,
+        alpha: 0.5,
+        tint,
+        getSprite: this.getSprite,
+      });
+    }
+    const bottom = end.y !== start.y + start.height;
+    if (bottom) {
+      drawLine({
+        x: start.x + borderLineWidth / 2,
+        y: start.y + start.height - borderLineWidth / 2,
+        width: start.width - borderLineWidth,
+        height: borderLineWidth,
+        alpha: 0.5,
+        tint,
+        getSprite: this.getSprite,
+      });
+    }
     this.cellsSheet.cellsMarkers.add(start.x, start.y, type, false);
   }
 

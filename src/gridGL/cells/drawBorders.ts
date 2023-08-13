@@ -4,6 +4,8 @@ import { Border, BorderType, BorderTypeEnum } from '../../schemas';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 
+export const borderLineWidth = 1;
+
 function setTexture(sprite: Sprite | TilingSprite, horizontal: boolean, borderType?: BorderType): void {
   if (borderType === BorderTypeEnum.dashed) {
     sprite.texture = horizontal ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical;
@@ -62,7 +64,7 @@ export function drawBorder(options: {
     setTexture(bottom, true, borderType);
     bottom.tint = options.tint;
     bottom.alpha = options.alpha;
-    bottom.width = options.width + lineWidth;
+    bottom.width = options.width + (options.right ? 0 : lineWidth);
     bottom.height = lineWidth;
     bottom.position.set(options.x - lineWidth / 2, options.y + options.height - lineWidth / 2);
 
@@ -86,8 +88,8 @@ export function drawBorder(options: {
     left.tint = options.tint;
     left.alpha = options.alpha;
     left.width = lineWidth;
-    left.height = options.height + lineWidth;
-    left.position.set(options.x - lineWidth / 2, options.y - lineWidth / 2);
+    left.height = options.height + (options.top ? 0 : lineWidth) - (options.bottom ? lineWidth : 0);
+    left.position.set(options.x - lineWidth / 2, options.y - lineWidth / 2 + (options.top ? lineWidth : 0));
 
     if (doubleDistance) {
       const left = options.getSprite(tiling);
@@ -109,8 +111,11 @@ export function drawBorder(options: {
     right.tint = options.tint;
     right.alpha = options.alpha;
     right.width = lineWidth;
-    right.height = options.height + lineWidth;
-    right.position.set(options.x + options.width - lineWidth / 2, options.y - lineWidth / 2);
+    right.height = options.height + (options.top ? 0 : lineWidth);
+    right.position.set(
+      options.x + options.width - lineWidth / 2,
+      options.y - lineWidth / 2 + (options.top ? lineWidth : 0)
+    );
 
     if (doubleDistance) {
       const right = options.getSprite(tiling);
@@ -125,6 +130,23 @@ export function drawBorder(options: {
       );
     }
   }
+}
+
+export function drawLine(options: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  alpha: number;
+  tint: number;
+  getSprite: (tiling?: boolean) => Sprite;
+}) {
+  const line = options.getSprite(false);
+  line.tint = options.tint;
+  line.alpha = options.alpha;
+  line.width = options.width;
+  line.height = options.height;
+  line.position.set(options.x, options.y);
 }
 
 export function drawCellBorder(options: {
