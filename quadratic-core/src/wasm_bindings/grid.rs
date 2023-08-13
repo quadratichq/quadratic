@@ -88,27 +88,17 @@ impl Grid {
     /// Returns data for rendering horizontal borders as a string containing a
     /// JSON array of [`JsRenderBorder`].
     #[wasm_bindgen(js_name = "getRenderHorizontalBorders")]
-    pub fn get_render_horizontal_borders(
-        &self,
-        sheet_id: &SheetId,
-        region: &Rect,
-    ) -> Result<String, JsValue> {
+    pub fn get_render_horizontal_borders(&self, sheet_id: &SheetId) -> Result<String, JsValue> {
         let output = self
             .sheet_from_id(*sheet_id)
-            .get_render_horizontal_borders(*region);
+            .get_render_horizontal_borders();
         Ok(serde_json::to_string::<[JsRenderBorder]>(&output).map_err(|e| e.to_string())?)
     }
     /// Returns data for rendering vertical borders as a string containing a
     /// JSON array of [`JsRenderBorder`].
     #[wasm_bindgen(js_name = "getRenderVerticalBorders")]
-    pub fn get_render_vertical_borders(
-        &self,
-        sheet_id: &SheetId,
-        region: &Rect,
-    ) -> Result<String, JsValue> {
-        let output = self
-            .sheet_from_id(*sheet_id)
-            .get_render_vertical_borders(*region);
+    pub fn get_render_vertical_borders(&self, sheet_id: &SheetId) -> Result<String, JsValue> {
+        let output = self.sheet_from_id(*sheet_id).get_render_vertical_borders();
         Ok(serde_json::to_string::<[JsRenderBorder]>(&output).map_err(|e| e.to_string())?)
     }
 

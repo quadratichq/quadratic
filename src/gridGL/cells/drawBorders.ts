@@ -4,8 +4,8 @@ import { Border, BorderType, BorderTypeEnum } from '../../schemas';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 
-export interface BorderLine {
-  sprite: Sprite;
+export interface BorderCull {
+  sprite: Sprite | TilingSprite;
   rectangle: Rectangle;
 }
 
@@ -34,8 +34,8 @@ export function drawBorder(options: {
   bottom?: boolean;
   right?: boolean;
   borderType?: BorderType;
-}): BorderLine[] {
-  const borderLines: BorderLine[] = [];
+}): BorderCull[] {
+  const borderLines: BorderCull[] = [];
   const { borderType } = options;
   const lineWidth = borderType === BorderTypeEnum.line2 ? 2 : borderType === BorderTypeEnum.line3 ? 3 : 1;
 
@@ -176,7 +176,7 @@ export function drawLine(options: {
   alpha: number;
   tint: number;
   getSprite: (tiling?: boolean) => Sprite;
-}): BorderLine {
+}): BorderCull {
   const line = options.getSprite(false);
   line.tint = options.tint;
   line.alpha = options.alpha;

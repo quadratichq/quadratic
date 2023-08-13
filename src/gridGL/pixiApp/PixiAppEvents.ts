@@ -5,6 +5,7 @@ import { ensureVisible } from '../interaction/viewportHelper';
 import { QuadrantChanged } from '../quadrants/Quadrants';
 import { Coordinate } from '../types/size';
 import { PixiApp } from './PixiApp';
+import { PixiAppSettings } from './PixiAppSettings';
 
 // this is a helper for the sheetController and react to communicate with PixiApp
 
@@ -16,6 +17,11 @@ export interface SetDirty {
 
 class PixiAppEvents {
   app?: PixiApp;
+
+  getSettings(): PixiAppSettings {
+    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.settings');
+    return this.app.settings;
+  }
 
   quadrantsChanged(quadrantChanged: QuadrantChanged): void {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.quadrantsChanged');
@@ -153,6 +159,10 @@ class PixiAppEvents {
       this.app.viewport.scale.set(lastViewport.scaleX, lastViewport.scaleY);
       this.app.viewport.dirty = true;
     }
+  }
+
+  createBorders(): void {
+    this.app?.cellsSheets.createBorders();
   }
 }
 

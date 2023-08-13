@@ -4,7 +4,7 @@ import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Coordinate, MinMax } from '../../gridGL/types/size';
 import { Grid, Pos, Rect, SheetId } from '../../quadratic-core/quadratic_core';
-import { JsRenderCodeCell } from '../../quadratic-core/types';
+import { JsRenderBorder, JsRenderCodeCell } from '../../quadratic-core/types';
 import { Cell, CellFormat } from '../../schemas';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
@@ -377,5 +377,15 @@ export class GridSparse {
 
   recalculateBounds(): void {
     this.grid.recalculateBounds(this.sheetId);
+  }
+
+  getHorizontalBorders(): JsRenderBorder[] {
+    const data = this.grid.getRenderHorizontalBorders(this.sheetId);
+    return JSON.parse(data);
+  }
+
+  getVerticalBorders(): JsRenderBorder[] {
+    const data = this.grid.getRenderVerticalBorders(this.sheetId);
+    return JSON.parse(data);
   }
 }
