@@ -4,6 +4,7 @@ import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Coordinate, MinMax } from '../../gridGL/types/size';
 import { Grid, Pos, Rect, SheetId } from '../../quadratic-core/quadratic_core';
+import { JsRenderCodeCell } from '../../quadratic-core/types';
 import { Cell, CellFormat } from '../../schemas';
 import { CellRectangle } from './CellRectangle';
 import { GridOffsets } from './GridOffsets';
@@ -214,6 +215,11 @@ export class GridSparse {
     const rect = new Rect(new Pos(rectangle.x, rectangle.y), new Pos(rectangle.right, rectangle.bottom));
     const data = this.grid.getRenderCells(this.sheetId, rect);
     return CellRectangle.fromRust(rectangle, data, this);
+  }
+
+  getRenderCodeCells(): JsRenderCodeCell[] | undefined {
+    const data = this.grid.getRenderCodeCells(this.sheetId);
+    return JSON.parse(data);
   }
 
   getNakedCells(x0: number, y0: number, x1: number, y1: number): Cell[] {

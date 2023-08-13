@@ -78,15 +78,11 @@ impl Grid {
         let output = self.sheet_from_id(*sheet_id).get_render_fills(*region);
         Ok(serde_json::to_string::<[JsRenderFill]>(&output).map_err(|e| e.to_string())?)
     }
-    /// Returns data for rendering code cells as a string containing a JSON aray
+    /// Returns data for rendering code cells as a string containing a JSON array
     /// of [`JsRenderCodeCell`].
     #[wasm_bindgen(js_name = "getRenderCodeCells")]
-    pub fn get_render_code_cells(
-        &self,
-        sheet_id: &SheetId,
-        region: &Rect,
-    ) -> Result<String, JsValue> {
-        let output = self.sheet_from_id(*sheet_id).get_render_code_cells(*region);
+    pub fn get_render_code_cells(&self, sheet_id: &SheetId) -> Result<String, JsValue> {
+        let output = self.sheet_from_id(*sheet_id).get_all_render_code_cells();
         Ok(serde_json::to_string::<[JsRenderCodeCell]>(&output).map_err(|e| e.to_string())?)
     }
     /// Returns data for rendering horizontal borders as a string containing a

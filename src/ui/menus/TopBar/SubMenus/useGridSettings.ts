@@ -1,5 +1,5 @@
 import mixpanel from 'mixpanel-browser';
-import { atom, useRecoilState, AtomEffect } from 'recoil';
+import { AtomEffect, atom, useRecoilState } from 'recoil';
 import { debugGridSettings } from '../../../../debugFlags';
 
 const SETTINGS_KEY = 'viewSettings';
@@ -21,7 +21,7 @@ export const defaultGridSettings: GridSettings = {
   presentationMode: false,
 };
 
-// Persist the GrdiSettings
+// Persist the GridSettings
 const localStorageEffect: AtomEffect<GridSettings> = ({ setSelf, onSet }) => {
   // Initialize from localStorage
   // Note: presentationMode is always off on a fresh page reload

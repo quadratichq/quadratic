@@ -560,6 +560,23 @@ impl Sheet {
             })
             .collect()
     }
+    /// Returns data for all rendering code cells
+    pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
+        self.iter_all_code_cells_locations()
+            .filter_map(|cell_ref| {
+                let pos = self.cell_ref_to_pos(cell_ref)?;
+                let code_cell = self.code_cells.get(&cell_ref)?;
+                let ArraySize { w, h } = code_cell.output_size();
+                Some(JsRenderCodeCell {
+                    x: pos.x,
+                    y: pos.y,
+                    w,
+                    h,
+                    language: code_cell.language,
+                })
+            })
+            .collect()
+    }
     /// Returns data for rendering horizontal borders.
     pub fn get_render_horizontal_borders(&self, region: Rect) -> Vec<JsRenderBorder> {
         self.borders.get_render_horizontal_borders(region)
@@ -581,6 +598,23 @@ impl Sheet {
                 column
                     .spills
                     .blocks_covering_range(region.y_range())
+                    .map(|block| block.content().value)
+            })
+            .collect();
+
+        code_cell_refs.into_iter()
+    }
+
+    fn iter_all_code_cells_locations(&self) -> impl Iterator<Item = CellRef> {
+        // Scan spilled cells to find code cells. TODO: this won't work for
+        // unspilled code cells
+        let code_cell_refs: HashSet<CellRef> = self
+            .columns
+            .iter()
+            .flat_map(|(_x, column)| {
+                column
+                    .spills
+                    .get_blocks_all()
                     .map(|block| block.content().value)
             })
             .collect();
