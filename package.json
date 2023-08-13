@@ -68,7 +68,7 @@
     "build:wasm:nodejs": "cd quadratic-core && wasm-pack build --target nodejs --out-dir ../src/quadratic-core/__mocks__",
     "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../src/quadratic-core'",
     "start:production": "npm run build && serve build",
-    "build:ci": "./scripts/run-ci-build.sh",
+    "build:ci": "./scripts/run-ci-build.sh && npm run build",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\" \"npm run test:python\"",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:unit:dev": "npm run build:wasm:nodejs && node --experimental-vm-modules node_modules/jest/bin/jest.js --watchAll",
