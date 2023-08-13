@@ -578,12 +578,12 @@ impl Sheet {
             .collect()
     }
     /// Returns data for rendering horizontal borders.
-    pub fn get_render_horizontal_borders(&self, region: Rect) -> Vec<JsRenderBorder> {
-        self.borders.get_render_horizontal_borders(region)
+    pub fn get_render_horizontal_borders(&self) -> Vec<JsRenderBorder> {
+        self.borders.get_render_horizontal_borders()
     }
     /// Returns data for rendering vertical borders.
-    pub fn get_render_vertical_borders(&self, region: Rect) -> Vec<JsRenderBorder> {
-        self.borders.get_render_vertical_borders(region)
+    pub fn get_render_vertical_borders(&self) -> Vec<JsRenderBorder> {
+        self.borders.get_render_vertical_borders()
     }
 
     /// Returns an iterator over all locations containing code cells that may

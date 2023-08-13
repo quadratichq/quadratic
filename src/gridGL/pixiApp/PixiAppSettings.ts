@@ -29,13 +29,13 @@ export class PixiAppSettings {
   constructor(app: PixiApp) {
     this.app = app;
     this.getSettings();
-    window.addEventListener('grid-settings', this.getSettings);
+    window.addEventListener('grid-settings', this.getSettings.bind(this));
     this._input = { show: false };
     this._panMode = PanMode.Disabled;
   }
 
   destroy() {
-    window.removeEventListener('grid-settings', this.getSettings);
+    window.removeEventListener('grid-settings', this.getSettings.bind(this));
   }
 
   private getSettings = (): void => {
@@ -55,7 +55,9 @@ export class PixiAppSettings {
       (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
       (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
     ) {
-      this.app.quadrants.build();
+      this.app.cellsSheets.toggleOutlines();
+      this.app.viewport.dirty = true;
+      // this.app.quadrants.build();
     }
     this.lastSettings = this.settings;
   };

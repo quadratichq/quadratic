@@ -44,34 +44,31 @@ impl SheetBorders {
         }
     }
 
-    pub fn get_render_horizontal_borders(&self, region: Rect) -> Vec<JsRenderBorder> {
+    pub fn get_render_horizontal_borders(&self) -> Vec<JsRenderBorder> {
         self.horizontal
-            .range(region.y_range())
+            .iter()
             .flat_map(|(&y, row)| {
-                row.blocks_covering_range(region.x_range())
-                    .map(move |block| JsRenderBorder {
-                        x: block.start(),
-                        y,
-                        w: Some(block.len()),
-                        h: None,
-                        style: block.content().value.clone(),
-                    })
+                row.get_blocks_all().map(move |block| JsRenderBorder {
+                    x: block.start(),
+                    y,
+                    w: Some(block.len()),
+                    h: None,
+                    style: block.content().value.clone(),
+                })
             })
             .collect()
     }
-    pub fn get_render_vertical_borders(&self, region: Rect) -> Vec<JsRenderBorder> {
+    pub fn get_render_vertical_borders(&self) -> Vec<JsRenderBorder> {
         self.vertical
-            .range(region.x_range())
+            .iter()
             .flat_map(|(&x, column)| {
-                column
-                    .blocks_covering_range(region.y_range())
-                    .map(move |block| JsRenderBorder {
-                        x,
-                        y: block.start(),
-                        w: None,
-                        h: Some(block.len()),
-                        style: block.content().value.clone(),
-                    })
+                column.get_blocks_all().map(move |block| JsRenderBorder {
+                    x,
+                    y: block.start(),
+                    w: None,
+                    h: Some(block.len()),
+                    style: block.content().value.clone(),
+                })
             })
             .collect()
     }

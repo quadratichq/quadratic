@@ -2,8 +2,10 @@ import { Container, Rectangle } from 'pixi.js';
 import { debugShowCellsSheetCulling } from '../../debugFlags';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
+import { pixiAppEvents } from '../pixiApp/PixiAppEvents';
 import { Coordinate } from '../types/size';
 import { CellsArray } from './CellsArray';
+import { CellsBorders } from './CellsBorders';
 import { CellsHash } from './CellsHash';
 import { CellsMarkers } from './CellsMarker';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
@@ -18,6 +20,8 @@ export class CellsSheet extends Container {
 
   // friend of CellsArray
   cellsMarkers: CellsMarkers;
+
+  private cellsBorders: CellsBorders;
 
   // (x, y) index into cellsHashContainer
   cellsHash: Map<string, CellsHash>;
@@ -41,6 +45,7 @@ export class CellsSheet extends Container {
     this.dirtyRows = new Set();
     this.cellsHashContainer = this.addChild(new Container());
     this.cellsArray = this.addChild(new CellsArray(this));
+    this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
@@ -97,7 +102,12 @@ export class CellsSheet extends Container {
         cellsHash.hide();
       }
     });
-    this.cellsArray.cheapCull(bounds);
+    if (pixiAppEvents.getSettings().showCellTypeOutlines) {
+      this.cellsArray.visible = true;
+      this.cellsArray.cheapCull(bounds);
+    } else {
+      this.cellsArray.visible = false;
+    }
     this.cellsMarkers.cheapCull(bounds);
     if (debugShowCellsSheetCulling) {
       console.log(`[CellsSheet] visible: ${count}/${this.cellsHash.size}`);
@@ -106,6 +116,14 @@ export class CellsSheet extends Container {
 
   hide(): void {
     this.visible = false;
+  }
+
+  toggleOutlines() {
+    this.cellsArray.visible = pixiAppEvents.getSettings().showCellTypeOutlines;
+  }
+
+  createBorders() {
+    this.cellsBorders.create();
   }
 
   getCellsHash(column: number, row: number): CellsHash | undefined {
@@ -217,6 +235,7 @@ export class CellsSheet extends Container {
         resolve();
       } else {
         this.cellsArray.create();
+        this.cellsBorders.create();
         this.resolveTick = resolve;
         debugTimeReset();
         this.preloadTick();

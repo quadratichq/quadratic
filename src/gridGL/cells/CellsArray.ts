@@ -4,11 +4,11 @@ import { JsRenderCodeCell } from '../../quadratic-core/types';
 import { colors } from '../../theme/colors';
 import { intersects } from '../helpers/intersects';
 import { CellsSheet } from './CellsSheet';
-import { BorderLine, borderLineWidth, drawBorder, drawLine } from './drawBorders';
+import { BorderCull, borderLineWidth, drawBorder, drawLine } from './drawBorders';
 
 export class CellsArray extends ParticleContainer {
   private cellsSheet: CellsSheet;
-  private lines: BorderLine[];
+  private lines: BorderCull[];
 
   constructor(cellsSheet: CellsSheet) {
     super(undefined, { vertices: true, tint: true }, undefined, true);

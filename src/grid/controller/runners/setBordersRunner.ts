@@ -1,3 +1,4 @@
+import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 import { Coordinate } from '../../../gridGL/types/size';
 import { Border } from '../../../schemas';
 import { SheetController } from '../sheetController';
@@ -23,11 +24,13 @@ export const SetBordersRunner = (sheetController: SheetController, statement: St
       updateBorders.push(border);
     }
     if (clearBorders.length) {
-      sheet.borders.clear(clearBorders);
+      // sheet.grid.clearBorders(clearBorders);
+      // sheet.borders.clear(clearBorders);
     }
     if (updateBorders.length) {
-      sheet.borders.update(updateBorders);
+      // sheet.grid.updateBorders(updateBorders);
     }
+    pixiAppEvents.createBorders();
   });
 
   // return reverse statement
