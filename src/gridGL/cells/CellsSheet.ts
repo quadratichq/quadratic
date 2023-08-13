@@ -3,7 +3,9 @@ import { debugShowCellsSheetCulling } from '../../debugFlags';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { Coordinate } from '../types/size';
+import { CellsArray } from './CellsArray';
 import { CellsHash } from './CellsHash';
+import { CellsMarkers } from './CellsMarker';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 
 const MAXIMUM_FRAME_TIME = 1000 / 15;
@@ -11,6 +13,11 @@ const MAXIMUM_FRAME_TIME = 1000 / 15;
 export class CellsSheet extends Container {
   // individual hash containers (eg, CellsBackground, CellsArray)
   private cellsHashContainer: Container;
+
+  private cellsArray: CellsArray;
+
+  // friend of CellsArray
+  cellsMarkers: CellsMarkers;
 
   // (x, y) index into cellsHashContainer
   cellsHash: Map<string, CellsHash>;
@@ -33,6 +40,8 @@ export class CellsSheet extends Container {
     this.cellsRows = new Map();
     this.dirtyRows = new Set();
     this.cellsHashContainer = this.addChild(new Container());
+    this.cellsArray = this.addChild(new CellsArray(this));
+    this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
   addHash(hashX: number, hashY: number): CellsHash {
@@ -166,11 +175,6 @@ export class CellsSheet extends Container {
     if (hashes.size && options.background) {
       hashes.forEach((hash) => hash.updateBackgrounds());
     }
-    // if (options.labels) {
-    //   hashes.forEach((hash) => hash.createLabels());
-    //   hashes.forEach((hash) => hash.overflowClip());
-    //   hashes.forEach((hash) => hash.updateBuffers());
-    // }
   }
 
   // this assumes that dirtyRows has a size (checked in calling functions)
@@ -210,6 +214,7 @@ export class CellsSheet extends Container {
       if (!this.createHashes()) {
         resolve();
       } else {
+        this.cellsArray.create();
         this.resolveTick = resolve;
         debugTimeReset();
         this.preloadTick();

@@ -98,6 +98,9 @@ impl<B: BlockContent> ColumnData<B> {
             .map(|(_, block)| block)
             .filter(|block| block.contains(y))
     }
+    pub fn get_blocks_all(&self) -> impl Iterator<Item = &Block<B>> {
+        self.0.iter().map(|(_, block)| block)
+    }
     fn remove_block_containing(&mut self, y: i64) -> Option<Block<B>> {
         let key = self.get_block_containing(y)?.start();
         self.remove_block_at(key)
