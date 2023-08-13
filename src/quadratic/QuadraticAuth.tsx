@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import apiClientSingleton from '../api-client/apiClientSingleton';
 import { FILE_PARAM_KEY } from '../constants/app';
 import { debug } from '../debugFlags';
-import init, { hello } from '../quadratic-core';
+import init, { hello } from '../quadratic-core/quadratic_core';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { QuadraticApp } from './QuadraticApp';
 
