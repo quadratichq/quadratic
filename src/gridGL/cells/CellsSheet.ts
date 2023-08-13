@@ -97,6 +97,8 @@ export class CellsSheet extends Container {
         cellsHash.hide();
       }
     });
+    this.cellsArray.cheapCull(bounds);
+    this.cellsMarkers.cheapCull(bounds);
     if (debugShowCellsSheetCulling) {
       console.log(`[CellsSheet] visible: ${count}/${this.cellsHash.size}`);
     }
