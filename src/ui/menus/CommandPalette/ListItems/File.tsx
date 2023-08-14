@@ -1,6 +1,7 @@
 import { NoteAddOutlined } from '@mui/icons-material';
+import apiClientSingleton from 'api-client/apiClientSingleton';
 import { ROUTES } from 'constants/routes';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { SaveFileOutlined } from '../../../icons';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
@@ -16,10 +17,11 @@ const ListItems = [
   {
     label: 'File: Download local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      // const { file } = useLocalFiles();
+      const { uuid } = useParams();
       const downloadCurrentFile = () => {
-        // TODO
-        // apiClientSingleton.downloadFile(file.id);
+        if (uuid) {
+          apiClientSingleton.downloadFile(uuid);
+        }
       };
       return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={downloadCurrentFile} />;
     },
