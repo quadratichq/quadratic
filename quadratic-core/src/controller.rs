@@ -139,7 +139,7 @@ impl GridController {
     fn transact(&mut self, transaction: Transaction) -> (Transaction, TransactionSummary) {
         let mut rev_ops = vec![];
         let mut dirty_sheets = vec![];
-        let mut regions_modified = vec![];
+        let mut cell_regions_modified = vec![];
         for op in transaction.ops {
             if let Some(new_dirty_sheet) = op.dirty_sheet() {
                 if !dirty_sheets.contains(&new_dirty_sheet) {
@@ -151,7 +151,7 @@ impl GridController {
                     let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
                     let cell_xy = sheet.cell_ref_to_pos(cell_ref).expect("bad cell reference");
 
-                    regions_modified.push((cell_ref.sheet, Rect::single_pos(cell_xy)));
+                    cell_regions_modified.push((cell_ref.sheet, Rect::single_pos(cell_xy)));
 
                     let old_value = match sheet.set_cell_value(cell_xy, value) {
                         Some(response) => response.old_value,
@@ -177,7 +177,7 @@ impl GridController {
                     let xs = columns.iter().filter_map(|&id| sheet.get_column_index(id));
                     let ys = rows.iter().filter_map(|&id| sheet.get_row_index(id));
                     if let Some(modified_rect) = Rect::from_xs_and_ys(xs, ys) {
-                        regions_modified.push((sheet_id, modified_rect));
+                        cell_regions_modified.push((sheet_id, modified_rect));
                     }
 
                     let width = rows.len() as u32;
@@ -214,7 +214,10 @@ impl GridController {
         rev_ops.reverse();
 
         let reverse_transaction = Transaction { ops: rev_ops };
-        let summary = TransactionSummary { regions_modified };
+        let summary = TransactionSummary {
+            cell_regions_modified,
+            ..Default::default()
+        };
 
         (reverse_transaction, summary)
     }
@@ -250,7 +253,18 @@ impl Operation {
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct TransactionSummary {
-    pub regions_modified: Vec<(SheetId, Rect)>,
+    /// Cell and text formatting regions modified.
+    pub cell_regions_modified: Vec<(SheetId, Rect)>,
+    /// Sheets where any fills have been modified.
+    pub fill_sheets_modified: Vec<SheetId>,
+    /// Sheets where any borders have been modified.
+    pub border_sheets_modified: Vec<SheetId>,
+
+    /// Locations of code cells that were modified. They may no longer exist.
+    pub code_cells_modified: Vec<(SheetId, Pos)>,
+
+    /// Sheet metadata or order was modified.
+    pub sheet_list_modified: bool,
 }
 
 #[cfg(test)]
@@ -265,7 +279,8 @@ mod tests {
         let get_the_cell =
             |g: &GridController| g.sheet(sheet_id).get_cell_value(pos).unwrap_or_default();
         let expected_summary = Some(TransactionSummary {
-            regions_modified: vec![(sheet_id, Rect::single_pos(pos))],
+            cell_regions_modified: vec![(sheet_id, Rect::single_pos(pos))],
+            ..Default::default()
         });
 
         assert_eq!(get_the_cell(&g), CellValue::Blank);
