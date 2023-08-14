@@ -573,23 +573,9 @@ impl Sheet {
                     w,
                     h,
                     language: code_cell.language,
-                })
-            })
-            .collect()
-    }
-    /// Returns data for all rendering code cells
-    pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
-        self.iter_all_code_cells_locations()
-            .filter_map(|cell_ref| {
-                let pos = self.cell_ref_to_pos(cell_ref)?;
-                let code_cell = self.code_cells.get(&cell_ref)?;
-                let ArraySize { w, h } = code_cell.output_size();
-                Some(JsRenderCodeCell {
-                    x: pos.x,
-                    y: pos.y,
-                    w,
-                    h,
-                    language: code_cell.language,
+
+                    // todo
+                    state: JsRenderCodeCellState::Success,
                 })
             })
             .collect()
