@@ -25,6 +25,17 @@ impl GridController {
         Self::new()
     }
 
+    /// Returns whether there is a transaction to undo.
+    #[wasm_bindgen(js_name = "hasUndo")]
+    pub fn js_has_undo(&self) -> bool {
+        self.has_undo()
+    }
+    /// Returns whether there is a transaction to redo.
+    #[wasm_bindgen(js_name = "hasRedo")]
+    pub fn js_has_redo(&self) -> bool {
+        self.has_redo()
+    }
+
     /// Undoes one transaction. Returns a [`TransactionSummary`], or `null` if
     /// there was nothing to undo.
     #[wasm_bindgen(js_name = "undo")]

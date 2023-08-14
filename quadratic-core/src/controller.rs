@@ -117,6 +117,12 @@ impl GridController {
         self.undo_stack.push(reverse_transaction);
         summary
     }
+    pub fn has_undo(&self) -> bool {
+        !self.undo_stack.is_empty()
+    }
+    pub fn has_redo(&self) -> bool {
+        !self.redo_stack.is_empty()
+    }
     pub fn undo(&mut self) -> Option<TransactionSummary> {
         let transaction = self.undo_stack.pop()?;
         let (reverse_transaction, summary) = self.transact(transaction);
