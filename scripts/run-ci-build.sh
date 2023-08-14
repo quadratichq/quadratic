@@ -12,7 +12,9 @@ cargo run --bin export_types
 echo 'Building wasm...'
 wasm-pack build --target web --out-dir ../src/quadratic-core
 wasm-pack build --target nodejs --out-dir ../src/quadratic-core/__mocks__
+ls ../src/quadratic-core
 
 echo 'Building front-end...'
 cd ..
+ls
 npm run build
