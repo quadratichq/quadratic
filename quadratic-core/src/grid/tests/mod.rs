@@ -9,7 +9,8 @@ use crate::IsBlank;
 fn test_airports() {
     let grid = Grid::from_legacy(
         &serde_json::from_str(include_str!("../../../examples/airports.json")).unwrap(),
-    );
+    )
+    .unwrap();
 
     let sheet = &grid.sheets()[0];
 
@@ -44,7 +45,8 @@ fn test_airports() {
 fn test_startup_portfolio() {
     let grid = Grid::from_legacy(
         &serde_json::from_str(include_str!("../../../examples/startup_portfolio.json")).unwrap(),
-    );
+    )
+    .unwrap();
 
     let sheet = &grid.sheets()[0];
 

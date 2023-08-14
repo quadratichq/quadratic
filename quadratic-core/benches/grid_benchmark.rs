@@ -8,7 +8,8 @@ criterion_main!(benches);
 fn criterion_benchmark(c: &mut Criterion) {
     let airports = Grid::from_legacy(
         &serde_json::from_str(include_str!("../examples/airports.json")).unwrap(),
-    );
+    )
+    .unwrap();
 
     let inputs = vec![("empty", Grid::new()), ("airports", airports)];
 

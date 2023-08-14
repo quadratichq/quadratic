@@ -111,6 +111,39 @@ impl GridController {
         self.transact_forward(transaction)
     }
 
+    pub fn add_sheet(&mut self) -> TransactionSummary {
+        let sheet_names = &self
+            .grid
+            .sheets()
+            .iter()
+            .map(|s| s.name.as_str())
+            .collect_vec();
+
+        let id = SheetId::new();
+        let name = crate::util::unused_name("Sheet", &sheet_names);
+
+        let transaction = Transaction::from(Operation::AddSheet {
+            sheet: Sheet::new(id, name),
+            before: None,
+        });
+        self.transact_forward(transaction)
+    }
+    pub fn delete_sheet(&mut self, sheet_id: SheetId) -> TransactionSummary {
+        let transaction = Transaction::from(Operation::DeleteSheet { sheet_id });
+        self.transact_forward(transaction)
+    }
+    pub fn move_sheet(
+        &mut self,
+        sheet_id: SheetId,
+        to_before: Option<SheetId>,
+    ) -> TransactionSummary {
+        let transaction = Transaction::from(Operation::ReorderSheet {
+            target: sheet_id,
+            to_before,
+        });
+        self.transact_forward(transaction)
+    }
+
     fn transact_forward(&mut self, transaction: Transaction) -> TransactionSummary {
         let (reverse_transaction, summary) = self.transact(transaction);
         self.redo_stack.clear();
@@ -138,12 +171,12 @@ impl GridController {
 
     fn transact(&mut self, transaction: Transaction) -> (Transaction, TransactionSummary) {
         let mut rev_ops = vec![];
-        let mut dirty_sheets = vec![];
-        let mut cell_regions_modified = vec![];
+        let mut sheets_with_changed_bounds = vec![];
+        let mut summary = TransactionSummary::default();
         for op in transaction.ops {
-            if let Some(new_dirty_sheet) = op.dirty_sheet() {
-                if !dirty_sheets.contains(&new_dirty_sheet) {
-                    dirty_sheets.push(new_dirty_sheet)
+            if let Some(new_dirty_sheet) = op.sheet_with_changed_bounds() {
+                if !sheets_with_changed_bounds.contains(&new_dirty_sheet) {
+                    sheets_with_changed_bounds.push(new_dirty_sheet)
                 }
             }
             match op {
@@ -151,7 +184,9 @@ impl GridController {
                     let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
                     let cell_xy = sheet.cell_ref_to_pos(cell_ref).expect("bad cell reference");
 
-                    cell_regions_modified.push((cell_ref.sheet, Rect::single_pos(cell_xy)));
+                    summary
+                        .cell_regions_modified
+                        .push((cell_ref.sheet, Rect::single_pos(cell_xy)));
 
                     let old_value = match sheet.set_cell_value(cell_xy, value) {
                         Some(response) => response.old_value,
@@ -162,6 +197,7 @@ impl GridController {
                         value: old_value,
                     });
                 }
+
                 Operation::SetCells {
                     sheet_id,
                     columns,
@@ -177,7 +213,9 @@ impl GridController {
                     let xs = columns.iter().filter_map(|&id| sheet.get_column_index(id));
                     let ys = rows.iter().filter_map(|&id| sheet.get_row_index(id));
                     if let Some(modified_rect) = Rect::from_xs_and_ys(xs, ys) {
-                        cell_regions_modified.push((sheet_id, modified_rect));
+                        summary
+                            .cell_regions_modified
+                            .push((sheet_id, modified_rect));
                     }
 
                     let width = rows.len() as u32;
@@ -204,9 +242,53 @@ impl GridController {
                         values: old_values,
                     })
                 }
+
+                Operation::AddSheet { sheet, before } => {
+                    let sheet_id = sheet.id;
+                    self.grid
+                        .add_sheet(sheet, before.and_then(|id| self.grid.sheet_id_to_index(id)))
+                        .expect("duplicate sheet name");
+                    rev_ops.push(Operation::DeleteSheet { sheet_id });
+                }
+                Operation::DeleteSheet { sheet_id } => {
+                    let old_after = self
+                        .grid
+                        .sheet_id_to_index(sheet_id)
+                        .and_then(|i| Some(*self.sheet_ids().get(i + 1)?));
+                    let deleted_sheet = self.grid.remove_sheet(sheet_id);
+                    if let Some(sheet) = deleted_sheet {
+                        rev_ops.push(Operation::AddSheet {
+                            sheet,
+                            before: old_after,
+                        });
+                    }
+                }
+
+                Operation::ReorderSheet { target, to_before } => {
+                    // TODO: This should probably use fractional indexing to be
+                    // more robust. Fortunately the order of sheets is not too
+                    // high-stakes.
+                    //
+                    // Right now, if `to_before` doesn't exist, the operation
+                    // just does nothing.
+                    let old_position = self.sheet_ids().iter().position(|&id| id == target);
+                    let new_position = match to_before {
+                        Some(to_before) => self.sheet_ids().iter().position(|&id| id == to_before),
+                        None => Some(self.sheet_ids().len()),
+                    };
+                    if let (Some(old), Some(new)) = (old_position, new_position) {
+                        summary.sheet_list_modified = true;
+                        let old_after = self.sheet_ids().get(old + 1).copied();
+                        self.grid.move_sheet(target, new);
+                        rev_ops.push(Operation::ReorderSheet {
+                            target,
+                            to_before: old_after,
+                        });
+                    }
+                }
             }
         }
-        for dirty_sheet in dirty_sheets {
+        for dirty_sheet in sheets_with_changed_bounds {
             self.grid
                 .sheet_mut_from_id(dirty_sheet)
                 .recalculate_bounds();
@@ -214,10 +296,6 @@ impl GridController {
         rev_ops.reverse();
 
         let reverse_transaction = Transaction { ops: rev_ops };
-        let summary = TransactionSummary {
-            cell_regions_modified,
-            ..Default::default()
-        };
 
         (reverse_transaction, summary)
     }
@@ -226,6 +304,11 @@ impl GridController {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
     ops: Vec<Operation>,
+}
+impl From<Operation> for Transaction {
+    fn from(op: Operation) -> Self {
+        Transaction { ops: vec![op] }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -240,12 +323,30 @@ pub enum Operation {
         rows: Vec<RowId>,
         values: Array,
     },
+
+    AddSheet {
+        sheet: Sheet,
+        before: Option<SheetId>,
+    },
+    DeleteSheet {
+        sheet_id: SheetId,
+    },
+
+    ReorderSheet {
+        target: SheetId,
+        to_before: Option<SheetId>,
+    },
 }
 impl Operation {
-    pub fn dirty_sheet(&self) -> Option<SheetId> {
+    pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
         match self {
             Operation::SetCell { cell_ref, .. } => Some(cell_ref.sheet),
             Operation::SetCells { sheet_id, .. } => Some(*sheet_id),
+
+            Operation::AddSheet { .. } => None,
+            Operation::DeleteSheet { .. } => None,
+
+            Operation::ReorderSheet { .. } => None,
         }
     }
 }
@@ -304,5 +405,44 @@ mod tests {
         assert_eq!(get_the_cell(&g), "b".into());
         assert!(g.redo().is_none());
         assert_eq!(get_the_cell(&g), "b".into());
+    }
+
+    #[test]
+    fn test_add_delete_reorder_sheets() {
+        let mut g = GridController::new();
+        g.add_sheet();
+        g.add_sheet();
+        let old_sheet_ids = g.sheet_ids();
+        let s1 = old_sheet_ids[0];
+        let s2 = old_sheet_ids[1];
+        let s3 = old_sheet_ids[2];
+
+        let mut test_reorder = |a, b, expected: [SheetId; 3]| {
+            g.move_sheet(a, b);
+            assert_eq!(expected.to_vec(), g.sheet_ids());
+            g.undo();
+            assert_eq!(old_sheet_ids, g.sheet_ids());
+        };
+
+        test_reorder(s1, Some(s2), [s1, s2, s3]);
+        test_reorder(s1, Some(s3), [s2, s1, s3]);
+        test_reorder(s1, None, [s2, s3, s1]);
+        test_reorder(s2, Some(s1), [s2, s1, s3]);
+        test_reorder(s2, Some(s3), [s1, s2, s3]);
+        test_reorder(s2, None, [s1, s3, s2]);
+        test_reorder(s3, Some(s1), [s3, s1, s2]);
+        test_reorder(s3, Some(s2), [s1, s3, s2]);
+        test_reorder(s3, None, [s1, s2, s3]);
+
+        let mut test_delete = |a, expected: [SheetId; 2]| {
+            g.delete_sheet(a);
+            assert_eq!(expected.to_vec(), g.sheet_ids());
+            g.undo();
+            assert_eq!(old_sheet_ids, g.sheet_ids());
+        };
+
+        test_delete(s1, [s2, s3]);
+        test_delete(s2, [s1, s3]);
+        test_delete(s3, [s1, s2]);
     }
 }

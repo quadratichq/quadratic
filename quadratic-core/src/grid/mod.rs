@@ -55,19 +55,22 @@ impl Grid {
             id: Uuid::new_v4(),
             modified: 0.0, // TODO: modification time
         };
-        ret.add_sheet();
+        ret.add_sheet(Sheet::new(SheetId::new(), "Sheet".to_string()), None)
+            .expect("error adding initial sheet");
         ret
     }
-    pub fn from_legacy(file: &legacy::GridFile) -> Self {
+    pub fn from_legacy(file: &legacy::GridFile) -> Result<Self, &'static str> {
         use legacy::*;
 
         let GridFile::V1_3(file) = file;
         let mut ret = Grid::new();
         ret.sheets = vec![];
         for js_sheet in &file.sheets {
-            let sheet_id = ret.add_sheet();
+            let sheet_id = SheetId::new();
+            ret.add_sheet(Sheet::new(sheet_id, js_sheet.name.clone()), None)
+                .map_err(|_| "duplicate sheet name")?;
             let sheet_index = ret.sheet_id_to_index(sheet_id).unwrap();
-            let sheet = &mut ret.sheets_mut()[sheet_index];
+            let sheet = &mut ret.sheets[sheet_index];
 
             // Load cell data
             for js_cell in &js_sheet.cells {
@@ -143,7 +146,7 @@ impl Grid {
             sheet.recalculate_bounds();
         }
 
-        ret
+        Ok(ret)
     }
 
     pub fn sheets(&self) -> &[Sheet] {
@@ -152,12 +155,45 @@ impl Grid {
     pub fn sheets_mut(&mut self) -> &mut [Sheet] {
         &mut self.sheets
     }
-    pub fn add_sheet(&mut self) -> SheetId {
-        let id = SheetId::new();
-        let name = format!("Sheet {}", self.sheets.len() + 1);
-        self.sheet_ids.add(id, self.sheets.len());
-        self.sheets.push(Sheet::new(id, name));
-        id
+    /// Adds a sheet to the grid. Returns an error if the sheet name is already
+    /// in use.
+    pub fn add_sheet(&mut self, sheet: Sheet, index: Option<usize>) -> Result<(), ()> {
+        if self
+            .sheets
+            .iter()
+            .any(|old_sheet| old_sheet.name == sheet.name)
+        {
+            return Err(());
+        }
+
+        match index {
+            Some(i) => self.sheets.insert(i, sheet),
+            None => self.sheets.push(sheet),
+        }
+        self.rebuild_sheet_id_map();
+        Ok(())
+    }
+    pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Option<Sheet> {
+        let i = self.sheet_id_to_index(sheet_id)?;
+        let ret = self.sheets.remove(i);
+        self.rebuild_sheet_id_map();
+        Some(ret)
+    }
+    /// Moves a sheet to a specific index.
+    pub fn move_sheet(&mut self, target: SheetId, to: usize) {
+        let from = self.sheet_id_to_index(target).expect("bad sheet ID");
+        if from < to {
+            self.sheets[from..to].rotate_left(1);
+        } else {
+            self.sheets[to..=from].rotate_right(1);
+        }
+        self.rebuild_sheet_id_map();
+    }
+    fn rebuild_sheet_id_map(&mut self) {
+        self.sheet_ids = IdMap::new();
+        for (i, sheet) in self.sheets.iter().enumerate() {
+            self.sheet_ids.add(sheet.id, i);
+        }
     }
 
     pub fn sheet_id_to_index(&self, id: SheetId) -> Option<usize> {
@@ -194,7 +230,8 @@ impl Grid {
             sheets: self
                 .sheets
                 .iter()
-                .map(|sheet| sheet.export_to_legacy_file_format())
+                .enumerate()
+                .map(|(i, sheet)| sheet.export_to_legacy_file_format(i))
                 .collect(),
             created: self.created,
             filename: self.filename.clone(),

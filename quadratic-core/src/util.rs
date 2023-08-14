@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fmt;
 use std::ops::Range;
 
@@ -235,6 +236,21 @@ pub fn union_ranges(ranges: impl IntoIterator<Item = Option<Range<i64>>>) -> Opt
         .into_iter()
         .filter_map(|x| x)
         .reduce(|a, b| std::cmp::min(a.start, b.start)..std::cmp::max(a.end, b.end))
+}
+
+pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
+    if !already_used.contains(&prefix) {
+        prefix.to_string()
+    } else {
+        let already_used_numbers: HashSet<usize> = already_used
+            .iter()
+            .filter_map(|s| s.strip_prefix(prefix)?.trim().parse().ok())
+            .collect();
+
+        // Find the first number that's not already used.
+        let i = (1..).find(|i| !already_used_numbers.contains(&i)).unwrap();
+        format!("{prefix} {i}")
+    }
 }
 
 #[cfg(test)]

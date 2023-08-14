@@ -15,7 +15,7 @@ macro_rules! uuid_wrapper_struct {
         }
 
         impl $name {
-            pub(super) fn new() -> Self {
+            pub(crate) fn new() -> Self {
                 $name { id: Uuid::new_v4() }
             }
         }

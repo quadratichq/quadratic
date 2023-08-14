@@ -8,7 +8,7 @@ impl GridController {
     pub fn js_new_from_file(file: JsValue) -> Result<GridController, JsValue> {
         Ok(GridController::from_grid(Grid::from_legacy(
             &serde_wasm_bindgen::from_value(file)?,
-        )))
+        )?))
     }
 
     /// Exports a [`GridController`] to a file. Returns a `GridFile` (fits JS schema).
@@ -49,22 +49,39 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&self.redo())?)
     }
 
-    // /// Adds an empty sheet to the grid.
-    // #[wasm_bindgen(js_name = "addSheet")]
-    // pub fn js_add_sheet(&mut self) -> SheetId {
-    //     self.add_sheet()
-    // }
+    /// Adds an empty sheet to the grid. Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "addSheet")]
+    pub fn js_add_sheet(&mut self) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.add_sheet())?)
+    }
+    /// Deletes a sheet from the the grid. Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "deleteSheet")]
+    pub fn js_delete_sheet(&mut self, sheet_id: &SheetId) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.delete_sheet(*sheet_id))?)
+    }
+    /// Moves a sheet to before another sheet, or to the end of the list.
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "moveSheet")]
+    pub fn js_move_sheet(
+        &mut self,
+        sheet_id: &SheetId,
+        to_before: Option<SheetId>,
+    ) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.move_sheet(*sheet_id, to_before),
+        )?)
+    }
 
-    // /// Returns the ID of the sheet at the given index.
-    // #[wasm_bindgen(js_name = "sheetIdToIndex")]
-    // pub fn js_sheet_id_to_index(&self, id: &SheetId) -> Option<usize> {
-    //     self.grid().sheet_id_to_index(*id)
-    // }
-    // /// Returns the index of the sheet with the given ID.
-    // #[wasm_bindgen(js_name = "sheetIndexToId")]
-    // pub fn js_sheet_index_to_id(&self, index: usize) -> Option<SheetId> {
-    //     self.grid().sheet_index_to_id(index)
-    // }
+    /// Returns the ID of the sheet at the given index.
+    #[wasm_bindgen(js_name = "sheetIdToIndex")]
+    pub fn js_sheet_id_to_index(&self, id: &SheetId) -> Option<usize> {
+        self.grid().sheet_id_to_index(*id)
+    }
+    /// Returns the index of the sheet with the given ID.
+    #[wasm_bindgen(js_name = "sheetIndexToId")]
+    pub fn js_sheet_index_to_id(&self, index: usize) -> Option<SheetId> {
+        self.grid().sheet_index_to_id(index)
+    }
 
     /// Populates a portion of a sheet with random float values.
     ///

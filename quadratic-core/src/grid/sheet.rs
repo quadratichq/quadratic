@@ -22,7 +22,7 @@ use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect, Value};
 pub struct Sheet {
     pub id: SheetId,
     pub name: String,
-    pub color: Option<[u8; 3]>,
+    pub color: Option<String>,
 
     column_ids: IdMap<ColumnId, i64>,
     row_ids: IdMap<RowId, i64>,
@@ -213,8 +213,12 @@ impl Sheet {
         FormattingSummary { bold, italic }
     }
 
-    pub fn export_to_legacy_file_format(&self) -> legacy::JsSheet {
+    pub fn export_to_legacy_file_format(&self, index: usize) -> legacy::JsSheet {
         legacy::JsSheet {
+            name: self.name.clone(),
+            color: self.color.clone(),
+            order: format!("{index:0>8}"), // pad with zeros to sort lexicographically
+
             borders: self.borders.export_to_js_file(),
             cells: match self.bounds(false) {
                 GridBounds::Empty => vec![],

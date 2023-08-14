@@ -6,7 +6,7 @@ impl Grid {
     /// Imports a [`Grid`] from a file (that fits the schema defined in JS).
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(file: JsValue) -> Result<Grid, JsValue> {
-        Ok(Grid::from_legacy(&serde_wasm_bindgen::from_value(file)?))
+        Ok(Grid::from_legacy(&serde_wasm_bindgen::from_value(file)?)?)
     }
 
     /// Exports a [`Grid`] to a file. Returns a `GridFile` (fits JS schema).
@@ -23,8 +23,11 @@ impl Grid {
 
     /// Adds an empty sheet to the grid.
     #[wasm_bindgen(js_name = "addSheet")]
-    pub fn js_add_sheet(&mut self) -> SheetId {
-        self.add_sheet()
+    pub fn js_add_sheet(&mut self) -> Result<SheetId, JsValue> {
+        let sheet_id = SheetId::new();
+        self.add_sheet(Sheet::new(sheet_id, "Sheet".to_string()), None)
+            .map_err(|_| "duplicate sheet name")?;
+        Ok(sheet_id)
     }
 
     /// Returns the ID of the sheet at the given index.
