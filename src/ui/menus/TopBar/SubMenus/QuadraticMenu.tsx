@@ -4,9 +4,10 @@ import { Tooltip } from '@mui/material';
 import Button from '@mui/material/Button';
 import { Menu, MenuDivider, MenuHeader, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
+import apiClientSingleton from 'api-client/apiClientSingleton';
 import { ROUTES } from 'constants/routes';
 import { useEffect } from 'react';
-import { useRouteLoaderData } from 'react-router-dom';
+import { useParams, useRouteLoaderData } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
@@ -31,12 +32,7 @@ export const QuadraticMenu = (props: Props) => {
   const interactionState = useRecoilValue(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
-
-  // const { file: { currentFileId } } = useLocalFiles();
-  // const downloadCurrentFile = () => {
-  //   apiClientSingleton.downloadFile(currentFileId);
-  // };
-
+  const { uuid } = useParams();
   const { isAuthenticated, user } = useRouteLoaderData('root') as RootLoaderData;
 
   // For readonly, set Headers to not visible by default
@@ -81,8 +77,9 @@ export const QuadraticMenu = (props: Props) => {
           </MenuItem>
           <MenuItem
             onClick={() => {
-              // TODO
-              //downloadCurrentFile()
+              if (uuid) {
+                apiClientSingleton.downloadFile(uuid);
+              }
             }}
           >
             Download local copy
