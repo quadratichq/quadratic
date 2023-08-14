@@ -48,7 +48,7 @@ impl SheetBorders {
         self.horizontal
             .iter()
             .flat_map(|(&y, row)| {
-                row.get_blocks_all().map(move |block| JsRenderBorder {
+                row.blocks().map(move |block| JsRenderBorder {
                     x: block.start(),
                     y,
                     w: Some(block.len()),
@@ -62,7 +62,7 @@ impl SheetBorders {
         self.vertical
             .iter()
             .flat_map(|(&x, column)| {
-                column.get_blocks_all().map(move |block| JsRenderBorder {
+                column.blocks().map(move |block| JsRenderBorder {
                     x,
                     y: block.start(),
                     w: None,
@@ -76,12 +76,12 @@ impl SheetBorders {
     pub fn export_to_js_file(&self) -> Vec<legacy::JsBorders> {
         let mut ret: HashMap<(i64, i64), CellBorders> = HashMap::new();
         for (&x, column) in &self.vertical {
-            for (y, border) in column.iter() {
+            for (y, border) in column.values() {
                 ret.entry((x, y)).or_default().h = Some(border);
             }
         }
         for (&y, row) in &self.horizontal {
-            for (x, border) in row.iter() {
+            for (x, border) in row.values() {
                 ret.entry((x, y)).or_default().v = Some(border);
             }
         }

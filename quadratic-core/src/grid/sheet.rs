@@ -468,7 +468,7 @@ impl Sheet {
         let ordinary_cells = columns_iter.clone().flat_map(|(x, column)| {
             column
                 .values
-                .iter_range(region.y_range())
+                .values_in_range(region.y_range())
                 .map(move |(y, value)| (x, y, column, value, None))
         });
 
@@ -618,12 +618,7 @@ impl Sheet {
         let code_cell_refs: HashSet<CellRef> = self
             .columns
             .iter()
-            .flat_map(|(_x, column)| {
-                column
-                    .spills
-                    .get_blocks_all()
-                    .map(|block| block.content().value)
-            })
+            .flat_map(|(_x, column)| column.spills.blocks().map(|block| block.content().value))
             .collect();
 
         code_cell_refs.into_iter()

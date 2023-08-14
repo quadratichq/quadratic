@@ -98,9 +98,6 @@ impl<B: BlockContent> ColumnData<B> {
             .map(|(_, block)| block)
             .filter(|block| block.contains(y))
     }
-    pub fn get_blocks_all(&self) -> impl Iterator<Item = &Block<B>> {
-        self.0.iter().map(|(_, block)| block)
-    }
     fn remove_block_containing(&mut self, y: i64) -> Option<Block<B>> {
         let key = self.get_block_containing(y)?.start();
         self.remove_block_at(key)
@@ -198,6 +195,9 @@ impl<B: BlockContent> ColumnData<B> {
         }
     }
 
+    pub fn blocks(&self) -> impl Iterator<Item = &Block<B>> {
+        self.0.iter().map(|(_, block)| block)
+    }
     pub fn blocks_of_range(&self, y_range: Range<i64>) -> impl Iterator<Item = Cow<'_, Block<B>>> {
         self.blocks_covering_range(y_range.clone())
             .with_position()
@@ -264,13 +264,16 @@ impl<B: BlockContent> ColumnData<B> {
     }
 
     /// Iterates over all values, skipping cells with no data.
-    pub fn iter(&self) -> impl '_ + Iterator<Item = (i64, B::Item)> {
+    pub fn values(&self) -> impl '_ + Iterator<Item = (i64, B::Item)> {
         self.range()
             .into_iter()
-            .flat_map(|y_range| self.iter_range(y_range))
+            .flat_map(|y_range| self.values_in_range(y_range))
     }
     /// Iterates over a range, skipping cells with no data.
-    pub fn iter_range(&self, y_range: Range<i64>) -> impl '_ + Iterator<Item = (i64, B::Item)> {
+    pub fn values_in_range(
+        &self,
+        y_range: Range<i64>,
+    ) -> impl '_ + Iterator<Item = (i64, B::Item)> {
         self.blocks_covering_range(y_range.clone())
             .flat_map(move |block| {
                 let start = std::cmp::max(y_range.start, block.start());
