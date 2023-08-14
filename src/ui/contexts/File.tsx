@@ -1,4 +1,6 @@
 import { PostFileContentsReq, PostFileNameReq } from 'api-client/types';
+import { useDebounce } from 'hooks/useDebounce';
+import { useInterval } from 'hooks/useInterval';
 import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
@@ -36,9 +38,12 @@ export const FileProvider = ({
   initialFile: InitialFile;
   sheetController: SheetController;
 }) => {
-  const { uuid } = useParams();
+  const params = useParams();
+  // We can gaurantee this is in the URL when it runs, so cast as string
+  const uuid = params.uuid as string;
   const [name, setName] = useState<FileContextType['name']>(initialFile.name);
   const [contents, setContents] = useState<FileContextType['contents']>(initialFile.contents);
+  const debouncedContents = useDebounce<FileContextType['contents']>(contents, 1000);
   let didMount = useRef<boolean>(false);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
   const syncState = latestSync.state;
@@ -83,12 +88,10 @@ export const FileProvider = ({
   // TODO debounce file changes so changes sync only every X milliseconds
   const syncChanges = useCallback(
     async (changes: PostFileContentsReq | PostFileNameReq) => {
-      if (uuid) {
-        const id = Date.now();
-        setLatestSync({ id, state: 'syncing' });
-        const ok = await apiClientSingleton.postFile(uuid, changes);
-        setLatestSync((prev) => (prev.id === id ? { id, state: ok ? 'idle' : 'error' } : prev));
-      }
+      const id = Date.now();
+      setLatestSync({ id, state: 'syncing' });
+      const ok = await apiClientSingleton.postFile(uuid, changes);
+      setLatestSync((prev) => (prev.id === id ? { id, state: ok ? 'idle' : 'error' } : prev));
     },
     [setLatestSync, uuid]
   );
@@ -99,10 +102,20 @@ export const FileProvider = ({
     syncChanges({ name });
   }, [name, syncChanges, uuid]);
 
-  // When the contents of the file changes, sync to server
+  // When the contents of the file changes, sync to server (debounce it so that
+  // quick changes, especially undo/redos, don’t sync all at once)
   useEffect(() => {
-    syncChanges({ contents: JSON.stringify(contents), version: contents.version });
-  }, [contents, syncChanges]);
+    syncChanges({ contents: JSON.stringify(debouncedContents), version: debouncedContents.version });
+  }, [debouncedContents, syncChanges]);
+
+  // If a sync fails, start an interval that tries to sync anew ever few seconds
+  // until a sync completes again
+  useInterval(
+    () => {
+      syncChanges({ contents: JSON.stringify(debouncedContents), version: debouncedContents.version });
+    },
+    syncState === 'error' ? 1000 : null
+  );
 
   return <FileContext.Provider value={{ name, renameFile, contents, syncState }}>{children}</FileContext.Provider>;
 };
