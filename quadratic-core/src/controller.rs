@@ -143,6 +143,19 @@ impl GridController {
         });
         self.transact_forward(transaction)
     }
+    pub fn duplicate_sheet(&mut self, sheet_id: SheetId) -> TransactionSummary {
+        let sheet_after = self
+            .sheet_ids()
+            .get(self.grid.sheet_id_to_index(sheet_id).expect("bad sheet ID") + 1)
+            .copied();
+        let mut new_sheet = self.sheet(sheet_id).clone();
+        new_sheet.id = SheetId::new();
+        let transaction = Transaction::from(Operation::AddSheet {
+            sheet: new_sheet,
+            to_before: sheet_after,
+        });
+        self.transact_forward(transaction)
+    }
 
     fn transact_forward(&mut self, transaction: Transaction) -> TransactionSummary {
         let (reverse_transaction, summary) = self.transact(transaction);

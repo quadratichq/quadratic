@@ -71,6 +71,13 @@ impl GridController {
             &self.move_sheet(*sheet_id, to_before),
         )?)
     }
+    /// Makes a copy of a sheet. Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "duplicateSheet")]
+    pub fn js_duplicate_sheet(&mut self, sheet_id: &SheetId) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.duplicate_sheet(*sheet_id),
+        )?)
+    }
 
     /// Returns the ID of the sheet at the given index.
     #[wasm_bindgen(js_name = "sheetIdToIndex")]
