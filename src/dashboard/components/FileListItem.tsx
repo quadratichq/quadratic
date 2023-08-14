@@ -2,7 +2,7 @@ import { InsertDriveFileOutlined } from '@mui/icons-material';
 import { Box, Divider, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
 
-export default function FileListItem({
+export function FileListItem({
   name,
   description,
   actions,

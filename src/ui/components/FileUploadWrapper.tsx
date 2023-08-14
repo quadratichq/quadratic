@@ -2,11 +2,11 @@ import debounce from 'lodash.debounce';
 import { DragEvent, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
+import { useGlobalSnackbar } from '../../components/GlobalSnackbar';
 import { InsertCSV } from '../../grid/actions/insertData/insertCSV';
 import { SheetController } from '../../grid/controller/sheetController';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
-import { useGlobalSnackbar } from '../../shared/GlobalSnackbar';
 
 interface Props {
   sheetController: SheetController;

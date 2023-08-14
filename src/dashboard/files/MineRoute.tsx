@@ -8,7 +8,11 @@ import {
 import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
 import apiClientSingleton from 'api-client/apiClientSingleton';
 import { GetFilesRes } from 'api-client/types';
+import { Empty } from 'components/Empty';
+import { useGlobalSnackbar } from 'components/GlobalSnackbar';
 import { ROUTES } from 'constants/routes';
+import { FileListItem } from 'dashboard/components/FileListItem';
+import { Header } from 'dashboard/components/Header';
 import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import {
@@ -25,10 +29,6 @@ import {
   useSubmit,
 } from 'react-router-dom';
 import { validateAndUpgradeGridFile } from 'schemas/validateAndUpgradeGridFile';
-import Empty from 'shared/Empty';
-import { useGlobalSnackbar } from 'shared/GlobalSnackbar';
-import File from 'shared/dashboard/FileListItem';
-import Header from 'shared/dashboard/Header';
 import { TooltipHint } from 'ui/components/TooltipHint';
 
 type ActionData = {
@@ -207,7 +207,7 @@ function FileWithActions({ file }: { file: NonNullable<GetFilesRes>[0] }) {
 
   return (
     <Link to={ROUTES.FILE(uuid)} reloadDocument style={{ textDecoration: 'none', color: 'inherit' }}>
-      <File
+      <FileListItem
         key={uuid}
         name={name}
         status={failedToDelete && <Chip label="Failed to delete" size="small" color="error" variant="outlined" />}

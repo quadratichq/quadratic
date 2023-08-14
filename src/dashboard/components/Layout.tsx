@@ -1,9 +1,9 @@
 import { Close, ExtensionOutlined, FolderOpenOutlined, Menu, PeopleOutline } from '@mui/icons-material';
 import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
+import { RootLoaderData } from 'Routes';
 import { ROUTES } from 'constants/routes';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation, useRouteLoaderData } from 'react-router-dom';
-import { RootLoaderData } from 'routes';
 import { colors } from 'theme/colors';
 import { ReactComponent as QuadraticLogo } from './quadratic-logo.svg';
 import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';

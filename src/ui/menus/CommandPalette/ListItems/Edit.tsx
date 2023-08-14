@@ -1,11 +1,11 @@
 import { ContentCopy, ContentCut, ContentPaste, East, Redo, Undo } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
+import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
 import { PNG_MESSAGE } from '../../../../constants/app';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { useGlobalSnackbar } from '../../../../shared/GlobalSnackbar';
 import { isMac } from '../../../../utils/isMac';
 import { CopyAsPNG } from '../../../icons';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';

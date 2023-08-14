@@ -2,7 +2,12 @@ import { User } from '@auth0/auth0-spa-js';
 import { ErrorOutline, WarningAmber } from '@mui/icons-material';
 import { Button } from '@mui/material';
 import * as Sentry from '@sentry/react';
+import { Empty } from 'components/Empty';
+import { GlobalSnackbarProvider } from 'components/GlobalSnackbar';
+import { Theme } from 'components/Theme';
 import { ROUTES } from 'constants/routes';
+import * as CloudFilesMigration from 'dashboard/CloudFilesMigrationRoute';
+import { BrowserCompatibility } from 'dashboard/components/BrowserCompatibility';
 import localforage from 'localforage';
 import {
   Link,
@@ -15,16 +20,11 @@ import {
   redirect,
   useRouteError,
 } from 'react-router-dom';
-import * as CloudFilesMigration from 'shared/CloudFilesMigration';
-import { GlobalSnackbarProvider } from 'shared/GlobalSnackbar';
 import { initializeAnalytics } from 'utils/analytics';
-import { authClient, protectedRouteLoaderWrapper } from '../auth';
-import { debugLogAuth } from '../debugFlags';
-import * as Create from '../routes/files/create';
-import Empty from '../shared/Empty';
-import BrowserCompatibility from '../shared/root/BrowserCompatibility';
-import Theme from '../shared/root/Theme';
-import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
+import { authClient, protectedRouteLoaderWrapper } from './auth';
+import * as Create from './dashboard/files/CreateRoute';
+import { debugLogAuth } from './debugFlags';
+import { QuadraticLoading } from './ui/loading/QuadraticLoading';
 // @ts-expect-error - for testing purposes
 window.lf = localforage;
 
@@ -67,7 +67,7 @@ const router = createBrowserRouter(
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibility />}>
             <Route index element={<Navigate to="/files" replace />} />
-            <Route path=":uuid" lazy={() => import('./file')} />
+            <Route path=":uuid" lazy={() => import('./dashboard/FileRoute')} />
           </Route>
         </Route>
 
@@ -79,12 +79,12 @@ const router = createBrowserRouter(
           shouldRevalidate={() => false}
         />
 
-        <Route lazy={() => import('../shared/dashboard/Layout')}>
+        <Route lazy={() => import('./dashboard/components/Layout')}>
           <Route path="files" element={<Navigate to={ROUTES.MY_FILES} replace />} />
-          <Route path={ROUTES.MY_FILES} lazy={() => import('./files/mine')} />
-          <Route path={ROUTES.EXAMPLES} lazy={() => import('./files/examples')} />
-          <Route path={ROUTES.TEAMS} lazy={() => import('./teams')} />
-          <Route path={ROUTES.ACCOUNT} lazy={() => import('./account')} />
+          <Route path={ROUTES.MY_FILES} lazy={() => import('./dashboard/files/MineRoute')} />
+          <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/files/ExamplesRoute')} />
+          <Route path={ROUTES.TEAMS} lazy={() => import('./dashboard/TeamsRoute')} />
+          <Route path={ROUTES.ACCOUNT} lazy={() => import('./dashboard/AccountRoute')} />
         </Route>
 
         <Route

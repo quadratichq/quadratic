@@ -1,8 +1,8 @@
 import init, { hello } from 'quadratic-core';
 import { useEffect, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
-import { InitialFile } from 'routes/file';
 import { loadedStateAtom } from '../atoms/loadedStateAtom';
+import { InitialFile } from '../dashboard/FileRoute';
 import { SheetController } from '../grid/controller/sheetController';
 import { loadAssets } from '../gridGL/loadAssets';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';

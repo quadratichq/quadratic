@@ -1,6 +1,6 @@
 import { ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip, useTheme } from '@mui/material';
-import ShowAfter from 'shared/ShowAfter';
+import { ShowAfter } from 'components/ShowAfter';
 import { useFile } from 'ui/contexts/File';
 import BottomBarItem from './BottomBarItem';
 

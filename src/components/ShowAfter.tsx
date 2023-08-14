@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
  * `delay` indicates the number of milliseconds to wait until rendering the
  * child component.
  */
-const ShowAfter = ({ delay, children }: { delay: number; children: React.ReactElement }) => {
+export const ShowAfter = ({ delay, children }: { delay: number; children: React.ReactElement }) => {
   const [show, setShow] = useState<boolean>(false);
 
   useEffect(() => {
@@ -18,5 +18,3 @@ const ShowAfter = ({ delay, children }: { delay: number; children: React.ReactEl
 
   return show ? children : null;
 };
-
-export default ShowAfter;

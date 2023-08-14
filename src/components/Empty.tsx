@@ -1,7 +1,7 @@
 import { Box, SvgIcon, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
 
-export default function Empty({
+export function Empty({
   title,
   description,
   actions,

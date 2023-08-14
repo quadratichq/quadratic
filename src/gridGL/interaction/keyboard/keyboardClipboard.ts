@@ -1,4 +1,5 @@
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { GlobalSnackbar } from '../../../components/GlobalSnackbar';
 import { PNG_MESSAGE } from '../../../constants/app';
 import {
   copySelectionToPNG,
@@ -7,7 +8,6 @@ import {
   pasteFromClipboard,
 } from '../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { GlobalSnackbar } from '../../../shared/GlobalSnackbar';
 import { PixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardClipboard(props: {

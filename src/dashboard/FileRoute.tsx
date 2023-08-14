@@ -3,11 +3,11 @@ import { Button } from '@mui/material';
 import * as Sentry from '@sentry/react';
 import apiClientSingleton from 'api-client/apiClientSingleton';
 import { GetFileResSchema } from 'api-client/types';
+import { Empty } from 'components/Empty';
 import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
 import { GridFile, GridFileSchema } from 'schemas';
 import { validateAndUpgradeGridFile } from 'schemas/validateAndUpgradeGridFile';
-import Empty from 'shared/Empty';
 import QuadraticApp from 'ui/QuadraticApp';
 
 export type InitialFile = {

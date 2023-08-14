@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { useGlobalSnackbar } from '../../../shared/GlobalSnackbar';
 import { useClearAllFormatting } from '../../../ui/menus/TopBar/SubMenus/useClearAllFormatting';
 import { useFormatCells } from '../../../ui/menus/TopBar/SubMenus/useFormatCells';
 import { useGetSelection } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';

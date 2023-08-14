@@ -10,7 +10,7 @@ export const ColorModeContext = createContext({
 
 export const useColorMode = () => useContext(ColorModeContext);
 
-export default function Theme(props: any) {
+export function Theme(props: any) {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   // TODO store this _somewhere_
   const [colorModePreference, setColorModePreference] = useState<ColorModePreference>('light');
