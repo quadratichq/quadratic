@@ -21,6 +21,7 @@ use crate::{CodeResult, CodeResultExt, ErrorMsg, Span, SpannableIterExt, Spanned
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(untagged)]
 pub enum Value {
     Single(CellValue),
     Array(Array),
