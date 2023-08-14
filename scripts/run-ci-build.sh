@@ -14,4 +14,5 @@ wasm-pack build --target web --out-dir ../src/quadratic-core
 wasm-pack build --target nodejs --out-dir ../src/quadratic-core/__mocks__
 
 echo 'Building front-end...'
+cd ..
 npm run build
