@@ -98,7 +98,6 @@ export const Component = () => {
 
           // If it reaches here, we’re good!
         } catch (e) {
-          // TODO log to sentry
           console.error(e);
           fileIdsThatFailed.push(localFile.id);
         }

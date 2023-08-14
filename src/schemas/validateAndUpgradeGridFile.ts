@@ -21,7 +21,7 @@ export function validateAndUpgradeGridFile(input: any, logOutput: boolean = true
   if (typeof input !== 'string') {
     if (logOutput)
       console.error(
-        '[validateAndUpgradeFile] Failed to validate and upgrade file. Expected a string, received: %s',
+        '[validateAndUpgradeGridFile] Failed to validate and upgrade file. Expected a string, received: %s',
         typeof input
       );
     return null;
@@ -33,7 +33,10 @@ export function validateAndUpgradeGridFile(input: any, logOutput: boolean = true
     json = JSON.parse(input);
   } catch (e) {
     if (logOutput)
-      console.error('[validateAndUpgradeFile] Failed to validated and upgrade file. Could not parse input as JSON.', e);
+      console.error(
+        '[validateAndUpgradeGridFile] Failed to validated and upgrade file. Could not parse input as JSON.',
+        e
+      );
     return null;
   }
 
@@ -55,7 +58,7 @@ export function validateAndUpgradeGridFile(input: any, logOutput: boolean = true
       while (upgradeIndex !== 0) {
         if (logOutput)
           console.log(
-            '[validateAndUpgradeFile] upgrading file version from %s to %s: ',
+            '[validateAndUpgradeGridFile] upgrading file version from %s to %s: ',
             gridFile.version,
             FILES[upgradeIndex - 1].schema.shape.version.value
           );
@@ -74,7 +77,7 @@ export function validateAndUpgradeGridFile(input: any, logOutput: boolean = true
 
   // If it never passed, stop
   if (!isValid) {
-    if (logOutput) console.log('[validateAndUpgradeFile] failed to validate file with zod.', errors);
+    if (logOutput) console.log('[validateAndUpgradeGridFile] failed to validate file with zod.', errors);
     return null;
   }
 

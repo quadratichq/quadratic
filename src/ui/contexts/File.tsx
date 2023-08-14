@@ -85,7 +85,6 @@ export const FileProvider = ({
     // sheetController.app?.reset();
   }, [sheetController.sheet, initialFile.contents]);
 
-  // TODO debounce file changes so changes sync only every X milliseconds
   const syncChanges = useCallback(
     async (changes: PostFileContentsReq | PostFileNameReq) => {
       const id = Date.now();

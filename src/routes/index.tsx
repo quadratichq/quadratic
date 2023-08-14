@@ -1,6 +1,7 @@
 import { User } from '@auth0/auth0-spa-js';
 import { ErrorOutline, WarningAmber } from '@mui/icons-material';
 import { Button } from '@mui/material';
+import * as Sentry from '@sentry/react';
 import { ROUTES } from 'constants/routes';
 import localforage from 'localforage';
 import {
@@ -178,7 +179,11 @@ function Root() {
 function RootError() {
   let error = useRouteError();
   console.error(error);
-  // TODO sentry catch error
+
+  Sentry.captureException({
+    message: `RootRoute error element triggered. ${error}`,
+  });
+
   return (
     <Empty
       title="Something went wrong"

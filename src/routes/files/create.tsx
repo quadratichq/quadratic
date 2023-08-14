@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import apiClientSingleton from 'api-client/apiClientSingleton';
 import { EXAMPLE_FILES } from 'constants/app';
 import { ROUTES } from 'constants/routes';
@@ -25,7 +26,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (exampleId) {
     if (!EXAMPLE_FILES.hasOwnProperty(exampleId)) {
       // If we get here, something's wrong
-      // TODO log to sentry
+      Sentry.captureEvent({
+        message: 'Client tried to load an invalid example file.',
+        level: Sentry.Severity.Warning,
+        extra: {
+          exampleId,
+        },
+      });
       return redirect(getFailUrl(ROUTES.EXAMPLES));
     }
 
@@ -45,7 +52,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       })
       .catch((err) => {
         console.error(err);
-        // TODO sentry error
+        Sentry.captureEvent({
+          message: 'Client failed to load the selected example file.',
+          level: Sentry.Severity.Warning,
+          extra: {
+            exampleId,
+          },
+        });
         return undefined;
       });
 
