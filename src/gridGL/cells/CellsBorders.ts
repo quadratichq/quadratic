@@ -22,8 +22,8 @@ export class CellsBorders extends Container {
   }
 
   create(): void {
-    const horizontal = this.sheet.grid.getHorizontalBorders();
-    console.log(horizontal);
+    // const horizontal = this.sheet.gridSparse.getHorizontalBorders();
+    // console.log(horizontal);
     // horizontal.forEach((border) => {
     //   const start = this.sheet.gridOffsets.getCell(Number(border.x), Number(border.y));
     //   let end: Rectangle;
@@ -34,8 +34,8 @@ export class CellsBorders extends Container {
     //   }
     //   this.sprites.push(drawLine(start.x, start.y));
     // });
-    const vertical = this.sheet.grid.getVerticalBorders();
-    console.log(vertical);
+    // const vertical = this.sheet.gridSparse.getVerticalBorders();
+    // console.log(vertical);
   }
 
   private getSprite = (tiling?: boolean): Sprite | TilingSprite => {
