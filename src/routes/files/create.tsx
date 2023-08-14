@@ -1,10 +1,12 @@
 import * as Sentry from '@sentry/react';
 import apiClientSingleton from 'api-client/apiClientSingleton';
+import { authClient } from 'auth';
 import { EXAMPLE_FILES } from 'constants/app';
 import { ROUTES } from 'constants/routes';
 import mixpanel from 'mixpanel-browser';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from 'react-router-dom';
 import { validateAndUpgradeGridFile } from 'schemas/validateAndUpgradeGridFile';
+import { initMixpanelAnalytics } from 'utils/analytics';
 
 const getFailUrl = (location: string = ROUTES.MY_FILES) =>
   encodeURI(`${location}?snackbar-msg=Failed to create file. Try again.&snackbar-severity=error`);
@@ -19,6 +21,12 @@ const navigate = async (uuid: string) => {
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  // We initialize mixpanel here (again, as we do it in the root loader) because
+  // it helps us prevent the app from failing because all the loaders run in parallel
+  // and we can't guarantee this loader finishes before the root one
+  let user = await authClient.user();
+  initMixpanelAnalytics(user);
+
   // Allows you to clone an example file by passing the file id, e.g.
   // /files/create?example=:id
   const url = new URL(request.url);
@@ -39,7 +47,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const { name } = EXAMPLE_FILES[exampleId];
 
     // These fail on fresh page loads new loads
-    // mixpanel.track('[Files].newExampleFile', { fileName: name });
+    mixpanel.track('[Files].newExampleFile', { fileName: name });
 
     const uuid = await fetch(`/examples/${exampleId}`)
       .then((res) => res.text())
@@ -71,8 +79,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // If there's no query params for the kind of file to create, just create a blank new one
 
-  // TODO this crashes the app
-  // mixpanel.track('[Files].newFileGet');
+  mixpanel.track('[Files].newFile');
   const uuid = await apiClientSingleton.createFile();
   if (uuid) {
     return navigate(uuid);

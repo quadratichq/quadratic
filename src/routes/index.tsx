@@ -17,12 +17,12 @@ import {
 } from 'react-router-dom';
 import * as CloudFilesMigration from 'shared/CloudFilesMigration';
 import { GlobalSnackbarProvider } from 'shared/GlobalSnackbar';
+import { initializeAnalytics } from 'utils/analytics';
 import { authClient, protectedRouteLoaderWrapper } from '../auth';
 import { debugLogAuth } from '../debugFlags';
 import * as Create from '../routes/files/create';
 import Empty from '../shared/Empty';
 import BrowserCompatibility from '../shared/root/BrowserCompatibility';
-import Scripts from '../shared/root/Scripts';
 import Theme from '../shared/root/Theme';
 import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 // @ts-expect-error - for testing purposes
@@ -53,6 +53,8 @@ const router = createBrowserRouter(
           let isAuthenticated = await authClient.isAuthenticated();
           let user = await authClient.user();
           if (debugLogAuth) console.log('[auth] / <loader>: isAuthenticated: %s', isAuthenticated);
+          initializeAnalytics({ isAuthenticated, user });
+
           return { isAuthenticated, user };
         })}
         element={<Root />}
@@ -167,11 +169,9 @@ export const Routes = () => <RouterProvider router={router} fallbackElement={<Qu
 function Root() {
   return (
     <Theme>
-      <Scripts>
-        <GlobalSnackbarProvider>
-          <Outlet />
-        </GlobalSnackbarProvider>
-      </Scripts>
+      <GlobalSnackbarProvider>
+        <Outlet />
+      </GlobalSnackbarProvider>
     </Theme>
   );
 }
