@@ -573,9 +573,13 @@ impl Sheet {
                     w,
                     h,
                     language: code_cell.language,
-
-                    // todo
-                    state: JsRenderCodeCellState::Success,
+                    state: match &code_cell.output {
+                        Some(output) => match &output.result {
+                            CodeCellRunResult::Ok { .. } => JsRenderCodeCellState::Success,
+                            CodeCellRunResult::Err { .. } => JsRenderCodeCellState::RunError,
+                        },
+                        None => JsRenderCodeCellState::NotYetRun,
+                    },
                 })
             })
             .collect()
