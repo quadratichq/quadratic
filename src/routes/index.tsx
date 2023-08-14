@@ -53,7 +53,7 @@ const router = createBrowserRouter(
           let user = await authClient.user();
           if (debugLogAuth) console.log('[auth] / <loader>: isAuthenticated: %s', isAuthenticated);
           initializeAnalytics({ isAuthenticated, user });
-          // await new Promise((resolve) => setTimeout(resolve, 3000));
+
           return { isAuthenticated, user };
         })}
         element={<Root />}

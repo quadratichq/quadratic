@@ -60,7 +60,7 @@ function initAmplitudeAnalytics(user: Options['user']) {
   console.log('[Analytics] Amplitude activated');
 }
 
-function initMixpanelAnalytics(user: Options['user']) {
+export function initMixpanelAnalytics(user: Options['user']) {
   if (!process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY && process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY !== 'none') {
     // Without init Mixpanel, all mixpanel events throw an error and break the app.
     // So we have to init Mixpanel with a fake key, and disable Mixpanel.
@@ -71,10 +71,6 @@ function initMixpanelAnalytics(user: Options['user']) {
 
   mixpanel.init(process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY, {
     api_host: 'https://mixpanel-proxy.quadratichq.com',
-    loaded: (mp) => {
-      var distinct_id = mp.get_distinct_id();
-      console.log(distinct_id);
-    },
   });
 
   mixpanel.register({
