@@ -51,8 +51,8 @@ impl GridController {
 
     /// Adds an empty sheet to the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "addSheet")]
-    pub fn js_add_sheet(&mut self) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.add_sheet())?)
+    pub fn js_add_sheet(&mut self, to_before: Option<SheetId>) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.add_sheet(to_before))?)
     }
     /// Deletes a sheet from the the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "deleteSheet")]

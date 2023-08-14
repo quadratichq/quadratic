@@ -111,7 +111,7 @@ impl GridController {
         self.transact_forward(transaction)
     }
 
-    pub fn add_sheet(&mut self) -> TransactionSummary {
+    pub fn add_sheet(&mut self, to_before: Option<SheetId>) -> TransactionSummary {
         let sheet_names = &self
             .grid
             .sheets()
@@ -124,7 +124,7 @@ impl GridController {
 
         let transaction = Transaction::from(Operation::AddSheet {
             sheet: Sheet::new(id, name),
-            before: None,
+            to_before,
         });
         self.transact_forward(transaction)
     }
@@ -243,10 +243,11 @@ impl GridController {
                     })
                 }
 
-                Operation::AddSheet { sheet, before } => {
+                Operation::AddSheet { sheet, to_before } => {
                     let sheet_id = sheet.id;
+                    let index = to_before.and_then(|id| self.grid.sheet_id_to_index(id));
                     self.grid
-                        .add_sheet(sheet, before.and_then(|id| self.grid.sheet_id_to_index(id)))
+                        .add_sheet(sheet, index)
                         .expect("duplicate sheet name");
                     rev_ops.push(Operation::DeleteSheet { sheet_id });
                 }
@@ -259,7 +260,7 @@ impl GridController {
                     if let Some(sheet) = deleted_sheet {
                         rev_ops.push(Operation::AddSheet {
                             sheet,
-                            before: old_after,
+                            to_before: old_after,
                         });
                     }
                 }
@@ -326,7 +327,7 @@ pub enum Operation {
 
     AddSheet {
         sheet: Sheet,
-        before: Option<SheetId>,
+        to_before: Option<SheetId>,
     },
     DeleteSheet {
         sheet_id: SheetId,
@@ -410,8 +411,8 @@ mod tests {
     #[test]
     fn test_add_delete_reorder_sheets() {
         let mut g = GridController::new();
-        g.add_sheet();
-        g.add_sheet();
+        g.add_sheet(None);
+        g.add_sheet(None);
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
         let s2 = old_sheet_ids[1];
