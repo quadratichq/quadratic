@@ -3,6 +3,7 @@ export const ROUTES = {
   LOGOUT: '/logout',
   LOGIN: '/login',
   LOGIN_RESULT: '/login-result',
+  FILES: '/files',
   MY_FILES: '/files/mine',
   EXAMPLES: '/files/examples',
   CREATE_FILE: '/files/create',

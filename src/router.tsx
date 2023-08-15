@@ -59,18 +59,18 @@ export const router = createBrowserRouter(
         errorElement={<RootError />}
         id="root"
       >
-        <Route index element={<Navigate to="/files" replace />} />
+        <Route index element={<Navigate to={ROUTES.FILES} replace />} />
 
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibility />}>
-            <Route index element={<Navigate to="/files" replace />} />
+            <Route index element={<Navigate to={ROUTES.FILES} replace />} />
             <Route path=":uuid" lazy={() => import('./dashboard/FileRoute')} />
           </Route>
         </Route>
 
         <Route
-          path="files/create"
+          path={ROUTES.CREATE_FILE}
           id="create"
           loader={Create.loader}
           action={Create.action}
@@ -78,7 +78,7 @@ export const router = createBrowserRouter(
         />
 
         <Route lazy={() => import('./dashboard/components/Layout')}>
-          <Route path="files" element={<Navigate to={ROUTES.MY_FILES} replace />} />
+          <Route path={ROUTES.FILES} element={<Navigate to={ROUTES.MY_FILES} replace />} />
           <Route path={ROUTES.MY_FILES} lazy={() => import('./dashboard/files/MineRoute')} />
           <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/files/ExamplesRoute')} />
           <Route path={ROUTES.TEAMS} lazy={() => import('./dashboard/TeamsRoute')} />
