@@ -231,7 +231,7 @@ export class PointerHeading {
           };
         }
         if (updateHeading) {
-          this.app.sheet_controller.predefined_transaction([
+          this.app.sheetController.predefined_transaction([
             {
               type: 'SET_HEADING_SIZE',
               data: {
@@ -280,7 +280,7 @@ export class PointerHeading {
     const size = CELL_HEIGHT;
 
     this.app.quadrants.quadrantChanged({ row });
-    this.app.sheet_controller.predefined_transaction([
+    this.app.sheetController.predefined_transaction([
       {
         type: 'SET_HEADING_SIZE',
         data: {

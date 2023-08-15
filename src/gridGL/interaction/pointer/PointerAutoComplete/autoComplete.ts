@@ -13,7 +13,7 @@ export const shrinkHorizontal = async (options: {
   endCell: Coordinate;
 }): Promise<void> => {
   const { app, selection, endCell } = options;
-  const { sheet_controller } = app;
+  const { sheetController: sheet_controller } = app;
   await DeleteCells({
     x0: endCell.x + 1,
     y0: selection.top,
@@ -30,7 +30,7 @@ export const shrinkVertical = async (options: {
   endCell: Coordinate;
 }): Promise<void> => {
   const { app, selection, endCell } = options;
-  const { sheet_controller } = app;
+  const { sheetController: sheet_controller } = app;
 
   await DeleteCells({
     x0: selection.left,
@@ -75,7 +75,7 @@ export const expandDown = async (options: {
   shrinkHorizontal?: number;
 }): Promise<void> => {
   const { app, selection, to, shrinkHorizontal } = options;
-  const { sheet_controller, sheet } = app;
+  const { sheetController: sheet_controller, sheet } = app;
 
   const cells: Cell[] = [];
   const formats: CellFormat[] = [];
@@ -156,7 +156,7 @@ export const expandUp = async (options: {
   shrinkHorizontal?: number;
 }): Promise<void> => {
   const { app, selection, to, shrinkHorizontal } = options;
-  const { sheet_controller, sheet } = app;
+  const { sheetController: sheet_controller, sheet } = app;
 
   const cells: Cell[] = [];
   const formats: CellFormat[] = [];
@@ -235,7 +235,7 @@ export const expandRight = async (options: {
   toVertical?: number;
 }): Promise<void> => {
   const { app, selection, to, toVertical } = options;
-  const { sheet_controller, sheet } = app;
+  const { sheetController: sheet_controller, sheet } = app;
   const cells: Cell[] = [];
   const formats: CellFormat[] = [];
   const borders: Border[] = [];
@@ -316,7 +316,7 @@ export const expandLeft = async (options: {
   toVertical?: number;
 }): Promise<void> => {
   const { app, selection, to, toVertical } = options;
-  const { sheet_controller, sheet } = app;
+  const { sheetController: sheet_controller, sheet } = app;
 
   const cells: Cell[] = [];
   const formats: CellFormat[] = [];

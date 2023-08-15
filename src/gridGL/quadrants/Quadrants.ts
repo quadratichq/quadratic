@@ -76,7 +76,7 @@ export class Quadrants extends Container {
   build(): void {
     this.removeChildren();
     this.quadrants.clear();
-    this.app.sheet_controller.sheets.forEach((sheet) => {
+    this.app.sheetController.sheets.forEach((sheet) => {
       const quadrantsSheet = this.addChild(new QuadrantsSheet(this.app, sheet));
       this.quadrants.set(sheet.id, quadrantsSheet);
     });
@@ -85,7 +85,7 @@ export class Quadrants extends Container {
   // sorts QuadrantsSheets based on distance to active sheet
   private getSortedQuadrantsSheets(): QuadrantsSheet[] {
     const quadrantsSheets = Array.from(this.quadrants.values());
-    const sheets = this.app.sheet_controller.sheets;
+    const sheets = this.app.sheetController.sheets;
     const currentIndex = sheets.indexOf(this.app.sheet);
     if (currentIndex === -1) {
       throw new Error('Expected to find index of current sheet in sheets');

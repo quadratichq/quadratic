@@ -30,8 +30,7 @@ export class PixiApp {
 
   grid: Grid;
 
-  // deprecated and replaced with Grid
-  sheet_controller: SheetController;
+  sheetController: SheetController;
 
   canvas: HTMLCanvasElement;
   viewport: Viewport;
@@ -58,9 +57,9 @@ export class PixiApp {
 
   paused = false;
 
-  constructor(grid: Grid, sheet_controller: SheetController, save: () => Promise<void>) {
+  constructor(grid: Grid, sheetController: SheetController, save: () => Promise<void>) {
     this.grid = grid;
-    this.sheet_controller = sheet_controller;
+    this.sheetController = sheetController;
     this.save = save;
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
@@ -150,7 +149,7 @@ export class PixiApp {
   }
 
   get sheet(): Sheet {
-    return this.sheet_controller.sheet;
+    return this.sheetController.sheet;
   }
 
   private showCache(): void {

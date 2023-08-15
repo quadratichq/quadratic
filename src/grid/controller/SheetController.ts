@@ -26,8 +26,8 @@ export class SheetController {
   constructor(grid: Grid) {
     this.gridNew = grid;
     this.grid = new GridRust();
-    this.sheets = [new Sheet(this.gridNew, 0)];
-    this._current = this.sheets[0].id;
+    this.sheets = [];
+    this._current = '';
     this.undo_stack = [];
     this.redo_stack = [];
     this.transaction_in_progress = undefined;
