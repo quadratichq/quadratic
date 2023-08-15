@@ -20,7 +20,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { RootLoaderData } from '../../../router';
 import { CellType } from '../../../schemas';
 import { colors } from '../../../theme/colors';
-import inputRef from '../../../utils/inputRef';
+import focusInput from '../../../utils/focusInput';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { AI, Formula, JavaScript, Python, Sql } from '../../icons';
 import '../../styles/floating-dialog.css';
@@ -162,7 +162,7 @@ export default function CellTypeMenu() {
           sx={{ width: '100%', padding: '8px 16px' }}
           placeholder={searchlabel}
           inputProps={{ 'aria-label': searchlabel }}
-          inputRef={inputRef}
+          inputRef={focusInput}
           autoComplete="off"
           value={value}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {

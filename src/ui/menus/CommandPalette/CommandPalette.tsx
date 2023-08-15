@@ -7,7 +7,7 @@ import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAto
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
-import inputRef from '../../../utils/inputRef';
+import focusInput from '../../../utils/focusInput';
 import '../../styles/floating-dialog.css';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 
@@ -87,7 +87,7 @@ export const CommandPalette = (props: Props) => {
           sx={{ width: '100%', padding: '8px 16px' }}
           placeholder={searchlabel}
           inputProps={{ 'aria-label': searchlabel }}
-          inputRef={inputRef}
+          inputRef={focusInput}
           value={activeSearchValue}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             setSelectedListItemIndex(0);

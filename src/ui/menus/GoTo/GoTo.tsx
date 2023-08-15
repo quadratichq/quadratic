@@ -9,7 +9,7 @@ import { isVisible, moveViewport } from '../../../gridGL/interaction/viewportHel
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../../gridGL/types/size';
 import { focusGrid } from '../../../helpers/focusGrid';
-import inputRef from '../../../utils/inputRef';
+import focusInput from '../../../utils/focusInput';
 import '../../styles/floating-dialog.css';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 
@@ -95,7 +95,7 @@ export const GoTo = (props: Props) => {
       <Paper component="form" elevation={12} onSubmit={onSelect}>
         <InputBase
           sx={{ width: '100%', padding: '8px 16px' }}
-          inputRef={inputRef}
+          inputRef={focusInput}
           value={value}
           fullWidth
           placeholder="Enter a cell “0, 0” or range “0, 0, -5, -5”"
