@@ -16,7 +16,7 @@ if (!(domain && clientId && audience && issuer)) {
 }
 
 // Create the client as a module-scoped promise so all loaders will wait
-// for this one single isntance of client to resolve
+// for this one single instance of client to resolve
 let auth0ClientPromise: Promise<Auth0Client>;
 async function getClient() {
   if (!auth0ClientPromise) {
