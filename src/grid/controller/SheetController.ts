@@ -6,9 +6,9 @@ import { Sheet } from '../sheet/Sheet';
 import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
 import { Grid } from './Grid';
 import { StatementRunner } from './runners/runner';
-import { TransactionResponse } from './s';
 import { Statement } from './statement';
 import { Transaction } from './transaction';
+import { transactionResponse } from './transactionResponse';
 
 export class SheetController {
   private _current: string;
@@ -16,8 +16,6 @@ export class SheetController {
   grid: Grid;
   sheets: Sheet[];
   saveLocalFiles: (() => void) | undefined;
-
-  transactionResponse: TransactionResponse;
 
   // @deprecated
   transaction_in_progress: Transaction | undefined;
@@ -29,8 +27,6 @@ export class SheetController {
     this.grid = new Grid();
     this.sheets = [];
     this._current = '';
-
-    this.transactionResponse = new TransactionResponse(this);
 
     // @deprecated
     this.undo_stack = [];
@@ -90,6 +86,7 @@ export class SheetController {
     // ensure the sheets exist
     sheetIds.forEach((sheetId, index) => {
       if (!this.sheets.find((search) => search.id === sheetId)) {
+        debugger;
         const sheet = new Sheet(this.grid, index);
         this.sheets.push(sheet);
         pixiAppEvents.addSheet(sheet);
@@ -122,7 +119,7 @@ export class SheetController {
 
   renameSheet(name: string): void {
     const summary = this.grid.renameSheet(this.current, name);
-    this.transactionResponse.handle(summary);
+    transactionResponse(this, summary);
   }
 
   reorderSheet(options: { id: string; order?: string; delta?: number }) {
@@ -164,7 +161,7 @@ export class SheetController {
   duplicateSheet(): void {
     // duplicate sheet needs to also return the id :(
     const summary = this.grid.duplicateSheet(this.current);
-    this.transactionResponse.handle(summary);
+    transactionResponse(this, summary);
     const currentIndex = this.sheets.findIndex((sheet) => sheet.id === this.current);
     if (currentIndex === -1) throw new Error('Expected to find current sheet in duplicateSheet');
     const duplicate = this.sheets[currentIndex + 1];
@@ -319,26 +316,35 @@ export class SheetController {
 
   public undo(): void {
     if (!this.hasUndo()) return;
+    // const lastSheetId = this.sheet.id;
+    // const lastSheetIndex = this.sheets.indexOf(this.sheet);
+
     const summary = this.grid.undo();
-    this.transactionResponse(summary);
-    if (this.transaction_in_progress || this.transaction_in_progress_reverse) return;
+    transactionResponse(this, summary);
 
-    // pop transaction off undo stack
-    const transaction = this.undo_stack.pop();
+    // handle case where current sheet is deleted
+    // if (this.current === lastSheetId && !this.sheets.find((search) => search.id === lastSheetId)) {
+    //   this.current = lastSheetIndex >= this.sheets.length ? this.sheets[0].id : this.sheets[lastSheetIndex].id;
+    // }
 
-    if (transaction === undefined) {
-      throw new Error('Transaction is undefined.');
-    }
+    // if (this.transaction_in_progress || this.transaction_in_progress_reverse) return;
 
-    this.start_transaction();
+    // // pop transaction off undo stack
+    // const transaction = this.undo_stack.pop();
 
-    transaction.statements.forEach((statement) => {
-      this.execute_statement(statement);
-    });
+    // if (transaction === undefined) {
+    //   throw new Error('Transaction is undefined.');
+    // }
 
-    const reverse_transaction = this.end_transaction(false, false);
-    // add reverse transaction to redo stack
-    this.redo_stack.push(reverse_transaction);
+    // this.start_transaction();
+
+    // transaction.statements.forEach((statement) => {
+    //   this.execute_statement(statement);
+    // });
+
+    // const reverse_transaction = this.end_transaction(false, false);
+    // // add reverse transaction to redo stack
+    // this.redo_stack.push(reverse_transaction);
 
     // todo
     // if (transaction.cursor) {
@@ -348,6 +354,18 @@ export class SheetController {
   }
 
   public redo(): void {
+    if (!this.hasRedo) return;
+    const lastSheetId = this.sheet.id;
+    const lastSheetIndex = this.sheets.indexOf(this.sheet);
+
+    const summary = this.grid.redo();
+    transactionResponse(this, summary);
+
+    // handle case where current sheet is deleted
+    if (this.current === lastSheetId && !this.sheets.find((search) => search.id === lastSheetId)) {
+      this.current = lastSheetIndex >= this.sheets.length ? this.sheets[0].id : this.sheets[lastSheetIndex].id;
+    }
+
     // check if redo stack is empty
     // check if transaction in progress
     // pop transaction off redo stack
@@ -355,31 +373,31 @@ export class SheetController {
     // run each statement in transaction
     // end transaction
     // add reverse transaction to undo stack
-    if (!this.hasRedo()) return;
+    // if (!this.hasRedo()) return;
 
-    if (this.transaction_in_progress || this.transaction_in_progress_reverse) return;
+    // if (this.transaction_in_progress || this.transaction_in_progress_reverse) return;
 
-    // pop transaction off redo stack
-    const transaction = this.redo_stack.pop();
+    // // pop transaction off redo stack
+    // const transaction = this.redo_stack.pop();
 
-    if (transaction === undefined) {
-      throw new Error('Transaction is undefined.');
-    }
+    // if (transaction === undefined) {
+    //   throw new Error('Transaction is undefined.');
+    // }
 
-    this.start_transaction();
+    // this.start_transaction();
 
-    transaction.statements.forEach((statement) => {
-      this.execute_statement(statement);
-    });
+    // transaction.statements.forEach((statement) => {
+    //   this.execute_statement(statement);
+    // });
 
-    const reverse_transaction = this.end_transaction(false, false);
-    // add reverse transaction to undo stack
-    this.undo_stack.push(reverse_transaction);
+    // const reverse_transaction = this.end_transaction(false, false);
+    // // add reverse transaction to undo stack
+    // this.undo_stack.push(reverse_transaction);
 
-    if (transaction.cursor) {
-      this.current = transaction.cursor.sheetId;
-      this.sheet.cursor.load(transaction.cursor);
-    }
+    // if (transaction.cursor) {
+    //   this.current = transaction.cursor.sheetId;
+    //   this.sheet.cursor.load(transaction.cursor);
+    // }
   }
 
   public clear(): void {

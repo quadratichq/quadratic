@@ -23,10 +23,17 @@ const ARROW_REPEAT_INTERVAL = 17;
 export const SheetBar = (props: Props): JSX.Element => {
   const { sheetController } = props;
 
+  // used to trigger state change (eg, when sheetController.sheets change)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setTrigger] = useState(0);
+
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheetController.current);
   useEffect(() => {
-    const updateSheet = () => setActiveSheet(sheetController.current);
+    const updateSheet = () => {
+      setTrigger((trigger) => trigger + 1);
+      setActiveSheet(sheetController.current);
+    };
     window.addEventListener('change-sheet', updateSheet);
     return () => window.removeEventListener('change-sheet', updateSheet);
   }, [sheetController]);

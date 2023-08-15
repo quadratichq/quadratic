@@ -152,9 +152,8 @@ impl Grid {
     pub fn sheets(&self) -> &[Sheet] {
         &self.sheets
     }
-    pub fn sheets_to_sorted_sheet_ids(&self) -> Vec<SheetId> {
-        let sheets = &self.sheets.to_vec();
-        sheets.iter().map(|sheet| sheet.id).collect()
+    pub fn sheet_ids(&self) -> Vec<SheetId> {
+        self.sheets.iter().map(|sheet| sheet.id).collect()
     }
     pub fn sheets_mut(&mut self) -> &mut [Sheet] {
         &mut self.sheets
@@ -162,11 +161,9 @@ impl Grid {
     /// Adds a sheet to the grid. Returns an error if the sheet name is already
     /// in use.
     pub fn add_sheet(&mut self, sheet: Option<Sheet>, index: Option<usize>) -> Result<SheetId, ()> {
-        let sheet = sheet.unwrap_or({
-            let sheet_id = SheetId::new();
-            Sheet::new(sheet_id, format!("Sheet {}", self.sheets.len().to_string()))
-        });
-        let id = sheet.id.clone();
+        let sheet = sheet
+            .unwrap_or_else(|| Sheet::new(SheetId::new(), format!("Sheet {}", self.sheets.len())));
+        let id = sheet.id;
         if self
             .sheets
             .iter()
