@@ -19,9 +19,9 @@ export function getCoordinatesFromStringId(stringId: StringId): [number, number]
   return [x, y];
 }
 
-function addToSet(deps: [number, number][], set: Set<StringId>) {
-  for (const dep of deps) set.add(getKey(dep[0], dep[1]));
-}
+// function addToSet(deps: [number, number][], set: Set<StringId>) {
+//   for (const dep of deps) set.add(getKey(dep[0], dep[1]));
+// }
 
 export const updateCellAndDCells = async (args: ArgsType) => {
   const { starting_cells, sheetController, app, delete_starting_cells, create_transaction } = args;
@@ -238,21 +238,21 @@ export const updateCellAndDCells = async (args: ArgsType) => {
       });
     }
 
-    // if any updated cells have other cells depending on them, add to list to update
-    for (const array_cell of array_cells_to_output) {
-      let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
-      addToSet(deps, cells_to_update);
-    }
+    // // if any updated cells have other cells depending on them, add to list to update
+    // for (const array_cell of array_cells_to_output) {
+    //   let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
+    //   addToSet(deps, cells_to_update);
+    // }
 
-    // any deleted cells have other cells depending on them, add to list to update
-    for (const array_cell of array_cells_to_delete) {
-      let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
-      addToSet(deps, cells_to_update);
-    }
+    // // any deleted cells have other cells depending on them, add to list to update
+    // for (const array_cell of array_cells_to_delete) {
+    //   let deps = sheetController.sheet.cell_dependency.getDependencies([array_cell.x, array_cell.y]);
+    //   addToSet(deps, cells_to_update);
+    // }
 
-    // if this cell updates other cells add them to the list to update
-    let deps = sheetController.sheet.cell_dependency.getDependencies([cell.x, cell.y]);
-    addToSet(deps, cells_to_update);
+    // // if this cell updates other cells add them to the list to update
+    // let deps = sheetController.sheet.cell_dependency.getDependencies([cell.x, cell.y]);
+    // addToSet(deps, cells_to_update);
   }
 
   // Officially end the transaction

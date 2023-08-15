@@ -3,7 +3,7 @@ import { CellFill, CellRust } from '../../gridGL/cells/CellsTypes';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
 import { Coordinate, MinMax } from '../../gridGL/types/size';
-import { Grid, Pos, Rect, SheetId } from '../../quadratic-core/quadratic_core';
+import { Grid, Pos, Rect } from '../../quadratic-core/quadratic_core';
 import { JsRenderBorder, JsRenderCodeCell } from '../../quadratic-core/types';
 import { Cell, CellFormat } from '../../schemas';
 import { CellRectangle } from './CellRectangle';
@@ -20,7 +20,7 @@ export class GridSparse {
   private sheet: Sheet;
   private grid: Grid;
 
-  sheetId: SheetId;
+  sheetId: string;
 
   // tracks which quadrants need to render based on GridSparse data
   quadrants = new Set<string>();

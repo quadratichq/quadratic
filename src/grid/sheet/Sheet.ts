@@ -1,9 +1,8 @@
 import { Rectangle } from 'pixi.js';
-import { v4 as uuid } from 'uuid';
-import { intersects } from '../../gridGL/helpers/intersects';
 import { Coordinate } from '../../gridGL/types/size';
-import { Grid } from '../../quadratic-core/quadratic_core';
+import { JsRenderCell, JsRenderFill } from '../../quadratic-core/types';
 import { Cell, CellFormat } from '../../schemas';
+import { Grid } from '../Grid';
 import { CellDependencyManager } from './CellDependencyManager';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
@@ -12,40 +11,35 @@ import { CellAndFormat, GridSparse } from './GridSparse';
 import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
-  id: string; // used to connect Sheet to Quadrants (could be saved as part of Sheet if needed in the future)
-  name: string;
+  id: string;
   gridOffsets: GridOffsets;
   grid: GridSparse;
+  gridNew: Grid;
   borders: GridBorders;
   cursor: SheetCursor;
-  order: string;
-  color?: string;
 
-  // visual dependency for overflowing cells
+  // deprecated
   render_dependency: GridRenderDependency;
-
-  // visual dependency for drawing array lines
   array_dependency: GridRenderDependency;
-
-  // cell calculation dependency
   cell_dependency: CellDependencyManager;
 
-  constructor(grid: Grid, index: number, name: string | undefined, order: string, copyFrom?: Sheet) {
+  constructor(grid: Grid, index: number) {
+    //}, name: string | undefined, order: string, copyFrom?: Sheet) {
+    this.gridNew = grid;
+    this.grid = new GridSparse(grid.grid, index, this);
+
+    const sheetId = this.gridNew.sheetIndexToId(index);
+    if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
+    this.id = sheetId;
+
     this.gridOffsets = new GridOffsets();
-    this.grid = new GridSparse(grid, index, this);
     this.borders = new GridBorders(this.gridOffsets);
+
+    // deprecated
     this.render_dependency = new GridRenderDependency();
     this.array_dependency = new GridRenderDependency();
     this.cell_dependency = new CellDependencyManager();
 
-    // todo
-    // if (copyFrom) {
-    //   const save = copyFrom.export_file();
-    //   this.load_file(save);
-    // }
-    this.id = uuid();
-    this.name = name ?? 'Sheet';
-    this.order = order;
     this.cursor = new SheetCursor(this);
   }
 
@@ -60,8 +54,34 @@ export class Sheet {
     // this.cursor = new SheetCursor(this);
   }
 
+  get name(): string {
+    const name = this.gridNew.getSheetName(this.id);
+    if (name === undefined) throw new Error('Expected name to be defined in Sheet');
+    return name;
+  }
+
+  get color(): string | undefined {
+    return this.gridNew.getSheetColor(this.id);
+  }
+
+  // todo: this should be a number
+  get order(): string {
+    const order = this.gridNew.getSheetOrder(this.id);
+    if (order === undefined) throw new Error('Expected order to be defined in Sheet');
+    return order.toString();
+  }
+
+  getRenderCells(rectangle: Rectangle): JsRenderCell[] {
+    return this.gridNew.getRenderCells(this.id, rectangle);
+  }
+
+  getRenderFills(rectangle: Rectangle): JsRenderFill[] {
+    return this.gridNew.getRenderFills(this.id, rectangle);
+  }
+
   rename(name: string) {
-    this.name = name;
+    debugger;
+    // this.name = name;
   }
 
   protected copyCell(cell: Cell | undefined): Cell | undefined {
@@ -96,16 +116,8 @@ export class Sheet {
     };
   }
 
-  /** finds grid bounds based on GridSparse, GridBounds, and GridRenderDependency */
   getGridBounds(onlyData: boolean): Rectangle | undefined {
-    if (onlyData) {
-      return this.grid.getSheetBounds(true);
-    }
-    return intersects.rectangleUnion(
-      this.grid.getSheetBounds(false),
-      this.borders.getGridBounds(),
-      this.render_dependency.getGridBounds()
-    );
+    return this.gridNew.getGridBounds(this.id, onlyData);
   }
 
   getMinMax(onlyData: boolean): Coordinate[] | undefined {

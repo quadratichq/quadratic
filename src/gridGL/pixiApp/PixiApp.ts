@@ -4,6 +4,7 @@ import { editorInteractionStateDefault } from '../../atoms/editorInteractionStat
 import { IS_READONLY_MODE } from '../../constants/app';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
+import { Grid } from '../../grid/Grid';
 import { SheetController } from '../../grid/controller/sheetController';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { AxesLines } from '../UI/AxesLines';
@@ -27,6 +28,9 @@ export class PixiApp {
   private cacheIsVisible = false;
   save: () => Promise<void>;
 
+  grid: Grid;
+
+  // deprecated and replaced with Grid
   sheet_controller: SheetController;
 
   canvas: HTMLCanvasElement;
@@ -54,7 +58,8 @@ export class PixiApp {
 
   paused = false;
 
-  constructor(sheet_controller: SheetController, save: () => Promise<void>) {
+  constructor(grid: Grid, sheet_controller: SheetController, save: () => Promise<void>) {
+    this.grid = grid;
     this.sheet_controller = sheet_controller;
     this.save = save;
     this.canvas = document.createElement('canvas');

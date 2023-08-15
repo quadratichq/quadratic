@@ -71,7 +71,7 @@ export class CellsSheet extends Container {
 
   createHashes(): boolean {
     debugTimeReset();
-    const bounds = this.sheet.grid.getSheetBounds(false);
+    const bounds = this.sheet.getGridBounds(false);
     if (!bounds) return false;
     const xStart = Math.floor(bounds.left / sheetHashWidth);
     const yStart = Math.floor(bounds.top / sheetHashHeight);
@@ -80,8 +80,8 @@ export class CellsSheet extends Container {
     for (let y = yStart; y <= yEnd; y++) {
       for (let x = xStart; x <= xEnd; x++) {
         const rect = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-        const cells = this.sheet.grid.getCellValue(rect);
-        const background = this.sheet.grid.getCellBackground(rect);
+        const cells = this.sheet.getRenderCells(rect);
+        const background = this.sheet.getRenderFills(rect);
         if (cells.length || background.length) {
           this.addHash(x, y);
         }

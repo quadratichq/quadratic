@@ -152,6 +152,10 @@ impl Grid {
     pub fn sheets(&self) -> &[Sheet] {
         &self.sheets
     }
+    pub fn sheets_to_sorted_sheet_ids(&self) -> Vec<SheetId> {
+        let sheets = &self.sheets.to_vec();
+        sheets.iter().map(|sheet| sheet.id).collect()
+    }
     pub fn sheets_mut(&mut self) -> &mut [Sheet] {
         &mut self.sheets
     }
@@ -195,7 +199,6 @@ impl Grid {
             self.sheet_ids.add(sheet.id, i);
         }
     }
-
     pub fn sheet_id_to_index(&self, id: SheetId) -> Option<usize> {
         self.sheet_ids.index_of(id)
     }

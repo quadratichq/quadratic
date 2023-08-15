@@ -18,6 +18,16 @@ macro_rules! uuid_wrapper_struct {
             pub(crate) fn new() -> Self {
                 $name { id: Uuid::new_v4() }
             }
+
+            pub fn from_string(s: &str) -> Self {
+                $name {
+                    id: Uuid::parse_str(s).unwrap_or_default(),
+                }
+            }
+
+            pub fn id_to_string(&self) -> String {
+                self.id.to_string()
+            }
         }
     };
 }

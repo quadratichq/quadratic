@@ -19,6 +19,12 @@ use super::{legacy, CodeCellRunResult};
 use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SheetMetaData {
+    pub name: String,
+    pub color: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Sheet {
     pub id: SheetId,
     pub name: String,
@@ -630,5 +636,12 @@ impl Sheet {
 
     fn unspill(&mut self, source: CellRef) {
         todo!("unspill cells from {source:?}")
+    }
+
+    pub fn get_meta_data(&self) -> SheetMetaData {
+        SheetMetaData {
+            name: self.name.clone(),
+            color: self.color.clone(),
+        }
     }
 }
