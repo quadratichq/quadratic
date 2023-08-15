@@ -45,9 +45,14 @@ export class Grid {
     return this.gridController.addSheet();
   }
 
-  deleteSheet(id: string): void {
+  deleteSheet(sheetId: string): void {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.deleteSheet(id);
+    return this.gridController.deleteSheet(sheetId);
+  }
+
+  renameSheet(sheetId: string, name: string): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.renameSheet(sheetId, name);
   }
 
   duplicateSheet(sheetId: string): TransactionSummary {

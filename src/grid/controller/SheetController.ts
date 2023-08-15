@@ -120,6 +120,11 @@ export class SheetController {
     return sheet;
   }
 
+  renameSheet(name: string): void {
+    const summary = this.grid.renameSheet(this.current, name);
+    this.transactionResponse.handle(summary);
+  }
+
   reorderSheet(options: { id: string; order?: string; delta?: number }) {
     const sheet = this.sheets.find((sheet) => sheet.id === options.id);
     if (sheet) {

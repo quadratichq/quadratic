@@ -162,6 +162,10 @@ impl GridController {
         });
         self.transact_forward(transaction)
     }
+    pub fn rename_sheet(&mut self, sheet_id: SheetId, name: String) -> TransactionSummary {
+        let transaction = Transaction::from(Operation::RenameSheet { sheet_id, name });
+        self.transact_forward(transaction)
+    }
 
     fn transact_forward(&mut self, transaction: Transaction) -> TransactionSummary {
         let (reverse_transaction, summary) = self.transact(transaction);
@@ -308,6 +312,17 @@ impl GridController {
                         });
                     }
                 }
+
+                Operation::RenameSheet { sheet_id, name } => {
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                    let old_name = sheet.name.clone();
+                    sheet.set_name(name);
+                    rev_ops.push(Operation::RenameSheet {
+                        sheet_id,
+                        name: old_name,
+                    });
+                    summary.sheet_list_modified = true;
+                }
             }
         }
         for dirty_sheet in sheets_with_changed_bounds {
@@ -358,6 +373,11 @@ pub enum Operation {
         target: SheetId,
         to_before: Option<SheetId>,
     },
+
+    RenameSheet {
+        sheet_id: SheetId,
+        name: String,
+    },
 }
 impl Operation {
     pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
@@ -369,6 +389,8 @@ impl Operation {
             Operation::DeleteSheet { .. } => None,
 
             Operation::ReorderSheet { .. } => None,
+
+            Operation::RenameSheet { .. } => None,
         }
     }
 }

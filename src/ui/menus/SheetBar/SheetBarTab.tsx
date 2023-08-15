@@ -69,7 +69,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
                 } else {
                   setNameExists(false);
                   setIsRenaming(false);
-                  sheetController.sheet.rename(input.value);
+                  sheetController.renameSheet(input.value);
                   localFiles.save();
                 }
               }
@@ -89,7 +89,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
               if (!isRenaming) return false;
               if (input.value !== sheet.name) {
                 if (!sheetController.sheetNameExists(input.value)) {
-                  sheetController.sheet.rename(input.value);
+                  sheetController.renameSheet(input.value);
                   localFiles.save();
                 } else {
                   setNameExists(true);

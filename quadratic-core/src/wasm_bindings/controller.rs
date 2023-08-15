@@ -99,6 +99,14 @@ impl GridController {
             &self.duplicate_sheet(sheet_id),
         )?)
     }
+    /// Renames a sheet. Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "renameSheet")]
+    pub fn js_rename_sheet(&mut self, sheet_id: String, name: String) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
+        Ok(serde_wasm_bindgen::to_value(
+            &self.rename_sheet(sheet_id, name),
+        )?)
+    }
 
     /// Returns the ID of the sheet at the given index.
     #[wasm_bindgen(js_name = "sheetIdToIndex")]
