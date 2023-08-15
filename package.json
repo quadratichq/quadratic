@@ -81,7 +81,8 @@
     "lint:ts": "tsc --noemit",
     "lint:eslint": "eslint --ext .ts,.tsx src",
     "lint:prettier": "prettier --check src",
-    "lint:prettier:write": "prettier --write src"
+    "lint:prettier:write": "prettier --write src",
+    "api:start": "cd quadratic-api && npm start"
   },
   "eslintConfig": {
     "extends": [

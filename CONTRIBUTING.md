@@ -40,7 +40,7 @@ In order to run the front-end and/or the server locally, you must have all the e
 - For `quadratic-api/.env.local` you will need to set the `DATABASE_ENV` to point at your local postgres db. You will also need to copy `AUTH0_JWKS_URI` and `AUTH0_ISSUER` from `quadratic-api/.env_example` into your local `quadratic-api/.env.local` api env variables.
 
 5. `npm run prisma:migrate`
-6. `npm start`
+6. Start both `npm run api:start` and `npm start`
 
 ### Run tests (TypeScript)
 
