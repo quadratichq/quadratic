@@ -55,7 +55,7 @@ impl Grid {
             id: Uuid::new_v4(),
             modified: 0.0, // TODO: modification time
         };
-        ret.add_sheet(Sheet::new(SheetId::new(), "Sheet".to_string()), None)
+        ret.add_sheet(None, None)
             .expect("error adding initial sheet");
         ret
     }
@@ -67,7 +67,7 @@ impl Grid {
         ret.sheets = vec![];
         for js_sheet in &file.sheets {
             let sheet_id = SheetId::new();
-            ret.add_sheet(Sheet::new(sheet_id, js_sheet.name.clone()), None)
+            ret.add_sheet(Some(Sheet::new(sheet_id, js_sheet.name.clone())), None)
                 .map_err(|_| "duplicate sheet name")?;
             let sheet_index = ret.sheet_id_to_index(sheet_id).unwrap();
             let sheet = &mut ret.sheets[sheet_index];
@@ -161,7 +161,12 @@ impl Grid {
     }
     /// Adds a sheet to the grid. Returns an error if the sheet name is already
     /// in use.
-    pub fn add_sheet(&mut self, sheet: Sheet, index: Option<usize>) -> Result<(), ()> {
+    pub fn add_sheet(&mut self, sheet: Option<Sheet>, index: Option<usize>) -> Result<SheetId, ()> {
+        let sheet = sheet.unwrap_or({
+            let sheet_id = SheetId::new();
+            Sheet::new(sheet_id, format!("Sheet {}", self.sheets.len().to_string()))
+        });
+        let id = sheet.id.clone();
         if self
             .sheets
             .iter()
@@ -175,7 +180,7 @@ impl Grid {
             None => self.sheets.push(sheet),
         }
         self.rebuild_sheet_id_map();
-        Ok(())
+        Ok(id)
     }
     pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Option<Sheet> {
         let i = self.sheet_id_to_index(sheet_id)?;

@@ -37,6 +37,11 @@ impl GridController {
         self.grid.sheet_from_id(sheet_id)
     }
 
+    pub fn set_sheet_name(&mut self, sheet_id: SheetId, name: String) {
+        let sheet = self.grid.sheet_mut_from_id(sheet_id);
+        sheet.set_name(name);
+    }
+
     pub fn set_cell_value(
         &mut self,
         sheet_id: SheetId,
@@ -150,6 +155,7 @@ impl GridController {
             .copied();
         let mut new_sheet = self.sheet(sheet_id).clone();
         new_sheet.id = SheetId::new();
+        new_sheet.name = format!("{} Copy", new_sheet.name);
         let transaction = Transaction::from(Operation::AddSheet {
             sheet: new_sheet,
             to_before: sheet_after,
@@ -260,8 +266,9 @@ impl GridController {
                     let sheet_id = sheet.id;
                     let index = to_before.and_then(|id| self.grid.sheet_id_to_index(id));
                     self.grid
-                        .add_sheet(sheet, index)
+                        .add_sheet(Some(sheet), index)
                         .expect("duplicate sheet name");
+                    summary.sheet_list_modified = true;
                     rev_ops.push(Operation::DeleteSheet { sheet_id });
                 }
                 Operation::DeleteSheet { sheet_id } => {
@@ -271,6 +278,7 @@ impl GridController {
                         .and_then(|i| Some(*self.sheet_ids().get(i + 1)?));
                     let deleted_sheet = self.grid.remove_sheet(sheet_id);
                     if let Some(sheet) = deleted_sheet {
+                        summary.sheet_list_modified = true;
                         rev_ops.push(Operation::AddSheet {
                             sheet,
                             to_before: old_after,
@@ -458,5 +466,22 @@ mod tests {
         test_delete(s1, [s2, s3]);
         test_delete(s2, [s1, s3]);
         test_delete(s3, [s1, s2]);
+    }
+
+    #[test]
+    fn test_duplicate_sheet() {
+        let mut g = GridController::new();
+        let old_sheet_ids = g.sheet_ids();
+        let s1 = old_sheet_ids[0];
+
+        g.set_sheet_name(s1, String::from("Nice Name"));
+        g.duplicate_sheet(s1);
+        let sheet_ids = g.sheet_ids();
+        let s2 = sheet_ids[1];
+
+        let sheet1 = g.sheet(s1);
+        let sheet2 = g.sheet(s2);
+
+        assert_ne!(sheet1.name, sheet2.name);
     }
 }

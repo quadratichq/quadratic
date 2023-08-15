@@ -14,6 +14,7 @@ export interface CellHash {
   visible: boolean;
 }
 
+// @deprecated
 export interface CellRust {
   x: number;
   y: number;
@@ -29,6 +30,7 @@ export interface CellRust {
   textFormat?: { type: 'CURRENCY' | 'PERCENTAGE' | 'NUMBER' | 'EXPONENTIAL'; decimalPlaces: number; symbol?: string };
 }
 
+// @deprecated
 export interface CellFill {
   x: number;
   y: number;

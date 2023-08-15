@@ -51,43 +51,69 @@ impl GridController {
 
     /// Adds an empty sheet to the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "addSheet")]
-    pub fn js_add_sheet(&mut self, to_before: Option<SheetId>) -> Result<JsValue, JsValue> {
+    pub fn js_add_sheet(&mut self, to_before: Option<String>) -> Result<JsValue, JsValue> {
+        let to_before = match to_before {
+            Some(to_before) => Some(SheetId::from_string(&to_before)),
+            None => None,
+        };
         Ok(serde_wasm_bindgen::to_value(&self.add_sheet(to_before))?)
+    }
+    /// Gets a list of ordered sheet ids
+    #[wasm_bindgen(js_name = "getSheetIds")]
+    pub fn js_get_sheet_ids(&mut self) -> Result<String, JsValue> {
+        let sheet_ids: Vec<String> = self
+            .sheet_ids()
+            .iter()
+            .map(|id| id.id_to_string())
+            .collect();
+        Ok(serde_json::to_string(&sheet_ids).map_err(|e| e.to_string())?)
     }
     /// Deletes a sheet from the the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "deleteSheet")]
-    pub fn js_delete_sheet(&mut self, sheet_id: &SheetId) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.delete_sheet(*sheet_id))?)
+    pub fn js_delete_sheet(&mut self, sheet_id: String) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
+        Ok(serde_wasm_bindgen::to_value(&self.delete_sheet(sheet_id))?)
     }
     /// Moves a sheet to before another sheet, or to the end of the list.
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "moveSheet")]
     pub fn js_move_sheet(
         &mut self,
-        sheet_id: &SheetId,
-        to_before: Option<SheetId>,
+        sheet_id: String,
+        to_before: Option<String>,
     ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
+        let to_before = match to_before {
+            Some(to_before) => Some(SheetId::from_string(&to_before)),
+            None => None,
+        };
         Ok(serde_wasm_bindgen::to_value(
-            &self.move_sheet(*sheet_id, to_before),
+            &self.move_sheet(sheet_id, to_before),
         )?)
     }
     /// Makes a copy of a sheet. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "duplicateSheet")]
-    pub fn js_duplicate_sheet(&mut self, sheet_id: &SheetId) -> Result<JsValue, JsValue> {
+    pub fn js_duplicate_sheet(&mut self, sheet_id: String) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
         Ok(serde_wasm_bindgen::to_value(
-            &self.duplicate_sheet(*sheet_id),
+            &self.duplicate_sheet(sheet_id),
         )?)
     }
 
     /// Returns the ID of the sheet at the given index.
     #[wasm_bindgen(js_name = "sheetIdToIndex")]
-    pub fn js_sheet_id_to_index(&self, id: &SheetId) -> Option<usize> {
-        self.grid().sheet_id_to_index(*id)
+    pub fn js_sheet_id_to_index(&self, id: String) -> Option<usize> {
+        let sheet_id = SheetId::from_string(&id);
+        self.grid().sheet_id_to_index(sheet_id)
     }
     /// Returns the index of the sheet with the given ID.
     #[wasm_bindgen(js_name = "sheetIndexToId")]
-    pub fn js_sheet_index_to_id(&self, index: usize) -> Option<SheetId> {
-        self.grid().sheet_index_to_id(index)
+    pub fn js_sheet_index_to_id(&self, index: usize) -> Result<String, JsValue> {
+        let sheet_id = self.grid().sheet_index_to_id(index);
+        match sheet_id {
+            Some(sheet_id) => Ok(sheet_id.id_to_string()),
+            None => Err(JsValue::UNDEFINED),
+        }
     }
 
     /// Populates a portion of a sheet with random float values.
@@ -96,12 +122,13 @@ impl GridController {
     #[wasm_bindgen(js_name = "populateWithRandomFloats")]
     pub fn populate_with_random_floats(
         &mut self,
-        sheet_id: &SheetId,
+        sheet_id: String,
         region: &Rect,
     ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cells(
-                *sheet_id,
+                sheet_id,
                 region.min,
                 Array::from_random_floats(region.width(), region.height())
                     .map_err(|e| e.to_string())?,
@@ -113,11 +140,13 @@ impl GridController {
     #[wasm_bindgen(js_name = "getGridBounds")]
     pub fn get_grid_bounds(
         &self,
-        sheet_id: &SheetId,
+        sheet_id: String,
         ignore_formatting: bool,
     ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
+
         Ok(serde_wasm_bindgen::to_value(
-            &self.sheet(*sheet_id).bounds(ignore_formatting),
+            &self.sheet(sheet_id).bounds(ignore_formatting),
         )?)
     }
 
@@ -126,15 +155,17 @@ impl GridController {
     ///
     /// Returns a string containing a JSON array of [`JsRenderCell`].
     #[wasm_bindgen(js_name = "getRenderCells")]
-    pub fn get_render_cells(&self, sheet_id: &SheetId, &region: &Rect) -> Result<String, JsValue> {
-        let output = self.sheet(*sheet_id).get_render_cells(region);
+    pub fn get_render_cells(&self, sheet_id: String, &region: &Rect) -> Result<String, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
+        let output = self.sheet(sheet_id).get_render_cells(region);
         Ok(serde_json::to_string::<[JsRenderCell]>(&output).map_err(|e| e.to_string())?)
     }
     /// Returns data for rendering cell fill color as a string containing a JSON
     /// array of [`JsRenderFill`].
     #[wasm_bindgen(js_name = "getRenderFills")]
-    pub fn get_render_fills(&self, sheet_id: &SheetId, region: &Rect) -> Result<String, JsValue> {
-        let output = self.sheet(*sheet_id).get_render_fills(*region);
+    pub fn get_render_fills(&self, sheet_id: String, region: &Rect) -> Result<String, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
+        let output = self.sheet(sheet_id).get_render_fills(*region);
         Ok(serde_json::to_string::<[JsRenderFill]>(&output).map_err(|e| e.to_string())?)
     }
     /// Returns data for rendering code cells as a string containing a JSON aray
@@ -142,24 +173,27 @@ impl GridController {
     #[wasm_bindgen(js_name = "getRenderCodeCells")]
     pub fn get_render_code_cells(
         &self,
-        sheet_id: &SheetId,
+        sheet_id: String,
         region: &Rect,
     ) -> Result<String, JsValue> {
-        let output = self.sheet(*sheet_id).get_render_code_cells(*region);
+        let sheet_id = SheetId::from_string(&sheet_id);
+        let output = self.sheet(sheet_id).get_render_code_cells(*region);
         Ok(serde_json::to_string::<[JsRenderCodeCell]>(&output).map_err(|e| e.to_string())?)
     }
     /// Returns data for rendering horizontal borders as a string containing a
     /// JSON array of [`JsRenderBorder`].
     #[wasm_bindgen(js_name = "getRenderHorizontalBorders")]
-    pub fn get_render_horizontal_borders(&self, sheet_id: &SheetId) -> Result<String, JsValue> {
-        let output = self.sheet(*sheet_id).get_render_horizontal_borders();
+    pub fn get_render_horizontal_borders(&self, sheet_id: String) -> Result<String, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
+        let output = self.sheet(sheet_id).get_render_horizontal_borders();
         Ok(serde_json::to_string::<[JsRenderBorder]>(&output).map_err(|e| e.to_string())?)
     }
     /// Returns data for rendering vertical borders as a string containing a
     /// JSON array of [`JsRenderBorder`].
     #[wasm_bindgen(js_name = "getRenderVerticalBorders")]
-    pub fn get_render_vertical_borders(&self, sheet_id: &SheetId) -> Result<String, JsValue> {
-        let output = self.sheet(*sheet_id).get_render_vertical_borders();
+    pub fn get_render_vertical_borders(&self, sheet_id: String) -> Result<String, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
+        let output = self.sheet(sheet_id).get_render_vertical_borders();
         Ok(serde_json::to_string::<[JsRenderBorder]>(&output).map_err(|e| e.to_string())?)
     }
 
@@ -169,13 +203,14 @@ impl GridController {
     #[wasm_bindgen(js_name = "setCellValue")]
     pub fn js_set_cell_value(
         &mut self,
-        sheet_id: &SheetId,
+        sheet_id: String,
         pos: &Pos,
         cell_value: JsValue,
     ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
         let cell_value: CellValue = serde_wasm_bindgen::from_value(cell_value)?;
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_value(*sheet_id, *pos, cell_value),
+            &self.set_cell_value(sheet_id, *pos, cell_value),
         )?)
     }
 
@@ -185,22 +220,20 @@ impl GridController {
     #[wasm_bindgen(js_name = "deleteCellValues")]
     pub fn js_delete_cell_values(
         &mut self,
-        sheet_id: &SheetId,
+        sheet_id: String,
         region: &Rect,
     ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
         Ok(serde_wasm_bindgen::to_value(
-            &self.delete_cell_values(*sheet_id, *region),
+            &self.delete_cell_values(sheet_id, *region),
         )?)
     }
 
     /// Returns a code cell as a [`CodeCellValue`].
     #[wasm_bindgen(js_name = "getCodeCellValue")]
-    pub fn get_code_cell_value(
-        &mut self,
-        sheet_id: &SheetId,
-        pos: &Pos,
-    ) -> Result<JsValue, JsValue> {
-        match self.sheet(*sheet_id).get_code_cell(*pos) {
+    pub fn get_code_cell_value(&mut self, sheet_id: String, pos: &Pos) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
+        match self.sheet(sheet_id).get_code_cell(*pos) {
             Some(code_cell) => Ok(serde_wasm_bindgen::to_value(&code_cell)?),
             None => Ok(JsValue::UNDEFINED),
         }
@@ -226,11 +259,19 @@ impl GridController {
     #[wasm_bindgen(js_name = "getFormattingSummary")]
     pub fn get_formatting_summary(
         &self,
-        sheet_id: &SheetId,
+        sheet_id: String,
         region: &Rect,
     ) -> Result<JsValue, JsValue> {
-        let output: FormattingSummary = self.sheet(*sheet_id).get_formatting_summary(*region);
+        let sheet_id = SheetId::from_string(&sheet_id);
+        let output: FormattingSummary = self.sheet(sheet_id).get_formatting_summary(*region);
         Ok(serde_wasm_bindgen::to_value(&output)?)
+    }
+
+    #[wasm_bindgen(js_name = "getSheetMetaData")]
+    pub fn get_sheet_metadata(&self, sheet_id: String) -> Result<String, JsValue> {
+        let sheet_id = SheetId::from_string(&sheet_id);
+        let sheet = self.grid().sheet_from_id(sheet_id);
+        Ok(serde_json::to_string(&sheet.get_meta_data()).map_err(|e| e.to_string())?)
     }
 
     // /// Sets the text alignment as a [`CellAlign`] in a region.

@@ -1,9 +1,10 @@
 import { Container, Rectangle, Renderer } from 'pixi.js';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { Sheet } from '../../../grid/sheet/Sheet';
+import { JsRenderCell } from '../../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../../helpers/debugPerformance';
 import { CellsHash } from '../CellsHash';
-import { CellHash, CellRust } from '../CellsTypes';
+import { CellHash } from '../CellsTypes';
 import { CellLabel } from './CellLabel';
 import { LabelMeshes } from './LabelMeshes';
 
@@ -35,16 +36,16 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
     return this.cellsHash.sheet;
   }
 
-  private getKey(cell: CellRust): string {
+  private getKey(cell: JsRenderCell): string {
     return `${cell.x},${cell.y}`;
   }
 
-  create(cells?: CellRust[]): void {
+  create(cells?: JsRenderCell[]): void {
     debugTimeReset();
     this.cellLabels = new Map();
-    cells = cells ?? this.sheet.grid.getCellValue(this.cellsHash.AABB);
+    cells = cells ?? this.sheet.getRenderCells(this.cellsHash.AABB);
     cells.forEach((cell) => {
-      const rectangle = this.sheet.gridOffsets.getCell(cell.x, cell.y);
+      const rectangle = this.sheet.gridOffsets.getCell(Number(cell.x), Number(cell.y));
       const cellLabel = new CellLabel(cell, rectangle);
       this.cellLabels.set(this.getKey(cell), cellLabel);
     });
@@ -83,7 +84,7 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
 
   /** clips overflows for CellLabels */
   overflowClip(): void {
-    const bounds = this.cellsHash.sheet.grid.getSheetBounds(true);
+    const bounds = this.cellsHash.sheet.getGridBounds(true);
     if (!bounds) {
       throw new Error('Expected bounds to exist in overflowClip for CellsLabels');
     }

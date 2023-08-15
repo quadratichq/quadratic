@@ -8,7 +8,6 @@ import apiClientSingleton from '../api-client/apiClientSingleton';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
 import { debugMockLargeData, debugShowFileIO } from '../debugFlags';
-import { Grid } from '../grid/controller/Grid';
 import { SheetController } from '../grid/controller/SheetController';
 import { pixiAppEvents } from '../gridGL/pixiApp/PixiAppEvents';
 import { downloadFile } from '../helpers/downloadFile';
@@ -48,7 +47,7 @@ export interface LocalFiles {
  * This hook should ONLY be run once. The values it returns get stuck in the
  * `useLocalFiles()` provider for as a react context for use throughout the app
  */
-export const useGenerateLocalFiles = (sheetController: SheetController, grid: Grid): LocalFiles => {
+export const useGenerateLocalFiles = (sheetController: SheetController): LocalFiles => {
   const [hasInitialPageLoadError, setHasInitialPageLoadError] = useState<boolean>(false);
   const [fileList, setFileList] = useState<LocalFile[]>([]);
   const [currentFileContents, setCurrentFileContents] = useState<GridFile | null>(null);
@@ -94,7 +93,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController, grid: Gr
       const url = `${window.location.href.split('?')[0]}?${searchParams.toString()}`;
       window.history.replaceState(undefined, '', url);
     },
-    [grid]
+    [sheetController]
   );
 
   // Given some contents, determine whether it's a valid file we can load into

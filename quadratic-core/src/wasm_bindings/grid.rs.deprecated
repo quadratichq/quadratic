@@ -25,11 +25,12 @@ impl Grid {
 
     /// Adds an empty sheet to the grid.
     #[wasm_bindgen(js_name = "addSheet")]
-    pub fn js_add_sheet(&mut self) -> Result<SheetId, JsValue> {
-        let sheet_id = SheetId::new();
-        self.add_sheet(Sheet::new(sheet_id, "Sheet".to_string()), None)
-            .map_err(|_| "duplicate sheet name")?;
-        Ok(sheet_id)
+    pub fn js_add_sheet(&mut self) -> Result<JsValue, JsValue> {
+        let sheet = self.add_sheet(None, None);
+        match sheet {
+            Ok(sheet) => Ok(serde_wasm_bindgen::to_value(&sheet.id_to_string())?),
+            Err(_) => Ok(JsValue::UNDEFINED),
+        }
     }
 
     /// Returns the index of the sheet with the given ID.

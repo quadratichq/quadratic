@@ -34,6 +34,15 @@ export class CellsSheets extends Container<CellsSheet> {
     this.show(sheet.id);
   }
 
+  deleteSheet(id: string): void {
+    const cellsSheet = this.children.find((cellsSheet) => cellsSheet.sheet.id === id);
+    if (!cellsSheet) {
+      throw new Error('Expected to find cellsSheet in CellSheets.delete');
+    }
+    this.removeChild(cellsSheet);
+    cellsSheet.destroy();
+  }
+
   show(id: string): void {
     this.children.forEach((child) => {
       if (child.sheet.id === id) {

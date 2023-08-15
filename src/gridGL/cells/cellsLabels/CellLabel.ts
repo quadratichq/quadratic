@@ -3,9 +3,9 @@ import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
 import { cellTextFormatterRust } from '../../../grid/formatting/cellTextFormatter';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { convertColorStringToTint, convertTintToArray } from '../../../helpers/convertColor';
+import { JsRenderCell } from '../../../quadratic-core/types';
 import { CellAlignment } from '../../../schemas';
 import { Coordinate } from '../../types/size';
-import { CellRust } from '../CellsTypes';
 import { LabelMeshes } from './LabelMeshes';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 
@@ -64,7 +64,7 @@ export class CellLabel extends Container {
   // cache for clip to avoid recalculation of same clip
   private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
 
-  constructor(cell: CellRust, rectangle: Rectangle) {
+  constructor(cell: JsRenderCell, rectangle: Rectangle) {
     super();
     let cellText = cellTextFormatterRust(cell);
     // strip new lines
@@ -83,7 +83,7 @@ export class CellLabel extends Container {
     this.letterSpacing = 0;
     this.tint = cell?.textColor ? convertColorStringToTint(cell.textColor) : 0;
 
-    this.location = { x: cell.x, y: cell.y };
+    this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = rectangle;
     this.cellWidth = rectangle.width;
     this.topLeft = new Point(rectangle.x, rectangle.y);

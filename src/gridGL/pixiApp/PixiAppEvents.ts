@@ -125,8 +125,13 @@ class PixiAppEvents {
 
   async loadSheets() {
     if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.loadSheets');
-    await this.app?.cellsSheets.create();
+    await this.app.cellsSheets.create();
     this.app.viewport.dirty = true;
+  }
+
+  async deleteSheet(sheetId: string) {
+    if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.deleteSheet');
+    this.app.cellsSheets.deleteSheet(sheetId);
   }
 
   changed(options: {

@@ -1,6 +1,6 @@
 import { format as formatNumber } from 'numerable';
-import { CellRust } from '../../gridGL/cells/CellsTypes';
 import { isStringANumber } from '../../helpers/isStringANumber';
+import { JsRenderCell } from '../../quadratic-core/types';
 import { Cell, CellFormat } from '../../schemas';
 import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from './cellTextFormat';
 
@@ -37,15 +37,24 @@ export const CellTextFormatter = (cell: Cell, format: CellFormat | undefined) =>
   return cell.value;
 };
 
-export const cellTextFormatterRust = (cell: CellRust) => {
-  const value = cell.value.value.toString();
+export const cellTextFormatterRust = (cell: JsRenderCell): string => {
+  let value: string;
+  if (cell.value.type === 'blank') {
+    throw new Error('Should not create a CellLabel from value.type = blank');
+  } else if (cell.value.type === 'text') {
+    value = cell.value.value;
+  } else if (cell.value.type === 'number') {
+    value = cell.value.value.toString();
+  } else {
+    throw new Error(`Unhandled value type ${cell.value.type} in cellTextFormatter`);
+  }
   if (!cell.textFormat) return value;
   const number_of_decimals = cell.textFormat.decimalPlaces ?? DEFAULT_NUMBER_OF_DECIMAL_PLACES;
   const decimal_string = getDecimalPlacesString(number_of_decimals);
 
   try {
     if (cell.textFormat.type === 'CURRENCY' && isStringANumber(value)) {
-      return formatNumber(value, `$0,0${decimal_string}`, { currency: cell.textFormat.symbol });
+      return formatNumber(value, `$0,0${decimal_string}`, { currency: cell.textFormat.symbol ?? '$' });
     } else if (cell.textFormat.type === 'PERCENTAGE' && isStringANumber(value)) {
       return formatNumber(Number(value), `0,0${decimal_string}%`);
     } else if (cell.textFormat.type === 'NUMBER' && isStringANumber(value)) {
@@ -58,5 +67,5 @@ export const cellTextFormatterRust = (cell: CellRust) => {
     console.error('Caught error in CellTextFormatter: ', e);
   }
 
-  return cell.value.value;
+  return value;
 };

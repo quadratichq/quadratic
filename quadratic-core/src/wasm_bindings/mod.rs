@@ -7,7 +7,6 @@ use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
 pub mod controller;
-pub mod grid;
 pub mod js;
 pub mod lsp;
 pub mod pos;

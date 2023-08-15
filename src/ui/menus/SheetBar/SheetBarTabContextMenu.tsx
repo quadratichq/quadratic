@@ -1,7 +1,7 @@
 import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useState } from 'react';
 import { ColorResult } from 'react-color';
-import { createSheet, updateSheet } from '../../../grid/actions/sheetsAction';
+import { updateSheet } from '../../../grid/actions/sheetsAction';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { convertReactColorToString } from '../../../helpers/convertColor';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -35,8 +35,8 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         <MenuItem
           onClick={handleClose}
           onClickCapture={() => {
-            const sheet = sheetController.createDuplicateSheet();
-            createSheet({ sheetController, sheet, create_transaction: true });
+            sheetController.duplicateSheet();
+            // createSheet({ sheetController, sheet, create_transaction: true });
             focusGrid();
           }}
         >
