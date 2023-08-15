@@ -31,7 +31,7 @@ In order to run the front-end and/or the server locally, you must have all the e
 1. `cd quadratic-api`
 2. `npm i`
 3. Install [postgress.app](https://postgresapp.com/) (follow instructions on website)
-4. Create two environnement files `.env.local` & `quadratic-api/.env.local`.
+4. Create two environment files `.env.local` & `quadratic-api/.env.local`.
 
 - For the `.env.local` react app ENV variables you will need to set the following variables:
   `REACT_APP_AUTH0_DOMAIN` `REACT_APP_AUTH0_CLIENT_ID` `REACT_APP_AUTH0_AUDIENCE` `REACT_APP_AUTH0_ISSUER` `REACT_APP_QUADRATIC_API_URL`
