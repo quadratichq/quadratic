@@ -11,7 +11,7 @@ import apiClientSingleton from '../../../../api-client/apiClientSingleton';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { authClient } from '../../../../auth';
-import { IS_READONLY_MODE } from '../../../../constants/app';
+import { IS_READONLY_MODE } from '../../../../constants/appConstants';
 import { ROUTES } from '../../../../constants/routes';
 import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';

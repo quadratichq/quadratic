@@ -3,7 +3,7 @@ import mixpanel from 'mixpanel-browser';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from 'react-router-dom';
 import apiClientSingleton from '../../api-client/apiClientSingleton';
 import { authClient } from '../../auth';
-import { EXAMPLE_FILES } from '../../constants/app';
+import { EXAMPLE_FILES } from '../../constants/appConstants';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 import { initMixpanelAnalytics } from '../../utils/analytics';

@@ -2,7 +2,7 @@ import { ContentCopy, ContentCut, ContentPaste, East, Redo, Undo } from '@mui/ic
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
-import { PNG_MESSAGE } from '../../../../constants/app';
+import { PNG_MESSAGE } from '../../../../constants/appConstants';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';

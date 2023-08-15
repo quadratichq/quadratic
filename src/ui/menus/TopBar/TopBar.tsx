@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { IS_READONLY_MODE } from '../../../constants/app';
+import { IS_READONLY_MODE } from '../../../constants/appConstants';
 import { ROUTES } from '../../../constants/routes';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';

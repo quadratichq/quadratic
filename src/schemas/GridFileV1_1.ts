@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import z from 'zod';
-import { DEFAULT_FILE_NAME } from '../constants/app';
+import { DEFAULT_FILE_NAME } from '../constants/appConstants';
 import { GridFileV1_0 } from './GridFileV1_0';
 
 // Shared schemas

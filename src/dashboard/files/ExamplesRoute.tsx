@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { EXAMPLE_FILES } from '../../constants/app';
+import { EXAMPLE_FILES } from '../../constants/appConstants';
 import { ROUTES } from '../../constants/routes';
 import { FileListItem } from '../../dashboard/components/FileListItem';
 import { Header } from '../../dashboard/components/Header';

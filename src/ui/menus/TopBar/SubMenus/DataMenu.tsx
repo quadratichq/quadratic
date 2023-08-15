@@ -11,7 +11,7 @@ import Button from '@mui/material/Button';
 import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
-import { CSV_IMPORT_MESSAGE } from '../../../../constants/app';
+import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
 import { MenuLineItem } from '../MenuLineItem';
 
 export const DataMenu = () => {

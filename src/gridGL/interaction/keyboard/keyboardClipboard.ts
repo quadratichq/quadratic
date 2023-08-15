@@ -1,6 +1,6 @@
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbar';
-import { PNG_MESSAGE } from '../../../constants/app';
+import { PNG_MESSAGE } from '../../../constants/appConstants';
 import {
   copySelectionToPNG,
   copyToClipboard,

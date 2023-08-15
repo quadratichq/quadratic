@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { IS_READONLY_MODE } from '../constants/app';
+import { IS_READONLY_MODE } from '../constants/appConstants';
 import { SheetController } from '../grid/controller/sheetController';
 import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
