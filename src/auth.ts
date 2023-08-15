@@ -3,29 +3,32 @@ import * as Sentry from '@sentry/browser';
 import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
 import { ROUTES } from './constants/routes';
 
-const domain = process.env.REACT_APP_AUTH0_DOMAIN || '';
-const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID || '';
-const audience = process.env.REACT_APP_AUTH0_AUDIENCE;
-const issuer = process.env.REACT_APP_AUTH0_ISSUER;
-if (!(domain && clientId && audience && issuer)) {
-  const message = 'Auth0 variables are not configured correctly.';
-  Sentry.captureEvent({
-    message,
-    level: Sentry.Severity.Fatal,
-  });
-}
+const AUTH0_DOMAIN = process.env.REACT_APP_AUTH0_DOMAIN;
+const AUTH0_CLIENT_ID = process.env.REACT_APP_AUTH0_CLIENT_ID;
+const AUTH0_AUDIENCE = process.env.REACT_APP_AUTH0_AUDIENCE;
+const AUTH0_ISSUER = process.env.REACT_APP_AUTH0_ISSUER;
 
 // Create the client as a module-scoped promise so all loaders will wait
 // for this one single instance of client to resolve
 let auth0ClientPromise: Promise<Auth0Client>;
 async function getClient() {
+  // verify all AUTH0 env variables are set
+  if (!(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE && AUTH0_ISSUER)) {
+    const message = 'Auth0 variables are not configured correctly.';
+    Sentry.captureEvent({
+      message,
+      level: Sentry.Severity.Fatal,
+    });
+    throw new Error(message);
+  }
+
   if (!auth0ClientPromise) {
     auth0ClientPromise = createAuth0Client({
-      domain,
-      clientId,
-      issuer,
+      domain: AUTH0_DOMAIN,
+      clientId: AUTH0_CLIENT_ID,
+      issuer: AUTH0_ISSUER,
       authorizationParams: {
-        audience,
+        audience: AUTH0_AUDIENCE,
       },
     });
   }
