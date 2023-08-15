@@ -1,5 +1,8 @@
+use core::fmt;
+use core::fmt::Display;
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
+use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -19,14 +22,29 @@ macro_rules! uuid_wrapper_struct {
                 $name { id: Uuid::new_v4() }
             }
 
-            pub fn from_string(s: &str) -> Self {
-                $name {
-                    id: Uuid::parse_str(s).unwrap_or_default(),
-                }
-            }
+            //     pub fn from_string(s: &str) -> Self {
+            //         $name {
+            //             id: Uuid::parse_str(s).unwrap_or_default(),
+            //         }
+            //     }
 
-            pub fn id_to_string(&self) -> String {
-                self.id.to_string()
+            //     pub fn id_to_string(&self) -> String {
+            //         self.id.to_string()
+            //     }
+        }
+
+        impl FromStr for $name {
+            type Err = String;
+
+            fn from_str(s: &str) -> Result<Self, String> {
+                let id = Uuid::parse_str(s);
+                Ok($name { id: id.unwrap() })
+            }
+        }
+
+        impl Display for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(f, "{}", self.id)
             }
         }
     };
