@@ -1,13 +1,12 @@
-import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import express from 'express';
 import { z } from 'zod';
+import dbClient from '../dbClient';
 import { validateAccessToken } from '../middleware/auth';
 import { userMiddleware } from '../middleware/user';
 import { Request } from '../types/Request';
 
 const files_router = express.Router();
-const prisma = new PrismaClient();
 
 const RequestBodySchema = z.object({
   feedback: z.string(),
@@ -23,7 +22,7 @@ files_router.post('/', validateAccessToken, userMiddleware, async (req: Request,
   }
 
   // Add to DB
-  await prisma.qFeedback.create({
+  await dbClient.qFeedback.create({
     data: {
       feedback,
       userId: req.user.id,
