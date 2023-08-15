@@ -2,11 +2,10 @@ import { Box, Chip, Tab, Tabs } from '@mui/material';
 import { useTheme } from '@mui/system';
 import { stripIndent } from 'common-tags';
 import { useEffect, useState } from 'react';
-import { useRouteLoaderData } from 'react-router-dom';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { CellEvaluationResult } from '../../../grid/computations/types';
-import { RootLoaderData } from '../../../router';
+import { useRootRouteLoaderData } from '../../../router';
 import { Cell } from '../../../schemas';
 import { colors } from '../../../theme/colors';
 import { CodeSnippet } from '../../components/CodeSnippet';
@@ -25,7 +24,7 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
-  const { isAuthenticated } = useRouteLoaderData('root') as RootLoaderData;
+  const { isAuthenticated } = useRootRouteLoaderData();
   const theme = useTheme();
 
   // Whenever we change to a different cell, reset the active tab to the 1st

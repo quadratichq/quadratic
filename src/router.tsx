@@ -12,6 +12,7 @@ import {
   createRoutesFromElements,
   redirect,
   useRouteError,
+  useRouteLoaderData,
 } from 'react-router-dom';
 import { authClient, protectedRouteLoaderWrapper } from './auth';
 import { Empty } from './components/Empty';
@@ -30,6 +31,8 @@ export type RootLoaderData = {
   isAuthenticated: boolean;
   user?: User;
 };
+
+export const useRootRouteLoaderData = () => useRouteLoaderData('root') as RootLoaderData;
 
 export const router = createBrowserRouter(
   createRoutesFromElements(

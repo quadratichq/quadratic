@@ -1,9 +1,9 @@
 import { Close, ExtensionOutlined, FolderOpenOutlined, Menu, PeopleOutline } from '@mui/icons-material';
 import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
 import { ReactNode, useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigation, useRouteLoaderData } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
-import { RootLoaderData } from '../../router';
+import { useRootRouteLoaderData } from '../../router';
 import { colors } from '../../theme/colors';
 import { ReactComponent as QuadraticLogo } from './quadratic-logo.svg';
 import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';
@@ -100,7 +100,7 @@ export const Component = () => {
 };
 
 function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
-  const { user } = useRouteLoaderData('root') as RootLoaderData;
+  const { user } = useRootRouteLoaderData();
 
   const theme = useTheme();
 
