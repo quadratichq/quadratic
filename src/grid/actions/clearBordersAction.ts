@@ -1,7 +1,7 @@
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { Coordinate } from '../../gridGL/types/size';
 import { Border } from '../../schemas';
-import { SheetController } from '../controller/_sheetController';
+import { SheetController } from '../controller/SheetController';
 
 export const clearBordersAction = (args: {
   sheet_controller: SheetController;

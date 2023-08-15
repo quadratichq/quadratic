@@ -1,4 +1,4 @@
-import { SheetController } from '../controller/_sheetController';
+import { SheetController } from '../controller/SheetController';
 import { Sheet } from '../sheet/Sheet';
 
 export const createSheet = (args: { sheetController: SheetController; sheet: Sheet; create_transaction?: boolean }) => {

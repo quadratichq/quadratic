@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { SheetController } from '../grid/controller/_sheetController';
+import { SheetController } from '../grid/controller/SheetController';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { CellInput } from './interaction/CellInput';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';

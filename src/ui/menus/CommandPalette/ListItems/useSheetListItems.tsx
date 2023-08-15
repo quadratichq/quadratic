@@ -1,6 +1,6 @@
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import { useMemo } from 'react';
-import { SheetController } from '../../../../grid/controller/_sheetController';
+import { SheetController } from '../../../../grid/controller/SheetController';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 
 export const useSheetListItems = (sheetController: SheetController) => {

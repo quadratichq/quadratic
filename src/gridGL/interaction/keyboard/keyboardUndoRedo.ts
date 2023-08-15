@@ -1,4 +1,4 @@
-import { SheetController } from '../../../grid/controller/_sheetController';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { isMac } from '../../../utils/isMac';
 
 export function keyboardUndoRedo(event: React.KeyboardEvent<HTMLElement>, sheetController: SheetController): boolean {

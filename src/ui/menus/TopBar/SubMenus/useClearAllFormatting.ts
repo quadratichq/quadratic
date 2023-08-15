@@ -1,4 +1,4 @@
-import { SheetController } from '../../../../grid/controller/_sheetController';
+import { SheetController } from '../../../../grid/controller/SheetController';
 import { useBorders } from './useBorders';
 import { useFormatCells } from './useFormatCells';
 

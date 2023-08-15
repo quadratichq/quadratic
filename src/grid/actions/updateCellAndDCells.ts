@@ -3,7 +3,7 @@ import { Coordinate } from '../../gridGL/types/size';
 import { StringId, getKey } from '../../helpers/getKey';
 import { ArrayOutputBase, Cell } from '../../schemas';
 import { runCellComputation } from '../computations/runCellComputation';
-import { SheetController } from '../controller/_sheetController';
+import { SheetController } from '../controller/SheetController';
 
 interface ArgsType {
   starting_cells: Cell[];

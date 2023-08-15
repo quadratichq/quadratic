@@ -2,7 +2,7 @@ import { ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListIt
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
 import { ReactElement } from 'react';
-import { SheetController } from '../../../grid/controller/_sheetController';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 
 // Props generated in the root CommandPalette and passed to every CommandPaletteListItem

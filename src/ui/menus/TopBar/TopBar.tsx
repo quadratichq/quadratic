@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../../constants/app';
-import { SheetController } from '../../../grid/controller/_sheetController';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';

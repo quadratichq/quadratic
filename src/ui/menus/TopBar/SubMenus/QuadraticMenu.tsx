@@ -11,7 +11,7 @@ import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionS
 import { IS_READONLY_MODE } from '../../../../constants/app';
 import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { SheetController } from '../../../../grid/controller/_sheetController';
+import { SheetController } from '../../../../grid/controller/SheetController';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';

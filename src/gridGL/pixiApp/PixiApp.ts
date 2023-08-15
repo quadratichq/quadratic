@@ -5,7 +5,7 @@ import { IS_READONLY_MODE } from '../../constants/app';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
 import { Grid } from '../../grid/controller/Grid';
-import { SheetController } from '../../grid/controller/_sheetController';
+import { SheetController } from '../../grid/controller/SheetController';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';

@@ -1,7 +1,7 @@
 import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 import { Coordinate } from '../../../gridGL/types/size';
 import { CellFormat } from '../../../schemas';
-import { SheetController } from '../_sheetController';
+import { SheetController } from '../SheetController';
 import { Statement } from '../statement';
 
 const CopyCellFormat = (format: CellFormat | undefined): CellFormat | undefined => {

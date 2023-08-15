@@ -1,5 +1,5 @@
 import { debugShowTransactions } from '../../../debugFlags';
-import { SheetController } from '../_sheetController';
+import { SheetController } from '../SheetController';
 import { Statement } from '../statement';
 import { SetBordersRunner } from './setBordersRunner';
 import { AddCellDependenciesRunner, RemoveCellDependenciesRunner } from './setCellDependenciesRunner';

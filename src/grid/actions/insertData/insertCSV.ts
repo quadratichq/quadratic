@@ -1,5 +1,5 @@
 import { Coordinate } from '../../../gridGL/types/size';
-import { SheetController } from '../../controller/_sheetController';
+import { SheetController } from '../../controller/SheetController';
 // import { Cell } from '../../sheet/gridTypes';
 // import { updateCellAndDCells } from '../updateCellAndDCells';
 import mixpanel from 'mixpanel-browser';

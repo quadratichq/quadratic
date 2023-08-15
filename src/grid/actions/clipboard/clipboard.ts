@@ -3,7 +3,7 @@ import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 import { Coordinate } from '../../../gridGL/types/size';
 import { Border, Cell, CellFormat } from '../../../schemas';
-import { SheetController } from '../../controller/_sheetController';
+import { SheetController } from '../../controller/SheetController';
 import { CellAndFormat } from '../../sheet/GridSparse';
 import { DeleteCells } from '../DeleteCells';
 import { clearBordersAction } from '../clearBordersAction';

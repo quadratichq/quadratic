@@ -9,7 +9,7 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
 import { debugMockLargeData, debugShowFileIO } from '../debugFlags';
 import { Grid } from '../grid/controller/Grid';
-import { SheetController } from '../grid/controller/_sheetController';
+import { SheetController } from '../grid/controller/SheetController';
 import { pixiAppEvents } from '../gridGL/pixiApp/PixiAppEvents';
 import { downloadFile } from '../helpers/downloadFile';
 import { getURLParameter } from '../helpers/getURL';

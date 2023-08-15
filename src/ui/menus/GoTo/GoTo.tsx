@@ -3,7 +3,7 @@ import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemTex
 import React, { SyntheticEvent } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../../grid/controller/_sheetController';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { isVisible, moveViewport } from '../../../gridGL/interaction/viewportHelper';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../../gridGL/types/size';

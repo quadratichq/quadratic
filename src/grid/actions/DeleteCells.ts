@@ -1,4 +1,4 @@
-import { SheetController } from '../controller/_sheetController';
+import { SheetController } from '../controller/SheetController';
 import { updateCellAndDCells } from './updateCellAndDCells';
 
 interface DeleteCellsArgs {

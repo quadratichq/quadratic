@@ -2,7 +2,7 @@ import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-me
 import { useState } from 'react';
 import { ColorResult } from 'react-color';
 import { createSheet, updateSheet } from '../../../grid/actions/sheetsAction';
-import { SheetController } from '../../../grid/controller/_sheetController';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { convertReactColorToString } from '../../../helpers/convertColor';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { generateKeyBetween } from '../../../utils/fractionalIndexing';

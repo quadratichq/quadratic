@@ -1,5 +1,5 @@
 import fuzzysort from 'fuzzysort';
-import { SheetController } from '../../../grid/controller/_sheetController';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import BordersListItems from './ListItems/Borders';

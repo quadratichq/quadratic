@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
 import { DeleteCells } from '../../grid/actions/DeleteCells';
 import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
-import { SheetController } from '../../grid/controller/_sheetController';
+import { SheetController } from '../../grid/controller/SheetController';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CellFormat } from '../../schemas';
 import { useFormatCells } from '../../ui/menus/TopBar/SubMenus/useFormatCells';

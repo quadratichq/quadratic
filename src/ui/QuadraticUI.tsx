@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { IS_READONLY_MODE } from '../constants/app';
-import { SheetController } from '../grid/controller/_sheetController';
+import { SheetController } from '../grid/controller/SheetController';
 import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';

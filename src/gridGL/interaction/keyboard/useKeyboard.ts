@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../../grid/controller/_sheetController';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { useGlobalSnackbar } from '../../../ui/contexts/GlobalSnackbar';
 import { useLocalFiles } from '../../../ui/contexts/LocalFiles';
 import { useClearAllFormatting } from '../../../ui/menus/TopBar/SubMenus/useClearAllFormatting';

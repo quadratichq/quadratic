@@ -16,7 +16,7 @@ import { Tooltip } from '@mui/material';
 import { ClickEvent, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
 import { useCallback, useEffect, useState } from 'react';
 import { ColorResult } from 'react-color';
-import { SheetController } from '../../../../../grid/controller/_sheetController';
+import { SheetController } from '../../../../../grid/controller/SheetController';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
 import { BorderType, BorderTypeEnum } from '../../../../../schemas';
 import { colors } from '../../../../../theme/colors';

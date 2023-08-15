@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { loadedStateAtom } from '../atoms/loadedStateAtom';
 import { Grid } from '../grid/controller/Grid';
-import { SheetController } from '../grid/controller/_sheetController';
+import { SheetController } from '../grid/controller/SheetController';
 import { loadAssets } from '../gridGL/loadAssets';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { pixiAppEvents } from '../gridGL/pixiApp/PixiAppEvents';

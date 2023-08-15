@@ -18,7 +18,7 @@ import Button from '@mui/material/Button';
 import { Menu, MenuChangeEvent, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useCallback } from 'react';
-import { SheetController } from '../../../../../grid/controller/_sheetController';
+import { SheetController } from '../../../../../grid/controller/SheetController';
 import { focusGrid } from '../../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';
 import { QColorPicker } from '../../../../components/qColorPicker';

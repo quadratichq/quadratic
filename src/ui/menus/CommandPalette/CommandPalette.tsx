@@ -3,7 +3,7 @@ import mixpanel from 'mixpanel-browser';
 import React, { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../../grid/controller/_sheetController';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
 import '../../styles/floating-dialog.css';

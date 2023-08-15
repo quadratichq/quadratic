@@ -18,7 +18,7 @@ import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
 import { PNG_MESSAGE } from '../../../constants/app';
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
-import { SheetController } from '../../../grid/controller/_sheetController';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';

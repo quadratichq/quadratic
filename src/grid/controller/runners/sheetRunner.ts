@@ -1,4 +1,4 @@
-import { SheetController } from '../_sheetController';
+import { SheetController } from '../SheetController';
 import { Statement } from '../statement';
 
 export const sheetRunner = (sheetController: SheetController, statement: Statement): Statement => {

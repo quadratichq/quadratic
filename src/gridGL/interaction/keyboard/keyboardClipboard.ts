@@ -5,7 +5,7 @@ import {
   cutToClipboard,
   pasteFromClipboard,
 } from '../../../grid/actions/clipboard/clipboard';
-import { SheetController } from '../../../grid/controller/_sheetController';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { GlobalSnackbar } from '../../../ui/contexts/GlobalSnackbar';
 import { PixiApp } from '../../pixiApp/PixiApp';
 

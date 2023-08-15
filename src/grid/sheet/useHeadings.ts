@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
 import { Coordinate } from '../../gridGL/types/size';
-import { SheetController } from '../controller/_sheetController';
+import { SheetController } from '../controller/SheetController';
 import { HeadingResizing } from './GridOffsets';
 
 interface Props {

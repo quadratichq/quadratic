@@ -2,7 +2,7 @@ import './SheetBarTab.css';
 
 import { Box, Fade, Popper } from '@mui/material';
 import { MouseEvent, PointerEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { SheetController } from '../../../grid/controller/_sheetController';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useLocalFiles } from '../../contexts/LocalFiles';

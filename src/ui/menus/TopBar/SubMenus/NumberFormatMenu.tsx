@@ -5,7 +5,7 @@ import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { AbcOutlined, AttachMoney, Functions, Percent } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
 import '@szhsin/react-menu/dist/index.css';
-import { SheetController } from '../../../../grid/controller/_sheetController';
+import { SheetController } from '../../../../grid/controller/SheetController';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import { MenuLineItem } from '../MenuLineItem';
 import { useFormatCells } from './useFormatCells';
