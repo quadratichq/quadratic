@@ -1,18 +1,17 @@
-import GetCellsDB
-
-import sys
-import re
-import traceback
-import pyodide
 import asyncio
-import micropip
-import pandas as pd
-import numpy as np
 import operator
-
-from io import StringIO
+import re
+import sys
+import traceback
 from contextlib import redirect_stdout
 from decimal import Decimal, DecimalException
+from io import StringIO
+
+import GetCellsDB
+import micropip
+import numpy as np
+import pandas as pd
+import pyodide
 
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
@@ -299,6 +298,15 @@ async def run_python(code):
         if isinstance(output_value, pd.Series):
             array_output = output_value.to_numpy().tolist()
 
+        # Attempt to format code
+        formatted_code = code 
+        try:
+            formatted_code = autopep8.fix_code(
+                code, options={"ignore": ["E402"]}
+            )  # Ignore E402 : otherwise breaks imports
+        except Exception:
+            pass
+
         return {
             "output_value": str(output_value),
             "array_output": array_output,
@@ -306,9 +314,7 @@ async def run_python(code):
             "input_python_std_out": sout.getvalue(),
             "success": True,
             "input_python_stack_trace": None,
-            "formatted_code": autopep8.fix_code(
-                code, options={"ignore": ["E402"]}
-            ),  # Ignore E402 : otherwise breaks imports
+            "formatted_code": formatted_code
         }
 
     return {
