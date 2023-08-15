@@ -1,7 +1,3 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import {
   AttachMoneyOutlined,
   BorderAll,
@@ -13,24 +9,28 @@ import {
   FormatColorFill,
   FormatColorText,
   FormatItalic,
-  Percent,
   MoreHoriz,
+  Percent,
 } from '@mui/icons-material';
+import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuItem, useMenuState } from '@szhsin/react-menu';
-import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
-import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
-import { QColorPicker } from '../../components/qColorPicker';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
-import { TooltipHint } from '../../components/TooltipHint';
-import { CopyAsPNG, DecimalDecrease, DecimalIncrease } from '../../icons';
-import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting';
-import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
-import { MenuLineItem } from '../TopBar/MenuLineItem';
-import { colors } from '../../../theme/colors';
 import mixpanel from 'mixpanel-browser';
-import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
+import { useCallback, useEffect, useRef } from 'react';
 import { PNG_MESSAGE } from '../../../constants/app';
+import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
+import { SheetController } from '../../../grid/controller/_sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import { colors } from '../../../theme/colors';
+import { TooltipHint } from '../../components/TooltipHint';
+import { QColorPicker } from '../../components/qColorPicker';
+import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
+import { CopyAsPNG, DecimalDecrease, DecimalIncrease } from '../../icons';
+import { MenuLineItem } from '../TopBar/MenuLineItem';
+import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
+import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting';
+import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
+import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
 
 interface Props {
   container?: HTMLDivElement;

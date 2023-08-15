@@ -1,24 +1,24 @@
+import { ManageSearch } from '@mui/icons-material';
+import { Box, IconButton, InputBase, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { Box, Typography, IconButton, InputBase } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
+import { IS_READONLY_MODE } from '../../../constants/app';
+import { SheetController } from '../../../grid/controller/_sheetController';
+import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
-import { DataMenu } from './SubMenus/DataMenu';
-import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
-import { ZoomDropdown } from './ZoomDropdown';
-import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { IS_READONLY_MODE } from '../../../constants/app';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
-import { ManageSearch } from '@mui/icons-material';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { useGridSettings } from './SubMenus/useGridSettings';
-import CodeOutlinesSwitch from './CodeOutlinesSwitch';
 import { useLocalFiles } from '../../contexts/LocalFiles';
+import CodeOutlinesSwitch from './CodeOutlinesSwitch';
+import { DataMenu } from './SubMenus/DataMenu';
+import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
+import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
+import { QuadraticMenu } from './SubMenus/QuadraticMenu';
+import { useGridSettings } from './SubMenus/useGridSettings';
+import { ZoomDropdown } from './ZoomDropdown';
 
 interface IProps {
   sheetController: SheetController;

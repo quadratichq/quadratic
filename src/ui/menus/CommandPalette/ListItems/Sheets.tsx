@@ -1,8 +1,8 @@
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
-import { SheetController } from '../../../../grid/controller/sheetController';
+import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined';
 import { createSheet } from '../../../../grid/actions/sheetsAction';
+import { SheetController } from '../../../../grid/controller/_sheetController';
+import { CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const ListItems = [
   {

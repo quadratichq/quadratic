@@ -1,11 +1,11 @@
 import './SheetBarTab.css';
 
-import { MouseEvent, PointerEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { useLocalFiles } from '../../contexts/LocalFiles';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { focusGrid } from '../../../helpers/focusGrid';
 import { Box, Fade, Popper } from '@mui/material';
+import { MouseEvent, PointerEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { SheetController } from '../../../grid/controller/_sheetController';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { useLocalFiles } from '../../contexts/LocalFiles';
 
 interface Props {
   sheet: Sheet;

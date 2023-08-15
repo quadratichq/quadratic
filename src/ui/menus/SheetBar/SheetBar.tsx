@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { ButtonUnstyled } from '@mui/material';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { createSheet, updateSheet } from '../../../grid/actions/sheetsAction';
-import { SheetController } from '../../../grid/controller/sheetController';
+import { SheetController } from '../../../grid/controller/_sheetController';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { generateKeyBetween } from '../../../utils/fractionalIndexing';

@@ -2,7 +2,7 @@ import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
 import { JsRenderCell, JsRenderFill } from '../../quadratic-core/types';
 import { Cell, CellFormat } from '../../schemas';
-import { Grid } from '../Grid';
+import { Grid } from '../controller/Grid';
 import { CellDependencyManager } from './CellDependencyManager';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
@@ -14,7 +14,10 @@ export class Sheet {
   id: string;
   gridOffsets: GridOffsets;
   grid: GridSparse;
+
+  // todo: rename to Grid after migration
   gridNew: Grid;
+
   borders: GridBorders;
   cursor: SheetCursor;
 
@@ -24,9 +27,10 @@ export class Sheet {
   cell_dependency: CellDependencyManager;
 
   constructor(grid: Grid, index: number) {
-    //}, name: string | undefined, order: string, copyFrom?: Sheet) {
     this.gridNew = grid;
-    this.grid = new GridSparse(grid.grid, index, this);
+
+    // deprecated
+    this.grid = new GridSparse(this);
 
     const sheetId = this.gridNew.sheetIndexToId(index);
     if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Coordinate } from '../types/size';
-import { focusGrid } from '../../helpers/focusGrid';
-import { PixiApp } from '../pixiApp/PixiApp';
-import { SheetController } from '../../grid/controller/sheetController';
-import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
-import { DeleteCells } from '../../grid/actions/DeleteCells';
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
+import { DeleteCells } from '../../grid/actions/DeleteCells';
+import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
+import { SheetController } from '../../grid/controller/_sheetController';
+import { focusGrid } from '../../helpers/focusGrid';
 import { CellFormat } from '../../schemas';
 import { useFormatCells } from '../../ui/menus/TopBar/SubMenus/useFormatCells';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
+import { PixiApp } from '../pixiApp/PixiApp';
+import { Coordinate } from '../types/size';
 
 interface CellInputProps {
   editorInteractionState: EditorInteractionState;

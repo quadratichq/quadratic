@@ -1,32 +1,32 @@
 import './formatMenuStyles.scss';
 
-import { useCallback } from 'react';
-import Button from '@mui/material/Button';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Menu, MenuItem, MenuDivider, SubMenu, MenuChangeEvent } from '@szhsin/react-menu';
 import {
-  FormatBold,
-  FormatItalic,
-  FormatColorText,
-  FormatColorFill,
-  FormatClear,
   BorderAll,
-  FormatAlignLeft,
   FormatAlignCenter,
+  FormatAlignLeft,
   FormatAlignRight,
+  FormatBold,
+  FormatClear,
+  FormatColorFill,
+  FormatColorText,
+  FormatItalic,
+  PaletteOutlined,
 } from '@mui/icons-material';
-import { PaletteOutlined } from '@mui/icons-material';
-import '@szhsin/react-menu/dist/index.css';
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Tooltip } from '@mui/material';
-import { QColorPicker } from '../../../../components/qColorPicker';
-import { useFormatCells } from '../useFormatCells';
-import { useGetBorderMenu } from './useGetBorderMenu';
-import { SheetController } from '../../../../../grid/controller/sheetController';
-import { useGetSelection } from '../useGetSelection';
-import { MenuLineItem } from '../../MenuLineItem';
-import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';
-import { useClearAllFormatting } from '../useClearAllFormatting';
+import Button from '@mui/material/Button';
+import { Menu, MenuChangeEvent, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
+import '@szhsin/react-menu/dist/index.css';
+import { useCallback } from 'react';
+import { SheetController } from '../../../../../grid/controller/_sheetController';
 import { focusGrid } from '../../../../../helpers/focusGrid';
+import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';
+import { QColorPicker } from '../../../../components/qColorPicker';
+import { MenuLineItem } from '../../MenuLineItem';
+import { useClearAllFormatting } from '../useClearAllFormatting';
+import { useFormatCells } from '../useFormatCells';
+import { useGetSelection } from '../useGetSelection';
+import { useGetBorderMenu } from './useGetBorderMenu';
 
 interface IProps {
   sheet_controller: SheetController;

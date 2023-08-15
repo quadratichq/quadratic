@@ -1,16 +1,16 @@
 import fuzzysort from 'fuzzysort';
-import HelpListItems from './ListItems/Help';
-import ViewListItems from './ListItems/View';
-import FileListItems from './ListItems/File';
-import ImportListItems from './ListItems/Import';
-import EditListItems from './ListItems/Edit';
-import FormatListItems from './ListItems/Format';
+import { SheetController } from '../../../grid/controller/_sheetController';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import BordersListItems from './ListItems/Borders';
+import EditListItems from './ListItems/Edit';
+import FileListItems from './ListItems/File';
+import FormatListItems from './ListItems/Format';
+import HelpListItems from './ListItems/Help';
+import ImportListItems from './ListItems/Import';
 import SheetListItems from './ListItems/Sheets';
 import TextListItems from './ListItems/Text';
-import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import ViewListItems from './ListItems/View';
 
 interface Commands {
   label: string;

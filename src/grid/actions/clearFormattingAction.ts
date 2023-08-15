@@ -1,6 +1,6 @@
 import { Coordinate } from '../../gridGL/types/size';
 import { CellFormat } from '../../schemas';
-import { SheetController } from '../controller/sheetController';
+import { SheetController } from '../controller/_sheetController';
 
 export const clearFormattingAction = (args: {
   sheet_controller: SheetController;

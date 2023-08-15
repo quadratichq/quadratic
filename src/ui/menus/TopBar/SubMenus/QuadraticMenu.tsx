@@ -1,23 +1,23 @@
+import { useAuth0 } from '@auth0/auth0-react';
+import { ContentCopy, ContentCut, ContentPaste, Redo, Undo } from '@mui/icons-material';
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
+import { Tooltip } from '@mui/material';
+import Button from '@mui/material/Button';
+import { Menu, MenuDivider, MenuHeader, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useEffect } from 'react';
-import Button from '@mui/material/Button';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Menu, MenuItem, SubMenu, MenuDivider, MenuHeader } from '@szhsin/react-menu';
-import { IS_READONLY_MODE } from '../../../../constants/app';
-import { useGridSettings } from './useGridSettings';
-import { useAuth0 } from '@auth0/auth0-react';
-import { Tooltip } from '@mui/material';
-import { DOCUMENTATION_URL } from '../../../../constants/urls';
-import { SheetController } from '../../../../grid/controller/sheetController';
-import { MenuLineItem } from '../MenuLineItem';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { useRecoilState } from 'recoil';
-import { isMac } from '../../../../utils/isMac';
-import { ContentCopy, ContentCut, ContentPaste, Undo, Redo } from '@mui/icons-material';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { useLocalFiles } from '../../../contexts/LocalFiles';
+import { IS_READONLY_MODE } from '../../../../constants/app';
+import { DOCUMENTATION_URL } from '../../../../constants/urls';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
+import { SheetController } from '../../../../grid/controller/_sheetController';
 import { focusGrid } from '../../../../helpers/focusGrid';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { isMac } from '../../../../utils/isMac';
+import { useLocalFiles } from '../../../contexts/LocalFiles';
+import { MenuLineItem } from '../MenuLineItem';
+import { useGridSettings } from './useGridSettings';
 
 interface Props {
   sheetController: SheetController;

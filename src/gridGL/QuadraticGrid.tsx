@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
 import { useRecoilState } from 'recoil';
-import { PixiApp } from './pixiApp/PixiApp';
+import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
+import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
+import { SheetController } from '../grid/controller/_sheetController';
+import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
+import { CellInput } from './interaction/CellInput';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/viewportHelper';
-import { CellInput } from './interaction/CellInput';
-import { SheetController } from '../grid/controller/sheetController';
-import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
+import { PixiApp } from './pixiApp/PixiApp';
 import { PanMode } from './pixiApp/PixiAppSettings';
 
 interface IProps {

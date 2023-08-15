@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { ColorResult } from 'react-color';
 import { clearFormattingAction } from '../../../../grid/actions/clearFormattingAction';
-import { SheetController } from '../../../../grid/controller/sheetController';
+import { SheetController } from '../../../../grid/controller/_sheetController';
 import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
 import { pixiAppEvents } from '../../../../gridGL/pixiApp/PixiAppEvents';
 import { convertReactColorToString } from '../../../../helpers/convertColor';

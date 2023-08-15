@@ -1,5 +1,5 @@
 import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
-import { SheetController } from '../sheetController';
+import { SheetController } from '../_sheetController';
 import { Statement } from '../statement';
 
 export const SetHeadingSizeRunner = (sheetController: SheetController, statement: Statement): Statement => {

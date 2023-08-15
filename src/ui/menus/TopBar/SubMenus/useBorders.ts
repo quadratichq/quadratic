@@ -1,5 +1,5 @@
 import { clearBordersAction } from '../../../../grid/actions/clearBordersAction';
-import { SheetController } from '../../../../grid/controller/sheetController';
+import { SheetController } from '../../../../grid/controller/_sheetController';
 import { pixiAppEvents } from '../../../../gridGL/pixiApp/PixiAppEvents';
 import { Border, BorderType } from '../../../../schemas';
 import { useGetSelection } from './useGetSelection';

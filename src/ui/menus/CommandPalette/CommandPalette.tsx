@@ -1,14 +1,14 @@
-import React, { useEffect } from 'react';
 import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
+import React, { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { focusGrid } from '../../../helpers/focusGrid';
+import { SheetController } from '../../../grid/controller/_sheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { getCommandPaletteListItems } from './getCommandPaletteListItems';
+import { focusGrid } from '../../../helpers/focusGrid';
 import '../../styles/floating-dialog.css';
-import mixpanel from 'mixpanel-browser';
 import { useSheetListItems } from './ListItems/useSheetListItems';
+import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 
 interface Props {
   app: PixiApp;

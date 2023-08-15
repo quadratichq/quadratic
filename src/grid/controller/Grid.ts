@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
-import { Pos, Rect, Grid as RustGrid } from '../quadratic-core/quadratic_core';
-import { JsRenderCell, JsRenderFill } from '../quadratic-core/types';
-import { GridFile } from '../schemas';
+import { Pos, Rect, Grid as RustGrid } from '../../quadratic-core/quadratic_core';
+import { JsRenderCell, JsRenderFill } from '../../quadratic-core/types';
+import { GridFile } from '../../schemas';
 
 const rectangleToRect = (rectangle: Rectangle): Rect => {
   return new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
@@ -14,11 +14,7 @@ const pointsToRect = (x: number, y: number, width: number, height: number): Rect
 // TS wrapper around Grid.rs
 export class Grid {
   // should be private after migration
-  grid: RustGrid;
-
-  constructor() {
-    this.grid = new RustGrid();
-  }
+  grid?: RustGrid;
 
   // todo: remove return value (used to keep TS sheetController running)
   newFromFile(grid: GridFile): RustGrid {
@@ -27,34 +23,41 @@ export class Grid {
   }
 
   getSheetOrder(sheetId: string): number | undefined {
+    if (!this.grid) throw new Error('Expected grid to be defined in Grid');
     return this.grid.sheetIdToIndex(sheetId);
   }
 
   getSheetName(sheetId: string): string | undefined {
+    if (!this.grid) throw new Error('Expected grid to be defined in Grid');
     const json = this.grid.getSheetMetaData(sheetId);
     return JSON.parse(json).name;
   }
 
   getSheetColor(sheetId: string): string | undefined {
+    if (!this.grid) throw new Error('Expected grid to be defined in Grid');
     const json = this.grid.getSheetMetaData(sheetId);
     return JSON.parse(json).color;
   }
 
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
+    if (!this.grid) throw new Error('Expected grid to be defined in Grid');
     const data = this.grid.getRenderCells(sheetId, rectangleToRect(rectangle));
     return JSON.parse(data);
   }
 
   getRenderFills(sheetId: string, rectangle: Rectangle): JsRenderFill[] {
+    if (!this.grid) throw new Error('Expected grid to be defined in Grid');
     const data = this.grid.getRenderFills(sheetId, rectangleToRect(rectangle));
     return JSON.parse(data);
   }
 
   sheetIndexToId(index: number): string | undefined {
+    if (!this.grid) throw new Error('Expected grid to be defined in Grid');
     return this.grid.sheetIndexToId(index);
   }
 
   getGridBounds(sheetId: string, ignoreFormatting: boolean): Rectangle | undefined {
+    if (!this.grid) throw new Error('Expected grid to be defined in Grid');
     const bounds = this.grid.getGridBounds(sheetId, ignoreFormatting);
     if (bounds.type === 'empty') {
       return;
@@ -63,6 +66,7 @@ export class Grid {
   }
 
   populateWithRandomFloats(sheetId: string, width: number, height: number): void {
+    if (!this.grid) throw new Error('Expected grid to be defined in Grid');
     this.grid.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height));
   }
 }

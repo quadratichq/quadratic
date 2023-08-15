@@ -8,7 +8,8 @@ import apiClientSingleton from '../api-client/apiClientSingleton';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { DEFAULT_FILE_NAME, EXAMPLE_FILES, FILE_PARAM_KEY } from '../constants/app';
 import { debugMockLargeData, debugShowFileIO } from '../debugFlags';
-import { SheetController } from '../grid/controller/sheetController';
+import { Grid } from '../grid/controller/Grid';
+import { SheetController } from '../grid/controller/_sheetController';
 import { pixiAppEvents } from '../gridGL/pixiApp/PixiAppEvents';
 import { downloadFile } from '../helpers/downloadFile';
 import { getURLParameter } from '../helpers/getURL';
@@ -47,7 +48,7 @@ export interface LocalFiles {
  * This hook should ONLY be run once. The values it returns get stuck in the
  * `useLocalFiles()` provider for as a react context for use throughout the app
  */
-export const useGenerateLocalFiles = (sheetController: SheetController): LocalFiles => {
+export const useGenerateLocalFiles = (sheetController: SheetController, grid: Grid): LocalFiles => {
   const [hasInitialPageLoadError, setHasInitialPageLoadError] = useState<boolean>(false);
   const [fileList, setFileList] = useState<LocalFile[]>([]);
   const [currentFileContents, setCurrentFileContents] = useState<GridFile | null>(null);
@@ -81,20 +82,19 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
 
   // Reset the sheet to the current file in state, update the URL accordingly
   const resetSheet = useCallback(
-    (grid: GridFile) => {
-      sheetController.clear();
-      sheetController.loadFile(grid);
+    (gridFile: GridFile) => {
+      sheetController.loadFile(gridFile);
       pixiAppEvents.rebuild();
       const searchParams = new URLSearchParams(window.location.search);
       // If `file` is in there from an initial page load, remove it
       if (searchParams.get('file')) {
         searchParams.delete('file');
       }
-      searchParams.set('local', grid.id);
+      searchParams.set('local', gridFile.id);
       const url = `${window.location.href.split('?')[0]}?${searchParams.toString()}`;
       window.history.replaceState(undefined, '', url);
     },
-    [sheetController]
+    [grid]
   );
 
   // Given some contents, determine whether it's a valid file we can load into

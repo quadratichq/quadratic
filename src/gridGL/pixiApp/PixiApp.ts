@@ -4,8 +4,8 @@ import { editorInteractionStateDefault } from '../../atoms/editorInteractionStat
 import { IS_READONLY_MODE } from '../../constants/app';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
-import { Grid } from '../../grid/Grid';
-import { SheetController } from '../../grid/controller/sheetController';
+import { Grid } from '../../grid/controller/Grid';
+import { SheetController } from '../../grid/controller/_sheetController';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';

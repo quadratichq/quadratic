@@ -23,7 +23,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
 import { CellEvaluationResult } from '../../../grid/computations/types';
-import { SheetController } from '../../../grid/controller/sheetController';
+import { SheetController } from '../../../grid/controller/_sheetController';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';

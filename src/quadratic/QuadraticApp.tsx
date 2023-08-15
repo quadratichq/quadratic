@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { loadedStateAtom } from '../atoms/loadedStateAtom';
-import { Grid } from '../grid/Grid';
-import { SheetController } from '../grid/controller/sheetController';
+import { Grid } from '../grid/controller/Grid';
+import { SheetController } from '../grid/controller/_sheetController';
 import { loadAssets } from '../gridGL/loadAssets';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { pixiAppEvents } from '../gridGL/pixiApp/PixiAppEvents';
@@ -22,7 +22,7 @@ export const QuadraticApp = () => {
   const didMount = useRef(false);
   const [grid] = useState(() => new Grid());
   const [sheetController] = useState(() => new SheetController(grid));
-  const localFiles = useGenerateLocalFiles(sheetController);
+  const localFiles = useGenerateLocalFiles(sheetController, grid);
   const [app] = useState(() => new PixiApp(grid, sheetController, localFiles.save));
   const { initialize } = localFiles;
 

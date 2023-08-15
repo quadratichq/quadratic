@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { DeleteCells } from '../../../../grid/actions/DeleteCells';
 import { updateCellAndDCells } from '../../../../grid/actions/updateCellAndDCells';
-import { SheetController } from '../../../../grid/controller/sheetController';
+import { SheetController } from '../../../../grid/controller/_sheetController';
 import { Border, Cell, CellFormat } from '../../../../schemas';
 import { PixiApp } from '../../../pixiApp/PixiApp';
 import { Coordinate } from '../../../types/size';

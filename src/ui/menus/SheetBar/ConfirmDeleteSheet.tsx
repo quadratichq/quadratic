@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
-import { SheetController } from '../../../grid/controller/sheetController';
 import { deleteSheet } from '../../../grid/actions/sheetsAction';
+import { SheetController } from '../../../grid/controller/_sheetController';
 
 interface Props {
   sheetController: SheetController;

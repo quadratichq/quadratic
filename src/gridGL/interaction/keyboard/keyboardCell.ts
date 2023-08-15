@@ -1,6 +1,6 @@
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { DeleteCells } from '../../../grid/actions/DeleteCells';
-import { SheetController } from '../../../grid/controller/sheetController';
+import { SheetController } from '../../../grid/controller/_sheetController';
 import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
 import { isAllowedFirstChar } from './keyboardCellChars';
 
