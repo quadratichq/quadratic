@@ -5,8 +5,8 @@ import { GridFile, SheetSchema } from '../../schemas';
 import { Sheet } from '../sheet/Sheet';
 import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
 import { Grid } from './Grid';
-import { TransactionResponse } from './TransactionResponse';
 import { StatementRunner } from './runners/runner';
+import { TransactionResponse } from './s';
 import { Statement } from './statement';
 import { Transaction } from './transaction';
 
@@ -310,23 +310,17 @@ export class SheetController {
     return this.end_transaction();
   }
 
-  public has_undo(): boolean {
-    return this.undo_stack.length > 0;
+  public hasUndo(): boolean {
+    return this.grid.hasUndo();
   }
-  public has_redo(): boolean {
-    return this.redo_stack.length > 0;
+  public hasRedo(): boolean {
+    return this.grid.hasRedo();
   }
 
   public undo(): void {
-    // check if undo stack is empty
-    // check if transaction in progress
-    // pop transaction off undo stack
-    // start transaction
-    // run each statement in transaction
-    // end transaction
-    // add reverse transaction to redo stack
-    if (!this.has_undo()) return;
-
+    if (!this.hasUndo()) return;
+    const summary = this.grid.undo();
+    this.transactionResponse(summary);
     if (this.transaction_in_progress || this.transaction_in_progress_reverse) return;
 
     // pop transaction off undo stack
@@ -346,10 +340,11 @@ export class SheetController {
     // add reverse transaction to redo stack
     this.redo_stack.push(reverse_transaction);
 
-    if (transaction.cursor) {
-      this.current = transaction.cursor.sheetId;
-      this.sheet.cursor.load(transaction.cursor);
-    }
+    // todo
+    // if (transaction.cursor) {
+    //   this.current = transaction.cursor.sheetId;
+    //   this.sheet.cursor.load(transaction.cursor);
+    // }
   }
 
   public redo(): void {
@@ -360,7 +355,7 @@ export class SheetController {
     // run each statement in transaction
     // end transaction
     // add reverse transaction to undo stack
-    if (!this.has_redo()) return;
+    if (!this.hasRedo()) return;
 
     if (this.transaction_in_progress || this.transaction_in_progress_reverse) return;
 

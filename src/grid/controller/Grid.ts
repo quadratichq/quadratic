@@ -75,7 +75,31 @@ export class Grid {
     return this.gridController.getSheetColor(sheetId);
   }
 
+  // undo
+  //-----
+
+  hasUndo(): boolean {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.hasUndo();
+  }
+
+  hasRedo(): boolean {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.hasRedo();
+  }
+
+  undo(): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.undo();
+  }
+
+  redo(): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.redo();
+  }
+
   // get grid components
+  //--------------------
 
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
