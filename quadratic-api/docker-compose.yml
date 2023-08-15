@@ -1,12 +1,12 @@
 version: '3.8'
 services:
-  db:
+  postgres:
     image: postgres:15
     restart: always
-    container_name: integration-tests-prisma
+    container_name: postgres
     ports:
       - '5433:5432'
     environment:
       POSTGRES_USER: prisma
       POSTGRES_PASSWORD: prisma
-      POSTGRES_DB: tests
+      POSTGRES_DB: quadratic-api

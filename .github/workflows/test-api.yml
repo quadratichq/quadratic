@@ -25,4 +25,4 @@ jobs:
       - name: Run Tests
         run: |
           cd quadratic-api
-          npm run test:ci
+          npm run docker:test:ci
