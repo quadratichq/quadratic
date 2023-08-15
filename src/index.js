@@ -3,6 +3,7 @@ import { BrowserTracing } from '@sentry/tracing';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
+import { ShowAfter } from './components/ShowAfter';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { router } from './router';
@@ -24,7 +25,14 @@ const container = document.getElementById('root');
 const root = createRoot(container);
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} fallbackElement={<QuadraticLoading />}></RouterProvider>
+    <RouterProvider
+      router={router}
+      fallbackElement={
+        <ShowAfter delay={2000}>
+          <QuadraticLoading />
+        </ShowAfter>
+      }
+    ></RouterProvider>
   </React.StrictMode>
 );
 
