@@ -9,7 +9,7 @@ export const Component = () => {
     <>
       <Header title="My team" />
       <Empty
-        title="Coming soon…"
+        title="Coming soon"
         description={
           <>
             Quadratic Teams is a collaborative space where your team can work on files together. If you are interested
