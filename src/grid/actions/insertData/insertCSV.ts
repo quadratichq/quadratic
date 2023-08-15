@@ -1,11 +1,11 @@
 import { Coordinate } from '../../../gridGL/types/size';
-import { SheetController } from '../../controller/sheetController';
+import { SheetController } from '../../controller/_sheetController';
 // import { Cell } from '../../sheet/gridTypes';
 // import { updateCellAndDCells } from '../updateCellAndDCells';
-import * as Papa from 'papaparse';
-import { updateCellAndDCells } from '../updateCellAndDCells';
-import { Cell } from '../../../schemas';
 import mixpanel from 'mixpanel-browser';
+import * as Papa from 'papaparse';
+import { Cell } from '../../../schemas';
+import { updateCellAndDCells } from '../updateCellAndDCells';
 
 export const InsertCSV = (props: {
   file: File;

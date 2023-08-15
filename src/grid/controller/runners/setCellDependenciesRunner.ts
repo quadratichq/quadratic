@@ -1,4 +1,4 @@
-import { SheetController } from '../sheetController';
+import { SheetController } from '../_sheetController';
 import { Statement } from '../statement';
 
 export const AddCellDependenciesRunner = (sheetController: SheetController, statement: Statement): Statement => {

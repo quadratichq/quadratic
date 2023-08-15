@@ -1,7 +1,7 @@
 import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 import { Coordinate } from '../../../gridGL/types/size';
 import { Cell } from '../../../schemas';
-import { SheetController } from '../sheetController';
+import { SheetController } from '../_sheetController';
 import { Statement } from '../statement';
 
 export const SetCellsRunner = (sheetController: SheetController, statement: Statement): Statement => {
