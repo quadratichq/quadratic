@@ -632,14 +632,6 @@ impl Sheet {
         todo!("unspill cells from {source:?}")
     }
 
-    pub fn get_name(&self) -> String {
-        self.name.clone()
-    }
-
-    pub fn get_color(&self) -> Option<String> {
-        self.color.clone()
-    }
-
     pub fn id_to_string(&self) -> String {
         self.id.id_to_string()
     }
