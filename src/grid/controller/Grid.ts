@@ -62,14 +62,12 @@ export class Grid {
 
   getSheetName(sheetId: string): string | undefined {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    const json = this.gridController.getSheetMetaData(sheetId);
-    return JSON.parse(json).name;
+    return this.gridController.getSheetName(sheetId);
   }
 
   getSheetColor(sheetId: string): string | undefined {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    const json = this.gridController.getSheetMetaData(sheetId);
-    return JSON.parse(json).color;
+    return this.gridController.getSheetColor(sheetId);
   }
 
   // get grid components

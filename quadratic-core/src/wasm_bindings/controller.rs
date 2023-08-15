@@ -267,11 +267,21 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&output)?)
     }
 
-    #[wasm_bindgen(js_name = "getSheetMetaData")]
-    pub fn get_sheet_metadata(&self, sheet_id: String) -> Result<String, JsValue> {
+    #[wasm_bindgen(js_name = "getSheetName")]
+    pub fn get_sheet_name(&self, sheet_id: String) -> String {
         let sheet_id = SheetId::from_string(&sheet_id);
         let sheet = self.grid().sheet_from_id(sheet_id);
-        Ok(serde_json::to_string(&sheet.get_meta_data()).map_err(|e| e.to_string())?)
+        sheet.name.clone()
+    }
+
+    #[wasm_bindgen(js_name = "getSheetColor")]
+    pub fn get_sheet_color(&self, sheet_id: String) -> String {
+        let sheet_id = SheetId::from_string(&sheet_id);
+        let sheet = self.grid().sheet_from_id(sheet_id);
+        match &sheet.color {
+            Some(color) => color.clone(),
+            None => String::from(""),
+        }
     }
 
     // /// Sets the text alignment as a [`CellAlign`] in a region.
