@@ -15,8 +15,6 @@ const DEFAULT_FILE: GridFile = {
   version: GridFileSchema.shape.version.value,
 };
 
-const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
-
 class APIClientSingleton {
   // Allow only one instance of the class to be created
   // gives access to the api all over the app including pure js
@@ -31,10 +29,10 @@ class APIClientSingleton {
   }
 
   getAPIURL() {
-    if (!API_URL) {
+    if (!process.env.REACT_APP_QUADRATIC_API_URL) {
       throw new Error('REACT_APP_QUADRATIC_API_URL not set');
     }
-    return API_URL;
+    return process.env.REACT_APP_QUADRATIC_API_URL;
   }
 
   async getFiles(): Promise<GetFilesRes> {
