@@ -55,7 +55,7 @@ export const QuadraticMenu = (props: Props) => {
           </Tooltip>
         }
       >
-        <MenuItem href="/" style={{ textDecoration: 'none' }}>
+        <MenuItem href={ROUTES.MY_FILES} style={{ textDecoration: 'none' }}>
           Back to files
         </MenuItem>
         <MenuDivider />
