@@ -24,6 +24,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // We initialize mixpanel here (again, as we do it in the root loader) because
   // it helps us prevent the app from failing because all the loaders run in parallel
   // and we can't guarantee this loader finishes before the root one
+  // Once this proposal ships, we should use it: https://github.com/remix-run/react-router/discussions/9564
   let user = await authClient.user();
   initMixpanelAnalytics(user);
 
