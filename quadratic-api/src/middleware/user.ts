@@ -1,5 +1,5 @@
-import dbClient from '../dbClient';
 import { NextFunction, Response } from 'express';
+import dbClient from '../dbClient';
 import { Request } from '../types/Request';
 
 export const userMiddleware = async (req: Request, res: Response, next: NextFunction) => {
