@@ -482,6 +482,6 @@ mod tests {
         let sheet1 = g.sheet(s1);
         let sheet2 = g.sheet(s2);
 
-        assert_ne!(sheet1.name, sheet2.name);
+        assert_eq!(sheet2.name, format!("{} Copy", sheet1.name));
     }
 }
