@@ -10,8 +10,8 @@ import { webWorkers } from '../web-workers/webWorkers';
 import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
-type loadableItem = 'pixi-assets' | 'wasm-rust';
-const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'wasm-rust'];
+type loadableItem = 'pixi-assets' | 'wasm-rust' | 'prerender-quadrants';
+const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'wasm-rust', 'prerender-quadrants'];
 
 export default function QuadraticApp({ initialFile }: { initialFile: InitialFile }) {
   const [loading, setLoading] = useState(true);
@@ -56,6 +56,11 @@ export default function QuadraticApp({ initialFile }: { initialFile: InitialFile
 
     loadAssets().then(() => {
       setItemsLoaded((old) => ['pixi-assets', ...old]);
+
+      // render quadrants
+      app.preRenderQuadrants().then(() => {
+        setItemsLoaded((old) => ['prerender-quadrants', ...old]);
+      });
     });
     init().then(() => {
       hello(); // let Rust say hello to console
