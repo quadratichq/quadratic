@@ -46,7 +46,7 @@ files_router.post('/', validateAccessToken, userMiddleware, async (req: Request,
     });
   }
 
-  res.status(200).end();
+  res.status(200).json({ message: 'Feedback submitted!' });
 });
 
 export default files_router;

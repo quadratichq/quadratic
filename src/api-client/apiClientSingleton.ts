@@ -1,9 +1,24 @@
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+import z from 'zod';
 import { authClient } from '../auth';
 import { downloadFile } from '../helpers/downloadFile';
 import { GridFile, GridFileSchema } from '../schemas';
-import { GetFileRes, GetFilesRes, PostFileContentsReq, PostFileNameReq, PostFilesReq, PostFilesRes } from './types';
+import {
+  DeleteFileRes,
+  DeleteFileResSchema,
+  GetFileRes,
+  GetFileResSchema,
+  GetFilesRes,
+  GetFilesResSchema,
+  PostFeedbackReq,
+  PostFeedbackReqSchema,
+  PostFileContentsReq,
+  PostFileNameReq,
+  PostFilesReq,
+  PostFilesRes,
+  PostFilesResSchema,
+} from './types';
 
 const DEFAULT_FILE: GridFile = {
   cells: [],
@@ -35,151 +50,54 @@ class APIClientSingleton {
     return process.env.REACT_APP_QUADRATIC_API_URL;
   }
 
-  async getFiles(): Promise<GetFilesRes> {
-    try {
-      const base_url = this.getAPIURL();
-      const token = await authClient.getToken();
-      const response = await fetch(`${base_url}/v0/files`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
-      }
-
-      const files = await response.json();
-      return files;
-    } catch (error) {
-      console.error(error);
-      Sentry.captureException({
-        message: `API Error Catch: Failed to fetch \`/files\`. ${error}`,
-      });
-
-      return undefined;
-    }
+  async getFiles(): Promise<GetFilesRes | undefined> {
+    return safeFetch<GetFilesRes>(`/v0/files`, { method: 'GET' }, GetFilesResSchema);
   }
 
   // Fetch a file from the DB
   async getFile(id: string): Promise<GetFileRes | undefined> {
-    try {
-      const base_url = this.getAPIURL();
-      const response = await fetch(`${base_url}/v0/files/${id}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${await authClient.getToken()}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error(error);
-      Sentry.captureException({
-        message: `API Error Catch: Failed to fetch \`/files\`. ${error}`,
-      });
-    }
+    return safeFetch<GetFileRes>(`/v0/files/${id}`, { method: 'GET' }, GetFileResSchema);
   }
 
   async deleteFile(id: string): Promise<boolean> {
     mixpanel.track('[Files].deleteFile', { id });
-
-    try {
-      const base_url = this.getAPIURL();
-      const response = await fetch(`${base_url}/v0/files/${id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${await authClient.getToken()}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
-      }
-      return true;
-    } catch (error) {
-      console.error(error);
-      Sentry.captureException({
-        message: `API Error Catch: Failed to delete \`/files/${id}\`. ${error}`,
-      });
-      return false;
-    }
+    return safeFetch<DeleteFileRes>(`/v0/files/${id}`, { method: 'DELETE' }, DeleteFileResSchema) // TODO
+      .then(() => true)
+      .catch(() => false);
   }
 
   async downloadFile(id: string): Promise<boolean> {
     mixpanel.track('[APIClient].downloadFile', { id });
-    try {
-      const res = await this.getFile(id);
-      if (!res) {
-        throw new Error('Failed to fetch file.');
-      }
-
-      downloadFile(res.file.name, res.file.contents);
-      return true;
-    } catch (error) {
-      console.error(error);
-      Sentry.captureException({
-        message: `API Error Catch: Failed to download \`/files/${id}\`. ${error}`,
-      });
-      return false;
-    }
+    return this.getFile(id)
+      .then((json) => {
+        if (json) {
+          downloadFile(json.file.name, json.file.contents);
+          return true;
+        } else {
+          return false;
+        }
+      })
+      .catch(() => false);
   }
 
   async postFile(uuid: string, body: PostFileContentsReq | PostFileNameReq): Promise<boolean> {
-    try {
-      const base_url = this.getAPIURL();
-      const response = await fetch(`${base_url}/v0/files/${uuid}`, {
+    return safeFetch<PostFileContentsReq | PostFileNameReq>(
+      `/v0/files/${uuid}`,
+      {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${await authClient.getToken()}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
-      }
-
-      return true;
-    } catch (error: any) {
-      Sentry.captureException({
-        message: `API Error Catch: ${error}`,
-      });
-      return false;
-    }
+      },
+      // TODO PostFileReqSchema
+      z.object({ name: z.string() })
+    )
+      .then(() => true)
+      .catch(() => false);
   }
 
-  async postFeedback({ feedback, userEmail }: { feedback: string; userEmail?: string }): Promise<boolean> {
-    try {
-      const url = `${this.getAPIURL()}/v0/feedback`;
-      const body = JSON.stringify({ feedback, userEmail });
-      const token = await authClient.getToken();
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body,
-      });
-      if (!response.ok) {
-        throw new Error(`Unexpected response: ${response.status} ${response.statusText}`);
-      }
-      return true;
-    } catch (error) {
-      Sentry.captureException({
-        message: `API Error Catch \`/v0/feedback\`: ${error}`,
-      });
-      return false;
-    }
+  async postFeedback(body: PostFeedbackReq): Promise<boolean> {
+    return safeFetch(`/v0/feedback`, { method: 'POST', body: JSON.stringify(body) }, PostFeedbackReqSchema)
+      .then(() => true)
+      .catch(() => false);
   }
 
   /**
@@ -193,30 +111,53 @@ class APIClientSingleton {
       version: DEFAULT_FILE.version,
     }
   ): Promise<string | undefined> {
-    try {
-      const base_url = this.getAPIURL();
-      const response = await fetch(`${base_url}/v0/files/`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${await authClient.getToken()}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Response Error: ${response.status} ${response.statusText}`);
-      }
-
-      const json: PostFilesRes = await response.json();
-
-      return json.uuid;
-    } catch (error: any) {
-      Sentry.captureException({
-        message: `API Error Catch: ${error}`,
-      });
-    }
+    return safeFetch<PostFilesRes>(`/v0/files/`, { method: 'POST', body: JSON.stringify(body) }, PostFilesResSchema)
+      .then((json) => json.uuid)
+      .catch(() => undefined);
   }
 }
 
 export default APIClientSingleton.getInstance();
+
+// Borrowed from: https://gist.github.com/gimenete/dd1886288ee3d3baaeae573ca226048f
+export async function safeFetch<T>(path: string, init: RequestInit, schema: z.Schema<T>): Promise<T> {
+  // Options shared amongst all fetches
+  const baseUrl = APIClientSingleton.getInstance().getAPIURL();
+  const token = await authClient.getToken();
+  const defaultInit = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const response = await fetch(baseUrl + path, { ...defaultInit, ...init });
+
+  if (!response.ok) {
+    const error = await newHTTPError('Unsuccessful response', response, init.method);
+    throw error;
+  }
+
+  const json = await response.json().catch(async () => {
+    const error = await newHTTPError('Not a JSON body', response, init.method);
+    throw error;
+  });
+
+  const result = schema.safeParse(json);
+  if (!result.success) {
+    const error = await newHTTPError('Unexpected response schema', response, init.method);
+    throw error;
+  }
+
+  return result.data;
+}
+
+async function newHTTPError(reason: string, response: Response, method?: string) {
+  const text = await response.text().catch(() => null);
+  const message = `Error fetching ${method} ${response.url} ${response.status}. ${reason}`;
+  console.error(`${message}. Response body: ${text}`);
+  Sentry.captureException({
+    message,
+  });
+  return new Error(message);
+}

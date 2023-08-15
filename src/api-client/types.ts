@@ -12,7 +12,7 @@ const fileMeta = {
 };
 
 // GET /files
-const GetFilesResSchema = z
+export const GetFilesResSchema = z
   .array(
     z.object({
       ...fileMeta,
@@ -31,6 +31,12 @@ export const GetFileResSchema = z.object({
   permission: z.string(), // TODO one of:
 });
 export type GetFileRes = z.infer<typeof GetFileResSchema>;
+
+// DELETE /file/:uuid
+export const DeleteFileResSchema = z.object({
+  message: z.string(),
+});
+export type DeleteFileRes = z.infer<typeof DeleteFileResSchema>;
 
 // POST /files/:uuid
 const PostFileContentsReqSchema = z.object({
@@ -52,5 +58,11 @@ const PostFilesReqSchema = z
   })
   .optional();
 export type PostFilesReq = z.infer<typeof PostFilesReqSchema>;
-const PostFilesResSchema = z.object(fileMeta);
+export const PostFilesResSchema = z.object(fileMeta);
 export type PostFilesRes = z.infer<typeof PostFilesResSchema>;
+
+export const PostFeedbackReqSchema = z.object({
+  feedback: z.string(),
+  userEmail: z.string().optional(),
+});
+export type PostFeedbackReq = z.infer<typeof PostFeedbackReqSchema>;
