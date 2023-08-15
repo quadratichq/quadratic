@@ -286,10 +286,7 @@ impl GridController {
     pub fn get_sheet_color(&self, sheet_id: String) -> String {
         let sheet_id = SheetId::from_string(&sheet_id);
         let sheet = self.grid().sheet_from_id(sheet_id);
-        match &sheet.color {
-            Some(color) => color.clone(),
-            None => String::from(""),
-        }
+        sheet.color.clone().unwrap_or_default()
     }
 
     // /// Sets the text alignment as a [`CellAlign`] in a region.
