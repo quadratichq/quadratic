@@ -459,4 +459,39 @@ mod tests {
         test_delete(s2, [s1, s3]);
         test_delete(s3, [s1, s2]);
     }
+
+    #[test]
+    fn test_render_fill() {
+        let mut g = GridController::new();
+        let sheet_id = g.sheet_ids()[0];
+        g.grid.set_cell_fill_color(
+            &sheet_id,
+            &Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 10, y: 10 },
+            },
+            "blue".to_string(),
+        );
+        g.grid.set_cell_fill_color(
+            &sheet_id,
+            &Rect {
+                min: Pos { x: 1, y: 15 },
+                max: Pos { x: 10, y: 20 },
+            },
+            "blue".to_string(),
+        );
+        g.grid.set_cell_fill_color(
+            &sheet_id,
+            &Rect {
+                min: Pos { x: 1, y: 10 },
+                max: Pos { x: 10, y: 15 },
+            },
+            "blue".to_string(),
+        );
+        let render_fills = g.sheet(sheet_id).get_render_fills(Rect {
+            min: Pos { x: -100, y: -100 },
+            max: Pos { x: 100, y: 100 },
+        });
+        assert_eq!(10, render_fills.len())
+    }
 }

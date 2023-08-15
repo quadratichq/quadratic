@@ -293,6 +293,8 @@ impl<T: fmt::Debug + Clone + PartialEq> ColumnData<SameValue<T>> {
                 len: (y_range.end - y_range.start) as usize,
             },
         });
+        self.try_merge_at(y_range.start);
+        self.try_merge_at(y_range.end);
         removed
     }
 }
