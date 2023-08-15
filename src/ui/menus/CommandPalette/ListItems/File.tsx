@@ -1,7 +1,7 @@
 import { NoteAddOutlined } from '@mui/icons-material';
-import apiClientSingleton from 'api-client/apiClientSingleton';
-import { ROUTES } from 'constants/routes';
 import { useNavigate, useParams } from 'react-router-dom';
+import apiClientSingleton from '../../../../api-client/apiClientSingleton';
+import { ROUTES } from '../../../../constants/routes';
 import { SaveFileOutlined } from '../../../icons';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 

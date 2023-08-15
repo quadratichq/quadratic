@@ -6,13 +6,6 @@ import {
   InsertDriveFileOutlined,
 } from '@mui/icons-material';
 import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
-import apiClientSingleton from 'api-client/apiClientSingleton';
-import { GetFilesRes } from 'api-client/types';
-import { Empty } from 'components/Empty';
-import { useGlobalSnackbar } from 'components/GlobalSnackbar';
-import { ROUTES } from 'constants/routes';
-import { FileListItem } from 'dashboard/components/FileListItem';
-import { Header } from 'dashboard/components/Header';
 import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import {
@@ -28,8 +21,15 @@ import {
   useNavigation,
   useSubmit,
 } from 'react-router-dom';
-import { validateAndUpgradeGridFile } from 'schemas/validateAndUpgradeGridFile';
-import { TooltipHint } from 'ui/components/TooltipHint';
+import apiClientSingleton from '../../api-client/apiClientSingleton';
+import { GetFilesRes } from '../../api-client/types';
+import { Empty } from '../../components/Empty';
+import { useGlobalSnackbar } from '../../components/GlobalSnackbar';
+import { ROUTES } from '../../constants/routes';
+import { FileListItem } from '../../dashboard/components/FileListItem';
+import { Header } from '../../dashboard/components/Header';
+import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
+import { TooltipHint } from '../../ui/components/TooltipHint';
 
 type ActionData = {
   ok: boolean;

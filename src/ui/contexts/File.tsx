@@ -1,13 +1,13 @@
-import { PostFileContentsReq, PostFileNameReq } from 'api-client/types';
-import { InitialFile } from 'dashboard/FileRoute';
-import { useDebounce } from 'hooks/useDebounce';
-import { useInterval } from 'hooks/useInterval';
 import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
-import { GridFile } from 'schemas';
 import apiClientSingleton from '../../api-client/apiClientSingleton';
+import { PostFileContentsReq, PostFileNameReq } from '../../api-client/types';
+import { InitialFile } from '../../dashboard/FileRoute';
 import { SheetController } from '../../grid/controller/sheetController';
+import { useDebounce } from '../../hooks/useDebounce';
+import { useInterval } from '../../hooks/useInterval';
+import { GridFile } from '../../schemas';
 
 type Sync = {
   id: number;

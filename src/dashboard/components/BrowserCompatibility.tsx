@@ -2,9 +2,9 @@
 import { ErrorOutline } from '@mui/icons-material';
 import { isWebGLSupported } from '@pixi/utils';
 import * as Sentry from '@sentry/browser';
-import { Empty } from 'components/Empty';
 import { Outlet } from 'react-router-dom';
-import { isWASMSupported } from 'utils/isWASMSupported';
+import { Empty } from '../../components/Empty';
+import { isWASMSupported } from '../../utils/isWASMSupported';
 
 export function BrowserCompatibility() {
   if (!isWASMSupported || !isWebGLSupported()) {

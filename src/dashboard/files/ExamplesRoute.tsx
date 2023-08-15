@@ -1,8 +1,8 @@
-import { EXAMPLE_FILES } from 'constants/app';
-import { ROUTES } from 'constants/routes';
-import { FileListItem } from 'dashboard/components/FileListItem';
-import { Header } from 'dashboard/components/Header';
 import { Link } from 'react-router-dom';
+import { EXAMPLE_FILES } from '../../constants/app';
+import { ROUTES } from '../../constants/routes';
+import { FileListItem } from '../../dashboard/components/FileListItem';
+import { Header } from '../../dashboard/components/Header';
 
 export const Component = () => {
   return (

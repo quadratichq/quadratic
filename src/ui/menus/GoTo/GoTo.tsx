@@ -2,7 +2,6 @@ import { East } from '@mui/icons-material';
 import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
 import React, { SyntheticEvent } from 'react';
 import { useRecoilState } from 'recoil';
-import inputRef from 'utils/inputRef';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
@@ -10,6 +9,7 @@ import { isVisible, moveViewport } from '../../../gridGL/interaction/viewportHel
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../../gridGL/types/size';
 import { focusGrid } from '../../../helpers/focusGrid';
+import inputRef from '../../../utils/inputRef';
 import '../../styles/floating-dialog.css';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 

@@ -2,12 +2,12 @@ import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemTex
 import mixpanel from 'mixpanel-browser';
 import React, { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
-import inputRef from 'utils/inputRef';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
+import inputRef from '../../../utils/inputRef';
 import '../../styles/floating-dialog.css';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 

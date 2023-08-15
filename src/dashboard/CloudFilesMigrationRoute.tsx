@@ -1,12 +1,12 @@
 import { CheckCircleOutlineOutlined, ErrorOutline } from '@mui/icons-material';
 import { Box, Button, Chip, CircularProgress, Stack, Typography, useTheme } from '@mui/material';
 import * as Sentry from '@sentry/browser';
-import apiClientSingleton from 'api-client/apiClientSingleton';
-import { ReactComponent as QuadraticLogo } from 'dashboard/components/quadratic-logo.svg';
 import localforage from 'localforage';
 import { useEffect, useRef, useState } from 'react';
 import { redirect, useLoaderData, useNavigate } from 'react-router-dom';
-import { validateAndUpgradeGridFile } from 'schemas/validateAndUpgradeGridFile';
+import apiClientSingleton from '../api-client/apiClientSingleton';
+import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
+import { ReactComponent as QuadraticLogo } from './components/quadratic-logo.svg';
 const LOCAL_FILES_KEY = 'file-list';
 
 type Progress = 'uploading' | 'success' | 'fail';

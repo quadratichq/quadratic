@@ -2,29 +2,27 @@ import { User } from '@auth0/auth0-spa-js';
 import { ErrorOutline, WarningAmber } from '@mui/icons-material';
 import { Button } from '@mui/material';
 import * as Sentry from '@sentry/react';
-import { Empty } from 'components/Empty';
-import { GlobalSnackbarProvider } from 'components/GlobalSnackbar';
-import { Theme } from 'components/Theme';
-import { ROUTES } from 'constants/routes';
-import * as CloudFilesMigration from 'dashboard/CloudFilesMigrationRoute';
-import { BrowserCompatibility } from 'dashboard/components/BrowserCompatibility';
 import localforage from 'localforage';
 import {
   Link,
   Navigate,
   Outlet,
   Route,
-  RouterProvider,
   createBrowserRouter,
   createRoutesFromElements,
   redirect,
   useRouteError,
 } from 'react-router-dom';
-import { initializeAnalytics } from 'utils/analytics';
 import { authClient, protectedRouteLoaderWrapper } from './auth';
+import { Empty } from './components/Empty';
+import { GlobalSnackbarProvider } from './components/GlobalSnackbar';
+import { Theme } from './components/Theme';
+import { ROUTES } from './constants/routes';
+import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
+import { BrowserCompatibility } from './dashboard/components/BrowserCompatibility';
 import * as Create from './dashboard/files/CreateRoute';
 import { debugLogAuth } from './debugFlags';
-import { QuadraticLoading } from './ui/loading/QuadraticLoading';
+import { initializeAnalytics } from './utils/analytics';
 // @ts-expect-error - for testing purposes
 window.lf = localforage;
 
@@ -33,7 +31,7 @@ export type RootLoaderData = {
   user?: User;
 };
 
-const router = createBrowserRouter(
+export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       <Route
@@ -163,8 +161,6 @@ const router = createBrowserRouter(
     </>
   )
 );
-
-export const Routes = () => <RouterProvider router={router} fallbackElement={<QuadraticLoading />} />;
 
 function Root() {
   return (

@@ -12,12 +12,12 @@ import { useTheme } from '@mui/system';
 import { useState } from 'react';
 import { useRouteLoaderData } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import { RootLoaderData } from '../../../Routes';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
 import { BUG_REPORT_URL, DISCORD, TWITTER } from '../../../constants/urls';
 import useLocalStorage from '../../../hooks/useLocalStorage';
+import { RootLoaderData } from '../../../router';
 import { SocialDiscord, SocialGithub, SocialTwitter } from '../../icons';
 
 export const FeedbackMenu = () => {

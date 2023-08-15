@@ -1,5 +1,5 @@
-import { GridFileSchema } from 'schemas';
 import z from 'zod';
+import { GridFileSchema } from '../schemas';
 
 // TODO share these with the API
 

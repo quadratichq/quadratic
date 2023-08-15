@@ -1,8 +1,8 @@
 import { Box, Button, Typography, useTheme } from '@mui/material';
-import { RootLoaderData } from 'Routes';
-import { ROUTES } from 'constants/routes';
-import { Header } from 'dashboard/components/Header';
 import { Form, useRouteLoaderData } from 'react-router-dom';
+import { ROUTES } from '../constants/routes';
+import { Header } from '../dashboard/components/Header';
+import { RootLoaderData } from '../router';
 // import { useColorMode } from 'shared/root/Theme';
 
 export const Component = () => {

@@ -1,12 +1,12 @@
 import * as Sentry from '@sentry/react';
-import apiClientSingleton from 'api-client/apiClientSingleton';
-import { authClient } from 'auth';
-import { EXAMPLE_FILES } from 'constants/app';
-import { ROUTES } from 'constants/routes';
 import mixpanel from 'mixpanel-browser';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from 'react-router-dom';
-import { validateAndUpgradeGridFile } from 'schemas/validateAndUpgradeGridFile';
-import { initMixpanelAnalytics } from 'utils/analytics';
+import apiClientSingleton from '../../api-client/apiClientSingleton';
+import { authClient } from '../../auth';
+import { EXAMPLE_FILES } from '../../constants/app';
+import { ROUTES } from '../../constants/routes';
+import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
+import { initMixpanelAnalytics } from '../../utils/analytics';
 
 const getFailUrl = (location: string = ROUTES.MY_FILES) =>
   encodeURI(`${location}?snackbar-msg=Failed to create file. Try again.&snackbar-severity=error`);

@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
-import { downloadFile } from 'helpers/downloadFile';
 import mixpanel from 'mixpanel-browser';
 import { authClient } from '../auth';
+import { downloadFile } from '../helpers/downloadFile';
 import { GridFile, GridFileSchema } from '../schemas';
 import { GetFileRes, GetFilesRes, PostFileContentsReq, PostFileNameReq, PostFilesReq, PostFilesRes } from './types';
 

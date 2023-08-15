@@ -1,6 +1,6 @@
-import { InitialFile } from 'dashboard/FileRoute';
-import { SheetController } from 'grid/controller/sheetController';
-import { PixiApp } from 'gridGL/pixiApp/PixiApp';
+import { InitialFile } from '../dashboard/FileRoute';
+import { SheetController } from '../grid/controller/sheetController';
+import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import QuadraticUI from './QuadraticUI';
 import { FileProvider } from './contexts/File';
 

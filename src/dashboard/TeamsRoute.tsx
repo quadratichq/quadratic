@@ -1,6 +1,6 @@
 import { PeopleOutline } from '@mui/icons-material';
-import { Empty } from 'components/Empty';
-import { Header } from 'dashboard/components/Header';
+import { Empty } from '../components/Empty';
+import { Header } from '../dashboard/components/Header';
 
 export const Component = () => {
   const mailto =
