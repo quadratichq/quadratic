@@ -74,8 +74,10 @@ impl GridController {
     ) -> TransactionSummary {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         let cell_ref = sheet.get_or_create_cell_ref(pos);
+        let region = RegionRef::from(cell_ref);
+        let values = Array::from(value);
         let transaction = Transaction {
-            ops: vec![Operation::SetCell { cell_ref, value }],
+            ops: vec![Operation::SetCells { region, values }],
             cursor,
         };
         self.transact_forward(transaction)
@@ -218,24 +220,6 @@ impl GridController {
                 }
             }
             match op {
-                Operation::SetCell { cell_ref, value } => {
-                    let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
-                    let cell_xy = sheet.cell_ref_to_pos(cell_ref).expect("bad cell reference");
-
-                    summary
-                        .cell_regions_modified
-                        .push((cell_ref.sheet, Rect::single_pos(cell_xy)));
-
-                    let old_value = match sheet.set_cell_value(cell_xy, value) {
-                        Some(response) => response.old_value,
-                        None => CellValue::Blank,
-                    };
-                    rev_ops.push(Operation::SetCell {
-                        cell_ref,
-                        value: old_value,
-                    });
-                }
-
                 Operation::SetCells { region, values } => {
                     summary
                         .cell_regions_modified
@@ -391,10 +375,6 @@ pub struct Transaction {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Operation {
-    SetCell {
-        cell_ref: CellRef,
-        value: CellValue,
-    },
     SetCells {
         region: RegionRef,
         values: Array,
@@ -426,7 +406,6 @@ pub enum Operation {
 impl Operation {
     pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
         match self {
-            Operation::SetCell { cell_ref, .. } => Some(cell_ref.sheet),
             Operation::SetCells { region, .. } => Some(region.sheet),
 
             Operation::AddSheet { .. } => None,
