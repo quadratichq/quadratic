@@ -1,4 +1,3 @@
-export const API_URL = 'http://localhost:8000';
 export const DOCUMENTATION_URL = 'https://docs.quadratichq.com';
 export const DOCUMENTATION_PYTHON_URL = `${DOCUMENTATION_URL}/python`;
 export const DOCUMENTATION_FORMULAS_URL = `${DOCUMENTATION_URL}/formulas`;
