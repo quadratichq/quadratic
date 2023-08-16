@@ -39,7 +39,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
   // If the file version is newer than what is supported by the current version
   // of the app, do a (hard) reload.
   if (contents.version > GridFileSchema.shape.version.value) {
-    // @ts-expect-error
+    Sentry.captureEvent({
+      message: `User opened a file at version ${contents.version} but the app is at version ${GridFileSchema.shape.version.value}. The app will automatically reload.`,
+      level: Sentry.Severity.Log,
+    });
+    // @ts-expect-error hard reload via `true` only works in some browsers
     window.location.reload(true);
   }
 
