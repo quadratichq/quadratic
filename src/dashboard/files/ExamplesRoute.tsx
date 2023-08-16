@@ -1,7 +1,6 @@
-import { Link } from 'react-router-dom';
 import { EXAMPLE_FILES } from '../../constants/appConstants';
 import { ROUTES } from '../../constants/routes';
-import { DashboardFileListItem } from '../components/DashboardFileListItem';
+import { DashboardFileLink } from '../components/DashboardFileLink';
 import { DashboardHeader } from '../components/DashboardHeader';
 
 export const Component = () => {
@@ -9,9 +8,7 @@ export const Component = () => {
     <>
       <DashboardHeader title="Examples" />
       {Object.entries(EXAMPLE_FILES).map(([id, { name, description }]) => (
-        <Link to={`${ROUTES.CREATE_FILE}?example=${id}`} style={{ textDecoration: 'none' }} key={id}>
-          <DashboardFileListItem name={name} description={description} />
-        </Link>
+        <DashboardFileLink key={id} name={name} description={description} to={`${ROUTES.CREATE_FILE}?example=${id}`} />
       ))}
     </>
   );

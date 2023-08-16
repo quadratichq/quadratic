@@ -26,7 +26,7 @@ import { useGlobalSnackbar } from '../../components/GlobalSnackbar';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 import { TooltipHint } from '../../ui/components/TooltipHint';
-import { DashboardFileListItem } from '../components/DashboardFileListItem';
+import { DashboardFileLink } from '../components/DashboardFileLink';
 import { DashboardHeader } from '../components/DashboardHeader';
 
 type LoaderData = Awaited<ReturnType<typeof apiClient.getFiles>> | null;
@@ -202,56 +202,55 @@ function FileWithActions({ file }: { file: NonNullable<LoaderData>[0] }) {
   const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
 
   return (
-    <Link to={ROUTES.FILE(uuid)} reloadDocument style={{ textDecoration: 'none', color: 'inherit' }}>
-      <DashboardFileListItem
-        key={uuid}
-        name={name}
-        status={failedToDelete && <Chip label="Failed to delete" size="small" color="error" variant="outlined" />}
-        description={`Updated ${timeAgo(updated_date)}`}
-        actions={
-          <div style={{ display: 'flex', gap: theme.spacing(1) }}>
-            <fetcherDelete.Form method="post">
-              <input type="hidden" name="uuid" value={uuid} />
-              <TooltipHint title="Delete" enterDelay={1000}>
-                <span>
-                  <IconButton
-                    name="action"
-                    value="delete"
-                    type="submit"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!window.confirm(`Confirm you want to delete the file: “${name}”`)) {
-                        e.preventDefault();
-                      }
-                    }}
-                  >
-                    <DeleteOutline />
-                  </IconButton>
-                </span>
-              </TooltipHint>
-            </fetcherDelete.Form>
-            <fetcherDownload.Form method="post">
-              <input type="hidden" name="uuid" value={uuid} />
-              <TooltipHint title="Download local copy" enterDelay={1000}>
-                <span>
-                  <IconButton
-                    name="action"
-                    value="download"
-                    type="submit"
-                    disabled={false}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                  >
-                    {fetcherDownload.state !== 'idle' ? <CircularProgress size={24} /> : <FileDownloadOutlined />}
-                  </IconButton>
-                </span>
-              </TooltipHint>
-            </fetcherDownload.Form>
-          </div>
-        }
-      />
-    </Link>
+    <DashboardFileLink
+      to={ROUTES.FILE(uuid)}
+      key={uuid}
+      name={name}
+      status={failedToDelete && <Chip label="Failed to delete" size="small" color="error" variant="outlined" />}
+      description={`Updated ${timeAgo(updated_date)}`}
+      actions={
+        <div style={{ display: 'flex', gap: theme.spacing(1) }}>
+          <fetcherDelete.Form method="post">
+            <input type="hidden" name="uuid" value={uuid} />
+            <TooltipHint title="Delete" enterDelay={1000}>
+              <span>
+                <IconButton
+                  name="action"
+                  value="delete"
+                  type="submit"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!window.confirm(`Confirm you want to delete the file: “${name}”`)) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <DeleteOutline />
+                </IconButton>
+              </span>
+            </TooltipHint>
+          </fetcherDelete.Form>
+          <fetcherDownload.Form method="post">
+            <input type="hidden" name="uuid" value={uuid} />
+            <TooltipHint title="Download local copy" enterDelay={1000}>
+              <span>
+                <IconButton
+                  name="action"
+                  value="download"
+                  type="submit"
+                  disabled={false}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  {fetcherDownload.state !== 'idle' ? <CircularProgress size={24} /> : <FileDownloadOutlined />}
+                </IconButton>
+              </span>
+            </TooltipHint>
+          </fetcherDownload.Form>
+        </div>
+      }
+    />
   );
 }
 
