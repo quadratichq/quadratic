@@ -49,24 +49,34 @@ export class CellsSheet extends Container {
     this.cellsMarkers = this.addChild(new CellsMarkers());
   }
 
-  addHash(hashX: number, hashY: number): CellsHash {
-    const cellsHash = this.cellsHashContainer.addChild(new CellsHash(this, hashX, hashY));
-    this.cellsHash.set(cellsHash.key, cellsHash);
-    const row = this.cellsRows.get(hashY);
-    if (row) {
-      row.push(cellsHash);
-    } else {
-      this.cellsRows.set(hashY, [cellsHash]);
-      this.dirtyRows.add(hashY);
-    }
-    return cellsHash;
-  }
-
   static getHash(x: number, y: number): { x: number; y: number } {
     return {
       x: Math.floor(x / sheetHashWidth),
       y: Math.floor(y / sheetHashHeight),
     };
+  }
+
+  private createHash(hashX: number, hashY: number): CellsHash | undefined {
+    const rect = new Rectangle(
+      hashX * sheetHashWidth,
+      hashY * sheetHashHeight,
+      sheetHashWidth - 1,
+      sheetHashHeight - 1
+    );
+    const cells = this.sheet.getRenderCells(rect);
+    const background = this.sheet.getRenderFills(rect);
+    if (cells.length || background.length) {
+      const cellsHash = this.cellsHashContainer.addChild(new CellsHash(this, hashX, hashY));
+      this.cellsHash.set(cellsHash.key, cellsHash);
+      const row = this.cellsRows.get(hashY);
+      if (row) {
+        row.push(cellsHash);
+      } else {
+        this.cellsRows.set(hashY, [cellsHash]);
+        this.dirtyRows.add(hashY);
+      }
+      return cellsHash;
+    }
   }
 
   createHashes(): boolean {
@@ -79,12 +89,7 @@ export class CellsSheet extends Container {
     const yEnd = Math.floor(bounds.bottom / sheetHashHeight);
     for (let y = yStart; y <= yEnd; y++) {
       for (let x = xStart; x <= xEnd; x++) {
-        const rect = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-        const cells = this.sheet.getRenderCells(rect);
-        const background = this.sheet.getRenderFills(rect);
-        if (cells.length || background.length) {
-          this.addHash(x, y);
-        }
+        this.createHash(x, y);
       }
     }
     debugTimeCheck('createHashes');
@@ -126,10 +131,14 @@ export class CellsSheet extends Container {
     this.cellsBorders.create();
   }
 
-  getCellsHash(column: number, row: number): CellsHash | undefined {
+  getCellsHash(column: number, row: number, createIfNeeded?: boolean): CellsHash | undefined {
     const { x, y } = CellsSheet.getHash(column, row);
     const key = CellsHash.getKey(x, y);
-    return this.cellsHash.get(key);
+    let hash = this.cellsHash.get(key);
+    if (!hash && createIfNeeded) {
+      hash = this.createHash(x, y);
+    }
+    return hash;
   }
 
   getColumnHashes(column: number): CellsHash[] {
@@ -179,7 +188,11 @@ export class CellsSheet extends Container {
     const hashes = new Set<CellsHash>();
     if (options.cells) {
       options.cells.forEach((cell) => {
-        const hash = this.getCellsHash(cell.x, cell.y);
+        let hash = this.getCellsHash(cell.x, cell.y, true);
+        if (!hash) {
+          const { x, y } = CellsSheet.getHash(cell.x, cell.y);
+          hash = this.createHash(x, y);
+        }
         if (hash) {
           hashes.add(hash);
           if (options.labels) {
@@ -204,7 +217,11 @@ export class CellsSheet extends Container {
     } else if (options.rectangle) {
       for (let y = options.rectangle.top; y <= options.rectangle.bottom + sheetHashHeight - 1; y += sheetHashHeight) {
         for (let x = options.rectangle.left; x <= options.rectangle.right + sheetHashWidth - 1; x += sheetHashWidth) {
-          const hash = this.getCellsHash(x, y);
+          let hash = this.getCellsHash(x, y);
+          if (!hash) {
+            const hashCoordinate = CellsSheet.getHash(x, y);
+            hash = this.createHash(hashCoordinate.x, hashCoordinate.y);
+          }
           if (hash) {
             hashes.add(hash);
             if (options.labels) {
