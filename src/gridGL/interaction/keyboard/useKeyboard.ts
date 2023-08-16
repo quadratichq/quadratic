@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { useGlobalSnackbar } from '../../../ui/contexts/GlobalSnackbar';
@@ -34,8 +34,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { currentFileId } = useLocalFiles();
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const keyDownWindow = useCallback(
-    (event: KeyboardEvent): void => {
+  useEffect(() => {
+    const keyDownWindow = (event: KeyboardEvent): void => {
       if (app.settings.input.show) return;
 
       if (
@@ -58,26 +58,23 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
         event.stopPropagation();
         event.preventDefault();
       }
-    },
-    [
-      editorInteractionState,
-      setEditorInteractionState,
-      app,
-      sheetController.sheet,
-      clearAllFormatting,
-      changeBold,
-      changeItalic,
-      format,
-      presentationMode,
-      setPresentationMode,
-      currentFileId,
-    ]
-  );
+    };
 
-  useEffect(() => {
     window.addEventListener('keydown', keyDownWindow);
     return () => window.removeEventListener('keydown', keyDownWindow);
-  }, [keyDownWindow]);
+  }, [
+    app,
+    changeBold,
+    changeItalic,
+    clearAllFormatting,
+    currentFileId,
+    editorInteractionState,
+    format,
+    presentationMode,
+    setEditorInteractionState,
+    setPresentationMode,
+    sheetController.sheet,
+  ]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (app.settings.input.show) return;

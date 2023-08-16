@@ -3,7 +3,7 @@ import './SheetBar.css';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { ButtonUnstyled } from '@mui/material';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { createSheet, updateSheet } from '../../../grid/actions/sheetsAction';
+import { updateSheet } from '../../../grid/actions/sheetsAction';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -380,8 +380,8 @@ export const SheetBar = (props: Props): JSX.Element => {
       <div className="sheet-bar-add">
         <ButtonUnstyled
           onClick={() => {
-            const sheet = sheetController.createNewSheet();
-            createSheet({ sheetController, sheet, create_transaction: true });
+            sheetController.createNewSheet();
+            // createSheet({ sheetController, sheet, create_transaction: true });
             focusGrid();
           }}
         >

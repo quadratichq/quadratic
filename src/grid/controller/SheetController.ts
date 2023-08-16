@@ -1,11 +1,9 @@
-import * as Sentry from '@sentry/browser';
-import { debug, debugMockLargeData } from '../../debugFlags';
+import { debugMockLargeData } from '../../debugFlags';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { GridFile, SheetSchema } from '../../schemas';
 import { Sheet } from '../sheet/Sheet';
-import { SheetCursor, SheetCursorSave } from '../sheet/SheetCursor';
+import { SheetCursor } from '../sheet/SheetCursor';
 import { Grid } from './Grid';
-import { StatementRunner } from './runners/runner';
 import { Statement } from './statement';
 import { Transaction } from './transaction';
 import { transactionResponse } from './transactionResponse';
@@ -43,6 +41,7 @@ export class SheetController {
     if (value !== this._current) {
       this._current = value;
       pixiAppEvents.changeSheet();
+      this.updateSheetBar();
     }
   }
 
@@ -75,18 +74,19 @@ export class SheetController {
     this.repopulateSheets();
   }
 
-  private updateSheetBar(): void {
+  // updates the SheetBar UI
+  updateSheetBar(): void {
     this.sortSheets();
     window.dispatchEvent(new CustomEvent('change-sheet'));
   }
 
+  // ensures there's a Sheet.ts for every Sheet.rs
   repopulateSheets() {
     const sheetIds = this.grid.getSheetIds();
 
     // ensure the sheets exist
     sheetIds.forEach((sheetId, index) => {
       if (!this.sheets.find((search) => search.id === sheetId)) {
-        debugger;
         const sheet = new Sheet(this.grid, index);
         this.sheets.push(sheet);
         pixiAppEvents.addSheet(sheet);
@@ -100,7 +100,6 @@ export class SheetController {
         pixiAppEvents.deleteSheet(sheet.id);
       }
     });
-    this.updateSheetBar();
   }
 
   export(): SheetSchema[] {
@@ -109,16 +108,24 @@ export class SheetController {
     return [];
   }
 
+  // checks Grid whether this sheet still exists
+  // NOTE: this.sheets and Grid.sheets may have different value as handled in transactionResponse
+  gridHasSheet(sheetId: string): boolean {
+    const ids = this.grid.getSheetIds();
+    return ids.includes(sheetId);
+  }
+
   get sheet(): Sheet {
     const sheet = this.sheets.find((sheet) => sheet.id === this.current);
     if (!sheet) {
+      debugger;
       throw new Error('Expected to find sheet based on id');
     }
     return sheet;
   }
 
   renameSheet(name: string): void {
-    const summary = this.grid.renameSheet(this.current, name);
+    const summary = this.grid.renameSheet(this.current, name, this.sheet.cursor.save());
     transactionResponse(this, summary);
   }
 
@@ -137,48 +144,27 @@ export class SheetController {
     }
   }
 
-  createNewSheet(): Sheet {
-    const sheetId = this.grid.addSheet();
-    if (!sheetId) throw new Error('SheetController failed to create a new Sheet');
-    // // find a unique sheet name (usually `Sheet${this.sheets.length + 1}`), but will continue to increment if that name is already in use
-    // let i = this.sheets.length + 1;
-    // while (this.sheetNameExists(`Sheet${i}`)) {
-    //   i++;
-    // }
-    // let order: string;
-    // const last = this.getLastSheet();
-    // if (!last) {
-    //   order = generateKeyBetween(null, null);
-    // } else {
-    //   order = generateKeyBetween(last.order, null);
-    // }
-    // const sheetId = this.grid.addSheet();
-    const sheet = new Sheet(this.grid, this.sheets.length); //, `Sheet${i}`, order);
-    // sheet.grid.sheetId = sheetId;
-    return sheet;
+  createNewSheet(): void {
+    const summary = this.grid.addSheet(this.sheet.cursor.save());
+
+    transactionResponse(this, summary);
+
+    // sets the current sheet to the new sheet
+    this.current = this.sheets[this.sheets.length - 1].id;
   }
 
   duplicateSheet(): void {
     // duplicate sheet needs to also return the id :(
-    const summary = this.grid.duplicateSheet(this.current);
-    transactionResponse(this, summary);
+    const summary = this.grid.duplicateSheet(this.current, this.sheet.cursor.save());
+
+    // sets the current sheet to the duplicated sheet
     const currentIndex = this.sheets.findIndex((sheet) => sheet.id === this.current);
     if (currentIndex === -1) throw new Error('Expected to find current sheet in duplicateSheet');
     const duplicate = this.sheets[currentIndex + 1];
     if (!duplicate) throw new Error('Expected to find duplicate sheet in duplicateSheet');
     this.current = duplicate.id;
-    // this.this.repopulateSheets();
-    // let i = 0;
-    // while (this.sheetNameExists(`Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim())) {
-    //   i++;
-    // }
-    // const name = `Copy of ${this.sheet.name} ${i === 0 ? '' : i}`.trim();
-    // const next = this.getNextSheet(this.sheet.order);
-    // const sheet = new Sheet(name, generateKeyBetween(this.sheet.order, next?.order));
-    // return sheet;
-    // const sheet = this.sheets.find((sheet) => sheet.id === duplicate);
-    // if (!sheet) throw new Error('Expected to find duplicated sheet in createDuplicateSheet');
-    // return sheet;
+
+    transactionResponse(this, summary);
   }
 
   addSheet(sheet: Sheet): void {
@@ -192,13 +178,12 @@ export class SheetController {
   deleteSheet(id: string): void {
     const sheet = this.sheets.find((sheet) => sheet.id === id);
     if (!sheet) throw new Error('Expected to find sheet in deleteSheet');
-    const order = sheet.order;
-    this.grid.deleteSheet(id);
-    this.repopulateSheets();
 
-    // set current to next sheet
+    const summary = this.grid.deleteSheet(id, this.sheet.cursor.save());
+
+    // set current to next sheet (before this.sheets is updated)
     if (this.sheets.length) {
-      const next = this.getNextSheet(order);
+      const next = this.getNextSheet(this.sheet.id);
       if (next) {
         this.current = next.id;
       } else {
@@ -208,7 +193,7 @@ export class SheetController {
         }
       }
     }
-    this.updateSheetBar();
+    transactionResponse(this, summary);
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
@@ -226,85 +211,90 @@ export class SheetController {
   }
 
   public start_transaction(sheetCursor?: SheetCursor): void {
-    if (this.transaction_in_progress) {
-      // during debug mode, throw an error
-      // otherwise, capture the error and continue
-      if (debug) throw new Error('Transaction already in progress.');
-      else Sentry.captureException('Transaction already in progress.');
+    throw new Error('Remove');
+    // if (this.transaction_in_progress) {
+    //   // during debug mode, throw an error
+    //   // otherwise, capture the error and continue
+    //   if (debug) throw new Error('Transaction already in progress.');
+    //   else Sentry.captureException('Transaction already in progress.');
 
-      // attempt to recover and continue
-      this.end_transaction();
-    }
+    //   // attempt to recover and continue
+    //   this.end_transaction();
+    // }
 
-    // This is useful when the user clicks outside of the active cell to another
-    // cell, so the cursor moves to that new cell and the transaction finishes
-    let cursor: SheetCursorSave;
-    if (sheetCursor) {
-      cursor = sheetCursor.save();
-    } else {
-      cursor = this.sheet.cursor.save();
-    }
+    // // This is useful when the user clicks outside of the active cell to another
+    // // cell, so the cursor moves to that new cell and the transaction finishes
+    // let cursor: CursorSave;
+    // if (sheetCursor) {
+    //   cursor = sheetCursor.save();
+    // } else {
+    //   cursor = this.sheet.cursor.save();
+    // }
 
-    // set transaction in progress to a new Transaction
-    // transaction_in_progress represents the stack of commands needed
-    // to undo the transaction currently being executed.
-    this.transaction_in_progress = { statements: [], cursor };
-    this.transaction_in_progress_reverse = { statements: [], cursor };
+    // // set transaction in progress to a new Transaction
+    // // transaction_in_progress represents the stack of commands needed
+    // // to undo the transaction currently being executed.
+    // this.transaction_in_progress = { statements: [], cursor };
+    // this.transaction_in_progress_reverse = { statements: [], cursor };
   }
 
   public execute_statement(statement: Statement): void {
-    if (!this.transaction_in_progress || !this.transaction_in_progress_reverse) {
-      throw new Error('No transaction in progress.');
-    }
+    throw new Error('Remove');
+    // if (!this.transaction_in_progress || !this.transaction_in_progress_reverse) {
+    //   throw new Error('No transaction in progress.');
+    // }
 
-    this.transaction_in_progress.statements.push(statement);
+    // this.transaction_in_progress.statements.push(statement);
 
-    // run statement and add reverse statement to transaction_in_progress
-    const reverse_statement = StatementRunner(this, statement);
+    // // run statement and add reverse statement to transaction_in_progress
+    // const reverse_statement = StatementRunner(this, statement);
 
-    this.transaction_in_progress_reverse.statements.unshift(reverse_statement);
+    // this.transaction_in_progress_reverse.statements.unshift(reverse_statement);
   }
 
   public end_transaction(add_to_undo_stack = true, clear_redo_stack = true): Transaction {
-    if (!this.transaction_in_progress || !this.transaction_in_progress_reverse) {
-      throw new Error('No transaction in progress.');
-    }
+    throw new Error('Remove');
+    // if (!this.transaction_in_progress || !this.transaction_in_progress_reverse) {
+    //   throw new Error('No transaction in progress.');
+    // }
 
-    // add transaction_in_progress to undo stack
-    if (add_to_undo_stack) this.undo_stack.push(this.transaction_in_progress_reverse);
+    // // add transaction_in_progress to undo stack
+    // if (add_to_undo_stack) this.undo_stack.push(this.transaction_in_progress_reverse);
 
-    // if this Transaction is not from undo/redo. Clear redo stack.
-    if (clear_redo_stack) this.redo_stack = [];
+    // // if this Transaction is not from undo/redo. Clear redo stack.
+    // if (clear_redo_stack) this.redo_stack = [];
 
-    // clear the transaction
-    const reverse_transaction = { ...this.transaction_in_progress_reverse };
-    this.transaction_in_progress = undefined;
-    this.transaction_in_progress_reverse = undefined;
+    // // clear the transaction
+    // const reverse_transaction = { ...this.transaction_in_progress_reverse };
+    // this.transaction_in_progress = undefined;
+    // this.transaction_in_progress_reverse = undefined;
 
-    // TODO: This is a good place to do things like mark Quadrants as dirty, save the file, etc.
-    // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
-    if (this.saveLocalFiles) this.saveLocalFiles();
+    // // TODO: This is a good place to do things like mark Quadrants as dirty, save the file, etc.
+    // // TODO: The transaction should keep track of everything that becomes dirty while executing and then just sets the correct flags on app.
+    // if (this.saveLocalFiles) this.saveLocalFiles();
 
-    return reverse_transaction;
+    // return reverse_transaction;
   }
 
   public cancel_transaction(): void {
-    if (!this.transaction_in_progress || !this.transaction_in_progress_reverse) {
-      throw new Error('No transaction in progress.');
-    }
-    this.transaction_in_progress = undefined;
-    this.transaction_in_progress_reverse = undefined;
+    throw new Error('Remove');
+    // if (!this.transaction_in_progress || !this.transaction_in_progress_reverse) {
+    //   throw new Error('No transaction in progress.');
+    // }
+    // this.transaction_in_progress = undefined;
+    // this.transaction_in_progress_reverse = undefined;
   }
 
   public predefined_transaction(statements: Statement[]): Transaction {
-    // Starts a transaction, executes all statements, and ends the transaction.
-    // Returns the transaction.
-    // Transaction is automatically added to the undo stack.
-    this.start_transaction();
-    statements.forEach((statement) => {
-      this.execute_statement(statement);
-    });
-    return this.end_transaction();
+    throw new Error('Remove');
+    // // Starts a transaction, executes all statements, and ends the transaction.
+    // // Returns the transaction.
+    // // Transaction is automatically added to the undo stack.
+    // this.start_transaction();
+    // statements.forEach((statement) => {
+    //   this.execute_statement(statement);
+    // });
+    // return this.end_transaction();
   }
 
   public hasUndo(): boolean {
@@ -318,39 +308,8 @@ export class SheetController {
     if (!this.hasUndo()) return;
     // const lastSheetId = this.sheet.id;
     // const lastSheetIndex = this.sheets.indexOf(this.sheet);
-
-    const summary = this.grid.undo();
+    const summary = this.grid.undo(this.sheet.cursor.save());
     transactionResponse(this, summary);
-
-    // handle case where current sheet is deleted
-    // if (this.current === lastSheetId && !this.sheets.find((search) => search.id === lastSheetId)) {
-    //   this.current = lastSheetIndex >= this.sheets.length ? this.sheets[0].id : this.sheets[lastSheetIndex].id;
-    // }
-
-    // if (this.transaction_in_progress || this.transaction_in_progress_reverse) return;
-
-    // // pop transaction off undo stack
-    // const transaction = this.undo_stack.pop();
-
-    // if (transaction === undefined) {
-    //   throw new Error('Transaction is undefined.');
-    // }
-
-    // this.start_transaction();
-
-    // transaction.statements.forEach((statement) => {
-    //   this.execute_statement(statement);
-    // });
-
-    // const reverse_transaction = this.end_transaction(false, false);
-    // // add reverse transaction to redo stack
-    // this.redo_stack.push(reverse_transaction);
-
-    // todo
-    // if (transaction.cursor) {
-    //   this.current = transaction.cursor.sheetId;
-    //   this.sheet.cursor.load(transaction.cursor);
-    // }
   }
 
   public redo(): void {
@@ -358,75 +317,45 @@ export class SheetController {
     const lastSheetId = this.sheet.id;
     const lastSheetIndex = this.sheets.indexOf(this.sheet);
 
-    const summary = this.grid.redo();
+    const summary = this.grid.redo(this.sheet.cursor.save());
     transactionResponse(this, summary);
 
     // handle case where current sheet is deleted
     if (this.current === lastSheetId && !this.sheets.find((search) => search.id === lastSheetId)) {
       this.current = lastSheetIndex >= this.sheets.length ? this.sheets[0].id : this.sheets[lastSheetIndex].id;
     }
-
-    // check if redo stack is empty
-    // check if transaction in progress
-    // pop transaction off redo stack
-    // start transaction
-    // run each statement in transaction
-    // end transaction
-    // add reverse transaction to undo stack
-    // if (!this.hasRedo()) return;
-
-    // if (this.transaction_in_progress || this.transaction_in_progress_reverse) return;
-
-    // // pop transaction off redo stack
-    // const transaction = this.redo_stack.pop();
-
-    // if (transaction === undefined) {
-    //   throw new Error('Transaction is undefined.');
-    // }
-
-    // this.start_transaction();
-
-    // transaction.statements.forEach((statement) => {
-    //   this.execute_statement(statement);
-    // });
-
-    // const reverse_transaction = this.end_transaction(false, false);
-    // // add reverse transaction to undo stack
-    // this.undo_stack.push(reverse_transaction);
-
-    // if (transaction.cursor) {
-    //   this.current = transaction.cursor.sheetId;
-    //   this.sheet.cursor.load(transaction.cursor);
-    // }
   }
 
   public clear(): void {
-    this.undo_stack = [];
-    this.redo_stack = [];
-    this.transaction_in_progress = undefined;
-    this.transaction_in_progress_reverse = undefined;
+    throw new Error('Remove');
+    // this.undo_stack = [];
+    // this.redo_stack = [];
+    // this.transaction_in_progress = undefined;
+    // this.transaction_in_progress_reverse = undefined;
   }
 
   public logUndoStack(): void {
-    let print_string = 'Undo Stack:\n';
-    this.undo_stack.forEach((transaction) => {
-      print_string += '\tTransaction:\n';
-      transaction.statements.forEach((statement) => {
-        print_string += `\t\t${JSON.stringify(statement)}\n`;
-      });
-    });
-    console.log(print_string);
+    throw new Error('Remove');
+    // let print_string = 'Undo Stack:\n';
+    // this.undo_stack.forEach((transaction) => {
+    //   print_string += '\tTransaction:\n';
+    //   transaction.statements.forEach((statement) => {
+    //     print_string += `\t\t${JSON.stringify(statement)}\n`;
+    //   });
+    // });
+    // console.log(print_string);
   }
 
   public logRedoStack(): void {
-    let print_string = 'Redo Stack:\n';
-    this.redo_stack.forEach((transaction) => {
-      print_string += '\tTransaction:\n';
-      transaction.statements.forEach((statement) => {
-        print_string += `\t\t${JSON.stringify(statement)}\n`;
-      });
-    });
-    console.log(print_string);
+    throw new Error('Remove');
+    // let print_string = 'Redo Stack:\n';
+    // this.redo_stack.forEach((transaction) => {
+    //   print_string += '\tTransaction:\n';
+    //   transaction.statements.forEach((statement) => {
+    //     print_string += `\t\t${JSON.stringify(statement)}\n`;
+    //   });
+    // });
+    // console.log(print_string);
   }
 
   sortSheets(): void {

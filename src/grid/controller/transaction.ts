@@ -1,7 +1,6 @@
-import { SheetCursorSave } from '../sheet/SheetCursor';
-import { Statement } from './statement';
+// import { SheetCursorSave } from '../sheet/SheetCursor';
 
 export type Transaction = {
-  statements: Statement[];
-  cursor?: SheetCursorSave;
+  // statements: Statement[];
+  // cursor?: SheetCursorSave;
 };

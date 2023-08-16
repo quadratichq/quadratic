@@ -1,6 +1,5 @@
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined';
-import { createSheet } from '../../../../grid/actions/sheetsAction';
 import { SheetController } from '../../../../grid/controller/SheetController';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 
@@ -14,8 +13,8 @@ const ListItems = [
           icon={<PostAddOutlinedIcon />}
           action={() => {
             const sheetController = props.sheetController as SheetController;
-            const sheet = sheetController.createNewSheet();
-            createSheet({ sheetController, sheet, create_transaction: true });
+            sheetController.createNewSheet();
+            // createSheet({ sheetController, sheet, create_transaction: true });
           }}
         />
       );

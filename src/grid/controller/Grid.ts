@@ -2,6 +2,7 @@ import { Rectangle } from 'pixi.js';
 import { GridController, Pos, Rect } from '../../quadratic-core/quadratic_core';
 import { JsRenderCell, JsRenderFill, TransactionSummary } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
+import { SheetCursorSave } from '../sheet/SheetCursor';
 
 const rectangleToRect = (rectangle: Rectangle): Rect => {
   return new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
@@ -22,16 +23,12 @@ export class Grid {
     this.gridController = GridController.newFromFile(grid);
   }
 
+  // sheet operations
+  // ----------------
+
   populateWithRandomFloats(sheetId: string, width: number, height: number): void {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height));
-  }
-
-  // sheets
-
-  sheetIndexToId(index: number): string | undefined {
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.sheetIndexToId(index);
   }
 
   getSheetIds(): string[] {
@@ -40,24 +37,32 @@ export class Grid {
     return JSON.parse(data);
   }
 
-  addSheet(): string | undefined {
+  addSheet(cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.addSheet();
+    return this.gridController.addSheet(undefined, JSON.stringify(cursor));
   }
 
-  deleteSheet(sheetId: string): void {
+  deleteSheet(sheetId: string, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.deleteSheet(sheetId);
+    return this.gridController.deleteSheet(sheetId, JSON.stringify(cursor));
   }
 
-  renameSheet(sheetId: string, name: string): TransactionSummary {
+  renameSheet(sheetId: string, name: string, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.renameSheet(sheetId, name);
+    return this.gridController.renameSheet(sheetId, name, JSON.stringify(cursor));
   }
 
-  duplicateSheet(sheetId: string): TransactionSummary {
+  duplicateSheet(sheetId: string, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.duplicateSheet(sheetId);
+    return this.gridController.duplicateSheet(sheetId, JSON.stringify(cursor));
+  }
+
+  // sheet information
+  // -----------------
+
+  sheetIndexToId(index: number): string | undefined {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.sheetIndexToId(index);
   }
 
   getSheetOrder(sheetId: string): number | undefined {
@@ -75,31 +80,8 @@ export class Grid {
     return this.gridController.getSheetColor(sheetId);
   }
 
-  // undo
-  //-----
-
-  hasUndo(): boolean {
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.hasUndo();
-  }
-
-  hasRedo(): boolean {
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.hasRedo();
-  }
-
-  undo(): TransactionSummary {
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.undo();
-  }
-
-  redo(): TransactionSummary {
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.redo();
-  }
-
-  // get grid components
-  //--------------------
+  // rendering information
+  // ---------------------
 
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
@@ -120,5 +102,28 @@ export class Grid {
       return;
     }
     return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
+  }
+
+  // undo
+  //-----
+
+  hasUndo(): boolean {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.hasUndo();
+  }
+
+  hasRedo(): boolean {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.hasRedo();
+  }
+
+  undo(cursor: SheetCursorSave): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.undo(JSON.stringify(cursor));
+  }
+
+  redo(cursor: SheetCursorSave): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.redo(JSON.stringify(cursor));
   }
 }

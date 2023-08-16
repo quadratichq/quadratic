@@ -21,16 +21,6 @@ macro_rules! uuid_wrapper_struct {
             pub(crate) fn new() -> Self {
                 $name { id: Uuid::new_v4() }
             }
-
-            //     pub fn from_string(s: &str) -> Self {
-            //         $name {
-            //             id: Uuid::parse_str(s).unwrap_or_default(),
-            //         }
-            //     }
-
-            //     pub fn id_to_string(&self) -> String {
-            //         self.id.to_string()
-            //     }
         }
 
         impl FromStr for $name {
@@ -55,7 +45,7 @@ uuid_wrapper_struct!(RowId);
 uuid_wrapper_struct!(ColumnId);
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
 pub struct CellRef {
     pub sheet: SheetId,
     pub column: ColumnId,

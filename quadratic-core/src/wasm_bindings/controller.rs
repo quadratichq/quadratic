@@ -40,24 +40,30 @@ impl GridController {
     /// Undoes one transaction. Returns a [`TransactionSummary`], or `null` if
     /// there was nothing to undo.
     #[wasm_bindgen(js_name = "undo")]
-    pub fn js_undo(&mut self) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.undo())?)
+    pub fn js_undo(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.undo(cursor))?)
     }
     /// Redoes one transaction. Returns a [`TransactionSummary`], or `null` if
     /// there was nothing to redo.
     #[wasm_bindgen(js_name = "redo")]
-    pub fn js_redo(&mut self) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.redo())?)
+    pub fn js_redo(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
     }
 
     /// Adds an empty sheet to the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "addSheet")]
-    pub fn js_add_sheet(&mut self, to_before: Option<String>) -> Result<JsValue, JsValue> {
+    pub fn js_add_sheet(
+        &mut self,
+        to_before: Option<String>,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
         let to_before = match to_before {
             Some(to_before) => Some(SheetId::from_str(&to_before).unwrap()),
             None => None,
         };
-        Ok(serde_wasm_bindgen::to_value(&self.add_sheet(to_before))?)
+        Ok(serde_wasm_bindgen::to_value(
+            &self.add_sheet(to_before, cursor),
+        )?)
     }
     /// Gets a list of ordered sheet ids
     #[wasm_bindgen(js_name = "getSheetIds")]
@@ -67,10 +73,14 @@ impl GridController {
     }
     /// Deletes a sheet from the the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "deleteSheet")]
-    pub fn js_delete_sheet(&mut self, sheet_id: String) -> Result<JsValue, JsValue> {
+    pub fn js_delete_sheet(
+        &mut self,
+        sheet_id: String,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id);
         Ok(serde_wasm_bindgen::to_value(
-            &self.delete_sheet(sheet_id.unwrap()),
+            &self.delete_sheet(sheet_id.unwrap(), cursor),
         )?)
     }
     /// Moves a sheet to before another sheet, or to the end of the list.
@@ -80,6 +90,7 @@ impl GridController {
         &mut self,
         sheet_id: String,
         to_before: Option<String>,
+        cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let to_before = match to_before {
@@ -87,23 +98,32 @@ impl GridController {
             None => None,
         };
         Ok(serde_wasm_bindgen::to_value(
-            &self.move_sheet(sheet_id, to_before),
+            &self.move_sheet(sheet_id, to_before, cursor),
         )?)
     }
     /// Makes a copy of a sheet. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "duplicateSheet")]
-    pub fn js_duplicate_sheet(&mut self, sheet_id: String) -> Result<JsValue, JsValue> {
+    pub fn js_duplicate_sheet(
+        &mut self,
+        sheet_id: String,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.duplicate_sheet(sheet_id),
+            &self.duplicate_sheet(sheet_id, cursor),
         )?)
     }
     /// Renames a sheet. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "renameSheet")]
-    pub fn js_rename_sheet(&mut self, sheet_id: String, name: String) -> Result<JsValue, JsValue> {
+    pub fn js_rename_sheet(
+        &mut self,
+        sheet_id: String,
+        name: String,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.rename_sheet(sheet_id, name),
+            &self.rename_sheet(sheet_id, name, cursor),
         )?)
     }
 
@@ -139,6 +159,7 @@ impl GridController {
                 region.min,
                 Array::from_random_floats(region.width(), region.height())
                     .map_err(|e| e.to_string())?,
+                None,
             ),
         )?)
     }
@@ -213,11 +234,12 @@ impl GridController {
         sheet_id: String,
         pos: &Pos,
         cell_value: JsValue,
+        cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let cell_value: CellValue = serde_wasm_bindgen::from_value(cell_value)?;
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_value(sheet_id, *pos, cell_value),
+            &self.set_cell_value(sheet_id, *pos, cell_value, cursor),
         )?)
     }
 
@@ -229,10 +251,11 @@ impl GridController {
         &mut self,
         sheet_id: String,
         region: &Rect,
+        cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.delete_cell_values(sheet_id, *region),
+            &self.delete_cell_values(sheet_id, *region, cursor),
         )?)
     }
 

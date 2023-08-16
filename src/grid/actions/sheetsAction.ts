@@ -33,8 +33,8 @@ export const deleteSheet = (args: { sheetController: SheetController; sheet: She
   });
 
   if (sheetController.sheets.length === 0) {
-    const sheet = sheetController.createNewSheet();
-    createSheet({ sheetController, sheet, create_transaction: false });
+    // const sheet = sheetController.createNewSheet();
+    // createSheet({ sheetController, sheet, create_transaction: false });
   }
 
   if (create_transaction ?? true) {

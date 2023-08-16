@@ -83,11 +83,6 @@ export class Sheet {
     return this.gridNew.getRenderFills(this.id, rectangle);
   }
 
-  rename(name: string) {
-    debugger;
-    // this.name = name;
-  }
-
   protected copyCell(cell: Cell | undefined): Cell | undefined {
     if (!cell) return undefined;
     return {

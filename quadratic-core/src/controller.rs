@@ -47,11 +47,13 @@ impl GridController {
         sheet_id: SheetId,
         pos: Pos,
         value: CellValue,
+        cursor: Option<String>,
     ) -> TransactionSummary {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         let cell_ref = sheet.get_or_create_cell_ref(pos);
         let transaction = Transaction {
             ops: vec![Operation::SetCell { cell_ref, value }],
+            cursor,
         };
         self.transact_forward(transaction)
     }
@@ -60,6 +62,7 @@ impl GridController {
         sheet_id: SheetId,
         start_pos: Pos,
         values: Array,
+        cursor: Option<String>,
     ) -> TransactionSummary {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         let region = Rect {
@@ -84,10 +87,16 @@ impl GridController {
                 rows,
                 values,
             }],
+            cursor,
         };
         self.transact_forward(transaction)
     }
-    pub fn delete_cell_values(&mut self, sheet_id: SheetId, region: Rect) -> TransactionSummary {
+    pub fn delete_cell_values(
+        &mut self,
+        sheet_id: SheetId,
+        region: Rect,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
         let sheet = self.grid.sheet_from_id(sheet_id);
         let columns = region
             .x_range()
@@ -108,15 +117,21 @@ impl GridController {
                     rows,
                     values,
                 }],
+                cursor,
             },
             Err(_) => Transaction {
                 ops: vec![], // nothing to do! TODO: probably shouldn't even have an undo stack entry
+                cursor: None,
             },
         };
         self.transact_forward(transaction)
     }
 
-    pub fn add_sheet(&mut self, to_before: Option<SheetId>) -> TransactionSummary {
+    pub fn add_sheet(
+        &mut self,
+        to_before: Option<SheetId>,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
         let sheet_names = &self
             .grid
             .sheets()
@@ -127,28 +142,46 @@ impl GridController {
         let id = SheetId::new();
         let name = crate::util::unused_name("Sheet", &sheet_names);
 
-        let transaction = Transaction::from(Operation::AddSheet {
-            sheet: Sheet::new(id, name),
-            to_before,
-        });
+        let transaction = Transaction {
+            ops: vec![Operation::AddSheet {
+                sheet: Sheet::new(id, name),
+                to_before,
+            }],
+            cursor,
+        };
         self.transact_forward(transaction)
     }
-    pub fn delete_sheet(&mut self, sheet_id: SheetId) -> TransactionSummary {
-        let transaction = Transaction::from(Operation::DeleteSheet { sheet_id });
+    pub fn delete_sheet(
+        &mut self,
+        sheet_id: SheetId,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let transaction = Transaction {
+            ops: vec![Operation::DeleteSheet { sheet_id }],
+            cursor,
+        };
         self.transact_forward(transaction)
     }
     pub fn move_sheet(
         &mut self,
         sheet_id: SheetId,
         to_before: Option<SheetId>,
+        cursor: Option<String>,
     ) -> TransactionSummary {
-        let transaction = Transaction::from(Operation::ReorderSheet {
-            target: sheet_id,
-            to_before,
-        });
+        let transaction = Transaction {
+            ops: vec![Operation::ReorderSheet {
+                target: sheet_id,
+                to_before,
+            }],
+            cursor,
+        };
         self.transact_forward(transaction)
     }
-    pub fn duplicate_sheet(&mut self, sheet_id: SheetId) -> TransactionSummary {
+    pub fn duplicate_sheet(
+        &mut self,
+        sheet_id: SheetId,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
         let sheet_after = self
             .sheet_ids()
             .get(self.grid.sheet_id_to_index(sheet_id).expect("bad sheet ID") + 1)
@@ -156,14 +189,25 @@ impl GridController {
         let mut new_sheet = self.sheet(sheet_id).clone();
         new_sheet.id = SheetId::new();
         new_sheet.name = format!("{} Copy", new_sheet.name);
-        let transaction = Transaction::from(Operation::AddSheet {
-            sheet: new_sheet,
-            to_before: sheet_after,
-        });
+        let transaction = Transaction {
+            ops: vec![Operation::AddSheet {
+                sheet: new_sheet,
+                to_before: sheet_after,
+            }],
+            cursor,
+        };
         self.transact_forward(transaction)
     }
-    pub fn rename_sheet(&mut self, sheet_id: SheetId, name: String) -> TransactionSummary {
-        let transaction = Transaction::from(Operation::RenameSheet { sheet_id, name });
+    pub fn rename_sheet(
+        &mut self,
+        sheet_id: SheetId,
+        name: String,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let transaction = Transaction {
+            ops: vec![Operation::RenameSheet { sheet_id, name }],
+            cursor,
+        };
         self.transact_forward(transaction)
     }
 
@@ -179,16 +223,22 @@ impl GridController {
     pub fn has_redo(&self) -> bool {
         !self.redo_stack.is_empty()
     }
-    pub fn undo(&mut self) -> Option<TransactionSummary> {
+    pub fn undo(&mut self, cursor: Option<String>) -> Option<TransactionSummary> {
         let transaction = self.undo_stack.pop()?;
-        let (reverse_transaction, summary) = self.transact(transaction);
+        let cursor_old = transaction.cursor.clone();
+        let (mut reverse_transaction, mut summary) = self.transact(transaction);
+        reverse_transaction.cursor = cursor;
         self.redo_stack.push(reverse_transaction);
+        summary.cursor = cursor_old;
         Some(summary)
     }
-    pub fn redo(&mut self) -> Option<TransactionSummary> {
+    pub fn redo(&mut self, cursor: Option<String>) -> Option<TransactionSummary> {
         let transaction = self.redo_stack.pop()?;
-        let (reverse_transaction, summary) = self.transact(transaction);
+        let cursor_old = transaction.cursor.clone();
+        let (mut reverse_transaction, mut summary) = self.transact(transaction);
+        reverse_transaction.cursor = cursor;
         self.undo_stack.push(reverse_transaction);
+        summary.cursor = cursor_old;
         Some(summary)
     }
 
@@ -332,7 +382,10 @@ impl GridController {
         }
         rev_ops.reverse();
 
-        let reverse_transaction = Transaction { ops: rev_ops };
+        let reverse_transaction = Transaction {
+            ops: rev_ops,
+            cursor: transaction.cursor,
+        };
 
         (reverse_transaction, summary)
     }
@@ -341,11 +394,7 @@ impl GridController {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
     ops: Vec<Operation>,
-}
-impl From<Operation> for Transaction {
-    fn from(op: Operation) -> Self {
-        Transaction { ops: vec![op] }
-    }
+    cursor: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -410,6 +459,9 @@ pub struct TransactionSummary {
 
     /// Sheet metadata or order was modified.
     pub sheet_list_modified: bool,
+
+    /// Cursor location for undo/redo operation
+    pub cursor: Option<String>,
 }
 
 #[cfg(test)]
@@ -429,42 +481,42 @@ mod tests {
         });
 
         assert_eq!(get_the_cell(&g), CellValue::Blank);
-        g.set_cell_value(sheet_id, pos, "a".into());
+        g.set_cell_value(sheet_id, pos, "a".into(), None);
         assert_eq!(get_the_cell(&g), "a".into());
-        g.set_cell_value(sheet_id, pos, "b".into());
+        g.set_cell_value(sheet_id, pos, "b".into(), None);
         assert_eq!(get_the_cell(&g), "b".into());
-        assert!(g.undo() == expected_summary);
+        assert!(g.undo(None) == expected_summary);
         assert_eq!(get_the_cell(&g), "a".into());
-        assert!(g.redo() == expected_summary);
+        assert!(g.redo(None) == expected_summary);
         assert_eq!(get_the_cell(&g), "b".into());
-        assert!(g.undo() == expected_summary);
+        assert!(g.undo(None) == expected_summary);
         assert_eq!(get_the_cell(&g), "a".into());
-        assert!(g.undo() == expected_summary);
+        assert!(g.undo(None) == expected_summary);
         assert_eq!(get_the_cell(&g), CellValue::Blank);
-        assert!(g.undo().is_none());
+        assert!(g.undo(None).is_none());
         assert_eq!(get_the_cell(&g), CellValue::Blank);
-        assert!(g.redo() == expected_summary);
+        assert!(g.redo(None) == expected_summary);
         assert_eq!(get_the_cell(&g), "a".into());
-        assert!(g.redo() == expected_summary);
+        assert!(g.redo(None) == expected_summary);
         assert_eq!(get_the_cell(&g), "b".into());
-        assert!(g.redo().is_none());
+        assert!(g.redo(None).is_none());
         assert_eq!(get_the_cell(&g), "b".into());
     }
 
     #[test]
     fn test_add_delete_reorder_sheets() {
         let mut g = GridController::new();
-        g.add_sheet(None);
-        g.add_sheet(None);
+        g.add_sheet(None, None);
+        g.add_sheet(None, None);
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
         let s2 = old_sheet_ids[1];
         let s3 = old_sheet_ids[2];
 
         let mut test_reorder = |a, b, expected: [SheetId; 3]| {
-            g.move_sheet(a, b);
+            g.move_sheet(a, b, None);
             assert_eq!(expected.to_vec(), g.sheet_ids());
-            g.undo();
+            g.undo(None);
             assert_eq!(old_sheet_ids, g.sheet_ids());
         };
 
@@ -479,9 +531,9 @@ mod tests {
         test_reorder(s3, None, [s1, s2, s3]);
 
         let mut test_delete = |a, expected: [SheetId; 2]| {
-            g.delete_sheet(a);
+            g.delete_sheet(a, None);
             assert_eq!(expected.to_vec(), g.sheet_ids());
-            g.undo();
+            g.undo(None);
             assert_eq!(old_sheet_ids, g.sheet_ids());
         };
 
@@ -497,7 +549,7 @@ mod tests {
         let s1 = old_sheet_ids[0];
 
         g.set_sheet_name(s1, String::from("Nice Name"));
-        g.duplicate_sheet(s1);
+        g.duplicate_sheet(s1, None);
         let sheet_ids = g.sheet_ids();
         let s2 = sheet_ids[1];
 
