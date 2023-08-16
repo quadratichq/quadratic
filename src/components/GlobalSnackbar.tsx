@@ -6,6 +6,8 @@ import * as React from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 const DURATION = 6000;
+export const snackbarMsgQueryParam = 'snackbar-msg';
+export const snackbarSeverityQueryParam = 'snackbar-severity';
 
 /**
  * Context
@@ -114,13 +116,13 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
 
   // If the route has these query params (when it loads), we'll throw up a snackbar too
   React.useEffect(() => {
-    const msg = searchParams.get('snackbar-msg');
-    const severity = searchParams.get('snackbar-severity');
+    const msg = searchParams.get(snackbarMsgQueryParam);
+    const severity = searchParams.get(snackbarSeverityQueryParam);
 
     if (msg) {
       addGlobalSnackbar(msg, severity ? { severity: 'error' } : undefined);
-      searchParams.delete('snackbar-msg');
-      searchParams.delete('snackbar-severity');
+      searchParams.delete(snackbarMsgQueryParam);
+      searchParams.delete(snackbarSeverityQueryParam);
       setSearchParams(searchParams);
     }
   }, [addGlobalSnackbar, searchParams, setSearchParams]);

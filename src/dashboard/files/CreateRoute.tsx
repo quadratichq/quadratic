@@ -3,13 +3,18 @@ import mixpanel from 'mixpanel-browser';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { authClient } from '../../auth';
+import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '../../components/GlobalSnackbar';
 import { EXAMPLE_FILES } from '../../constants/appConstants';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 import { initMixpanelAnalytics } from '../../utils/analytics';
 
-const getFailUrl = (location: string = ROUTES.MY_FILES) =>
-  encodeURI(`${location}?snackbar-msg=Failed to create file. Try again.&snackbar-severity=error`);
+const getFailUrl = (path: string = ROUTES.MY_FILES) => {
+  let params = new URLSearchParams();
+  params.append(snackbarMsgQueryParam, 'Failed to create file. Try again.');
+  params.append(snackbarSeverityQueryParam, 'error');
+  return path + '?' + params.toString();
+};
 
 // FYI the `await new Promise()` code is a hack until this ships in react-router
 // https://github.com/remix-run/react-router/pull/10705
@@ -46,8 +51,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
 
     const { name } = EXAMPLE_FILES[exampleId];
-
-    // These fail on fresh page loads new loads
     mixpanel.track('[Files].newExampleFile', { fileName: name });
 
     try {
