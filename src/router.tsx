@@ -20,7 +20,7 @@ import { GlobalSnackbarProvider } from './components/GlobalSnackbar';
 import { Theme } from './components/Theme';
 import { ROUTES } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
-import { BrowserCompatibility } from './dashboard/components/BrowserCompatibility';
+import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Create from './dashboard/files/CreateRoute';
 import { debugLogAuth } from './debugFlags';
 import { initializeAnalytics } from './utils/analytics';
@@ -66,19 +66,13 @@ export const router = createBrowserRouter(
 
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
-          <Route element={<BrowserCompatibility />}>
+          <Route element={<BrowserCompatibilityLayoutRoute />}>
             <Route index element={<Navigate to={ROUTES.FILES} replace />} />
             <Route path=":uuid" lazy={() => import('./dashboard/FileRoute')} />
           </Route>
         </Route>
 
-        <Route
-          path={ROUTES.CREATE_FILE}
-          id="create"
-          loader={Create.loader}
-          action={Create.action}
-          shouldRevalidate={() => false}
-        />
+        <Route path={ROUTES.CREATE_FILE} loader={Create.loader} action={Create.action} shouldRevalidate={() => false} />
 
         <Route lazy={() => import('./dashboard/components/DashboardLayoutRoute')}>
           <Route path={ROUTES.FILES} element={<Navigate to={ROUTES.MY_FILES} replace />} />
