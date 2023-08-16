@@ -635,8 +635,4 @@ impl Sheet {
     pub fn id_to_string(&self) -> String {
         self.id.to_string()
     }
-
-    pub fn set_name(&mut self, name: String) {
-        self.name = name;
-    }
 }

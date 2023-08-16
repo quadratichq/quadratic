@@ -15,22 +15,11 @@ export class SheetController {
   sheets: Sheet[];
   saveLocalFiles: (() => void) | undefined;
 
-  // @deprecated
-  transaction_in_progress: Transaction | undefined;
-  transaction_in_progress_reverse: Transaction | undefined;
-  undo_stack: Transaction[];
-  redo_stack: Transaction[];
-
   constructor() {
     this.grid = new Grid();
     this.sheets = [];
     this._current = '';
 
-    // @deprecated
-    this.undo_stack = [];
-    this.redo_stack = [];
-    this.transaction_in_progress = undefined;
-    this.transaction_in_progress_reverse = undefined;
     this.saveLocalFiles = undefined;
   }
 
@@ -125,10 +114,11 @@ export class SheetController {
   }
 
   renameSheet(name: string): void {
-    const summary = this.grid.renameSheet(this.current, name, this.sheet.cursor.save());
+    const summary = this.grid.setSheetName(this.current, name, this.sheet.cursor.save());
     transactionResponse(this, summary);
   }
 
+  // todo
   reorderSheet(options: { id: string; order?: string; delta?: number }) {
     const sheet = this.sheets.find((sheet) => sheet.id === options.id);
     if (sheet) {
@@ -175,9 +165,6 @@ export class SheetController {
   }
 
   deleteSheet(id: string): void {
-    const sheet = this.sheets.find((sheet) => sheet.id === id);
-    if (!sheet) throw new Error('Expected to find sheet in deleteSheet');
-
     const summary = this.grid.deleteSheet(id, this.sheet.cursor.save());
 
     // set current to next sheet (before this.sheets is updated)
@@ -196,17 +183,10 @@ export class SheetController {
     if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
-  // starting a transaction is the only way to execute statements
-  // once a transaction is started, statements can be executed via
-  // execute_statement until end_transaction is called.
-  //
-
   changeSheetColor(id: string, color?: string): void {
-    // const sheet = this.sheets.find((sheet) => sheet.id === id);
-    // if (!sheet) throw new Error('Expected to find sheet in changeSheetColor');
-    // sheet.color = color;
-    // this.current = id;
-    // if (this.saveLocalFiles) this.saveLocalFiles();
+    const summary = this.grid.setSheetColor(id, color, this.sheet.cursor.save());
+    transactionResponse(this, summary);
+    if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
   public start_transaction(sheetCursor?: SheetCursor): void {

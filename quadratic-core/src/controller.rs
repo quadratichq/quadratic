@@ -34,9 +34,30 @@ impl GridController {
         self.grid.sheet_from_id(sheet_id)
     }
 
-    pub fn set_sheet_name(&mut self, sheet_id: SheetId, name: String) {
-        let sheet = self.grid.sheet_mut_from_id(sheet_id);
-        sheet.set_name(name);
+    pub fn set_sheet_name(
+        &mut self,
+        sheet_id: SheetId,
+        name: String,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let transaction = Transaction {
+            ops: vec![Operation::SetSheetName { sheet_id, name }],
+            cursor,
+        };
+        self.transact_forward(transaction)
+    }
+
+    pub fn set_sheet_color(
+        &mut self,
+        sheet_id: SheetId,
+        color: Option<String>,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let transaction = Transaction {
+            ops: vec![Operation::SetSheetColor { sheet_id, color }],
+            cursor,
+        };
+        self.transact_forward(transaction)
     }
 
     pub fn set_cell_value(
@@ -195,18 +216,6 @@ impl GridController {
         };
         self.transact_forward(transaction)
     }
-    pub fn rename_sheet(
-        &mut self,
-        sheet_id: SheetId,
-        name: String,
-        cursor: Option<String>,
-    ) -> TransactionSummary {
-        let transaction = Transaction {
-            ops: vec![Operation::RenameSheet { sheet_id, name }],
-            cursor,
-        };
-        self.transact_forward(transaction)
-    }
 
     fn transact_forward(&mut self, transaction: Transaction) -> TransactionSummary {
         let (reverse_transaction, summary) = self.transact(transaction);
@@ -360,13 +369,24 @@ impl GridController {
                     }
                 }
 
-                Operation::RenameSheet { sheet_id, name } => {
+                Operation::SetSheetName { sheet_id, name } => {
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
                     let old_name = sheet.name.clone();
-                    sheet.set_name(name);
-                    rev_ops.push(Operation::RenameSheet {
+                    sheet.name = name;
+                    rev_ops.push(Operation::SetSheetName {
                         sheet_id,
                         name: old_name,
+                    });
+                    summary.sheet_list_modified = true;
+                }
+
+                Operation::SetSheetColor { sheet_id, color } => {
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                    let old_color = sheet.color.clone();
+                    sheet.color = color;
+                    rev_ops.push(Operation::SetSheetColor {
+                        sheet_id,
+                        color: old_color,
                     });
                     summary.sheet_list_modified = true;
                 }
@@ -415,14 +435,19 @@ pub enum Operation {
         sheet_id: SheetId,
     },
 
+    SetSheetName {
+        sheet_id: SheetId,
+        name: String,
+    },
+
+    SetSheetColor {
+        sheet_id: SheetId,
+        color: Option<String>,
+    },
+
     ReorderSheet {
         target: SheetId,
         to_before: Option<SheetId>,
-    },
-
-    RenameSheet {
-        sheet_id: SheetId,
-        name: String,
     },
 }
 impl Operation {
@@ -434,9 +459,10 @@ impl Operation {
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,
 
-            Operation::ReorderSheet { .. } => None,
+            Operation::SetSheetColor { .. } => None,
+            Operation::SetSheetName { .. } => None,
 
-            Operation::RenameSheet { .. } => None,
+            Operation::ReorderSheet { .. } => None,
         }
     }
 }
@@ -545,7 +571,7 @@ mod tests {
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
 
-        g.set_sheet_name(s1, String::from("Nice Name"));
+        g.set_sheet_name(s1, String::from("Nice Name"), None);
         g.duplicate_sheet(s1, None);
         let sheet_ids = g.sheet_ids();
         let s2 = sheet_ids[1];

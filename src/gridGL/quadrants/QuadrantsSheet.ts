@@ -36,12 +36,12 @@ export class QuadrantsSheet extends Container {
     this.complete = true;
     this.removeChildren();
     this.quadrants.clear();
-    const { grid, borders, render_dependency, array_dependency } = this.sheet;
+    const { grid, borders } = this.sheet;
     const gridBounds = grid.getSheetBounds(false);
     const borderBounds = borders.getGridBounds();
-    const renderDependencyBounds = render_dependency.getGridBounds();
-    const arrayDependencyBounds = array_dependency.getGridBounds();
-    const bounds = intersects.rectangleUnion(gridBounds, borderBounds, renderDependencyBounds, arrayDependencyBounds);
+    // const renderDependencyBounds = render_dependency.getGridBounds();
+    // const arrayDependencyBounds = array_dependency.getGridBounds();
+    const bounds = intersects.rectangleUnion(gridBounds, borderBounds);
 
     if (!bounds) return;
 
@@ -109,11 +109,11 @@ export class QuadrantsSheet extends Container {
         const { x: quadrantX, y: quadrantY } = this.getQuadrantCoordinate(x, options.row);
         const quadrant = this.getQuadrant(quadrantX, quadrantY, false);
         if (quadrant) quadrant.dirty = true;
-        const dependents = this.sheet.render_dependency.getDependents({ x, y: options.row });
-        dependents?.forEach((dependent) => {
-          const quadrant = this.getQuadrant(dependent.x, dependent.y, false);
-          if (quadrant) quadrant.dirty = true;
-        });
+        // const dependents = this.sheet.render_dependency.getDependents({ x, y: options.row });
+        // dependents?.forEach((dependent) => {
+        //   const quadrant = this.getQuadrant(dependent.x, dependent.y, false);
+        //   if (quadrant) quadrant.dirty = true;
+        // });
       }
 
       // reposition quadrants below the row

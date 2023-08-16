@@ -113,19 +113,6 @@ impl GridController {
             &self.duplicate_sheet(sheet_id, cursor),
         )?)
     }
-    /// Renames a sheet. Returns a [`TransactionSummary`].
-    #[wasm_bindgen(js_name = "renameSheet")]
-    pub fn js_rename_sheet(
-        &mut self,
-        sheet_id: String,
-        name: String,
-        cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.rename_sheet(sheet_id, name, cursor),
-        )?)
-    }
 
     /// Returns the ID of the sheet at the given index.
     #[wasm_bindgen(js_name = "sheetIdToIndex")]
@@ -287,7 +274,7 @@ impl GridController {
     /// Returns a summary of the formatting in a region as a
     /// [`FormattingSummary`].
     #[wasm_bindgen(js_name = "getFormattingSummary")]
-    pub fn get_formatting_summary(
+    pub fn js_formatting_summary(
         &self,
         sheet_id: String,
         region: &Rect,
@@ -298,17 +285,45 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "getSheetName")]
-    pub fn get_sheet_name(&self, sheet_id: String) -> String {
+    pub fn js_sheet_name(&self, sheet_id: String) -> String {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let sheet = self.grid().sheet_from_id(sheet_id);
         sheet.name.clone()
     }
 
     #[wasm_bindgen(js_name = "getSheetColor")]
-    pub fn get_sheet_color(&self, sheet_id: String) -> String {
+    pub fn js_sheet_color(&self, sheet_id: String) -> String {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let sheet = self.grid().sheet_from_id(sheet_id);
         sheet.color.clone().unwrap_or_default()
+    }
+
+    /// Returns a code cell as a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "setSheetName")]
+    pub fn js_set_sheet_name(
+        &mut self,
+        sheet_id: String,
+        name: String,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(
+            &self.set_sheet_name(sheet_id, name, cursor),
+        )?)
+    }
+
+    /// Returns a code cell as a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "setSheetColor")]
+    pub fn js_set_sheet_color(
+        &mut self,
+        sheet_id: String,
+        color: Option<String>,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(
+            &self.set_sheet_color(sheet_id, color, cursor),
+        )?)
     }
 
     // /// Sets the text alignment as a [`CellAlign`] in a region.

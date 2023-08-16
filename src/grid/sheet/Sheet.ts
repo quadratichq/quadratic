@@ -3,10 +3,8 @@ import { Coordinate } from '../../gridGL/types/size';
 import { JsRenderCell, JsRenderFill } from '../../quadratic-core/types';
 import { Cell, CellFormat } from '../../schemas';
 import { Grid } from '../controller/Grid';
-import { CellDependencyManager } from './CellDependencyManager';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
-import { GridRenderDependency } from './GridRenderDependency';
 import { CellAndFormat, GridSparse } from './GridSparse';
 import { SheetCursor } from './SheetCursor';
 
@@ -21,11 +19,6 @@ export class Sheet {
   borders: GridBorders;
   cursor: SheetCursor;
 
-  // deprecated
-  render_dependency: GridRenderDependency;
-  array_dependency: GridRenderDependency;
-  cell_dependency: CellDependencyManager;
-
   constructor(grid: Grid, index: number) {
     this.gridNew = grid;
 
@@ -39,16 +32,12 @@ export class Sheet {
     this.gridOffsets = new GridOffsets();
     this.borders = new GridBorders(this.gridOffsets);
 
-    // deprecated
-    this.render_dependency = new GridRenderDependency();
-    this.array_dependency = new GridRenderDependency();
-    this.cell_dependency = new CellDependencyManager();
-
     this.cursor = new SheetCursor(this);
   }
 
   // for testing
   clear() {
+    // todo
     // this.gridOffsets = new GridOffsets();
     // this.grid = new GridSparse(this);
     // this.borders = new GridBorders(this.gridOffsets);
@@ -188,10 +177,9 @@ export class Sheet {
 
   hasQuadrant(x: number, y: number): boolean {
     return (
-      this.grid.hasQuadrant(x, y) ||
-      this.borders.hasQuadrant(x, y) ||
-      this.render_dependency.hasQuadrant(x, y) ||
-      this.array_dependency.hasQuadrant(x, y)
+      this.grid.hasQuadrant(x, y) || this.borders.hasQuadrant(x, y)
+      // this.render_dependency.hasQuadrant(x, y) ||
+      // this.array_dependency.hasQuadrant(x, y)
     );
   }
 

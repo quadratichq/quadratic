@@ -17,9 +17,9 @@ If you have any problems getting the project to run locally, please create an is
 
 ## Run Quadratic front-end locally
 
-1. `npm run build:wasm` to compile the Rust code
-2. `npm install` to install dependencies (run again when updating Rust)
-3. `npm start` to run in browser or `npm run dev` to run with Electron
+1. `npm install` to install dependencies
+   2a. `npm start` to run in browser or `npm run dev` to run with Electron
+   2b. or `npm run watch:front-end` to run in browser with automatic wasm rebuilding
 
 ### Run Quadrtic server locally
 

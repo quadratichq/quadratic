@@ -36,7 +36,6 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           onClick={handleClose}
           onClickCapture={() => {
             sheetController.duplicateSheet();
-            // createSheet({ sheetController, sheet, create_transaction: true });
             focusGrid();
           }}
         >
@@ -57,18 +56,14 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             onChangeComplete={(change: ColorResult) => {
               const color = convertReactColorToString(change);
               if (contextMenu) {
-                const sheet = sheetController.getSheet(contextMenu.id);
-                if (!sheet) throw new Error('Expected sheet to be defined in Change Color');
-                updateSheet({ sheetController, sheet, color, create_transaction: true });
+                sheetController.changeSheetColor(contextMenu.id, color);
                 focusGrid();
               }
               handleClose();
             }}
             onClear={() => {
               if (contextMenu) {
-                const sheet = sheetController.getSheet(contextMenu.id);
-                if (!sheet) throw new Error('Expected sheet to be defined in Change Color');
-                updateSheet({ sheetController, sheet, color: null, create_transaction: true });
+                sheetController.changeSheetColor(contextMenu.id, undefined);
                 focusGrid();
               }
               handleClose();

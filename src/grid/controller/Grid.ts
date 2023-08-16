@@ -47,9 +47,14 @@ export class Grid {
     return this.gridController.deleteSheet(sheetId, JSON.stringify(cursor));
   }
 
-  renameSheet(sheetId: string, name: string, cursor: SheetCursorSave): TransactionSummary {
+  setSheetName(sheetId: string, name: string, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.renameSheet(sheetId, name, JSON.stringify(cursor));
+    return this.gridController.setSheetName(sheetId, name, JSON.stringify(cursor));
+  }
+
+  setSheetColor(sheetId: string, color: string | undefined, cursor: SheetCursorSave): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.setSheetColor(sheetId, color, JSON.stringify(cursor));
   }
 
   duplicateSheet(sheetId: string, cursor: SheetCursorSave): TransactionSummary {
