@@ -1,4 +1,4 @@
-import { API_URL } from '../../../api/fetchFromApi';
+import { apiClient } from '../../../api/apiClient';
 import { authClient } from '../../../auth';
 import { Coordinate } from '../../../gridGL/types/size';
 import { GetCellsDB } from '../../sheet/Cells/GetCellsDB';
@@ -76,7 +76,7 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
       ],
     };
 
-    response = await fetch(`${API_URL}/ai/chat`, {
+    response = await fetch(`${apiClient.getApiUrl()}/ai/chat`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

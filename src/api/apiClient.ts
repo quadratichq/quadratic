@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { downloadFile as downloadFileOnClient } from '../helpers/downloadFile';
 import { GridFile, GridFileSchema } from '../schemas';
@@ -88,6 +89,20 @@ export const apiClient = {
       { method: 'POST', body: JSON.stringify(body) },
       PostFeedbackResSchema
     );
+  },
+
+  getApiUrl() {
+    const url = process.env.REACT_APP_QUADRATIC_API_URL;
+    if (!url) {
+      const message = 'REACT_APP_QUADRATIC_API_URL env variable is not set.';
+      Sentry.captureEvent({
+        message,
+        level: Sentry.Severity.Fatal,
+      });
+      throw new Error(message);
+    }
+
+    return url;
   },
 
   // Someday: figure out how to fit in the calls for the AI chat

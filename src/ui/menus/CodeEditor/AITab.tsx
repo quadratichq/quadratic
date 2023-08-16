@@ -1,7 +1,7 @@
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, FormControl, IconButton, InputAdornment, OutlinedInput } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { API_URL } from '../../../api/fetchFromApi';
+import { apiClient } from '../../../api/apiClient';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { authClient } from '../../../auth';
 import { CellEvaluationResult } from '../../../grid/computations/types';
@@ -81,7 +81,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
     setMessages(updatedMessages);
     setPrompt('');
 
-    await fetch(`${API_URL}/ai/chat/stream`, {
+    await fetch(`${apiClient.getApiUrl()}/ai/chat/stream`, {
       method: 'POST',
       signal: controller.current.signal,
       headers: {
