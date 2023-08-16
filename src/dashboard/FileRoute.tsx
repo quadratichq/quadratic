@@ -3,8 +3,8 @@ import { Button } from '@mui/material';
 import * as Sentry from '@sentry/react';
 import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
-import apiClientSingleton from '../api-client/apiClientSingleton';
-import { GetFileResSchema } from '../api-client/types';
+import { apiClient } from '../api/apiClient';
+import { GetFileResSchema } from '../api/types';
 import { Empty } from '../components/Empty';
 import { GridFile, GridFileSchema } from '../schemas';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
@@ -24,10 +24,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
   }
 
   // Fetch the file
-  const data = await apiClientSingleton.getFile(uuid as string);
-  if (!data) {
-    throw new Response('Unexpected response from the API.', { status: 500 });
-  }
+  const data = await apiClient.getFile(uuid as string);
 
   // Validate and upgrade file to the latest version
   const contents = validateAndUpgradeGridFile(data.file.contents);
@@ -42,7 +39,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
   // If the file version is newer than what is supported by the current version
   // of the app, do a (hard) reload.
   if (contents.version > GridFileSchema.shape.version.value) {
-    // @ts-expect-error
+    Sentry.captureEvent({
+      message: `User opened a file at version ${contents.version} but the app is at version ${GridFileSchema.shape.version.value}. The app will automatically reload.`,
+      level: Sentry.Severity.Log,
+    });
+    // @ts-expect-error hard reload via `true` only works in some browsers
     window.location.reload(true);
   }
 

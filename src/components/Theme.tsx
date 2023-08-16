@@ -18,7 +18,6 @@ export function Theme(props: any) {
     () => ({
       colorModePreference,
       toggleColorMode: (newPref: ColorModePreference) => {
-        console.log(newPref);
         setColorModePreference(newPref);
       },
     }),
@@ -34,7 +33,9 @@ export function Theme(props: any) {
           mode,
         },
         typography: {
-          fontFamily: `OpenSans, sans-serif`,
+          // We set a font family on the body in the main `index.css` file
+          // so we just inherit from that.
+          fontFamily: `inherit`,
           // For some reason, if you change the default font-family, this gets
           // lost on the original overline style
           overline: {

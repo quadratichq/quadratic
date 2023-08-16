@@ -3,9 +3,11 @@ import { Alert, AlertColor } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import Snackbar from '@mui/material/Snackbar';
 import * as React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 const DURATION = 6000;
+export const snackbarMsgQueryParam = 'snackbar-msg';
+export const snackbarSeverityQueryParam = 'snackbar-severity';
 
 /**
  * Context
@@ -44,6 +46,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
   const [messageQueue, setMessageQueue] = React.useState<readonly Message[]>([]);
   const [open, setOpen] = React.useState(false);
   const [activeMessage, setActiveMessage] = React.useState<Message | undefined>(undefined);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   React.useEffect(() => {
     if (messageQueue.length && !activeMessage) {
@@ -110,19 +113,19 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
         ),
       }
     : { message: activeMessage?.message };
-  const location = useLocation();
 
   // If the route has these query params (when it loads), we'll throw up a snackbar too
   React.useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const msg = searchParams.get('snackbar-msg');
-    const severity = searchParams.get('snackbar-severity');
+    const msg = searchParams.get(snackbarMsgQueryParam);
+    const severity = searchParams.get(snackbarSeverityQueryParam);
 
     if (msg) {
-      console.log('Running side effect');
       addGlobalSnackbar(msg, severity ? { severity: 'error' } : undefined);
+      searchParams.delete(snackbarMsgQueryParam);
+      searchParams.delete(snackbarSeverityQueryParam);
+      setSearchParams(searchParams);
     }
-  }, [location, addGlobalSnackbar]);
+  }, [addGlobalSnackbar, searchParams, setSearchParams]);
 
   return (
     <GlobalSnackbarContext.Provider value={value}>

@@ -12,6 +12,7 @@ import {
   createRoutesFromElements,
   redirect,
   useRouteError,
+  useRouteLoaderData,
 } from 'react-router-dom';
 import { authClient, protectedRouteLoaderWrapper } from './auth';
 import { Empty } from './components/Empty';
@@ -19,9 +20,8 @@ import { GlobalSnackbarProvider } from './components/GlobalSnackbar';
 import { Theme } from './components/Theme';
 import { ROUTES } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
-import { BrowserCompatibility } from './dashboard/components/BrowserCompatibility';
+import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Create from './dashboard/files/CreateRoute';
-import { debugLogAuth } from './debugFlags';
 import { initializeAnalytics } from './utils/analytics';
 // @ts-expect-error - for testing purposes
 window.lf = localforage;
@@ -30,6 +30,8 @@ export type RootLoaderData = {
   isAuthenticated: boolean;
   user?: User;
 };
+
+export const useRootRouteLoaderData = () => useRouteLoaderData('root') as RootLoaderData;
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -50,7 +52,6 @@ export const router = createBrowserRouter(
           // All other routes get the same data
           let isAuthenticated = await authClient.isAuthenticated();
           let user = await authClient.user();
-          if (debugLogAuth) console.log('[auth] / <loader>: isAuthenticated: %s', isAuthenticated);
           initializeAnalytics({ isAuthenticated, user });
 
           return { isAuthenticated, user };
@@ -63,21 +64,15 @@ export const router = createBrowserRouter(
 
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
-          <Route element={<BrowserCompatibility />}>
+          <Route element={<BrowserCompatibilityLayoutRoute />}>
             <Route index element={<Navigate to={ROUTES.FILES} replace />} />
             <Route path=":uuid" lazy={() => import('./dashboard/FileRoute')} />
           </Route>
         </Route>
 
-        <Route
-          path={ROUTES.CREATE_FILE}
-          id="create"
-          loader={Create.loader}
-          action={Create.action}
-          shouldRevalidate={() => false}
-        />
+        <Route path={ROUTES.CREATE_FILE} loader={Create.loader} action={Create.action} shouldRevalidate={() => false} />
 
-        <Route lazy={() => import('./dashboard/components/Layout')}>
+        <Route lazy={() => import('./dashboard/components/DashboardLayoutRoute')}>
           <Route path={ROUTES.FILES} element={<Navigate to={ROUTES.MY_FILES} replace />} />
           <Route path={ROUTES.MY_FILES} lazy={() => import('./dashboard/files/MineRoute')} />
           <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/files/ExamplesRoute')} />
@@ -114,14 +109,12 @@ export const router = createBrowserRouter(
 
           // If they’re authenticated, redirect home
           if (isAuthenticated) {
-            if (debugLogAuth) console.log('[auth] redirect to home after login');
             return redirect('/');
           }
 
           // If they’re not authenticated, send them to Auth0
           // Watch for a `from` query param, as unprotected routes will redirect
           // to here for them to auth first
-          if (debugLogAuth) console.log('[auth] send to auth0 for login');
           const url = new URL(request.url);
           const redirectTo = url.searchParams.get('from') || '';
           await authClient.login(redirectTo);

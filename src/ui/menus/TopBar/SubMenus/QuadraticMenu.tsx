@@ -5,9 +5,9 @@ import Button from '@mui/material/Button';
 import { Menu, MenuDivider, MenuHeader, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useEffect } from 'react';
-import { useParams, useRouteLoaderData } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import apiClientSingleton from '../../../../api-client/apiClientSingleton';
+import { apiClient } from '../../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { authClient } from '../../../../auth';
@@ -18,7 +18,7 @@ import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../..
 import { SheetController } from '../../../../grid/controller/sheetController';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { RootLoaderData } from '../../../../router';
+import { useRootRouteLoaderData } from '../../../../router';
 import { isMac } from '../../../../utils/isMac';
 import { MenuLineItem } from '../MenuLineItem';
 import { useGridSettings } from './useGridSettings';
@@ -33,7 +33,7 @@ export const QuadraticMenu = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
   const { uuid } = useParams();
-  const { isAuthenticated, user } = useRouteLoaderData('root') as RootLoaderData;
+  const { isAuthenticated, user } = useRootRouteLoaderData();
 
   // For readonly, set Headers to not visible by default
   useEffect(() => {
@@ -78,7 +78,7 @@ export const QuadraticMenu = (props: Props) => {
           <MenuItem
             onClick={() => {
               if (uuid) {
-                apiClientSingleton.downloadFile(uuid);
+                apiClient.downloadFile(uuid);
               }
             }}
           >

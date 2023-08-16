@@ -1,8 +1,7 @@
 import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
-import apiClientSingleton from '../../api-client/apiClientSingleton';
-import { PostFileContentsReq, PostFileNameReq } from '../../api-client/types';
+import { apiClient } from '../../api/apiClient';
 import { InitialFile } from '../../dashboard/FileRoute';
 import { SheetController } from '../../grid/controller/sheetController';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -78,42 +77,46 @@ export const FileProvider = ({
     didMount.current = true;
     console.log('[FileProvider] (re)loading file into the sheet...');
 
-    // TODO when we do true spa transitions, we'll likely need to clear/rebuild/reset
-    // sheetController.clear();
     sheetController.sheet.load_file(initialFile.contents);
-    // sheetController.app?.rebuild();
-    // sheetController.app?.reset();
   }, [sheetController.sheet, initialFile.contents]);
 
   const syncChanges = useCallback(
-    async (changes: PostFileContentsReq | PostFileNameReq) => {
+    async (apiClientFn: Function) => {
       const id = Date.now();
       setLatestSync({ id, state: 'syncing' });
-      const ok = await apiClientSingleton.postFile(uuid, changes);
-      setLatestSync((prev) => (prev.id === id ? { id, state: ok ? 'idle' : 'error' } : prev));
+      apiClientFn()
+        .then(() => true)
+        .catch(() => false)
+        .then((ok: boolean) => {
+          setLatestSync((prev) => (prev.id === id ? { id, state: ok ? 'idle' : 'error' } : prev));
+        });
     },
-    [setLatestSync, uuid]
+    [setLatestSync]
   );
 
   // When the file name changes, update document title and sync to server
   useEffect(() => {
     document.title = `${name} - Quadratic`;
-    syncChanges({ name });
+    syncChanges(() => apiClient.renameFile(uuid, { name }));
   }, [name, syncChanges, uuid]);
 
   // When the contents of the file changes, sync to server (debounce it so that
   // quick changes, especially undo/redos, don’t sync all at once)
   useEffect(() => {
-    syncChanges({ contents: JSON.stringify(debouncedContents), version: debouncedContents.version });
-  }, [debouncedContents, syncChanges]);
+    syncChanges(() =>
+      apiClient.updateFile(uuid, { contents: JSON.stringify(debouncedContents), version: debouncedContents.version })
+    );
+  }, [debouncedContents, syncChanges, uuid]);
 
   // If a sync fails, start an interval that tries to sync anew ever few seconds
   // until a sync completes again
   useInterval(
     () => {
-      syncChanges({ contents: JSON.stringify(debouncedContents), version: debouncedContents.version });
+      syncChanges(() =>
+        apiClient.updateFile(uuid, { contents: JSON.stringify(debouncedContents), version: debouncedContents.version })
+      );
     },
-    syncState === 'error' ? 1000 : null
+    syncState === 'error' ? 5000 : null
   );
 
   return <FileContext.Provider value={{ name, renameFile, contents, syncState }}>{children}</FileContext.Provider>;
@@ -122,4 +125,4 @@ export const FileProvider = ({
 /**
  * Consumer
  */
-export const useFile = () => useContext(FileContext);
+export const useFileContext = () => useContext(FileContext);

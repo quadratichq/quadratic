@@ -10,14 +10,13 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/system';
 import { useState } from 'react';
-import { useRouteLoaderData } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import apiClientSingleton from '../../../api-client/apiClientSingleton';
+import { apiClient } from '../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
 import { BUG_REPORT_URL, DISCORD, TWITTER } from '../../../constants/urls';
 import useLocalStorage from '../../../hooks/useLocalStorage';
-import { RootLoaderData } from '../../../router';
+import { useRootRouteLoaderData } from '../../../router';
 import { SocialDiscord, SocialGithub, SocialTwitter } from '../../icons';
 
 export const FeedbackMenu = () => {
@@ -28,7 +27,7 @@ export const FeedbackMenu = () => {
   const [loadState, setLoadState] = useState<'INITIAL' | 'LOADING' | 'LOAD_ERROR'>('INITIAL');
   const theme = useTheme();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const { user } = useRouteLoaderData('root') as RootLoaderData;
+  const { user } = useRootRouteLoaderData();
 
   const closeMenu = () => {
     setEditorInteractionState((state) => ({
@@ -39,12 +38,12 @@ export const FeedbackMenu = () => {
 
   const onSubmit = async () => {
     setLoadState('LOADING');
-    const success = await apiClientSingleton.postFeedback({ feedback: value, userEmail: user?.email });
-    if (success) {
+    try {
+      await apiClient.postFeedback({ feedback: value, userEmail: user?.email });
       setValue('');
       closeMenu();
       addGlobalSnackbar('Feedback submitted! Thank you.');
-    } else {
+    } catch (error) {
       setLoadState('LOAD_ERROR');
     }
   };

@@ -1,4 +1,4 @@
-// Any routes referenced outside of the index Routes component are stored here
+// Any routes referenced outside of the root router are stored here
 export const ROUTES = {
   LOGOUT: '/logout',
   LOGIN: '/login',

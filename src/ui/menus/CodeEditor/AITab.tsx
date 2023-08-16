@@ -1,12 +1,11 @@
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, FormControl, IconButton, InputAdornment, OutlinedInput } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { useRouteLoaderData } from 'react-router-dom';
-import apiClientSingleton from '../../../api-client/apiClientSingleton';
+import { apiClient } from '../../../api/apiClient';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { authClient } from '../../../auth';
 import { CellEvaluationResult } from '../../../grid/computations/types';
-import { RootLoaderData } from '../../../router';
+import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import ConditionalWrapper from '../../components/ConditionalWrapper';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -54,7 +53,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
   const [loading, setLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const controller = useRef<AbortController>();
-  const { user } = useRouteLoaderData('root') as RootLoaderData;
+  const { user } = useRootRouteLoaderData();
   const inputRef = useRef<HTMLInputElement | undefined>(undefined);
 
   // Focus the input when the tab comes into focus
@@ -82,7 +81,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
     setMessages(updatedMessages);
     setPrompt('');
 
-    await fetch(`${apiClientSingleton.getAPIURL()}/ai/chat/stream`, {
+    await fetch(`${apiClient.getApiUrl()}/ai/chat/stream`, {
       method: 'POST',
       signal: controller.current.signal,
       headers: {
