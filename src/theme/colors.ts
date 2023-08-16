@@ -29,9 +29,6 @@ export const colors = {
   languagePython: '#3776ab',
   languageFormula: '#8c1a6a',
   languageAI: '#1a8c5d',
-  canvasLayer1: '#fff',
-  canvasLayer2: muiColors.grey['50'],
-  canvasLayer3: muiColors.grey['200'],
   error: '#f25f5c',
   cellHighlightColor: [
     muiColors.orange['900'],
