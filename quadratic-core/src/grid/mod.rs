@@ -216,6 +216,14 @@ impl Grid {
         &mut self.sheets[sheet_index]
     }
 
+    /// Returns a list of rectangles that exactly covers a region. Ignores IDs
+    /// for columns and rows that don't exist.
+    pub(crate) fn region_rects(&self, region: &RegionRef) -> impl Iterator<Item = (SheetId, Rect)> {
+        let sheet_id = region.sheet;
+        let sheet = self.sheet_from_id(sheet_id);
+        sheet.region_rects(region).map(move |rect| (sheet_id, rect))
+    }
+
     pub fn set_same_values<T: fmt::Debug + Clone + PartialEq>(
         &mut self,
         sheet_id: SheetId,

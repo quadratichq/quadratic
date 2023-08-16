@@ -9,6 +9,8 @@ use uuid::Uuid;
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
+use crate::ArraySize;
+
 macro_rules! uuid_wrapper_struct {
     ($name:ident) => {
         #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -52,11 +54,31 @@ pub struct CellRef {
     pub row: RowId,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+/// Reference to a set of cells which stays the same, even as columns and rows
+/// move around. It typically is constructed as a rectangle, but if columns and
+/// rows move then it may no longer be rectangular.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RegionRef {
-    pub top_left: CellRef,
-    pub w: u32,
-    pub h: u32,
+    pub sheet: SheetId,
+    pub columns: Vec<ColumnId>,
+    pub rows: Vec<RowId>,
+}
+impl RegionRef {
+    /// Iterates over cells in row-major order.
+    pub fn iter(&self) -> impl '_ + Iterator<Item = CellRef> {
+        let sheet = self.sheet;
+        itertools::iproduct!(&self.rows, &self.columns).map(move |(&row, &column)| CellRef {
+            sheet,
+            column,
+            row,
+        })
+    }
+
+    /// Returns the size of an array containing the cells in the region, or
+    /// `None` if the region is empty.
+    pub fn size(&self) -> Option<ArraySize> {
+        ArraySize::new(self.columns.len() as u32, self.rows.len() as u32)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -87,67 +87,33 @@ impl GridController {
         values: Array,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let sheet = self.grid.sheet_mut_from_id(sheet_id);
-        let region = Rect {
+        let end_pos = Pos {
+            x: start_pos.x + values.width() as i64 - 1,
+            y: start_pos.y + values.height() as i64 - 1,
+        };
+        let rect = Rect {
             min: start_pos,
-            max: Pos {
-                x: start_pos.x + values.width() as i64 - 1,
-                y: start_pos.y + values.height() as i64 - 1,
-            },
+            max: end_pos,
         };
-        let columns = region
-            .x_range()
-            .map(|x| sheet.get_or_create_column(x).0.id)
-            .collect();
-        let rows = region
-            .x_range()
-            .map(|x| sheet.get_or_create_row(x).id)
-            .collect();
-        let transaction = Transaction {
-            ops: vec![Operation::SetCells {
-                sheet_id,
-                columns,
-                rows,
-                values,
-            }],
-            cursor,
-        };
-        self.transact_forward(transaction)
+        let region = self.region(sheet_id, rect);
+        let ops = vec![Operation::SetCells { region, values }];
+        self.transact_forward(Transaction { ops, cursor })
     }
     pub fn delete_cell_values(
         &mut self,
         sheet_id: SheetId,
-        region: Rect,
+        rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let sheet = self.grid.sheet_from_id(sheet_id);
-        let columns = region
-            .x_range()
-            .filter_map(|x| sheet.get_column(x))
-            .map(|column| column.id)
-            .collect_vec();
-        let rows = region
-            .x_range()
-            .filter_map(|x| sheet.get_row(x))
-            .collect_vec();
-        let width = columns.len() as u32;
-        let height = rows.len() as u32;
-        let transaction = match Array::new_empty(width, height) {
-            Ok(values) => Transaction {
-                ops: vec![Operation::SetCells {
-                    sheet_id,
-                    columns,
-                    rows,
-                    values,
-                }],
-                cursor,
-            },
-            Err(_) => Transaction {
-                ops: vec![], // nothing to do! TODO: probably shouldn't even have an undo stack entry
-                cursor: None,
-            },
+        let region = self.existing_region(sheet_id, rect);
+        let ops = match region.size() {
+            Some(size) => vec![Operation::SetCells {
+                region,
+                values: Array::new_empty(size),
+            }],
+            None => vec![], // region is empty; do nothing
         };
-        self.transact_forward(transaction)
+        self.transact_forward(Transaction { ops, cursor })
     }
 
     pub fn add_sheet(
@@ -165,25 +131,19 @@ impl GridController {
         let id = SheetId::new();
         let name = crate::util::unused_name("Sheet", &sheet_names);
 
-        let transaction = Transaction {
-            ops: vec![Operation::AddSheet {
-                sheet: Sheet::new(id, name),
-                to_before,
-            }],
-            cursor,
-        };
-        self.transact_forward(transaction)
+        let ops = vec![Operation::AddSheet {
+            sheet: Sheet::new(id, name),
+            to_before,
+        }];
+        self.transact_forward(Transaction { ops, cursor })
     }
     pub fn delete_sheet(
         &mut self,
         sheet_id: SheetId,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let transaction = Transaction {
-            ops: vec![Operation::DeleteSheet { sheet_id }],
-            cursor,
-        };
-        self.transact_forward(transaction)
+        let ops = vec![Operation::DeleteSheet { sheet_id }];
+        self.transact_forward(Transaction { ops, cursor })
     }
     pub fn move_sheet(
         &mut self,
@@ -191,14 +151,11 @@ impl GridController {
         to_before: Option<SheetId>,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let transaction = Transaction {
-            ops: vec![Operation::ReorderSheet {
-                target: sheet_id,
-                to_before,
-            }],
-            cursor,
-        };
-        self.transact_forward(transaction)
+        let ops = vec![Operation::ReorderSheet {
+            target: sheet_id,
+            to_before,
+        }];
+        self.transact_forward(Transaction { ops, cursor })
     }
     pub fn duplicate_sheet(
         &mut self,
@@ -212,14 +169,11 @@ impl GridController {
         let mut new_sheet = self.sheet(sheet_id).clone();
         new_sheet.id = SheetId::new();
         new_sheet.name = format!("{} Copy", new_sheet.name);
-        let transaction = Transaction {
-            ops: vec![Operation::AddSheet {
-                sheet: new_sheet,
-                to_before: sheet_after,
-            }],
-            cursor,
-        };
-        self.transact_forward(transaction)
+        let ops = vec![Operation::AddSheet {
+            sheet: new_sheet,
+            to_before: sheet_after,
+        }];
+        self.transact_forward(Transaction { ops, cursor })
     }
 
     fn transact_forward(&mut self, transaction: Transaction) -> TransactionSummary {
@@ -282,49 +236,30 @@ impl GridController {
                     });
                 }
 
-                Operation::SetCells {
-                    sheet_id,
-                    columns,
-                    rows,
-                    values,
-                } => {
-                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                Operation::SetCells { region, values } => {
+                    summary
+                        .cell_regions_modified
+                        .extend(self.grid.region_rects(&region));
 
-                    // Perhaps some columns or rows have disappeared since this
-                    // transaction was first made. In that case, ignore the
-                    // deleted columns when considering what region was
-                    // modified.
-                    let xs = columns.iter().filter_map(|&id| sheet.get_column_index(id));
-                    let ys = rows.iter().filter_map(|&id| sheet.get_row_index(id));
-                    if let Some(modified_rect) = Rect::from_xs_and_ys(xs, ys) {
-                        summary
-                            .cell_regions_modified
-                            .push((sheet_id, modified_rect));
-                    }
+                    let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
-                    let width = rows.len() as u32;
-                    let height = columns.len() as u32;
-                    let old_values = itertools::iproduct!(&rows, &columns)
+                    let Some(size) = region.size() else {continue};
+                    let old_values = region
+                        .iter()
                         .zip(values.into_cell_values_vec())
-                        .map(|((&row, &column), value)| {
-                            let pos = sheet.cell_ref_to_pos(CellRef {
-                                sheet: sheet_id,
-                                column,
-                                row,
-                            })?;
+                        .map(|(cell_ref, value)| {
+                            let pos = sheet.cell_ref_to_pos(cell_ref)?;
                             let response = sheet.set_cell_value(pos, value)?;
                             Some(response.old_value)
                         })
                         .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                         .collect();
-                    let old_values = Array::new_row_major(width, height, old_values)
+                    let old_values = Array::new_row_major(size, old_values)
                         .expect("error constructing array of old values for SetCells operation");
                     rev_ops.push(Operation::SetCells {
-                        sheet_id,
-                        columns,
-                        rows,
+                        region,
                         values: old_values,
-                    })
+                    });
                 }
 
                 Operation::AddSheet { sheet, to_before } => {
@@ -411,6 +346,41 @@ impl GridController {
 
         (reverse_transaction, summary)
     }
+
+    /// Returns a region of the spreadsheet, assigning IDs to columns and rows
+    /// as needed.
+    fn region(&mut self, sheet_id: SheetId, rect: Rect) -> RegionRef {
+        let sheet = self.grid.sheet_mut_from_id(sheet_id);
+        let columns = rect
+            .x_range()
+            .map(|x| sheet.get_or_create_column(x).0.id)
+            .collect();
+        let rows = rect
+            .x_range()
+            .map(|x| sheet.get_or_create_row(x).id)
+            .collect();
+        RegionRef {
+            sheet: sheet_id,
+            columns,
+            rows,
+        }
+    }
+    /// Returns a region of the spreadsheet, ignoring columns and rows which
+    /// have no contents and no IDs.
+    fn existing_region(&self, sheet_id: SheetId, rect: Rect) -> RegionRef {
+        let sheet = self.grid.sheet_from_id(sheet_id);
+        let columns = rect
+            .x_range()
+            .filter_map(|x| sheet.get_column(x))
+            .map(|col| col.id)
+            .collect();
+        let rows = rect.y_range().filter_map(|y| sheet.get_row(y)).collect();
+        RegionRef {
+            sheet: sheet_id,
+            columns,
+            rows,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -426,9 +396,7 @@ pub enum Operation {
         value: CellValue,
     },
     SetCells {
-        sheet_id: SheetId,
-        columns: Vec<ColumnId>,
-        rows: Vec<RowId>,
+        region: RegionRef,
         values: Array,
     },
 
@@ -459,7 +427,7 @@ impl Operation {
     pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
         match self {
             Operation::SetCell { cell_ref, .. } => Some(cell_ref.sheet),
-            Operation::SetCells { sheet_id, .. } => Some(*sheet_id),
+            Operation::SetCells { region, .. } => Some(region.sheet),
 
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,

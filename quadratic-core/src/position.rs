@@ -1,10 +1,11 @@
 use std::fmt;
 use std::ops::Range;
 
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
+
+use crate::ArraySize;
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -87,20 +88,26 @@ impl Rect {
         self.max.x = std::cmp::max(self.max.x, pos.x);
         self.max.y = std::cmp::max(self.max.y, pos.y);
     }
-    pub fn from_xs_and_ys(
-        xs: impl Iterator<Item = i64>,
-        ys: impl Iterator<Item = i64>,
-    ) -> Option<Rect> {
-        let (min_x, max_x) = xs.into_iter().minmax().into_option()?;
-        let (min_y, max_y) = ys.into_iter().minmax().into_option()?;
-        Some(Rect {
-            min: Pos { x: min_x, y: min_y },
-            max: Pos { x: max_x, y: max_y },
-        })
+    /// Constructs a rectangle from an X range and a Y range.
+    pub fn from_ranges(xs: Range<i64>, ys: Range<i64>) -> Rect {
+        Rect {
+            min: Pos {
+                x: xs.start,
+                y: ys.start,
+            },
+            max: Pos {
+                x: xs.end - 1,
+                y: ys.end - 1,
+            },
+        }
+    }
+
+    pub fn size(self) -> ArraySize {
+        ArraySize::new(self.width(), self.height()).expect("empty rectangle has no size")
     }
 
     /// Returns whether a position is contained within the rectangle.
-    pub fn contains(&self, pos: Pos) -> bool {
+    pub fn contains(self, pos: Pos) -> bool {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
     }
 

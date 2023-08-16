@@ -376,11 +376,37 @@ impl Sheet {
         }
     }
 
+    /// Returns the X coordinate of a column from its ID, or `None` if no such
+    /// column exists.
     pub(crate) fn get_column_index(&self, column_id: ColumnId) -> Option<i64> {
         self.column_ids.index_of(column_id)
     }
+    /// Returns the Y coordinate of a row from its ID, or `None` if no such row
+    /// exists.
     pub(crate) fn get_row_index(&self, row_id: RowId) -> Option<i64> {
         self.row_ids.index_of(row_id)
+    }
+
+    /// Returns contiguous ranges of X coordinates from a list of column IDs.
+    /// Ignores IDs for columns that don't exist.
+    pub(crate) fn column_ranges(&self, column_ids: &[ColumnId]) -> Vec<Range<i64>> {
+        let xs = column_ids
+            .iter()
+            .filter_map(|&id| self.get_column_index(id));
+        contiguous_ranges(xs)
+    }
+    /// Returns contiguous ranges of Y coordinates from a list of row IDs.
+    /// Ignores IDs for rows that don't exist.
+    pub(crate) fn row_ranges(&self, row_ids: &[RowId]) -> Vec<Range<i64>> {
+        let ys = row_ids.iter().filter_map(|&id| self.get_row_index(id));
+        contiguous_ranges(ys)
+    }
+    /// Returns a list of rectangles that exactly covers a region. Ignores
+    /// IDs for columns and rows that don't exist.
+    pub(crate) fn region_rects(&self, region: &RegionRef) -> impl Iterator<Item = Rect> {
+        let x_ranges = self.column_ranges(&region.columns);
+        let y_ranges = self.row_ranges(&region.rows);
+        itertools::iproduct!(x_ranges, y_ranges).map(|(xs, ys)| Rect::from_ranges(xs, ys))
     }
 
     /// Returns whether the sheet is completely empty.
@@ -531,7 +557,7 @@ impl Sheet {
     }
     /// Returns data for rendering code cells.
     pub fn get_render_code_cells(&self, region: Rect) -> Vec<JsRenderCodeCell> {
-        self.iter_code_cells_locations(region)
+        self.iter_code_cells_locations_in_region(region)
             .filter_map(|cell_ref| {
                 let pos = self.cell_ref_to_pos(cell_ref)?;
                 if !region.contains(pos) {
@@ -559,7 +585,7 @@ impl Sheet {
     }
     /// Returns data for all rendering code cells
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
-        self.iter_all_code_cells_locations()
+        self.iter_code_cells_locations()
             .filter_map(|cell_ref| {
                 let pos = self.cell_ref_to_pos(cell_ref)?;
                 let code_cell = self.code_cells.get(&cell_ref)?;
@@ -592,7 +618,7 @@ impl Sheet {
 
     /// Returns an iterator over all locations containing code cells that may
     /// spill into `region`.
-    fn iter_code_cells_locations(&self, region: Rect) -> impl Iterator<Item = CellRef> {
+    fn iter_code_cells_locations_in_region(&self, region: Rect) -> impl Iterator<Item = CellRef> {
         // Scan spilled cells to find code cells. TODO: this won't work for
         // unspilled code cells
         let code_cell_refs: HashSet<CellRef> = self
@@ -609,16 +635,8 @@ impl Sheet {
         code_cell_refs.into_iter()
     }
 
-    fn iter_all_code_cells_locations(&self) -> impl Iterator<Item = CellRef> {
-        // Scan spilled cells to find code cells. TODO: this won't work for
-        // unspilled code cells
-        let code_cell_refs: HashSet<CellRef> = self
-            .columns
-            .iter()
-            .flat_map(|(_x, column)| column.spills.blocks().map(|block| block.content().value))
-            .collect();
-
-        code_cell_refs.into_iter()
+    fn iter_code_cells_locations(&self) -> impl '_ + Iterator<Item = CellRef> {
+        self.code_cells.keys().copied()
     }
 
     // fn unspill(&mut self, source: CellRef) {
@@ -628,4 +646,18 @@ impl Sheet {
     pub fn id_to_string(&self) -> String {
         self.id.to_string()
     }
+}
+
+fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
+    // Usually `values` is already sorted or nearly sorted, in which case this
+    // is `O(n)`. At worst, it's `O(n log n)`.
+    let mut ret: Vec<Range<i64>> = vec![];
+    for i in values.into_iter().sorted() {
+        match ret.last_mut() {
+            Some(range) if range.end == i => range.end += 1,
+            Some(range) if (&*range).contains(&i) => continue,
+            _ => ret.push(i..i + 1),
+        }
+    }
+    ret
 }
