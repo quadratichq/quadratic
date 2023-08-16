@@ -154,17 +154,16 @@ export class SheetController {
   }
 
   duplicateSheet(): void {
-    // duplicate sheet needs to also return the id :(
+    const oldSheetId = this.current;
     const summary = this.grid.duplicateSheet(this.current, this.sheet.cursor.save());
+    transactionResponse(this, summary);
 
     // sets the current sheet to the duplicated sheet
-    const currentIndex = this.sheets.findIndex((sheet) => sheet.id === this.current);
+    const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
     if (currentIndex === -1) throw new Error('Expected to find current sheet in duplicateSheet');
     const duplicate = this.sheets[currentIndex + 1];
     if (!duplicate) throw new Error('Expected to find duplicate sheet in duplicateSheet');
     this.current = duplicate.id;
-
-    transactionResponse(this, summary);
   }
 
   addSheet(sheet: Sheet): void {
