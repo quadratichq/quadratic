@@ -161,11 +161,21 @@ export class CellsSheet extends Container {
       throw new Error('Expected bounds to be defined in findPreviousHash of CellsSheet');
     }
     let hash = this.getCellsHash(column, row);
-    while (!hash && column >= bounds.left) {}
+    while (!hash && column >= bounds.left) {
+      column--;
+      hash = this.getCellsHash(column, row);
+    }
     return hash;
   }
 
-  changed(options: { cells?: Coordinate[]; column?: number; row?: number; labels?: boolean; background?: boolean }) {
+  changed(options: {
+    cells?: Coordinate[];
+    column?: number;
+    row?: number;
+    rectangle?: Rectangle;
+    labels?: boolean;
+    background?: boolean;
+  }) {
     const hashes = new Set<CellsHash>();
     if (options.cells) {
       options.cells.forEach((cell) => {
@@ -190,6 +200,18 @@ export class CellsSheet extends Container {
       rowHashes.forEach((hash) => hashes.add(hash));
       if (options.labels) {
         this.dirtyRows.add(Math.floor(options.row / sheetHashHeight));
+      }
+    } else if (options.rectangle) {
+      for (let y = options.rectangle.top; y <= options.rectangle.bottom + sheetHashHeight - 1; y += sheetHashHeight) {
+        for (let x = options.rectangle.left; x <= options.rectangle.right + sheetHashWidth - 1; x += sheetHashWidth) {
+          const hash = this.getCellsHash(x, y);
+          if (hash) {
+            hashes.add(hash);
+            if (options.labels) {
+              this.dirtyRows.add(hash.hashY);
+            }
+          }
+        }
       }
     }
     if (hashes.size && options.background) {

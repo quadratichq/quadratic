@@ -1,9 +1,8 @@
-import { BitmapFont } from 'pixi.js';
+import { BitmapFont, Rectangle } from 'pixi.js';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { QuadrantChanged } from '../quadrants/Quadrants';
-import { Coordinate } from '../types/size';
 import { PixiApp } from './PixiApp';
 import { PixiAppSettings } from './PixiAppSettings';
 
@@ -71,7 +70,11 @@ class PixiAppEvents {
 
   addSheet(sheet: Sheet): void {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.addSheet');
-    this.app.cellsSheets.addSheet(sheet.id);
+
+    // todo: hack!!! (this avoids loading the sheets during initial load b/c PIXI is not set up yet)
+    if (BitmapFont.available['OpenSans']) {
+      this.app.cellsSheets.addSheet(sheet.id);
+    }
     // this.app.quadrants.addSheet(sheet);
   }
 
@@ -134,19 +137,6 @@ class PixiAppEvents {
     this.app.cellsSheets.deleteSheet(sheetId);
   }
 
-  changed(options: {
-    sheet: Sheet;
-    cells?: Coordinate[];
-    labels: boolean;
-    background: boolean;
-    column?: number;
-    row?: number;
-  }): void {
-    if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.changeCells');
-    this.app.cellsSheets.changed(options);
-    this.app.setViewportDirty();
-  }
-
   getStartingViewport(): { x: number; y: number } {
     if (!this.app) throw new Error('Expected app to be defined in getStartingViewport');
     if (this.app.settings.showHeadings) {
@@ -167,7 +157,15 @@ class PixiAppEvents {
   }
 
   createBorders(): void {
+    if (!this.app?.cellsSheets)
+      throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.createBorders');
     this.app?.cellsSheets.createBorders();
+  }
+
+  cellsChanged(sheetId: string, rectangle: Rectangle): void {
+    if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.cellsChanged');
+    this.app.cellsSheets.changed({ sheetId, rectangle, labels: true, background: false });
+    this.app.setViewportDirty();
   }
 }
 

@@ -64,22 +64,18 @@ impl Sheet {
         }
     }
 
-    /// Constructs a new sheet with a region populated with random float values.
-    pub fn with_random_floats(id: SheetId, name: String, region: Rect) -> Self {
+    /// Populates the current sheet with random values
+    pub fn with_random_floats(&mut self, region: &Rect) {
+        self.columns.clear();
         let mut rng = rand::thread_rng();
-        let mut sheet = Self::new(id, name);
         for x in region.x_range() {
-            let (_, column) = sheet.get_or_create_column(x);
+            let (_, column) = self.get_or_create_column(x);
             for y in region.y_range() {
-                // Generate a random value with precision 0.1 in a range from
-                // -10 to +10.
                 let value = rng.gen_range(-10000..=10000) as f64;
-
                 column.values.set(y, Some(value.into()));
             }
         }
-        sheet.recalculate_bounds();
-        sheet
+        self.recalculate_bounds();
     }
 
     /// Sets a cell value and returns a response object, which contains column &
@@ -101,13 +97,13 @@ impl Sheet {
         let (column_response, column) = self.get_or_create_column(pos.x);
         let old_value = column.values.set(pos.y, value).unwrap_or_default();
 
-        let mut unspill = None;
-        if !is_blank {
-            if let Some(source) = column.spills.get(pos.y) {
-                self.unspill(source);
-                unspill = Some(source);
-            }
-        }
+        let unspill = None;
+        // if !is_blank {
+        //     if let Some(source) = column.spills.get(pos.y) {
+        //         self.unspill(source);
+        //         unspill = Some(source);
+        //     }
+        // }
 
         // TODO: check for new spills, if the cell was deleted
         let spill = None;
@@ -628,9 +624,9 @@ impl Sheet {
         code_cell_refs.into_iter()
     }
 
-    fn unspill(&mut self, source: CellRef) {
-        todo!("unspill cells from {source:?}")
-    }
+    // fn unspill(&mut self, source: CellRef) {
+    //     todo!("unspill cells from {source:?}");
+    // }
 
     pub fn id_to_string(&self) -> String {
         self.id.to_string()

@@ -11,7 +11,8 @@
     "pixi",
     "pixiapp",
     "subquadrant",
-    "subquadrants"
+    "subquadrants",
+    "unspill"
   ],
   "editor.codeActionsOnSave": {
     "source.organizeImports": true

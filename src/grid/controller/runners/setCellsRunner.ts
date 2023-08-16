@@ -1,4 +1,3 @@
-import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
 import { Coordinate } from '../../../gridGL/types/size';
 import { Cell } from '../../../schemas';
 import { SheetController } from '../SheetController';
@@ -32,12 +31,12 @@ export const SetCellsRunner = (sheetController: SheetController, statement: Stat
     sheet.grid.updateCells(cellsToUpdate, true);
   }
   sheet.recalculateBounds();
-  pixiAppEvents.changed({
-    sheet: sheetController.sheet,
-    cells: changedCells,
-    labels: true,
-    background: false,
-  });
+  // pixiAppEvents.changed({
+  //   sheet: sheetController.sheet,
+  //   cells: changedCells,
+  //   labels: true,
+  //   background: false,
+  // });
 
   // pixiAppEvents.quadrantsChanged({ cells: changedCells });
   return {

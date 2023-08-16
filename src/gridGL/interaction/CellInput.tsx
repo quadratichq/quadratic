@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
-import { DeleteCells } from '../../grid/actions/DeleteCells';
-import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
 import { SheetController } from '../../grid/controller/SheetController';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CellFormat } from '../../schemas';
@@ -143,44 +141,44 @@ export const CellInput = (props: CellInputProps) => {
     const value = textInput.innerText;
 
     if (!cancel) {
-      sheetController.start_transaction();
-      // Update Cell and dependent cells
-      if (value === '') {
-        // delete cell if input is empty, and wasn't empty before
-        if (cell !== undefined)
-          DeleteCells({
-            x0: cellLocation.x,
-            y0: cellLocation.y,
-            x1: cellLocation.x,
-            y1: cellLocation.y,
-            sheetController,
-            create_transaction: false,
-          });
-      } else {
-        // create cell with value at input location
-        await updateCellAndDCells({
-          create_transaction: false,
-          starting_cells: [
-            {
-              x: cellLocation.x,
-              y: cellLocation.y,
-              type: 'TEXT',
-              value: value || '',
-            },
-          ],
-          sheetController,
-        });
-        if (temporaryBold !== undefined && temporaryBold !== !!format?.bold) {
-          changeBold(temporaryBold);
-        }
-        if (temporaryItalic !== undefined && temporaryItalic !== !!format?.italic) {
-          changeItalic(temporaryItalic);
-        }
+      sheetController.setCellValue({ sheetId: sheetController.sheet.id, x: cellLocation.x, y: cellLocation.y, value });
+      // sheetController.start_transaction();
+      // // Update Cell and dependent cells
+      // if (value === '') {
+      //   // delete cell if input is empty, and wasn't empty before
+      //   if (cell !== undefined)
+      //     DeleteCells({
+      //       x0: cellLocation.x,
+      //       y0: cellLocation.y,
+      //       x1: cellLocation.x,
+      //       y1: cellLocation.y,
+      //       sheetController,
+      //       create_transaction: false,
+      //     });
+      // } else {
+      //   // create cell with value at input location
+      //   await updateCellAndDCells({
+      //     create_transaction: false,
+      //     starting_cells: [
+      //       {
+      //         x: cellLocation.x,
+      //         y: cellLocation.y,
+      //         type: 'TEXT',
+      //         value: value || '',
+      //       },
+      //     ],
+      //     sheetController,
+      //   });
+      if (temporaryBold !== undefined && temporaryBold !== !!format?.bold) {
+        changeBold(temporaryBold);
+      }
+      if (temporaryItalic !== undefined && temporaryItalic !== !!format?.italic) {
+        changeItalic(temporaryItalic);
       }
       setTemporaryBold(undefined);
       setTemporaryItalic(undefined);
-      sheetController.end_transaction();
-      app.quadrants.quadrantChanged({ cells: [cellLocation] });
+      // sheetController.end_transaction();
+      // app.quadrants.quadrantChanged({ cells: [cellLocation] });
       textInput.innerText = '';
     }
 

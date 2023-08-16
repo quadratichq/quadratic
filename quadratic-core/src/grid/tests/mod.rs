@@ -76,7 +76,8 @@ fn test_read_write() {
         min: Pos::ORIGIN,
         max: Pos { x: 49, y: 49 },
     };
-    let sheet = Sheet::with_random_floats(SheetId::new(), "TestSheet".to_string(), region);
+    let mut sheet = Sheet::new(SheetId::new(), "name".to_string());
+    sheet.with_random_floats(&region);
     assert_eq!(GridBounds::NonEmpty(region), sheet.bounds(true));
     assert_eq!(GridBounds::NonEmpty(region), sheet.bounds(false));
 }

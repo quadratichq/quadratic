@@ -1,5 +1,4 @@
 import { Container, Rectangle } from 'pixi.js';
-import { Sheet } from '../../grid/sheet/Sheet';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { pixiAppEvents } from '../pixiApp/PixiAppEvents';
 import { Coordinate } from '../types/size';
@@ -63,21 +62,21 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   changed(options: {
-    sheet?: Sheet;
+    sheetId: string;
     column?: number;
     row?: number;
     cells?: Coordinate[];
+    rectangle?: Rectangle;
     labels: boolean;
     background: boolean;
   }): void {
-    const sheet = options.sheet ?? this.app.sheet;
-
-    const cellsSheet = this.children.find((search) => search.sheet.id === sheet.id);
+    const cellsSheet = this.children.find((search) => search.sheet.id === options.sheetId);
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in changed');
     cellsSheet.changed({
       cells: options.cells,
       column: options.column,
       row: options.row,
+      rectangle: options.rectangle,
       labels: options.labels,
       background: options.background,
     });

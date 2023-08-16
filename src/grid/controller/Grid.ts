@@ -1,15 +1,31 @@
-import { Rectangle } from 'pixi.js';
-import { GridController, Pos, Rect } from '../../quadratic-core/quadratic_core';
-import { JsRenderCell, JsRenderFill, TransactionSummary } from '../../quadratic-core/types';
+import { Point, Rectangle } from 'pixi.js';
+import { GridController, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
+import { CellValue, JsRenderCell, JsRenderFill, Rect, TransactionSummary } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
 import { SheetCursorSave } from '../sheet/SheetCursor';
 
 const rectangleToRect = (rectangle: Rectangle): Rect => {
-  return new Rect(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
+  return new RectInternal(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
 };
 
 const pointsToRect = (x: number, y: number, width: number, height: number): Rect => {
-  return new Rect(new Pos(x, y), new Pos(x + width, y + height));
+  return new RectInternal(new Pos(x, y), new Pos(x + width, y + height));
+};
+
+export const rectToRectangle = (rect: Rect): Rectangle => {
+  return new Rectangle(
+    Number(rect.min.x),
+    Number(rect.min.y),
+    Number(rect.max.x - rect.min.x),
+    Number(rect.max.y - rect.min.y)
+  );
+};
+
+export const rectToPoint = (rect: Rect): Point => {
+  if (rect.min.x !== rect.max.x || rect.min.y !== rect.max.x) {
+    throw new Error('Expected rectToPoint to receive a rectangle with width/height = 1');
+  }
+  return new Point(Number(rect.min.x), Number(rect.min.y));
 };
 
 // TS wrapper around Grid.rs
@@ -19,6 +35,10 @@ export class Grid {
 
   // import/export
 
+  createForTesting(): void {
+    this.gridController = new GridController();
+  }
+
   newFromFile(grid: GridFile): void {
     this.gridController = GridController.newFromFile(grid);
   }
@@ -26,9 +46,9 @@ export class Grid {
   // sheet operations
   // ----------------
 
-  populateWithRandomFloats(sheetId: string, width: number, height: number): void {
+  populateWithRandomFloats(sheetId: string, width: number, height: number): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height));
+    return this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height) as RectInternal);
   }
 
   getSheetIds(): string[] {
@@ -62,6 +82,23 @@ export class Grid {
     return this.gridController.duplicateSheet(sheetId, JSON.stringify(cursor));
   }
 
+  // sheet grid operations
+  // ---------------------
+
+  setCellValue(options: { sheetId: string; x: number; y: number; value: string; cursor: SheetCursorSave }) {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    const cellValue: CellValue = {
+      type: 'text',
+      value: options.value,
+    };
+    return this.gridController.setCellValue(
+      options.sheetId,
+      new Pos(options.x, options.y),
+      cellValue,
+      JSON.stringify(options.cursor)
+    );
+  }
+
   // sheet information
   // -----------------
 
@@ -90,13 +127,13 @@ export class Grid {
 
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle));
+    const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle) as RectInternal);
     return JSON.parse(data);
   }
 
   getRenderFills(sheetId: string, rectangle: Rectangle): JsRenderFill[] {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    const data = this.gridController.getRenderFills(sheetId, rectangleToRect(rectangle));
+    const data = this.gridController.getRenderFills(sheetId, rectangleToRect(rectangle) as RectInternal);
     return JSON.parse(data);
   }
 

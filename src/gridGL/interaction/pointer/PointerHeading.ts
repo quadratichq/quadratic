@@ -178,7 +178,9 @@ export class PointerHeading {
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
-          this.app.cellsSheets.changed({ column: headingResizing.column, labels: true, background: true });
+
+          // todo fix this
+          // this.app.cellsSheets.changed({ column: headingResizing.column, labels: true, background: true });
           // this.app.quadrants.quadrantChanged({ column: headingResizing.column });
         }
       } else if (headingResizing.row !== undefined) {
@@ -200,7 +202,9 @@ export class PointerHeading {
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
-          this.app.cellsSheets.changed({ row: headingResizing.row, labels: true, background: true });
+
+          // todo fix this
+          // this.app.cellsSheets.changed({ row: headingResizing.row, labels: true, background: true });
           // this.app.quadrants.quadrantChanged({ row: headingResizing.row });
         }
       }

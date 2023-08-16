@@ -8,6 +8,8 @@ import { Statement } from './statement';
 import { Transaction } from './transaction';
 import { transactionResponse } from './transactionResponse';
 
+const randomFloatSize = { x: 10, y: 3000 };
+
 export class SheetController {
   private _current: string;
 
@@ -35,32 +37,30 @@ export class SheetController {
   }
 
   loadFile(grid: GridFile) {
-    this.grid.newFromFile(grid);
-    this.sheets = [];
-    grid.sheets.forEach((gridSheet, index) => {
-      const sheet = new Sheet(this.grid, index);
-      sheet.gridOffsets.populate(gridSheet.columns, gridSheet.rows);
-      this.sheets.push(sheet);
-    });
-    this.sortSheets();
-    this._current = this.sheets[0].id;
-
     // use to test large sheets
     if (debugMockLargeData) {
+      this.grid.createForTesting();
+      this.repopulateSheets();
+      this._current = this.sheets[0].id;
+
       console.time('random');
       const url = new URLSearchParams(window.location.search);
-      let x = 10;
-      let y = 3000;
+      let { x, y } = randomFloatSize;
       const params = url.get('mock-large-data');
       if (params?.includes(',')) {
         const n = params.split(',');
         x = parseInt(n[0]);
         y = parseInt(n[1]);
       }
-      this.grid.populateWithRandomFloats(this.sheets[0].grid.sheetId, x, y);
+      const summary = this.grid.populateWithRandomFloats(this._current, x, y);
+      transactionResponse(this, summary);
       console.timeEnd('random');
+    } else {
+      this.grid.newFromFile(grid);
+      this.sheets = [];
+      this.repopulateSheets();
+      this._current = this.sheets[0].id;
     }
-    this.repopulateSheets();
   }
 
   // updates the SheetBar UI
@@ -116,6 +116,7 @@ export class SheetController {
   renameSheet(name: string): void {
     const summary = this.grid.setSheetName(this.current, name, this.sheet.cursor.save());
     transactionResponse(this, summary);
+    if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
   // todo
@@ -406,5 +407,11 @@ export class SheetController {
 
   getSheet(id: string): Sheet | undefined {
     return this.sheets.find((sheet) => sheet.id === id);
+  }
+
+  setCellValue(options: { sheetId: string; x: number; y: number; value: string }): void {
+    const summary = this.grid.setCellValue({ ...options, cursor: this.sheet.cursor.save() });
+    transactionResponse(this, summary);
+    if (this.saveLocalFiles) this.saveLocalFiles();
   }
 }

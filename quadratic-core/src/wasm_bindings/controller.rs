@@ -1,5 +1,5 @@
 use super::*;
-use crate::grid::js_types::*;
+use crate::{controller::TransactionSummary, grid::js_types::*};
 use std::str::FromStr;
 
 #[wasm_bindgen]
@@ -134,21 +134,21 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "populateWithRandomFloats")]
-    pub fn populate_with_random_floats(
+    pub fn js_populate_with_random_floats(
         &mut self,
         sheet_id: String,
         region: &Rect,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cells(
-                sheet_id,
-                region.min,
-                Array::from_random_floats(region.width(), region.height())
-                    .map_err(|e| e.to_string())?,
-                None,
-            ),
-        )?)
+        self.populate_with_random_floats(sheet_id, region);
+        Ok(serde_wasm_bindgen::to_value(&TransactionSummary {
+            cell_regions_modified: vec![(sheet_id, *region)],
+            fill_sheets_modified: vec![],
+            border_sheets_modified: vec![],
+            code_cells_modified: vec![],
+            sheet_list_modified: false,
+            cursor: None,
+        })?)
     }
 
     /// Returns a sheet's bounds.

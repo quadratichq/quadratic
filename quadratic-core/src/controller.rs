@@ -23,6 +23,11 @@ impl GridController {
             redo_stack: vec![],
         }
     }
+    pub fn populate_with_random_floats(&mut self, sheet_id: SheetId, region: &Rect) {
+        let sheet = self.grid.sheet_mut_from_id(sheet_id);
+        sheet.with_random_floats(region);
+    }
+
     pub fn grid(&self) -> &Grid {
         &self.grid
     }
