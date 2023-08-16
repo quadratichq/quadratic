@@ -1,4 +1,5 @@
 use std::collections::{btree_map, BTreeMap, HashMap, HashSet};
+use std::ops::Range;
 
 use itertools::Itertools;
 use rand::Rng;
@@ -6,17 +7,17 @@ use serde::{Deserialize, Serialize};
 
 use super::borders::{CellBorder, SheetBorders};
 use super::bounds::GridBounds;
-use super::code::{CodeCellLanguage, CodeCellValue};
+use super::code::{CodeCellLanguage, CodeCellRunResult, CodeCellValue};
 use super::column::Column;
 use super::formatting::BoolSummary;
-use super::ids::{CellRef, ColumnId, IdMap, RowId, SheetId};
+use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
 use super::js_types::{
     FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
     JsRenderFill,
 };
+use super::legacy;
 use super::response::{GetIdResponse, SetCellResponse};
-use super::{legacy, CodeCellRunResult};
-use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect, Value};
+use crate::{Array, CellValue, IsBlank, Pos, Rect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Sheet {
@@ -129,10 +130,7 @@ impl Sheet {
             .collect_vec();
         let mut column_ids = vec![];
 
-        let width = column_ids.len() as u32;
-        let height = row_ids.len() as u32;
-        let mut old_cell_values_array =
-            Array::new_empty(width, height).expect("error constructing array for old cell values");
+        let mut old_cell_values_array = Array::new_empty(region.size());
 
         for x in region.x_range() {
             let Some(column) = self.columns.get_mut(&x) else {continue};
@@ -150,7 +148,7 @@ impl Sheet {
             }
         }
 
-        for cell_ref in self.iter_code_cells_locations(region) {
+        for cell_ref in self.iter_code_cells_locations_in_region(region) {
             // TODO: unspill!
             self.code_cells.remove(&cell_ref);
         }
@@ -238,16 +236,15 @@ impl Sheet {
                                 let array_output = code_cell.output.as_ref()?.output_value()?;
                                 match array_output {
                                     Value::Single(_) => None,
-                                    Value::Array(array) => {
-                                        let ArraySize { w, h } = array.array_size();
-                                        Some(
-                                            Array::indices(w, h)
-                                                .map(|(dx, dy)| {
-                                                    (cell.x + dx as i64, cell.y + dy as i64)
-                                                })
-                                                .collect(),
-                                        )
-                                    }
+                                    Value::Array(array) => Some(
+                                        array
+                                            .size()
+                                            .iter()
+                                            .map(|(dx, dy)| {
+                                                (cell.x + dx as i64, cell.y + dy as i64)
+                                            })
+                                            .collect(),
+                                    ),
                                 }
                             }),
                             dependent_cells: None,
@@ -541,7 +538,7 @@ impl Sheet {
                     return None;
                 }
                 let code_cell = self.code_cells.get(&cell_ref)?;
-                let ArraySize { w, h } = code_cell.output_size();
+                let output_size = code_cell.output_size();
                 let state = match &code_cell.output {
                     Some(output) => match output.result {
                         CodeCellRunResult::Ok { .. } => JsRenderCodeCellState::Success,
@@ -552,8 +549,8 @@ impl Sheet {
                 Some(JsRenderCodeCell {
                     x: pos.x,
                     y: pos.y,
-                    w,
-                    h,
+                    w: output_size.w.get(),
+                    h: output_size.h.get(),
                     language: code_cell.language,
                     state,
                 })
@@ -566,12 +563,12 @@ impl Sheet {
             .filter_map(|cell_ref| {
                 let pos = self.cell_ref_to_pos(cell_ref)?;
                 let code_cell = self.code_cells.get(&cell_ref)?;
-                let ArraySize { w, h } = code_cell.output_size();
+                let output_size = code_cell.output_size();
                 Some(JsRenderCodeCell {
                     x: pos.x,
                     y: pos.y,
-                    w,
-                    h,
+                    w: output_size.w.get(),
+                    h: output_size.h.get(),
                     language: code_cell.language,
                     state: match &code_cell.output {
                         Some(output) => match &output.result {

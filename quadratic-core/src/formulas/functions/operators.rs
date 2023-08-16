@@ -1,3 +1,5 @@
+use crate::ArraySize;
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -78,7 +80,8 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let range = if a < b { a..=b } else { b..=a };
                 let width = 1;
                 let height = len;
-                Array::new_row_major(width, height, range.map(CellValue::from).collect())?
+                let array_size = ArraySize::new_or_err(width, height)?;
+                Array::new_row_major(array_size, range.map(CellValue::from).collect())?
             }
         ),
         // String operators

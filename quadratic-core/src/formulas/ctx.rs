@@ -2,26 +2,26 @@ use futures::future::LocalBoxFuture;
 use smallvec::SmallVec;
 
 use super::*;
-use crate::{Array, ArraySize, CellValue, CodeResult, ErrorMsg, Pos, Span, Spanned, Value};
+use crate::{Array, CellValue, CodeResult, ErrorMsg, Pos, Span, Spanned, Value};
 
 macro_rules! zip_map_impl {
     ($arrays:ident.zip_map(|$args_buffer:ident| $eval_f:expr)) => {{
-        let ArraySize { w, h } = Value::common_array_size($arrays)?;
+        let size = Value::common_array_size($arrays)?;
 
         let mut $args_buffer = Vec::with_capacity($arrays.into_iter().len());
 
         // If the result is a single value, return that value instead of a 1x1
         // array. This isn't just an optimization; it's important for Excel
         // compatibility.
-        if w == 1 && h == 1 {
+        if size.len() == 1 {
             for array in $arrays {
                 $args_buffer.push(array.cell_value()?);
             }
             return Ok(Value::Single($eval_f));
         }
 
-        let mut values = SmallVec::with_capacity(w as usize * h as usize);
-        for (x, y) in Array::indices(w, h) {
+        let mut values = SmallVec::with_capacity(size.len());
+        for (x, y) in size.iter() {
             $args_buffer.clear();
             for array in $arrays {
                 $args_buffer.push(array.get(x, y)?);
@@ -30,7 +30,7 @@ macro_rules! zip_map_impl {
             values.push($eval_f);
         }
 
-        let result = Array::new_row_major(w, h, values)?;
+        let result = Array::new_row_major(size, values)?;
         Ok(Value::Array(result))
     }};
 }

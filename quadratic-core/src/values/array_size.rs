@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, num::NonZeroU32};
 
 use serde::{Deserialize, Serialize};
 
@@ -9,9 +9,9 @@ use super::ErrorMsg;
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ArraySize {
     /// Width (number of columns)
-    pub w: u32,
+    pub w: NonZeroU32,
     /// Height (number of rows)
-    pub h: u32,
+    pub h: NonZeroU32,
 }
 impl fmt::Display for ArraySize {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -20,7 +20,7 @@ impl fmt::Display for ArraySize {
     }
 }
 impl std::ops::Index<Axis> for ArraySize {
-    type Output = u32;
+    type Output = NonZeroU32;
 
     fn index(&self, index: Axis) -> &Self::Output {
         match index {
@@ -37,12 +37,57 @@ impl std::ops::IndexMut<Axis> for ArraySize {
         }
     }
 }
+impl TryFrom<(u32, u32)> for ArraySize {
+    type Error = ErrorMsg;
+
+    fn try_from((w, h): (u32, u32)) -> Result<Self, Self::Error> {
+        Self::new_or_err(w, h)
+    }
+}
 impl ArraySize {
+    #[allow(unconditional_panic)]
+    pub const _1X1: Self = match NonZeroU32::new(1) {
+        Some(one) => ArraySize { w: one, h: one },
+        None => [][0], // workaround for `.unwrap()` being unstable in const context
+    };
+
+    /// Constructs a new `ArraySize`, or returns an `None` if the width or
+    /// height is zero.
+    pub fn new(w: u32, h: u32) -> Option<Self> {
+        Some(ArraySize {
+            w: NonZeroU32::new(w)?,
+            h: NonZeroU32::new(h)?,
+        })
+    }
+    /// Construct a new `ArraySize`, or returns an error if the width or height
+    /// is zero.
+    pub fn new_or_err(w: u32, h: u32) -> Result<Self, ErrorMsg> {
+        Self::new(w, h).ok_or(ErrorMsg::EmptyArray)
+    }
+    /// Returns the number of elements in the array.
+    pub fn len(self) -> usize {
+        self.w.get() as usize * self.h.get() as usize
+    }
+    /// Flips the width and height of the array size.
+    #[must_use]
+    pub fn transpose(self) -> ArraySize {
+        ArraySize {
+            w: self.h,
+            h: self.w,
+        }
+    }
+    /// Iterates over `(x, y)` array indices in canconical order.
+    pub fn iter(self) -> impl Iterator<Item = (u32, u32)> {
+        itertools::iproduct!(0..self.h.get(), 0..self.w.get()).map(|(y, x)| (x, y))
+    }
+    /// Flattens an index
     pub fn flatten_index(self, x: u32, y: u32) -> Result<usize, ErrorMsg> {
-        let x = if self.w > 1 { x } else { 0 };
-        let y = if self.h > 1 { y } else { 0 };
-        if x < self.w && y < self.h {
-            Ok((x + y * self.w) as usize)
+        let w = self.w.get();
+        let h = self.h.get();
+        let x = if w > 1 { x } else { 0 };
+        let y = if h > 1 { y } else { 0 };
+        if x < w && y < h {
+            Ok((x + y * w) as usize)
         } else {
             Err(ErrorMsg::IndexOutOfBounds)
         }

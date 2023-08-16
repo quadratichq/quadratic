@@ -106,10 +106,10 @@ impl Criterion {
         output_values_range: Option<&'a Spanned<Array>>,
     ) -> CodeResult<impl 'a + Iterator<Item = Spanned<&'a CellValue>>> {
         if let Some(range) = output_values_range {
-            if range.inner.array_size() != eval_range.inner.array_size() {
+            if range.inner.size() != eval_range.inner.size() {
                 return Err(ErrorMsg::ExactArraySizeMismatch {
-                    expected: eval_range.inner.array_size(),
-                    got: range.inner.array_size(),
+                    expected: eval_range.inner.size(),
+                    got: range.inner.size(),
                 }
                 .with_span(range.span));
             }

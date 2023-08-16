@@ -5,7 +5,7 @@ use super::formatting::{CellAlign, CellWrap, NumericFormat};
 use super::{
     CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Sheet,
 };
-use crate::{Array, CellValue, Error, ErrorMsg, Span, Value};
+use crate::{Array, ArraySize, CellValue, Error, ErrorMsg, Span, Value};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct JsCoordinate {
@@ -239,7 +239,8 @@ impl JsCell {
                                 }
                             }
 
-                            Value::Array(Array::new_row_major(width, height, array_contents).ok()?)
+                            let array_size = ArraySize::new(width, height)?;
+                            Value::Array(Array::new_row_major(array_size, array_contents).ok()?)
                         } else if let Some(s) = js_result.output_value.clone() {
                             Value::Single(CellValue::Text(s))
                         } else {

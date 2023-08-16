@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
 
 use super::*;
-use crate::{Array, CellValue, CodeResult, CoerceInto, ErrorMsg, Pos, Spanned, Value};
+use crate::{Array, ArraySize, CellValue, CodeResult, CoerceInto, ErrorMsg, Pos, Spanned, Value};
 
 /// Abstract syntax tree of a formula expression.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -160,7 +160,8 @@ impl AstNode {
                     }
                 }
 
-                Array::new_row_major(width, height, flat_array)?.into()
+                let size = ArraySize::new_or_err(width, height)?;
+                Array::new_row_major(size, flat_array)?.into()
             }
 
             // Other operator/function
@@ -201,7 +202,8 @@ impl AstNode {
                     }
                 }
 
-                Array::new_row_major(width as u32, height as u32, flat_array)?.into()
+                let size = ArraySize::new_or_err(width as u32, height as u32)?;
+                Array::new_row_major(size, flat_array)?.into()
             }
 
             // Single cell references return 1x1 arrays for Excel compatibility.

@@ -1,6 +1,8 @@
 use regex::Regex;
 use smallvec::smallvec;
 
+use crate::ArraySize;
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -232,7 +234,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 // Find the values for N, Q, and R, and error if there's an
                 // array mismatch.
                 let n = Array::common_len(search_axis, [&haystack, &returns].map(|v| v.as_ref()))?;
-                returns.check_array_size_on(search_axis, n)?;
+                returns.check_array_size_on(search_axis, n.get())?;
                 let q = Array::common_len(search_axis, [&needle, &fallback].map(|v| v.as_ref()))?;
                 let r = Array::common_len(
                     non_search_axis,
@@ -248,26 +250,28 @@ fn get_functions() -> Vec<FormulaFunction> {
                     .collect::<CodeResult<Vec<Option<usize>>>>()?;
 
                 // Construct the final output array.
-                let needle_size = needle.inner.array_size();
+                let needle_size = needle.inner.size();
                 let (result_w, result_h) = match search_axis {
                     Axis::X => (q, r),
                     Axis::Y => (r, q),
                 };
                 let mut final_output_array = smallvec![];
-                for y in 0..result_h {
-                    for x in 0..result_w {
-                        let needle_index = needle_size.flatten_index(x, y)?;
-                        match lookup_indices[needle_index] {
-                            Some(i) => final_output_array.push({
-                                let x = if search_axis == Axis::X { i as u32 } else { x };
-                                let y = if search_axis == Axis::Y { i as u32 } else { y };
-                                returns.inner.get(x, y)?.clone()
-                            }),
-                            None => final_output_array.push(fallback.inner.get(x, y)?.clone()),
-                        }
+                let result_size = ArraySize {
+                    w: result_w,
+                    h: result_h,
+                };
+                for (x, y) in result_size.iter() {
+                    let needle_index = needle_size.flatten_index(x, y)?;
+                    match lookup_indices[needle_index] {
+                        Some(i) => final_output_array.push({
+                            let x = if search_axis == Axis::X { i as u32 } else { x };
+                            let y = if search_axis == Axis::Y { i as u32 } else { y };
+                            returns.inner.get(x, y)?.clone()
+                        }),
+                        None => final_output_array.push(fallback.inner.get(x, y)?.clone()),
                     }
                 }
-                Array::new_row_major(result_w, result_h, final_output_array)?
+                Array::new_row_major(result_size, final_output_array)?
             }
         ),
     ]
@@ -738,12 +742,14 @@ mod tests {
 
         // Multiple needle values is ok if it matches the return values
         fn make_test_formula(needle_size: (u32, u32), returns_size: (u32, u32)) -> String {
-            let (w, h) = needle_size;
-            let needle = Array::new_row_major(w, h, smallvec![1.into(); (w * h) as usize]).unwrap();
+            let needle_size = ArraySize::try_from(needle_size).unwrap();
+            let needle =
+                Array::new_row_major(needle_size, smallvec![1.into(); needle_size.len()]).unwrap();
 
-            let (w, h) = returns_size;
+            let returns_size = ArraySize::try_from(returns_size).unwrap();
             let returns =
-                Array::new_row_major(w, h, smallvec!["ret".into(); (w * h) as usize]).unwrap();
+                Array::new_row_major(returns_size, smallvec!["ret".into(); returns_size.len()])
+                    .unwrap();
 
             format!("XLOOKUP({}, A1:A4, {})", needle.repr(), returns.repr())
         }
@@ -796,8 +802,9 @@ mod tests {
 
                     for row in array.rows() {
                         let needle = row[col as usize].repr();
+                        let array_size = ArraySize::new(w as u32, 1).unwrap();
                         let expected =
-                            Array::new_row_major(w as u32, 1, row.iter().cloned().collect())
+                            Array::new_row_major(array_size, row.iter().cloned().collect())
                                 .unwrap();
 
                         // Test vertical lookup

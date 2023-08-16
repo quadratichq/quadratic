@@ -61,8 +61,8 @@ impl CodeCellValue {
 
     pub fn output_size(&self) -> ArraySize {
         match self.output.as_ref().and_then(|out| out.output_value()) {
-            Some(Value::Array(a)) => a.array_size(),
-            Some(Value::Single(_)) | None => ArraySize { w: 1, h: 1 },
+            Some(Value::Array(a)) => a.size(),
+            Some(Value::Single(_)) | None => ArraySize::_1X1,
         }
     }
 }
