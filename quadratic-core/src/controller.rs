@@ -3,10 +3,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    grid::{CellRef, ColumnId, Grid, RowId, Sheet, SheetId},
-    Array, CellValue, Pos, Rect,
-};
+use crate::{grid::*, Array, CellValue, Pos, Rect};
 
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -558,4 +555,38 @@ mod tests {
 
         assert_eq!(sheet2.name, format!("{} Copy", sheet1.name));
     }
+
+    // fn test_render_fill() {
+    //     let mut g = GridController::new();
+    //     let sheet_id = g.sheet_ids()[0];
+    //     g.grid.set_cell_fill_color(
+    //         &sheet_id,
+    //         &Rect {
+    //             min: Pos { x: 1, y: 1 },
+    //             max: Pos { x: 10, y: 10 },
+    //         },
+    //         "blue".to_string(),
+    //     );
+    //     g.grid.set_cell_fill_color(
+    //         &sheet_id,
+    //         &Rect {
+    //             min: Pos { x: 1, y: 15 },
+    //             max: Pos { x: 10, y: 20 },
+    //         },
+    //         "blue".to_string(),
+    //     );
+    //     g.grid.set_cell_fill_color(
+    //         &sheet_id,
+    //         &Rect {
+    //             min: Pos { x: 1, y: 10 },
+    //             max: Pos { x: 10, y: 15 },
+    //         },
+    //         "blue".to_string(),
+    //     );
+    //     let render_fills = g.sheet(sheet_id).get_render_fills(Rect {
+    //         min: Pos { x: -100, y: -100 },
+    //         max: Pos { x: 100, y: 100 },
+    //     });
+    //     assert_eq!(10, render_fills.len())
+    // }
 }
