@@ -85,7 +85,13 @@ export class Grid {
   // sheet grid operations
   // ---------------------
 
-  setCellValue(options: { sheetId: string; x: number; y: number; value: string; cursor: SheetCursorSave }) {
+  setCellValue(options: {
+    sheetId: string;
+    x: number;
+    y: number;
+    value: string;
+    cursor: SheetCursorSave;
+  }): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     const cellValue: CellValue = {
       type: 'text',
@@ -96,6 +102,15 @@ export class Grid {
       new Pos(options.x, options.y),
       cellValue,
       JSON.stringify(options.cursor)
+    );
+  }
+
+  deleteCellValues(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.deleteCellValues(
+      sheetId,
+      rectangleToRect(rectangle) as RectInternal,
+      JSON.stringify(cursor)
     );
   }
 

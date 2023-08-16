@@ -141,7 +141,7 @@ export const CellInput = (props: CellInputProps) => {
     const value = textInput.innerText;
 
     if (!cancel) {
-      sheetController.setCellValue({ sheetId: sheetController.sheet.id, x: cellLocation.x, y: cellLocation.y, value });
+      sheetController.setCellValue(cellLocation.x, cellLocation.y, value);
       // sheetController.start_transaction();
       // // Update Cell and dependent cells
       // if (value === '') {

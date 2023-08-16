@@ -1,3 +1,4 @@
+import { Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { GridFile, SheetSchema } from '../../schemas';
@@ -409,8 +410,18 @@ export class SheetController {
     return this.sheets.find((sheet) => sheet.id === id);
   }
 
-  setCellValue(options: { sheetId: string; x: number; y: number; value: string }): void {
-    const summary = this.grid.setCellValue({ ...options, cursor: this.sheet.cursor.save() });
+  // set values for current sheet
+  // ----------------------------
+
+  setCellValue(x: number, y: number, value: string): void {
+    const summary = this.grid.setCellValue({ sheetId: this.sheet.id, x, y, value, cursor: this.sheet.cursor.save() });
+    transactionResponse(this, summary);
+    if (this.saveLocalFiles) this.saveLocalFiles();
+  }
+
+  deleteCells(rectangle: Rectangle): void {
+    const summary = this.grid.deleteCellValues(this.sheet.id, rectangle, this.sheet.cursor.save());
+    debugger;
     transactionResponse(this, summary);
     if (this.saveLocalFiles) this.saveLocalFiles();
   }

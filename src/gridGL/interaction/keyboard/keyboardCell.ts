@@ -1,5 +1,5 @@
+import { Rectangle } from 'pixi.js';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { DeleteCells } from '../../../grid/actions/DeleteCells';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
 import { isAllowedFirstChar } from './keyboardCellChars';
@@ -33,13 +33,14 @@ export function keyboardCell(options: {
 
   if (event.key === 'Backspace' || event.key === 'Delete') {
     // delete a range or a single cell, depending on if MultiCursor is active
-    DeleteCells({
-      x0: cursor.originPosition.x,
-      y0: cursor.originPosition.y,
-      x1: cursor.terminalPosition.x,
-      y1: cursor.terminalPosition.y,
-      sheetController: sheet_controller,
-    });
+    sheet_controller.deleteCells(
+      new Rectangle(
+        cursor.originPosition.x,
+        cursor.originPosition.y,
+        cursor.terminalPosition.x - cursor.originPosition.x,
+        cursor.terminalPosition.y - cursor.originPosition.y
+      )
+    );
     event.preventDefault();
   }
 
