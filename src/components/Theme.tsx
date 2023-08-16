@@ -18,7 +18,6 @@ export function Theme(props: any) {
     () => ({
       colorModePreference,
       toggleColorMode: (newPref: ColorModePreference) => {
-        console.log(newPref);
         setColorModePreference(newPref);
       },
     }),
