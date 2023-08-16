@@ -48,11 +48,11 @@ export const TopBar = (props: IProps) => {
         color: colors.darkGray,
         //@ts-expect-error
         WebkitAppRegion: 'drag', // this allows the window to be dragged in Electron
-        paddingLeft: isElectron() ? '4.5rem' : '2rem',
+        paddingLeft: isElectron() ? '4.5rem' : theme.spacing(2),
         width: '100%',
         display: 'flex',
         justifyContent: 'space-between',
-        paddingRight: '1rem',
+        paddingRight: theme.spacing(2),
         border: colors.mediumGray,
         borderWidth: '0 0 1px 0',
         borderStyle: 'solid',

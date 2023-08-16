@@ -70,6 +70,8 @@ export const BottomBar = (props: Props) => {
     focusGrid();
   };
 
+  const showOnDesktop = !isMobileOnly;
+
   return (
     <div
       onContextMenu={(event) => {
@@ -91,13 +93,17 @@ export const BottomBar = (props: Props) => {
       }}
     >
       <Stack direction="row">
-        <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>
+        {showOnDesktop && (
+          <>
+            <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>
 
-        {showMultiCursor && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
-        {selectedCell?.last_modified && (
-          <BottomBarItem>
-            You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}
-          </BottomBarItem>
+            {showMultiCursor && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
+            {selectedCell?.last_modified && (
+              <BottomBarItem>
+                You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}
+              </BottomBarItem>
+            )}
+          </>
         )}
         {(debugShowRenderer || true) && (
           <BottomBarItem>
@@ -133,7 +139,7 @@ export const BottomBar = (props: Props) => {
         <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
         <SyncState />
 
-        {!isMobileOnly && <PythonState />}
+        {showOnDesktop && <PythonState />}
         <BottomBarItem
           icon={<ChatBubbleOutline fontSize="inherit" />}
           onClick={() => {
