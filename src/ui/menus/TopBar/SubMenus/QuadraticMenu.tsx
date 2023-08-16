@@ -7,7 +7,7 @@ import '@szhsin/react-menu/dist/index.css';
 import { useEffect } from 'react';
 import { useParams, useRouteLoaderData } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import apiClientSingleton from '../../../../api-client/apiClientSingleton';
+import { apiClient } from '../../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { authClient } from '../../../../auth';
@@ -78,7 +78,7 @@ export const QuadraticMenu = (props: Props) => {
           <MenuItem
             onClick={() => {
               if (uuid) {
-                apiClientSingleton.downloadFile(uuid);
+                apiClient.downloadFile(uuid);
               }
             }}
           >

@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from 'react-router-dom';
-import apiClientSingleton from '../../api-client/apiClientSingleton';
+import { apiClient } from '../../api/apiClient';
 import { authClient } from '../../auth';
 import { EXAMPLE_FILES } from '../../constants/appConstants';
 import { ROUTES } from '../../constants/routes';
@@ -50,42 +50,42 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // These fail on fresh page loads new loads
     mixpanel.track('[Files].newExampleFile', { fileName: name });
 
-    const uuid = await fetch(`/examples/${exampleId}`)
-      .then((res) => res.text())
-      .then((contents) => {
-        const file = validateAndUpgradeGridFile(contents);
-        if (!file) {
-          throw new Error(`Failed to create a new file because the example file is corrupt: ${file}`);
-        }
-        return apiClientSingleton.createFile({ name, contents: JSON.stringify(file), version: file.version });
-      })
-      .catch((err) => {
-        console.error(err);
-        Sentry.captureEvent({
-          message: 'Client failed to load the selected example file.',
-          level: Sentry.Severity.Warning,
-          extra: {
-            exampleId,
-          },
-        });
-        return undefined;
-      });
+    try {
+      // Get example file's contents
+      const res = await fetch(`/examples/${exampleId}`);
+      const contents = await res.text();
 
-    if (uuid) {
+      // Validate and upgrade file
+      const file = validateAndUpgradeGridFile(contents);
+      if (!file) {
+        throw new Error(`Failed to create a new file because the example file is corrupt: ${file}`);
+      }
+
+      // Create a new file from that example file
+      const { uuid } = await apiClient.createFile({ name, contents: JSON.stringify(file), version: file.version });
+
+      // Navigate to it
       return navigate(uuid);
+    } catch (error) {
+      Sentry.captureEvent({
+        message: 'Client failed to load the selected example file.',
+        level: Sentry.Severity.Warning,
+        extra: {
+          exampleId,
+        },
+      });
+      return redirect(getFailUrl(ROUTES.EXAMPLES));
     }
-
-    return redirect(getFailUrl(ROUTES.EXAMPLES));
   }
 
   // If there's no query params for the kind of file to create, just create a blank new one
-
   mixpanel.track('[Files].newFile');
-  const uuid = await apiClientSingleton.createFile();
-  if (uuid) {
+  try {
+    const { uuid } = await apiClient.createFile();
     return navigate(uuid);
+  } catch (error) {
+    return redirect(getFailUrl());
   }
-  return redirect(getFailUrl());
 };
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
@@ -94,13 +94,11 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   const contents = formData.get('contents') as string;
   const version = formData.get('version') as string;
 
-  if (name && contents && version) {
-    mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
-    const uuid = await apiClientSingleton.createFile({ name, contents, version });
-    if (uuid) {
-      return navigate(uuid);
-    }
+  mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
+  try {
+    const { uuid } = await apiClient.createFile({ name, contents, version });
+    return navigate(uuid);
+  } catch (error) {
+    return redirect(getFailUrl());
   }
-
-  return redirect(getFailUrl());
 };

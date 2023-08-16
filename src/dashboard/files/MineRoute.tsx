@@ -6,7 +6,6 @@ import {
   InsertDriveFileOutlined,
 } from '@mui/icons-material';
 import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
-import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import {
   ActionFunctionArgs,
@@ -21,8 +20,7 @@ import {
   useNavigation,
   useSubmit,
 } from 'react-router-dom';
-import apiClientSingleton from '../../api-client/apiClientSingleton';
-import { GetFilesRes } from '../../api-client/types';
+import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbar';
 import { ROUTES } from '../../constants/routes';
@@ -31,21 +29,17 @@ import { Header } from '../../dashboard/components/Header';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 import { TooltipHint } from '../../ui/components/TooltipHint';
 
+type LoaderData = Awaited<ReturnType<typeof apiClient.getFiles>> | null;
 type ActionData = {
   ok: boolean;
 } | null;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const files = await apiClientSingleton.getFiles();
-  if (files) {
-    return files;
-  }
-
-  return null;
+  return apiClient.getFiles().catch(() => null);
 };
 
 export const Component = () => {
-  const files = useLoaderData() as GetFilesRes;
+  const files = useLoaderData() as LoaderData;
   const actionData = useActionData() as ActionData;
   const theme = useTheme();
   const fetchers = useFetchers();
@@ -166,27 +160,29 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   const action = formData.get('action');
 
   if (action === 'delete') {
-    const uuid = formData.get('uuid');
-    const ok = await apiClientSingleton.deleteFile(uuid as string);
-
-    mixpanel.track('[Files].deleteFile', { id: uuid });
-
-    return { ok };
+    const uuid = formData.get('uuid') as string;
+    try {
+      await apiClient.deleteFile(uuid);
+      return { ok: true };
+    } catch (error) {
+      return { ok: false };
+    }
   }
 
   if (action === 'download') {
-    const uuid = formData.get('uuid');
-    const ok = await apiClientSingleton.downloadFile(uuid as string);
-
-    mixpanel.track('[Files].downloadFile', { id: uuid });
-
-    return { ok };
+    const uuid = formData.get('uuid') as string;
+    try {
+      await apiClient.downloadFile(uuid);
+      return { ok: true };
+    } catch (error) {
+      return { ok: false };
+    }
   }
 
   return null;
 };
 
-function FileWithActions({ file }: { file: NonNullable<GetFilesRes>[0] }) {
+function FileWithActions({ file }: { file: NonNullable<LoaderData>[0] }) {
   const { uuid, name, updated_date } = file;
   const theme = useTheme();
   const fetcherDelete = useFetcher();

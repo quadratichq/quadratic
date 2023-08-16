@@ -3,8 +3,8 @@ import { Button } from '@mui/material';
 import * as Sentry from '@sentry/react';
 import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
-import apiClientSingleton from '../api-client/apiClientSingleton';
-import { GetFileResSchema } from '../api-client/types';
+import { apiClient } from '../api/apiClient';
+import { GetFileResSchema } from '../api/types';
 import { Empty } from '../components/Empty';
 import { GridFile, GridFileSchema } from '../schemas';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
@@ -24,10 +24,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
   }
 
   // Fetch the file
-  const data = await apiClientSingleton.getFile(uuid as string);
-  if (!data) {
-    throw new Response('Unexpected response from the API.', { status: 500 });
-  }
+  const data = await apiClient.getFile(uuid as string);
 
   // Validate and upgrade file to the latest version
   const contents = validateAndUpgradeGridFile(data.file.contents);
