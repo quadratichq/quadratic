@@ -31,71 +31,64 @@ const DEFAULT_FILE: GridFile = {
   version: GridFileSchema.shape.version.value,
 };
 
-async function getFiles() {
-  return fetchFromApi<GetFilesRes>(`/v0/files`, { method: 'GET' }, GetFilesResSchema);
-}
-
-async function getFile(uuid: string) {
-  return fetchFromApi<GetFileRes>(`/v0/files/${uuid}`, { method: 'GET' }, GetFileResSchema);
-}
-
-async function createFile(
-  body: PostFilesReq = {
-    name: 'Untitled',
-    contents: JSON.stringify(DEFAULT_FILE),
-    version: DEFAULT_FILE.version,
-  }
-) {
-  return fetchFromApi<PostFilesRes>(`/v0/files/`, { method: 'POST', body: JSON.stringify(body) }, PostFilesResSchema);
-}
-
-async function downloadFile(uuid: string) {
-  mixpanel.track('[Files].downloadFile', { id: uuid });
-  return getFile(uuid).then((json) => downloadFileOnClient(json.file.name, json.file.contents));
-}
-
-async function deleteFile(uuid: string) {
-  mixpanel.track('[Files].deleteFile', { id: uuid });
-  return fetchFromApi<DeleteFileRes>(`/v0/files/${uuid}`, { method: 'DELETE' }, DeleteFileResSchema);
-}
-
-async function renameFile(uuid: string, body: PostFileNameReq) {
-  return fetchFromApi<PostFileRes>(
-    `/v0/files/${uuid}`,
-    {
-      method: 'POST',
-      body: JSON.stringify(body),
-    },
-    PostFileResSchema
-  );
-}
-
-async function updateFile(uuid: string, body: PostFileContentsReq) {
-  return fetchFromApi<PostFileRes>(
-    `/v0/files/${uuid}`,
-    {
-      method: 'POST',
-      body: JSON.stringify(body),
-    },
-    PostFileResSchema
-  );
-}
-
-async function postFeedback(body: PostFeedbackReq) {
-  return fetchFromApi<PostFeedbackRes>(
-    `/v0/feedback`,
-    { method: 'POST', body: JSON.stringify(body) },
-    PostFeedbackResSchema
-  );
-}
-
 export const apiClient = {
-  getFiles,
-  getFile,
-  createFile,
-  downloadFile,
-  deleteFile,
-  renameFile,
-  updateFile,
-  postFeedback,
+  async getFiles() {
+    return fetchFromApi<GetFilesRes>(`/v0/files`, { method: 'GET' }, GetFilesResSchema);
+  },
+
+  async getFile(uuid: string) {
+    return fetchFromApi<GetFileRes>(`/v0/files/${uuid}`, { method: 'GET' }, GetFileResSchema);
+  },
+
+  async createFile(
+    body: PostFilesReq = {
+      name: 'Untitled',
+      contents: JSON.stringify(DEFAULT_FILE),
+      version: DEFAULT_FILE.version,
+    }
+  ) {
+    return fetchFromApi<PostFilesRes>(`/v0/files/`, { method: 'POST', body: JSON.stringify(body) }, PostFilesResSchema);
+  },
+
+  async downloadFile(uuid: string) {
+    mixpanel.track('[Files].downloadFile', { id: uuid });
+    return this.getFile(uuid).then((json) => downloadFileOnClient(json.file.name, json.file.contents));
+  },
+
+  async deleteFile(uuid: string) {
+    mixpanel.track('[Files].deleteFile', { id: uuid });
+    return fetchFromApi<DeleteFileRes>(`/v0/files/${uuid}`, { method: 'DELETE' }, DeleteFileResSchema);
+  },
+
+  async renameFile(uuid: string, body: PostFileNameReq) {
+    return fetchFromApi<PostFileRes>(
+      `/v0/files/${uuid}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      },
+      PostFileResSchema
+    );
+  },
+
+  async updateFile(uuid: string, body: PostFileContentsReq) {
+    return fetchFromApi<PostFileRes>(
+      `/v0/files/${uuid}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      },
+      PostFileResSchema
+    );
+  },
+
+  async postFeedback(body: PostFeedbackReq) {
+    return fetchFromApi<PostFeedbackRes>(
+      `/v0/feedback`,
+      { method: 'POST', body: JSON.stringify(body) },
+      PostFeedbackResSchema
+    );
+  },
+
+  // Someday: figure out how to fit in the calls for the AI chat
 };
