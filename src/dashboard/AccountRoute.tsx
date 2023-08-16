@@ -1,12 +1,12 @@
 import { Box, Button, Typography, useTheme } from '@mui/material';
-import { Form, useRouteLoaderData } from 'react-router-dom';
+import { Form } from 'react-router-dom';
 import { ROUTES } from '../constants/routes';
 import { Header } from '../dashboard/components/Header';
-import { RootLoaderData } from '../router';
+import { useRootRouteLoaderData } from '../router';
 // import { useColorMode } from 'shared/root/Theme';
 
 export const Component = () => {
-  const { user } = useRouteLoaderData('root') as RootLoaderData;
+  const { user } = useRootRouteLoaderData();
   const theme = useTheme();
   // const { colorModePreference, toggleColorMode } = useColorMode();
 
