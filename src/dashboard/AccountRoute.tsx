@@ -1,8 +1,8 @@
 import { Box, Button, Typography, useTheme } from '@mui/material';
 import { Form } from 'react-router-dom';
 import { ROUTES } from '../constants/routes';
-import { Header } from '../dashboard/components/Header';
 import { useRootRouteLoaderData } from '../router';
+import { DashboardHeader } from './components/DashboardHeader';
 // import { useColorMode } from 'shared/root/Theme';
 
 export const Component = () => {
@@ -12,7 +12,7 @@ export const Component = () => {
 
   return (
     <>
-      <Header title="My account" />
+      <DashboardHeader title="My account" />
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: theme.spacing(3), mt: theme.spacing(3) }}>
         <Row>
           <Typography variant="body1" color="text.primary" fontWeight="bold">

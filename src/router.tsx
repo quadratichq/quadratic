@@ -80,7 +80,7 @@ export const router = createBrowserRouter(
           shouldRevalidate={() => false}
         />
 
-        <Route lazy={() => import('./dashboard/components/Layout')}>
+        <Route lazy={() => import('./dashboard/components/DashboardLayoutRoute')}>
           <Route path={ROUTES.FILES} element={<Navigate to={ROUTES.MY_FILES} replace />} />
           <Route path={ROUTES.MY_FILES} lazy={() => import('./dashboard/files/MineRoute')} />
           <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/files/ExamplesRoute')} />

@@ -24,10 +24,10 @@ import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbar';
 import { ROUTES } from '../../constants/routes';
-import { FileListItem } from '../../dashboard/components/FileListItem';
-import { Header } from '../../dashboard/components/Header';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 import { TooltipHint } from '../../ui/components/TooltipHint';
+import { DashboardFileListItem } from '../components/DashboardFileListItem';
+import { DashboardHeader } from '../components/DashboardHeader';
 
 type LoaderData = Awaited<ReturnType<typeof apiClient.getFiles>> | null;
 type ActionData = {
@@ -99,7 +99,7 @@ export const Component = () => {
 
   return (
     <>
-      <Header
+      <DashboardHeader
         title="My files"
         actions={
           <div style={{ display: 'flex', gap: theme.spacing(1) }}>
@@ -203,7 +203,7 @@ function FileWithActions({ file }: { file: NonNullable<LoaderData>[0] }) {
 
   return (
     <Link to={ROUTES.FILE(uuid)} reloadDocument style={{ textDecoration: 'none', color: 'inherit' }}>
-      <FileListItem
+      <DashboardFileListItem
         key={uuid}
         name={name}
         status={failedToDelete && <Chip label="Failed to delete" size="small" color="error" variant="outlined" />}

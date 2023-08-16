@@ -1,13 +1,13 @@
 import { PeopleOutline } from '@mui/icons-material';
 import { Empty } from '../components/Empty';
 import { SUPPORT_EMAIL } from '../constants/appConstants';
-import { Header } from '../dashboard/components/Header';
+import { DashboardHeader } from './components/DashboardHeader';
 
 export const Component = () => {
   const mailto = `mailto:${SUPPORT_EMAIL}?subject=Early%20access%20to%20teams&body=Please%20sign%20me%20up%20for%20early%20access%20to%20teams!`;
   return (
     <>
-      <Header title="My team" />
+      <DashboardHeader title="My team" />
       <Empty
         title="Coming soon"
         description={
