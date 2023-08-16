@@ -145,7 +145,7 @@ export const Component = () => {
       <QuadraticLogo width="53" height="80" />
       <Stack gap={theme.spacing(1)} mb={theme.spacing(1)}>
         <Typography variant="h5" color="text.primary">
-          Cloud files are here
+          Cloud storage is here
         </Typography>
         <Typography variant="body1" color="text.secondary">
           Please wait while files stored in your browser are uploaded to your Quadratic account so you can access them
