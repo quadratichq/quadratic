@@ -90,28 +90,6 @@ export const GridFileSchemaV1_3 = z.object({
 export type GridFileV1_3 = z.infer<typeof GridFileSchemaV1_3>;
 export type ArrayOutputBase = z.infer<typeof ArrayOutputBaseSchema>;
 
-/*
-
-
-response = {
-  permission: "",
-  file: {
-    name,
-    version,
-    contents: GridFile
-  }
-}
-
-request = {
-  name,
-  contents: GridFile
-}
-
-GridFile is what the sheet takes
-GridFile is what you download
-
-*/
-
 /**
  * Given a v1_2 file, update it to a v1_3 file
  */
