@@ -14,7 +14,7 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
 import { TooltipHint } from '../../components/TooltipHint';
-import { useFile } from '../../contexts/File';
+import { useFile } from '../../contexts/FileContext';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
 import { DataMenu } from './SubMenus/DataMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';

@@ -1,7 +1,7 @@
 import { ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip, useTheme } from '@mui/material';
 import { ShowAfter } from '../../../components/ShowAfter';
-import { useFile } from '../../contexts/File';
+import { useFile } from '../../contexts/FileContext';
 import BottomBarItem from './BottomBarItem';
 
 export default function SyncState() {
