@@ -22,7 +22,6 @@ import { ROUTES } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Create from './dashboard/files/CreateRoute';
-import { debugLogAuth } from './debugFlags';
 import { initializeAnalytics } from './utils/analytics';
 // @ts-expect-error - for testing purposes
 window.lf = localforage;
@@ -53,7 +52,6 @@ export const router = createBrowserRouter(
           // All other routes get the same data
           let isAuthenticated = await authClient.isAuthenticated();
           let user = await authClient.user();
-          if (debugLogAuth) console.log('[auth] / <loader>: isAuthenticated: %s', isAuthenticated);
           initializeAnalytics({ isAuthenticated, user });
 
           return { isAuthenticated, user };
@@ -111,14 +109,12 @@ export const router = createBrowserRouter(
 
           // If they’re authenticated, redirect home
           if (isAuthenticated) {
-            if (debugLogAuth) console.log('[auth] redirect to home after login');
             return redirect('/');
           }
 
           // If they’re not authenticated, send them to Auth0
           // Watch for a `from` query param, as unprotected routes will redirect
           // to here for them to auth first
-          if (debugLogAuth) console.log('[auth] send to auth0 for login');
           const url = new URL(request.url);
           const redirectTo = url.searchParams.get('from') || '';
           await authClient.login(redirectTo);
