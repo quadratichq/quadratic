@@ -14,7 +14,7 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
 import { TooltipHint } from '../../components/TooltipHint';
-import { useFile } from '../../contexts/FileContext';
+import { useFileContext } from '../../contexts/FileContext';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
 import { DataMenu } from './SubMenus/DataMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
@@ -31,7 +31,7 @@ interface IProps {
 export const TopBar = (props: IProps) => {
   const { app, sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { name, renameFile } = useFile();
+  const { name, renameFile } = useFileContext();
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const theme = useTheme();
   const settings = useGridSettings();

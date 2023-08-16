@@ -1,12 +1,12 @@
 import { ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip, useTheme } from '@mui/material';
 import { ShowAfter } from '../../../components/ShowAfter';
-import { useFile } from '../../contexts/FileContext';
+import { useFileContext } from '../../contexts/FileContext';
 import BottomBarItem from './BottomBarItem';
 
 export default function SyncState() {
   const theme = useTheme();
-  const { syncState } = useFile();
+  const { syncState } = useFileContext();
 
   if (syncState === 'idle') {
     return null;

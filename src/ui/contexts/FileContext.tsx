@@ -77,11 +77,7 @@ export const FileProvider = ({
     didMount.current = true;
     console.log('[FileProvider] (re)loading file into the sheet...');
 
-    // TODO when we do true spa transitions, we'll likely need to clear/rebuild/reset
-    // sheetController.clear();
     sheetController.sheet.load_file(initialFile.contents);
-    // sheetController.app?.rebuild();
-    // sheetController.app?.reset();
   }, [sheetController.sheet, initialFile.contents]);
 
   const syncChanges = useCallback(
@@ -129,4 +125,4 @@ export const FileProvider = ({
 /**
  * Consumer
  */
-export const useFile = () => useContext(FileContext);
+export const useFileContext = () => useContext(FileContext);
