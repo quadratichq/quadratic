@@ -1,6 +1,6 @@
 import { NoteAddOutlined } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import apiClientSingleton from '../../../../api-client/apiClientSingleton';
+import { apiClient } from '../../../../api/apiClient';
 import { ROUTES } from '../../../../constants/routes';
 import { SaveFileOutlined } from '../../../icons';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
@@ -20,7 +20,7 @@ const ListItems = [
       const { uuid } = useParams();
       const downloadCurrentFile = () => {
         if (uuid) {
-          apiClientSingleton.downloadFile(uuid);
+          apiClient.downloadFile(uuid);
         }
       };
       return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={downloadCurrentFile} />;

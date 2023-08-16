@@ -11,7 +11,7 @@ import {
 import { useTheme } from '@mui/system';
 import { useState } from 'react';
 import { useRecoilState } from 'recoil';
-import apiClientSingleton from '../../../api-client/apiClientSingleton';
+import { apiClient } from '../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
 import { BUG_REPORT_URL, DISCORD, TWITTER } from '../../../constants/urls';
@@ -38,12 +38,12 @@ export const FeedbackMenu = () => {
 
   const onSubmit = async () => {
     setLoadState('LOADING');
-    const success = await apiClientSingleton.postFeedback({ feedback: value, userEmail: user?.email });
-    if (success) {
+    try {
+      await apiClient.postFeedback({ feedback: value, userEmail: user?.email });
       setValue('');
       closeMenu();
       addGlobalSnackbar('Feedback submitted! Thank you.');
-    } else {
+    } catch (error) {
       setLoadState('LOAD_ERROR');
     }
   };

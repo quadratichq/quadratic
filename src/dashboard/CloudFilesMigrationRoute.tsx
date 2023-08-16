@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/browser';
 import localforage from 'localforage';
 import { useEffect, useRef, useState } from 'react';
 import { redirect, useLoaderData, useNavigate } from 'react-router-dom';
-import apiClientSingleton from '../api-client/apiClientSingleton';
+import { apiClient } from '../api/apiClient';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import { ReactComponent as QuadraticLogo } from './components/quadratic-logo.svg';
 const LOCAL_FILES_KEY = 'file-list';
@@ -87,14 +87,11 @@ export const Component = () => {
           }
 
           // Create a new file in the DB
-          const newUUID = await apiClientSingleton.createFile({
+          await apiClient.createFile({
             name: localFile.filename,
             contents: JSON.stringify(newFile),
             version: newFile.version,
           });
-          if (!newUUID) {
-            throw new Error('Failed to upload file to the cloud.');
-          }
 
           // If it reaches here, we’re good!
         } catch (e) {
