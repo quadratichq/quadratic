@@ -9,7 +9,7 @@ if (!process.env.REACT_APP_QUADRATIC_API_URL) {
 export const API_URL = process.env.REACT_APP_QUADRATIC_API_URL;
 
 export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z.Schema<T>): Promise<T> {
-  // Options shared amongst all fetches
+  // Set headers
   const token = await authClient.getToken();
   const sharedInit = {
     headers: {
@@ -18,18 +18,22 @@ export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z
     },
   };
 
+  // Make API call
   const response = await fetch(API_URL + path, { ...sharedInit, ...init });
 
+  // Handle response if a server error is returned
   if (!response.ok) {
     const error = await newHTTPError('Unsuccessful response', response, init.method);
     throw error;
   }
 
+  // Handle if the response is not JSON
   const json = await response.json().catch(async () => {
     const error = await newHTTPError('Not a JSON body', response, init.method);
     throw error;
   });
 
+  // Compare the response to the expected schema
   const result = schema.safeParse(json);
   if (!result.success) {
     const error = await newHTTPError('Unexpected response schema', response, init.method);
