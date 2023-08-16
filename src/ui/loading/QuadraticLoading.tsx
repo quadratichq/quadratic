@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
+import { useEffect, useState } from 'react';
 import { TopBarLoading } from '../components/TopBarLoading';
 
 import './styles.css';
@@ -8,17 +8,15 @@ import './styles.css';
 export function QuadraticLoading() {
   const [progress, setProgress] = useState<number>(0);
 
-  const loadingMS = 3000;
-
   useEffect(() => {
     const timer = setInterval(() => {
       setProgress((oldProgress) => {
         if (oldProgress === 100) {
           return 100;
         }
-        return oldProgress + 1;
+        return oldProgress + 2;
       });
-    }, loadingMS / 100);
+    }, 10);
 
     return () => {
       clearInterval(timer);
