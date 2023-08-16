@@ -32,7 +32,7 @@ root.render(
           <QuadraticLoading />
         </ShowAfter>
       }
-    ></RouterProvider>
+    />
   </React.StrictMode>
 );
 
