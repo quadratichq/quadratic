@@ -58,6 +58,7 @@ export class SheetCursor {
     this.keyboardMovePosition = value.keyboardMovePosition;
     this.cursorPosition = value.cursorPosition;
     this.multiCursor = value.multiCursor;
+    pixiAppEvents.cursorPosition();
   }
 
   changePosition(options: {
