@@ -20,26 +20,27 @@ export const createSheet = (args: { sheetController: SheetController; sheet: She
 };
 
 export const deleteSheet = (args: { sheetController: SheetController; sheet: Sheet; create_transaction: boolean }) => {
-  const { create_transaction, sheetController, sheet } = args;
+  throw new Error('replaced');
+  // const { create_transaction, sheetController, sheet } = args;
 
-  if (create_transaction ?? true) sheetController.start_transaction();
+  // if (create_transaction ?? true) sheetController.start_transaction();
 
-  sheetController.execute_statement({
-    type: 'SET_SHEET',
-    data: {
-      sheetId: sheet.id,
-      sheet: undefined,
-    },
-  });
+  // sheetController.execute_statement({
+  //   type: 'SET_SHEET',
+  //   data: {
+  //     sheetId: sheet.id,
+  //     sheet: undefined,
+  //   },
+  // });
 
-  if (sheetController.sheets.length === 0) {
-    // const sheet = sheetController.createNewSheet();
-    // createSheet({ sheetController, sheet, create_transaction: false });
-  }
+  // if (sheetController.sheets.length === 0) {
+  //   // const sheet = sheetController.createNewSheet();
+  //   // createSheet({ sheetController, sheet, create_transaction: false });
+  // }
 
-  if (create_transaction ?? true) {
-    sheetController.end_transaction();
-  }
+  // if (create_transaction ?? true) {
+  //   sheetController.end_transaction();
+  // }
 };
 
 // updates an attribute in sheet (note that you should only update one attribute at a time)

@@ -13,7 +13,7 @@ const ListItems = [
           icon={<PostAddOutlinedIcon />}
           action={() => {
             const sheetController = props.sheetController as SheetController;
-            sheetController.createNewSheet();
+            sheetController.sheets.createNew();
             // createSheet({ sheetController, sheet, create_transaction: true });
           }}
         />

@@ -235,7 +235,7 @@ export const SheetBar = (props: Props): JSX.Element => {
 
             // moving left
             if (down.current.actualOrder > overlap.order) {
-              const previous = sheetController.getPreviousSheet(overlap.order);
+              const previous = sheetController.sheets.getPrevious(overlap.order);
               down.current.actualOrder = generateKeyBetween(previous?.order, overlap.order);
 
               // place floating tab to the left of the overlapped tab
@@ -244,7 +244,7 @@ export const SheetBar = (props: Props): JSX.Element => {
 
             // moving right
             else {
-              const next = sheetController.getNextSheet(overlap.order);
+              const next = sheetController.sheets.getNext(overlap.order);
               down.current.actualOrder = generateKeyBetween(overlap.order, next?.order);
 
               // place floating tab to the right of the overlapped tab
@@ -342,7 +342,7 @@ export const SheetBar = (props: Props): JSX.Element => {
       tab.style.zIndex = '';
       tab.style.transform = '';
       if (down.current.actualOrder !== down.current.originalOrder) {
-        const sheet = sheetController.getSheet(down.current.id);
+        const sheet = sheetController.sheets.getById(down.current.id);
         if (!sheet) {
           throw new Error('Expect sheet to be defined in SheetBar.pointerUp');
         }
@@ -380,8 +380,7 @@ export const SheetBar = (props: Props): JSX.Element => {
       <div className="sheet-bar-add">
         <ButtonUnstyled
           onClick={() => {
-            sheetController.createNewSheet();
-            // createSheet({ sheetController, sheet, create_transaction: true });
+            sheetController.sheets.createNew();
             focusGrid();
           }}
         >

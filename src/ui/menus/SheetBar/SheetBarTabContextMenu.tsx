@@ -35,7 +35,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         <MenuItem
           onClick={handleClose}
           onClickCapture={() => {
-            sheetController.duplicateSheet();
+            sheetController.sheets.duplicate();
             focusGrid();
           }}
         >
@@ -56,14 +56,14 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             onChangeComplete={(change: ColorResult) => {
               const color = convertReactColorToString(change);
               if (contextMenu) {
-                sheetController.changeSheetColor(contextMenu.id, color);
+                sheetController.sheet.color = color;
                 focusGrid();
               }
               handleClose();
             }}
             onClear={() => {
               if (contextMenu) {
-                sheetController.changeSheetColor(contextMenu.id, undefined);
+                sheetController.sheet.color = undefined;
                 focusGrid();
               }
               handleClose();
@@ -72,12 +72,12 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         </SubMenu>
         <MenuDivider />
         <MenuItem
-          disabled={sheetController.getFirstSheet().id === contextMenu?.id}
+          disabled={sheetController.sheets.getFirst().id === contextMenu?.id}
           onClick={() => {
             if (contextMenu) {
               const sheet = sheetController.sheet;
-              const previous = sheetController.getPreviousSheet(sheet.order)?.order ?? null;
-              const previousSecond = previous ? sheetController.getPreviousSheet(previous)?.order ?? null : null;
+              const previous = sheetController.sheets.getPrevious(sheet.order)?.order ?? null;
+              const previousSecond = previous ? sheetController.sheets.getPrevious(previous)?.order ?? null : null;
               const order = generateKeyBetween(previousSecond, previous);
               updateSheet({
                 sheetController,
@@ -93,12 +93,12 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           Move Left
         </MenuItem>
         <MenuItem
-          disabled={sheetController.getLastSheet().id === contextMenu?.id}
+          disabled={sheetController.sheets.getLast().id === contextMenu?.id}
           onClick={() => {
             if (contextMenu) {
               const sheet = sheetController.sheet;
-              const next = sheetController.getNextSheet(sheet.order)?.order ?? null;
-              const nextSecond = next ? sheetController.getNextSheet(next)?.order ?? null : null;
+              const next = sheetController.sheets.getNext(sheet.order)?.order ?? null;
+              const nextSecond = next ? sheetController.sheets.getNext(next)?.order ?? null : null;
               const order = generateKeyBetween(next, nextSecond);
               updateSheet({
                 sheetController,

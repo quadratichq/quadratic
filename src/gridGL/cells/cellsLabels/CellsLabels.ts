@@ -44,6 +44,7 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
     debugTimeReset();
     this.cellLabels = new Map();
     cells = cells ?? this.sheet.getRenderCells(this.cellsHash.AABB);
+    console.log(cells);
     cells.forEach((cell) => {
       const rectangle = this.sheet.gridOffsets.getCell(Number(cell.x), Number(cell.y));
       const cellLabel = new CellLabel(cell, rectangle);

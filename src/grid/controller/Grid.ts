@@ -35,7 +35,7 @@ export class Grid {
 
   // import/export
 
-  createForTesting(): void {
+  constructor() {
     this.gridController = new GridController();
   }
 

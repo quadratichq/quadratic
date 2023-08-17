@@ -15,16 +15,19 @@ export class CellsSheets extends Container<CellsSheet> {
 
   async create(): Promise<void> {
     this.removeChildren();
-    if (!this.app.sheetController.sheets.length) return;
-    for (const sheet of this.app.sheetController.sheets) {
+    if (!this.app.sheetController.sheets.size) return;
+    this.app.sheetController.sheets.forEach(async (sheet) => {
       const child = this.addChild(new CellsSheet(sheet));
       await child.preload();
-    }
+      if (sheet.id === this.app.sheetController.sheet.id) {
+        this.current = child;
+      }
+    });
     this.show(this.app.sheetController.sheet.id);
   }
 
   async addSheet(id: string): Promise<void> {
-    const sheet = this.app.sheetController.sheets.find((sheet) => sheet.id === id);
+    const sheet = this.app.sheetController.sheets.getById(id);
     if (!sheet) {
       throw new Error('Expected to find new sheet in cellSheet');
     }

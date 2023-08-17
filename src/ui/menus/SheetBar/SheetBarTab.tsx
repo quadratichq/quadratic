@@ -62,14 +62,14 @@ export const SheetBarTab = (props: Props): JSX.Element => {
             if (event.code === 'Enter') {
               const input = event.currentTarget as HTMLInputElement;
               if (input.value !== sheet.name) {
-                if (sheetController.sheetNameExists(input.value)) {
+                if (sheetController.sheets.nameExists(input.value)) {
                   setNameExists(true);
                   input.focus();
                   return;
                 } else {
                   setNameExists(false);
                   setIsRenaming(false);
-                  sheetController.renameSheet(input.value);
+                  sheetController.sheet.name = input.value;
                   localFiles.save();
                 }
               }
@@ -88,8 +88,8 @@ export const SheetBarTab = (props: Props): JSX.Element => {
             setIsRenaming((isRenaming) => {
               if (!isRenaming) return false;
               if (input.value !== sheet.name) {
-                if (!sheetController.sheetNameExists(input.value)) {
-                  sheetController.renameSheet(input.value);
+                if (!sheetController.sheets.nameExists(input.value)) {
+                  sheetController.sheet.name = input.value;
                   localFiles.save();
                 } else {
                   setNameExists(true);

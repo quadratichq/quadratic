@@ -96,6 +96,7 @@ class PixiAppEvents {
     // this.app.quadrants.build();
 
     this.app.paused = true;
+
     // todo: hack!!! (this avoids loading the sheets during initial load b/c PIXI is not set up yet)
     if (BitmapFont.available['OpenSans']) {
       await this.loadSheets();

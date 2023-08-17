@@ -1,194 +1,56 @@
-import { Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
-import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { GridFile, SheetSchema } from '../../schemas';
 import { Sheet } from '../sheet/Sheet';
 import { SheetCursor } from '../sheet/SheetCursor';
 import { Grid } from './Grid';
+import { Sheets } from './Sheets';
 import { Statement } from './statement';
 import { Transaction } from './transaction';
 import { transactionResponse } from './transactionResponse';
 
-const randomFloatSize = { x: 10, y: 3000 };
-
 export class SheetController {
-  private _current: string;
-
+  // friends of Sheets
   grid: Grid;
-  sheets: Sheet[];
+
+  sheets: Sheets;
   saveLocalFiles: (() => void) | undefined;
 
   constructor() {
     this.grid = new Grid();
-    this.sheets = [];
-    this._current = '';
+    this.sheets = new Sheets(this);
 
     this.saveLocalFiles = undefined;
   }
 
+  // Helper functions for this.sheets
+  // --------------------------------
+
+  // current active sheet
+  get sheet(): Sheet {
+    return this.sheets.sheet;
+  }
+
+  // current active sheet id
   get current(): string {
-    return this._current;
+    return this.sheets.current;
   }
   set current(value: string) {
-    if (value !== this._current) {
-      this._current = value;
-      pixiAppEvents.changeSheet();
-      this.updateSheetBar();
-    }
+    this.sheets.current = value;
   }
 
   loadFile(grid: GridFile) {
     // use to test large sheets
     if (debugMockLargeData) {
-      this.grid.createForTesting();
-      this.repopulateSheets();
-      this._current = this.sheets[0].id;
-
-      console.time('random');
-      const url = new URLSearchParams(window.location.search);
-      let { x, y } = randomFloatSize;
-      const params = url.get('mock-large-data');
-      if (params?.includes(',')) {
-        const n = params.split(',');
-        x = parseInt(n[0]);
-        y = parseInt(n[1]);
-      }
-      const summary = this.grid.populateWithRandomFloats(this._current, x, y);
-      transactionResponse(this, summary);
-      console.timeEnd('random');
+      this.sheets.mockLargeData();
     } else {
-      this.grid.newFromFile(grid);
-      this.sheets = [];
-      this.repopulateSheets();
-      this._current = this.sheets[0].id;
+      this.sheets.loadFile(grid);
     }
-  }
-
-  // updates the SheetBar UI
-  updateSheetBar(): void {
-    this.sortSheets();
-    window.dispatchEvent(new CustomEvent('change-sheet'));
-  }
-
-  // ensures there's a Sheet.ts for every Sheet.rs
-  repopulateSheets() {
-    const sheetIds = this.grid.getSheetIds();
-
-    // ensure the sheets exist
-    sheetIds.forEach((sheetId, index) => {
-      if (!this.sheets.find((search) => search.id === sheetId)) {
-        const sheet = new Sheet(this.grid, index);
-        this.sheets.push(sheet);
-        pixiAppEvents.addSheet(sheet);
-      }
-    });
-
-    // delete any sheets that no longer exist
-    this.sheets.forEach((sheet, index) => {
-      if (!sheetIds.includes(sheet.id)) {
-        this.sheets.splice(index, 1);
-        pixiAppEvents.deleteSheet(sheet.id);
-      }
-    });
   }
 
   export(): SheetSchema[] {
     // const schema = this.grid.exportToFile();
     // return schema.sheets;
     return [];
-  }
-
-  // checks Grid whether this sheet still exists
-  // NOTE: this.sheets and Grid.sheets may have different value as handled in transactionResponse
-  gridHasSheet(sheetId: string): boolean {
-    const ids = this.grid.getSheetIds();
-    return ids.includes(sheetId);
-  }
-
-  get sheet(): Sheet {
-    const sheet = this.sheets.find((sheet) => sheet.id === this.current);
-    if (!sheet) {
-      debugger;
-      throw new Error('Expected to find sheet based on id');
-    }
-    return sheet;
-  }
-
-  renameSheet(name: string): void {
-    const summary = this.grid.setSheetName(this.current, name, this.sheet.cursor.save());
-    transactionResponse(this, summary);
-    if (this.saveLocalFiles) this.saveLocalFiles();
-  }
-
-  // todo
-  reorderSheet(options: { id: string; order?: string; delta?: number }) {
-    const sheet = this.sheets.find((sheet) => sheet.id === options.id);
-    if (sheet) {
-      // todo
-      // if (options.order !== undefined) {
-      //   sheet.order = options.order;
-      // } else if (options.delta !== undefined) {
-      //   sheet.order += options.delta;
-      // }
-      // if (this.saveLocalFiles) this.saveLocalFiles();
-    } else {
-      throw new Error('Expected sheet to be defined in reorderSheet');
-    }
-  }
-
-  createNewSheet(): void {
-    const summary = this.grid.addSheet(this.sheet.cursor.save());
-
-    transactionResponse(this, summary);
-
-    // sets the current sheet to the new sheet
-    this.current = this.sheets[this.sheets.length - 1].id;
-  }
-
-  duplicateSheet(): void {
-    const oldSheetId = this.current;
-    const summary = this.grid.duplicateSheet(this.current, this.sheet.cursor.save());
-    transactionResponse(this, summary);
-
-    // sets the current sheet to the duplicated sheet
-    const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
-    if (currentIndex === -1) throw new Error('Expected to find current sheet in duplicateSheet');
-    const duplicate = this.sheets[currentIndex + 1];
-    if (!duplicate) throw new Error('Expected to find duplicate sheet in duplicateSheet');
-    this.current = duplicate.id;
-  }
-
-  addSheet(sheet: Sheet): void {
-    this.sheets.push(sheet);
-    pixiAppEvents.addSheet(sheet);
-    this.current = sheet.id;
-    window.dispatchEvent(new CustomEvent('change-sheet'));
-    if (this.saveLocalFiles) this.saveLocalFiles();
-  }
-
-  deleteSheet(id: string): void {
-    const summary = this.grid.deleteSheet(id, this.sheet.cursor.save());
-
-    // set current to next sheet (before this.sheets is updated)
-    if (this.sheets.length) {
-      const next = this.getNextSheet(this.sheet.id);
-      if (next) {
-        this.current = next.id;
-      } else {
-        const first = this.getFirstSheet();
-        if (first) {
-          this.current = first.id;
-        }
-      }
-    }
-    transactionResponse(this, summary);
-    if (this.saveLocalFiles) this.saveLocalFiles();
-  }
-
-  changeSheetColor(id: string, color?: string): void {
-    const summary = this.grid.setSheetColor(id, color, this.sheet.cursor.save());
-    transactionResponse(this, summary);
-    if (this.saveLocalFiles) this.saveLocalFiles();
   }
 
   public start_transaction(sheetCursor?: SheetCursor): void {
@@ -287,142 +149,30 @@ export class SheetController {
 
   public undo(): void {
     if (!this.hasUndo()) return;
-    // const lastSheetId = this.sheet.id;
-    // const lastSheetIndex = this.sheets.indexOf(this.sheet);
     const summary = this.grid.undo(this.sheet.cursor.save());
     transactionResponse(this, summary);
   }
 
   public redo(): void {
     if (!this.hasRedo) return;
-    const lastSheetId = this.sheet.id;
-    const lastSheetIndex = this.sheets.indexOf(this.sheet);
+    // const lastSheetId = this.sheet.id;
+    // const lastSheetIndex = this.sheets.getIndex();
 
     const summary = this.grid.redo(this.sheet.cursor.save());
     transactionResponse(this, summary);
 
-    // handle case where current sheet is deleted
-    if (this.current === lastSheetId && !this.sheets.find((search) => search.id === lastSheetId)) {
-      this.current = lastSheetIndex >= this.sheets.length ? this.sheets[0].id : this.sheets[lastSheetIndex].id;
-    }
+    // this should be handled by cursor.save
+    // // handle case where current sheet is deleted
+    // if (this.sheets.current === lastSheetId && !this.sheets.hasSheetIndex(lastSheetId)) {
+    //   this.sheets.current = lastSheetIndex >= this.sheets.size ? this.sheets[0].id : this.sheets[lastSheetIndex].id;
+    // }
   }
 
   public clear(): void {
-    throw new Error('Remove');
+    throw new Error('deprecated');
     // this.undo_stack = [];
     // this.redo_stack = [];
     // this.transaction_in_progress = undefined;
     // this.transaction_in_progress_reverse = undefined;
-  }
-
-  public logUndoStack(): void {
-    throw new Error('Remove');
-    // let print_string = 'Undo Stack:\n';
-    // this.undo_stack.forEach((transaction) => {
-    //   print_string += '\tTransaction:\n';
-    //   transaction.statements.forEach((statement) => {
-    //     print_string += `\t\t${JSON.stringify(statement)}\n`;
-    //   });
-    // });
-    // console.log(print_string);
-  }
-
-  public logRedoStack(): void {
-    throw new Error('Remove');
-    // let print_string = 'Redo Stack:\n';
-    // this.redo_stack.forEach((transaction) => {
-    //   print_string += '\tTransaction:\n';
-    //   transaction.statements.forEach((statement) => {
-    //     print_string += `\t\t${JSON.stringify(statement)}\n`;
-    //   });
-    // });
-    // console.log(print_string);
-  }
-
-  sortSheets(): void {
-    this.sheets.sort((a, b) => {
-      if (a.order < b.order) return -1;
-      if (a.order > b.order) return 1;
-      return 0;
-    });
-  }
-
-  getFirstSheet(): Sheet {
-    this.sortSheets();
-    return this.sheets[0];
-  }
-
-  getLastSheet(): Sheet {
-    this.sortSheets();
-    return this.sheets[this.sheets.length - 1];
-  }
-
-  getPreviousSheet(order?: string): Sheet | undefined {
-    if (!order) {
-      return this.getFirstSheet();
-    }
-    const sheets = this.sheets;
-
-    // only one sheet so previous is always null
-    if (sheets.length === 1) {
-      return;
-    }
-    const index = sheets.findIndex((s) => s.order === order);
-
-    // if first sheet so previous is null
-    if (index === 0) {
-      return;
-    }
-
-    return sheets[index - 1];
-  }
-
-  getNextSheet(order?: string): Sheet | undefined {
-    if (!order) {
-      return this.getLastSheet();
-    }
-    const sheets = this.sheets;
-
-    // only one sheet
-    if (sheets.length === 1) {
-      return;
-    }
-    const index = sheets.findIndex((s) => s.order === order);
-
-    // order is the last sheet
-    if (index === sheets.length - 1) {
-      return;
-    }
-
-    // otherwise find the next sheet after the order
-    return sheets[index + 1];
-  }
-
-  sheetNameExists(name: string): boolean {
-    return !!this.sheets.find((sheet) => sheet.name === name);
-  }
-
-  getSheetListItems() {
-    return this.sheets.map((sheet) => ({ name: sheet.name, id: sheet.id }));
-  }
-
-  getSheet(id: string): Sheet | undefined {
-    return this.sheets.find((sheet) => sheet.id === id);
-  }
-
-  // set values for current sheet
-  // ----------------------------
-
-  setCellValue(x: number, y: number, value: string): void {
-    const summary = this.grid.setCellValue({ sheetId: this.sheet.id, x, y, value, cursor: this.sheet.cursor.save() });
-    transactionResponse(this, summary);
-    if (this.saveLocalFiles) this.saveLocalFiles();
-  }
-
-  deleteCells(rectangle: Rectangle): void {
-    const summary = this.grid.deleteCellValues(this.sheet.id, rectangle, this.sheet.cursor.save());
-    debugger;
-    transactionResponse(this, summary);
-    if (this.saveLocalFiles) this.saveLocalFiles();
   }
 }

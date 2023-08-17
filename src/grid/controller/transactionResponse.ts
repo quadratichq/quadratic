@@ -6,7 +6,7 @@ import { SheetController } from './SheetController';
 
 export const transactionResponse = (sheetController: SheetController, summary: TransactionSummary): void => {
   if (summary.sheet_list_modified) {
-    sheetController.repopulateSheets();
+    sheetController.sheets.repopulate();
   }
   if (summary.cell_regions_modified) {
     summary.cell_regions_modified.forEach((region: [SheetId, Rect]) => {
@@ -16,8 +16,7 @@ export const transactionResponse = (sheetController: SheetController, summary: T
   }
   const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
   if (cursor) {
-    sheetController.current = cursor.sheetId;
+    sheetController.sheets.current = cursor.sheetId;
     sheetController.sheet.cursor.load(cursor);
-    sheetController.updateSheetBar();
   }
 };

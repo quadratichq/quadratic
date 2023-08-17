@@ -8,7 +8,7 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
-import { Sheet } from '../../../grid/sheet/Sheet';
+import { SheetController } from '../../../grid/controller/SheetController';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { Cell } from '../../../schemas';
 import { colors } from '../../../theme/colors';
@@ -17,7 +17,7 @@ import { ActiveSelectionStats } from './ActiveSelectionStats';
 const stylesAlignCenter = { display: 'flex', alignItems: 'center', gap: '.25rem' };
 
 interface Props {
-  sheet: Sheet;
+  sheetController: SheetController;
 }
 
 export const BottomBar = (props: Props) => {
@@ -25,7 +25,7 @@ export const BottomBar = (props: Props) => {
   const loadedState = useRecoilValue(loadedStateAtom);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
-  const cursor = props.sheet.cursor;
+  const cursor = props.sheetController.sheet.cursor;
   // Generate string describing cursor location
   const cursorPositionString = `(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`;
   const multiCursorPositionString = cursor.multiCursor
@@ -38,7 +38,7 @@ export const BottomBar = (props: Props) => {
       if (selectedCell?.x === cursor.cursorPosition.x && selectedCell?.y === cursor.cursorPosition.y) return;
 
       // Get cell at position
-      const cell = props.sheet.getCellCopy(cursor.cursorPosition.x, cursor.cursorPosition.y);
+      const cell = props.sheetController.sheet.getCellCopy(cursor.cursorPosition.x, cursor.cursorPosition.y);
 
       // If cell exists set selectedCell
       // Otherwise set to undefined
@@ -49,7 +49,7 @@ export const BottomBar = (props: Props) => {
       }
     };
     updateCellData();
-  }, [selectedCell, props.sheet, cursor.cursorPosition.x, cursor.cursorPosition.y]);
+  }, [selectedCell, cursor.cursorPosition.x, cursor.cursorPosition.y, props.sheetController.sheet]);
 
   const handleShowGoToMenu = () => {
     setEditorInteractionState({
@@ -129,7 +129,7 @@ export const BottomBar = (props: Props) => {
           gap: '1rem',
         }}
       >
-        <ActiveSelectionStats sheet={props.sheet}></ActiveSelectionStats>
+        <ActiveSelectionStats sheet={props.sheetController.sheet}></ActiveSelectionStats>
         {!isMobileOnly && (
           <>
             <span style={stylesAlignCenter}>

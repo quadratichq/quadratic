@@ -33,7 +33,7 @@ export function keyboardCell(options: {
 
   if (event.key === 'Backspace' || event.key === 'Delete') {
     // delete a range or a single cell, depending on if MultiCursor is active
-    sheet_controller.deleteCells(
+    sheet_controller.sheet.deleteCells(
       new Rectangle(
         cursor.originPosition.x,
         cursor.originPosition.y,

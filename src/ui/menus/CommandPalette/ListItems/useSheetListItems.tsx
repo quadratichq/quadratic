@@ -5,13 +5,13 @@ import { CommandPaletteListItem } from '../CommandPaletteListItem';
 
 export const useSheetListItems = (sheetController: SheetController) => {
   return useMemo(() => {
-    return sheetController.getSheetListItems().map((item) => ({
+    return sheetController.sheets.getSheetListItems().map((item) => ({
       label: `Sheet: ${item.name}`,
       Component: (props: any) => (
         <CommandPaletteListItem
           {...props}
           icon={<ArticleOutlinedIcon />}
-          action={() => (sheetController.current = item.id)}
+          action={() => (sheetController.sheets.current = item.id)}
         />
       ),
     }));

@@ -3,24 +3,29 @@ import { Coordinate } from '../../gridGL/types/size';
 import { JsRenderCell, JsRenderFill } from '../../quadratic-core/types';
 import { Cell, CellFormat } from '../../schemas';
 import { Grid } from '../controller/Grid';
+import { SheetController } from '../controller/SheetController';
+import { transactionResponse } from '../controller/transactionResponse';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
 import { CellAndFormat, GridSparse } from './GridSparse';
 import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
-  id: string;
-  gridOffsets: GridOffsets;
-  grid: GridSparse;
+  private sheetController: SheetController;
 
-  // todo: rename to Grid after migration
-  gridNew: Grid;
+  id: string;
+
+  // @deprecated (soon)
+  gridOffsets: GridOffsets;
+
+  // @deprecated
+  grid: GridSparse;
 
   borders: GridBorders;
   cursor: SheetCursor;
 
-  constructor(grid: Grid, index: number) {
-    this.gridNew = grid;
+  constructor(sheetController: SheetController, index: number) {
+    this.sheetController = sheetController;
 
     // deprecated
     this.grid = new GridSparse(this);
@@ -35,6 +40,11 @@ export class Sheet {
     this.cursor = new SheetCursor(this);
   }
 
+  // todo: rename to grid after migration away from gridSparse
+  private get gridNew(): Grid {
+    return this.sheetController.grid;
+  }
+
   // for testing
   clear() {
     // todo
@@ -47,17 +57,45 @@ export class Sheet {
     // this.cursor = new SheetCursor(this);
   }
 
+  // user initiated sheet actions
+  // ----------------------------
+
+  private save(): void {
+    this.sheetController.saveLocalFiles?.();
+  }
+
+  setCellValue(x: number, y: number, value: string): void {
+    const summary = this.gridNew.setCellValue({ sheetId: this.id, x, y, value, cursor: this.cursor.save() });
+    transactionResponse(this.sheetController, summary);
+    this.save();
+  }
+
+  deleteCells(rectangle: Rectangle): void {
+    const summary = this.gridNew.deleteCellValues(this.id, rectangle, this.cursor.save());
+    transactionResponse(this.sheetController, summary);
+    this.save();
+  }
+
   get name(): string {
     const name = this.gridNew.getSheetName(this.id);
     if (name === undefined) throw new Error('Expected name to be defined in Sheet');
     return name;
   }
+  set name(name: string) {
+    const summary = this.gridNew.setSheetName(this.id, name, this.cursor.save());
+    transactionResponse(this.sheetController, summary);
+    this.save();
+  }
 
   get color(): string | undefined {
     return this.gridNew.getSheetColor(this.id);
   }
+  set color(color: string | undefined) {
+    const summary = this.gridNew.setSheetColor(this.id, color, this.cursor.save());
+    transactionResponse(this.sheetController, summary);
+    this.save();
+  }
 
-  // todo: this should be a number
   get order(): string {
     const order = this.gridNew.getSheetOrder(this.id);
     if (order === undefined) throw new Error('Expected order to be defined in Sheet');

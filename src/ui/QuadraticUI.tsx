@@ -3,7 +3,6 @@ import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { IS_READONLY_MODE } from '../constants/app';
 import { SheetController } from '../grid/controller/SheetController';
-import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import CodeEditor from '../ui/menus/CodeEditor';
@@ -27,11 +26,6 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
   const { hasInitialPageLoadError } = useLocalFiles();
-
-  // Temporary way to attach sheet to global for use in GetCellsDB function
-  useEffect(() => {
-    GetCellsDBSetSheet(sheetController.sheet);
-  }, [sheetController.sheet]);
 
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {
@@ -82,7 +76,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       </div>
 
       {!presentationMode && <SheetBar sheetController={sheetController} />}
-      {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
+      {!presentationMode && <BottomBar sheetController={sheetController} />}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {presentationMode && <PresentationModeHint />}
       {hasInitialPageLoadError && <InitialPageLoadError />}

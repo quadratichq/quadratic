@@ -84,28 +84,29 @@ export class Quadrants extends Container {
 
   // sorts QuadrantsSheets based on distance to active sheet
   private getSortedQuadrantsSheets(): QuadrantsSheet[] {
-    const quadrantsSheets = Array.from(this.quadrants.values());
-    const sheets = this.app.sheetController.sheets;
-    const currentIndex = sheets.indexOf(this.app.sheet);
-    if (currentIndex === -1) {
-      throw new Error('Expected to find index of current sheet in sheets');
-    }
-    quadrantsSheets.sort((q1: QuadrantsSheet, q2: QuadrantsSheet) => {
-      const q1Index = sheets.findIndex((search) => search.id === q1.sheet.id);
-      if (q1Index === -1) {
-        throw new Error('Expected to find index of current sheet in sheets');
-      }
-      const q2Index = sheets.findIndex((search) => search.id === q2.sheet.id);
-      if (q2Index === -1) {
-        throw new Error('Expected to find index of current sheet in sheets');
-      }
+    throw new Error('needs updating');
+    // const quadrantsSheets = Array.from(this.quadrants.values());
+    // const sheets = this.app.sheetController.sheets;
+    // const currentIndex = sheets.indexOf(this.app.sheet);
+    // if (currentIndex === -1) {
+    //   throw new Error('Expected to find index of current sheet in sheets');
+    // }
+    // quadrantsSheets.sort((q1: QuadrantsSheet, q2: QuadrantsSheet) => {
+    //   const q1Index = sheets.findIndex((search) => search.id === q1.sheet.id);
+    //   if (q1Index === -1) {
+    //     throw new Error('Expected to find index of current sheet in sheets');
+    //   }
+    //   const q2Index = sheets.findIndex((search) => search.id === q2.sheet.id);
+    //   if (q2Index === -1) {
+    //     throw new Error('Expected to find index of current sheet in sheets');
+    //   }
 
-      // use the minimum of actual and wrapped distance
-      const q1Distance = Math.min(Math.abs(q1Index - currentIndex), Math.abs(q1Index - currentIndex) % sheets.length);
-      const q2Distance = Math.min(Math.abs(q2Index - currentIndex), Math.abs(q2Index - currentIndex) % sheets.length);
-      return q1Distance - q2Distance;
-    });
-    return quadrantsSheets;
+    //   // use the minimum of actual and wrapped distance
+    //   const q1Distance = Math.min(Math.abs(q1Index - currentIndex), Math.abs(q1Index - currentIndex) % sheets.length);
+    //   const q2Distance = Math.min(Math.abs(q2Index - currentIndex), Math.abs(q2Index - currentIndex) % sheets.length);
+    //   return q1Distance - q2Distance;
+    // });
+    // return quadrantsSheets;
   }
 
   needsUpdating(): boolean {
