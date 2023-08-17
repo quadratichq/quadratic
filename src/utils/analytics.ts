@@ -2,6 +2,11 @@ import * as amplitude from '@amplitude/analytics-browser';
 import { User } from '@auth0/auth0-spa-js';
 import { setUser } from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+import {
+  REACT_APP_AMPLITUDE_ANALYTICS_API_KEY,
+  REACT_APP_GOOGLE_ANALYTICS_GTAG,
+  REACT_APP_MIXPANEL_ANALYTICS_KEY,
+} from '../constants/env';
 
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 
@@ -19,13 +24,13 @@ export function initializeAnalytics({ isAuthenticated, user }: Options) {
 }
 
 function loadGoogleAnalytics() {
-  if (!process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG && process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG !== 'none') {
+  if (!REACT_APP_GOOGLE_ANALYTICS_GTAG) {
     return;
   }
 
   // set up Google Analytics
   const script_1 = document.createElement('script');
-  script_1.src = `https://www.googletagmanager.com/gtag/js?id=${process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG}`;
+  script_1.src = `https://www.googletagmanager.com/gtag/js?id=${REACT_APP_GOOGLE_ANALYTICS_GTAG}`;
   script_1.async = true;
 
   const script_2 = document.createElement('script');
@@ -33,7 +38,7 @@ function loadGoogleAnalytics() {
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', '${process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG}');
+        gtag('config', '${REACT_APP_GOOGLE_ANALYTICS_GTAG}');
       `;
 
   // add google analytics scripts to document
@@ -46,14 +51,11 @@ function loadGoogleAnalytics() {
 }
 
 function initAmplitudeAnalytics(user: Options['user']) {
-  if (
-    !process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY &&
-    process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY !== 'none'
-  ) {
+  if (!REACT_APP_AMPLITUDE_ANALYTICS_API_KEY) {
     return;
   }
 
-  amplitude.init(process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY, user?.sub, {
+  amplitude.init(REACT_APP_AMPLITUDE_ANALYTICS_API_KEY, user?.sub, {
     defaultTracking: { sessions: true, pageViews: true, formInteractions: true, fileDownloads: true },
   });
 
@@ -61,7 +63,7 @@ function initAmplitudeAnalytics(user: Options['user']) {
 }
 
 export function initMixpanelAnalytics(user: Options['user']) {
-  if (!process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY && process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY !== 'none') {
+  if (!REACT_APP_MIXPANEL_ANALYTICS_KEY) {
     // Without init Mixpanel, all mixpanel events throw an error and break the app.
     // So we have to init Mixpanel with a fake key, and disable Mixpanel.
     mixpanel.init('FAKE_KEY');
@@ -69,7 +71,7 @@ export function initMixpanelAnalytics(user: Options['user']) {
     return;
   }
 
-  mixpanel.init(process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY, {
+  mixpanel.init(REACT_APP_MIXPANEL_ANALYTICS_KEY, {
     api_host: 'https://mixpanel-proxy.quadratichq.com',
   });
 

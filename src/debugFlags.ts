@@ -1,5 +1,7 @@
+import { REACT_APP_DEBUG } from './constants/env';
+
 // set this in .env (if set to false then all debug flags are turned off)
-export const debug = process.env.REACT_APP_DEBUG === '1' ? true : false;
+export const debug = REACT_APP_DEBUG === '1' ? true : false;
 
 // ------------------
 // Debug footer marks

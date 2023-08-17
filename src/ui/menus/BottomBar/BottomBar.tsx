@@ -6,6 +6,7 @@ import { isMobileOnly } from 'react-device-detect';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
+import { REACT_APP_VERSION } from '../../../constants/env';
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -149,7 +150,7 @@ export const BottomBar = (props: Props) => {
           Feedback
         </BottomBarItem>
         <BottomBarItem icon={<Commit fontSize="inherit" />}>
-          Quadratic {process.env.REACT_APP_VERSION?.slice(0, 7)} (BETA)
+          Quadratic {REACT_APP_VERSION.slice(0, 7)} (BETA)
         </BottomBarItem>
       </Stack>
     </div>
