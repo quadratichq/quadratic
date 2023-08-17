@@ -38,6 +38,7 @@
     "jest-mock-extended": "^3.0.4",
     "jsonwebtoken": "^9.0.1",
     "jwks-rsa": "^3.0.0",
+    "newrelic": "^10.6.2",
     "nodemon": "^2.0.20",
     "openai": "^3.2.1",
     "supertest": "^6.3.3",
