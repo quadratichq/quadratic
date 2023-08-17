@@ -1,9 +1,9 @@
 import { Point, Rectangle } from 'pixi.js';
-import { IS_READONLY_MODE } from '../../../../constants/app';
-import { PixiApp } from '../../../pixiApp/PixiApp';
-import { Sheet } from '../../../../grid/sheet/Sheet';
 import { PanMode } from '../../../../atoms/gridInteractionStateAtom';
+import { IS_READONLY_MODE } from '../../../../constants/appConstants';
+import { Sheet } from '../../../../grid/sheet/Sheet';
 import { intersects } from '../../../helpers/intersects';
+import { PixiApp } from '../../../pixiApp/PixiApp';
 import { Coordinate } from '../../../types/size';
 import { expandDown, expandLeft, expandRight, expandUp, shrinkHorizontal, shrinkVertical } from './autoComplete';
 

@@ -1,14 +1,15 @@
-import React, { useEffect } from 'react';
 import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
+import React, { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { getCommandPaletteListItems } from './getCommandPaletteListItems';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { focusGrid } from '../../../helpers/focusGrid';
+import focusInput from '../../../utils/focusInput';
 import '../../styles/floating-dialog.css';
-import mixpanel from 'mixpanel-browser';
+import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 
 interface Props {
   app: PixiApp;
@@ -19,7 +20,6 @@ export const CommandPalette = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-
   const [activeSearchValue, setActiveSearchValue] = React.useState<string>('');
   const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
 
@@ -87,7 +87,7 @@ export const CommandPalette = (props: Props) => {
           sx={{ width: '100%', padding: '8px 16px' }}
           placeholder={searchlabel}
           inputProps={{ 'aria-label': searchlabel }}
-          autoFocus
+          inputRef={focusInput}
           value={activeSearchValue}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             setSelectedListItemIndex(0);

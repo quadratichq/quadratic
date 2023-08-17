@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
     provider = "prisma-client-js"
 }
@@ -10,13 +7,57 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-// Models
+model User {
+    id        Int         @id @default(autoincrement())
+    auth0_id  String      @unique
+    files     File[]
+    QFeedback QFeedback[]
+}
+
+enum LinkPermission {
+    NOT_SHARED
+    READONLY
+    EDIT
+}
+
+model File {
+    id                 Int            @id @default(autoincrement())
+    uuid               String         @unique @default(uuid())
+    name               String
+    created_date       DateTime       @default(now())
+    updated_date       DateTime       @default(now())
+    deleted            Boolean        @default(false)
+    deleted_date       DateTime?
+    // Binary file contents
+    contents           Bytes
+    // Permissions
+    owner              User           @relation(fields: [ownerUserId], references: [id])
+    ownerUserId        Int
+    public_link_access LinkPermission @default(NOT_SHARED)
+    // analytics fields
+    times_updated      Int            @default(1)
+    version            String?
+}
+
+model QFeedback {
+    id           Int      @id @default(autoincrement())
+    feedback     String
+    created_date DateTime @default(now())
+    qUserId      Int? // Linked to the old QUser object
+    userId       Int?
+    user         User?    @relation(fields: [userId], references: [id])
+}
+
+// !!Legacy user model
+// use User instead
 model QUser {
     id            Int     @id @default(autoincrement())
     auth0_user_id String? @unique
     QFile         QFile[]
 }
 
+// !!Legacy user model
+// use File instead
 model QFile {
     id            Int      @id @default(autoincrement())
     uuid          String   @unique @default(uuid())
@@ -31,9 +72,39 @@ model QFile {
     version       String?
 }
 
-model QFeedback {
-    id            Int      @id @default(autoincrement())
-    feedback      String
-    created_date  DateTime @default(now())
-    qUserId       Int
-}
+// model Team {
+//     id       Int    @id @default(autoincrement())
+//     name     String
+//     logo     Image?
+// }
+
+// enum SharePermission {
+//     READONLY
+//     EDIT
+// }
+
+// model UserFileAccess {
+//   // This works for individual access
+//   // Team access will be a separate model
+//   id Int
+//   userId    Int
+//   fileId    Int
+//   user      User      @relation(fields: [userId], references: [id])
+//   file      File      @relation(fields: [fileId], references: [id])
+//   permission SharePermission @default(READONLY)
+
+//   @@unique([userId, fileId])
+// }
+
+// model TeamFileAccess {
+//   // This works for individual access
+//   // Team access will be a separate model
+//   id Int
+//   teamID    Int
+//   fileId    Int
+//   user      User      @relation(fields: [userId], references: [id])
+//   file      File      @relation(fields: [fileId], references: [id])
+//   permission SharePermission @default(READONLY)
+
+//   @@unique([userId, fileId])
+// }

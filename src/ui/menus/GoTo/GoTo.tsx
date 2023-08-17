@@ -1,16 +1,17 @@
-import React, { SyntheticEvent } from 'react';
+import { East } from '@mui/icons-material';
 import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
+import React, { SyntheticEvent } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../grid/controller/sheetController';
-import { East } from '@mui/icons-material';
-import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
-import { Coordinate } from '../../../gridGL/types/size';
 import { isVisible, moveViewport } from '../../../gridGL/interaction/viewportHelper';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { Coordinate } from '../../../gridGL/types/size';
+import { focusGrid } from '../../../helpers/focusGrid';
+import focusInput from '../../../utils/focusInput';
 import '../../styles/floating-dialog.css';
+import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 
 interface Props {
   app: PixiApp;
@@ -94,7 +95,7 @@ export const GoTo = (props: Props) => {
       <Paper component="form" elevation={12} onSubmit={onSelect}>
         <InputBase
           sx={{ width: '100%', padding: '8px 16px' }}
-          autoFocus
+          inputRef={focusInput}
           value={value}
           fullWidth
           placeholder="Enter a cell “0, 0” or range “0, 0, -5, -5”"
