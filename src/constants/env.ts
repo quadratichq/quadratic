@@ -18,6 +18,7 @@ export const REACT_APP_AUTH0_AUDIENCE = process.env.REACT_APP_AUTH0_AUDIENCE || 
 export const REACT_APP_AUTH0_ISSUER = process.env.REACT_APP_AUTH0_ISSUER || '';
 export const REACT_APP_QUADRATIC_API_URL = process.env.REACT_APP_QUADRATIC_API_URL || '';
 export const REACT_APP_VERSION = process.env.REACT_APP_VERSION || '';
+// Note: anytime you add another required var here, add it to the array below
 
 // Bool for indicating that all required vars are present
 export let ENV_VARS_ARE_CONFIGURED_CORRECTLY = true;
