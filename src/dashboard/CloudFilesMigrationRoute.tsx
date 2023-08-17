@@ -2,6 +2,7 @@ import { CheckCircleOutlineOutlined, ErrorOutline } from '@mui/icons-material';
 import { Box, Button, Chip, CircularProgress, Stack, Typography, useTheme } from '@mui/material';
 import * as Sentry from '@sentry/browser';
 import localforage from 'localforage';
+import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
 import { redirect, useLoaderData, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
@@ -74,6 +75,10 @@ export const Component = () => {
     if (isMounted?.current) return;
     isMounted.current = true;
 
+    mixpanel.track('[CloudFilesMigration] started files migration', {
+      countOfFilesToUpload: localFilesToUpload.length,
+    });
+
     const syncFilesToCloud = async () => {
       let fileIdsThatFailed: string[] = [];
       for (const localFile of localFilesToUpload) {
@@ -112,8 +117,11 @@ export const Component = () => {
         setNumOfFilesToUpload((old) => old - 1);
       }
 
-      // If anything failed, log it to sentry
+      // Log details of migration to sentry and mixpanel
       if (fileIdsThatFailed.length) {
+        mixpanel.track('[CloudFilesMigration] completed files migration with failed uploads', {
+          countOfFilesThatFailed: fileIdsThatFailed.length,
+        });
         Sentry.captureEvent({
           message: 'Cloud files migration failed to upload some local file(s).',
           level: Sentry.Severity.Critical,
@@ -121,6 +129,8 @@ export const Component = () => {
             fileIdsThatFailed,
           },
         });
+      } else {
+        mixpanel.track('[CloudFilesMigration] completed files migration successfully');
       }
 
       // Once all files tried to upload, we set the final state for the UI
