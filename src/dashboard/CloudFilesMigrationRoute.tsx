@@ -75,7 +75,7 @@ export const Component = () => {
     if (isMounted?.current) return;
     isMounted.current = true;
 
-    mixpanel.track('[CloudFilesMigration] started files migration', {
+    mixpanel.track('[CloudFilesMigration].started', {
       countOfFilesToUpload: localFilesToUpload.length,
     });
 
@@ -119,8 +119,9 @@ export const Component = () => {
 
       // Log details of migration to sentry and mixpanel
       if (fileIdsThatFailed.length) {
-        mixpanel.track('[CloudFilesMigration] completed files migration with failed uploads', {
-          countOfFilesThatFailed: fileIdsThatFailed.length,
+        mixpanel.track('[CloudFilesMigration].failure', {
+          fileIdsThatFailed: fileIdsThatFailed,
+          count: fileIdsThatFailed.length
         });
         Sentry.captureEvent({
           message: 'Cloud files migration failed to upload some local file(s).',
@@ -130,7 +131,7 @@ export const Component = () => {
           },
         });
       } else {
-        mixpanel.track('[CloudFilesMigration] completed files migration successfully');
+        mixpanel.track('[CloudFilesMigration].success');
       }
 
       // Once all files tried to upload, we set the final state for the UI
