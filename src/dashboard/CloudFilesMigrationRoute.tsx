@@ -121,7 +121,7 @@ export const Component = () => {
       if (fileIdsThatFailed.length) {
         mixpanel.track('[CloudFilesMigration].failure', {
           fileIdsThatFailed: fileIdsThatFailed,
-          count: fileIdsThatFailed.length
+          count: fileIdsThatFailed.length,
         });
         Sentry.captureEvent({
           message: 'Cloud files migration failed to upload some local file(s).',
