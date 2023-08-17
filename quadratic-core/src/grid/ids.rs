@@ -63,6 +63,15 @@ pub struct RegionRef {
     pub columns: Vec<ColumnId>,
     pub rows: Vec<RowId>,
 }
+impl From<CellRef> for RegionRef {
+    fn from(value: CellRef) -> Self {
+        RegionRef {
+            sheet: value.sheet,
+            columns: vec![value.column],
+            rows: vec![value.row],
+        }
+    }
+}
 impl RegionRef {
     /// Iterates over cells in row-major order.
     pub fn iter(&self) -> impl '_ + Iterator<Item = CellRef> {
