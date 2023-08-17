@@ -90,7 +90,7 @@ impl<T: fmt::Debug + Clone + PartialEq> BlockContent for SameValue<T> {
             },
             SameValue {
                 value: self.value,
-                len: self.len - split_point - 1,
+                len: self.len - split_point,
             },
         ]
     }
