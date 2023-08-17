@@ -16,23 +16,8 @@ jobs:
           node-version: '17'
           cache: 'npm'
 
-      - name: Update local rust toolchain
-        run: |
-          rustup update
-          rustup component add clippy
-          rustup install nightly
-      - name: Toolchain info
-        run: |
-          cargo --version --verbose
-          rustc --version
-          cargo clippy --version
-
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
       - name: Build Quadratic
         run: |
-          npm run build:wasm
           npm install
 
       - name: Run Prettier
