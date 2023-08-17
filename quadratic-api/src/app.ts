@@ -1,11 +1,11 @@
-import express, { Request, Response, NextFunction } from 'express';
 import * as Sentry from '@sentry/node';
 import * as Tracing from '@sentry/tracing';
 import cors from 'cors';
-import ai_chat_router from './routes/ai_chat';
+import express, { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
-import files_router from './routes/files/files';
+import ai_chat_router from './routes/ai_chat';
 import feedback_router from './routes/feedback';
+import files_router from './routes/files/files';
 
 export const app = express();
 
@@ -37,7 +37,7 @@ if (SENTRY_DSN) {
   app.use(Sentry.Handlers.tracingHandler());
 }
 
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '20mb' }));
 app.use(helmet());
 
 // set CORS origin from env variable
