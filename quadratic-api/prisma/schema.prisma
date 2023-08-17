@@ -44,8 +44,8 @@ model QFeedback {
     feedback     String
     created_date DateTime @default(now())
     qUserId      Int? // Linked to the old QUser object
-    userId       Int
-    user         User     @relation(fields: [userId], references: [id])
+    userId       Int?
+    user         User?    @relation(fields: [userId], references: [id])
 }
 
 // !!Legacy user model
