@@ -4,7 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { ShowAfter } from './components/ShowAfter';
-import { ENV_VARS_ARE_CONFIGURED_CORRECTLY, REACT_APP_SENTRY_DSN } from './constants/env';
+import { envVarsAreConfiguredCorrectly, REACT_APP_SENTRY_DSN } from './constants/env';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { router } from './router';
@@ -25,7 +25,7 @@ const container = document.getElementById('root');
 const root = createRoot(container);
 root.render(
   <React.StrictMode>
-    {ENV_VARS_ARE_CONFIGURED_CORRECTLY ? (
+    {envVarsAreConfiguredCorrectly ? (
       <RouterProvider
         router={router}
         fallbackElement={

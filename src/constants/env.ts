@@ -18,10 +18,7 @@ export const REACT_APP_AUTH0_AUDIENCE = process.env.REACT_APP_AUTH0_AUDIENCE || 
 export const REACT_APP_AUTH0_ISSUER = process.env.REACT_APP_AUTH0_ISSUER || '';
 export const REACT_APP_QUADRATIC_API_URL = process.env.REACT_APP_QUADRATIC_API_URL || '';
 export const REACT_APP_VERSION = process.env.REACT_APP_VERSION || '';
-// Note: anytime you add another required var here, add it to the array below
-
-// Bool for indicating that all required vars are present
-export let ENV_VARS_ARE_CONFIGURED_CORRECTLY = true;
+// Note: anytime you add another required var here, add it to the object below
 const requiredVarsByName = {
   REACT_APP_AUTH0_DOMAIN,
   REACT_APP_AUTH0_CLIENT_ID,
@@ -30,16 +27,20 @@ const requiredVarsByName = {
   REACT_APP_QUADRATIC_API_URL,
   REACT_APP_VERSION,
 };
-const missingRequiredVarNames = Object.entries(requiredVarsByName).filter(([key, value]) => {
-  if (!value || typeof value !== 'string') {
-    ENV_VARS_ARE_CONFIGURED_CORRECTLY = false;
-    console.error('Expected a value for the env variable `%s` but got `%s`', key, value);
-    return true;
-  }
-  return false;
-});
-// Log to sentry if something's off
-if (!ENV_VARS_ARE_CONFIGURED_CORRECTLY) {
+
+// Check and make sure we have all the vars we expect
+const missingRequiredVarNames = Object.keys(requiredVarsByName).filter(
+  (name) =>
+    //@ts-expect-error
+    requiredVarsByName[name].length === 0
+);
+export let envVarsAreConfiguredCorrectly = Boolean(missingRequiredVarNames.length === 0);
+if (!envVarsAreConfiguredCorrectly) {
+  // Log missing ones to the console & then sentry
+  missingRequiredVarNames.forEach((name: string) => {
+    // @ts-expect-error
+    console.error('Expected a value for the env variable `%s` but got `%s`', name, requiredVarsByName[name]);
+  });
   Sentry.captureEvent({
     message: '',
     level: Sentry.Severity.Fatal,
