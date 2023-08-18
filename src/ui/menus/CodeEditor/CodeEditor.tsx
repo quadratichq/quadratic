@@ -37,12 +37,11 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const cell = useMemo(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
-    console.log(editorInteractionState.selectedCell);
     return sheetController.sheet.getCodeValue(
       editorInteractionState.selectedCell.x,
       editorInteractionState.selectedCell.y
     );
-  }, [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y, editorMode, sheetController.sheet]);
+  }, [editorInteractionState.selectedCell, editorMode, sheetController.sheet]);
 
   // todo
   const closeEditor = useCallback((skipSaveCheck = false) => {}, []);
@@ -72,7 +71,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     },
     [closeEditor, saveAndRunCell]
   );
-  console.log(cell, showCodeEditor);
+
   if (cell === undefined || !showCodeEditor) {
     return null;
   }

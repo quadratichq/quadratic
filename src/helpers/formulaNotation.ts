@@ -5,19 +5,23 @@ import { CursorCell } from '../gridGL/UI/Cursor';
 import { CellRefId } from '../hooks/useEditorCellHighlights';
 import { StringId } from './getKey';
 
-type Position = {
-  Relative: number;
-  Absolute?: number;
-};
-
-type CoordiantePositionType = {
-  x: Position;
-  y: Position;
-};
+interface CellPosition {
+  x: { type: 'Relative'; coord: number };
+  y: { type: 'Relative'; coord: number };
+}
 
 export type Span = { start: number; end: number };
 
-export type CellRef = { Cell: CoordiantePositionType } | { CellRange: CoordiantePositionType[] };
+export type CellRef =
+  | {
+      type: 'CellRange';
+      start: CellPosition;
+      end: CellPosition;
+    }
+  | {
+      type: 'Cell';
+      cell: CellPosition;
+    };
 
 export type ParseFormulaReturnType = {
   parse_error_msg: string | undefined;

@@ -20,14 +20,21 @@ function compareOldToNewMatches(oldCellsMatches: CellMatch, cellsMatches: CellMa
 
 function extractCellsFromParseFormula(parsedFormula: ParseFormulaReturnType): { cellId: CellRefId; span: Span }[] {
   return parsedFormula.cell_refs.map(({ cell_ref, span }) => {
-    if ('Cell' in cell_ref) return { cellId: getKey(cell_ref.Cell.x.Relative, cell_ref.Cell.y.Relative), span };
-    return {
-      cellId: `${getKey(cell_ref.CellRange[0].x.Relative, cell_ref.CellRange[0].y.Relative)}:${getKey(
-        cell_ref.CellRange[1].x.Relative,
-        cell_ref.CellRange[1].y.Relative
-      )}`,
-      span,
-    };
+    if (cell_ref.type === 'CellRange') {
+      if (cell_ref.start.x.type !== 'Relative' || cell_ref.end.x.type !== 'Relative') {
+        throw new Error('Unhandled non-Relative type in extractCellsFromParseFormula');
+      }
+      return {
+        cellId: `${getKey(cell_ref.start.x.coord, cell_ref.start.y.coord)}:${getKey(
+          cell_ref.end.x.coord,
+          cell_ref.end.y.coord
+        )}`,
+        span,
+      };
+    } else {
+      debugger;
+      return { cellId: getKey(cell_ref.cell.x.coord, cell_ref.cell.y.coord), span };
+    }
   });
 }
 
