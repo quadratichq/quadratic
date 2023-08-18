@@ -56,6 +56,8 @@ jobs:
           name: quadratic-core
           path: quadratic-core/pkg/
 
+      - run: npm install
+
       - run: npm run test:unit:ci
 
   lint:
@@ -74,6 +76,8 @@ jobs:
         with:
           name: quadratic-core
           path: quadratic-core/pkg/
+
+      - run: npm install
 
       - name: Run Prettier
         run: npm run lint:prettier
