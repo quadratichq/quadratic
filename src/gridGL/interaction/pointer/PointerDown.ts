@@ -79,8 +79,9 @@ export class PointerDown {
         if (rightClick) {
           return;
         }
+        const code = this.sheet.getCodeValue(column, row);
         const cell = this.sheet.getRenderCell(column, row);
-        doubleClickCell({ cell, app: this.app });
+        doubleClickCell({ column, row, code, cell });
         this.active = false;
         event.preventDefault();
         return;

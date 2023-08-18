@@ -1,4 +1,4 @@
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { CodeCellLanguage } from '../../quadratic-core/types';
 import { colors } from '../../theme/colors';
 import { intersects } from '../helpers/intersects';
@@ -10,8 +10,12 @@ interface Marker {
   rectangle: Rectangle;
 }
 
-export class CellsMarkers extends Container {
+export class CellsMarkers extends ParticleContainer {
   private markers: Marker[] = [];
+
+  constructor() {
+    super(undefined, { vertices: true, tint: true });
+  }
 
   clear() {
     this.removeChildren();

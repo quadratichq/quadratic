@@ -107,7 +107,7 @@ export class Sheet {
   }
 
   getRenderCell(x: number, y: number): JsRenderCell | undefined {
-    return this.gridNew.getRenderCells(this.id, new Rectangle(x, y, 1, 1))?.[0];
+    return this.gridNew.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
   }
 
   getRenderFills(rectangle: Rectangle): JsRenderFill[] {

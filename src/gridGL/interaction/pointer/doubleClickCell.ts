@@ -1,38 +1,44 @@
-import { JsRenderCell } from '../../../quadratic-core/types';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { CodeCellValue, JsRenderCell } from '../../../quadratic-core/types';
+import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
 
-export function doubleClickCell(options: { cell?: JsRenderCell; app: PixiApp }): void {
-  const { cell, app } = options;
-  const settings = app.settings;
+export function doubleClickCell(options: {
+  column: number;
+  row: number;
+  code?: CodeCellValue;
+  cell?: JsRenderCell;
+}): void {
+  const { code, cell, column, row } = options;
+  const settings = pixiAppEvents.getSettings();
 
   if (!settings.setEditorInteractionState) return;
-  if (cell) {
-    if (cell.language) {
-      const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
-      if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in doubleClickCell`);
+  if (code) {
+    if (code.language) {
+      const mode = code.language === 'Python' ? 'PYTHON' : code.language === 'Formula' ? 'FORMULA' : undefined;
+      if (!mode) throw new Error(`Unhandled cell.language ${code.language} in doubleClickCell`);
 
       // Open code editor, or move code editor if already open.
       settings.setEditorInteractionState({
         ...settings.editorInteractionState,
         showCellTypeMenu: false,
         showCodeEditor: true,
-        selectedCell: { x: Number(cell.x), y: Number(cell.y) },
+        selectedCell: { x: column, y: row },
         mode,
       });
-      return;
-    } else {
-      settings.changeInput(true, cell.value);
     }
   } else {
-    // If no previous value, open single line Input
-    settings.changeInput(true);
-  }
+    if (cell) {
+      settings.changeInput(true, cell.value);
+    } else {
+      // If no previous value, open single line Input
+      settings.changeInput(true);
+    }
 
-  // close CodeEditor if open
-  if (settings.editorInteractionState.showCodeEditor) {
-    settings.setEditorInteractionState({
-      ...settings.editorInteractionState,
-      showCodeEditor: false,
-    });
+    // close CodeEditor if open
+    if (settings.editorInteractionState.showCodeEditor) {
+      settings.setEditorInteractionState({
+        ...settings.editorInteractionState,
+        showCodeEditor: false,
+      });
+    }
   }
 }

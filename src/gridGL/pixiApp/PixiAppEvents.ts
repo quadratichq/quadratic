@@ -158,6 +158,10 @@ class PixiAppEvents {
     }
   }
 
+  setViewportDirty(): void {
+    this.app?.setViewportDirty();
+  }
+
   createBorders(): void {
     if (!this.app?.cellsSheets)
       throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.createBorders');
