@@ -15,7 +15,9 @@ jobs:
       - name: Cache wasm-pack build
         uses: actions/cache@v2
         with:
-          path: quadratic-core/target
+          path: |
+            quadratic-core/target
+            quadratic-core/pkg
           key: ${{ runner.os }}-wasm-pack
           restore-keys: |
             ${{ runner.os }}-wasm-pack
