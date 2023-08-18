@@ -40,6 +40,7 @@ jobs:
           path: quadratic-core/pkg/
 
   test_unit:
+    needs: build
     runs-on: ubuntu-latest-4-cores
 
     steps:
@@ -58,6 +59,7 @@ jobs:
       - run: npm run test:unit:ci
 
   lint:
+    needs: build
     runs-on: ubuntu-latest-4-cores
 
     steps:
