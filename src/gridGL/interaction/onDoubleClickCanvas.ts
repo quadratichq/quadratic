@@ -13,20 +13,23 @@ export const onDoubleClickCanvas = (
   // Get the double clicked cell, check if it is already set
   const x = cursor.cursorPosition.x;
   const y = cursor.cursorPosition.y;
-  const cell = sheet.getCellCopy(x, y);
+  const cell = sheet.getRenderCell(x, y);
   if (cell) {
     // open single line, for TEXT and COMPUTED
-    if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
-      pixiAppEvents.changeInput(true, cell.value);
-    } else {
+    if (cell.language) {
+      const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
+      if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in onDoubleClickCanvas`);
+
       // Open code editor, or move code editor if already open.
       setEditorInteractionState({
         ...editorInteractionState,
         showCellTypeMenu: false,
         showCodeEditor: true,
         selectedCell: { x: x, y: y },
-        mode: cell.type,
+        mode,
       });
+    } else {
+      pixiAppEvents.changeInput(true, cell.value);
     }
   } else {
     // If no previous value, open single line Input

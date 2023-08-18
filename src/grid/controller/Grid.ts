@@ -1,6 +1,13 @@
 import { Point, Rectangle } from 'pixi.js';
 import { GridController, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
-import { CellValue, JsRenderCell, JsRenderFill, Rect, TransactionSummary } from '../../quadratic-core/types';
+import {
+  CellValue,
+  CodeCellValue,
+  JsRenderCell,
+  JsRenderFill,
+  Rect,
+  TransactionSummary,
+} from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
 import { SheetCursorSave } from '../sheet/SheetCursor';
 
@@ -137,7 +144,7 @@ export class Grid {
     return this.gridController.getSheetColor(sheetId);
   }
 
-  // rendering information
+  // get grid information
   // ---------------------
 
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
@@ -161,7 +168,12 @@ export class Grid {
     return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
   }
 
-  // undo
+  getCodeValue(sheetId: string, x: number, y: number): CodeCellValue | undefined {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.getCodeCellValue(sheetId, new Pos(x, y));
+  }
+
+  // Undo/redo
   //-----
 
   hasUndo(): boolean {

@@ -50,6 +50,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { pythonLoaded } = useRecoilValue(loadedStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
+
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
 

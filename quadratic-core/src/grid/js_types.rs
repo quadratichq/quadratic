@@ -15,6 +15,7 @@ pub struct JsRenderCell {
     pub y: i64,
 
     pub value: CellValue,
+
     /// Code language, set only for the top left cell of a code output.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<CodeCellLanguage>,

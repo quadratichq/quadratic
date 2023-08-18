@@ -1,6 +1,6 @@
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
-import { JsRenderCell, JsRenderFill } from '../../quadratic-core/types';
+import { CodeCellValue, JsRenderCell, JsRenderFill } from '../../quadratic-core/types';
 import { Cell, CellFormat } from '../../schemas';
 import { Grid } from '../controller/Grid';
 import { SheetController } from '../controller/SheetController';
@@ -106,8 +106,16 @@ export class Sheet {
     return this.gridNew.getRenderCells(this.id, rectangle);
   }
 
+  getRenderCell(x: number, y: number): JsRenderCell | undefined {
+    return this.gridNew.getRenderCells(this.id, new Rectangle(x, y, 1, 1))?.[0];
+  }
+
   getRenderFills(rectangle: Rectangle): JsRenderFill[] {
     return this.gridNew.getRenderFills(this.id, rectangle);
+  }
+
+  getCodeValue(x: number, y: number): CodeCellValue | undefined {
+    return this.gridNew.getCodeValue(this.id, x, y);
   }
 
   protected copyCell(cell: Cell | undefined): Cell | undefined {
@@ -124,13 +132,6 @@ export class Sheet {
       ...format,
       textFormat: format.textFormat ? { ...format.textFormat } : undefined,
     };
-  }
-
-  getCellCopy(x: number, y: number): Cell | undefined {
-    // proper deep copy of a cell
-    const cell = this.grid.get(x, y);
-    if (!cell || !cell.cell) return;
-    return this.copyCell(cell.cell);
   }
 
   getCellAndFormatCopy(x: number, y: number): CellAndFormat | undefined {

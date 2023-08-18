@@ -68,7 +68,7 @@
     "watch:javascript": "react-scripts start",
     "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../src/quadratic-core'",
     "watch:wasm:fast:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../src/quadratic-core'",
-    "watch:wasm:types": "cd quadratic-core && cargo watch -w src/bin/export_types.rs -s 'cargo run --bin export_types'",
+    "watch:wasm:types": "cd quadratic-core && cargo watch 'cargo run --bin export_types'",
     "watch:front-end": "concurrently \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\"",
     "watch:fast:front-end": "concurrently \"npm:watch:javascript\" \"npm:watch:wasm:fast:javascript\" \"npm:watch:wasm:types\"",
     "start:production": "npm run build && serve build",

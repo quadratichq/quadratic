@@ -3,6 +3,7 @@ import {
   editorHighlightedCellsStateDefault,
 } from '../../atoms/editorHighlightedCellsStateAtom';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
+import { CellValue } from '../../quadratic-core/types';
 import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { PixiApp } from './PixiApp';
 import { pixiAppEvents } from './PixiAppEvents';
@@ -107,8 +108,9 @@ export class PixiAppSettings {
     return this.settings.showA1Notation;
   }
 
-  changeInput(input: boolean, initialValue = '') {
-    this._input = { show: input, initialValue };
+  changeInput(input: boolean, initialValue: CellValue | undefined = undefined) {
+    // todo: this does not handle types other than text
+    this._input = { show: input, initialValue: initialValue ? (initialValue as any).value?.toString() : undefined };
     pixiAppEvents.setDirty({ cursor: true });
 
     // this is used by CellInput to control visibility

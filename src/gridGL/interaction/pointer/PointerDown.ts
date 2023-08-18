@@ -2,9 +2,9 @@ import { Point } from 'pixi.js';
 import { IS_READONLY_MODE } from '../../../constants/app';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
+import { PanMode } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { PanMode } from '../../pixiApp/PixiAppSettings';
 
 const MINIMUM_MOVE_POSITION = 5;
 
@@ -79,7 +79,8 @@ export class PointerDown {
         if (rightClick) {
           return;
         }
-        doubleClickCell({ cell: this.sheet.grid.getCell(column, row), app: this.app });
+        const cell = this.sheet.getRenderCell(column, row);
+        doubleClickCell({ cell, app: this.app });
         this.active = false;
         event.preventDefault();
         return;

@@ -5,7 +5,6 @@ import { IS_READONLY_MODE } from '../constants/app';
 import { SheetController } from '../grid/controller/SheetController';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import CodeEditor from '../ui/menus/CodeEditor';
 import TopBar from '../ui/menus/TopBar';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import InitialPageLoadError from './components/InitialPageLoadError';
@@ -14,6 +13,7 @@ import ReadOnlyDialog from './components/ReadOnlyDialog';
 import { useLocalFiles } from './contexts/LocalFiles';
 import BottomBar from './menus/BottomBar';
 import CellTypeMenu from './menus/CellTypeMenu';
+import CodeEditor from './menus/CodeEditor';
 import CommandPalette from './menus/CommandPalette';
 import FeedbackMenu from './menus/FeedbackMenu';
 import FileMenu from './menus/FileMenu';
@@ -72,7 +72,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
         <FileUploadWrapper sheetController={sheetController} app={app}>
           <QuadraticGrid sheetController={sheetController} app={app} />
         </FileUploadWrapper>
-        <CodeEditor sheet_controller={sheetController} />
+        <CodeEditor sheetController={sheetController} />
       </div>
 
       {!presentationMode && <SheetBar sheetController={sheetController} />}

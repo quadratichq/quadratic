@@ -1,7 +1,6 @@
 import { ChatBubbleOutline, Check, ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip } from '@mui/material';
 import { Box } from '@mui/system';
-import { formatDistance } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { isMobileOnly } from 'react-device-detect';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -10,7 +9,7 @@ import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { Cell } from '../../../schemas';
+import { JsRenderCell } from '../../../quadratic-core/types';
 import { colors } from '../../../theme/colors';
 import { ActiveSelectionStats } from './ActiveSelectionStats';
 
@@ -23,7 +22,7 @@ interface Props {
 export const BottomBar = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const loadedState = useRecoilValue(loadedStateAtom);
-  const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
+  const [selectedCell, setSelectedCell] = useState<JsRenderCell | undefined>();
 
   const cursor = props.sheetController.sheet.cursor;
   // Generate string describing cursor location
@@ -35,10 +34,11 @@ export const BottomBar = (props: Props) => {
   useEffect(() => {
     const updateCellData = async () => {
       // Don't update if we have not moved cursor position
-      if (selectedCell?.x === cursor.cursorPosition.x && selectedCell?.y === cursor.cursorPosition.y) return;
+      if (Number(selectedCell?.x) === cursor.cursorPosition.x && Number(selectedCell?.y) === cursor.cursorPosition.y)
+        return;
 
       // Get cell at position
-      const cell = props.sheetController.sheet.getCellCopy(cursor.cursorPosition.x, cursor.cursorPosition.y);
+      const cell = props.sheetController.sheet.getRenderCell(cursor.cursorPosition.x, cursor.cursorPosition.y);
 
       // If cell exists set selectedCell
       // Otherwise set to undefined
@@ -99,9 +99,9 @@ export const BottomBar = (props: Props) => {
             Selection: {multiCursorPositionString}
           </span>
         )}
-        {selectedCell?.last_modified && (
+        {/* {selectedCell?.last_modified && (
           <span>You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}</span>
-        )}
+        )} */}
         {debugShowFPS && (
           <span
             className="debug-show-renderer"

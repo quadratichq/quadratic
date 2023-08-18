@@ -47,20 +47,22 @@ export function keyboardCell(options: {
   if (event.key === 'Enter') {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
-    const cell = sheet_controller.sheet.getCellCopy(x, y);
+    const cell = sheet_controller.sheet.getRenderCell(x, y);
     if (cell) {
-      if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
-        // open single line
-        pixiAppEvents.changeInput(true, cell.value);
-      } else {
+      if (cell.language) {
+        const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
+        if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
         // Open code editor, or move code editor if already open.
         setEditorInteractionState({
           ...editorInteractionState,
           showCellTypeMenu: false,
           showCodeEditor: true,
           selectedCell: { x: x, y: y },
-          mode: cell.type,
+          mode,
         });
+      } else {
+        // open single line
+        pixiAppEvents.changeInput(true, cell.value);
       }
     } else {
       pixiAppEvents.changeInput(true);
@@ -71,16 +73,19 @@ export function keyboardCell(options: {
   if (event.key === '/' || event.key === '=') {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
-    const cell = sheet_controller.sheet.getCellCopy(x, y);
+    const cell = sheet_controller.sheet.getRenderCell(x, y);
     if (cell) {
-      if (cell.type === 'PYTHON') {
+      if (cell.language) {
+        const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
+        if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
+
         // Open code editor, or move code editor if already open.
         setEditorInteractionState({
           ...editorInteractionState,
           showCellTypeMenu: false,
           showCodeEditor: true,
           selectedCell: { x: x, y: y },
-          mode: 'PYTHON',
+          mode,
         });
       } else {
         // Open cell input for editing text
@@ -100,7 +105,7 @@ export function keyboardCell(options: {
   }
 
   if (isAllowedFirstChar(event.key)) {
-    pixiAppEvents.changeInput(true, event.key);
+    pixiAppEvents.changeInput(true, { type: 'text', value: event.key });
     event.preventDefault();
   }
 
