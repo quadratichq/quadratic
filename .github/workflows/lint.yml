@@ -49,12 +49,12 @@ jobs:
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-      - run: npm config set registry https://registry.npmjs.cf/
-      - run: npm install
-
       - name: Build Quadratic
         run: |
           npm run build:wasm:nodejs
+
+      - run: npm config set registry https://registry.npmjs.cf/
+      - run: npm install
 
       - name: Run Prettier
         run: npm run lint:prettier
