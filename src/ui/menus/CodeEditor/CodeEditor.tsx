@@ -1,11 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useMemo, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
+import {
+  editorHighlightedCellsStateAtom,
+  editorHighlightedCellsStateDefault,
+} from '../../../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
+import { Console } from './Console';
 import { ResizeControl } from './ResizeControl';
 import { SaveChangesAlert } from './SaveChangesAlert';
 
@@ -15,7 +20,8 @@ interface CodeEditorProps {
 
 export const CodeEditor = (props: CodeEditorProps) => {
   const { sheetController } = props;
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
 
   const [isRunningComputation, setIsRunningComputation] = useState(false);
@@ -28,25 +34,42 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [consoleHeight, setConsoleHeight] = useState<number>(200);
 
   // Save changes alert state
-  const [showSaveChangesAlert, setShowSaveChangesAlert] = useState<boolean>(false);
+  const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
 
   const cellLocation = useMemo(
     () => ({ x: editorInteractionState.selectedCell.x, y: editorInteractionState.selectedCell.y }),
     [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]
   );
 
+  const [editorContent, setEditorContent] = useState<string | undefined>();
   const cell = useMemo(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
-    return sheetController.sheet.getCodeValue(
+    const cellCodeValue = sheetController.sheet.getCodeValue(
       editorInteractionState.selectedCell.x,
       editorInteractionState.selectedCell.y
     );
+    setEditorContent(cellCodeValue?.code_string ?? '');
+    return cellCodeValue;
   }, [editorInteractionState.selectedCell, editorMode, sheetController.sheet]);
 
-  // todo
-  const closeEditor = useCallback((skipSaveCheck = false) => {}, []);
+  const closeEditor = useCallback(
+    (skipSaveCheck: boolean) => {
+      if (!skipSaveCheck && editorContent !== cell?.code_string) {
+        setShowSaveChangesAlert(true);
+      } else {
+        setEditorInteractionState((oldState) => ({
+          ...oldState,
+          showCodeEditor: false,
+        }));
+        setEditorHighlightedCells(editorHighlightedCellsStateDefault);
+      }
+    },
+    [cell?.code_string, editorContent, setEditorHighlightedCells, setEditorInteractionState]
+  );
 
-  const saveAndRunCell = useCallback(() => {}, []);
+  const saveAndRunCell = useCallback(() => {
+    // sheetController.sheet.set;
+  }, []);
 
   const onKeyDownEditor = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -66,7 +89,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
       // Esc
       if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
         event.preventDefault();
-        closeEditor();
+        closeEditor(false);
       }
     },
     [closeEditor, saveAndRunCell]
@@ -115,9 +138,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
         unsaved={false}
         isRunningComputation={isRunningComputation}
         saveAndRunCell={saveAndRunCell}
-        closeEditor={closeEditor}
+        closeEditor={() => closeEditor(false)}
       />
-      <CodeEditorBody cell={cell} />
+      <CodeEditorBody cell={cell} editorContent={editorContent} setEditorContent={setEditorContent} />
       <ResizeControl setState={setConsoleHeight} position="TOP" />
 
       {/* Console Wrapper */}
@@ -131,14 +154,9 @@ export const CodeEditor = (props: CodeEditorProps) => {
           height: `${consoleHeight}px`,
         }}
       >
-        {/* {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
-          <Console
-            evalResult={evalResult}
-            editorMode={editorMode}
-            editorContent={editorContent}
-            selectedCell={selectedCell}
-          />
-        )} */}
+        {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
+          <Console evalResult={cell.output} editorMode={editorMode} editorContent={editorContent} selectedCell={cell} />
+        )}
       </div>
     </div>
   );

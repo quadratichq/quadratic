@@ -1,7 +1,7 @@
+import monaco from 'monaco-editor';
 import { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
-import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
-import monaco from 'monaco-editor';
+import { editorHighlightedCellsStateAtom } from '../../../atoms/editorHighlightedCellsStateAtom';
 
 export const useEditorOnSelectionChange = (
   isValidRef: boolean,

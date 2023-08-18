@@ -3,20 +3,22 @@ import monaco from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { useEditorCellHighlights } from '../../../hooks/useEditorCellHighlights';
-import { useEditorOnSelectionChange } from '../../../hooks/useEditorOnSelectionChange';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
 import { CodeCellValue } from '../../../quadratic-core/types';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
+import { useEditorCellHighlights } from './useEditorCellHighlights';
+import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 
 interface Props {
   cell: CodeCellValue | undefined;
+  editorContent: string | undefined;
+  setEditorContent: (value: string | undefined) => void;
 }
 
 export const CodeEditorBody = (props: Props) => {
-  const { cell } = props;
+  const { cell, editorContent, setEditorContent } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -25,13 +27,8 @@ export const CodeEditorBody = (props: Props) => {
   const [didMount, setDidMount] = useState(false);
   const [isValidRef, setIsValidRef] = useState(false);
 
-  const [editorContent, setEditorContent] = useState<string | undefined>();
-
   useEditorCellHighlights(isValidRef, editorRef, monacoRef);
   useEditorOnSelectionChange(isValidRef, editorRef);
-
-  // sets initial code value
-  useEffect(() => setEditorContent(cell?.code_string), [cell]);
 
   useEffect(() => {
     if (editorInteractionState.showCodeEditor) {

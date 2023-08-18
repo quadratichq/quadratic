@@ -1,11 +1,11 @@
 import monaco from 'monaco-editor';
 import { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
-import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
-import { ParseFormulaReturnType, Span } from '../helpers/formulaNotation';
-import { StringId, getKey } from '../helpers/getKey';
-import { parse_formula } from '../quadratic-core/quadratic_core';
-import { colors } from '../theme/colors';
+import { editorHighlightedCellsStateAtom } from '../../../atoms/editorHighlightedCellsStateAtom';
+import { ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
+import { StringId, getKey } from '../../../helpers/getKey';
+import { parse_formula } from '../../../quadratic-core/quadratic_core';
+import { colors } from '../../../theme/colors';
 
 function compareOldToNewMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch): boolean {
   if (oldCellsMatches.size !== cellsMatches.size) return false;

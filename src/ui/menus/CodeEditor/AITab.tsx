@@ -4,17 +4,17 @@ import { Avatar, CircularProgress, FormControl, IconButton, InputAdornment, Outl
 import { useEffect, useRef, useState } from 'react';
 import apiClientSingleton from '../../../api-client/apiClientSingleton';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { CellEvaluationResult } from '../../../grid/computations/types';
+import { CodeCellRunOutput } from '../../../quadratic-core/types';
 import { colors } from '../../../theme/colors';
+import ConditionalWrapper from '../../components/ConditionalWrapper';
 import { TooltipHint } from '../../components/TooltipHint';
 import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
-import ConditionalWrapper from '../../components/ConditionalWrapper';
 import './AITab.css';
 
 interface Props {
   editorMode: EditorInteractionState['mode'];
-  evalResult: CellEvaluationResult | undefined;
+  evalResult: CodeCellRunOutput | undefined;
   editorContent: string | undefined;
   isActive: boolean;
 }

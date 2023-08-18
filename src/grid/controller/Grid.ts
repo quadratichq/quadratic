@@ -113,6 +113,12 @@ export class Grid {
     );
   }
 
+  setCodeCellValue(options: { sheetId: string; x: number; y: number; codeString: string }): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    // return this.gridController.set;
+    throw new Error('not implemented yet...');
+  }
+
   deleteCellValues(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     return this.gridController.deleteCellValues(

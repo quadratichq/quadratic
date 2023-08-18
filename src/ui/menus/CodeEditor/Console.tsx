@@ -1,23 +1,22 @@
-import { Box, Tabs, Tab, Chip } from '@mui/material';
-import { useTheme } from '@mui/system';
-import { useEffect, useState } from 'react';
-import { CellEvaluationResult } from '../../../grid/computations/types';
-import { LinkNewTab } from '../../components/LinkNewTab';
-import { colors } from '../../../theme/colors';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { AITab } from './AITab';
 import { useAuth0 } from '@auth0/auth0-react';
-import { CodeSnippet } from '../../components/CodeSnippet';
+import { Box, Chip, Tab, Tabs } from '@mui/material';
+import { useTheme } from '@mui/system';
 import { stripIndent } from 'common-tags';
-import { Cell } from '../../../schemas';
+import { useEffect, useState } from 'react';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
+import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
+import { colors } from '../../../theme/colors';
+import { CodeSnippet } from '../../components/CodeSnippet';
+import { LinkNewTab } from '../../components/LinkNewTab';
+import { AITab } from './AITab';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
-  evalResult: CellEvaluationResult | undefined;
+  evalResult: CodeCellRunOutput | undefined;
   editorContent: string | undefined;
-  selectedCell: Cell;
+  selectedCell: CodeCellValue;
 }
 
 export function Console({ evalResult, editorMode, editorContent, selectedCell }: ConsoleProps) {

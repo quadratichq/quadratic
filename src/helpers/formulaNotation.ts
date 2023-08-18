@@ -2,7 +2,7 @@ import { getCoordinatesFromStringId } from '../grid/actions/updateCellAndDCells'
 import { GridOffsets } from '../grid/sheet/GridOffsets';
 import { Coordinate } from '../gridGL/types/size';
 import { CursorCell } from '../gridGL/UI/Cursor';
-import { CellRefId } from '../hooks/useEditorCellHighlights';
+import { CellRefId } from '../ui/menus/CodeEditor/useEditorCellHighlights';
 import { StringId } from './getKey';
 
 interface CellPosition {
