@@ -1,6 +1,6 @@
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
-import { CodeCellValue, JsRenderCell, JsRenderFill } from '../../quadratic-core/types';
+import { CodeCellValue, JsRenderCell, JsRenderCodeCell, JsRenderFill } from '../../quadratic-core/types';
 import { Cell, CellFormat } from '../../schemas';
 import { Grid } from '../controller/Grid';
 import { SheetController } from '../controller/SheetController';
@@ -41,7 +41,7 @@ export class Sheet {
   }
 
   // todo: rename to grid after migration away from gridSparse
-  private get gridNew(): Grid {
+  get gridNew(): Grid {
     return this.sheetController.grid;
   }
 
@@ -112,6 +112,10 @@ export class Sheet {
 
   getRenderFills(rectangle: Rectangle): JsRenderFill[] {
     return this.gridNew.getRenderFills(this.id, rectangle);
+  }
+
+  getRenderCodeCells(): JsRenderCodeCell[] {
+    return this.gridNew.getRenderCodeCells(this.id);
   }
 
   getCodeValue(x: number, y: number): CodeCellValue | undefined {

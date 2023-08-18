@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ChatBubbleOutline, Check, ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip } from '@mui/material';
 import { Box } from '@mui/system';
@@ -31,24 +32,24 @@ export const BottomBar = (props: Props) => {
     ? `(${cursor.multiCursor.originPosition.x}, ${cursor.multiCursor.originPosition.y}), (${cursor.multiCursor.terminalPosition.x}, ${cursor.multiCursor.terminalPosition.y})`
     : '';
 
+  // todo
   useEffect(() => {
-    const updateCellData = async () => {
-      // Don't update if we have not moved cursor position
-      if (Number(selectedCell?.x) === cursor.cursorPosition.x && Number(selectedCell?.y) === cursor.cursorPosition.y)
-        return;
-
-      // Get cell at position
-      const cell = props.sheetController.sheet.getRenderCell(cursor.cursorPosition.x, cursor.cursorPosition.y);
-
-      // If cell exists set selectedCell
-      // Otherwise set to undefined
-      if (cell) {
-        setSelectedCell(cell);
-      } else {
-        setSelectedCell(undefined);
-      }
-    };
-    updateCellData();
+    // const updateCellData = async () => {
+    //   // Don't update if we have not moved cursor position
+    //   if (Number(selectedCell?.x) === cursor.cursorPosition.x && Number(selectedCell?.y) === cursor.cursorPosition.y)
+    //     return;
+    //   console.log(cursor.cursorPosition, selectedCell);
+    //   // Get cell at position
+    //   const cell = props.sheetController.sheet.getRenderCell(cursor.cursorPosition.x, cursor.cursorPosition.y);
+    //   // If cell exists set selectedCell
+    //   // Otherwise set to undefined
+    //   if (cell) {
+    //     setSelectedCell(cell);
+    //   } else {
+    //     setSelectedCell(undefined);
+    //   }
+    // };
+    // updateCellData();
   }, [selectedCell, cursor.cursorPosition.x, cursor.cursorPosition.y, props.sheetController.sheet]);
 
   const handleShowGoToMenu = () => {

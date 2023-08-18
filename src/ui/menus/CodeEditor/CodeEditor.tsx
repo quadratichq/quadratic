@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/SheetController';
@@ -30,24 +30,18 @@ export const CodeEditor = (props: CodeEditorProps) => {
   // Save changes alert state
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState<boolean>(false);
 
-  const cellLocation = { x: editorInteractionState.selectedCell.x, y: editorInteractionState.selectedCell.y };
-
-  const cell = useMemo(
-    () => sheetController.sheet.getCodeValue(cellLocation.x, cellLocation.y),
-    [cellLocation.x, cellLocation.y, sheetController.sheet]
+  const cellLocation = useMemo(
+    () => ({ x: editorInteractionState.selectedCell.x, y: editorInteractionState.selectedCell.y }),
+    [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]
   );
 
-  // listens to cursor-position event to update cell
-  const [trigger, setTrigger] = useState(0);
-  useEffect(() => {
-    const changeTrigger = () => setTrigger((trigger) => trigger + 1);
-    window.addEventListener('cursor-position', changeTrigger);
-    return () => window.removeEventListener('cursor-position', changeTrigger);
-  }, []);
-
-  useEffect(() => {
-    if (showCodeEditor) mixpanel.track('[CodeEditor].opened', { type: editorMode });
-  }, [showCodeEditor, editorMode]);
+  const cell = useMemo(() => {
+    mixpanel.track('[CodeEditor].opened', { type: editorMode });
+    return sheetController.sheet.getCodeValue(
+      editorInteractionState.selectedCell.x,
+      editorInteractionState.selectedCell.y
+    );
+  }, [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y, editorMode, sheetController.sheet]);
 
   // todo
   const closeEditor = useCallback((skipSaveCheck = false) => {}, []);
@@ -77,8 +71,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
     },
     [closeEditor, saveAndRunCell]
   );
-
-  if (cell === undefined || !editorInteractionState.showCodeEditor) {
+  console.log(cell, showCodeEditor);
+  if (cell === undefined || !showCodeEditor) {
     return null;
   }
 

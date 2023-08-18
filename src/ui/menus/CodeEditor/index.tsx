@@ -1,2 +1,2 @@
-import { CodeEditor } from './CodeEditorNew';
+import { CodeEditor } from './CodeEditor';
 export default CodeEditor;

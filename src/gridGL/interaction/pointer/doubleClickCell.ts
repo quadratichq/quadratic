@@ -19,11 +19,20 @@ export function doubleClickCell(options: { cell?: JsRenderCell; app: PixiApp }):
         selectedCell: { x: Number(cell.x), y: Number(cell.y) },
         mode,
       });
+      return;
     } else {
       settings.changeInput(true, cell.value);
     }
   } else {
     // If no previous value, open single line Input
     settings.changeInput(true);
+  }
+
+  // close CodeEditor if open
+  if (settings.editorInteractionState.showCodeEditor) {
+    settings.setEditorInteractionState({
+      ...settings.editorInteractionState,
+      showCodeEditor: false,
+    });
   }
 }

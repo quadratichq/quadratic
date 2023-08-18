@@ -12,7 +12,7 @@ import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguage
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 
 interface Props {
-  cell: CodeCellValue;
+  cell: CodeCellValue | undefined;
 }
 
 export const CodeEditorBody = (props: Props) => {
@@ -31,7 +31,7 @@ export const CodeEditorBody = (props: Props) => {
   useEditorOnSelectionChange(isValidRef, editorRef);
 
   // sets initial code value
-  useEffect(() => setEditorContent(cell.code_string), [cell]);
+  useEffect(() => setEditorContent(cell?.code_string), [cell]);
 
   useEffect(() => {
     if (editorInteractionState.showCodeEditor) {
@@ -65,6 +65,8 @@ export const CodeEditorBody = (props: Props) => {
     },
     [didMount]
   );
+
+  if (!cell) return null;
 
   return (
     <div

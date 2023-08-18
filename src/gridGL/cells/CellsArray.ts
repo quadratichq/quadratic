@@ -24,7 +24,7 @@ export class CellsArray extends ParticleContainer {
     this.removeChildren();
     this.lines = [];
 
-    const codeCells = this.cellsSheet.sheet.grid.getRenderCodeCells();
+    const codeCells = this.cellsSheet.sheet.getRenderCodeCells();
     this.cellsSheet.cellsMarkers.clear();
     codeCells?.forEach((codeCell) => {
       this.draw(codeCell);
@@ -46,9 +46,6 @@ export class CellsArray extends ParticleContainer {
     } else if (type === 'Formula') {
       tint = colors.cellColorUserFormula;
     }
-    // : type === 'AI'
-    // ? colors.cellColorUserAI
-    // : colors.independence,
 
     this.lines.push(
       ...drawBorder({

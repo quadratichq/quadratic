@@ -10,8 +10,8 @@ import { TooltipHint } from '../../components/TooltipHint';
 import { Formula, Python } from '../../icons';
 
 interface Props {
-  cell: CodeCellValue;
-  cellLocation: Coordinate;
+  cell: CodeCellValue | undefined;
+  cellLocation: Coordinate | undefined;
   unsaved: boolean;
   isRunningComputation: boolean;
 
@@ -22,8 +22,11 @@ interface Props {
 export const CodeEditorHeader = (props: Props) => {
   const { cell, cellLocation, unsaved, isRunningComputation, saveAndRunCell, closeEditor } = props;
   const { pythonLoaded } = useRecoilValue(loadedStateAtom);
-  const isLoadingPython = !pythonLoaded && cell.language === 'Python';
   const theme = useTheme();
+
+  if (!cell || !cellLocation) return null;
+
+  const isLoadingPython = !pythonLoaded && cell.language === 'Python';
 
   return (
     <div

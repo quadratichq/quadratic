@@ -4,6 +4,7 @@ import {
   CellValue,
   CodeCellValue,
   JsRenderCell,
+  JsRenderCodeCell,
   JsRenderFill,
   Rect,
   TransactionSummary,
@@ -171,6 +172,12 @@ export class Grid {
   getCodeValue(sheetId: string, x: number, y: number): CodeCellValue | undefined {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     return this.gridController.getCodeCellValue(sheetId, new Pos(x, y));
+  }
+
+  getRenderCodeCells(sheetId: string): JsRenderCodeCell[] {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    const data = this.gridController.getAllRenderCodeCells(sheetId);
+    return JSON.parse(data);
   }
 
   // Undo/redo
