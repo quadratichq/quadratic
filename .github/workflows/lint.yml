@@ -11,6 +11,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Cache wasm-pack build
+        uses: actions/cache@v2
+        with:
+          path: quadratic-core/target
+          key: ${{ runner.os }}-wasm-pack
+          restore-keys: |
+            ${{ runner.os }}-wasm-pack
+
       - uses: actions/setup-node@v2
         with:
           node-version: '17'
