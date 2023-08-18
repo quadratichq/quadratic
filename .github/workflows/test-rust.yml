@@ -45,7 +45,3 @@ jobs:
           cd quadratic-core
           cargo check
           cargo test --workspace
-      - name: Build
-        run: |
-          cd quadratic-core
-          cargo build --release

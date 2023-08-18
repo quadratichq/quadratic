@@ -12,6 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Cache wasm-pack build
         uses: actions/cache@v2
         with:
@@ -41,10 +49,12 @@ jobs:
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+      - run: npm config set registry https://registry.npmjs.cf/
+      - run: npm install
+
       - name: Build Quadratic
         run: |
-          npm run build:wasm
-          npm install
+          npm run build:wasm:nodejs
 
       - name: Run Prettier
         run: npm run lint:prettier
