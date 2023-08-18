@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
 import z from 'zod';
 import { authClient } from '../auth';
-import { apiClient } from './apiClient';
+import { REACT_APP_QUADRATIC_API_URL } from '../constants/env';
 
 export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z.Schema<T>): Promise<T> {
   // Set headers
@@ -14,7 +14,7 @@ export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z
   };
 
   // Make API call
-  const response = await fetch(apiClient.getApiUrl() + path, { ...sharedInit, ...init });
+  const response = await fetch(REACT_APP_QUADRATIC_API_URL + path, { ...sharedInit, ...init });
 
   // Handle response if a server error is returned
   if (!response.ok) {

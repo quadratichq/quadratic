@@ -1,5 +1,4 @@
 import mixpanel from 'mixpanel-browser';
-import { REACT_APP_QUADRATIC_API_URL } from '../constants/env';
 import { downloadFile as downloadFileOnClient } from '../helpers/downloadFile';
 import { GridFile, GridFileSchema } from '../schemas';
 import { fetchFromApi } from './fetchFromApi';
@@ -89,10 +88,6 @@ export const apiClient = {
       { method: 'POST', body: JSON.stringify(body) },
       PostFeedbackResSchema
     );
-  },
-
-  getApiUrl() {
-    return REACT_APP_QUADRATIC_API_URL;
   },
 
   // Someday: figure out how to fit in the calls for the AI chat

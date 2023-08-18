@@ -1,5 +1,5 @@
-import { apiClient } from '../../../api/apiClient';
 import { authClient } from '../../../auth';
+import { REACT_APP_QUADRATIC_API_URL } from '../../../constants/env';
 import { Coordinate } from '../../../gridGL/types/size';
 import { GetCellsDB } from '../../sheet/Cells/GetCellsDB';
 
@@ -76,7 +76,7 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
       ],
     };
 
-    response = await fetch(`${apiClient.getApiUrl()}/ai/chat`, {
+    response = await fetch(`${REACT_APP_QUADRATIC_API_URL}/ai/chat`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
