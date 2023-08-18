@@ -1,8 +1,8 @@
 import { Viewport } from 'pixi-viewport';
 import { Container, Graphics, Renderer } from 'pixi.js';
+import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
-import { IS_READONLY_MODE } from '../../constants/appConstants';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../debugFlags';
 import { SheetController } from '../../grid/controller/sheetController';
@@ -79,7 +79,7 @@ export class PixiApp {
       .drag({
         pressDrag: true,
         wheel: false, // handled by Wheel plugin below
-        ...(IS_READONLY_MODE ? {} : { keyToPress: ['Space'] }),
+        ...(isMobile ? {} : { keyToPress: ['Space'] }),
       })
       .decelerate()
       .pinch()

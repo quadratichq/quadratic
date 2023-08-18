@@ -1,5 +1,5 @@
 import { ChatBubbleOutline, Commit } from '@mui/icons-material';
-import { Stack, useTheme } from '@mui/material';
+import { Stack } from '@mui/material';
 import { formatDistance } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { isMobileOnly } from 'react-device-detect';
@@ -25,7 +25,6 @@ export const BottomBar = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
-  const theme = useTheme();
 
   const {
     showMultiCursor,
@@ -87,8 +86,6 @@ export const BottomBar = (props: Props) => {
         backdropFilter: 'blur(1px)',
         display: 'flex',
         justifyContent: 'space-between',
-        paddingLeft: theme.spacing(1),
-        paddingRight: theme.spacing(1),
         userSelect: 'none',
       }}
     >

@@ -5,13 +5,13 @@ import Button from '@mui/material/Button';
 import { Menu, MenuDivider, MenuHeader, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useEffect } from 'react';
+import { isMobile } from 'react-device-detect';
 import { useParams } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { apiClient } from '../../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { authClient } from '../../../../auth';
-import { IS_READONLY_MODE } from '../../../../constants/appConstants';
 import { ROUTES } from '../../../../constants/routes';
 import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
@@ -35,9 +35,9 @@ export const QuadraticMenu = (props: Props) => {
   const { uuid } = useParams();
   const { isAuthenticated, user } = useRootRouteLoaderData();
 
-  // For readonly, set Headers to not visible by default
+  // For mobile, set Headers to not visible by default
   useEffect(() => {
-    if (IS_READONLY_MODE) {
+    if (isMobile) {
       settings.setShowHeadings(false);
     }
     // eslint-disable-next-line
