@@ -11,6 +11,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Cache quadratic-core build
+        uses: actions/cache@v2
+        with:
+          path: |
+            quadratic-core/target
+            quadratic-core/pkg
+          key: ${{ runner.os }}-quadratic-core-unit
+          restore-keys: |
+            ${{ runner.os }}-quadratic-core-unit
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - uses: actions/setup-node@v2
         with:
           node-version: '19'
@@ -26,6 +45,7 @@ jobs:
           rustc --version
           cargo clippy --version
 
+      - run: npm config set registry https://registry.npmjs.cf/
       - run: npm install
 
       - name: Install wasm-pack
