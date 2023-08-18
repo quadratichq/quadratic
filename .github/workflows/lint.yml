@@ -20,15 +20,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: Cache wasm-pack build
+      - name: Cache quadratic-core build
         uses: actions/cache@v2
         with:
           path: |
             quadratic-core/target
             quadratic-core/pkg
-          key: ${{ runner.os }}-wasm-pack
+          key: ${{ runner.os }}-quadratic-core-lint
           restore-keys: |
-            ${{ runner.os }}-wasm-pack
+            ${{ runner.os }}-quadratic-core-lint
 
       - uses: actions/setup-node@v2
         with:
@@ -51,7 +51,7 @@ jobs:
 
       - name: Build Quadratic
         run: |
-          npm run build:wasm:nodejs
+          npm run build:wasm
 
       - run: npm config set registry https://registry.npmjs.cf/
       - run: npm install
