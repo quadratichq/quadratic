@@ -9,7 +9,7 @@ export const LoadingScreen = () => {
 
   // Use a different loading screen for the dashboard vs quadratic app
   let LoadingComponent = <DashboardLoading />;
-  if (location.pathname.startsWith(ROUTES.FILE(''))) {
+  if (location.pathname.startsWith(ROUTES.FILE('')) || location.pathname.startsWith(ROUTES.CREATE_FILE)) {
     LoadingComponent = <QuadraticLoading />;
   }
 
