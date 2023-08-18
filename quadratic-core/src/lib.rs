@@ -10,6 +10,7 @@ pub mod ext;
 pub mod formulas;
 pub mod grid;
 mod position;
+mod rle;
 mod span;
 mod values;
 #[cfg(feature = "js")]
@@ -18,6 +19,7 @@ pub mod wasm_bindings;
 pub use error::*;
 pub use ext::*;
 pub use position::*;
+pub use rle::RunLengthEncoding;
 pub use span::*;
 pub use values::*;
 

@@ -88,6 +88,11 @@ impl RegionRef {
     pub fn size(&self) -> Option<ArraySize> {
         ArraySize::new(self.columns.len() as u32, self.rows.len() as u32)
     }
+
+    /// Returns the number of cells in the region.
+    pub fn len(&self) -> usize {
+        self.columns.len() * self.rows.len()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

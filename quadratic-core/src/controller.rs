@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-use crate::{grid::*, Array, CellValue, Pos, Rect};
+use crate::{grid::*, Array, CellValue, Pos, Rect, RunLengthEncoding};
 
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -76,11 +76,8 @@ impl GridController {
         let cell_ref = sheet.get_or_create_cell_ref(pos);
         let region = RegionRef::from(cell_ref);
         let values = Array::from(value);
-        let transaction = Transaction {
-            ops: vec![Operation::SetCells { region, values }],
-            cursor,
-        };
-        self.transact_forward(transaction)
+        let ops = vec![Operation::SetCellValues { region, values }];
+        self.transact_forward(Transaction { ops, cursor })
     }
     pub fn set_cells(
         &mut self,
@@ -98,7 +95,7 @@ impl GridController {
             max: end_pos,
         };
         let region = self.region(sheet_id, rect);
-        let ops = vec![Operation::SetCells { region, values }];
+        let ops = vec![Operation::SetCellValues { region, values }];
         self.transact_forward(Transaction { ops, cursor })
     }
     pub fn delete_cell_values(
@@ -109,10 +106,10 @@ impl GridController {
     ) -> TransactionSummary {
         let region = self.existing_region(sheet_id, rect);
         let ops = match region.size() {
-            Some(size) => vec![Operation::SetCells {
-                region,
-                values: Array::new_empty(size),
-            }],
+            Some(size) => {
+                let values = Array::new_empty(size);
+                vec![Operation::SetCellValues { region, values }]
+            }
             None => vec![], // region is empty; do nothing
         };
         self.transact_forward(Transaction { ops, cursor })
@@ -220,7 +217,7 @@ impl GridController {
                 }
             }
             match op {
-                Operation::SetCells { region, values } => {
+                Operation::SetCellValues { region, values } => {
                     summary
                         .cell_regions_modified
                         .extend(self.grid.region_rects(&region));
@@ -240,10 +237,44 @@ impl GridController {
                         .collect();
                     let old_values = Array::new_row_major(size, old_values)
                         .expect("error constructing array of old values for SetCells operation");
-                    rev_ops.push(Operation::SetCells {
+                    rev_ops.push(Operation::SetCellValues {
                         region,
                         values: old_values,
                     });
+                }
+
+                Operation::SetCellFormats { region, attr } => {
+                    summary
+                        .cell_regions_modified
+                        .extend(self.grid.region_rects(&region));
+
+                    let old_attr = match attr {
+                        CellFmtArray::Align(align) => CellFmtArray::Align(
+                            self.set_cell_formats_for_type::<CellAlign>(&region, align),
+                        ),
+                        CellFmtArray::Wrap(wrap) => CellFmtArray::Wrap(
+                            self.set_cell_formats_for_type::<CellWrap>(&region, wrap),
+                        ),
+                        CellFmtArray::NumericFormat(num_fmt) => CellFmtArray::NumericFormat(
+                            self.set_cell_formats_for_type::<NumericFormat>(&region, num_fmt),
+                        ),
+                        CellFmtArray::Bold(bold) => CellFmtArray::Bold(
+                            self.set_cell_formats_for_type::<Bold>(&region, bold),
+                        ),
+                        CellFmtArray::Italic(italic) => CellFmtArray::Italic(
+                            self.set_cell_formats_for_type::<Italic>(&region, italic),
+                        ),
+                        CellFmtArray::TextColor(text_color) => CellFmtArray::TextColor(
+                            self.set_cell_formats_for_type::<TextColor>(&region, text_color),
+                        ),
+                        CellFmtArray::FillColor(fill_color) => CellFmtArray::FillColor(
+                            self.set_cell_formats_for_type::<FillColor>(&region, fill_color),
+                        ),
+                    };
+                    rev_ops.push(Operation::SetCellFormats {
+                        region,
+                        attr: old_attr,
+                    })
                 }
 
                 Operation::AddSheet { sheet, to_before } => {
@@ -331,6 +362,23 @@ impl GridController {
         (reverse_transaction, summary)
     }
 
+    fn set_cell_formats_for_type<A: CellFmtAttr>(
+        &mut self,
+        region: &RegionRef,
+        values: RunLengthEncoding<Option<A::Value>>,
+    ) -> RunLengthEncoding<Option<A::Value>> {
+        let sheet = self.grid.sheet_mut_from_id(region.sheet);
+        // TODO: optimize this for contiguous runs of the same value
+        let mut old_values = RunLengthEncoding::new();
+        for (cell_ref, value) in region.iter().zip(values.iter_values()) {
+            let old_value = sheet
+                .cell_ref_to_pos(cell_ref)
+                .and_then(|pos| sheet.set_formatting_value::<A>(pos, value.clone()));
+            old_values.push(old_value);
+        }
+        old_values
+    }
+
     /// Returns a region of the spreadsheet, assigning IDs to columns and rows
     /// as needed.
     fn region(&mut self, sheet_id: SheetId, rect: Rect) -> RegionRef {
@@ -340,8 +388,8 @@ impl GridController {
             .map(|x| sheet.get_or_create_column(x).0.id)
             .collect();
         let rows = rect
-            .x_range()
-            .map(|x| sheet.get_or_create_row(x).id)
+            .y_range()
+            .map(|y| sheet.get_or_create_row(y).id)
             .collect();
         RegionRef {
             sheet: sheet_id,
@@ -367,6 +415,34 @@ impl GridController {
     }
 }
 
+macro_rules! impl_set_cell_fmt_method {
+    ($method_name:ident<$cell_fmt_attr_type:ty>($cell_fmt_array_constructor:expr)) => {
+        impl GridController {
+            pub fn $method_name(
+                &mut self,
+                sheet_id: SheetId,
+                rect: Rect,
+                value: Option<<$cell_fmt_attr_type as CellFmtAttr>::Value>,
+                cursor: Option<String>,
+            ) -> TransactionSummary {
+                let region = self.region(sheet_id, rect);
+                let attr =
+                    $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, region.len()));
+                let ops = vec![Operation::SetCellFormats { region, attr }];
+                self.transact_forward(Transaction { ops, cursor })
+            }
+        }
+    };
+}
+
+impl_set_cell_fmt_method!(set_cell_align<CellAlign>(CellFmtArray::Align));
+impl_set_cell_fmt_method!(set_cell_wrap<CellWrap>(CellFmtArray::Wrap));
+impl_set_cell_fmt_method!(set_cell_numeric_format<NumericFormat>(CellFmtArray::NumericFormat));
+impl_set_cell_fmt_method!(set_cell_bold<Bold>(CellFmtArray::Bold));
+impl_set_cell_fmt_method!(set_cell_italic<Italic>(CellFmtArray::Italic));
+impl_set_cell_fmt_method!(set_cell_text_color<TextColor>(CellFmtArray::TextColor));
+impl_set_cell_fmt_method!(set_cell_fill_color<FillColor>(CellFmtArray::FillColor));
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
     ops: Vec<Operation>,
@@ -375,9 +451,13 @@ pub struct Transaction {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Operation {
-    SetCells {
+    SetCellValues {
         region: RegionRef,
         values: Array,
+    },
+    SetCellFormats {
+        region: RegionRef,
+        attr: CellFmtArray,
     },
 
     AddSheet {
@@ -406,7 +486,8 @@ pub enum Operation {
 impl Operation {
     pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
         match self {
-            Operation::SetCells { region, .. } => Some(region.sheet),
+            Operation::SetCellValues { region, .. } => Some(region.sheet),
+            Operation::SetCellFormats { region, .. } => Some(region.sheet),
 
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,
@@ -417,6 +498,18 @@ impl Operation {
             Operation::ReorderSheet { .. } => None,
         }
     }
+}
+
+/// Array of a single cell formatting attribute.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum CellFmtArray {
+    Align(RunLengthEncoding<Option<CellAlign>>),
+    Wrap(RunLengthEncoding<Option<CellWrap>>),
+    NumericFormat(RunLengthEncoding<Option<NumericFormat>>),
+    Bold(RunLengthEncoding<Option<bool>>),
+    Italic(RunLengthEncoding<Option<bool>>),
+    TextColor(RunLengthEncoding<Option<String>>),
+    FillColor(RunLengthEncoding<Option<String>>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
@@ -444,7 +537,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_set_cell_undo_redo() {
+    fn test_set_cell_value_undo_redo() {
         let mut g = GridController::new();
         let sheet_id = g.grid.sheets()[0].id;
         let pos = Pos { x: 3, y: 6 };
@@ -476,6 +569,63 @@ mod tests {
         assert_eq!(get_the_cell(&g), "b".into());
         assert!(g.redo(None).is_none());
         assert_eq!(get_the_cell(&g), "b".into());
+    }
+
+    #[test]
+    fn test_set_cell_text_color_undo_redo() {
+        let mut g = GridController::new();
+        let sheet_id = g.grid.sheets()[0].id;
+        let pos1 = Pos { x: 3, y: 6 };
+        let pos2 = Pos { x: 5, y: 8 };
+        let pos3 = Pos { x: 9, y: 6 };
+        let rect1 = Rect::new_span(pos1, pos2);
+        let rect2 = Rect::new_span(pos2, pos3);
+
+        let get = |g: &GridController, pos: Pos| {
+            g.sheet(sheet_id)
+                .get_formatting_value::<TextColor>(pos)
+                .unwrap_or_default()
+        };
+
+        let expected_summary = |rect| TransactionSummary {
+            cell_regions_modified: vec![(sheet_id, rect)],
+            ..Default::default()
+        };
+
+        assert_eq!(get(&g, pos1), "");
+        assert_eq!(get(&g, pos2), "");
+        assert_eq!(get(&g, pos3), "");
+        assert_eq!(
+            g.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None),
+            expected_summary(rect1),
+        );
+        println!("{:#?}", g);
+        assert_eq!(get(&g, pos1), "blue");
+        assert_eq!(get(&g, pos2), "blue");
+        assert_eq!(get(&g, pos3), "");
+        assert_eq!(
+            g.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None),
+            expected_summary(rect2),
+        );
+        assert_eq!(get(&g, pos1), "blue");
+        assert_eq!(get(&g, pos2), "red");
+        assert_eq!(get(&g, pos3), "red");
+        assert_eq!(g.undo(None), Some(expected_summary(rect2)));
+        assert_eq!(get(&g, pos1), "blue");
+        assert_eq!(get(&g, pos2), "blue");
+        assert_eq!(get(&g, pos3), "");
+        assert_eq!(g.undo(None), Some(expected_summary(rect1)));
+        assert_eq!(get(&g, pos1), "");
+        assert_eq!(get(&g, pos2), "");
+        assert_eq!(get(&g, pos3), "");
+        assert_eq!(g.redo(None), Some(expected_summary(rect1)));
+        assert_eq!(get(&g, pos1), "blue");
+        assert_eq!(get(&g, pos2), "blue");
+        assert_eq!(get(&g, pos3), "");
+        assert_eq!(g.redo(None), Some(expected_summary(rect2)));
+        assert_eq!(get(&g, pos1), "blue");
+        assert_eq!(get(&g, pos2), "red");
+        assert_eq!(get(&g, pos3), "red");
     }
 
     #[test]

@@ -1,5 +1,3 @@
-use std::fmt;
-
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 #[cfg(feature = "js")]
@@ -22,7 +20,10 @@ pub use borders::{CellBorder, CellBorderStyle, CellBorders};
 pub use bounds::GridBounds;
 pub use code::*;
 pub use column::{Column, ColumnData};
-pub use formatting::{BoolSummary, CellAlign, CellWrap, NumericFormat, NumericFormatKind};
+pub use formatting::{
+    Bold, BoolSummary, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericFormat,
+    NumericFormatKind, TextColor,
+};
 pub use ids::*;
 pub use sheet::Sheet;
 
@@ -224,20 +225,6 @@ impl Grid {
         sheet.region_rects(region).map(move |rect| (sheet_id, rect))
     }
 
-    pub fn set_same_values<T: fmt::Debug + Clone + PartialEq>(
-        &mut self,
-        sheet_id: SheetId,
-        region: Rect,
-        pick_column_data: fn(&mut Column) -> &mut ColumnData<SameValue<T>>,
-        value: T,
-    ) {
-        let sheet = self.sheet_mut_from_id(sheet_id);
-        for x in region.x_range() {
-            let column = sheet.get_or_create_column(x).1;
-            pick_column_data(column).set_range(region.y_range(), value.clone());
-        }
-    }
-
     pub fn to_legacy_file_format(&self) -> legacy::GridFileV1_3 {
         legacy::GridFileV1_3 {
             sheets: self
@@ -250,19 +237,6 @@ impl Grid {
             filename: self.filename.clone(),
             id: self.id.to_string(),
             modified: self.modified,
-        }
-    }
-
-    pub fn delete_cell_columns<T: fmt::Debug + Clone + PartialEq>(
-        &mut self,
-        sheet_id: SheetId,
-        region: Rect,
-        pick_column_data: fn(&mut Column) -> &mut ColumnData<SameValue<T>>,
-    ) {
-        let sheet = self.sheet_mut_from_id(sheet_id);
-        for x in region.x_range() {
-            let column = sheet.get_or_create_column(x).1;
-            pick_column_data(column).remove_range(region.y_range());
         }
     }
 }

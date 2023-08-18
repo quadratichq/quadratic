@@ -425,3 +425,80 @@ impl GridController {
     //     self.delete_cell_columns(*sheet_id, *region, |column| &mut column.wrap);
     // }
 }
+
+macro_rules! impl_grid_controller_js_set_formatting_fns {
+    (
+        $(
+            $(#[doc = $doc_line:literal])*
+            #[js_name = $js_name:literal]
+            fn $rust_fn_name:ident($value_name:ident: $type:ty) {
+                $internal_fn_name:ident()
+            }
+        )+
+    ) => {
+        #[wasm_bindgen]
+        impl GridController {
+            $(
+                $(#[doc = $doc_line])*
+                ///
+                /// Returns a [`TransactionSummary`].
+                #[wasm_bindgen(js_name = "setCellAlign")]
+                pub fn $rust_fn_name(
+                    &mut self,
+                    sheet_id: String,
+                    rect: &Rect,
+                    $value_name: JsValue,
+                    cursor: Option<String>,
+                ) -> Result<JsValue, JsValue> {
+                    let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+                    let value: Option<$type> = serde_wasm_bindgen::from_value($value_name)?;
+                    Ok(serde_wasm_bindgen::to_value(
+                        &self.$internal_fn_name(sheet_id, *rect, value, cursor),
+                    )?)
+                }
+            )+
+        }
+    };
+}
+
+impl_grid_controller_js_set_formatting_fns!(
+    /// Sets cell align formatting given as an optional [`CellAlign`].
+    #[js_name = "setCellAlign"]
+    fn js_set_cell_align(align: CellAlign) {
+        set_cell_align()
+    }
+
+    /// Sets cell wrap formatting given as an optional [`CellWrap`].
+    #[js_name = "setCellWrap"]
+    fn js_set_cell_wrap(wrap: CellWrap) {
+        set_cell_wrap()
+    }
+
+    /// Sets cell numeric formatting given as an optional [`NumericFormat`].
+    #[js_name = "setCellNumericFormat"]
+    fn js_set_cell_numeric_format(numeric_format: NumericFormat) {
+        set_cell_numeric_format()
+    }
+
+    /// Sets cell bold formatting given as an optional [`bool`].
+    #[js_name = "setCellBold"]
+    fn js_set_cell_bold(bold: bool) {
+        set_cell_bold()
+    }
+    /// Sets cell italic formatting given as an optional [`bool`].
+    #[js_name = "setCellItalic"]
+    fn js_set_cell_italic(italic: bool) {
+        set_cell_italic()
+    }
+
+    /// Sets cell text color given as an optional [`String`].
+    #[js_name = "setCellTextColor"]
+    fn js_set_cell_text_color(text_color: String) {
+        set_cell_text_color()
+    }
+    /// Sets cell fill color given as an optional [`String`].
+    #[js_name = "setCellFillColor"]
+    fn js_set_cell_fill_color(fill_color: String) {
+        set_cell_fill_color()
+    }
+);

@@ -1,6 +1,84 @@
+use std::fmt;
 use std::ops::{BitOr, BitOrAssign};
 
 use serde::{Deserialize, Serialize};
+
+use super::{block::SameValue, Column, ColumnData};
+
+/// Cell formatting attribute.
+pub trait CellFmtAttr {
+    type Value: fmt::Debug + Clone + Eq;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>>;
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>>;
+}
+
+impl CellFmtAttr for CellAlign {
+    type Value = Self;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.align
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.align
+    }
+}
+impl CellFmtAttr for CellWrap {
+    type Value = Self;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.wrap
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.wrap
+    }
+}
+impl CellFmtAttr for NumericFormat {
+    type Value = Self;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.numeric_format
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.numeric_format
+    }
+}
+pub struct Bold;
+impl CellFmtAttr for Bold {
+    type Value = bool;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.bold
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.bold
+    }
+}
+pub struct Italic;
+impl CellFmtAttr for Italic {
+    type Value = bool;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.italic
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.italic
+    }
+}
+pub struct TextColor;
+impl CellFmtAttr for TextColor {
+    type Value = String;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.text_color
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.text_color
+    }
+}
+pub struct FillColor;
+impl CellFmtAttr for FillColor {
+    type Value = String;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.fill_color
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.fill_color
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]

@@ -9,7 +9,7 @@ use super::borders::{CellBorder, SheetBorders};
 use super::bounds::GridBounds;
 use super::code::{CodeCellLanguage, CodeCellRunResult, CodeCellValue};
 use super::column::Column;
-use super::formatting::BoolSummary;
+use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
 use super::js_types::{
     FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
@@ -178,8 +178,13 @@ impl Sheet {
     /// Returns the value of a cell (i.e., what would be returned if code asked
     /// for it).
     pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        self.get_column(pos.x)
-            .and_then(|column| column.values.get(pos.y))
+        let column = self.get_column(pos.x)?;
+        column.values.get(pos.y)
+    }
+    /// Returns a formatting property of a cell.
+    pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {
+        let column = self.get_column(pos.x)?;
+        A::column_data_ref(column).get(pos.y)
     }
     /// Returns a code cell value.
     pub fn get_code_cell(&self, pos: Pos) -> Option<&CodeCellValue> {
@@ -205,6 +210,16 @@ impl Sheet {
         }
 
         FormattingSummary { bold, italic }
+    }
+
+    /// Sets a formatting property for a cell.
+    pub fn set_formatting_value<A: CellFmtAttr>(
+        &mut self,
+        pos: Pos,
+        value: Option<A::Value>,
+    ) -> Option<A::Value> {
+        let (_, column) = self.get_or_create_column(pos.x);
+        A::column_data_mut(column).set(pos.y, value)
     }
 
     pub fn export_to_legacy_file_format(&self, index: usize) -> legacy::JsSheet {
