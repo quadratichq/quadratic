@@ -3,12 +3,11 @@ import { BrowserTracing } from '@sentry/tracing';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
-import { ShowAfter } from './components/ShowAfter';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { router } from './router';
 import './styles.css';
-import { QuadraticLoading } from './ui/loading/QuadraticLoading';
+import { LoadingScreen } from './ui/loading/LoadingScreen';
 
 // Enable sentry only if SENTRY_DSN is in ENV
 if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'none')
@@ -25,14 +24,7 @@ const container = document.getElementById('root');
 const root = createRoot(container);
 root.render(
   <React.StrictMode>
-    <RouterProvider
-      router={router}
-      fallbackElement={
-        <ShowAfter delay={2000}>
-          <QuadraticLoading />
-        </ShowAfter>
-      }
-    />
+    <RouterProvider router={router} fallbackElement={<LoadingScreen></LoadingScreen>} />
   </React.StrictMode>
 );
 

@@ -1,18 +1,25 @@
 import { ErrorOutline, QuestionMarkOutlined } from '@mui/icons-material';
 import { Button } from '@mui/material';
 import * as Sentry from '@sentry/react';
+import init, { hello } from 'quadratic-core';
 import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
 import { GetFileResSchema } from '../api/types';
 import { Empty } from '../components/Empty';
+import { SheetController } from '../grid/controller/sheetController';
+import { loadAssets } from '../gridGL/loadAssets';
+import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import { GridFile, GridFileSchema } from '../schemas';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
+import { webWorkers } from '../web-workers/webWorkers';
 
 export type InitialFile = {
   name: string;
   contents: GridFile;
+  sheetController: SheetController;
+  app: PixiApp;
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<InitialFile> => {
@@ -47,7 +54,18 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
     window.location.reload(true);
   }
 
-  return { contents, name: data.file.name };
+  // create pixi app
+  const sheetController = new SheetController();
+  const app = new PixiApp(sheetController);
+
+  // populate web workers
+  webWorkers.init(app);
+
+  await loadAssets();
+  await init();
+  hello(); // let Rust say hello to console
+
+  return { contents, name: data.file.name, sheetController, app };
 };
 
 export const Component = () => {

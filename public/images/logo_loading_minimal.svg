@@ -1,0 +1,17 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g style="mix-blend-mode:darken" opacity="0.35">
+<path d="M17 10H31V24H17V10Z" fill="#CB8999"/>
+</g>
+<g style="mix-blend-mode:darken" opacity="0.35">
+<rect x="33" y="42" width="14" height="13" fill="#FFC800"/>
+</g>
+<g style="mix-blend-mode:darken" opacity="0.35">
+<rect x="17" y="26" width="14" height="14" fill="#5D576B"/>
+</g>
+<g style="mix-blend-mode:darken" opacity="0.35">
+<rect x="33" y="26" width="14" height="14" fill="#6CD4FF"/>
+</g>
+<g style="mix-blend-mode:darken" opacity="0.35">
+<rect x="33" y="10" width="14" height="14" fill="#8ECB89"/>
+</g>
+</svg>
