@@ -440,9 +440,7 @@ macro_rules! impl_grid_controller_js_set_formatting_fns {
         impl GridController {
             $(
                 $(#[doc = $doc_line])*
-                ///
                 /// Returns a [`TransactionSummary`].
-                #[wasm_bindgen(js_name = "setCellAlign")]
                 pub fn $rust_fn_name(
                     &mut self,
                     sheet_id: String,
