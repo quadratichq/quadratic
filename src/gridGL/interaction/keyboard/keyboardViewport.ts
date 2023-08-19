@@ -1,10 +1,10 @@
-import { MultipleFormat } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { Pointer } from '../pointer/Pointer';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { CellFormatSummary } from '../../../quadratic-core/types';
 import { LocalFiles } from '../../../ui/contexts/LocalFiles';
+import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
+import { Pointer } from '../pointer/Pointer';
 
 export function keyboardViewport(options: {
   app: PixiApp;
@@ -15,7 +15,7 @@ export function keyboardViewport(options: {
   clearAllFormatting: Function;
   changeBold: Function;
   changeItalic: Function;
-  format: MultipleFormat;
+  formatPrimaryCell?: CellFormatSummary;
   pointer: Pointer;
   presentationMode: boolean;
   setPresentationMode: Function;
@@ -27,7 +27,7 @@ export function keyboardViewport(options: {
     clearAllFormatting,
     currentFileId,
     event,
-    format,
+    formatPrimaryCell,
     sheet,
     editorInteractionState,
     setEditorInteractionState,
@@ -92,12 +92,12 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    changeBold(!(format.bold === true));
+    changeBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    changeItalic(!(format.italic === true));
+    changeItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
     return true;
   }
 

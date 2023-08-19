@@ -53,18 +53,17 @@ export const FloatingContextMenu = (props: Props) => {
   const moreMenuButtonRef = useRef(null);
   const borders = useGetBorderMenu({ sheetController: sheetController });
   const {
-    changeFillColor,
-    removeFillColor,
-    changeBold,
-    changeItalic,
-    changeTextColor,
-    changeAlignment,
+    setFillColor,
+    setBold,
+    setItalic,
+    setTextColor,
+    setAlignment,
     textFormatDecreaseDecimalPlaces,
     textFormatIncreaseDecimalPlaces,
     textFormatSetCurrency,
     textFormatSetPercentage,
   } = useFormatCells(sheetController);
-  const { format } = useGetSelection(sheetController.sheet);
+  const { formatPrimaryCell } = useGetSelection(sheetController.sheet);
   const { clearAllFormatting } = useClearAllFormatting(sheetController);
   const cursor = sheetController.sheet.cursor;
 
@@ -224,13 +223,13 @@ export const FloatingContextMenu = (props: Props) => {
         }}
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton onClick={() => changeBold(!format.bold)} color="inherit">
+          <IconButton onClick={() => setBold(!formatPrimaryCell?.bold)} color="inherit">
             <FormatBold fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton onClick={() => changeItalic(!format.italic)} color="inherit">
+          <IconButton onClick={() => setItalic(!formatPrimaryCell?.italic)} color="inherit">
             <FormatItalic fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -246,23 +245,23 @@ export const FloatingContextMenu = (props: Props) => {
             </div>
           }
         >
-          <QColorPicker onChangeComplete={changeTextColor} onClear={removeFillColor} />
+          <QColorPicker onChangeComplete={setTextColor} onClear={() => setTextColor(undefined)} />
         </Menu>
 
         <MenuDivider />
 
         <TooltipHint title="Align left">
-          <IconButton size="small" onClick={() => changeAlignment('left')}>
+          <IconButton size="small" onClick={() => setAlignment('left')}>
             <FormatAlignLeft fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         <TooltipHint title="Align center">
-          <IconButton size="small" onClick={() => changeAlignment('center')}>
+          <IconButton size="small" onClick={() => setAlignment('center')}>
             <FormatAlignCenter fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         <TooltipHint title="Align right">
-          <IconButton size="small" onClick={() => changeAlignment('right')}>
+          <IconButton size="small" onClick={() => setAlignment('right')}>
             <FormatAlignRight fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -281,7 +280,7 @@ export const FloatingContextMenu = (props: Props) => {
             </div>
           }
         >
-          <QColorPicker onChangeComplete={changeFillColor} onClear={removeFillColor} />
+          <QColorPicker onChangeComplete={setFillColor} onClear={() => setFillColor(undefined)} />
         </Menu>
         <Menu
           menuButton={

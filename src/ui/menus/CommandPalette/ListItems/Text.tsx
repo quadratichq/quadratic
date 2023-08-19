@@ -1,21 +1,21 @@
+import { FormatAlignCenter, FormatAlignLeft, FormatAlignRight, FormatBold, FormatItalic } from '@mui/icons-material';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useFormatCells } from '../../TopBar/SubMenus/useFormatCells';
 import { useGetSelection } from '../../TopBar/SubMenus/useGetSelection';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { FormatAlignCenter, FormatAlignLeft, FormatAlignRight, FormatBold, FormatItalic } from '@mui/icons-material';
 
 const ListItems = [
   {
     label: 'Text: Bold',
     Component: (props: any) => {
       const selection = useGetSelection(props.sheetController.sheet);
-      const format = useFormatCells(props.sheetController, props.app);
+      const format = useFormatCells(props.sheetController);
       return (
         <CommandPaletteListItem
           {...props}
           icon={<FormatBold />}
           action={() => {
-            format.changeBold(!selection.format?.bold);
+            format.setBold(!selection.formatPrimaryCell?.bold);
           }}
           shortcut="B"
           shortcutModifiers={KeyboardSymbols.Command}
@@ -27,13 +27,13 @@ const ListItems = [
     label: 'Text: Italic',
     Component: (props: any) => {
       const selection = useGetSelection(props.sheetController.sheet);
-      const format = useFormatCells(props.sheetController, props.app);
+      const format = useFormatCells(props.sheetController);
       return (
         <CommandPaletteListItem
           {...props}
           icon={<FormatItalic />}
           action={() => {
-            format.changeItalic(!selection.format?.italic);
+            format.setItalic(!selection.formatPrimaryCell?.italic);
           }}
           shortcut="I"
           shortcutModifiers={KeyboardSymbols.Command}
@@ -44,14 +44,14 @@ const ListItems = [
   {
     label: 'Text: Align left',
     Component: (props: any) => {
-      const { changeAlignment } = useFormatCells(props.sheetController, props.app);
+      const { setAlignment: changeAlignment } = useFormatCells(props.sheetController);
       return <CommandPaletteListItem {...props} icon={<FormatAlignLeft />} action={() => changeAlignment('left')} />;
     },
   },
   {
     label: 'Text: Align center',
     Component: (props: any) => {
-      const { changeAlignment } = useFormatCells(props.sheetController, props.app);
+      const { setAlignment: changeAlignment } = useFormatCells(props.sheetController);
       return (
         <CommandPaletteListItem {...props} icon={<FormatAlignCenter />} action={() => changeAlignment('center')} />
       );
@@ -60,7 +60,7 @@ const ListItems = [
   {
     label: 'Text: Align right',
     Component: (props: any) => {
-      const { changeAlignment } = useFormatCells(props.sheetController, props.app);
+      const { setAlignment: changeAlignment } = useFormatCells(props.sheetController);
       return <CommandPaletteListItem {...props} icon={<FormatAlignRight />} action={() => changeAlignment('right')} />;
     },
   },

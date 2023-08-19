@@ -216,20 +216,21 @@ export const generateClipboardStrings = (sheet_controller: SheetController, cell
       plainTextClipboardString += '\n';
     }
 
+    // todo...
     for (let offset_x = 0; offset_x < cWidth; offset_x++) {
-      let cell_x = cell0.x + offset_x;
-      let cell_y = cell0.y + offset_y;
+      // let cell_x = cell0.x + offset_x;
+      // let cell_y = cell0.y + offset_y;
 
       if (offset_x > 0) {
         plainTextClipboardString += '\t';
       }
 
-      const cellAndFormat = sheet_controller.sheet.getCellAndFormatCopy(cell_x, cell_y);
+      // const cellAndFormat = sheet_controller.sheet.getCellAndFormatCopy(cell_x, cell_y);
 
-      if (cellAndFormat) {
-        plainTextClipboardString += cellAndFormat?.cell?.value || '';
-        quadraticClipboardString.cells.push(cellAndFormat);
-      }
+      // if (cellAndFormat) {
+      //   plainTextClipboardString += cellAndFormat?.cell?.value || '';
+      //   quadraticClipboardString.cells.push(cellAndFormat);
+      // }
     }
   }
 

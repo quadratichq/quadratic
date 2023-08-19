@@ -33,16 +33,8 @@ interface IProps {
 }
 
 export const FormatMenu = (props: IProps) => {
-  const { format } = useGetSelection(props.sheet_controller.sheet);
-  const {
-    changeFillColor,
-    removeFillColor,
-    changeBold,
-    changeItalic,
-    changeTextColor,
-    removeTextColor,
-    changeAlignment,
-  } = useFormatCells(props.sheet_controller);
+  const { formatPrimaryCell } = useGetSelection(props.sheet_controller.sheet);
+  const { setFillColor, setBold, setItalic, setTextColor, setAlignment } = useFormatCells(props.sheet_controller);
 
   // focus canvas after the format menu closes
   const onMenuChange = useCallback((event: MenuChangeEvent) => {
@@ -65,10 +57,10 @@ export const FormatMenu = (props: IProps) => {
         </Tooltip>
       }
     >
-      <MenuItem onClick={() => changeBold(!(format.bold === true))}>
+      <MenuItem onClick={() => setBold(!(formatPrimaryCell?.bold === true))}>
         <MenuLineItem primary="Bold" secondary={KeyboardSymbols.Command + 'B'} Icon={FormatBold} />
       </MenuItem>
-      <MenuItem onClick={() => changeItalic(!(format.italic === true))}>
+      <MenuItem onClick={() => setItalic(!(formatPrimaryCell?.italic === true))}>
         <MenuLineItem primary="Italic" secondary={KeyboardSymbols.Command + 'I'} Icon={FormatItalic} />
       </MenuItem>
       <SubMenu
@@ -76,17 +68,17 @@ export const FormatMenu = (props: IProps) => {
         id="TextColorMenuID"
         label={<MenuLineItem primary="Text color" Icon={FormatColorText} />}
       >
-        <QColorPicker onChangeComplete={changeTextColor} onClear={removeTextColor} />
+        <QColorPicker onChangeComplete={setTextColor} onClear={() => setTextColor()} />
       </SubMenu>
 
       <MenuDivider />
-      <MenuItem onClick={() => changeAlignment('left')}>
+      <MenuItem onClick={() => setAlignment('left')}>
         <MenuLineItem primary="Left" Icon={FormatAlignLeft} secondary="" />
       </MenuItem>
-      <MenuItem onClick={() => changeAlignment('center')}>
+      <MenuItem onClick={() => setAlignment('center')}>
         <MenuLineItem primary="Center" Icon={FormatAlignCenter} />
       </MenuItem>
-      <MenuItem onClick={() => changeAlignment('right')}>
+      <MenuItem onClick={() => setAlignment('right')}>
         <MenuLineItem primary="Right" Icon={FormatAlignRight} />
       </MenuItem>
 
@@ -96,7 +88,7 @@ export const FormatMenu = (props: IProps) => {
         id="FillColorMenuID"
         label={<MenuLineItem primary="Fill color" Icon={FormatColorFill} />}
       >
-        <QColorPicker onChangeComplete={changeFillColor} onClear={removeFillColor} />
+        <QColorPicker onChangeComplete={setFillColor} onClear={() => setFillColor()} />
       </SubMenu>
 
       <SubMenu label={<MenuLineItem primary="Border" Icon={BorderAll} />}>{borders}</SubMenu>

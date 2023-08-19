@@ -1,24 +1,20 @@
 import { useCallback } from 'react';
 import { ColorResult } from 'react-color';
-import { clearFormattingAction } from '../../../../grid/actions/clearFormattingAction';
 import { SheetController } from '../../../../grid/controller/SheetController';
-import { DEFAULT_NUMBER_OF_DECIMAL_PLACES } from '../../../../grid/formatting/cellTextFormat';
-import { pixiAppEvents } from '../../../../gridGL/pixiApp/PixiAppEvents';
+import { transactionResponse } from '../../../../grid/controller/transactionResponse';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
-import { CellAlignment, CellFormat } from '../../../../schemas';
+import { TransactionSummary } from '../../../../quadratic-core/types';
+import { CellAlignment } from '../../../../schemas';
 import { useGetSelection } from './useGetSelection';
 
 export const FORMAT_SELECTION_EVENT = 'format-selection-event';
 
 interface IResults {
-  changeFillColor: (rgb: ColorResult) => void;
-  removeFillColor: () => void;
-  clearFormatting: (args?: { create_transaction?: boolean }) => void;
-  changeBold: (bold: boolean) => void;
-  changeItalic: (italic: boolean) => void;
-  changeTextColor: (rgb: ColorResult) => void;
-  changeAlignment: (alignment: CellAlignment) => void;
-  removeTextColor: () => void;
+  setFillColor: (rgb?: ColorResult) => void;
+  setBold: (bold: boolean) => void;
+  setItalic: (italic: boolean) => void;
+  setTextColor: (rgb?: ColorResult) => void;
+  setAlignment: (alignment: CellAlignment) => void;
   textFormatIncreaseDecimalPlaces: () => void;
   textFormatDecreaseDecimalPlaces: () => void;
   textFormatClear: () => void;
@@ -26,144 +22,93 @@ interface IResults {
   textFormatSetPercentage: () => void;
   textFormatSetNumber: () => void;
   textFormatSetExponential: () => void;
+  clearFormatting: (args?: { create_transaction?: boolean }) => void;
 }
 
-type CellFormatNoPosition = Omit<CellFormat, 'x' | 'y'>;
-
-export const useFormatCells = (sheet_controller: SheetController, skipStartTransaction?: boolean): IResults => {
-  const { start, end } = useGetSelection(sheet_controller.sheet);
+export const useFormatCells = (sheetController: SheetController): IResults => {
+  const { rectangle } = useGetSelection(sheetController.sheet);
 
   const onFormat = useCallback(
-    (updatedFormat: CellFormatNoPosition, deltaNumberOfDecimalPlaces?: number): void => {
-      const formats: CellFormat[] = [];
-      for (let y = start.y; y <= end.y; y++) {
-        for (let x = start.x; x <= end.x; x++) {
-          let format = sheet_controller.sheet.grid.getFormat(x, y) ?? { x, y };
-
-          // if we are changing the number of decimal places
-          if (deltaNumberOfDecimalPlaces) {
-            if (format.textFormat === undefined) {
-              format.textFormat = {
-                type: 'NUMBER',
-                decimalPlaces: DEFAULT_NUMBER_OF_DECIMAL_PLACES + deltaNumberOfDecimalPlaces,
-              };
-            } else {
-              format.textFormat = {
-                ...format.textFormat,
-                decimalPlaces:
-                  (format.textFormat.decimalPlaces ?? DEFAULT_NUMBER_OF_DECIMAL_PLACES) + deltaNumberOfDecimalPlaces,
-              };
-            }
-            if ((format.textFormat.decimalPlaces ?? 0) < 0) {
-              format.textFormat.decimalPlaces = 0;
-            }
-          }
-
-          formats.push({ ...format, ...updatedFormat });
-        }
-      }
-      // Transaction to update formats
-      if (!skipStartTransaction) sheet_controller.start_transaction();
-      sheet_controller.execute_statement({
-        type: 'SET_CELL_FORMATS',
-        data: formats,
-      });
-      if (!skipStartTransaction) sheet_controller.end_transaction();
-      pixiAppEvents.quadrantsChanged({ range: { start, end } });
-
-      // triggers an event to indicate selection's format change (see useGetSelection.ts)
-      window.dispatchEvent(new CustomEvent(FORMAT_SELECTION_EVENT));
+    (summary: TransactionSummary) => {
+      transactionResponse(sheetController, summary);
+      window.dispatchEvent(new Event(FORMAT_SELECTION_EVENT));
     },
-    [end, sheet_controller, skipStartTransaction, start]
+    [sheetController]
   );
 
-  const changeFillColor = useCallback(
-    (color: ColorResult): void => {
-      onFormat({ fillColor: convertReactColorToString(color) });
+  const setFillColor = useCallback(
+    (color?: ColorResult): void => {
+      onFormat(sheetController.sheet.setCellFillColor(rectangle, color ? convertReactColorToString(color) : undefined));
     },
-    [onFormat]
+    [onFormat, rectangle, sheetController.sheet]
   );
 
-  const removeFillColor = useCallback(() => {
-    onFormat({ fillColor: undefined });
-  }, [onFormat]);
-
-  const clearFormatting = useCallback(
-    (args?: { create_transaction?: boolean }): void => {
-      clearFormattingAction({ sheet_controller, start, end, create_transaction: args?.create_transaction });
-    },
-    [end, sheet_controller, start]
-  );
-
-  const changeBold = useCallback(
+  const setBold = useCallback(
     (bold: boolean): void => {
-      onFormat({ bold });
+      onFormat(sheetController.sheet.setCellBold(rectangle, bold));
     },
-    [onFormat]
+    [onFormat, rectangle, sheetController.sheet]
   );
 
-  const changeItalic = useCallback(
+  const setItalic = useCallback(
     (italic: boolean): void => {
-      onFormat({ italic });
+      onFormat(sheetController.sheet.setCellItalic(rectangle, italic));
     },
-    [onFormat]
+    [onFormat, rectangle, sheetController.sheet]
   );
 
-  const changeTextColor = useCallback(
-    (rgb: ColorResult): void => {
-      onFormat({ textColor: convertReactColorToString(rgb) });
+  const setTextColor = useCallback(
+    (rgb?: ColorResult): void => {
+      onFormat(sheetController.sheet.setCellTextColor(rectangle, rgb ? convertReactColorToString(rgb) : undefined));
     },
-    [onFormat]
+    [onFormat, rectangle, sheetController.sheet]
   );
 
-  const removeTextColor = useCallback((): void => {
-    onFormat({ textColor: undefined });
-  }, [onFormat]);
+  const setAlignment = useCallback(
+    (alignment: CellAlignment): void => {
+      onFormat(sheetController.sheet.setCellAlign(rectangle, alignment));
+    },
+    [onFormat, rectangle, sheetController.sheet]
+  );
 
   const textFormatIncreaseDecimalPlaces = useCallback((): void => {
-    onFormat({}, 1);
-  }, [onFormat]);
+    throw new Error('not implemented yet');
+  }, []);
 
   const textFormatDecreaseDecimalPlaces = useCallback((): void => {
-    onFormat({}, -1);
-  }, [onFormat]);
+    throw new Error('not implemented yet');
+  }, []);
 
   const textFormatSetCurrency = useCallback((): void => {
-    onFormat({ textFormat: { type: 'CURRENCY', display: 'CURRENCY', symbol: 'USD' } });
-  }, [onFormat]);
+    throw new Error('not implemented yet');
+  }, []);
 
   const textFormatSetPercentage = useCallback((): void => {
-    onFormat({ textFormat: { type: 'PERCENTAGE' } });
-  }, [onFormat]);
+    throw new Error('not implemented yet');
+  }, []);
 
   const textFormatSetNumber = useCallback((): void => {
-    onFormat({ textFormat: { type: 'NUMBER' } });
-  }, [onFormat]);
+    throw new Error('not implemented yet');
+  }, []);
 
   const textFormatSetExponential = useCallback((): void => {
-    onFormat({ textFormat: { type: 'EXPONENTIAL' } });
-  }, [onFormat]);
+    throw new Error('not implemented yet');
+  }, []);
 
   const textFormatClear = useCallback((): void => {
-    onFormat({ textFormat: undefined });
-  }, [onFormat]);
+    throw new Error('not implemented yet');
+  }, []);
 
-  const changeAlignment = useCallback(
-    (alignment: CellAlignment): void => {
-      onFormat({ alignment });
-    },
-    [onFormat]
-  );
+  const clearFormatting = useCallback(() => {
+    onFormat(sheetController.sheet.clearFormatting(rectangle));
+  }, [onFormat, rectangle, sheetController.sheet]);
 
   return {
-    changeFillColor,
-    removeFillColor,
-    clearFormatting,
-    changeBold,
-    changeItalic,
-    changeTextColor,
-    removeTextColor,
-    changeAlignment,
+    setFillColor,
+    setBold,
+    setItalic,
+    setTextColor,
+    setAlignment,
     textFormatIncreaseDecimalPlaces,
     textFormatDecreaseDecimalPlaces,
     textFormatClear,
@@ -171,5 +116,6 @@ export const useFormatCells = (sheet_controller: SheetController, skipStartTrans
     textFormatSetPercentage,
     textFormatSetNumber,
     textFormatSetExponential,
+    clearFormatting,
   };
 };

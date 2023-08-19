@@ -1,22 +1,27 @@
 import { Point, Rectangle } from 'pixi.js';
 import { GridController, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
 import {
+  CellAlign,
+  CellFormatSummary,
   CellValue,
+  CellWrap,
   CodeCellValue,
+  FormattingSummary,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  NumericFormat,
   Rect,
   TransactionSummary,
 } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
 import { SheetCursorSave } from '../sheet/SheetCursor';
 
-const rectangleToRect = (rectangle: Rectangle): Rect => {
+const rectangleToRect = (rectangle: Rectangle): RectInternal => {
   return new RectInternal(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
 };
 
-const pointsToRect = (x: number, y: number, width: number, height: number): Rect => {
+const pointsToRect = (x: number, y: number, width: number, height: number): RectInternal => {
   return new RectInternal(new Pos(x, y), new Pos(x + width, y + height));
 };
 
@@ -51,12 +56,37 @@ export class Grid {
     this.gridController = GridController.newFromFile(grid);
   }
 
-  // sheet operations
-  // ----------------
+  //#region get sheet information
+  //-------------------------
+
+  sheetIndexToId(index: number): string | undefined {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.sheetIndexToId(index);
+  }
+
+  getSheetOrder(sheetId: string): number | undefined {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.sheetIdToIndex(sheetId);
+  }
+
+  getSheetName(sheetId: string): string | undefined {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.getSheetName(sheetId);
+  }
+
+  getSheetColor(sheetId: string): string | undefined {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.getSheetColor(sheetId);
+  }
+
+  //#endregion
+
+  //#region set sheet operations
+  //------------------------
 
   populateWithRandomFloats(sheetId: string, width: number, height: number): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height) as RectInternal);
+    return this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height));
   }
 
   getSheetIds(): string[] {
@@ -90,8 +120,10 @@ export class Grid {
     return this.gridController.duplicateSheet(sheetId, JSON.stringify(cursor));
   }
 
-  // sheet grid operations
-  // ---------------------
+  //#endregion
+
+  //#region set grid operations
+  //-----------------------------
 
   setCellValue(options: {
     sheetId: string;
@@ -121,48 +153,93 @@ export class Grid {
 
   deleteCellValues(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.deleteCellValues(
+    return this.gridController.deleteCellValues(sheetId, rectangleToRect(rectangle), JSON.stringify(cursor));
+  }
+
+  setCellAlign(
+    sheetId: string,
+    rectangle: Rectangle,
+    align: CellAlign | undefined,
+    cursor: SheetCursorSave
+  ): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.js_set_cell_align(sheetId, rectangleToRect(rectangle), align, JSON.stringify(cursor));
+  }
+
+  setCellWrap(sheetId: string, rectangle: Rectangle, wrap: CellWrap, cursor: SheetCursorSave): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.js_set_cell_wrap(sheetId, rectangleToRect(rectangle), wrap, JSON.stringify(cursor));
+  }
+
+  setCellNumericFormat(
+    sheetId: string,
+    rectangle: Rectangle,
+    numericFormat: NumericFormat,
+    cursor: SheetCursorSave
+  ): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.js_set_cell_numeric_format(
       sheetId,
-      rectangleToRect(rectangle) as RectInternal,
+      rectangleToRect(rectangle),
+      numericFormat,
       JSON.stringify(cursor)
     );
   }
 
-  // sheet information
-  // -----------------
-
-  sheetIndexToId(index: number): string | undefined {
+  setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.sheetIndexToId(index);
+    return this.gridController.js_set_cell_bold(sheetId, rectangleToRect(rectangle), bold, JSON.stringify(cursor));
   }
 
-  getSheetOrder(sheetId: string): number | undefined {
+  setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.sheetIdToIndex(sheetId);
+    return this.gridController.js_set_cell_italic(sheetId, rectangleToRect(rectangle), italic, JSON.stringify(cursor));
   }
 
-  getSheetName(sheetId: string): string | undefined {
+  setCellTextColor(
+    sheetId: string,
+    rectangle: Rectangle,
+    textColor: string | undefined,
+    cursor: SheetCursorSave
+  ): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.getSheetName(sheetId);
+    return this.gridController.js_set_cell_text_color(
+      sheetId,
+      rectangleToRect(rectangle),
+      textColor,
+      JSON.stringify(cursor)
+    );
   }
 
-  getSheetColor(sheetId: string): string | undefined {
+  setCellFillColor(
+    sheetId: string,
+    rectangle: Rectangle,
+    fillColor: string | undefined,
+    cursor: SheetCursorSave
+  ): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.getSheetColor(sheetId);
+    return this.gridController.js_set_cell_fill_color(
+      sheetId,
+      rectangleToRect(rectangle),
+      fillColor,
+      JSON.stringify(cursor)
+    );
   }
 
-  // get grid information
-  // ---------------------
+  //#endregion
+
+  //#region get grid information
+  // ---------------------------
 
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle) as RectInternal);
+    const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle));
     return JSON.parse(data);
   }
 
   getRenderFills(sheetId: string, rectangle: Rectangle): JsRenderFill[] {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    const data = this.gridController.getRenderFills(sheetId, rectangleToRect(rectangle) as RectInternal);
+    const data = this.gridController.getRenderFills(sheetId, rectangleToRect(rectangle));
     return JSON.parse(data);
   }
 
@@ -186,8 +263,20 @@ export class Grid {
     return JSON.parse(data);
   }
 
-  // Undo/redo
-  //-----
+  getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.getCellFormatSummary(sheetId, new Pos(x, y));
+  }
+
+  getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
+  }
+
+  //#endregion
+
+  //#region Undo/redo
+  //-----------------
 
   hasUndo(): boolean {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
@@ -208,4 +297,6 @@ export class Grid {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     return this.gridController.redo(JSON.stringify(cursor));
   }
+
+  //#endregion
 }

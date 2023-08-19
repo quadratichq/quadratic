@@ -292,6 +292,15 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&output)?)
     }
 
+    /// Returns a summary of the formatting in a region as a
+    /// [`CellFormatSummary`].
+    #[wasm_bindgen(js_name = "getCellFormatSummary")]
+    pub fn js_cell_format_summary(&self, sheet_id: String, pos: &Pos) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let output: CellFormatSummary = self.sheet(sheet_id).get_cell_format_summary(*pos);
+        Ok(serde_wasm_bindgen::to_value(&output)?)
+    }
+
     #[wasm_bindgen(js_name = "getSheetName")]
     pub fn js_sheet_name(&self, sheet_id: String) -> String {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();

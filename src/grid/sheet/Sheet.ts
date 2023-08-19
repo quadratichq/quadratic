@@ -1,13 +1,21 @@
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
-import { CodeCellValue, JsRenderCell, JsRenderCodeCell, JsRenderFill } from '../../quadratic-core/types';
-import { Cell, CellFormat } from '../../schemas';
+import {
+  CellAlign,
+  CellFormatSummary,
+  CodeCellValue,
+  FormattingSummary,
+  JsRenderCell,
+  JsRenderCodeCell,
+  JsRenderFill,
+  TransactionSummary,
+} from '../../quadratic-core/types';
 import { Grid } from '../controller/Grid';
 import { SheetController } from '../controller/SheetController';
 import { transactionResponse } from '../controller/transactionResponse';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
-import { CellAndFormat, GridSparse } from './GridSparse';
+import { GridSparse } from './GridSparse';
 import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
@@ -57,8 +65,8 @@ export class Sheet {
     // this.cursor = new SheetCursor(this);
   }
 
-  // user initiated sheet actions
-  // ----------------------------
+  //#region set sheet actions
+  // -----------------------------------
 
   private save(): void {
     this.sheetController.saveLocalFiles?.();
@@ -76,24 +84,30 @@ export class Sheet {
     this.save();
   }
 
-  get name(): string {
-    const name = this.gridNew.getSheetName(this.id);
-    if (name === undefined) throw new Error('Expected name to be defined in Sheet');
-    return name;
-  }
   set name(name: string) {
     const summary = this.gridNew.setSheetName(this.id, name, this.cursor.save());
     transactionResponse(this.sheetController, summary);
     this.save();
   }
 
-  get color(): string | undefined {
-    return this.gridNew.getSheetColor(this.id);
-  }
   set color(color: string | undefined) {
     const summary = this.gridNew.setSheetColor(this.id, color, this.cursor.save());
     transactionResponse(this.sheetController, summary);
     this.save();
+  }
+
+  //#endregion
+
+  //#region get grid information
+
+  get name(): string {
+    const name = this.gridNew.getSheetName(this.id);
+    if (name === undefined) throw new Error('Expected name to be defined in Sheet');
+    return name;
+  }
+
+  get color(): string | undefined {
+    return this.gridNew.getSheetColor(this.id);
   }
 
   get order(): string {
@@ -122,29 +136,12 @@ export class Sheet {
     return this.gridNew.getCodeValue(this.id, x, y);
   }
 
-  protected copyCell(cell: Cell | undefined): Cell | undefined {
-    if (!cell) return undefined;
-    return {
-      ...cell,
-      evaluation_result: cell.evaluation_result ? { ...cell.evaluation_result } : undefined,
-    };
+  getFormattingSummary(rectangle: Rectangle): FormattingSummary {
+    return this.gridNew.getFormattingSummary(this.id, rectangle);
   }
 
-  protected copyFormat(format: CellFormat | undefined): CellFormat | undefined {
-    if (!format) return undefined;
-    return {
-      ...format,
-      textFormat: format.textFormat ? { ...format.textFormat } : undefined,
-    };
-  }
-
-  getCellAndFormatCopy(x: number, y: number): CellAndFormat | undefined {
-    const cell = this.grid.get(x, y);
-    if (!cell) return;
-    return {
-      cell: this.copyCell(cell.cell),
-      format: this.copyFormat(cell.format),
-    };
+  getCellFormatSummary(x: number, y: number): CellFormatSummary {
+    return this.gridNew.getCellFormatSummary(this.id, x, y);
   }
 
   getGridBounds(onlyData: boolean): Rectangle | undefined {
@@ -218,15 +215,33 @@ export class Sheet {
     ];
   }
 
-  hasQuadrant(x: number, y: number): boolean {
-    return (
-      this.grid.hasQuadrant(x, y) || this.borders.hasQuadrant(x, y)
-      // this.render_dependency.hasQuadrant(x, y) ||
-      // this.array_dependency.hasQuadrant(x, y)
-    );
+  //#endregion
+
+  //#region set grid information
+
+  setCellFillColor(rectangle: Rectangle, fillColor?: string): TransactionSummary {
+    return this.gridNew.setCellFillColor(this.id, rectangle, fillColor, this.cursor.save());
   }
 
-  recalculateBounds(): void {
-    this.grid.recalculateBounds();
+  setCellBold(rectangle: Rectangle, bold: boolean): TransactionSummary {
+    return this.gridNew.setCellBold(this.id, rectangle, bold, this.cursor.save());
   }
+
+  setCellItalic(rectangle: Rectangle, italic: boolean): TransactionSummary {
+    return this.gridNew.setCellItalic(this.id, rectangle, italic, this.cursor.save());
+  }
+
+  setCellTextColor(rectangle: Rectangle, color?: string): TransactionSummary {
+    return this.gridNew.setCellTextColor(this.id, rectangle, color, this.cursor.save());
+  }
+
+  setCellAlign(rectangle: Rectangle, align?: CellAlign): TransactionSummary {
+    return this.gridNew.setCellAlign(this.id, rectangle, align, this.cursor.save());
+  }
+
+  clearFormatting(rectangle: Rectangle): TransactionSummary {
+    throw new Error('Not implemented yet');
+  }
+
+  //#endregion
 }

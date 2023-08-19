@@ -46,26 +46,26 @@ export class QuadrantsSheet extends Container {
     if (!bounds) return;
 
     // iterate through visible grid bounds and prepare quadrants
-    const yStart = Math.floor(bounds.top / QUADRANT_ROWS);
-    const yEnd = Math.floor(bounds.bottom / QUADRANT_ROWS);
-    const xStart = Math.floor(bounds.left / QUADRANT_COLUMNS);
-    const xEnd = Math.floor(bounds.right / QUADRANT_COLUMNS);
-    for (let y = yStart; y <= yEnd; y++) {
-      for (let x = xStart; x <= xEnd; x++) {
-        if (this.sheet.hasQuadrant(x, y)) {
-          const quadrant = this.addChild(new Quadrant(this.sheet, x, y));
-          this.quadrants.set(`${x},${y}`, quadrant);
-          this.complete = false;
-        }
-      }
-    }
-    if (debugShowCacheInfo) {
-      console.log(
-        `[Quadrants] Added ${
-          Math.ceil(bounds.width / QUADRANT_COLUMNS) * Math.ceil(bounds.height / QUADRANT_ROWS)
-        } quadrants for sheet ${this.sheet.id} to queue.`
-      );
-    }
+    // const yStart = Math.floor(bounds.top / QUADRANT_ROWS);
+    // const yEnd = Math.floor(bounds.bottom / QUADRANT_ROWS);
+    // const xStart = Math.floor(bounds.left / QUADRANT_COLUMNS);
+    // const xEnd = Math.floor(bounds.right / QUADRANT_COLUMNS);
+    // for (let y = yStart; y <= yEnd; y++) {
+    //   for (let x = xStart; x <= xEnd; x++) {
+    //     if (this.sheet.hasQuadrant(x, y)) {
+    //       const quadrant = this.addChild(new Quadrant(this.sheet, x, y));
+    //       this.quadrants.set(`${x},${y}`, quadrant);
+    //       this.complete = false;
+    //     }
+    //   }
+    // }
+    // if (debugShowCacheInfo) {
+    //   console.log(
+    //     `[Quadrants] Added ${
+    //       Math.ceil(bounds.width / QUADRANT_COLUMNS) * Math.ceil(bounds.height / QUADRANT_ROWS)
+    //     } quadrants for sheet ${this.sheet.id} to queue.`
+    //   );
+    // }
   }
 
   update(viewport: Viewport, timeStart: number): boolean | 'not dirty' {

@@ -12,8 +12,8 @@ use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
 use super::js_types::{
-    FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
-    JsRenderFill,
+    CellFormatSummary, FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell,
+    JsRenderCodeCellState, JsRenderFill,
 };
 use super::legacy;
 use super::response::{GetIdResponse, SetCellResponse};
@@ -210,6 +210,20 @@ impl Sheet {
         }
 
         FormattingSummary { bold, italic }
+    }
+
+    /// Returns a summary of formatting in a region.
+    pub fn get_cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
+        match self.columns.get(&pos.x) {
+            None => CellFormatSummary {
+                bold: None,
+                italic: None,
+            },
+            Some(column) => CellFormatSummary {
+                bold: column.bold.get(pos.y),
+                italic: column.italic.get(pos.y),
+            },
+        }
     }
 
     /// Sets a formatting property for a cell.

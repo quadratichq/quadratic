@@ -62,6 +62,12 @@ pub struct JsRenderBorder {
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct CellFormatSummary {
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+}
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct FormattingSummary {
     pub bold: BoolSummary,
     pub italic: BoolSummary,
