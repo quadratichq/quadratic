@@ -3,7 +3,6 @@ import { debugShowCellsHashBoxes } from '../../debugFlags';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { Pos, Rect } from '../../quadratic-core/quadratic_core';
-import { CellsBackground } from './CellsBackground';
 import { CellsSheet } from './CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 import { CellLabel } from './cellsLabels/CellLabel';
@@ -13,7 +12,7 @@ export class CellsHash extends Container {
   cellsSheet: CellsSheet;
 
   private test?: Graphics;
-  private cellsBackground: CellsBackground;
+  // private cellsBackground: CellsFills;
   private cellsLabels: CellsLabels;
 
   hashX: number;
@@ -21,9 +20,6 @@ export class CellsHash extends Container {
 
   // column/row bounds (does not include overflow cells)
   AABB: Rectangle;
-
-  // x,y bounds (includes overflow cells)
-  viewBounds: Bounds;
 
   // quadratic-core/rect
   rect: any;
@@ -45,7 +41,6 @@ export class CellsHash extends Container {
     this.hashY = y;
     this.key = CellsHash.getKey(x, y);
     this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    this.viewBounds = new Bounds();
 
     if (debugShowCellsHashBoxes) {
       const screen = this.sheet.gridOffsets.getScreenRectangle(
@@ -60,13 +55,8 @@ export class CellsHash extends Container {
         .drawShape(screen)
         .endFill();
     }
-    this.cellsBackground = this.addChild(new CellsBackground(this));
+    // this.cellsBackground = this.addChild(new CellsFills(this));
     this.cellsLabels = this.addChild(new CellsLabels(this));
-  }
-
-  updateBounds() {
-    this.viewBounds.clear();
-    this.viewBounds.mergeInto(this.cellsLabels.viewBounds, this.cellsBackground.viewBounds);
   }
 
   get sheet(): Sheet {
@@ -105,10 +95,9 @@ export class CellsHash extends Container {
     this.cellsLabels.updateBuffers();
 
     this.rect = new Rect(new Pos(this.AABB.left, this.AABB.top), new Pos(this.AABB.right, this.AABB.bottom));
-    this.updateBounds();
   }
 
-  updateBackgrounds(): void {
-    this.cellsBackground.create();
+  get viewBounds(): Bounds {
+    return this.cellsLabels.viewBounds;
   }
 }

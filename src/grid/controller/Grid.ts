@@ -243,6 +243,12 @@ export class Grid {
     return JSON.parse(data);
   }
 
+  getAllRenderFills(sheetId: string): JsRenderFill[] {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    const data = this.gridController.getAllRenderFills(sheetId);
+    return JSON.parse(data);
+  }
+
   getGridBounds(sheetId: string, ignoreFormatting: boolean): Rectangle | undefined {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     const bounds = this.gridController.getGridBounds(sheetId, ignoreFormatting);

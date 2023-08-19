@@ -6,6 +6,7 @@ import { pixiAppEvents } from '../pixiApp/PixiAppEvents';
 import { Coordinate } from '../types/size';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
+import { CellsFills } from './CellsFills';
 import { CellsHash } from './CellsHash';
 import { CellsMarkers } from './CellsMarker';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
@@ -13,6 +14,8 @@ import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 const MAXIMUM_FRAME_TIME = 1000 / 15;
 
 export class CellsSheet extends Container {
+  private cellsFills: CellsFills;
+
   // individual hash containers (eg, CellsBackground, CellsArray)
   private cellsHashContainer: Container;
 
@@ -43,6 +46,7 @@ export class CellsSheet extends Container {
     this.cellsHash = new Map();
     this.cellsRows = new Map();
     this.dirtyRows = new Set();
+    this.cellsFills = this.addChild(new CellsFills(this));
     this.cellsHashContainer = this.addChild(new Container());
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
@@ -113,6 +117,7 @@ export class CellsSheet extends Container {
     } else {
       this.cellsArray.visible = false;
     }
+    this.cellsFills.cheapCull(bounds);
     this.cellsMarkers.cheapCull(bounds);
     if (debugShowCellsSheetCulling) {
       console.log(`[CellsSheet] visible: ${count}/${this.cellsHash.size}`);
@@ -231,8 +236,8 @@ export class CellsSheet extends Container {
         }
       }
     }
-    if (hashes.size && options.background) {
-      hashes.forEach((hash) => hash.updateBackgrounds());
+    if (options.background) {
+      this.cellsFills.create();
     }
   }
 
@@ -269,17 +274,22 @@ export class CellsSheet extends Container {
 
   preload(): Promise<void> {
     return new Promise((resolve) => {
-      // if there are no bounds in this sheet, then there's nothing to do
+      this.cellsFills.create();
+      this.cellsBorders.create();
+
       if (!this.createHashes()) {
         resolve();
       } else {
         this.cellsArray.create();
-        this.cellsBorders.create();
         this.resolveTick = resolve;
         debugTimeReset();
         this.preloadTick();
       }
     });
+  }
+
+  updateFill(): void {
+    this.cellsFills.create();
   }
 
   update(): boolean {

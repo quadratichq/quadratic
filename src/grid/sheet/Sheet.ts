@@ -128,6 +128,10 @@ export class Sheet {
     return this.gridNew.getRenderFills(this.id, rectangle);
   }
 
+  getAllRenderFills(): JsRenderFill[] {
+    return this.gridNew.getAllRenderFills(this.id);
+  }
+
   getRenderCodeCells(): JsRenderCodeCell[] {
     return this.gridNew.getRenderCodeCells(this.id);
   }

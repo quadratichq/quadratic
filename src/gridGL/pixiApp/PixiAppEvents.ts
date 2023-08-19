@@ -173,6 +173,11 @@ class PixiAppEvents {
     this.app.cellsSheets.changed({ sheetId, rectangle, labels: true, background: false });
     this.app.setViewportDirty();
   }
+
+  fillsChanged(sheetIds: string[]): void {
+    if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.cellsChanged');
+    this.app.cellsSheets.updateFills(sheetIds);
+  }
 }
 
 export const pixiAppEvents = new PixiAppEvents();

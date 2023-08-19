@@ -13,6 +13,12 @@ export const transactionResponse = (sheetController: SheetController, summary: T
       const rectangle = rectToRectangle(region[1]);
       pixiAppEvents.cellsChanged(region[0].id, rectangle);
     });
+
+    // todo: placeholder until fill_sheets_modified is added
+    pixiAppEvents.fillsChanged(summary.cell_regions_modified.map((region: [SheetId, Rect]) => region[0].id));
+  }
+  if (summary.fill_sheets_modified) {
+    pixiAppEvents.fillsChanged(summary.fill_sheets_modified);
   }
   const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
   if (cursor) {

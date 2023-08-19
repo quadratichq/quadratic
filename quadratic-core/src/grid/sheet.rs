@@ -568,6 +568,22 @@ impl Sheet {
             })
             .collect()
     }
+    /// Returns all data for rendering cell fill color.
+    pub fn get_all_render_fills(&self) -> Vec<JsRenderFill> {
+        let mut ret = vec![];
+        for (&x, column) in self.columns.iter() {
+            for block in column.fill_color.blocks() {
+                ret.push(JsRenderFill {
+                    x,
+                    y: block.y,
+                    w: 1,
+                    h: block.len() as u32,
+                    color: block.content().value.clone(),
+                });
+            }
+        }
+        ret
+    }
     /// Returns data for rendering cell fill color.
     pub fn get_render_fills(&self, region: Rect) -> Vec<JsRenderFill> {
         let mut ret = vec![];

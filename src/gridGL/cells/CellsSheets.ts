@@ -103,4 +103,12 @@ export class CellsSheets extends Container<CellsSheet> {
   createBorders(): void {
     this.current?.createBorders();
   }
+
+  updateFills(sheetIds: string[]): void {
+    this.children.forEach((cellsSheet) => {
+      if (sheetIds.includes(cellsSheet.sheet.id)) {
+        cellsSheet.updateFill();
+      }
+    });
+  }
 }
