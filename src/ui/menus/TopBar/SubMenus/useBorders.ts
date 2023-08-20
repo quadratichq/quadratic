@@ -23,7 +23,7 @@ interface IResults {
 
 export const useBorders = (sheetController: SheetController): IResults => {
   const sheet = sheetController.sheet;
-  const { start, end, multiCursor } = useGetSelection(sheet);
+  const { rectangle } = useGetSelection(sheet);
 
   const changeBorders = (options: ChangeBorder): void => {
     const borderColor = options.color;

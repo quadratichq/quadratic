@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-use crate::{grid::*, Array, CellValue, Pos, Rect, RunLengthEncoding};
+use crate::{
+    grid::{borders::ChangeBorder, *},
+    Array, CellValue, Pos, Rect, RunLengthEncoding,
+};
 
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -241,6 +244,17 @@ impl GridController {
                         region,
                         values: old_values,
                     });
+                }
+
+                Operation::SetBorders {
+                    sheet_id,
+                    region,
+                    change_border,
+                    border_type,
+                } => {
+                    summary.border_sheets_modified.append(sheet_id);
+
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 }
 
                 Operation::SetCellFormats { region, attr } => {
@@ -482,12 +496,20 @@ pub enum Operation {
         target: SheetId,
         to_before: Option<SheetId>,
     },
+
+    SetBorders {
+        sheet_id: SheetId,
+        region: RegionRef,
+        change_border: ChangeBorder,
+        border_type: BorderType,
+    },
 }
 impl Operation {
     pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
         match self {
             Operation::SetCellValues { region, .. } => Some(region.sheet),
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
+            Operation::SetBorders { region, .. } => Some(region.sheet),
 
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,

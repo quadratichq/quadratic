@@ -4,7 +4,7 @@ use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 
 mod block;
-mod borders;
+pub mod borders;
 mod bounds;
 mod code;
 mod column;
@@ -16,7 +16,7 @@ mod response;
 mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
-pub use borders::{CellBorder, CellBorderStyle, CellBorders};
+pub use borders::{BorderType, CellBorderStyle, CellBorders};
 pub use bounds::GridBounds;
 pub use code::*;
 pub use column::{Column, ColumnData};

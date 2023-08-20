@@ -5,7 +5,7 @@ use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use super::borders::{CellBorder, SheetBorders};
+use super::borders::{BorderType, ChangeBorder, SheetBorders};
 use super::bounds::GridBounds;
 use super::code::{CodeCellLanguage, CodeCellRunResult, CodeCellValue};
 use super::column::Column;
@@ -166,13 +166,14 @@ impl Sheet {
         // TODO: spill (or have some other way to handle new code results)
     }
 
-    /// Sets or deletes horizontal borders in a region.
-    pub fn set_horizontal_border(&mut self, region: Rect, value: CellBorder) {
-        self.borders.set_horizontal_border(region, value);
-    }
-    /// Sets or deletes vertical borders in a region.
-    pub fn set_vertical_border(&mut self, region: Rect, value: CellBorder) {
-        self.borders.set_vertical_border(region, value);
+    /// Sets borders for a region
+    pub fn set_border(
+        &mut self,
+        region: Rect,
+        change_border: ChangeBorder,
+        border_type: BorderType,
+    ) {
+        self.borders.set_border(region, change_border, border_type);
     }
 
     /// Returns the value of a cell (i.e., what would be returned if code asked

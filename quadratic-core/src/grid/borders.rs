@@ -12,10 +12,10 @@ use crate::Rect;
 pub struct SheetBorders {
     /// Horizontal borders, stored transposed so that each `ColumnData` actually
     /// holds the data for one row.
-    horizontal: BTreeMap<i64, ColumnData<SameValue<CellBorder>>>,
+    horizontal: BTreeMap<i64, ColumnData<SameValue<BorderType>>>,
     /// Vertical borders, stored normally so that each `ColumnData` holds data
     /// for one column.
-    vertical: BTreeMap<i64, ColumnData<SameValue<CellBorder>>>,
+    vertical: BTreeMap<i64, ColumnData<SameValue<BorderType>>>,
 }
 impl SheetBorders {
     pub fn new() -> Self {
@@ -25,22 +25,45 @@ impl SheetBorders {
         }
     }
 
-    pub fn set_horizontal_border(&mut self, region: Rect, value: CellBorder) {
+    fn set_horizontal_border(&mut self, region: Rect, border_type: &BorderType) {
         // The horizontal borders structure is transposed, so this code is
         // intentionally swapping X and Y everywhere.
         for y in region.y_range() {
             self.horizontal
                 .entry(y)
                 .or_default()
-                .set_range(region.x_range(), value.clone());
+                .set_range(region.x_range(), border_type.clone());
         }
     }
-    pub fn set_vertical_border(&mut self, region: Rect, value: CellBorder) {
+    fn set_vertical_border(&mut self, region: Rect, border_type: &BorderType) {
         for x in region.x_range() {
             self.vertical
                 .entry(x)
                 .or_default()
-                .set_range(region.y_range(), value.clone());
+                .set_range(region.y_range(), border_type.clone());
+        }
+    }
+
+    pub fn set_border(
+        &mut self,
+        region: Rect,
+        change_border: ChangeBorder,
+        border_type: BorderType,
+    ) {
+        match change_border {
+            ChangeBorder::All => {
+                self.set_horizontal_border(region, &border_type);
+                self.set_vertical_border(region, &border_type);
+            }
+            ChangeBorder::Inside => {}
+            ChangeBorder::Outside => {}
+            ChangeBorder::Horizontal => {}
+            ChangeBorder::Vertical => {}
+            ChangeBorder::Left => {}
+            ChangeBorder::Top => {}
+            ChangeBorder::Right => {}
+            ChangeBorder::Bottom => {}
+            ChangeBorder::Clear => {}
         }
     }
 
@@ -100,14 +123,14 @@ impl SheetBorders {
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellBorders {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub h: Option<CellBorder>,
+    pub h: Option<BorderType>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub v: Option<CellBorder>,
+    pub v: Option<BorderType>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct CellBorder {
+pub struct BorderType {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
@@ -123,4 +146,20 @@ pub enum CellBorderStyle {
     Dotted,
     Dashed,
     Double,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "lowercase")]
+pub enum ChangeBorder {
+    All,
+    Inside,
+    Outside,
+    Horizontal,
+    Vertical,
+    Left,
+    Top,
+    Right,
+    Bottom,
+    Clear,
 }

@@ -25,7 +25,7 @@ fn main() {
         // grid/borders.rs
         grid::CellBorders,
         grid::CellBorderStyle,
-        grid::CellBorder,
+        grid::BorderType,
         // grid/bounds.rs
         grid::GridBounds,
         // grid/code.rs

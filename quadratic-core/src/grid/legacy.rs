@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::borders::CellBorder;
+use super::borders::BorderType;
 use super::formatting::{CellAlign, CellWrap, NumericFormat};
 use super::{
     CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Sheet,
@@ -110,9 +110,9 @@ pub struct JsBorders {
     pub x: i64,
     pub y: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub horizontal: Option<CellBorder>,
+    pub horizontal: Option<BorderType>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub vertical: Option<CellBorder>,
+    pub vertical: Option<BorderType>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
