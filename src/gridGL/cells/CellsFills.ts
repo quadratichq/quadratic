@@ -23,7 +23,6 @@ export class CellsFills extends ParticleContainer {
   create(): void {
     this.removeChildren();
     const fills = this.sheet.getAllRenderFills();
-    console.log({ fills });
     fills.forEach((fill) => {
       const sprite = this.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
       sprite.tint = convertColorStringToTint(fill.color);

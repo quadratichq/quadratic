@@ -13,7 +13,7 @@ import {
   Percent,
 } from '@mui/icons-material';
 import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
-import { ControlledMenu, Menu, MenuItem, useMenuState } from '@szhsin/react-menu';
+import { ControlledMenu, Menu, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
 import { PNG_MESSAGE } from '../../../constants/app';
@@ -66,6 +66,9 @@ export const FloatingContextMenu = (props: Props) => {
   const { formatPrimaryCell } = useGetSelection(sheetController.sheet);
   const { clearAllFormatting } = useClearAllFormatting(sheetController);
   const cursor = sheetController.sheet.cursor;
+
+  const textColorRef = useRef<MenuInstance>(null);
+  const fillColorRef = useRef<MenuInstance>(null);
 
   // close moreMenu when context menu closes
   useEffect(() => {
@@ -235,6 +238,7 @@ export const FloatingContextMenu = (props: Props) => {
         </TooltipHint>
         <Menu
           className="color-picker-submenu"
+          instanceRef={textColorRef}
           menuButton={
             <div>
               <TooltipHint title="Text color">
@@ -245,7 +249,16 @@ export const FloatingContextMenu = (props: Props) => {
             </div>
           }
         >
-          <QColorPicker onChangeComplete={setTextColor} onClear={() => setTextColor(undefined)} />
+          <QColorPicker
+            onChangeComplete={(color) => {
+              textColorRef.current?.closeMenu();
+              setTextColor(color);
+            }}
+            onClear={() => {
+              textColorRef.current?.closeMenu();
+              setTextColor(undefined);
+            }}
+          />
         </Menu>
 
         <MenuDivider />
@@ -270,6 +283,7 @@ export const FloatingContextMenu = (props: Props) => {
 
         <Menu
           className="color-picker-submenu"
+          instanceRef={fillColorRef}
           menuButton={
             <div>
               <TooltipHint title="Fill color">
@@ -280,7 +294,16 @@ export const FloatingContextMenu = (props: Props) => {
             </div>
           }
         >
-          <QColorPicker onChangeComplete={setFillColor} onClear={() => setFillColor(undefined)} />
+          <QColorPicker
+            onChangeComplete={(color) => {
+              fillColorRef.current?.closeMenu();
+              setFillColor(color);
+            }}
+            onClear={() => {
+              fillColorRef.current?.closeMenu();
+              setFillColor(undefined);
+            }}
+          />
         </Menu>
         <Menu
           menuButton={
