@@ -7,7 +7,7 @@ import { ROUTES } from '../../../constants/routes';
 import { focusGrid } from '../../../helpers/focusGrid';
 // import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
-import { useFileContext } from '../../contexts/FileContext';
+import { useFileContext } from '../../components/FileProvider';
 
 export const TopBarFileMenu = () => {
   const { name, renameFile } = useFileContext();

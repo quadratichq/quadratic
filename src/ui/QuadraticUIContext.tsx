@@ -2,7 +2,7 @@ import { InitialFile } from '../dashboard/FileRoute';
 import { SheetController } from '../grid/controller/sheetController';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import QuadraticUI from './QuadraticUI';
-import { FileProvider } from './contexts/FileContext';
+import { FileProvider } from './components/FileProvider';
 
 // TODO we'll add these in a separate PR
 // export const PixiAppContext = createContext<PixiApp>({} as PixiApp);
