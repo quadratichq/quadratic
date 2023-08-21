@@ -1,45 +1,29 @@
-import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { NoteAddOutlined, UploadFileOutlined } from '@mui/icons-material';
+import { NoteAddOutlined } from '@mui/icons-material';
+import { useNavigate, useParams } from 'react-router-dom';
+import { apiClient } from '../../../../api/apiClient';
+import { ROUTES } from '../../../../constants/routes';
 import { SaveFileOutlined } from '../../../icons';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { useLocalFiles } from '../../../contexts/LocalFiles';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
     label: 'File: New',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { createNewFile } = useLocalFiles();
-      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={createNewFile} />;
+      const navigate = useNavigate();
+      const action = () => navigate(ROUTES.CREATE_FILE);
+      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={action} />;
     },
   },
   {
     label: 'File: Download local copy',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { downloadCurrentFile } = useLocalFiles();
-      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={() => downloadCurrentFile()} />;
-    },
-  },
-  {
-    label: 'File: Open…',
-    Component: (props: CommandPaletteListItemSharedProps) => {
-      const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-      return (
-        <CommandPaletteListItem
-          {...props}
-          icon={<UploadFileOutlined />}
-          shortcut="O"
-          shortcutModifiers={[KeyboardSymbols.Command]}
-          action={() => {
-            setEditorInteractionState({
-              ...editorInteractionState,
-              showFileMenu: true,
-            });
-          }}
-        />
-      );
+      const { uuid } = useParams();
+      const downloadCurrentFile = () => {
+        if (uuid) {
+          apiClient.downloadFile(uuid);
+        }
+      };
+      return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={downloadCurrentFile} />;
     },
   },
 ];

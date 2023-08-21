@@ -15,20 +15,31 @@ If you have any problems getting the project to run locally, please create an is
 3. Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 4. `rustup target add wasm32-unknown-unknown` to install the WASM toolchain
 
-## Run Quadratic front-end locally
+## Run Quadratic
+
+In order to run the front-end and/or the server locally, you must have all the environment variables configured in `.env.local` (and `quadratic-api/.env.local` if you’re running a local server). You can grab the values from [our team Notion page](https://www.notion.so/Env-Variables-78b1a1da19d0421993abe8c449e51496?pvs=4) or by asking a team member.
+
+### Run front-end locally
 
 1. `npm install` to install dependencies
-   2a. `npm start` to run in browser or `npm run dev` to run with Electron
-   2b. or `npm run watch:front-end` to run in browser with automatic wasm rebuilding
+2. Configure `.env.local` values
+3. (a) `npm start` to run in browser or `npm run dev` to run with Electron; or (b) `npm run watch:front-end` to run in browser with automatic wasm rebuilding
 
-### Run Quadrtic server locally
+### Run server locally
 
 1. `cd quadratic-api`
 2. `npm i`
 3. Install [postgress.app](https://postgresapp.com/) (follow instructions on website)
-4. Configure `./.env` & `./quadratic-api/.env` values, including update to `DATABASE_ENV` variable to point at your local postgres db.
+4. Create two environment files `.env.local` & `quadratic-api/.env.local`.
+
+- For the `.env.local` react app ENV variables you will need to set the following variables:
+  `REACT_APP_AUTH0_DOMAIN` `REACT_APP_AUTH0_CLIENT_ID` `REACT_APP_AUTH0_AUDIENCE` `REACT_APP_AUTH0_ISSUER` `REACT_APP_QUADRATIC_API_URL`
+  You will need to ask your team for the appropriate values.
+
+- For `quadratic-api/.env.local` you will need to set the `DATABASE_ENV` to point at your local postgres db. You will also need to copy `AUTH0_JWKS_URI` and `AUTH0_ISSUER` from `quadratic-api/.env_example` into your local `quadratic-api/.env.local` api env variables.
+
 5. `npm run prisma:migrate`
-6. `npm start`
+6. Start both `npm run api:start` and `npm start`
 
 ### Run tests (TypeScript)
 

@@ -1,7 +1,7 @@
 import { Viewport } from 'pixi-viewport';
 import { Container, Graphics, Renderer } from 'pixi.js';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { IS_READONLY_MODE } from '../../constants/app';
+import { IS_READONLY_MODE } from '../../constants/appConstants';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
 import { SheetController } from '../../grid/controller/SheetController';
@@ -25,7 +25,6 @@ export class PixiApp {
   private parent?: HTMLDivElement;
   private update: Update;
   private cacheIsVisible = false;
-  save: () => Promise<void>;
 
   sheetController: SheetController;
 
@@ -52,11 +51,8 @@ export class PixiApp {
   // for testing purposes
   debug: Graphics;
 
-  paused = false;
-
-  constructor(sheetController: SheetController, save: () => Promise<void>) {
+  constructor(sheetController: SheetController) {
     this.sheetController = sheetController;
-    this.save = save;
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';

@@ -1,5 +1,5 @@
 import { Point, Rectangle } from 'pixi.js';
-import { IS_READONLY_MODE } from '../../../../constants/app';
+import { IS_READONLY_MODE } from '../../../../constants/appConstants';
 import { Sheet } from '../../../../grid/sheet/Sheet';
 import { intersects } from '../../../helpers/intersects';
 import { PixiApp } from '../../../pixiApp/PixiApp';
@@ -213,7 +213,7 @@ export class PointerAutoComplete {
       this.reset();
       return;
     }
-    this.app.sheetController.start_transaction();
+    this.app.sheet_controller.start_transaction();
 
     if (this.stateVertical === 'shrink') {
       if (this.endCell) {
@@ -262,7 +262,7 @@ export class PointerAutoComplete {
         toVertical: this.toVertical,
       });
     }
-    this.app.sheetController.end_transaction();
+    this.app.sheet_controller.end_transaction();
 
     this.setSelection();
     this.reset();

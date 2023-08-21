@@ -20,7 +20,6 @@ export const CommandPalette = (props: Props) => {
   const { app, sheetController, confirmSheetDelete } = props;
 
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-
   const [activeSearchValue, setActiveSearchValue] = React.useState<string>('');
   const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
 

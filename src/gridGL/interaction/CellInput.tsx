@@ -52,7 +52,7 @@ export const CellInput = (props: CellInputProps) => {
   // }
 
   // moves the cursor to the end of the input (since we're placing a single character that caused the input to open)
-  const handleFocus = useCallback((e) => {
+  const handleFocus = useCallback((e: any) => {
     const div = e.target;
     window.setTimeout(() => {
       if (!document.hasFocus() || !div.contains(document.activeElement)) return;
@@ -72,7 +72,7 @@ export const CellInput = (props: CellInputProps) => {
   // Effect for sizing the input width to the length of the value
   const [textInput, setTextInput] = useState<HTMLDivElement>();
   const textInputRef = useCallback(
-    (node) => {
+    (node: any) => {
       if (!node) return;
       node.focus();
       setTextInput(node);

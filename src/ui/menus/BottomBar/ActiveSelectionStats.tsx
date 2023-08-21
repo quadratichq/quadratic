@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { runFormula } from '../../../grid/computations/formulas/runFormula';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
+import BottomBarItem from './BottomBarItem';
 
 interface Props {
   sheet: Sheet;
@@ -84,9 +85,9 @@ export const ActiveSelectionStats = (props: Props) => {
   if (isBigEnoughForActiveSelectionStats && cursor.multiCursor)
     return (
       <>
-        {sum && <span>Sum: {sum}</span>}
-        {avg && <span>Avg: {avg}</span>}
-        {countA && <span>Count: {countA}</span>}
+        {sum && <BottomBarItem>Sum: {sum}</BottomBarItem>}
+        {avg && <BottomBarItem>Avg: {avg}</BottomBarItem>}
+        {countA && <BottomBarItem>Count: {countA}</BottomBarItem>}
       </>
     );
   else return null;

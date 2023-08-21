@@ -1,7 +1,6 @@
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { CellFormatSummary } from '../../../quadratic-core/types';
-import { LocalFiles } from '../../../ui/contexts/LocalFiles';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { Pointer } from '../pointer/Pointer';
@@ -19,13 +18,11 @@ export function keyboardViewport(options: {
   pointer: Pointer;
   presentationMode: boolean;
   setPresentationMode: Function;
-  currentFileId: LocalFiles['currentFileId'];
 }): boolean {
   const {
     changeBold,
     changeItalic,
     clearAllFormatting,
-    currentFileId,
     event,
     formatPrimaryCell,
     sheet,
@@ -39,28 +36,6 @@ export function keyboardViewport(options: {
   const { viewport } = app;
 
   if (event.altKey) return false;
-
-  // Should come before other shortcuts (opens file menu)
-  if ((event.metaKey || event.ctrlKey) && event.key === 'o') {
-    // Toggle visibility but only under certain conditions
-    if (!editorInteractionState.showFileMenu) {
-      setEditorInteractionState({
-        ...editorInteractionState,
-        showFileMenu: true,
-      });
-      return true;
-    } else if (editorInteractionState.showFileMenu && currentFileId) {
-      setEditorInteractionState({
-        ...editorInteractionState,
-        showFileMenu: false,
-      });
-      return true;
-    }
-    // Return true anyway, to override browser "Open" functionality
-    return true;
-  }
-  // If file menu is open, don't accept any other shortcuts
-  if (editorInteractionState.showFileMenu) return false;
 
   if ((event.metaKey || event.ctrlKey) && (event.key === 'p' || event.key === 'k' || event.key === '/')) {
     setEditorInteractionState({

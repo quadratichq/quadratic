@@ -1,4 +1,3 @@
-import { useAuth0 } from '@auth0/auth0-react';
 import { ContentCopy, ContentCut, ContentPaste, Redo, Undo } from '@mui/icons-material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Tooltip } from '@mui/material';
@@ -6,16 +5,20 @@ import Button from '@mui/material/Button';
 import { Menu, MenuDivider, MenuHeader, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useEffect } from 'react';
+import { useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
+import { apiClient } from '../../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { IS_READONLY_MODE } from '../../../../constants/app';
+import { authClient } from '../../../../auth';
+import { IS_READONLY_MODE } from '../../../../constants/appConstants';
+import { ROUTES } from '../../../../constants/routes';
 import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../../grid/controller/SheetController';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { useRootRouteLoaderData } from '../../../../router';
 import { isMac } from '../../../../utils/isMac';
-import { useLocalFiles } from '../../../contexts/LocalFiles';
 import { MenuLineItem } from '../MenuLineItem';
 import { useGridSettings } from './useGridSettings';
 
@@ -29,9 +32,8 @@ export const QuadraticMenu = (props: Props) => {
   const settings = useGridSettings();
   const cursor = sheetController.sheet.cursor;
 
-  const { createNewFile, downloadCurrentFile } = useLocalFiles();
-
-  const { isAuthenticated, user, logout } = useAuth0();
+  const { uuid } = useParams();
+  const { isAuthenticated, user } = useRootRouteLoaderData();
 
   // For readonly, set Headers to not visible by default
   useEffect(() => {
@@ -47,18 +49,14 @@ export const QuadraticMenu = (props: Props) => {
         menuButton={
           <Tooltip title="Main menu" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
             <Button style={{ color: 'inherit' }}>
-              <img src="favicon.ico" height="22px" alt="Quadratic Icon" />
+              <img src="/favicon.ico" height="22px" alt="Quadratic Icon" />
               <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
             </Button>
           </Tooltip>
         }
       >
-        <MenuItem
-          onClick={() => {
-            setEditorInteractionState((oldState) => ({ ...oldState, showFileMenu: true }));
-          }}
-        >
-          <MenuLineItem primary="Back to files" secondary={KeyboardSymbols.Command + 'O'} />
+        <MenuItem href={ROUTES.MY_FILES} style={{ textDecoration: 'none' }}>
+          Back to files
         </MenuItem>
         <MenuDivider />
         <MenuItem
@@ -74,17 +72,17 @@ export const QuadraticMenu = (props: Props) => {
         </MenuItem>
         <MenuDivider />
         <SubMenu label="File">
-          <MenuItem onClick={createNewFile}>New</MenuItem>
-          <MenuItem onClick={() => downloadCurrentFile()}>Download local copy</MenuItem>
+          <MenuItem href={ROUTES.CREATE_FILE} style={{ textDecoration: 'none' }}>
+            New
+          </MenuItem>
           <MenuItem
             onClick={() => {
-              setEditorInteractionState({
-                ...editorInteractionState,
-                showFileMenu: true,
-              });
+              if (uuid) {
+                apiClient.downloadFile(uuid);
+              }
             }}
           >
-            <MenuLineItem primary="Open…" secondary={KeyboardSymbols.Command + 'O'} />
+            Download local copy
           </MenuItem>
         </SubMenu>
         <SubMenu label="Edit">
@@ -181,7 +179,7 @@ export const QuadraticMenu = (props: Props) => {
         {isAuthenticated && (
           <SubMenu label="Account">
             <MenuHeader>{user?.email}</MenuHeader>
-            <MenuItem onClick={() => logout({ returnTo: window.location.origin })}>Log out</MenuItem>
+            <MenuItem onClick={() => authClient.logout()}>Log out</MenuItem>
           </SubMenu>
         )}
 

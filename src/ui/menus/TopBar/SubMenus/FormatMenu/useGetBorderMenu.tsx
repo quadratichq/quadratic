@@ -190,7 +190,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
         <SubMenu
           className="borderSubmenu color-picker-submenu"
           id="FillBorderColorMenuID"
-          menuStyles={{
+          menuStyle={{
             padding: '0px',
           }}
           label={<BorderColor style={{ marginRight: '0.25rem' }}></BorderColor>}

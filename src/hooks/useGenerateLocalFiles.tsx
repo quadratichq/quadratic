@@ -342,7 +342,7 @@ export const useGenerateLocalFiles = (sheetController: SheetController): LocalFi
   }, [currentFileContents]);
 
   useEffect(() => {
-    sheetController.saveLocalFiles = save;
+    sheetController.saveFiles = save;
   }, [sheetController, save]);
 
   // Logic for the initial page load

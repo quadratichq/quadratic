@@ -1,9 +1,11 @@
 import { ManageSearch } from '@mui/icons-material';
-import { Box, IconButton, InputBase, Typography } from '@mui/material';
+import { Box, IconButton, InputBase, Typography, useTheme } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { IS_READONLY_MODE } from '../../../constants/app';
+import { IS_READONLY_MODE } from '../../../constants/appConstants';
+import { ROUTES } from '../../../constants/routes';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -11,7 +13,7 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
 import { TooltipHint } from '../../components/TooltipHint';
-import { useLocalFiles } from '../../contexts/LocalFiles';
+import { useFileContext } from '../../contexts/FileContext';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
 import { DataMenu } from './SubMenus/DataMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
@@ -27,9 +29,9 @@ interface IProps {
 export const TopBar = (props: IProps) => {
   const { sheetController } = props;
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { currentFilename, renameCurrentFile } = useLocalFiles();
+  const { name, renameFile } = useFileContext();
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
-
+  const theme = useTheme();
   const settings = useGridSettings();
   // const { user } = useAuth0();
 
@@ -44,11 +46,11 @@ export const TopBar = (props: IProps) => {
         color: colors.darkGray,
         //@ts-expect-error
         WebkitAppRegion: 'drag', // this allows the window to be dragged in Electron
-        paddingLeft: isElectron() ? '4.5rem' : '2rem',
+        paddingLeft: isElectron() ? '4.5rem' : theme.spacing(2),
         width: '100%',
         display: 'flex',
         justifyContent: 'space-between',
-        paddingRight: '1rem',
+        paddingRight: theme.spacing(2),
         border: colors.mediumGray,
         borderWidth: '0 0 1px 0',
         borderStyle: 'solid',
@@ -58,7 +60,7 @@ export const TopBar = (props: IProps) => {
         if (event.target === event.currentTarget) electronMaximizeCurrentWindow();
       }}
     >
-      <Box
+      <div
         style={{
           //@ts-expect-error
           WebkitAppRegion: 'no-drag',
@@ -74,7 +76,7 @@ export const TopBar = (props: IProps) => {
             <NumberFormatMenu sheet_controller={sheetController}></NumberFormatMenu>
           </>
         )}
-      </Box>
+      </div>
 
       {IS_READONLY_MODE ? (
         <Box
@@ -104,22 +106,26 @@ export const TopBar = (props: IProps) => {
           }}
         >
           {isRenaming ? (
-            <FileRename
-              setIsRenaming={setIsRenaming}
-              currentFilename={currentFilename}
-              renameCurrentFile={renameCurrentFile}
-            />
+            <FileRename setIsRenaming={setIsRenaming} currentFilename={name} renameCurrentFile={renameFile} />
           ) : (
             <>
-              <Typography variant="body2" fontFamily={'sans-serif'} color={colors.mediumGray}>
-                Local /&nbsp;
+              <Typography
+                variant="body2"
+                color={theme.palette.text.disabled}
+                sx={{
+                  '&:hover a': { color: theme.palette.text.primary },
+                  '&::after': { content: '"/"', mx: theme.spacing(1) },
+                }}
+              >
+                <Link to={ROUTES.MY_FILES} reloadDocument style={{ textDecoration: 'none' }}>
+                  My files
+                </Link>
               </Typography>
               <Typography
                 onClick={() => {
                   setIsRenaming(true);
                 }}
                 variant="body2"
-                fontFamily={'sans-serif'}
                 color={colors.darkGray}
                 style={{
                   display: 'block',
@@ -131,7 +137,7 @@ export const TopBar = (props: IProps) => {
                   maxWidth: '25vw',
                 }}
               >
-                {currentFilename}
+                {name}
               </Typography>
             </>
           )}
@@ -139,16 +145,14 @@ export const TopBar = (props: IProps) => {
           {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
         </Box>
       )}
-      <Box
-        sx={{
+      <div
+        style={{
+          // @ts-expect-error
+          WebkitAppRegion: 'no-drag',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-end',
           gap: '1rem',
-        }}
-        style={{
-          //@ts-expect-error
-          WebkitAppRegion: 'no-drag',
         }}
       >
         {!IS_READONLY_MODE && (
@@ -191,24 +195,10 @@ export const TopBar = (props: IProps) => {
                 <ManageSearch />
               </IconButton>
             </TooltipHint>
-            {/* <Tooltip title="Coming soon" arrow>
-              <Button
-                style={{
-                  color: colors.darkGray,
-                  borderColor: colors.darkGray,
-                  paddingTop: '1px',
-                  paddingBottom: '1px',
-                }}
-                variant="outlined"
-                size="small"
-              >
-                Share
-              </Button>
-            </Tooltip> */}
           </>
         )}
         <ZoomDropdown />
-      </Box>
+      </div>
     </div>
   );
 };
