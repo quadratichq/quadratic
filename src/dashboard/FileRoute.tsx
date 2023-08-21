@@ -20,11 +20,14 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
 
   // Ensure we have an UUID that matches the schema
   if (!GetFileResSchema.shape.file.shape.uuid.safeParse(uuid).success) {
-    throw new Response('Bad request. Expected a UUID string.', { status: 400 });
+    throw new Response('Bad request. Expected a UUID string.');
   }
 
   // Fetch the file
-  const data = await apiClient.getFile(uuid as string);
+  let data = await apiClient.getFile(uuid as string).catch(() => undefined);
+  if (!data) {
+    throw new Response('Failed to retrive file from server');
+  }
 
   // Validate and upgrade file to the latest version
   const contents = validateAndUpgradeGridFile(data.file.contents);
@@ -33,7 +36,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
       message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
       level: Sentry.Severity.Critical,
     });
-    throw new Response('Invalid file that could not be upgraded.', { status: 400 });
+    throw new Response('Invalid file that could not be upgraded.');
   }
 
   // If the file version is newer than what is supported by the current version
@@ -64,10 +67,10 @@ export const ErrorBoundary = () => {
   const error = useRouteError();
 
   if (isRouteErrorResponse(error)) {
-    console.error(error.data);
     // If the future, we can differentiate between the different kinds of file
     // loading errors and be as granular in the message as we like.
-    // e.g. file found but didn't validate. file couldn't be found. file...
+    // e.g. file found but didn't validate. file couldn't be found on server, etc.
+    // But for now, we'll just show a 404
     return (
       <Empty
         title="404: file not found"
@@ -83,7 +86,7 @@ export const ErrorBoundary = () => {
   }
 
   // Maybe we log this to Sentry someday...
-  console.log(error);
+  console.error(error);
   return (
     <Empty
       title="Unexpected error"
