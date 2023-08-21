@@ -45,6 +45,9 @@ export class SheetController {
     } else {
       this.sheets.loadFile(grid);
     }
+
+    // todo: this should probably be in pixiAppEvents???
+    window.dispatchEvent(new CustomEvent('change-sheet'));
   }
 
   // todo: ??? maybe remove

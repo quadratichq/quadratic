@@ -30,6 +30,7 @@ export const SheetBar = (props: Props): JSX.Element => {
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheetController.current);
+
   useEffect(() => {
     const updateSheet = () => {
       setTrigger((trigger) => trigger + 1);
