@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../grid/controller/SheetController';
@@ -31,25 +32,22 @@ export const CellInput = (props: CellInputProps) => {
   }, []);
 
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
-  // const copy = sheetController.sheet.getCellAndFormatCopy(cellLocation.x, cellLocation.y);
   const cell = sheetController.sheet.getRenderCell(cellLocation.x, cellLocation.y);
-  // const cell = copy?.cell;
-  // const format = copy?.format ?? ({} as CellFormat);
 
   // todo
   // handle temporary changes to bold and italic (via keyboard)
-  // const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
-  // const [temporaryItalic, setTemporaryItalic] = useState<undefined | boolean>();
+  const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
+  const [temporaryItalic, setTemporaryItalic] = useState<undefined | boolean>();
   let fontFamily = 'OpenSans';
-  // const italic = temporaryItalic === undefined ? format.italic : temporaryItalic;
-  // const bold = temporaryBold === undefined ? format.bold : temporaryBold;
-  // if (italic && bold) {
-  //   fontFamily = 'OpenSans-BoldItalic';
-  // } else if (italic) {
-  //   fontFamily = 'OpenSans-Italic';
-  // } else if (bold) {
-  //   fontFamily = 'OpenSans-Bold';
-  // }
+  const italic = temporaryItalic === undefined ? cell?.italic : temporaryItalic;
+  const bold = temporaryBold === undefined ? cell?.bold : temporaryBold;
+  if (italic && bold) {
+    fontFamily = 'OpenSans-BoldItalic';
+  } else if (italic) {
+    fontFamily = 'OpenSans-Italic';
+  } else if (bold) {
+    fontFamily = 'OpenSans-Bold';
+  }
 
   // moves the cursor to the end of the input (since we're placing a single character that caused the input to open)
   const handleFocus = useCallback((e: any) => {
@@ -224,23 +222,16 @@ export const CellInput = (props: CellInputProps) => {
         left: 0,
         minWidth: cell_offsets.width - CURSOR_THICKNESS * 2,
         outline: 'none',
-
-        // todo...
-        // color: format?.textColor ?? 'black',
-
+        color: cell?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
         margin: 0,
         lineHeight: `${cell_offsets.height - CURSOR_THICKNESS * 2}px`,
         verticalAlign: 'text-top',
-        background: 'transparent',
         transformOrigin: '0 0',
         transform,
         fontFamily,
         fontSize: '14px',
-
-        // todo...
-        // backgroundColor: format?.fillColor ?? 'white',
-
+        backgroundColor: cell?.fillColor ?? 'white',
         whiteSpace: 'break-spaces',
       }}
       onInput={() => {

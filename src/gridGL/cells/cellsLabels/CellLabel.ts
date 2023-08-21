@@ -18,6 +18,8 @@ interface CharRenderData {
   prevSpaces: number;
 }
 
+const openSansFix = { x: 1.8, y: -1 };
+
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
 // todo: make this part of the cell's style data structure
@@ -279,8 +281,8 @@ export class CellLabel extends Container {
       if (this.roundPixels) {
         offset = Math.round(offset);
       }
-      const xPos = this.position.x + offset * scale;
-      const yPos = this.position.y + char.position.y * scale;
+      const xPos = this.position.x + offset * scale + openSansFix.x;
+      const yPos = this.position.y + char.position.y * scale + openSansFix.y;
       const labelMesh = labelMeshes.get(char.labelMeshId);
       const texture = char.texture;
       const textureFrame = texture.frame;
