@@ -63,7 +63,7 @@ impl Grid {
     pub fn from_legacy(file: &legacy::GridFile) -> Result<Self, &'static str> {
         use legacy::*;
 
-        let GridFile::V1_3(file) = file;
+        let GridFile::V1_4(file) = file;
         let mut ret = Grid::new();
         ret.sheets = vec![];
         for js_sheet in &file.sheets {
@@ -225,18 +225,14 @@ impl Grid {
         sheet.region_rects(region).map(move |rect| (sheet_id, rect))
     }
 
-    pub fn to_legacy_file_format(&self) -> legacy::GridFileV1_3 {
-        legacy::GridFileV1_3 {
+    pub fn to_legacy_file_format(&self) -> legacy::GridFileV1_4 {
+        legacy::GridFileV1_4 {
             sheets: self
                 .sheets
                 .iter()
                 .enumerate()
                 .map(|(i, sheet)| sheet.export_to_legacy_file_format(i))
                 .collect(),
-            created: self.created,
-            filename: self.filename.clone(),
-            id: self.id.to_string(),
-            modified: self.modified,
         }
     }
 }

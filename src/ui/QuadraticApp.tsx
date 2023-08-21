@@ -7,8 +7,8 @@ import { loadAssets } from '../gridGL/loadAssets';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import init, { hello } from '../quadratic-core/quadratic_core';
 import QuadraticUIContext from '../ui/QuadraticUIContext';
-import { QuadraticLoading } from '../ui/loading/QuadraticLoading';
 import { webWorkers } from '../web-workers/webWorkers';
+import { QuadraticLoading } from './loading/QuadraticLoading';
 
 type loadableItem = 'pixi-assets' | 'wasm-rust';
 const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'wasm-rust'];
@@ -18,8 +18,9 @@ export default function QuadraticApp({ initialFile }: { initialFile: InitialFile
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
   const setLoadedState = useSetRecoilState(loadedStateAtom);
   const didMount = useRef<boolean>(false);
-  const [sheetController] = useState<SheetController>(new SheetController());
-  const [app] = useState(() => new PixiApp(sheetController));
+
+  const [sheetController, setSheetController] = useState<SheetController>();
+  const [app, setApp] = useState<PixiApp>();
 
   // recoil tracks whether python is loaded
   useEffect(() => {
@@ -60,6 +61,11 @@ export default function QuadraticApp({ initialFile }: { initialFile: InitialFile
     init().then(() => {
       hello(); // let Rust say hello to console
       setItemsLoaded((old) => ['wasm-rust', ...old]);
+
+      // need to wait until wasm loads before creating sheetController and app
+      const sc = new SheetController();
+      setSheetController(sc);
+      setApp(new PixiApp(sc));
     });
   }, [app]);
 
@@ -70,9 +76,9 @@ export default function QuadraticApp({ initialFile }: { initialFile: InitialFile
     }
   }, [app, itemsLoaded, sheetController]);
 
-  return loading ? (
-    <QuadraticLoading />
-  ) : (
-    <QuadraticUIContext sheetController={sheetController} initialFile={initialFile} app={app} />
-  );
+  if (loading || !sheetController || !app) {
+    return <QuadraticLoading />;
+  }
+
+  return <QuadraticUIContext sheetController={sheetController} initialFile={initialFile} app={app} />;
 }
