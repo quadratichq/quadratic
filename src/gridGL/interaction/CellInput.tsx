@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../grid/controller/SheetController';
@@ -34,7 +35,6 @@ export const CellInput = (props: CellInputProps) => {
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
   const cell = sheetController.sheet.getRenderCell(cellLocation.x, cellLocation.y);
 
-  // todo
   // handle temporary changes to bold and italic (via keyboard)
   const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
   const [temporaryItalic, setTemporaryItalic] = useState<undefined | boolean>();
@@ -141,45 +141,8 @@ export const CellInput = (props: CellInputProps) => {
 
     if (!cancel) {
       sheetController.sheet.setCellValue(cellLocation.x, cellLocation.y, value);
-      // sheetController.start_transaction();
-      // // Update Cell and dependent cells
-      // if (value === '') {
-      //   // delete cell if input is empty, and wasn't empty before
-      //   if (cell !== undefined)
-      //     DeleteCells({
-      //       x0: cellLocation.x,
-      //       y0: cellLocation.y,
-      //       x1: cellLocation.x,
-      //       y1: cellLocation.y,
-      //       sheetController,
-      //       create_transaction: false,
-      //     });
-      // } else {
-      //   // create cell with value at input location
-      //   await updateCellAndDCells({
-      //     create_transaction: false,
-      //     starting_cells: [
-      //       {
-      //         x: cellLocation.x,
-      //         y: cellLocation.y,
-      //         type: 'TEXT',
-      //         value: value || '',
-      //       },
-      //     ],
-      //     sheetController,
-      //   });
-
-      // todo ???
-      // if (temporaryBold !== undefined && temporaryBold !== !!format?.bold) {
-      //   changeBold(temporaryBold);
-      // }
-      // if (temporaryItalic !== undefined && temporaryItalic !== !!format?.italic) {
-      //   changeItalic(temporaryItalic);
-      // }
-      // setTemporaryBold(undefined);
-      // setTemporaryItalic(undefined);
-      // sheetController.end_transaction();
-      // app.quadrants.quadrantChanged({ cells: [cellLocation] });
+      setTemporaryBold(undefined);
+      setTemporaryItalic(undefined);
       textInput.innerText = '';
     }
 
@@ -289,16 +252,19 @@ export const CellInput = (props: CellInputProps) => {
         } else if (event.key === ' ') {
           // Don't propagate so panning mode doesn't get triggered
           event.stopPropagation();
+        } else if (event.key === 'i' && (event.ctrlKey || event.metaKey)) {
+          const italic = temporaryItalic === undefined ? !cell?.italic : !temporaryItalic;
+          setTemporaryItalic(italic);
+          sheetController.sheet.setCellItalic(new Rectangle(cellLocation.x, cellLocation.y, 0, 0), italic);
+          event.stopPropagation();
+          event.preventDefault();
+        } else if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
+          const bold = temporaryBold === undefined ? !cell?.italic : !temporaryBold;
+          setTemporaryBold(bold);
+          sheetController.sheet.setCellBold(new Rectangle(cellLocation.x, cellLocation.y, 0, 0), bold);
+          event.stopPropagation();
+          event.preventDefault();
         }
-        // else if (event.key === 'i' && (event.ctrlKey || event.metaKey)) {
-        //   setTemporaryItalic((italic) => (italic === undefined ? !format.italic : !italic));
-        //   event.stopPropagation();
-        //   event.preventDefault();
-        // } else if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
-        //   setTemporaryBold((bold) => (bold === undefined ? !format.bold : !bold));
-        //   event.stopPropagation();
-        //   event.preventDefault();
-        // }
         // ensure the cell border is redrawn
         app.cursor.dirty = true;
       }}
