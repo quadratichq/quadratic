@@ -167,13 +167,13 @@ impl Sheet {
     }
 
     /// Sets borders for a region
-    pub fn set_border(
+    pub fn set_borders(
         &mut self,
         region: Rect,
         change_border: ChangeBorder,
         border_type: BorderType,
     ) {
-        self.borders.set_border(region, change_border, border_type);
+        self.borders.set_borders(region, change_border, border_type);
     }
 
     /// Returns the value of a cell (i.e., what would be returned if code asked

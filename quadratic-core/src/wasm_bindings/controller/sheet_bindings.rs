@@ -15,7 +15,7 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let sheet = self.grid().sheet_mut_from_id(sheet_id);
-        Ok(serde_wasm_bindgen::to_value(&sheet.set_border(
+        Ok(serde_wasm_bindgen::to_value(&sheet.set_borders(
             sheet_id,
             region,
             change_border,

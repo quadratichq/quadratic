@@ -6,6 +6,8 @@ use super::block::SameValue;
 use super::column::ColumnData;
 use super::js_types::JsRenderBorder;
 use super::legacy;
+use crate::controller::Operation;
+use crate::Pos;
 use crate::Rect;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -44,7 +46,7 @@ impl SheetBorders {
         }
     }
 
-    pub fn set_border(
+    pub fn set_borders(
         &mut self,
         region: Rect,
         change_border: ChangeBorder,
@@ -55,7 +57,22 @@ impl SheetBorders {
                 self.set_horizontal_border(region, &border_type);
                 self.set_vertical_border(region, &border_type);
             }
-            ChangeBorder::Inside => {}
+            ChangeBorder::Inside => {
+                self.set_horizontal_border(
+                    Rect::new_span(
+                        Pos::new(region.min.x + 1, region.min.y),
+                        Pos::new(region.max.x - 1, region.max.y),
+                    ),
+                    &border_type,
+                );
+                self.set_vertical_border(
+                    Rect::new_span(
+                        Pos::new(region.min.x, region.min.y + 1),
+                        Pos::new(region.max.x, region.max.y - 1),
+                    ),
+                    &border_type,
+                );
+            }
             ChangeBorder::Outside => {}
             ChangeBorder::Horizontal => {}
             ChangeBorder::Vertical => {}
@@ -64,6 +81,13 @@ impl SheetBorders {
             ChangeBorder::Right => {}
             ChangeBorder::Bottom => {}
             ChangeBorder::Clear => {}
+        }
+    }
+
+    pub fn get_horizontal_border(self, region: Rect) -> Vec<Operation> {
+        let operations: Vec<Operation> = Vec::new();
+        for y in region.y_range() {
+            self.horizontal.range(region.x_range()).flat_map(|block| )
         }
     }
 

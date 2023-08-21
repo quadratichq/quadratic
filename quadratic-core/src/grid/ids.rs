@@ -4,12 +4,14 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::str::FromStr;
 
+use crate::Pos;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-use crate::ArraySize;
+use crate::{ArraySize, Rect};
 
 macro_rules! uuid_wrapper_struct {
     ($name:ident) => {

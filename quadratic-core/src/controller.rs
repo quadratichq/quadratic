@@ -253,8 +253,8 @@ impl GridController {
                     border_type,
                 } => {
                     summary.border_sheets_modified.append(sheet_id);
-
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                    let r = region.
                 }
 
                 Operation::SetCellFormats { region, attr } => {
