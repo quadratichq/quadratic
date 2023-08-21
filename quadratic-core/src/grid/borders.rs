@@ -27,37 +27,52 @@ impl SheetBorders {
         }
     }
 
-    fn set_horizontal_border(&mut self, region: Rect, border_type: &BorderType) {
+    fn set_horizontal_border(&mut self, rect: Rect, border_type: &BorderType) {
         // The horizontal borders structure is transposed, so this code is
         // intentionally swapping X and Y everywhere.
-        for y in region.y_range() {
+        for y in rect.y_range() {
             self.horizontal
                 .entry(y)
                 .or_default()
-                .set_range(region.x_range(), border_type.clone());
+                .set_range(rect.x_range(), border_type.clone());
         }
     }
-    fn set_vertical_border(&mut self, region: Rect, border_type: &BorderType) {
-        for x in region.x_range() {
+    fn set_vertical_border(&mut self, rect: Rect, border_type: &BorderType) {
+        for x in rect.x_range() {
             self.vertical
                 .entry(x)
                 .or_default()
-                .set_range(region.y_range(), border_type.clone());
+                .set_range(rect.y_range(), border_type.clone());
         }
     }
+
+    pub fn get_horizontal_borders(self, rect: Rect) -> Vec<Operation> {
+        let operations: Vec<Operation> = Vec::new();
+        // The horizontal borders structure is transposed, so this code is
+        // intentionally swapping X and Y everywhere.
+        for y in rect.y_range() {
+            self.horizontal.range(rect.x_range()).for_each(|block| {
+                let rect = Rect::new_span(Pos::new(y, block.start()), Pos::new(y, block.end()));
+
+                operations.push(Operation::SetBorders { sheet_id: block.1., region: (), change_border: (), border_type: () })
+            });
+        }
+    }
+
+
 
     pub fn set_borders(
         &mut self,
         region: Rect,
-        change_border: ChangeBorder,
+        change_border: BorderChange,
         border_type: BorderType,
     ) {
         match change_border {
-            ChangeBorder::All => {
+            BorderChange::All => {
                 self.set_horizontal_border(region, &border_type);
                 self.set_vertical_border(region, &border_type);
             }
-            ChangeBorder::Inside => {
+            BorderChange::Inside => {
                 self.set_horizontal_border(
                     Rect::new_span(
                         Pos::new(region.min.x + 1, region.min.y),
@@ -73,21 +88,14 @@ impl SheetBorders {
                     &border_type,
                 );
             }
-            ChangeBorder::Outside => {}
-            ChangeBorder::Horizontal => {}
-            ChangeBorder::Vertical => {}
-            ChangeBorder::Left => {}
-            ChangeBorder::Top => {}
-            ChangeBorder::Right => {}
-            ChangeBorder::Bottom => {}
-            ChangeBorder::Clear => {}
-        }
-    }
-
-    pub fn get_horizontal_border(self, region: Rect) -> Vec<Operation> {
-        let operations: Vec<Operation> = Vec::new();
-        for y in region.y_range() {
-            self.horizontal.range(region.x_range()).flat_map(|block| )
+            BorderChange::Outside => {}
+            BorderChange::Horizontal => {}
+            BorderChange::Vertical => {}
+            BorderChange::Left => {}
+            BorderChange::Top => {}
+            BorderChange::Right => {}
+            BorderChange::Bottom => {}
+            BorderChange::Clear => {}
         }
     }
 
@@ -175,7 +183,7 @@ pub enum CellBorderStyle {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "lowercase")]
-pub enum ChangeBorder {
+pub enum BorderChange {
     All,
     Inside,
     Outside,

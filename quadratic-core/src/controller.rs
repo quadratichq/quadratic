@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    grid::{borders::ChangeBorder, *},
+    grid::{borders::BorderChange, *},
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
 
@@ -254,7 +254,7 @@ impl GridController {
                 } => {
                     summary.border_sheets_modified.append(sheet_id);
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    let r = region.
+                    let operations = sheet.get_hori
                 }
 
                 Operation::SetCellFormats { region, attr } => {
@@ -376,6 +376,18 @@ impl GridController {
         (reverse_transaction, summary)
     }
 
+    pub fn set_borders(
+        &mut self,
+        sheet_id: SheetId,
+        rect: Rect,
+        change_border: BorderChange,
+        border_type: BorderType,
+    ) -> TransactionSummary {
+        let sheet = self.grid.sheet_mut_from_id(sheet_id);
+        let region = self.region(sheet_id, rect);
+        let mut old_values
+
+    }
     fn set_cell_formats_for_type<A: CellFmtAttr>(
         &mut self,
         region: &RegionRef,
@@ -500,7 +512,7 @@ pub enum Operation {
     SetBorders {
         sheet_id: SheetId,
         region: RegionRef,
-        change_border: ChangeBorder,
+        change_border: BorderChange,
         border_type: BorderType,
     },
 }

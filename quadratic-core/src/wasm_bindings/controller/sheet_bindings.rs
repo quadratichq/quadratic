@@ -1,5 +1,5 @@
 use super::*;
-use crate::grid::borders::ChangeBorder;
+use crate::grid::borders::BorderChange;
 use crate::grid::*;
 
 #[wasm_bindgen]
@@ -10,7 +10,7 @@ impl GridController {
         &mut self,
         sheet_id: String,
         region: Rect,
-        change_border: ChangeBorder,
+        change_border: BorderChange,
         border_type: BorderType,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
