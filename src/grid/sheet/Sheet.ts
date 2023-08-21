@@ -69,7 +69,7 @@ export class Sheet {
   // -----------------------------------
 
   private save(): void {
-    this.sheetController.saveLocalFiles?.();
+    this.sheetController.saveFiles?.();
   }
 
   setCellValue(x: number, y: number, value: string): void {

@@ -1,5 +1,5 @@
 import { debugMockLargeData } from '../../debugFlags';
-import { GridFile, SheetSchema } from '../../schemas';
+import { GridFile } from '../../schemas';
 import { Sheet } from '../sheet/Sheet';
 import { SheetCursor } from '../sheet/SheetCursor';
 import { Grid } from './Grid';
@@ -47,7 +47,8 @@ export class SheetController {
     }
   }
 
-  export(): SheetSchema[] {
+  // todo: ??? maybe remove
+  export(): [] {
     // const schema = this.grid.exportToFile();
     // return schema.sheets;
     return [];
