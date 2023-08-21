@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { useParams } from 'react-router';
 import { apiClient } from '../../api/apiClient';
 import { InitialFile } from '../../dashboard/FileRoute';
-import { SheetController } from '../../grid/controller/sheetController';
+import { SheetController } from '../../grid/controller/SheetController';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useInterval } from '../../hooks/useInterval';
 import { GridFile } from '../../schemas';
@@ -38,7 +38,7 @@ export const FileProvider = ({
   sheetController: SheetController;
 }) => {
   const params = useParams();
-  // We can gaurantee this is in the URL when it runs, so cast as string
+  // We can guarantee this is in the URL when it runs, so cast as string
   const uuid = params.uuid as string;
   const [name, setName] = useState<FileContextType['name']>(initialFile.name);
   const [contents, setContents] = useState<FileContextType['contents']>(initialFile.contents);
@@ -60,15 +60,15 @@ export const FileProvider = ({
     setContents((oldContents) => {
       let newContents = {
         ...oldContents,
-        ...sheetController.sheet.export_file(),
+        ...sheetController.export(),
       };
       return newContents;
     });
 
     console.log('[FileProvider] sheetController file save');
-  }, [setContents, sheetController.sheet]);
+  }, [setContents, sheetController]);
   useEffect(() => {
-    sheetController.saveFile = save;
+    sheetController.save = save;
   }, [sheetController, save]);
 
   // On mounting, load the sheet
@@ -77,8 +77,8 @@ export const FileProvider = ({
     didMount.current = true;
     console.log('[FileProvider] (re)loading file into the sheet...');
 
-    sheetController.sheet.load_file(initialFile.contents);
-  }, [sheetController.sheet, initialFile.contents]);
+    sheetController.loadFile(initialFile.contents);
+  }, [initialFile.contents, sheetController]);
 
   const syncChanges = useCallback(
     async (apiClientFn: Function) => {

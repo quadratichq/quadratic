@@ -83,7 +83,7 @@ export class Sheets {
   }
 
   private save() {
-    this.sheetController.saveFiles?.();
+    this.sheetController.save?.();
   }
 
   // Get Sheet information

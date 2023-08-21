@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { downloadFile as downloadFileOnClient } from '../helpers/downloadFile';
 import { GridFile, GridFileSchema } from '../schemas';
+import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
 import {
   DeleteFileRes,
@@ -23,12 +24,18 @@ import {
 } from './types';
 
 const DEFAULT_FILE: GridFile = {
-  cells: [],
-  formats: [],
-  columns: [],
-  rows: [],
-  borders: [],
-  cell_dependency: '',
+  sheets: [
+    {
+      name: 'Sheet1',
+      order: generateKeyBetween(null, null),
+      cells: [],
+      formats: [],
+      columns: [],
+      rows: [],
+      borders: [],
+      cell_dependency: '',
+    },
+  ],
   version: GridFileSchema.shape.version.value,
 };
 

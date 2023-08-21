@@ -5,7 +5,7 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 import { SheetController } from '../grid/controller/SheetController';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { CellInput } from './interaction/CellInput';
-import { useKeyboard } from './interaction/keyboard/app';
+import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/viewportHelper';
 import { PixiApp } from './pixiApp/PixiApp';
 import { PanMode } from './pixiApp/PixiAppSettings';

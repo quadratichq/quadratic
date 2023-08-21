@@ -131,7 +131,7 @@ export const BottomBar = (props: Props) => {
         )}
       </Stack>
       <Stack direction="row">
-        <ActiveSelectionStats interactionState={editorInteractionState}></ActiveSelectionStats>
+        <ActiveSelectionStats sheet={props.sheetController.sheet}></ActiveSelectionStats>
         <SyncState />
 
         {showOnDesktop && <PythonState />}

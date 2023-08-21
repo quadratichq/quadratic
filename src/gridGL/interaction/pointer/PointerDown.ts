@@ -1,5 +1,4 @@
 import { Point } from 'pixi.js';
-import { PanMode } from '../../../atoms/gridInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../../constants/appConstants';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';

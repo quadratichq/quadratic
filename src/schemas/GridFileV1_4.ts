@@ -95,14 +95,6 @@ export const GridFileSchemaV1_4 = z.object({
       rows: HeadingSchema.array(),
     })
     .array(),
-  created: z.number(),
-
-  // Note: this is used inside the app, but is overridden when a file is
-  // imported by either the file's name on disk or the name in the URL
-  filename: z.string(),
-
-  id: z.string().uuid(),
-  modified: z.number(),
   version: z.literal('1.4'),
 });
 export type GridFileV1_4 = z.infer<typeof GridFileSchemaV1_4>;

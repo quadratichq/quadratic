@@ -13,13 +13,13 @@ export class SheetController {
   grid: Grid;
 
   sheets: Sheets;
-  saveLocalFiles: (() => void) | undefined;
+  save: (() => void) | undefined;
 
   constructor() {
     this.grid = new Grid();
     this.sheets = new Sheets(this);
 
-    this.saveLocalFiles = undefined;
+    this.save = undefined;
   }
 
   // Helper functions for this.sheets

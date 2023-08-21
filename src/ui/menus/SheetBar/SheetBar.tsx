@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import './SheetBar.css';
 
+// import { ButtonUnstyled } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
-import { ButtonUnstyled } from '@mui/material';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { updateSheet } from '../../../grid/actions/sheetsAction';
 import { SheetController } from '../../../grid/controller/SheetController';
@@ -43,7 +44,7 @@ export const SheetBar = (props: Props): JSX.Element => {
   const [leftArrow, setLeftArrow] = useState<HTMLElement | undefined>();
   const [rightArrow, setRightArrow] = useState<HTMLElement | undefined>();
   const leftRef = useCallback(
-    (node: HTMLElement) => {
+    (node: HTMLButtonElement) => {
       setLeftArrow(node);
       if (!sheets || !node) return;
       const hide = sheets.scrollLeft === 0 || sheets.offsetWidth === sheets.scrollWidth;
@@ -54,7 +55,7 @@ export const SheetBar = (props: Props): JSX.Element => {
   );
 
   const rightRef = useCallback(
-    (node: HTMLElement) => {
+    (node: HTMLButtonElement) => {
       setRightArrow(node);
       if (!sheets || !node) return;
       const hide =
@@ -378,14 +379,14 @@ export const SheetBar = (props: Props): JSX.Element => {
   return (
     <div className="sheet-bar">
       <div className="sheet-bar-add">
-        <ButtonUnstyled
+        <button
           onClick={() => {
             sheetController.sheets.createNew();
             focusGrid();
           }}
         >
           +
-        </ButtonUnstyled>
+        </button>
         <div
           className="sheet-bar-sheets"
           ref={sheetsRef}
@@ -412,22 +413,22 @@ export const SheetBar = (props: Props): JSX.Element => {
         </div>
       </div>
       <div className="sheet-bar-arrows">
-        <ButtonUnstyled
+        <button
           className="sheet-bar-arrow"
           ref={leftRef}
           onPointerDown={() => handleArrowDown(-1)}
           onPointerUp={handleArrowUp}
         >
           <ChevronLeft />
-        </ButtonUnstyled>
-        <ButtonUnstyled
+        </button>
+        <button
           className="sheet-bar-arrow"
           ref={rightRef}
           onPointerDown={() => handleArrowDown(1)}
           onPointerUp={handleArrowUp}
         >
           <ChevronRight />
-        </ButtonUnstyled>
+        </button>
       </div>
       <SheetBarTabContextMenu
         sheetController={sheetController}

@@ -1,5 +1,5 @@
 import { InitialFile } from '../dashboard/FileRoute';
-import { SheetController } from '../grid/controller/sheetController';
+import { SheetController } from '../grid/controller/SheetController';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import QuadraticUI from './QuadraticUI';
 import { FileProvider } from './contexts/FileContext';

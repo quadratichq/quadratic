@@ -15,7 +15,7 @@ import { keyboardSelect } from './keyboardSelect';
 import { keyboardUndoRedo } from './keyboardUndoRedo';
 import { keyboardViewport } from './keyboardViewport';
 
-interface IProps {
+export interface IProps {
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   app: PixiApp;

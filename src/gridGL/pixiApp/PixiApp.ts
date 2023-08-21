@@ -47,6 +47,7 @@ export class PixiApp {
   stage = new Container();
   loading = true;
   destroyed = false;
+  paused = false;
 
   // for testing purposes
   debug: Graphics;
