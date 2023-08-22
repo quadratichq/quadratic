@@ -8,6 +8,7 @@ export interface EditorInteractionState {
   showCommandPalette: boolean;
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
+  showShareFileMenu: boolean;
   selectedCell: Coordinate;
   mode: CellType;
 }
@@ -18,6 +19,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showCommandPalette: false,
   showGoToMenu: false,
   showFeedbackMenu: false,
+  showShareFileMenu: false,
   selectedCell: { x: 0, y: 0 },
   mode: 'TEXT',
 };

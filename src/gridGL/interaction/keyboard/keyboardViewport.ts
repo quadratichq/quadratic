@@ -1,11 +1,11 @@
 import { Viewport } from 'pixi-viewport';
-import { MultipleFormat } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { Pointer } from '../pointer/Pointer';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { MultipleFormat } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';
+import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
+import { Pointer } from '../pointer/Pointer';
 
 export function keyboardViewport(options: {
   app: PixiApp;
@@ -47,6 +47,7 @@ export function keyboardViewport(options: {
       showFeedbackMenu: false,
       showCellTypeMenu: false,
       showGoToMenu: false,
+      showShareFileMenu: false,
       showCommandPalette: !editorInteractionState.showCommandPalette,
     });
     return true;

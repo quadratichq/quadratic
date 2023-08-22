@@ -1,4 +1,6 @@
 import { Box, Button, useMediaQuery, useTheme } from '@mui/material';
+import { useSetRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
@@ -26,8 +28,8 @@ export const TopBar = (props: IProps) => {
   const theme = useTheme();
   const settings = useGridSettings();
   const { isAuthenticated } = useRootRouteLoaderData();
-  // const { user } = useAuth0();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   const showEditControls = isAuthenticated && isDesktop; // TODO and it's not read only
 
@@ -99,7 +101,14 @@ export const TopBar = (props: IProps) => {
           }}
         >
           {isAuthenticated ? (
-            <Button variant="contained" size="small" disableElevation>
+            <Button
+              variant="contained"
+              size="small"
+              disableElevation
+              onClick={() => {
+                setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: !prev.showShareFileMenu }));
+              }}
+            >
               Share
             </Button>
           ) : (

@@ -16,6 +16,7 @@ import CellTypeMenu from './menus/CellTypeMenu';
 import CommandPalette from './menus/CommandPalette';
 import FeedbackMenu from './menus/FeedbackMenu';
 import GoTo from './menus/GoTo';
+import ShareFileMenu from './menus/ShareFileMenu';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
@@ -67,6 +68,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
 
       {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
+      {editorInteractionState.showShareFileMenu && <ShareFileMenu />}
       {presentationMode && <PresentationModeHint />}
 
       {isMobile && <ReadOnlyDialog />}
