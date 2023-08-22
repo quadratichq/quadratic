@@ -1,8 +1,7 @@
 import { ChatBubbleOutline, Commit } from '@mui/icons-material';
-import { Stack } from '@mui/material';
+import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { formatDistance } from 'date-fns';
 import { useEffect, useState } from 'react';
-import { isMobileOnly } from 'react-device-detect';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
@@ -23,7 +22,7 @@ interface Props {
 export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-
+  const theme = useTheme();
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
 
   const {
@@ -69,7 +68,7 @@ export const BottomBar = (props: Props) => {
     focusGrid();
   };
 
-  const showOnDesktop = !isMobileOnly;
+  const showOnDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
   return (
     <div
@@ -90,19 +89,14 @@ export const BottomBar = (props: Props) => {
       }}
     >
       <Stack direction="row">
-        {showOnDesktop && (
-          <>
-            <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>
-
-            {showMultiCursor && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
-            {selectedCell?.last_modified && (
-              <BottomBarItem>
-                You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}
-              </BottomBarItem>
-            )}
-          </>
+        {showOnDesktop && <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>}
+        {showOnDesktop && showMultiCursor && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
+        {showOnDesktop && selectedCell?.last_modified && (
+          <BottomBarItem>
+            You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}
+          </BottomBarItem>
         )}
-        {(debugShowRenderer || true) && (
+        {debugShowRenderer && (
           <BottomBarItem>
             <div
               className="debug-show-renderer"
@@ -112,7 +106,7 @@ export const BottomBar = (props: Props) => {
                 borderRadius: '50%',
               }}
             >
-              &nbsp;
+              &nbsp;fef
             </div>
           </BottomBarItem>
         )}

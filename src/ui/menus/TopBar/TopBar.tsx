@@ -45,6 +45,7 @@ export const TopBar = (props: IProps) => {
         width: '100%',
         display: 'flex',
         justifyContent: 'space-between',
+        gap: theme.spacing(1),
         border: colors.mediumGray,
         borderWidth: '0 0 1px 0',
         borderStyle: 'solid',

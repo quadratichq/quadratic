@@ -100,7 +100,7 @@ export const TopBarFileMenu = () => {
             >
               {name}
             </Typography>
-            {isMobile && <Chip label="Read only" variant="outlined" size="small" />}
+            {isMobile && <Chip label="Read-only" variant="outlined" size="small" />}
           </Stack>
         </Stack>
       )}
