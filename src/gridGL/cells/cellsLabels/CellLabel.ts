@@ -56,9 +56,6 @@ export class CellLabel extends Container {
   // cell's actual width (different from overflowed textWidth)
   cellWidth: number;
 
-  // the right position of the cell
-  right: number;
-
   alignment: CellAlignment;
 
   dirty = true;
@@ -89,7 +86,6 @@ export class CellLabel extends Container {
     this.AABB = rectangle;
     this.cellWidth = rectangle.width;
     this.topLeft = new Point(rectangle.x, rectangle.y);
-    this.right = rectangle.right;
     this.position.set(rectangle.x, rectangle.y);
 
     const bold = cell?.bold ? 'Bold' : '';
@@ -124,7 +120,7 @@ export class CellLabel extends Container {
   }
 
   checkRightClip(nextLeft: number): void {
-    if (this.right > nextLeft) {
+    if (this.AABB.right > nextLeft) {
       this.setClip({ clipRight: nextLeft });
     }
   }
@@ -134,25 +130,25 @@ export class CellLabel extends Container {
     this.overflowRight = 0;
     let alignment = this.alignment ?? 'left';
     if (alignment === 'right') {
-      const actualLeft = this.topLeft.x + this.right - this.textWidth;
+      const actualLeft = this.topLeft.x + this.cellWidth - this.textWidth;
       if (actualLeft < this.topLeft.x) {
         this.overflowLeft = this.topLeft.x - actualLeft;
       }
       return new Point(actualLeft, this.topLeft.y);
     } else if (alignment === 'center') {
-      const actualLeft = this.topLeft.x + this.right / 2 - this.textWidth / 2;
+      const actualLeft = this.topLeft.x + this.cellWidth / 2 - this.textWidth / 2;
       const actualRight = actualLeft + this.textWidth;
       if (actualLeft < this.topLeft.x) {
         this.overflowLeft = this.topLeft.x - actualLeft;
       }
-      if (actualRight > this.right) {
-        this.overflowRight = actualRight - this.right;
+      if (actualRight > this.AABB.right) {
+        this.overflowRight = actualRight - this.cellWidth;
       }
       return new Point(actualLeft, this.topLeft.y);
     }
     const actualRight = this.topLeft.x + this.textWidth;
-    if (actualRight > this.right) {
-      this.overflowRight = actualRight - this.right;
+    if (actualRight > this.AABB.right) {
+      this.overflowRight = actualRight - this.cellWidth;
     }
     return this.topLeft;
   }
@@ -264,7 +260,6 @@ export class CellLabel extends Container {
     this.textHeight = (pos.y + data.lineHeight) * scale;
 
     this.position = this.calculatePosition();
-    this.right = this.position.x + this.textWidth;
   }
 
   /** Adds the glyphs to the CellsLabels container */
