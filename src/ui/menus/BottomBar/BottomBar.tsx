@@ -26,32 +26,23 @@ export const BottomBar = (props: Props) => {
   const [selectedCell] = useState<JsRenderCell | undefined>();
   const theme = useTheme();
 
-  const cursor = props.sheetController.sheet.cursor;
-  // Generate string describing cursor location
-  const cursorPositionString = `(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`;
-  const multiCursorPositionString = cursor.multiCursor
-    ? `(${cursor.multiCursor.originPosition.x}, ${cursor.multiCursor.originPosition.y}), (${cursor.multiCursor.terminalPosition.x}, ${cursor.multiCursor.terminalPosition.y})`
-    : '';
-
-  // todo
+  const [cursorPositionString, setCursorPositionString] = useState('');
+  const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
   useEffect(() => {
-    // const updateCellData = async () => {
-    //   // Don't update if we have not moved cursor position
-    //   if (Number(selectedCell?.x) === cursor.cursorPosition.x && Number(selectedCell?.y) === cursor.cursorPosition.y)
-    //     return;
-    //   console.log(cursor.cursorPosition, selectedCell);
-    //   // Get cell at position
-    //   const cell = props.sheetController.sheet.getRenderCell(cursor.cursorPosition.x, cursor.cursorPosition.y);
-    //   // If cell exists set selectedCell
-    //   // Otherwise set to undefined
-    //   if (cell) {
-    //     setSelectedCell(cell);
-    //   } else {
-    //     setSelectedCell(undefined);
-    //   }
-    // };
-    // updateCellData();
-  }, [selectedCell, cursor.cursorPosition.x, cursor.cursorPosition.y, props.sheetController.sheet]);
+    const updateCursor = () => {
+      const cursor = props.sheetController.sheet.cursor;
+      setCursorPositionString(`(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`);
+      if (cursor.multiCursor) {
+        setMultiCursorPositionString(
+          `(${cursor.multiCursor.originPosition.x}, ${cursor.multiCursor.originPosition.y}), (${cursor.multiCursor.terminalPosition.x}, ${cursor.multiCursor.terminalPosition.y})`
+        );
+      } else {
+        setMultiCursorPositionString('');
+      }
+    };
+    window.addEventListener('cursor-position', updateCursor);
+    return () => window.removeEventListener('cursor-position', updateCursor);
+  }, [selectedCell, props.sheetController.sheet]);
 
   const handleShowGoToMenu = () => {
     setEditorInteractionState({
@@ -90,10 +81,9 @@ export const BottomBar = (props: Props) => {
           <>
             <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>
 
-            {cursor.multiCursor && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
-            {/*
-              // todo
-            {selectedCell?.last_modified && (
+            {multiCursorPositionString && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
+
+            {/* {selectedCell?.last_modified && (
               <BottomBarItem>
                 You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}
               </BottomBarItem>

@@ -139,7 +139,7 @@ export const CellInput = (props: CellInputProps) => {
 
     const value = textInput.innerText;
 
-    if (!cancel) {
+    if (!cancel && (value.trim() || cell?.value)) {
       sheetController.sheet.setCellValue(cellLocation.x, cellLocation.y, value);
       setTemporaryBold(undefined);
       setTemporaryItalic(undefined);

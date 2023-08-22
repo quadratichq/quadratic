@@ -158,18 +158,9 @@ export class SheetController {
   }
 
   public redo(): void {
-    if (!this.hasRedo) return;
-    // const lastSheetId = this.sheet.id;
-    // const lastSheetIndex = this.sheets.getIndex();
-
+    if (!this.hasRedo()) return;
     const summary = this.grid.redo(this.sheet.cursor.save());
     transactionResponse(this, summary);
-
-    // this should be handled by cursor.save
-    // // handle case where current sheet is deleted
-    // if (this.sheets.current === lastSheetId && !this.sheets.hasSheetIndex(lastSheetId)) {
-    //   this.sheets.current = lastSheetIndex >= this.sheets.size ? this.sheets[0].id : this.sheets[lastSheetIndex].id;
-    // }
   }
 
   public clear(): void {
