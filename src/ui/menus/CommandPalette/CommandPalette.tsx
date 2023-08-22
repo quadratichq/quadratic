@@ -57,10 +57,10 @@ export const CommandPalette = (props: Props) => {
     activeSearchValue: activeSearchValue,
     selectedListItemIndex: selectedListItemIndex,
     extraItems: sheets,
-    confirmDelete: () => confirmSheetDelete(),
+    confirmDelete: confirmSheetDelete,
   });
 
-  const searchlabel = 'Search menus and commands…';
+  const searchLabel = 'Search menus and commands…';
 
   return (
     <>
@@ -89,8 +89,8 @@ export const CommandPalette = (props: Props) => {
         >
           <InputBase
             sx={{ width: '100%', padding: '8px 16px' }}
-            placeholder={searchlabel}
-            inputProps={{ 'aria-label': searchlabel }}
+            placeholder={searchLabel}
+            inputProps={{ 'aria-label': searchLabel }}
             autoFocus
             value={activeSearchValue}
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => {

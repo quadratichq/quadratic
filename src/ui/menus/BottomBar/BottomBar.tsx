@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ChatBubbleOutline, Commit } from '@mui/icons-material';
 import { Stack, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -7,9 +8,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { JsRenderCell } from '../../../quadratic-core/types';
 import { colors } from '../../../theme/colors';
-import { ActiveSelectionStats } from './ActiveSelectionStats';
 import BottomBarItem from './BottomBarItem';
 import PythonState from './PythonState';
 import SyncState from './SyncState';
@@ -20,10 +19,6 @@ interface Props {
 
 export const BottomBar = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-
-  // todo
-  // const loadedState = useRecoilValue(loadedStateAtom);
-  const [selectedCell] = useState<JsRenderCell | undefined>();
   const theme = useTheme();
 
   const [cursorPositionString, setCursorPositionString] = useState('');
@@ -40,9 +35,10 @@ export const BottomBar = (props: Props) => {
         setMultiCursorPositionString('');
       }
     };
+    updateCursor();
     window.addEventListener('cursor-position', updateCursor);
     return () => window.removeEventListener('cursor-position', updateCursor);
-  }, [selectedCell, props.sheetController.sheet]);
+  }, [props.sheetController.sheet]);
 
   const handleShowGoToMenu = () => {
     setEditorInteractionState({
@@ -80,7 +76,6 @@ export const BottomBar = (props: Props) => {
         {showOnDesktop && (
           <>
             <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>
-
             {multiCursorPositionString && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
 
             {/* {selectedCell?.last_modified && (
@@ -121,7 +116,11 @@ export const BottomBar = (props: Props) => {
         )}
       </Stack>
       <Stack direction="row">
-        <ActiveSelectionStats sheet={props.sheetController.sheet}></ActiveSelectionStats>
+        {/*
+
+          todo: when runFormula works again...
+
+        <ActiveSelectionStats sheetController={props.sheetController}></ActiveSelectionStats> */}
         <SyncState />
 
         {showOnDesktop && <PythonState />}
