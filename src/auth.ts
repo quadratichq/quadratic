@@ -76,7 +76,7 @@ export const authClient: AuthClient = {
   },
   async logout() {
     const client = await getClient();
-    await client.logout({ openUrl: false });
+    await client.logout({ openUrl: (url) => window.location.replace(url) });
   },
   async getToken() {
     const client = await getClient();
