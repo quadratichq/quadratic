@@ -61,6 +61,9 @@ export class Sheets {
       y = parseInt(n[1]);
     }
     this.grid.populateWithRandomFloats(this._current, x, y);
+    this.sheets = [];
+    this.repopulate();
+    this._current = this.sheets[0].id;
     console.timeEnd('random');
   }
 
