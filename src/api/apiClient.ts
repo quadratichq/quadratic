@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { downloadFile as downloadFileOnClient } from '../helpers/downloadFile';
+import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
 import { GridFile, GridFileSchema } from '../schemas';
 import { fetchFromApi } from './fetchFromApi';
 import {
@@ -53,7 +53,7 @@ export const apiClient = {
 
   async downloadFile(uuid: string) {
     mixpanel.track('[Files].downloadFile', { id: uuid });
-    return this.getFile(uuid).then((json) => downloadFileOnClient(json.file.name, json.file.contents));
+    return this.getFile(uuid).then((json) => downloadFileInBrowser(json.file.name, json.file.contents));
   },
 
   async deleteFile(uuid: string) {
