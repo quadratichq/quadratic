@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
+import { useRecoilValue } from 'recoil';
+import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../grid/controller/SheetController';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
@@ -9,15 +10,14 @@ import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 
 interface CellInputProps {
-  editorInteractionState: EditorInteractionState;
   container?: HTMLDivElement;
   app?: PixiApp;
   sheetController: SheetController;
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { editorInteractionState, app, container, sheetController } = props;
-  // const { changeBold, changeItalic } = useFormatCells(sheetController, true);
+  const { app, container, sheetController } = props;
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   const viewport = app?.viewport;
 
@@ -154,6 +154,7 @@ export const CellInput = (props: CellInputProps) => {
         y: position.y + transpose.y,
       },
     });
+
     app.settings.changeInput(false);
 
     // Set focus back to Grid
@@ -236,6 +237,7 @@ export const CellInput = (props: CellInputProps) => {
       onKeyDown={(event) => {
         if (event.key === 'Enter') {
           closeInput({ x: 0, y: 1 });
+          event.stopPropagation();
           event.preventDefault();
         } else if (event.key === 'Tab') {
           closeInput({ x: 1, y: 0 });

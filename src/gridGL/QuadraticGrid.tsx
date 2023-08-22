@@ -127,12 +127,7 @@ export default function QuadraticGrid(props: IProps) {
       }}
       onKeyUp={onKeyUp}
     >
-      <CellInput
-        editorInteractionState={editorInteractionState}
-        container={container}
-        app={props.app}
-        sheetController={props.sheetController}
-      />
+      <CellInput container={container} app={props.app} sheetController={props.sheetController} />
       <FloatingContextMenu
         container={container}
         app={props.app}
