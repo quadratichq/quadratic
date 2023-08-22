@@ -26,7 +26,7 @@ export const GetFileResSchema = z.object({
     contents: z.string(), // Stringified Gridfile
     version: z.string(), // TODO one of: ...
   }),
-  permission: z.string(), // TODO one of:
+  permission: z.enum(['OWNER', 'READONLY', 'EDIT', 'NOT_SHARED']),
 });
 export type GetFileRes = z.infer<typeof GetFileResSchema>;
 
