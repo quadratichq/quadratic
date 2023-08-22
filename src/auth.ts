@@ -77,6 +77,7 @@ export const authClient: AuthClient = {
   async logout() {
     const client = await getClient();
     await client.logout({ logoutParams: { returnTo: window.location.origin } });
+    await new Promise((resolve) => setTimeout(resolve, 10000));
   },
   async getToken() {
     const client = await getClient();
