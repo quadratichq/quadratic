@@ -2,8 +2,8 @@ import { File, User } from '@prisma/client';
 import express, { NextFunction, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
-import { validateAccessToken } from '../../middleware/auth';
-import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken, validateOptionalAccessToken } from '../../middleware/auth';
+import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
 import { Request } from '../../types/Request';
 
 const files_router = express.Router();
@@ -43,8 +43,8 @@ const fileMiddleware = async (req: Request, res: Response, next: NextFunction) =
   next();
 };
 
-const getFilePermissions = (user: User, file: File): FILE_PERMISSION => {
-  if (file.ownerUserId === user.id) {
+const getFilePermissions = (user: User | undefined, file: File): FILE_PERMISSION => {
+  if (file.ownerUserId === user?.id) {
     return 'OWNER';
   }
 
@@ -90,11 +90,11 @@ files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, 
 files_router.get(
   '/:uuid',
   validateUUID(),
-  validateAccessToken,
-  userMiddleware,
+  validateOptionalAccessToken,
+  userOptionalMiddleware,
   fileMiddleware,
   async (req: Request, res: Response) => {
-    if (!req.file || !req.user) {
+    if (!req.file) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
