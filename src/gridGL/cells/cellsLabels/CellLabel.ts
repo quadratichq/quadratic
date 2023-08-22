@@ -120,7 +120,7 @@ export class CellLabel extends Container {
   }
 
   checkRightClip(nextLeft: number): void {
-    if (this.AABB.right > nextLeft) {
+    if (this.overflowRight && this.AABB.right + this.overflowRight > nextLeft) {
       this.setClip({ clipRight: nextLeft });
     }
   }
@@ -142,13 +142,13 @@ export class CellLabel extends Container {
         this.overflowLeft = this.topLeft.x - actualLeft;
       }
       if (actualRight > this.AABB.right) {
-        this.overflowRight = actualRight - this.cellWidth;
+        this.overflowRight = actualRight - this.AABB.right;
       }
       return new Point(actualLeft, this.topLeft.y);
     }
     const actualRight = this.topLeft.x + this.textWidth;
     if (actualRight > this.AABB.right) {
-      this.overflowRight = actualRight - this.cellWidth;
+      this.overflowRight = actualRight - this.AABB.right;
     }
     return this.topLeft;
   }
