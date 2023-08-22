@@ -29,6 +29,8 @@ async function getClient() {
       authorizationParams: {
         audience: AUTH0_AUDIENCE,
       },
+      cacheLocation: 'localstorage',
+      useRefreshTokens: true,
     });
   }
   const auth0Client = await auth0ClientPromise;
