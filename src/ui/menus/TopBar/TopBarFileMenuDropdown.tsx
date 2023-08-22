@@ -22,6 +22,8 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
     setAnchorEl(null);
   };
 
+  // TODO only duplicate and download should show up for people without edit access
+
   return (
     <>
       <IconButton
@@ -47,6 +49,15 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
         <MenuItem
           dense
           onClick={() => {
+            setIsRenaming(true);
+            handleClose();
+          }}
+        >
+          Rename
+        </MenuItem>
+        <MenuItem
+          dense
+          onClick={() => {
             // TODO this is async and needs to disable button or something
             let formData = new FormData();
             formData.append('name', name + ' (Copy)');
@@ -56,15 +67,6 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
           }}
         >
           Duplicate
-        </MenuItem>
-        <MenuItem
-          dense
-          onClick={() => {
-            setIsRenaming(true);
-            handleClose();
-          }}
-        >
-          Rename
         </MenuItem>
         <MenuItem
           dense
