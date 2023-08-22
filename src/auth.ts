@@ -77,6 +77,11 @@ export const authClient: AuthClient = {
   async logout() {
     const client = await getClient();
     await client.logout({ openUrl: false });
+    // Not sure why this is the case, but manually waiting for this is what
+    // makes it work. Auth0 will redirect once it actually does the logout,
+    // otherwise this doesn't wait and it "logs out" too fast and you don't
+    // actually log out
+    await new Promise((resolve) => setTimeout(resolve, 10000));
   },
   async getToken() {
     const client = await getClient();
