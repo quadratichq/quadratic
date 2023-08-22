@@ -4,6 +4,7 @@ import { useParams } from 'react-router';
 import { apiClient } from '../../api/apiClient';
 import { InitialFile } from '../../dashboard/FileRoute';
 import { SheetController } from '../../grid/controller/sheetController';
+import { downloadFileInBrowser } from '../../helpers/downloadFileInBrowser';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useInterval } from '../../hooks/useInterval';
 import { GridFile } from '../../schemas';
@@ -18,6 +19,7 @@ export type FileContextType = {
   renameFile: (newName: string) => void;
   contents: GridFile;
   syncState: Sync['state'];
+  downloadFile: () => void;
 };
 
 /**
@@ -54,6 +56,9 @@ export const FileProvider = ({
     },
     [setName]
   );
+  const downloadFile = useCallback(() => {
+    downloadFileInBrowser(name, JSON.stringify(contents));
+  }, [name, contents]);
 
   // Create and save the fn used by the sheetController to save the file
   const save = useCallback(async (): Promise<void> => {
@@ -119,7 +124,11 @@ export const FileProvider = ({
     syncState === 'error' ? 5000 : null
   );
 
-  return <FileContext.Provider value={{ name, renameFile, contents, syncState }}>{children}</FileContext.Provider>;
+  return (
+    <FileContext.Provider value={{ downloadFile, name, renameFile, contents, syncState }}>
+      {children}
+    </FileContext.Provider>
+  );
 };
 
 /**
