@@ -7,7 +7,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { Request } from '../../types/Request';
 
-type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED';
+type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT';
 
 const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
@@ -59,8 +59,6 @@ const getFilePermissions = (user: User | undefined, file: File): FILE_PERMISSION
   if (file.public_link_access === 'EDIT') {
     return 'EDIT';
   }
-
-  return 'NOT_SHARED';
 };
 
 files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, res) => {
@@ -116,6 +114,7 @@ files_router.get(
         updated_date: req.file.updated_date,
         version: req.file.version,
         contents: req.file.contents.toString('utf8'),
+        public_link_access: req.file.public_link_access,
       },
       permission: getFilePermissions(req.user, req.file),
     });
