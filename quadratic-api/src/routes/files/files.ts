@@ -1,18 +1,22 @@
-import { File, User } from '@prisma/client';
+import { File, LinkPermission, User } from '@prisma/client';
 import express, { NextFunction, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
-import { validateAccessToken } from '../../middleware/auth';
-import { userMiddleware } from '../../middleware/user';
+import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { Request } from '../../types/Request';
 
-const files_router = express.Router();
+type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
 
 const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
 const validateFileName = () => body('name').isString().not().isEmpty();
 const validateFileVersion = () => body('version').isString().not().isEmpty();
-type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
+const validateFileSharingPermission = () =>
+  body('public_link_access').isIn([LinkPermission.READONLY, LinkPermission.NOT_SHARED]);
+
+const files_router = express.Router();
 
 const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   if (req.params.uuid === undefined) {
@@ -43,8 +47,8 @@ const fileMiddleware = async (req: Request, res: Response, next: NextFunction) =
   next();
 };
 
-const getFilePermissions = (user: User, file: File): FILE_PERMISSION => {
-  if (file.ownerUserId === user.id) {
+const getFilePermissions = (user: User | undefined, file: File): FILE_PERMISSION => {
+  if (file.ownerUserId === user?.id) {
     return 'OWNER';
   }
 
@@ -84,17 +88,17 @@ files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, 
     ],
   });
 
-  res.status(200).json(files);
+  return res.status(200).json(files);
 });
 
 files_router.get(
   '/:uuid',
   validateUUID(),
-  validateAccessToken,
-  userMiddleware,
+  validateOptionalAccessToken,
+  userOptionalMiddleware,
   fileMiddleware,
   async (req: Request, res: Response) => {
-    if (!req.file || !req.user) {
+    if (!req.file) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
@@ -127,6 +131,7 @@ files_router.post(
   validateFileContents().optional(),
   validateFileVersion().optional(),
   validateFileName().optional(),
+  validateFileSharingPermission().optional(),
   async (req: Request, res: Response) => {
     if (!req.file || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
@@ -181,7 +186,15 @@ files_router.post(
       });
     }
 
-    res.status(200).json({ message: 'File updated.' });
+    // update the link sharing permissions
+    if (req.body.public_link_access !== undefined) {
+      await dbClient.file.update({
+        where: { uuid: req.params.uuid },
+        data: { public_link_access: req.body.public_link_access },
+      });
+    }
+
+    return res.status(200).json({ message: 'File updated.' });
   }
 );
 
@@ -258,7 +271,7 @@ files_router.post(
       },
     });
 
-    res.status(201).json(file); // CREATED
+    return res.status(201).json(file); // CREATED
   }
 );
 
