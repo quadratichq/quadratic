@@ -9,6 +9,7 @@ const fileMeta = {
   name: z.string(),
   created_date: z.string().datetime(),
   updated_date: z.string().datetime(),
+  public_link_access: z.enum(['EDIT', 'READONLY', 'NOT_SHARED']),
 };
 
 // GET /files
@@ -26,7 +27,7 @@ export const GetFileResSchema = z.object({
     contents: z.string(), // Stringified Gridfile
     version: z.string(), // TODO one of: ...
   }),
-  permission: z.enum(['OWNER', 'READONLY', 'EDIT', 'NOT_SHARED']),
+  permission: z.enum(['OWNER', 'VIEWER', 'EDITOR']),
 });
 export type GetFileRes = z.infer<typeof GetFileResSchema>;
 
@@ -37,15 +38,14 @@ export const DeleteFileResSchema = z.object({
 export type DeleteFileRes = z.infer<typeof DeleteFileResSchema>;
 
 // POST /files/:uuid
-export const PostFileContentsReqSchema = z.object({
-  contents: z.string(),
-  version: GridFileSchema.shape.version,
+// You can post any of these, but if you post `contents` you have to also send `version`
+export const PostFileReqSchema = z.object({
+  contents: z.string().optional(),
+  version: GridFileSchema.shape.version.optional(),
+  name: z.string().optional(),
+  public_link_access: fileMeta.public_link_access.optional(),
 });
-export type PostFileContentsReq = z.infer<typeof PostFileContentsReqSchema>;
-export const PostFileNameReqSchema = z.object({
-  name: z.string(),
-});
-export type PostFileNameReq = z.infer<typeof PostFileNameReqSchema>;
+export type PostFileReq = z.infer<typeof PostFileReqSchema>;
 export const PostFileResSchema = z.object({
   message: z.string(),
 });

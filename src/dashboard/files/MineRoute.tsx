@@ -186,7 +186,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 };
 
 function FileWithActions({ file }: { file: NonNullable<LoaderData>[0] }) {
-  const { uuid, name, updated_date } = file;
+  const { uuid, name, updated_date, public_link_access } = file;
   const theme = useTheme();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
@@ -211,6 +211,7 @@ function FileWithActions({ file }: { file: NonNullable<LoaderData>[0] }) {
       name={name}
       status={failedToDelete && <Chip label="Failed to delete" size="small" color="error" variant="outlined" />}
       description={`Updated ${timeAgo(updated_date)}`}
+      isShared={public_link_access !== 'NOT_SHARED'}
       actions={
         <div style={{ display: 'flex', gap: theme.spacing(1) }}>
           <fetcherDelete.Form method="post">

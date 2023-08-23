@@ -5,27 +5,12 @@ import {
   StorageOutlined,
   UploadFile,
 } from '@mui/icons-material';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { ButtonBase, Tooltip, useTheme } from '@mui/material';
 import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
 import { MenuLineItem } from '../MenuLineItem';
-
-const TopBarIconButton = (props: any) => {
-  const theme = useTheme();
-  return (
-    <Tooltip title={props.tooltipTitle} arrow disableInteractive enterDelay={500} enterNextDelay={500}>
-      <ButtonBase disableRipple sx={{ p: theme.spacing(1), '&:hover svg': { fill: theme.palette.text.primary } }}>
-        <div>
-          {props.children}
-          <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
-        </div>
-      </ButtonBase>
-    </Tooltip>
-  );
-};
+import { TopBarMenuItem } from '../TopBarMenuItem';
 
 export const DataMenu = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -36,9 +21,9 @@ export const DataMenu = () => {
         menuButton={
           <div>
             {/* forward ref */}
-            <TopBarIconButton tooltipTitle="Data import">
+            <TopBarMenuItem title="Data import">
               <DataObjectOutlined fontSize="small" />
-            </TopBarIconButton>
+            </TopBarMenuItem>
           </div>
         }
       >

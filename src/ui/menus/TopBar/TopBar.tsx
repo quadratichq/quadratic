@@ -8,6 +8,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
+import { useFileContext } from '../../components/FileProvider';
 import { TooltipHint } from '../../components/TooltipHint';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
 import { DataMenu } from './SubMenus/DataMenu';
@@ -16,7 +17,7 @@ import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { useGridSettings } from './SubMenus/useGridSettings';
 import { TopBarFileMenu } from './TopBarFileMenu';
-import { ZoomDropdown } from './ZoomDropdown';
+import { TopBarZoomMenu } from './TopBarZoomMenu';
 
 interface IProps {
   app: PixiApp;
@@ -28,10 +29,12 @@ export const TopBar = (props: IProps) => {
   const theme = useTheme();
   const settings = useGridSettings();
   const { isAuthenticated } = useRootRouteLoaderData();
+  const { permission } = useFileContext();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
-  const showEditControls = isAuthenticated && isDesktop; // TODO and it's not read only
+  const isOwner = permission === 'OWNER';
+  const showEditControls = isAuthenticated && isOwner && isDesktop;
 
   return (
     <Box
@@ -94,30 +97,6 @@ export const TopBar = (props: IProps) => {
           gap: theme.spacing(),
         }}
       >
-        <Box
-          sx={{
-            [theme.breakpoints.down('md')]: {
-              display: 'none',
-            },
-          }}
-        >
-          {isAuthenticated ? (
-            <Button
-              variant="contained"
-              size="small"
-              disableElevation
-              onClick={() => {
-                setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: !prev.showShareFileMenu }));
-              }}
-            >
-              Share
-            </Button>
-          ) : (
-            <Button variant="outlined" size="small" disableElevation>
-              Log in
-            </Button>
-          )}
-        </Box>
         {isDesktop && (
           <>
             {/* {user !== undefined && (
@@ -147,7 +126,31 @@ export const TopBar = (props: IProps) => {
             </TooltipHint>
           </>
         )}
-        <ZoomDropdown app={app} />
+        <Box
+          sx={{
+            [theme.breakpoints.down('md')]: {
+              display: 'none',
+            },
+          }}
+        >
+          {isAuthenticated ? (
+            <Button
+              variant="contained"
+              size="small"
+              disableElevation
+              onClick={() => {
+                setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: !prev.showShareFileMenu }));
+              }}
+            >
+              Share
+            </Button>
+          ) : (
+            <Button variant="outlined" size="small" disableElevation>
+              Log in
+            </Button>
+          )}
+        </Box>
+        <TopBarZoomMenu app={app} />
       </div>
     </Box>
   );

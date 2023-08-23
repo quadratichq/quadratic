@@ -1,20 +1,19 @@
-import { Button } from '@mui/material';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { colors } from '../../../theme/colors';
-import { focusGrid } from '../../../helpers/focusGrid';
+import { Typography } from '@mui/material';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-import { MenuLineItem } from './MenuLineItem';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { useCallback, useState } from 'react';
-import useEventListener from '../../../hooks/useEventListener';
 import mixpanel from 'mixpanel-browser';
+import { useCallback, useState } from 'react';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import useEventListener from '../../../hooks/useEventListener';
+import { MenuLineItem } from './MenuLineItem';
+import { TopBarMenuItem } from './TopBarMenuItem';
 
 interface Props {
   app: PixiApp;
 }
 
-export const ZoomDropdown = (props: Props) => {
+export const TopBarZoomMenu = (props: Props) => {
   const [zoom, setZoom] = useState(1);
   const handleZoom = useCallback(
     (event: CustomEvent<number>) => {
@@ -35,9 +34,13 @@ export const ZoomDropdown = (props: Props) => {
   return (
     <Menu
       menuButton={
-        <Button style={{ color: colors.darkGray, width: '4rem' }}>
-          {zoom === Infinity ? 100 : Math.round(zoom * 100)}%<KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
-        </Button>
+        <div style={{ width: '5rem' }}>
+          <TopBarMenuItem title="Zoom options">
+            <Typography variant="subtitle2" color="inherit">
+              {zoom === Infinity ? 100 : Math.round(zoom * 100)}%
+            </Typography>
+          </TopBarMenuItem>
+        </div>
       }
     >
       <MenuItem

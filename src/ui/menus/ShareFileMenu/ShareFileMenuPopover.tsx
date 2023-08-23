@@ -18,7 +18,7 @@ export function ShareFileMenuPopover({
   disabled,
 }: {
   options: Option[];
-  setValue: any; // TODO
+  setValue: Function;
   value: string;
   disabled?: boolean;
 }) {

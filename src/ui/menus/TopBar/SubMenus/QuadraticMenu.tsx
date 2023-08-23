@@ -1,7 +1,4 @@
 import { ContentCopy, ContentCut, ContentPaste, Redo, Undo } from '@mui/icons-material';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Tooltip } from '@mui/material';
-import Button from '@mui/material/Button';
 import { Menu, MenuDivider, MenuHeader, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useEffect } from 'react';
@@ -21,6 +18,7 @@ import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRootRouteLoaderData } from '../../../../router';
 import { isMac } from '../../../../utils/isMac';
 import { MenuLineItem } from '../MenuLineItem';
+import { TopBarMenuItem } from '../TopBarMenuItem';
 import { useGridSettings } from './useGridSettings';
 
 interface Props {
@@ -47,12 +45,11 @@ export const QuadraticMenu = (props: Props) => {
     <>
       <Menu
         menuButton={
-          <Tooltip title="Main menu" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
-            <Button style={{ color: 'inherit' }}>
+          <div>
+            <TopBarMenuItem title="Main menu">
               <img src="/favicon.ico" height="22px" alt="Quadratic Icon" />
-              <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
-            </Button>
-          </Tooltip>
+            </TopBarMenuItem>
+          </div>
         }
       >
         <MenuItem href={ROUTES.MY_FILES} style={{ textDecoration: 'none' }}>

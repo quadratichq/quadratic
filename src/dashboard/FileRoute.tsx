@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/react';
 import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
-import { GetFileResSchema } from '../api/types';
+import { GetFileRes, GetFileResSchema } from '../api/types';
 import { Empty } from '../components/Empty';
 import { GridFile, GridFileSchema } from '../schemas';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
@@ -13,6 +13,8 @@ import QuadraticApp from '../ui/QuadraticApp';
 export type InitialFile = {
   name: string;
   contents: GridFile;
+  permission: GetFileRes['permission'];
+  publicLinkAccess: GetFileRes['file']['public_link_access'];
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<InitialFile> => {
@@ -50,7 +52,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
     window.location.reload(true);
   }
 
-  return { contents, name: data.file.name };
+  return {
+    contents,
+    name: data.file.name,
+    permission: data.permission,
+    publicLinkAccess: data.file.public_link_access,
+  };
 };
 
 export const Component = () => {

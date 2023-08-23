@@ -13,8 +13,7 @@ import {
   PostFeedbackReq,
   PostFeedbackRes,
   PostFeedbackResSchema,
-  PostFileContentsReq,
-  PostFileNameReq,
+  PostFileReq,
   PostFileRes,
   PostFileResSchema,
   PostFilesReq,
@@ -61,18 +60,7 @@ export const apiClient = {
     return fetchFromApi<DeleteFileRes>(`/v0/files/${uuid}`, { method: 'DELETE' }, DeleteFileResSchema);
   },
 
-  async renameFile(uuid: string, body: PostFileNameReq) {
-    return fetchFromApi<PostFileRes>(
-      `/v0/files/${uuid}`,
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
-      },
-      PostFileResSchema
-    );
-  },
-
-  async updateFile(uuid: string, body: PostFileContentsReq) {
+  async updateFile(uuid: string, body: PostFileReq) {
     return fetchFromApi<PostFileRes>(
       `/v0/files/${uuid}`,
       {
