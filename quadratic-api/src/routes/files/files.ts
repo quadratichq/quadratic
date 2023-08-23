@@ -2,7 +2,8 @@ import { File, User } from '@prisma/client';
 import express, { NextFunction, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
-import { validateAccessToken, validateOptionalAccessToken } from '../../middleware/auth';
+import { validateAccessToken } from '../../middleware/auth';
+import { validateOptionalAccessToken } from '../../middleware/auth_optional';
 import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
 import { Request } from '../../types/Request';
 

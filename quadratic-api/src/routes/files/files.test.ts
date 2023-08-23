@@ -172,10 +172,8 @@ describe('READ - GET /v0/files/:uuid with auth and owned file', () => {
       .get('/v0/files/00000000-0000-4000-8000-000000000000')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/);
-    // .expect(200); // OK
-
-    console.log(res.body);
+      .expect('Content-Type', /json/)
+      .expect(200); // OK
 
     expect(res.body).toHaveProperty('file');
     expect(res.body).toHaveProperty('permission');
