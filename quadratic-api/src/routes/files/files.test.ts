@@ -148,7 +148,7 @@ describe('READ - GET /v0/files/:uuid file shared, no auth', () => {
         uuid: '00000000-0000-4000-8000-000000000001',
         version: null,
       },
-      permission: 'READONLY',
+      permission: 'VIEWER',
     });
   });
 });
@@ -193,7 +193,7 @@ describe('READ - GET /v0/files/:uuid with auth and another users file shared rea
 
     expect(res.body).toHaveProperty('file');
     expect(res.body).toHaveProperty('permission');
-    expect(res.body.permission).toEqual('READONLY');
+    expect(res.body.permission).toEqual('VIEWER');
     expect(res.body.file.contents).toEqual('contents_1');
   });
 });
@@ -326,7 +326,7 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file lin
       .expect(200); // OK
 
     expect(res3.body).toHaveProperty('permission');
-    expect(res3.body.permission).toEqual('READONLY');
+    expect(res3.body.permission).toEqual('VIEWER');
 
     // change file link permissions to NOT_SHARED
     const res4 = await request(app)

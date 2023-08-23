@@ -7,7 +7,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { Request } from '../../types/Request';
 
-type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT';
+type FILE_PERMISSION = 'OWNER' | 'VIEWER' | 'EDITOR';
 
 const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
@@ -53,11 +53,11 @@ const getFilePermissions = (user: User | undefined, file: File): FILE_PERMISSION
   }
 
   if (file.public_link_access === 'READONLY') {
-    return 'READONLY';
+    return 'VIEWER';
   }
 
   if (file.public_link_access === 'EDIT') {
-    return 'EDIT';
+    return 'EDITOR';
   }
 };
 
@@ -143,7 +143,7 @@ files_router.post(
 
     // ensure the user has EDIT access to the file
     const permissions = getFilePermissions(req.user, req.file);
-    if (permissions !== 'EDIT' && permissions !== 'OWNER') {
+    if (permissions !== 'EDITOR' && permissions !== 'OWNER') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }
 
