@@ -1,4 +1,5 @@
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
+import { TransactionSummary } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
 import { Sheet } from '../sheet/Sheet';
 import { Grid } from './Grid';
@@ -41,6 +42,8 @@ export class Sheets {
         pixiAppEvents.deleteSheet(sheet.id);
       }
     });
+    this.sort();
+    this.sheets.map((sheet) => console.log(`${sheet.name}: ${sheet.order}`));
   }
 
   loadFile(grid: GridFile): void {
@@ -210,6 +213,7 @@ export class Sheets {
 
     // sets the current sheet to the new sheet
     this.current = this.sheets[this.sheets.length - 1].id;
+    this.save();
   }
 
   duplicate(): void {
@@ -223,6 +227,8 @@ export class Sheets {
     const duplicate = this.sheets[currentIndex + 1];
     if (!duplicate) throw new Error('Expected to find duplicate sheet in duplicateSheet');
     this.current = duplicate.id;
+
+    this.save();
   }
 
   // add(sheet: Sheet): void {
@@ -252,19 +258,53 @@ export class Sheets {
     this.save();
   }
 
-  // todo
-  reorder(options: { id: string; order?: string; delta?: number }) {
-    const sheet = this.sheets.find((sheet) => sheet.id === options.id);
-    if (sheet) {
-      // todo
-      // if (options.order !== undefined) {
-      //   sheet.order = options.order;
-      // } else if (options.delta !== undefined) {
-      //   sheet.order += options.delta;
-      // }
-      // if (this.saveLocalFiles) this.saveLocalFiles();
-    } else {
-      throw new Error('Expected sheet to be defined in reorderSheet');
+  private findClosestPreviousSheet(order: number, excludeSheetId: string): string | undefined {
+    this.sheets.sort();
+    for (let i = this.sheets.length - 1; i >= 0; i--) {
+      if (this.sheets[i].id === excludeSheetId) continue;
+      if (parseInt(this.sheets[i].order) < order) {
+        return this.sheets[i].id;
+      }
     }
+  }
+
+  moveSheet(options: { id: string; order?: number; delta?: number }) {
+    const { id, order, delta } = options;
+    const sheet = this.sheets.find((sheet) => sheet.id === options.id);
+    if (!sheet) throw new Error('Expected sheet to be defined in reorderSheet');
+    let response: TransactionSummary;
+    if (delta !== undefined) {
+      if (delta === 1) {
+        const next = this.getNext(id);
+
+        // trying to move sheet to the right when already last
+        if (!next) return;
+
+        response = this.grid.moveSheet(id, next.id, sheet.cursor.save());
+      } else if (delta === -1) {
+        const previous = this.getPrevious(id);
+
+        // trying to move sheet to the left when already first
+        if (!previous) return;
+
+        // if not defined, then this is id will become first sheet
+        const previousPrevious = this.getPrevious(previous.id);
+
+        response = this.grid.moveSheet(id, previousPrevious ? previousPrevious.id : undefined, sheet.cursor.save());
+      } else {
+        throw new Error(`Unhandled delta ${delta} in sheets.changeOrder`);
+      }
+    } else if (order !== undefined) {
+      const previousSheetId = this.findClosestPreviousSheet(order, id);
+      const previous = this.sheets.find((sheet) => sheet.id === previousSheetId);
+      response = this.grid.moveSheet(id, previousSheetId, sheet.cursor.save());
+      console.log(`Moving ${sheet.name} to after ${previous?.name}`);
+    } else {
+      throw new Error('Expected order or delta to be defined in sheets.moveSheet');
+    }
+    transactionResponse(this.sheetController, response);
+    this.save();
+    this.sheets.sort();
+    this.sheets.forEach((sheet) => console.log(sheet.name, sheet.order));
   }
 }

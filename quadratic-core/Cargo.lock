@@ -249,6 +249,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
+name = "fractional_index"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "431f421295b3185afd05d846d86c8f7a4f680e5971c0250156cb6ffecd199c24"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "futures"
 version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -559,6 +568,7 @@ dependencies = [
  "async-trait",
  "console_error_panic_hook",
  "criterion",
+ "fractional_index",
  "futures",
  "getrandom",
  "itertools",

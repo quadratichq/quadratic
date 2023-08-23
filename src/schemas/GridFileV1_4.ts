@@ -1,3 +1,4 @@
+import { v4 as uuid } from 'uuid';
 import z from 'zod';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { GridFileV1_3 } from './GridFileV1_3';
@@ -17,6 +18,7 @@ const HeadingSchema = z.object({
 export const GridFileSchemaV1_4 = z.object({
   sheets: z
     .object({
+      id: z.string(),
       name: z.string(),
       color: z.string().optional(),
       order: z.string(),
@@ -101,10 +103,12 @@ export type GridFileV1_4 = z.infer<typeof GridFileSchemaV1_4>;
 
 export function upgradeV1_3toV1_4(file: GridFileV1_3): GridFileV1_4 {
   // file.render_dependency is removed
+  // sheets and id added
   return {
     sheets: [
       {
-        name: 'Sheet1',
+        name: 'Sheet 1',
+        id: uuid(),
         order: generateKeyBetween(null, null),
         borders: file.borders,
         cells: file.cells,

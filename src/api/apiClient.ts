@@ -1,3 +1,5 @@
+import { v4 as uuid } from 'uuid';
+
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { downloadFile as downloadFileOnClient } from '../helpers/downloadFile';
@@ -26,7 +28,8 @@ import {
 const DEFAULT_FILE: GridFile = {
   sheets: [
     {
-      name: 'Sheet1',
+      name: 'Sheet 1',
+      id: uuid(),
       order: generateKeyBetween(null, null),
       cells: [],
       formats: [],

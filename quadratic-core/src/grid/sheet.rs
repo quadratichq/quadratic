@@ -19,11 +19,14 @@ use super::legacy;
 use super::response::{GetIdResponse, SetCellResponse};
 use crate::{Array, CellValue, IsBlank, Pos, Rect, Value};
 
+use fractional_index::ZenoIndex;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Sheet {
     pub id: SheetId,
     pub name: String,
     pub color: Option<String>,
+    pub order: ZenoIndex,
 
     column_ids: IdMap<ColumnId, i64>,
     row_ids: IdMap<RowId, i64>,
@@ -44,11 +47,12 @@ pub struct Sheet {
 }
 impl Sheet {
     /// Constructs a new empty sheet.
-    pub fn new(id: SheetId, name: String) -> Self {
+    pub fn new(id: SheetId, name: String, order: ZenoIndex) -> Self {
         Sheet {
             id,
             name,
             color: None,
+            order,
 
             column_ids: IdMap::new(),
             row_ids: IdMap::new(),
@@ -238,6 +242,7 @@ impl Sheet {
 
     pub fn export_to_legacy_file_format(&self, index: usize) -> legacy::JsSheet {
         legacy::JsSheet {
+            id: self.id.to_string().clone(),
             name: self.name.clone(),
             color: self.color.clone(),
             order: format!("{index:0>8}"), // pad with zeros to sort lexicographically

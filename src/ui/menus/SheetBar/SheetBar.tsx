@@ -1,14 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import './SheetBar.css';
 
-// import { ButtonUnstyled } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { updateSheet } from '../../../grid/actions/sheetsAction';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { generateKeyBetween } from '../../../utils/fractionalIndexing';
 import { SheetBarTab } from './SheetBarTab';
 import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
 
@@ -128,9 +124,9 @@ export const SheetBar = (props: Props): JSX.Element => {
         tab: HTMLElement;
         offset: number;
         id: string;
-        originalOrder: string;
-        actualOrder: string;
-        overlap?: string;
+        originalOrder: number;
+        actualOrder: number;
+        overlap?: number;
         scrollWidth: number;
       }
     | undefined
@@ -158,8 +154,8 @@ export const SheetBar = (props: Props): JSX.Element => {
           offset: event.clientX - rect.left,
           id: sheet.id,
           scrollWidth: sheets.scrollWidth,
-          originalOrder: sheet.order,
-          actualOrder: sheet.order,
+          originalOrder: parseInt(sheet.order),
+          actualOrder: parseInt(sheet.order),
         };
         setTimeout(() => {
           if (down.current) {
@@ -216,14 +212,14 @@ export const SheetBar = (props: Props): JSX.Element => {
         if (!down.current) return;
 
         // store current tabs (except the dragging tab)
-        const tabs: { rect: DOMRect; order: string; element: HTMLDivElement }[] = [];
+        const tabs: { rect: DOMRect; order: number; element: HTMLDivElement }[] = [];
 
         down.current.tab.parentElement?.childNodes.forEach((node) => {
           const element = node as HTMLDivElement;
           if (element !== tab) {
             let order = element.getAttribute('data-order');
             if (order) {
-              tabs.push({ rect: element.getBoundingClientRect(), order, element });
+              tabs.push({ rect: element.getBoundingClientRect(), order: parseInt(order), element });
             }
           }
         });
@@ -237,8 +233,7 @@ export const SheetBar = (props: Props): JSX.Element => {
 
             // moving left
             if (down.current.actualOrder > overlap.order) {
-              const previous = sheetController.sheets.getPrevious(overlap.order);
-              down.current.actualOrder = generateKeyBetween(previous?.order, overlap.order);
+              down.current.actualOrder = overlap.order - 0.5;
 
               // place floating tab to the left of the overlapped tab
               tab.style.order = (parseInt(overlap.element.style.order) - 1).toString();
@@ -246,8 +241,7 @@ export const SheetBar = (props: Props): JSX.Element => {
 
             // moving right
             else {
-              const next = sheetController.sheets.getNext(overlap.order);
-              down.current.actualOrder = generateKeyBetween(overlap.order, next?.order);
+              down.current.actualOrder = overlap.order + 0.5;
 
               // place floating tab to the right of the overlapped tab
               tab.style.order = (parseInt(overlap.element.style.order) + 1).toString();
@@ -307,7 +301,7 @@ export const SheetBar = (props: Props): JSX.Element => {
         }
       }
     },
-    [sheetController, sheets]
+    [sheets]
   );
 
   const scrollInterval = useRef<number | undefined>();
@@ -348,7 +342,7 @@ export const SheetBar = (props: Props): JSX.Element => {
         if (!sheet) {
           throw new Error('Expect sheet to be defined in SheetBar.pointerUp');
         }
-        updateSheet({ sheetController, sheet, order: down.current.actualOrder, create_transaction: true });
+        sheetController.sheets.moveSheet({ id: down.current.id, order: down.current.actualOrder });
       }
       down.current = undefined;
     }

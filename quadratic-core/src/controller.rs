@@ -115,11 +115,7 @@ impl GridController {
         self.transact_forward(Transaction { ops, cursor })
     }
 
-    pub fn add_sheet(
-        &mut self,
-        to_before: Option<SheetId>,
-        cursor: Option<String>,
-    ) -> TransactionSummary {
+    pub fn add_sheet(&mut self, cursor: Option<String>) -> TransactionSummary {
         let sheet_names = &self
             .grid
             .sheets()
@@ -129,11 +125,9 @@ impl GridController {
 
         let id = SheetId::new();
         let name = crate::util::unused_name("Sheet", &sheet_names);
-
-        let ops = vec![Operation::AddSheet {
-            sheet: Sheet::new(id, name),
-            to_before,
-        }];
+        let order = self.grid.end_order();
+        let sheet = Sheet::new(id, name, order.clone());
+        let ops = vec![Operation::AddSheet { sheet }];
         self.transact_forward(Transaction { ops, cursor })
     }
     pub fn delete_sheet(
@@ -161,17 +155,13 @@ impl GridController {
         sheet_id: SheetId,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let sheet_after = self
-            .sheet_ids()
-            .get(self.grid.sheet_id_to_index(sheet_id).expect("bad sheet ID") + 1)
-            .copied();
+        let source = self.grid.sheet_from_id(sheet_id);
         let mut new_sheet = self.sheet(sheet_id).clone();
         new_sheet.id = SheetId::new();
         new_sheet.name = format!("{} Copy", new_sheet.name);
-        let ops = vec![Operation::AddSheet {
-            sheet: new_sheet,
-            to_before: sheet_after,
-        }];
+        let right = self.grid.next_sheet_order(sheet_id);
+        new_sheet.order = Grid::between_order(Some(source.order.clone()), right);
+        let ops = vec![Operation::AddSheet { sheet: new_sheet }];
         self.transact_forward(Transaction { ops, cursor })
     }
 
@@ -277,27 +267,19 @@ impl GridController {
                     })
                 }
 
-                Operation::AddSheet { sheet, to_before } => {
-                    let sheet_id = sheet.id;
-                    let index = to_before.and_then(|id| self.grid.sheet_id_to_index(id));
+                Operation::AddSheet { sheet } => {
+                    let sheet_id = sheet.id.clone();
                     self.grid
-                        .add_sheet(Some(sheet), index)
+                        .add_sheet(Some(sheet), None)
                         .expect("duplicate sheet name");
                     summary.sheet_list_modified = true;
                     rev_ops.push(Operation::DeleteSheet { sheet_id });
                 }
                 Operation::DeleteSheet { sheet_id } => {
-                    let old_after = self
-                        .grid
-                        .sheet_id_to_index(sheet_id)
-                        .and_then(|i| Some(*self.sheet_ids().get(i + 1)?));
                     let deleted_sheet = self.grid.remove_sheet(sheet_id);
                     if let Some(sheet) = deleted_sheet {
                         summary.sheet_list_modified = true;
-                        rev_ops.push(Operation::AddSheet {
-                            sheet,
-                            to_before: old_after,
-                        });
+                        rev_ops.push(Operation::AddSheet { sheet });
                     }
                 }
 
@@ -462,7 +444,6 @@ pub enum Operation {
 
     AddSheet {
         sheet: Sheet,
-        to_before: Option<SheetId>,
     },
     DeleteSheet {
         sheet_id: SheetId,
@@ -631,8 +612,8 @@ mod tests {
     #[test]
     fn test_add_delete_reorder_sheets() {
         let mut g = GridController::new();
-        g.add_sheet(None, None);
-        g.add_sheet(None, None);
+        g.add_sheet(None);
+        g.add_sheet(None);
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
         let s2 = old_sheet_ids[1];
