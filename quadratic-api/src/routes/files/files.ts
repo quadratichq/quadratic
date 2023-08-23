@@ -1,4 +1,4 @@
-import { File, User } from '@prisma/client';
+import { File, LinkPermission, User } from '@prisma/client';
 import express, { NextFunction, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
@@ -7,13 +7,16 @@ import { validateOptionalAccessToken } from '../../middleware/auth_optional';
 import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
 import { Request } from '../../types/Request';
 
-const files_router = express.Router();
+type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
 
 const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
 const validateFileName = () => body('name').isString().not().isEmpty();
 const validateFileVersion = () => body('version').isString().not().isEmpty();
-type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
+const validateFileSharingPermission = () =>
+  body('public_link_access').isIn([LinkPermission.READONLY, LinkPermission.NOT_SHARED]);
+
+const files_router = express.Router();
 
 const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   if (req.params.uuid === undefined) {
@@ -128,6 +131,7 @@ files_router.post(
   validateFileContents().optional(),
   validateFileVersion().optional(),
   validateFileName().optional(),
+  validateFileSharingPermission().optional(),
   async (req: Request, res: Response) => {
     if (!req.file || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
@@ -179,6 +183,14 @@ files_router.post(
             increment: 1,
           },
         },
+      });
+    }
+
+    // update the file name
+    if (req.body.public_link_access !== undefined) {
+      await dbClient.file.update({
+        where: { uuid: req.params.uuid },
+        data: { public_link_access: req.body.public_link_access },
       });
     }
 
