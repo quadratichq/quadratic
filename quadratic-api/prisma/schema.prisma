@@ -84,8 +84,6 @@ model QFile {
 // }
 
 // model UserFileAccess {
-//   // This works for individual access
-//   // Team access will be a separate model
 //   id Int
 //   userId    Int
 //   fileId    Int
@@ -97,14 +95,17 @@ model QFile {
 // }
 
 // model TeamFileAccess {
-//   // This works for individual access
-//   // Team access will be a separate model
 //   id Int
 //   teamID    Int
 //   fileId    Int
-//   user      User      @relation(fields: [userId], references: [id])
+//   team      Team      @relation(fields: [teamID], references: [id])
 //   file      File      @relation(fields: [fileId], references: [id])
 //   permission SharePermission @default(READONLY)
 
 //   @@unique([userId, fileId])
 // }
+
+// Permission Logic
+// Public Link Access: Check the share_link column in the files table.
+// Direct User Access: Check for a row in UserFileAccess with the user's ID.
+// Team Access: Check for a row in TeamFileAccess with a team ID that the user is a part of.
