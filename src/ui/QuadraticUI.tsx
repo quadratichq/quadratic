@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
+import { useNavigation } from 'react-router';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { SheetController } from '../grid/controller/sheetController';
@@ -22,6 +23,7 @@ import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
+  const navigation = useNavigation();
 
   useEffect(() => {
     sheetController.setApp(app);
@@ -44,6 +46,9 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        transition: '.3s ease opacity',
+        opacity: 1,
+        ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}

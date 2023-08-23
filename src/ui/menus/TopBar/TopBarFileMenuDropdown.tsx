@@ -3,6 +3,7 @@ import { Divider, IconButton, Menu, MenuItem, useTheme } from '@mui/material';
 import { Dispatch, SetStateAction, useState } from 'react';
 import { useParams, useSubmit } from 'react-router-dom';
 import { apiClient } from '../../../api/apiClient';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
 import { ROUTES } from '../../../constants/routes';
 import { GridFileSchema } from '../../../schemas';
 import { useFileContext } from '../../components/FileProvider';
@@ -13,6 +14,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
   const { name, contents, downloadFile } = useFileContext();
   const { uuid } = useParams() as { uuid: string };
   const submit = useSubmit();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -49,8 +51,8 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
         <MenuItem
           dense
           onClick={() => {
-            setIsRenaming(true);
             handleClose();
+            setIsRenaming(true);
           }}
         >
           Rename
@@ -58,6 +60,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
         <MenuItem
           dense
           onClick={() => {
+            handleClose();
             // TODO this is async and needs to disable button or something
             let formData = new FormData();
             formData.append('name', name + ' (Copy)');
@@ -71,8 +74,8 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
         <MenuItem
           dense
           onClick={() => {
-            downloadFile();
             handleClose();
+            downloadFile();
           }}
         >
           Download local copy
@@ -81,17 +84,18 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
         <MenuItem
           dense
           onClick={async () => {
-            // Confirm user wants to do it
-            if (window.confirm(`Please confirm you want to delete the file: “${name}”`)) {
-              // TODO a couple options for async operations on the sheet:
-              // 1. just assume it'll delete (and it'll show up in the file list if it didn't?)
-              // 2. Use local state and await it here, then navigate
-              // 3. Create routes for use by fetchers when in the sheet, e.g. `/file/:uuid/delete`
-              //    with a top-level "loading" effect on the entire sheet when we do these kinds of things
-              apiClient.deleteFile(uuid);
-              window.location.href = ROUTES.FILES;
-            }
             handleClose();
+            // Give the UI a chance to update and close the menu before triggering alert
+            setTimeout(async () => {
+              if (window.confirm(`Please confirm you want to delete the file: “${name}”`)) {
+                try {
+                  await apiClient.deleteFile(uuid);
+                  window.location.href = ROUTES.FILES;
+                } catch (e) {
+                  addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
+                }
+              }
+            }, 200);
           }}
         >
           Delete

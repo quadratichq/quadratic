@@ -35,7 +35,10 @@ type ActionData = {
 } | null;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  return apiClient.getFiles().catch(() => null);
+  return apiClient.getFiles().catch((e) => {
+    console.error(e);
+    return null;
+  });
 };
 
 export const Component = () => {
