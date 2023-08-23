@@ -2,9 +2,9 @@ import { File, LinkPermission, User } from '@prisma/client';
 import express, { NextFunction, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
-import { validateAccessToken } from '../../middleware/auth';
-import { validateOptionalAccessToken } from '../../middleware/auth_optional';
 import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { Request } from '../../types/Request';
 
 type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
@@ -88,7 +88,7 @@ files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, 
     ],
   });
 
-  res.status(200).json(files);
+  return res.status(200).json(files);
 });
 
 files_router.get(
@@ -186,7 +186,7 @@ files_router.post(
       });
     }
 
-    // update the file name
+    // update the link sharing permissions
     if (req.body.public_link_access !== undefined) {
       await dbClient.file.update({
         where: { uuid: req.params.uuid },
@@ -194,7 +194,7 @@ files_router.post(
       });
     }
 
-    res.status(200).json({ message: 'File updated.' });
+    return res.status(200).json({ message: 'File updated.' });
   }
 );
 
@@ -271,7 +271,7 @@ files_router.post(
       },
     });
 
-    res.status(201).json(file); // CREATED
+    return res.status(201).json(file); // CREATED
   }
 );
 

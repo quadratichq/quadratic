@@ -2,8 +2,8 @@ import axios from 'axios';
 import express from 'express';
 import { z } from 'zod';
 import dbClient from '../dbClient';
-import { validateAccessToken } from '../middleware/auth';
 import { userMiddleware } from '../middleware/user';
+import { validateAccessToken } from '../middleware/validateAccessToken';
 import { Request } from '../types/Request';
 
 const files_router = express.Router();
