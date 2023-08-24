@@ -273,6 +273,9 @@ impl GridController {
                 }
 
                 Operation::AddSheet { sheet } => {
+                    // todo: need to handle the case where sheet.order overlaps another sheet order
+                    // this may happen after (1) delete a sheet; (2) MP update w/an added sheet; and (3) undo the deleted sheet
+
                     let sheet_id = sheet.id.clone();
                     self.grid
                         .add_sheet(Some(sheet))
