@@ -7,7 +7,7 @@ use super::{block::SameValue, Column, ColumnData};
 
 /// Cell formatting attribute.
 pub trait CellFmtAttr {
-    type Value: fmt::Debug + Clone + Eq;
+    type Value: fmt::Debug + Default + Clone + Eq;
     fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>>;
     fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>>;
 }
@@ -80,10 +80,12 @@ impl CellFmtAttr for FillColor {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum CellAlign {
+    #[default]
+    Default,
     Center,
     Left,
     Right,
@@ -99,7 +101,7 @@ pub enum CellWrap {
     Clip,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct NumericFormat {
     #[serde(rename = "type")]
@@ -108,10 +110,11 @@ pub struct NumericFormat {
     decimals: Option<u32>,
     symbol: Option<String>,
 }
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]
 pub enum NumericFormatKind {
+    #[default]
     Number,
     Currency, // { symbol: String }, // TODO: would be nice if this were just a single char (and it could be)
     Percentage,

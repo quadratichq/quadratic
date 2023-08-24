@@ -227,13 +227,14 @@ impl Sheet {
     }
 
     /// Sets a formatting property for a cell.
-    pub fn set_formatting_value<A: CellFmtAttr>(
-        &mut self,
-        pos: Pos,
-        value: Option<A::Value>,
-    ) -> Option<A::Value> {
+    pub fn set_formatting_value<A: CellFmtAttr>(&mut self, pos: Pos, value: A::Value) -> A::Value {
         let (_, column) = self.get_or_create_column(pos.x);
-        A::column_data_mut(column).set(pos.y, value)
+        // If `value` is default, set `None`
+        let value = (value != Default::default()).then_some(value);
+        A::column_data_mut(column)
+            .set(pos.y, value)
+            // Infer default in case of `None`
+            .unwrap_or_default()
     }
 
     pub fn export_to_legacy_file_format(&self, index: usize) -> legacy::JsSheet {

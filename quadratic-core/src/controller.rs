@@ -365,15 +365,16 @@ impl GridController {
     fn set_cell_formats_for_type<A: CellFmtAttr>(
         &mut self,
         region: &RegionRef,
-        values: RunLengthEncoding<Option<A::Value>>,
-    ) -> RunLengthEncoding<Option<A::Value>> {
+        values: RunLengthEncoding<A::Value>,
+    ) -> RunLengthEncoding<A::Value> {
         let sheet = self.grid.sheet_mut_from_id(region.sheet);
         // TODO: optimize this for contiguous runs of the same value
         let mut old_values = RunLengthEncoding::new();
         for (cell_ref, value) in region.iter().zip(values.iter_values()) {
-            let old_value = sheet
-                .cell_ref_to_pos(cell_ref)
-                .and_then(|pos| sheet.set_formatting_value::<A>(pos, value.clone()));
+            let old_value = match sheet.cell_ref_to_pos(cell_ref) {
+                Some(pos) => sheet.set_formatting_value::<A>(pos, value.clone()),
+                None => Default::default(), // ignore invalid cell refs
+            };
             old_values.push(old_value);
         }
         old_values
@@ -422,7 +423,7 @@ macro_rules! impl_set_cell_fmt_method {
                 &mut self,
                 sheet_id: SheetId,
                 rect: Rect,
-                value: Option<<$cell_fmt_attr_type as CellFmtAttr>::Value>,
+                value: <$cell_fmt_attr_type as CellFmtAttr>::Value,
                 cursor: Option<String>,
             ) -> TransactionSummary {
                 let region = self.region(sheet_id, rect);
@@ -503,13 +504,13 @@ impl Operation {
 /// Array of a single cell formatting attribute.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum CellFmtArray {
-    Align(RunLengthEncoding<Option<CellAlign>>),
-    Wrap(RunLengthEncoding<Option<CellWrap>>),
-    NumericFormat(RunLengthEncoding<Option<NumericFormat>>),
-    Bold(RunLengthEncoding<Option<bool>>),
-    Italic(RunLengthEncoding<Option<bool>>),
-    TextColor(RunLengthEncoding<Option<String>>),
-    FillColor(RunLengthEncoding<Option<String>>),
+    Align(RunLengthEncoding<CellAlign>),
+    Wrap(RunLengthEncoding<CellWrap>),
+    NumericFormat(RunLengthEncoding<NumericFormat>),
+    Bold(RunLengthEncoding<bool>),
+    Italic(RunLengthEncoding<bool>),
+    TextColor(RunLengthEncoding<String>),
+    FillColor(RunLengthEncoding<String>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
@@ -596,7 +597,7 @@ mod tests {
         assert_eq!(get(&g, pos2), "");
         assert_eq!(get(&g, pos3), "");
         assert_eq!(
-            g.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None),
+            g.set_cell_text_color(sheet_id, rect1, "blue".to_string(), None),
             expected_summary(rect1),
         );
         println!("{:#?}", g);
@@ -604,7 +605,7 @@ mod tests {
         assert_eq!(get(&g, pos2), "blue");
         assert_eq!(get(&g, pos3), "");
         assert_eq!(
-            g.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None),
+            g.set_cell_text_color(sheet_id, rect2, "red".to_string(), None),
             expected_summary(rect2),
         );
         assert_eq!(get(&g, pos1), "blue");
