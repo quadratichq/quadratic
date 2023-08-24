@@ -155,15 +155,30 @@ impl Sheet {
 
         (column_ids, row_ids, old_cell_values_array)
     }
-    /// Sets or deletes a code cell value.
-    pub fn set_code_cell_value(&mut self, pos: Pos, code_cell: Option<CodeCellValue>) {
+    /// Sets or deletes a code cell value. Returns the old value.
+    pub fn set_code_cell(
+        &mut self,
+        pos: Pos,
+        code_cell: Option<CodeCellValue>,
+    ) -> Option<CodeCellValue> {
         let cell_ref = self.get_or_create_cell_ref(pos);
+
         // TODO: unspill!
+
         self.code_cells.remove(&cell_ref);
-        if let Some(code_cell) = code_cell {
-            self.code_cells.insert(cell_ref, code_cell);
-        }
+        let old_value = if let Some(code_cell) = code_cell {
+            self.code_cells.insert(cell_ref, code_cell)
+        } else {
+            None
+        };
+
         // TODO: spill (or have some other way to handle new code results)
+        self.get_or_create_column(pos.x)
+            .1
+            .spills
+            .set(pos.y, Some(cell_ref));
+
+        old_value
     }
 
     /// Sets or deletes horizontal borders in a region.
@@ -660,6 +675,15 @@ impl Sheet {
     /// Returns data for rendering vertical borders.
     pub fn get_render_vertical_borders(&self) -> Vec<JsRenderBorder> {
         self.borders.get_render_vertical_borders()
+    }
+
+    /// Removes code cells in a region.
+    pub fn remove_code_cells_in_region(
+        &mut self,
+        region: Rect,
+    ) -> impl '_ + Iterator<Item = (CellRef, CodeCellValue)> {
+        self.iter_code_cells_locations_in_region(region)
+            .filter_map(|cell_ref| Some((cell_ref, self.code_cells.remove(&cell_ref)?)))
     }
 
     /// Returns an iterator over all locations containing code cells that may

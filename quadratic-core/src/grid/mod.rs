@@ -109,7 +109,7 @@ impl Grid {
                             }
                         }
                     }
-                    sheet.set_code_cell_value(
+                    sheet.set_code_cell(
                         Pos {
                             x: js_cell.x,
                             y: js_cell.y,
