@@ -1,16 +1,14 @@
-import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { ContentCopy, ContentPaste, ContentCut, East } from '@mui/icons-material';
+import { ContentCopy, ContentCut, ContentPaste, East, Redo, Undo } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { Undo, Redo } from '@mui/icons-material';
-import { isMac } from '../../../../utils/isMac';
+import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
+import { PNG_MESSAGE } from '../../../../constants/appConstants';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { isMac } from '../../../../utils/isMac';
 import { CopyAsPNG } from '../../../icons';
-import { useGlobalSnackbar } from '../../../contexts/GlobalSnackbar';
-import { PNG_MESSAGE } from '../../../../constants/app';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {

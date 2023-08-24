@@ -25,7 +25,7 @@ sys.modules["pyodide"] = mock_pyodide
 sys.modules["micropip"] = mock_micropip
 
 # add path to import run_python
-sys.path.insert(1, "src/grid/computations/python")
+sys.path.insert(1, "src/web-workers/pythonWebWorker")
 
 from run_python import run_python, attempt_fix_await
 

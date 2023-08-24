@@ -1,10 +1,10 @@
 import { Point } from 'pixi.js';
-import { IS_READONLY_MODE } from '../../../constants/app';
+import { PanMode } from '../../../atoms/gridInteractionStateAtom';
+import { IS_READONLY_MODE } from '../../../constants/appConstants';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { PanMode } from '../../../atoms/gridInteractionStateAtom';
 
 const MINIMUM_MOVE_POSITION = 5;
 

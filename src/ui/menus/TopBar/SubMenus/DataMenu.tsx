@@ -1,18 +1,18 @@
-import Button from '@mui/material/Button';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Menu, MenuItem, MenuHeader } from '@szhsin/react-menu';
 import {
   CloudDownloadOutlined,
-  StorageOutlined,
   DataObjectOutlined,
-  UploadFile,
   InsertDriveFile,
+  StorageOutlined,
+  UploadFile,
 } from '@mui/icons-material';
-import '@szhsin/react-menu/dist/index.css';
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Tooltip } from '@mui/material';
+import Button from '@mui/material/Button';
+import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
+import '@szhsin/react-menu/dist/index.css';
+import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
+import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
 import { MenuLineItem } from '../MenuLineItem';
-import { CSV_IMPORT_MESSAGE } from '../../../../constants/app';
-import { useGlobalSnackbar } from '../../../contexts/GlobalSnackbar';
 
 export const DataMenu = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();

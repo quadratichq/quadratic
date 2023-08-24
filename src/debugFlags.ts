@@ -1,9 +1,6 @@
 // set this in .env (if set to false then all debug flags are turned off)
 export const debug = process.env.REACT_APP_DEBUG === '1' ? true : false;
 
-// skip python load (used to speed up debugging)
-export const debugSkipPythonLoad = debug && false;
-
 // ------------------
 // Debug footer marks
 // ------------------

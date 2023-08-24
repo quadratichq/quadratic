@@ -1,6 +1,7 @@
-import { GetCellsDB } from '../../sheet/Cells/GetCellsDB';
+import { apiClient } from '../../../api/apiClient';
+import { authClient } from '../../../auth';
 import { Coordinate } from '../../../gridGL/types/size';
-import apiClientSingleton from '../../../api-client/apiClientSingleton';
+import { GetCellsDB } from '../../sheet/Cells/GetCellsDB';
 
 export interface runAIReturnType {
   success: boolean;
@@ -10,7 +11,7 @@ export interface runAIReturnType {
 }
 
 export async function runAI(prompt: string, pos: Coordinate): Promise<runAIReturnType> {
-  const token = await apiClientSingleton.getAuth();
+  const token = await authClient.getToken();
 
   const top_cells = await GetCellsDB(pos.x - 25, pos.y - 50, pos.x + 25, pos.y - 1);
   const left_cells = await GetCellsDB(pos.x - 25, pos.y - 25, pos.x - 1, pos.y + 50);
@@ -75,7 +76,7 @@ export async function runAI(prompt: string, pos: Coordinate): Promise<runAIRetur
       ],
     };
 
-    response = await fetch(`${apiClientSingleton.getAPIURL()}/ai/chat`, {
+    response = await fetch(`${apiClient.getApiUrl()}/ai/chat`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

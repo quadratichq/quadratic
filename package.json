@@ -10,7 +10,7 @@
   "private": true,
   "dependencies": {
     "@amplitude/analytics-browser": "^1.9.4",
-    "@auth0/auth0-react": "^1.11.0",
+    "@auth0/auth0-spa-js": "^2.1.0",
     "@emotion/react": "^11.7.0",
     "@emotion/styled": "^11.6.0",
     "@monaco-editor/react": "^4.3.1",
@@ -18,7 +18,7 @@
     "@mui/material": "^5.2.2",
     "@sentry/react": "^6.19.6",
     "@sentry/tracing": "^6.19.6",
-    "@szhsin/react-menu": "^2.3.4",
+    "@szhsin/react-menu": "^4.0.2",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
@@ -26,9 +26,9 @@
     "@types/fontfaceobserver": "^2.1.0",
     "@types/jest": "^27.0.2",
     "@types/node": "^14.14.31",
-    "@types/react": "^17.0.33",
+    "@types/react": "^18.2.16",
     "@types/react-color": "^3.0.6",
-    "@types/react-dom": "^17.0.10",
+    "@types/react-dom": "^18.2.7",
     "@types/uuid": "^9.0.1",
     "ace-builds": "^1.4.13",
     "axios": "^0.24.0",
@@ -40,18 +40,19 @@
     "localforage": "^1.10.0",
     "lodash.debounce": "^4.0.8",
     "mixpanel-browser": "^2.46.0",
-    "monaco-editor": "^0.31.1",
+    "monaco-editor": "^0.40.0",
     "numerable": "^0.3.15",
     "papaparse": "^5.3.2",
     "pixi-viewport": "^4.37.0",
     "pixi.js": "^6.5.1",
     "quadratic-core": "file:quadratic-core/pkg",
-    "react": "^17.0.2",
+    "react": "^18.2.0",
     "react-color": "^2.19.3",
     "react-device-detect": "^2.2.2",
-    "react-dom": "^17.0.2",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.14.1",
     "react-scripts": "5.0.1",
-    "recoil": "^0.6.0",
+    "recoil": "^0.7.7",
     "sass": "^1.56.2",
     "typescript": "^4.4.4",
     "uuid": "^9.0.0",
@@ -60,8 +61,8 @@
   },
   "main": "public/electron.js",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-scripts start",
+    "build": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-scripts build",
     "build:wasm": "cd quadratic-core && wasm-pack build --target web --out-dir pkg",
     "build:wasm:nodejs": "cd quadratic-core && wasm-pack build --target nodejs --out-dir pkg",
     "build:ci": "./scripts/run-ci-build.sh",
@@ -80,7 +81,8 @@
     "lint:ts": "tsc --noemit",
     "lint:eslint": "eslint --ext .ts,.tsx src",
     "lint:prettier": "prettier --check src",
-    "lint:prettier:write": "prettier --write src"
+    "lint:prettier:write": "prettier --write src",
+    "api:start": "cd quadratic-api && npm start"
   },
   "eslintConfig": {
     "extends": [
@@ -122,6 +124,6 @@
     "pyodide": "^0.22.0",
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
-    "wait-on": "^6.0.1"
+    "wait-on": "^7.0.1"
   }
 }

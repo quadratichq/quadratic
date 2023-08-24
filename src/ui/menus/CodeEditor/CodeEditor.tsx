@@ -1,9 +1,5 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
-import monaco from 'monaco-editor';
-import { colors } from '../../../theme/colors';
-import { QuadraticEditorTheme } from './quadraticEditorTheme';
-import { Cell } from '../../../schemas';
+import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
 import {
   Button,
   CircularProgress,
@@ -13,49 +9,66 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
+  useTheme,
 } from '@mui/material';
-import { Console } from './Console';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { useSetRecoilState } from 'recoil';
-import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
-import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
-import { provideCompletionItems, provideHover } from 'quadratic-core';
-import { CellEvaluationResult } from '../../../grid/computations/types';
-import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
-import { AI, Formula, Python } from '../../icons';
-import { TooltipHint } from '../../components/TooltipHint';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { ResizeControl } from './ResizeControl';
-import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import mixpanel from 'mixpanel-browser';
+import monaco from 'monaco-editor';
+import { provideCompletionItems, provideHover } from 'quadratic-core';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
+import {
+  editorHighlightedCellsStateAtom,
+  editorHighlightedCellsStateDefault,
+} from '../../../atoms/editorHighlightedCellsStateAtom';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
+import { updateCellAndDCells } from '../../../grid/actions/updateCellAndDCells';
+import { CellEvaluationResult } from '../../../grid/computations/types';
+import { SheetController } from '../../../grid/controller/sheetController';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import useAlertOnUnsavedChanges from '../../../hooks/useAlertOnUnsavedChanges';
+import { useEditorCellHighlights } from '../../../hooks/useEditorCellHighlights';
+import { useEditorOnSelectionChange } from '../../../hooks/useEditorOnSelectionChange';
+import { Cell } from '../../../schemas';
+import { colors } from '../../../theme/colors';
+import { TooltipHint } from '../../components/TooltipHint';
+import { AI, Formula, Python } from '../../icons';
+import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
+import { Console } from './Console';
+import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
+import { ResizeControl } from './ResizeControl';
+import { QuadraticEditorTheme } from './quadraticEditorTheme';
 
 loader.config({ paths: { vs: '/monaco/vs' } });
 
 interface CodeEditorProps {
-  editorInteractionState: EditorInteractionState;
   sheet_controller: SheetController;
 }
 
 export const CodeEditor = (props: CodeEditorProps) => {
-  const { editorInteractionState } = props;
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const { pythonLoaded } = useRecoilValue(loadedStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
-
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
 
   const [editorContent, setEditorContent] = useState<string | undefined>('');
   const [didMount, setDidMount] = useState(false);
+  const [isValidRef, setIsValidRef] = useState(false);
 
   const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
+  const theme = useTheme();
+  const isLoadingPython = !pythonLoaded && editorMode === 'PYTHON';
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   // Selected Cell State
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>(undefined);
+
+  // HighlightedCells State hook
+  const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
 
   // Monitor selected cell for changes
   const x = editorInteractionState.selectedCell.x;
@@ -77,6 +90,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState<boolean>(false);
 
   const hasUnsavedChanges =
+    // can't have unsaved changes with no cell selected
+    selectedCell !== undefined &&
     // new cell and no content
     !(cell === undefined && !editorContent) &&
     // existing cell and content has changed
@@ -117,6 +132,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
   }, [selectedCell]);
 
   useAlertOnUnsavedChanges(hasUnsavedChanges);
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef);
+  useEditorOnSelectionChange(isValidRef, editorRef);
 
   const closeEditor = ({ skipUnsavedChangesCheck } = { skipUnsavedChangesCheck: false }) => {
     // If there are unsaved changes and we haven't been told to explicitly skip
@@ -125,12 +142,14 @@ export const CodeEditor = (props: CodeEditorProps) => {
       setShowSaveChangesAlert(true);
       return;
     }
+    setIsValidRef(false);
 
     setShowSaveChangesAlert(false);
     setInteractionState({
       ...editorInteractionState,
       ...{ showCodeEditor: false },
     });
+    setEditorHighlightedCells(editorHighlightedCellsStateDefault);
     setEditorContent('');
     setSelectedCell(undefined);
     setEvalResult(undefined);
@@ -190,6 +209,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const saveAndRunCell = async () => {
     if (!selectedCell) return;
     if (isRunningComputation) return;
+    if (isLoadingPython) return;
 
     setIsRunningComputation(true);
 
@@ -231,6 +251,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+    setIsValidRef(true);
 
     editor.focus();
 
@@ -357,6 +378,12 @@ export const CodeEditor = (props: CodeEditorProps) => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
           {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
+          {isLoadingPython && (
+            <div style={{ color: theme.palette.warning.main, display: 'flex', alignItems: 'center' }}>
+              Loading Python...
+              <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
+            </div>
+          )}
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
             <span>
               <IconButton
@@ -364,7 +391,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
                 size="small"
                 color="primary"
                 onClick={saveAndRunCell}
-                disabled={isRunningComputation}
+                disabled={isRunningComputation || isLoadingPython}
               >
                 <PlayArrow />
               </IconButton>

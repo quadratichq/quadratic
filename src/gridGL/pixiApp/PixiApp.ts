@@ -1,32 +1,31 @@
-import { Renderer, Container, Graphics } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
-import { PixiAppSettings } from './PixiAppSettings';
-import { Pointer } from '../interaction/pointer/Pointer';
-import { Update } from './Update';
-import './pixiApp.css';
-import { GridLines } from '../UI/GridLines';
-import { AxesLines } from '../UI/AxesLines';
-import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
-import { Cursor } from '../UI/Cursor';
-import { Cells } from '../UI/cells/Cells';
-import { zoomInOut, zoomToFit, zoomToSelection } from '../helpers/zoom';
-import { Quadrants } from '../quadrants/Quadrants';
-import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
-import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../debugFlags';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { SheetController } from '../../grid/controller/sheetController';
-import { HEADING_SIZE } from '../../constants/gridConstants';
+import { Container, Graphics, Renderer } from 'pixi.js';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
-import { IS_READONLY_MODE } from '../../constants/app';
-import { Wheel, ZOOM_KEY, HORIZONTAL_SCROLL_KEY } from '../pixiOverride/Wheel';
+import { IS_READONLY_MODE } from '../../constants/appConstants';
+import { HEADING_SIZE } from '../../constants/gridConstants';
+import { debugAlwaysShowCache, debugNeverShowCache, debugShowCacheFlag } from '../../debugFlags';
+import { SheetController } from '../../grid/controller/sheetController';
+import { Sheet } from '../../grid/sheet/Sheet';
+import { AxesLines } from '../UI/AxesLines';
+import { Cursor } from '../UI/Cursor';
+import { GridLines } from '../UI/GridLines';
 import { BoxCells } from '../UI/boxCells';
+import { Cells } from '../UI/cells/Cells';
+import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
+import { zoomInOut, zoomToFit, zoomToSelection } from '../helpers/zoom';
+import { Pointer } from '../interaction/pointer/Pointer';
+import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
+import { Quadrants } from '../quadrants/Quadrants';
+import { QUADRANT_SCALE } from '../quadrants/quadrantConstants';
+import { PixiAppSettings } from './PixiAppSettings';
+import { Update } from './Update';
+import './pixiApp.css';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
   private update: Update;
   private cacheIsVisible = false;
-  save: () => Promise<void>;
 
   sheet_controller: SheetController;
   sheet: Sheet;
@@ -52,11 +51,10 @@ export class PixiApp {
   // for testing purposes
   debug: Graphics;
 
-  constructor(sheet_controller: SheetController, save: () => Promise<void>) {
+  constructor(sheet_controller: SheetController) {
     this.sheet_controller = sheet_controller;
     this.sheet = sheet_controller.sheet;
     this.sheet.onRebuild = this.rebuild;
-    this.save = save;
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';

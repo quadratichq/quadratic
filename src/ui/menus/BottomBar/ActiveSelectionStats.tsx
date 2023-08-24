@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useMediaQuery } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { runFormula } from '../../../grid/computations/formulas/runFormula';
 import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { useMediaQuery } from '@mui/material';
+import BottomBarItem from './BottomBarItem';
 
 interface Props {
   interactionState: GridInteractionState;
@@ -81,9 +82,9 @@ export const ActiveSelectionStats = (props: Props) => {
   if (isBigEnoughForActiveSelectionStats && showMultiCursor)
     return (
       <>
-        {sum && <span>Sum: {sum}</span>}
-        {avg && <span>Avg: {avg}</span>}
-        {countA && <span>Count: {countA}</span>}
+        {sum && <BottomBarItem>Sum: {sum}</BottomBarItem>}
+        {avg && <BottomBarItem>Avg: {avg}</BottomBarItem>}
+        {countA && <BottomBarItem>Count: {countA}</BottomBarItem>}
       </>
     );
   else return null;

@@ -1,17 +1,20 @@
-import { Box } from '@mui/system';
-import { colors } from '../../../theme/colors';
-import { useRecoilState } from 'recoil';
-import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
-import { useEffect, useState } from 'react';
-import { Cell } from '../../../schemas';
+import { ChatBubbleOutline, Commit } from '@mui/icons-material';
+import { Stack, useTheme } from '@mui/material';
 import { formatDistance } from 'date-fns';
-import { focusGrid } from '../../../helpers/focusGrid';
+import { useEffect, useState } from 'react';
 import { isMobileOnly } from 'react-device-detect';
-import { debugShowCacheFlag, debugShowFPS, debugShowRenderer, debugShowCacheCount } from '../../../debugFlags';
-import { Sheet } from '../../../grid/sheet/Sheet';
+import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { ChatBubbleOutline } from '@mui/icons-material';
+import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
+import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { Cell } from '../../../schemas';
+import { colors } from '../../../theme/colors';
 import { ActiveSelectionStats } from './ActiveSelectionStats';
+import BottomBarItem from './BottomBarItem';
+import PythonState from './PythonState';
+import SyncState from './SyncState';
 
 interface Props {
   sheet: Sheet;
@@ -20,7 +23,9 @@ interface Props {
 export const BottomBar = (props: Props) => {
   const [interactionState] = useRecoilState(gridInteractionStateAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
+  const theme = useTheme();
 
   const {
     showMultiCursor,
@@ -65,6 +70,8 @@ export const BottomBar = (props: Props) => {
     focusGrid();
   };
 
+  const showOnDesktop = !isMobileOnly;
+
   return (
     <div
       onContextMenu={(event) => {
@@ -77,89 +84,74 @@ export const BottomBar = (props: Props) => {
         color: colors.darkGray,
         bottom: 0,
         width: '100%',
-        height: '1.5rem',
         backdropFilter: 'blur(1px)',
         display: 'flex',
         justifyContent: 'space-between',
-        paddingLeft: '1rem',
-        paddingRight: '1rem',
-        fontFamily: 'sans-serif',
-        fontSize: '0.7rem',
+        paddingLeft: theme.spacing(1),
+        paddingRight: theme.spacing(1),
         userSelect: 'none',
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-        }}
-      >
-        <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
-          Cursor: {cursorPositionString}
-        </span>
-        {showMultiCursor && (
-          <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
-            Selection: {multiCursorPositionString}
-          </span>
-        )}
-        {selectedCell?.last_modified && (
-          <span>You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}</span>
-        )}
-        {debugShowRenderer && (
-          <span
-            className="debug-show-renderer"
-            style={{
-              width: '0.7rem',
-              height: '0.7rem',
-              borderRadius: '50%',
-            }}
-          >
-            &nbsp;
-          </span>
-        )}
-        {debugShowFPS && (
-          <span>
-            <span className="debug-show-FPS">--</span> FPS
-          </span>
-        )}
-        {debugShowCacheFlag && <span className="debug-show-cache-on" />}
-        {debugShowCacheCount && <span className="debug-show-cache-count" />}
-      </Box>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-        }}
-      >
-        <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
-        {!isMobileOnly && (
+      <Stack direction="row">
+        {showOnDesktop && (
           <>
-            <span>✓ Python 3.9.5</span>
+            <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>
+
+            {showMultiCursor && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
+            {selectedCell?.last_modified && (
+              <BottomBarItem>
+                You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}
+              </BottomBarItem>
+            )}
           </>
         )}
-        <span>✓ Quadratic {process.env.REACT_APP_VERSION}</span>
-        <span
-          style={{ display: 'flex', alignItems: 'center', gap: '.25rem', cursor: 'pointer' }}
+        {(debugShowRenderer || true) && (
+          <BottomBarItem>
+            <div
+              className="debug-show-renderer"
+              style={{
+                width: '0.7rem',
+                height: '0.7rem',
+                borderRadius: '50%',
+              }}
+            >
+              &nbsp;
+            </div>
+          </BottomBarItem>
+        )}
+        {debugShowFPS && (
+          <BottomBarItem>
+            <span className="debug-show-FPS">--</span> FPS
+          </BottomBarItem>
+        )}
+        {debugShowCacheFlag && (
+          <BottomBarItem>
+            <span className="debug-show-cache-on" />
+          </BottomBarItem>
+        )}
+        {debugShowCacheCount && (
+          <BottomBarItem>
+            <span className="debug-show-cache-count" />
+          </BottomBarItem>
+        )}
+      </Stack>
+      <Stack direction="row">
+        <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
+        <SyncState />
+
+        {showOnDesktop && <PythonState />}
+        <BottomBarItem
+          icon={<ChatBubbleOutline fontSize="inherit" />}
           onClick={() => {
             setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
           }}
         >
-          <ChatBubbleOutline fontSize="inherit" />
           Feedback
-        </span>
-        <span
-          style={{
-            color: '#ffffff',
-            backgroundColor: colors.quadraticSecondary,
-            padding: '2px 5px 2px 5px',
-            borderRadius: '2px',
-          }}
-        >
-          BETA
-        </span>
-      </Box>
+        </BottomBarItem>
+        <BottomBarItem icon={<Commit fontSize="inherit" />}>
+          Quadratic {process.env.REACT_APP_VERSION?.slice(0, 7)} (BETA)
+        </BottomBarItem>
+      </Stack>
     </div>
   );
 };
