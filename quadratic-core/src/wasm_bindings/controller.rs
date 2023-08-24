@@ -313,6 +313,13 @@ impl GridController {
         sheet.color.clone().unwrap_or_default()
     }
 
+    #[wasm_bindgen(js_name = "getSheetOrder")]
+    pub fn js_sheet_order(&self, sheet_id: String) -> String {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let sheet = self.grid().sheet_from_id(sheet_id);
+        sheet.order.clone()
+    }
+
     /// Returns a code cell as a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setSheetName")]
     pub fn js_set_sheet_name(

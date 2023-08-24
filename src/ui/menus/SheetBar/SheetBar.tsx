@@ -124,14 +124,38 @@ export const SheetBar = (props: Props): JSX.Element => {
         tab: HTMLElement;
         offset: number;
         id: string;
-        originalOrder: number;
-        actualOrder: number;
-        overlap?: number;
+
+        // as fractional-index
+        originalOrder: string;
+
+        // as index * 2
+        originalOrderIndex: number;
+        actualOrderIndex: number;
+
+        // sheet id of overlap
+        overlap?: string;
         scrollWidth: number;
       }
     | undefined
   >();
   const scrolling = useRef<undefined | number>();
+
+  // finds the index * 2 for a new order string
+  const getOrderIndex = useCallback(
+    (order: string): number => {
+      const orders = sheetController.sheets.map((sheet) => sheet.order);
+      if (orders.length === 0) {
+        return 0;
+      }
+      for (let i = 0; i < orders.length; i++) {
+        if (order < orders[i]) {
+          return i * 2;
+        }
+      }
+      return orders.length * 2;
+    },
+    [sheetController.sheets]
+  );
 
   const handlePointerDown = useCallback(
     (options: { event: React.PointerEvent<HTMLDivElement>; sheet: Sheet }) => {
@@ -149,13 +173,15 @@ export const SheetBar = (props: Props): JSX.Element => {
       const tab = event.currentTarget;
       if (tab) {
         const rect = tab.getBoundingClientRect();
+        const originalOrderIndex = getOrderIndex(sheet.order);
         down.current = {
           tab,
           offset: event.clientX - rect.left,
           id: sheet.id,
           scrollWidth: sheets.scrollWidth,
-          originalOrder: parseInt(sheet.order),
-          actualOrder: parseInt(sheet.order),
+          originalOrder: sheet.order,
+          originalOrderIndex,
+          actualOrderIndex: originalOrderIndex,
         };
         setTimeout(() => {
           if (down.current) {
@@ -167,24 +193,7 @@ export const SheetBar = (props: Props): JSX.Element => {
       focusGrid();
       event.preventDefault();
     },
-    [sheetController, sheets]
-  );
-
-  // finds the index * 2 for a new order string
-  const getOrderIndex = useCallback(
-    (order: string): string => {
-      const orders = sheetController.sheets.map((sheet) => sheet.order);
-      if (orders.length === 0) {
-        return '0';
-      }
-      for (let i = 0; i < orders.length; i++) {
-        if (order < orders[i]) {
-          return (i * 2).toString();
-        }
-      }
-      return (orders.length * 2).toString();
-    },
-    [sheetController.sheets]
+    [getOrderIndex, sheetController, sheets]
   );
 
   const handlePointerMove = useCallback(
@@ -212,14 +221,14 @@ export const SheetBar = (props: Props): JSX.Element => {
         if (!down.current) return;
 
         // store current tabs (except the dragging tab)
-        const tabs: { rect: DOMRect; order: number; element: HTMLDivElement }[] = [];
+        const tabs: { rect: DOMRect; order: string; element: HTMLDivElement }[] = [];
 
         down.current.tab.parentElement?.childNodes.forEach((node) => {
           const element = node as HTMLDivElement;
           if (element !== tab) {
             let order = element.getAttribute('data-order');
             if (order) {
-              tabs.push({ rect: element.getBoundingClientRect(), order: parseInt(order), element });
+              tabs.push({ rect: element.getBoundingClientRect(), order, element });
             }
           }
         });
@@ -231,20 +240,19 @@ export const SheetBar = (props: Props): JSX.Element => {
             // ensure we only use the overlapping tab one time
             down.current.overlap = overlap.order;
 
+            const overlapIndex = getOrderIndex(overlap.order);
             // moving left
-            if (down.current.actualOrder > overlap.order) {
-              down.current.actualOrder = overlap.order - 0.5;
-
+            if (down.current.actualOrderIndex > overlapIndex) {
               // place floating tab to the left of the overlapped tab
-              tab.style.order = (parseInt(overlap.element.style.order) - 1).toString();
+              down.current.actualOrderIndex = overlapIndex - 1;
+              tab.style.order = down.current.actualOrderIndex.toString();
             }
 
             // moving right
             else {
-              down.current.actualOrder = overlap.order + 0.5;
-
               // place floating tab to the right of the overlapped tab
-              tab.style.order = (parseInt(overlap.element.style.order) + 1).toString();
+              down.current.actualOrderIndex = overlapIndex + 1;
+              tab.style.order = down.current.actualOrderIndex.toString();
             }
           }
         } else {
@@ -301,7 +309,7 @@ export const SheetBar = (props: Props): JSX.Element => {
         }
       }
     },
-    [sheets]
+    [getOrderIndex, sheets]
   );
 
   const scrollInterval = useRef<number | undefined>();
@@ -337,12 +345,32 @@ export const SheetBar = (props: Props): JSX.Element => {
       tab.style.boxShadow = '';
       tab.style.zIndex = '';
       tab.style.transform = '';
-      if (down.current.actualOrder !== down.current.originalOrder) {
+
+      if (down.current.actualOrderIndex !== down.current.originalOrderIndex) {
         const sheet = sheetController.sheets.getById(down.current.id);
         if (!sheet) {
           throw new Error('Expect sheet to be defined in SheetBar.pointerUp');
         }
-        sheetController.sheets.moveSheet({ id: down.current.id, order: down.current.actualOrder });
+        const tabs: { order: number; id: string }[] = [];
+
+        down.current.tab.parentElement?.childNodes.forEach((node) => {
+          const element = node as HTMLDivElement;
+          if (element !== tab) {
+            let order = parseInt(element.style.order);
+            let id = element.getAttribute('data-id');
+            if (!id || !order) throw new Error('Expected id and order to be defined in SheetBar');
+            tabs.push({ order, id });
+          }
+        });
+        tabs.sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0));
+        let toBefore: string | undefined;
+        for (let i = 0; i < tabs.length; i++) {
+          if (tabs[i].order > down.current.actualOrderIndex) {
+            toBefore = tabs[i].id;
+            break;
+          }
+        }
+        sheetController.sheets.moveSheet({ id: down.current.id, toBefore });
       }
       down.current = undefined;
     }
@@ -395,7 +423,7 @@ export const SheetBar = (props: Props): JSX.Element => {
           {sheetController.sheets.map((sheet) => (
             <SheetBarTab
               key={sheet.id}
-              order={getOrderIndex(sheet.order)}
+              order={getOrderIndex(sheet.order).toString()}
               onPointerDown={handlePointerDown}
               onContextMenu={handleContextEvent}
               active={activeSheet === sheet.id}

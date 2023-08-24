@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use lexicon_fractional_index::key_between;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
@@ -126,7 +127,7 @@ impl GridController {
         let id = SheetId::new();
         let name = crate::util::unused_name("Sheet", &sheet_names);
         let order = self.grid.end_order();
-        let sheet = Sheet::new(id, name, order.clone());
+        let sheet = Sheet::new(id, name, order);
         let ops = vec![Operation::AddSheet { sheet }];
         self.transact_forward(Transaction { ops, cursor })
     }
@@ -159,8 +160,12 @@ impl GridController {
         let mut new_sheet = self.sheet(sheet_id).clone();
         new_sheet.id = SheetId::new();
         new_sheet.name = format!("{} Copy", new_sheet.name);
-        let right = self.grid.next_sheet_order(sheet_id);
-        new_sheet.order = Grid::between_order(Some(source.order.clone()), right);
+        let right = self.grid.next_sheet(sheet_id);
+        let right_order = match right {
+            Some(right) => Some(right.order.clone()),
+            None => None,
+        };
+        new_sheet.order = key_between(&Some(source.order.clone()), &right_order).unwrap();
         let ops = vec![Operation::AddSheet { sheet: new_sheet }];
         self.transact_forward(Transaction { ops, cursor })
     }
@@ -270,7 +275,7 @@ impl GridController {
                 Operation::AddSheet { sheet } => {
                     let sheet_id = sheet.id.clone();
                     self.grid
-                        .add_sheet(Some(sheet), None)
+                        .add_sheet(Some(sheet))
                         .expect("duplicate sheet name");
                     summary.sheet_list_modified = true;
                     rev_ops.push(Operation::DeleteSheet { sheet_id });
@@ -284,26 +289,16 @@ impl GridController {
                 }
 
                 Operation::ReorderSheet { target, to_before } => {
-                    // TODO: This should probably use fractional indexing to be
-                    // more robust. Fortunately the order of sheets is not too
-                    // high-stakes.
-                    //
-                    // Right now, if `to_before` doesn't exist, the operation
-                    // just does nothing.
-                    let old_position = self.sheet_ids().iter().position(|&id| id == target);
-                    let new_position = match to_before {
-                        Some(to_before) => self.sheet_ids().iter().position(|&id| id == to_before),
-                        None => Some(self.sheet_ids().len()),
+                    let original = self.grid.next_sheet(target);
+                    let original_before = match original {
+                        Some(original) => Some(original.id.clone()),
+                        None => None,
                     };
-                    if let (Some(old), Some(new)) = (old_position, new_position) {
-                        summary.sheet_list_modified = true;
-                        let old_after = self.sheet_ids().get(old + 1).copied();
-                        self.grid.move_sheet(target, new);
-                        rev_ops.push(Operation::ReorderSheet {
-                            target,
-                            to_before: old_after,
-                        });
-                    }
+                    self.grid.move_sheet(target, to_before);
+                    rev_ops.push(Operation::ReorderSheet {
+                        target,
+                        to_before: original_before,
+                    });
                 }
 
                 Operation::SetSheetName { sheet_id, name } => {

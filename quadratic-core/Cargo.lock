@@ -249,15 +249,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
-name = "fractional_index"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "431f421295b3185afd05d846d86c8f7a4f680e5971c0250156cb6ffecd199c24"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "futures"
 version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -427,6 +418,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
+name = "lexicon_fractional_index"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b14c52534dd690e23b687bdbbbe300d7ec5c45f25e9261f72b70751af67067d3"
+
+[[package]]
 name = "libc"
 version = "0.2.147"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -568,12 +565,12 @@ dependencies = [
  "async-trait",
  "console_error_panic_hook",
  "criterion",
- "fractional_index",
  "futures",
  "getrandom",
  "itertools",
  "js-sys",
  "lazy_static",
+ "lexicon_fractional_index",
  "pollster",
  "proptest",
  "proptest-derive",

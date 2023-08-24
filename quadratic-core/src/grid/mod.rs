@@ -1,4 +1,4 @@
-use fractional_index::ZenoIndex;
+use lexicon_fractional_index::key_between;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
@@ -29,8 +29,6 @@ pub use sheet::Sheet;
 
 use crate::{CellValue, Pos, Rect, Value};
 
-use self::legacy::JsSheet;
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Grid {
@@ -44,28 +42,8 @@ impl Default for Grid {
 impl Grid {
     pub fn new() -> Self {
         let mut ret = Grid { sheets: vec![] };
-        ret.add_sheet(None, None)
-            .expect("error adding initial sheet");
+        ret.add_sheet(None).expect("error adding initial sheet");
         ret
-    }
-    /// create an ordered list of JsSheet ids
-    fn get_ordered_list(sheets: &Vec<JsSheet>) -> Vec<(String, ZenoIndex)> {
-        let mut order_to_sort_list: Vec<(String, String)> = sheets
-            .iter()
-            .map(|sheet| (sheet.id.clone(), sheet.order.clone()))
-            .collect();
-        order_to_sort_list.sort_by(|a, b| a.1.cmp(&b.1));
-        let mut last: Option<ZenoIndex> = None;
-        let mut order_list: Vec<(String, ZenoIndex)> = vec![];
-        order_to_sort_list.iter().for_each(|entry| {
-            let order = match last {
-                Some(ref last) => ZenoIndex::new_after(&last),
-                None => ZenoIndex::default(),
-            };
-            order_list.push((entry.0.clone(), order.clone()));
-            last = Some(order.clone());
-        });
-        order_list
     }
     pub fn from_legacy(file: &legacy::GridFile) -> Result<Self, &'static str> {
         use legacy::*;
@@ -73,19 +51,14 @@ impl Grid {
         let GridFile::V1_4(file) = file;
         let mut ret = Grid::new();
         ret.sheets = vec![];
-        let order_list = Grid::get_ordered_list(&file.sheets);
 
         for js_sheet in &file.sheets {
             let sheet_id = SheetId::new();
-            let find_order = order_list
-                .iter()
-                .find(|order| order.0 == js_sheet.id)
-                .unwrap();
-            let order = find_order.1.clone();
-            ret.add_sheet(
-                Some(Sheet::new(sheet_id, js_sheet.name.clone(), order.clone())),
-                None,
-            )
+            ret.add_sheet(Some(Sheet::new(
+                sheet_id,
+                js_sheet.name.clone(),
+                js_sheet.order.clone(),
+            )))
             .map_err(|_| "duplicate sheet name")?;
             let sheet = ret.sheet_mut_from_id(sheet_id);
 
@@ -178,31 +151,14 @@ impl Grid {
     pub fn sort_sheets(&mut self) {
         self.sheets.sort_by(|a, b| a.order.cmp(&b.order));
     }
-    pub fn end_order(&self) -> ZenoIndex {
-        if self.sheets.len() == 0 {
-            ZenoIndex::default()
-        } else {
-            ZenoIndex::new_after(&self.sheets[self.sheets.len() - 1].order)
-        }
+    pub fn end_order(&self) -> String {
+        let last_order = match self.sheets.last() {
+            Some(last) => Some(last.order.clone()),
+            None => None,
+        };
+        key_between(&last_order, &None).unwrap()
     }
-    pub fn between_order(ref left: Option<ZenoIndex>, ref right: Option<ZenoIndex>) -> ZenoIndex {
-        let is_left = left.is_some();
-        let is_right = right.is_some();
-        if is_left && is_right {
-            let left_unwrapped = left.clone().unwrap();
-            let right_unwrapped = right.clone().unwrap();
-            ZenoIndex::new_between(&left_unwrapped, &right_unwrapped).unwrap()
-        } else if is_left {
-            let left_unwrapped = left.clone().unwrap();
-            ZenoIndex::new_after(&left_unwrapped)
-        } else if is_right {
-            let right_unwrapped = right.clone().unwrap();
-            ZenoIndex::new_before(&right_unwrapped)
-        } else {
-            ZenoIndex::default()
-        }
-    }
-    pub fn previous_sheet_order(&self, sheet_id: SheetId) -> Option<ZenoIndex> {
+    pub fn previous_sheet_order(&self, sheet_id: SheetId) -> Option<String> {
         let mut previous: Option<&Sheet> = None;
         for sheet in self.sheets.iter() {
             if sheet.id == sheet_id {
@@ -215,11 +171,11 @@ impl Grid {
         }
         None
     }
-    pub fn next_sheet_order(&self, sheet_id: SheetId) -> Option<ZenoIndex> {
+    pub fn next_sheet(&self, sheet_id: SheetId) -> Option<&Sheet> {
         let mut next = false;
         for sheet in self.sheets.iter() {
             if next {
-                return Some(sheet.order.clone());
+                return Some(sheet);
             }
             if sheet.id == sheet_id {
                 next = true;
@@ -229,13 +185,9 @@ impl Grid {
     }
     /// Adds a sheet to the grid. Returns an error if the sheet name is already
     /// in use.
-    pub fn add_sheet(
-        &mut self,
-        sheet: Option<Sheet>,
-        to_before: Option<Sheet>,
-    ) -> Result<SheetId, ()> {
+    pub fn add_sheet(&mut self, sheet: Option<Sheet>) -> Result<SheetId, ()> {
         // for new sheets, order is after the last one
-        let mut sheet = sheet.unwrap_or_else(|| {
+        let sheet = sheet.unwrap_or_else(|| {
             Sheet::new(
                 SheetId::new(),
                 format!("Sheet {}", self.sheets.len()),
@@ -243,7 +195,7 @@ impl Grid {
             )
         });
 
-        // determine order based on to_before
+        // error if duplicate name
         let id = sheet.id;
         if self
             .sheets
@@ -252,15 +204,6 @@ impl Grid {
         {
             return Err(());
         }
-        let left = match to_before {
-            Some(ref to_before) => self.previous_sheet_order(to_before.id),
-            None => None,
-        };
-        let right = match to_before {
-            Some(ref to_before) => Some(to_before.order.clone()),
-            None => None,
-        };
-        sheet.order = Grid::between_order(left, right);
         self.sheets.push(sheet);
         self.sort_sheets();
         Ok(id)
@@ -270,14 +213,24 @@ impl Grid {
         let ret = self.sheets.remove(i);
         Some(ret)
     }
-    /// Moves a sheet to a specific index.
-    pub fn move_sheet(&mut self, target: SheetId, to: usize) {
-        let from = self.sheet_id_to_index(target).expect("bad sheet ID");
-        if from < to {
-            self.sheets[from..to].rotate_left(1);
+    /// Moves a sheet before another sheet
+    pub fn move_sheet(&mut self, target: SheetId, to_before: Option<SheetId>) {
+        let order: String;
+        // treat to_before as None if to_before's sheet no longer exists
+        if to_before.is_none() || !self.sheet_has_id(to_before) {
+            let last_order = match self.sheets.last() {
+                Some(last) => Some(last.order.clone()),
+                None => None,
+            };
+            order = key_between(&last_order, &None).unwrap();
         } else {
-            self.sheets[to..=from].rotate_right(1);
+            let after_sheet = self.sheet_from_id(to_before.unwrap());
+            let before = self.previous_sheet_order(after_sheet.id);
+            order = key_between(&before, &Some(after_sheet.order.clone())).unwrap();
         }
+        let target = self.sheet_mut_from_id(target);
+        target.order = order;
+        self.sort_sheets();
     }
     pub fn sheet_id_to_index(&self, id: SheetId) -> Option<usize> {
         self.sheets.iter().position(|sheet| sheet.id == id)
@@ -287,6 +240,15 @@ impl Grid {
         match sheet {
             Some(sheet) => Some(sheet.id),
             None => None,
+        }
+    }
+    pub fn sheet_has_id(&self, sheet_id: Option<SheetId>) -> bool {
+        if sheet_id.is_none() {
+            return false;
+        }
+        match &self.sheets.iter().position(|s| s.id == sheet_id.unwrap()) {
+            Some(_) => true,
+            None => false,
         }
     }
     pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {

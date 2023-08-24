@@ -231,14 +231,6 @@ export class Sheets {
     this.save();
   }
 
-  // add(sheet: Sheet): void {
-  //   this.sheets.push(sheet);
-  //   pixiAppEvents.addSheet(sheet);
-  //   this.current = sheet.id;
-  //   window.dispatchEvent(new CustomEvent('change-sheet'));
-  //   this.save();
-  // }
-
   deleteSheet(id: string): void {
     const summary = this.grid.deleteSheet(id, this.sheet.cursor.save());
 
@@ -258,18 +250,8 @@ export class Sheets {
     this.save();
   }
 
-  private findClosestPreviousSheet(order: number, excludeSheetId: string): string | undefined {
-    this.sheets.sort();
-    for (let i = this.sheets.length - 1; i >= 0; i--) {
-      if (this.sheets[i].id === excludeSheetId) continue;
-      if (parseInt(this.sheets[i].order) < order) {
-        return this.sheets[i].id;
-      }
-    }
-  }
-
-  moveSheet(options: { id: string; order?: number; delta?: number }) {
-    const { id, order, delta } = options;
+  moveSheet(options: { id: string; toBefore?: string; delta?: number }) {
+    const { id, toBefore, delta } = options;
     const sheet = this.sheets.find((sheet) => sheet.id === options.id);
     if (!sheet) throw new Error('Expected sheet to be defined in reorderSheet');
     let response: TransactionSummary;
@@ -294,17 +276,12 @@ export class Sheets {
       } else {
         throw new Error(`Unhandled delta ${delta} in sheets.changeOrder`);
       }
-    } else if (order !== undefined) {
-      const previousSheetId = this.findClosestPreviousSheet(order, id);
-      const previous = this.sheets.find((sheet) => sheet.id === previousSheetId);
-      response = this.grid.moveSheet(id, previousSheetId, sheet.cursor.save());
-      console.log(`Moving ${sheet.name} to after ${previous?.name}`);
     } else {
-      throw new Error('Expected order or delta to be defined in sheets.moveSheet');
+      response = this.grid.moveSheet(id, toBefore, sheet.cursor.save());
     }
     transactionResponse(this.sheetController, response);
     this.save();
-    this.sheets.sort();
+    this.sheets.sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0));
     this.sheets.forEach((sheet) => console.log(sheet.name, sheet.order));
   }
 }

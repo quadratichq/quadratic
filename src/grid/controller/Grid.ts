@@ -64,13 +64,9 @@ export class Grid {
     return this.gridController.sheetIndexToId(index);
   }
 
-  getSheetOrder(sheetId: string): number {
+  getSheetOrder(sheetId: string): string {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    const data = this.gridController.getSheetIds();
-    const ids = JSON.parse(data);
-    const order = ids.indexOf(sheetId);
-    if (order === -1) throw new Error('Expected to find order in Grid.getSheetOrder');
-    return order;
+    return this.gridController.getSheetOrder(sheetId);
   }
 
   getSheetName(sheetId: string): string | undefined {
