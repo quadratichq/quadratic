@@ -8,6 +8,7 @@ import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAto
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { useRootRouteLoaderData } from '../../../router';
 import { Cell } from '../../../schemas';
 import { colors } from '../../../theme/colors';
 import { ActiveSelectionStats } from './ActiveSelectionStats';
@@ -24,6 +25,7 @@ export const BottomBar = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const theme = useTheme();
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
+  const { isAuthenticated } = useRootRouteLoaderData();
 
   const {
     showMultiCursor,
@@ -131,14 +133,16 @@ export const BottomBar = (props: Props) => {
         <SyncState />
 
         {showOnDesktop && <PythonState />}
-        <BottomBarItem
-          icon={<ChatBubbleOutline fontSize="inherit" />}
-          onClick={() => {
-            setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
-          }}
-        >
-          Feedback
-        </BottomBarItem>
+        {isAuthenticated && (
+          <BottomBarItem
+            icon={<ChatBubbleOutline fontSize="inherit" />}
+            onClick={() => {
+              setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
+            }}
+          >
+            Feedback
+          </BottomBarItem>
+        )}
         <BottomBarItem icon={<Commit fontSize="inherit" />}>
           Quadratic {process.env.REACT_APP_VERSION?.slice(0, 7)} (BETA)
         </BottomBarItem>
