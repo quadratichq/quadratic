@@ -135,7 +135,6 @@ pub enum JsCellType {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsSheet {
-    pub id: String,
     pub name: String,
     pub color: Option<String>,
     pub order: String,

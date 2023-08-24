@@ -240,7 +240,6 @@ impl Sheet {
 
     pub fn export_to_legacy_file_format(&self, index: usize) -> legacy::JsSheet {
         legacy::JsSheet {
-            id: self.id.to_string().clone(),
             name: self.name.clone(),
             color: self.color.clone(),
             order: format!("{index:0>8}"), // pad with zeros to sort lexicographically
