@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-use crate::{grid::*, Array, CellValue, Pos, Rect, RunLengthEncoding};
+use crate::{array, grid::*, Array, CellValue, Pos, Rect, RunLengthEncoding};
 
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -72,12 +72,7 @@ impl GridController {
         value: CellValue,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let sheet = self.grid.sheet_mut_from_id(sheet_id);
-        let cell_ref = sheet.get_or_create_cell_ref(pos);
-        let region = RegionRef::from(cell_ref);
-        let values = Array::from(value);
-        let ops = vec![Operation::SetCellValues { region, values }];
-        self.transact_forward(Transaction { ops, cursor })
+        self.set_cells(sheet_id, pos, array![value], cursor)
     }
     pub fn set_cells(
         &mut self,
@@ -112,6 +107,21 @@ impl GridController {
             }
             None => vec![], // region is empty; do nothing
         };
+        self.transact_forward(Transaction { ops, cursor })
+    }
+
+    pub fn set_code_cell_value(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        value: CodeCellValue,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let cell_ref = self
+            .grid
+            .sheet_mut_from_id(sheet_id)
+            .get_or_create_cell_ref(pos);
+        let ops = vec![Operation::SetCodeCell { cell_ref, value }];
         self.transact_forward(Transaction { ops, cursor })
     }
 
@@ -218,11 +228,19 @@ impl GridController {
             }
             match op {
                 Operation::SetCellValues { region, values } => {
+                    let region_rects = self.grid.region_rects(&region).collect_vec();
                     summary
                         .cell_regions_modified
-                        .extend(self.grid.region_rects(&region));
+                        .extend_from_slice(&region_rects);
 
                     let sheet = self.grid.sheet_mut_from_id(region.sheet);
+
+                    // Remove any code cells.
+                    for &(_, rect) in &region_rects {
+                        for (cell_ref, value) in sheet.remove_code_cells_in_region(rect) {
+                            rev_ops.push(Operation::SetCodeCell { cell_ref, value });
+                        }
+                    }
 
                     let Some(size) = region.size() else {continue};
                     let old_values = region
@@ -275,6 +293,29 @@ impl GridController {
                         region,
                         attr: old_attr,
                     })
+                }
+
+                Operation::SetCodeCell { cell_ref, value } => {
+                    let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
+                    let Some(pos) = sheet.cell_ref_to_pos(cell_ref) else {continue};
+
+                    // Remove ordinary cell value.
+                    let response = sheet.set_cell_value(pos, CellValue::Blank);
+                    if let Some(response) = response {
+                        rev_ops.push(Operation::SetCellValues {
+                            region: cell_ref.into(),
+                            values: array![response.old_value],
+                        });
+                    }
+
+                    // Set code cell value.
+                    let old_code_cell_value = sheet.set_code_cell(pos, Some(value));
+                    if let Some(old_code_cell_value) = old_code_cell_value {
+                        rev_ops.push(Operation::SetCodeCell {
+                            cell_ref,
+                            value: old_code_cell_value,
+                        });
+                    }
                 }
 
                 Operation::AddSheet { sheet, to_before } => {
@@ -459,6 +500,10 @@ pub enum Operation {
         region: RegionRef,
         attr: CellFmtArray,
     },
+    SetCodeCell {
+        cell_ref: CellRef,
+        value: CodeCellValue,
+    },
 
     AddSheet {
         sheet: Sheet,
@@ -488,6 +533,7 @@ impl Operation {
         match self {
             Operation::SetCellValues { region, .. } => Some(region.sheet),
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
+            Operation::SetCodeCell { cell_ref, .. } => Some(cell_ref.sheet),
 
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,
@@ -682,6 +728,75 @@ mod tests {
         let sheet2 = g.sheet(s2);
 
         assert_eq!(sheet2.name, format!("{} Copy", sheet1.name));
+    }
+
+    #[test]
+    fn test_code_cell_value_overwrite() {
+        let mut g = GridController::new();
+        let s = g.sheet_ids()[0];
+        let pos = Pos { x: 3, y: -5 };
+
+        let code_cell_value = CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code_string: "=PI()".to_string(),
+            formatted_code_string: None,
+            last_modified: String::new(),
+            output: None,
+        };
+
+        assert_eq!(None, g.sheet(s).get_cell_value(pos));
+        assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+        g.set_cell_value(s, pos, CellValue::Number(10.0), None);
+        assert_eq!(
+            Some(CellValue::Number(10.0)),
+            g.sheet(s).get_cell_value(pos),
+        );
+        assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+        g.set_code_cell_value(s, pos, code_cell_value.clone(), None);
+        assert_eq!(None, g.sheet(s).get_cell_value(pos));
+        assert_eq!(Some(&code_cell_value), g.sheet(s).get_code_cell(pos));
+
+        g.set_cell_value(s, pos, CellValue::Number(20.0), None);
+        assert_eq!(
+            Some(CellValue::Number(20.0)),
+            g.sheet(s).get_cell_value(pos),
+        );
+        assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+        g.undo(None);
+        assert_eq!(None, g.sheet(s).get_cell_value(pos));
+        assert_eq!(Some(&code_cell_value), g.sheet(s).get_code_cell(pos));
+
+        g.undo(None);
+        assert_eq!(
+            Some(CellValue::Number(10.0)),
+            g.sheet(s).get_cell_value(pos),
+        );
+        assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+        g.undo(None);
+        assert_eq!(None, g.sheet(s).get_cell_value(pos));
+        assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+        g.redo(None);
+        assert_eq!(
+            Some(CellValue::Number(10.0)),
+            g.sheet(s).get_cell_value(pos),
+        );
+        assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+        g.redo(None);
+        assert_eq!(None, g.sheet(s).get_cell_value(pos));
+        assert_eq!(Some(&code_cell_value), g.sheet(s).get_code_cell(pos));
+
+        g.redo(None);
+        assert_eq!(
+            Some(CellValue::Number(20.0)),
+            g.sheet(s).get_cell_value(pos),
+        );
+        assert_eq!(None, g.sheet(s).get_code_cell(pos));
     }
 
     // fn test_render_fill() {

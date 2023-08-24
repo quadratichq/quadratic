@@ -100,6 +100,7 @@ impl Array {
             )
         }
     }
+
     /// Returns a formula-source-code representation of the value.
     pub fn repr(&self) -> String {
         format!(
