@@ -5,11 +5,12 @@ import { apiClient } from './apiClient';
 
 export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z.Schema<T>): Promise<T> {
   // Set headers
-  const token = await authClient.getToken();
+  const isAuthenticated = await authClient.isAuthenticated();
   const sharedInit = {
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
+      // Only pass the auth if the user is auth'd
+      ...(isAuthenticated ? { Authorization: `Bearer ${await authClient.getToken()}` } : {}),
     },
   };
 
