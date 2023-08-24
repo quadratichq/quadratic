@@ -1,6 +1,6 @@
 import { Point } from 'pixi.js';
+import { isMobile } from 'react-device-detect';
 import { PanMode } from '../../../atoms/gridInteractionStateAtom';
-import { IS_READONLY_MODE } from '../../../constants/appConstants';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { PixiApp } from '../../pixiApp/PixiApp';
 import { doubleClickCell } from './doubleClickCell';
@@ -30,8 +30,11 @@ export class PointerDown {
   }
 
   pointerDown(world: Point, event: PointerEvent): void {
-    if (IS_READONLY_MODE) return;
-    if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
+    const {
+      editorInteractionState: { permission },
+      interactionState: { panMode },
+    } = this.app.settings;
+    if (isMobile || panMode !== PanMode.Disabled || permission === 'ANONYMOUS' || permission === 'VIEWER') return;
 
     // note: directly call this.app.settings instead of locally defining it here; otherwise it dereferences this
 

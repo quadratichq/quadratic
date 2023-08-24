@@ -1,6 +1,6 @@
 import { Point, Rectangle } from 'pixi.js';
+import { isMobile } from 'react-device-detect';
 import { PanMode } from '../../../../atoms/gridInteractionStateAtom';
-import { IS_READONLY_MODE } from '../../../../constants/appConstants';
 import { Sheet } from '../../../../grid/sheet/Sheet';
 import { intersects } from '../../../helpers/intersects';
 import { PixiApp } from '../../../pixiApp/PixiApp';
@@ -31,7 +31,9 @@ export class PointerAutoComplete {
   }
 
   pointerDown(world: Point): boolean {
-    if (IS_READONLY_MODE) return false;
+    const { permission } = this.app.settings.editorInteractionState;
+    if (isMobile || permission === 'ANONYMOUS' || permission === 'VIEWER') return false;
+
     const { interactionState, setInteractionState } = this.app.settings;
     if (!setInteractionState) throw new Error('Expected setInteractionState to be defined in PointerAutoComplete');
     if (interactionState.panMode !== PanMode.Disabled) return false;
@@ -91,7 +93,9 @@ export class PointerAutoComplete {
   }
 
   pointerMove(world: Point): boolean {
-    if (IS_READONLY_MODE) return false;
+    const { permission } = this.app.settings.editorInteractionState;
+    if (isMobile || permission === 'ANONYMOUS' || permission === 'VIEWER') return false;
+
     const { interactionState, setInteractionState } = this.app.settings;
     if (interactionState.panMode !== PanMode.Disabled) return false;
     if (!this.active) {

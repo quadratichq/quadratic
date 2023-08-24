@@ -1,7 +1,9 @@
 import mixpanel from 'mixpanel-browser';
 import { Dispatch, SetStateAction, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
+import { useSetRecoilState } from 'recoil';
 import { apiClient } from '../../api/apiClient';
+import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { InitialFile } from '../../dashboard/FileRoute';
 import { SheetController } from '../../grid/controller/sheetController';
 import { downloadFileInBrowser } from '../../helpers/downloadFileInBrowser';
@@ -20,7 +22,6 @@ export type FileContextType = {
   contents: GridFile;
   syncState: Sync['state'];
   downloadFile: () => void;
-  permission: InitialFile['permission'];
   publicLinkAccess: InitialFile['publicLinkAccess'];
   setPublicLinkAccess: Dispatch<SetStateAction<InitialFile['publicLinkAccess']>>;
 };
@@ -51,6 +52,7 @@ export const FileProvider = ({
   );
   const debouncedContents = useDebounce<FileContextType['contents']>(contents, 1000);
   let didMount = useRef<boolean>(false);
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
 
   const syncState = latestSync.state;
@@ -146,6 +148,11 @@ export const FileProvider = ({
     syncChanges(() => apiClient.updateFile(uuid, { public_link_access: publicLinkAccess }));
   }, [publicLinkAccess, syncChanges, uuid]);
 
+  // Set the permission based on the initial state
+  useEffect(() => {
+    setEditorInteractionState((prev) => ({ ...prev, permission: initialFile.permission }));
+  }, [initialFile.permission, setEditorInteractionState]);
+
   return (
     <FileContext.Provider
       value={{
@@ -154,7 +161,6 @@ export const FileProvider = ({
         renameFile,
         contents,
         syncState,
-        permission: initialFile.permission,
         publicLinkAccess,
         setPublicLinkAccess,
       }}

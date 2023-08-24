@@ -7,7 +7,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { Request } from '../../types/Request';
 
-type FILE_PERMISSION = 'OWNER' | 'VIEWER' | 'EDITOR';
+type FILE_PERMISSION = 'OWNER' | 'VIEWER' | 'EDITOR' | 'ANONYMOUS';
 
 const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
@@ -48,6 +48,10 @@ const fileMiddleware = async (req: Request, res: Response, next: NextFunction) =
 };
 
 const getFilePermissions = (user: User | undefined, file: File): FILE_PERMISSION => {
+  if (!user) {
+    return 'ANONYMOUS';
+  }
+
   if (file.ownerUserId === user?.id) {
     return 'OWNER';
   }

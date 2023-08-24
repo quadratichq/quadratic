@@ -54,6 +54,11 @@ a {
 /* Override third-party default to inherit from document defaults */
 .szh-menu {
   color: inherit !important;
+  padding: 0.25rem 0 !important;
+}
+
+.szh-menu__divider {
+  margin: 0.25rem 0 !important;
 }
 .szh-menu__submenu > .szh-menu__item::after {
   content: '›' !important;
