@@ -136,7 +136,14 @@ impl GridController {
         sheet_id: SheetId,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let ops = vec![Operation::DeleteSheet { sheet_id }];
+        let mut ops = vec![Operation::DeleteSheet { sheet_id }];
+        if self.sheet_ids().len() == 1 {
+            let id = SheetId::new();
+            let name = String::from("Sheet 1");
+            let order = self.grid.end_order();
+            let sheet = Sheet::new(id, name, order);
+            ops.push(Operation::AddSheet { sheet });
+        }
         self.transact_forward(Transaction { ops, cursor })
     }
     pub fn move_sheet(
@@ -661,6 +668,26 @@ mod tests {
         let sheet2 = g.sheet(s2);
 
         assert_eq!(sheet2.name, format!("{} Copy", sheet1.name));
+    }
+
+    #[test]
+    fn test_delete_last_sheet() {
+        let mut g = GridController::new();
+        let sheet_ids = g.sheet_ids();
+        let first_sheet_id = sheet_ids[0].clone();
+
+        g.delete_sheet(first_sheet_id, None);
+        let new_sheet_ids = g.sheet_ids();
+        assert_eq!(new_sheet_ids.len(), 1);
+        assert_ne!(new_sheet_ids[0], sheet_ids[0]);
+
+        g.undo(None);
+        let new_sheet_ids_2 = g.sheet_ids();
+        assert_eq!(sheet_ids[0], new_sheet_ids_2[0]);
+
+        g.redo(None);
+        let new_sheet_ids_3 = g.sheet_ids();
+        assert_eq!(new_sheet_ids[0], new_sheet_ids_3[0]);
     }
 
     // fn test_render_fill() {

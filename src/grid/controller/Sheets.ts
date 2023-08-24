@@ -210,11 +210,14 @@ export class Sheets {
   }
 
   deleteSheet(id: string): void {
+    const order = this.sheet.order;
     const summary = this.grid.deleteSheet(id, this.sheet.cursor.save());
+    transactionResponse(this.sheetController, summary);
+    this.save();
 
     // set current to next sheet (before this.sheets is updated)
     if (this.sheets.length) {
-      const next = this.getNext(this.sheet.order);
+      const next = this.getNext(order);
       if (next) {
         this.current = next.id;
       } else {
@@ -224,8 +227,6 @@ export class Sheets {
         }
       }
     }
-    transactionResponse(this.sheetController, summary);
-    this.save();
   }
 
   moveSheet(options: { id: string; toBefore?: string; delta?: number }) {

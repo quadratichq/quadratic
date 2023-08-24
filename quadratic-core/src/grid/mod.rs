@@ -190,7 +190,7 @@ impl Grid {
         let sheet = sheet.unwrap_or_else(|| {
             Sheet::new(
                 SheetId::new(),
-                format!("Sheet {}", self.sheets.len()),
+                format!("Sheet {}", self.sheets.len() + 1),
                 self.end_order(),
             )
         });
