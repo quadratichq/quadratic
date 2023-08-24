@@ -5,6 +5,8 @@ use proptest::prelude::*;
 use super::*;
 use crate::IsBlank;
 
+pub mod order;
+
 #[test]
 fn test_airports() {
     let grid = Grid::from_legacy(
