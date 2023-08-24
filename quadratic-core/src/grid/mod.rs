@@ -214,20 +214,7 @@ impl Grid {
         Some(ret)
     }
     /// Moves a sheet before another sheet
-    pub fn move_sheet(&mut self, target: SheetId, to_before: Option<SheetId>) {
-        let order: String;
-        // treat to_before as None if to_before's sheet no longer exists
-        if to_before.is_none() || !self.sheet_has_id(to_before) {
-            let last_order = match self.sheets.last() {
-                Some(last) => Some(last.order.clone()),
-                None => None,
-            };
-            order = key_between(&last_order, &None).unwrap();
-        } else {
-            let after_sheet = self.sheet_from_id(to_before.unwrap());
-            let before = self.previous_sheet_order(after_sheet.id);
-            order = key_between(&before, &Some(after_sheet.order.clone())).unwrap();
-        }
+    pub fn move_sheet(&mut self, target: SheetId, order: String) {
         let target = self.sheet_mut_from_id(target);
         target.order = order;
         self.sort_sheets();
@@ -236,20 +223,11 @@ impl Grid {
         self.sheets.iter().position(|sheet| sheet.id == id)
     }
     pub fn sheet_index_to_id(&self, index: usize) -> Option<SheetId> {
-        let sheet = self.sheets.get(index);
-        match sheet {
-            Some(sheet) => Some(sheet.id),
-            None => None,
-        }
+        Some(self.sheets.get(index)?.id)
     }
     pub fn sheet_has_id(&self, sheet_id: Option<SheetId>) -> bool {
-        if sheet_id.is_none() {
-            return false;
-        }
-        match &self.sheets.iter().position(|s| s.id == sheet_id.unwrap()) {
-            Some(_) => true,
-            None => false,
-        }
+        let Some(sheet_id) = sheet_id else { return false };
+        self.sheets.iter().position(|s| s.id == sheet_id).is_some()
     }
     pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");

@@ -152,9 +152,22 @@ impl GridController {
         to_before: Option<SheetId>,
         cursor: Option<String>,
     ) -> TransactionSummary {
+        let order: String;
+        // treat to_before as None if to_before's sheet no longer exists
+        if to_before.is_none() || !self.grid.sheet_has_id(to_before) {
+            let last_order = match self.grid.sheets().last() {
+                Some(last) => Some(last.order.clone()),
+                None => None,
+            };
+            order = key_between(&last_order, &None).unwrap();
+        } else {
+            let after_sheet = self.grid.sheet_from_id(to_before.unwrap());
+            let before = self.grid.previous_sheet_order(after_sheet.id);
+            order = key_between(&before, &Some(after_sheet.order.clone())).unwrap();
+        }
         let ops = vec![Operation::ReorderSheet {
             target: sheet_id,
-            to_before,
+            order,
         }];
         self.transact_forward(Transaction { ops, cursor })
     }
@@ -168,10 +181,7 @@ impl GridController {
         new_sheet.id = SheetId::new();
         new_sheet.name = format!("{} Copy", new_sheet.name);
         let right = self.grid.next_sheet(sheet_id);
-        let right_order = match right {
-            Some(right) => Some(right.order.clone()),
-            None => None,
-        };
+        let right_order = right.map(|right| right.order.clone());
         new_sheet.order = key_between(&Some(source.order.clone()), &right_order).unwrap();
         let ops = vec![Operation::AddSheet { sheet: new_sheet }];
         self.transact_forward(Transaction { ops, cursor })
@@ -298,16 +308,13 @@ impl GridController {
                     }
                 }
 
-                Operation::ReorderSheet { target, to_before } => {
-                    let original = self.grid.next_sheet(target);
-                    let original_before = match original {
-                        Some(original) => Some(original.id.clone()),
-                        None => None,
-                    };
-                    self.grid.move_sheet(target, to_before);
+                Operation::ReorderSheet { target, order } => {
+                    let sheet = self.grid.sheet_from_id(target);
+                    let original_order = sheet.order.clone();
+                    self.grid.move_sheet(target, order);
                     rev_ops.push(Operation::ReorderSheet {
                         target,
-                        to_before: original_before,
+                        order: original_order,
                     });
                 }
 
@@ -466,7 +473,7 @@ pub enum Operation {
 
     ReorderSheet {
         target: SheetId,
-        to_before: Option<SheetId>,
+        order: String,
     },
 }
 impl Operation {
