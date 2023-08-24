@@ -34,3 +34,28 @@ html,
   padding-left: 16px !important;
   padding-right: 16px !important;
 }
+
+body {
+  margin: 0;
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: ui-monospace, source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+a {
+  color: inherit;
+}
+
+/* Override third-party default to inherit from document defaults */
+.szh-menu {
+  color: inherit !important;
+}
+.szh-menu__submenu > .szh-menu__item::after {
+  content: '›' !important;
+  font-size: 1.125rem !important;
+}

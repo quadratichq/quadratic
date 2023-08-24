@@ -72,7 +72,7 @@ export const TopBar = (props: IProps) => {
           WebkitAppRegion: 'no-drag',
           display: 'flex',
           alignItems: 'center',
-          color: theme.palette.text.secondary,
+          color: theme.palette.text.primary,
         }}
       >
         <QuadraticMenu sheetController={sheetController} />
@@ -95,6 +95,7 @@ export const TopBar = (props: IProps) => {
           alignItems: 'center',
           justifyContent: 'flex-end',
           gap: theme.spacing(),
+          color: theme.palette.text.primary,
         }}
       >
         {isDesktop && (

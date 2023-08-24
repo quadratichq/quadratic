@@ -1,5 +1,5 @@
-import { ContentCopy, ContentCut, ContentPaste, Redo, Undo } from '@mui/icons-material';
-import { Menu, MenuDivider, MenuHeader, MenuItem, SubMenu } from '@szhsin/react-menu';
+import { Check, ContentCopy, ContentCut, ContentPaste, Redo, Undo } from '@mui/icons-material';
+import { Menu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -31,7 +31,7 @@ export const QuadraticMenu = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
   const { uuid } = useParams();
-  const { isAuthenticated, user } = useRootRouteLoaderData();
+  const { isAuthenticated } = useRootRouteLoaderData();
 
   // For mobile, set Headers to not visible by default
   useEffect(() => {
@@ -53,7 +53,7 @@ export const QuadraticMenu = (props: Props) => {
         }
       >
         <MenuItem href={ROUTES.MY_FILES} style={{ textDecoration: 'none' }}>
-          Back to files
+          <MenuLineItem primary="Back to files" />
         </MenuItem>
         <MenuDivider />
         <MenuItem
@@ -68,9 +68,9 @@ export const QuadraticMenu = (props: Props) => {
           <MenuLineItem primary="Command palette" secondary={KeyboardSymbols.Command + 'P'} />
         </MenuItem>
         <MenuDivider />
-        <SubMenu label="File">
+        <SubMenu label={<MenuLineItem primary="File" />}>
           <MenuItem href={ROUTES.CREATE_FILE} style={{ textDecoration: 'none' }}>
-            New
+            <MenuLineItem primary="New" />
           </MenuItem>
           <MenuItem
             onClick={() => {
@@ -79,10 +79,10 @@ export const QuadraticMenu = (props: Props) => {
               }
             }}
           >
-            Download local copy
+            <MenuLineItem primary="Download local copy" />
           </MenuItem>
         </SubMenu>
-        <SubMenu label="Edit">
+        <SubMenu label={<MenuLineItem primary="Edit" />}>
           <MenuItem
             onClick={() => {
               sheetController.undo();
@@ -138,42 +138,22 @@ export const QuadraticMenu = (props: Props) => {
             <MenuLineItem primary="Paste" secondary={KeyboardSymbols.Command + 'V'} Icon={ContentPaste}></MenuLineItem>
           </MenuItem>
         </SubMenu>
-        <SubMenu label="View">
-          <MenuItem
-            type="checkbox"
-            checked={settings.showHeadings}
-            onClick={() => settings.setShowHeadings(!settings.showHeadings)}
-          >
-            Show row and column headings
+        <SubMenu label={<MenuLineItem primary="View" />}>
+          <MenuItem onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
+            <MenuLineItem primary="Show row and column headings" Icon={settings.showHeadings && Check} indent />
           </MenuItem>
-          <MenuItem
-            type="checkbox"
-            checked={settings.showGridAxes}
-            onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}
-          >
-            Show grid axis
+          <MenuItem onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}>
+            <MenuLineItem primary="Show grid axis" Icon={settings.showGridAxes && Check} indent />
           </MenuItem>
-          <MenuItem
-            type="checkbox"
-            checked={settings.showGridLines}
-            onClick={() => settings.setShowGridLines(!settings.showGridLines)}
-          >
-            Show grid lines
+          <MenuItem onClick={() => settings.setShowGridLines(!settings.showGridLines)}>
+            <MenuLineItem primary="Show grid lines" Icon={settings.showGridLines && Check} indent />
           </MenuItem>
-          <MenuItem
-            type="checkbox"
-            checked={settings.showCellTypeOutlines}
-            onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}
-          >
-            Show code cell outlines
+          <MenuItem onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}>
+            <MenuLineItem primary="Show code cell outlines" Icon={settings.showCellTypeOutlines && Check} indent />
           </MenuItem>
           <MenuDivider />
-          <MenuItem
-            type="checkbox"
-            checked={settings.presentationMode}
-            onClick={() => settings.setPresentationMode(!settings.presentationMode)}
-          >
-            Presentation mode
+          <MenuItem onClick={() => settings.setPresentationMode(!settings.presentationMode)}>
+            <MenuLineItem primary="Presentation mode" Icon={settings.presentationMode && Check} indent />
           </MenuItem>
           {/*
           Commented out because the editor switches this state automatically when the user
@@ -187,15 +167,10 @@ export const QuadraticMenu = (props: Props) => {
           </MenuItem> */}
         </SubMenu>
 
-        {isAuthenticated && (
-          <SubMenu label="Account">
-            <MenuHeader>{user?.email}</MenuHeader>
-            <MenuItem onClick={() => authClient.logout()}>Log out</MenuItem>
-          </SubMenu>
-        )}
-
-        <SubMenu label="Help">
-          <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>Read the docs</MenuItem>
+        <SubMenu label={<MenuLineItem primary="Help" />}>
+          <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>
+            <MenuLineItem primary="Read the docs" />
+          </MenuItem>
           <MenuItem
             onClick={() =>
               setEditorInteractionState((prevState) => ({
@@ -204,9 +179,18 @@ export const QuadraticMenu = (props: Props) => {
               }))
             }
           >
-            Provide feedback
+            <MenuLineItem primary="Provide feedback" />
           </MenuItem>
         </SubMenu>
+
+        {isAuthenticated && (
+          <>
+            <MenuDivider />
+            <MenuItem onClick={() => authClient.logout()}>
+              <MenuLineItem primary="Log out" />
+            </MenuItem>
+          </>
+        )}
       </Menu>
     </>
   );

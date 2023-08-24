@@ -82,7 +82,7 @@ export const TopBarZoomMenu = (props: Props) => {
           setZoomState(0.5);
         }}
       >
-        Zoom to 50%
+        <MenuLineItem primary="Zoom to 50%" />
       </MenuItem>
       <MenuItem
         onClick={() => {
@@ -98,7 +98,7 @@ export const TopBarZoomMenu = (props: Props) => {
           setZoomState(2);
         }}
       >
-        Zoom to 200%
+        <MenuLineItem primary="Zoom to 200%" />
       </MenuItem>
     </Menu>
   );
