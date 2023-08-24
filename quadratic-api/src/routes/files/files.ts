@@ -1,6 +1,7 @@
 import { File, LinkPermission, User } from '@prisma/client';
 import express, { NextFunction, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
+import { getUserProfile } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -117,6 +118,9 @@ files_router.get(
         public_link_access: req.file.public_link_access,
       },
       permission: getFilePermissions(req.user, req.file),
+      sharing: {
+        owner: await getUserProfile(req.file.ownerUserId),
+      },
     });
   }
 );
