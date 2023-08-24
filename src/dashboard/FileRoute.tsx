@@ -26,7 +26,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
   }
 
   // Fetch the file
-  let data = await apiClient.getFile(uuid as string).catch(() => undefined);
+  let data = await apiClient.getFile(uuid as string).catch((e) => {
+    console.error(e);
+    return undefined;
+  });
   if (!data) {
     throw new Response('Failed to retrive file from server');
   }
@@ -74,7 +77,7 @@ export const ErrorBoundary = () => {
   const error = useRouteError();
 
   if (isRouteErrorResponse(error)) {
-    console.log(error);
+    console.error(error);
     // If the future, we can differentiate between the different kinds of file
     // loading errors and be as granular in the message as we like.
     // e.g. file found but didn't validate. file couldn't be found on server, etc.
