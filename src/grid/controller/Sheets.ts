@@ -43,7 +43,6 @@ export class Sheets {
       }
     });
     this.sort();
-    this.sheets.map((sheet) => console.log(`${sheet.name}: ${sheet.order}`));
   }
 
   loadFile(grid: GridFile): void {
@@ -77,11 +76,7 @@ export class Sheets {
   }
 
   private sort(): void {
-    this.sheets.sort((a, b) => {
-      if (a.order < b.order) return -1;
-      if (a.order > b.order) return 1;
-      return 0;
-    });
+    this.sheets.sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0));
   }
 
   private get grid(): Grid {
@@ -126,16 +121,6 @@ export class Sheets {
     return this.sheets.map.bind(this.sheets);
   }
 
-  // hasSheetIndex(id: string): boolean {
-  //   return !!this.sheets.find((sheet) => sheet.id === id);
-  // }
-
-  // getIndex(sheet = this.sheet): number {
-  //   const index = this.sheets.indexOf(sheet);
-  //   if (index === -1) throw new Error('Could not find index in Sheets.getIndex');
-  //   return index;
-  // }
-
   getFirst(): Sheet {
     return this.sheets[0];
   }
@@ -164,7 +149,7 @@ export class Sheets {
     return sheets[index - 1];
   }
 
-  getNext(order?: string): Sheet | undefined {
+  private getNext(order?: string): Sheet | undefined {
     if (!order) {
       return this.getLast();
     }
@@ -197,13 +182,6 @@ export class Sheets {
     return this.sheets.find((sheet) => sheet.id === id);
   }
 
-  // checks Grid whether this sheet still exists
-  // NOTE: this.sheets and Grid.sheets may have different value as handled in transactionResponse
-  gridHasSheet(sheetId: string): boolean {
-    const ids = this.grid.getSheetIds();
-    return ids.includes(sheetId);
-  }
-
   // Sheet operations
   // ----------------
 
@@ -227,8 +205,8 @@ export class Sheets {
     const duplicate = this.sheets[currentIndex + 1];
     if (!duplicate) throw new Error('Expected to find duplicate sheet in duplicateSheet');
     this.current = duplicate.id;
-
     this.save();
+    this.sort();
   }
 
   deleteSheet(id: string): void {
@@ -236,7 +214,7 @@ export class Sheets {
 
     // set current to next sheet (before this.sheets is updated)
     if (this.sheets.length) {
-      const next = this.getNext(this.sheet.id);
+      const next = this.getNext(this.sheet.order);
       if (next) {
         this.current = next.id;
       } else {
@@ -257,22 +235,22 @@ export class Sheets {
     let response: TransactionSummary;
     if (delta !== undefined) {
       if (delta === 1) {
-        const next = this.getNext(id);
+        const next = this.getNext(sheet.order);
 
         // trying to move sheet to the right when already last
         if (!next) return;
 
-        response = this.grid.moveSheet(id, next.id, sheet.cursor.save());
+        const nextNext = next ? this.getNext(next.order) : undefined;
+
+        response = this.grid.moveSheet(id, nextNext?.id, sheet.cursor.save());
       } else if (delta === -1) {
-        const previous = this.getPrevious(id);
+        const previous = this.getPrevious(sheet.order);
 
         // trying to move sheet to the left when already first
         if (!previous) return;
 
         // if not defined, then this is id will become first sheet
-        const previousPrevious = this.getPrevious(previous.id);
-
-        response = this.grid.moveSheet(id, previousPrevious ? previousPrevious.id : undefined, sheet.cursor.save());
+        response = this.grid.moveSheet(id, previous?.id, sheet.cursor.save());
       } else {
         throw new Error(`Unhandled delta ${delta} in sheets.changeOrder`);
       }
@@ -281,7 +259,6 @@ export class Sheets {
     }
     transactionResponse(this.sheetController, response);
     this.save();
-    this.sheets.sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0));
-    this.sheets.forEach((sheet) => console.log(sheet.name, sheet.order));
+    this.sort();
   }
 }

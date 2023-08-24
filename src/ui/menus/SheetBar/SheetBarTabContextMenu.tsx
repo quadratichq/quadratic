@@ -1,11 +1,9 @@
 import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useState } from 'react';
 import { ColorResult } from 'react-color';
-import { updateSheet } from '../../../grid/actions/sheetsAction';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { convertReactColorToString } from '../../../helpers/convertColor';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { generateKeyBetween } from '../../../utils/fractionalIndexing';
 import { QColorPicker } from '../../components/qColorPicker';
 import { ConfirmDeleteSheet } from './ConfirmDeleteSheet';
 
@@ -75,16 +73,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           disabled={sheetController.sheets.getFirst().id === contextMenu?.id}
           onClick={() => {
             if (contextMenu) {
-              const sheet = sheetController.sheet;
-              const previous = sheetController.sheets.getPrevious(sheet.order)?.order ?? null;
-              const previousSecond = previous ? sheetController.sheets.getPrevious(previous)?.order ?? null : null;
-              const order = generateKeyBetween(previousSecond, previous);
-              updateSheet({
-                sheetController,
-                sheet: sheetController.sheet,
-                order,
-                create_transaction: true,
-              });
+              sheetController.sheets.moveSheet({ id: sheetController.sheet.id, delta: -1 });
               focusGrid();
             }
             handleClose();
@@ -96,16 +85,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           disabled={sheetController.sheets.getLast().id === contextMenu?.id}
           onClick={() => {
             if (contextMenu) {
-              const sheet = sheetController.sheet;
-              const next = sheetController.sheets.getNext(sheet.order)?.order ?? null;
-              const nextSecond = next ? sheetController.sheets.getNext(next)?.order ?? null : null;
-              const order = generateKeyBetween(next, nextSecond);
-              updateSheet({
-                sheetController,
-                sheet: sheetController.sheet,
-                order,
-                create_transaction: true,
-              });
+              sheetController.sheets.moveSheet({ id: sheetController.sheet.id, delta: 1 });
               focusGrid();
             }
             handleClose();
