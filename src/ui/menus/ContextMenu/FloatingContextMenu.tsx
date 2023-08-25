@@ -17,7 +17,7 @@ import { ControlledMenu, Menu, MenuItem, useMenuState } from '@szhsin/react-menu
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../constants/appConstants';
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../grid/controller/sheetController';

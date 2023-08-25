@@ -4,7 +4,7 @@ import React from 'react';
 import { useRecoilState } from 'recoil';
 import { GetFileRes } from '../../../api/types';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useRootRouteLoaderData } from '../../../router';
 import { useFileContext } from '../../components/FileProvider';

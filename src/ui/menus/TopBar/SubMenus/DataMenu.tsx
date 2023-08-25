@@ -7,7 +7,7 @@ import {
 } from '@mui/icons-material';
 import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
-import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
 import { MenuLineItem } from '../MenuLineItem';
 import { TopBarMenuItem } from '../TopBarMenuItem';

@@ -1,5 +1,5 @@
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { GlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../constants/appConstants';
 import {
   copySelectionToPNG,

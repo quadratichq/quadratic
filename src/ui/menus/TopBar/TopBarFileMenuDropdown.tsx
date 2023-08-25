@@ -6,7 +6,7 @@ import { useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { apiClient } from '../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../../constants/routes';
 import { GridFileSchema } from '../../../schemas';
 import { useFileContext } from '../../components/FileProvider';

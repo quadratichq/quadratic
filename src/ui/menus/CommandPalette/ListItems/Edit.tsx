@@ -1,7 +1,7 @@
 import { ContentCopy, ContentCut, ContentPaste, East, Redo, Undo } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../../constants/appConstants';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
