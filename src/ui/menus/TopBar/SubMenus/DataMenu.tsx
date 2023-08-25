@@ -18,14 +18,11 @@ export const DataMenu = () => {
   return (
     <>
       <Menu
-        menuButton={
-          <div>
-            {/* forward ref */}
-            <TopBarMenuItem title="Data import">
-              <DataObjectOutlined fontSize="small" />
-            </TopBarMenuItem>
-          </div>
-        }
+        menuButton={({ open }) => (
+          <TopBarMenuItem title="Data import" open={open}>
+            <DataObjectOutlined fontSize="small" />
+          </TopBarMenuItem>
+        )}
       >
         <MenuHeader>Import</MenuHeader>
         <MenuItem

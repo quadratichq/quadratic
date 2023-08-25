@@ -44,13 +44,11 @@ export const QuadraticMenu = (props: Props) => {
   return (
     <>
       <Menu
-        menuButton={
-          <div>
-            <TopBarMenuItem title="Main menu">
-              <img src="/favicon.ico" height="22px" alt="Quadratic Icon" />
-            </TopBarMenuItem>
-          </div>
-        }
+        menuButton={({ open }) => (
+          <TopBarMenuItem title="Main menu" open={open}>
+            <img src="/favicon.ico" height="22px" alt="Quadratic Icon" />
+          </TopBarMenuItem>
+        )}
       >
         <MenuItem href={ROUTES.MY_FILES} style={{ textDecoration: 'none' }}>
           <MenuLineItem primary="Back to files" />

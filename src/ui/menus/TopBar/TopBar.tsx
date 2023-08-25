@@ -42,7 +42,7 @@ export const TopBar = (props: IProps) => {
       }}
       sx={{
         backgroundColor: 'rgba(255, 255, 255)',
-        px: theme.spacing(1),
+        // px: theme.spacing(1),
         width: '100%',
         display: 'flex',
         justifyContent: 'space-between',
@@ -69,7 +69,7 @@ export const TopBar = (props: IProps) => {
           //@ts-expect-error
           WebkitAppRegion: 'no-drag',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'stretch',
           color: theme.palette.text.primary,
           ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
@@ -91,7 +91,7 @@ export const TopBar = (props: IProps) => {
           // @ts-expect-error
           WebkitAppRegion: 'no-drag',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'stretch',
           justifyContent: 'flex-end',
           gap: theme.spacing(),
           color: theme.palette.text.primary,
@@ -100,7 +100,10 @@ export const TopBar = (props: IProps) => {
       >
         {isDesktop && (
           <>
-            <TooltipHint title={`${settings.showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
+            <TooltipHint
+              sx={{ alignSelf: 'center' }}
+              title={`${settings.showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}
+            >
               <CodeOutlinesSwitch
                 onClick={() => {
                   settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
@@ -109,9 +112,10 @@ export const TopBar = (props: IProps) => {
                 checked={settings.showCellTypeOutlines}
               />
             </TooltipHint>
+
             {user && (
               <TooltipHint title={user.name + ' (You)'}>
-                <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5) }}>
+                <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
                   <Avatar
                     sx={{
                       bgcolor: colors.quadraticSecondary,
@@ -139,6 +143,7 @@ export const TopBar = (props: IProps) => {
                 onClick={() => {
                   setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: !prev.showShareFileMenu }));
                 }}
+                sx={{ alignSelf: 'center' }}
               >
                 Share
               </Button>

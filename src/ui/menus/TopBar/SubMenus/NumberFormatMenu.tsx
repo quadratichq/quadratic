@@ -27,13 +27,11 @@ export const NumberFormatMenu = (props: IProps) => {
 
   return (
     <Menu
-      menuButton={
-        <div>
-          <TopBarMenuItem title="Number format">
-            <Icon123 style={{ fontSize: '1.8125rem' }} />
-          </TopBarMenuItem>
-        </div>
-      }
+      menuButton={({ open }) => (
+        <TopBarMenuItem title="Number format" open={open}>
+          <Icon123 style={{ fontSize: '1.8125rem' }} />
+        </TopBarMenuItem>
+      )}
     >
       <MenuItem onClick={() => textFormatClear()}>
         <MenuLineItem primary="Plain text" secondary={<code>Abc</code>} Icon={AbcOutlined} />

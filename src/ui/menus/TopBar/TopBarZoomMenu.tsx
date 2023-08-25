@@ -33,15 +33,13 @@ export const TopBarZoomMenu = (props: Props) => {
 
   return (
     <Menu
-      menuButton={
-        <div style={{ width: '5rem' }}>
-          <TopBarMenuItem title="Zoom options">
-            <Typography variant="subtitle2" color="inherit">
-              {zoom === Infinity ? 100 : Math.round(zoom * 100)}%
-            </Typography>
-          </TopBarMenuItem>
-        </div>
-      }
+      menuButton={({ open }) => (
+        <TopBarMenuItem title="Zoom options" style={{ width: '4.5rem' }} open={open}>
+          <Typography variant="subtitle2" color="inherit">
+            {zoom === Infinity ? 100 : Math.round(zoom * 100)}%
+          </Typography>
+        </TopBarMenuItem>
+      )}
     >
       <MenuItem
         onClick={() => {
