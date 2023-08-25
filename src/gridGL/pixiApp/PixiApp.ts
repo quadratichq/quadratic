@@ -47,7 +47,7 @@ export class PixiApp {
   stage = new Container();
   loading = true;
   destroyed = false;
-  paused = false;
+  paused = true;
 
   // for testing purposes
   debug: Graphics;
@@ -196,6 +196,7 @@ export class PixiApp {
     this.resize();
     this.update.start();
     this.canvas.focus();
+    this.paused = false;
   }
 
   destroy(): void {
