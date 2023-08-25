@@ -1,5 +1,5 @@
 use super::*;
-use crate::{controller::TransactionSummary, grid::js_types::*};
+use crate::{controller::transactions::TransactionSummary, grid::js_types::*};
 use std::str::FromStr;
 
 #[wasm_bindgen]
