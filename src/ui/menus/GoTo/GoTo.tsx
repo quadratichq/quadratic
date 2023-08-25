@@ -53,7 +53,6 @@ export const GoTo = (props: Props) => {
         terminalPosition,
       };
     }
-    console.log({ keyboardMovePosition, cursorPosition, multiCursor });
     props.sheetController.sheet.cursor.changePosition({
       keyboardMovePosition,
       cursorPosition,
