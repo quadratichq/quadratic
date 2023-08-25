@@ -4,7 +4,6 @@ import React, { SyntheticEvent } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/SheetController';
-import { isVisible, moveViewport } from '../../../gridGL/interaction/viewportHelper';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../../gridGL/types/size';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -54,28 +53,12 @@ export const GoTo = (props: Props) => {
         terminalPosition,
       };
     }
-
+    console.log({ keyboardMovePosition, cursorPosition, multiCursor });
     props.sheetController.sheet.cursor.changePosition({
       keyboardMovePosition,
       cursorPosition,
       multiCursor,
     });
-    if (coor1.x === 0 && coor1.y === 0 && !coor2)
-      moveViewport({
-        app: props.app,
-        topLeft: cursorPosition,
-      });
-    else if (
-      !isVisible({
-        app: props.app,
-        sheet: props.sheetController.sheet,
-      })
-    )
-      moveViewport({
-        app: props.app,
-        center: cursorPosition,
-      });
-
     closeMenu();
     focusGrid();
   };
