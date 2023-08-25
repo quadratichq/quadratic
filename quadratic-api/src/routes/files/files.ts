@@ -1,4 +1,4 @@
-import { File, LinkPermission, User } from '@prisma/client';
+import { File, User } from '@prisma/client';
 import express, { NextFunction, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
@@ -13,8 +13,6 @@ export const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
 const validateFileName = () => body('name').isString().not().isEmpty();
 const validateFileVersion = () => body('version').isString().not().isEmpty();
-const validateFileSharingPermission = () =>
-  body('public_link_access').isIn([LinkPermission.READONLY, LinkPermission.NOT_SHARED]);
 
 const files_router = express.Router();
 
@@ -114,7 +112,6 @@ files_router.get(
         updated_date: req.file.updated_date,
         version: req.file.version,
         contents: req.file.contents.toString('utf8'),
-        public_link_access: req.file.public_link_access,
       },
       permission: getFilePermissions(req.user, req.file),
     });
@@ -130,7 +127,6 @@ files_router.post(
   validateFileContents().optional(),
   validateFileVersion().optional(),
   validateFileName().optional(),
-  validateFileSharingPermission().optional(),
   async (req: Request, res: Response) => {
     if (!req.file || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
@@ -182,14 +178,6 @@ files_router.post(
             increment: 1,
           },
         },
-      });
-    }
-
-    // update the link sharing permissions
-    if (req.body.public_link_access !== undefined) {
-      await dbClient.file.update({
-        where: { uuid: req.params.uuid },
-        data: { public_link_access: req.body.public_link_access },
       });
     }
 
