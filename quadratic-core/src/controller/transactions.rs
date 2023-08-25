@@ -1,7 +1,7 @@
 use crate::{grid::*, Array, CellValue, Pos, Rect};
 use serde::{Deserialize, Serialize};
 
-use super::{CellFmtArray, GridController};
+use super::{cells::CellFmtArray, GridController};
 
 impl GridController {
     pub fn transact_forward(&mut self, transaction: Transaction) -> TransactionSummary {
