@@ -101,8 +101,8 @@ class PixiAppEvents {
     // todo: hack!!! (this avoids loading the sheets during initial load b/c PIXI is not set up yet)
     if (BitmapFont.available['OpenSans']) {
       await this.loadSheets();
+      this.app.paused = false;
     }
-    this.app.paused = false;
     this.app.reset();
   }
 
