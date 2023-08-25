@@ -137,7 +137,6 @@ export const router = createBrowserRouter(
           } catch (e) {
             console.error(e);
           }
-
           return redirect('/');
         }}
       />
