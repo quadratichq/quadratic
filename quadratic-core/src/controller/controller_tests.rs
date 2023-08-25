@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod ControllerTests {
+mod grid_controller_tests {
     use crate::{
         controller::{GridController, TransactionSummary},
         Rect,
