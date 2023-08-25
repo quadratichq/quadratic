@@ -58,6 +58,7 @@ export default function QuadraticApp({ initialFile }: { initialFile: InitialFile
     loadAssets().then(() => {
       setItemsLoaded((old) => ['pixi-assets', ...old]);
     });
+
     init().then(() => {
       hello(); // let Rust say hello to console
       setItemsLoaded((old) => ['wasm-rust', ...old]);

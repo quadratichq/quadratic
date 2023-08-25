@@ -1,10 +1,25 @@
 import FontFaceObserver from 'fontfaceobserver';
-import { Loader } from 'pixi.js';
+import { BitmapFont, Loader } from 'pixi.js';
 import { createBorderTypes } from './dashedTextures';
+
+const intervalToCheckBitmapFonts = 100;
+const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
 function loadFont(fontName: string): void {
   const font = new FontFaceObserver(fontName);
   font.load();
+}
+
+export function ensureBitmapFontLoaded(resolve: () => void): void {
+  const waitForLoad = () => {
+    if (bitmapFonts.find((font) => !BitmapFont.available[font])) {
+      setTimeout(waitForLoad, intervalToCheckBitmapFonts);
+    } else {
+      resolve();
+    }
+  };
+
+  waitForLoad();
 }
 
 export function loadAssets(): Promise<void> {
@@ -28,6 +43,6 @@ export function loadAssets(): Promise<void> {
     Loader.shared.add('images/python-icon.png');
 
     // Wait until pixi fonts are loaded before resolving
-    Loader.shared.load(() => resolve());
+    Loader.shared.load(() => ensureBitmapFontLoaded(resolve));
   });
 }
