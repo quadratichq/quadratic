@@ -28,22 +28,18 @@ export const getUserProfile = async (id: number) => {
   const user = await dbClient.user.findUnique({
     where: { id },
   });
-  console.log('user', user);
 
-  //@ts-expect-error
-  const name = user.name ?? user.auth0_data?.name ?? undefined;
-  //@ts-expect-error
-  const picture = user.picture ?? user.auth0_data?.picture ?? undefined;
-  //@ts-expect-error
-  const email = user.email ?? user.auth0_data?.email ?? undefined;
+  const auth0_user = await getAuth0User(user.auth0_id);
+
+  const name = user.name ?? auth0_user.name ?? undefined;
+  const picture = user.picture ?? auth0_user.picture ?? undefined;
 
   console.log('name', name);
   console.log('picture', picture);
-  console.log('email', email);
 
   return {
     name,
     picture,
-    email,
+    email: auth0_user.email,
   };
 };

@@ -1,7 +1,6 @@
 import { File, LinkPermission, User } from '@prisma/client';
 import express, { NextFunction, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
-import { getUserProfile } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -10,7 +9,7 @@ import { Request } from '../../types/Request';
 
 type FILE_PERMISSION = 'OWNER' | 'VIEWER' | 'EDITOR';
 
-const validateUUID = () => param('uuid').isUUID(4);
+export const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
 const validateFileName = () => body('name').isString().not().isEmpty();
 const validateFileVersion = () => body('version').isString().not().isEmpty();
@@ -19,7 +18,7 @@ const validateFileSharingPermission = () =>
 
 const files_router = express.Router();
 
-const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+export const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   if (req.params.uuid === undefined) {
     return res.status(400).json({ error: { message: 'Invalid file UUID' } });
   }
@@ -48,7 +47,7 @@ const fileMiddleware = async (req: Request, res: Response, next: NextFunction) =
   next();
 };
 
-const getFilePermissions = (user: User | undefined, file: File): FILE_PERMISSION => {
+export const getFilePermissions = (user: User | undefined, file: File): FILE_PERMISSION => {
   if (file.ownerUserId === user?.id) {
     return 'OWNER';
   }
@@ -118,9 +117,6 @@ files_router.get(
         public_link_access: req.file.public_link_access,
       },
       permission: getFilePermissions(req.user, req.file),
-      sharing: {
-        owner: await getUserProfile(req.file.ownerUserId),
-      },
     });
   }
 );
