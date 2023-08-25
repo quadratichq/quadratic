@@ -26,19 +26,22 @@ fn test_order_move_sheet() {
     let mut grid = setup_grid();
 
     // moved to name = 1, 0, 2
-    grid.move_sheet(grid.sheets[0].id, Some(grid.sheets[2].id));
+    grid.move_sheet(grid.sheets[0].id, grid.sheets[2].order.clone());
     assert_eq!(grid.sheets[0].name, String::from('1'));
     assert_eq!(grid.sheets[1].name, String::from('0'));
     assert_eq!(grid.sheets[2].name, String::from('2'));
 
     // moved to name = 1, 2, 0
-    grid.move_sheet(grid.sheets[1].id, None);
+    grid.move_sheet(
+        grid.sheets[1].id,
+        key_between(&Some(grid.sheets[2].order.clone()), &None).unwrap(),
+    );
     assert_eq!(grid.sheets[0].name, String::from('1'));
     assert_eq!(grid.sheets[1].name, String::from('2'));
     assert_eq!(grid.sheets[2].name, String::from('0'));
 
     // moved back to name = 0, 1, 2
-    grid.move_sheet(grid.sheets[2].id, Some(grid.sheets[0].id));
+    grid.move_sheet(grid.sheets[2].id, grid.sheets[0].order.clone());
     assert_eq!(grid.sheets[0].name, String::from('0'));
     assert_eq!(grid.sheets[1].name, String::from('1'));
     assert_eq!(grid.sheets[2].name, String::from('2'));
