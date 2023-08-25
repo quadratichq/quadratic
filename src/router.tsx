@@ -105,6 +105,7 @@ export const router = createBrowserRouter(
       <Route
         path={ROUTES.LOGIN}
         loader={async ({ request }) => {
+          document.title = 'Login - Quadratic';
           let isAuthenticated = await authClient.isAuthenticated();
 
           // If they’re authenticated, redirect home
@@ -125,6 +126,7 @@ export const router = createBrowserRouter(
       <Route
         path={ROUTES.LOGIN_RESULT}
         loader={async () => {
+          document.title = 'Login result - Quadratic';
           // try/catch here handles case where this _could_ error out and we
           // have no errorElement so we just redirect back to home
           try {
@@ -136,8 +138,8 @@ export const router = createBrowserRouter(
             }
           } catch (e) {
             console.error(e);
+            return redirect('/');
           }
-          return redirect('/');
         }}
       />
       <Route
