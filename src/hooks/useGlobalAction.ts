@@ -17,7 +17,15 @@ function MyComponent() {
 
 Important on this design: these are the actions for _within_ the app.
 Actions from the Dashboard are handled separately, though they may use the same
-underlying code from other functions like the `apiClient`
+underlying code from other functions like the `apiClient`.
+
+Why? Because permissions aren't important there (we know who the user is on the dashboard)
+and actions are handled differently in that context, with fetchers and the like,
+whereas the app is more client-first and changes are synced, the dashboard is optimistic 
+with some actions being fully async.
+
+In the future we might be able to achieve the same with fetchers, but perhaps this
+is a good-enough abstraction for now.
 */
 
 import { Dispatch, SetStateAction, useMemo } from 'react';
