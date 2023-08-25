@@ -7,7 +7,9 @@ function MyComponent() {
 
   return (
     <div>
-      {duplicateFile.isAvailable && <Button onClick={() => duplicateFile.run()}>Duplicate</Button>}
+      {duplicateFile.isAvailable &&
+        <Button onClick={() => duplicateFile.run()}>{duplicateFile.label}</Button>
+      }
     </div>
   );
 }
