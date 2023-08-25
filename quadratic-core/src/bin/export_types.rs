@@ -1,4 +1,4 @@
-use quadratic_core::*;
+use quadratic_core::{controller::transactions, *};
 use ts_rs::TS;
 
 macro_rules! generate_type_declarations {
@@ -17,7 +17,7 @@ fn main() {
 
     s += &generate_type_declarations!(
         // controller.rs
-        controller::TransactionSummary,
+        transactions::TransactionSummary,
         // grid/cell_ref.rs
         formulas::RangeRef,
         formulas::CellRef,
