@@ -10,6 +10,7 @@ import { PixiApp } from '../gridGL/pixiApp/PixiApp';
 import CodeEditor from '../ui/menus/CodeEditor';
 import TopBar from '../ui/menus/TopBar';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
+import { PermissionOverlay } from './components/PermissionOverlay';
 import PresentationModeHint from './components/PresentationModeHint';
 import ReadOnlyDialog from './components/ReadOnlyDialog';
 import BottomBar from './menus/BottomBar';
@@ -77,6 +78,9 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {presentationMode && <PresentationModeHint />}
 
       {isMobile && <ReadOnlyDialog />}
+      {(editorInteractionState.permission === 'ANONYMOUS' || editorInteractionState.permission === 'VIEWER') && (
+        <PermissionOverlay permission={editorInteractionState.permission} />
+      )}
     </div>
   );
 }

@@ -60,6 +60,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
   const theme = useTheme();
   const isLoadingPython = !pythonLoaded && editorMode === 'PYTHON';
+  const readOnly = editorInteractionState.permission === 'VIEWER' || editorInteractionState.permission === 'ANONYMOUS';
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -384,19 +385,21 @@ export const CodeEditor = (props: CodeEditorProps) => {
               <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
             </div>
           )}
-          <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
-            <span>
-              <IconButton
-                id="QuadraticCodeEditorRunButtonID"
-                size="small"
-                color="primary"
-                onClick={saveAndRunCell}
-                disabled={isRunningComputation || isLoadingPython}
-              >
-                <PlayArrow />
-              </IconButton>
-            </span>
-          </TooltipHint>
+          {!readOnly && (
+            <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
+              <span>
+                <IconButton
+                  id="QuadraticCodeEditorRunButtonID"
+                  size="small"
+                  color="primary"
+                  onClick={saveAndRunCell}
+                  disabled={isRunningComputation || isLoadingPython}
+                >
+                  <PlayArrow />
+                </IconButton>
+              </span>
+            </TooltipHint>
+          )}
           <TooltipHint title="Close" shortcut="ESC">
             <IconButton
               id="QuadraticCodeEditorCloseButtonID"
@@ -427,6 +430,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
           onChange={setEditorContent}
           onMount={handleEditorDidMount}
           options={{
+            readOnly,
             minimap: { enabled: true },
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,

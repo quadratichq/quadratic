@@ -132,7 +132,15 @@ export const TopBar = (props: IProps) => {
               </TooltipHint>
             )}
             {permission === 'ANONYMOUS' ? (
-              <Button replace component={Link} to={ROUTES.LOGIN} variant="outlined" size="small" disableElevation>
+              <Button
+                replace
+                component={Link}
+                to={ROUTES.LOGIN}
+                variant="outlined"
+                size="small"
+                disableElevation
+                sx={{ alignSelf: 'center' }}
+              >
                 Log in
               </Button>
             ) : (

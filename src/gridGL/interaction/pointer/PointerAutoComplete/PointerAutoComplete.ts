@@ -31,8 +31,7 @@ export class PointerAutoComplete {
   }
 
   pointerDown(world: Point): boolean {
-    const { permission } = this.app.settings.editorInteractionState;
-    if (isMobile || permission === 'ANONYMOUS' || permission === 'VIEWER') return false;
+    if (isMobile) return false;
 
     const { interactionState, setInteractionState } = this.app.settings;
     if (!setInteractionState) throw new Error('Expected setInteractionState to be defined in PointerAutoComplete');
@@ -93,8 +92,7 @@ export class PointerAutoComplete {
   }
 
   pointerMove(world: Point): boolean {
-    const { permission } = this.app.settings.editorInteractionState;
-    if (isMobile || permission === 'ANONYMOUS' || permission === 'VIEWER') return false;
+    if (isMobile) return false;
 
     const { interactionState, setInteractionState } = this.app.settings;
     if (interactionState.panMode !== PanMode.Disabled) return false;

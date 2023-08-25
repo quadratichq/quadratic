@@ -30,11 +30,7 @@ export class PointerDown {
   }
 
   pointerDown(world: Point, event: PointerEvent): void {
-    const {
-      editorInteractionState: { permission },
-      interactionState: { panMode },
-    } = this.app.settings;
-    if (isMobile || panMode !== PanMode.Disabled || permission === 'ANONYMOUS' || permission === 'VIEWER') return;
+    if (isMobile || this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
 
     // note: directly call this.app.settings instead of locally defining it here; otherwise it dereferences this
 

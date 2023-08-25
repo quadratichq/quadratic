@@ -2,7 +2,8 @@ import { Box, Chip, Tab, Tabs } from '@mui/material';
 import { useTheme } from '@mui/system';
 import { stripIndent } from 'common-tags';
 import { useEffect, useState } from 'react';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { useRecoilValue } from 'recoil';
+import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { CellEvaluationResult } from '../../../grid/computations/types';
 import { useRootRouteLoaderData } from '../../../router';
@@ -21,6 +22,7 @@ interface ConsoleProps {
 }
 
 export function Console({ evalResult, editorMode, editorContent, selectedCell }: ConsoleProps) {
+  const { permission } = useRecoilValue(editorInteractionStateAtom);
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
@@ -56,7 +58,7 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
             id="console-tab-1"
             aria-controls="console-tabpanel-1"
           ></Tab>
-          {isAuthenticated && editorMode === 'PYTHON' ? (
+          {isAuthenticated && editorMode === 'PYTHON' && permission !== 'ANONYMOUS' ? (
             <Tab
               style={{ minHeight: '32px' }}
               label="AI Assistant"
