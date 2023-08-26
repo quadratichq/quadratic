@@ -3,6 +3,7 @@ use crate::{controller::TransactionSummary, grid::js_types::*};
 use std::str::FromStr;
 
 pub mod formatting;
+pub mod render;
 pub mod sheets;
 
 #[wasm_bindgen]
