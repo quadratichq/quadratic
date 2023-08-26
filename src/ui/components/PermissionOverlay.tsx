@@ -7,10 +7,10 @@ export function PermissionOverlay({ permission }: { permission: 'ANONYMOUS' | 'V
     <Paper
       sx={{
         position: 'fixed',
-        bottom: theme.spacing(8),
-        transform: 'translateX(25%)',
-        width: '100%',
-        maxWidth: '40rem',
+        top: theme.spacing(10),
+        transform: 'translateX(-50%)',
+        left: '50%',
+        width: '40rem',
         zIndex: '10',
       }}
       elevation={4}
