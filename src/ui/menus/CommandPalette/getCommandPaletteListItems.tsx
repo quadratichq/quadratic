@@ -1,20 +1,22 @@
 import fuzzysort from 'fuzzysort';
-import HelpListItems from './ListItems/Help';
-import ViewListItems from './ListItems/View';
-import FileListItems from './ListItems/File';
-import ImportListItems from './ListItems/Import';
-import EditListItems from './ListItems/Edit';
-import FormatListItems from './ListItems/Format';
-import BordersListItems from './ListItems/Borders';
-import TextListItems from './ListItems/Text';
-import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
+import BordersListItems from './ListItems/Borders';
+import EditListItems from './ListItems/Edit';
+import FileListItems from './ListItems/File';
+import FormatListItems from './ListItems/Format';
+import HelpListItems from './ListItems/Help';
+import ImportListItems from './ListItems/Import';
+import TextListItems from './ListItems/Text';
+import ViewListItems from './ListItems/View';
 
 interface Commands {
   label: string;
   Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
+  permissions?: Array<EditorInteractionState['permission']>;
 }
 
 const commands: Array<Commands> = [
@@ -29,6 +31,7 @@ const commands: Array<Commands> = [
 ];
 
 export const getCommandPaletteListItems = (props: {
+  permission: EditorInteractionState['permission'];
   sheetController: SheetController;
   app: PixiApp;
   interactionState: GridInteractionState;
@@ -36,11 +39,13 @@ export const getCommandPaletteListItems = (props: {
   activeSearchValue: string;
   selectedListItemIndex: number;
 }): Array<JSX.Element> => {
-  const { activeSearchValue, ...rest } = props;
+  const { activeSearchValue, permission, ...rest } = props;
+
+  let filteredCommands = commands.filter(({ permissions }) => (permissions ? permissions.includes(permission) : true));
 
   // If there's no active search query, return everything
   if (!activeSearchValue) {
-    return commands.map(({ label, Component }, i) => (
+    return filteredCommands.map(({ label, Component }, i) => (
       <Component {...rest} key={label} listItemIndex={i} label={label} />
     ));
   }
@@ -49,7 +54,7 @@ export const getCommandPaletteListItems = (props: {
   // component for rendering
   let out: any = [];
   let listItemIndex = 0;
-  commands.forEach(({ label, Component }, i) => {
+  filteredCommands.forEach(({ label, Component }, i) => {
     const result = fuzzysort.single(activeSearchValue, label);
     if (result) {
       out.push(
@@ -58,6 +63,5 @@ export const getCommandPaletteListItems = (props: {
       listItemIndex++;
     }
   });
-
   return out;
 };

@@ -53,11 +53,6 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
-    clearAllFormatting();
-    return true;
-  }
-
   if ((event.metaKey || event.ctrlKey) && event.key === '.') {
     setPresentationMode(!presentationMode);
     return true;
@@ -69,16 +64,6 @@ export function keyboardViewport(options: {
       return true;
     }
     return app.pointer.handleEscape();
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    changeBold(!(format.bold === true));
-    return true;
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    changeItalic(!(format.italic === true));
-    return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && (event.key === 'g' || event.key === 'j')) {
@@ -119,6 +104,27 @@ export function keyboardViewport(options: {
 
   if ((event.metaKey || event.ctrlKey) && event.key === 's') {
     // don't do anything on Command+S
+    return true;
+  }
+
+  // All formatting options past here are only available for specific users
+  // So don't trigger anything past here unless
+  if (editorInteractionState.permission === 'ANONYMOUS' || editorInteractionState.permission === 'VIEWER') {
+    return false;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
+    clearAllFormatting();
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
+    changeBold(!(format.bold === true));
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
+    changeItalic(!(format.italic === true));
     return true;
   }
 

@@ -42,6 +42,10 @@ export function keyboardCell(options: {
     event.preventDefault();
   }
 
+  if (editorInteractionState.permission === 'ANONYMOUS' || editorInteractionState.permission === 'VIEWER') {
+    return false;
+  }
+
   if (event.key === 'Backspace' || event.key === 'Delete') {
     // delete a range or a single cell, depending on if MultiCursor is active
     if (interactionState.showMultiCursor) {

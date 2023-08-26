@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useParams } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
+import { createFile, downloadFile, provideFeedback } from '../../../../actions';
 import { apiClient } from '../../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
@@ -32,6 +33,7 @@ export const QuadraticMenu = (props: Props) => {
   const settings = useGridSettings();
   const { uuid } = useParams();
   const { isAuthenticated } = useRootRouteLoaderData();
+  const { permission } = editorInteractionState;
 
   // For mobile, set Headers to not visible by default
   useEffect(() => {
@@ -66,20 +68,26 @@ export const QuadraticMenu = (props: Props) => {
           <MenuLineItem primary="Command palette" secondary={KeyboardSymbols.Command + 'P'} />
         </MenuItem>
         <MenuDivider />
-        <SubMenu label={<MenuLineItem primary="File" />}>
-          <MenuItem href={ROUTES.CREATE_FILE} style={{ textDecoration: 'none' }}>
-            <MenuLineItem primary="New" />
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              if (uuid) {
-                apiClient.downloadFile(uuid);
-              }
-            }}
-          >
-            <MenuLineItem primary="Download local copy" />
-          </MenuItem>
-        </SubMenu>
+        {permission !== 'ANONYMOUS' && (
+          <SubMenu label={<MenuLineItem primary="File" />}>
+            {createFile.permissions.includes(permission) && (
+              <MenuItem href={ROUTES.CREATE_FILE} style={{ textDecoration: 'none' }}>
+                <MenuLineItem primary={createFile.label} />
+              </MenuItem>
+            )}
+            {downloadFile.permissions.includes(permission) && (
+              <MenuItem
+                onClick={() => {
+                  if (uuid) {
+                    apiClient.downloadFile(uuid);
+                  }
+                }}
+              >
+                <MenuLineItem primary="Download local copy" />
+              </MenuItem>
+            )}
+          </SubMenu>
+        )}
         <SubMenu label={<MenuLineItem primary="Edit" />}>
           <MenuItem
             onClick={() => {
@@ -169,16 +177,18 @@ export const QuadraticMenu = (props: Props) => {
           <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>
             <MenuLineItem primary="Read the docs" />
           </MenuItem>
-          <MenuItem
-            onClick={() =>
-              setEditorInteractionState((prevState) => ({
-                ...prevState,
-                showFeedbackMenu: true,
-              }))
-            }
-          >
-            <MenuLineItem primary="Provide feedback" />
-          </MenuItem>
+          {provideFeedback.permissions.includes(permission) && (
+            <MenuItem
+              onClick={() =>
+                setEditorInteractionState((prevState) => ({
+                  ...prevState,
+                  showFeedbackMenu: true,
+                }))
+              }
+            >
+              <MenuLineItem primary="Provide feedback" />
+            </MenuItem>
+          )}
         </SubMenu>
 
         {isAuthenticated && (

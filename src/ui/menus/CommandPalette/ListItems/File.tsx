@@ -1,5 +1,6 @@
-import { NoteAddOutlined } from '@mui/icons-material';
+import { DeleteOutline, NoteAddOutlined } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { createFile } from '../../../../actions';
 import { apiClient } from '../../../../api/apiClient';
 import { ROUTES } from '../../../../constants/routes';
 import { SaveFileOutlined } from '../../../icons';
@@ -7,7 +8,8 @@ import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../Co
 
 const ListItems = [
   {
-    label: 'File: New',
+    label: 'File: ' + createFile.label,
+    permissions: createFile.permissions,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const navigate = useNavigate();
       const action = () => navigate(ROUTES.CREATE_FILE);
@@ -15,7 +17,18 @@ const ListItems = [
     },
   },
   {
+    label: 'File: Duplicate',
+    permissions: ['OWNER', 'EDITOR', 'VIEWER'],
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      // TODO
+      const navigate = useNavigate();
+      const action = () => navigate(ROUTES.CREATE_FILE);
+      return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={action} />;
+    },
+  },
+  {
     label: 'File: Download local copy',
+    permissions: ['OWNER', 'EDITOR', 'VIEWER'],
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { uuid } = useParams();
       const downloadCurrentFile = () => {
@@ -24,6 +37,16 @@ const ListItems = [
         }
       };
       return <CommandPaletteListItem {...props} icon={<SaveFileOutlined />} action={downloadCurrentFile} />;
+    },
+  },
+  {
+    label: 'File: Delete',
+    permissions: ['OWNER'],
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      // TODO
+      // const navigate = useNavigate();
+      const action = () => {};
+      return <CommandPaletteListItem {...props} icon={<DeleteOutline />} action={action} />;
     },
   },
 ];

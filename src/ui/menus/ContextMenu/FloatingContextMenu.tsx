@@ -16,6 +16,7 @@ import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../constants/appConstants';
@@ -34,6 +35,7 @@ import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
 import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
 
 interface Props {
+  editorInteractionState: EditorInteractionState;
   interactionState: GridInteractionState;
   setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
@@ -44,6 +46,7 @@ interface Props {
 
 export const FloatingContextMenu = (props: Props) => {
   const {
+    editorInteractionState: { permission },
     interactionState,
     app,
     app: { viewport },
@@ -124,6 +127,9 @@ export const FloatingContextMenu = (props: Props) => {
 
     // Hide if in presentation mode
     if (app.settings.presentationMode) visibility = 'hidden';
+
+    // Hide if you don't have edit access
+    if (permission === 'VIEWER' || permission === 'ANONYMOUS') visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheetController.sheet.gridOffsets.getCell(

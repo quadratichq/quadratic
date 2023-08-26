@@ -3,12 +3,12 @@ import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { formatDistance } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
+import { provideFeedback } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { useRootRouteLoaderData } from '../../../router';
 import { Cell } from '../../../schemas';
 import { colors } from '../../../theme/colors';
 import { ActiveSelectionStats } from './ActiveSelectionStats';
@@ -25,7 +25,7 @@ export const BottomBar = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const theme = useTheme();
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
-  const { isAuthenticated } = useRootRouteLoaderData();
+  const { permission } = editorInteractionState;
 
   const {
     showMultiCursor,
@@ -133,7 +133,7 @@ export const BottomBar = (props: Props) => {
         <SyncState />
 
         {showOnDesktop && <PythonState />}
-        {isAuthenticated && (
+        {provideFeedback.permissions.includes(permission) && (
           <BottomBarItem
             icon={<ChatBubbleOutline fontSize="inherit" />}
             onClick={() => {

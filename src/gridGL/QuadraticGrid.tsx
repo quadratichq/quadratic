@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { gridInteractionStateAtom } from '../atoms/gridInteractionStateAtom';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
 import { useRecoilState } from 'recoil';
-import { PixiApp } from './pixiApp/PixiApp';
-import { useKeyboard } from './interaction/keyboard/useKeyboard';
-import { ensureVisible } from './interaction/viewportHelper';
-import { CellInput } from './interaction/CellInput';
+import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
+import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
+import { PanMode, gridInteractionStateAtom } from '../atoms/gridInteractionStateAtom';
 import { SheetController } from '../grid/controller/sheetController';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
-import { PanMode } from '../atoms/gridInteractionStateAtom';
+import { CellInput } from './interaction/CellInput';
+import { useKeyboard } from './interaction/keyboard/useKeyboard';
+import { ensureVisible } from './interaction/viewportHelper';
+import { PixiApp } from './pixiApp/PixiApp';
 
 interface IProps {
   sheetController: SheetController;
@@ -159,6 +158,7 @@ export default function QuadraticGrid(props: IProps) {
         sheetController={props.sheetController}
       />
       <FloatingContextMenu
+        editorInteractionState={editorInteractionState}
         interactionState={interactionState}
         setInteractionState={setInteractionState}
         container={container}
