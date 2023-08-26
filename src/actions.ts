@@ -1,6 +1,18 @@
 /*
 
-Option 1: only share label + permissions and leave actions to individual spots in code
+Option 1: Define everything you can statically (label + permissions) and
+leave calculating them to runtime actions. Associated actions also has to be run
+in each individual spot.
+
+Benefit:
+
+- Static definitions, can be imported and used anywhere, even outside react components
+- Leaves logic for action up to invocation spot, making it more extensible
+- Could in theory be shared with Dashboard
+
+Drawbacks:
+
+- Leaves logic for action up to invocation spot, making exact consistency more varied
 
 ```
 // actions.ts
@@ -22,7 +34,18 @@ const MyComponent = () => {
 }
 ```
 
-Option 2: share label + permissions + action via a context
+Option 2: Define and calculate everything associated with an action (label + permissions + action)
+in a React context. Use the same actions everywhere.
+
+Benefits:
+
+- Centralized action names, permission checks, and logic all calculated once at initialization
+- Guarantees consistency
+
+Drawbacks:
+
+- Makes custom action UX given invocation location difficult, nearly impossible
+- Probably can't be shared with dashboard
 
 ```
 // ActionProvider.ts
