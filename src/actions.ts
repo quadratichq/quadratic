@@ -34,6 +34,49 @@ const MyComponent = () => {
 }
 ```
 
+Also: we could just define the actions as pure functions, but then you have to generate
+all the state you need in each place where you call it. Could also make permission checking
+a function so the caller only need call it and pass the app's permission
+
+```
+// actions.ts
+const deleteFile = {
+  label: "Delete",
+  isAllowed: (permission) => permission === "OWNER"
+  run: ({ uuid, addGlobalSnackbar }) => {
+    if (window.confirm("Please confirm you want to delete this file")) {
+        try {
+          await apiClient.deleteFile();
+          window.location.href = "/files/mine"
+        } catch(e) {
+          addGlobalSnackbar("Failed to delete file. Try again.", { severity: 'error' });
+        }
+      }
+  }
+}
+
+// Component.tsx
+import { deleteFile } from "./actions";
+import { useParams } from "react-router";
+import { userGlobalSnackbarContext } from "./GlobalSnackbarProvider";
+const MyComponent = () => {
+  const { uuid } = useParams();
+  const { permission } = useRecoilValue(editorInteractionStateAtom);
+  const { addGlobalSnackbar } = useGlobalSnackbarContext();
+  return (
+    <div>
+      {deleteFile.isAllowed(permission) && 
+        <Button onClick={() => deleteFile.run({ addGlobalSnackbar, uuid })}>{deleteFile.label}</Button>}
+    </div>
+  );
+}
+```
+
+As you can see, that can get to be a lot as actions require certain pieces of 
+state only avaiable through react components. But, it is clear.
+
+---
+
 Option 2: Define and calculate everything associated with an action (label + permissions + action)
 in a React context. Use the same actions everywhere.
 
