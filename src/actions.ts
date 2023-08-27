@@ -12,7 +12,7 @@ Benefit:
 
 Drawbacks:
 
-- Leaves logic for action up to invocation spot, making exact consistency more varied
+- Leaves logic for action up to invocation spot, making exact consistency difficult to impossible (not DRY)
 
 ```
 // actions.ts
