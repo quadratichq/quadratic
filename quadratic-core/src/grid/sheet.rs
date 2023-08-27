@@ -7,9 +7,9 @@ use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
+use super::borders::{BorderSelection, BorderStyle};
 use self::sheet_offsets::SheetOffsets;
 
-use super::borders::{CellBorder, SheetBorders};
 use super::bounds::GridBounds;
 use super::code::CodeCellValue;
 use super::column::Column;
@@ -18,6 +18,7 @@ use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
 use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::response::{GetIdResponse, SetCellResponse};
 use super::{NumericFormat, NumericFormatKind};
+use crate::grid::{borders, SheetBorders};
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
@@ -173,13 +174,13 @@ impl Sheet {
         (column_ids, row_ids, old_cell_values_array)
     }
 
-    /// Sets or deletes horizontal borders in a region.
-    pub fn set_horizontal_border(&mut self, region: Rect, value: CellBorder) {
-        self.borders.set_horizontal_border(region, value);
-    }
-    /// Sets or deletes vertical borders in a region.
-    pub fn set_vertical_border(&mut self, region: Rect, value: CellBorder) {
-        self.borders.set_vertical_border(region, value);
+    /// Sets or deletes borders in a region.
+    pub fn set_region_borders(
+        &mut self,
+        region: &RegionRef,
+        sheet_borders: SheetBorders
+    ) -> SheetBorders {
+        borders::set_region_borders(self, vec![region.clone()], sheet_borders)
     }
 
     /// Returns the value of a cell (i.e., what would be returned if code asked
@@ -406,6 +407,37 @@ impl Sheet {
         let y_ranges = self.row_ranges(&region.rows);
         itertools::iproduct!(x_ranges, y_ranges).map(|(xs, ys)| Rect::from_ranges(xs, ys))
     }
+    /// Returns a region of the sheet, assigning IDs to columns and rows as needed.
+    pub fn region(&mut self, rect: Rect) -> RegionRef {
+        let columns = rect
+            .x_range()
+            .map(|x| self.get_or_create_column(x).0.id)
+            .collect();
+        let rows = rect
+            .y_range()
+            .map(|y| self.get_or_create_row(y).id)
+            .collect();
+        RegionRef {
+            sheet: self.id,
+            columns,
+            rows,
+        }
+    }
+    /// Returns a region of the sheet, ignoring columns and rows which
+    /// have no contents and no IDs.
+    pub fn existing_region(&self, rect: Rect) -> RegionRef {
+        let columns = rect
+            .x_range()
+            .filter_map(|x| self.get_column(x))
+            .map(|col| col.id)
+            .collect();
+        let rows = rect.y_range().filter_map(|y| self.get_row(y)).collect();
+        RegionRef {
+            sheet: self.id,
+            columns,
+            rows,
+        }
+    }
 
     /// Deletes all data and formatting in the sheet, effectively recreating it.
     pub fn clear(&mut self) {
@@ -469,7 +501,7 @@ mod test {
     use super::*;
     use crate::{
         controller::{auto_complete::cell_values_in_rect, GridController},
-        grid::{Bold, CellBorderStyle, Italic, NumericFormat},
+        grid::{Bold, Italic, NumericFormat},
         test_util::print_table,
     };
 
@@ -647,26 +679,27 @@ mod test {
     }
 
     // TODO(ddimaria): use the code below as a template once cell borders are in place
-    #[ignore]
-    #[tokio::test]
-    async fn test_set_border() {
-        let (grid, sheet_id, selected) = test_setup_basic().await;
-        let cell_border = CellBorder {
-            color: Some("red".into()),
-            style: Some(CellBorderStyle::Line1),
-        };
-        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
-        sheet.set_horizontal_border(selected, cell_border.clone());
-        sheet.set_vertical_border(selected, cell_border);
-        let _borders = sheet.borders();
-
-        print_table(&grid, sheet_id, selected);
-
-        // let formats = grid.get_all_cell_formats(sheet_id, selected);
-        // formats
-        //     .into_iter()
-        //     .for_each(|format| assert_eq!(format, SOMETHING_HERE));
-    }
+    // TODO(jrice): Uncomment and test
+    // #[ignore]
+    // #[tokio::test]
+    // async fn test_set_border() {
+    //     let (grid, sheet_id, selected) = test_setup_basic().await;
+    //     let cell_border = CellBorder {
+    //         color: Some("red".into()),
+    //         style: Some(CellBorderStyle::Line1),
+    //     };
+    //     let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+    //     sheet.set_horizontal_border(selected, cell_border.clone());
+    //     sheet.set_vertical_border(selected, cell_border);
+    //     let _borders = sheet.borders();
+    //
+    //     print_table(&grid, sheet_id, selected);
+    //
+    //     // let formats = grid.get_all_cell_formats(sheet_id, selected);
+    //     // formats
+    //     //     .into_iter()
+    //     //     .for_each(|format| assert_eq!(format, SOMETHING_HERE));
+    // }
 
     #[tokio::test]
     async fn test_get_cell_value() {

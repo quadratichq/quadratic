@@ -127,6 +127,7 @@ impl Operation {
             Operation::SetCellDependencies { .. } => None,
             Operation::SetCellCode { cell_ref, .. } => Some(cell_ref.sheet),
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
+            Operation::SetBorders { .. } => None,
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,
             Operation::SetSheetColor { .. } => None,

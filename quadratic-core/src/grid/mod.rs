@@ -22,7 +22,10 @@ pub mod series;
 pub mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
-pub use borders::{CellBorder, CellBorderStyle, CellBorders, SheetBorders};
+pub use borders::{
+    generate_sheet_borders, set_region_borders, BorderSelection, BorderStyle, CellBorderLine,
+    LegacyCellBorder, LegacyCellBorders, SheetBorders,
+};
 pub use bounds::GridBounds;
 pub use code::*;
 pub use column::{Column, ColumnData};

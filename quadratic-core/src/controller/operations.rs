@@ -34,6 +34,10 @@ pub enum Operation {
         region: RegionRef,
         attr: CellFmtArray,
     },
+    SetBorders {
+        region: RegionRef,
+        borders: SheetBorders,
+    },
     AddSheet {
         sheet: Sheet,
     },
@@ -465,6 +469,16 @@ impl GridController {
                 Operation::SetCellFormats {
                     region,
                     attr: old_attr,
+                }
+            }
+            Operation::SetBorders { region, borders } => {
+                summary.border_sheets_modified.push(region.sheet);
+                let sheet = self.grid.sheet_mut_from_id(region.sheet);
+
+                let old_borders = sheet.set_region_borders(&region, borders);
+                Operation::SetBorders {
+                    region,
+                    borders: old_borders,
                 }
             }
             Operation::AddSheet { sheet } => {
