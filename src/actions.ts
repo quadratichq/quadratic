@@ -27,7 +27,7 @@ const MyComponent = () => {
   const { permission } = useRecoilValue(editorInteractionStateAtom);
   return (
     <div>
-      {deleteFile.permissions.includes(permissions) && 
+      {deleteFile.permissions.includes(permission) && 
         <Button onClick={() => {}}>{deleteFile.label}</Button>}
     </div>
   );
@@ -44,7 +44,7 @@ Benefits:
 
 Drawbacks:
 
-- Makes custom action UX given invocation location difficult, nearly impossible
+- Makes custom action UX given invocation location difficult, nearly impossible (maybe this is ok, even desired?)
 - Probably can't be shared with dashboard
 
 ```
@@ -55,7 +55,7 @@ const ActionProvider = (props) => {
 
   const deleteFile = useMemo(() => ({
     label: 'Delete',
-    isAvailable: permission === 'OWNER,
+    isAvailable: permission === 'OWNER',
     run: (uuid) => {
       if (window.confirm("Please confirm you want to delete this file")) {
         try {
