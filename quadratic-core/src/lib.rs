@@ -17,6 +17,7 @@ mod test_util;
 mod values;
 #[cfg(feature = "js")]
 pub mod wasm_bindings;
+mod color;
 
 pub use error::*;
 pub use ext::*;

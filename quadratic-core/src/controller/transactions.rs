@@ -137,6 +137,7 @@ impl Operation {
             Operation::SetCellValues { region, .. } => Some(region.sheet),
             Operation::SetCellDependencies { .. } => None,
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
+            Operation::SetBorders { .. } => None,
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,
             Operation::SetSheetColor { .. } => None,

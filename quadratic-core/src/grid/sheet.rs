@@ -7,7 +7,7 @@ use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use super::borders::{CellBorder, SheetBorders};
+use super::borders::{BorderSelection, BorderStyle};
 use super::bounds::GridBounds;
 use super::code::{CodeCellRunResult, CodeCellValue};
 use super::column::Column;
@@ -20,6 +20,7 @@ use super::js_types::{
 use super::offsets::Offsets;
 use super::response::{GetIdResponse, SetCellResponse};
 use super::{NumericFormat, NumericFormatKind};
+use crate::grid::{borders, SheetBorders};
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
@@ -182,13 +183,13 @@ impl Sheet {
         // TODO: spill (or have some other way to handle new code results)
     }
 
-    /// Sets or deletes horizontal borders in a region.
-    pub fn set_horizontal_border(&mut self, region: Rect, value: CellBorder) {
-        self.borders.set_horizontal_border(region, value);
-    }
-    /// Sets or deletes vertical borders in a region.
-    pub fn set_vertical_border(&mut self, region: Rect, value: CellBorder) {
-        self.borders.set_vertical_border(region, value);
+    /// Sets or deletes borders in a region.
+    pub fn set_region_borders(
+        &mut self,
+        region: &RegionRef,
+        sheet_borders: SheetBorders
+    ) -> SheetBorders {
+        borders::set_region_borders(self, vec![region.clone()], sheet_borders)
     }
 
     /// Returns the value of a cell (i.e., what would be returned if code asked
@@ -418,6 +419,37 @@ impl Sheet {
         let y_ranges = self.row_ranges(&region.rows);
         itertools::iproduct!(x_ranges, y_ranges).map(|(xs, ys)| Rect::from_ranges(xs, ys))
     }
+    /// Returns a region of the sheet, assigning IDs to columns and rows as needed.
+    pub fn region(&mut self, rect: Rect) -> RegionRef {
+        let columns = rect
+            .x_range()
+            .map(|x| self.get_or_create_column(x).0.id)
+            .collect();
+        let rows = rect
+            .y_range()
+            .map(|y| self.get_or_create_row(y).id)
+            .collect();
+        RegionRef {
+            sheet: self.id,
+            columns,
+            rows,
+        }
+    }
+    /// Returns a region of the sheet, ignoring columns and rows which
+    /// have no contents and no IDs.
+    pub fn existing_region(&self, rect: Rect) -> RegionRef {
+        let columns = rect
+            .x_range()
+            .filter_map(|x| self.get_column(x))
+            .map(|col| col.id)
+            .collect();
+        let rows = rect.y_range().filter_map(|y| self.get_row(y)).collect();
+        RegionRef {
+            sheet: self.id,
+            columns,
+            rows,
+        }
+    }
 
     /// Deletes all data and formatting in the sheet, effectively recreating it.
     pub fn clear(&mut self) {
@@ -588,11 +620,13 @@ impl Sheet {
     }
     /// Returns data for rendering horizontal borders.
     pub fn get_render_horizontal_borders(&self) -> Vec<JsRenderBorder> {
-        self.borders.get_render_horizontal_borders()
+        // self.borders.get_render_horizontal_borders()
+        vec![]
     }
     /// Returns data for rendering vertical borders.
     pub fn get_render_vertical_borders(&self) -> Vec<JsRenderBorder> {
-        self.borders.get_render_vertical_borders()
+        // self.borders.get_render_vertical_borders()
+        vec![]
     }
 
     /// Returns an iterator over all locations containing code cells that may

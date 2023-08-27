@@ -114,9 +114,9 @@ pub struct JsBordersSchema {
     pub x: i64,
     pub y: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub horizontal: Option<CellBorder>,
+    pub horizontal: Option<LegacyCellBorder>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub vertical: Option<CellBorder>,
+    pub vertical: Option<LegacyCellBorder>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
