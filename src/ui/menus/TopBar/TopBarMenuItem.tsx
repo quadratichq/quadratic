@@ -16,7 +16,7 @@ export const TopBarMenuItem = forwardRef((props: Props, ref) => {
     color: theme.palette.text.primary,
     backgroundColor: theme.palette.action.hover,
   };
-  const activeIconStyle = { transform: 'translate(0, 1px)' };
+  const activeIconStyle = { transform: 'translateY(1px)' };
   return (
     <Tooltip ref={ref} arrow disableInteractive enterDelay={500} enterNextDelay={500} title={title} {...rest}>
       <ButtonBase

@@ -1,7 +1,7 @@
 import { KeyboardArrowDown } from '@mui/icons-material';
 import { IconButton, useTheme } from '@mui/material';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction } from 'react';
 import { useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { apiClient } from '../../../api/apiClient';
@@ -13,7 +13,6 @@ import { useFileContext } from '../../components/FileProvider';
 import { MenuLineItem } from './MenuLineItem';
 
 export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateAction<boolean>> }) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const { name, contents, downloadFile } = useFileContext();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
@@ -23,13 +22,6 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
   const { permission } = editorInteractionState;
 
   const isOwner = permission === 'OWNER';
-  const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
 
   if (permission === 'ANONYMOUS') {
     return null;
@@ -39,24 +31,38 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
 
   return (
     <Menu
-      menuButton={
+      menuButton={({ open }) => (
         <IconButton
           id="file-name-button"
           aria-controls={open ? 'basic-menu' : undefined}
           aria-haspopup="true"
           aria-expanded={open ? 'true' : undefined}
-          onClick={handleClick}
           size="small"
-          sx={{ marginLeft: theme.spacing(-0.5), fontSize: '1rem' }}
+          disableRipple
+          sx={{
+            marginLeft: theme.spacing(-0.5),
+            fontSize: '1rem',
+            ...(open
+              ? {
+                  backgroundColor: theme.palette.action.hover,
+                  '& svg': { transform: 'translateY(1px)' },
+                }
+              : {}),
+            '&:hover': {
+              backgroundColor: theme.palette.action.hover,
+            },
+            '&:hover svg': {
+              transform: 'translateY(1px)',
+            },
+          }}
         >
-          <KeyboardArrowDown fontSize="inherit" />
+          <KeyboardArrowDown fontSize="inherit" sx={{ transition: '.2s ease transform' }} />
         </IconButton>
-      }
+      )}
     >
       {isOwner && (
         <MenuItem
           onClick={() => {
-            handleClose();
             setIsRenaming(true);
           }}
         >
@@ -65,7 +71,6 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
       )}
       <MenuItem
         onClick={() => {
-          handleClose();
           // TODO this is async and needs to disable button or something
           let formData = new FormData();
           formData.append('name', name + ' (Copy)');
@@ -78,7 +83,6 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
       </MenuItem>
       <MenuItem
         onClick={() => {
-          handleClose();
           downloadFile();
         }}
       >
@@ -89,18 +93,14 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
           <MenuDivider />
           <MenuItem
             onClick={async () => {
-              handleClose();
-              // Give the UI a chance to update and close the menu before triggering alert
-              setTimeout(async () => {
-                if (window.confirm(`Please confirm you want to delete the file: “${name}”`)) {
-                  try {
-                    await apiClient.deleteFile(uuid);
-                    window.location.href = ROUTES.FILES;
-                  } catch (e) {
-                    addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
-                  }
+              if (window.confirm(`Please confirm you want to delete the file: “${name}”`)) {
+                try {
+                  await apiClient.deleteFile(uuid);
+                  window.location.href = ROUTES.FILES;
+                } catch (e) {
+                  addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
                 }
-              }, 200);
+              }
             }}
           >
             <MenuLineItem primary="Delete" />
