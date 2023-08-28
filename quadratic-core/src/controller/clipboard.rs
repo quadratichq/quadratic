@@ -1,4 +1,4 @@
-use super::GridController;
+use super::{transactions::TransactionSummary, GridController};
 use crate::{
     grid::{js_types::CellFormatSummary, CodeCellValue, SheetId},
     CellValue, Pos, Rect,
@@ -109,6 +109,17 @@ impl GridController {
         final_html.push_str(&String::from("\">"));
         final_html.push_str(&html);
         (plain_text, final_html)
+    }
+
+    pub fn cut_to_clipboard(
+        &mut self,
+        sheet_id: SheetId,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> (TransactionSummary, String, String) {
+        let copy = self.copy_to_clipboard(sheet_id, rect);
+        let summary = self.delete_cell_values(sheet_id, rect, cursor);
+        (summary, copy.0, copy.1)
     }
 }
 

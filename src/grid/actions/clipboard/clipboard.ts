@@ -4,10 +4,8 @@ import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 import { Coordinate } from '../../../gridGL/types/size';
 import { Border, Cell, CellFormat } from '../../../schemas';
 import { SheetController } from '../../controller/SheetController';
+import { transactionResponse } from '../../controller/transactionResponse';
 import { CellAndFormat } from '../../sheet/GridSparse';
-import { DeleteCells } from '../DeleteCells';
-import { clearBordersAction } from '../clearBordersAction';
-import { clearFormattingAction } from '../clearFormattingAction';
 import { updateCellAndDCells } from '../updateCellAndDCells';
 
 const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.2';
@@ -267,12 +265,7 @@ export const generateClipboardStrings = (sheet_controller: SheetController, cell
   };
 };
 
-export const copyToClipboard = async (sheetController: SheetController, cell0: Coordinate, cell1: Coordinate) => {
-  // write selected cells to clipboard
-  const { plainText, html } = sheetController.grid.copyToClipboard(
-    sheetController.sheet.id,
-    new Rectangle(cell0.x, cell0.y, cell1.x - cell0.x, cell1.y - cell0.y)
-  );
+const toClipboard = (plainText: string, html: string) => {
   // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
   if (navigator.clipboard && window.ClipboardItem) {
     // browser support clipboard api navigator.clipboard
@@ -296,6 +289,14 @@ export const copyToClipboard = async (sheetController: SheetController, cell0: C
   }
 };
 
+export const copyToClipboard = (sheetController: SheetController, cell0: Coordinate, cell1: Coordinate) => {
+  const { plainText, html } = sheetController.grid.copyToClipboard(
+    sheetController.sheet.id,
+    new Rectangle(cell0.x, cell0.y, cell1.x - cell0.x, cell1.y - cell0.y)
+  );
+  toClipboard(plainText, html);
+};
+
 export const copySelectionToPNG = async (app: PixiApp) => {
   const blob = await copyAsPNG(app);
   if (!blob) {
@@ -311,27 +312,13 @@ export const copySelectionToPNG = async (app: PixiApp) => {
   }
 };
 
-export const cutToClipboard = async (sheet_controller: SheetController, cell0: Coordinate, cell1: Coordinate) => {
-  // copy selected cells to clipboard
-  await copyToClipboard(sheet_controller, cell0, cell1);
-
-  sheet_controller.start_transaction();
-
-  // delete selected cells
-  await DeleteCells({
-    x0: cell0.x,
-    y0: cell0.y,
-    x1: cell1.x,
-    y1: cell1.y,
-    sheetController: sheet_controller,
-    create_transaction: false,
-  });
-
-  //  delete cell formats
-  clearFormattingAction({ sheet_controller, start: cell0, end: cell1, create_transaction: false });
-
-  // delete borders
-  clearBordersAction({ sheet_controller, start: cell0, end: cell1, create_transaction: false });
-
-  sheet_controller.end_transaction();
+export const cutToClipboard = async (sheetController: SheetController, cell0: Coordinate, cell1: Coordinate) => {
+  const { summary, plainText, html } = sheetController.grid.cutToClipboard(
+    sheetController.sheet.id,
+    new Rectangle(cell0.x, cell0.y, cell1.x - cell0.x, cell1.y - cell0.y),
+    sheetController.sheet.cursor.save()
+  );
+  toClipboard(plainText, html);
+  if (!summary) throw new Error('Expected summary to be defined in cutToClipboard');
+  transactionResponse(sheetController, summary);
 };

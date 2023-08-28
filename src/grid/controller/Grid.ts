@@ -315,7 +315,12 @@ export class Grid {
   //#region Clipboard
   copyToClipboard(sheetId: string, rectangle: Rectangle): JsClipboard {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.getClipboard(sheetId, rectangleToRect(rectangle));
+    return this.gridController.copyToClipboard(sheetId, rectangleToRect(rectangle));
+  }
+
+  cutToClipboard(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): JsClipboard {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.cutToClipboard(sheetId, rectangleToRect(rectangle), JSON.stringify(cursor));
   }
 
   //#endregion
