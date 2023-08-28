@@ -133,7 +133,7 @@ export const BottomBar = (props: Props) => {
         <SyncState />
 
         {showOnDesktop && <PythonState />}
-        {provideFeedback.permissions.includes(permission) && (
+        {provideFeedback.isAvailable(permission) && (
           <BottomBarItem
             icon={<ChatBubbleOutline fontSize="inherit" />}
             onClick={() => {

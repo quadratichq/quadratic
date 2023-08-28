@@ -5,7 +5,17 @@ import { useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useParams } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { createFile, downloadFile, provideFeedback } from '../../../../actions';
+import {
+  copy,
+  createNewFile,
+  cut,
+  downloadFile,
+  isViewerOrAbove,
+  paste,
+  provideFeedback,
+  redo,
+  undo,
+} from '../../../../actions';
 import { apiClient } from '../../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
@@ -68,14 +78,14 @@ export const QuadraticMenu = (props: Props) => {
           <MenuLineItem primary="Command palette" secondary={KeyboardSymbols.Command + 'P'} />
         </MenuItem>
         <MenuDivider />
-        {permission !== 'ANONYMOUS' && (
+        {isViewerOrAbove(permission) && (
           <SubMenu label={<MenuLineItem primary="File" />}>
-            {createFile.permissions.includes(permission) && (
+            {createNewFile.isAvailable(permission) && (
               <MenuItem href={ROUTES.CREATE_FILE} style={{ textDecoration: 'none' }}>
-                <MenuLineItem primary={createFile.label} />
+                <MenuLineItem primary={createNewFile.label} />
               </MenuItem>
             )}
-            {downloadFile.permissions.includes(permission) && (
+            {downloadFile.isAvailable(permission) && (
               <MenuItem
                 onClick={() => {
                   if (uuid) {
@@ -89,42 +99,53 @@ export const QuadraticMenu = (props: Props) => {
           </SubMenu>
         )}
         <SubMenu label={<MenuLineItem primary="Edit" />}>
-          <MenuItem
-            onClick={() => {
-              sheetController.undo();
-            }}
-          >
-            <MenuLineItem primary="Undo" secondary={KeyboardSymbols.Command + 'Z'} Icon={Undo}></MenuLineItem>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              sheetController.redo();
-            }}
-          >
-            <MenuLineItem
-              primary="Redo"
-              secondary={isMac ? KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z' : KeyboardSymbols.Command + 'Y'}
-              Icon={Redo}
-            ></MenuLineItem>
-          </MenuItem>
-          <MenuDivider />
-          <MenuItem
-            onClick={() => {
-              cutToClipboard(
-                sheetController,
-                {
-                  x: interactionState.multiCursorPosition.originPosition.x,
-                  y: interactionState.multiCursorPosition.originPosition.y,
-                },
-                {
-                  x: interactionState.multiCursorPosition.terminalPosition.x,
-                  y: interactionState.multiCursorPosition.terminalPosition.y,
-                }
-              );
-            }}
-          >
-            <MenuLineItem primary="Cut" secondary={KeyboardSymbols.Command + 'X'} Icon={ContentCut}></MenuLineItem>
-          </MenuItem>
+          {undo.isAvailable(permission) && (
+            <MenuItem
+              onClick={() => {
+                sheetController.undo();
+              }}
+            >
+              <MenuLineItem primary={undo.label} secondary={KeyboardSymbols.Command + 'Z'} Icon={Undo} />
+            </MenuItem>
+          )}
+          {redo.isAvailable(permission) && (
+            <>
+              <MenuItem
+                onClick={() => {
+                  sheetController.redo();
+                }}
+              >
+                <MenuLineItem
+                  primary={redo.label}
+                  secondary={
+                    isMac ? KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z' : KeyboardSymbols.Command + 'Y'
+                  }
+                  Icon={Redo}
+                />
+              </MenuItem>
+              <MenuDivider />
+            </>
+          )}
+
+          {cut.isAvailable(permission) && (
+            <MenuItem
+              onClick={() => {
+                cutToClipboard(
+                  sheetController,
+                  {
+                    x: interactionState.multiCursorPosition.originPosition.x,
+                    y: interactionState.multiCursorPosition.originPosition.y,
+                  },
+                  {
+                    x: interactionState.multiCursorPosition.terminalPosition.x,
+                    y: interactionState.multiCursorPosition.terminalPosition.y,
+                  }
+                );
+              }}
+            >
+              <MenuLineItem primary={cut.label} secondary={KeyboardSymbols.Command + 'X'} Icon={ContentCut} />
+            </MenuItem>
+          )}
           <MenuItem
             onClick={() => {
               copyToClipboard(
@@ -134,15 +155,17 @@ export const QuadraticMenu = (props: Props) => {
               );
             }}
           >
-            <MenuLineItem primary="Copy" secondary={KeyboardSymbols.Command + 'C'} Icon={ContentCopy}></MenuLineItem>
+            <MenuLineItem primary={copy.label} secondary={KeyboardSymbols.Command + 'C'} Icon={ContentCopy} />
           </MenuItem>
-          <MenuItem
-            onClick={() => {
-              pasteFromClipboard(props.sheetController, interactionState.cursorPosition);
-            }}
-          >
-            <MenuLineItem primary="Paste" secondary={KeyboardSymbols.Command + 'V'} Icon={ContentPaste}></MenuLineItem>
-          </MenuItem>
+          {paste.isAvailable(permission) && (
+            <MenuItem
+              onClick={() => {
+                pasteFromClipboard(props.sheetController, interactionState.cursorPosition);
+              }}
+            >
+              <MenuLineItem primary={paste.label} secondary={KeyboardSymbols.Command + 'V'} Icon={ContentPaste} />
+            </MenuItem>
+          )}
         </SubMenu>
         <SubMenu label={<MenuLineItem primary="View" />}>
           <MenuItem onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
@@ -177,7 +200,7 @@ export const QuadraticMenu = (props: Props) => {
           <MenuItem onClick={() => window.open(DOCUMENTATION_URL, '_blank')}>
             <MenuLineItem primary="Read the docs" />
           </MenuItem>
-          {provideFeedback.permissions.includes(permission) && (
+          {provideFeedback.isAvailable(permission) && (
             <MenuItem
               onClick={() =>
                 setEditorInteractionState((prevState) => ({

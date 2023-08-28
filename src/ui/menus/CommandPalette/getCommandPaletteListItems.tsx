@@ -1,4 +1,5 @@
 import fuzzysort from 'fuzzysort';
+import { GenericAction } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/sheetController';
@@ -16,7 +17,7 @@ import ViewListItems from './ListItems/View';
 interface Commands {
   label: string;
   Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
-  permissions?: Array<EditorInteractionState['permission']>;
+  isAvailable?: GenericAction['isAvailable'];
 }
 
 const commands: Array<Commands> = [
@@ -41,7 +42,7 @@ export const getCommandPaletteListItems = (props: {
 }): Array<JSX.Element> => {
   const { activeSearchValue, permission, ...rest } = props;
 
-  let filteredCommands = commands.filter(({ permissions }) => (permissions ? permissions.includes(permission) : true));
+  let filteredCommands = commands.filter((action) => (action.isAvailable ? action.isAvailable(permission) : true));
 
   // If there's no active search query, return everything
   if (!activeSearchValue) {

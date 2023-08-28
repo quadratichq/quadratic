@@ -1,6 +1,6 @@
 import { DeleteOutline, NoteAddOutlined } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { createFile } from '../../../../actions';
+import { createNewFile, duplicateFile } from '../../../../actions';
 import { apiClient } from '../../../../api/apiClient';
 import { ROUTES } from '../../../../constants/routes';
 import { SaveFileOutlined } from '../../../icons';
@@ -8,19 +8,18 @@ import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../Co
 
 const ListItems = [
   {
-    label: 'File: ' + createFile.label,
-    permissions: createFile.permissions,
+    label: 'File: ' + createNewFile.label,
+    isAvailable: createNewFile.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const navigate = useNavigate();
-      const action = () => navigate(ROUTES.CREATE_FILE);
+      const action = () => createNewFile.run({ navigate });
       return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={action} />;
     },
   },
   {
-    label: 'File: Duplicate',
-    permissions: ['OWNER', 'EDITOR', 'VIEWER'],
+    label: 'File: ' + duplicateFile.label,
+    isAvailable: duplicateFile.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
-      // TODO
       const navigate = useNavigate();
       const action = () => navigate(ROUTES.CREATE_FILE);
       return <CommandPaletteListItem {...props} icon={<NoteAddOutlined />} action={action} />;
@@ -28,7 +27,7 @@ const ListItems = [
   },
   {
     label: 'File: Download local copy',
-    permissions: ['OWNER', 'EDITOR', 'VIEWER'],
+    // permissions: ['OWNER', 'EDITOR', 'VIEWER'],
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { uuid } = useParams();
       const downloadCurrentFile = () => {
@@ -41,7 +40,7 @@ const ListItems = [
   },
   {
     label: 'File: Delete',
-    permissions: ['OWNER'],
+    // permissions: ['OWNER'],
     Component: (props: CommandPaletteListItemSharedProps) => {
       // TODO
       // const navigate = useNavigate();

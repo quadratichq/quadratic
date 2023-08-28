@@ -16,6 +16,7 @@ import monaco from 'monaco-editor';
 import { provideCompletionItems, provideHover } from 'quadratic-core';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { isEditorOrAbove } from '../../../actions';
 import {
   editorHighlightedCellsStateAtom,
   editorHighlightedCellsStateDefault,
@@ -60,7 +61,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
   const theme = useTheme();
   const isLoadingPython = !pythonLoaded && editorMode === 'PYTHON';
-  const readOnly = editorInteractionState.permission === 'VIEWER' || editorInteractionState.permission === 'ANONYMOUS';
+  const readOnly = !isEditorOrAbove(editorInteractionState.permission);
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);

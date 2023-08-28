@@ -1,6 +1,7 @@
 import { Avatar, AvatarGroup, Box, Button, useMediaQuery, useTheme } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
+import { isViewerOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../../constants/routes';
 import { SheetController } from '../../../grid/controller/sheetController';
@@ -131,19 +132,7 @@ export const TopBar = (props: IProps) => {
                 </AvatarGroup>
               </TooltipHint>
             )}
-            {permission === 'ANONYMOUS' ? (
-              <Button
-                replace
-                component={Link}
-                to={ROUTES.LOGIN}
-                variant="outlined"
-                size="small"
-                disableElevation
-                sx={{ alignSelf: 'center' }}
-              >
-                Log in
-              </Button>
-            ) : (
+            {isViewerOrAbove(permission) ? (
               <Button
                 variant="contained"
                 size="small"
@@ -154,6 +143,18 @@ export const TopBar = (props: IProps) => {
                 sx={{ alignSelf: 'center' }}
               >
                 Share
+              </Button>
+            ) : (
+              <Button
+                replace
+                component={Link}
+                to={ROUTES.LOGIN}
+                variant="outlined"
+                size="small"
+                disableElevation
+                sx={{ alignSelf: 'center' }}
+              >
+                Log in
               </Button>
             )}
           </>

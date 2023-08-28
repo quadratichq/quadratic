@@ -1,3 +1,4 @@
+import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
@@ -53,8 +54,8 @@ export function keyboardClipboard(props: {
     return true;
   }
 
-  // Don't allow commands past here if they don't have the permission
-  if (permission === 'ANONYMOUS' || permission === 'VIEWER') {
+  // Don't allow commands past here without permission
+  if (!isEditorOrAbove(permission)) {
     return false;
   }
 

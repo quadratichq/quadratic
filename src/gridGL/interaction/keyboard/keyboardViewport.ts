@@ -1,4 +1,5 @@
 import { Viewport } from 'pixi-viewport';
+import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { Sheet } from '../../../grid/sheet/Sheet';
@@ -107,9 +108,8 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  // All formatting options past here are only available for specific users
-  // So don't trigger anything past here unless
-  if (editorInteractionState.permission === 'ANONYMOUS' || editorInteractionState.permission === 'VIEWER') {
+  // All formatting options past here are only available for people with rights
+  if (!isEditorOrAbove(editorInteractionState.permission)) {
     return false;
   }
 

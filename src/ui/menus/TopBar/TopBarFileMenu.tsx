@@ -2,6 +2,7 @@ import { Box, Chip, InputBase, Stack, Typography, useMediaQuery, useTheme } from
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
+import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../../constants/routes';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -64,7 +65,7 @@ export const TopBarFileMenu = () => {
           <Stack direction="row" gap={theme.spacing(1)} alignItems="center">
             <Typography
               onClick={() => {
-                if (isNarrowScreen || permission === 'VIEWER' || permission === 'ANONYMOUS') {
+                if (isNarrowScreen || !isEditorOrAbove(permission)) {
                   return;
                 }
                 setIsRenaming(true);

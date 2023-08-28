@@ -16,6 +16,7 @@ import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
+import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
@@ -129,7 +130,7 @@ export const FloatingContextMenu = (props: Props) => {
     if (app.settings.presentationMode) visibility = 'hidden';
 
     // Hide if you don't have edit access
-    if (permission === 'VIEWER' || permission === 'ANONYMOUS') visibility = 'hidden';
+    if (!isEditorOrAbove(permission)) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheetController.sheet.gridOffsets.getCell(
@@ -171,7 +172,7 @@ export const FloatingContextMenu = (props: Props) => {
     } else menuDiv.current.style.pointerEvents = 'auto';
 
     return transform;
-  }, [app, viewport, container, sheetController.sheet.gridOffsets, interactionState, showContextMenu]);
+  }, [app, viewport, container, sheetController.sheet.gridOffsets, interactionState, showContextMenu, permission]);
 
   useEffect(() => {
     if (!viewport) return;

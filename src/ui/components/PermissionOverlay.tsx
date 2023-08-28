@@ -1,6 +1,8 @@
 import { Alert, Button, Paper, useTheme } from '@mui/material';
+import { Permission, permissionSchema } from '../../api/types';
+const { ANONYMOUS, VIEWER } = permissionSchema.enum;
 
-export function PermissionOverlay({ permission }: { permission: 'ANONYMOUS' | 'VIEWER' }) {
+export function PermissionOverlay({ permission }: { permission: Permission }) {
   const theme = useTheme();
 
   return (
@@ -16,7 +18,7 @@ export function PermissionOverlay({ permission }: { permission: 'ANONYMOUS' | 'V
       elevation={4}
     >
       {/* TODO refine positioning on the action buttons — they're off by default */}
-      {permission === 'ANONYMOUS' && (
+      {permission === ANONYMOUS && (
         <Alert
           variant="outlined"
           severity="info"
@@ -30,7 +32,7 @@ export function PermissionOverlay({ permission }: { permission: 'ANONYMOUS' | 'V
           <strong>Welcome to Quadratic.</strong> You must log in to edit this file.
         </Alert>
       )}
-      {permission === 'VIEWER' && (
+      {permission === VIEWER && (
         <Alert
           variant="outlined"
           severity="info"

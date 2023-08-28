@@ -4,11 +4,11 @@ import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { Dispatch, SetStateAction } from 'react';
 import { useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
+import { duplicateFile, isViewerOrAbove } from '../../../actions';
 import { apiClient } from '../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../../constants/routes';
-import { GridFileSchema } from '../../../schemas';
 import { useFileContext } from '../../components/FileProvider';
 import { MenuLineItem } from './MenuLineItem';
 
@@ -23,7 +23,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
 
   const isOwner = permission === 'OWNER';
 
-  if (permission === 'ANONYMOUS') {
+  if (!isViewerOrAbove(permission)) {
     return null;
   }
 
@@ -69,18 +69,11 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
           <MenuLineItem primary="Rename" />
         </MenuItem>
       )}
-      <MenuItem
-        onClick={() => {
-          // TODO this is async and needs to disable button or something
-          let formData = new FormData();
-          formData.append('name', name + ' (Copy)');
-          formData.append('contents', JSON.stringify(contents));
-          formData.append('version', GridFileSchema.shape.version.value);
-          submit(formData, { method: 'POST', action: ROUTES.CREATE_FILE });
-        }}
-      >
-        <MenuLineItem primary="Duplicate" />
-      </MenuItem>
+      {duplicateFile.isAvailable(permission) && (
+        <MenuItem onClick={() => duplicateFile.run({ contents, name, submit })}>
+          <MenuLineItem primary={duplicateFile.label} />
+        </MenuItem>
+      )}
       <MenuItem
         onClick={() => {
           downloadFile();
