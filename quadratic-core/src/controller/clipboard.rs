@@ -1,6 +1,6 @@
 use super::{transactions::TransactionSummary, GridController};
 use crate::{
-    grid::{js_types::CellFormatSummary, CodeCellValue, SheetId},
+    grid::{js_types::CellFormatSummary, CodeCellValue, Sheet, SheetId},
     CellValue, Pos, Rect,
 };
 use html_escape;
@@ -120,6 +120,28 @@ impl GridController {
         let copy = self.copy_to_clipboard(sheet_id, rect);
         let summary = self.delete_cell_values(sheet_id, rect, cursor);
         (summary, copy.0, copy.1)
+    }
+
+    fn paste_html(sheet: Sheet, pos: Pos, html: String) -> TransactionSummary {}
+
+    fn paste_plain_text(sheet: Sheet, pos: Pos, plain_text: String) -> TransactionSummary {}
+
+    pub fn paste_from_clipboard(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        plain_text: Option<String>,
+        html: Option<String>,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let sheet = self.grid().sheet_from_id(sheet_id);
+
+        if html.is_some() {
+            return self.paste_html(sheet, pos, html);
+        } else if plain_text.is_some() {
+            return self.paste_plain_text(sheet, pos, plain_text);
+        }
+        TransactionSummary::default()
     }
 }
 

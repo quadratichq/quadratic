@@ -249,3 +249,16 @@ pub struct TransactionSummary {
     /// Cursor location for undo/redo operation
     pub cursor: Option<String>,
 }
+
+impl TransactionSummary {
+    pub fn default() -> Self {
+        TransactionSummary {
+            cell_regions_modified: vec![],
+            fill_sheets_modified: vec![],
+            code_cells_modified: vec![],
+            border_sheets_modified: vec![],
+            cursor: None,
+            sheet_list_modified: false,
+        }
+    }
+}
