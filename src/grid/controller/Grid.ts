@@ -7,6 +7,7 @@ import {
   CellWrap,
   CodeCellValue,
   FormattingSummary,
+  JsClipboard,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -307,6 +308,14 @@ export class Grid {
   redo(cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     return this.gridController.redo(JSON.stringify(cursor));
+  }
+
+  //#endregion
+
+  //#region Clipboard
+  copyToClipboard(sheetId: string, rectangle: Rectangle): JsClipboard {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.getClipboard(sheetId, rectangleToRect(rectangle));
   }
 
   //#endregion

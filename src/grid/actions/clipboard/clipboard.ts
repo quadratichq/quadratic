@@ -10,7 +10,7 @@ import { clearBordersAction } from '../clearBordersAction';
 import { clearFormattingAction } from '../clearFormattingAction';
 import { updateCellAndDCells } from '../updateCellAndDCells';
 
-const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.1';
+const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.2';
 
 interface ClipboardData {
   cells: CellAndFormat[];
@@ -267,46 +267,25 @@ export const generateClipboardStrings = (sheet_controller: SheetController, cell
   };
 };
 
-// from https://stackoverflow.com/a/49124600
-function btoaFromCharCode(data: Uint8Array): string {
-  return btoa(data.reduce((data, byte) => data + String.fromCharCode(byte), ''));
-}
-
-export const copyToClipboard = async (sheet_controller: SheetController, cell0: Coordinate, cell1: Coordinate) => {
+export const copyToClipboard = async (sheetController: SheetController, cell0: Coordinate, cell1: Coordinate) => {
   // write selected cells to clipboard
-  const { plainTextClipboardString, htmlClipboardString, quadraticClipboardString } = generateClipboardStrings(
-    sheet_controller,
-    cell0,
-    cell1
+  const { plainText, html } = sheetController.grid.copyToClipboard(
+    sheetController.sheet.id,
+    new Rectangle(cell0.x, cell0.y, cell1.x - cell0.x, cell1.y - cell0.y)
   );
-
-  const encoder = new TextEncoder();
-  const quadraticData = encoder.encode(
-    JSON.stringify({
-      type: CLIPBOARD_FORMAT_VERSION,
-      data: quadraticClipboardString,
-      cell0,
-      cell1,
-    })
-  );
-  const quadraticString = btoaFromCharCode(quadraticData);
-  const clipboardHTMLString = `<span data-metadata="<--(quadratic)${quadraticString}(/quadratic)-->"></span>${htmlClipboardString}`;
-
   // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
   if (navigator.clipboard && window.ClipboardItem) {
-    // browser support clipboard apinavigator.clipboard
+    // browser support clipboard api navigator.clipboard
     navigator.clipboard.write([
       new ClipboardItem({
-        //@ts-ignore
-        'text/html': new Blob([clipboardHTMLString], { type: 'text/html' }),
-        //@ts-ignore
-        'text/plain': new Blob([plainTextClipboardString], { type: 'text/plain' }),
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([plainText], { type: 'text/plain' }),
       }),
     ]);
   } else {
     // fallback to textarea
     const textarea = document.createElement('textarea');
-    textarea.value = plainTextClipboardString;
+    textarea.value = plainText;
     textarea.style.position = 'fixed';
     textarea.style.opacity = '0';
     document.body.appendChild(textarea);
