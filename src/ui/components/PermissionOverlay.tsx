@@ -36,7 +36,7 @@ export function PermissionOverlay({ permission }: { permission: 'ANONYMOUS' | 'V
           severity="info"
           sx={{ width: '100%' }}
           action={
-            <Button variant="contained" size="small" disableElevation>
+            <Button variant="outlined" size="small" disableElevation>
               Duplicate
             </Button>
           }
