@@ -108,3 +108,11 @@ pub enum JsRenderCodeCellState {
     SpillError,
     Success,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct JsClipboard {
+    pub plain_text: String,
+    pub html: String,
+}

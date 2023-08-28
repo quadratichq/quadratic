@@ -193,6 +193,23 @@ impl Sheet {
         self.code_cells.get(&self.try_get_cell_ref(pos)?)
     }
 
+    pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
+        let column = self.get_column(pos.x);
+        if column.is_none() {
+            return None;
+        }
+        let block = column.unwrap().spills.get(pos.y);
+        if block.is_none() {
+            return None;
+        }
+        let code_cell_pos = self.cell_ref_to_pos(block.unwrap())?;
+        let code_cell = self.code_cells.get(&block.unwrap())?;
+        code_cell.get_output_value(
+            (pos.x - code_cell_pos.x) as u32,
+            (pos.y - code_cell_pos.y) as u32,
+        )
+    }
+
     /// Returns a summary of formatting in a region.
     pub fn get_formatting_summary(&self, region: Rect) -> FormattingSummary {
         let mut bold = BoolSummary::default();
@@ -225,6 +242,22 @@ impl Sheet {
                 bold: column.bold.get(pos.y),
                 italic: column.italic.get(pos.y),
             },
+        }
+    }
+
+    pub fn get_existing_cell_format(&self, pos: Pos) -> Option<CellFormatSummary> {
+        match self.columns.get(&pos.x) {
+            Some(column) => {
+                let bold = column.bold.get(pos.y);
+                let italic = column.italic.get(pos.y);
+
+                if bold.is_some() || italic.is_some() {
+                    Some(CellFormatSummary { bold, italic })
+                } else {
+                    None
+                }
+            }
+            None => None,
         }
     }
 
@@ -570,6 +603,7 @@ impl Sheet {
             })
             .collect()
     }
+
     /// Returns all data for rendering cell fill color.
     pub fn get_all_render_fills(&self) -> Vec<JsRenderFill> {
         let mut ret = vec![];

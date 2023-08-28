@@ -52,6 +52,7 @@ fn main() {
         grid::js_types::CellFormatSummary,
         grid::js_types::JsRenderCodeCell,
         grid::js_types::JsRenderCodeCellState,
+        grid::js_types::JsClipboard,
         // values
         ArraySize,
         Axis,

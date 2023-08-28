@@ -2,6 +2,8 @@ use super::*;
 use crate::{controller::transactions::TransactionSummary, grid::js_types::*};
 use std::str::FromStr;
 
+pub mod clipboard;
+
 #[wasm_bindgen]
 impl GridController {
     /// Imports a [`GridController`] from a file (that fits the schema defined in JS).

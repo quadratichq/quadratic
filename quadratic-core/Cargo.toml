@@ -42,6 +42,7 @@ strum = "0.24.1"
 strum_macros = "0.24.3"
 pollster = "0.2.5"
 uuid = { version = "1.4.0", features = ["v4", "serde"] }
+html-escape = "0.2.13"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
