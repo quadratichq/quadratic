@@ -53,6 +53,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
         ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
       }}
     >
+      {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
       {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
       {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
       {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
@@ -81,7 +82,6 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {!isEditorOrAbove(editorInteractionState.permission) && (
         <PermissionOverlay permission={editorInteractionState.permission} />
       )}
-      {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
     </div>
   );
 }
