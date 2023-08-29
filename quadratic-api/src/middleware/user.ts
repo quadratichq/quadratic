@@ -1,5 +1,4 @@
 import { NextFunction, Response } from 'express';
-import { getAuth0User } from '../auth0/profile';
 import dbClient from '../dbClient';
 import { Request } from '../types/Request';
 
@@ -16,24 +15,6 @@ const getOrCreateUser = async (auth0_id: string) => {
     user = await dbClient.user.create({
       data: {
         auth0_id,
-      },
-    });
-  }
-
-  // update Auth0 data if it's been more than 24 hours
-  if (
-    user.auth0_data_last_updated === null ||
-    user.auth0_data_last_updated.getTime() < Date.now() - 24 * 60 * 60 * 1000
-  ) {
-    const auth0User = await getAuth0User(auth0_id);
-
-    return dbClient.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        auth0_data: auth0User as any,
-        auth0_data_last_updated: new Date(),
       },
     });
   }

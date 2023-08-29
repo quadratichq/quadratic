@@ -31,15 +31,9 @@ export const getUserProfile = async (id: number) => {
 
   const auth0_user = await getAuth0User(user.auth0_id);
 
-  const name = user.name ?? auth0_user.name ?? undefined;
-  const picture = user.picture ?? auth0_user.picture ?? undefined;
-
-  console.log('name', name);
-  console.log('picture', picture);
-
   return {
-    name,
-    picture,
+    name: auth0_user.name,
+    picture: auth0_user.picture,
     email: auth0_user.email,
   };
 };

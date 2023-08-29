@@ -8,15 +8,10 @@ datasource db {
 }
 
 model User {
-    id                      Int         @id @default(autoincrement())
-    auth0_id                String      @unique
-    email                   String?     @unique
-    name                    String?
-    picture                 String?
-    auth0_data              Json?
-    auth0_data_last_updated DateTime?
-    files                   File[]
-    QFeedback               QFeedback[]
+    id        Int         @id @default(autoincrement())
+    auth0_id  String      @unique
+    files     File[]
+    QFeedback QFeedback[]
 }
 
 enum LinkPermission {
