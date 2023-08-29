@@ -1,7 +1,14 @@
 import { NavigateFunction, SubmitFunction } from 'react-router-dom';
+import { SetterOrUpdater } from 'recoil';
+import { apiClient } from './api/apiClient';
 import { Permission, permissionSchema } from './api/types';
+import { EditorInteractionState } from './atoms/editorInteractionStateAtom';
+import { GlobalSnackbar } from './components/GlobalSnackbarProvider';
 import { ROUTES } from './constants/routes';
+import { DOCUMENTATION_URL } from './constants/urls';
+import { downloadFileInBrowser } from './helpers/downloadFileInBrowser';
 import { GridFile, GridFileSchema } from './schemas';
+import { FileContextType } from './ui/components/FileProvider';
 const { OWNER, EDITOR, VIEWER } = permissionSchema.enum;
 
 export type GenericAction = {
@@ -71,16 +78,40 @@ export const duplicateFile = {
 export const downloadFile = {
   label: 'Download local copy',
   isAvailable: isViewerOrAbove,
+  run({ name, contents }: { name: FileContextType['name']; contents: FileContextType['contents'] }) {
+    downloadFileInBrowser(name, JSON.stringify(contents));
+  },
 };
 
 export const deleteFile = {
   label: 'Delete',
   isAvailable: isOwner,
+  // TODO enhancement: handle this async operation in the UI similar to /files/create
+  async run({ uuid, addGlobalSnackbar }: { uuid: string; addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] }) {
+    if (window.confirm('Please confirm you want to delete this file.')) {
+      try {
+        await apiClient.deleteFile(uuid);
+        window.location.href = ROUTES.FILES;
+      } catch (e) {
+        addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
+      }
+    }
+  },
 };
 
 export const provideFeedback = {
   label: 'Feedback',
   isAvailable: isViewerOrAbove,
+  run({ setEditorInteractionState }: { setEditorInteractionState: SetterOrUpdater<EditorInteractionState> }) {
+    setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
+  },
+};
+
+export const viewDocs = {
+  label: 'Docs',
+  run() {
+    window.open(DOCUMENTATION_URL, '_blank')?.focus();
+  },
 };
 
 export const cut = {

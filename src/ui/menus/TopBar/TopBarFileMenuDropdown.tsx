@@ -4,30 +4,24 @@ import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { Dispatch, SetStateAction } from 'react';
 import { useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { duplicateFile, isViewerOrAbove } from '../../../actions';
-import { apiClient } from '../../../api/apiClient';
+import { deleteFile, downloadFile, duplicateFile, isViewerOrAbove, renameFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
-import { ROUTES } from '../../../constants/routes';
 import { useFileContext } from '../../components/FileProvider';
 import { MenuLineItem } from './MenuLineItem';
 
 export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateAction<boolean>> }) {
   const theme = useTheme();
-  const { name, contents, downloadFile } = useFileContext();
+  const { name, contents } = useFileContext();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { uuid } = useParams() as { uuid: string };
   const submit = useSubmit();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { permission } = editorInteractionState;
 
-  const isOwner = permission === 'OWNER';
-
   if (!isViewerOrAbove(permission)) {
     return null;
   }
-
-  // TODO only duplicate and download should show up for people without edit access
 
   return (
     <Menu
@@ -60,13 +54,13 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
         </IconButton>
       )}
     >
-      {isOwner && (
+      {renameFile.isAvailable(permission) && (
         <MenuItem
           onClick={() => {
             setIsRenaming(true);
           }}
         >
-          <MenuLineItem primary="Rename" />
+          <MenuLineItem primary={renameFile.label} />
         </MenuItem>
       )}
       {duplicateFile.isAvailable(permission) && (
@@ -74,29 +68,24 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
           <MenuLineItem primary={duplicateFile.label} />
         </MenuItem>
       )}
-      <MenuItem
-        onClick={() => {
-          downloadFile();
-        }}
-      >
-        <MenuLineItem primary="Download local copy" />
-      </MenuItem>
-      {isOwner && (
+      {downloadFile.isAvailable(permission) && (
+        <MenuItem
+          onClick={() => {
+            downloadFile.run({ name, contents });
+          }}
+        >
+          <MenuLineItem primary={downloadFile.label} />
+        </MenuItem>
+      )}
+      {deleteFile.isAvailable(permission) && (
         <>
           <MenuDivider />
           <MenuItem
             onClick={async () => {
-              if (window.confirm(`Please confirm you want to delete the file: “${name}”`)) {
-                try {
-                  await apiClient.deleteFile(uuid);
-                  window.location.href = ROUTES.FILES;
-                } catch (e) {
-                  addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
-                }
-              }
+              deleteFile.run({ uuid, addGlobalSnackbar });
             }}
           >
-            <MenuLineItem primary="Delete" />
+            <MenuLineItem primary={deleteFile.label} />
           </MenuItem>
         </>
       )}

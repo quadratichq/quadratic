@@ -140,7 +140,7 @@ export const BottomBar = (props: Props) => {
               setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
             }}
           >
-            Feedback
+            {provideFeedback.label}
           </BottomBarItem>
         )}
         <BottomBarItem icon={<Commit fontSize="inherit" />}>
