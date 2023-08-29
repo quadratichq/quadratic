@@ -5,6 +5,8 @@ use proptest::prelude::*;
 use super::*;
 use crate::IsBlank;
 
+pub mod order;
+
 #[test]
 fn test_airports() {
     let grid = Grid::from_legacy(
@@ -76,7 +78,11 @@ fn test_read_write() {
         min: Pos::ORIGIN,
         max: Pos { x: 49, y: 49 },
     };
-    let mut sheet = Sheet::new(SheetId::new(), "name".to_string());
+    let mut sheet = Sheet::new(
+        SheetId::new(),
+        "name".to_string(),
+        key_between(&None, &None).unwrap(),
+    );
     sheet.with_random_floats(&region);
     assert_eq!(GridBounds::NonEmpty(region), sheet.bounds(true));
     assert_eq!(GridBounds::NonEmpty(region), sheet.bounds(false));
@@ -90,7 +96,11 @@ proptest! {
 }
 
 fn proptest_sheet_writes_internal(writes: Vec<(Pos, CellValue)>) {
-    let mut sheet = Sheet::new(SheetId::new(), "TestSheet".to_string());
+    let mut sheet = Sheet::new(
+        SheetId::new(),
+        "TestSheet".to_string(),
+        key_between(&None, &None).unwrap(),
+    );
 
     // We'll be testing against the  ~ HASHMAP OF TRUTH ~
     let mut hashmap_of_truth = HashMap::new();

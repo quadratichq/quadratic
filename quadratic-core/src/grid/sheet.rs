@@ -24,6 +24,7 @@ pub struct Sheet {
     pub id: SheetId,
     pub name: String,
     pub color: Option<String>,
+    pub order: String,
 
     column_ids: IdMap<ColumnId, i64>,
     row_ids: IdMap<RowId, i64>,
@@ -44,11 +45,12 @@ pub struct Sheet {
 }
 impl Sheet {
     /// Constructs a new empty sheet.
-    pub fn new(id: SheetId, name: String) -> Self {
+    pub fn new(id: SheetId, name: String, order: String) -> Self {
         Sheet {
             id,
             name,
             color: None,
+            order,
 
             column_ids: IdMap::new(),
             row_ids: IdMap::new(),

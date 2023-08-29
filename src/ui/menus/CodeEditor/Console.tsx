@@ -1,4 +1,3 @@
-import { useAuth0 } from '@auth0/auth0-react';
 import { Box, Chip, Tab, Tabs } from '@mui/material';
 import { useTheme } from '@mui/system';
 import { stripIndent } from 'common-tags';
@@ -6,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
+import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import { CodeSnippet } from '../../components/CodeSnippet';
 import { LinkNewTab } from '../../components/LinkNewTab';
@@ -23,7 +23,7 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
-  const { isAuthenticated } = useAuth0();
+  const { isAuthenticated } = useRootRouteLoaderData();
   const theme = useTheme();
 
   // Whenever we change to a different cell, reset the active tab to the 1st

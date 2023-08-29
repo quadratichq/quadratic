@@ -1,13 +1,12 @@
-import express from 'express';
 import axios from 'axios';
+import express from 'express';
 import { z } from 'zod';
-import { Request as JWTRequest } from 'express-jwt';
-import { PrismaClient } from '@prisma/client';
+import dbClient from '../dbClient';
 import { validateAccessToken } from '../middleware/auth';
-import { get_user } from '../helpers/get_user';
+import { userMiddleware } from '../middleware/user';
+import { Request } from '../types/Request';
 
 const files_router = express.Router();
-const prisma = new PrismaClient();
 
 const RequestBodySchema = z.object({
   feedback: z.string(),
@@ -15,15 +14,18 @@ const RequestBodySchema = z.object({
 });
 type RequestBody = z.infer<typeof RequestBodySchema>;
 
-files_router.post('/', validateAccessToken, async (request: JWTRequest, response) => {
-  const { feedback, userEmail }: RequestBody = RequestBodySchema.parse(request.body);
-  const user = await get_user(request);
+files_router.post('/', validateAccessToken, userMiddleware, async (req: Request, res) => {
+  const { feedback, userEmail }: RequestBody = RequestBodySchema.parse(req.body);
+
+  if (!req.user) {
+    return res.status(500).json({ error: { message: 'Internal server error' } });
+  }
 
   // Add to DB
-  await prisma.qFeedback.create({
+  await dbClient.qFeedback.create({
     data: {
       feedback,
-      qUserId: user.id,
+      userId: req.user.id,
       created_date: new Date(),
     },
   });
@@ -34,7 +36,7 @@ files_router.post('/', validateAccessToken, async (request: JWTRequest, response
     const payload = {
       text: [
         `📣 ${process.env.NODE_ENV === 'production' ? '' : '[STAGING]'} New product feedback`,
-        `*From:* ${userEmail ? userEmail : `[no email]`} (${user.auth0_user_id})`,
+        `*From:* ${userEmail ? userEmail : `[no email]`} (${req.user.auth0_id})`,
         '*Message*:',
         feedback,
       ].join('\n\n'),
@@ -44,7 +46,7 @@ files_router.post('/', validateAccessToken, async (request: JWTRequest, response
     });
   }
 
-  response.status(200).end();
+  res.status(200).json({ message: 'Feedback submitted' });
 });
 
 export default files_router;

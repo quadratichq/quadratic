@@ -1,5 +1,4 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
-import { deleteSheet } from '../../../grid/actions/sheetsAction';
 import { SheetController } from '../../../grid/controller/SheetController';
 
 interface Props {
@@ -25,7 +24,7 @@ export const ConfirmDeleteSheet = (props: Props): JSX.Element => {
           color="warning"
           onClick={() => {
             if (confirmDelete) {
-              deleteSheet({ sheetController, sheet: sheetController.sheet, create_transaction: true });
+              sheetController.sheets.deleteSheet(sheetController.sheet.id);
             }
             handleClose();
           }}

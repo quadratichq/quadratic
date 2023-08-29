@@ -4,18 +4,8 @@ use super::*;
 impl GridController {
     /// Adds an empty sheet to the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "addSheet")]
-    pub fn js_add_sheet(
-        &mut self,
-        to_before: Option<String>,
-        cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let to_before = match to_before {
-            Some(to_before) => Some(SheetId::from_str(&to_before).unwrap()),
-            None => None,
-        };
-        Ok(serde_wasm_bindgen::to_value(
-            &self.add_sheet(to_before, cursor),
-        )?)
+    pub fn js_add_sheet(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.add_sheet(cursor))?)
     }
     /// Gets a list of ordered sheet ids
     #[wasm_bindgen(js_name = "getSheetIds")]
@@ -66,6 +56,13 @@ impl GridController {
         )?)
     }
 
+    /// Returns the order string for a sheet.
+    #[wasm_bindgen(js_name = "getSheetOrder")]
+    pub fn js_sheet_order(&self, sheet_id: String) -> String {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let sheet = self.grid().sheet_from_id(sheet_id);
+        sheet.order.clone()
+    }
     /// Returns the ID of the sheet at the given index.
     #[wasm_bindgen(js_name = "sheetIdToIndex")]
     pub fn js_sheet_id_to_index(&self, id: String) -> Option<usize> {

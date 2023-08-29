@@ -5,7 +5,6 @@ import { MouseEvent, PointerEvent, useCallback, useEffect, useRef, useState } fr
 import { SheetController } from '../../../grid/controller/SheetController';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { useLocalFiles } from '../../contexts/LocalFiles';
 
 interface Props {
   sheet: Sheet;
@@ -20,7 +19,7 @@ interface Props {
 
 export const SheetBarTab = (props: Props): JSX.Element => {
   const { sheet, order, sheetController, active, onPointerDown, onContextMenu, forceRename, clearRename } = props;
-  const localFiles = useLocalFiles();
+  // const localFiles = useFileContext();
   const [nameExists, setNameExists] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
 
@@ -70,7 +69,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
                   setNameExists(false);
                   setIsRenaming(false);
                   sheetController.sheet.name = input.value;
-                  localFiles.save();
+                  // localFiles.save();
                 }
               }
               focusGrid();
@@ -90,7 +89,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
               if (input.value !== sheet.name) {
                 if (!sheetController.sheets.nameExists(input.value)) {
                   sheetController.sheet.name = input.value;
-                  localFiles.save();
+                  // localFiles.save();
                 } else {
                   setNameExists(true);
                   setTimeout(() => setNameExists(false), 1500);

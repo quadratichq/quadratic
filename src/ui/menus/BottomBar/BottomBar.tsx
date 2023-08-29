@@ -1,20 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { ChatBubbleOutline, Check, ErrorOutline } from '@mui/icons-material';
-import { CircularProgress, Tooltip } from '@mui/material';
-import { Box } from '@mui/system';
+import { ChatBubbleOutline, Commit } from '@mui/icons-material';
+import { Stack, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { isMobileOnly } from 'react-device-detect';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { JsRenderCell } from '../../../quadratic-core/types';
 import { colors } from '../../../theme/colors';
-import { ActiveSelectionStats } from './ActiveSelectionStats';
-
-const stylesAlignCenter = { display: 'flex', alignItems: 'center', gap: '.25rem' };
+import BottomBarItem from './BottomBarItem';
+import PythonState from './PythonState';
+import SyncState from './SyncState';
 
 interface Props {
   sheetController: SheetController;
@@ -22,35 +19,26 @@ interface Props {
 
 export const BottomBar = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const loadedState = useRecoilValue(loadedStateAtom);
-  const [selectedCell, setSelectedCell] = useState<JsRenderCell | undefined>();
+  const theme = useTheme();
 
-  const cursor = props.sheetController.sheet.cursor;
-  // Generate string describing cursor location
-  const cursorPositionString = `(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`;
-  const multiCursorPositionString = cursor.multiCursor
-    ? `(${cursor.multiCursor.originPosition.x}, ${cursor.multiCursor.originPosition.y}), (${cursor.multiCursor.terminalPosition.x}, ${cursor.multiCursor.terminalPosition.y})`
-    : '';
-
-  // todo
+  const [cursorPositionString, setCursorPositionString] = useState('');
+  const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
   useEffect(() => {
-    // const updateCellData = async () => {
-    //   // Don't update if we have not moved cursor position
-    //   if (Number(selectedCell?.x) === cursor.cursorPosition.x && Number(selectedCell?.y) === cursor.cursorPosition.y)
-    //     return;
-    //   console.log(cursor.cursorPosition, selectedCell);
-    //   // Get cell at position
-    //   const cell = props.sheetController.sheet.getRenderCell(cursor.cursorPosition.x, cursor.cursorPosition.y);
-    //   // If cell exists set selectedCell
-    //   // Otherwise set to undefined
-    //   if (cell) {
-    //     setSelectedCell(cell);
-    //   } else {
-    //     setSelectedCell(undefined);
-    //   }
-    // };
-    // updateCellData();
-  }, [selectedCell, cursor.cursorPosition.x, cursor.cursorPosition.y, props.sheetController.sheet]);
+    const updateCursor = () => {
+      const cursor = props.sheetController.sheet.cursor;
+      setCursorPositionString(`(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`);
+      if (cursor.multiCursor) {
+        setMultiCursorPositionString(
+          `(${cursor.multiCursor.originPosition.x}, ${cursor.multiCursor.originPosition.y}), (${cursor.multiCursor.terminalPosition.x}, ${cursor.multiCursor.terminalPosition.y})`
+        );
+      } else {
+        setMultiCursorPositionString('');
+      }
+    };
+    updateCursor();
+    window.addEventListener('cursor-position', updateCursor);
+    return () => window.removeEventListener('cursor-position', updateCursor);
+  }, [props.sheetController.sheet]);
 
   const handleShowGoToMenu = () => {
     setEditorInteractionState({
@@ -61,6 +49,8 @@ export const BottomBar = (props: Props) => {
     // Set focus back to Grid
     focusGrid();
   };
+
+  const showOnDesktop = !isMobileOnly;
 
   return (
     <div
@@ -74,102 +64,78 @@ export const BottomBar = (props: Props) => {
         color: colors.darkGray,
         bottom: 0,
         width: '100%',
-        height: '1.5rem',
         backdropFilter: 'blur(1px)',
         display: 'flex',
         justifyContent: 'space-between',
-        paddingLeft: '1rem',
-        paddingRight: '1rem',
-        fontFamily: 'sans-serif',
-        fontSize: '0.7rem',
+        paddingLeft: theme.spacing(1),
+        paddingRight: theme.spacing(1),
         userSelect: 'none',
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-        }}
-      >
-        <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
-          Cursor: {cursorPositionString}
-        </span>
-        {cursor.multiCursor && (
-          <span style={{ cursor: 'pointer' }} onClick={handleShowGoToMenu}>
-            Selection: {multiCursorPositionString}
-          </span>
-        )}
-        {/* {selectedCell?.last_modified && (
-          <span>You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}</span>
-        )} */}
-        {debugShowFPS && (
-          <span
-            className="debug-show-renderer"
-            style={{
-              width: '0.7rem',
-              height: '0.7rem',
-              borderRadius: '50%',
-            }}
-          >
-            &nbsp;
-          </span>
-        )}
-        {debugShowFPS && (
-          <span>
-            <span className="debug-show-FPS">--</span> FPS
-          </span>
-        )}
-        {debugShowCacheFlag && <span className="debug-show-cache-on" />}
-        {debugShowCacheCount && <span className="debug-show-cache-count" />}
-      </Box>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-        }}
-      >
-        <ActiveSelectionStats sheet={props.sheetController.sheet}></ActiveSelectionStats>
-        {!isMobileOnly && (
+      <Stack direction="row">
+        {showOnDesktop && (
           <>
-            <span style={stylesAlignCenter}>
-              {loadedState.pythonLoaded === 'error' ? (
-                <Tooltip title="Error loading Python. Please refresh your browser.">
-                  <ErrorOutline style={{ color: 'red' }} fontSize="inherit" />
-                </Tooltip>
-              ) : loadedState.pythonLoaded ? (
-                <Check fontSize="inherit" />
-              ) : (
-                <CircularProgress size="0.5rem" />
-              )}{' '}
-              Python 3.9.5
-            </span>
+            <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>
+            {multiCursorPositionString && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
+
+            {/* {selectedCell?.last_modified && (
+              <BottomBarItem>
+                You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}
+              </BottomBarItem>
+            )} */}
           </>
         )}
-        <span style={stylesAlignCenter}>
-          <Check fontSize="inherit" /> Quadratic {process.env.REACT_APP_VERSION}
-        </span>
-        <span
-          style={{ ...stylesAlignCenter, cursor: 'pointer' }}
+        {(debugShowFPS || true) && (
+          <BottomBarItem>
+            <div
+              className="debug-show-renderer"
+              style={{
+                width: '0.7rem',
+                height: '0.7rem',
+                borderRadius: '50%',
+              }}
+            >
+              &nbsp;
+            </div>
+          </BottomBarItem>
+        )}
+        {debugShowFPS && (
+          <BottomBarItem>
+            <span className="debug-show-FPS">--</span> FPS
+          </BottomBarItem>
+        )}
+        {debugShowCacheFlag && (
+          <BottomBarItem>
+            <span className="debug-show-cache-on" />
+          </BottomBarItem>
+        )}
+        {debugShowCacheCount && (
+          <BottomBarItem>
+            <span className="debug-show-cache-count" />
+          </BottomBarItem>
+        )}
+      </Stack>
+      <Stack direction="row">
+        {/*
+
+          todo: when runFormula works again...
+
+        <ActiveSelectionStats sheetController={props.sheetController}></ActiveSelectionStats> */}
+        <SyncState />
+
+        {showOnDesktop && <PythonState />}
+        <BottomBarItem
+          icon={<ChatBubbleOutline fontSize="inherit" />}
           onClick={() => {
             setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
           }}
         >
-          <ChatBubbleOutline fontSize="inherit" />
           Feedback
-        </span>
-        <span
-          style={{
-            color: '#ffffff',
-            backgroundColor: colors.quadraticSecondary,
-            padding: '2px 5px 2px 5px',
-            borderRadius: '2px',
-          }}
-        >
-          BETA
-        </span>
-      </Box>
+        </BottomBarItem>
+        <BottomBarItem icon={<Commit fontSize="inherit" />}>
+          Quadratic {process.env.REACT_APP_VERSION?.slice(0, 7)} (BETA)
+        </BottomBarItem>
+      </Stack>
     </div>
   );
 };

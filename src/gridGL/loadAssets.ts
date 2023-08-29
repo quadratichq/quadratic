@@ -1,42 +1,48 @@
 import FontFaceObserver from 'fontfaceobserver';
-import { Loader } from 'pixi.js';
+import { BitmapFont, Loader } from 'pixi.js';
 import { createBorderTypes } from './dashedTextures';
 
-const TOTAL = 5;
+const intervalToCheckBitmapFonts = 100;
+const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
-let count = 0;
-
-function complete(resolve: Function) {
-  count++;
-  if (count === TOTAL) {
-    resolve();
-  }
+function loadFont(fontName: string): void {
+  const font = new FontFaceObserver(fontName);
+  font.load();
 }
 
-function loadFont(resolve: Function, fontName: string): void {
-  const font = new FontFaceObserver(fontName);
-  font.load(null, 100000).then(() => complete(resolve));
+export function ensureBitmapFontLoaded(resolve: () => void): void {
+  const waitForLoad = () => {
+    if (bitmapFonts.find((font) => !BitmapFont.available[font])) {
+      setTimeout(waitForLoad, intervalToCheckBitmapFonts);
+    } else {
+      resolve();
+    }
+  };
+
+  waitForLoad();
 }
 
 export function loadAssets(): Promise<void> {
   return new Promise((resolve) => {
-    // Fonts for PIXI.Text
-    loadFont(resolve, 'OpenSans');
-    loadFont(resolve, 'OpenSans-Bold');
-    loadFont(resolve, 'OpenSans-Italic');
-    loadFont(resolve, 'OpenSans-BoldItalic');
+    createBorderTypes();
 
-    // CellsLabel
-    Loader.shared.add('OpenSans', 'fonts/opensans/OpenSans.fnt');
-    Loader.shared.add('OpenSans-Bold', 'fonts/opensans/OpenSans-Bold.fnt');
-    Loader.shared.add('OpenSans-Italic', 'fonts/opensans/OpenSans-Italic.fnt');
-    Loader.shared.add('OpenSans-BoldItalic', 'fonts/opensans/OpenSans-BoldItalic.fnt');
+    // Load HTML fonts for Input
+    loadFont('OpenSans');
+    loadFont('OpenSans-Bold');
+    loadFont('OpenSans-Italic');
+    loadFont('OpenSans-BoldItalic');
+
+    // Load PixiJS fonts for canvas
+    Loader.shared.add('OpenSans', '/fonts/opensans/OpenSans.fnt');
+    Loader.shared.add('OpenSans-Bold', '/fonts/opensans/OpenSans-Bold.fnt');
+    Loader.shared.add('OpenSans-Italic', '/fonts/opensans/OpenSans-Italic.fnt');
+    Loader.shared.add('OpenSans-BoldItalic', '/fonts/opensans/OpenSans-BoldItalic.fnt');
 
     // CellsMarker
     Loader.shared.add('images/formula-fx-icon.png');
     Loader.shared.add('images/python-icon.png');
 
-    Loader.shared.load(() => complete(resolve));
-    createBorderTypes();
+    // Wait until pixi fonts are loaded before resolving
+    Loader.shared.load(() => ensureBitmapFontLoaded(resolve));
   });
 }

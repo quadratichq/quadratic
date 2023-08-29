@@ -32,10 +32,10 @@ export class CellsMarkers extends ParticleContainer {
     child.width = 4;
     child.position.set(x + 1.25, y + 1.25);
     if (type === 'Python') {
-      child.texture = Texture.from('images/python-icon.png');
+      child.texture = Texture.from('/images/python-icon.png');
       child.tint = colors.cellColorUserPython;
     } else if (type === 'Formula') {
-      child.texture = Texture.from('images/formula-fx-icon.png');
+      child.texture = Texture.from('/images/formula-fx-icon.png');
       child.tint = colors.cellColorUserFormula;
     }
 
@@ -45,11 +45,6 @@ export class CellsMarkers extends ParticleContainer {
     });
 
     // todo
-    // else if (type === 'AIIcon') {
-    //   child.position.set(x + 1.25, y + 1.25);
-    //   child.texture = Texture.from('images/ai-icon.png');
-    //   child.tint = colors.cellColorUserAI;
-    //   child.width = child.height = 4;
     // } else if (type === 'ErrorIcon') {
     //   child.position.set(x, y);
     //   child.texture = Texture.from('images/error-icon.png');

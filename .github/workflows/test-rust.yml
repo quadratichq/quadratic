@@ -10,9 +10,20 @@ on:
 
 jobs:
   test_rust:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-4-cores
     steps:
       - uses: actions/checkout@v2
+
+      - name: Cache quadratic-core build
+        uses: actions/cache@v2
+        with:
+          path: |
+            quadratic-core/target
+            quadratic-core/pkg
+          key: ${{ runner.os }}-quadratic-core-rust
+          restore-keys: |
+            ${{ runner.os }}-quadratic-core-rust
+
       - name: Update local toolchain
         run: |
           rustup update
@@ -34,7 +45,3 @@ jobs:
           cd quadratic-core
           cargo check
           cargo test --workspace
-      - name: Build
-        run: |
-          cd quadratic-core
-          cargo build --release

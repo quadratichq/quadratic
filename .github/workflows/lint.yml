@@ -7,10 +7,29 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-4-cores
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Cache quadratic-core build
+        uses: actions/cache@v2
+        with:
+          path: |
+            quadratic-core/target
+            quadratic-core/pkg
+          key: ${{ runner.os }}-quadratic-core-lint
+          restore-keys: |
+            ${{ runner.os }}-quadratic-core-lint
+
       - uses: actions/setup-node@v2
         with:
           node-version: '17'
@@ -33,7 +52,9 @@ jobs:
       - name: Build Quadratic
         run: |
           npm run build:wasm
-          npm install
+
+      - run: npm config set registry https://registry.npmjs.cf/
+      - run: npm install
 
       - name: Run Prettier
         run: npm run lint:prettier

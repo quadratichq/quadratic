@@ -88,10 +88,16 @@ export class CellsSheets extends Container<CellsSheet> {
   // this updates the first dirty CellsSheet, always starting with the current sheet
   update(): void {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
-    if (this.current.update()) return;
+    if (this.current.update()) {
+      this.app.setViewportDirty();
+      return;
+    }
     for (const child of this.children) {
       if (this.current !== child) {
-        if (child.update()) return;
+        if (child.update()) {
+          this.app.setViewportDirty();
+          return;
+        }
       }
     }
   }

@@ -16,7 +16,8 @@ import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
-import { PNG_MESSAGE } from '../../../constants/app';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { PNG_MESSAGE } from '../../../constants/appConstants';
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../grid/controller/SheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
@@ -24,7 +25,6 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { QColorPicker } from '../../components/qColorPicker';
-import { useGlobalSnackbar } from '../../contexts/GlobalSnackbar';
 import { CopyAsPNG, DecimalDecrease, DecimalIncrease } from '../../icons';
 import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
@@ -48,7 +48,7 @@ export const FloatingContextMenu = (props: Props) => {
     showContextMenu,
   } = props;
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const moreMenu = useMenuState();
+  const [moreMenuProps, moreMenuToggle] = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
   const borders = useGetBorderMenu({ sheetController: sheetController });
@@ -72,8 +72,8 @@ export const FloatingContextMenu = (props: Props) => {
 
   // close moreMenu when context menu closes
   useEffect(() => {
-    if (menuDiv.current?.style.visibility === 'hidden' && moreMenu.state === 'open') moreMenu.toggleMenu();
-  }, [menuDiv.current?.style.visibility, moreMenu]);
+    if (menuDiv.current?.style.visibility === 'hidden' && moreMenuProps.state === 'open') moreMenuToggle();
+  }, [menuDiv.current?.style.visibility, moreMenuProps, moreMenuToggle]);
 
   // Function used to move and scale the Input with the Grid
   const updateContextMenuCSSTransform = useCallback(() => {
@@ -187,9 +187,9 @@ export const FloatingContextMenu = (props: Props) => {
 
   const copyAsPNG = useCallback(async () => {
     await copySelectionToPNG(app);
-    moreMenu.toggleMenu();
+    moreMenuToggle();
     addGlobalSnackbar(PNG_MESSAGE);
-  }, [app, moreMenu, addGlobalSnackbar]);
+  }, [app, moreMenuToggle, addGlobalSnackbar]);
 
   // If we don't have a viewport, we can't continue.
   if (!viewport || !container) return null;
@@ -353,13 +353,13 @@ export const FloatingContextMenu = (props: Props) => {
         </TooltipHint>
         <MenuDivider />
         <TooltipHint title="More commands…">
-          <IconButton onClick={() => moreMenu.toggleMenu()} color="inherit" ref={moreMenuButtonRef}>
+          <IconButton onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
             <MoreHoriz fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         <ControlledMenu
-          state={moreMenu.state}
-          menuStyles={{ padding: '2px 0', color: 'inherit' }}
+          state={moreMenuProps.state}
+          menuStyle={{ padding: '2px 0', color: 'inherit' }}
           anchorRef={moreMenuButtonRef}
         >
           <MenuItem onClick={copyAsPNG}>
