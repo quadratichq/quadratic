@@ -4,6 +4,38 @@ use std::str::FromStr;
 
 #[wasm_bindgen]
 impl GridController {
+    /// Resizes a column transiently; the operation must be committed using
+    /// `commitResize()` or canceled using `cancelResize()`. If `size` is `null`
+    /// then the column width is reset.
+    #[wasm_bindgen(js_name = "resizeColumnTransiently")]
+    pub fn js_resize_column_transiently(
+        &mut self,
+        sheet_id: String,
+        column: i64,
+        size: Option<f64>,
+    ) {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        self.resize_column_transiently(sheet_id, column, size);
+    }
+    /// Resizes a row transiently; the operation must be committed using
+    /// `commitResize()` or canceled using `cancelResize()`. If `size` is `null`
+    /// then the row height is reset.
+    #[wasm_bindgen(js_name = "resizeRowTransiently")]
+    pub fn js_resize_row_transiently(&mut self, sheet_id: String, row: i64, size: Option<f64>) {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        self.resize_row_transiently(sheet_id, row, size);
+    }
+    /// Cancels a resize operation.
+    #[wasm_bindgen(js_name = "cancelResize")]
+    pub fn js_cancel_resize(&mut self) {
+        self.cancel_resize();
+    }
+    /// Commits a resize operation. Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "commitResize")]
+    pub fn js_commit_resize(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.commit_resize(cursor))?)
+    }
+
     /// Imports a [`GridController`] from a file (that fits the schema defined in JS).
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(file: JsValue) -> Result<GridController, JsValue> {

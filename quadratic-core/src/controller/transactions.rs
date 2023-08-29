@@ -156,6 +156,31 @@ impl GridController {
                     });
                     summary.sheet_list_modified = true;
                 }
+
+                Operation::ResizeColumn {
+                    sheet_id,
+                    column,
+                    new_size,
+                } => {
+                    let old_size = self.resize_column_internal(sheet_id, column, new_size);
+                    rev_ops.push(Operation::ResizeColumn {
+                        sheet_id,
+                        column,
+                        new_size: old_size,
+                    });
+                }
+                Operation::ResizeRow {
+                    sheet_id,
+                    row,
+                    new_size,
+                } => {
+                    let old_size = self.resize_row_internal(sheet_id, row, new_size);
+                    rev_ops.push(Operation::ResizeRow {
+                        sheet_id,
+                        row,
+                        new_size: old_size,
+                    });
+                }
             }
         }
         for dirty_sheet in sheets_with_changed_bounds {
@@ -212,6 +237,17 @@ pub enum Operation {
         target: SheetId,
         order: String,
     },
+
+    ResizeColumn {
+        sheet_id: SheetId,
+        column: i64,
+        new_size: Option<f64>,
+    },
+    ResizeRow {
+        sheet_id: SheetId,
+        row: i64,
+        new_size: Option<f64>,
+    },
 }
 impl Operation {
     pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
@@ -226,6 +262,9 @@ impl Operation {
             Operation::SetSheetName { .. } => None,
 
             Operation::ReorderSheet { .. } => None,
+
+            Operation::ResizeColumn { .. } => None,
+            Operation::ResizeRow { .. } => None,
         }
     }
 }
