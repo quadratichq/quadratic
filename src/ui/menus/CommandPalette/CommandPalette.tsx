@@ -49,6 +49,7 @@ export const CommandPalette = (props: Props) => {
 
   // Otherwise, define vars and render the lsit
   const ListItems = getCommandPaletteListItems({
+    permission: editorInteractionState.permission,
     sheetController: props.sheetController,
     app: props.app,
     interactionState,

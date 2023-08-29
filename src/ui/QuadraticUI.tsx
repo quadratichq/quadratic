@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useNavigation } from 'react-router';
 import { useRecoilValue } from 'recoil';
+import { isEditorOrAbove } from '../actions';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { SheetController } from '../grid/controller/sheetController';
 import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
@@ -78,7 +79,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {presentationMode && <PresentationModeHint />}
 
       {isMobile && <ReadOnlyDialog />}
-      {(editorInteractionState.permission === 'ANONYMOUS' || editorInteractionState.permission === 'VIEWER') && (
+      {!isEditorOrAbove(editorInteractionState.permission) && (
         <PermissionOverlay permission={editorInteractionState.permission} />
       )}
     </div>

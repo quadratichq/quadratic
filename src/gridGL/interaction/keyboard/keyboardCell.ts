@@ -1,3 +1,4 @@
+import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { DeleteCells } from '../../../grid/actions/DeleteCells';
@@ -40,6 +41,11 @@ export function keyboardCell(options: {
       },
     });
     event.preventDefault();
+  }
+
+  // Don't allow actions beyond here for certain users
+  if (!isEditorOrAbove(editorInteractionState.permission)) {
+    return false;
   }
 
   if (event.key === 'Backspace' || event.key === 'Delete') {

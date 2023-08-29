@@ -94,6 +94,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     if (
       keyboardClipboard({
         event,
+        editorInteractionState,
         interactionState,
         sheet_controller: props.sheetController,
         app: props.app,

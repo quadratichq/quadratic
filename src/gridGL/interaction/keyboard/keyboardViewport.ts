@@ -1,4 +1,5 @@
 import { Viewport } from 'pixi-viewport';
+import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { Sheet } from '../../../grid/sheet/Sheet';
@@ -53,11 +54,6 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
-    clearAllFormatting();
-    return true;
-  }
-
   if ((event.metaKey || event.ctrlKey) && event.key === '.') {
     setPresentationMode(!presentationMode);
     return true;
@@ -69,16 +65,6 @@ export function keyboardViewport(options: {
       return true;
     }
     return app.pointer.handleEscape();
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    changeBold(!(format.bold === true));
-    return true;
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    changeItalic(!(format.italic === true));
-    return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && (event.key === 'g' || event.key === 'j')) {
@@ -119,6 +105,26 @@ export function keyboardViewport(options: {
 
   if ((event.metaKey || event.ctrlKey) && event.key === 's') {
     // don't do anything on Command+S
+    return true;
+  }
+
+  // All formatting options past here are only available for people with rights
+  if (!isEditorOrAbove(editorInteractionState.permission)) {
+    return false;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
+    clearAllFormatting();
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
+    changeBold(!(format.bold === true));
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
+    changeItalic(!(format.italic === true));
     return true;
   }
 

@@ -3,10 +3,10 @@ import { useTheme } from '@mui/system';
 import { stripIndent } from 'common-tags';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { isViewerOrAbove } from '../../../actions';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { CellEvaluationResult } from '../../../grid/computations/types';
-import { useRootRouteLoaderData } from '../../../router';
 import { Cell } from '../../../schemas';
 import { colors } from '../../../theme/colors';
 import { CodeSnippet } from '../../components/CodeSnippet';
@@ -24,10 +24,9 @@ interface ConsoleProps {
 export function Console({ evalResult, editorMode, editorContent, selectedCell }: ConsoleProps) {
   const { permission } = useRecoilValue(editorInteractionStateAtom);
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
+  const theme = useTheme();
   const { std_err = '', std_out = '' } = evalResult || {};
   let hasOutput = Boolean(std_err.length || std_out.length);
-  const { isAuthenticated } = useRootRouteLoaderData();
-  const theme = useTheme();
 
   // Whenever we change to a different cell, reset the active tab to the 1st
   useEffect(() => {
@@ -58,14 +57,14 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
             id="console-tab-1"
             aria-controls="console-tabpanel-1"
           ></Tab>
-          {isAuthenticated && editorMode === 'PYTHON' && permission !== 'ANONYMOUS' ? (
+          {editorMode === 'PYTHON' && isViewerOrAbove(permission) && (
             <Tab
               style={{ minHeight: '32px' }}
               label="AI Assistant"
               id="console-tab-4"
               aria-controls="console-tabpanel-2"
             ></Tab>
-          ) : null}
+          )}
         </Tabs>
       </Box>
       <div style={{ flex: '2', overflow: 'scroll', fontSize: '.875rem', lineHeight: '1.5' }}>

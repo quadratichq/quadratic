@@ -1,7 +1,15 @@
 import { Alert, Button, Paper, useTheme } from '@mui/material';
+import { Link, useSubmit } from 'react-router-dom';
+import { duplicateFile } from '../../actions';
+import { Permission, permissionSchema } from '../../api/types';
+import { ROUTES } from '../../constants/routes';
+import { useFileContext } from './FileProvider';
+const { ANONYMOUS, VIEWER } = permissionSchema.enum;
 
-export function PermissionOverlay({ permission }: { permission: 'ANONYMOUS' | 'VIEWER' }) {
+export function PermissionOverlay({ permission }: { permission: Permission }) {
   const theme = useTheme();
+  const { name, contents } = useFileContext();
+  const submit = useSubmit();
 
   return (
     <Paper
@@ -16,13 +24,13 @@ export function PermissionOverlay({ permission }: { permission: 'ANONYMOUS' | 'V
       elevation={4}
     >
       {/* TODO refine positioning on the action buttons — they're off by default */}
-      {permission === 'ANONYMOUS' && (
+      {permission === ANONYMOUS && (
         <Alert
           variant="outlined"
           severity="info"
           sx={{ width: '100%' }}
           action={
-            <Button variant="contained" size="small" disableElevation>
+            <Button component={Link} to={ROUTES.LOGIN} variant="contained" size="small" disableElevation>
               Log in
             </Button>
           }
@@ -30,14 +38,19 @@ export function PermissionOverlay({ permission }: { permission: 'ANONYMOUS' | 'V
           <strong>Welcome to Quadratic.</strong> You must log in to edit this file.
         </Alert>
       )}
-      {permission === 'VIEWER' && (
+      {permission === VIEWER && (
         <Alert
           variant="outlined"
           severity="info"
           sx={{ width: '100%' }}
           action={
-            <Button variant="outlined" size="small" disableElevation>
-              Duplicate
+            <Button
+              variant="outlined"
+              size="small"
+              disableElevation
+              onClick={() => duplicateFile.run({ name, contents, submit })}
+            >
+              {duplicateFile.label}
             </Button>
           }
         >
