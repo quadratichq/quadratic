@@ -1,3 +1,5 @@
+use super::*;
+
 #[wasm_bindgen]
 impl GridController {
     /// Returns cell data in a format useful for rendering. This includes only
