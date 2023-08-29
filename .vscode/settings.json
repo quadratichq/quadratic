@@ -6,11 +6,15 @@
     "endregion",
     "Fuzzysort",
     "hljs",
+    "itertools",
     "msdf",
     "openai",
+    "opensans",
     "peekable",
     "pixi",
     "pixiapp",
+    "rects",
+    "Signin",
     "subquadrant",
     "subquadrants",
     "unspill"
@@ -20,5 +24,6 @@
   },
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
-  }
+  },
+  "rust-analyzer.linkedProjects": ["./quadratic-core/Cargo.toml"]
 }

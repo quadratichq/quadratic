@@ -1,28 +1,38 @@
 import z from 'zod';
-import { GridFileV1 } from './GridFileV1';
-import { GridFileV1_1 } from './GridFileV1_1';
-import { ArrayOutputBase, GridFileV1_2 } from './GridFileV1_2';
-import { GridFileSchemaV1_3, GridFileV1_3 } from './GridFileV1_3';
+import { GridFileSchemaV1_0 } from './GridFileV1_0';
+import { GridFileSchemaV1_1 } from './GridFileV1_1';
+import { ArrayOutputBase, GridFileSchemaV1_2 } from './GridFileV1_2';
+import { GridFileSchemaV1_3 } from './GridFileV1_3';
+import { GridFileSchemaV1_4, GridFileV1_4 } from './GridFileV1_4';
 
 /**
  * Export types for the grid files
  */
 
 // Type representing one of any of the grid files
-export type GridFiles = GridFileV1 | GridFileV1_1 | GridFileV1_2 | GridFileV1_3;
+export const GridFilesSchema = z.union([
+  GridFileSchemaV1_0,
+  GridFileSchemaV1_1,
+  GridFileSchemaV1_2,
+  GridFileSchemaV1_3,
+  GridFileSchemaV1_4,
+]);
+export type GridFiles = z.infer<typeof GridFilesSchema>;
 
 // Map the most recent file schema to the one that will be used in the code
 // (Code always assumes the most recent file)
-export type GridFile = GridFileV1_3;
-export const GridFileSchema = GridFileSchemaV1_3;
+export type GridFile = GridFileV1_4;
+export const GridFileSchema = GridFileSchemaV1_4;
 
 /**
  * Export types for use throughout the codebase, all of which today can be derived
  * from the grid file schema.
  */
 
-// Parts of the file schema used by the sheet
-const GridFileDataSchema = GridFileSchema.pick({
+// Sheet uses everything except these values
+const GridFileDataSchema = GridFileSchema.omit({
+  version: true,
+}).pick({
   sheets: true,
 });
 export type GridFileData = z.infer<typeof GridFileDataSchema>;
@@ -39,6 +49,6 @@ export type Border = GridFile['sheets'][0]['borders'][0];
 export type Heading = GridFile['sheets'][0]['columns'][0];
 export type BorderType = NonNullable<Pick<NonNullable<Border['horizontal']>, 'type'>['type']>;
 export type SheetSchema = GridFile['sheets'][0];
-export const BorderTypeEnum = GridFileSchemaV1_3.shape.sheets.element.shape.borders.element.shape.horizontal
+export const BorderTypeEnum = GridFileSchemaV1_4.shape.sheets.element.shape.borders.element.shape.horizontal
   .unwrap()
   .shape.type.unwrap().enum;

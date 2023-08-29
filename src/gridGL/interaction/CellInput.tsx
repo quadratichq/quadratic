@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
+import { useRecoilValue } from 'recoil';
+import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../grid/controller/SheetController';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
@@ -7,15 +10,14 @@ import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 
 interface CellInputProps {
-  editorInteractionState: EditorInteractionState;
   container?: HTMLDivElement;
   app?: PixiApp;
   sheetController: SheetController;
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { editorInteractionState, app, container, sheetController } = props;
-  // const { changeBold, changeItalic } = useFormatCells(sheetController, true);
+  const { app, container, sheetController } = props;
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   const viewport = app?.viewport;
 
@@ -31,28 +33,24 @@ export const CellInput = (props: CellInputProps) => {
   }, []);
 
   const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
-  // const copy = sheetController.sheet.getCellAndFormatCopy(cellLocation.x, cellLocation.y);
   const cell = sheetController.sheet.getRenderCell(cellLocation.x, cellLocation.y);
-  // const cell = copy?.cell;
-  // const format = copy?.format ?? ({} as CellFormat);
 
-  // todo
   // handle temporary changes to bold and italic (via keyboard)
-  // const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
-  // const [temporaryItalic, setTemporaryItalic] = useState<undefined | boolean>();
+  const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
+  const [temporaryItalic, setTemporaryItalic] = useState<undefined | boolean>();
   let fontFamily = 'OpenSans';
-  // const italic = temporaryItalic === undefined ? format.italic : temporaryItalic;
-  // const bold = temporaryBold === undefined ? format.bold : temporaryBold;
-  // if (italic && bold) {
-  //   fontFamily = 'OpenSans-BoldItalic';
-  // } else if (italic) {
-  //   fontFamily = 'OpenSans-Italic';
-  // } else if (bold) {
-  //   fontFamily = 'OpenSans-Bold';
-  // }
+  const italic = temporaryItalic === undefined ? cell?.italic : temporaryItalic;
+  const bold = temporaryBold === undefined ? cell?.bold : temporaryBold;
+  if (italic && bold) {
+    fontFamily = 'OpenSans-BoldItalic';
+  } else if (italic) {
+    fontFamily = 'OpenSans-Italic';
+  } else if (bold) {
+    fontFamily = 'OpenSans-Bold';
+  }
 
   // moves the cursor to the end of the input (since we're placing a single character that caused the input to open)
-  const handleFocus = useCallback((e) => {
+  const handleFocus = useCallback((e: any) => {
     const div = e.target;
     window.setTimeout(() => {
       if (!document.hasFocus() || !div.contains(document.activeElement)) return;
@@ -72,7 +70,7 @@ export const CellInput = (props: CellInputProps) => {
   // Effect for sizing the input width to the length of the value
   const [textInput, setTextInput] = useState<HTMLDivElement>();
   const textInputRef = useCallback(
-    (node) => {
+    (node: any) => {
       if (!node) return;
       node.focus();
       setTextInput(node);
@@ -141,47 +139,10 @@ export const CellInput = (props: CellInputProps) => {
 
     const value = textInput.innerText;
 
-    if (!cancel) {
+    if (!cancel && (value.trim() || cell?.value)) {
       sheetController.sheet.setCellValue(cellLocation.x, cellLocation.y, value);
-      // sheetController.start_transaction();
-      // // Update Cell and dependent cells
-      // if (value === '') {
-      //   // delete cell if input is empty, and wasn't empty before
-      //   if (cell !== undefined)
-      //     DeleteCells({
-      //       x0: cellLocation.x,
-      //       y0: cellLocation.y,
-      //       x1: cellLocation.x,
-      //       y1: cellLocation.y,
-      //       sheetController,
-      //       create_transaction: false,
-      //     });
-      // } else {
-      //   // create cell with value at input location
-      //   await updateCellAndDCells({
-      //     create_transaction: false,
-      //     starting_cells: [
-      //       {
-      //         x: cellLocation.x,
-      //         y: cellLocation.y,
-      //         type: 'TEXT',
-      //         value: value || '',
-      //       },
-      //     ],
-      //     sheetController,
-      //   });
-
-      // todo ???
-      // if (temporaryBold !== undefined && temporaryBold !== !!format?.bold) {
-      //   changeBold(temporaryBold);
-      // }
-      // if (temporaryItalic !== undefined && temporaryItalic !== !!format?.italic) {
-      //   changeItalic(temporaryItalic);
-      // }
-      // setTemporaryBold(undefined);
-      // setTemporaryItalic(undefined);
-      // sheetController.end_transaction();
-      // app.quadrants.quadrantChanged({ cells: [cellLocation] });
+      setTemporaryBold(undefined);
+      setTemporaryItalic(undefined);
       textInput.innerText = '';
     }
 
@@ -193,6 +154,7 @@ export const CellInput = (props: CellInputProps) => {
         y: position.y + transpose.y,
       },
     });
+
     app.settings.changeInput(false);
 
     // Set focus back to Grid
@@ -224,23 +186,16 @@ export const CellInput = (props: CellInputProps) => {
         left: 0,
         minWidth: cell_offsets.width - CURSOR_THICKNESS * 2,
         outline: 'none',
-
-        // todo...
-        // color: format?.textColor ?? 'black',
-
+        color: cell?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
         margin: 0,
         lineHeight: `${cell_offsets.height - CURSOR_THICKNESS * 2}px`,
         verticalAlign: 'text-top',
-        background: 'transparent',
         transformOrigin: '0 0',
         transform,
         fontFamily,
         fontSize: '14px',
-
-        // todo...
-        // backgroundColor: format?.fillColor ?? 'white',
-
+        backgroundColor: cell?.fillColor ?? 'white',
         whiteSpace: 'break-spaces',
       }}
       onInput={() => {
@@ -282,6 +237,7 @@ export const CellInput = (props: CellInputProps) => {
       onKeyDown={(event) => {
         if (event.key === 'Enter') {
           closeInput({ x: 0, y: 1 });
+          event.stopPropagation();
           event.preventDefault();
         } else if (event.key === 'Tab') {
           closeInput({ x: 1, y: 0 });
@@ -298,16 +254,19 @@ export const CellInput = (props: CellInputProps) => {
         } else if (event.key === ' ') {
           // Don't propagate so panning mode doesn't get triggered
           event.stopPropagation();
+        } else if (event.key === 'i' && (event.ctrlKey || event.metaKey)) {
+          const italic = temporaryItalic === undefined ? !cell?.italic : !temporaryItalic;
+          setTemporaryItalic(italic);
+          sheetController.sheet.setCellItalic(new Rectangle(cellLocation.x, cellLocation.y, 0, 0), italic);
+          event.stopPropagation();
+          event.preventDefault();
+        } else if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
+          const bold = temporaryBold === undefined ? !cell?.italic : !temporaryBold;
+          setTemporaryBold(bold);
+          sheetController.sheet.setCellBold(new Rectangle(cellLocation.x, cellLocation.y, 0, 0), bold);
+          event.stopPropagation();
+          event.preventDefault();
         }
-        // else if (event.key === 'i' && (event.ctrlKey || event.metaKey)) {
-        //   setTemporaryItalic((italic) => (italic === undefined ? !format.italic : !italic));
-        //   event.stopPropagation();
-        //   event.preventDefault();
-        // } else if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
-        //   setTemporaryBold((bold) => (bold === undefined ? !format.bold : !bold));
-        //   event.stopPropagation();
-        //   event.preventDefault();
-        // }
         // ensure the cell border is redrawn
         app.cursor.dirty = true;
       }}

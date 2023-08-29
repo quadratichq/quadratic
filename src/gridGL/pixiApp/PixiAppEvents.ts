@@ -88,20 +88,15 @@ class PixiAppEvents {
   async rebuild() {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.rebuild');
     this.app.clear();
+    this.app.paused = true;
     this.app.viewport.dirty = true;
     this.app.gridLines.dirty = true;
     this.app.axesLines.dirty = true;
     this.app.headings.dirty = true;
     this.app.cursor.dirty = true;
     this.app.boxCells.reset();
-    // this.app.quadrants.build();
 
-    this.app.paused = true;
-
-    // todo: hack!!! (this avoids loading the sheets during initial load b/c PIXI is not set up yet)
-    if (BitmapFont.available['OpenSans']) {
-      await this.loadSheets();
-    }
+    await this.loadSheets();
     this.app.paused = false;
     this.app.reset();
   }

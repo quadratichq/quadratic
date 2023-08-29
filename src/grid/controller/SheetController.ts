@@ -1,5 +1,5 @@
 import { debugMockLargeData } from '../../debugFlags';
-import { GridFile, SheetSchema } from '../../schemas';
+import { GridFile } from '../../schemas';
 import { Sheet } from '../sheet/Sheet';
 import { SheetCursor } from '../sheet/SheetCursor';
 import { Grid } from './Grid';
@@ -13,13 +13,13 @@ export class SheetController {
   grid: Grid;
 
   sheets: Sheets;
-  saveLocalFiles: (() => void) | undefined;
+  save: (() => void) | undefined;
 
   constructor() {
     this.grid = new Grid();
     this.sheets = new Sheets(this);
 
-    this.saveLocalFiles = undefined;
+    this.save = undefined;
   }
 
   // Helper functions for this.sheets
@@ -45,9 +45,13 @@ export class SheetController {
     } else {
       this.sheets.loadFile(grid);
     }
+
+    // todo: this should probably be in pixiAppEvents???
+    window.dispatchEvent(new CustomEvent('change-sheet'));
   }
 
-  export(): SheetSchema[] {
+  // todo: ??? maybe remove
+  export(): [] {
     // const schema = this.grid.exportToFile();
     // return schema.sheets;
     return [];
@@ -154,18 +158,9 @@ export class SheetController {
   }
 
   public redo(): void {
-    if (!this.hasRedo) return;
-    // const lastSheetId = this.sheet.id;
-    // const lastSheetIndex = this.sheets.getIndex();
-
+    if (!this.hasRedo()) return;
     const summary = this.grid.redo(this.sheet.cursor.save());
     transactionResponse(this, summary);
-
-    // this should be handled by cursor.save
-    // // handle case where current sheet is deleted
-    // if (this.sheets.current === lastSheetId && !this.sheets.hasSheetIndex(lastSheetId)) {
-    //   this.sheets.current = lastSheetIndex >= this.sheets.size ? this.sheets[0].id : this.sheets[lastSheetIndex].id;
-    // }
   }
 
   public clear(): void {

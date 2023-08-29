@@ -4,10 +4,10 @@ import React, { SyntheticEvent } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { SheetController } from '../../../grid/controller/SheetController';
-import { isVisible, moveViewport } from '../../../gridGL/interaction/viewportHelper';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../../gridGL/types/size';
 import { focusGrid } from '../../../helpers/focusGrid';
+import focusInput from '../../../utils/focusInput';
 import '../../styles/floating-dialog.css';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 
@@ -53,28 +53,11 @@ export const GoTo = (props: Props) => {
         terminalPosition,
       };
     }
-
     props.sheetController.sheet.cursor.changePosition({
       keyboardMovePosition,
       cursorPosition,
       multiCursor,
     });
-    if (coor1.x === 0 && coor1.y === 0 && !coor2)
-      moveViewport({
-        app: props.app,
-        topLeft: cursorPosition,
-      });
-    else if (
-      !isVisible({
-        app: props.app,
-        sheet: props.sheetController.sheet,
-      })
-    )
-      moveViewport({
-        app: props.app,
-        center: cursorPosition,
-      });
-
     closeMenu();
     focusGrid();
   };
@@ -84,7 +67,7 @@ export const GoTo = (props: Props) => {
       <Paper component="form" elevation={12} onSubmit={onSelect}>
         <InputBase
           sx={{ width: '100%', padding: '8px 16px' }}
-          autoFocus
+          inputRef={focusInput}
           value={value}
           fullWidth
           placeholder="Enter a cell “0, 0” or range “0, 0, -5, -5”"

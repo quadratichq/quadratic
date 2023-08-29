@@ -167,21 +167,15 @@ impl Into<CellValue> for Any {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GridFileV1_3 {
+pub struct GridFileV1_4 {
     pub sheets: Vec<JsSheet>,
-    pub created: f64,
-
-    pub filename: String,
-
-    pub id: String,
-    pub modified: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 pub enum GridFile {
-    #[serde(rename = "1.3")]
-    V1_3(GridFileV1_3),
+    #[serde(rename = "1.4")]
+    V1_4(GridFileV1_4),
 }
 
 impl JsCell {

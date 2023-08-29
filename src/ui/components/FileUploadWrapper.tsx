@@ -1,10 +1,10 @@
 import debounce from 'lodash.debounce';
 import { DragEvent, useRef, useState } from 'react';
+import { useGlobalSnackbar } from '../../components/GlobalSnackbar';
 import { InsertCSV } from '../../grid/actions/insertData/insertCSV';
 import { SheetController } from '../../grid/controller/SheetController';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
-import { useGlobalSnackbar } from '../contexts/GlobalSnackbar';
 
 interface Props {
   sheetController: SheetController;

@@ -69,7 +69,7 @@ export class Sheet {
   // -----------------------------------
 
   private save(): void {
-    this.sheetController.saveLocalFiles?.();
+    this.sheetController.save?.();
   }
 
   setCellValue(x: number, y: number, value: string): void {
@@ -111,9 +111,7 @@ export class Sheet {
   }
 
   get order(): string {
-    const order = this.gridNew.getSheetOrder(this.id);
-    if (order === undefined) throw new Error('Expected order to be defined in Sheet');
-    return order.toString();
+    return this.gridNew.getSheetOrder(this.id);
   }
 
   getRenderCells(rectangle: Rectangle): JsRenderCell[] {

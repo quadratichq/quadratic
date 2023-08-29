@@ -64,9 +64,9 @@ export class Grid {
     return this.gridController.sheetIndexToId(index);
   }
 
-  getSheetOrder(sheetId: string): number | undefined {
+  getSheetOrder(sheetId: string): string {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.sheetIdToIndex(sheetId);
+    return this.gridController.getSheetOrder(sheetId);
   }
 
   getSheetName(sheetId: string): string | undefined {
@@ -97,7 +97,7 @@ export class Grid {
 
   addSheet(cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.addSheet(undefined, JSON.stringify(cursor));
+    return this.gridController.addSheet(JSON.stringify(cursor));
   }
 
   deleteSheet(sheetId: string, cursor: SheetCursorSave): TransactionSummary {
@@ -118,6 +118,11 @@ export class Grid {
   duplicateSheet(sheetId: string, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     return this.gridController.duplicateSheet(sheetId, JSON.stringify(cursor));
+  }
+
+  moveSheet(sheetId: string, leftSheetId: string | undefined, cursor: SheetCursorSave): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.moveSheet(sheetId, leftSheetId, JSON.stringify(cursor));
   }
 
   //#endregion
