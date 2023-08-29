@@ -1,13 +1,12 @@
-import { File, User } from '@prisma/client';
-import express, { NextFunction, Response } from 'express';
+import express, { Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
 import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { Request } from '../../types/Request';
-
-type FILE_PERMISSION = 'OWNER' | 'VIEWER' | 'EDITOR';
+import { fileMiddleware } from './fileMiddleware';
+import { getFilePermissions } from './getFilePermissions';
 
 export const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
@@ -15,49 +14,6 @@ const validateFileName = () => body('name').isString().not().isEmpty();
 const validateFileVersion = () => body('version').isString().not().isEmpty();
 
 const files_router = express.Router();
-
-export const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  if (req.params.uuid === undefined) {
-    return res.status(400).json({ error: { message: 'Invalid file UUID' } });
-  }
-
-  const file = await dbClient.file.findUnique({
-    where: {
-      uuid: req.params.uuid,
-    },
-  });
-
-  if (file === null) {
-    return res.status(404).json({ error: { message: 'File not found' } });
-  }
-
-  if (file.deleted) {
-    return res.status(400).json({ error: { message: 'File has been deleted' } });
-  }
-
-  if (file.ownerUserId !== req?.user?.id) {
-    if (file.public_link_access === 'NOT_SHARED') {
-      return res.status(403).json({ error: { message: 'Permission denied' } });
-    }
-  }
-
-  req.file = file;
-  next();
-};
-
-export const getFilePermissions = (user: User | undefined, file: File): FILE_PERMISSION => {
-  if (file.ownerUserId === user?.id) {
-    return 'OWNER';
-  }
-
-  if (file.public_link_access === 'READONLY') {
-    return 'VIEWER';
-  }
-
-  if (file.public_link_access === 'EDIT') {
-    return 'EDITOR';
-  }
-};
 
 files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, res) => {
   if (!req.user) {
