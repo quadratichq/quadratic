@@ -18,18 +18,15 @@ const auth0 = new ManagementClient({
 });
 
 export const getAuth0User = async (auth0_id: string) => {
-  const user = await auth0.getUser({ id: auth0_id });
-
-  //   user.picture = await fetchImageAndEncode(user.picture);
-  return user;
+  return;
 };
 
-export const getUserProfile = async (id: number) => {
+export const getUserProfile = async (user_id: number) => {
   const user = await dbClient.user.findUnique({
-    where: { id },
+    where: { id: user_id },
   });
 
-  const auth0_user = await getAuth0User(user.auth0_id);
+  const auth0_user = await auth0.getUser({ id: user.auth0_id });
 
   return {
     name: auth0_user.name,
