@@ -293,22 +293,23 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file con
   });
 });
 
-describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file link permissions', () => {
+describe('UPDATE - POST /v0/files/:uuid/sharing with auth and owned file update file link permissions', () => {
   it('responds with json', async () => {
     // change file link permissions to READONLY
     const res = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000000')
+      .post('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
       .send({ public_link_access: 'READONLY' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
       .expect(200); // OK
 
+    console.log(res.body);
     expect(res.body).toMatchObject({ message: 'File updated.' });
 
     // check file permission from owner
     const res2 = await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000')
+      .get('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -319,7 +320,7 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file lin
 
     // check file permission from another user
     const res3 = await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000')
+      .get('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_2`)
       .expect('Content-Type', /json/)
@@ -330,7 +331,7 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file lin
 
     // change file link permissions to NOT_SHARED
     const res4 = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000000')
+      .post('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
       .send({ public_link_access: 'NOT_SHARED' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
@@ -341,7 +342,7 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file lin
 
     // check file permission from owner
     const res5 = await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000')
+      .get('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -352,7 +353,7 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file lin
 
     // check file permission from another user
     const res6 = await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000')
+      .get('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_2`)
       .expect('Content-Type', /json/)
