@@ -17,10 +17,6 @@ const auth0 = new ManagementClient({
   scope: 'read:users',
 });
 
-export const getAuth0User = async (auth0_id: string) => {
-  return;
-};
-
 export const getUserProfile = async (user_id: number) => {
   const user = await dbClient.user.findUnique({
     where: { id: user_id },
