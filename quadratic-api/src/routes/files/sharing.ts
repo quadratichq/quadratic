@@ -7,7 +7,9 @@ import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { Request } from '../../types/Request';
-import { fileMiddleware, getFilePermissions, validateUUID } from './files';
+import { fileMiddleware } from './fileMiddleware';
+import { validateUUID } from './files';
+import { getFilePermissions } from './getFilePermissions';
 
 const validateFileSharingPermission = () =>
   body('public_link_access').isIn([LinkPermission.READONLY, LinkPermission.NOT_SHARED]);
@@ -31,8 +33,14 @@ sharing_router.get(
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // Only authenticated users can view the email addresses of other users
+    let owner = await getUserProfile(req.file.ownerUserId);
+    if (!req.user) {
+      owner.email = null;
+    }
+
     return res.status(200).json({
-      owner: await getUserProfile(req.file.ownerUserId),
+      owner: owner,
       public_link_access: req.file.public_link_access,
       users: [],
       teams: [],
