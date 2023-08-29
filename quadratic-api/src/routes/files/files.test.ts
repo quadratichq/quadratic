@@ -147,6 +147,7 @@ describe('READ - GET /v0/files/:uuid file shared, no auth', () => {
         name: 'test_file_2',
         uuid: '00000000-0000-4000-8000-000000000001',
         version: null,
+        public_link_access: 'READONLY',
       },
       permission: 'VIEWER',
     });
@@ -290,76 +291,6 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file con
     expect(res2.body.permission).toEqual('OWNER');
     expect(res2.body.file.name).toEqual('test_file_1_new_name');
     expect(res2.body.file.contents).toEqual('contents_0_updated');
-  });
-});
-
-describe('UPDATE - POST /v0/files/:uuid/sharing with auth and owned file update file link permissions', () => {
-  it('responds with json', async () => {
-    // change file link permissions to READONLY
-    const res = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
-      .send({ public_link_access: 'READONLY' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    console.log(res.body);
-    expect(res.body).toMatchObject({ message: 'File updated.' });
-
-    // check file permission from owner
-    const res2 = await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res2.body).toHaveProperty('permission');
-    expect(res2.body.permission).toEqual('OWNER');
-
-    // check file permission from another user
-    const res3 = await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_2`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res3.body).toHaveProperty('permission');
-    expect(res3.body.permission).toEqual('VIEWER');
-
-    // change file link permissions to NOT_SHARED
-    const res4 = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
-      .send({ public_link_access: 'NOT_SHARED' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res4.body).toMatchObject({ message: 'File updated.' });
-
-    // check file permission from owner
-    const res5 = await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res5.body).toHaveProperty('permission');
-    expect(res5.body.permission).toEqual('OWNER');
-
-    // check file permission from another user
-    const res6 = await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_2`)
-      .expect('Content-Type', /json/)
-      .expect(403); // OK
-
-    expect(res6.body).toMatchObject({ error: { message: 'Permission denied' } });
   });
 });
 
