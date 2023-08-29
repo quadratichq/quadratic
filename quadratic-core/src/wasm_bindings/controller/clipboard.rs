@@ -2,7 +2,7 @@ use std::str::FromStr;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
-    controller::{transactions::TransactionSummary, GridController},
+    controller::GridController,
     grid::{js_types::JsClipboard, SheetId},
     Pos, Rect,
 };
