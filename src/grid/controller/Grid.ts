@@ -163,12 +163,12 @@ export class Grid {
     cursor: SheetCursorSave
   ): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.js_set_cell_align(sheetId, rectangleToRect(rectangle), align, JSON.stringify(cursor));
+    return this.gridController.set_cell_align(sheetId, rectangleToRect(rectangle), align, JSON.stringify(cursor));
   }
 
   setCellWrap(sheetId: string, rectangle: Rectangle, wrap: CellWrap, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.js_set_cell_wrap(sheetId, rectangleToRect(rectangle), wrap, JSON.stringify(cursor));
+    return this.gridController.set_cell_wrap(sheetId, rectangleToRect(rectangle), wrap, JSON.stringify(cursor));
   }
 
   setCellNumericFormat(
@@ -178,7 +178,7 @@ export class Grid {
     cursor: SheetCursorSave
   ): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.js_set_cell_numeric_format(
+    return this.gridController.set_cell_numeric_format(
       sheetId,
       rectangleToRect(rectangle),
       numericFormat,
@@ -188,12 +188,12 @@ export class Grid {
 
   setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.js_set_cell_bold(sheetId, rectangleToRect(rectangle), bold, JSON.stringify(cursor));
+    return this.gridController.set_cell_bold(sheetId, rectangleToRect(rectangle), bold, JSON.stringify(cursor));
   }
 
   setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.js_set_cell_italic(sheetId, rectangleToRect(rectangle), italic, JSON.stringify(cursor));
+    return this.gridController.set_cell_italic(sheetId, rectangleToRect(rectangle), italic, JSON.stringify(cursor));
   }
 
   setCellTextColor(
@@ -203,7 +203,7 @@ export class Grid {
     cursor: SheetCursorSave
   ): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.js_set_cell_text_color(
+    return this.gridController.set_cell_text_color(
       sheetId,
       rectangleToRect(rectangle),
       textColor,
@@ -218,7 +218,7 @@ export class Grid {
     cursor: SheetCursorSave
   ): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.js_set_cell_fill_color(
+    return this.gridController.set_cell_fill_color(
       sheetId,
       rectangleToRect(rectangle),
       fillColor,
