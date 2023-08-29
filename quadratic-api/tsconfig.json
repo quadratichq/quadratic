@@ -20,7 +20,6 @@
     "src/**/*.ts", 
     "src/**/*.d.ts",
     "src/**/*.test.ts",
-    "jobs/**/*.ts",
   ],
   "exclude": ["node_modules"]
 }
