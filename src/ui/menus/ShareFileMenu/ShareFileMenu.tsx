@@ -2,7 +2,7 @@ import { Public } from '@mui/icons-material';
 import { Avatar, Button, Dialog, Divider, Paper, Stack, Typography, useTheme } from '@mui/material';
 import React from 'react';
 import { useRecoilState } from 'recoil';
-import { GetFileRes } from '../../../api/types';
+import { ApiTypes } from '../../../api/types';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -12,7 +12,7 @@ import { ShareFileMenuPopover } from './ShareFileMenuPopover';
 
 type ShareOption = {
   label: string;
-  value: GetFileRes['file']['public_link_access'];
+  value: ApiTypes['/v0/files/:uuid.GET.response']['file']['public_link_access'];
   disabled?: boolean;
 };
 

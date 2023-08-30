@@ -1,5 +1,5 @@
 import { atom } from 'recoil';
-import { GetFileRes } from '../api/types';
+import { ApiTypes } from '../api/types';
 import { Coordinate } from '../gridGL/types/size';
 import { CellType } from '../schemas';
 
@@ -10,7 +10,7 @@ export interface EditorInteractionState {
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showShareFileMenu: boolean;
-  permission: GetFileRes['permission'];
+  permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
   selectedCell: Coordinate;
   mode: CellType;
 }

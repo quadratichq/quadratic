@@ -14,64 +14,67 @@ const fileMeta = {
 export const permissionSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER', 'ANONYMOUS']);
 export type Permission = z.infer<typeof permissionSchema>;
 
-// GET /files
-export const GetFilesResSchema = z.array(
-  z.object({
-    ...fileMeta,
-  })
-);
-export type GetFilesRes = z.infer<typeof GetFilesResSchema>;
+// Zod schemas for API endpoints
+export const apiSchemas = {
+  // Files
+  '/v0/files.GET.response': z.array(
+    z.object({
+      ...fileMeta,
+    })
+  ),
+  '/v0/files.POST.request': z
+    .object({
+      name: z.string(),
+      contents: z.string(),
+      version: z.string(),
+    })
+    .optional(),
+  '/v0/files.POST.response': z.object(fileMeta),
 
-// GET /file/:uuid
-export const GetFileResSchema = z.object({
-  file: z.object({
-    ...fileMeta,
-    contents: z.string(), // Stringified Gridfile
-    version: z.string(), // TODO one of: ...
+  // File
+  '/v0/files/:uuid.GET.response': z.object({
+    file: z.object({
+      ...fileMeta,
+      contents: z.string(), // Stringified Gridfile
+      version: z.string(), // TODO one of: ...
+    }),
+    permission: permissionSchema,
   }),
-  permission: permissionSchema,
-});
-export type GetFileRes = z.infer<typeof GetFileResSchema>;
+  '/v0/files/:uuid.DELETE.response': z.object({
+    message: z.string(),
+  }),
+  '/v0/files/:uuid.POST.request': z.object({
+    // You can post any of these, but if you post `contents` you have to also send `version`
+    contents: z.string().optional(),
+    version: GridFileSchema.shape.version.optional(),
+    name: z.string().optional(),
+    public_link_access: fileMeta.public_link_access.optional(),
+  }),
+  '/v0/files/:uuid.POST.response': z.object({
+    message: z.string(),
+  }),
 
-// DELETE /file/:uuid
-export const DeleteFileResSchema = z.object({
-  message: z.string(),
-});
-export type DeleteFileRes = z.infer<typeof DeleteFileResSchema>;
+  // Feedback
+  '/v0/feedback.POST.request': z.object({
+    feedback: z.string(),
+    userEmail: z.string().optional(),
+  }),
+  '/v0/feedback.POST.response': z.object({
+    message: z.string(),
+  }),
+};
 
-// POST /files/:uuid
-// You can post any of these, but if you post `contents` you have to also send `version`
-export const PostFileReqSchema = z.object({
-  contents: z.string().optional(),
-  version: GridFileSchema.shape.version.optional(),
-  name: z.string().optional(),
-  public_link_access: fileMeta.public_link_access.optional(),
-});
-export type PostFileReq = z.infer<typeof PostFileReqSchema>;
-export const PostFileResSchema = z.object({
-  message: z.string(),
-});
-export type PostFileRes = z.infer<typeof PostFileResSchema>;
+// Types for API endpoitns
+export type ApiTypes = {
+  '/v0/files.GET.response': z.infer<(typeof apiSchemas)['/v0/files.GET.response']>;
+  '/v0/files.POST.request': z.infer<(typeof apiSchemas)['/v0/files.POST.request']>;
+  '/v0/files.POST.response': z.infer<(typeof apiSchemas)['/v0/files.POST.response']>;
 
-// POST /files
-const PostFilesReqSchema = z
-  .object({
-    name: z.string(),
-    contents: z.string(),
-    version: z.string(),
-  })
-  .optional();
-export type PostFilesReq = z.infer<typeof PostFilesReqSchema>;
-export const PostFilesResSchema = z.object(fileMeta);
-export type PostFilesRes = z.infer<typeof PostFilesResSchema>;
+  '/v0/files/:uuid.GET.response': z.infer<(typeof apiSchemas)['/v0/files/:uuid.GET.response']>;
+  '/v0/files/:uuid.DELETE.response': z.infer<(typeof apiSchemas)['/v0/files/:uuid.DELETE.response']>;
+  '/v0/files/:uuid.POST.request': z.infer<(typeof apiSchemas)['/v0/files/:uuid.POST.request']>;
+  '/v0/files/:uuid.POST.response': z.infer<(typeof apiSchemas)['/v0/files/:uuid.POST.response']>;
 
-// POST /feedback
-export const PostFeedbackReqSchema = z.object({
-  feedback: z.string(),
-  userEmail: z.string().optional(),
-});
-export type PostFeedbackReq = z.infer<typeof PostFeedbackReqSchema>;
-export const PostFeedbackResSchema = z.object({
-  message: z.string(),
-});
-export type PostFeedbackRes = z.infer<typeof PostFeedbackResSchema>;
+  '/v0/feedback.POST.request': z.infer<(typeof apiSchemas)['/v0/feedback.POST.request']>;
+  '/v0/feedback.POST.response': z.infer<(typeof apiSchemas)['/v0/feedback.POST.response']>;
+};

@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/react';
 import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
-import { GetFileRes, GetFileResSchema } from '../api/types';
+import { ApiTypes, apiSchemas } from '../api/types';
 import { Empty } from '../components/Empty';
 import { GridFile, GridFileSchema } from '../schemas';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
@@ -13,15 +13,15 @@ import QuadraticApp from '../ui/QuadraticApp';
 export type InitialFile = {
   name: string;
   contents: GridFile;
-  permission: GetFileRes['permission'];
-  publicLinkAccess: GetFileRes['file']['public_link_access'];
+  permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
+  publicLinkAccess: ApiTypes['/v0/files/:uuid.GET.response']['file']['public_link_access'];
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<InitialFile> => {
   const { uuid } = params;
 
   // Ensure we have an UUID that matches the schema
-  if (!GetFileResSchema.shape.file.shape.uuid.safeParse(uuid).success) {
+  if (!apiSchemas['/v0/files/:uuid.GET.response'].shape.file.shape.uuid.safeParse(uuid).success) {
     throw new Response('Bad request. Expected a UUID string.');
   }
 
