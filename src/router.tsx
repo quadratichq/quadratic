@@ -54,7 +54,6 @@ export const router = createBrowserRouter(
             }
           }
 
-          // TODO what to do about analytics for people who aren't users?
           initializeAnalytics({ isAuthenticated, user });
 
           return { isAuthenticated, user };
@@ -67,7 +66,7 @@ export const router = createBrowserRouter(
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibilityLayoutRoute />}>
             <Route index element={<Navigate to={ROUTES.FILES} replace />} />
-            <Route path=":uuid" id="file" lazy={() => import('./dashboard/FileRoute')} />
+            <Route path=":uuid" id={ROUTE_LOADER_IDS.FILE} lazy={() => import('./dashboard/FileRoute')} />
           </Route>
         </Route>
 
