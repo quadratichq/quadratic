@@ -1,10 +1,10 @@
 import { Public } from '@mui/icons-material';
 import { Avatar, Button, Dialog, Divider, Paper, Stack, Typography, useTheme } from '@mui/material';
 import React from 'react';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { GetFileRes } from '../../../api/types';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useRootRouteLoaderData } from '../../../router';
 import { useFileContext } from '../../components/FileProvider';
@@ -23,11 +23,12 @@ const shareOptions: ShareOption[] = [
 ];
 
 export function ShareFileMenu() {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { user } = useRootRouteLoaderData();
-  const { permission, publicLinkAccess, setPublicLinkAccess } = useFileContext();
+  const { publicLinkAccess, setPublicLinkAccess } = useFileContext();
   const theme = useTheme();
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const { permission } = editorInteractionState;
 
   const onClose = () => {
     setEditorInteractionState((prevState) => ({
@@ -40,7 +41,6 @@ export function ShareFileMenu() {
   // const input = useRef<HTMLInputElement>();
   const shareLink = window.location.href;
   const isShared = publicLinkAccess !== 'NOT_SHARED';
-  const isOwner = permission === 'OWNER';
 
   return (
     <Dialog open={true} onClose={onClose} fullWidth maxWidth={'sm'} BackdropProps={{ invisible: true }}>
@@ -51,13 +51,13 @@ export function ShareFileMenu() {
             <Typography variant="body2">Anyone with the link</Typography>
             <ShareFileMenuPopover
               value={publicLinkAccess}
-              disabled={!isOwner}
+              disabled={permission === 'VIEWER'}
               options={shareOptions}
               setValue={setPublicLinkAccess}
             />
           </Row>
           {/* TODO what if owner isn't person logged in? */}
-          {isOwner && (
+          {permission === 'OWNER' && (
             <Row>
               <Avatar alt={user?.name} src={user?.picture} sx={{ width: 24, height: 24 }} />
               <Typography variant="body2">{user?.name} (You)</Typography>
@@ -71,7 +71,7 @@ export function ShareFileMenu() {
           )}
           <Divider />
           <Row sx={{ mt: theme.spacing(1) }}>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="caption" color="text.secondary">
               View access also allows sharing & duplicating.
             </Typography>
             <Button

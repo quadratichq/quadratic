@@ -1,97 +1,94 @@
 import { KeyboardArrowDown } from '@mui/icons-material';
 import { IconButton, useTheme } from '@mui/material';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction } from 'react';
 import { useParams, useSubmit } from 'react-router-dom';
-import { apiClient } from '../../../api/apiClient';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
-import { ROUTES } from '../../../constants/routes';
-import { GridFileSchema } from '../../../schemas';
+import { useRecoilValue } from 'recoil';
+import { deleteFile, downloadFile, duplicateFile, isViewerOrAbove, renameFile } from '../../../actions';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { useFileContext } from '../../components/FileProvider';
 import { MenuLineItem } from './MenuLineItem';
 
 export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateAction<boolean>> }) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
-  const { name, contents, downloadFile } = useFileContext();
+  const { name, contents } = useFileContext();
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { uuid } = useParams() as { uuid: string };
   const submit = useSubmit();
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const { permission } = editorInteractionState;
 
-  const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  // TODO only duplicate and download should show up for people without edit access
+  if (!isViewerOrAbove(permission)) {
+    return null;
+  }
 
   return (
     <Menu
-      menuButton={
+      menuButton={({ open }) => (
         <IconButton
           id="file-name-button"
           aria-controls={open ? 'basic-menu' : undefined}
           aria-haspopup="true"
           aria-expanded={open ? 'true' : undefined}
-          onClick={handleClick}
           size="small"
-          sx={{ marginLeft: theme.spacing(-0.5), fontSize: '1rem' }}
+          disableRipple
+          sx={{
+            marginLeft: theme.spacing(-0.5),
+            fontSize: '1rem',
+            ...(open
+              ? {
+                  backgroundColor: theme.palette.action.hover,
+                  '& svg': { transform: 'translateY(1px)' },
+                }
+              : {}),
+            '&:hover': {
+              backgroundColor: theme.palette.action.hover,
+            },
+            '&:hover svg': {
+              transform: 'translateY(1px)',
+            },
+          }}
         >
-          <KeyboardArrowDown fontSize="inherit" />
+          <KeyboardArrowDown fontSize="inherit" sx={{ transition: '.2s ease transform' }} />
         </IconButton>
-      }
+      )}
     >
-      <MenuItem
-        onClick={() => {
-          handleClose();
-          setIsRenaming(true);
-        }}
-      >
-        <MenuLineItem primary="Rename" />
-      </MenuItem>
-      <MenuItem
-        onClick={() => {
-          handleClose();
-          // TODO this is async and needs to disable button or something
-          let formData = new FormData();
-          formData.append('name', name + ' (Copy)');
-          formData.append('contents', JSON.stringify(contents));
-          formData.append('version', GridFileSchema.shape.version.value);
-          submit(formData, { method: 'POST', action: ROUTES.CREATE_FILE });
-        }}
-      >
-        <MenuLineItem primary="Duplicate" />
-      </MenuItem>
-      <MenuItem
-        onClick={() => {
-          handleClose();
-          downloadFile();
-        }}
-      >
-        <MenuLineItem primary="Download local copy" />
-      </MenuItem>
-      <MenuDivider />
-      <MenuItem
-        onClick={async () => {
-          handleClose();
-          // Give the UI a chance to update and close the menu before triggering alert
-          setTimeout(async () => {
-            if (window.confirm(`Please confirm you want to delete the file: “${name}”`)) {
-              try {
-                await apiClient.deleteFile(uuid);
-                window.location.href = ROUTES.FILES;
-              } catch (e) {
-                addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
-              }
-            }
-          }, 200);
-        }}
-      >
-        <MenuLineItem primary="Delete" />
-      </MenuItem>
+      {renameFile.isAvailable(permission) && (
+        <MenuItem
+          onClick={() => {
+            setIsRenaming(true);
+          }}
+        >
+          <MenuLineItem primary={renameFile.label} />
+        </MenuItem>
+      )}
+      {duplicateFile.isAvailable(permission) && (
+        <MenuItem onClick={() => duplicateFile.run({ contents, name, submit })}>
+          <MenuLineItem primary={duplicateFile.label} />
+        </MenuItem>
+      )}
+      {downloadFile.isAvailable(permission) && (
+        <MenuItem
+          onClick={() => {
+            downloadFile.run({ name, contents });
+          }}
+        >
+          <MenuLineItem primary={downloadFile.label} />
+        </MenuItem>
+      )}
+      {deleteFile.isAvailable(permission) && (
+        <>
+          <MenuDivider />
+          <MenuItem
+            onClick={async () => {
+              deleteFile.run({ uuid, addGlobalSnackbar });
+            }}
+          >
+            <MenuLineItem primary={deleteFile.label} />
+          </MenuItem>
+        </>
+      )}
     </Menu>
   );
 }

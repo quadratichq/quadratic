@@ -1,9 +1,10 @@
 import { Graphics, Rectangle } from 'pixi.js';
-import { colors } from '../../theme/colors';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { isMobile } from 'react-device-detect';
 import { convertColorStringToTint } from '../../helpers/convertColor';
-import { dashedTextures } from '../dashedTextures';
 import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
+import { colors } from '../../theme/colors';
+import { dashedTextures } from '../dashedTextures';
+import { PixiApp } from '../pixiApp/PixiApp';
 
 export const CURSOR_THICKNESS = 2;
 const FILL_ALPHA = 0.1;
@@ -38,6 +39,7 @@ export class Cursor extends Graphics {
   }
 
   private drawCursor(): void {
+    if (isMobile) return;
     const { settings, viewport } = this.app;
     const { gridOffsets } = this.app.sheet;
     const { editorInteractionState } = this.app.settings;

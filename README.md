@@ -1,4 +1,4 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![E2E Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-e2e.yml/badge.svg) ![Python Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-python.yml/badge.svg) ![Unit Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-unit.yml/badge.svg)
+![E2E Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-e2e.yml/badge.svg) ![Python Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-python.yml/badge.svg) ![Unit Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-unit.yml/badge.svg)
 ![Twitter Follow](https://img.shields.io/twitter/follow/QuadraticHQ)
 ![quadraticlogo4 1](https://user-images.githubusercontent.com/3479421/162037216-2fea1620-2310-4cfa-96fb-31299195e3a9.png)
 

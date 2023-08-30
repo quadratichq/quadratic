@@ -22,7 +22,7 @@ import {
 } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 import { TooltipHint } from '../../ui/components/TooltipHint';

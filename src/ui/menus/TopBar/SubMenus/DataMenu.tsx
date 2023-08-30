@@ -7,7 +7,7 @@ import {
 } from '@mui/icons-material';
 import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
-import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
 import { MenuLineItem } from '../MenuLineItem';
 import { TopBarMenuItem } from '../TopBarMenuItem';
@@ -18,14 +18,11 @@ export const DataMenu = () => {
   return (
     <>
       <Menu
-        menuButton={
-          <div>
-            {/* forward ref */}
-            <TopBarMenuItem title="Data import">
-              <DataObjectOutlined fontSize="small" />
-            </TopBarMenuItem>
-          </div>
-        }
+        menuButton={({ open }) => (
+          <TopBarMenuItem title="Data import" open={open}>
+            <DataObjectOutlined fontSize="small" />
+          </TopBarMenuItem>
+        )}
       >
         <MenuHeader>Import</MenuHeader>
         <MenuItem

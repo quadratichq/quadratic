@@ -1,6 +1,9 @@
 import { Box, Chip, InputBase, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
+import { isEditorOrAbove } from '../../../actions';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../../constants/routes';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useFileContext } from '../../components/FileProvider';
@@ -9,8 +12,10 @@ import { TopBarFileMenuDropdown } from './TopBarFileMenuDropdown';
 export const TopBarFileMenu = () => {
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const { name } = useFileContext();
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isNarrowScreen = useMediaQuery(theme.breakpoints.down('md'));
+  const { permission } = editorInteractionState;
 
   return (
     <Box
@@ -25,36 +30,42 @@ export const TopBarFileMenu = () => {
         <FileNameInput setIsRenaming={setIsRenaming} />
       ) : (
         <Stack direction="row" gap={theme.spacing()} alignItems="center">
-          <Typography
-            variant="body2"
-            color={theme.palette.text.disabled}
-            sx={{
-              [theme.breakpoints.down('md')]: {
-                display: 'none',
-              },
-              '&:hover a': { color: theme.palette.text.primary },
-            }}
-          >
-            <Link to={ROUTES.MY_FILES} reloadDocument style={{ textDecoration: 'none' }}>
-              My files
-            </Link>
-          </Typography>
-          <Typography
-            variant="body2"
-            color={theme.palette.text.disabled}
-            sx={{
-              userSelect: 'none',
-              [theme.breakpoints.down('md')]: {
-                display: 'none',
-              },
-            }}
-          >
-            /
-          </Typography>
+          {permission === 'OWNER' && (
+            <>
+              <Typography
+                variant="body2"
+                color={theme.palette.text.disabled}
+                sx={{
+                  [theme.breakpoints.down('md')]: {
+                    display: 'none',
+                  },
+                  '&:hover a': { color: theme.palette.text.primary },
+                }}
+              >
+                <Link to={ROUTES.MY_FILES} reloadDocument style={{ textDecoration: 'none' }}>
+                  My files
+                </Link>
+              </Typography>
+
+              <Typography
+                variant="body2"
+                color={theme.palette.text.disabled}
+                sx={{
+                  userSelect: 'none',
+                  [theme.breakpoints.down('md')]: {
+                    display: 'none',
+                  },
+                }}
+              >
+                /
+              </Typography>
+            </>
+          )}
+
           <Stack direction="row" gap={theme.spacing(1)} alignItems="center">
             <Typography
               onClick={() => {
-                if (isMobile) {
+                if (isNarrowScreen || !isEditorOrAbove(permission)) {
                   return;
                 }
                 setIsRenaming(true);
@@ -72,13 +83,11 @@ export const TopBarFileMenu = () => {
             >
               {name}
             </Typography>
-            {isMobile && <Chip label="Read-only" variant="outlined" size="small" />}
-            {!isMobile && <TopBarFileMenuDropdown setIsRenaming={setIsRenaming} />}
+            {isNarrowScreen && <Chip label="Read-only" variant="outlined" size="small" />}
+            {!isNarrowScreen && <TopBarFileMenuDropdown setIsRenaming={setIsRenaming} />}
           </Stack>
         </Stack>
       )}
-
-      {/* <KeyboardArrowDown fontSize="small" style={{ color: colors.darkGray }}></KeyboardArrowDown> */}
     </Box>
   );
 };

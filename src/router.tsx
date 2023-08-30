@@ -16,7 +16,7 @@ import {
 } from 'react-router-dom';
 import { authClient, protectedRouteLoaderWrapper } from './auth';
 import { Empty } from './components/Empty';
-import { GlobalSnackbarProvider } from './components/GlobalSnackbar';
+import { GlobalSnackbarProvider } from './components/GlobalSnackbarProvider';
 import { Theme } from './components/Theme';
 import { SUPPORT_EMAIL } from './constants/appConstants';
 import { ROUTES } from './constants/routes';

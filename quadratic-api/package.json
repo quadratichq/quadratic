@@ -19,7 +19,6 @@
     "job:update_users_auth0": "dotenv -e .env -- ts-node-dev jobs/update_users_auth0.ts"
   },
   "author": "David Kircos",
-  "license": "MIT",
   "dependencies": {
     "@prisma/client": "^4.12.0",
     "@sentry/node": "^7.50.0",

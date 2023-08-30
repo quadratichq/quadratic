@@ -1,6 +1,9 @@
-import { Box, Button, useMediaQuery, useTheme } from '@mui/material';
-import { useSetRecoilState } from 'recoil';
+import { Avatar, AvatarGroup, Box, Button, useMediaQuery, useTheme } from '@mui/material';
+import { Link } from 'react-router-dom';
+import { useRecoilState } from 'recoil';
+import { isViewerOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { ROUTES } from '../../../constants/routes';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
@@ -8,7 +11,6 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
-import { useFileContext } from '../../components/FileProvider';
 import { TooltipHint } from '../../components/TooltipHint';
 import CodeOutlinesSwitch from './CodeOutlinesSwitch';
 import { DataMenu } from './SubMenus/DataMenu';
@@ -25,16 +27,13 @@ interface IProps {
 }
 
 export const TopBar = (props: IProps) => {
-  const { app, sheetController } = props;
+  const { user } = useRootRouteLoaderData();
   const theme = useTheme();
   const settings = useGridSettings();
-  const { isAuthenticated } = useRootRouteLoaderData();
-  const { permission } = useFileContext();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-
-  const isOwner = permission === 'OWNER';
-  const showEditControls = isAuthenticated && isOwner && isDesktop;
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const { permission } = editorInteractionState;
+  const { app, sheetController } = props;
 
   return (
     <Box
@@ -44,7 +43,7 @@ export const TopBar = (props: IProps) => {
       }}
       sx={{
         backgroundColor: 'rgba(255, 255, 255)',
-        px: theme.spacing(1),
+        // px: theme.spacing(1),
         width: '100%',
         display: 'flex',
         justifyContent: 'space-between',
@@ -71,12 +70,13 @@ export const TopBar = (props: IProps) => {
           //@ts-expect-error
           WebkitAppRegion: 'no-drag',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'stretch',
           color: theme.palette.text.primary,
+          ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
       >
         <QuadraticMenu sheetController={sheetController} />
-        {showEditControls && (
+        {(permission === 'OWNER' || permission === 'EDITOR') && isDesktop && (
           <>
             <DataMenu />
             <FormatMenu app={app} sheet_controller={sheetController} />
@@ -92,31 +92,19 @@ export const TopBar = (props: IProps) => {
           // @ts-expect-error
           WebkitAppRegion: 'no-drag',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'stretch',
           justifyContent: 'flex-end',
           gap: theme.spacing(),
           color: theme.palette.text.primary,
+          ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
       >
         {isDesktop && (
           <>
-            {/* {user !== undefined && (
-              <AvatarGroup>
-                <Avatar
-                  sx={{
-                    bgcolor: colors.quadraticSecondary,
-                    width: 24,
-                    height: 24,
-                    fontSize: '0.8rem',
-                  }}
-                  alt={user?.name}
-                  src={user?.picture}
-                >
-                  {user?.name && user?.name[0]}
-                </Avatar>
-              </AvatarGroup>
-            )} */}
-            <TooltipHint title={`${settings.showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
+            <TooltipHint
+              sx={{ alignSelf: 'center' }}
+              title={`${settings.showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}
+            >
               <CodeOutlinesSwitch
                 onClick={() => {
                   settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
@@ -125,32 +113,52 @@ export const TopBar = (props: IProps) => {
                 checked={settings.showCellTypeOutlines}
               />
             </TooltipHint>
+
+            {user && (
+              <TooltipHint title={user.name + ' (You)'}>
+                <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: colors.quadraticSecondary,
+                      width: 24,
+                      height: 24,
+                      fontSize: '0.8rem',
+                    }}
+                    alt={user?.name}
+                    src={user?.picture}
+                  >
+                    {user?.name && user?.name[0]}
+                  </Avatar>
+                </AvatarGroup>
+              </TooltipHint>
+            )}
+            {isViewerOrAbove(permission) ? (
+              <Button
+                variant="contained"
+                size="small"
+                disableElevation
+                onClick={() => {
+                  setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: !prev.showShareFileMenu }));
+                }}
+                sx={{ alignSelf: 'center' }}
+              >
+                Share
+              </Button>
+            ) : (
+              <Button
+                replace
+                component={Link}
+                to={ROUTES.LOGIN}
+                variant="outlined"
+                size="small"
+                disableElevation
+                sx={{ alignSelf: 'center' }}
+              >
+                Log in
+              </Button>
+            )}
           </>
         )}
-        <Box
-          sx={{
-            [theme.breakpoints.down('md')]: {
-              display: 'none',
-            },
-          }}
-        >
-          {isAuthenticated ? (
-            <Button
-              variant="contained"
-              size="small"
-              disableElevation
-              onClick={() => {
-                setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: !prev.showShareFileMenu }));
-              }}
-            >
-              Share
-            </Button>
-          ) : (
-            <Button variant="outlined" size="small" disableElevation>
-              Log in
-            </Button>
-          )}
-        </Box>
         <TopBarZoomMenu app={app} />
       </div>
     </Box>

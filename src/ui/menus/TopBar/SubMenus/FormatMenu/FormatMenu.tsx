@@ -2,7 +2,6 @@ import { Menu, MenuChangeEvent, MenuDivider, MenuItem, SubMenu } from '@szhsin/r
 import { useCallback } from 'react';
 
 import {
-  // ReadMore,
   BorderAll,
   FormatAlignCenter,
   FormatAlignLeft,
@@ -63,13 +62,11 @@ export const FormatMenu = (props: IProps) => {
   return (
     <Menu
       onMenuChange={onMenuChange}
-      menuButton={
-        <div>
-          <TopBarMenuItem title="Cell format">
-            <PaletteOutlined fontSize="small"></PaletteOutlined>
-          </TopBarMenuItem>
-        </div>
-      }
+      menuButton={({ open }) => (
+        <TopBarMenuItem title="Cell format" open={open}>
+          <PaletteOutlined fontSize="small"></PaletteOutlined>
+        </TopBarMenuItem>
+      )}
     >
       <MenuItem onClick={() => changeBold(!(format.bold === true))}>
         <MenuLineItem primary="Bold" secondary={KeyboardSymbols.Command + 'B'} Icon={FormatBold} />

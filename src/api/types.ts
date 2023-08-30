@@ -11,6 +11,8 @@ const fileMeta = {
   updated_date: z.string().datetime(),
   public_link_access: z.enum(['EDIT', 'READONLY', 'NOT_SHARED']),
 };
+export const permissionSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER', 'ANONYMOUS']);
+export type Permission = z.infer<typeof permissionSchema>;
 
 // GET /files
 export const GetFilesResSchema = z.array(
@@ -27,7 +29,7 @@ export const GetFileResSchema = z.object({
     contents: z.string(), // Stringified Gridfile
     version: z.string(), // TODO one of: ...
   }),
-  permission: z.enum(['OWNER', 'VIEWER', 'EDITOR']),
+  permission: permissionSchema,
 });
 export type GetFileRes = z.infer<typeof GetFileResSchema>;
 
