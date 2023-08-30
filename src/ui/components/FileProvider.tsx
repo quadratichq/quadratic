@@ -2,9 +2,10 @@ import mixpanel from 'mixpanel-browser';
 import { Dispatch, SetStateAction, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useSetRecoilState } from 'recoil';
+import { isOwner as isOwnerTest } from '../../actions';
 import { apiClient } from '../../api/apiClient';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
-import { InitialFile } from '../../dashboard/FileRoute';
+import { FileData, useFileRouteLoaderData } from '../../dashboard/FileRoute';
 import { SheetController } from '../../grid/controller/sheetController';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useInterval } from '../../hooks/useInterval';
@@ -20,8 +21,8 @@ export type FileContextType = {
   renameFile: (newName: string) => void;
   contents: GridFile;
   syncState: Sync['state'];
-  publicLinkAccess: InitialFile['publicLinkAccess'];
-  setPublicLinkAccess: Dispatch<SetStateAction<InitialFile['publicLinkAccess']>>;
+  publicLinkAccess: FileData['sharing']['public_link_access'];
+  setPublicLinkAccess: Dispatch<SetStateAction<FileData['sharing']['public_link_access']>>;
 };
 
 /**
@@ -34,27 +35,26 @@ const FileContext = createContext<FileContextType>({} as FileContextType);
  */
 export const FileProvider = ({
   children,
-  initialFile,
   sheetController,
 }: {
   children: React.ReactElement;
-  initialFile: InitialFile;
   sheetController: SheetController;
 }) => {
   // We can gaurantee this is in the URL when it runs, so cast as string
   const { uuid } = useParams() as { uuid: string };
-  const [name, setName] = useState<FileContextType['name']>(initialFile.name);
-  const [contents, setContents] = useState<FileContextType['contents']>(initialFile.contents);
+  const initialFileData = useFileRouteLoaderData();
+  const [name, setName] = useState<FileContextType['name']>(initialFileData.name);
+  const [contents, setContents] = useState<FileContextType['contents']>(initialFileData.contents);
   const [publicLinkAccess, setPublicLinkAccess] = useState<FileContextType['publicLinkAccess']>(
-    initialFile.publicLinkAccess
+    initialFileData.sharing.public_link_access
   );
   const debouncedContents = useDebounce<FileContextType['contents']>(contents, 1000);
-  let didMount = useRef<boolean>(false);
+  let isFirstUpdate = useRef(true);
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
 
   const syncState = latestSync.state;
-  const isOwner = initialFile.permission === 'OWNER';
+  const isOwner = isOwnerTest(initialFileData.permission);
 
   const renameFile: FileContextType['renameFile'] = useCallback(
     (newName) => {
@@ -73,8 +73,6 @@ export const FileProvider = ({
       };
       return newContents;
     });
-
-    console.log('[FileProvider] sheetController file save');
   }, [setContents, sheetController.sheet]);
   useEffect(() => {
     sheetController.saveFile = save;
@@ -82,18 +80,19 @@ export const FileProvider = ({
 
   // On mounting, load the sheet
   useEffect(() => {
-    if (didMount.current) return;
-    didMount.current = true;
-    console.log('[FileProvider] (re)loading file into the sheet...');
-
-    sheetController.sheet.load_file(initialFile.contents);
-  }, [sheetController.sheet, initialFile.contents]);
+    if (isFirstUpdate.current) {
+      sheetController.sheet.load_file(initialFileData.contents);
+    }
+  }, [sheetController.sheet, initialFileData.contents]);
 
   const syncChanges = useCallback(
     async (apiClientFn: Function) => {
       // User shouldn't have the ability to change anything, but we'll double
       // make sure the file can't be modified on the server if it's not the owner
       if (!isOwner) return;
+
+      // Don't sync anything if we're on the first update
+      if (isFirstUpdate.current) return;
 
       const id = Date.now();
       setLatestSync({ id, state: 'syncing' });
@@ -129,23 +128,37 @@ export const FileProvider = ({
         apiClient.updateFile(uuid, {
           contents: JSON.stringify(debouncedContents),
           version: debouncedContents.version,
-          public_link_access: publicLinkAccess,
           name,
         })
       );
+      syncChanges(() => apiClient.updateFileSharing(uuid, { public_link_access: publicLinkAccess }));
     },
     syncState === 'error' ? 5000 : null
   );
 
   // Update the public link access when it changes
   useEffect(() => {
-    syncChanges(() => apiClient.updateFile(uuid, { public_link_access: publicLinkAccess }));
+    syncChanges(() => apiClient.updateFileSharing(uuid, { public_link_access: publicLinkAccess }));
   }, [publicLinkAccess, syncChanges, uuid]);
 
-  // Set the permission based on the initial state
+  // Set the permission in recoil based on the initial state
+  // TODO figure out a way to set this in RecoilRoot (if possible)
+  //      or let it flow if we go with react-router's loaders for this
   useEffect(() => {
-    setEditorInteractionState((prev) => ({ ...prev, permission: initialFile.permission }));
-  }, [initialFile.permission, setEditorInteractionState]);
+    setEditorInteractionState((prev) => ({ ...prev, permission: initialFileData.permission }));
+  }, [initialFileData.permission, setEditorInteractionState]);
+
+  // Keep track of lifecycle so we can run things at a specific time
+  useEffect(() => {
+    if (isFirstUpdate.current) {
+      isFirstUpdate.current = false;
+      return;
+    }
+
+    return () => {
+      isFirstUpdate.current = true;
+    };
+  }, []);
 
   return (
     <FileContext.Provider

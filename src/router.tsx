@@ -19,7 +19,7 @@ import { Empty } from './components/Empty';
 import { GlobalSnackbarProvider } from './components/GlobalSnackbarProvider';
 import { Theme } from './components/Theme';
 import { SUPPORT_EMAIL } from './constants/appConstants';
-import { ROUTES } from './constants/routes';
+import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Create from './dashboard/files/CreateRoute';
@@ -32,7 +32,7 @@ export type RootLoaderData = {
   user?: User;
 };
 
-export const useRootRouteLoaderData = () => useRouteLoaderData('root') as RootLoaderData;
+export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -67,7 +67,7 @@ export const router = createBrowserRouter(
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibilityLayoutRoute />}>
             <Route index element={<Navigate to={ROUTES.FILES} replace />} />
-            <Route path=":uuid" lazy={() => import('./dashboard/FileRoute')} />
+            <Route path=":uuid" id="file" lazy={() => import('./dashboard/FileRoute')} />
           </Route>
         </Route>
 

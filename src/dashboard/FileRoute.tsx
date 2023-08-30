@@ -1,24 +1,25 @@
 import { ErrorOutline, QuestionMarkOutlined } from '@mui/icons-material';
 import { Button } from '@mui/material';
 import * as Sentry from '@sentry/react';
-import { Link, LoaderFunctionArgs, isRouteErrorResponse, useLoaderData, useRouteError } from 'react-router-dom';
+import { Link, LoaderFunctionArgs, isRouteErrorResponse, useRouteError, useRouteLoaderData } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
 import { ApiTypes, apiSchemas } from '../api/types';
 import { Empty } from '../components/Empty';
+import { ROUTE_LOADER_IDS } from '../constants/routes';
 import { GridFile, GridFileSchema } from '../schemas';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
 
-export type InitialFile = {
+export type FileData = {
   name: string;
   contents: GridFile;
   permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
-  publicLinkAccess: ApiTypes['/v0/files/:uuid.GET.response']['file']['public_link_access'];
+  sharing: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
 };
 
-export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<InitialFile> => {
-  const { uuid } = params;
+export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData> => {
+  const { uuid } = params as { uuid: string };
 
   // Ensure we have an UUID that matches the schema
   if (!apiSchemas['/v0/files/:uuid.GET.response'].shape.file.shape.uuid.safeParse(uuid).success) {
@@ -26,7 +27,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
   }
 
   // Fetch the file
-  let data = await apiClient.getFile(uuid as string).catch((e) => {
+  const data = await apiClient.getFile(uuid).catch((e) => {
     console.error(e);
     return undefined;
   });
@@ -55,20 +56,27 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
     window.location.reload(true);
   }
 
+  // Fetch the file's sharing info
+  const sharing = await apiClient.getFileSharing(uuid).catch((e) => {
+    console.error(e);
+    return undefined;
+  });
+  if (!sharing) {
+    throw new Error('Failed to retrieve file sharing info from the server.');
+  }
+
   return {
     contents,
     name: data.file.name,
     permission: data.permission,
-    publicLinkAccess: data.file.public_link_access,
+    sharing,
   };
 };
 
 export const Component = () => {
-  const initialFile = useLoaderData() as InitialFile;
-
   return (
     <RecoilRoot>
-      <QuadraticApp initialFile={initialFile} />
+      <QuadraticApp />
     </RecoilRoot>
   );
 };
@@ -112,3 +120,5 @@ export const ErrorBoundary = () => {
     />
   );
 };
+
+export const useFileRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.FILE) as FileData;

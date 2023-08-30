@@ -1,24 +1,20 @@
-import { Avatar, AvatarGroup, Box, Button, useMediaQuery, useTheme } from '@mui/material';
-import { Link } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
-import { isViewerOrAbove } from '../../../actions';
+import { Box, useMediaQuery, useTheme } from '@mui/material';
+import { useRecoilValue } from 'recoil';
+import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { ROUTES } from '../../../constants/routes';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
-import { TooltipHint } from '../../components/TooltipHint';
-import CodeOutlinesSwitch from './CodeOutlinesSwitch';
 import { DataMenu } from './SubMenus/DataMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { useGridSettings } from './SubMenus/useGridSettings';
+import { TopBarCodeOutlinesSwitch } from './TopBarCodeOutlinesSwitch';
 import { TopBarFileMenu } from './TopBarFileMenu';
+import { TopBarShareButton } from './TopBarShareButton';
+import { TopBarUsers } from './TopBarUsers';
 import { TopBarZoomMenu } from './TopBarZoomMenu';
 
 interface IProps {
@@ -27,11 +23,9 @@ interface IProps {
 }
 
 export const TopBar = (props: IProps) => {
-  const { user } = useRootRouteLoaderData();
   const theme = useTheme();
-  const settings = useGridSettings();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { permission } = editorInteractionState;
   const { app, sheetController } = props;
 
@@ -76,7 +70,7 @@ export const TopBar = (props: IProps) => {
         }}
       >
         <QuadraticMenu sheetController={sheetController} />
-        {(permission === 'OWNER' || permission === 'EDITOR') && isDesktop && (
+        {isEditorOrAbove(permission) && isDesktop && (
           <>
             <DataMenu />
             <FormatMenu app={app} sheet_controller={sheetController} />
@@ -101,62 +95,9 @@ export const TopBar = (props: IProps) => {
       >
         {isDesktop && (
           <>
-            <TooltipHint
-              sx={{ alignSelf: 'center' }}
-              title={`${settings.showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}
-            >
-              <CodeOutlinesSwitch
-                onClick={() => {
-                  settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
-                  focusGrid();
-                }}
-                checked={settings.showCellTypeOutlines}
-              />
-            </TooltipHint>
-
-            {user && (
-              <TooltipHint title={user.name + ' (You)'}>
-                <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
-                  <Avatar
-                    sx={{
-                      bgcolor: colors.quadraticSecondary,
-                      width: 24,
-                      height: 24,
-                      fontSize: '0.8rem',
-                    }}
-                    alt={user?.name}
-                    src={user?.picture}
-                  >
-                    {user?.name && user?.name[0]}
-                  </Avatar>
-                </AvatarGroup>
-              </TooltipHint>
-            )}
-            {isViewerOrAbove(permission) ? (
-              <Button
-                variant="contained"
-                size="small"
-                disableElevation
-                onClick={() => {
-                  setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: !prev.showShareFileMenu }));
-                }}
-                sx={{ alignSelf: 'center' }}
-              >
-                Share
-              </Button>
-            ) : (
-              <Button
-                replace
-                component={Link}
-                to={ROUTES.LOGIN}
-                variant="outlined"
-                size="small"
-                disableElevation
-                sx={{ alignSelf: 'center' }}
-              >
-                Log in
-              </Button>
-            )}
+            <TopBarCodeOutlinesSwitch />
+            <TopBarUsers />
+            <TopBarShareButton />
           </>
         )}
         <TopBarZoomMenu app={app} />

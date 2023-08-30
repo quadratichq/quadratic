@@ -2,11 +2,12 @@ import { Public } from '@mui/icons-material';
 import { Avatar, Button, Dialog, Divider, Paper, Stack, Typography, useTheme } from '@mui/material';
 import React from 'react';
 import { useRecoilState } from 'recoil';
+import { isOwner as isOwnerTest } from '../../../actions';
 import { ApiTypes } from '../../../api/types';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
+import { useFileRouteLoaderData } from '../../../dashboard/FileRoute';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { useRootRouteLoaderData } from '../../../router';
 import { useFileContext } from '../../components/FileProvider';
 import { ShareFileMenuPopover } from './ShareFileMenuPopover';
 
@@ -24,9 +25,11 @@ const shareOptions: ShareOption[] = [
 
 export function ShareFileMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { user } = useRootRouteLoaderData();
   const { publicLinkAccess, setPublicLinkAccess } = useFileContext();
   const theme = useTheme();
+  const {
+    sharing: { owner },
+  } = useFileRouteLoaderData();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { permission } = editorInteractionState;
 
@@ -40,6 +43,7 @@ export function ShareFileMenu() {
     focusGrid();
   };
   const isShared = publicLinkAccess !== 'NOT_SHARED';
+  const isOwner = isOwnerTest(permission);
 
   return (
     <Dialog open={true} onClose={onClose} fullWidth maxWidth={'sm'} BackdropProps={{ invisible: true }}>
@@ -55,19 +59,14 @@ export function ShareFileMenu() {
               setValue={setPublicLinkAccess}
             />
           </Row>
-          {/* TODO what if owner isn't person logged in? */}
-          {permission === 'OWNER' && (
-            <Row>
-              <Avatar alt={user?.name} src={user?.picture} sx={{ width: 24, height: 24 }} />
-              <Typography variant="body2">{user?.name} (You)</Typography>
-              <ShareFileMenuPopover
-                value={'1'}
-                disabled
-                options={[{ label: 'Owner', value: '1' }]}
-                setValue={() => {}}
-              />
-            </Row>
-          )}
+          <Row>
+            <Avatar alt={owner.name} src={owner.picture} sx={{ width: 24, height: 24 }} />
+            <Typography variant="body2">
+              {owner.name}
+              {isOwner && ` (You)`}
+            </Typography>
+            <ShareFileMenuPopover value={'1'} disabled options={[{ label: 'Owner', value: '1' }]} setValue={() => {}} />
+          </Row>
           <Divider />
           <Row sx={{ mt: theme.spacing(1) }}>
             <Typography variant="caption" color="text.secondary">

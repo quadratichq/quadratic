@@ -71,6 +71,26 @@ export const apiClient = {
     );
   },
 
+  async getFileSharing(uuid: string) {
+    return fetchFromApi<ApiTypes['/v0/files/:uuid/sharing.GET.response']>(
+      `/v0/files/${uuid}/sharing`,
+      {
+        method: 'GET',
+      },
+      apiSchemas['/v0/files/:uuid/sharing.GET.response']
+    );
+  },
+  async updateFileSharing(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.POST.request']) {
+    return fetchFromApi<ApiTypes['/v0/files/:uuid/sharing.POST.response']>(
+      `/v0/files/${uuid}/sharing`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      },
+      apiSchemas['/v0/files/:uuid/sharing.POST.response']
+    );
+  },
+
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {
     return fetchFromApi<ApiTypes['/v0/feedback.POST.response']>(
       `/v0/feedback`,

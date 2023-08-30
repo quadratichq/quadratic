@@ -11,3 +11,8 @@ export const ROUTES = {
   ACCOUNT: '/account',
   FILE: (uuid: string) => `/file/${uuid}`,
 };
+
+export const ROUTE_LOADER_IDS = {
+  ROOT: 'root',
+  FILE: 'file',
+};
