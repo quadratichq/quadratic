@@ -42,7 +42,6 @@ strum = "0.24.1"
 strum_macros = "0.24.3"
 pollster = "0.2.5"
 uuid = { version = "1.4.0", features = ["v4", "serde"] }
-html-escape = "0.2.13"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -60,6 +59,7 @@ ts-rs = { git = "https://github.com/HactarCE/ts-rs/", rev = "812c1a8", optional 
 wasm-bindgen = { version = "0.2.83", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
 lexicon_fractional_index = "0.0.3"
+htmlescape = "0.3.1"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }

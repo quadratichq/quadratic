@@ -6,7 +6,7 @@ use crate::{
     grid::{js_types::CellFormatSummary, CodeCellValue, SheetId},
     Array, ArraySize, CellValue, Pos, Rect,
 };
-use html_escape;
+use htmlescape;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -113,7 +113,7 @@ impl GridController {
         html.push_str("</tr></tbody></table>");
         let mut final_html = String::from("<table data-quadratic=\"");
         let data = serde_json::to_string(&clipboard).unwrap();
-        let encoded = html_escape::encode_safe(&data);
+        let encoded = htmlescape::encode_attribute(&data);
         final_html.push_str(&encoded);
         final_html.push_str(&String::from("\">"));
         final_html.push_str(&html);
@@ -158,6 +158,45 @@ impl GridController {
         Some(array)
     }
 
+    fn array_from_plain_cells(clipboard: String) -> Option<Array> {
+        let lines: Vec<&str> = clipboard.split("\n").collect();
+        let rows: Vec<Vec<&str>> = lines
+            .iter()
+            .map(|line| line.split('\t').collect())
+            .collect();
+        if rows.len() == 0 {
+            return None;
+        }
+        let longest = rows
+            .iter()
+            .map(|line| line.clone().len())
+            .max()
+            .unwrap_or(0);
+        if longest == 0 {
+            return None;
+        }
+        let mut array =
+            Array::new_empty(ArraySize::new(longest as u32, rows.len() as u32).unwrap());
+        let mut x = 0;
+        let mut y = 0;
+        rows.iter().for_each(|row| {
+            row.iter().for_each(|s| {
+                if s.len() != 0 {
+                    let number_test = s.parse::<f64>();
+                    if number_test.is_ok() {
+                        let _ = array.set(x, y, CellValue::Number(number_test.unwrap()));
+                    } else {
+                        let _ = array.set(x, y, CellValue::Text(String::from(*s)));
+                    }
+                }
+                x = x + 1;
+            });
+            y = y + 1;
+            x = 0;
+        });
+        Some(array)
+    }
+
     fn set_clipboard_cells(
         &mut self,
         sheet_id: SheetId,
@@ -168,8 +207,8 @@ impl GridController {
         let rect = Rect {
             min: start_pos,
             max: Pos {
-                x: start_pos.x + (clipboard.w as i64),
-                y: start_pos.y + (clipboard.h as i64),
+                x: start_pos.x + (clipboard.w as i64) - 1,
+                y: start_pos.y + (clipboard.h as i64) - 1,
             },
         };
         let mut ops = vec![];
@@ -187,6 +226,34 @@ impl GridController {
         self.transact_forward(Transaction { ops, cursor })
     }
 
+    fn paste_plain_text(
+        &mut self,
+        sheet_id: SheetId,
+        start_pos: Pos,
+        clipboard: String,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let array = Self::array_from_plain_cells(clipboard);
+        match array {
+            Some(array) => {
+                let rect = Rect {
+                    min: start_pos,
+                    max: Pos {
+                        x: start_pos.x + (array.width() as i64) - 1,
+                        y: start_pos.y + (array.height() as i64) - 1,
+                    },
+                };
+                let region = self.region(sheet_id, rect);
+                let ops: Vec<Operation> = vec![Operation::SetCellValues {
+                    region,
+                    values: array,
+                }];
+                self.transact_forward(Transaction { ops, cursor })
+            }
+            None => TransactionSummary::default(),
+        }
+    }
+
     // todo: parse table structure to provide better pasting experience from other spreadsheets
     fn paste_html(
         &mut self,
@@ -195,27 +262,24 @@ impl GridController {
         html: String,
         cursor: Option<String>,
     ) -> Result<TransactionSummary, ()> {
-        let re = Regex::new(r#"data-quadratic="(.*)">"#).unwrap();
+        // use regex to find data-quadratic
+        let re = Regex::new(r#"data-quadratic="(.*)"><tbody"#).unwrap();
         let Some(data) = re.captures(&html) else { return Err(()); };
         let result = &data.get(1).map_or("", |m| m.as_str());
-        let unencoded = html_escape::decode_html_entities(&result);
-        let parsed = serde_json::from_str::<Clipboard>(&unencoded);
+
+        // decode html in attribute
+        let unencoded = htmlescape::decode_html(&result);
+        if unencoded.is_err() {
+            return Err(());
+        }
+
+        // parse into Clipboard
+        let parsed = serde_json::from_str::<Clipboard>(&unencoded.unwrap());
         if parsed.is_err() {
             return Err(());
         }
         let clipboard = parsed.unwrap();
         Ok(self.set_clipboard_cells(sheet_id, pos, clipboard, cursor))
-    }
-
-    fn paste_plain_text(
-        &mut self,
-        _sheet_id: SheetId,
-        _pos: Pos,
-        _plain_text: String,
-        _cursor: Option<String>,
-    ) -> TransactionSummary {
-        // self.set_cells(sheet_id, pos, values, cursor)
-        TransactionSummary::default()
     }
 
     pub fn paste_from_clipboard(
@@ -240,6 +304,11 @@ impl GridController {
         }
         TransactionSummary::default()
     }
+}
+
+#[cfg(test)]
+fn test_pasted_output() -> String {
+    String::from("<table data-quadratic=\"{&quot;cells&quot;:[{&quot;value&quot;:{&quot;type&quot;:&quot;text&quot;,&quot;value&quot;:&quot;1, 1&quot;},&quot;code&quot;:null,&quot;format&quot;:{&quot;bold&quot;:true,&quot;italic&quot;:null},&quot;spill_value&quot;:null},{&quot;value&quot;:null,&quot;code&quot;:null,&quot;format&quot;:null,&quot;spill_value&quot;:null},{&quot;value&quot;:null,&quot;code&quot;:null,&quot;format&quot;:null,&quot;spill_value&quot;:null},{&quot;value&quot;:null,&quot;code&quot;:null,&quot;format&quot;:null,&quot;spill_value&quot;:null},{&quot;value&quot;:null,&quot;code&quot;:null,&quot;format&quot;:null,&quot;spill_value&quot;:null},{&quot;value&quot;:{&quot;type&quot;:&quot;number&quot;,&quot;value&quot;:12.0},&quot;code&quot;:null,&quot;format&quot;:{&quot;bold&quot;:null,&quot;italic&quot;:true},&quot;spill_value&quot;:null}],&quot;w&quot;:3,&quot;h&quot;:2}\"><tbody><tr><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td><span style={font-style:italic;}>12</span></tr></tbody></table>")
 }
 
 #[test]
@@ -280,17 +349,30 @@ fn test_copy_to_clipboard() {
 
     let (plain_text, html) = gc.copy_to_clipboard(sheet_id, rect);
     assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
-    assert_eq!(html, String::from("<table data-quadratic=\"[{\"x\":1,\"y\":1,\"value\":{\"type\":\"text\",\"value\":\"1, 1\"},\"code\":null,\"format\":{\"bold\":true,\"italic\":null},\"spill_value\":null},{\"x\":3,\"y\":2,\"value\":{\"type\":\"number\",\"value\":12.0},\"code\":null,\"format\":{\"bold\":null,\"italic\":true},\"spill_value\":null}]\"><tbody><tr><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td><span style={font-style:italic;}>12</span></tr></tbody></table>"));
+    assert_eq!(html, test_pasted_output());
 }
 
 #[test]
 fn test_paste_from_quadratic_clipboard() {
-    let html = String::from("<table data-quadratic=\"[{\"x\":1,\"y\":1,\"value\":{\"type\":\"text\",\"value\":\"1, 1\"},\"code\":null,\"format\":{\"bold\":true,\"italic\":null},\"spill_value\":null},{\"x\":3,\"y\":2,\"value\":{\"type\":\"number\",\"value\":12.0},\"code\":null,\"format\":{\"bold\":null,\"italic\":true},\"spill_value\":null}]\"><tbody><tr><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td><span style={font-style:italic;}>12</span></tr></tbody></table>");
     let mut gc = GridController::default();
     let sheet_id = gc.sheet_ids()[0];
-    gc.paste_from_clipboard(sheet_id, Pos { x: 0, y: 0 }, None, Some(html), None);
+    gc.paste_from_clipboard(
+        sheet_id,
+        Pos { x: 0, y: 0 },
+        None,
+        Some(test_pasted_output()),
+        None,
+    );
 
     let sheet = gc.sheet(sheet_id);
     let cell11 = sheet.get_cell_value(Pos { x: 0, y: 0 });
     assert_eq!(cell11.unwrap(), CellValue::Text(String::from("1, 1")));
+    let cell21 = sheet.get_cell_value(Pos { x: 2, y: 1 });
+    assert_eq!(cell21.unwrap(), CellValue::Number(12.0));
+}
+
+#[test]
+fn test_paste_from_plain_text_clipboard() {
+    let mut gc = GridController::default();
+    let sheet_id = gc.sheet_ids()[0];
 }

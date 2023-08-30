@@ -6,6 +6,7 @@
     "endregion",
     "Fuzzysort",
     "hljs",
+    "htmlescape",
     "itertools",
     "msdf",
     "openai",

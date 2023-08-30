@@ -245,18 +245,26 @@ export const pasteFromClipboard = async (sheetController: SheetController, targe
     try {
       const clipboardData = await navigator.clipboard.read();
       const plainTextItem = clipboardData.find((item) => item.types.includes('text/plain'));
-      let plainText: String | undefined;
+      let plainText: string | undefined;
       if (plainTextItem) {
         const item = await plainTextItem.getType('text/plain');
         plainText = await item.text();
       }
-      let html: String | undefined;
+      let html: string | undefined;
       const htmlItem = clipboardData.find((item) => item.types.includes('text/html'));
       if (htmlItem) {
         const item = await htmlItem.getType('text/html');
         html = await item.text();
       }
-      console.log({ plainText, html });
+      const summary = sheetController.grid.pasteFromClipboard({
+        sheetId: sheetController.sheet.id,
+        x: target.x,
+        y: target.y,
+        plainText,
+        html,
+        cursor: sheetController.sheet.cursor.save(),
+      });
+      transactionResponse(sheetController, summary);
     } catch (e) {
       console.warn(e);
     }

@@ -323,5 +323,18 @@ export class Grid {
     return this.gridController.cutToClipboard(sheetId, rectangleToRect(rectangle), JSON.stringify(cursor));
   }
 
+  pasteFromClipboard(options: {
+    sheetId: string;
+    x: number;
+    y: number;
+    plainText: string | undefined;
+    html: string | undefined;
+    cursor: SheetCursorSave;
+  }): TransactionSummary {
+    const { sheetId, x, y, plainText, html, cursor } = options;
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.pasteFromClipboard(sheetId, new Pos(x, y), plainText, html, JSON.stringify(cursor));
+  }
+
   //#endregion
 }
