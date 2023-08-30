@@ -149,7 +149,7 @@ describe('READ - GET /v0/files/:uuid file shared, no auth', () => {
         version: null,
         public_link_access: 'READONLY',
       },
-      permission: 'VIEWER',
+      permission: 'ANONYMOUS',
     });
   });
 });
