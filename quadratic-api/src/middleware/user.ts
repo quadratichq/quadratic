@@ -4,7 +4,7 @@ import { Request } from '../types/Request';
 
 const getOrCreateUser = async (auth0_id: string) => {
   // get user from db
-  const user = await dbClient.user.findUnique({
+  let user = await dbClient.user.findUnique({
     where: {
       auth0_id,
     },
@@ -12,7 +12,7 @@ const getOrCreateUser = async (auth0_id: string) => {
 
   // if not user, create user
   if (user === null) {
-    return dbClient.user.create({
+    user = await dbClient.user.create({
       data: {
         auth0_id,
       },
