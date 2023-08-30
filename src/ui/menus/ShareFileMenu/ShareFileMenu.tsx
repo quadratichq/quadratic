@@ -35,11 +35,10 @@ export function ShareFileMenu() {
       ...prevState,
       showShareFileMenu: false,
     }));
-    // TODO get this working, proper focus trapping with modal
+    // TODO the button that triggers the share menu is getting focus, not the
+    // grid, even when you run this
     focusGrid();
   };
-  // const input = useRef<HTMLInputElement>();
-  const shareLink = window.location.href;
   const isShared = publicLinkAccess !== 'NOT_SHARED';
 
   return (
@@ -78,6 +77,7 @@ export function ShareFileMenu() {
               variant="outlined"
               size="small"
               onClick={() => {
+                const shareLink = window.location.href;
                 navigator.clipboard.writeText(shareLink).then(() => {
                   addGlobalSnackbar('Link copied to clipboard.');
                 });
