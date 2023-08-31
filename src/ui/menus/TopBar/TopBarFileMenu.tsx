@@ -1,4 +1,4 @@
-import { Box, Chip, InputBase, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Box, InputBase, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
@@ -83,7 +83,6 @@ export const TopBarFileMenu = () => {
             >
               {name}
             </Typography>
-            {isNarrowScreen && <Chip label="Read-only" variant="outlined" size="small" />}
             {!isNarrowScreen && <TopBarFileMenuDropdown setIsRenaming={setIsRenaming} />}
           </Stack>
         </Stack>

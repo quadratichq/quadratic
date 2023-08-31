@@ -108,7 +108,7 @@ export const BottomBar = (props: Props) => {
                 borderRadius: '50%',
               }}
             >
-              &nbsp;fef
+              &nbsp;
             </div>
           </BottomBarItem>
         )}

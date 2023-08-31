@@ -4,8 +4,8 @@ import { GridFileSchema } from '../schemas';
 // TODO share these with the API
 
 // Shared types
-const publicLinkAccessSchema = z.enum(['EDIT', 'READONLY', 'NOT_SHARED']);
-export type PublicLinkAccess = z.infer<typeof publicLinkAccessSchema>;
+const PublicLinkAccessSchema = z.enum(['EDIT', 'READONLY', 'NOT_SHARED']);
+export type PublicLinkAccess = z.infer<typeof PublicLinkAccessSchema>;
 
 const fileMeta = {
   uuid: z.string().uuid(),
@@ -14,16 +14,16 @@ const fileMeta = {
   updated_date: z.string().datetime(),
 };
 
-export const permissionSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER', 'ANONYMOUS']);
-export type Permission = z.infer<typeof permissionSchema>;
+export const PermissionSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER', 'ANONYMOUS']);
+export type Permission = z.infer<typeof PermissionSchema>;
 
 // Zod schemas for API endpoints
-export const apiSchemas = {
+export const ApiSchemas = {
   // Files
   '/v0/files.GET.response': z.array(
     z.object({
       ...fileMeta,
-      public_link_access: publicLinkAccessSchema,
+      public_link_access: PublicLinkAccessSchema,
     })
   ),
   '/v0/files.POST.request': z
@@ -47,7 +47,7 @@ export const apiSchemas = {
       // general string here.
       version: z.string(),
     }),
-    permission: permissionSchema,
+    permission: PermissionSchema,
   }),
   '/v0/files/:uuid.DELETE.response': z.object({
     message: z.string(),
@@ -71,12 +71,12 @@ export const apiSchemas = {
       // For now we don't need it so we ignore it
       // email: z.string().email() | z.null()
     }),
-    public_link_access: publicLinkAccessSchema,
+    public_link_access: PublicLinkAccessSchema,
     // These come, but we'll leave them off for now because we don't care about them
     // users: z.array(z.any()),
     // teams: z.array(z.any()),
   }),
-  '/v0/files/:uuid/sharing.POST.request': z.object({ public_link_access: publicLinkAccessSchema }),
+  '/v0/files/:uuid/sharing.POST.request': z.object({ public_link_access: PublicLinkAccessSchema }),
   '/v0/files/:uuid/sharing.POST.response': z.object({ message: z.string() }),
 
   // Feedback
@@ -91,19 +91,19 @@ export const apiSchemas = {
 
 // Types for API endpoitns
 export type ApiTypes = {
-  '/v0/files.GET.response': z.infer<(typeof apiSchemas)['/v0/files.GET.response']>;
-  '/v0/files.POST.request': z.infer<(typeof apiSchemas)['/v0/files.POST.request']>;
-  '/v0/files.POST.response': z.infer<(typeof apiSchemas)['/v0/files.POST.response']>;
+  '/v0/files.GET.response': z.infer<(typeof ApiSchemas)['/v0/files.GET.response']>;
+  '/v0/files.POST.request': z.infer<(typeof ApiSchemas)['/v0/files.POST.request']>;
+  '/v0/files.POST.response': z.infer<(typeof ApiSchemas)['/v0/files.POST.response']>;
 
-  '/v0/files/:uuid.GET.response': z.infer<(typeof apiSchemas)['/v0/files/:uuid.GET.response']>;
-  '/v0/files/:uuid.DELETE.response': z.infer<(typeof apiSchemas)['/v0/files/:uuid.DELETE.response']>;
-  '/v0/files/:uuid.POST.request': z.infer<(typeof apiSchemas)['/v0/files/:uuid.POST.request']>;
-  '/v0/files/:uuid.POST.response': z.infer<(typeof apiSchemas)['/v0/files/:uuid.POST.response']>;
+  '/v0/files/:uuid.GET.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid.GET.response']>;
+  '/v0/files/:uuid.DELETE.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid.DELETE.response']>;
+  '/v0/files/:uuid.POST.request': z.infer<(typeof ApiSchemas)['/v0/files/:uuid.POST.request']>;
+  '/v0/files/:uuid.POST.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid.POST.response']>;
 
-  '/v0/files/:uuid/sharing.GET.response': z.infer<(typeof apiSchemas)['/v0/files/:uuid/sharing.GET.response']>;
-  '/v0/files/:uuid/sharing.POST.request': z.infer<(typeof apiSchemas)['/v0/files/:uuid/sharing.POST.request']>;
-  '/v0/files/:uuid/sharing.POST.response': z.infer<(typeof apiSchemas)['/v0/files/:uuid/sharing.POST.response']>;
+  '/v0/files/:uuid/sharing.GET.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid/sharing.GET.response']>;
+  '/v0/files/:uuid/sharing.POST.request': z.infer<(typeof ApiSchemas)['/v0/files/:uuid/sharing.POST.request']>;
+  '/v0/files/:uuid/sharing.POST.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid/sharing.POST.response']>;
 
-  '/v0/feedback.POST.request': z.infer<(typeof apiSchemas)['/v0/feedback.POST.request']>;
-  '/v0/feedback.POST.response': z.infer<(typeof apiSchemas)['/v0/feedback.POST.response']>;
+  '/v0/feedback.POST.request': z.infer<(typeof ApiSchemas)['/v0/feedback.POST.request']>;
+  '/v0/feedback.POST.response': z.infer<(typeof ApiSchemas)['/v0/feedback.POST.response']>;
 };

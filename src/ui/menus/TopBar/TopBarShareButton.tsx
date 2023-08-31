@@ -28,7 +28,7 @@ export const TopBarShareButton = () => {
         <Button
           replace
           component={Link}
-          to={ROUTES.LOGIN}
+          to={ROUTES.LOGIN_WITH_REDIRECT()}
           variant="outlined"
           size="small"
           disableElevation
