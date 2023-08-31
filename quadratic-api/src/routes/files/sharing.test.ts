@@ -129,8 +129,46 @@ describe('UPDATE - POST /v0/files/:uuid/sharing with auth and owned file update 
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_2`)
       .expect('Content-Type', /json/)
-      .expect(403); // OK
+      .expect(403);
 
     expect(res6.body).toMatchObject({ error: { message: 'Permission denied' } });
+  });
+
+  it('fails with invalid public_link_access', async () => {
+    const res = await request(app)
+      .post('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
+      .send({ public_link_access: 'INVALID' })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(res.body).toHaveProperty('errors');
+    expect(res.body.errors).toHaveLength(1);
+    expect(res.body.errors[0]).toMatchObject({
+      location: 'body',
+      msg: 'Invalid value',
+      path: 'public_link_access',
+      type: 'field',
+      value: 'INVALID',
+    });
+
+    const res1 = await request(app)
+      .post('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
+      .send({ public_link_access: null })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(res1.body).toHaveProperty('errors');
+    expect(res1.body.errors).toHaveLength(1);
+    expect(res1.body.errors[0]).toMatchObject({
+      location: 'body',
+      msg: 'Invalid value',
+      path: 'public_link_access',
+      type: 'field',
+      value: null,
+    });
   });
 });
