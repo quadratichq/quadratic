@@ -42,8 +42,8 @@ sharing_router.get(
     return res.status(200).json({
       owner: owner,
       public_link_access: req.file.public_link_access,
-      users: [],
-      teams: [],
+      // users: [],
+      // teams: [],
     });
   }
 );
