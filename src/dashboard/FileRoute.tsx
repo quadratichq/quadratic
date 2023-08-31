@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/react';
 import { Link, LoaderFunctionArgs, isRouteErrorResponse, useRouteError, useRouteLoaderData } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
-import { ApiTypes, apiSchemas } from '../api/types';
+import { ApiSchemas, ApiTypes } from '../api/types';
 import { Empty } from '../components/Empty';
 import { ROUTE_LOADER_IDS } from '../constants/routes';
 import { GridFile, GridFileSchema } from '../schemas';
@@ -22,7 +22,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const { uuid } = params as { uuid: string };
 
   // Ensure we have an UUID that matches the schema
-  if (!apiSchemas['/v0/files/:uuid.GET.response'].shape.file.shape.uuid.safeParse(uuid).success) {
+  if (!ApiSchemas['/v0/files/:uuid.GET.response'].shape.file.shape.uuid.safeParse(uuid).success) {
     throw new Response('Bad request. Expected a UUID string.');
   }
 

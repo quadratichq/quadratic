@@ -1,7 +1,7 @@
 import { NavigateFunction, SubmitFunction } from 'react-router-dom';
 import { SetterOrUpdater } from 'recoil';
 import { apiClient } from './api/apiClient';
-import { Permission, permissionSchema } from './api/types';
+import { Permission, PermissionSchema } from './api/types';
 import { EditorInteractionState } from './atoms/editorInteractionStateAtom';
 import { GlobalSnackbar } from './components/GlobalSnackbarProvider';
 import { ROUTES } from './constants/routes';
@@ -9,7 +9,7 @@ import { DOCUMENTATION_URL } from './constants/urls';
 import { downloadFileInBrowser } from './helpers/downloadFileInBrowser';
 import { GridFile, GridFileSchema } from './schemas';
 import { FileContextType } from './ui/components/FileProvider';
-const { OWNER, EDITOR, VIEWER } = permissionSchema.enum;
+const { OWNER, EDITOR, VIEWER } = PermissionSchema.enum;
 
 export type GenericAction = {
   label: string;

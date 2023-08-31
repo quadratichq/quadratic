@@ -1,10 +1,10 @@
 import { Alert, Button, Paper, useTheme } from '@mui/material';
 import { Link, useSubmit } from 'react-router-dom';
 import { duplicateFile } from '../../actions';
-import { Permission, permissionSchema } from '../../api/types';
+import { Permission, PermissionSchema } from '../../api/types';
 import { ROUTES } from '../../constants/routes';
 import { useFileContext } from './FileProvider';
-const { ANONYMOUS, VIEWER } = permissionSchema.enum;
+const { ANONYMOUS, VIEWER } = PermissionSchema.enum;
 
 export function PermissionOverlay({ permission }: { permission: Permission }) {
   const theme = useTheme();

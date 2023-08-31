@@ -3,7 +3,7 @@ import mixpanel from 'mixpanel-browser';
 import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
 import { GridFile, GridFileSchema } from '../schemas';
 import { fetchFromApi } from './fetchFromApi';
-import { ApiTypes, apiSchemas } from './types';
+import { ApiSchemas, ApiTypes } from './types';
 
 const DEFAULT_FILE: GridFile = {
   cells: [],
@@ -20,7 +20,7 @@ export const apiClient = {
     return fetchFromApi<ApiTypes['/v0/files.GET.response']>(
       `/v0/files`,
       { method: 'GET' },
-      apiSchemas['/v0/files.GET.response']
+      ApiSchemas['/v0/files.GET.response']
     );
   },
 
@@ -28,7 +28,7 @@ export const apiClient = {
     return fetchFromApi<ApiTypes['/v0/files/:uuid.GET.response']>(
       `/v0/files/${uuid}`,
       { method: 'GET' },
-      apiSchemas['/v0/files/:uuid.GET.response']
+      ApiSchemas['/v0/files/:uuid.GET.response']
     );
   },
 
@@ -42,7 +42,7 @@ export const apiClient = {
     return fetchFromApi<ApiTypes['/v0/files.POST.response']>(
       `/v0/files/`,
       { method: 'POST', body: JSON.stringify(body) },
-      apiSchemas['/v0/files.POST.response']
+      ApiSchemas['/v0/files.POST.response']
     );
   },
 
@@ -56,7 +56,7 @@ export const apiClient = {
     return fetchFromApi<ApiTypes['/v0/files/:uuid.DELETE.response']>(
       `/v0/files/${uuid}`,
       { method: 'DELETE' },
-      apiSchemas['/v0/files/:uuid.DELETE.response']
+      ApiSchemas['/v0/files/:uuid.DELETE.response']
     );
   },
 
@@ -67,7 +67,7 @@ export const apiClient = {
         method: 'POST',
         body: JSON.stringify(body),
       },
-      apiSchemas['/v0/files/:uuid.POST.response']
+      ApiSchemas['/v0/files/:uuid.POST.response']
     );
   },
 
@@ -77,7 +77,7 @@ export const apiClient = {
       {
         method: 'GET',
       },
-      apiSchemas['/v0/files/:uuid/sharing.GET.response']
+      ApiSchemas['/v0/files/:uuid/sharing.GET.response']
     );
   },
   async updateFileSharing(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.POST.request']) {
@@ -87,7 +87,7 @@ export const apiClient = {
         method: 'POST',
         body: JSON.stringify(body),
       },
-      apiSchemas['/v0/files/:uuid/sharing.POST.response']
+      ApiSchemas['/v0/files/:uuid/sharing.POST.response']
     );
   },
 
@@ -95,7 +95,7 @@ export const apiClient = {
     return fetchFromApi<ApiTypes['/v0/feedback.POST.response']>(
       `/v0/feedback`,
       { method: 'POST', body: JSON.stringify(body) },
-      apiSchemas['/v0/feedback.POST.response']
+      ApiSchemas['/v0/feedback.POST.response']
     );
   },
 
