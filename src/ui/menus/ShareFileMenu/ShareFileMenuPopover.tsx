@@ -30,15 +30,8 @@ export function ShareFileMenuPopover({
   const handleClose = () => {
     setAnchorEl(null);
   };
-  // TODO move this h
-  // const handleClick = (e: any) => {
-  //   console.log('firedzzz', e.currenttarget);
-  //   handleClose();
-  //   // onChange(e.target.value);
-  // };
 
-  // @ts-expect-error
-  const { label } = options.find((element) => element.value === value);
+  const activeOption = options.find((element) => element.value === value) as Option;
 
   return (
     <div>
@@ -52,7 +45,7 @@ export function ShareFileMenuPopover({
         disabled={disabled}
         endIcon={disabled ? undefined : <ArrowDropDown />}
       >
-        {label}
+        {activeOption.label}
       </Button>
       <Menu
         id="demo-positioned-menu"
