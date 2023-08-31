@@ -4,7 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { ShowAfter } from './components/ShowAfter';
-import { envVarsAreConfiguredCorrectly, REACT_APP_SENTRY_DSN } from './constants/env';
+import { REACT_APP_SENTRY_DSN } from './constants/env';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { router } from './router';
@@ -25,23 +25,14 @@ const container = document.getElementById('root');
 const root = createRoot(container);
 root.render(
   <React.StrictMode>
-    {envVarsAreConfiguredCorrectly ? (
-      <RouterProvider
-        router={router}
-        fallbackElement={
-          <ShowAfter delay={2000}>
-            <QuadraticLoading />
-          </ShowAfter>
-        }
-      />
-    ) : (
-      <div style={{ maxWidth: '60ch', margin: '0 auto', padding: '1rem', textAlign: 'center' }}>
-        <p>
-          <strong>The app is not configured properly. </strong>
-        </p>
-        <p>We log these errors and should fix this soon. Please check back shortly.</p>
-      </div>
-    )}
+    <RouterProvider
+      router={router}
+      fallbackElement={
+        <ShowAfter delay={2000}>
+          <QuadraticLoading />
+        </ShowAfter>
+      }
+    />
   </React.StrictMode>
 );
 

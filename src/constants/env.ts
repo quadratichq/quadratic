@@ -1,5 +1,3 @@
-import * as Sentry from '@sentry/react';
-
 // This is to help clarify what vars are need through the app, and provides
 // one central place for us to access them throughout the app.
 // We default them all to empty strings when not set.
@@ -19,7 +17,8 @@ export const REACT_APP_AUTH0_ISSUER = process.env.REACT_APP_AUTH0_ISSUER || '';
 export const REACT_APP_QUADRATIC_API_URL = process.env.REACT_APP_QUADRATIC_API_URL || '';
 export const REACT_APP_VERSION = process.env.REACT_APP_VERSION || '';
 // Note: anytime you add another required var here, add it to the object below
-const requiredVarsByName = {
+// These are read by the build step to ensure we have all the env vars before building
+export const requiredVarValuesByName = {
   REACT_APP_AUTH0_DOMAIN,
   REACT_APP_AUTH0_CLIENT_ID,
   REACT_APP_AUTH0_AUDIENCE,
@@ -27,23 +26,3 @@ const requiredVarsByName = {
   REACT_APP_QUADRATIC_API_URL,
   REACT_APP_VERSION,
 };
-
-// Check and make sure we have all the vars we expect
-const missingRequiredVarNames = Object.keys(requiredVarsByName).filter(
-  (name) =>
-    //@ts-expect-error
-    requiredVarsByName[name].length === 0
-);
-export let envVarsAreConfiguredCorrectly = Boolean(missingRequiredVarNames.length === 0);
-if (!envVarsAreConfiguredCorrectly) {
-  // Log missing ones to the console & then sentry
-  missingRequiredVarNames.forEach((name: string) => {
-    // @ts-expect-error
-    console.error('Expected a value for the env variable `%s` but got `%s`', name, requiredVarsByName[name]);
-  });
-  Sentry.captureEvent({
-    message: '',
-    level: Sentry.Severity.Fatal,
-    extra: { missingRequiredVarNames },
-  });
-}

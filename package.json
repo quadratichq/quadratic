@@ -62,6 +62,7 @@
   "main": "public/electron.js",
   "scripts": {
     "start": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-scripts start",
+    "prebuild": "export REACT_APP_VERSION=$(git rev-parse HEAD) && NODE_OPTIONS='-r dotenv/config' ts-node --skipProject scripts/prebuild.ts dotenv_config_path=./.env",
     "build": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-scripts build",
     "build:wasm": "cd quadratic-core && wasm-pack build --target web --out-dir pkg",
     "build:wasm:nodejs": "cd quadratic-core && wasm-pack build --target nodejs --out-dir pkg",
