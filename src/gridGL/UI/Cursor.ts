@@ -1,5 +1,6 @@
 import { Graphics, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
+import { isEditorOrAbove } from '../../actions';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
 import { colors } from '../../theme/colors';
@@ -129,6 +130,9 @@ export class Cursor extends Graphics {
 
   private drawCursorIndicator(): void {
     const { viewport } = this.app;
+
+    // TODO don't draw the indicator, but also finish drawing the rest of the box
+    if (!isEditorOrAbove(this.app.settings.editorInteractionState.permission)) return;
 
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
       const { editorInteractionState } = this.app.settings;
