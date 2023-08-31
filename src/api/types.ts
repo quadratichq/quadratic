@@ -5,13 +5,13 @@ import { GridFileSchema } from '../schemas';
 
 // Shared types
 const publicLinkAccessSchema = z.enum(['EDIT', 'READONLY', 'NOT_SHARED']);
+export type PublicLinkAccess = z.infer<typeof publicLinkAccessSchema>;
 
 const fileMeta = {
   uuid: z.string().uuid(),
   name: z.string(),
   created_date: z.string().datetime(),
   updated_date: z.string().datetime(),
-  public_link_access: publicLinkAccessSchema,
 };
 
 export const permissionSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER', 'ANONYMOUS']);
@@ -23,6 +23,7 @@ export const apiSchemas = {
   '/v0/files.GET.response': z.array(
     z.object({
       ...fileMeta,
+      public_link_access: publicLinkAccessSchema,
     })
   ),
   '/v0/files.POST.request': z

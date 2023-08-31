@@ -3,7 +3,7 @@ import { Avatar, Button, Dialog, Divider, Paper, Stack, Typography, useTheme } f
 import React from 'react';
 import { useRecoilState } from 'recoil';
 import { isOwner as isOwnerTest } from '../../../actions';
-import { ApiTypes } from '../../../api/types';
+import { PublicLinkAccess } from '../../../api/types';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { useFileRouteLoaderData } from '../../../dashboard/FileRoute';
@@ -13,7 +13,7 @@ import { ShareFileMenuPopover } from './ShareFileMenuPopover';
 
 type ShareOption = {
   label: string;
-  value: ApiTypes['/v0/files/:uuid.GET.response']['file']['public_link_access'];
+  value: PublicLinkAccess;
   disabled?: boolean;
 };
 
