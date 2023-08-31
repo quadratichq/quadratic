@@ -34,7 +34,13 @@ export function PermissionOverlay() {
           severity="info"
           sx={{ width: '100%' }}
           action={
-            <Button component={Link} to={ROUTES.LOGIN} variant="contained" size="small" disableElevation>
+            <Button
+              component={Link}
+              to={ROUTES.LOGIN_WITH_REDIRECT()}
+              variant="contained"
+              size="small"
+              disableElevation
+            >
               Log in
             </Button>
           }
