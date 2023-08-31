@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
-import { isMobile } from 'react-device-detect';
 import { useNavigation } from 'react-router';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../actions';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { SheetController } from '../grid/controller/sheetController';
 import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
@@ -13,7 +11,6 @@ import TopBar from '../ui/menus/TopBar';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { PermissionOverlay } from './components/PermissionOverlay';
 import PresentationModeHint from './components/PresentationModeHint';
-import ReadOnlyDialog from './components/ReadOnlyDialog';
 import BottomBar from './menus/BottomBar';
 import CellTypeMenu from './menus/CellTypeMenu';
 import CommandPalette from './menus/CommandPalette';
@@ -78,10 +75,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       {editorInteractionState.showShareFileMenu && <ShareFileMenu />}
       {presentationMode && <PresentationModeHint />}
 
-      {isMobile && <ReadOnlyDialog />}
-      {!isEditorOrAbove(editorInteractionState.permission) && (
-        <PermissionOverlay permission={editorInteractionState.permission} />
-      )}
+      <PermissionOverlay />
     </div>
   );
 }
