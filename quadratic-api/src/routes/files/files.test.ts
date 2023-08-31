@@ -147,7 +147,6 @@ describe('READ - GET /v0/files/:uuid file shared, no auth', () => {
         name: 'test_file_2',
         uuid: '00000000-0000-4000-8000-000000000001',
         version: null,
-        public_link_access: 'READONLY',
       },
       permission: 'ANONYMOUS',
     });

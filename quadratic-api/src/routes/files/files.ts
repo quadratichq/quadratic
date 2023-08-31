@@ -68,7 +68,6 @@ files_router.get(
         updated_date: req.file.updated_date,
         version: req.file.version,
         contents: req.file.contents.toString('utf8'),
-        public_link_access: req.file.public_link_access,
       },
       permission: getFilePermissions(req.user, req.file),
     });
@@ -212,7 +211,6 @@ files_router.post(
         name: true,
         created_date: true,
         updated_date: true,
-        public_link_access: true,
       },
     });
 
