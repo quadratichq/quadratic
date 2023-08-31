@@ -1,12 +1,14 @@
+import { FormatAlignCenter, FormatAlignLeft, FormatAlignRight, FormatBold, FormatItalic } from '@mui/icons-material';
+import { isEditorOrAbove } from '../../../../actions';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useFormatCells } from '../../TopBar/SubMenus/useFormatCells';
 import { useGetSelection } from '../../TopBar/SubMenus/useGetSelection';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { FormatAlignCenter, FormatAlignLeft, FormatAlignRight, FormatBold, FormatItalic } from '@mui/icons-material';
 
 const ListItems = [
   {
     label: 'Text: Bold',
+    isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       const selection = useGetSelection(props.sheetController.sheet);
       const format = useFormatCells(props.sheetController, props.app);
@@ -25,6 +27,7 @@ const ListItems = [
   },
   {
     label: 'Text: Italic',
+    isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       const selection = useGetSelection(props.sheetController.sheet);
       const format = useFormatCells(props.sheetController, props.app);
@@ -43,6 +46,7 @@ const ListItems = [
   },
   {
     label: 'Text: Align left',
+    isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       const { changeAlignment } = useFormatCells(props.sheetController, props.app);
       return <CommandPaletteListItem {...props} icon={<FormatAlignLeft />} action={() => changeAlignment('left')} />;
@@ -50,6 +54,7 @@ const ListItems = [
   },
   {
     label: 'Text: Align center',
+    isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       const { changeAlignment } = useFormatCells(props.sheetController, props.app);
       return (
@@ -59,6 +64,7 @@ const ListItems = [
   },
   {
     label: 'Text: Align right',
+    isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       const { changeAlignment } = useFormatCells(props.sheetController, props.app);
       return <CommandPaletteListItem {...props} icon={<FormatAlignRight />} action={() => changeAlignment('right')} />;

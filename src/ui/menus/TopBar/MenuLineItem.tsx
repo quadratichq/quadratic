@@ -1,13 +1,15 @@
+import { useTheme } from '@mui/material';
+
 interface IMenuLineItem {
   primary: string;
-  secondary?: string | JSX.Element;
+  secondary?: string | JSX.Element | React.ReactNode;
   Icon?: any;
-  // This is used for smaller menu items, like the floating formatting menu
-  size?: 'default' | 'small';
+  indent?: boolean;
 }
 
 export const MenuLineItem = (props: IMenuLineItem): JSX.Element => {
-  const { primary, secondary, Icon, size = 'default' } = props;
+  const { primary, secondary, Icon, indent } = props;
+  const theme = useTheme();
   return (
     <div
       style={{
@@ -15,7 +17,7 @@ export const MenuLineItem = (props: IMenuLineItem): JSX.Element => {
         width: '100%',
         alignItems: 'center',
         justifyContent: 'space-between',
-        ...(size === 'small' ? { fontSize: '.875rem' } : {}),
+        fontSize: '.875rem',
       }}
     >
       <div
@@ -23,12 +25,15 @@ export const MenuLineItem = (props: IMenuLineItem): JSX.Element => {
           display: 'flex',
           alignItems: 'center',
           gap: '1rem',
+          ...(indent && !Icon ? { paddingLeft: '2.25rem' } : {}),
         }}
       >
-        {Icon && <Icon style={{ color: 'inherit' }} {...(size === 'small' ? { fontSize: 'small' } : {})} />}
+        {Icon && <Icon style={{ color: 'inherit' }} fontSize="small" />}
         {primary}
       </div>
-      {secondary && <div style={{ marginLeft: '24px', fontSize: '14px', color: '#aaaaaa' }}>{secondary}</div>}
+      {secondary && (
+        <div style={{ marginLeft: '24px', fontSize: '14px', color: theme.palette.text.disabled }}>{secondary}</div>
+      )}
     </div>
   );
 };

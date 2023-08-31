@@ -2,7 +2,6 @@ import init, { hello } from 'quadratic-core';
 import { useEffect, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { loadedStateAtom } from '../atoms/loadedStateAtom';
-import { InitialFile } from '../dashboard/FileRoute';
 import { SheetController } from '../grid/controller/sheetController';
 import { loadAssets } from '../gridGL/loadAssets';
 import { PixiApp } from '../gridGL/pixiApp/PixiApp';
@@ -13,7 +12,7 @@ import { QuadraticLoading } from './loading/QuadraticLoading';
 type loadableItem = 'pixi-assets' | 'wasm-rust';
 const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'wasm-rust'];
 
-export default function QuadraticApp({ initialFile }: { initialFile: InitialFile }) {
+export default function QuadraticApp() {
   const [loading, setLoading] = useState(true);
   const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
   const setLoadedState = useSetRecoilState(loadedStateAtom);
@@ -70,9 +69,5 @@ export default function QuadraticApp({ initialFile }: { initialFile: InitialFile
     }
   }, [app, itemsLoaded, sheetController]);
 
-  return loading ? (
-    <QuadraticLoading />
-  ) : (
-    <QuadraticUIContext sheetController={sheetController} initialFile={initialFile} app={app} />
-  );
+  return loading ? <QuadraticLoading /> : <QuadraticUIContext sheetController={sheetController} app={app} />;
 }

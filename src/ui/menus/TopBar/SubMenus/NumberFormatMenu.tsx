@@ -1,15 +1,13 @@
-import Button from '@mui/material/Button';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Menu, MenuItem, MenuDivider } from '@szhsin/react-menu';
+import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 
-import '@szhsin/react-menu/dist/index.css';
-import { Tooltip } from '@mui/material';
-import { useFormatCells } from './useFormatCells';
-import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../../grid/controller/sheetController';
-import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import { AbcOutlined, AttachMoney, Functions, Percent } from '@mui/icons-material';
+import '@szhsin/react-menu/dist/index.css';
+import { SheetController } from '../../../../grid/controller/sheetController';
+import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
+import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import { MenuLineItem } from '../MenuLineItem';
+import { TopBarMenuItem } from '../TopBarMenuItem';
+import { useFormatCells } from './useFormatCells';
 
 interface IProps {
   app: PixiApp;
@@ -29,14 +27,11 @@ export const NumberFormatMenu = (props: IProps) => {
 
   return (
     <Menu
-      menuButton={
-        <Tooltip title="Number format" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
-          <Button style={{ color: 'inherit' }}>
-            <Icon123 style={{ fontSize: '1.8125rem' }} />
-            <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
-          </Button>
-        </Tooltip>
-      }
+      menuButton={({ open }) => (
+        <TopBarMenuItem title="Number format" open={open}>
+          <Icon123 style={{ fontSize: '1.8125rem' }} />
+        </TopBarMenuItem>
+      )}
     >
       <MenuItem onClick={() => textFormatClear()}>
         <MenuLineItem primary="Plain text" secondary={<code>Abc</code>} Icon={AbcOutlined} />

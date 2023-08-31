@@ -1,37 +1,34 @@
+import { Menu, MenuChangeEvent, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useCallback } from 'react';
-import Button from '@mui/material/Button';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Menu, MenuItem, MenuDivider, SubMenu, MenuChangeEvent } from '@szhsin/react-menu';
 
 import {
+  BorderAll,
+  FormatAlignCenter,
+  FormatAlignLeft,
+  FormatAlignRight,
   FormatBold,
-  FormatItalic,
+  FormatClear,
+  FormatColorFill,
   // FormatAlignLeft,
   // FormatAlignRight,
   // FormatAlignCenter,
   FormatColorText,
-  FormatColorFill,
-  FormatClear,
-  // ReadMore,
-  BorderAll,
-  FormatAlignLeft,
-  FormatAlignCenter,
-  FormatAlignRight,
+  FormatItalic,
+  PaletteOutlined,
 } from '@mui/icons-material';
-import { PaletteOutlined } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
-import { Tooltip } from '@mui/material';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { useFormatCells } from '../useFormatCells';
-import { useGetBorderMenu } from './useGetBorderMenu';
 import './formatMenuStyles.scss';
+import { useGetBorderMenu } from './useGetBorderMenu';
 
-import { PixiApp } from '../../../../../gridGL/pixiApp/PixiApp';
 import { SheetController } from '../../../../../grid/controller/sheetController';
-import { useGetSelection } from '../useGetSelection';
-import { MenuLineItem } from '../../MenuLineItem';
+import { PixiApp } from '../../../../../gridGL/pixiApp/PixiApp';
 import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';
+import { MenuLineItem } from '../../MenuLineItem';
+import { TopBarMenuItem } from '../../TopBarMenuItem';
 import { useClearAllFormatting } from '../useClearAllFormatting';
+import { useGetSelection } from '../useGetSelection';
 
 interface IProps {
   app: PixiApp;
@@ -65,14 +62,11 @@ export const FormatMenu = (props: IProps) => {
   return (
     <Menu
       onMenuChange={onMenuChange}
-      menuButton={
-        <Tooltip title="Cell format" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
-          <Button style={{ color: 'inherit' }}>
-            <PaletteOutlined fontSize="small"></PaletteOutlined>
-            <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
-          </Button>
-        </Tooltip>
-      }
+      menuButton={({ open }) => (
+        <TopBarMenuItem title="Cell format" open={open}>
+          <PaletteOutlined fontSize="small"></PaletteOutlined>
+        </TopBarMenuItem>
+      )}
     >
       <MenuItem onClick={() => changeBold(!(format.bold === true))}>
         <MenuLineItem primary="Bold" secondary={KeyboardSymbols.Command + 'B'} Icon={FormatBold} />
