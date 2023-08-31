@@ -38,8 +38,13 @@ export const apiSchemas = {
   '/v0/files/:uuid.GET.response': z.object({
     file: z.object({
       ...fileMeta,
-      contents: z.string(), // Stringified Gridfile
-      version: z.string(), // TODO one of: ...
+      // A string-ified version of `GridFile`
+      contents: z.string(),
+      // We could derive this to be one of the defined types for `version` from
+      // our set of schemas, but it’s possible this is a _new_ version from
+      // the server and the app needs to refresh to use it. So we just allow a
+      // general string here.
+      version: z.string(),
     }),
     permission: permissionSchema,
   }),
