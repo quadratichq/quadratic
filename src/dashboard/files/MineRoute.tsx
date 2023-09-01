@@ -1,15 +1,8 @@
-import {
-  AddOutlined,
-  DeleteOutline,
-  ErrorOutline,
-  FileDownloadOutlined,
-  InsertDriveFileOutlined,
-} from '@mui/icons-material';
-import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
-import { useEffect } from 'react';
+import { AddOutlined, ErrorOutline, InsertDriveFileOutlined, MoreVert } from '@mui/icons-material';
+import { Box, Button, Chip, CircularProgress, Divider, IconButton, Menu, MenuItem, useTheme } from '@mui/material';
+import { useEffect, useState } from 'react';
 import {
   ActionFunctionArgs,
-  Fetcher,
   Form,
   Link,
   LoaderFunctionArgs,
@@ -20,21 +13,39 @@ import {
   useNavigation,
   useSubmit,
 } from 'react-router-dom';
+import { deleteFile, downloadFile, duplicateFile, renameFile } from '../../actions';
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
-import { TooltipHint } from '../../ui/components/TooltipHint';
 import { DashboardFileLink } from '../components/DashboardFileLink';
 import { DashboardHeader } from '../components/DashboardHeader';
 
-type LoaderData = Awaited<ReturnType<typeof apiClient.getFiles>> | null;
-type ActionData = {
+type ListFile = Awaited<ReturnType<typeof apiClient.getFiles>>[0];
+type LoaderRes = ListFile[] | null;
+
+type ActionRes = {
   ok: boolean;
 } | null;
 
+type ActionReqDelete = {
+  action: 'delete';
+  uuid: string;
+};
+type ActionReqDownload = {
+  action: 'download';
+  uuid: string;
+};
+type ActionReqDuplicate = {
+  action: 'duplicate';
+  uuid: string;
+  file: ListFile;
+};
+type ActionReq = ActionReqDelete | ActionReqDownload | ActionReqDuplicate;
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  console.warn('fired loader');
   return apiClient.getFiles().catch((e) => {
     console.error(e);
     return null;
@@ -42,8 +53,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const Component = () => {
-  const files = useLoaderData() as LoaderData;
-  const actionData = useActionData() as ActionData;
+  const files = useLoaderData() as LoaderRes;
+  const actionData = useActionData() as ActionRes;
   const theme = useTheme();
   const fetchers = useFetchers();
   const submit = useSubmit();
@@ -70,21 +81,19 @@ export const Component = () => {
       </Box>
     );
   } else {
-    const renderEmptyList =
-      files.length === 0 ||
-      // Optimistic UI
-      // If the number of fetchers that are in the process of being deleted match
-      // the number of files there are, render the empty state.
-      fetchers.filter(
-        (fetcher) => fetcher.formData?.get('action') === 'delete' && optimisticallyHideFileBeingDeleted(fetcher)
-      ).length === files.length;
+    // Optimistcally render files being duplciated
+    const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as ActionReq)?.action === 'delete');
+    const filesBeingDuplicated = fetchers
+      .filter((fetcher) => (fetcher.json as ActionReq)?.action === 'duplicate')
+      .map((fetcher) => (fetcher.json as ActionReqDuplicate)?.file);
+    const filesToRender = filesBeingDuplicated.concat(files);
 
     filesUI = (
       <>
-        {files.map((file) => (
+        {filesToRender.map((file, i) => (
           <FileWithActions key={file.uuid} file={file} />
         ))}
-        {renderEmptyList && (
+        {filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && (
           <Empty
             title="No files"
             description={
@@ -158,24 +167,34 @@ export const Component = () => {
   );
 };
 
-export const action = async ({ params, request }: ActionFunctionArgs): Promise<ActionData> => {
-  const formData = await request.formData();
-  const action = formData.get('action');
+export const action = async ({ params, request }: ActionFunctionArgs): Promise<ActionRes> => {
+  const json: ActionReq = await request.json();
+  const { action } = json;
 
   if (action === 'delete') {
-    const uuid = formData.get('uuid') as string;
     try {
-      await apiClient.deleteFile(uuid);
+      await new Promise((resolve, reject) => setTimeout(reject, 5000));
+      // await apiClient.deleteFile(uuid);
+      return { ok: true };
+    } catch (error) {
+      console.warn('fired action: delete not ok');
+      return { ok: false };
+    }
+  }
+
+  if (action === 'download') {
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      // await apiClient.downloadFile(uuid);
       return { ok: true };
     } catch (error) {
       return { ok: false };
     }
   }
 
-  if (action === 'download') {
-    const uuid = formData.get('uuid') as string;
+  if (action === 'duplicate') {
     try {
-      await apiClient.downloadFile(uuid);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -185,81 +204,132 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   return null;
 };
 
-function FileWithActions({ file }: { file: NonNullable<LoaderData>[0] }) {
-  const { uuid, name, updated_date, public_link_access } = file;
+function FileWithActions({ file }: { file: ListFile }) {
   const theme = useTheme();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
+  const fetcherDuplicate = useFetcher();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   useEffect(() => {
     if (fetcherDownload.data && !fetcherDownload.data.ok) {
       addGlobalSnackbar('Failed to download file. Try again.', { severity: 'error' });
     }
   }, [addGlobalSnackbar, fetcherDownload.data]);
 
-  if (optimisticallyHideFileBeingDeleted(fetcherDelete)) {
+  if (fetcherDelete.state === 'submitting' || fetcherDelete.state === 'loading') {
     return null;
   }
 
+  const { uuid, name, updated_date, public_link_access } = file;
+  const open = Boolean(anchorEl);
   const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+    event.preventDefault();
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
 
   return (
     <DashboardFileLink
-      to={ROUTES.FILE(uuid)}
+      to={uuid.startsWith('duplicate-') ? '' : ROUTES.FILE(uuid)}
       key={uuid}
       name={name}
       status={failedToDelete && <Chip label="Failed to delete" size="small" color="error" variant="outlined" />}
       description={`Updated ${timeAgo(updated_date)}`}
       isShared={public_link_access !== 'NOT_SHARED'}
       actions={
-        <div style={{ display: 'flex', gap: theme.spacing(1) }}>
-          <fetcherDelete.Form method="post">
-            <input type="hidden" name="uuid" value={uuid} />
-            <TooltipHint title="Delete" enterDelay={1000}>
-              <span>
-                <IconButton
-                  name="action"
-                  value="delete"
-                  type="submit"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!window.confirm(`Confirm you want to delete the file: “${name}”`)) {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  <DeleteOutline />
-                </IconButton>
-              </span>
-            </TooltipHint>
-          </fetcherDelete.Form>
-          <fetcherDownload.Form method="post">
-            <input type="hidden" name="uuid" value={uuid} />
-            <TooltipHint title="Download local copy" enterDelay={1000}>
-              <span>
-                <IconButton
-                  name="action"
-                  value="download"
-                  type="submit"
-                  disabled={false}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  {fetcherDownload.state !== 'idle' ? <CircularProgress size={24} /> : <FileDownloadOutlined />}
-                </IconButton>
-              </span>
-            </TooltipHint>
-          </fetcherDownload.Form>
+        <div style={{ display: 'flex', gap: theme.spacing(1), alignItems: 'center' }}>
+          {fetcherDownload.state === 'submitting' && <CircularProgress size={18} />}
+          <IconButton
+            id="file-actions-button"
+            aria-controls={open ? 'file-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={open ? 'true' : undefined}
+            onClick={handleClick}
+          >
+            <MoreVert />
+          </IconButton>
+          <Menu
+            id="file-menu"
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleClose}
+            MenuListProps={{
+              'aria-labelledby': 'file-actions-button',
+            }}
+          >
+            <MenuItem dense onClick={handleClose}>
+              Share
+            </MenuItem>
+            <MenuItem
+              dense
+              onClick={(e) => {
+                e.stopPropagation();
+                const date = new Date().toISOString();
+                const data: ActionReqDuplicate = {
+                  action: 'duplicate',
+                  uuid,
+                  // These are the values that will optimistically render in the UI
+                  file: {
+                    uuid: 'duplicate-' + date,
+                    public_link_access: 'NOT_SHARED',
+                    name: name + ' (Copy)',
+                    updated_date: date,
+                    created_date: date,
+                  },
+                };
+                fetcherDuplicate.submit(data, { method: 'POST', encType: 'application/json' });
+                handleClose();
+              }}
+            >
+              {duplicateFile.label}
+            </MenuItem>
+            <MenuItem dense onClick={handleClose}>
+              {renameFile.label}
+            </MenuItem>
+
+            <MenuItem
+              dense
+              onClick={(e) => {
+                e.stopPropagation();
+                const data: ActionReqDownload = {
+                  uuid,
+                  action: 'download',
+                };
+                fetcherDownload.submit(data, { method: 'POST' });
+                handleClose();
+              }}
+            >
+              {downloadFile.label}
+            </MenuItem>
+            <Divider />
+
+            <MenuItem
+              dense
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
+                  const data: ActionReqDelete = {
+                    uuid,
+                    action: 'delete',
+                  };
+                  fetcherDelete.submit(data, { method: 'POST', encType: 'application/json' });
+                }
+                handleClose();
+              }}
+            >
+              {deleteFile.label}
+            </MenuItem>
+          </Menu>
         </div>
       }
     />
   );
-}
-
-function optimisticallyHideFileBeingDeleted(fetcher: Fetcher) {
-  return fetcher.state === 'submitting' || fetcher.state === 'loading' || (fetcher.data && fetcher.data.success);
 }
 
 // Vanilla js time formatter. Adapted from:
