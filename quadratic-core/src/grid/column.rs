@@ -187,6 +187,9 @@ impl<B: BlockContent> ColumnData<B> {
     }
 
     fn try_merge_at(&mut self, y: i64) {
+        if self.get_block_containing(y - 1).is_some() {
+            print!("Hello");
+        }
         if self.0.contains_key(&y) {
             if let Some(block_above) = self.remove_block_containing(y - 1) {
                 let block_below = self.remove_block_at(y).expect("block should not vanish");
@@ -322,4 +325,27 @@ impl ColumnData<SameValue<bool>> {
 
         ret
     }
+}
+
+#[test]
+fn test_column_data_same_value_set_range() {
+    let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+
+    // range 0 - 10 (true)
+    cd.set_range(Range { start: -2, end: 10 }, true);
+    assert_eq!(cd.get(-1), Some(true));
+    assert_eq!(cd.get(-3), None);
+    assert_eq!(cd.blocks().count(), 1);
+
+    // adding range 11 - 20 (true)
+    cd.set_range(Range { start: 11, end: 20 }, true);
+    assert_eq!(cd.get(11), Some(true));
+    assert_eq!(cd.get(21), None);
+
+    assert_eq!(cd.blocks().count(), 1);
+
+    cd.set_range(Range { start: 21, end: 30 }, false);
+    assert_eq!(cd.get(21), Some(false));
+    assert_eq!(cd.get(31), None);
+    assert_eq!(cd.blocks().count(), 2);
 }
