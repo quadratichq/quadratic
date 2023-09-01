@@ -53,7 +53,9 @@ export class Cursor extends Graphics {
     const editor_selected_cell = editorInteractionState.selectedCell;
 
     // draw cursor but leave room for cursor indicator if needed
-    const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
+    const indicatorSize = isEditorOrAbove(this.app.settings.editorInteractionState.permission)
+      ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
+      : 0;
     this.indicator.width = this.indicator.height = indicatorSize;
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
     const terminalPosition = settings.interactionState.multiCursorPosition.terminalPosition;
@@ -130,9 +132,6 @@ export class Cursor extends Graphics {
 
   private drawCursorIndicator(): void {
     const { viewport } = this.app;
-
-    // TODO don't draw the indicator, but also finish drawing the rest of the box
-    if (!isEditorOrAbove(this.app.settings.editorInteractionState.permission)) return;
 
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
       const { editorInteractionState } = this.app.settings;
