@@ -230,7 +230,7 @@ export class Grid {
       JSON.stringify(cursor)
     ) as TransactionSummary;
 
-    // todo: the rust summary is incorrect for cell_fill -- it's part of the fill layer, not the cells layer
+    // todo: the rust summary is incorrect for fill-color -- it's part of the fill_sheets_modified, not the cell_regions_modified
     summary.cell_regions_modified = [];
     summary.fill_sheets_modified = [sheetId];
     return summary;
