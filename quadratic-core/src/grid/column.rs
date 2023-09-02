@@ -325,7 +325,7 @@ impl ColumnData<SameValue<bool>> {
 }
 
 #[test]
-fn test_column_data_same_value_set_range() {
+fn test_column_data_set_range() {
     let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
 
     // range 0 - 10 (true)
@@ -342,8 +342,10 @@ fn test_column_data_same_value_set_range() {
     assert_eq!(cd.get(20), None);
     assert_eq!(cd.blocks().count(), 1);
 
-    cd.set_range(Range { start: 25, end: 30 }, false);
-    assert_eq!(cd.get(24), None);
+    // adding range 19 - 30 (false) - creating a second block and overlapping previous one
+    cd.set_range(Range { start: 19, end: 30 }, false);
+    assert_eq!(cd.get(19), Some(false));
+    assert_eq!(cd.get(18), Some(true));
     assert_eq!(cd.get(25), Some(false));
     assert_eq!(cd.get(30), None);
     assert_eq!(cd.blocks().count(), 2);
