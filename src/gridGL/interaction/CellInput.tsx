@@ -241,6 +241,7 @@ export const CellInput = (props: CellInputProps) => {
           event.preventDefault();
         } else if (event.key === 'Tab') {
           closeInput({ x: 1, y: 0 });
+          event.stopPropagation();
           event.preventDefault();
         } else if (event.key === 'Escape') {
           closeInput(undefined, true);
