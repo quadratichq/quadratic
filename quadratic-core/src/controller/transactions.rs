@@ -112,6 +112,18 @@ impl GridController {
                     formats,
                     height,
                 } => {
+                    let rect = Rect::new_span(
+                        pos,
+                        Pos {
+                            x: pos.x + (formats.len() as i64),
+                            y: pos.y + (height as i64),
+                        },
+                    );
+                    summary.cell_regions_modified.push((sheet_id, rect));
+
+                    // todo: maybe do work to see if this should be updated?
+                    summary.fill_sheets_modified.push(sheet_id);
+
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
                     let rect = Rect {
                         min: pos.clone(),
