@@ -224,12 +224,17 @@ export class Grid {
     cursor: SheetCursorSave
   ): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.js_set_cell_fill_color(
+    const summary = this.gridController.js_set_cell_fill_color(
       sheetId,
       rectangleToRect(rectangle),
       fillColor,
       JSON.stringify(cursor)
-    );
+    ) as TransactionSummary;
+
+    // todo: the rust summary is incorrect for fill-color -- it's part of the fill_sheets_modified, not the cell_regions_modified
+    summary.cell_regions_modified = [];
+    summary.fill_sheets_modified = [sheetId];
+    return summary;
   }
 
   //#endregion
