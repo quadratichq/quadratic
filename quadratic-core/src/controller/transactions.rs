@@ -116,7 +116,7 @@ impl GridController {
                     let rect = Rect {
                         min: pos.clone(),
                         max: Pos {
-                            x: pos.y,
+                            x: pos.x,
                             y: pos.y + (height as i64),
                         },
                     };
