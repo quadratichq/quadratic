@@ -78,6 +78,51 @@ impl Column {
             || self.text_color.get(y).is_some()
             || self.fill_color.get(y).is_some()
     }
+
+    /// copies formats column into a new column with y starting at 0
+    pub fn copy_formats_to_column(&self, range: Range<i64>) -> Column {
+        let mut column = Column::new();
+        self.align.copy_to_clipboard(&range, &mut column.align);
+        self.wrap.copy_to_clipboard(&range, &mut column.wrap);
+        self.numeric_format
+            .copy_to_clipboard(&range, &mut column.numeric_format);
+        self.bold.copy_to_clipboard(&range, &mut column.bold);
+        self.italic.copy_to_clipboard(&range, &mut column.italic);
+        self.text_color
+            .copy_to_clipboard(&range, &mut column.text_color);
+        self.fill_color
+            .copy_to_clipboard(&range, &mut column.fill_color);
+        column
+    }
+    /// removes formats column into a new column with y starting at 0
+    pub fn remove_formats_to_column(&mut self, range: Range<i64>) -> Column {
+        let mut column = Column::new();
+        self.align
+            .remove_range_to_column_data(range.clone(), &mut column.align);
+        self.wrap
+            .remove_range_to_column_data(range.clone(), &mut column.wrap);
+        self.numeric_format
+            .remove_range_to_column_data(range.clone(), &mut column.numeric_format);
+        self.bold
+            .remove_range_to_column_data(range.clone(), &mut column.bold);
+        self.italic
+            .remove_range_to_column_data(range.clone(), &mut column.italic);
+        self.text_color
+            .remove_range_to_column_data(range.clone(), &mut column.text_color);
+        self.fill_color
+            .remove_range_to_column_data(range.clone(), &mut column.fill_color);
+        column
+    }
+    pub fn merge_formats_from_column(&mut self, y: i64, source: &Column) {
+        self.align.merge_from_column(y, &source.align);
+        self.wrap.merge_from_column(y, &source.wrap);
+        self.numeric_format
+            .merge_from_column(y, &source.numeric_format);
+        self.bold.merge_from_column(y, &source.bold);
+        self.italic.merge_from_column(y, &source.italic);
+        self.text_color.merge_from_column(y, &source.text_color);
+        self.fill_color.merge_from_column(y, &source.fill_color);
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -255,6 +300,62 @@ impl<B: BlockContent> ColumnData<B> {
         self.add_blocks(to_put_back);
 
         to_return
+    }
+
+    pub fn remove_range_to_column_data(
+        &mut self,
+        y_range: Range<i64>,
+        column_data: &mut ColumnData<B>,
+    ) {
+        let mut blocks = self.remove_range(y_range);
+        if blocks.len() != 0 {
+            let first = blocks.first().unwrap().y;
+            blocks.iter_mut().for_each(|block| block.y -= first);
+            column_data.add_blocks(blocks);
+        }
+    }
+
+    // copy and overwrite blocks from the y_start through the length of the from (which always starts at y = 0)
+    pub fn copy_to_clipboard(&self, y_range: &Range<i64>, column_data: &mut ColumnData<B>) {
+        let mut to_copy = vec![];
+        for it in self.blocks_covering_range(y_range.clone()).with_position() {
+            match it {
+                itertools::Position::First(block) => {
+                    let [_, below] = block.clone().split(y_range.start);
+                    to_copy.extend(below)
+                }
+                itertools::Position::Middle(block) => to_copy.push(block.clone()),
+                itertools::Position::Last(block) => {
+                    let [above, _] = block.clone().split(y_range.end);
+                    to_copy.extend(above);
+                }
+                itertools::Position::Only(block) => {
+                    let [_, rest] = block.clone().split(y_range.start);
+                    if let Some(rest) = rest {
+                        let [inside, _] = rest.split(y_range.end);
+                        to_copy.extend(inside);
+                    }
+                }
+            }
+        }
+
+        if to_copy.len() != 0 {
+            // normalize the y-values where the range.start = 0
+            to_copy
+                .iter_mut()
+                .for_each(|block| block.y -= y_range.start);
+            column_data.add_blocks(to_copy);
+        }
+    }
+
+    pub fn merge_from_column(&mut self, y_start: i64, clipboard: &ColumnData<B>) {
+        clipboard.blocks().for_each(|block| {
+            let mut to_add = block.clone();
+            to_add.y += y_start;
+            self.add_block(to_add);
+            self.try_merge_at(block.y);
+            self.try_merge_at(block.y + (block.len() as i64) + 1);
+        });
     }
 
     pub fn range(&self) -> Option<Range<i64>> {

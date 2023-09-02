@@ -106,6 +106,30 @@ impl GridController {
                     })
                 }
 
+                Operation::ReplaceCellFormats {
+                    sheet_id,
+                    pos,
+                    formats,
+                    height,
+                } => {
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                    let rect = Rect {
+                        min: pos.clone(),
+                        max: Pos {
+                            x: pos.y,
+                            y: pos.y + (height as i64),
+                        },
+                    };
+                    let old_formats = sheet.remove_formats_from_columns(rect);
+                    sheet.merge_formats_from_columns(pos, formats);
+                    rev_ops.push(Operation::ReplaceCellFormats {
+                        sheet_id,
+                        formats: old_formats,
+                        pos,
+                        height,
+                    });
+                }
+
                 Operation::AddSheet { sheet } => {
                     // todo: need to handle the case where sheet.order overlaps another sheet order
                     // this may happen after (1) delete a sheet; (2) MP update w/an added sheet; and (3) undo the deleted sheet
@@ -190,6 +214,12 @@ pub enum Operation {
         region: RegionRef,
         attr: CellFmtArray,
     },
+    ReplaceCellFormats {
+        sheet_id: SheetId,
+        pos: Pos,
+        formats: Vec<Column>,
+        height: u32,
+    },
 
     AddSheet {
         sheet: Sheet,
@@ -218,6 +248,7 @@ impl Operation {
         match self {
             Operation::SetCellValues { region, .. } => Some(region.sheet),
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
+            Operation::ReplaceCellFormats { sheet_id, .. } => Some(*sheet_id),
 
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,

@@ -381,6 +381,9 @@ impl Sheet {
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get(&index)
     }
+    pub(crate) fn get_mut_column(&mut self, index: i64) -> Option<&mut Column> {
+        self.columns.get_mut(&index)
+    }
     /// Returns a column of a sheet from its index, or creates a new column at
     /// that index.
     pub(crate) fn get_or_create_column(
@@ -726,6 +729,27 @@ impl Sheet {
 
     pub fn id_to_string(&self) -> String {
         self.id.to_string()
+    }
+    pub fn remove_formats_from_columns(&mut self, rect: Rect) -> Vec<Column> {
+        let mut columns = vec![];
+        let range: Range<i64> = Range {
+            start: rect.min.y,
+            end: rect.max.y + 1,
+        };
+        for x in rect.x_range() {
+            if let Some(column) = self.get_mut_column(x) {
+                columns.push(column.remove_formats_to_column(range.clone()));
+            }
+        }
+        columns
+    }
+    pub fn merge_formats_from_columns(&mut self, start_pos: Pos, clipboard: Vec<Column>) {
+        let mut x = start_pos.x;
+        clipboard.iter().for_each(|column| {
+            let (_, to_copy) = self.get_or_create_column(x);
+            to_copy.merge_formats_from_column(start_pos.y, column);
+            x += 1;
+        });
     }
 }
 

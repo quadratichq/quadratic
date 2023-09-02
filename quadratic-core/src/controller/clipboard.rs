@@ -1,9 +1,11 @@
+use std::ops::Range;
+
 use super::{
     transactions::{Operation, Transaction, TransactionSummary},
     GridController,
 };
 use crate::{
-    grid::{js_types::CellFormatSummary, CodeCellValue, SheetId},
+    grid::{js_types::CellFormatSummary, CodeCellValue, Column, Sheet, SheetId},
     Array, ArraySize, CellValue, Pos, Rect,
 };
 use htmlescape;
@@ -20,18 +22,29 @@ pub struct ClipboardCell {
 
 #[derive(Serialize, Deserialize)]
 pub struct Clipboard {
-    cells: Vec<ClipboardCell>,
     w: u32,
     h: u32,
+    cells: Vec<ClipboardCell>,
+    formats: Vec<Column>,
 }
 
 impl GridController {
-    pub fn copy_to_clipboard(&self, sheet_id: SheetId, rect: Rect) -> (String, String) {
-        let mut clipboard = Clipboard {
-            cells: vec![],
-            w: rect.width(),
-            h: rect.height(),
+    fn copy_formats_to_clipboard(&self, sheet: &Sheet, rect: Rect) -> Vec<Column> {
+        let mut columns = vec![];
+        let range = Range {
+            start: rect.min.y,
+            end: rect.max.y + 1,
         };
+        for x in rect.x_range() {
+            if let Some(original) = sheet.get_column(x) {
+                columns.push(original.copy_formats_to_column(range.clone()));
+            }
+        }
+        columns
+    }
+
+    pub fn copy_to_clipboard(&self, sheet_id: SheetId, rect: Rect) -> (String, String) {
+        let mut cells = vec![];
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
 
@@ -76,7 +89,7 @@ impl GridController {
                 let format = sheet.get_existing_cell_format(pos);
 
                 // create quadratic clipboard values
-                clipboard.cells.push(ClipboardCell {
+                cells.push(ClipboardCell {
                     value: value.clone(),
                     code: code.clone(),
                     format: format.clone(),
@@ -110,6 +123,15 @@ impl GridController {
                 }
             }
         }
+
+        let formats = self.copy_formats_to_clipboard(sheet, rect);
+        let clipboard = Clipboard {
+            cells,
+            formats,
+            w: rect.width(),
+            h: rect.height(),
+        };
+
         html.push_str("</tr></tbody></table>");
         let mut final_html = String::from("<table data-quadratic=\"");
         let data = serde_json::to_string(&clipboard).unwrap();
@@ -211,6 +233,9 @@ impl GridController {
                 y: start_pos.y + (clipboard.h as i64) - 1,
             },
         };
+        let height = clipboard.h;
+        let formats = clipboard.formats.clone();
+
         let mut ops = vec![];
         let region = self.region(sheet_id, rect);
         let values = GridController::array_from_clipboard_cells(clipboard);
@@ -221,7 +246,12 @@ impl GridController {
             });
         }
 
-        // todo formatting, code value
+        ops.push(Operation::ReplaceCellFormats {
+            sheet_id,
+            pos: start_pos,
+            height,
+            formats,
+        });
 
         self.transact_forward(Transaction { ops, cursor })
     }
