@@ -25,4 +25,5 @@ export const transactionResponse = (sheetController: SheetController, summary: T
     sheetController.sheets.current = cursor.sheetId;
     sheetController.sheet.cursor.load(cursor);
   }
+  pixiAppEvents.setViewportDirty();
 };
