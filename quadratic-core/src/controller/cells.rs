@@ -92,6 +92,7 @@ impl GridController {
                     pos: rect.min,
                     formats,
                     height: rect.height(),
+                    use_column_ids: false,
                 }]
             }
             None => vec![],

@@ -249,6 +249,7 @@ impl GridController {
             pos: start_pos,
             height,
             formats,
+            use_column_ids: false,
         });
 
         self.transact_forward(Transaction { ops, cursor })

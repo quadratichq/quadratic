@@ -745,11 +745,25 @@ impl Sheet {
         }
         columns
     }
-    pub fn merge_formats_from_columns(&mut self, start_pos: Pos, columns: Vec<Column>) {
+    pub fn merge_formats_from_columns(
+        &mut self,
+        start_pos: Pos,
+        columns: Vec<Column>,
+        use_column_ids: bool,
+    ) {
         let mut x = start_pos.x;
         columns.iter().for_each(|column| {
-            let (_, to_copy) = self.get_or_create_column(x);
-            to_copy.merge_formats_from_column(start_pos.y, column);
+            let index = if use_column_ids {
+                self.get_column_index(column.id)
+            } else {
+                Some(x)
+            };
+
+            // this handles the case where a column was deleted when attempting to undo
+            if index.is_some() {
+                let (_, to_copy) = self.get_or_create_column(index.unwrap());
+                to_copy.merge_formats_from_column(start_pos.y, column);
+            }
             x += 1;
         });
     }

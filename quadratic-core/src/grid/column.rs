@@ -81,7 +81,8 @@ impl Column {
 
     /// copies formats column into a new column with y starting at 0
     pub fn copy_formats_to_column(&self, range: Range<i64>) -> Column {
-        let mut column = Column::new();
+        // the copied column has the same id as the original to assist with undo
+        let mut column = Column::with_id(self.id);
         self.align
             .copy_range_to_column_data(&range, &mut column.align);
         self.wrap
@@ -100,7 +101,8 @@ impl Column {
     }
     /// removes formats column into a new column with y starting at 0
     pub fn remove_formats_to_column(&mut self, range: Range<i64>) -> Column {
-        let mut column = Column::new();
+        // the copied column has the same id as the original to assist with undo
+        let mut column = Column::with_id(self.id);
         self.align
             .remove_range_to_column_data(&range, &mut column.align);
         self.wrap

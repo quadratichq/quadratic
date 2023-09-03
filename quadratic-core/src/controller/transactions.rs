@@ -117,6 +117,7 @@ impl GridController {
                     pos,
                     formats,
                     height,
+                    use_column_ids,
                 } => {
                     let rect = Rect::new_span(
                         pos,
@@ -133,12 +134,13 @@ impl GridController {
 
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
                     let old_formats = sheet.remove_formats_from_columns(rect);
-                    sheet.merge_formats_from_columns(pos, formats);
+                    sheet.merge_formats_from_columns(pos, formats, use_column_ids);
                     rev_ops.push(Operation::ReplaceCellFormats {
                         sheet_id,
                         pos,
                         formats: old_formats,
                         height,
+                        use_column_ids: true,
                     });
                 }
 
@@ -231,6 +233,9 @@ pub enum Operation {
         pos: Pos,
         formats: Vec<Column>,
         height: u32,
+
+        // true for an undo; false for a paste
+        use_column_ids: bool,
     },
 
     AddSheet {
