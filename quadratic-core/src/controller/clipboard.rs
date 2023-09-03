@@ -6,6 +6,7 @@ use super::{
 };
 use crate::{
     grid::{js_types::CellFormatSummary, CodeCellValue, Column, Sheet, SheetId},
+    wasm_bindings::js,
     Array, ArraySize, CellValue, Pos, Rect,
 };
 use htmlescape;
@@ -36,8 +37,12 @@ impl GridController {
             end: rect.max.y + 1,
         };
         for x in rect.x_range() {
-            if let Some(original) = sheet.get_column(x) {
-                columns.push(original.copy_formats_to_column(range.clone()));
+            let column = sheet.get_column(x);
+            match column {
+                Some(column) => columns.push(column.copy_formats_to_column(range.clone())),
+
+                // push an empty column so we properly track the number of columns
+                None => columns.push(Column::new()),
             }
         }
         columns
@@ -135,6 +140,7 @@ impl GridController {
         html.push_str("</tr></tbody></table>");
         let mut final_html = String::from("<table data-quadratic=\"");
         let data = serde_json::to_string(&clipboard).unwrap();
+        js::log(&data);
         let encoded = htmlescape::encode_attribute(&data);
         final_html.push_str(&encoded);
         final_html.push_str(&String::from("\">"));
