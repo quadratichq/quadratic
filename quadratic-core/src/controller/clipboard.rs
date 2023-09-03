@@ -6,7 +6,6 @@ use super::{
 };
 use crate::{
     grid::{js_types::CellFormatSummary, CodeCellValue, Column, Sheet, SheetId},
-    wasm_bindings::js,
     Array, ArraySize, CellValue, Pos, Rect,
 };
 use htmlescape;
@@ -140,7 +139,6 @@ impl GridController {
         html.push_str("</tr></tbody></table>");
         let mut final_html = String::from("<table data-quadratic=\"");
         let data = serde_json::to_string(&clipboard).unwrap();
-        js::log(&data);
         let encoded = htmlescape::encode_attribute(&data);
         final_html.push_str(&encoded);
         final_html.push_str(&String::from("\">"));
