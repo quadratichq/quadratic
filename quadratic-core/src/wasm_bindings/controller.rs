@@ -350,104 +350,18 @@ impl GridController {
         )?)
     }
 
-    // /// Sets the text alignment as a [`CellAlign`] in a region.
-    // #[wasm_bindgen(js_name = "setCellAlign")]
-    // pub fn set_cell_align(
-    //     &mut self,
-    //     sheet_id: &SheetId,
-    //     region: &Rect,
-    //     value: JsValue,
-    // ) -> Result<(), JsValue> {
-    //     let value: CellAlign = serde_wasm_bindgen::from_value(value)?;
-    //     self.set_same_values(*sheet_id, *region, |column| &mut column.align, value);
-    //     Ok(())
-    // }
-    // /// Sets the text wrapping as a [`CellWrap`] in a region.
-    // #[wasm_bindgen(js_name = "setCellWrap")]
-    // pub fn set_cell_wrap(
-    //     &mut self,
-    //     sheet_id: &SheetId,
-    //     region: &Rect,
-    //     value: JsValue,
-    // ) -> Result<(), JsValue> {
-    //     let value: CellWrap = serde_wasm_bindgen::from_value(value)?;
-    //     self.set_same_values(*sheet_id, *region, |column| &mut column.wrap, value);
-    //     Ok(())
-    // }
-    // /// Sets the horizontal borders as a [`CellBorder`] in a region.
-    // #[wasm_bindgen(js_name = "setHorizontalCellBorder")]
-    // pub fn set_horizontal_cell_border(
-    //     &mut self,
-    //     sheet_id: &SheetId,
-    //     region: &Rect,
-    //     value: JsValue,
-    // ) -> Result<(), JsValue> {
-    //     let value: CellBorder = serde_wasm_bindgen::from_value(value)?;
-    //     self.sheet_mut_from_id(*sheet_id)
-    //         .set_horizontal_border(*region, value);
-    //     Ok(())
-    // }
-    // /// Sets the vertical borders as a [`CellBorder`] in a region.
-    // #[wasm_bindgen(js_name = "setVerticalCellBorder")]
-    // pub fn set_vertical_cell_border(
-    //     &mut self,
-    //     sheet_id: &SheetId,
-    //     region: &Rect,
-    //     value: JsValue,
-    // ) -> Result<(), JsValue> {
-    //     let value: CellBorder = serde_wasm_bindgen::from_value(value)?;
-    //     self.sheet_mut_from_id(*sheet_id)
-    //         .set_vertical_border(*region, value);
-    //     Ok(())
-    // }
-    // /// Sets the numeric format as a [`NumericFormat`] in a region.
-    // #[wasm_bindgen(js_name = "setCellNumericFormat")]
-    // pub fn set_cell_numeric_format(
-    //     &mut self,
-    //     sheet_id: &SheetId,
-    //     region: &Rect,
-    //     value: JsValue,
-    // ) -> Result<(), JsValue> {
-    //     let value: NumericFormat = serde_wasm_bindgen::from_value(value)?;
-    //     self.set_same_values(
-    //         *sheet_id,
-    //         *region,
-    //         |column| &mut column.numeric_format,
-    //         value,
-    //     );
-    //     Ok(())
-    // }
-    // /// Sets whether cell text is bold in a region.
-    // #[wasm_bindgen(js_name = "setCellBold")]
-    // pub fn set_cell_bold(&mut self, sheet_id: &SheetId, region: &Rect, value: bool) {
-    //     self.set_same_values(*sheet_id, *region, |column| &mut column.bold, value);
-    // }
-    // /// Sets whether cell text is italic in a region.
-    // #[wasm_bindgen(js_name = "setCellItalic")]
-    // pub fn set_cell_italic(&mut self, sheet_id: &SheetId, region: &Rect, value: bool) {
-    //     self.set_same_values(*sheet_id, *region, |column| &mut column.italic, value);
-    // }
-    // /// Sets text color in a region.
-    // #[wasm_bindgen(js_name = "setCellTextColor")]
-    // pub fn set_cell_text_color(&mut self, sheet_id: &SheetId, region: &Rect, value: String) {
-    //     self.set_same_values(*sheet_id, *region, |column| &mut column.text_color, value);
-    // }
-    // /// Sets fill color in a region.
-    // #[wasm_bindgen(js_name = "setCellFillColor")]
-    // pub fn set_cell_fill_color(&mut self, sheet_id: &SheetId, region: &Rect, value: String) {
-    //     self.set_same_values(*sheet_id, *region, |column| &mut column.fill_color, value);
-    // }
-    // /// Clears all formatting in a region.
-    // #[wasm_bindgen(js_name = "clearFormatting")]
-    // pub fn clear_formatting(&mut self, sheet_id: &SheetId, region: &Rect) {
-    //     self.delete_cell_columns(*sheet_id, *region, |column| &mut column.fill_color);
-    //     self.delete_cell_columns(*sheet_id, *region, |column| &mut column.align);
-    //     self.delete_cell_columns(*sheet_id, *region, |column| &mut column.bold);
-    //     self.delete_cell_columns(*sheet_id, *region, |column| &mut column.italic);
-    //     self.delete_cell_columns(*sheet_id, *region, |column| &mut column.numeric_format);
-    //     self.delete_cell_columns(*sheet_id, *region, |column| &mut column.text_color);
-    //     self.delete_cell_columns(*sheet_id, *region, |column| &mut column.wrap);
-    // }
+    /// Returns a [`TransactionSummary`].
+    pub fn js_clear_formatting(
+        &mut self,
+        sheet_id: String,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(
+            &self.clear_formatting(sheet_id, rect, cursor),
+        )?)
+    }
 }
 
 macro_rules! impl_grid_controller_js_set_formatting_fns {

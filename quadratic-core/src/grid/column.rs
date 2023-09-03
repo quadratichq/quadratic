@@ -307,10 +307,9 @@ impl<B: BlockContent> ColumnData<B> {
         y_range: Range<i64>,
         column_data: &mut ColumnData<B>,
     ) {
-        let mut blocks = self.remove_range(y_range);
+        let mut blocks = self.remove_range(y_range.clone());
         if blocks.len() != 0 {
-            let first = blocks.first().unwrap().y;
-            blocks.iter_mut().for_each(|block| block.y -= first);
+            blocks.iter_mut().for_each(|block| block.y -= y_range.start);
             column_data.add_blocks(blocks);
         }
     }

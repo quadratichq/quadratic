@@ -241,8 +241,8 @@ export class Sheet {
     return this.gridNew.setCellAlign(this.id, rectangle, align, this.cursor.save());
   }
 
-  clearFormatting(rectangle: Rectangle): TransactionSummary {
-    throw new Error('Not implemented yet');
+  clearFormatting(): TransactionSummary {
+    return this.gridNew.clearFormatting(this.id, this.cursor.getRectangle(), this.cursor.save());
   }
 
   //#endregion

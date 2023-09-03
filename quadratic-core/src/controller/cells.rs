@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     grid::{
-        Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Grid, Italic, NumericFormat, RegionRef,
-        SheetId, TextColor,
+        Bold, CellAlign, CellFmtAttr, CellWrap, Column, FillColor, Grid, Italic, NumericFormat,
+        RegionRef, SheetId, TextColor,
     },
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
@@ -69,6 +69,32 @@ impl GridController {
                 vec![Operation::SetCellValues { region, values }]
             }
             None => vec![], // region is empty; do nothing
+        };
+        self.transact_forward(Transaction { ops, cursor })
+    }
+
+    pub fn clear_formatting(
+        &mut self,
+        sheet_id: SheetId,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let region = self.existing_region(sheet_id, rect);
+        let ops = match region.size() {
+            Some(_) => {
+                // need an empty list of columns to clear the range
+                let mut formats = vec![];
+                for _ in rect.x_range() {
+                    formats.push(Column::new());
+                }
+                vec![Operation::ReplaceCellFormats {
+                    sheet_id,
+                    pos: rect.min,
+                    formats,
+                    height: rect.height(),
+                }]
+            }
+            None => vec![],
         };
         self.transact_forward(Transaction { ops, cursor })
     }

@@ -127,24 +127,17 @@ impl GridController {
                     );
                     summary.cell_regions_modified.push((sheet_id, rect));
 
-                    // todo: maybe do work to see if this should be updated?
+                    // todo: maybe do work below to see if this should be updated?
                     // might not be worth it....
                     summary.fill_sheets_modified.push(sheet_id);
 
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    let rect = Rect {
-                        min: pos.clone(),
-                        max: Pos {
-                            x: pos.x,
-                            y: pos.y + (height as i64),
-                        },
-                    };
                     let old_formats = sheet.remove_formats_from_columns(rect);
                     sheet.merge_formats_from_columns(pos, formats);
                     rev_ops.push(Operation::ReplaceCellFormats {
                         sheet_id,
-                        formats: old_formats,
                         pos,
+                        formats: old_formats,
                         height,
                     });
                 }

@@ -1,20 +1,14 @@
 import { SheetController } from '../../../../grid/controller/SheetController';
-import { useBorders } from './useBorders';
-import { useFormatCells } from './useFormatCells';
+import { transactionResponse } from '../../../../grid/controller/transactionResponse';
 
 interface IResults {
   clearAllFormatting: () => void;
 }
 
-export const useClearAllFormatting = (sheet_controller: SheetController): IResults => {
-  const { clearFormatting } = useFormatCells(sheet_controller);
-  const { clearBorders } = useBorders(sheet_controller);
-
+export const useClearAllFormatting = (sheetController: SheetController): IResults => {
   const clearAllFormatting = () => {
-    sheet_controller.start_transaction();
-    clearFormatting({ create_transaction: false });
-    clearBorders({ create_transaction: false });
-    sheet_controller.end_transaction();
+    const summary = sheetController.sheet.clearFormatting();
+    transactionResponse(sheetController, summary);
   };
 
   return {

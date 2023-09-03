@@ -169,10 +169,10 @@ impl GridController {
                     let _ = array.set(x, y, CellValue::Blank);
                 }
             };
-            x = x + 1;
+            x += 1;
             if x == clipboard.w {
                 x = 0;
-                y = y + 1;
+                y += 1;
             }
         });
         Some(array)
@@ -209,9 +209,9 @@ impl GridController {
                         let _ = array.set(x, y, CellValue::Text(String::from(*s)));
                     }
                 }
-                x = x + 1;
+                x += 1;
             });
-            y = y + 1;
+            y += 1;
             x = 0;
         });
         Some(array)

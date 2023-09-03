@@ -1,4 +1,5 @@
 import { IViewportTransformState } from 'pixi-viewport';
+import { Rectangle } from 'pixi.js';
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { Coordinate } from '../../gridGL/types/size';
 import { Sheet } from './Sheet';
@@ -87,5 +88,11 @@ export class SheetCursor {
   }
   get terminalPosition(): Coordinate {
     return this.multiCursor ? this.multiCursor.terminalPosition : this.cursorPosition;
+  }
+
+  getRectangle(): Rectangle {
+    const origin = this.originPosition;
+    const terminal = this.terminalPosition;
+    return new Rectangle(origin.x, origin.y, terminal.x - origin.x, terminal.y - origin.y);
   }
 }

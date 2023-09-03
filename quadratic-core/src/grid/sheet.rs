@@ -737,15 +737,17 @@ impl Sheet {
             end: rect.max.y + 1,
         };
         for x in rect.x_range() {
-            if let Some(column) = self.get_mut_column(x) {
-                columns.push(column.remove_formats_to_column(range.clone()));
+            let column = self.get_mut_column(x);
+            match column {
+                Some(column) => columns.push(column.remove_formats_to_column(range.clone())),
+                None => columns.push(Column::new()),
             }
         }
         columns
     }
-    pub fn merge_formats_from_columns(&mut self, start_pos: Pos, clipboard: Vec<Column>) {
+    pub fn merge_formats_from_columns(&mut self, start_pos: Pos, columns: Vec<Column>) {
         let mut x = start_pos.x;
-        clipboard.iter().for_each(|column| {
+        columns.iter().for_each(|column| {
             let (_, to_copy) = self.get_or_create_column(x);
             to_copy.merge_formats_from_column(start_pos.y, column);
             x += 1;

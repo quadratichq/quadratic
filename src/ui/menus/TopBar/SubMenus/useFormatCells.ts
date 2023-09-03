@@ -100,8 +100,8 @@ export const useFormatCells = (sheetController: SheetController): IResults => {
   }, []);
 
   const clearFormatting = useCallback(() => {
-    onFormat(sheetController.sheet.clearFormatting(rectangle));
-  }, [onFormat, rectangle, sheetController.sheet]);
+    onFormat(sheetController.sheet.clearFormatting());
+  }, [onFormat, sheetController.sheet]);
 
   return {
     setFillColor,

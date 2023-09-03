@@ -232,6 +232,11 @@ export class Grid {
     ) as TransactionSummary;
   }
 
+  clearFormatting(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.js_clear_formatting(sheetId, rectangleToRect(rectangle), JSON.stringify(cursor));
+  }
+
   //#endregion
 
   //#region get grid information
