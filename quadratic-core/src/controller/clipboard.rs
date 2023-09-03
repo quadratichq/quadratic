@@ -5,7 +5,7 @@ use super::{
     GridController,
 };
 use crate::{
-    grid::{js_types::CellFormatSummary, CodeCellValue, Column, Sheet, SheetId},
+    grid::{CodeCellValue, Column, Sheet, SheetId},
     Array, ArraySize, CellValue, Pos, Rect,
 };
 use htmlescape;
@@ -16,8 +16,6 @@ use serde::{Deserialize, Serialize};
 pub struct ClipboardCell {
     pub value: Option<CellValue>,
     pub code: Option<CodeCellValue>,
-    pub format: Option<CellFormatSummary>,
-    pub spill_value: Option<CellValue>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -68,8 +66,6 @@ impl GridController {
                 let pos = Pos { x, y };
                 let value = sheet.get_cell_value(pos);
 
-                // todo: probably need to return code in the cell for formulas (probably overwritten by spill_value)
-
                 let spill_value = if value.is_none() {
                     sheet.get_code_cell_value(pos)
                 } else {
@@ -90,16 +86,14 @@ impl GridController {
                 } else {
                     None
                 };
-                let format = sheet.get_existing_cell_format(pos);
 
                 // create quadratic clipboard values
                 cells.push(ClipboardCell {
                     value: value.clone(),
                     code: code.clone(),
-                    format: format.clone(),
-                    spill_value: spill_value.clone(),
                 });
 
+                let format = sheet.get_existing_cell_format(pos);
                 if format.is_some() {
                     html.push_str("<span style={");
                     if format.unwrap().bold.is_some_and(|bold| bold == true) {
@@ -403,10 +397,4 @@ fn test_paste_from_quadratic_clipboard() {
     assert_eq!(cell11.unwrap(), CellValue::Text(String::from("1, 1")));
     let cell21 = sheet.get_cell_value(Pos { x: 2, y: 1 });
     assert_eq!(cell21.unwrap(), CellValue::Number(12.0));
-}
-
-#[test]
-fn test_paste_from_plain_text_clipboard() {
-    let mut gc = GridController::default();
-    let sheet_id = gc.sheet_ids()[0];
 }

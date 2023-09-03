@@ -128,6 +128,7 @@ impl GridController {
                     summary.cell_regions_modified.push((sheet_id, rect));
 
                     // todo: maybe do work to see if this should be updated?
+                    // might not be worth it....
                     summary.fill_sheets_modified.push(sheet_id);
 
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
