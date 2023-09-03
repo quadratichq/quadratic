@@ -1,7 +1,7 @@
 import { BitmapFont, Rectangle } from 'pixi.js';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { CellValue } from '../../quadratic-core/types';
+import { CellValue, SheetId } from '../../quadratic-core/types';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { QuadrantChanged } from '../quadrants/Quadrants';
 import { PixiApp } from './PixiApp';
@@ -169,7 +169,7 @@ class PixiAppEvents {
     this.app.setViewportDirty();
   }
 
-  fillsChanged(sheetIds: string[]): void {
+  fillsChanged(sheetIds: SheetId[]): void {
     if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.cellsChanged');
     this.app.cellsSheets.updateFills(sheetIds);
   }
