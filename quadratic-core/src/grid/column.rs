@@ -102,19 +102,19 @@ impl Column {
     pub fn remove_formats_to_column(&mut self, range: Range<i64>) -> Column {
         let mut column = Column::new();
         self.align
-            .remove_range_to_column_data(range.clone(), &mut column.align);
+            .remove_range_to_column_data(&range, &mut column.align);
         self.wrap
-            .remove_range_to_column_data(range.clone(), &mut column.wrap);
+            .remove_range_to_column_data(&range, &mut column.wrap);
         self.numeric_format
-            .remove_range_to_column_data(range.clone(), &mut column.numeric_format);
+            .remove_range_to_column_data(&range, &mut column.numeric_format);
         self.bold
-            .remove_range_to_column_data(range.clone(), &mut column.bold);
+            .remove_range_to_column_data(&range, &mut column.bold);
         self.italic
-            .remove_range_to_column_data(range.clone(), &mut column.italic);
+            .remove_range_to_column_data(&range, &mut column.italic);
         self.text_color
-            .remove_range_to_column_data(range.clone(), &mut column.text_color);
+            .remove_range_to_column_data(&range, &mut column.text_color);
         self.fill_color
-            .remove_range_to_column_data(range.clone(), &mut column.fill_color);
+            .remove_range_to_column_data(&range, &mut column.fill_color);
         column
     }
     pub fn merge_formats_from_column(&mut self, y: i64, source: &Column) {
@@ -310,7 +310,7 @@ impl<B: BlockContent> ColumnData<B> {
 
     pub fn remove_range_to_column_data(
         &mut self,
-        y_range: Range<i64>,
+        y_range: &Range<i64>,
         column_data: &mut ColumnData<B>,
     ) {
         let mut blocks = self.remove_range(y_range.clone());
