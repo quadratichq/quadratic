@@ -82,16 +82,20 @@ impl Column {
     /// copies formats column into a new column with y starting at 0
     pub fn copy_formats_to_column(&self, range: Range<i64>) -> Column {
         let mut column = Column::new();
-        self.align.copy_to_clipboard(&range, &mut column.align);
-        self.wrap.copy_to_clipboard(&range, &mut column.wrap);
+        self.align
+            .copy_range_to_column_data(&range, &mut column.align);
+        self.wrap
+            .copy_range_to_column_data(&range, &mut column.wrap);
         self.numeric_format
-            .copy_to_clipboard(&range, &mut column.numeric_format);
-        self.bold.copy_to_clipboard(&range, &mut column.bold);
-        self.italic.copy_to_clipboard(&range, &mut column.italic);
+            .copy_range_to_column_data(&range, &mut column.numeric_format);
+        self.bold
+            .copy_range_to_column_data(&range, &mut column.bold);
+        self.italic
+            .copy_range_to_column_data(&range, &mut column.italic);
         self.text_color
-            .copy_to_clipboard(&range, &mut column.text_color);
+            .copy_range_to_column_data(&range, &mut column.text_color);
         self.fill_color
-            .copy_to_clipboard(&range, &mut column.fill_color);
+            .copy_range_to_column_data(&range, &mut column.fill_color);
         column
     }
     /// removes formats column into a new column with y starting at 0
@@ -114,14 +118,16 @@ impl Column {
         column
     }
     pub fn merge_formats_from_column(&mut self, y: i64, source: &Column) {
-        self.align.merge_from_column(y, &source.align);
-        self.wrap.merge_from_column(y, &source.wrap);
+        self.align.merge_from_column_data(y, &source.align);
+        self.wrap.merge_from_column_data(y, &source.wrap);
         self.numeric_format
-            .merge_from_column(y, &source.numeric_format);
-        self.bold.merge_from_column(y, &source.bold);
-        self.italic.merge_from_column(y, &source.italic);
-        self.text_color.merge_from_column(y, &source.text_color);
-        self.fill_color.merge_from_column(y, &source.fill_color);
+            .merge_from_column_data(y, &source.numeric_format);
+        self.bold.merge_from_column_data(y, &source.bold);
+        self.italic.merge_from_column_data(y, &source.italic);
+        self.text_color
+            .merge_from_column_data(y, &source.text_color);
+        self.fill_color
+            .merge_from_column_data(y, &source.fill_color);
     }
 }
 
@@ -314,8 +320,8 @@ impl<B: BlockContent> ColumnData<B> {
         }
     }
 
-    // copy and overwrite blocks from the y_start through the length of the from (which always starts at y = 0)
-    pub fn copy_to_clipboard(&self, y_range: &Range<i64>, column_data: &mut ColumnData<B>) {
+    // copy from the y_start through the length of the from (which always starts at y = 0)
+    pub fn copy_range_to_column_data(&self, y_range: &Range<i64>, column_data: &mut ColumnData<B>) {
         let mut to_copy = vec![];
         for it in self.blocks_covering_range(y_range.clone()).with_position() {
             match it {
@@ -347,7 +353,7 @@ impl<B: BlockContent> ColumnData<B> {
         }
     }
 
-    pub fn merge_from_column(&mut self, y_start: i64, clipboard: &ColumnData<B>) {
+    pub fn merge_from_column_data(&mut self, y_start: i64, clipboard: &ColumnData<B>) {
         clipboard.blocks().for_each(|block| {
             let mut to_add = block.clone();
             to_add.y += y_start;
