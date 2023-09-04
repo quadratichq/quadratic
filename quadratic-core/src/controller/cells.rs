@@ -1,6 +1,5 @@
 use crate::{
     grid::{NumericFormat, NumericFormatKind, RegionRef, SheetId},
-    wasm_bindings::js,
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
 

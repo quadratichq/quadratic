@@ -125,6 +125,7 @@
     "concurrently": "^6.5.1",
     "electron": "^23.0.0",
     "electron-is-dev": "^2.0.0",
+    "fontkit": "^2.0.2",
     "fs-extra": "^11.1.0",
     "jest-environment-jsdom": "^29.6.1",
     "msdf-bmfont-xml": "^2.7.0",
