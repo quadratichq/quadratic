@@ -108,6 +108,17 @@ pub struct NumericFormat {
     decimals: Option<u32>,
     symbol: Option<String>,
 }
+
+impl NumericFormat {
+    pub fn new(kind: NumericFormatKind, decimals: Option<u32>, symbol: Option<String>) -> Self {
+        NumericFormat {
+            kind,
+            decimals,
+            symbol,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]
