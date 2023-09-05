@@ -9,9 +9,6 @@ use super::{
     GridController,
 };
 
-// todo: fill this out
-const CURRENCY_SYMBOLS: &str = "$€£¥";
-
 impl GridController {
     pub fn populate_with_random_floats(&mut self, sheet_id: SheetId, region: &Rect) {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
@@ -19,20 +16,16 @@ impl GridController {
     }
 
     /// tests whether a a CellValue::Text is a currency value
-    fn is_currency(value: &CellValue) -> Option<(String, f64)> {
-        if value.type_name() != "text" {
+    fn unpack_currency(s: &String) -> Option<(String, f64)> {
+        if s.is_empty() {
             return None;
         }
-        let s = value.to_string();
-        if s.len() == 0 {
-            return None;
-        }
-        let possible_currency = s.chars().next().unwrap();
-        if CURRENCY_SYMBOLS.contains(possible_currency) {
-            let split: Vec<&str> = s.split(possible_currency).collect();
-            if split.len() == 2 {
-                if let Ok(number) = split[1].parse::<f64>() {
-                    return Some((possible_currency.to_string(), number));
+        for char in s.chars() {
+            let number = s.strip_prefix(char);
+            if number.is_some() {
+                let parsed = s.parse::<f64>();
+                if parsed.is_ok() {
+                    return Some((char.to_string(), parsed.unwrap()));
                 }
             }
         }
@@ -44,20 +37,24 @@ impl GridController {
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
-        value: CellValue,
+        value: String,
         cursor: Option<String>,
     ) -> TransactionSummary {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         let cell_ref = sheet.get_or_create_cell_ref(pos);
         let region = RegionRef::from(cell_ref);
         let mut ops = vec![];
-        if let Some((currency, number)) = Self::is_currency(&value) {
+
+        // check for currency
+        if let Some((currency, number)) = Self::unpack_currency(&value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(number)),
             });
-            let numeric_format =
-                NumericFormat::new(NumericFormatKind::Currency, Some(2), Some(currency));
+            let numeric_format = NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some(currency),
+            };
             ops.push(Operation::SetCellFormats {
                 region,
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
@@ -65,8 +62,15 @@ impl GridController {
                     1,
                 )),
             })
-        } else {
-            let values = Array::from(value);
+        } else if let Ok(number) = value.parse::<f64>() {
+            ops.push(Operation::SetCellValues {
+                region: region.clone(),
+                values: Array::from(CellValue::Number(number)),
+            });
+        }
+        // todo: include other types here
+        else {
+            let values = Array::from(CellValue::Text(value));
             ops.push(Operation::SetCellValues { region, values });
         }
         self.transact_forward(Transaction { ops, cursor })
@@ -180,18 +184,18 @@ fn test_set_cell_value_undo_redo() {
 
 #[test]
 fn test_is_currency() {
-    let value = CellValue::Text(String::from("$123.123"));
+    let value = String::from("$123.123");
     assert_eq!(
-        GridController::is_currency(&value),
+        GridController::unpack_currency(&value),
         Some((String::from("$"), 123.123))
     );
 
-    let value = CellValue::Text(String::from("test"));
-    assert_eq!(GridController::is_currency(&value), None);
+    let value = String::from("test");
+    assert_eq!(GridController::unpack_currency(&value), None);
 
-    let value = CellValue::Text(String::from("$123$123"));
-    assert_eq!(GridController::is_currency(&value), None);
+    let value = String::from("$123$123");
+    assert_eq!(GridController::unpack_currency(&value), None);
 
-    let value = CellValue::Text(String::from("$123.123abc"));
-    assert_eq!(GridController::is_currency(&value), None);
+    let value = String::from("$123.123abc");
+    assert_eq!(GridController::unpack_currency(&value), None);
 }

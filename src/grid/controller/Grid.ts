@@ -3,7 +3,6 @@ import { GridController, Pos, Rect as RectInternal } from '../../quadratic-core/
 import {
   CellAlign,
   CellFormatSummary,
-  CellValue,
   CellWrap,
   CodeCellValue,
   FormattingSummary,
@@ -138,14 +137,10 @@ export class Grid {
     cursor: SheetCursorSave;
   }): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    const cellValue: CellValue = {
-      type: 'text',
-      value: options.value,
-    };
     return this.gridController.setCellValue(
       options.sheetId,
       new Pos(options.x, options.y),
-      cellValue,
+      value,
       JSON.stringify(options.cursor)
     );
   }

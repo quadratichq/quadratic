@@ -21,8 +21,8 @@ pub use bounds::GridBounds;
 pub use code::*;
 pub use column::{Column, ColumnData};
 pub use formatting::{
-    Bold, BoolSummary, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericFormat,
-    NumericFormatKind, TextColor,
+    Bold, BoolSummary, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericDecimals,
+    NumericFormat, NumericFormatKind, TextColor,
 };
 pub use ids::*;
 pub use sheet::Sheet;

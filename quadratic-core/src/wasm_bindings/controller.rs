@@ -226,13 +226,12 @@ impl GridController {
         &mut self,
         sheet_id: String,
         pos: &Pos,
-        cell_value: JsValue,
+        value: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let cell_value: CellValue = serde_wasm_bindgen::from_value(cell_value)?;
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_value(sheet_id, *pos, cell_value, cursor),
+            &self.set_cell_value(sheet_id, *pos, value, cursor),
         )?)
     }
 

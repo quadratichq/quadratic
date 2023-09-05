@@ -563,6 +563,7 @@ impl Sheet {
                 align: column.align.get(y),
                 wrap: column.wrap.get(y),
                 numeric_format: column.numeric_format.get(y),
+                numeric_decimals: column.numeric_decimals.get(y),
                 bold: column.bold.get(y),
                 italic: column.italic.get(y),
                 text_color: column.text_color.get(y),

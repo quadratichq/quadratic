@@ -21,6 +21,7 @@ pub struct Column {
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
     pub numeric_format: ColumnData<SameValue<NumericFormat>>,
+    pub numeric_decimals: ColumnData<SameValue<i16>>,
     pub bold: ColumnData<SameValue<bool>>,
     pub italic: ColumnData<SameValue<bool>>,
     pub text_color: ColumnData<SameValue<String>>,
@@ -40,6 +41,7 @@ impl Column {
             align: ColumnData::default(),
             wrap: ColumnData::default(),
             numeric_format: ColumnData::default(),
+            numeric_decimals: ColumnData::default(),
             bold: ColumnData::default(),
             italic: ColumnData::default(),
             text_color: ColumnData::default(),
@@ -57,6 +59,7 @@ impl Column {
                 self.align.range(),
                 self.wrap.range(),
                 self.numeric_format.range(),
+                self.numeric_decimals.range(),
                 self.bold.range(),
                 self.italic.range(),
                 self.text_color.range(),
@@ -73,6 +76,7 @@ impl Column {
             || self.align.get(y).is_some()
             || self.wrap.get(y).is_some()
             || self.numeric_format.get(y).is_some()
+            || self.numeric_decimals.get(y).is_some()
             || self.bold.get(y).is_some()
             || self.italic.get(y).is_some()
             || self.text_color.get(y).is_some()

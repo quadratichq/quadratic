@@ -1,9 +1,9 @@
 use crate::{
     grid::{
-        Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericFormat, RegionRef,
-        SheetId, TextColor,
+        Bold, CellAlign, CellFmtAttr, CellRef, CellWrap, FillColor, Italic, NumericDecimals,
+        NumericFormat, RegionRef, SheetId, TextColor,
     },
-    Rect, RunLengthEncoding,
+    CellValue, Rect, RunLengthEncoding,
 };
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +28,63 @@ impl GridController {
             old_values.push(old_value);
         }
         old_values
+    }
+
+    fn current_decimal_places(&self, source: CellRef) -> Option<i16> {
+        let sheet = self.sheet(source.sheet);
+        let pos = sheet.cell_ref_to_pos(source);
+
+        if let Some(pos) = pos {
+            // first check if numeric_format already exists for this cell
+            let decimals = if let Some(numeric_decimals) =
+                if let Some(column) = sheet.get_column(pos.x) {
+                    column.numeric_decimals.get(pos.y)
+                } else {
+                    None
+                } {
+                Some(numeric_decimals)
+            } else {
+                None
+            };
+            if decimals.is_some() {
+                return decimals;
+            }
+
+            // otherwise check value to see if it has a decimal and use that length
+            let value = sheet.get_cell_value(pos);
+            if value.is_some() {
+                match value.unwrap() {
+                    CellValue::Number(n) => {
+                        let s = n.to_string();
+                        let split: Vec<&str> = s.split('.').collect();
+                        if split.len() == 2 {
+                            return Some(split[1].len() as i16);
+                        }
+                    }
+                    _ => (),
+                }
+            };
+        }
+        None
+    }
+
+    // todo: should also check the results of spills
+    pub fn change_decimal_places(
+        &mut self,
+        source: CellRef,
+        region: RegionRef,
+        delta: usize,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let decimals = self.current_decimal_places(source).unwrap_or(0);
+        let ops = vec![Operation::SetCellFormats {
+            region,
+            attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
+                Some(((decimals as usize) + delta) as i16),
+                1,
+            )),
+        }];
+        self.transact_forward(Transaction { ops, cursor })
     }
 }
 
@@ -54,6 +111,7 @@ macro_rules! impl_set_cell_fmt_method {
 impl_set_cell_fmt_method!(set_cell_align<CellAlign>(CellFmtArray::Align));
 impl_set_cell_fmt_method!(set_cell_wrap<CellWrap>(CellFmtArray::Wrap));
 impl_set_cell_fmt_method!(set_cell_numeric_format<NumericFormat>(CellFmtArray::NumericFormat));
+impl_set_cell_fmt_method!(set_cell_numeric_decimals<NumericDecimals>(CellFmtArray::NumericDecimals));
 impl_set_cell_fmt_method!(set_cell_bold<Bold>(CellFmtArray::Bold));
 impl_set_cell_fmt_method!(set_cell_italic<Italic>(CellFmtArray::Italic));
 impl_set_cell_fmt_method!(set_cell_text_color<TextColor>(CellFmtArray::TextColor));
@@ -65,6 +123,7 @@ pub enum CellFmtArray {
     Align(RunLengthEncoding<Option<CellAlign>>),
     Wrap(RunLengthEncoding<Option<CellWrap>>),
     NumericFormat(RunLengthEncoding<Option<NumericFormat>>),
+    NumericDecimals(RunLengthEncoding<Option<i16>>),
     Bold(RunLengthEncoding<Option<bool>>),
     Italic(RunLengthEncoding<Option<bool>>),
     TextColor(RunLengthEncoding<Option<String>>),
@@ -164,4 +223,63 @@ fn test_render_fill() {
         max: crate::Pos { x: 100, y: 100 },
     });
     assert_eq!(10, render_fills.len())
+}
+
+#[test]
+fn test_current_decimal_places_value() {
+    let mut gc = GridController::new();
+    let sheet_id = gc.sheet_ids()[0];
+
+    // get decimal places after a set_cell_value
+    gc.set_cell_value(
+        sheet_id,
+        crate::Pos { x: 1, y: 2 },
+        String::from("12.23"),
+        None,
+    );
+
+    let sheet = gc.sheet(sheet_id);
+
+    let cell_ref = sheet.try_get_cell_ref(crate::Pos { x: 1, y: 2 }).unwrap();
+    assert_eq!(gc.current_decimal_places(cell_ref), Some(2));
+}
+
+#[test]
+fn test_current_decimal_places_numeric_format() {
+    let mut gc = GridController::new();
+    let sheet_id = gc.sheet_ids()[0];
+
+    gc.set_cell_numeric_format(
+        sheet_id,
+        crate::Rect {
+            min: crate::Pos { x: 3, y: 3 },
+            max: crate::Pos { x: 3, y: 3 },
+        },
+        Some(NumericFormat {
+            kind: crate::grid::NumericFormatKind::Number,
+            symbol: Some(String::from("$")),
+        }),
+        None,
+    );
+
+    let sheet = gc.sheet(sheet_id);
+    let cell_ref = sheet.try_get_cell_ref(crate::Pos { x: 3, y: 3 }).unwrap();
+    assert_eq!(gc.current_decimal_places(cell_ref), Some(3));
+}
+
+#[test]
+fn test_current_decimal_places_text() {
+    let mut gc = GridController::new();
+    let sheet_id = gc.sheet_ids()[0];
+
+    gc.set_cell_value(
+        sheet_id,
+        crate::Pos { x: 1, y: 2 },
+        String::from("abc"),
+        None,
+    );
+
+    let sheet = gc.sheet(sheet_id);
+    let cell_ref = sheet.try_get_cell_ref(crate::Pos { x: 1, y: 2 }).unwrap();
+    assert_eq!(gc.current_decimal_places(cell_ref), None);
 }

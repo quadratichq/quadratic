@@ -28,6 +28,8 @@ pub struct JsRenderCell {
     #[serde(rename = "textFormat")]
     pub numeric_format: Option<NumericFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub numeric_decimals: Option<i16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bold: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub italic: Option<bool>,

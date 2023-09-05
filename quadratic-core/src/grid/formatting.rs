@@ -39,6 +39,17 @@ impl CellFmtAttr for NumericFormat {
         &mut column.numeric_format
     }
 }
+pub struct NumericDecimals;
+impl CellFmtAttr for NumericDecimals {
+    type Value = i16;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.numeric_decimals
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.numeric_decimals
+    }
+}
+
 pub struct Bold;
 impl CellFmtAttr for Bold {
     type Value = bool;
@@ -103,20 +114,8 @@ pub enum CellWrap {
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct NumericFormat {
     #[serde(rename = "type")]
-    kind: NumericFormatKind,
-    #[serde(rename = "decimalPlaces")]
-    decimals: Option<u32>,
-    symbol: Option<String>,
-}
-
-impl NumericFormat {
-    pub fn new(kind: NumericFormatKind, decimals: Option<u32>, symbol: Option<String>) -> Self {
-        NumericFormat {
-            kind,
-            decimals,
-            symbol,
-        }
-    }
+    pub kind: NumericFormatKind,
+    pub symbol: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]

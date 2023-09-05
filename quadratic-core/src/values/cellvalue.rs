@@ -5,6 +5,9 @@ use serde::{Deserialize, Serialize};
 use super::{Duration, ErrorMsg, Instant, IsBlank};
 use crate::{CodeResult, Error, Span};
 
+// todo: fill this out
+const CURRENCY_SYMBOLS: &str = "$€£¥";
+
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
