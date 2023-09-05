@@ -17,6 +17,7 @@ import { deleteFile, downloadFile, duplicateFile, renameFile } from '../../actio
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
+import { ShareFileMenu } from '../../components/ShareFileMenu';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 import { DashboardFileLink } from '../components/DashboardFileLink';
@@ -59,6 +60,7 @@ export const Component = () => {
   const fetchers = useFetchers();
   const submit = useSubmit();
   const navigation = useNavigation();
+  const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
   const isDisabled = navigation.state !== 'idle';
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
@@ -81,7 +83,7 @@ export const Component = () => {
       </Box>
     );
   } else {
-    // Optimistcally render files being duplciated
+    // Optimistcally render UI
     const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as ActionReq)?.action === 'delete');
     const filesBeingDuplicated = fetchers
       .filter((fetcher) => (fetcher.json as ActionReq)?.action === 'duplicate')
@@ -91,7 +93,12 @@ export const Component = () => {
     filesUI = (
       <>
         {filesToRender.map((file, i) => (
-          <FileWithActions key={file.uuid} file={file} />
+          <FileWithActions
+            key={file.uuid}
+            file={file}
+            activeShareMenuFileId={activeShareMenuFileId}
+            setActiveShareMenuFileId={setActiveShareMenuFileId}
+          />
         ))}
         {filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && (
           <Empty
@@ -163,6 +170,16 @@ export const Component = () => {
       />
 
       {filesUI}
+
+      {activeShareMenuFileId && (
+        <ShareFileMenu
+          onClose={() => {
+            setActiveShareMenuFileId('');
+          }}
+          permission={'OWNER'}
+          fileUuid={activeShareMenuFileId}
+        />
+      )}
     </>
   );
 };
@@ -177,7 +194,6 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       // await apiClient.deleteFile(uuid);
       return { ok: true };
     } catch (error) {
-      console.warn('fired action: delete not ok');
       return { ok: false };
     }
   }
@@ -204,7 +220,15 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   return null;
 };
 
-function FileWithActions({ file }: { file: ListFile }) {
+function FileWithActions({
+  file,
+  activeShareMenuFileId,
+  setActiveShareMenuFileId,
+}: {
+  file: ListFile;
+  activeShareMenuFileId: string;
+  setActiveShareMenuFileId: Function;
+}) {
   const theme = useTheme();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
@@ -263,7 +287,13 @@ function FileWithActions({ file }: { file: ListFile }) {
               'aria-labelledby': 'file-actions-button',
             }}
           >
-            <MenuItem dense onClick={handleClose}>
+            <MenuItem
+              dense
+              onClick={() => {
+                setActiveShareMenuFileId(uuid);
+                handleClose();
+              }}
+            >
               Share
             </MenuItem>
             <MenuItem
