@@ -51,7 +51,6 @@ export default function QuadraticApp() {
     didMount.current = true;
 
     // Load python and populate web workers (if supported)
-    console.log('firing', permission, !isMobile && isEditorOrAbove(permission));
     if (!isMobile && isEditorOrAbove(permission)) {
       setLoadedState((prevState) => ({ ...prevState, pythonLoadState: 'loading' }));
       webWorkers.init(app);
