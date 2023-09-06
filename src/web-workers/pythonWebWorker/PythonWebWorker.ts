@@ -1,5 +1,5 @@
-import { WebWorkers } from '../webWorkers';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
+import { WebWorkers } from '../webWorkers';
 
 export class PythonWebWorker {
   private webWorkers: WebWorkers;
@@ -29,13 +29,9 @@ export class PythonWebWorker {
         }
         const cells = this.webWorkers.app.sheet.grid.getNakedCells(range.x0, range.y0, range.x1, range.y1);
         this.worker.postMessage({ type: 'get-cells', cells } as PythonMessage);
-      } else if (event.type === 'python-loading') {
-        window.dispatchEvent(new CustomEvent('python-loading'));
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
         this.loaded = true;
-      } else if (event.type === 'python-loading-skipped') {
-        window.dispatchEvent(new CustomEvent('python-loading-skipped'));
       } else if (event.type === 'python-error') {
         window.dispatchEvent(new CustomEvent('python-error'));
       } else {

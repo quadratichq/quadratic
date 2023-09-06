@@ -1,11 +1,11 @@
 import { atom } from 'recoil';
 
 export interface LoadedState {
-  pythonLoadState: 'initial' | 'loading' | 'loaded' | 'skipped' | 'error';
+  pythonLoaded: boolean | 'error';
 }
 
 export const loadedStateDefault: LoadedState = {
-  pythonLoadState: 'initial',
+  pythonLoaded: false,
 };
 
 export const loadedStateAtom = atom({

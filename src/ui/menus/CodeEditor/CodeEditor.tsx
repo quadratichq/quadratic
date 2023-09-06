@@ -49,7 +49,7 @@ interface CodeEditorProps {
 
 export const CodeEditor = (props: CodeEditorProps) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { pythonLoadState } = useRecoilValue(loadedStateAtom);
+  const { pythonLoaded } = useRecoilValue(loadedStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -60,7 +60,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
   const theme = useTheme();
-  const isLoadingPython = pythonLoadState === 'loading' && editorMode === 'PYTHON';
+  const isLoadingPython = !pythonLoaded && editorMode === 'PYTHON';
   const readOnly = !isEditorOrAbove(editorInteractionState.permission);
 
   // Interaction State hook

@@ -11,15 +11,7 @@ export interface PythonReturnType {
 }
 
 export interface PythonMessage {
-  type:
-    | 'results'
-    | 'execute'
-    | 'not-loaded'
-    | 'get-cells'
-    | 'python-loading'
-    | 'python-loading-skipped'
-    | 'python-loaded'
-    | 'python-error';
+  type: 'results' | 'execute' | 'not-loaded' | 'get-cells' | 'python-loaded' | 'python-error';
   python?: string;
   results?: PythonReturnType;
   error?: string;

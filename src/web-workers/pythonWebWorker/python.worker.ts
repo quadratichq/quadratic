@@ -1,7 +1,6 @@
 /* eslint-disable no-restricted-globals */
 /* eslint-disable no-undef */
 
-import { isMobile } from 'react-device-detect';
 import { Cell } from '../../schemas';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 import define_run_python from './run_python.py';
@@ -23,13 +22,6 @@ const getCellsDB = async (x0: number, y0: number, x1: number, y1: number): Promi
 let pyodide: any | undefined;
 
 async function pythonWebWorker() {
-  if (isMobile) {
-    self.postMessage({ type: 'python-loading-skipped' } as PythonMessage);
-    return;
-  }
-
-  self.postMessage({ type: 'python-loading' } as PythonMessage);
-
   try {
     pyodide = await (self as any).loadPyodide();
     await pyodide.registerJsModule('GetCellsDB', getCellsDB);

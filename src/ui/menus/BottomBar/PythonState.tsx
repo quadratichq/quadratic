@@ -5,30 +5,22 @@ import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import BottomBarItem from './BottomBarItem';
 
 const PythonState = () => {
-  const { pythonLoadState } = useRecoilValue(loadedStateAtom);
+  const loadedState = useRecoilValue(loadedStateAtom);
+
   const theme = useTheme();
   const pythonLabel = 'Python 3.9.5';
 
-  if (pythonLoadState === 'error') {
-    return (
-      <BottomBarItem icon={<ErrorOutline fontSize="inherit" />} style={{ color: theme.palette.error.main }}>
-        <Tooltip title="Error loading Python. Please refresh your browser.">
-          <span>{pythonLabel}</span>
-        </Tooltip>
-      </BottomBarItem>
-    );
-  }
-
-  if (pythonLoadState === 'loaded') {
-    return <BottomBarItem icon={<Check fontSize="inherit" />}>{pythonLabel}</BottomBarItem>;
-  }
-
-  if (pythonLoadState === 'loading') {
-    return <BottomBarItem icon={<CircularProgress size="0.5rem" />}>{pythonLabel}</BottomBarItem>;
-  }
-
-  // initial or skipped
-  return null;
+  return loadedState.pythonLoaded === 'error' ? (
+    <BottomBarItem icon={<ErrorOutline fontSize="inherit" />} style={{ color: theme.palette.error.main }}>
+      <Tooltip title="Error loading Python. Please refresh your browser.">
+        <span>{pythonLabel}</span>
+      </Tooltip>
+    </BottomBarItem>
+  ) : loadedState.pythonLoaded ? (
+    <BottomBarItem icon={<Check fontSize="inherit" />}>{pythonLabel}</BottomBarItem>
+  ) : (
+    <BottomBarItem icon={<CircularProgress size="0.5rem" />}>{pythonLabel}</BottomBarItem>
+  );
 };
 
 export default PythonState;

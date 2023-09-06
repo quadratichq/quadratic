@@ -22,34 +22,24 @@ export default function QuadraticApp() {
 
   // recoil tracks whether python is loaded
   useEffect(() => {
-    const loading = () =>
-      setLoadedState((loaded) => ({
-        ...loaded,
-        pythonLoadState: 'loading',
-      }));
     const loaded = () =>
-      setLoadedState((loaded) => ({
-        ...loaded,
-        pythonLoadState: 'loaded',
-      }));
+      setLoadedState((loaded) => {
+        return {
+          ...loaded,
+          pythonLoaded: true,
+        };
+      });
     const error = () =>
-      setLoadedState((loaded) => ({
-        ...loaded,
-        pythonLoadState: 'error',
-      }));
-    const skipped = () =>
-      setLoadedState((loaded) => ({
-        ...loaded,
-        pythonLoadState: 'skipped',
-      }));
-    window.addEventListener('python-loading', loading);
+      setLoadedState((loaded) => {
+        return {
+          ...loaded,
+          pythonLoaded: 'error',
+        };
+      });
     window.addEventListener('python-loaded', loaded);
-    window.addEventListener('python-skipped', skipped);
     window.addEventListener('python-error', error);
     return () => {
-      window.removeEventListener('python-loading', loading);
       window.removeEventListener('python-loaded', loaded);
-      window.removeEventListener('python-skipped', skipped);
       window.removeEventListener('python-error', error);
     };
   }, [setLoadedState]);
