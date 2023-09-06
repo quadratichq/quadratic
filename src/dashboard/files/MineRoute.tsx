@@ -186,12 +186,11 @@ export const Component = () => {
 
 export const action = async ({ params, request }: ActionFunctionArgs): Promise<ActionRes> => {
   const json: ActionReq = await request.json();
-  const { action } = json;
+  const { action, uuid } = json;
 
   if (action === 'delete') {
     try {
-      await new Promise((resolve, reject) => setTimeout(reject, 5000));
-      // await apiClient.deleteFile(uuid);
+      await apiClient.deleteFile(uuid);
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -200,8 +199,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'download') {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      // await apiClient.downloadFile(uuid);
+      await apiClient.downloadFile(uuid);
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -210,7 +208,13 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'duplicate') {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      const {
+        file: { name },
+      } = json as ActionReqDuplicate;
+      const {
+        file: { contents, version },
+      } = await apiClient.getFile(uuid);
+      await apiClient.createFile({ name, version, contents });
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -235,6 +239,7 @@ function FileWithActions({
   const fetcherDuplicate = useFetcher();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
   useEffect(() => {
     if (fetcherDownload.data && !fetcherDownload.data.ok) {
       addGlobalSnackbar('Failed to download file. Try again.', { severity: 'error' });
@@ -271,7 +276,7 @@ function FileWithActions({
           {fetcherDownload.state === 'submitting' && <CircularProgress size={18} />}
           <IconButton
             id="file-actions-button"
-            aria-controls={open ? 'file-menu' : undefined}
+            aria-controls={open ? 'file-actions-menu' : undefined}
             aria-haspopup="true"
             aria-expanded={open ? 'true' : undefined}
             onClick={handleClick}
@@ -279,7 +284,7 @@ function FileWithActions({
             <MoreVert />
           </IconButton>
           <Menu
-            id="file-menu"
+            id="file-actions-menu"
             anchorEl={anchorEl}
             open={open}
             onClose={handleClose}
@@ -328,10 +333,10 @@ function FileWithActions({
               onClick={(e) => {
                 e.stopPropagation();
                 const data: ActionReqDownload = {
-                  uuid,
                   action: 'download',
+                  uuid,
                 };
-                fetcherDownload.submit(data, { method: 'POST' });
+                fetcherDownload.submit(data, { method: 'POST', encType: 'application/json' });
                 handleClose();
               }}
             >
