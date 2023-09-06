@@ -1,10 +1,18 @@
 import { ErrorOutline, QuestionMarkOutlined } from '@mui/icons-material';
 import { Button } from '@mui/material';
 import * as Sentry from '@sentry/react';
-import { Link, LoaderFunctionArgs, isRouteErrorResponse, useRouteError, useRouteLoaderData } from 'react-router-dom';
-import { RecoilRoot } from 'recoil';
+import {
+  Link,
+  LoaderFunctionArgs,
+  isRouteErrorResponse,
+  useLoaderData,
+  useRouteError,
+  useRouteLoaderData,
+} from 'react-router-dom';
+import { MutableSnapshot, RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
 import { ApiSchemas, ApiTypes } from '../api/types';
+import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { Empty } from '../components/Empty';
 import { ROUTE_LOADER_IDS } from '../constants/routes';
 import { GridFile, GridFileSchema } from '../schemas';
@@ -74,8 +82,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 };
 
 export const Component = () => {
+  // Initialize recoil with the file's permission we get from the server
+  const { permission } = useLoaderData() as FileData;
+  const initializeState = ({ set }: MutableSnapshot) => {
+    set(editorInteractionStateAtom, (prevState) => ({
+      ...prevState,
+      permission,
+    }));
+  };
+
   return (
-    <RecoilRoot>
+    <RecoilRoot initializeState={initializeState}>
       <QuadraticApp />
     </RecoilRoot>
   );
