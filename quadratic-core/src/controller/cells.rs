@@ -45,7 +45,7 @@ impl GridController {
         None
     }
 
-    /// sets the value based on a user's input
+    /// sets the value based on a user's input and converts input to proper NumericFormat
     pub fn set_cell_value(
         &mut self,
         sheet_id: SheetId,
