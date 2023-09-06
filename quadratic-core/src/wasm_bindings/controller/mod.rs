@@ -113,7 +113,7 @@ impl GridController {
         sheet_id: String,
         source: Pos,
         rect: Rect,
-        delta: usize,
+        delta: isize,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();

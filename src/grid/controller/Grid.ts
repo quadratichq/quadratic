@@ -216,6 +216,23 @@ export class Grid {
     return this.gridController.setCellFillColor(sheetId, rectangleToRect(rectangle), fillColor, JSON.stringify(cursor));
   }
 
+  changeDecimalPlaces(
+    sheetId: string,
+    source: Pos,
+    rectangle: Rectangle,
+    delta: number,
+    cursor: SheetCursorSave
+  ): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.changeDecimalPlaces(
+      sheetId,
+      source,
+      rectangleToRect(rectangle),
+      delta,
+      JSON.stringify(cursor)
+    );
+  }
+
   //#endregion
 
   //#region get grid information

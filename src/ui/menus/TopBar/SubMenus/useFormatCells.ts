@@ -72,12 +72,12 @@ export const useFormatCells = (sheetController: SheetController): IResults => {
   );
 
   const textFormatIncreaseDecimalPlaces = useCallback((): void => {
-    throw new Error('not implemented yet');
-  }, []);
+    onFormat(sheetController.sheet.changeDecimals(1));
+  }, [onFormat, sheetController.sheet]);
 
   const textFormatDecreaseDecimalPlaces = useCallback((): void => {
-    throw new Error('not implemented yet');
-  }, []);
+    onFormat(sheetController.sheet.changeDecimals(-1));
+  }, [onFormat, sheetController.sheet]);
 
   const textFormatSetCurrency = useCallback((): void => {
     throw new Error('not implemented yet');

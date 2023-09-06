@@ -147,4 +147,22 @@ impl GridController {
             &self.set_cell_fill_color(sheet_id, *rect, value, cursor),
         )?)
     }
+
+    /// Changes cell numeric decimals.
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "changeDecimalPlaces")]
+    pub fn js_change_decimal_places(
+        &mut self,
+        sheet_id: String,
+        source: Pos,
+        rect: &Rect,
+        delta: isize,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
+            sheet_id, source, *rect, delta, cursor,
+        ))?)
+    }
 }

@@ -246,6 +246,16 @@ export class Sheet {
     return this.gridNew.setCellAlign(this.id, rectangle, align, this.cursor.save());
   }
 
+  changeDecimals(decimals: number): TransactionSummary {
+    return this.gridNew.changeDecimalPlaces(
+      this.id,
+      new Pos(this.cursor.originPosition.x, this.cursor.originPosition.y),
+      this.cursor.getRectangle(),
+      decimals,
+      this.cursor.save()
+    );
+  }
+
   clearFormatting(rectangle: Rectangle): TransactionSummary {
     throw new Error('Not implemented yet');
   }
