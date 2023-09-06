@@ -16,6 +16,7 @@ use super::js_types::{
     JsRenderCodeCellState, JsRenderFill,
 };
 use super::response::{GetIdResponse, SetCellResponse};
+use super::NumericFormatKind;
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -192,6 +193,15 @@ impl Sheet {
     /// Returns a code cell value.
     pub fn get_code_cell(&self, pos: Pos) -> Option<&CodeCellValue> {
         self.code_cells.get(&self.try_get_cell_ref(pos)?)
+    }
+
+    pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
+        let column = self.get_column(pos.x)?;
+        if let Some(format) = column.numeric_format.get(pos.x) {
+            Some(format.kind)
+        } else {
+            None
+        }
     }
 
     /// Returns a summary of formatting in a region.
@@ -700,7 +710,7 @@ impl Sheet {
     }
 
     /// get or calculate decimal places for a cell
-    pub fn decimal_places(&self, pos: Pos) -> Option<i16> {
+    pub fn decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
         // first check if numeric_format already exists for this cell
         let decimals = if let Some(numeric_decimals) = if let Some(column) = self.get_column(pos.x)
         {
@@ -724,7 +734,11 @@ impl Sheet {
                     let s = n.to_string();
                     let split: Vec<&str> = s.split('.').collect();
                     if split.len() == 2 {
-                        return Some(split[1].len() as i16);
+                        if is_percentage {
+                            return Some((split[1].len() - 2).min(0) as i16);
+                        } else {
+                            return Some(split[1].len() as i16);
+                        }
                     }
                 }
                 _ => (),
@@ -751,7 +765,7 @@ fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
 #[cfg(test)]
 mod test {
     use crate::{
-        grid::{Sheet, SheetId},
+        grid::{NumericFormat, NumericFormatKind, Sheet, SheetId},
         CellValue, Pos,
     };
 
@@ -760,9 +774,11 @@ mod test {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
         // get decimal places after a set_cell_value
-        sheet.set_cell_value(crate::Pos { x: 1, y: 2 }, CellValue::Number(12.23));
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Number(12.23));
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), Some(2));
 
-        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }), Some(2));
+        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Number(0.23));
+        assert_eq!(sheet.decimal_places(Pos { x: 2, y: 2 }, true), Some(0));
     }
 
     #[test]
@@ -772,7 +788,7 @@ mod test {
         let column = sheet.get_or_create_column(3);
         column.1.numeric_decimals.set(3, Some(3));
 
-        assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }), Some(3));
+        assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }, false), Some(3));
     }
 
     #[test]
@@ -784,6 +800,24 @@ mod test {
             CellValue::Text(String::from("abc")),
         );
 
-        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }), None);
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), None);
+    }
+
+    #[test]
+    fn test_cell_numeric_format_kind() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+        let column = sheet.get_or_create_column(0);
+        column.1.numeric_format.set(
+            0,
+            Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }),
+        );
+
+        assert_eq!(
+            sheet.cell_numeric_format_kind(Pos { x: 0, y: 0 }),
+            Some(NumericFormatKind::Percentage)
+        );
     }
 }

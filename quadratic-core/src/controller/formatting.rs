@@ -1,8 +1,9 @@
 use crate::{
     grid::{
         Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericDecimals, NumericFormat,
-        RegionRef, SheetId, TextColor,
+        NumericFormatKind, RegionRef, SheetId, TextColor,
     },
+    wasm_bindings::js,
     Pos, Rect, RunLengthEncoding,
 };
 use serde::{Deserialize, Serialize};
@@ -40,7 +41,10 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let sheet = self.sheet(sheet_id);
-        let decimals = sheet.decimal_places(source).unwrap_or(0);
+        let is_percentage =
+            sheet.cell_numeric_format_kind(source) == Some(NumericFormatKind::Percentage);
+        let decimals = sheet.decimal_places(source, is_percentage).unwrap_or(0);
+        js::log(&format!("{}", decimals));
         if decimals + (delta as i16) < 0 {
             return TransactionSummary::default();
         }
