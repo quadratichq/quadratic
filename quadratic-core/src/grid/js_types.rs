@@ -3,9 +3,8 @@ use std::ops::{BitOr, BitOrAssign};
 use serde::{Deserialize, Serialize};
 
 use super::borders::CellBorder;
-use super::formatting::{BoolSummary, CellAlign, CellWrap, NumericFormat};
+use super::formatting::{BoolSummary, CellAlign, CellWrap};
 use super::CodeCellLanguage;
-use crate::CellValue;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -14,7 +13,7 @@ pub struct JsRenderCell {
     pub x: i64,
     pub y: i64,
 
-    pub value: CellValue,
+    pub value: String,
 
     /// Code language, set only for the top left cell of a code output.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -24,11 +23,6 @@ pub struct JsRenderCell {
     pub align: Option<CellAlign>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wrap: Option<CellWrap>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "textFormat")]
-    pub numeric_format: Option<NumericFormat>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub numeric_decimals: Option<i16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bold: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]

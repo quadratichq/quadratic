@@ -9,6 +9,9 @@ use super::{
     GridController,
 };
 
+// todo: fill this out
+const CURRENCY_SYMBOLS: &str = "$€£¥";
+
 impl GridController {
     pub fn populate_with_random_floats(&mut self, sheet_id: SheetId, region: &Rect) {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
@@ -20,12 +23,10 @@ impl GridController {
         if s.is_empty() {
             return None;
         }
-        for char in s.chars() {
-            let number = s.strip_prefix(char);
-            if number.is_some() {
-                let parsed = s.parse::<f64>();
-                if parsed.is_ok() {
-                    return Some((char.to_string(), parsed.unwrap()));
+        for char in CURRENCY_SYMBOLS.chars() {
+            if let Some(stripped) = s.strip_prefix(char) {
+                if let Ok(parsed) = stripped.parse::<f64>() {
+                    return Some((char.to_string(), parsed));
                 }
             }
         }
@@ -56,12 +57,16 @@ impl GridController {
                 symbol: Some(currency),
             };
             ops.push(Operation::SetCellFormats {
-                region,
+                region: region.clone(),
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     Some(numeric_format),
                     1,
                 )),
-            })
+            });
+            ops.push(Operation::SetCellFormats {
+                region,
+                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
+            });
         } else if let Ok(number) = value.parse::<f64>() {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),

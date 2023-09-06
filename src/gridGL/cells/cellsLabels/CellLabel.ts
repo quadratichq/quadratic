@@ -1,6 +1,5 @@
 import { removeItems } from '@pixi/utils';
 import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
-import { cellTextFormatterRust } from '../../../grid/formatting/cellTextFormatter';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { convertColorStringToTint, convertTintToArray } from '../../../helpers/convertColor';
 import { JsRenderCell } from '../../../quadratic-core/types';
@@ -65,15 +64,8 @@ export class CellLabel extends Container {
 
   constructor(cell: JsRenderCell, rectangle: Rectangle) {
     super();
-    let cellText = cellTextFormatterRust(cell);
-    // strip new lines
-    cellText = cellText ? cellText.replace(/\n/g, '') : '';
 
-    // todo
-    // if (cell.error) {
-    //   cellText = '  ERROR';
-    //   cell_format = { x: column, y: row, textColor: colors.error, italic: true };
-    // }
+    const cellText = cell.value && cell.value.type !== 'blank' ? cell.value.value.toString().replace(/\n/g, '') : '';
 
     this.text = cellText;
     this.fontSize = fontSize;

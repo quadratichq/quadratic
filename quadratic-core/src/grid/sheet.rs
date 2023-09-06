@@ -135,7 +135,9 @@ impl Sheet {
         let mut old_cell_values_array = Array::new_empty(region.size());
 
         for x in region.x_range() {
-            let Some(column) = self.columns.get_mut(&x) else {continue};
+            let Some(column) = self.columns.get_mut(&x) else {
+                continue;
+            };
             column_ids.push(column.id);
             let removed = column.values.remove_range(region.y_range());
             for block in removed {
@@ -238,111 +240,111 @@ impl Sheet {
         A::column_data_mut(column).set(pos.y, value)
     }
 
-    pub fn export_to_legacy_file_format(&self, index: usize) -> legacy::JsSheet {
-        legacy::JsSheet {
-            name: self.name.clone(),
-            color: self.color.clone(),
-            order: format!("{index:0>8}"), // pad with zeros to sort lexicographically
+    // pub fn export_to_legacy_file_format(&self, index: usize) -> legacy::JsSheet {
+    //     legacy::JsSheet {
+    //         name: self.name.clone(),
+    //         color: self.color.clone(),
+    //         order: format!("{index:0>8}"), // pad with zeros to sort lexicographically
 
-            borders: self.borders.export_to_js_file(),
-            cells: match self.bounds(false) {
-                GridBounds::Empty => vec![],
-                GridBounds::NonEmpty(region) => self
-                    .get_render_cells(region)
-                    .into_iter()
-                    .map(|cell| {
-                        let pos = Pos {
-                            x: cell.x,
-                            y: cell.y,
-                        };
-                        let code_cell = self
-                            .try_get_cell_ref(pos)
-                            .and_then(|cell_ref| self.code_cells.get(&cell_ref));
-                        legacy::JsCell {
-                            x: cell.x,
-                            y: cell.y,
-                            r#type: self.get_legacy_cell_type(pos),
-                            value: cell.value.to_string(),
-                            array_cells: code_cell.and_then(|code_cell| {
-                                let array_output = code_cell.output.as_ref()?.output_value()?;
-                                match array_output {
-                                    Value::Single(_) => None,
-                                    Value::Array(array) => Some(
-                                        array
-                                            .size()
-                                            .iter()
-                                            .map(|(dx, dy)| {
-                                                (cell.x + dx as i64, cell.y + dy as i64)
-                                            })
-                                            .collect(),
-                                    ),
-                                }
-                            }),
-                            dependent_cells: None,
-                            evaluation_result: code_cell
-                                .and_then(|code_cell| code_cell.js_evaluation_result()),
-                            formula_code: code_cell.as_ref().and_then(|code_cell| {
-                                (code_cell.language == CodeCellLanguage::Formula)
-                                    .then(|| code_cell.code_string.clone())
-                            }),
-                            last_modified: None, // TODO: last modified
-                            ai_prompt: None,
-                            python_code: code_cell.as_ref().and_then(|code_cell| {
-                                (code_cell.language == CodeCellLanguage::Python)
-                                    .then(|| code_cell.code_string.clone())
-                            }),
-                        }
-                    })
-                    .collect(),
-            },
-            cell_dependency: "{}".to_string(), // TODO: cell dependencies
-            columns: vec![],                   // TODO: column headers
-            formats: match self.bounds(false) {
-                GridBounds::Empty => vec![],
-                GridBounds::NonEmpty(region) => self
-                    .get_render_cells(region)
-                    .into_iter()
-                    .map(|cell| legacy::JsCellFormat {
-                        x: cell.x,
-                        y: cell.y,
-                        alignment: cell.align,
-                        bold: cell.bold,
-                        fill_color: cell.fill_color,
-                        italic: cell.italic,
-                        text_color: cell.text_color,
-                        text_format: cell.numeric_format,
-                        wrapping: cell.wrap,
-                    })
-                    .collect(),
-            },
-            rows: vec![], // TODO: row headers
-        }
-    }
-    /// Returns the type of a cell, according to the legacy file format.
-    fn get_legacy_cell_type(&self, pos: Pos) -> legacy::JsCellType {
-        if self
-            .get_column(pos.x)
-            .and_then(|column| column.spills.get(pos.y))
-            .is_some()
-        {
-            let code_cell = self
-                .try_get_cell_ref(pos)
-                .and_then(|cell_ref| self.code_cells.get(&cell_ref));
+    //         borders: self.borders.export_to_js_file(),
+    //         cells: match self.bounds(false) {
+    //             GridBounds::Empty => vec![],
+    //             GridBounds::NonEmpty(region) => self
+    //                 .get_render_cells(region)
+    //                 .into_iter()
+    //                 .map(|cell| {
+    //                     let pos = Pos {
+    //                         x: cell.x,
+    //                         y: cell.y,
+    //                     };
+    //                     let code_cell = self
+    //                         .try_get_cell_ref(pos)
+    //                         .and_then(|cell_ref| self.code_cells.get(&cell_ref));
+    //                     legacy::JsCell {
+    //                         x: cell.x,
+    //                         y: cell.y,
+    //                         r#type: self.get_legacy_cell_type(pos),
+    //                         value: cell.value.to_string(),
+    //                         array_cells: code_cell.and_then(|code_cell| {
+    //                             let array_output = code_cell.output.as_ref()?.output_value()?;
+    //                             match array_output {
+    //                                 Value::Single(_) => None,
+    //                                 Value::Array(array) => Some(
+    //                                     array
+    //                                         .size()
+    //                                         .iter()
+    //                                         .map(|(dx, dy)| {
+    //                                             (cell.x + dx as i64, cell.y + dy as i64)
+    //                                         })
+    //                                         .collect(),
+    //                                 ),
+    //                             }
+    //                         }),
+    //                         dependent_cells: None,
+    //                         evaluation_result: code_cell
+    //                             .and_then(|code_cell| code_cell.js_evaluation_result()),
+    //                         formula_code: code_cell.as_ref().and_then(|code_cell| {
+    //                             (code_cell.language == CodeCellLanguage::Formula)
+    //                                 .then(|| code_cell.code_string.clone())
+    //                         }),
+    //                         last_modified: None, // TODO: last modified
+    //                         ai_prompt: None,
+    //                         python_code: code_cell.as_ref().and_then(|code_cell| {
+    //                             (code_cell.language == CodeCellLanguage::Python)
+    //                                 .then(|| code_cell.code_string.clone())
+    //                         }),
+    //                     }
+    //                 })
+    //                 .collect(),
+    //         },
+    //         cell_dependency: "{}".to_string(), // TODO: cell dependencies
+    //         columns: vec![],                   // TODO: column headers
+    //         formats: match self.bounds(false) {
+    //             GridBounds::Empty => vec![],
+    //             GridBounds::NonEmpty(region) => self
+    //                 .get_render_cells(region)
+    //                 .into_iter()
+    //                 .map(|cell| legacy::JsCellFormat {
+    //                     x: cell.x,
+    //                     y: cell.y,
+    //                     alignment: cell.align,
+    //                     bold: cell.bold,
+    //                     fill_color: cell.fill_color,
+    //                     italic: cell.italic,
+    //                     text_color: cell.text_color,
+    //                     text_format: cell.numeric_format,
+    //                     wrapping: cell.wrap,
+    //                 })
+    //                 .collect(),
+    //         },
+    //         rows: vec![], // TODO: row headers
+    //     }
+    // }
+    // /// Returns the type of a cell, according to the legacy file format.
+    // fn get_legacy_cell_type(&self, pos: Pos) -> legacy::JsCellType {
+    //     if self
+    //         .get_column(pos.x)
+    //         .and_then(|column| column.spills.get(pos.y))
+    //         .is_some()
+    //     {
+    //         let code_cell = self
+    //             .try_get_cell_ref(pos)
+    //             .and_then(|cell_ref| self.code_cells.get(&cell_ref));
 
-            if let Some(code_cell) = code_cell {
-                match code_cell.language {
-                    CodeCellLanguage::Python => legacy::JsCellType::Python,
-                    CodeCellLanguage::Formula => legacy::JsCellType::Formula,
-                    CodeCellLanguage::JavaScript => legacy::JsCellType::Javascript,
-                    CodeCellLanguage::Sql => legacy::JsCellType::Sql,
-                }
-            } else {
-                legacy::JsCellType::Computed
-            }
-        } else {
-            legacy::JsCellType::Text
-        }
-    }
+    //         if let Some(code_cell) = code_cell {
+    //             match code_cell.language {
+    //                 CodeCellLanguage::Python => legacy::JsCellType::Python,
+    //                 CodeCellLanguage::Formula => legacy::JsCellType::Formula,
+    //                 CodeCellLanguage::JavaScript => legacy::JsCellType::Javascript,
+    //                 CodeCellLanguage::Sql => legacy::JsCellType::Sql,
+    //             }
+    //         } else {
+    //             legacy::JsCellType::Computed
+    //         }
+    //     } else {
+    //         legacy::JsCellType::Text
+    //     }
+    // }
 
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
@@ -557,13 +559,12 @@ impl Sheet {
                 x,
                 y,
 
-                value,
+                value: value
+                    .to_display(column.numeric_format.get(y), column.numeric_decimals.get(y)),
                 language,
 
                 align: column.align.get(y),
                 wrap: column.wrap.get(y),
-                numeric_format: column.numeric_format.get(y),
-                numeric_decimals: column.numeric_decimals.get(y),
                 bold: column.bold.get(y),
                 italic: column.italic.get(y),
                 text_color: column.text_color.get(y),
@@ -694,6 +695,40 @@ impl Sheet {
     pub fn id_to_string(&self) -> String {
         self.id.to_string()
     }
+
+    /// get or calculate decimal places for a cell
+    pub fn decimal_places(&self, pos: Pos) -> Option<i16> {
+        // first check if numeric_format already exists for this cell
+        let decimals = if let Some(numeric_decimals) = if let Some(column) = self.get_column(pos.x)
+        {
+            column.numeric_decimals.get(pos.y)
+        } else {
+            None
+        } {
+            Some(numeric_decimals)
+        } else {
+            None
+        };
+        if decimals.is_some() {
+            return decimals;
+        }
+
+        // otherwise check value to see if it has a decimal and use that length
+        let value = self.get_cell_value(pos);
+        if value.is_some() {
+            match value.unwrap() {
+                CellValue::Number(n) => {
+                    let s = n.to_string();
+                    let split: Vec<&str> = s.split('.').collect();
+                    if split.len() == 2 {
+                        return Some(split[1].len() as i16);
+                    }
+                }
+                _ => (),
+            }
+        };
+        None
+    }
 }
 
 fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
@@ -708,4 +743,39 @@ fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
         }
     }
     ret
+}
+
+#[test]
+fn test_current_decimal_places_value() {
+    let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+    // get decimal places after a set_cell_value
+    sheet.set_cell_value(
+        crate::Pos { x: 1, y: 2 },
+        CellValue::Text(String::from("12.23")),
+    );
+
+    assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }), Some(2));
+}
+
+#[test]
+fn test_current_decimal_places_numeric_format() {
+    let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+    let column = sheet.get_or_create_column(3);
+    column.1.numeric_decimals.set(3, Some(3));
+
+    assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }), Some(3));
+}
+
+#[test]
+fn test_current_decimal_places_text() {
+    let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+    sheet.set_cell_value(
+        crate::Pos { x: 1, y: 2 },
+        CellValue::Text(String::from("abc")),
+    );
+
+    assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }), None);
 }

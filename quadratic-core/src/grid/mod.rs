@@ -226,7 +226,9 @@ impl Grid {
         Some(self.sheets.get(index)?.id)
     }
     pub fn sheet_has_id(&self, sheet_id: Option<SheetId>) -> bool {
-        let Some(sheet_id) = sheet_id else { return false };
+        let Some(sheet_id) = sheet_id else {
+            return false;
+        };
         self.sheets.iter().position(|s| s.id == sheet_id).is_some()
     }
     pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {
@@ -246,16 +248,16 @@ impl Grid {
         sheet.region_rects(region).map(move |rect| (sheet_id, rect))
     }
 
-    pub fn to_legacy_file_format(&self) -> legacy::GridFileV1_4 {
-        legacy::GridFileV1_4 {
-            sheets: self
-                .sheets
-                .iter()
-                .enumerate()
-                .map(|(i, sheet)| sheet.export_to_legacy_file_format(i))
-                .collect(),
-        }
-    }
+    // pub fn to_legacy_file_format(&self) -> legacy::GridFileV1_4 {
+    //     legacy::GridFileV1_4 {
+    //         sheets: self
+    //             .sheets
+    //             .iter()
+    //             .enumerate()
+    //             .map(|(i, sheet)| sheet.export_to_legacy_file_format(i))
+    //             .collect(),
+    //     }
+    // }
 }
 
 #[cfg(test)]

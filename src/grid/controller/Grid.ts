@@ -140,7 +140,7 @@ export class Grid {
     return this.gridController.setCellValue(
       options.sheetId,
       new Pos(options.x, options.y),
-      value,
+      options.value,
       JSON.stringify(options.cursor)
     );
   }

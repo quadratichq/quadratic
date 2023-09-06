@@ -347,6 +347,22 @@ impl GridController {
         )?)
     }
 
+    /// changes the decimal places
+    #[wasm_bindgen(js_name = "setCellNumericDecimals")]
+    pub fn js_set_cell_numeric_decimals(
+        &mut self,
+        sheet_id: String,
+        source: Pos,
+        rect: Rect,
+        delta: usize,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
+            sheet_id, source, rect, delta, cursor,
+        ))?)
+    }
+
     // /// Sets the text alignment as a [`CellAlign`] in a region.
     // #[wasm_bindgen(js_name = "setCellAlign")]
     // pub fn set_cell_align(

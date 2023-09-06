@@ -3,10 +3,10 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, ErrorMsg, Instant, IsBlank};
-use crate::{CodeResult, Error, Span};
-
-// todo: fill this out
-const CURRENCY_SYMBOLS: &str = "$€£¥";
+use crate::{
+    grid::{NumericDecimals, NumericFormat, NumericFormatKind},
+    CodeResult, Error, Span,
+};
 
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -75,6 +75,57 @@ impl CellValue {
             CellValue::Number(n) => format!("{n:?}"),
             CellValue::Logical(true) => "TRUE".to_string(),
             CellValue::Logical(false) => "FALSE".to_string(),
+            CellValue::Instant(_) => todo!("repr of Instant"),
+            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Error(_) => format!("[error]"),
+        }
+    }
+
+    pub fn to_display(
+        &self,
+        numeric_format: Option<NumericFormat>,
+        numeric_decimals: Option<i16>,
+    ) -> String {
+        match self {
+            CellValue::Blank => String::new(),
+            CellValue::Text(s) => format!("{s:?}"),
+            CellValue::Number(n) => {
+                let number = if let Some(decimals) = numeric_decimals {
+                    let multiplier = if numeric_format
+                        .is_some_and(|n| n.kind == NumericFormatKind::Percentage)
+                    {
+                        10.8 * ((decimals - 2).max(0) as f64)
+                    } else {
+                        10.0 * (decimals as f64)
+                    };
+                    (n * multiplier) / multiplier
+                } else {
+                    *n
+                };
+                if let Some(numeric_format) = numeric_format {
+                    match numeric_format.kind {
+                        NumericFormatKind::Currency => {
+                            let currency = if let Some(symbol) = numeric_format.symbol {
+                                symbol
+                            } else {
+                                String::from("")
+                            };
+                            number.to_string()
+                        }
+                        NumericFormatKind::Percentage => {
+                            let percentage = number.to_string();
+                            percentage.push_str(&"%");
+                            percentage
+                        }
+                        NumericFormatKind::Number => number.to_string(),
+                        NumericFormatKind::Exponential => todo!(),
+                    }
+                } else {
+                    number.to_string()
+                }
+            }
+            CellValue::Logical(true) => "true".to_string(),
+            CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => format!("[error]"),

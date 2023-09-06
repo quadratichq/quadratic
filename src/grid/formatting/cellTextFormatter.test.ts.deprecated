@@ -1,6 +1,6 @@
 import { Cell, CellFormat } from '../../schemas';
 import { CellTextFormat } from './cellTextFormat';
-import { CellTextFormatter } from './cellTextFormatter';
+import { CellTextFormatter } from './cellTextFormatter.ts.deprecated';
 
 const generateCell = (value: string) => {
   return {
