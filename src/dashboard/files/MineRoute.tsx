@@ -43,7 +43,12 @@ type ActionReqDuplicate = {
   uuid: string;
   file: ListFile;
 };
-type ActionReq = ActionReqDelete | ActionReqDownload | ActionReqDuplicate;
+type ActionReqRename = {
+  action: 'rename';
+  uuid: string;
+  name: string;
+};
+type ActionReq = ActionReqDelete | ActionReqDownload | ActionReqDuplicate | ActionReqRename;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   console.warn('fired loader');
@@ -221,6 +226,12 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     }
   }
 
+  if (action === 'rename') {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    console.log('renamed on the server');
+    return { ok: true };
+  }
+
   return null;
 };
 
@@ -237,8 +248,10 @@ function FileWithActions({
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
   const fetcherDuplicate = useFetcher();
+  const fetcherRename = useFetcher();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isRenaming, setIsRenaming] = useState<boolean>(false);
 
   useEffect(() => {
     if (fetcherDownload.data && !fetcherDownload.data.ok) {
@@ -263,11 +276,35 @@ function FileWithActions({
     setAnchorEl(null);
   };
 
+  const handleRename = (value: string) => {
+    setIsRenaming(false);
+
+    // Don't allow empty file names
+    if (!(value && value.trim())) {
+      return;
+    }
+
+    // Don't do anything if the name didn't change
+    if (value === name) {
+      return;
+    }
+
+    // Otherwise update on the server and optimistically in the UI
+    const data: ActionReqRename = { uuid, action: 'rename', name: value };
+    fetcherRename.submit(data, { method: 'POST', encType: 'application/json' });
+  };
+
+  // reject the rename
+  if (fetcherRename.json) console.log(fetcherRename);
+
   return (
     <DashboardFileLink
-      to={uuid.startsWith('duplicate-') ? '' : ROUTES.FILE(uuid)}
+      handleRename={handleRename}
+      isRenaming={isRenaming}
+      disabled={uuid.startsWith('duplicate-') || isRenaming}
+      to={ROUTES.FILE(uuid)}
       key={uuid}
-      name={name}
+      name={fetcherRename.json ? (fetcherRename.json as ActionReqRename).name : name}
       status={failedToDelete && <Chip label="Failed to delete" size="small" color="error" variant="outlined" />}
       description={`Updated ${timeAgo(updated_date)}`}
       isShared={public_link_access !== 'NOT_SHARED'}
@@ -324,7 +361,13 @@ function FileWithActions({
             >
               {duplicateFile.label}
             </MenuItem>
-            <MenuItem dense onClick={handleClose}>
+            <MenuItem
+              dense
+              onClick={() => {
+                setIsRenaming(true);
+                handleClose();
+              }}
+            >
               {renameFile.label}
             </MenuItem>
 

@@ -73,6 +73,7 @@ export const Component = () => {
           paddingBottom: theme.spacing(5),
           position: 'relative',
           transition: '.2s ease opacity',
+          maxWidth: '90rem',
           ...(isLoading ? { opacity: '.25', pointerEvents: 'none' } : {}),
 
           [theme.breakpoints.up('md')]: {
