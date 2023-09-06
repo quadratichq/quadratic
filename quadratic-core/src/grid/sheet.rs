@@ -748,37 +748,42 @@ fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
     ret
 }
 
-#[test]
-fn test_current_decimal_places_value() {
-    let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+#[cfg(test)]
+mod test {
+    use crate::{
+        grid::{Sheet, SheetId},
+        CellValue, Pos,
+    };
 
-    // get decimal places after a set_cell_value
-    sheet.set_cell_value(
-        crate::Pos { x: 1, y: 2 },
-        CellValue::Text(String::from("12.23")),
-    );
+    #[test]
+    fn test_current_decimal_places_value() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-    assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }), Some(2));
-}
+        // get decimal places after a set_cell_value
+        sheet.set_cell_value(crate::Pos { x: 1, y: 2 }, CellValue::Number(12.23));
 
-#[test]
-fn test_current_decimal_places_numeric_format() {
-    let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }), Some(2));
+    }
 
-    let column = sheet.get_or_create_column(3);
-    column.1.numeric_decimals.set(3, Some(3));
+    #[test]
+    fn test_current_decimal_places_numeric_format() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-    assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }), Some(3));
-}
+        let column = sheet.get_or_create_column(3);
+        column.1.numeric_decimals.set(3, Some(3));
 
-#[test]
-fn test_current_decimal_places_text() {
-    let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+        assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }), Some(3));
+    }
 
-    sheet.set_cell_value(
-        crate::Pos { x: 1, y: 2 },
-        CellValue::Text(String::from("abc")),
-    );
+    #[test]
+    fn test_current_decimal_places_text() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-    assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }), None);
+        sheet.set_cell_value(
+            crate::Pos { x: 1, y: 2 },
+            CellValue::Text(String::from("abc")),
+        );
+
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }), None);
+    }
 }

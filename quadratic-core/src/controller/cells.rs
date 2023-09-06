@@ -180,60 +180,74 @@ impl GridController {
     }
 }
 
-#[test]
-fn test_set_cell_value_undo_redo() {
-    let mut g = GridController::new();
-    let sheet_id = g.grid.sheets()[0].id;
-    let pos = Pos { x: 3, y: 6 };
-    let get_the_cell =
-        |g: &GridController| g.sheet(sheet_id).get_cell_value(pos).unwrap_or_default();
-    let expected_summary = Some(TransactionSummary {
-        cell_regions_modified: vec![(sheet_id, Rect::single_pos(pos))],
-        ..Default::default()
-    });
+#[cfg(test)]
+mod test {
+    use approx::assert_relative_eq;
 
-    assert_eq!(get_the_cell(&g), CellValue::Blank);
-    g.set_cell_value(sheet_id, pos, "a".into(), None);
-    assert_eq!(get_the_cell(&g), "a".into());
-    g.set_cell_value(sheet_id, pos, "b".into(), None);
-    assert_eq!(get_the_cell(&g), "b".into());
-    assert!(g.undo(None) == expected_summary);
-    assert_eq!(get_the_cell(&g), "a".into());
-    assert!(g.redo(None) == expected_summary);
-    assert_eq!(get_the_cell(&g), "b".into());
-    assert!(g.undo(None) == expected_summary);
-    assert_eq!(get_the_cell(&g), "a".into());
-    assert!(g.undo(None) == expected_summary);
-    assert_eq!(get_the_cell(&g), CellValue::Blank);
-    assert!(g.undo(None).is_none());
-    assert_eq!(get_the_cell(&g), CellValue::Blank);
-    assert!(g.redo(None) == expected_summary);
-    assert_eq!(get_the_cell(&g), "a".into());
-    assert!(g.redo(None) == expected_summary);
-    assert_eq!(get_the_cell(&g), "b".into());
-    assert!(g.redo(None).is_none());
-    assert_eq!(get_the_cell(&g), "b".into());
-}
+    use crate::{
+        controller::{transactions::TransactionSummary, GridController},
+        CellValue, Pos, Rect,
+    };
 
-#[test]
-fn test_unpack_currency() {
-    let value = String::from("$123.123");
-    assert_eq!(
-        GridController::unpack_currency(&value),
-        Some((String::from("$"), 123.123))
-    );
+    #[test]
+    fn test_set_cell_value_undo_redo() {
+        let mut g = GridController::new();
+        let sheet_id = g.grid.sheets()[0].id;
+        let pos = Pos { x: 3, y: 6 };
+        let get_the_cell =
+            |g: &GridController| g.sheet(sheet_id).get_cell_value(pos).unwrap_or_default();
+        let expected_summary = Some(TransactionSummary {
+            cell_regions_modified: vec![(sheet_id, Rect::single_pos(pos))],
+            ..Default::default()
+        });
 
-    let value = String::from("test");
-    assert_eq!(GridController::unpack_currency(&value), None);
+        assert_eq!(get_the_cell(&g), CellValue::Blank);
+        g.set_cell_value(sheet_id, pos, "a".into(), None);
+        assert_eq!(get_the_cell(&g), "a".into());
+        g.set_cell_value(sheet_id, pos, "b".into(), None);
+        assert_eq!(get_the_cell(&g), "b".into());
+        assert!(g.undo(None) == expected_summary);
+        assert_eq!(get_the_cell(&g), "a".into());
+        assert!(g.redo(None) == expected_summary);
+        assert_eq!(get_the_cell(&g), "b".into());
+        assert!(g.undo(None) == expected_summary);
+        assert_eq!(get_the_cell(&g), "a".into());
+        assert!(g.undo(None) == expected_summary);
+        assert_eq!(get_the_cell(&g), CellValue::Blank);
+        assert!(g.undo(None).is_none());
+        assert_eq!(get_the_cell(&g), CellValue::Blank);
+        assert!(g.redo(None) == expected_summary);
+        assert_eq!(get_the_cell(&g), "a".into());
+        assert!(g.redo(None) == expected_summary);
+        assert_eq!(get_the_cell(&g), "b".into());
+        assert!(g.redo(None).is_none());
+        assert_eq!(get_the_cell(&g), "b".into());
+    }
 
-    let value = String::from("$123$123");
-    assert_eq!(GridController::unpack_currency(&value), None);
+    #[test]
+    fn test_unpack_currency() {
+        let value = String::from("$123.123");
+        assert_eq!(
+            GridController::unpack_currency(&value),
+            Some((String::from("$"), 123.123))
+        );
 
-    let value = String::from("$123.123abc");
-    assert_eq!(GridController::unpack_currency(&value), None);
-}
+        let value = String::from("test");
+        assert_eq!(GridController::unpack_currency(&value), None);
 
-fn test_unpack_percentage() {
-    let value = String::from("1238.12232%");
-    assert_eq!(GridController::unpack_percentage(&value), Some(12.3812232));
+        let value = String::from("$123$123");
+        assert_eq!(GridController::unpack_currency(&value), None);
+
+        let value = String::from("$123.123abc");
+        assert_eq!(GridController::unpack_currency(&value), None);
+    }
+
+    #[test]
+    fn test_unpack_percentage() {
+        let value = String::from("1238.12232%");
+        assert_relative_eq!(
+            GridController::unpack_percentage(&value).unwrap(),
+            12.3812232,
+        );
+    }
 }
