@@ -1,3 +1,4 @@
+import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { WebWorkers } from '../webWorkers';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
@@ -7,7 +8,7 @@ export class PythonWebWorker {
   private callback?: (results: PythonReturnType) => void;
   private loaded = false;
 
-  constructor(webWorkers: WebWorkers) {
+  constructor(webWorkers: WebWorkers, app?: PixiApp) {
     this.webWorkers = webWorkers;
 
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
@@ -42,6 +43,11 @@ export class PythonWebWorker {
         throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
       }
     };
+
+    this.worker.postMessage({
+      type: 'python-initialize',
+      permission: app?.settings.editorInteractionState.permission,
+    } as PythonMessage);
   }
 
   run(python: string): Promise<PythonReturnType> {

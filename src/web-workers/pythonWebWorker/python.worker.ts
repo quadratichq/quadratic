@@ -2,6 +2,8 @@
 /* eslint-disable no-undef */
 
 import { isMobile } from 'react-device-detect';
+import { isEditorOrAbove } from '../../actions';
+import { Permission } from '../../api/types';
 import { Cell } from '../../schemas';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 import define_run_python from './run_python.py';
@@ -22,8 +24,9 @@ const getCellsDB = async (x0: number, y0: number, x1: number, y1: number): Promi
 
 let pyodide: any | undefined;
 
-async function pythonWebWorker() {
-  if (isMobile) {
+async function pythonWebWorker(permission?: Permission) {
+  // @ts-expect-error
+  if (isMobile || isEditorOrAbove(permission)) {
     self.postMessage({ type: 'python-loading-skipped' } as PythonMessage);
     return;
   }
@@ -39,7 +42,7 @@ async function pythonWebWorker() {
   } catch (e) {
     self.postMessage({ type: 'python-error' } as PythonMessage);
     console.warn(`[Python WebWorker] failed to load`, e);
-    setTimeout(() => pythonWebWorker(), TRY_AGAIN_TIMEOUT);
+    setTimeout(() => pythonWebWorker(permission), TRY_AGAIN_TIMEOUT);
     return;
   }
 
@@ -49,7 +52,9 @@ async function pythonWebWorker() {
 
 self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   const event = e.data;
-  if (event.type === 'get-cells') {
+  if (event.type === 'python-initialize') {
+    pythonWebWorker(event.permission);
+  } else if (event.type === 'get-cells') {
     if (event.cells && getCellsMessages) {
       getCellsMessages(event.cells);
     }
@@ -68,6 +73,6 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   }
 };
 
-pythonWebWorker();
+// pythonWebWorker();
 
 export {};
