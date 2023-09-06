@@ -24,7 +24,7 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&output)?)
     }
 
-    /// Sets cell align formatting given as an optional [`CellAlign`].
+    /// Sets cell align formatting given as a [`CellAlign`].
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellAlign")]
@@ -36,13 +36,13 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let value: Option<CellAlign> = serde_wasm_bindgen::from_value(align).unwrap();
+        let value: CellAlign = serde_wasm_bindgen::from_value(align).unwrap();
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cell_align(sheet_id, *rect, value, cursor),
         )?)
     }
 
-    /// Sets cell wrap formatting given as an optional [`CellWrap`].
+    /// Sets cell wrap formatting given as a [`CellWrap`].
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellWrap")]
@@ -54,13 +54,13 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let value: Option<CellWrap> = serde_wasm_bindgen::from_value(wrap).unwrap();
+        let value: CellWrap = serde_wasm_bindgen::from_value(wrap).unwrap();
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cell_wrap(sheet_id, *rect, value, cursor),
         )?)
     }
 
-    /// Sets cell numeric formatting given as an optional [`NumericFormat`].
+    /// Sets cell numeric formatting given as a [`NumericFormat`].
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellNumericFormat")]
@@ -72,13 +72,13 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let value: Option<NumericFormat> = serde_wasm_bindgen::from_value(numeric_format).unwrap();
+        let value: NumericFormat = serde_wasm_bindgen::from_value(numeric_format).unwrap();
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cell_numeric_format(sheet_id, *rect, value, cursor),
         )?)
     }
 
-    /// Sets cell bold formatting given as an optional [`bool`].
+    /// Sets cell bold formatting given as a [`bool`].
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellBold")]
@@ -90,12 +90,12 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let value: Option<bool> = serde_wasm_bindgen::from_value(bold).unwrap();
+        let value: bool = serde_wasm_bindgen::from_value(bold).unwrap();
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cell_bold(sheet_id, *rect, value, cursor),
         )?)
     }
-    /// Sets cell italic formatting given as an optional [`bool`].
+    /// Sets cell italic formatting given as a [`bool`].
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellItalic")]
@@ -107,13 +107,13 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let value: Option<bool> = serde_wasm_bindgen::from_value(italic).unwrap();
+        let value: bool = serde_wasm_bindgen::from_value(italic).unwrap();
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cell_italic(sheet_id, *rect, value, cursor),
         )?)
     }
 
-    /// Sets cell text color given as an optional [`String`].
+    /// Sets cell text color given as a [`String`].
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellTextColor")]
@@ -125,12 +125,12 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let value: Option<String> = serde_wasm_bindgen::from_value(text_color).unwrap();
+        let value: String = serde_wasm_bindgen::from_value(text_color).unwrap();
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cell_text_color(sheet_id, *rect, value, cursor),
         )?)
     }
-    /// Sets cell fill color given as an optional [`String`].
+    /// Sets cell fill color given as a [`String`].
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellFillColor")]
@@ -142,7 +142,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let value: Option<String> = serde_wasm_bindgen::from_value(fill_color).unwrap();
+        let value: String = serde_wasm_bindgen::from_value(fill_color).unwrap();
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cell_fill_color(sheet_id, *rect, value, cursor),
         )?)

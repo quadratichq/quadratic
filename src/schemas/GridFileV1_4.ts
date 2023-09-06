@@ -63,7 +63,7 @@ export const GridFileSchemaV1_4 = z.object({
         .object({
           x: z.number(),
           y: z.number(),
-          alignment: z.enum(['left', 'right', 'center']).optional(),
+          alignment: z.enum(['default', 'left', 'right', 'center']).optional(),
           bold: z.boolean().optional(),
           fillColor: z.string().optional(),
           italic: z.boolean().optional(),
