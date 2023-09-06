@@ -56,12 +56,10 @@ export function DashboardFileLink({ disabled, name, description, descriptionErro
           }}
         >
           <div className="FileListItem-icon">{isShared ? <ShareFileOutlined /> : <InsertDriveFileOutlined />}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto' }}>
-            <div style={{ display: 'flex', gap: theme.spacing() }}>
-              <Typography variant="body1" color="text.primary">
-                {name}
-              </Typography>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto', minWidth: '0' }}>
+            <Typography variant="body1" color="text.primary" noWrap>
+              {name}
+            </Typography>
             <Stack direction="row" gap={theme.spacing(1)}>
               <Typography variant="caption" color="text.secondary">
                 {description}
