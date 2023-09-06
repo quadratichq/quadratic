@@ -1,4 +1,5 @@
 import { Container, Rectangle } from 'pixi.js';
+import { SheetId } from '../../quadratic-core/types';
 import { PixiApp } from '../pixiApp/PixiApp';
 import { pixiAppEvents } from '../pixiApp/PixiAppEvents';
 import { Coordinate } from '../types/size';
@@ -110,9 +111,9 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current?.createBorders();
   }
 
-  updateFills(sheetIds: string[]): void {
+  updateFills(sheetIds: SheetId[]): void {
     this.children.forEach((cellsSheet) => {
-      if (sheetIds.includes(cellsSheet.sheet.id)) {
+      if (sheetIds.find((id) => id.id === cellsSheet.sheet.id)) {
         cellsSheet.updateFill();
       }
     });
