@@ -56,13 +56,17 @@ pub struct JsRenderBorder {
     pub style: CellBorder,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellFormatSummary {
     pub bold: Option<bool>,
     pub italic: Option<bool>,
+
+    pub text_color: Option<String>,
+    pub fill_color: Option<String>,
 }
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct FormattingSummary {
     pub bold: BoolSummary,
@@ -80,7 +84,7 @@ impl BitOr for FormattingSummary {
 }
 impl BitOrAssign for FormattingSummary {
     fn bitor_assign(&mut self, rhs: Self) {
-        *self = *self | rhs;
+        *self = self.clone() | rhs;
     }
 }
 

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use super::borders::{CellBorder, SheetBorders};
 use super::bounds::GridBounds;
-use super::code::{CodeCellLanguage, CodeCellRunResult, CodeCellValue};
+use super::code::{CodeCellRunResult, CodeCellValue};
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
@@ -15,9 +15,8 @@ use super::js_types::{
     CellFormatSummary, FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell,
     JsRenderCodeCellState, JsRenderFill,
 };
-use super::legacy;
 use super::response::{GetIdResponse, SetCellResponse};
-use crate::{Array, CellValue, IsBlank, Pos, Rect, Value};
+use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Sheet {
@@ -222,10 +221,14 @@ impl Sheet {
             None => CellFormatSummary {
                 bold: None,
                 italic: None,
+                text_color: None,
+                fill_color: None,
             },
             Some(column) => CellFormatSummary {
                 bold: column.bold.get(pos.y),
                 italic: column.italic.get(pos.y),
+                text_color: column.text_color.get(pos.y),
+                fill_color: column.fill_color.get(pos.y),
             },
         }
     }

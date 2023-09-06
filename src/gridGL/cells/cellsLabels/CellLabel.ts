@@ -65,7 +65,7 @@ export class CellLabel extends Container {
   constructor(cell: JsRenderCell, rectangle: Rectangle) {
     super();
 
-    const cellText = cell.value && cell.value.type !== 'blank' ? cell.value.value.toString().replace(/\n/g, '') : '';
+    const cellText = cell.value ? cell.value.replace(/\n/g, '') : '';
 
     this.text = cellText;
     this.fontSize = fontSize;

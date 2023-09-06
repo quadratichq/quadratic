@@ -231,6 +231,11 @@ export class Grid {
   //#region get grid information
   // ---------------------------
 
+  getEditCell(sheetId: string, pos: Pos): string {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.getEditCell(sheetId, pos);
+  }
+
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle));

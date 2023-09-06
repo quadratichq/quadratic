@@ -62,7 +62,8 @@ export function keyboardCell(options: {
         });
       } else {
         // open single line
-        pixiAppEvents.changeInput(true, cell.value);
+        const edit = sheet_controller.sheet.getEditCell(x, y);
+        pixiAppEvents.changeInput(true, edit);
       }
     } else {
       pixiAppEvents.changeInput(true);
@@ -105,7 +106,7 @@ export function keyboardCell(options: {
   }
 
   if (isAllowedFirstChar(event.key)) {
-    pixiAppEvents.changeInput(true, { type: 'text', value: event.key });
+    pixiAppEvents.changeInput(true, event.key);
     event.preventDefault();
   }
 

@@ -1,7 +1,7 @@
 import { BitmapFont, Rectangle } from 'pixi.js';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { CellValue, SheetId } from '../../quadratic-core/types';
+import { SheetId } from '../../quadratic-core/types';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { QuadrantChanged } from '../quadrants/Quadrants';
 import { PixiApp } from './PixiApp';
@@ -117,7 +117,7 @@ class PixiAppEvents {
     }
   }
 
-  changeInput(input: boolean, initialValue?: CellValue | undefined): void {
+  changeInput(input: boolean, initialValue?: string): void {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.changeInput');
 
     this.app.settings.changeInput(input, initialValue);

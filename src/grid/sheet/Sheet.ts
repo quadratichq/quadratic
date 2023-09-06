@@ -1,5 +1,6 @@
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
+import { Pos } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
@@ -120,6 +121,10 @@ export class Sheet {
 
   getRenderCell(x: number, y: number): JsRenderCell | undefined {
     return this.gridNew.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
+  }
+
+  getEditCell(x: number, y: number): string {
+    return this.gridNew.getEditCell(this.id, new Pos(x, y));
   }
 
   getRenderFills(rectangle: Rectangle): JsRenderFill[] {

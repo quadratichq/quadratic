@@ -12,13 +12,13 @@ impl GridController {
         )?))
     }
 
-    /// Exports a [`GridController`] to a file. Returns a `GridFile` (fits JS schema).
-    #[wasm_bindgen(js_name = "exportToFile")]
-    pub fn js_export_to_file(&self) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(
-            &self.grid().to_legacy_file_format(),
-        )?)
-    }
+    // /// Exports a [`GridController`] to a file. Returns a `GridFile` (fits JS schema).
+    // #[wasm_bindgen(js_name = "exportToFile")]
+    // pub fn js_export_to_file(&self) -> Result<JsValue, JsValue> {
+    //     Ok(serde_wasm_bindgen::to_value(
+    //         &self.grid().to_legacy_file_format(),
+    //     )?)
+    // }
 
     /// Constructs a new empty grid.
     #[wasm_bindgen(constructor)]
@@ -361,6 +361,18 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
             sheet_id, source, rect, delta, cursor,
         ))?)
+    }
+
+    /// gets an editable string for a cell
+    #[wasm_bindgen(js_name = "getEditCell")]
+    pub fn js_get_cell_edit(&self, sheet_id: String, pos: Pos) -> String {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let sheet = self.grid().sheet_from_id(sheet_id);
+        if let Some(value) = sheet.get_cell_value(pos) {
+            value.to_edit()
+        } else {
+            String::from("")
+        }
     }
 
     // /// Sets the text alignment as a [`CellAlign`] in a region.

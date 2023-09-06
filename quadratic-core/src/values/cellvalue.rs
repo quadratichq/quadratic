@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{Duration, ErrorMsg, Instant, IsBlank};
 use crate::{
-    grid::{NumericDecimals, NumericFormat, NumericFormatKind},
+    grid::{NumericFormat, NumericFormatKind},
     CodeResult, Error, Span,
 };
 
@@ -90,32 +90,34 @@ impl CellValue {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => format!("{s:?}"),
             CellValue::Number(n) => {
-                let number = if let Some(decimals) = numeric_decimals {
-                    let multiplier = if numeric_format
-                        .is_some_and(|n| n.kind == NumericFormatKind::Percentage)
-                    {
-                        10.8 * ((decimals - 2).max(0) as f64)
-                    } else {
-                        10.0 * (decimals as f64)
-                    };
-                    (n * multiplier) / multiplier
+                let n = if numeric_format
+                    .clone()
+                    .is_some_and(|format| format.kind == NumericFormatKind::Percentage)
+                {
+                    *n * 100.0
                 } else {
                     *n
+                };
+
+                let mut number = if let Some(decimals) = numeric_decimals {
+                    format!("{:.1$}", n, decimals as usize)
+                } else {
+                    n.to_string()
                 };
                 if let Some(numeric_format) = numeric_format {
                     match numeric_format.kind {
                         NumericFormatKind::Currency => {
-                            let currency = if let Some(symbol) = numeric_format.symbol {
+                            let mut currency = if let Some(symbol) = numeric_format.symbol {
                                 symbol
                             } else {
                                 String::from("")
                             };
-                            number.to_string()
+                            currency.push_str(&number);
+                            currency
                         }
                         NumericFormatKind::Percentage => {
-                            let percentage = number.to_string();
-                            percentage.push_str(&"%");
-                            percentage
+                            number.push_str(&"%");
+                            number
                         }
                         NumericFormatKind::Number => number.to_string(),
                         NumericFormatKind::Exponential => todo!(),
@@ -124,6 +126,19 @@ impl CellValue {
                     number.to_string()
                 }
             }
+            CellValue::Logical(true) => "true".to_string(),
+            CellValue::Logical(false) => "false".to_string(),
+            CellValue::Instant(_) => todo!("repr of Instant"),
+            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Error(_) => format!("[error]"),
+        }
+    }
+
+    pub fn to_edit(&self) -> String {
+        match self {
+            CellValue::Blank => String::new(),
+            CellValue::Text(s) => format!("{s:?}"),
+            CellValue::Number(n) => format!("{n:?}"),
             CellValue::Logical(true) => "true".to_string(),
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
@@ -249,4 +264,70 @@ impl CellValue {
             other_single_value => Ok(other_single_value),
         }
     }
+}
+
+#[test]
+fn test_cell_value_to_display_currency() {
+    let cv = CellValue::Number(123.1233);
+    assert_eq!(
+        cv.to_display(
+            Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some(String::from("$")),
+            }),
+            Some(2)
+        ),
+        String::from("$123.12")
+    );
+
+    let cv = CellValue::Number(123.1255);
+    assert_eq!(
+        cv.to_display(
+            Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some(String::from("$")),
+            }),
+            Some(2)
+        ),
+        String::from("$123.13")
+    );
+
+    let cv = CellValue::Number(123.0);
+    assert_eq!(
+        cv.to_display(
+            Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some(String::from("$")),
+            }),
+            Some(2)
+        ),
+        String::from("$123.00")
+    );
+}
+
+#[test]
+fn test_cell_value_to_display_percentage() {
+    let cv = CellValue::Number(0.015);
+    assert_eq!(
+        cv.to_display(
+            Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }),
+            None,
+        ),
+        String::from("1.5%")
+    );
+
+    let cv = CellValue::Number(0.9912239);
+    assert_eq!(
+        cv.to_display(
+            Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }),
+            Some(4),
+        ),
+        String::from("99.1224%")
+    );
 }
