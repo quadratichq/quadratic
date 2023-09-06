@@ -88,7 +88,7 @@ impl CellValue {
     ) -> String {
         match self {
             CellValue::Blank => String::new(),
-            CellValue::Text(s) => format!("{s:?}"),
+            CellValue::Text(s) => s.to_string(),
             CellValue::Number(n) => {
                 let n = if numeric_format
                     .clone()
@@ -137,8 +137,8 @@ impl CellValue {
     pub fn to_edit(&self) -> String {
         match self {
             CellValue::Blank => String::new(),
-            CellValue::Text(s) => format!("{s:?}"),
-            CellValue::Number(n) => format!("{n:?}"),
+            CellValue::Text(s) => s.to_string(),
+            CellValue::Number(n) => n.to_string(),
             CellValue::Logical(true) => "true".to_string(),
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
@@ -264,6 +264,12 @@ impl CellValue {
             other_single_value => Ok(other_single_value),
         }
     }
+}
+
+#[test]
+fn test_cell_value_to_display_text() {
+    let cv = CellValue::Text(String::from("hello"));
+    assert_eq!(cv.to_display(None, None), String::from("hello"));
 }
 
 #[test]

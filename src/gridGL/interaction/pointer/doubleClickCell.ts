@@ -1,12 +1,7 @@
-import { CodeCellValue, JsRenderCell } from '../../../quadratic-core/types';
+import { CodeCellValue } from '../../../quadratic-core/types';
 import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
 
-export function doubleClickCell(options: {
-  column: number;
-  row: number;
-  code?: CodeCellValue;
-  cell?: JsRenderCell;
-}): void {
+export function doubleClickCell(options: { column: number; row: number; code?: CodeCellValue; cell?: string }): void {
   const { code, cell, column, row } = options;
   const settings = pixiAppEvents.getSettings();
 
@@ -26,12 +21,7 @@ export function doubleClickCell(options: {
       });
     }
   } else {
-    if (cell) {
-      settings.changeInput(true, cell.value);
-    } else {
-      // If no previous value, open single line Input
-      settings.changeInput(true);
-    }
+    settings.changeInput(true, cell);
 
     // close CodeEditor if open
     if (settings.editorInteractionState.showCodeEditor) {

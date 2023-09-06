@@ -119,7 +119,6 @@ class PixiAppEvents {
 
   changeInput(input: boolean, initialValue?: string): void {
     if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.changeInput');
-
     this.app.settings.changeInput(input, initialValue);
   }
 

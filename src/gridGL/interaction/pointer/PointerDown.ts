@@ -80,7 +80,7 @@ export class PointerDown {
           return;
         }
         const code = this.sheet.getCodeValue(column, row);
-        const cell = this.sheet.getRenderCell(column, row);
+        const cell = this.sheet.getEditCell(column, row);
         doubleClickCell({ column, row, code, cell });
         this.active = false;
         event.preventDefault();
