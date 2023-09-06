@@ -33,6 +33,18 @@ impl GridController {
         None
     }
 
+    fn unpack_percentage(s: &String) -> Option<f64> {
+        if s.is_empty() {
+            return None;
+        }
+        if let Some(number) = s.strip_suffix('%') {
+            if let Ok(parsed) = number.parse::<f64>() {
+                return Some(parsed / 100.0);
+            }
+        }
+        None
+    }
+
     /// sets the value based on a user's input
     pub fn set_cell_value(
         &mut self,
@@ -71,6 +83,22 @@ impl GridController {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(number)),
+            });
+        } else if let Some(percent) = Self::unpack_percentage(&value) {
+            ops.push(Operation::SetCellValues {
+                region: region.clone(),
+                values: Array::from(CellValue::Number(percent)),
+            });
+            let numeric_format = NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            };
+            ops.push(Operation::SetCellFormats {
+                region,
+                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                    Some(numeric_format),
+                    1,
+                )),
             });
         }
         // todo: include other types here
@@ -188,7 +216,7 @@ fn test_set_cell_value_undo_redo() {
 }
 
 #[test]
-fn test_is_currency() {
+fn test_unpack_currency() {
     let value = String::from("$123.123");
     assert_eq!(
         GridController::unpack_currency(&value),
@@ -203,4 +231,9 @@ fn test_is_currency() {
 
     let value = String::from("$123.123abc");
     assert_eq!(GridController::unpack_currency(&value), None);
+}
+
+fn test_unpack_percentage() {
+    let value = String::from("1238.12232%");
+    assert_eq!(GridController::unpack_percentage(&value), Some(12.3812232));
 }
