@@ -51,12 +51,6 @@ export const apiClient = {
     return this.getFile(uuid).then((json) => downloadFileInBrowser(json.file.name, json.file.contents));
   },
 
-  async dupcliateFile(uuid: string) {
-    const { file } = await this.getFile(uuid);
-    const duplicateFile = await this.createFile({ name: file.name, contents: file.contents, version: file.version });
-    return duplicateFile.uuid;
-  },
-
   async deleteFile(uuid: string) {
     mixpanel.track('[Files].deleteFile', { id: uuid });
     return fetchFromApi<ApiTypes['/v0/files/:uuid.DELETE.response']>(

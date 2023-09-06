@@ -120,9 +120,6 @@ export function FileListItem({ file, activeShareMenuFileId, setActiveShareMenuFi
     handleActionsMenuClose();
   };
 
-  // reject the rename
-  if (fetcherRename.json) console.log(fetcherRename);
-
   return (
     <Box sx={{ position: 'relative' }}>
       <DashboardFileLink
