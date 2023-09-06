@@ -45,7 +45,7 @@ export function ShareFileMenu({ onClose, fileUuid, permission }: Props) {
         setData(data);
       })
       .catch();
-  }, []);
+  }, [fileUuid]);
 
   // TODO
   const setPublicLinkAccess = () => {};
