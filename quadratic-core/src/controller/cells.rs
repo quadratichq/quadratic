@@ -1,12 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    grid::{
-        Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Grid, Italic, NumericFormat, RegionRef,
-        SheetId, TextColor,
-    },
-    Array, CellValue, Pos, Rect, RunLengthEncoding,
-};
+use crate::{array, grid::*, Array, CellValue, Pos, Rect, RunLengthEncoding};
 
 use super::{
     transactions::{Operation, Transaction, TransactionSummary},
@@ -30,12 +24,7 @@ impl GridController {
         value: CellValue,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let sheet = self.grid.sheet_mut_from_id(sheet_id);
-        let cell_ref = sheet.get_or_create_cell_ref(pos);
-        let region = RegionRef::from(cell_ref);
-        let values = Array::from(value);
-        let ops = vec![Operation::SetCellValues { region, values }];
-        self.transact_forward(Transaction { ops, cursor })
+        self.set_cells(sheet_id, pos, array![value], cursor)
     }
     pub fn set_cells(
         &mut self,
@@ -70,6 +59,21 @@ impl GridController {
             }
             None => vec![], // region is empty; do nothing
         };
+        self.transact_forward(Transaction { ops, cursor })
+    }
+
+    pub fn set_code_cell_value(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        value: CodeCellValue,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let cell_ref = self
+            .grid
+            .sheet_mut_from_id(sheet_id)
+            .get_or_create_cell_ref(pos);
+        let ops = vec![Operation::SetCodeCell { cell_ref, value }];
         self.transact_forward(Transaction { ops, cursor })
     }
 
@@ -256,6 +260,75 @@ fn test_set_cell_text_color_undo_redo() {
     assert_eq!(get(&g, pos1), "blue");
     assert_eq!(get(&g, pos2), "red");
     assert_eq!(get(&g, pos3), "red");
+}
+
+#[test]
+fn test_code_cell_value_overwrite() {
+    let mut g = GridController::new();
+    let s = g.sheet_ids()[0];
+    let pos = Pos { x: 3, y: -5 };
+
+    let code_cell_value = CodeCellValue {
+        language: CodeCellLanguage::Formula,
+        code_string: "=PI()".to_string(),
+        formatted_code_string: None,
+        last_modified: String::new(),
+        output: None,
+    };
+
+    assert_eq!(None, g.sheet(s).get_cell_value(pos));
+    assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+    g.set_cell_value(s, pos, CellValue::Number(10.0), None);
+    assert_eq!(
+        Some(CellValue::Number(10.0)),
+        g.sheet(s).get_cell_value(pos),
+    );
+    assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+    g.set_code_cell_value(s, pos, code_cell_value.clone(), None);
+    assert_eq!(None, g.sheet(s).get_cell_value(pos));
+    assert_eq!(Some(&code_cell_value), g.sheet(s).get_code_cell(pos));
+
+    g.set_cell_value(s, pos, CellValue::Number(20.0), None);
+    assert_eq!(
+        Some(CellValue::Number(20.0)),
+        g.sheet(s).get_cell_value(pos),
+    );
+    assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+    g.undo(None);
+    assert_eq!(None, g.sheet(s).get_cell_value(pos));
+    assert_eq!(Some(&code_cell_value), g.sheet(s).get_code_cell(pos));
+
+    g.undo(None);
+    assert_eq!(
+        Some(CellValue::Number(10.0)),
+        g.sheet(s).get_cell_value(pos),
+    );
+    assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+    g.undo(None);
+    assert_eq!(None, g.sheet(s).get_cell_value(pos));
+    assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+    g.redo(None);
+    assert_eq!(
+        Some(CellValue::Number(10.0)),
+        g.sheet(s).get_cell_value(pos),
+    );
+    assert_eq!(None, g.sheet(s).get_code_cell(pos));
+
+    g.redo(None);
+    assert_eq!(None, g.sheet(s).get_cell_value(pos));
+    assert_eq!(Some(&code_cell_value), g.sheet(s).get_code_cell(pos));
+
+    g.redo(None);
+    assert_eq!(
+        Some(CellValue::Number(20.0)),
+        g.sheet(s).get_cell_value(pos),
+    );
+    assert_eq!(None, g.sheet(s).get_code_cell(pos));
 }
 
 // fn test_render_fill() {

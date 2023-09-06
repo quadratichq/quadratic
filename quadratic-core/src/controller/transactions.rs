@@ -1,4 +1,5 @@
-use crate::{grid::*, Array, CellValue, Pos, Rect};
+use crate::{array, grid::*, Array, CellValue, Pos, Rect};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use super::{cells::CellFmtArray, GridController};
@@ -47,11 +48,19 @@ impl GridController {
             }
             match op {
                 Operation::SetCellValues { region, values } => {
+                    let region_rects = self.grid.region_rects(&region).collect_vec();
                     summary
                         .cell_regions_modified
                         .extend(self.grid.region_rects(&region));
 
                     let sheet = self.grid.sheet_mut_from_id(region.sheet);
+
+                    // Remove any code cells.
+                    for &(_, rect) in &region_rects {
+                        for (cell_ref, value) in sheet.remove_code_cells_in_region(rect) {
+                            rev_ops.push(Operation::SetCodeCell { cell_ref, value });
+                        }
+                    }
 
                     let Some(size) = region.size() else {continue};
                     let old_values = region
@@ -110,6 +119,29 @@ impl GridController {
                         region,
                         attr: old_attr,
                     })
+                }
+
+                Operation::SetCodeCell { cell_ref, value } => {
+                    let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
+                    let Some(pos) = sheet.cell_ref_to_pos(cell_ref) else {continue};
+
+                    // Remove ordinary cell value.
+                    let response = sheet.set_cell_value(pos, CellValue::Blank);
+                    if let Some(response) = response {
+                        rev_ops.push(Operation::SetCellValues {
+                            region: cell_ref.into(),
+                            values: array![response.old_value],
+                        });
+                    }
+
+                    // Set code cell value.
+                    let old_code_cell_value = sheet.set_code_cell(pos, Some(value));
+                    if let Some(old_code_cell_value) = old_code_cell_value {
+                        rev_ops.push(Operation::SetCodeCell {
+                            cell_ref,
+                            value: old_code_cell_value,
+                        });
+                    }
                 }
 
                 Operation::AddSheet { sheet } => {
@@ -196,6 +228,10 @@ pub enum Operation {
         region: RegionRef,
         attr: CellFmtArray,
     },
+    SetCodeCell {
+        cell_ref: CellRef,
+        value: CodeCellValue,
+    },
 
     AddSheet {
         sheet: Sheet,
@@ -224,6 +260,7 @@ impl Operation {
         match self {
             Operation::SetCellValues { region, .. } => Some(region.sheet),
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
+            Operation::SetCodeCell { cell_ref, .. } => Some(cell_ref.sheet),
 
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,
