@@ -3,6 +3,7 @@ export const ROUTES = {
   LOGOUT: '/logout',
   LOGIN: '/login',
   LOGIN_WITH_REDIRECT: () => '/login?from=' + encodeURIComponent(window.location.pathname),
+  SIGNUP_WITH_REDIRECT: () => '/login?signup&from=' + encodeURIComponent(window.location.pathname),
   LOGIN_RESULT: '/login-result',
   FILES: '/files',
   MY_FILES: '/files/mine',
