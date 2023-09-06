@@ -22,7 +22,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showGoToMenu: false,
   showFeedbackMenu: false,
   showShareFileMenu: false,
-  permission: 'VIEWER',
+  permission: 'VIEWER', // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },
   mode: 'TEXT',
 };

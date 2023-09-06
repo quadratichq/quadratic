@@ -49,7 +49,7 @@ interface CodeEditorProps {
 
 export const CodeEditor = (props: CodeEditorProps) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { pythonLoaded } = useRecoilValue(loadedStateAtom);
+  const { pythonLoadState } = useRecoilValue(loadedStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -60,7 +60,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
   const theme = useTheme();
-  const isLoadingPython = !pythonLoaded && editorMode === 'PYTHON';
+  const isLoadingPython = pythonLoadState === 'loading' && editorMode === 'PYTHON';
   const readOnly = !isEditorOrAbove(editorInteractionState.permission);
 
   // Interaction State hook
@@ -273,6 +273,17 @@ export const CodeEditor = (props: CodeEditorProps) => {
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    // Esc
+    if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
+      event.preventDefault();
+      closeEditor();
+    }
+
+    // Don't allow the shortcuts below for certain users
+    if (!isEditorOrAbove(editorInteractionState.permission)) {
+      return;
+    }
+
     // Command + S
     if ((event.metaKey || event.ctrlKey) && event.key === 's') {
       event.preventDefault();
@@ -284,12 +295,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
       event.preventDefault();
       event.stopPropagation();
       saveAndRunCell();
-    }
-
-    // Esc
-    if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
-      event.preventDefault();
-      closeEditor();
     }
   };
 
