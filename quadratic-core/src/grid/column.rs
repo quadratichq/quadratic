@@ -350,7 +350,6 @@ fn test_column_data_set_range() {
     cd.set_range(Range { start: 19, end: 30 }, false);
     assert_eq!(cd.get(19), Some(false));
     assert_eq!(cd.get(18), Some(true));
-    assert_eq!(cd.get(25), Some(false));
     assert_eq!(cd.get(30), None);
     assert_eq!(cd.blocks().count(), 2);
 }

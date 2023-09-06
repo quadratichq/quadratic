@@ -53,7 +53,7 @@ impl GridController {
 
                     let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
-                    let Some(size) = region.size() else {continue};
+                    let Some(size) = region.size() else { continue };
                     let old_values = region
                         .iter()
                         .zip(values.into_cell_values_vec())
@@ -93,6 +93,14 @@ impl GridController {
                         CellFmtArray::NumericFormat(num_fmt) => CellFmtArray::NumericFormat(
                             self.set_cell_formats_for_type::<NumericFormat>(&region, num_fmt),
                         ),
+                        CellFmtArray::NumericDecimals(num_decimals) => {
+                            CellFmtArray::NumericDecimals(
+                                self.set_cell_formats_for_type::<NumericDecimals>(
+                                    &region,
+                                    num_decimals,
+                                ),
+                            )
+                        }
                         CellFmtArray::Bold(bold) => CellFmtArray::Bold(
                             self.set_cell_formats_for_type::<Bold>(&region, bold),
                         ),
