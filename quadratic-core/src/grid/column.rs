@@ -11,7 +11,7 @@ use super::formatting::*;
 use super::{Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue};
 use crate::IsBlank;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Column {
     pub id: ColumnId,
 
@@ -80,8 +80,10 @@ impl Column {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ColumnData<B>(BTreeMap<i64, Block<B>>);
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ColumnData<B: Serialize + for<'d> Deserialize<'d>>(
+    #[serde(with = "crate::util::btreemap_serde")] BTreeMap<i64, Block<B>>,
+);
 impl<B: BlockContent> Default for ColumnData<B> {
     fn default() -> Self {
         Self::new()
@@ -283,7 +285,9 @@ impl<B: BlockContent> ColumnData<B> {
     }
 }
 
-impl<T: fmt::Debug + Clone + PartialEq> ColumnData<SameValue<T>> {
+impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
+    ColumnData<SameValue<T>>
+{
     pub fn set_range(&mut self, y_range: Range<i64>, value: T) -> Vec<Block<SameValue<T>>> {
         let removed = self.remove_range(y_range.clone());
         self.add_block(Block {

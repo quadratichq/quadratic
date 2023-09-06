@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use super::borders::CellBorder;
-use super::formatting::{CellAlign, CellWrap, NumericFormat};
-use super::{
-    CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Sheet,
-};
-use crate::{Array, ArraySize, CellValue, Error, ErrorMsg, Span, Value};
+use crate::{Array, ArraySize, Error, ErrorMsg, Span};
+
+use super::v1_5::*;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GridFileV1_4 {
+    pub sheets: Vec<JsSheet>,
+}
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct JsCoordinate {
@@ -93,17 +95,6 @@ pub struct JsCellFormat {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wrapping: Option<CellWrap>, // default is overflow
 }
-impl JsCellFormat {
-    pub fn is_default(&self) -> bool {
-        self.alignment.is_none()
-            && self.bold.is_none()
-            && self.fill_color.is_none()
-            && self.italic.is_none()
-            && self.text_color.is_none()
-            && self.text_format.is_none()
-            && self.wrapping.is_none()
-    }
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsBorders {
@@ -166,18 +157,6 @@ impl Into<CellValue> for Any {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GridFileV1_4 {
-    pub sheets: Vec<JsSheet>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "version")]
-pub enum GridFile {
-    #[serde(rename = "1.4")]
-    V1_4(GridFileV1_4),
-}
-
 impl JsCell {
     pub fn to_cell_value(&self) -> Option<CellValue> {
         match self.r#type {
@@ -189,7 +168,10 @@ impl JsCell {
             _ => None,
         }
     }
-    pub fn to_cell_code(&self, sheet: &mut Sheet) -> Option<CodeCellValue> {
+    pub fn to_code_cell_value(
+        &self,
+        get_cell_ref: impl FnMut(Pos) -> CellRef,
+    ) -> Option<CodeCellValue> {
         let language = match self.r#type {
             JsCellType::Text | JsCellType::Computed => return None,
             JsCellType::Formula => CodeCellLanguage::Formula,
@@ -243,11 +225,8 @@ impl JsCell {
                         cells_accessed: js_result
                             .cells_accessed
                             .iter()
-                            .map(|&(x, y)| CellRef {
-                                sheet: sheet.id,
-                                column: sheet.get_or_create_column(x).0.id,
-                                row: sheet.get_or_create_row(y).id,
-                            })
+                            .map(|&(x, y)| Pos { x, y })
+                            .map(get_cell_ref)
                             .collect(),
                     },
                     false => CodeCellRunResult::Err {

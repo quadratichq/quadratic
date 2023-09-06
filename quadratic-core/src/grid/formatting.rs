@@ -7,7 +7,7 @@ use super::{block::SameValue, Column, ColumnData};
 
 /// Cell formatting attribute.
 pub trait CellFmtAttr {
-    type Value: fmt::Debug + Clone + Eq;
+    type Value: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + Eq;
     fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>>;
     fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>>;
 }
