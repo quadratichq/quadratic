@@ -1,4 +1,3 @@
-import { Permission } from '../../api/types';
 import { ArrayOutput, Cell } from '../../schemas';
 
 export interface PythonReturnType {
@@ -17,7 +16,6 @@ export interface PythonMessage {
     | 'execute'
     | 'not-loaded'
     | 'get-cells'
-    | 'python-initialize'
     | 'python-loading'
     | 'python-loading-skipped'
     | 'python-loaded'
@@ -27,5 +25,4 @@ export interface PythonMessage {
   error?: string;
   range?: { x0: number; y0: number; x1: number; y1: number };
   cells?: Cell[];
-  permission?: Permission;
 }

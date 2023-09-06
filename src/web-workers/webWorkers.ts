@@ -8,10 +8,9 @@ export class WebWorkers {
   pythonWebWorker?: PythonWebWorker;
 
   // this cannot be part of the constructor or mocking does not work
-  // pixiapp
   init(app?: PixiApp) {
     this.app = app;
-    this.pythonWebWorker = new PythonWebWorker(this, app);
+    this.pythonWebWorker = new PythonWebWorker(this);
   }
 
   async runPython(python_code: string): Promise<PythonReturnType> {
