@@ -82,10 +82,16 @@ impl GridController {
                 }
 
                 Operation::SetCellFormats { region, attr } => {
-                    summary
-                        .cell_regions_modified
-                        .extend(self.grid.region_rects(&region));
-
+                    match attr {
+                        CellFmtArray::FillColor(_) => {
+                            summary.fill_sheets_modified.push(region.sheet);
+                        }
+                        _ => {
+                            summary
+                                .cell_regions_modified
+                                .extend(self.grid.region_rects(&region));
+                        }
+                    }
                     let old_attr = match attr {
                         CellFmtArray::Align(align) => CellFmtArray::Align(
                             self.set_cell_formats_for_type::<CellAlign>(&region, align),
