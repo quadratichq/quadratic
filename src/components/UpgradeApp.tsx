@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { useInterval } from '../hooks/useInterval';
 import { useGlobalSnackbar } from './GlobalSnackbarProvider';
 
 export const UpgradeApp = () => {
-  const [stopPolling, setStopPolling] = useState<boolean>(false);
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   useInterval(
@@ -32,12 +30,11 @@ export const UpgradeApp = () => {
           );
           if (needsUpdate) {
             // TODO pass custom actions to snackbar so the page will refresh
-            addGlobalSnackbar('Quadratic has updates! You should reload.');
-            setStopPolling(true);
+            addGlobalSnackbar('Quadratic has updates! Please reload.');
           }
         });
     },
-    stopPolling ? null : 5000 /*3_600_000*/ // one hour
+    10000 // one hour? 3_600_000
   );
 
   return null;
