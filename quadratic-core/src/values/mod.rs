@@ -17,10 +17,10 @@ pub use convert::CoerceInto;
 pub use isblank::IsBlank;
 pub use time::{Duration, Instant};
 
-use crate::{CodeResult, CodeResultExt, ErrorMsg, Span, SpannableIterExt, Spanned};
+use crate::{CodeResult, CodeResultExt, ErrorMsg, SpannableIterExt, Spanned};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(untagged)]
 pub enum Value {
     Single(CellValue),
@@ -85,14 +85,14 @@ impl Value {
         }
     }
 
-    /// Replaces NaN and Inf with errors; otherwise returns the value
-    /// unchanged.
-    pub fn purify_floats(self, span: Span) -> CodeResult<Self> {
-        match self {
-            Value::Single(v) => v.purify_float(span).map(Value::Single),
-            Value::Array(a) => a.purify_floats(span).map(Value::Array),
-        }
-    }
+    // / Replaces NaN and Inf with errors; otherwise returns the value
+    // / unchanged.
+    // pub fn purify_floats(self, span: Span) -> CodeResult<Self> {
+    //     match self {
+    //         Value::Single(v) => v.purify_float(span).map(Value::Single),
+    //         Value::Array(a) => a.purify_floats(span).map(Value::Array),
+    //     }
+    // }
 
     /// Returns the unique width and height that fits all of `values`.
     ///

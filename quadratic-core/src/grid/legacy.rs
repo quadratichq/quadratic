@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
 
 use super::borders::CellBorder;
@@ -152,14 +155,15 @@ pub struct JsSheet {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum Any {
-    Number(f64),
+    Number(String),
     String(String),
     Boolean(bool),
 }
 impl Into<CellValue> for Any {
     fn into(self) -> CellValue {
         match self {
-            Any::Number(n) => CellValue::Number(n),
+            // todo: not sure about this
+            Any::Number(n) => CellValue::Number(BigDecimal::from_str(&n).unwrap()),
             Any::String(s) => CellValue::Text(s),
             Any::Boolean(b) => CellValue::Logical(b),
         }

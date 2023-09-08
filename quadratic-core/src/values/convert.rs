@@ -1,3 +1,7 @@
+use std::str::FromStr;
+
+use bigdecimal::{BigDecimal, ToPrimitive};
+
 use super::{CellValue, IsBlank, Value};
 use crate::{CodeResult, CodeResultExt, ErrorMsg, Span, Spanned, Unspan};
 
@@ -33,24 +37,25 @@ impl From<&str> for CellValue {
         CellValue::Text(value.to_string())
     }
 }
+// todo: this might be wrong for formulas
 impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
-        CellValue::Number(value)
+        CellValue::Number(BigDecimal::from_str(&value.to_string()).unwrap())
     }
 }
 impl From<i64> for CellValue {
     fn from(value: i64) -> Self {
-        CellValue::Number(value as f64)
+        CellValue::Number(BigDecimal::from(value))
     }
 }
 impl From<i32> for CellValue {
     fn from(value: i32) -> Self {
-        CellValue::Number(value as f64)
+        CellValue::Number(BigDecimal::from(value))
     }
 }
 impl From<u32> for CellValue {
     fn from(value: u32) -> Self {
-        CellValue::Number(value as f64)
+        CellValue::Number(BigDecimal::from(value))
     }
 }
 impl From<bool> for CellValue {
@@ -111,7 +116,8 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
                     got: Some(value.type_name().into()),
                 })
             }
-            CellValue::Number(n) => Ok(*n),
+            // todo: this may be wrong
+            CellValue::Number(n) => Ok(n.to_f64().unwrap()),
             CellValue::Logical(true) => Ok(1.0),
             CellValue::Logical(false) => Ok(0.0),
             CellValue::Instant(_) | CellValue::Duration(_) => Err(ErrorMsg::Expected {
@@ -145,7 +151,7 @@ impl<'a> TryFrom<&'a CellValue> for bool {
             CellValue::Blank => Ok(false),
             CellValue::Text(s) if s.eq_ignore_ascii_case("TRUE") => Ok(true),
             CellValue::Text(s) if s.eq_ignore_ascii_case("FALSE") => Ok(false),
-            CellValue::Number(n) => Ok(*n != 0.0),
+            CellValue::Number(n) => Ok(n.ne(&BigDecimal::from_str(&"0.0").unwrap())),
             CellValue::Logical(b) => Ok(*b),
             _ => Err(ErrorMsg::Expected {
                 expected: "boolean".into(),

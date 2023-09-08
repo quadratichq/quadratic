@@ -1,6 +1,8 @@
 use std::collections::{btree_map, BTreeMap, HashMap, HashSet};
 use std::ops::Range;
+use std::str::FromStr;
 
+use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -74,8 +76,11 @@ impl Sheet {
         for x in region.x_range() {
             let (_, column) = self.get_or_create_column(x);
             for y in region.y_range() {
-                let value = rng.gen_range(-10000..=10000) as f64;
-                column.values.set(y, Some(value.into()));
+                let value = rng.gen_range(-10000..=10000).to_string();
+                column.values.set(
+                    y,
+                    Some(CellValue::Number(BigDecimal::from_str(&value).unwrap())),
+                );
             }
         }
         self.recalculate_bounds();
@@ -764,6 +769,10 @@ fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
 
 #[cfg(test)]
 mod test {
+    use std::str::FromStr;
+
+    use bigdecimal::BigDecimal;
+
     use crate::{
         grid::{NumericFormat, NumericFormatKind, Sheet, SheetId},
         CellValue, Pos,
@@ -774,10 +783,16 @@ mod test {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
         // get decimal places after a set_cell_value
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Number(12.23));
+        sheet.set_cell_value(
+            Pos { x: 1, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"12.23").unwrap()),
+        );
         assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), Some(2));
 
-        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Number(0.23));
+        sheet.set_cell_value(
+            Pos { x: 2, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"0.23").unwrap()),
+        );
         assert_eq!(sheet.decimal_places(Pos { x: 2, y: 2 }, true), Some(0));
     }
 

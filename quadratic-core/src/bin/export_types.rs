@@ -16,61 +16,47 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
-        // controller.rs
         transactions::TransactionSummary,
-        // grid/cell_ref.rs
         formulas::RangeRef,
         formulas::CellRef,
         formulas::CellRefCoord,
-        // grid/borders.rs
         grid::CellBorders,
         grid::CellBorderStyle,
         grid::CellBorder,
-        // grid/bounds.rs
         grid::GridBounds,
-        // grid/code.rs
         grid::CodeCellLanguage,
-        grid::CodeCellValue,
+        // grid::CodeCellValue,
         grid::CodeCellRunOutput,
         grid::CodeCellRunResult,
-        // grid/formatting.rs
-        grid::CellAlign,
-        grid::CellWrap,
-        grid::NumericFormat,
-        grid::NumericFormatKind,
-        grid::BoolSummary,
-        // grid/ids.rs
-        grid::SheetId,
-        grid::RowId,
-        grid::ColumnId,
-        grid::CellRef,
-        // grid/js_types.rs
-        grid::js_types::JsRenderCell,
-        grid::js_types::JsRenderFill,
-        grid::js_types::JsRenderBorder,
-        grid::js_types::FormattingSummary,
-        grid::js_types::CellFormatSummary,
-        grid::js_types::JsRenderCodeCell,
-        grid::js_types::JsRenderCodeCellState,
-        // values
-        ArraySize,
-        Axis,
-        Array,
-        CellValue,
-        Value,
-        Instant,
-        Duration,
-        // wasm_bindings
-        wasm_bindings::JsCodeResult,
-        wasm_bindings::JsFormulaParseResult,
-        wasm_bindings::JsCellRefSpan,
-        // error.rs
-        Error,
-        ErrorMsg,
-        // position.rs
+        // grid::CellAlign,
+        // grid::CellWrap,
+        // grid::NumericFormat,
+        // grid::NumericFormatKind,
+        // grid::BoolSummary,
+        // grid::SheetId,
+        // grid::RowId,
+        // grid::ColumnId,
+        // grid::CellRef,
+        // grid::js_types::JsRenderCell,
+        // grid::js_types::JsRenderFill,
+        // grid::js_types::JsRenderBorder,
+        // grid::js_types::FormattingSummary,
+        // grid::js_types::CellFormatSummary,
+        // grid::js_types::JsRenderCodeCell,
+        // grid::js_types::JsRenderCodeCellState,
+        // ArraySize,
+        // Axis,
+        // // Array,
+        // // Value,
+        // Instant,
+        // Duration,
+        // wasm_bindings::JsCodeResult,
+        // wasm_bindings::JsFormulaParseResult,
+        // wasm_bindings::JsCellRefSpan,
+        // Error,
+        // ErrorMsg,
         Pos,
         Rect,
-        // span.rs
         Span,
     );
 

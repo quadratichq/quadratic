@@ -3,6 +3,9 @@
 //! This entire file feels really janky and awful but this is my best attempt at
 //! mimicking the behavior Excel has.
 
+use std::str::FromStr;
+
+use bigdecimal::{BigDecimal, Zero};
 use itertools::Itertools;
 use regex::Regex;
 
@@ -38,7 +41,7 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
                     CellValue::Logical(true)
                 } else if rhs_string.eq_ignore_ascii_case("FALSE") {
                     CellValue::Logical(false)
-                } else if let Ok(n) = rhs_string.parse::<f64>() {
+                } else if let Ok(n) = BigDecimal::from_str(&rhs_string) {
                     CellValue::Number(n)
                 } else if compare_fn == CompareFn::Eql && rhs_string.contains(['?', '*']) {
                     // If the string doesn't contain any `?` or `*`, then Excel
@@ -75,7 +78,7 @@ impl Criterion {
     fn compare(compare_fn: CompareFn, lhs: &CellValue, rhs: &CellValue) -> bool {
         match rhs {
             CellValue::Blank => match lhs {
-                CellValue::Number(lhs) => compare_fn.compare(lhs, &0.0),
+                CellValue::Number(lhs) => compare_fn.compare(lhs, &BigDecimal::zero()),
                 _ => false,
             },
             CellValue::Text(rhs) => compare_fn.compare(&lhs.to_string().to_ascii_lowercase(), rhs),

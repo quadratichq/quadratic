@@ -88,7 +88,7 @@ pub struct CodeCellRunOutput {
 impl CodeCellRunOutput {
     /// Returns the value (single cell or array) outputted by the code run if it
     /// succeeded, or `None` if it failed or has never been run.
-    pub fn output_value(&self) -> Option<&Value> {
+    pub fn output_value(&self) -> Option<&String> {
         self.result.output_value()
     }
 }
@@ -98,7 +98,7 @@ impl CodeCellRunOutput {
 #[serde(untagged)]
 pub enum CodeCellRunResult {
     Ok {
-        output_value: Value,
+        output_value: String,
         cells_accessed: Vec<CellRef>,
     },
     Err {
@@ -108,7 +108,7 @@ pub enum CodeCellRunResult {
 impl CodeCellRunResult {
     /// Returns the value (single cell or array) outputted by the code run if it
     /// succeeded, or `None` if it failed.
-    pub fn output_value(&self) -> Option<&Value> {
+    pub fn output_value(&self) -> Option<&String> {
         match self {
             Self::Ok { output_value, .. } => Some(output_value),
             Self::Err { .. } => None,

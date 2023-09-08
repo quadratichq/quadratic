@@ -1,3 +1,7 @@
+use std::str::FromStr;
+
+use bigdecimal::{BigDecimal, FromPrimitive};
+
 use crate::{
     grid::{NumericFormat, NumericFormatKind, RegionRef, SheetId},
     Array, CellValue, Pos, Rect, RunLengthEncoding,
@@ -19,27 +23,27 @@ impl GridController {
     }
 
     /// tests whether a a CellValue::Text is a currency value
-    fn unpack_currency(s: &String) -> Option<(String, f64)> {
+    fn unpack_currency(s: &String) -> Option<(String, BigDecimal)> {
         if s.is_empty() {
             return None;
         }
         for char in CURRENCY_SYMBOLS.chars() {
             if let Some(stripped) = s.strip_prefix(char) {
-                if let Ok(parsed) = stripped.parse::<f64>() {
-                    return Some((char.to_string(), parsed));
+                if let Ok(bd) = BigDecimal::from_str(stripped) {
+                    return Some((char.to_string(), bd));
                 }
             }
         }
         None
     }
 
-    fn unpack_percentage(s: &String) -> Option<f64> {
+    fn unpack_percentage(s: &String) -> Option<BigDecimal> {
         if s.is_empty() {
             return None;
         }
         if let Some(number) = s.strip_suffix('%') {
-            if let Ok(parsed) = number.parse::<f64>() {
-                return Some(parsed / 100.0);
+            if let Ok(bd) = BigDecimal::from_str(number) {
+                return Some(bd / BigDecimal::from_i8(100).unwrap());
             }
         }
         None
@@ -79,10 +83,10 @@ impl GridController {
                 region,
                 attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
             });
-        } else if let Ok(number) = value.parse::<f64>() {
+        } else if let Ok(bd) = BigDecimal::from_str(&value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
-                values: Array::from(CellValue::Number(number)),
+                values: Array::from(CellValue::Number(bd)),
             });
         } else if let Some(percent) = Self::unpack_percentage(&value) {
             ops.push(Operation::SetCellValues {
@@ -182,7 +186,9 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use approx::assert_relative_eq;
+    use std::str::FromStr;
+
+    use bigdecimal::BigDecimal;
 
     use crate::{
         controller::{transactions::TransactionSummary, GridController},
@@ -202,26 +208,26 @@ mod test {
         });
 
         assert_eq!(get_the_cell(&g), CellValue::Blank);
-        g.set_cell_value(sheet_id, pos, "a".into(), None);
-        assert_eq!(get_the_cell(&g), "a".into());
-        g.set_cell_value(sheet_id, pos, "b".into(), None);
-        assert_eq!(get_the_cell(&g), "b".into());
+        g.set_cell_value(sheet_id, pos, String::from("a"), None);
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
+        g.set_cell_value(sheet_id, pos, String::from("b"), None);
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
         assert!(g.undo(None) == expected_summary);
-        assert_eq!(get_the_cell(&g), "a".into());
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
         assert!(g.redo(None) == expected_summary);
-        assert_eq!(get_the_cell(&g), "b".into());
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
         assert!(g.undo(None) == expected_summary);
-        assert_eq!(get_the_cell(&g), "a".into());
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
         assert!(g.undo(None) == expected_summary);
         assert_eq!(get_the_cell(&g), CellValue::Blank);
         assert!(g.undo(None).is_none());
         assert_eq!(get_the_cell(&g), CellValue::Blank);
         assert!(g.redo(None) == expected_summary);
-        assert_eq!(get_the_cell(&g), "a".into());
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
         assert!(g.redo(None) == expected_summary);
-        assert_eq!(get_the_cell(&g), "b".into());
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
         assert!(g.redo(None).is_none());
-        assert_eq!(get_the_cell(&g), "b".into());
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
     }
 
     #[test]
@@ -229,7 +235,7 @@ mod test {
         let value = String::from("$123.123");
         assert_eq!(
             GridController::unpack_currency(&value),
-            Some((String::from("$"), 123.123))
+            Some((String::from("$"), BigDecimal::from_str(&"123.123").unwrap()))
         );
 
         let value = String::from("test");
@@ -245,9 +251,9 @@ mod test {
     #[test]
     fn test_unpack_percentage() {
         let value = String::from("1238.12232%");
-        assert_relative_eq!(
-            GridController::unpack_percentage(&value).unwrap(),
-            12.3812232,
+        assert_eq!(
+            GridController::unpack_percentage(&value),
+            Some(BigDecimal::from_str(&"12.3812232").unwrap()),
         );
     }
 }

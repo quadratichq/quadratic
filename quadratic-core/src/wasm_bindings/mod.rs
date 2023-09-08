@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use async_trait::async_trait;
+use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -225,7 +226,7 @@ impl GridProxy for JsGridProxy {
             None => return CellValue::Blank,
         };
 
-        if let Ok(n) = string.parse::<f64>() {
+        if let Some(n) = BigDecimal::parse_bytes(&string.clone().into_bytes(), 10) {
             CellValue::Number(n)
         } else if string.is_empty() {
             CellValue::Blank
