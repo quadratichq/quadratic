@@ -6,7 +6,6 @@ import { InitialFile } from '../../dashboard/FileRoute';
 import { SheetController } from '../../grid/controller/SheetController';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useInterval } from '../../hooks/useInterval';
-import { GridFile } from '../../schemas';
 
 type Sync = {
   id: number;
@@ -16,7 +15,7 @@ type Sync = {
 export type FileContextType = {
   name: string;
   renameFile: (newName: string) => void;
-  contents: GridFile;
+  // contents: GridFile;
   syncState: Sync['state'];
 };
 
@@ -41,8 +40,8 @@ export const FileProvider = ({
   // We can guarantee this is in the URL when it runs, so cast as string
   const uuid = params.uuid as string;
   const [name, setName] = useState<FileContextType['name']>(initialFile.name);
-  const [contents, setContents] = useState<FileContextType['contents']>(initialFile.contents);
-  const debouncedContents = useDebounce<FileContextType['contents']>(contents, 1000);
+  const [dirtyFile, setDirtyFile] = useState<boolean>(false);
+  const debouncedContents = useDebounce<boolean>(dirtyFile, 1000);
   let didMount = useRef<boolean>(false);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
   const syncState = latestSync.state;
@@ -57,16 +56,9 @@ export const FileProvider = ({
 
   // Create and save the fn used by the sheetController to save the file
   const save = useCallback(async (): Promise<void> => {
-    setContents((oldContents) => {
-      let newContents = {
-        ...oldContents,
-        ...sheetController.export(),
-      };
-      return newContents;
-    });
-
-    console.log('[FileProvider] sheetController file save');
-  }, [setContents, sheetController]);
+    setDirtyFile(true);
+    console.log('[FileProvider] sheetController file marked as dirty');
+  }, []);
   useEffect(() => {
     sheetController.save = save;
   }, [sheetController, save]);
@@ -74,10 +66,13 @@ export const FileProvider = ({
   // On mounting, load the sheet
   useEffect(() => {
     if (didMount.current) return;
-    didMount.current = true;
-    console.log('[FileProvider] (re)loading file into the sheet...');
 
-    sheetController.loadFile(initialFile.contents);
+    if (!sheetController.loadFile(initialFile.contents)) {
+      console.log('[FileProvider] Failed to load file...');
+    } else {
+      didMount.current = true;
+      console.log('[FileProvider] (re)loading file into the sheet...');
+    }
   }, [initialFile.contents, sheetController]);
 
   const syncChanges = useCallback(
@@ -103,23 +98,26 @@ export const FileProvider = ({
   // When the contents of the file changes, sync to server (debounce it so that
   // quick changes, especially undo/redos, don’t sync all at once)
   useEffect(() => {
-    syncChanges(() =>
-      apiClient.updateFile(uuid, { contents: JSON.stringify(debouncedContents), version: debouncedContents.version })
-    );
-  }, [debouncedContents, syncChanges, uuid]);
+    if (debouncedContents) {
+      syncChanges(() =>
+        apiClient.updateFile(uuid, { contents: sheetController.export(), version: sheetController.getVersion() })
+      );
+      setDirtyFile(false);
+    }
+  }, [debouncedContents, sheetController, syncChanges, uuid]);
 
   // If a sync fails, start an interval that tries to sync anew ever few seconds
   // until a sync completes again
   useInterval(
     () => {
       syncChanges(() =>
-        apiClient.updateFile(uuid, { contents: JSON.stringify(debouncedContents), version: debouncedContents.version })
+        apiClient.updateFile(uuid, { contents: sheetController.export(), version: sheetController.getVersion() })
       );
     },
     syncState === 'error' ? 5000 : null
   );
 
-  return <FileContext.Provider value={{ name, renameFile, contents, syncState }}>{children}</FileContext.Provider>;
+  return <FileContext.Provider value={{ name, renameFile, syncState }}>{children}</FileContext.Provider>;
 };
 
 /**

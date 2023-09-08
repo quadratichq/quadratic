@@ -45,11 +45,16 @@ export class Sheets {
     this.sort();
   }
 
-  loadFile(grid: GridFile): void {
-    this.grid.newFromFile(grid);
-    this.sheets = [];
-    this.repopulate();
-    this._current = this.sheets[0].id;
+  loadFile(grid: GridFile): boolean {
+    try {
+      this.grid.newFromFile(grid);
+      this.sheets = [];
+      this.repopulate();
+      this._current = this.sheets[0].id;
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   mockLargeData(): void {

@@ -18,8 +18,14 @@ export class SheetController {
   constructor() {
     this.grid = new Grid();
     this.sheets = new Sheets(this);
+  }
 
-    this.save = undefined;
+  export(): string {
+    return this.grid.export();
+  }
+
+  getVersion(): string {
+    return this.grid.getVersion();
   }
 
   // Helper functions for this.sheets
@@ -38,23 +44,17 @@ export class SheetController {
     this.sheets.current = value;
   }
 
-  loadFile(grid: GridFile) {
+  loadFile(grid: GridFile): boolean {
     // use to test large sheets
     if (debugMockLargeData) {
       this.sheets.mockLargeData();
     } else {
-      this.sheets.loadFile(grid);
+      if (!this.sheets.loadFile(grid)) {
+        return false;
+      }
     }
-
-    // todo: this should probably be in pixiAppEvents???
     window.dispatchEvent(new CustomEvent('change-sheet'));
-  }
-
-  // todo: ??? maybe remove
-  export(): [] {
-    // const schema = this.grid.exportToFile();
-    // return schema.sheets;
-    return [];
+    return true;
   }
 
   public start_transaction(sheetCursor?: SheetCursor): void {

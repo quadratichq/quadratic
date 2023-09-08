@@ -67,6 +67,10 @@ pub fn import(file_contents: &str) -> Result<current::Grid, String> {
     })
 }
 
+pub fn version() -> String {
+    String::from("1.5")
+}
+
 pub fn export(grid: &current::Grid) -> Result<String, String> {
     serde_json::to_string(&GridFile::V1_5 {
         grid: v1_5::Grid {

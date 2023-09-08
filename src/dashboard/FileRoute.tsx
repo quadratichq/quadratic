@@ -6,7 +6,7 @@ import { RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
 import { GetFileResSchema } from '../api/types';
 import { Empty } from '../components/Empty';
-import { GridFile, GridFileSchema } from '../schemas';
+import { GridFile } from '../schemas';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
 
@@ -38,14 +38,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
 
   // If the file version is newer than what is supported by the current version
   // of the app, do a (hard) reload.
-  if (contents.version > GridFileSchema.shape.version.value) {
-    Sentry.captureEvent({
-      message: `User opened a file at version ${contents.version} but the app is at version ${GridFileSchema.shape.version.value}. The app will automatically reload.`,
-      level: Sentry.Severity.Log,
-    });
-    // @ts-expect-error hard reload via `true` only works in some browsers
-    window.location.reload(true);
-  }
+
+  // todo: figure out how to handle this
+  // if (contents.version > GridFileSchema.shape.version.value) {
+  //   Sentry.captureEvent({
+  //     message: `User opened a file at version ${contents.version} but the app is at version ${GridFileSchema.shape.version.value}. The app will automatically reload.`,
+  //     level: Sentry.Severity.Log,
+  //   });
+  //   // @ts-expect-error hard reload via `true` only works in some browsers
+  //   window.location.reload(true);
+  // }
 
   return { contents, name: data.file.name };
 };

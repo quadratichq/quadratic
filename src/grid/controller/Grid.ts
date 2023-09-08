@@ -41,6 +41,10 @@ export const rectToPoint = (rect: Rect): Point => {
   return new Point(Number(rect.min.x), Number(rect.min.y));
 };
 
+export const convertGridFile = (file: string): string {
+
+}
+
 // TS wrapper around Grid.rs
 export class Grid {
   // should be private after migration
@@ -53,7 +57,17 @@ export class Grid {
   }
 
   newFromFile(grid: GridFile): void {
-    this.gridController = GridController.newFromFile(grid);
+    this.gridController = GridController.newFromFile(JSON.stringify(grid));
+  }
+
+  export(): string {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.exportToFile();
+  }
+
+  getVersion(): string {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.getVersion();
   }
 
   //#region get sheet information

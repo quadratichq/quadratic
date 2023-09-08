@@ -14,6 +14,9 @@ const FILES = [
   { schema: GridFileSchemaV1_0, updateFn: upgradeV1_0toV1_1 },
 ];
 
+// all versions validated by Rust
+const rustFileVersions = ['1.5'];
+
 /**
  * Given arbitrary JSON, validate whether it's a valid file format and return
  * the newest format of the file if it is.
@@ -40,6 +43,10 @@ export function validateAndUpgradeGridFile(input: any, logOutput: boolean = true
         e
       );
     return null;
+  }
+
+  if (rustFileVersions.includes(json.version)) {
+    return json;
   }
 
   // Try to validate the file against the newest version, then step back through

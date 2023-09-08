@@ -19,9 +19,7 @@ export default function QuadraticUIContext({
 }) {
   return (
     <FileProvider initialFile={initialFile} sheetController={sheetController}>
-      {/* <PixiAppContext.Provider value={app}><SheetControllerContext.Provider value={sheetController}> */}
       <QuadraticUI app={app} sheetController={sheetController} />
-      {/* </SheetControllerContext.Provider></PixiAppContext.Provider> */}
     </FileProvider>
   );
 }

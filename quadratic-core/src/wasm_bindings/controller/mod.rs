@@ -20,6 +20,12 @@ impl GridController {
         Ok(file::export(&self.grid())?)
     }
 
+    /// Exports a [`string`]
+    #[wasm_bindgen(js_name = "getVersion")]
+    pub fn js_file_version(&self) -> String {
+        file::version()
+    }
+
     /// Constructs a new empty grid.
     #[wasm_bindgen(constructor)]
     pub fn js_new() -> Self {
