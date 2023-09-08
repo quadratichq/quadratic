@@ -29,7 +29,7 @@ export const UpgradeApp = () => {
             nextVersion
           );
           if (needsUpdate) {
-            // TODO pass custom actions to snackbar so the page will refresh
+            // TODO pass custom action to snackbar so user can click button on notification to refresh
             addGlobalSnackbar('Quadratic has updates! Please reload.');
           }
         });
