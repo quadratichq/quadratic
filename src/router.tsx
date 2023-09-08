@@ -18,6 +18,7 @@ import { authClient, protectedRouteLoaderWrapper } from './auth';
 import { Empty } from './components/Empty';
 import { GlobalSnackbarProvider } from './components/GlobalSnackbarProvider';
 import { Theme } from './components/Theme';
+import { UpgradeApp } from './components/UpgradeApp';
 import { SUPPORT_EMAIL } from './constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
@@ -171,7 +172,10 @@ function Root() {
   return (
     <Theme>
       <GlobalSnackbarProvider>
-        <Outlet />
+        <>
+          <UpgradeApp />
+          <Outlet />
+        </>
       </GlobalSnackbarProvider>
     </Theme>
   );

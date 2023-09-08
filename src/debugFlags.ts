@@ -70,4 +70,4 @@ export const debugGridSettings = debug && false;
 // UI
 // --------
 
-export const debugShowUILogs = debug && false;
+export const debugShowUILogs = true;
