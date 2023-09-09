@@ -13,7 +13,9 @@ class SheetController {
   grid!: Grid;
 
   sheets!: Sheets;
-  save: (() => void) | undefined;
+  save: () => void = () => {
+    throw new Error('SheetController.save should be initialized');
+  };
 
   // initial call that properly initializes object (constructor doesn't work b/c of timing)
   init() {

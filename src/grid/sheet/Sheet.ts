@@ -65,7 +65,7 @@ export class Sheet {
   // -----------------------------------
 
   private save(): void {
-    sheetController.save?.();
+    sheetController.save();
   }
 
   setCellValue(x: number, y: number, value: string): void {

@@ -88,7 +88,7 @@ export class Sheets {
   }
 
   private save() {
-    sheetController.save?.();
+    sheetController.save();
   }
 
   // Get Sheet information

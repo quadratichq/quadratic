@@ -10,6 +10,7 @@ export const FORMAT_SELECTION_EVENT = 'format-selection-event';
 const format = (summary: TransactionSummary) => {
   transactionResponse(summary);
   window.dispatchEvent(new Event(FORMAT_SELECTION_EVENT));
+  sheetController.save();
 };
 
 export const setFillColor = (color?: ColorResult): void => {
