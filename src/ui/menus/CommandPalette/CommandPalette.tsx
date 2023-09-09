@@ -3,21 +3,17 @@ import mixpanel from 'mixpanel-browser';
 import React, { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../../grid/controller/SheetController';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
 import '../../styles/floating-dialog.css';
 import { useSheetListItems } from './ListItems/useSheetListItems';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 
 interface Props {
-  app: PixiApp;
-  sheetController: SheetController;
   confirmSheetDelete: () => void;
 }
 
 export const CommandPalette = (props: Props) => {
-  const { app, sheetController, confirmSheetDelete } = props;
+  const { confirmSheetDelete } = props;
 
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const [activeSearchValue, setActiveSearchValue] = React.useState<string>('');
@@ -47,12 +43,10 @@ export const CommandPalette = (props: Props) => {
     }
   }, [selectedListItemIndex]);
 
-  const sheets = useSheetListItems(sheetController);
+  const sheets = useSheetListItems();
 
   // Otherwise, define vars and render the list
   const ListItems = getCommandPaletteListItems({
-    app,
-    sheetController,
     closeCommandPalette,
     activeSearchValue: activeSearchValue,
     selectedListItemIndex: selectedListItemIndex,

@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { useParams } from 'react-router';
 import { apiClient } from '../../api/apiClient';
 import { InitialFile } from '../../dashboard/FileRoute';
-import { SheetController } from '../../grid/controller/SheetController';
+import { sheetController } from '../../grid/controller/SheetController';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useInterval } from '../../hooks/useInterval';
 
@@ -27,15 +27,7 @@ const FileContext = createContext<FileContextType>({} as FileContextType);
 /**
  * Provider
  */
-export const FileProvider = ({
-  children,
-  initialFile,
-  sheetController,
-}: {
-  children: React.ReactElement;
-  initialFile: InitialFile;
-  sheetController: SheetController;
-}) => {
+export const FileProvider = ({ children, initialFile }: { children: React.ReactElement; initialFile: InitialFile }) => {
   const params = useParams();
   // We can guarantee this is in the URL when it runs, so cast as string
   const uuid = params.uuid as string;
@@ -61,7 +53,7 @@ export const FileProvider = ({
   }, []);
   useEffect(() => {
     sheetController.save = save;
-  }, [sheetController, save]);
+  }, [save]);
 
   // On mounting, load the sheet
   useEffect(() => {
@@ -73,7 +65,7 @@ export const FileProvider = ({
       didMount.current = true;
       console.log('[FileProvider] (re)loading file into the sheet...');
     }
-  }, [initialFile.contents, sheetController]);
+  }, [initialFile.contents]);
 
   const syncChanges = useCallback(
     async (apiClientFn: Function) => {
@@ -104,7 +96,7 @@ export const FileProvider = ({
       );
       setDirtyFile(false);
     }
-  }, [debouncedContents, sheetController, syncChanges, uuid]);
+  }, [debouncedContents, syncChanges, uuid]);
 
   // If a sync fails, start an interval that tries to sync anew ever few seconds
   // until a sync completes again

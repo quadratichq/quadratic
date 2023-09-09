@@ -6,7 +6,6 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { IS_READONLY_MODE } from '../../../constants/appConstants';
 import { ROUTES } from '../../../constants/routes';
-import { SheetController } from '../../../grid/controller/SheetController';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
@@ -22,12 +21,7 @@ import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { useGridSettings } from './SubMenus/useGridSettings';
 import { ZoomDropdown } from './ZoomDropdown';
 
-interface IProps {
-  sheetController: SheetController;
-}
-
-export const TopBar = (props: IProps) => {
-  const { sheetController } = props;
+export const TopBar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { name, renameFile } = useFileContext();
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
@@ -68,12 +62,12 @@ export const TopBar = (props: IProps) => {
           alignItems: 'center',
         }}
       >
-        <QuadraticMenu sheetController={sheetController} />
+        <QuadraticMenu />
         {!IS_READONLY_MODE && (
           <>
-            <DataMenu></DataMenu>
-            <FormatMenu sheet_controller={sheetController} />
-            <NumberFormatMenu sheet_controller={sheetController}></NumberFormatMenu>
+            <DataMenu />
+            <FormatMenu />
+            <NumberFormatMenu />
           </>
         )}
       </div>

@@ -14,7 +14,7 @@ import { IS_READONLY_MODE } from '../../../../constants/appConstants';
 import { ROUTES } from '../../../../constants/routes';
 import { DOCUMENTATION_URL } from '../../../../constants/urls';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { SheetController } from '../../../../grid/controller/SheetController';
+import { sheetController } from '../../../../grid/controller/SheetController';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRootRouteLoaderData } from '../../../../router';
@@ -22,12 +22,7 @@ import { isMac } from '../../../../utils/isMac';
 import { MenuLineItem } from '../MenuLineItem';
 import { useGridSettings } from './useGridSettings';
 
-interface Props {
-  sheetController: SheetController;
-}
-
-export const QuadraticMenu = (props: Props) => {
-  const { sheetController } = props;
+export const QuadraticMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
   const cursor = sheetController.sheet.cursor;
@@ -107,21 +102,21 @@ export const QuadraticMenu = (props: Props) => {
           <MenuDivider />
           <MenuItem
             onClick={() => {
-              cutToClipboard(sheetController, cursor.originPosition, cursor.terminalPosition);
+              cutToClipboard(cursor.originPosition, cursor.terminalPosition);
             }}
           >
             <MenuLineItem primary="Cut" secondary={KeyboardSymbols.Command + 'X'} Icon={ContentCut}></MenuLineItem>
           </MenuItem>
           <MenuItem
             onClick={() => {
-              copyToClipboard(props.sheetController, cursor.originPosition, cursor.terminalPosition);
+              copyToClipboard(cursor.originPosition, cursor.terminalPosition);
             }}
           >
             <MenuLineItem primary="Copy" secondary={KeyboardSymbols.Command + 'C'} Icon={ContentCopy}></MenuLineItem>
           </MenuItem>
           <MenuItem
             onClick={() => {
-              pasteFromClipboard(props.sheetController, cursor.cursorPosition);
+              pasteFromClipboard(cursor.cursorPosition);
             }}
           >
             <MenuLineItem primary="Paste" secondary={KeyboardSymbols.Command + 'V'} Icon={ContentPaste}></MenuLineItem>

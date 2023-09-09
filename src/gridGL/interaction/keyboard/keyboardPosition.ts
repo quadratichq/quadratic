@@ -1,10 +1,9 @@
-import { Sheet } from '../../../grid/sheet/Sheet';
+import { sheetController } from '../../../grid/controller/SheetController';
 import { cellHasContent } from '../../helpers/selectCells';
 import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
 
-export function keyboardPosition(options: { event: React.KeyboardEvent<HTMLElement>; sheet: Sheet }): boolean {
-  const { event, sheet } = options;
-
+export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boolean {
+  const sheet = sheetController.sheet;
   const cursor = sheet.cursor;
 
   const setCursorPosition = (x: number, y: number): void => {

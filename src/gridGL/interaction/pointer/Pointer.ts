@@ -1,25 +1,23 @@
 import { InteractionEvent } from 'pixi.js';
-import { PixiApp } from '../../pixiApp/PixiApp';
-import { PointerHeading } from './PointerHeading';
-import { PointerDown } from './PointerDown';
+import { pixiApp } from '../../pixiApp/PixiApp';
 import { PointerAutoComplete } from './PointerAutoComplete/PointerAutoComplete';
+import { PointerDown } from './PointerDown';
+import { PointerHeading } from './PointerHeading';
 import { PointerCursor } from './pointerCursor';
 
 export class Pointer {
-  private app: PixiApp;
   pointerHeading: PointerHeading;
   pointerAutoComplete: PointerAutoComplete;
   private pointerCursor: PointerCursor;
 
   pointerDown: PointerDown;
 
-  constructor(app: PixiApp) {
-    this.app = app;
-    this.pointerHeading = new PointerHeading(app);
-    this.pointerAutoComplete = new PointerAutoComplete(app);
-    this.pointerDown = new PointerDown(app);
-    this.pointerCursor = new PointerCursor(app);
-    const viewport = app.viewport;
+  constructor() {
+    this.pointerHeading = new PointerHeading();
+    this.pointerAutoComplete = new PointerAutoComplete();
+    this.pointerDown = new PointerDown();
+    this.pointerCursor = new PointerCursor();
+    const viewport = pixiApp.viewport;
     viewport.on('pointerdown', this.handlePointerDown);
     viewport.on('pointermove', this.pointerMove);
     viewport.on('pointerup', this.pointerUp);
@@ -27,7 +25,7 @@ export class Pointer {
   }
 
   destroy() {
-    const viewport = this.app.viewport;
+    const viewport = pixiApp.viewport;
     viewport.off('pointerdown', this.handlePointerDown);
     viewport.off('pointermove', this.pointerMove);
     viewport.off('pointerup', this.pointerUp);
@@ -36,7 +34,7 @@ export class Pointer {
   }
 
   private handlePointerDown = (e: InteractionEvent): void => {
-    const world = this.app.viewport.toWorld(e.data.global);
+    const world = pixiApp.viewport.toWorld(e.data.global);
     const event = e.data.originalEvent as PointerEvent;
     this.pointerHeading.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
@@ -44,7 +42,7 @@ export class Pointer {
   };
 
   private pointerMove = (e: InteractionEvent): void => {
-    const world = this.app.viewport.toWorld(e.data.global);
+    const world = pixiApp.viewport.toWorld(e.data.global);
     this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world);

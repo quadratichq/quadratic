@@ -2,9 +2,9 @@ import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
 import { Rect, SheetId, TransactionSummary } from '../../quadratic-core/types';
 import { SheetCursorSave } from '../sheet/SheetCursor';
 import { rectToRectangle } from './Grid';
-import { SheetController } from './SheetController';
+import { sheetController } from './SheetController';
 
-export const transactionResponse = (sheetController: SheetController, summary: TransactionSummary): void => {
+export const transactionResponse = (summary: TransactionSummary): void => {
   if (summary.sheet_list_modified) {
     sheetController.sheets.repopulate();
   }

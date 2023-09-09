@@ -5,7 +5,7 @@ import {
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { CellValue } from '../../quadratic-core/types';
 import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
-import { PixiApp } from './PixiApp';
+import { pixiApp } from './PixiApp';
 import { pixiAppEvents } from './PixiAppEvents';
 
 export enum PanMode {
@@ -15,7 +15,6 @@ export enum PanMode {
 }
 
 export class PixiAppSettings {
-  private app: PixiApp;
   private settings!: GridSettings;
   private lastSettings?: GridSettings;
   private _panMode: PanMode;
@@ -27,8 +26,7 @@ export class PixiAppSettings {
   editorHighlightedCellsState = editorHighlightedCellsStateDefault;
   setEditorHighlightedCellsState?: (value: EditorHighlightedCellsState) => void;
 
-  constructor(app: PixiApp) {
-    this.app = app;
+  constructor() {
     this.getSettings();
     window.addEventListener('grid-settings', this.getSettings.bind(this));
     this._input = { show: false };
@@ -46,19 +44,19 @@ export class PixiAppSettings {
     } else {
       this.settings = defaultGridSettings;
     }
-    this.app.gridLines.dirty = true;
-    this.app.axesLines.dirty = true;
-    this.app.headings.dirty = true;
-    // this.app.cells.dirty = true;
+    pixiApp.gridLines.dirty = true;
+    pixiApp.axesLines.dirty = true;
+    pixiApp.headings.dirty = true;
+    // pixiApp.cells.dirty = true;
 
     // only rebuild quadrants if showCellTypeOutlines change
     if (
       (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
       (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
     ) {
-      this.app.cellsSheets.toggleOutlines();
-      this.app.viewport.dirty = true;
-      // this.app.quadrants.build();
+      pixiApp.cellsSheets.toggleOutlines();
+      pixiApp.viewport.dirty = true;
+      // pixiApp.quadrants.build();
     }
     this.lastSettings = this.settings;
   };
@@ -69,9 +67,9 @@ export class PixiAppSettings {
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
-    this.app.headings.dirty = true;
-    this.app.cursor.dirty = true;
-    // this.app.cells.dirty = true;
+    pixiApp.headings.dirty = true;
+    pixiApp.cursor.dirty = true;
+    // pixiApp.cells.dirty = true;
   }
 
   updateEditorHighlightedCellsState(
@@ -80,7 +78,7 @@ export class PixiAppSettings {
   ): void {
     this.editorHighlightedCellsState = editorHighlightedCellsState;
     this.setEditorHighlightedCellsState = setEditorHighlightedCellsState;
-    this.app.cursor.dirty = true;
+    pixiApp.cursor.dirty = true;
   }
 
   get showGridLines(): boolean {

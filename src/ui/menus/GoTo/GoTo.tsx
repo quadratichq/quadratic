@@ -3,20 +3,14 @@ import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemTex
 import React, { SyntheticEvent } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../../grid/controller/SheetController';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { sheetController } from '../../../grid/controller/SheetController';
 import { Coordinate } from '../../../gridGL/types/size';
 import { focusGrid } from '../../../helpers/focusGrid';
 import focusInput from '../../../utils/focusInput';
 import '../../styles/floating-dialog.css';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 
-interface Props {
-  app: PixiApp;
-  sheetController: SheetController;
-}
-
-export const GoTo = (props: Props) => {
+export const GoTo = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showGoToMenu } = editorInteractionState;
   const [value, setValue] = React.useState<string>('');
@@ -53,7 +47,7 @@ export const GoTo = (props: Props) => {
         terminalPosition,
       };
     }
-    props.sheetController.sheet.cursor.changePosition({
+    sheetController.sheet.cursor.changePosition({
       keyboardMovePosition,
       cursorPosition,
       multiCursor,

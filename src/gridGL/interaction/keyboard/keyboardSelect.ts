@@ -1,21 +1,10 @@
-import { Viewport } from 'pixi-viewport';
-import { Sheet } from '../../../grid/sheet/Sheet';
 import { selectAllCells } from '../../helpers/selectCells';
 
-export function keyboardSelect(options: {
-  event: React.KeyboardEvent<HTMLElement>;
-  viewport?: Viewport;
-  sheet: Sheet;
-}): boolean {
-  if (!options.viewport) return false;
-
+export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean {
   // Command + A
-  if ((options.event.metaKey || options.event.ctrlKey) && options.event.key === 'a') {
-    selectAllCells({
-      sheet: options.sheet,
-      viewport: options.viewport,
-    });
-    options.event.preventDefault();
+  if ((event.metaKey || event.ctrlKey) && event.key === 'a') {
+    selectAllCells();
+    event.preventDefault();
     return true;
   }
   return false;

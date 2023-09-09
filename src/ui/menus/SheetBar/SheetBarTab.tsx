@@ -2,14 +2,13 @@ import './SheetBarTab.css';
 
 import { Box, Fade, Popper } from '@mui/material';
 import { MouseEvent, PointerEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { SheetController } from '../../../grid/controller/SheetController';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { sheetController } from '../../../grid/controller/SheetController';
 
 interface Props {
   sheet: Sheet;
   order: string;
-  sheetController: SheetController;
   active: boolean;
   onPointerDown: (options: { event: PointerEvent<HTMLDivElement>; sheet: Sheet }) => void;
   onContextMenu: (event: MouseEvent, sheet: Sheet) => void;
@@ -18,7 +17,7 @@ interface Props {
 }
 
 export const SheetBarTab = (props: Props): JSX.Element => {
-  const { sheet, order, sheetController, active, onPointerDown, onContextMenu, forceRename, clearRename } = props;
+  const { sheet, order, active, onPointerDown, onContextMenu, forceRename, clearRename } = props;
   // const localFiles = useFileContext();
   const [nameExists, setNameExists] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);

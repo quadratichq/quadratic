@@ -4,6 +4,7 @@ import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionS
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
 import { PNG_MESSAGE } from '../../../../constants/appConstants';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
+import { sheetController } from '../../../../grid/controller/SheetController';
 import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';
@@ -19,7 +20,7 @@ const ListItems = [
           {...props}
           icon={<Undo />}
           action={() => {
-            props.sheetController.undo();
+            sheetController.undo();
           }}
           shortcut="Z"
           shortcutModifiers={[KeyboardSymbols.Command]}
@@ -35,7 +36,7 @@ const ListItems = [
           {...props}
           icon={<Redo />}
           action={() => {
-            props.sheetController.redo();
+            sheetController.redo();
           }}
           shortcut={isMac ? 'Z' : 'Y'}
           shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
@@ -50,8 +51,8 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            const cursor = props.sheetController.sheet.cursor;
-            cutToClipboard(props.sheetController, cursor.originPosition, cursor.terminalPosition);
+            const cursor = sheetController.sheet.cursor;
+            cutToClipboard(cursor.originPosition, cursor.terminalPosition);
           }}
           icon={<ContentCut />}
           shortcut="X"
@@ -67,8 +68,8 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            const cursor = props.sheetController.sheet.cursor;
-            copyToClipboard(props.sheetController, cursor.originPosition, cursor.terminalPosition);
+            const cursor = sheetController.sheet.cursor;
+            copyToClipboard(cursor.originPosition, cursor.terminalPosition);
           }}
           icon={<ContentCopy />}
           shortcut="C"
@@ -84,7 +85,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            pasteFromClipboard(props.sheetController, props.sheetController.sheet.cursor.cursorPosition);
+            pasteFromClipboard(sheetController.sheet.cursor.cursorPosition);
           }}
           icon={<ContentPaste />}
           shortcut="V"
@@ -101,7 +102,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            copyAsPNG(props.app);
+            copyAsPNG();
             addGlobalSnackbar(PNG_MESSAGE);
           }}
           icon={<CopyAsPNG />}

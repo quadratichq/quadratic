@@ -8,7 +8,7 @@ import { Statement } from './statement';
 import { Transaction } from './transaction';
 import { transactionResponse } from './transactionResponse';
 
-export class SheetController {
+class SheetController {
   // friends of Sheets
   grid: Grid;
 
@@ -17,7 +17,7 @@ export class SheetController {
 
   constructor() {
     this.grid = new Grid();
-    this.sheets = new Sheets(this);
+    this.sheets = new Sheets();
   }
 
   export(): string {
@@ -154,13 +154,13 @@ export class SheetController {
   public undo(): void {
     if (!this.hasUndo()) return;
     const summary = this.grid.undo(this.sheet.cursor.save());
-    transactionResponse(this, summary);
+    transactionResponse(summary);
   }
 
   public redo(): void {
     if (!this.hasRedo()) return;
     const summary = this.grid.redo(this.sheet.cursor.save());
-    transactionResponse(this, summary);
+    transactionResponse(summary);
   }
 
   public clear(): void {
@@ -171,3 +171,5 @@ export class SheetController {
     // this.transaction_in_progress_reverse = undefined;
   }
 }
+
+export const sheetController = new SheetController();

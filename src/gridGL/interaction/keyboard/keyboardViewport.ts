@@ -1,39 +1,17 @@
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { CellFormatSummary } from '../../../quadratic-core/types';
+import { clearFormattingAndBorders } from '../../../ui/menus/TopBar/SubMenus/formatCells';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
-import { PixiApp } from '../../pixiApp/PixiApp';
-import { Pointer } from '../pointer/Pointer';
+import { pixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardViewport(options: {
-  app: PixiApp;
   event: KeyboardEvent;
-  sheet: Sheet;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  clearAllFormatting: Function;
-  changeBold: Function;
-  changeItalic: Function;
-  formatPrimaryCell?: CellFormatSummary;
-  pointer: Pointer;
   presentationMode: boolean;
   setPresentationMode: Function;
 }): boolean {
-  const {
-    changeBold,
-    changeItalic,
-    clearAllFormatting,
-    event,
-    formatPrimaryCell,
-    sheet,
-    editorInteractionState,
-    setEditorInteractionState,
-    presentationMode,
-    setPresentationMode,
-    app,
-  } = options;
-
-  const { viewport } = app;
+  const { event, editorInteractionState, setEditorInteractionState, presentationMode, setPresentationMode } = options;
+  const { pointer } = pixiApp;
 
   if (event.altKey) return false;
 
@@ -49,7 +27,7 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
-    clearAllFormatting();
+    clearFormattingAndBorders();
     return true;
   }
 
@@ -63,17 +41,20 @@ export function keyboardViewport(options: {
       setPresentationMode(false);
       return true;
     }
-    return app.pointer.handleEscape();
+    return pointer.handleEscape();
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    changeBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
-    return true;
+    throw new Error('not implemented yet');
+    // const formatPrimaryKey = sheetController.sheet.getFormatSummary();
+    // changeBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
+    // return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    changeItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
-    return true;
+    throw new Error('not implemented yet');
+    // changeItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
+    // return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && (event.key === 'g' || event.key === 'j')) {
@@ -88,27 +69,27 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '=') {
-    zoomIn(viewport);
+    zoomIn();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '-') {
-    zoomOut(viewport);
+    zoomOut();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '8') {
-    zoomToSelection(sheet, viewport);
+    zoomToSelection();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '9') {
-    zoomToFit(sheet, viewport);
+    zoomToFit();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '0') {
-    zoomTo100(viewport);
+    zoomTo100();
     return true;
   }
 

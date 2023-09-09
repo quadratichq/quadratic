@@ -3,23 +3,21 @@ import { TransactionSummary } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
 import { Sheet } from '../sheet/Sheet';
 import { Grid } from './Grid';
-import { SheetController } from './SheetController';
+import { sheetController } from './SheetController';
 import { transactionResponse } from './transactionResponse';
 
 // default size for URL: &mock-large-data=
 const randomFloatSize = { x: 10, y: 3000 };
 
 export class Sheets {
-  private sheetController: SheetController;
   private sheets: Sheet[];
   private _current: string;
 
   // set up sheet information
   // ------------------------
 
-  constructor(sheetController: SheetController) {
-    this.sheetController = sheetController;
-    this.sheets = [new Sheet(this.sheetController, 0)];
+  constructor() {
+    this.sheets = [new Sheet(0)];
     this._current = this.sheets[0].id;
   }
 
@@ -29,7 +27,7 @@ export class Sheets {
     // ensure the sheets exist
     sheetIds.forEach((sheetId, index) => {
       if (!this.sheets.find((search) => search.id === sheetId)) {
-        const sheet = new Sheet(this.sheetController, index);
+        const sheet = new Sheet(index);
         this.sheets.push(sheet);
         pixiAppEvents.addSheet(sheet);
       }
@@ -85,11 +83,11 @@ export class Sheets {
   }
 
   private get grid(): Grid {
-    return this.sheetController.grid;
+    return sheetController.grid;
   }
 
   private save() {
-    this.sheetController.save?.();
+    sheetController.save?.();
   }
 
   // Get Sheet information
@@ -192,7 +190,7 @@ export class Sheets {
 
   createNew(): void {
     const summary = this.grid.addSheet(this.sheet.cursor.save());
-    transactionResponse(this.sheetController, summary);
+    transactionResponse(summary);
 
     // sets the current sheet to the new sheet
     this.current = this.sheets[this.sheets.length - 1].id;
@@ -202,7 +200,7 @@ export class Sheets {
   duplicate(): void {
     const oldSheetId = this.current;
     const summary = this.grid.duplicateSheet(this.current, this.sheet.cursor.save());
-    transactionResponse(this.sheetController, summary);
+    transactionResponse(summary);
 
     // sets the current sheet to the duplicated sheet
     const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
@@ -217,7 +215,7 @@ export class Sheets {
   deleteSheet(id: string): void {
     const order = this.sheet.order;
     const summary = this.grid.deleteSheet(id, this.sheet.cursor.save());
-    transactionResponse(this.sheetController, summary);
+    transactionResponse(summary);
     this.save();
 
     // set current to next sheet (before this.sheets is updated)
@@ -263,7 +261,7 @@ export class Sheets {
     } else {
       response = this.grid.moveSheet(id, toBefore, sheet.cursor.save());
     }
-    transactionResponse(this.sheetController, response);
+    transactionResponse(response);
     this.save();
     this.sort();
   }

@@ -1,6 +1,4 @@
-import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
-import { mockPixiApp } from '../../../setupPixiTests';
-
+export {};
 // const createCell = (pos: [number, number], value: string): Cell => {
 //   return {
 //     x: pos[0],
@@ -11,7 +9,7 @@ import { mockPixiApp } from '../../../setupPixiTests';
 // };
 
 beforeAll(() => {
-  pixiAppEvents.app = mockPixiApp();
+  // pixiAppEvents.app = mockPixiApp();
 });
 
 test('SheetController', () => {

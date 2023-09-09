@@ -41,10 +41,6 @@ export const rectToPoint = (rect: Rect): Point => {
   return new Point(Number(rect.min.x), Number(rect.min.y));
 };
 
-export const convertGridFile = (file: string): string {
-
-}
-
 // TS wrapper around Grid.rs
 export class Grid {
   // should be private after migration

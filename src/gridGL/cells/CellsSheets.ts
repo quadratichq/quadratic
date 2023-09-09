@@ -1,34 +1,29 @@
 import { Container, Rectangle } from 'pixi.js';
+import { sheetController } from '../../grid/controller/SheetController';
 import { SheetId } from '../../quadratic-core/types';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppEvents } from '../pixiApp/PixiAppEvents';
 import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
-  private app: PixiApp;
   private current?: CellsSheet;
-
-  constructor(app: PixiApp) {
-    super();
-    this.app = app;
-  }
 
   async create(): Promise<void> {
     this.removeChildren();
-    if (!this.app.sheetController.sheets.size) return;
-    this.app.sheetController.sheets.forEach(async (sheet) => {
+    if (!sheetController.sheets.size) return;
+    sheetController.sheets.forEach(async (sheet) => {
       const child = this.addChild(new CellsSheet(sheet));
       await child.preload();
-      if (sheet.id === this.app.sheetController.sheet.id) {
+      if (sheet.id === sheetController.sheet.id) {
         this.current = child;
       }
     });
-    this.show(this.app.sheetController.sheet.id);
+    this.show(sheetController.sheet.id);
   }
 
   async addSheet(id: string): Promise<void> {
-    const sheet = this.app.sheetController.sheets.getById(id);
+    const sheet = sheetController.sheets.getById(id);
     if (!sheet) {
       throw new Error('Expected to find new sheet in cellSheet');
     }
@@ -51,7 +46,7 @@ export class CellsSheets extends Container<CellsSheet> {
       if (child.sheet.id === id) {
         if (this.current?.sheet.id !== child?.sheet.id) {
           this.current = child;
-          child.show(this.app.viewport.getVisibleBounds());
+          child.show(pixiApp.viewport.getVisibleBounds());
           pixiAppEvents.loadViewport();
         }
       } else {
@@ -90,13 +85,13 @@ export class CellsSheets extends Container<CellsSheet> {
   update(): void {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
     if (this.current.update()) {
-      this.app.setViewportDirty();
+      pixiApp.setViewportDirty();
       return;
     }
     for (const child of this.children) {
       if (this.current !== child) {
         if (child.update()) {
-          this.app.setViewportDirty();
+          pixiApp.setViewportDirty();
           return;
         }
       }

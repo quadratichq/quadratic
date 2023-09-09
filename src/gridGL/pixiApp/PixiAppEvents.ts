@@ -1,10 +1,12 @@
 import { BitmapFont, Rectangle } from 'pixi.js';
 import { HEADING_SIZE } from '../../constants/gridConstants';
+import { sheetController } from '../../grid/controller/SheetController';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { CellValue, SheetId } from '../../quadratic-core/types';
+import { zoomInOut, zoomToFit, zoomToSelection } from '../helpers/zoom';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { QuadrantChanged } from '../quadrants/Quadrants';
-import { PixiApp } from './PixiApp';
+import { pixiApp } from './PixiApp';
 import { PixiAppSettings } from './PixiAppSettings';
 
 // this is a helper for the sheetController and react to communicate with PixiApp
@@ -15,128 +17,107 @@ export interface SetDirty {
   gridLines?: boolean;
 }
 
-class PixiAppEvents {
-  app?: PixiApp;
+// todo: with pixiApp a singleton, this can be removed
 
+class PixiAppEvents {
   getSettings(): PixiAppSettings {
-    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.settings');
-    return this.app.settings;
+    return pixiApp.settings;
   }
 
   quadrantsChanged(quadrantChanged: QuadrantChanged): void {
-    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.quadrantsChanged');
-
-    // this.app.quadrants.quadrantChanged(quadrantChanged);
+    // pixiApp.quadrants.quadrantChanged(quadrantChanged);
   }
 
   setDirty(dirty: SetDirty): void {
-    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.setDirty');
-
     if (dirty.cursor) {
-      this.app.cursor.dirty = true;
+      pixiApp.cursor.dirty = true;
     }
     if (dirty.headings) {
-      this.app.headings.dirty = true;
+      pixiApp.headings.dirty = true;
     }
     if (dirty.gridLines) {
-      this.app.gridLines.dirty = true;
+      pixiApp.gridLines.dirty = true;
     }
   }
 
   cursorPosition(): void {
-    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.cursorPosition');
+    pixiApp.cursor.dirty = true;
+    pixiApp.headings.dirty = true;
 
-    this.app.cursor.dirty = true;
-    this.app.headings.dirty = true;
-
-    ensureVisible({ app: this.app, sheet: this.app.sheet });
+    ensureVisible();
 
     // triggers useGetBorderMenu clearSelection()
     window.dispatchEvent(new CustomEvent('cursor-position'));
   }
 
   changeSheet(): void {
-    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.changeSheet');
+    if (!pixiApp) throw new Error('Expected app to be defined in PixiAppEvents.changeSheet');
 
-    this.app.viewport.dirty = true;
-    this.app.gridLines.dirty = true;
-    this.app.axesLines.dirty = true;
-    this.app.headings.dirty = true;
-    this.app.cursor.dirty = true;
-    // this.app.quadrants.changeSheet();
-    this.app.boxCells.reset();
-    this.app.settings.changeInput(false);
-    this.app.cellsSheets.show(this.app.sheet.id);
+    pixiApp.viewport.dirty = true;
+    pixiApp.gridLines.dirty = true;
+    pixiApp.axesLines.dirty = true;
+    pixiApp.headings.dirty = true;
+    pixiApp.cursor.dirty = true;
+    // pixiApp.quadrants.changeSheet();
+    pixiApp.boxCells.reset();
+    pixiApp.settings.changeInput(false);
+    pixiApp.cellsSheets.show(sheetController.sheet.id);
   }
 
   addSheet(sheet: Sheet): void {
-    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.addSheet');
-
     // todo: hack!!! (this avoids loading the sheets during initial load b/c PIXI is not set up yet)
     if (BitmapFont.available['OpenSans']) {
-      this.app.cellsSheets.addSheet(sheet.id);
+      pixiApp.cellsSheets.addSheet(sheet.id);
     }
-    // this.app.quadrants.addSheet(sheet);
+    // pixiApp.quadrants.addSheet(sheet);
   }
 
   quadrantsDelete(sheet: Sheet): void {
-    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.quadrantsDelete');
-
-    // this.app.quadrants.deleteSheet(sheet);
+    // pixiApp.quadrants.deleteSheet(sheet);
   }
 
   async rebuild() {
-    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.rebuild');
-    this.app.clear();
-    this.app.paused = true;
-    this.app.viewport.dirty = true;
-    this.app.gridLines.dirty = true;
-    this.app.axesLines.dirty = true;
-    this.app.headings.dirty = true;
-    this.app.cursor.dirty = true;
-    this.app.boxCells.reset();
+    pixiApp.clear();
+    pixiApp.paused = true;
+    pixiApp.viewport.dirty = true;
+    pixiApp.gridLines.dirty = true;
+    pixiApp.axesLines.dirty = true;
+    pixiApp.headings.dirty = true;
+    pixiApp.cursor.dirty = true;
+    pixiApp.boxCells.reset();
 
     await this.loadSheets();
-    this.app.paused = false;
-    this.app.reset();
+    pixiApp.paused = false;
+    pixiApp.reset();
   }
 
   setZoomState(zoom: number): void {
-    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.setZoomState');
-
-    this.app.setZoomState(zoom);
+    zoomInOut(zoom);
   }
 
   setZoomTo(type: 'selection' | 'fit'): void {
-    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.setZoomTo');
-
     if (type === 'selection') {
-      this.app.setZoomToSelection();
+      zoomToSelection();
     } else if (type === 'fit') {
-      this.app.setZoomToFit();
+      zoomToFit();
     }
   }
 
   changeInput(input: boolean, initialValue?: CellValue | undefined): void {
-    if (!this.app) throw new Error('Expected app to be defined in PixiAppEvents.changeInput');
-
-    this.app.settings.changeInput(input, initialValue);
+    pixiApp.settings.changeInput(input, initialValue);
   }
 
   async loadSheets() {
-    if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.loadSheets');
-    await this.app.cellsSheets.create();
-    this.app.viewport.dirty = true;
+    await pixiApp.cellsSheets.create();
+    pixiApp.viewport.dirty = true;
   }
 
   async deleteSheet(sheetId: string) {
-    if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.deleteSheet');
-    this.app.cellsSheets.deleteSheet(sheetId);
+    pixiApp.cellsSheets.deleteSheet(sheetId);
   }
 
   getStartingViewport(): { x: number; y: number } {
-    if (!this.app) throw new Error('Expected app to be defined in getStartingViewport');
-    if (this.app.settings.showHeadings) {
+    if (pixiApp.settings.showHeadings) {
       return { x: HEADING_SIZE, y: HEADING_SIZE };
     } else {
       return { x: 0, y: 0 };
@@ -144,34 +125,29 @@ class PixiAppEvents {
   }
 
   loadViewport(): void {
-    if (!this.app) throw new Error('Expected app to be defined in saveViewport');
-    const lastViewport = this.app.sheet.cursor.viewport;
+    const lastViewport = sheetController.sheet.cursor.viewport;
     if (lastViewport) {
-      this.app.viewport.position.set(lastViewport.x, lastViewport.y);
-      this.app.viewport.scale.set(lastViewport.scaleX, lastViewport.scaleY);
-      this.app.viewport.dirty = true;
+      pixiApp.viewport.position.set(lastViewport.x, lastViewport.y);
+      pixiApp.viewport.scale.set(lastViewport.scaleX, lastViewport.scaleY);
+      pixiApp.viewport.dirty = true;
     }
   }
 
   setViewportDirty(): void {
-    this.app?.setViewportDirty();
+    pixiApp.setViewportDirty();
   }
 
   createBorders(): void {
-    if (!this.app?.cellsSheets)
-      throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.createBorders');
-    this.app?.cellsSheets.createBorders();
+    pixiApp.cellsSheets.createBorders();
   }
 
   cellsChanged(sheetId: string, rectangle: Rectangle): void {
-    if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.cellsChanged');
-    this.app.cellsSheets.changed({ sheetId, rectangle, labels: true, background: false });
-    this.app.setViewportDirty();
+    pixiApp.cellsSheets.changed({ sheetId, rectangle, labels: true, background: false });
+    pixiApp.setViewportDirty();
   }
 
   fillsChanged(sheetIds: SheetId[]): void {
-    if (!this.app?.cellsSheets) throw new Error('Expected app.cellsSheets to be defined in PixiAppEvents.cellsChanged');
-    this.app.cellsSheets.updateFills(sheetIds);
+    pixiApp.cellsSheets.updateFills(sheetIds);
   }
 }
 

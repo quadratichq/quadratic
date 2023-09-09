@@ -4,15 +4,13 @@ import { editorInteractionStateDefault } from '../../atoms/editorInteractionStat
 import { IS_READONLY_MODE } from '../../constants/appConstants';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
-import { SheetController } from '../../grid/controller/SheetController';
-import { Sheet } from '../../grid/sheet/Sheet';
+import { sheetController } from '../../grid/controller/SheetController';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
-import { zoomInOut, zoomToFit, zoomToSelection } from '../helpers/zoom';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { Quadrants } from '../quadrants/Quadrants';
@@ -25,8 +23,6 @@ export class PixiApp {
   private parent?: HTMLDivElement;
   private update: Update;
   private cacheIsVisible = false;
-
-  sheetController: SheetController;
 
   canvas: HTMLCanvasElement;
   viewport: Viewport;
@@ -52,8 +48,7 @@ export class PixiApp {
   // for testing purposes
   debug: Graphics;
 
-  constructor(sheetController: SheetController) {
-    this.sheetController = sheetController;
+  constructor() {
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
@@ -106,23 +101,23 @@ export class PixiApp {
     this.debug = this.viewportContents.addChild(new Graphics());
 
     // todo...
-    this.quadrants = new Quadrants(this); //this.viewportContents.addChild(new Quadrants(this));
+    this.quadrants = new Quadrants(); //this.viewportContents.addChild(new Quadrants(this));
     this.quadrants.visible = false;
 
-    this.gridLines = this.viewportContents.addChild(new GridLines(this));
-    this.axesLines = this.viewportContents.addChild(new AxesLines(this));
-    this.cellsSheets = this.viewportContents.addChild(new CellsSheets(this));
+    this.gridLines = this.viewportContents.addChild(new GridLines());
+    this.axesLines = this.viewportContents.addChild(new AxesLines());
+    this.cellsSheets = this.viewportContents.addChild(new CellsSheets());
 
-    this.boxCells = this.viewportContents.addChild(new BoxCells(this));
-    this.cursor = this.viewportContents.addChild(new Cursor(this));
-    this.headings = this.viewportContents.addChild(new GridHeadings(this));
+    this.boxCells = this.viewportContents.addChild(new BoxCells());
+    this.cursor = this.viewportContents.addChild(new Cursor());
+    this.headings = this.viewportContents.addChild(new GridHeadings());
 
-    this.settings = new PixiAppSettings(this);
+    this.settings = new PixiAppSettings();
 
     this.reset();
 
-    this.pointer = new Pointer(this);
-    this.update = new Update(this);
+    this.pointer = new Pointer();
+    this.update = new Update();
 
     if (debugAlwaysShowCache) this.showCache();
 
@@ -134,17 +129,11 @@ export class PixiApp {
 
   private setupListeners() {
     window.addEventListener('resize', this.resize);
-    pixiAppEvents.app = this;
   }
 
   private removeListeners() {
     window.removeEventListener('resize', this.resize);
   }
-
-  get sheet(): Sheet {
-    return this.sheetController.sheet;
-  }
-
   private showCache(): void {
     if (debugShowCacheFlag && !this.quadrants.visible) {
       const cacheOn = document.querySelector('.debug-show-cache-on');
@@ -181,7 +170,7 @@ export class PixiApp {
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
-    this.sheet.cursor.viewport = this.viewport.lastViewport!;
+    sheetController.sheet.cursor.viewport = this.viewport.lastViewport!;
 
     // if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
     //   this.showCache();
@@ -221,18 +210,6 @@ export class PixiApp {
     this.cursor.dirty = true;
     // this.cells.dirty = true;
   };
-
-  setZoomState(value: number): void {
-    zoomInOut(this.viewport, value);
-  }
-
-  setZoomToFit(): void {
-    zoomToFit(this.sheet, this.viewport);
-  }
-
-  setZoomToSelection(): void {
-    zoomToSelection(this.sheet, this.viewport);
-  }
 
   // called before and after a quadrant render
   prepareForCopying(options?: { gridLines: boolean }): Container {
@@ -297,3 +274,5 @@ export class PixiApp {
     this.renderer.render(new Container());
   }
 }
+
+export const pixiApp = new PixiApp();

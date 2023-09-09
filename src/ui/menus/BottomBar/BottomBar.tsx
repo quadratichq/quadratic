@@ -6,18 +6,14 @@ import { isMobileOnly } from 'react-device-detect';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
-import { SheetController } from '../../../grid/controller/SheetController';
+import { sheetController } from '../../../grid/controller/SheetController';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
 import PythonState from './PythonState';
 import SyncState from './SyncState';
 
-interface Props {
-  sheetController: SheetController;
-}
-
-export const BottomBar = (props: Props) => {
+export const BottomBar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const theme = useTheme();
 
@@ -25,7 +21,7 @@ export const BottomBar = (props: Props) => {
   const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
   useEffect(() => {
     const updateCursor = () => {
-      const cursor = props.sheetController.sheet.cursor;
+      const cursor = sheetController.sheet.cursor;
       setCursorPositionString(`(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`);
       if (cursor.multiCursor) {
         setMultiCursorPositionString(
@@ -38,7 +34,7 @@ export const BottomBar = (props: Props) => {
     updateCursor();
     window.addEventListener('cursor-position', updateCursor);
     return () => window.removeEventListener('cursor-position', updateCursor);
-  }, [props.sheetController.sheet]);
+  }, []);
 
   const handleShowGoToMenu = () => {
     setEditorInteractionState({

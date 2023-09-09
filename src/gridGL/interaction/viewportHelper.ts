@@ -1,15 +1,14 @@
 import { HEADING_SIZE } from '../../constants/gridConstants';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { sheetController } from '../../grid/controller/SheetController';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 
-export function isVisible(options: { app: PixiApp; sheet: Sheet }) {
+export function isVisible() {
   // returns true if the cursor is visible in the viewport
-  const { app, sheet } = options;
-  const { viewport, headings } = app;
-  const { gridOffsets } = sheet;
+  const { viewport, headings } = pixiApp;
+  const sheet = sheetController.sheet;
+  const { gridOffsets, cursor } = sheet;
   const headingSize = headings.headingSize;
-  const cursor = sheet.cursor;
 
   const column = cursor.keyboardMovePosition.x;
   const row = cursor.keyboardMovePosition.y;
@@ -36,11 +35,9 @@ export function isVisible(options: { app: PixiApp; sheet: Sheet }) {
 }
 
 // Ensures the cursor is always visible
-export function ensureVisible(options: { app: PixiApp; sheet: Sheet }): void {
-  const { app, sheet } = options;
-
-  if (!isVisible({ app, sheet })) {
-    app.viewportChanged();
+export function ensureVisible(): void {
+  if (!isVisible()) {
+    pixiApp.viewportChanged();
   }
 }
 
@@ -51,20 +48,20 @@ export function ensureVisible(options: { app: PixiApp; sheet: Sheet }): void {
  * @param [options.center] cell coordinate to center viewport
  * @param [options.topLeft] cell coordinate to place at topLeft of viewport (adjusting for ruler if needed)
  */
-export function moveViewport(options: { app: PixiApp; center?: Coordinate; topLeft?: Coordinate }): void {
-  const { app, center, topLeft } = options;
+export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinate }): void {
+  const { center, topLeft } = options;
   if (!center && !topLeft) return;
 
   if (center) {
-    const cell = app.sheet.gridOffsets.getCell(center.x, center.y);
-    app.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
+    const cell = sheetController.sheet.gridOffsets.getCell(center.x, center.y);
+    pixiApp.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
   }
 
   if (topLeft) {
-    const adjust = app.settings.showHeadings ? HEADING_SIZE : 0;
-    const cell = app.sheet.gridOffsets.getCell(topLeft.x + adjust, topLeft.y + adjust);
-    app.viewport.moveCorner(cell.x, cell.y);
+    const adjust = pixiApp.settings.showHeadings ? HEADING_SIZE : 0;
+    const cell = sheetController.sheet.gridOffsets.getCell(topLeft.x + adjust, topLeft.y + adjust);
+    pixiApp.viewport.moveCorner(cell.x, cell.y);
   }
 
-  app.viewportChanged();
+  pixiApp.viewportChanged();
 }

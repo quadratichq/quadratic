@@ -1,9 +1,10 @@
 import { Graphics, Rectangle } from 'pixi.js';
+import { sheetController } from '../../grid/controller/SheetController';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../pixiApp/PixiApp';
 
 export const CURSOR_THICKNESS = 2;
 const FILL_ALPHA = 0.1;
@@ -21,17 +22,14 @@ const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
 const INPUT_ALPHA = 0.333;
 
 export class Cursor extends Graphics {
-  private app: PixiApp;
-
   indicator: Rectangle;
   dirty = true;
 
   startCell: CursorCell;
   endCell: CursorCell;
 
-  constructor(app: PixiApp) {
+  constructor() {
     super();
-    this.app = app;
     this.indicator = new Rectangle();
 
     this.startCell = CURSOR_CELL_DEFAULT_VALUE;
@@ -39,12 +37,12 @@ export class Cursor extends Graphics {
   }
 
   private drawCursor(): void {
-    const cursor = this.app.sheet.cursor;
-    const { viewport } = this.app;
-    const { gridOffsets } = this.app.sheet;
-    const { editorInteractionState } = this.app.settings;
+    const cursor = sheetController.sheet.cursor;
+    const { viewport } = pixiApp;
+    const { gridOffsets } = sheetController.sheet;
+    const { editorInteractionState } = pixiApp.settings;
     const cell = cursor.cursorPosition;
-    const showInput = this.app.settings.input.show;
+    const showInput = pixiApp.settings.input.show;
 
     let { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
     const color = colors.cursorCell;
@@ -102,8 +100,7 @@ export class Cursor extends Graphics {
   }
 
   private drawMultiCursor(): void {
-    const { gridOffsets } = this.app.sheet;
-    const cursor = this.app.sheet.cursor;
+    const { gridOffsets, cursor } = sheetController.sheet;
 
     if (cursor.multiCursor) {
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
@@ -123,11 +120,11 @@ export class Cursor extends Graphics {
   }
 
   private drawCursorIndicator(): void {
-    const { viewport } = this.app;
-    const cursor = this.app.sheet.cursor;
+    const { viewport } = pixiApp;
+    const cursor = sheetController.sheet.cursor;
 
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
-      const { editorInteractionState } = this.app.settings;
+      const { editorInteractionState } = pixiApp.settings;
       const editor_selected_cell = editorInteractionState.selectedCell;
       const cell = cursor.cursorPosition;
 
@@ -158,10 +155,10 @@ export class Cursor extends Graphics {
   }
 
   private drawCodeCursor(): void {
-    const { editorInteractionState } = this.app.settings;
+    const { editorInteractionState } = pixiApp.settings;
     if (!editorInteractionState.showCodeEditor) return;
     const cell = editorInteractionState.selectedCell;
-    const { x, y, width, height } = this.app.sheet.gridOffsets.getCell(cell.x, cell.y);
+    const { x, y, width, height } = sheetController.sheet.gridOffsets.getCell(cell.x, cell.y);
     const color =
       editorInteractionState.mode === 'PYTHON'
         ? colors.cellColorUserPython
@@ -180,7 +177,7 @@ export class Cursor extends Graphics {
   }
 
   private drawEditorHighlightedCells(): void {
-    const { editorHighlightedCellsState, editorInteractionState } = this.app.settings;
+    const { editorHighlightedCellsState, editorInteractionState } = pixiApp.settings;
     const { highlightedCells, selectedCell } = editorHighlightedCellsState;
     if (!highlightedCells || highlightedCells.size === 0) return;
 
@@ -188,7 +185,7 @@ export class Cursor extends Graphics {
     for (const [cellRefId] of highlightedCells.entries()) {
       const cell = getCellFromFormulaNotation(
         cellRefId,
-        this.app.sheet.gridOffsets,
+        sheetController.sheet.gridOffsets,
         editorInteractionState.selectedCell
       );
 
@@ -247,7 +244,7 @@ export class Cursor extends Graphics {
       this.clear();
       this.drawCursor();
 
-      if (!this.app.settings.input.show) {
+      if (!pixiApp.settings.input.show) {
         this.drawMultiCursor();
         this.drawCodeCursor();
         this.drawCursorIndicator();

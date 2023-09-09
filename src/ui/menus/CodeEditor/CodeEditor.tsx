@@ -7,19 +7,14 @@ import {
   editorHighlightedCellsStateDefault,
 } from '../../../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../../grid/controller/SheetController';
+import { sheetController } from '../../../grid/controller/SheetController';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
 import { ResizeControl } from './ResizeControl';
 import { SaveChangesAlert } from './SaveChangesAlert';
 
-interface CodeEditorProps {
-  sheetController: SheetController;
-}
-
-export const CodeEditor = (props: CodeEditorProps) => {
-  const { sheetController } = props;
+export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
@@ -50,7 +45,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
     );
     setEditorContent(cellCodeValue?.code_string ?? '');
     return cellCodeValue;
-  }, [editorInteractionState.selectedCell, editorMode, sheetController.sheet]);
+  }, [editorInteractionState.selectedCell, editorMode]);
 
   const closeEditor = useCallback(
     (skipSaveCheck: boolean) => {

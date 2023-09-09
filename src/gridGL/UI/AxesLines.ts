@@ -1,29 +1,23 @@
 import { Graphics } from 'pixi.js';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../pixiApp/PixiApp';
 
 export class AxesLines extends Graphics {
-  private app: PixiApp;
   dirty = true;
-
-  constructor(app: PixiApp) {
-    super();
-    this.app = app;
-  }
 
   update() {
     if (this.dirty) {
       this.dirty = false;
       this.clear();
 
-      if (!this.app.settings.showGridAxes) {
+      if (!pixiApp.settings.showGridAxes) {
         this.visible = false;
-        this.app.setViewportDirty();
+        pixiApp.setViewportDirty();
         return;
       }
 
       this.visible = true;
       this.lineStyle(10, 0x000000, 0.35, 0, true);
-      const viewport = this.app.viewport;
+      const viewport = pixiApp.viewport;
       if (0 >= viewport.left && 0 <= viewport.right) {
         this.moveTo(0, viewport.top);
         this.lineTo(0, viewport.bottom);

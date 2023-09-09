@@ -2,8 +2,6 @@ import { ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListIt
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
 import { ReactElement } from 'react';
-import { SheetController } from '../../../grid/controller/SheetController';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 
 // Props generated in the root CommandPalette and passed to every CommandPaletteListItem
 export interface CommandPaletteListItemSharedProps {
@@ -12,15 +10,6 @@ export interface CommandPaletteListItemSharedProps {
   label: string;
   listItemIndex: number;
   selectedListItemIndex: number;
-
-  // NOTE: possible optimiziation here.
-  // Props are passed dynamically to subcomponent, e.g. <CommandPaletteListItem {...props}>
-  // but these aren’t needed in that component but are in the intermediary one
-  // for capturing stateful values when needed.
-  sheetController: SheetController;
-
-  // needed by some menu items (eventually should be moved to pixiAppEvents)
-  app: PixiApp;
 }
 
 // Contextual props added to each individual <CommandPaletteListItem>
