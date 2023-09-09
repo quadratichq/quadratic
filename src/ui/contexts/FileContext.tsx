@@ -3,9 +3,12 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { useParams } from 'react-router';
 import { apiClient } from '../../api/apiClient';
 import { InitialFile } from '../../dashboard/FileRoute';
+import { debugShowFileIO } from '../../debugFlags';
 import { sheetController } from '../../grid/controller/SheetController';
-import { useDebounce } from '../../hooks/useDebounce';
 import { useInterval } from '../../hooks/useInterval';
+
+const syncInterval = 500;
+const syncErrorInterval = 1000;
 
 type Sync = {
   id: number;
@@ -33,7 +36,6 @@ export const FileProvider = ({ children, initialFile }: { children: React.ReactE
   const uuid = params.uuid as string;
   const [name, setName] = useState<FileContextType['name']>(initialFile.name);
   const [dirtyFile, setDirtyFile] = useState<boolean>(false);
-  const debouncedContents = useDebounce<boolean>(dirtyFile, 1000);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
   const syncState = latestSync.state;
 
@@ -46,10 +48,7 @@ export const FileProvider = ({ children, initialFile }: { children: React.ReactE
   );
 
   // Create and save the fn used by the sheetController to save the file
-  const save = useCallback(async (): Promise<void> => {
-    setDirtyFile(true);
-    console.log('[FileProvider] sheetController file marked as dirty');
-  }, []);
+  const save = useCallback(() => setDirtyFile(true), []);
   useEffect(() => {
     sheetController.save = save;
   }, [save]);
@@ -76,24 +75,19 @@ export const FileProvider = ({ children, initialFile }: { children: React.ReactE
 
   // When the contents of the file changes, sync to server (debounce it so that
   // quick changes, especially undo/redos, don’t sync all at once)
-  useEffect(() => {
-    if (debouncedContents) {
-      syncChanges(() =>
-        apiClient.updateFile(uuid, { contents: sheetController.export(), version: sheetController.getVersion() })
-      );
-      setDirtyFile(false);
-    }
-  }, [debouncedContents, syncChanges, uuid]);
-
   // If a sync fails, start an interval that tries to sync anew ever few seconds
   // until a sync completes again
   useInterval(
     () => {
-      syncChanges(() =>
-        apiClient.updateFile(uuid, { contents: sheetController.export(), version: sheetController.getVersion() })
-      );
+      if (dirtyFile) {
+        if (debugShowFileIO) console.log('[FileProvider] sheetController saving file...');
+        syncChanges(() =>
+          apiClient.updateFile(uuid, { contents: sheetController.export(), version: sheetController.getVersion() })
+        );
+        setDirtyFile(false);
+      }
     },
-    syncState === 'error' ? 5000 : null
+    syncState === 'error' ? syncErrorInterval : syncInterval
   );
 
   return <FileContext.Provider value={{ name, renameFile, syncState }}>{children}</FileContext.Provider>;
