@@ -1,7 +1,7 @@
 import { Point } from 'pixi.js';
 import { IS_READONLY_MODE } from '../../../constants/appConstants';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { sheetController } from '../../../grid/controller/SheetController';
+import { pixiApp } from '../../pixiApp/PixiApp';
 import { PanMode } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
@@ -9,7 +9,6 @@ import { DOUBLE_CLICK_TIME } from './pointerUtils';
 const MINIMUM_MOVE_POSITION = 5;
 
 export class PointerDown {
-  private app: PixiApp;
   active = false;
 
   private positionRaw?: Point;
@@ -21,24 +20,16 @@ export class PointerDown {
   // flag that ensures that if pointerUp triggers during setTimeout, pointerUp is still called (see below)
   private afterShowInput?: boolean;
 
-  constructor(app: PixiApp) {
-    this.app = app;
-  }
-
-  get sheet(): Sheet {
-    return this.app.sheet;
-  }
-
   pointerDown(world: Point, event: PointerEvent): void {
     if (IS_READONLY_MODE) return;
-    if (this.app.settings.panMode !== PanMode.Disabled) return;
+    if (pixiApp.settings.panMode !== PanMode.Disabled) return;
 
-    const cursor = this.app.sheet.cursor;
+    const cursor = sheetController.sheet.cursor;
 
-    // note: directly call this.app.settings instead of locally defining it here; otherwise it dereferences this
+    // note: directly call pixiApp.settings instead of locally defining it here; otherwise it dereferences this
 
     // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
-    if (this.app.settings.input.show) {
+    if (pixiApp.settings.input.show) {
       this.afterShowInput = true;
       setTimeout(() => {
         this.pointerDown(world, event);
@@ -47,7 +38,7 @@ export class PointerDown {
       return;
     }
 
-    const { gridOffsets } = this.sheet;
+    const { gridOffsets } = sheetController.sheet;
 
     this.positionRaw = world;
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
@@ -79,8 +70,8 @@ export class PointerDown {
         if (rightClick) {
           return;
         }
-        const code = this.sheet.getCodeValue(column, row);
-        const cell = this.sheet.getEditCell(column, row);
+        const code = sheetController.sheet.getCodeValue(column, row);
+        const cell = sheetController.sheet.getEditCell(column, row);
         doubleClickCell({ column, row, code, cell });
         this.active = false;
         event.preventDefault();
@@ -131,12 +122,12 @@ export class PointerDown {
   }
 
   pointerMove(world: Point): void {
-    if (this.app.settings.panMode !== PanMode.Disabled) return;
+    if (pixiApp.settings.panMode !== PanMode.Disabled) return;
 
     if (!this.active) return;
 
-    const { viewport } = this.app;
-    const { gridOffsets } = this.sheet;
+    const { viewport } = pixiApp;
+    const { gridOffsets } = sheetController.sheet;
 
     // for determining if double click
     if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
@@ -160,11 +151,11 @@ export class PointerDown {
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {
       // hide multi cursor when only selecting one cell
-      this.sheet.cursor.changePosition({
+      sheetController.sheet.cursor.changePosition({
         keyboardMovePosition: { x: this.position.x, y: this.position.y },
         cursorPosition: { x: this.position.x, y: this.position.y },
       });
-      this.app.settings.changeInput(false);
+      pixiApp.settings.changeInput(false);
     } else {
       // cursor origin and terminal are not in the same cell
 
@@ -186,7 +177,7 @@ export class PointerDown {
       // this reduces the number of hooks fired
       if (hasMoved) {
         // update multiCursor
-        this.sheet.cursor.changePosition({
+        sheetController.sheet.cursor.changePosition({
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
           multiCursor: {
@@ -194,7 +185,7 @@ export class PointerDown {
             terminalPosition: { x: termX, y: termY },
           },
         });
-        this.app.settings.changeInput(false);
+        pixiApp.settings.changeInput(false);
 
         // update previousPosition
         this.previousPosition = {

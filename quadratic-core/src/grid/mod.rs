@@ -8,15 +8,15 @@ mod borders;
 mod bounds;
 mod code;
 mod column;
+pub mod file;
 mod formatting;
 mod ids;
 pub mod js_types;
-mod legacy;
 mod response;
 mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
-pub use borders::{CellBorder, CellBorderStyle, CellBorders};
+pub use borders::{CellBorder, CellBorderStyle, CellBorders, SheetBorders};
 pub use bounds::GridBounds;
 pub use code::*;
 pub use column::{Column, ColumnData};
@@ -29,7 +29,7 @@ pub use sheet::Sheet;
 
 use crate::{CellValue, Pos, Rect, Value};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Grid {
     sheets: Vec<Sheet>,
@@ -44,99 +44,6 @@ impl Grid {
         let mut ret = Grid { sheets: vec![] };
         ret.add_sheet(None).expect("error adding initial sheet");
         ret
-    }
-    pub fn from_legacy(file: &legacy::GridFile) -> Result<Self, &'static str> {
-        use legacy::*;
-
-        let GridFile::V1_4(file) = file;
-        let mut ret = Grid::new();
-        ret.sheets = vec![];
-
-        for js_sheet in &file.sheets {
-            let sheet_id = SheetId::new();
-            ret.add_sheet(Some(Sheet::new(
-                sheet_id,
-                js_sheet.name.clone(),
-                js_sheet.order.clone(),
-            )))
-            .map_err(|_| "duplicate sheet name")?;
-            let sheet = ret.sheet_mut_from_id(sheet_id);
-
-            // Load cell data
-            for js_cell in &js_sheet.cells {
-                let column = sheet.get_or_create_column(js_cell.x).0.id;
-
-                if let Some(cell_code) = js_cell.to_cell_code(sheet) {
-                    let row = sheet.get_or_create_row(js_cell.y).id;
-                    let code_cell_ref = CellRef {
-                        sheet: sheet.id,
-                        column,
-                        row,
-                    };
-                    if let Some(output) = cell_code
-                        .output
-                        .as_ref()
-                        .and_then(CodeCellRunOutput::output_value)
-                    {
-                        let source = code_cell_ref;
-                        match output {
-                            Value::Single(_) => {
-                                let x = js_cell.x;
-                                let y = js_cell.y;
-                                let column = sheet.get_or_create_column(x).1;
-                                column.spills.set(y, Some(source));
-                            }
-                            Value::Array(array) => {
-                                for dy in 0..array.height() {
-                                    for dx in 0..array.width() {
-                                        let x = js_cell.x + dx as i64;
-                                        let y = js_cell.y + dy as i64;
-                                        let column = sheet.get_or_create_column(x).1;
-                                        column.spills.set(y, Some(source));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    sheet.set_code_cell_value(
-                        Pos {
-                            x: js_cell.x,
-                            y: js_cell.y,
-                        },
-                        Some(cell_code),
-                    );
-                } else if let Some(cell_value) = js_cell.to_cell_value() {
-                    let x = js_cell.x;
-                    let y = js_cell.y;
-                    sheet.set_cell_value(Pos { x, y }, cell_value);
-                }
-            }
-
-            for js_format in &js_sheet.formats {
-                let (_, column) = sheet.get_or_create_column(js_format.x);
-
-                column.align.set(js_format.y, js_format.alignment);
-                column.wrap.set(js_format.y, js_format.wrapping);
-
-                column
-                    .numeric_format
-                    .set(js_format.y, js_format.text_format.clone());
-
-                column.bold.set(js_format.y, js_format.bold);
-                column.italic.set(js_format.y, js_format.italic);
-
-                column
-                    .text_color
-                    .set(js_format.y, js_format.text_color.clone());
-                column
-                    .fill_color
-                    .set(js_format.y, js_format.fill_color.clone());
-            }
-
-            sheet.recalculate_bounds();
-        }
-
-        Ok(ret)
     }
 
     pub fn sheets(&self) -> &[Sheet] {
@@ -247,17 +154,6 @@ impl Grid {
         let sheet = self.sheet_from_id(sheet_id);
         sheet.region_rects(region).map(move |rect| (sheet_id, rect))
     }
-
-    // pub fn to_legacy_file_format(&self) -> legacy::GridFileV1_4 {
-    //     legacy::GridFileV1_4 {
-    //         sheets: self
-    //             .sheets
-    //             .iter()
-    //             .enumerate()
-    //             .map(|(i, sheet)| sheet.export_to_legacy_file_format(i))
-    //             .collect(),
-    //     }
-    // }
 }
 
 #[cfg(test)]

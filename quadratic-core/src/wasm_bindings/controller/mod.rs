@@ -8,21 +8,23 @@ pub mod sheets;
 
 #[wasm_bindgen]
 impl GridController {
-    /// Imports a [`GridController`] from a file (that fits the schema defined in JS).
+    /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
-    pub fn js_new_from_file(file: JsValue) -> Result<GridController, JsValue> {
-        Ok(GridController::from_grid(Grid::from_legacy(
-            &serde_wasm_bindgen::from_value(file)?,
-        )?))
+    pub fn js_new_from_file(file: &str) -> Result<GridController, JsValue> {
+        Ok(GridController::from_grid(file::import(file)?))
     }
 
-    // /// Exports a [`GridController`] to a file. Returns a `GridFile` (fits JS schema).
-    // #[wasm_bindgen(js_name = "exportToFile")]
-    // pub fn js_export_to_file(&self) -> Result<JsValue, JsValue> {
-    //     Ok(serde_wasm_bindgen::to_value(
-    //         &self.grid().to_legacy_file_format(),
-    //     )?)
-    // }
+    /// Exports a [`GridController`] to a file. Returns a `String`.
+    #[wasm_bindgen(js_name = "exportToFile")]
+    pub fn js_export_to_file(&self) -> Result<String, JsValue> {
+        Ok(file::export(&self.grid())?)
+    }
+
+    /// Exports a [`string`]
+    #[wasm_bindgen(js_name = "getVersion")]
+    pub fn js_file_version(&self) -> String {
+        file::version()
+    }
 
     /// Constructs a new empty grid.
     #[wasm_bindgen(constructor)]

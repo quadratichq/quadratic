@@ -1,21 +1,20 @@
 import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useState } from 'react';
 import { ColorResult } from 'react-color';
-import { SheetController } from '../../../grid/controller/SheetController';
+import { sheetController } from '../../../grid/controller/SheetController';
 import { convertReactColorToString } from '../../../helpers/convertColor';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { QColorPicker } from '../../components/qColorPicker';
 import { ConfirmDeleteSheet } from './ConfirmDeleteSheet';
 
 interface Props {
-  sheetController: SheetController;
   contextMenu?: { x: number; y: number; id: string; name: string };
   handleRename: () => void;
   handleClose: () => void;
 }
 
 export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
-  const { sheetController, contextMenu, handleClose, handleRename } = props;
+  const { contextMenu, handleClose, handleRename } = props;
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | undefined>();
   const [lastName, setLastName] = useState<string | undefined>();
 
@@ -95,7 +94,6 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         </MenuItem>
       </ControlledMenu>
       <ConfirmDeleteSheet
-        sheetController={sheetController}
         lastName={lastName}
         confirmDelete={confirmDelete}
         handleClose={() => {

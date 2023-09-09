@@ -21,29 +21,29 @@ use super::response::{GetIdResponse, SetCellResponse};
 use super::NumericFormatKind;
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
     pub id: SheetId,
     pub name: String,
     pub color: Option<String>,
     pub order: String,
 
-    column_ids: IdMap<ColumnId, i64>,
-    row_ids: IdMap<RowId, i64>,
+    pub(super) column_ids: IdMap<ColumnId, i64>,
+    pub(super) row_ids: IdMap<RowId, i64>,
 
     #[serde(with = "crate::util::btreemap_serde")]
-    column_widths: BTreeMap<i64, f32>,
+    pub(super) column_widths: BTreeMap<i64, f32>,
     #[serde(with = "crate::util::btreemap_serde")]
-    row_heights: BTreeMap<i64, f32>,
+    pub(super) row_heights: BTreeMap<i64, f32>,
 
     #[serde(with = "crate::util::btreemap_serde")]
-    columns: BTreeMap<i64, Column>,
-    borders: SheetBorders,
+    pub(super) columns: BTreeMap<i64, Column>,
+    pub(super) borders: SheetBorders,
     #[serde(with = "crate::util::hashmap_serde")]
-    code_cells: HashMap<CellRef, CodeCellValue>,
+    pub(super) code_cells: HashMap<CellRef, CodeCellValue>,
 
-    data_bounds: GridBounds,
-    format_bounds: GridBounds,
+    pub(super) data_bounds: GridBounds,
+    pub(super) format_bounds: GridBounds,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -199,6 +199,10 @@ impl Sheet {
     pub fn get_code_cell(&self, pos: Pos) -> Option<&CodeCellValue> {
         self.code_cells.get(&self.try_get_cell_ref(pos)?)
     }
+    /// Returns a code cell value.
+    pub fn get_code_cell_from_ref(&self, cell_ref: CellRef) -> Option<&CodeCellValue> {
+        self.code_cells.get(&cell_ref)
+    }
 
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
         let column = self.get_column(pos.x)?;
@@ -258,112 +262,28 @@ impl Sheet {
         A::column_data_mut(column).set(pos.y, value)
     }
 
-    // pub fn export_to_legacy_file_format(&self, index: usize) -> legacy::JsSheet {
-    //     legacy::JsSheet {
-    //         name: self.name.clone(),
-    //         color: self.color.clone(),
-    //         order: format!("{index:0>8}"), // pad with zeros to sort lexicographically
+    /// Returns the widths of columns.
+    pub fn column_widths(&self) -> &BTreeMap<i64, f32> {
+        &self.column_widths
+    }
+    /// Returns the heights of rows.
+    pub fn row_heights(&self) -> &BTreeMap<i64, f32> {
+        &self.row_heights
+    }
 
-    //         borders: self.borders.export_to_js_file(),
-    //         cells: match self.bounds(false) {
-    //             GridBounds::Empty => vec![],
-    //             GridBounds::NonEmpty(region) => self
-    //                 .get_render_cells(region)
-    //                 .into_iter()
-    //                 .map(|cell| {
-    //                     let pos = Pos {
-    //                         x: cell.x,
-    //                         y: cell.y,
-    //                     };
-    //                     let code_cell = self
-    //                         .try_get_cell_ref(pos)
-    //                         .and_then(|cell_ref| self.code_cells.get(&cell_ref));
-    //                     legacy::JsCell {
-    //                         x: cell.x,
-    //                         y: cell.y,
-    //                         r#type: self.get_legacy_cell_type(pos),
-    //                         value: cell.value.to_string(),
-    //                         array_cells: code_cell.and_then(|code_cell| {
-    //                             let array_output = code_cell.output.as_ref()?.output_value()?;
-    //                             match array_output {
-    //                                 Value::Single(_) => None,
-    //                                 Value::Array(array) => Some(
-    //                                     array
-    //                                         .size()
-    //                                         .iter()
-    //                                         .map(|(dx, dy)| {
-    //                                             (cell.x + dx as i64, cell.y + dy as i64)
-    //                                         })
-    //                                         .collect(),
-    //                                 ),
-    //                             }
-    //                         }),
-    //                         dependent_cells: None,
-    //                         evaluation_result: code_cell
-    //                             .and_then(|code_cell| code_cell.js_evaluation_result()),
-    //                         formula_code: code_cell.as_ref().and_then(|code_cell| {
-    //                             (code_cell.language == CodeCellLanguage::Formula)
-    //                                 .then(|| code_cell.code_string.clone())
-    //                         }),
-    //                         last_modified: None, // TODO: last modified
-    //                         ai_prompt: None,
-    //                         python_code: code_cell.as_ref().and_then(|code_cell| {
-    //                             (code_cell.language == CodeCellLanguage::Python)
-    //                                 .then(|| code_cell.code_string.clone())
-    //                         }),
-    //                     }
-    //                 })
-    //                 .collect(),
-    //         },
-    //         cell_dependency: "{}".to_string(), // TODO: cell dependencies
-    //         columns: vec![],                   // TODO: column headers
-    //         formats: match self.bounds(false) {
-    //             GridBounds::Empty => vec![],
-    //             GridBounds::NonEmpty(region) => self
-    //                 .get_render_cells(region)
-    //                 .into_iter()
-    //                 .map(|cell| legacy::JsCellFormat {
-    //                     x: cell.x,
-    //                     y: cell.y,
-    //                     alignment: cell.align,
-    //                     bold: cell.bold,
-    //                     fill_color: cell.fill_color,
-    //                     italic: cell.italic,
-    //                     text_color: cell.text_color,
-    //                     text_format: cell.numeric_format,
-    //                     wrapping: cell.wrap,
-    //                 })
-    //                 .collect(),
-    //         },
-    //         rows: vec![], // TODO: row headers
-    //     }
-    // }
-    // /// Returns the type of a cell, according to the legacy file format.
-    // fn get_legacy_cell_type(&self, pos: Pos) -> legacy::JsCellType {
-    //     if self
-    //         .get_column(pos.x)
-    //         .and_then(|column| column.spills.get(pos.y))
-    //         .is_some()
-    //     {
-    //         let code_cell = self
-    //             .try_get_cell_ref(pos)
-    //             .and_then(|cell_ref| self.code_cells.get(&cell_ref));
+    /// Returns all cell borders.
+    pub fn borders(&self) -> &SheetBorders {
+        &self.borders
+    }
 
-    //         if let Some(code_cell) = code_cell {
-    //             match code_cell.language {
-    //                 CodeCellLanguage::Python => legacy::JsCellType::Python,
-    //                 CodeCellLanguage::Formula => legacy::JsCellType::Formula,
-    //                 CodeCellLanguage::JavaScript => legacy::JsCellType::Javascript,
-    //                 CodeCellLanguage::Sql => legacy::JsCellType::Sql,
-    //             }
-    //         } else {
-    //             legacy::JsCellType::Computed
-    //         }
-    //     } else {
-    //         legacy::JsCellType::Text
-    //     }
-    // }
-
+    /// Returns an iterator over each column and its X coordinate.
+    pub fn iter_columns(&self) -> impl '_ + Iterator<Item = (i64, &Column)> {
+        self.columns.iter().map(|(&x, column)| (x, column))
+    }
+    /// Returns an iterator over each row ID and its Y coordinate.
+    pub fn iter_rows(&self) -> impl '_ + Iterator<Item = (i64, RowId)> {
+        self.row_ids.iter()
+    }
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get(&index)
@@ -402,6 +322,7 @@ impl Sheet {
             }
         }
     }
+
     /// Returns the position references by a `CellRef`.
     pub(crate) fn cell_ref_to_pos(&self, cell_ref: CellRef) -> Option<Pos> {
         Some(Pos {
@@ -685,7 +606,10 @@ impl Sheet {
 
     /// Returns an iterator over all locations containing code cells that may
     /// spill into `region`.
-    fn iter_code_cells_locations_in_region(&self, region: Rect) -> impl Iterator<Item = CellRef> {
+    pub fn iter_code_cells_locations_in_region(
+        &self,
+        region: Rect,
+    ) -> impl Iterator<Item = CellRef> {
         // Scan spilled cells to find code cells. TODO: this won't work for
         // unspilled code cells
         let code_cell_refs: HashSet<CellRef> = self
@@ -702,7 +626,7 @@ impl Sheet {
         code_cell_refs.into_iter()
     }
 
-    fn iter_code_cells_locations(&self) -> impl '_ + Iterator<Item = CellRef> {
+    pub fn iter_code_cells_locations(&self) -> impl '_ + Iterator<Item = CellRef> {
         self.code_cells.keys().copied()
     }
 

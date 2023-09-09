@@ -6,21 +6,18 @@ import {
   cutToClipboard,
   pasteFromClipboard,
 } from '../../../grid/actions/clipboard/clipboard';
-import { SheetController } from '../../../grid/controller/SheetController';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { sheetController } from '../../../grid/controller/SheetController';
 
 export function keyboardClipboard(props: {
   event: React.KeyboardEvent<HTMLElement>;
-  sheet_controller: SheetController;
-  app: PixiApp;
   addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
 }): boolean {
-  const { addGlobalSnackbar, event, sheet_controller, app } = props;
-  const cursor = sheet_controller.sheet.cursor;
+  const { addGlobalSnackbar, event } = props;
+  const cursor = sheetController.sheet.cursor;
 
   // Command + V
   if ((event.metaKey || event.ctrlKey) && event.key === 'v') {
-    pasteFromClipboard(sheet_controller, {
+    pasteFromClipboard({
       x: cursor.cursorPosition.x,
       y: cursor.cursorPosition.y,
     });
@@ -29,7 +26,7 @@ export function keyboardClipboard(props: {
 
   // Command + Shift + C
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'c') {
-    copySelectionToPNG(app);
+    copySelectionToPNG();
     addGlobalSnackbar(PNG_MESSAGE);
     event.preventDefault();
     event.stopPropagation();
@@ -41,13 +38,13 @@ export function keyboardClipboard(props: {
 
   // Command + C
   if ((event.metaKey || event.ctrlKey) && event.key === 'c') {
-    copyToClipboard(sheet_controller, start, end);
+    copyToClipboard(start, end);
     return true;
   }
 
   // Command + X
   if ((event.metaKey || event.ctrlKey) && event.key === 'x') {
-    cutToClipboard(sheet_controller, start, end);
+    cutToClipboard(start, end);
     return true;
   }
 

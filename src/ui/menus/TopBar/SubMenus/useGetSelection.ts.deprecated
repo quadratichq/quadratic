@@ -1,10 +1,10 @@
 import debounce from 'lodash.debounce';
 import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Sheet } from '../../../../grid/sheet/Sheet';
+import { sheetController } from '../../../../grid/controller/SheetController';
 import { Coordinate } from '../../../../gridGL/types/size';
 import { CellFormatSummary, FormattingSummary } from '../../../../quadratic-core/types';
-import { FORMAT_SELECTION_EVENT } from './useFormatCells';
+import { FORMAT_SELECTION_EVENT } from './formatCells';
 
 interface Results {
   start: Coordinate;
@@ -15,7 +15,8 @@ interface Results {
   rectangle: Rectangle;
 }
 
-export const useGetSelection = (sheet: Sheet): Results => {
+export const useGetSelection = (): Results => {
+  const sheet = sheetController.sheet;
   const cursor = sheet.cursor;
 
   // used to trigger a new format calculation after a format change (see useFormatCells.ts)

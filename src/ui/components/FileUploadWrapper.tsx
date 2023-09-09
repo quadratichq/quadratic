@@ -1,18 +1,12 @@
 import debounce from 'lodash.debounce';
-import { DragEvent, useRef, useState } from 'react';
+import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbar';
 import { InsertCSV } from '../../grid/actions/insertData/insertCSV';
-import { SheetController } from '../../grid/controller/SheetController';
-import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
+import { sheetController } from '../../grid/controller/SheetController';
+import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 
-interface Props {
-  sheetController: SheetController;
-  app: PixiApp;
-}
-
-export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
-  const { app } = props;
+export const FileUploadWrapper = (props: PropsWithChildren) => {
   // drag state
   const [dragActive, setDragActive] = useState(false);
   const divRef = useRef<HTMLDivElement>(null);
@@ -20,12 +14,12 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
 
   const moveCursor = debounce((e: DragEvent<HTMLDivElement>): void => {
     const clientBoudingRect = divRef?.current?.getBoundingClientRect();
-    const world = app.viewport.toWorld(
+    const world = pixiApp.viewport.toWorld(
       e.pageX - (clientBoudingRect?.left || 0),
       e.pageY - (clientBoudingRect?.top || 0)
     );
-    const { column, row } = props.sheetController.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
-    props.sheetController.sheet.cursor.changePosition({
+    const { column, row } = sheetController.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
+    sheetController.sheet.cursor.changePosition({
       cursorPosition: { x: column, y: row },
       keyboardMovePosition: { x: column, y: row },
       multiCursor: {
@@ -58,14 +52,13 @@ export const FileUploadWrapper = (props: React.PropsWithChildren<Props>) => {
       const file = e.dataTransfer.files[0];
       if (file.type === 'text/csv' || file.type === 'text/tab-separated-values') {
         const clientBoudingRect = divRef?.current?.getBoundingClientRect();
-        const world = app.viewport.toWorld(
+        const world = pixiApp.viewport.toWorld(
           e.pageX - (clientBoudingRect?.left || 0),
           e.pageY - (clientBoudingRect?.top || 0)
         );
-        const { column, row } = props.sheetController.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
+        const { column, row } = sheetController.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
 
         InsertCSV({
-          sheetController: props.sheetController,
           file: file,
           insertAtCellLocation: { x: column, y: row } as Coordinate,
           reportError: addGlobalSnackbar,

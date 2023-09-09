@@ -1,9 +1,10 @@
 import { Container, Rectangle } from 'pixi.js';
 import { debugShowCacheFlag, debugShowCellsForDirtyQuadrants, debugSkipQuadrantRendering } from '../../debugFlags';
+import { sheetController } from '../../grid/controller/SheetController';
 import { CellRectangle } from '../../grid/sheet/CellRectangle';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { intersects } from '../helpers/intersects';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { Quadrant } from './Quadrant';
 import { QuadrantsSheet } from './QuadrantsSheet';
@@ -18,15 +19,13 @@ export interface QuadrantChanged {
 
 // QuadrantsSheet rendered for each Sheet in a file
 export class Quadrants extends Container {
-  private app: PixiApp;
   private quadrants: Map<string, QuadrantsSheet>;
 
   // used to render cells in Quadrant
   container: Container;
 
-  constructor(app: PixiApp) {
+  constructor() {
     super();
-    this.app = app;
     this.quadrants = new Map();
     this.container = new Container();
     // this.cells = this.container.addChild(new Cells(app));
@@ -39,7 +38,7 @@ export class Quadrants extends Container {
 
   changeSheet(): void {
     const quadrantsSheets = Array.from(this.quadrants.values());
-    const activeId = this.app.sheet.id;
+    const activeId = sheetController.sheet.id;
     const quadrantsSheet = this.quadrants.get(activeId);
     if (!quadrantsSheet) {
       throw new Error('Expected to find QuadrantsSheet in Quadrants.changeSheet');
@@ -58,7 +57,7 @@ export class Quadrants extends Container {
 
   // adds a newly created sheet to the quadrants
   addSheet(sheet: Sheet): void {
-    const quadrantsSheet = this.addChild(new QuadrantsSheet(this.app, sheet));
+    const quadrantsSheet = this.addChild(new QuadrantsSheet(sheet));
     this.quadrants.set(sheet.id, quadrantsSheet);
   }
 
@@ -76,8 +75,8 @@ export class Quadrants extends Container {
   build(): void {
     this.removeChildren();
     this.quadrants.clear();
-    this.app.sheetController.sheets.forEach((sheet) => {
-      const quadrantsSheet = this.addChild(new QuadrantsSheet(this.app, sheet));
+    sheetController.sheets.forEach((sheet) => {
+      const quadrantsSheet = this.addChild(new QuadrantsSheet(sheet));
       this.quadrants.set(sheet.id, quadrantsSheet);
     });
   }
@@ -115,7 +114,7 @@ export class Quadrants extends Container {
     if (debugShowCacheFlag) {
       const span = document.querySelector('.debug-show-cache-count') as HTMLSpanElement;
       if (span) {
-        const currentSheet = quadrantsSheets.find((child) => child.sheet === this.app.sheet);
+        const currentSheet = quadrantsSheets.find((child) => child.sheet === sheetController.sheet);
         if (currentSheet) {
           const dirtyCount = currentSheet.children.reduce(
             (count, child) => count + ((child as Quadrant).dirty ? 1 : 0),
@@ -139,10 +138,10 @@ export class Quadrants extends Container {
 
     const sortedQuadrantsSheet = this.getSortedQuadrantsSheets();
     for (const quadrantsSheet of sortedQuadrantsSheet) {
-      const updated = quadrantsSheet.update(this.app.viewport, timeStart);
+      const updated = quadrantsSheet.update(timeStart);
       if (updated !== 'not dirty') {
         // debug only if it is the active sheet
-        if (quadrantsSheet.sheet === this.app.sheet) {
+        if (quadrantsSheet.sheet === sheetController.sheet) {
           return updated;
         } else {
           return false;
@@ -164,8 +163,8 @@ export class Quadrants extends Container {
 
   /** Returns CellRectangles for visible dirty quadrants */
   getCellsForDirtyQuadrants(): CellRectangle[] {
-    const { viewport } = this.app;
-    const { grid, borders, id } = this.app.sheet;
+    const { viewport } = pixiApp;
+    const { grid, borders, id } = sheetController.sheet;
     const quadrantsSheet = this.quadrants.get(id);
     if (!quadrantsSheet) {
       throw new Error('Expected quadrantsSheet to be defined in getCellsForDirtyQuadrants');
@@ -193,7 +192,7 @@ export class Quadrants extends Container {
   }
 
   cull(): void {
-    const bounds = this.app.viewport.getVisibleBounds();
+    const bounds = pixiApp.viewport.getVisibleBounds();
     this.children.forEach((child) => {
       (child as Quadrant).cull(bounds);
     });

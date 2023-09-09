@@ -8,17 +8,15 @@ import {
   debugTimeCheck,
   debugTimeReset,
 } from '../helpers/debugPerformance';
-import { PixiApp } from './PixiApp';
+import { pixiApp } from './PixiApp';
 
 export class Update {
-  private pixiApp: PixiApp;
   private raf?: number;
   private fps?: FPS;
   private lastViewportPosition: Point = new Point();
   private lastViewportScale = 1;
 
-  constructor(app: PixiApp) {
-    this.pixiApp = app;
+  constructor() {
     if (debugShowFPS) {
       this.fps = new FPS();
     }
@@ -38,7 +36,7 @@ export class Update {
   }
 
   private updateViewport(): void {
-    const { viewport } = this.pixiApp;
+    const { viewport } = pixiApp;
     let dirty = false;
     if (this.lastViewportScale !== viewport.scale.x) {
       this.lastViewportScale = viewport.scale.x;
@@ -53,16 +51,15 @@ export class Update {
       dirty = true;
     }
     if (dirty) {
-      this.pixiApp.viewportChanged();
+      pixiApp.viewportChanged();
     }
   }
 
   // update loop w/debug checks
   private update = (): void => {
-    const app = this.pixiApp;
-    if (app.destroyed) return;
+    if (pixiApp.destroyed) return;
 
-    if (app.paused) {
+    if (pixiApp.paused) {
       this.raf = requestAnimationFrame(this.update);
       this.fps?.update();
       return;
@@ -71,43 +68,43 @@ export class Update {
     this.updateViewport();
 
     const rendererDirty =
-      app.viewport.dirty ||
-      app.gridLines.dirty ||
-      app.axesLines.dirty ||
-      app.headings.dirty ||
-      app.boxCells.dirty ||
-      app.cursor.dirty;
+      pixiApp.viewport.dirty ||
+      pixiApp.gridLines.dirty ||
+      pixiApp.axesLines.dirty ||
+      pixiApp.headings.dirty ||
+      pixiApp.boxCells.dirty ||
+      pixiApp.cursor.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
-        `dirty: ${app.viewport.dirty ? 'viewport ' : ''}${app.gridLines.dirty ? 'gridLines ' : ''}${
-          app.axesLines.dirty ? 'axesLines ' : ''
-        }${app.headings.dirty ? 'headings ' : ''}${app.cursor.dirty ? 'cursor ' : ''}`
+        `dirty: ${pixiApp.viewport.dirty ? 'viewport ' : ''}${pixiApp.gridLines.dirty ? 'gridLines ' : ''}${
+          pixiApp.axesLines.dirty ? 'axesLines ' : ''
+        }${pixiApp.headings.dirty ? 'headings ' : ''}${pixiApp.cursor.dirty ? 'cursor ' : ''}`
       );
     }
 
     debugTimeReset();
-    app.gridLines.update();
+    pixiApp.gridLines.update();
     debugTimeCheck('[Update] gridLines');
-    app.axesLines.update();
+    pixiApp.axesLines.update();
     debugTimeCheck('[Update] axesLines');
-    app.headings.update();
+    pixiApp.headings.update();
     debugTimeCheck('[Update] headings');
-    app.boxCells.update();
+    pixiApp.boxCells.update();
     debugTimeCheck('[Update] boxCells');
-    app.cursor.update();
+    pixiApp.cursor.update();
     debugTimeCheck('[Update] cursor');
 
     if (rendererDirty) {
-      app.viewport.dirty = false;
+      pixiApp.viewport.dirty = false;
 
       debugTimeReset();
-      app.cellsSheets.update();
-      app.renderer.render(app.stage);
+      pixiApp.cellsSheets.update();
+      pixiApp.renderer.render(pixiApp.stage);
       debugTimeCheck('[Update] render');
       debugRendererLight(true);
-      debugShowChildren(app.stage, 'stage');
-      debugShowCachedCounts(app);
+      debugShowChildren(pixiApp.stage, 'stage');
+      debugShowCachedCounts();
     } else {
       debugRendererLight(false);
     }

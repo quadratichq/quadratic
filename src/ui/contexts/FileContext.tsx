@@ -1,12 +1,14 @@
 import mixpanel from 'mixpanel-browser';
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { apiClient } from '../../api/apiClient';
 import { InitialFile } from '../../dashboard/FileRoute';
-import { SheetController } from '../../grid/controller/SheetController';
-import { useDebounce } from '../../hooks/useDebounce';
+import { debugShowFileIO } from '../../debugFlags';
+import { sheetController } from '../../grid/controller/SheetController';
 import { useInterval } from '../../hooks/useInterval';
-import { GridFile } from '../../schemas';
+
+const syncInterval = 500;
+const syncErrorInterval = 1000;
 
 type Sync = {
   id: number;
@@ -16,7 +18,7 @@ type Sync = {
 export type FileContextType = {
   name: string;
   renameFile: (newName: string) => void;
-  contents: GridFile;
+  // contents: GridFile;
   syncState: Sync['state'];
 };
 
@@ -28,22 +30,12 @@ const FileContext = createContext<FileContextType>({} as FileContextType);
 /**
  * Provider
  */
-export const FileProvider = ({
-  children,
-  initialFile,
-  sheetController,
-}: {
-  children: React.ReactElement;
-  initialFile: InitialFile;
-  sheetController: SheetController;
-}) => {
+export const FileProvider = ({ children, initialFile }: { children: React.ReactElement; initialFile: InitialFile }) => {
   const params = useParams();
   // We can guarantee this is in the URL when it runs, so cast as string
   const uuid = params.uuid as string;
   const [name, setName] = useState<FileContextType['name']>(initialFile.name);
-  const [contents, setContents] = useState<FileContextType['contents']>(initialFile.contents);
-  const debouncedContents = useDebounce<FileContextType['contents']>(contents, 1000);
-  let didMount = useRef<boolean>(false);
+  const [dirtyFile, setDirtyFile] = useState<boolean>(false);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
   const syncState = latestSync.state;
 
@@ -56,29 +48,10 @@ export const FileProvider = ({
   );
 
   // Create and save the fn used by the sheetController to save the file
-  const save = useCallback(async (): Promise<void> => {
-    setContents((oldContents) => {
-      let newContents = {
-        ...oldContents,
-        ...sheetController.export(),
-      };
-      return newContents;
-    });
-
-    console.log('[FileProvider] sheetController file save');
-  }, [setContents, sheetController]);
+  const save = useCallback(() => setDirtyFile(true), []);
   useEffect(() => {
     sheetController.save = save;
-  }, [sheetController, save]);
-
-  // On mounting, load the sheet
-  useEffect(() => {
-    if (didMount.current) return;
-    didMount.current = true;
-    console.log('[FileProvider] (re)loading file into the sheet...');
-
-    sheetController.loadFile(initialFile.contents);
-  }, [initialFile.contents, sheetController]);
+  }, [save]);
 
   const syncChanges = useCallback(
     async (apiClientFn: Function) => {
@@ -102,24 +75,22 @@ export const FileProvider = ({
 
   // When the contents of the file changes, sync to server (debounce it so that
   // quick changes, especially undo/redos, don’t sync all at once)
-  useEffect(() => {
-    syncChanges(() =>
-      apiClient.updateFile(uuid, { contents: JSON.stringify(debouncedContents), version: debouncedContents.version })
-    );
-  }, [debouncedContents, syncChanges, uuid]);
-
   // If a sync fails, start an interval that tries to sync anew ever few seconds
   // until a sync completes again
   useInterval(
     () => {
-      syncChanges(() =>
-        apiClient.updateFile(uuid, { contents: JSON.stringify(debouncedContents), version: debouncedContents.version })
-      );
+      if (dirtyFile) {
+        if (debugShowFileIO) console.log('[FileProvider] sheetController saving file...');
+        syncChanges(() =>
+          apiClient.updateFile(uuid, { contents: sheetController.export(), version: sheetController.getVersion() })
+        );
+        setDirtyFile(false);
+      }
     },
-    syncState === 'error' ? 5000 : null
+    syncState === 'error' ? syncErrorInterval : syncInterval
   );
 
-  return <FileContext.Provider value={{ name, renameFile, contents, syncState }}>{children}</FileContext.Provider>;
+  return <FileContext.Provider value={{ name, renameFile, syncState }}>{children}</FileContext.Provider>;
 };
 
 /**

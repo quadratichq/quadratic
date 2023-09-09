@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { DeleteCells } from '../../../../grid/actions/DeleteCells';
 import { updateCellAndDCells } from '../../../../grid/actions/updateCellAndDCells';
-import { SheetController } from '../../../../grid/controller/SheetController';
+import { sheetController } from '../../../../grid/controller/SheetController';
 import { Border, Cell, CellFormat } from '../../../../schemas';
 import { PixiApp } from '../../../pixiApp/PixiApp';
 import { Coordinate } from '../../../types/size';
@@ -12,14 +12,12 @@ export const shrinkHorizontal = async (options: {
   selection: Rectangle;
   endCell: Coordinate;
 }): Promise<void> => {
-  const { app, selection, endCell } = options;
-  const { sheetController: sheet_controller } = app;
+  const { selection, endCell } = options;
   await DeleteCells({
     x0: endCell.x + 1,
     y0: selection.top,
     x1: selection.right,
     y1: selection.bottom,
-    sheetController: sheet_controller,
     create_transaction: false,
   });
 };
@@ -29,39 +27,31 @@ export const shrinkVertical = async (options: {
   selection: Rectangle;
   endCell: Coordinate;
 }): Promise<void> => {
-  const { app, selection, endCell } = options;
-  const { sheetController: sheet_controller } = app;
+  const { selection, endCell } = options;
 
   await DeleteCells({
     x0: selection.left,
     y0: endCell.y + 1,
     x1: selection.right,
     y1: selection.bottom,
-    sheetController: sheet_controller,
     create_transaction: false,
   });
 };
 
-const updateFormatAndBorders = async (options: {
-  cells: Cell[];
-  sheet_controller: SheetController;
-  formats: CellFormat[];
-  borders: Border[];
-}) => {
-  const { cells, sheet_controller, formats, borders } = options;
+const updateFormatAndBorders = async (options: { cells: Cell[]; formats: CellFormat[]; borders: Border[] }) => {
+  const { cells, formats, borders } = options;
   await updateCellAndDCells({
     create_transaction: false,
     starting_cells: cells,
-    sheetController: sheet_controller,
   });
   if (formats.length) {
-    sheet_controller.execute_statement({
+    sheetController.execute_statement({
       type: 'SET_CELL_FORMATS',
       data: formats,
     });
   }
   if (borders.length) {
-    sheet_controller.execute_statement({
+    sheetController.execute_statement({
       type: 'SET_BORDERS',
       data: borders,
     });
@@ -69,14 +59,12 @@ const updateFormatAndBorders = async (options: {
 };
 
 export const expandDown = async (options: {
-  app: PixiApp;
   selection: Rectangle;
   to: number;
   shrinkHorizontal?: number;
 }): Promise<void> => {
-  const { app, selection, to, shrinkHorizontal } = options;
-  const { sheetController: sheet_controller, sheet } = app;
-
+  const { selection, to, shrinkHorizontal } = options;
+  const sheet = sheetController.sheet;
   const cells: Cell[] = [];
   const formats: CellFormat[] = [];
   const borders: Border[] = [];
@@ -127,14 +115,14 @@ export const expandDown = async (options: {
       // change border on right edge
       if (x === right) {
         const border = rectangle.getBorder(x + 1, selection.top + index);
-        const existing = app.sheet.borders.get(x + 1, y);
+        const existing = sheetController.sheet.borders.get(x + 1, y);
         borders.push({ vertical: border?.vertical, x: x + 1, y, horizontal: existing?.horizontal });
       }
 
       // change border on bottom edge
       if (y === to) {
         const border = rectangle.getBorder(x, selection.top + index + 1);
-        const existing = app.sheet.borders.get(x, y + 1);
+        const existing = sheetController.sheet.borders.get(x, y + 1);
         borders.push({ vertical: existing?.vertical, x, y: y + 1, horizontal: border?.horizontal });
       }
 
@@ -143,20 +131,18 @@ export const expandDown = async (options: {
   }
   await updateFormatAndBorders({
     cells,
-    sheet_controller,
     formats,
     borders,
   });
 };
 
 export const expandUp = async (options: {
-  app: PixiApp;
   selection: Rectangle;
   to: number;
   shrinkHorizontal?: number;
 }): Promise<void> => {
-  const { app, selection, to, shrinkHorizontal } = options;
-  const { sheetController: sheet_controller, sheet } = app;
+  const { selection, to, shrinkHorizontal } = options;
+  const sheet = sheetController.sheet;
 
   const cells: Cell[] = [];
   const formats: CellFormat[] = [];
@@ -213,7 +199,7 @@ export const expandUp = async (options: {
       // change border on right edge
       if (x === right) {
         const border = rectangle.getBorder(x + 1, selection.top + index);
-        const existing = app.sheet.borders.get(x + 1, y);
+        const existing = sheetController.sheet.borders.get(x + 1, y);
         borders.push({ vertical: border?.vertical, x: x + 1, y, horizontal: existing?.horizontal });
       }
       index--;
@@ -222,20 +208,18 @@ export const expandUp = async (options: {
   }
   await updateFormatAndBorders({
     cells,
-    sheet_controller,
     formats,
     borders,
   });
 };
 
 export const expandRight = async (options: {
-  app: PixiApp;
   selection: Rectangle;
   to: number;
   toVertical?: number;
 }): Promise<void> => {
-  const { app, selection, to, toVertical } = options;
-  const { sheetController: sheet_controller, sheet } = app;
+  const { selection, to, toVertical } = options;
+  const sheet = sheetController.sheet;
   const cells: Cell[] = [];
   const formats: CellFormat[] = [];
   const borders: Border[] = [];
@@ -287,14 +271,14 @@ export const expandRight = async (options: {
       // change border on right edge
       if (x === to) {
         const border = rectangle.getBorder(selection.left + index + 1, y);
-        const existing = app.sheet.borders.get(x + 1, y);
+        const existing = sheetController.sheet.borders.get(x + 1, y);
         borders.push({ vertical: border?.vertical, x: x + 1, y, horizontal: existing?.horizontal });
       }
 
       // change border on bottom edge
       if (y === bottom) {
         const border = rectangle.getBorder(selection.left + index, y + 1);
-        const existing = app.sheet.borders.get(x, y + 1);
+        const existing = sheetController.sheet.borders.get(x, y + 1);
         borders.push({ vertical: existing?.vertical, x, y: y + 1, horizontal: border?.horizontal });
       }
 
@@ -303,20 +287,14 @@ export const expandRight = async (options: {
   }
   await updateFormatAndBorders({
     cells,
-    sheet_controller,
     formats,
     borders,
   });
 };
 
-export const expandLeft = async (options: {
-  app: PixiApp;
-  selection: Rectangle;
-  to: number;
-  toVertical?: number;
-}): Promise<void> => {
-  const { app, selection, to, toVertical } = options;
-  const { sheetController: sheet_controller, sheet } = app;
+export const expandLeft = async (options: { selection: Rectangle; to: number; toVertical?: number }): Promise<void> => {
+  const { selection, to, toVertical } = options;
+  const sheet = sheetController.sheet;
 
   const cells: Cell[] = [];
   const formats: CellFormat[] = [];
@@ -373,7 +351,7 @@ export const expandLeft = async (options: {
       // change border on bottom edge
       if (y === bottom) {
         const border = rectangle.getBorder(selection.left + index, y + 1);
-        const existing = app.sheet.borders.get(x, y + 1);
+        const existing = sheetController.sheet.borders.get(x, y + 1);
         borders.push({ vertical: existing?.vertical, x, y: y + 1, horizontal: border?.horizontal });
       }
 
@@ -383,7 +361,6 @@ export const expandLeft = async (options: {
   }
   await updateFormatAndBorders({
     cells,
-    sheet_controller,
     formats,
     borders,
   });

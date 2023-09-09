@@ -12,7 +12,7 @@ import {
   TransactionSummary,
 } from '../../quadratic-core/types';
 import { Grid } from '../controller/Grid';
-import { SheetController } from '../controller/SheetController';
+import { sheetController } from '../controller/SheetController';
 import { transactionResponse } from '../controller/transactionResponse';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
@@ -20,8 +20,6 @@ import { GridSparse } from './GridSparse';
 import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
-  private sheetController: SheetController;
-
   id: string;
 
   // @deprecated (soon)
@@ -33,9 +31,7 @@ export class Sheet {
   borders: GridBorders;
   cursor: SheetCursor;
 
-  constructor(sheetController: SheetController, index: number) {
-    this.sheetController = sheetController;
-
+  constructor(index: number) {
     // deprecated
     this.grid = new GridSparse(this);
 
@@ -51,7 +47,7 @@ export class Sheet {
 
   // todo: rename to grid after migration away from gridSparse
   get gridNew(): Grid {
-    return this.sheetController.grid;
+    return sheetController.grid;
   }
 
   // for testing
@@ -70,30 +66,30 @@ export class Sheet {
   // -----------------------------------
 
   private save(): void {
-    this.sheetController.save?.();
+    sheetController.save();
   }
 
   setCellValue(x: number, y: number, value: string): void {
     const summary = this.gridNew.setCellValue({ sheetId: this.id, x, y, value, cursor: this.cursor.save() });
-    transactionResponse(this.sheetController, summary);
+    transactionResponse(summary);
     this.save();
   }
 
   deleteCells(rectangle: Rectangle): void {
     const summary = this.gridNew.deleteCellValues(this.id, rectangle, this.cursor.save());
-    transactionResponse(this.sheetController, summary);
+    transactionResponse(summary);
     this.save();
   }
 
   set name(name: string) {
     const summary = this.gridNew.setSheetName(this.id, name, this.cursor.save());
-    transactionResponse(this.sheetController, summary);
+    transactionResponse(summary);
     this.save();
   }
 
   set color(color: string | undefined) {
     const summary = this.gridNew.setSheetColor(this.id, color, this.cursor.save());
-    transactionResponse(this.sheetController, summary);
+    transactionResponse(summary);
     this.save();
   }
 
@@ -258,6 +254,10 @@ export class Sheet {
 
   clearFormatting(rectangle: Rectangle): TransactionSummary {
     throw new Error('Not implemented yet');
+  }
+
+  getFormatPrimaryCell(): CellFormatSummary {
+    return this.gridNew.getCellFormatSummary(this.id, this.cursor.originPosition.x, this.cursor.originPosition.y);
   }
 
   //#endregion

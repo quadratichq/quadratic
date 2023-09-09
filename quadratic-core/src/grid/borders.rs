@@ -7,7 +7,7 @@ use super::column::ColumnData;
 use super::js_types::JsRenderBorder;
 use crate::Rect;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SheetBorders {
     /// Horizontal borders, stored transposed so that each `ColumnData` actually
     /// holds the data for one row.
@@ -71,28 +71,6 @@ impl SheetBorders {
             })
             .collect()
     }
-
-    //     pub fn export_to_js_file(&self) -> Vec<legacy::JsBorders> {
-    //         let mut ret: HashMap<(i64, i64), CellBorders> = HashMap::new();
-    //         for (&x, column) in &self.vertical {
-    //             for (y, border) in column.values() {
-    //                 ret.entry((x, y)).or_default().h = Some(border);
-    //             }
-    //         }
-    //         for (&y, row) in &self.horizontal {
-    //             for (x, border) in row.values() {
-    //                 ret.entry((x, y)).or_default().v = Some(border);
-    //             }
-    //         }
-    //         ret.into_iter()
-    //             .map(|((x, y), CellBorders { h, v })| legacy::JsBorders {
-    //                 x,
-    //                 y,
-    //                 horizontal: h,
-    //                 vertical: v,
-    //             })
-    //             .collect()
-    //     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]

@@ -8,18 +8,40 @@ import { Statement } from './statement';
 import { Transaction } from './transaction';
 import { transactionResponse } from './transactionResponse';
 
-export class SheetController {
+class SheetController {
   // friends of Sheets
-  grid: Grid;
+  grid!: Grid;
 
-  sheets: Sheets;
-  save: (() => void) | undefined;
+  sheets!: Sheets;
+  save: () => void = () => {
+    throw new Error('SheetController.save should be initialized');
+  };
 
-  constructor() {
+  // initial call that properly initializes object (constructor doesn't work b/c of timing)
+  init() {
     this.grid = new Grid();
-    this.sheets = new Sheets(this);
+  }
 
-    this.save = undefined;
+  load(grid: GridFile): boolean {
+    this.grid = new Grid();
+    // use to test large sheets
+    if (debugMockLargeData) {
+      this.sheets.mockLargeData();
+    } else {
+      if (!this.grid.newFromFile(grid)) {
+        return false;
+      }
+    }
+    this.sheets = new Sheets();
+    return true;
+  }
+
+  export(): string {
+    return this.grid.export();
+  }
+
+  getVersion(): string {
+    return this.grid.getVersion();
   }
 
   // Helper functions for this.sheets
@@ -38,23 +60,17 @@ export class SheetController {
     this.sheets.current = value;
   }
 
-  loadFile(grid: GridFile) {
+  loadFile(grid: GridFile): boolean {
     // use to test large sheets
     if (debugMockLargeData) {
       this.sheets.mockLargeData();
     } else {
-      this.sheets.loadFile(grid);
+      if (!this.grid.newFromFile(grid)) {
+        return false;
+      }
     }
-
-    // todo: this should probably be in pixiAppEvents???
     window.dispatchEvent(new CustomEvent('change-sheet'));
-  }
-
-  // todo: ??? maybe remove
-  export(): [] {
-    // const schema = this.grid.exportToFile();
-    // return schema.sheets;
-    return [];
+    return true;
   }
 
   public start_transaction(sheetCursor?: SheetCursor): void {
@@ -154,13 +170,13 @@ export class SheetController {
   public undo(): void {
     if (!this.hasUndo()) return;
     const summary = this.grid.undo(this.sheet.cursor.save());
-    transactionResponse(this, summary);
+    transactionResponse(summary);
   }
 
   public redo(): void {
     if (!this.hasRedo()) return;
     const summary = this.grid.redo(this.sheet.cursor.save());
-    transactionResponse(this, summary);
+    transactionResponse(summary);
   }
 
   public clear(): void {
@@ -171,3 +187,5 @@ export class SheetController {
     // this.transaction_in_progress_reverse = undefined;
   }
 }
+
+export const sheetController = new SheetController();

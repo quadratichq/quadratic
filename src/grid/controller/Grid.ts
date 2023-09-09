@@ -51,8 +51,19 @@ export class Grid {
     this.gridController = new GridController();
   }
 
-  newFromFile(grid: GridFile): void {
-    this.gridController = GridController.newFromFile(grid);
+  newFromFile(grid: GridFile): boolean {
+    this.gridController = GridController.newFromFile(JSON.stringify(grid));
+    return true;
+  }
+
+  export(): string {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.exportToFile();
+  }
+
+  getVersion(): string {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.getVersion();
   }
 
   //#region get sheet information

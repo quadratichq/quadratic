@@ -16,7 +16,6 @@ import {
   PostFeedbackReq,
   PostFeedbackRes,
   PostFeedbackResSchema,
-  PostFileContentsReq,
   PostFileNameReq,
   PostFileRes,
   PostFileResSchema,
@@ -82,7 +81,7 @@ export const apiClient = {
     );
   },
 
-  async updateFile(uuid: string, body: PostFileContentsReq) {
+  async updateFile(uuid: string, body: { contents: string; version: string }) {
     return fetchFromApi<PostFileRes>(
       `/v0/files/${uuid}`,
       {

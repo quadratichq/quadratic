@@ -1,9 +1,8 @@
 import { Rectangle } from 'pixi.js';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 import { Coordinate } from '../../../gridGL/types/size';
 import { Border, Cell, CellFormat } from '../../../schemas';
-import { SheetController } from '../../controller/SheetController';
+import { sheetController } from '../../controller/SheetController';
 import { CellAndFormat } from '../../sheet/GridSparse';
 import { DeleteCells } from '../DeleteCells';
 import { clearBordersAction } from '../clearBordersAction';
@@ -17,7 +16,7 @@ interface ClipboardData {
   borders: Border[];
 }
 
-const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCell: Coordinate) => {
+const pasteFromTextOrHtml = async (pasteToCell: Coordinate) => {
   try {
     const clipboard_data = await navigator.clipboard.read();
     // Attempt to read Quadratic data from clipboard
@@ -34,7 +33,7 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
         if (!match?.length) {
           const text_blob = await item.getType('text/plain');
           let item_text = await text_blob.text();
-          return pasteFromText(sheet_controller, pasteToCell, item_text);
+          return pasteFromText(pasteToCell, item_text);
         }
 
         // parse json from text
@@ -78,7 +77,7 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
           json.data.borders.forEach((border: Border) => {
             // transpose borders
             // combine with existing borders
-            const existingBorder = sheet_controller.sheet.borders.get(border.x + x_offset, border.y + y_offset);
+            const existingBorder = sheetController.sheet.borders.get(border.x + x_offset, border.y + y_offset);
             borders_to_update.push({
               ...existingBorder,
               ...border, // take old border
@@ -88,7 +87,7 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
           });
 
           // Start Transaction
-          sheet_controller.start_transaction();
+          sheetController.start_transaction();
 
           // TODO: delete cells that will be overwritten
           // TODO: delete formats that will be overwritten
@@ -97,25 +96,24 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
           // update cells
           await updateCellAndDCells({
             starting_cells: cells_to_update,
-            sheetController: sheet_controller,
             create_transaction: false,
           });
 
           // update formats
-          sheet_controller.execute_statement({
+          sheetController.execute_statement({
             type: 'SET_CELL_FORMATS',
             data: formats_to_update,
           });
 
           // update borders
           if (borders_to_update.length) {
-            sheet_controller.execute_statement({
+            sheetController.execute_statement({
               type: 'SET_BORDERS',
               data: borders_to_update,
             });
           }
 
-          sheet_controller.end_transaction();
+          sheetController.end_transaction();
 
           return true; // successful don't continue
         }
@@ -124,7 +122,7 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
       } else if (item.types.includes('text/plain')) {
         const text_blob = await item.getType('text/plain');
         let item_text = await text_blob.text();
-        return pasteFromText(sheet_controller, pasteToCell, item_text);
+        return pasteFromText(pasteToCell, item_text);
       }
     }
     return false; // unsuccessful
@@ -134,7 +132,7 @@ const pasteFromTextOrHtml = async (sheet_controller: SheetController, pasteToCel
   }
 };
 
-const pasteFromText = async (sheet_controller: SheetController, pasteToCell: Coordinate, clipboard_text: string) => {
+const pasteFromText = async (pasteToCell: Coordinate, clipboard_text: string) => {
   try {
     let cell_x: number = pasteToCell.x;
     let cell_y: number = pasteToCell.y;
@@ -181,7 +179,6 @@ const pasteFromText = async (sheet_controller: SheetController, pasteToCell: Coo
     // bulk update and delete cells
     await updateCellAndDCells({
       starting_cells: cells_to_write,
-      sheetController: sheet_controller,
     });
 
     // cells_to_delete
@@ -193,14 +190,14 @@ const pasteFromText = async (sheet_controller: SheetController, pasteToCell: Coo
   }
 };
 
-export const pasteFromClipboard = async (sheet_controller: SheetController, pasteToCell: Coordinate) => {
+export const pasteFromClipboard = async (pasteToCell: Coordinate) => {
   if (navigator.clipboard && window.ClipboardItem) {
     // attempt to read Quadratic data from clipboard
-    await pasteFromTextOrHtml(sheet_controller, pasteToCell);
+    await pasteFromTextOrHtml(pasteToCell);
   }
 };
 
-export const generateClipboardStrings = (sheet_controller: SheetController, cell0: Coordinate, cell1: Coordinate) => {
+export const generateClipboardStrings = (cell0: Coordinate, cell1: Coordinate) => {
   const cWidth = Math.abs(cell1.x - cell0.x) + 1;
   const cHeight = Math.abs(cell1.y - cell0.y) + 1;
 
@@ -240,7 +237,7 @@ export const generateClipboardStrings = (sheet_controller: SheetController, cell
     .replace(/\t/g, '</td><td>')}</td></tr></tbody></table>`;
 
   // Add borders to clipboard_data
-  quadraticClipboardString.borders = sheet_controller.sheet.borders.getBorders(
+  quadraticClipboardString.borders = sheetController.sheet.borders.getBorders(
     new Rectangle(cell0.x, cell0.y, cWidth, cHeight)
   );
 
@@ -272,10 +269,9 @@ function btoaFromCharCode(data: Uint8Array): string {
   return btoa(data.reduce((data, byte) => data + String.fromCharCode(byte), ''));
 }
 
-export const copyToClipboard = async (sheet_controller: SheetController, cell0: Coordinate, cell1: Coordinate) => {
+export const copyToClipboard = async (cell0: Coordinate, cell1: Coordinate) => {
   // write selected cells to clipboard
   const { plainTextClipboardString, htmlClipboardString, quadraticClipboardString } = generateClipboardStrings(
-    sheet_controller,
     cell0,
     cell1
   );
@@ -317,8 +313,8 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
   }
 };
 
-export const copySelectionToPNG = async (app: PixiApp) => {
-  const blob = await copyAsPNG(app);
+export const copySelectionToPNG = async () => {
+  const blob = await copyAsPNG();
   if (!blob) {
     throw new Error('Unable to copy as PNG');
   }
@@ -332,11 +328,11 @@ export const copySelectionToPNG = async (app: PixiApp) => {
   }
 };
 
-export const cutToClipboard = async (sheet_controller: SheetController, cell0: Coordinate, cell1: Coordinate) => {
+export const cutToClipboard = async (cell0: Coordinate, cell1: Coordinate) => {
   // copy selected cells to clipboard
-  await copyToClipboard(sheet_controller, cell0, cell1);
+  await copyToClipboard(cell0, cell1);
 
-  sheet_controller.start_transaction();
+  sheetController.start_transaction();
 
   // delete selected cells
   await DeleteCells({
@@ -344,15 +340,14 @@ export const cutToClipboard = async (sheet_controller: SheetController, cell0: C
     y0: cell0.y,
     x1: cell1.x,
     y1: cell1.y,
-    sheetController: sheet_controller,
     create_transaction: false,
   });
 
   //  delete cell formats
-  clearFormattingAction({ sheet_controller, start: cell0, end: cell1, create_transaction: false });
+  clearFormattingAction({ start: cell0, end: cell1, create_transaction: false });
 
   // delete borders
-  clearBordersAction({ sheet_controller, start: cell0, end: cell1, create_transaction: false });
+  clearBordersAction({ start: cell0, end: cell1, create_transaction: false });
 
-  sheet_controller.end_transaction();
+  sheetController.end_transaction();
 };

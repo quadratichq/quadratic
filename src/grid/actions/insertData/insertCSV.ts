@@ -1,20 +1,19 @@
 import { Coordinate } from '../../../gridGL/types/size';
-import { SheetController } from '../../controller/SheetController';
 // import { Cell } from '../../sheet/gridTypes';
 // import { updateCellAndDCells } from '../updateCellAndDCells';
 import mixpanel from 'mixpanel-browser';
 import * as Papa from 'papaparse';
 import { Cell } from '../../../schemas';
+import { sheetController } from '../../controller/SheetController';
 import { updateCellAndDCells } from '../updateCellAndDCells';
 
 export const InsertCSV = (props: {
   file: File;
   insertAtCellLocation: Coordinate;
-  sheetController: SheetController;
   reportError: (error: string) => void;
 }) => {
   const { file } = props;
-  props.sheetController.start_transaction();
+  sheetController.start_transaction();
 
   let rowIndex = 0;
   Papa.parse(file, {
@@ -23,7 +22,7 @@ export const InsertCSV = (props: {
       mixpanel.track('[Grid].[Actions].insertCSV', { status: 'error', name: error.name, message: error.message });
     },
     complete: function () {
-      props.sheetController.end_transaction();
+      sheetController.end_transaction();
       mixpanel.track('[Grid].[Actions].insertCSV', { status: 'complete' });
     },
     step: function (row) {
@@ -43,7 +42,6 @@ export const InsertCSV = (props: {
 
       updateCellAndDCells({
         starting_cells: cellsToInsert,
-        sheetController: props.sheetController,
         create_transaction: false,
       });
     },

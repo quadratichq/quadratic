@@ -1,5 +1,5 @@
-import { Container, BitmapText } from 'pixi.js';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { BitmapText, Container } from 'pixi.js';
+import { pixiApp } from '../../pixiApp/PixiApp';
 import { GRID_HEADER_FONT_SIZE } from './GridHeadings';
 
 interface LabelData {
@@ -9,13 +9,7 @@ interface LabelData {
 }
 
 export class GridHeadingsLabels extends Container {
-  private app: PixiApp;
   private labelData: LabelData[] = [];
-
-  constructor(app: PixiApp) {
-    super();
-    this.app = app;
-  }
 
   clear() {
     this.labelData = [];
@@ -43,7 +37,7 @@ export class GridHeadingsLabels extends Container {
     // keep current children to use as the cache
     this.children.forEach((child) => (child.visible = false));
 
-    const inverseScale = 1 / this.app.viewport.scale.x;
+    const inverseScale = 1 / pixiApp.viewport.scale.x;
     const available = [...this.children] as BitmapText[];
     const leftovers: LabelData[] = [];
 

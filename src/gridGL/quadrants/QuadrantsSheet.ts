@@ -1,9 +1,8 @@
-import { Viewport } from 'pixi-viewport';
 import { Container, Rectangle } from 'pixi.js';
 import { debugShowCacheInfo } from '../../debugFlags';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { intersects } from '../helpers/intersects';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { Quadrant } from './Quadrant';
 import { QuadrantChanged } from './Quadrants';
@@ -11,14 +10,12 @@ import { QUADRANT_COLUMNS, QUADRANT_ROWS } from './quadrantConstants';
 
 // quadrants for one Sheet
 export class QuadrantsSheet extends Container {
-  private app: PixiApp;
   private quadrants: Map<string, Quadrant>;
   sheet: Sheet;
   complete: boolean;
 
-  constructor(app: PixiApp, sheet: Sheet) {
+  constructor(sheet: Sheet) {
     super();
-    this.app = app;
     this.sheet = sheet;
     this.quadrants = new Map();
     this.complete = false;
@@ -68,15 +65,16 @@ export class QuadrantsSheet extends Container {
     // }
   }
 
-  update(viewport: Viewport, timeStart: number): boolean | 'not dirty' {
+  update(timeStart: number): boolean | 'not dirty' {
+    const viewport = pixiApp.viewport;
     const dirtyCount = this.children.reduce((count, child) => count + ((child as Quadrant).dirty ? 1 : 0), 0);
     if (!dirtyCount) return 'not dirty';
     const firstDirty = this.children.find((child) => (child as Quadrant).dirty) as Quadrant;
     if (firstDirty) {
       if (debugShowCacheInfo) {
-        firstDirty.update(this.app, timeStart, `${this.children.length - dirtyCount}/${this.children.length}`);
+        firstDirty.update(timeStart, `${this.children.length - dirtyCount}/${this.children.length}`);
       } else {
-        firstDirty.update(this.app);
+        firstDirty.update();
       }
       if (dirtyCount === 1 && !this.complete) {
         this.complete = true;

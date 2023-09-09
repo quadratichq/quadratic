@@ -1,6 +1,4 @@
 import fuzzysort from 'fuzzysort';
-import { SheetController } from '../../../grid/controller/SheetController';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import BordersListItems from './ListItems/Borders';
 import EditListItems from './ListItems/Edit';
@@ -12,14 +10,12 @@ import SheetListItems from './ListItems/Sheets';
 import TextListItems from './ListItems/Text';
 import ViewListItems from './ListItems/View';
 
-interface Commands {
+export interface Commands {
   label: string;
   Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
 }
 
 export const getCommandPaletteListItems = (props: {
-  app: PixiApp;
-  sheetController: SheetController;
   closeCommandPalette: Function;
   activeSearchValue: string;
   selectedListItemIndex: number;

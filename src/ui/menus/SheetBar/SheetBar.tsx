@@ -2,24 +2,18 @@ import './SheetBar.css';
 
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { SheetController } from '../../../grid/controller/SheetController';
+import { sheetController } from '../../../grid/controller/SheetController';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { SheetBarTab } from './SheetBarTab';
 import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
-
-interface Props {
-  sheetController: SheetController;
-}
 
 const ARROW_SCROLL_AMOUNT = 10;
 const HOVER_SCROLL_AMOUNT = 5;
 const SCROLLING_INTERVAL = 17;
 const ARROW_REPEAT_INTERVAL = 17;
 
-export const SheetBar = (props: Props): JSX.Element => {
-  const { sheetController } = props;
-
+export const SheetBar = (): JSX.Element => {
   // used to trigger state change (eg, when sheetController.sheets change)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setTrigger] = useState(0);
@@ -34,7 +28,7 @@ export const SheetBar = (props: Props): JSX.Element => {
     };
     window.addEventListener('change-sheet', updateSheet);
     return () => window.removeEventListener('change-sheet', updateSheet);
-  }, [sheetController]);
+  }, []);
 
   // handle disabling left arrow and right arrow
   const [sheets, setSheets] = useState<HTMLDivElement | undefined>();
@@ -141,21 +135,18 @@ export const SheetBar = (props: Props): JSX.Element => {
   const scrolling = useRef<undefined | number>();
 
   // finds the index * 2 for a new order string
-  const getOrderIndex = useCallback(
-    (order: string): number => {
-      const orders = sheetController.sheets.map((sheet) => sheet.order);
-      if (orders.length === 0) {
-        return 0;
+  const getOrderIndex = useCallback((order: string): number => {
+    const orders = sheetController.sheets.map((sheet) => sheet.order);
+    if (orders.length === 0) {
+      return 0;
+    }
+    for (let i = 0; i < orders.length; i++) {
+      if (order < orders[i]) {
+        return i * 2;
       }
-      for (let i = 0; i < orders.length; i++) {
-        if (order < orders[i]) {
-          return i * 2;
-        }
-      }
-      return orders.length * 2;
-    },
-    [sheetController.sheets]
-  );
+    }
+    return orders.length * 2;
+  }, []);
 
   const handlePointerDown = useCallback(
     (options: { event: React.PointerEvent<HTMLDivElement>; sheet: Sheet }) => {
@@ -193,7 +184,7 @@ export const SheetBar = (props: Props): JSX.Element => {
       focusGrid();
       event.preventDefault();
     },
-    [getOrderIndex, sheetController, sheets]
+    [getOrderIndex, sheets]
   );
 
   const handlePointerMove = useCallback(
@@ -374,7 +365,7 @@ export const SheetBar = (props: Props): JSX.Element => {
       }
       down.current = undefined;
     }
-  }, [sheetController]);
+  }, []);
 
   useEffect(() => {
     window.addEventListener('pointermove', handlePointerMove);
@@ -428,7 +419,6 @@ export const SheetBar = (props: Props): JSX.Element => {
               onContextMenu={handleContextEvent}
               active={activeSheet === sheet.id}
               sheet={sheet}
-              sheetController={sheetController}
               forceRename={forceRename === sheet.id}
               clearRename={clearRename}
             />
@@ -454,7 +444,6 @@ export const SheetBar = (props: Props): JSX.Element => {
         </button>
       </div>
       <SheetBarTabContextMenu
-        sheetController={sheetController}
         contextMenu={contextMenu}
         handleClose={() => setContextMenu(undefined)}
         handleRename={handleRename}

@@ -3,23 +3,21 @@ import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../grid/controller/SheetController';
+import { sheetController } from '../../grid/controller/SheetController';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 
 interface CellInputProps {
   container?: HTMLDivElement;
-  app?: PixiApp;
-  sheetController: SheetController;
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { app, container, sheetController } = props;
+  const { container } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
-  const viewport = app?.viewport;
+  const viewport = pixiApp.viewport;
 
   const cellLocation = sheetController.sheet.cursor.cursorPosition;
 
@@ -76,12 +74,12 @@ export const CellInput = (props: CellInputProps) => {
       node.focus();
       setTextInput(node);
       const value = cell;
-      text.current = app?.settings.input.initialValue ?? (value || '');
+      text.current = pixiApp.settings.input.initialValue ?? (value || '');
       if (document.hasFocus() && node.contains(document.activeElement)) {
         handleFocus({ target: node });
       }
     },
-    [app?.settings.input.initialValue, cell, handleFocus]
+    [cell, handleFocus]
   );
 
   // If we don't have a viewport, we can't continue.
@@ -97,7 +95,7 @@ export const CellInput = (props: CellInputProps) => {
 
   // Function used to move and scale the Input with the Grid
   function updateInputCSSTransform() {
-    if (!app || !viewport || !container) return '';
+    if (!container) return '';
 
     // Get world transform matrix
     let worldTransform = viewport.worldTransform;
@@ -156,7 +154,7 @@ export const CellInput = (props: CellInputProps) => {
       },
     });
 
-    app.settings.changeInput(false);
+    pixiApp.settings.changeInput(false);
 
     // Set focus back to Grid
     focusGrid();
@@ -203,34 +201,35 @@ export const CellInput = (props: CellInputProps) => {
         // viewport should try to keep the input box in view
         if (!textInput) return;
         const bounds = textInput.getBoundingClientRect();
-        const canvas = app.canvas.getBoundingClientRect();
-        const center = app.viewport.center;
+        const canvas = pixiApp.canvas.getBoundingClientRect();
+        const center = pixiApp.viewport.center;
+        const scale = pixiApp.viewport.scale.x;
         let x = center.x,
           y = center.y,
           move = false;
         if (bounds.right > canvas.right) {
-          x = center.x + (bounds.right - canvas.right) / app.viewport.scale.x;
+          x = center.x + (bounds.right - canvas.right) / scale;
           move = true;
         } else if (bounds.left < canvas.left) {
-          const change = (bounds.left - canvas.left) / app.viewport.scale.x;
+          const change = (bounds.left - canvas.left) / scale;
           if (bounds.right < canvas.right + change) {
             x = center.x + change;
             move = true;
           }
         }
         if (bounds.bottom > canvas.bottom) {
-          y = center.y + (bounds.bottom - canvas.bottom) / app.viewport.scale.x;
+          y = center.y + (bounds.bottom - canvas.bottom) / scale;
           move = true;
         } else if (bounds.top < canvas.top) {
-          const change = (bounds.top - canvas.top) / app.viewport.scale.x;
+          const change = (bounds.top - canvas.top) / scale;
           if (bounds.bottom < canvas.bottom + change) {
             y = center.y + change;
             move = true;
           }
         }
         if (move) {
-          app.viewport.moveCenter(x, y);
-          app.setViewportDirty();
+          viewport.moveCenter(x, y);
+          pixiApp.setViewportDirty();
         }
       }}
       onFocus={handleFocus}
@@ -270,7 +269,7 @@ export const CellInput = (props: CellInputProps) => {
           event.preventDefault();
         }
         // ensure the cell border is redrawn
-        app.cursor.dirty = true;
+        pixiApp.cursor.dirty = true;
       }}
     >
       {text.current}

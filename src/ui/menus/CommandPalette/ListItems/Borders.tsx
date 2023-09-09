@@ -63,7 +63,7 @@ const ListItems = [
   {
     label: 'Borders: Clear all',
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { clearBorders } = useBorders(props.sheetController);
+      const { clearBorders } = useBorders();
       return (
         <CommandPaletteListItem
           {...props}
@@ -98,7 +98,7 @@ function generateListItem({
   return {
     label,
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { changeBorders } = useBorders(props.sheetController);
+      const { changeBorders } = useBorders();
       return (
         <CommandPaletteListItem
           {...props}
