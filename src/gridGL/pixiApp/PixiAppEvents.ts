@@ -76,20 +76,7 @@ class PixiAppEvents {
     // pixiApp.quadrants.deleteSheet(sheet);
   }
 
-  async rebuild() {
-    pixiApp.clear();
-    pixiApp.paused = true;
-    pixiApp.viewport.dirty = true;
-    pixiApp.gridLines.dirty = true;
-    pixiApp.axesLines.dirty = true;
-    pixiApp.headings.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.boxCells.reset();
-
-    await this.loadSheets();
-    pixiApp.paused = false;
-    pixiApp.reset();
-  }
+  async rebuild() {}
 
   setZoomState(zoom: number): void {
     zoomInOut(zoom);

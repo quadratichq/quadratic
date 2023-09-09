@@ -1,5 +1,6 @@
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { clearFormattingAndBorders } from '../../../ui/menus/TopBar/SubMenus/formatCells';
+import { sheetController } from '../../../grid/controller/SheetController';
+import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
@@ -45,16 +46,15 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    throw new Error('not implemented yet');
-    // const formatPrimaryKey = sheetController.sheet.getFormatSummary();
-    // changeBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
-    // return true;
+    const formatPrimaryCell = sheetController.sheet.getFormatPrimaryCell();
+    setBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
+    return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    throw new Error('not implemented yet');
-    // changeItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
-    // return true;
+    const formatPrimaryCell = sheetController.sheet.getFormatPrimaryCell();
+    setItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
+    return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && (event.key === 'g' || event.key === 'j')) {

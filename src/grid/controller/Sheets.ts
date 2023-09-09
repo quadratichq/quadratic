@@ -17,7 +17,8 @@ export class Sheets {
   // ------------------------
 
   constructor() {
-    this.sheets = [new Sheet(0)];
+    this.sheets = [];
+    this.repopulate();
     this._current = this.sheets[0].id;
   }
 

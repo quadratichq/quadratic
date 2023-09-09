@@ -3,17 +3,13 @@ import { useSetRecoilState } from 'recoil';
 import { loadedStateAtom } from '../atoms/loadedStateAtom';
 import { InitialFile } from '../dashboard/FileRoute';
 import { loadAssets } from '../gridGL/loadAssets';
-import init, { hello } from '../quadratic-core/quadratic_core';
+import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { webWorkers } from '../web-workers/webWorkers';
 import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
-type loadableItem = 'pixi-assets' | 'wasm-rust';
-const ITEMS_TO_LOAD: loadableItem[] = ['pixi-assets', 'wasm-rust'];
-
 export default function QuadraticApp({ initialFile }: { initialFile: InitialFile }) {
   const [loading, setLoading] = useState(true);
-  const [itemsLoaded, setItemsLoaded] = useState<loadableItem[]>([]);
   const setLoadedState = useSetRecoilState(loadedStateAtom);
   const didMount = useRef<boolean>(false);
 
@@ -51,24 +47,10 @@ export default function QuadraticApp({ initialFile }: { initialFile: InitialFile
     webWorkers.init();
 
     loadAssets().then(() => {
-      setItemsLoaded((old) => ['pixi-assets', ...old]);
-    });
-
-    init().then(() => {
-      hello(); // let Rust say hello to console
-      setItemsLoaded((old) => ['wasm-rust', ...old]);
-
-      // // need to wait until wasm loads before creating sheetController and app
-      // setApp(new PixiApp(sc));
+      setLoading(false);
+      pixiApp.init();
     });
   }, []);
-
-  // Once everything loads, run this effect
-  useEffect(() => {
-    if (ITEMS_TO_LOAD.every((item) => itemsLoaded.includes(item))) {
-      setLoading(false);
-    }
-  }, [itemsLoaded]);
 
   if (loading) {
     return <QuadraticLoading />;

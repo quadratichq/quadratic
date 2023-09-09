@@ -15,8 +15,8 @@ export enum PanMode {
 }
 
 export class PixiAppSettings {
-  private settings!: GridSettings;
-  private lastSettings?: GridSettings;
+  private settings: GridSettings;
+  private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: { show: boolean; initialValue?: string };
 
@@ -27,7 +27,13 @@ export class PixiAppSettings {
   setEditorHighlightedCellsState?: (value: EditorHighlightedCellsState) => void;
 
   constructor() {
-    this.getSettings();
+    const settings = localStorage.getItem('viewSettings');
+    if (settings) {
+      this.settings = JSON.parse(settings) as GridSettings;
+    } else {
+      this.settings = defaultGridSettings;
+    }
+    this.lastSettings = this.settings;
     window.addEventListener('grid-settings', this.getSettings.bind(this));
     this._input = { show: false };
     this._panMode = PanMode.Disabled;
@@ -47,7 +53,6 @@ export class PixiAppSettings {
     pixiApp.gridLines.dirty = true;
     pixiApp.axesLines.dirty = true;
     pixiApp.headings.dirty = true;
-    // pixiApp.cells.dirty = true;
 
     // only rebuild quadrants if showCellTypeOutlines change
     if (

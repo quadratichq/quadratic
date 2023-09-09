@@ -52,8 +52,9 @@ export class Grid {
     this.gridController = new GridController();
   }
 
-  newFromFile(grid: GridFile): void {
+  newFromFile(grid: GridFile): boolean {
     this.gridController = GridController.newFromFile(JSON.stringify(grid));
+    return true;
   }
 
   export(): string {

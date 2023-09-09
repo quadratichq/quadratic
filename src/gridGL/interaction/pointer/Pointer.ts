@@ -4,6 +4,7 @@ import { PointerAutoComplete } from './PointerAutoComplete/PointerAutoComplete';
 import { PointerDown } from './PointerDown';
 import { PointerHeading } from './PointerHeading';
 import { PointerCursor } from './pointerCursor';
+import { Viewport } from 'pixi-viewport';
 
 export class Pointer {
   pointerHeading: PointerHeading;
@@ -12,12 +13,12 @@ export class Pointer {
 
   pointerDown: PointerDown;
 
-  constructor() {
+  constructor(viewport: Viewport) {
     this.pointerHeading = new PointerHeading();
     this.pointerAutoComplete = new PointerAutoComplete();
     this.pointerDown = new PointerDown();
     this.pointerCursor = new PointerCursor();
-    const viewport = pixiApp.viewport;
+
     viewport.on('pointerdown', this.handlePointerDown);
     viewport.on('pointermove', this.pointerMove);
     viewport.on('pointerup', this.pointerUp);

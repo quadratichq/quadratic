@@ -14,41 +14,37 @@ import { CellsSheets } from '../cells/CellsSheets';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { Quadrants } from '../quadrants/Quadrants';
-import { pixiAppEvents } from './PixiAppEvents';
 import { PixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
 import './pixiApp.css';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
-  private update: Update;
+  private update!: Update;
   private cacheIsVisible = false;
 
-  canvas: HTMLCanvasElement;
-  viewport: Viewport;
-  gridLines: GridLines;
-  axesLines: AxesLines;
-  cursor: Cursor;
-  headings: GridHeadings;
-  boxCells: BoxCells;
-  // cells: Cells;
-  cellsSheets: CellsSheets;
-
-  quadrants: Quadrants;
-
-  pointer: Pointer;
-  viewportContents: Container;
-  settings: PixiAppSettings;
-  renderer: Renderer;
+  canvas!: HTMLCanvasElement;
+  viewport!: Viewport;
+  gridLines!: GridLines;
+  axesLines!: AxesLines;
+  cursor!: Cursor;
+  headings!: GridHeadings;
+  boxCells!: BoxCells;
+  cellsSheets!: CellsSheets;
+  quadrants!: Quadrants;
+  pointer!: Pointer;
+  viewportContents!: Container;
+  settings!: PixiAppSettings;
+  renderer!: Renderer;
   stage = new Container();
   loading = true;
   destroyed = false;
   paused = true;
 
   // for testing purposes
-  debug: Graphics;
+  debug!: Graphics;
 
-  constructor() {
+  init() {
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
@@ -116,13 +112,13 @@ export class PixiApp {
 
     this.reset();
 
-    this.pointer = new Pointer();
+    this.pointer = new Pointer(this.viewport);
     this.update = new Update();
 
     if (debugAlwaysShowCache) this.showCache();
 
     this.setupListeners();
-    pixiAppEvents.rebuild();
+    this.rebuild();
 
     console.log('[QuadraticGL] environment ready');
   }
@@ -208,7 +204,6 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
-    // this.cells.dirty = true;
   };
 
   // called before and after a quadrant render
@@ -219,8 +214,6 @@ export class PixiApp {
     this.headings.visible = false;
     this.quadrants.visible = false;
     this.boxCells.visible = false;
-    // this.cells.changeVisibility(true);
-    // this.cells.dirty = true;
     return this.viewportContents;
   }
 
@@ -231,8 +224,6 @@ export class PixiApp {
     this.headings.visible = true;
     this.boxCells.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
-    // this.cells.changeVisibility(!this.cacheIsVisible);
-    // if (!this.cacheIsVisible) this.cells.dirty = true;
   }
 
   // helper for playwright
@@ -272,6 +263,26 @@ export class PixiApp {
 
   clear(): void {
     this.renderer.render(new Container());
+  }
+
+  private async loadSheets() {
+    await this.cellsSheets.create();
+    this.viewport.dirty = true;
+  }
+
+  async rebuild() {
+    this.clear();
+    this.paused = true;
+    this.viewport.dirty = true;
+    this.gridLines.dirty = true;
+    this.axesLines.dirty = true;
+    this.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.boxCells.reset();
+
+    await this.loadSheets();
+    this.paused = false;
+    this.reset();
   }
 }
 

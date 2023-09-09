@@ -6,6 +6,8 @@ import { RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
 import { GetFileResSchema } from '../api/types';
 import { Empty } from '../components/Empty';
+import { sheetController } from '../grid/controller/SheetController';
+import init, { hello } from '../quadratic-core/quadratic_core';
 import { GridFile } from '../schemas';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
@@ -26,7 +28,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
   // Fetch the file
   const data = await apiClient.getFile(uuid as string);
 
-  // Validate and upgrade file to the latest version
+  // Validate and upgrade file to the latest version in TS (up to 1.4)
   const contents = validateAndUpgradeGridFile(data.file.contents);
   if (!contents) {
     Sentry.captureEvent({
@@ -36,18 +38,32 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<I
     throw new Response('Invalid file that could not be upgraded.', { status: 400 });
   }
 
+  // load WASM
+  await init();
+  hello();
+  sheetController.init();
+
   // If the file version is newer than what is supported by the current version
   // of the app, do a (hard) reload.
+  if (contents.version > sheetController.getVersion()) {
+    Sentry.captureEvent({
+      message: `User opened a file at version ${
+        contents.version
+      } but the app is at version ${sheetController.getVersion()}. The app will automatically reload.`,
+      level: Sentry.Severity.Log,
+    });
+    // @ts-expect-error hard reload via `true` only works in some browsers
+    window.location.reload(true);
+  }
 
-  // todo: figure out how to handle this
-  // if (contents.version > GridFileSchema.shape.version.value) {
-  //   Sentry.captureEvent({
-  //     message: `User opened a file at version ${contents.version} but the app is at version ${GridFileSchema.shape.version.value}. The app will automatically reload.`,
-  //     level: Sentry.Severity.Log,
-  //   });
-  //   // @ts-expect-error hard reload via `true` only works in some browsers
-  //   window.location.reload(true);
-  // }
+  // attempt to load the sheet
+  if (!sheetController.load(contents)) {
+    Sentry.captureEvent({
+      message: `Failed to validate and upgrade user file from database (to Rust). It will likely have to be fixed manually. File UUID: ${uuid}`,
+      level: Sentry.Severity.Critical,
+    });
+    throw new Response('Invalid file that could not be upgraded by Rust.', { status: 400 });
+  }
 
   return { contents, name: data.file.name };
 };

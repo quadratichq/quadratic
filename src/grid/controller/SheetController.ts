@@ -10,14 +10,28 @@ import { transactionResponse } from './transactionResponse';
 
 class SheetController {
   // friends of Sheets
-  grid: Grid;
+  grid!: Grid;
 
-  sheets: Sheets;
+  sheets!: Sheets;
   save: (() => void) | undefined;
 
-  constructor() {
+  // initial call that properly initializes object (constructor doesn't work b/c of timing)
+  init() {
     this.grid = new Grid();
+  }
+
+  load(grid: GridFile): boolean {
+    this.grid = new Grid();
+    // use to test large sheets
+    if (debugMockLargeData) {
+      this.sheets.mockLargeData();
+    } else {
+      if (!this.grid.newFromFile(grid)) {
+        return false;
+      }
+    }
     this.sheets = new Sheets();
+    return true;
   }
 
   export(): string {
@@ -49,7 +63,7 @@ class SheetController {
     if (debugMockLargeData) {
       this.sheets.mockLargeData();
     } else {
-      if (!this.sheets.loadFile(grid)) {
+      if (!this.grid.newFromFile(grid)) {
         return false;
       }
     }

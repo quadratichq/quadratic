@@ -1,5 +1,5 @@
 import mixpanel from 'mixpanel-browser';
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { apiClient } from '../../api/apiClient';
 import { InitialFile } from '../../dashboard/FileRoute';
@@ -34,7 +34,6 @@ export const FileProvider = ({ children, initialFile }: { children: React.ReactE
   const [name, setName] = useState<FileContextType['name']>(initialFile.name);
   const [dirtyFile, setDirtyFile] = useState<boolean>(false);
   const debouncedContents = useDebounce<boolean>(dirtyFile, 1000);
-  let didMount = useRef<boolean>(false);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
   const syncState = latestSync.state;
 
@@ -54,18 +53,6 @@ export const FileProvider = ({ children, initialFile }: { children: React.ReactE
   useEffect(() => {
     sheetController.save = save;
   }, [save]);
-
-  // On mounting, load the sheet
-  useEffect(() => {
-    if (didMount.current) return;
-
-    if (!sheetController.loadFile(initialFile.contents)) {
-      console.log('[FileProvider] Failed to load file...');
-    } else {
-      didMount.current = true;
-      console.log('[FileProvider] (re)loading file into the sheet...');
-    }
-  }, [initialFile.contents]);
 
   const syncChanges = useCallback(
     async (apiClientFn: Function) => {
