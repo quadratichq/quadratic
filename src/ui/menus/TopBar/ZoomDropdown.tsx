@@ -1,14 +1,14 @@
-import { Button } from '@mui/material';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { colors } from '../../../theme/colors';
-import { focusGrid } from '../../../helpers/focusGrid';
+import { Button } from '@mui/material';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-import { MenuLineItem } from './MenuLineItem';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { useCallback, useState } from 'react';
-import useEventListener from '../../../hooks/useEventListener';
 import mixpanel from 'mixpanel-browser';
-import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
+import { useCallback, useState } from 'react';
+import { zoomInOut, zoomToFit, zoomToSelection } from '../../../gridGL/helpers/zoom';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import useEventListener from '../../../hooks/useEventListener';
+import { colors } from '../../../theme/colors';
+import { MenuLineItem } from './MenuLineItem';
 
 export const ZoomDropdown = () => {
   const [zoom, setZoom] = useState(1);
@@ -21,7 +21,7 @@ export const ZoomDropdown = () => {
   useEventListener('zoom-event', handleZoom);
 
   const setZoomState = useCallback((value: number) => {
-    pixiAppEvents.setZoomState(value);
+    zoomInOut(value);
     focusGrid();
   }, []);
 
@@ -53,7 +53,7 @@ export const ZoomDropdown = () => {
       <MenuItem
         onClick={() => {
           mixpanel.track('[ZoomDropdown].zoomToSelection');
-          pixiAppEvents.setZoomTo('selection');
+          zoomToSelection();
         }}
       >
         <MenuLineItem primary="Zoom to selection" secondary={KeyboardSymbols.Command + '8'} />
@@ -61,7 +61,7 @@ export const ZoomDropdown = () => {
       <MenuItem
         onClick={() => {
           mixpanel.track('[ZoomDropdown].zoomToFit');
-          pixiAppEvents.setZoomTo('fit');
+          zoomToFit();
         }}
       >
         <MenuLineItem primary="Zoom to fit" secondary={KeyboardSymbols.Command + '9'} />
