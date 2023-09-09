@@ -4,7 +4,7 @@ import { Pos } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
-  CodeCellValue,
+  // CodeCellValue,
   FormattingSummary,
   JsRenderCell,
   JsRenderCodeCell,
@@ -135,7 +135,9 @@ export class Sheet {
     return this.gridNew.getRenderCodeCells(this.id);
   }
 
-  getCodeValue(x: number, y: number): CodeCellValue | undefined {
+  // todo: fix types
+
+  getCodeValue(x: number, y: number): any /*CodeCellValue*/ | undefined {
     return this.gridNew.getCodeValue(this.id, x, y);
   }
 

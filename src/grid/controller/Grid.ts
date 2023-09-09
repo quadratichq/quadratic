@@ -4,7 +4,7 @@ import {
   CellAlign,
   CellFormatSummary,
   CellWrap,
-  CodeCellValue,
+  // CodeCellValue,
   FormattingSummary,
   JsRenderCell,
   JsRenderCodeCell,
@@ -281,7 +281,8 @@ export class Grid {
     return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
   }
 
-  getCodeValue(sheetId: string, x: number, y: number): CodeCellValue | undefined {
+  // todo: fix types
+  getCodeValue(sheetId: string, x: number, y: number): any | undefined {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     return this.gridController.getCodeCellValue(sheetId, new Pos(x, y));
   }

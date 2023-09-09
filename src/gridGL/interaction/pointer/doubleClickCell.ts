@@ -1,7 +1,9 @@
-import { CodeCellValue } from '../../../quadratic-core/types';
+// import { CodeCellValue } from '../../../quadratic-core/types';
 import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
 
-export function doubleClickCell(options: { column: number; row: number; code?: CodeCellValue; cell?: string }): void {
+// todo: fix types
+
+export function doubleClickCell(options: { column: number; row: number; code?: any; cell?: string }): void {
   const { code, cell, column, row } = options;
   const settings = pixiAppEvents.getSettings();
 

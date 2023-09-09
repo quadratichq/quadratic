@@ -4,13 +4,15 @@ import { useRecoilValue } from 'recoil';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { CodeCellValue } from '../../../quadratic-core/types';
+// import { CodeCellValue } from '../../../quadratic-core/types';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Formula, Python } from '../../icons';
 
+// todo: fix types
+
 interface Props {
-  cell: CodeCellValue | undefined;
+  cell: any | undefined; // CodeCellValue
   cellLocation: Coordinate | undefined;
   unsaved: boolean;
   isRunningComputation: boolean;

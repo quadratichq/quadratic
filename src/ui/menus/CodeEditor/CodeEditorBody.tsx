@@ -4,15 +4,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
-import { CodeCellValue } from '../../../quadratic-core/types';
+// import { CodeCellValue } from '../../../quadratic-core/types';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 
+// todo: fix types
+
 interface Props {
-  cell: CodeCellValue | undefined;
+  cell: any | undefined; //CodeCellValue
   editorContent: string | undefined;
   setEditorContent: (value: string | undefined) => void;
 }

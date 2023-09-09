@@ -61,7 +61,7 @@ export function keyboardCell(options: {
         });
       } else {
         // open single line
-        const edit = sheet_controller.sheet.getEditCell(x, y);
+        const edit = sheetController.sheet.getEditCell(x, y);
         pixiAppEvents.changeInput(true, edit);
       }
     } else {

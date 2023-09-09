@@ -139,9 +139,21 @@ impl v1_4::JsSheet {
             column.align.set(js_format.y, js_format.alignment);
             column.wrap.set(js_format.y, js_format.wrapping);
 
-            column
-                .numeric_format
-                .set(js_format.y, js_format.text_format.clone());
+            if let Some(text_format) = js_format.text_format.clone() {
+                column.numeric_format.set(
+                    js_format.y,
+                    Some(NumericFormat {
+                        kind: text_format.kind,
+                        symbol: text_format.symbol,
+                    }),
+                );
+
+                if let Some(decimals) = text_format.decimal_places {
+                    column
+                        .numeric_decimals
+                        .set(js_format.y, Some(decimals as i16));
+                }
+            }
 
             column.bold.set(js_format.y, js_format.bold);
             column.italic.set(js_format.y, js_format.italic);

@@ -4,7 +4,7 @@ import { stripIndent } from 'common-tags';
 import { useEffect, useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
-import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
+// import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import { CodeSnippet } from '../../components/CodeSnippet';
@@ -12,11 +12,13 @@ import { LinkNewTab } from '../../components/LinkNewTab';
 import { AITab } from './AITab';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
+// todo: fix types
+
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
-  evalResult: CodeCellRunOutput | undefined;
+  evalResult: any; //CodeCellRunOutput | undefined;
   editorContent: string | undefined;
-  selectedCell: CodeCellValue;
+  selectedCell: any; //CodeCellValue;
 }
 
 export function Console({ evalResult, editorMode, editorContent, selectedCell }: ConsoleProps) {

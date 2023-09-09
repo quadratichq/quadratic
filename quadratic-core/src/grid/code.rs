@@ -4,7 +4,7 @@ use super::CellRef;
 use crate::{ArraySize, CellValue, Error, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CodeCellValue {
     pub language: CodeCellLanguage,
     pub code_string: String,
@@ -40,7 +40,7 @@ pub enum CodeCellLanguage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CodeCellRunOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
@@ -51,17 +51,17 @@ pub struct CodeCellRunOutput {
 impl CodeCellRunOutput {
     /// Returns the value (single cell or array) outputted by the code run if it
     /// succeeded, or `None` if it failed or has never been run.
-    pub fn output_value(&self) -> Option<&String> {
+    pub fn output_value(&self) -> Option<&Value> {
         self.result.output_value()
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(untagged)]
 pub enum CodeCellRunResult {
     Ok {
-        output_value: String,
+        output_value: Value,
         cells_accessed: Vec<CellRef>,
     },
     Err {
@@ -71,7 +71,7 @@ pub enum CodeCellRunResult {
 impl CodeCellRunResult {
     /// Returns the value (single cell or array) outputted by the code run if it
     /// succeeded, or `None` if it failed.
-    pub fn output_value(&self) -> Option<&String> {
+    pub fn output_value(&self) -> Option<&Value> {
         match self {
             Self::Ok { output_value, .. } => Some(output_value),
             Self::Err { .. } => None,
