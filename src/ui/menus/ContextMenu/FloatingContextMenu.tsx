@@ -64,8 +64,7 @@ export const FloatingContextMenu = (props: Props) => {
 
   // Function used to move and scale the Input with the Grid
   const updateContextMenuCSSTransform = useCallback(() => {
-    if (!container) return '';
-    if (!menuDiv.current) return '';
+    if (!container || !menuDiv.current) return '';
 
     const { viewport } = pixiApp;
 
@@ -147,7 +146,6 @@ export const FloatingContextMenu = (props: Props) => {
       // that we check again soon to see if the viewport is done moving
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
-
     return transform;
   }, [
     container,
@@ -179,15 +177,12 @@ export const FloatingContextMenu = (props: Props) => {
     addGlobalSnackbar(PNG_MESSAGE);
   }, [moreMenuToggle, addGlobalSnackbar]);
 
-  if (!!container) return null;
-
   // set input's initial position correctly
   const transform = updateContextMenuCSSTransform();
 
   const iconSize = 'small';
 
-  // todo
-  const formatPrimaryCell = { bold: false, italic: false};
+  const formatPrimaryCell = sheetController.sheet.getFormatPrimaryCell();
 
   return (
     <Paper
