@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use bigdecimal::BigDecimal;
+use bigdecimal::{BigDecimal, FromPrimitive};
 use serde::{Deserialize, Serialize};
 
 use crate::{Array, ArraySize, Error, ErrorMsg, Span};
@@ -81,6 +81,7 @@ pub enum JsArrayOutput {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct JsTextFormat {
+    #[serde(rename = "type")]
     pub kind: NumericFormatKind,
     pub symbol: Option<String>,
     pub decimal_places: Option<i32>,
@@ -154,7 +155,7 @@ pub struct JsSheet {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum Any {
-    Number(String),
+    Number(f64),
     String(String),
     Boolean(bool),
 }
@@ -162,13 +163,19 @@ impl Into<CellValue> for Any {
     fn into(self) -> CellValue {
         match self {
             Any::Number(n) => {
-                if let Ok(number) = BigDecimal::from_str(&n) {
+                if let Some(number) = BigDecimal::from_f64(n) {
                     CellValue::Number(number)
                 } else {
-                    CellValue::Text(n)
+                    CellValue::Text(n.to_string())
                 }
             }
-            Any::String(s) => CellValue::Text(s),
+            Any::String(s) => {
+                if let Ok(number) = BigDecimal::from_str(&s) {
+                    CellValue::Number(number)
+                } else {
+                    CellValue::Text(s)
+                }
+            }
             Any::Boolean(b) => CellValue::Logical(b),
         }
     }
