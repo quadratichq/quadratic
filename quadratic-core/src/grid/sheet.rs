@@ -18,7 +18,7 @@ use super::js_types::{
     JsRenderCodeCellState, JsRenderFill,
 };
 use super::response::{GetIdResponse, SetCellResponse};
-use super::NumericFormatKind;
+use super::{NumericFormat, NumericFormatKind};
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -494,20 +494,34 @@ impl Sheet {
         });
 
         itertools::chain(ordinary_cells, code_output_cells)
-            .map(|(x, y, column, value, language)| JsRenderCell {
-                x,
-                y,
+            .map(|(x, y, column, value, language)| {
+                let mut numeric_format: Option<NumericFormat> = None;
+                let mut numeric_decimals: Option<i16> = None;
 
-                value: value
-                    .to_display(column.numeric_format.get(y), column.numeric_decimals.get(y)),
-                language,
+                // only get numeric_format only if it's a CellValue::Number (although it can exist for other types)
+                if value.type_name() == "number" {
+                    numeric_format = column.numeric_format.get(y);
+                    let is_percentage = if let Some(numeric_format) = numeric_format.clone() {
+                        numeric_format.kind == NumericFormatKind::Percentage
+                    } else {
+                        false
+                    };
+                    numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
+                }
+                JsRenderCell {
+                    x,
+                    y,
 
-                align: column.align.get(y),
-                wrap: column.wrap.get(y),
-                bold: column.bold.get(y),
-                italic: column.italic.get(y),
-                text_color: column.text_color.get(y),
-                fill_color: None,
+                    value: value.to_display(numeric_format, numeric_decimals),
+                    language,
+
+                    align: column.align.get(y),
+                    wrap: column.wrap.get(y),
+                    bold: column.bold.get(y),
+                    italic: column.italic.get(y),
+                    text_color: column.text_color.get(y),
+                    fill_color: None,
+                }
             })
             .collect()
     }
@@ -664,7 +678,7 @@ impl Sheet {
                     let split: Vec<&str> = s.split('.').collect();
                     if split.len() == 2 {
                         if is_percentage {
-                            return Some((split[1].len() - 2).min(0) as i16);
+                            return Some((split[1].len() - 2).max(0) as i16);
                         } else {
                             return Some(split[1].len() as i16);
                         }
@@ -740,6 +754,25 @@ mod test {
         );
 
         assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), None);
+    }
+
+    #[test]
+    fn test_current_decimal_places_percent() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+        sheet.set_cell_value(
+            crate::Pos { x: 1, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"0.24").unwrap()),
+        );
+
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(0));
+
+        sheet.set_cell_value(
+            crate::Pos { x: 1, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"0.245").unwrap()),
+        );
+
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(1));
     }
 
     #[test]
