@@ -93,18 +93,29 @@ impl CellValue {
             CellValue::Text(s) => s.to_string(),
             CellValue::Number(n) => {
                 let result: BigDecimal;
-                if numeric_format
-                    .clone()
-                    .is_some_and(|format| format.kind == NumericFormatKind::Percentage)
-                {
+                let is_percentage = numeric_format.clone().is_some_and(|numeric_format| {
+                    numeric_format.kind == NumericFormatKind::Percentage
+                });
+                if is_percentage {
                     result = n * 100;
                 } else {
                     result = n.clone();
                 };
                 let mut number = if let Some(decimals) = numeric_decimals {
-                    format!("{:.1$}", result, decimals as usize)
+                    result
+                        .with_scale_round(decimals as i64, bigdecimal::RoundingMode::HalfUp)
+                        .to_string()
                 } else {
-                    result.to_string()
+                    if is_percentage {
+                        let s = result.to_string();
+                        if s.contains(".") {
+                            s.trim_end_matches("0").to_string()
+                        } else {
+                            s
+                        }
+                    } else {
+                        result.to_string()
+                    }
                 };
                 if let Some(numeric_format) = numeric_format {
                     match numeric_format.kind {
