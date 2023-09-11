@@ -39,11 +39,11 @@ export const setAlignment = (alignment: CellAlignment): void => {
 };
 
 export const textFormatIncreaseDecimalPlaces = (): void => {
-  throw new Error('not implemented yet');
+  format(sheetController.sheet.changeDecimals(1));
 };
 
 export const textFormatDecreaseDecimalPlaces = (): void => {
-  throw new Error('not implemented yet');
+  format(sheetController.sheet.changeDecimals(-1));
 };
 
 export const textFormatSetCurrency = (): void => {

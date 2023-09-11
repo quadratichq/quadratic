@@ -44,7 +44,6 @@ impl GridController {
         let is_percentage =
             sheet.cell_numeric_format_kind(source) == Some(NumericFormatKind::Percentage);
         let decimals = sheet.decimal_places(source, is_percentage).unwrap_or(0);
-        js::log(&format!("{}", decimals));
         if decimals + (delta as i16) < 0 {
             return TransactionSummary::default();
         }

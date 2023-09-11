@@ -252,14 +252,12 @@ export class Sheet {
     return this.gridNew.setCellPercentage(this.id, rectangle, this.cursor.save());
   }
 
-
-
-  changeDecimals(decimals: number): TransactionSummary {
+  changeDecimals(delta: number): TransactionSummary {
     return this.gridNew.changeDecimalPlaces(
       this.id,
       new Pos(this.cursor.originPosition.x, this.cursor.originPosition.y),
       this.cursor.getRectangle(),
-      decimals,
+      delta,
       this.cursor.save()
     );
   }
