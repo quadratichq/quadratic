@@ -63,77 +63,79 @@ export const expandDown = async (options: {
   to: number;
   shrinkHorizontal?: number;
 }): Promise<void> => {
+  console.log('expandDown', options);
   const { selection, to, shrinkHorizontal } = options;
   const sheet = sheetController.sheet;
-  const cells: Cell[] = [];
-  const formats: CellFormat[] = [];
-  const borders: Border[] = [];
-  const right = shrinkHorizontal === undefined ? selection.right : shrinkHorizontal;
-  for (let x = selection.left; x <= right; x++) {
-    const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, 0, selection.bottom - selection.top));
-    rectangle.addBorders(sheet.borders, true);
-    const series: (Cell | undefined)[] = [];
-    for (let y = selection.top; y <= selection.bottom; y++) {
-      series.push(rectangle.get(x, y)?.cell);
-    }
-    const results = findAutoComplete({ series, spaces: to - selection.bottom, negative: false });
-    results.forEach((value, index) => {
-      const yIndex = selection.bottom + index + 1;
-      if (value === undefined) {
-        cells.push({
-          type: 'TEXT',
-          value: '',
-          x,
-          y: yIndex,
-        });
-      } else {
-        cells.push({
-          ...(value as Cell),
-          x,
-          y: yIndex,
-        });
-      }
-    });
-    let index = 0;
+  sheetController.grid.expandDown(sheet.id, selection, to, shrinkHorizontal);
+  // const cells: Cell[] = [];
+  // const formats: CellFormat[] = [];
+  // const borders: Border[] = [];
+  // const right = shrinkHorizontal === undefined ? selection.right : shrinkHorizontal;
+  // for (let x = selection.left; x <= right; x++) {
+  //   const rectangle = sheet.grid.getCells(new Rectangle(x, selection.top, 0, selection.bottom - selection.top));
+  //   rectangle.addBorders(sheet.borders, true);
+  //   const series: (Cell | undefined)[] = [];
+  //   for (let y = selection.top; y <= selection.bottom; y++) {
+  //     series.push(rectangle.get(x, y)?.cell);
+  //   }
+  //   const results = findAutoComplete({ series, spaces: to - selection.bottom, negative: false });
+  //   results.forEach((value, index) => {
+  //     const yIndex = selection.bottom + index + 1;
+  //     if (value === undefined) {
+  //       cells.push({
+  //         type: 'TEXT',
+  //         value: '',
+  //         x,
+  //         y: yIndex,
+  //       });
+  //     } else {
+  //       cells.push({
+  //         ...(value as Cell),
+  //         x,
+  //         y: yIndex,
+  //       });
+  //     }
+  //   });
+  //   let index = 0;
 
-    // formats & borders
-    for (let y = selection.bottom + 1; y <= to; y++) {
-      const format = rectangle.get(x, selection.top + index)?.format;
-      if (format) {
-        formats.push({ ...format, x, y });
-      } else {
-        formats.push({ x, y });
-      }
+  //   // formats & borders
+  //   for (let y = selection.bottom + 1; y <= to; y++) {
+  //     const format = rectangle.get(x, selection.top + index)?.format;
+  //     if (format) {
+  //       formats.push({ ...format, x, y });
+  //     } else {
+  //       formats.push({ x, y });
+  //     }
 
-      const border = rectangle.getBorder(x, selection.top + index);
-      if (border) {
-        borders.push({ ...border, x, y });
-      } else {
-        borders.push({ x, y });
-      }
+  //     const border = rectangle.getBorder(x, selection.top + index);
+  //     if (border) {
+  //       borders.push({ ...border, x, y });
+  //     } else {
+  //       borders.push({ x, y });
+  //     }
 
-      // change border on right edge
-      if (x === right) {
-        const border = rectangle.getBorder(x + 1, selection.top + index);
-        const existing = sheetController.sheet.borders.get(x + 1, y);
-        borders.push({ vertical: border?.vertical, x: x + 1, y, horizontal: existing?.horizontal });
-      }
+  //     // change border on right edge
+  //     if (x === right) {
+  //       const border = rectangle.getBorder(x + 1, selection.top + index);
+  //       const existing = sheetController.sheet.borders.get(x + 1, y);
+  //       borders.push({ vertical: border?.vertical, x: x + 1, y, horizontal: existing?.horizontal });
+  //     }
 
-      // change border on bottom edge
-      if (y === to) {
-        const border = rectangle.getBorder(x, selection.top + index + 1);
-        const existing = sheetController.sheet.borders.get(x, y + 1);
-        borders.push({ vertical: existing?.vertical, x, y: y + 1, horizontal: border?.horizontal });
-      }
+  //     // change border on bottom edge
+  //     if (y === to) {
+  //       const border = rectangle.getBorder(x, selection.top + index + 1);
+  //       const existing = sheetController.sheet.borders.get(x, y + 1);
+  //       borders.push({ vertical: existing?.vertical, x, y: y + 1, horizontal: border?.horizontal });
+  //     }
 
-      index = (index + 1) % (selection.bottom - selection.top + 1);
-    }
-  }
-  await updateFormatAndBorders({
-    cells,
-    formats,
-    borders,
-  });
+  //     index = (index + 1) % (selection.bottom - selection.top + 1);
+  //   }
+  // }
+  // await updateFormatAndBorders({
+  //   cells,
+  //   formats,
+  //   borders,
+  // });
 };
 
 export const expandUp = async (options: {

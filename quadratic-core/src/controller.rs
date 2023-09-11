@@ -5,6 +5,7 @@ use crate::grid::Grid;
 
 use self::transactions::Transaction;
 
+pub mod auto_complete;
 pub mod cells;
 pub mod sheets;
 pub mod transactions;

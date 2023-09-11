@@ -204,7 +204,8 @@ export class PointerAutoComplete {
       this.reset();
       return;
     }
-    sheetController.start_transaction();
+
+    // sheetController.start_transaction();
 
     if (this.stateVertical === 'shrink') {
       if (this.endCell) {
@@ -249,7 +250,7 @@ export class PointerAutoComplete {
         toVertical: this.toVertical,
       });
     }
-    sheetController.end_transaction();
+    // sheetController.end_transaction();
 
     this.setSelection();
     this.reset();

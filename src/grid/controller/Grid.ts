@@ -311,4 +311,14 @@ export class Grid {
   }
 
   //#endregion
+
+  //#region AutoComplete
+  //-----------------
+
+  expandDown(sheetId: string, rectangle: Rectangle, to: number, shrinkHorizontal?: number): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.expandDown(sheetId, rectangleToRect(rectangle), to, shrinkHorizontal);
+  }
+
+  //#endregion
 }
