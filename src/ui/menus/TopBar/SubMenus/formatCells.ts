@@ -47,11 +47,13 @@ export const textFormatDecreaseDecimalPlaces = (): void => {
 };
 
 export const textFormatSetCurrency = (): void => {
-  throw new Error('not implemented yet');
+  const rectangle = sheetController.sheet.cursor.getRectangle();
+  format(sheetController.sheet.setCurrency(rectangle));
 };
 
 export const textFormatSetPercentage = (): void => {
-  throw new Error('not implemented yet');
+  const rectangle = sheetController.sheet.cursor.getRectangle();
+  format(sheetController.sheet.setPercentage(rectangle));
 };
 
 export const textFormatSetNumber = (): void => {

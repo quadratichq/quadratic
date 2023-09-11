@@ -9,7 +9,6 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
-  NumericFormat,
   Rect,
   TransactionSummary,
 } from '../../quadratic-core/types';
@@ -182,19 +181,19 @@ export class Grid {
     return this.gridController.setCellWrap(sheetId, rectangleToRect(rectangle), wrap, JSON.stringify(cursor));
   }
 
-  setCellNumericFormat(
-    sheetId: string,
-    rectangle: Rectangle,
-    numericFormat: NumericFormat,
-    cursor: SheetCursorSave
-  ): TransactionSummary {
+  setCellCurrency(sheetId: string, rectangle: Rectangle, symbol: string, cursor: SheetCursorSave): TransactionSummary {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.setCellNumericFormat(
-      sheetId,
-      rectangleToRect(rectangle),
-      numericFormat,
-      JSON.stringify(cursor)
-    );
+    return this.gridController.setCellCurrency(sheetId, rectangleToRect(rectangle), symbol, JSON.stringify(cursor));
+  }
+
+  setCellPercentage(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.setCellPercentage(sheetId, rectangleToRect(rectangle), JSON.stringify(cursor));
+  }
+
+  removeCellNumericFormat(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): TransactionSummary {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    return this.gridController.removeCellNumericFormat(sheetId, rectangleToRect(rectangle), JSON.stringify(cursor));
   }
 
   setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean, cursor: SheetCursorSave): TransactionSummary {

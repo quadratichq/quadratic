@@ -244,6 +244,16 @@ export class Sheet {
     return this.gridNew.setCellAlign(this.id, rectangle, align, this.cursor.save());
   }
 
+  setCurrency(rectangle: Rectangle, symbol: string = '$') {
+    return this.gridNew.setCellCurrency(this.id, rectangle, symbol, this.cursor.save());
+  }
+
+  setPercentage(rectangle: Rectangle) {
+    return this.gridNew.setCellPercentage(this.id, rectangle, this.cursor.save());
+  }
+
+
+
   changeDecimals(decimals: number): TransactionSummary {
     return this.gridNew.changeDecimalPlaces(
       this.id,
