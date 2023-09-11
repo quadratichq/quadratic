@@ -252,6 +252,10 @@ export class Sheet {
     return this.gridNew.setCellPercentage(this.id, rectangle, this.cursor.save());
   }
 
+  removeCellNumericFormat(rectangle: Rectangle) {
+    return this.gridNew.removeCellNumericFormat(this.id, rectangle, this.cursor.save());
+  }
+
   changeDecimals(delta: number): TransactionSummary {
     return this.gridNew.changeDecimalPlaces(
       this.id,

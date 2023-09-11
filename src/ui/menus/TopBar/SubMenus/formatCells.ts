@@ -56,6 +56,11 @@ export const textFormatSetPercentage = (): void => {
   format(sheetController.sheet.setPercentage(rectangle));
 };
 
+export const removeCellNumericFormat = (): void => {
+  const rectangle = sheetController.sheet.cursor.getRectangle();
+  format(sheetController.sheet.removeCellNumericFormat(rectangle));
+};
+
 export const textFormatSetNumber = (): void => {
   throw new Error('not implemented yet');
 };

@@ -10,6 +10,7 @@ import {
   FormatColorText,
   FormatItalic,
   MoreHoriz,
+  Numbers,
   Percent,
 } from '@mui/icons-material';
 import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
@@ -30,6 +31,7 @@ import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import {
   clearFormattingAndBorders,
+  removeCellNumericFormat,
   setAlignment,
   setBold,
   setFillColor,
@@ -315,6 +317,12 @@ export const FloatingContextMenu = (props: Props) => {
         <TooltipHint title="Format as percent">
           <IconButton onClick={() => textFormatSetPercentage()} color="inherit">
             <Percent fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <TooltipHint title="Format as number">
+          <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
+            <Numbers fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
