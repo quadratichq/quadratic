@@ -1,5 +1,3 @@
-use std::env;
-
 use quadratic_core::{controller::transactions, *};
 use ts_rs::TS;
 
@@ -62,12 +60,5 @@ fn main() {
         Span,
     );
 
-    let Ok(mut dir) = env::current_dir() else {
-        panic!("export_types did not find the correct path.");
-    };
-    dir.push("..");
-    dir.push("src");
-    dir.push("quadratic-core");
-    dir.push("types.d.ts");
-    std::fs::write(dir, s).expect("failed to write types file");
+    std::fs::write("../src/quadratic-core/types.d.ts", s).expect("failed to write types file");
 }
