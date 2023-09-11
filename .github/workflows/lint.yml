@@ -56,9 +56,6 @@ jobs:
       - run: npm config set registry https://registry.npmjs.cf/
       - run: npm install
 
-      - name: Build wasm types
-        run: npm run build:wasm:types
-
       - name: Run Prettier
         run: npm run lint:prettier
 

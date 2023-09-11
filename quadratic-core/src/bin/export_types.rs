@@ -1,3 +1,5 @@
+use std::fs::create_dir_all;
+
 use quadratic_core::{controller::transactions, *};
 use ts_rs::TS;
 
@@ -60,5 +62,7 @@ fn main() {
         Span,
     );
 
-    std::fs::write("../src/quadratic-core/types.d.ts", s).expect("failed to write types file");
+    if create_dir_all("../src/quadratic-core").is_ok() {
+        std::fs::write("../src/quadratic-core/types.d.ts", s).expect("failed to write types file");
+    }
 }
