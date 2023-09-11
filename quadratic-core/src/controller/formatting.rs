@@ -3,7 +3,6 @@ use crate::{
         Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericDecimals, NumericFormat,
         NumericFormatKind, RegionRef, SheetId, TextColor,
     },
-    wasm_bindings::js,
     Pos, Rect, RunLengthEncoding,
 };
 use serde::{Deserialize, Serialize};

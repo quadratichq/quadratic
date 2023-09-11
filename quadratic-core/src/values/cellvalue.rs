@@ -74,7 +74,7 @@ impl CellValue {
         match self {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => format!("{s:?}"),
-            CellValue::Number(n) => format!("{n:?}"),
+            CellValue::Number(n) => n.to_string(),
             CellValue::Logical(true) => "TRUE".to_string(),
             CellValue::Logical(false) => "FALSE".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
