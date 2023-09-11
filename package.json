@@ -63,7 +63,7 @@
   "scripts": {
     "start": "npm run build:wasm:javascript && npm run watch:javascript",
     "build": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-scripts build",
-    "build:wasm": "npm run build:wasm:types && npm run build:wasm:javascript && npm run build:wasm:nodejs",
+    "build:wasm": "npm run build:wasm:types && npm run build:wasm:javascript && npm run build:wasm:nodejs && npm run build:wasm:types",
     "build:wasm:types": "cd quadratic-core && cargo run --bin export_types",
     "build:wasm:javascript": "cd quadratic-core && wasm-pack build --target web --out-dir ../src/quadratic-core",
     "build:wasm:nodejs": "cd quadratic-core && wasm-pack build --target nodejs --out-dir ../src/quadratic-core/__mocks__",
