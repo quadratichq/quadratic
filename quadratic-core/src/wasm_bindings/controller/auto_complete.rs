@@ -16,9 +16,10 @@ impl GridController {
         rect: &Rect,
         to: u32,
         shrink_horizontal: Option<u32>,
+        cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let output = self.expand_down(sheet_id, *rect, to, shrink_horizontal);
+        let output = self.expand_down(sheet_id, *rect, to, shrink_horizontal, cursor);
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
 }

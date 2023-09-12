@@ -16,6 +16,7 @@ import {
 } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
 import { SheetCursorSave } from '../sheet/SheetCursor';
+import { transactionResponse } from './transactionResponse';
 
 const rectangleToRect = (rectangle: Rectangle): RectInternal => {
   return new RectInternal(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
@@ -315,9 +316,22 @@ export class Grid {
   //#region AutoComplete
   //-----------------
 
-  expandDown(sheetId: string, rectangle: Rectangle, to: number, shrinkHorizontal?: number): TransactionSummary {
+  expandDown(
+    sheetId: string,
+    rectangle: Rectangle,
+    to: number,
+    shrinkHorizontal: number | undefined = undefined,
+    cursor: SheetCursorSave
+  ) {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.expandDown(sheetId, rectangleToRect(rectangle), to, shrinkHorizontal);
+    const summary = this.gridController.expandDown(
+      sheetId,
+      rectangleToRect(rectangle),
+      to,
+      shrinkHorizontal,
+      JSON.stringify(cursor)
+    );
+    transactionResponse(summary);
   }
 
   //#endregion

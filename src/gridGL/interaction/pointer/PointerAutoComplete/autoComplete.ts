@@ -66,7 +66,7 @@ export const expandDown = async (options: {
   console.log('expandDown', options);
   const { selection, to, shrinkHorizontal } = options;
   const sheet = sheetController.sheet;
-  sheetController.grid.expandDown(sheet.id, selection, to, shrinkHorizontal);
+  sheetController.grid.expandDown(sheet.id, selection, to, shrinkHorizontal, sheetController.sheet.cursor.save());
   // const cells: Cell[] = [];
   // const formats: CellFormat[] = [];
   // const borders: Border[] = [];

@@ -1,15 +1,23 @@
 use super::{transactions::TransactionSummary, GridController};
-use crate::{grid::SheetId, Rect};
+use crate::{grid::SheetId, wasm_bindings::js, CellValue, Pos, Rect};
 
 impl GridController {
     pub fn expand_down(
         &mut self,
-        _sheet_id: SheetId,
+        sheet_id: SheetId,
         _rect: Rect,
         _to: u32,
         _shrink_horizontal: Option<u32>,
+        cursor: Option<String>,
     ) -> TransactionSummary {
-        TransactionSummary::default()
+        js::log(&format!("rect: {:?}", _rect));
+
+        return self.set_cell_value(
+            sheet_id,
+            Pos { x: 1, y: 1 },
+            CellValue::Text("1".into()),
+            cursor,
+        );
     }
 }
 
