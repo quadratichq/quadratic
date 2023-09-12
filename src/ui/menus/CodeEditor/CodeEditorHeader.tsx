@@ -21,12 +21,11 @@ interface Props {
 
 export const CodeEditorHeader = (props: Props) => {
   const { cell, cellLocation, unsaved, isRunningComputation, saveAndRunCell, closeEditor } = props;
-  const { pythonLoaded } = useRecoilValue(loadedStateAtom);
+  const { pythonLoadState } = useRecoilValue(loadedStateAtom);
   const theme = useTheme();
 
   if (!cell || !cellLocation) return null;
-
-  const isLoadingPython = !pythonLoaded && cell.language === 'Python';
+  const isLoadingPython = !['loaded', 'initial'].includes(pythonLoadState) && cell.language === 'Python';
 
   return (
     <div

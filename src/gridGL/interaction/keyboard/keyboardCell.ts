@@ -110,7 +110,7 @@ export function keyboardCell(options: {
   }
 
   if (isAllowedFirstChar(event.key)) {
-    pixiAppEvents.changeInput(true, event.key);
+    pixiAppEvents.changeInput(true, { type: 'text', value: event.key });
     event.preventDefault();
   }
 

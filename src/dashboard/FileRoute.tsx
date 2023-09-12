@@ -42,7 +42,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     return undefined;
   });
   if (!data) {
-    throw new Response('Failed to retrive file from server');
+    throw new Response('Failed to retrieve file from server');
   }
 
   // Validate and upgrade file to the latest version in TS (up to 1.4)

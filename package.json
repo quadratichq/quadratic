@@ -72,6 +72,7 @@
     "watch:wasm:fast:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../src/quadratic-core'",
     "watch:wasm:types": "cd quadratic-core && cargo watch -s 'cargo run --bin export_types'",
     "watch:front-end": "concurrently --hide=3 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
+    "watch:front-end-back-end": "concurrently -n=react,rust,rust-types,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
     "watch:fast:front-end": "concurrently \"npm:watch:javascript\" \"npm:watch:wasm:fast:javascript\" \"npm:watch:wasm:types\"",
     "start:production": "npm run build && serve build",
     "build:ci": "./scripts/run-ci-build.sh",

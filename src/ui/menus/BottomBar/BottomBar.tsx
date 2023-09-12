@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ChatBubbleOutline, Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -36,7 +35,7 @@ export const BottomBar = () => {
     updateCursor();
     window.addEventListener('cursor-position', updateCursor);
     return () => window.removeEventListener('cursor-position', updateCursor);
-  }, []);
+  }, [cursor.cursorPosition.x, cursor.cursorPosition.y, cursor.multiCursor]);
 
   const handleShowGoToMenu = () => {
     setEditorInteractionState({

@@ -2,7 +2,7 @@ import { BitmapFont, Rectangle } from 'pixi.js';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { sheetController } from '../../grid/controller/SheetController';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { SheetId } from '../../quadratic-core/types';
+import { CellValue, SheetId } from '../../quadratic-core/types';
 import { zoomInOut, zoomToFit, zoomToSelection } from '../helpers/zoom';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { QuadrantChanged } from '../quadrants/Quadrants';
@@ -90,7 +90,7 @@ class PixiAppEvents {
     }
   }
 
-  changeInput(input: boolean, initialValue?: string | undefined): void {
+  changeInput(input: boolean, initialValue?: CellValue | undefined): void {
     pixiApp.settings.changeInput(input, initialValue);
   }
 
