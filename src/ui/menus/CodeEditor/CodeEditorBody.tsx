@@ -2,6 +2,7 @@ import Editor, { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
 // import { CodeCellValue } from '../../../quadratic-core/types';
@@ -23,6 +24,7 @@ export const CodeEditorBody = (props: Props) => {
   const { cell, editorContent, setEditorContent } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const readOnly = !isEditorOrAbove(editorInteractionState.permission);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
 
@@ -83,6 +85,7 @@ export const CodeEditorBody = (props: Props) => {
         onChange={setEditorContent}
         onMount={onMount}
         options={{
+          readOnly,
           minimap: { enabled: true },
           overviewRulerLanes: 0,
           hideCursorInOverviewRuler: true,

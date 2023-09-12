@@ -4,7 +4,6 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { ShowAfter } from './components/ShowAfter';
-import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { router } from './router';
 import './styles.css';

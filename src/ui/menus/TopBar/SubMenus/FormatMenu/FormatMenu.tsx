@@ -1,5 +1,3 @@
-import './formatMenuStyles.scss';
-
 import {
   BorderAll,
   FormatAlignCenter,
@@ -12,16 +10,13 @@ import {
   FormatItalic,
   PaletteOutlined,
 } from '@mui/icons-material';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Tooltip } from '@mui/material';
-import Button from '@mui/material/Button';
 import { Menu, MenuChangeEvent, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
-import '@szhsin/react-menu/dist/index.css';
 import { useCallback } from 'react';
 import { focusGrid } from '../../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { MenuLineItem } from '../../MenuLineItem';
+import { TopBarMenuItem } from '../../TopBarMenuItem';
 import {
   clearFormattingAndBorders,
   setAlignment,
@@ -30,6 +25,7 @@ import {
   setItalic,
   setTextColor,
 } from '../formatCells';
+import './formatMenuStyles.scss';
 import { useGetBorderMenu } from './useGetBorderMenu';
 
 export const FormatMenu = () => {
@@ -46,14 +42,11 @@ export const FormatMenu = () => {
   return (
     <Menu
       onMenuChange={onMenuChange}
-      menuButton={
-        <Tooltip title="Cell format" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
-          <Button style={{ color: 'inherit' }}>
-            <PaletteOutlined fontSize="small"></PaletteOutlined>
-            <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
-          </Button>
-        </Tooltip>
-      }
+      menuButton={({ open }) => (
+        <TopBarMenuItem title="Cell format" open={open}>
+          <PaletteOutlined fontSize="small"></PaletteOutlined>
+        </TopBarMenuItem>
+      )}
     >
       <MenuItem onClick={() => setBold(!(formatPrimaryCell?.bold === true))}>
         <MenuLineItem primary="Bold" secondary={KeyboardSymbols.Command + 'B'} Icon={FormatBold} />

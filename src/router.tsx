@@ -16,9 +16,10 @@ import {
 } from 'react-router-dom';
 import { authClient, protectedRouteLoaderWrapper } from './auth';
 import { Empty } from './components/Empty';
-import { GlobalSnackbarProvider } from './components/GlobalSnackbar';
+import { GlobalSnackbarProvider } from './components/GlobalSnackbarProvider';
 import { Theme } from './components/Theme';
-import { ROUTES } from './constants/routes';
+import { SUPPORT_EMAIL } from './constants/appConstants';
+import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Create from './dashboard/files/CreateRoute';
@@ -31,67 +32,78 @@ export type RootLoaderData = {
   user?: User;
 };
 
-export const useRootRouteLoaderData = () => useRouteLoaderData('root') as RootLoaderData;
+export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       <Route
         path="/"
-        loader={protectedRouteLoaderWrapper(async ({ request, params }): Promise<RootLoaderData | Response> => {
+        loader={async ({ request, params }): Promise<RootLoaderData | Response> => {
+          // All other routes get the same data
+          let isAuthenticated = await authClient.isAuthenticated();
+          let user = await authClient.user();
+
           // This is where we determine whether we need to run a migration
           // This redirect should trigger for every route _except_ the migration
           // route (this prevents an infinite loop of redirects).
           const url = new URL(request.url);
-          if (!url.pathname.startsWith('/cloud-migration')) {
+          if (isAuthenticated && !url.pathname.startsWith('/cloud-migration')) {
             if (await CloudFilesMigration.needsMigration()) {
               return redirect('/cloud-migration');
             }
           }
 
-          // All other routes get the same data
-          let isAuthenticated = await authClient.isAuthenticated();
-          let user = await authClient.user();
           initializeAnalytics({ isAuthenticated, user });
 
           return { isAuthenticated, user };
-        })}
+        }}
         element={<Root />}
         errorElement={<RootError />}
         id="root"
       >
-        <Route index element={<Navigate to={ROUTES.FILES} replace />} />
-
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibilityLayoutRoute />}>
             <Route index element={<Navigate to={ROUTES.FILES} replace />} />
-            <Route path=":uuid" lazy={() => import('./dashboard/FileRoute')} />
+            <Route path=":uuid" id={ROUTE_LOADER_IDS.FILE} lazy={() => import('./dashboard/FileRoute')} />
           </Route>
         </Route>
 
-        <Route path={ROUTES.CREATE_FILE} loader={Create.loader} action={Create.action} shouldRevalidate={() => false} />
+        <Route loader={protectedRouteLoaderWrapper(async () => null)}>
+          <Route index element={<Navigate to={ROUTES.FILES} replace />} />
+          <Route
+            path={ROUTES.CREATE_FILE}
+            loader={Create.loader}
+            action={Create.action}
+            shouldRevalidate={() => false}
+          />
 
-        <Route lazy={() => import('./dashboard/components/DashboardLayoutRoute')}>
-          <Route path={ROUTES.FILES} element={<Navigate to={ROUTES.MY_FILES} replace />} />
-          <Route path={ROUTES.MY_FILES} lazy={() => import('./dashboard/files/MineRoute')} />
-          <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/files/ExamplesRoute')} />
-          <Route path={ROUTES.TEAMS} lazy={() => import('./dashboard/TeamsRoute')} />
-          <Route path={ROUTES.ACCOUNT} lazy={() => import('./dashboard/AccountRoute')} />
+          <Route lazy={() => import('./dashboard/components/DashboardLayoutRoute')}>
+            <Route path={ROUTES.FILES} element={<Navigate to={ROUTES.MY_FILES} replace />} />
+            <Route path={ROUTES.MY_FILES} lazy={() => import('./dashboard/files/MineRoute')} />
+            <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/files/ExamplesRoute')} />
+            <Route path={ROUTES.TEAMS} lazy={() => import('./dashboard/TeamsRoute')} />
+            <Route path={ROUTES.ACCOUNT} lazy={() => import('./dashboard/AccountRoute')} />
+          </Route>
+
+          <Route
+            path="/cloud-migration"
+            element={<CloudFilesMigration.Component />}
+            loader={CloudFilesMigration.loader}
+          />
         </Route>
-
-        <Route
-          path="/cloud-migration"
-          element={<CloudFilesMigration.Component />}
-          loader={CloudFilesMigration.loader}
-        />
 
         <Route
           path="*"
           element={
             <Empty
               title="404: not found"
-              description="What you’re looking for could not be found. Check the URL and try again."
+              description={
+                <>
+                  Check the URL and try again. Or, contact us for help at <a href={SUPPORT_EMAIL}>{SUPPORT_EMAIL}</a>
+                </>
+              }
               Icon={WarningAmber}
               actions={
                 <Button component={Link} to="/" variant="contained" disableElevation>

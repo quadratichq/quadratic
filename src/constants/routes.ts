@@ -2,6 +2,7 @@
 export const ROUTES = {
   LOGOUT: '/logout',
   LOGIN: '/login',
+  LOGIN_WITH_REDIRECT: () => '/login?from=' + encodeURIComponent(window.location.pathname),
   LOGIN_RESULT: '/login-result',
   FILES: '/files',
   MY_FILES: '/files/mine',
@@ -10,4 +11,9 @@ export const ROUTES = {
   TEAMS: '/teams',
   ACCOUNT: '/account',
   FILE: (uuid: string) => `/file/${uuid}`,
+};
+
+export const ROUTE_LOADER_IDS = {
+  ROOT: 'root',
+  FILE: 'file',
 };

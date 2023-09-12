@@ -17,7 +17,10 @@ import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { useRecoilValue } from 'recoil';
+import { isEditorOrAbove } from '../../../actions';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../constants/appConstants';
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
 import { sheetController } from '../../../grid/controller/SheetController';
@@ -51,6 +54,7 @@ interface Props {
 export const FloatingContextMenu = (props: Props) => {
   const { container, showContextMenu } = props;
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [moreMenuProps, moreMenuToggle] = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
@@ -110,6 +114,9 @@ export const FloatingContextMenu = (props: Props) => {
     // Hide if in presentation mode
     if (pixiApp.settings.presentationMode) visibility = 'hidden';
 
+    // Hide if you don't have edit access
+    if (!isEditorOrAbove(editorInteractionState.permission)) visibility = 'hidden';
+
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheetController.sheet.gridOffsets.getCell(
       cursor.multiCursor ? cursor.multiCursor.terminalPosition.x : cursor.cursorPosition.x,
@@ -156,6 +163,7 @@ export const FloatingContextMenu = (props: Props) => {
     cursor.cursorPosition.y,
     cursor.boxCells,
     showContextMenu,
+    editorInteractionState.permission,
   ]);
 
   useEffect(() => {

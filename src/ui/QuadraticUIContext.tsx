@@ -1,14 +1,9 @@
-import { InitialFile } from '../dashboard/FileRoute';
 import QuadraticUI from './QuadraticUI';
-import { FileProvider } from './contexts/FileContext';
+import { FileProvider } from './components/FileProvider';
 
-// TODO we'll add these in a separate PR
-// export const PixiAppContext = createContext<PixiApp>({} as PixiApp);
-// export const SheetControllerContext = createContext<SheetController>({} as SheetController);
-
-export default function QuadraticUIContext({ initialFile }: { initialFile: InitialFile }) {
+export default function QuadraticUIContext() {
   return (
-    <FileProvider initialFile={initialFile}>
+    <FileProvider>
       <QuadraticUI />
     </FileProvider>
   );

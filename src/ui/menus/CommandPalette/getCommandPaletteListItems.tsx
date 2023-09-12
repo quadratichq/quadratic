@@ -1,4 +1,6 @@
 import fuzzysort from 'fuzzysort';
+import { GenericAction } from '../../../actions';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import BordersListItems from './ListItems/Borders';
 import EditListItems from './ListItems/Edit';
@@ -13,17 +15,17 @@ import ViewListItems from './ListItems/View';
 export interface Commands {
   label: string;
   Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
+  isAvailable?: GenericAction['isAvailable'];
 }
 
 export const getCommandPaletteListItems = (props: {
+  permission: EditorInteractionState['permission'];
   closeCommandPalette: Function;
   activeSearchValue: string;
   selectedListItemIndex: number;
   extraItems: Commands[];
   confirmDelete: () => void;
 }): Array<JSX.Element> => {
-  const { activeSearchValue, extraItems, ...rest } = props;
-
   const commands: Array<Commands> = [
     ...FileListItems,
     ...EditListItems,
@@ -33,13 +35,15 @@ export const getCommandPaletteListItems = (props: {
     ...TextListItems,
     ...FormatListItems,
     ...SheetListItems,
-    ...extraItems,
     ...HelpListItems,
   ];
+  const { activeSearchValue, permission, ...rest } = props;
+
+  let filteredCommands = commands.filter((action) => (action.isAvailable ? action.isAvailable(permission) : true));
 
   // If there's no active search query, return everything
   if (!activeSearchValue) {
-    return commands.map(({ label, Component }, i) => (
+    return filteredCommands.map(({ label, Component }, i) => (
       <Component {...rest} key={label} listItemIndex={i} label={label} />
     ));
   }
@@ -48,7 +52,7 @@ export const getCommandPaletteListItems = (props: {
   // component for rendering
   let out: any = [];
   let listItemIndex = 0;
-  commands.forEach(({ label, Component }, i) => {
+  filteredCommands.forEach(({ label, Component }, i) => {
     const result = fuzzysort.single(activeSearchValue, label);
     if (result) {
       out.push(
@@ -57,6 +61,5 @@ export const getCommandPaletteListItems = (props: {
       listItemIndex++;
     }
   });
-
   return out;
 };

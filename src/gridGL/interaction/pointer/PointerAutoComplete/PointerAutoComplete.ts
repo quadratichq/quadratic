@@ -1,5 +1,5 @@
 import { Point, Rectangle } from 'pixi.js';
-import { IS_READONLY_MODE } from '../../../../constants/appConstants';
+import { isMobile } from 'react-device-detect';
 import { sheetController } from '../../../../grid/controller/SheetController';
 import { intersects } from '../../../helpers/intersects';
 import { pixiApp } from '../../../pixiApp/PixiApp';
@@ -22,7 +22,8 @@ export class PointerAutoComplete {
   active = false;
 
   pointerDown(world: Point): boolean {
-    if (IS_READONLY_MODE) return false;
+    if (isMobile) return false;
+
     const cursor = sheetController.sheet.cursor;
 
     if (pixiApp.settings.panMode !== PanMode.Disabled) return false;
@@ -69,7 +70,7 @@ export class PointerAutoComplete {
   }
 
   pointerMove(world: Point): boolean {
-    if (IS_READONLY_MODE) return false;
+    if (isMobile) return false;
     if (pixiApp.settings.panMode !== PanMode.Disabled) return false;
     if (!this.active) {
       if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {

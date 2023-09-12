@@ -10,6 +10,7 @@ import {
   BorderTop,
   BorderVertical,
 } from '@mui/icons-material';
+import { isEditorOrAbove } from '../../../../actions';
 import { ChangeBorder, useBorders } from '../../TopBar/SubMenus/useBorders';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 // import { BorderType } from '../../../../core/gridDB/gridTypes';
@@ -62,6 +63,7 @@ const ListItems = [
   ].map(generateListItem),
   {
     label: 'Borders: Clear all',
+    isAvailable: isEditorOrAbove,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { clearBorders } = useBorders();
       return (
@@ -97,6 +99,7 @@ function generateListItem({
 }) {
   return {
     label,
+    isAvailable: isEditorOrAbove,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { changeBorders } = useBorders();
       return (
