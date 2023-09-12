@@ -66,12 +66,12 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
 
 export function ShareFileMenu({
   onClose,
-  fileUuid,
+  uuid,
   permission,
 }: {
   onClose: () => void;
   permission: Permission;
-  fileUuid: string;
+  uuid: string;
 }) {
   const theme = useTheme();
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -80,9 +80,9 @@ export function ShareFileMenu({
   // On the initial mount, load the data
   useEffect(() => {
     if (fetcher.state === 'idle' && !fetcher.data) {
-      fetcher.load(`/api/files/${fileUuid}/sharing`);
+      fetcher.load(`/api/files/${uuid}/sharing`);
     }
-  }, [fetcher, fileUuid]);
+  }, [fetcher, uuid]);
 
   const showSkeletons = Boolean(!fetcher.data?.ok);
   const animation = fetcher.state !== 'idle' ? 'pulse' : false;
@@ -112,7 +112,7 @@ export function ShareFileMenu({
                   color="inherit"
                   size="small"
                   onClick={() => {
-                    fetcher.load(`/api/files/${fileUuid}/sharing`);
+                    fetcher.load(`/api/files/${uuid}/sharing`);
                   }}
                 >
                   Reload
@@ -134,7 +134,7 @@ export function ShareFileMenu({
               animation={animation}
               publicLinkAccess={publicLinkAccess}
               isOwner={isOwner}
-              fileUuid={fileUuid}
+              uuid={uuid}
             />
           </Row>
           <Row>
@@ -192,13 +192,13 @@ function PublicLink({
   animation,
   publicLinkAccess,
   isOwner,
-  fileUuid,
+  uuid,
 }: {
   showSkeletons: boolean;
   animation: SkeletonProps['animation'];
   publicLinkAccess: PublicLinkAccess | undefined;
   isOwner: boolean;
-  fileUuid: string;
+  uuid: string;
 }) {
   const fetcher = useFetcher();
 
@@ -213,12 +213,12 @@ function PublicLink({
   const setPublicLinkAccess = async (newValue: PublicLinkAccess) => {
     const data: Action['request.update-public-link-access'] = {
       action: 'update-public-link-access',
-      uuid: fileUuid,
+      uuid: uuid,
       public_link_access: newValue,
     };
     fetcher.submit(data, {
       method: 'POST',
-      action: `/api/files/${fileUuid}/sharing`,
+      action: `/api/files/${uuid}/sharing`,
       encType: 'application/json',
     });
   };

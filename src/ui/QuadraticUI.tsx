@@ -86,7 +86,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
             focusGrid();
           }}
           permission={editorInteractionState.permission}
-          fileUuid={uuid}
+          uuid={uuid}
         />
       )}
       {presentationMode && <PresentationModeHint />}

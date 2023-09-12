@@ -162,7 +162,7 @@ export const Component = () => {
             setActiveShareMenuFileId('');
           }}
           permission={'OWNER'}
-          fileUuid={activeShareMenuFileId}
+          uuid={activeShareMenuFileId}
         />
       )}
     </>
