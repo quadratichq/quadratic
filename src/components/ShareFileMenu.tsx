@@ -177,19 +177,29 @@ export function ShareFileMenu({
   );
 }
 
-type ShareOption = {
+const shareOptions: Array<{
   label: string;
   value: PublicLinkAccess;
   disabled?: boolean;
-};
-
-const shareOptions: ShareOption[] = [
+}> = [
   { label: 'Cannot view', value: 'NOT_SHARED' },
   { label: 'Can view', value: 'READONLY' },
   { label: 'Can edit (coming soon)', value: 'EDIT', disabled: true },
 ];
 
-function PublicLink({ showSkeletons, animation, publicLinkAccess, isOwner, fileUuid }: any) {
+function PublicLink({
+  showSkeletons,
+  animation,
+  publicLinkAccess,
+  isOwner,
+  fileUuid,
+}: {
+  showSkeletons: boolean;
+  animation: SkeletonProps['animation'];
+  publicLinkAccess: PublicLinkAccess | undefined;
+  isOwner: boolean;
+  fileUuid: string;
+}) {
   const fetcher = useFetcher();
 
   // If we don’t have the value, assume 'not shared' by default because we need
