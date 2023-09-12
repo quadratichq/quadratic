@@ -34,7 +34,7 @@ interface AuthClient {
   login(redirectTo: string): Promise<void>;
   handleSigninRedirect(): Promise<void>;
   logout(): Promise<void>;
-  getToken(): Promise<string>;
+  getToken(): Promise<string | void>;
 }
 
 export const authClient: AuthClient = {
@@ -78,8 +78,13 @@ export const authClient: AuthClient = {
   },
   async getToken() {
     const client = await getClient();
-    const token = await client.getTokenSilently();
-    return token;
+
+    try {
+      const token = await client.getTokenSilently();
+      return token;
+    } catch (e) {
+      return this.login(new URL(window.location.href).pathname);
+    }
   },
 };
 

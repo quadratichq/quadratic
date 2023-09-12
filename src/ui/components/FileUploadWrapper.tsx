@@ -2,7 +2,7 @@ import debounce from 'lodash.debounce';
 import { DragEvent, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { gridInteractionStateAtom } from '../../atoms/gridInteractionStateAtom';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { InsertCSV } from '../../grid/actions/insertData/insertCSV';
 import { SheetController } from '../../grid/controller/sheetController';
 import { PixiApp } from '../../gridGL/pixiApp/PixiApp';

@@ -1,9 +1,11 @@
 import { Graphics, Rectangle } from 'pixi.js';
-import { colors } from '../../theme/colors';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { isMobile } from 'react-device-detect';
+import { isEditorOrAbove } from '../../actions';
 import { convertColorStringToTint } from '../../helpers/convertColor';
-import { dashedTextures } from '../dashedTextures';
 import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
+import { colors } from '../../theme/colors';
+import { dashedTextures } from '../dashedTextures';
+import { PixiApp } from '../pixiApp/PixiApp';
 
 export const CURSOR_THICKNESS = 2;
 const FILL_ALPHA = 0.1;
@@ -38,6 +40,7 @@ export class Cursor extends Graphics {
   }
 
   private drawCursor(): void {
+    if (isMobile) return;
     const { settings, viewport } = this.app;
     const { gridOffsets } = this.app.sheet;
     const { editorInteractionState } = this.app.settings;
@@ -50,7 +53,9 @@ export class Cursor extends Graphics {
     const editor_selected_cell = editorInteractionState.selectedCell;
 
     // draw cursor but leave room for cursor indicator if needed
-    const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
+    const indicatorSize = isEditorOrAbove(this.app.settings.editorInteractionState.permission)
+      ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
+      : 0;
     this.indicator.width = this.indicator.height = indicatorSize;
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
     const terminalPosition = settings.interactionState.multiCursorPosition.terminalPosition;

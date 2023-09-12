@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { useClearAllFormatting } from '../../../ui/menus/TopBar/SubMenus/useClearAllFormatting';
 import { useFormatCells } from '../../../ui/menus/TopBar/SubMenus/useFormatCells';
@@ -94,6 +94,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     if (
       keyboardClipboard({
         event,
+        editorInteractionState,
         interactionState,
         sheet_controller: props.sheetController,
         app: props.app,

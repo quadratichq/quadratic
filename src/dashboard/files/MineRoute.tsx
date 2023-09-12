@@ -22,7 +22,7 @@ import {
 } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 import { TooltipHint } from '../../ui/components/TooltipHint';
@@ -35,7 +35,10 @@ type ActionData = {
 } | null;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  return apiClient.getFiles().catch(() => null);
+  return apiClient.getFiles().catch((e) => {
+    console.error(e);
+    return null;
+  });
 };
 
 export const Component = () => {
@@ -183,7 +186,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 };
 
 function FileWithActions({ file }: { file: NonNullable<LoaderData>[0] }) {
-  const { uuid, name, updated_date } = file;
+  const { uuid, name, updated_date, public_link_access } = file;
   const theme = useTheme();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
@@ -208,6 +211,7 @@ function FileWithActions({ file }: { file: NonNullable<LoaderData>[0] }) {
       name={name}
       status={failedToDelete && <Chip label="Failed to delete" size="small" color="error" variant="outlined" />}
       description={`Updated ${timeAgo(updated_date)}`}
+      isShared={public_link_access !== 'NOT_SHARED'}
       actions={
         <div style={{ display: 'flex', gap: theme.spacing(1) }}>
           <fetcherDelete.Form method="post">

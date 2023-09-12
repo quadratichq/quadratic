@@ -5,11 +5,12 @@ import { REACT_APP_QUADRATIC_API_URL } from '../constants/env';
 
 export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z.Schema<T>): Promise<T> {
   // Set headers
-  const token = await authClient.getToken();
+  const isAuthenticated = await authClient.isAuthenticated();
   const sharedInit = {
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
+      // Only pass the auth if the user is auth'd
+      ...(isAuthenticated ? { Authorization: `Bearer ${await authClient.getToken()}` } : {}),
     },
   };
 
@@ -31,6 +32,7 @@ export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z
   // Compare the response to the expected schema
   const result = schema.safeParse(json);
   if (!result.success) {
+    console.error(result.error);
     const error = await newHTTPError('Unexpected response schema', response, init.method);
     throw error;
   }
@@ -39,7 +41,7 @@ export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z
 }
 
 async function newHTTPError(reason: string, response: Response, method?: string) {
-  const text = await response?.text().catch(() => null);
+  const text = await response.text().catch(() => `Response .text() cannot be parsed.`);
   const message = `Error fetching ${method} ${response.url} ${response.status}. ${reason}`;
   console.error(`${message}. Response body: ${text}`);
   Sentry.captureException({ message });

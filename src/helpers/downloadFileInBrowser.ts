@@ -1,4 +1,4 @@
-export function downloadFile(filename: string, data: string) {
+export function downloadFileInBrowser(filename: string, data: string) {
   const blob = new Blob([data], { type: 'application/json' });
   //@ts-expect-error
   if (window.navigator.msSaveOrOpenBlob) {

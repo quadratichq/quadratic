@@ -1,18 +1,18 @@
-import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { useBorders, ChangeBorder } from '../../TopBar/SubMenus/useBorders';
 import {
   BorderAll,
+  BorderBottom,
   BorderClear,
-  BorderOuter,
-  BorderInner,
-  BorderVertical,
   BorderHorizontal,
+  BorderInner,
   BorderLeft,
+  BorderOuter,
   BorderRight,
   BorderTop,
-  BorderBottom,
+  BorderVertical,
 } from '@mui/icons-material';
+import { isEditorOrAbove } from '../../../../actions';
+import { ChangeBorder, useBorders } from '../../TopBar/SubMenus/useBorders';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 // import { BorderType } from '../../../../core/gridDB/gridTypes';
 // import { BorderDashed, BorderDouble, BorderDotted, BorderThin, BorderThick, BorderMedium } from '../../../icons';
 
@@ -63,6 +63,7 @@ const ListItems = [
   ].map(generateListItem),
   {
     label: 'Borders: Clear all',
+    isAvailable: isEditorOrAbove,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { clearBorders } = useBorders(props.sheetController.sheet, props.app);
       return (
@@ -98,6 +99,7 @@ function generateListItem({
 }) {
   return {
     label,
+    isAvailable: isEditorOrAbove,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { changeBorders } = useBorders(props.sheetController.sheet, props.app);
       return (

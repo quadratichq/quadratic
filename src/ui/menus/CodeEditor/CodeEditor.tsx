@@ -16,6 +16,7 @@ import monaco from 'monaco-editor';
 import { provideCompletionItems, provideHover } from 'quadratic-core';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { isEditorOrAbove } from '../../../actions';
 import {
   editorHighlightedCellsStateAtom,
   editorHighlightedCellsStateDefault,
@@ -48,7 +49,7 @@ interface CodeEditorProps {
 
 export const CodeEditor = (props: CodeEditorProps) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { pythonLoaded } = useRecoilValue(loadedStateAtom);
+  const { pythonLoadState } = useRecoilValue(loadedStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -59,7 +60,8 @@ export const CodeEditor = (props: CodeEditorProps) => {
 
   const [isRunningComputation, setIsRunningComputation] = useState<boolean>(false);
   const theme = useTheme();
-  const isLoadingPython = !pythonLoaded && editorMode === 'PYTHON';
+  const isLoadingPython = pythonLoadState === 'loading' && editorMode === 'PYTHON';
+  const readOnly = !isEditorOrAbove(editorInteractionState.permission);
 
   // Interaction State hook
   const setInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -271,6 +273,17 @@ export const CodeEditor = (props: CodeEditorProps) => {
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    // Esc
+    if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
+      event.preventDefault();
+      closeEditor();
+    }
+
+    // Don't allow the shortcuts below for certain users
+    if (!isEditorOrAbove(editorInteractionState.permission)) {
+      return;
+    }
+
     // Command + S
     if ((event.metaKey || event.ctrlKey) && event.key === 's') {
       event.preventDefault();
@@ -282,12 +295,6 @@ export const CodeEditor = (props: CodeEditorProps) => {
       event.preventDefault();
       event.stopPropagation();
       saveAndRunCell();
-    }
-
-    // Esc
-    if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
-      event.preventDefault();
-      closeEditor();
     }
   };
 
@@ -384,19 +391,21 @@ export const CodeEditor = (props: CodeEditorProps) => {
               <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
             </div>
           )}
-          <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
-            <span>
-              <IconButton
-                id="QuadraticCodeEditorRunButtonID"
-                size="small"
-                color="primary"
-                onClick={saveAndRunCell}
-                disabled={isRunningComputation || isLoadingPython}
-              >
-                <PlayArrow />
-              </IconButton>
-            </span>
-          </TooltipHint>
+          {!readOnly && (
+            <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
+              <span>
+                <IconButton
+                  id="QuadraticCodeEditorRunButtonID"
+                  size="small"
+                  color="primary"
+                  onClick={saveAndRunCell}
+                  disabled={isRunningComputation || isLoadingPython}
+                >
+                  <PlayArrow />
+                </IconButton>
+              </span>
+            </TooltipHint>
+          )}
           <TooltipHint title="Close" shortcut="ESC">
             <IconButton
               id="QuadraticCodeEditorCloseButtonID"
@@ -427,6 +436,7 @@ export const CodeEditor = (props: CodeEditorProps) => {
           onChange={setEditorContent}
           onMount={handleEditorDidMount}
           options={{
+            readOnly,
             minimap: { enabled: true },
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,

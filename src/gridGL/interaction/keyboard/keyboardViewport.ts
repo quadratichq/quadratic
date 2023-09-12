@@ -1,11 +1,12 @@
 import { Viewport } from 'pixi-viewport';
-import { MultipleFormat } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
+import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { Pointer } from '../pointer/Pointer';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { MultipleFormat } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';
+import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { PixiApp } from '../../pixiApp/PixiApp';
+import { Pointer } from '../pointer/Pointer';
 
 export function keyboardViewport(options: {
   app: PixiApp;
@@ -47,13 +48,9 @@ export function keyboardViewport(options: {
       showFeedbackMenu: false,
       showCellTypeMenu: false,
       showGoToMenu: false,
+      showShareFileMenu: false,
       showCommandPalette: !editorInteractionState.showCommandPalette,
     });
-    return true;
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
-    clearAllFormatting();
     return true;
   }
 
@@ -68,16 +65,6 @@ export function keyboardViewport(options: {
       return true;
     }
     return app.pointer.handleEscape();
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    changeBold(!(format.bold === true));
-    return true;
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    changeItalic(!(format.italic === true));
-    return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && (event.key === 'g' || event.key === 'j')) {
@@ -118,6 +105,26 @@ export function keyboardViewport(options: {
 
   if ((event.metaKey || event.ctrlKey) && event.key === 's') {
     // don't do anything on Command+S
+    return true;
+  }
+
+  // All formatting options past here are only available for people with rights
+  if (!isEditorOrAbove(editorInteractionState.permission)) {
+    return false;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
+    clearAllFormatting();
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
+    changeBold(!(format.bold === true));
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
+    changeItalic(!(format.italic === true));
     return true;
   }
 

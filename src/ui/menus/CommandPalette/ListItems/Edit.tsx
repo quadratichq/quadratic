@@ -1,7 +1,8 @@
 import { ContentCopy, ContentCut, ContentPaste, East, Redo, Undo } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
+import { copy, cut, paste, redo, undo } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../../constants/appConstants';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
@@ -12,7 +13,8 @@ import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../Co
 
 const ListItems = [
   {
-    label: 'Undo',
+    label: undo.label,
+    isAvailable: undo.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
@@ -28,7 +30,8 @@ const ListItems = [
     },
   },
   {
-    label: 'Redo',
+    label: redo.label,
+    isAvailable: redo.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
@@ -44,7 +47,8 @@ const ListItems = [
     },
   },
   {
-    label: 'Cut',
+    label: cut.label,
+    isAvailable: cut.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
@@ -70,7 +74,7 @@ const ListItems = [
     },
   },
   {
-    label: 'Copy',
+    label: copy.label,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
@@ -90,7 +94,8 @@ const ListItems = [
     },
   },
   {
-    label: 'Paste',
+    label: paste.label,
+    isAvailable: paste.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
