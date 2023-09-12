@@ -25,6 +25,9 @@ export function FileListItemInput({ setValue, value }: Props) {
         bottom: '1px',
         display: 'flex',
         alignItems: 'center',
+        [theme.breakpoints.down('md')]: {
+          left: theme.spacing(5),
+        },
       }}
     >
       <InputBase
