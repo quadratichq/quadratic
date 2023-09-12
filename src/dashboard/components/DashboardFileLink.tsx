@@ -62,7 +62,7 @@ export function DashboardFileLink({ disabled, name, description, descriptionErro
             </Typography>
             <Stack direction="row" gap={theme.spacing(1)}>
               <Typography variant="caption" color="text.secondary">
-                {description}
+                {isShared && 'Public · '} {description}
               </Typography>
               {descriptionError && (
                 <Typography variant="caption" color="error">
