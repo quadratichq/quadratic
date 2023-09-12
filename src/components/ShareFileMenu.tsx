@@ -54,7 +54,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   if (action === 'update-public-link-access') {
     const { public_link_access } = json as Action['request.update-public-link-access'];
     try {
-      await new Promise((resolve, reject) => setTimeout(reject, 2000));
+      // await new Promise((resolve, reject) => setTimeout(reject, 2000));
       await apiClient.updateFileSharing(uuid, { public_link_access });
       return { ok: true };
     } catch (e) {
