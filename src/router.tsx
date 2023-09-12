@@ -104,7 +104,6 @@ export const router = createBrowserRouter(
           />
 
           <Route path="/api/files/:uuid/sharing" action={shareFileMenuAction} loader={shareFileMenuLoader} />
-          <Route path="/api/reset-fetcher" action={() => null} />
         </Route>
 
         <Route
