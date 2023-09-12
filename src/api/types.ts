@@ -1,5 +1,4 @@
 import z from 'zod';
-import { GridFileSchema } from '../schemas';
 
 // TODO share these with the API
 
@@ -55,7 +54,7 @@ export const ApiSchemas = {
   '/v0/files/:uuid.POST.request': z.object({
     // You can post any of these, but if you post `contents` you have to also send `version`
     contents: z.string().optional(),
-    version: GridFileSchema.shape.version.optional(),
+    version: z.string().optional(), // GridFileSchema.shape.version.optional(), -- version # is pulled from rust
     name: z.string().optional(),
   }),
   '/v0/files/:uuid.POST.response': z.object({
