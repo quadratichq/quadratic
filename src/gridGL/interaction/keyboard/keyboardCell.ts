@@ -1,4 +1,5 @@
 import { Rectangle } from 'pixi.js';
+import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheetController } from '../../../grid/controller/SheetController';
 import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
@@ -28,6 +29,11 @@ export function keyboardCell(options: {
       },
     });
     event.preventDefault();
+  }
+
+  // Don't allow actions beyond here for certain users
+  if (!isEditorOrAbove(editorInteractionState.permission)) {
+    return false;
   }
 
   if (event.key === 'Backspace' || event.key === 'Delete') {
@@ -104,7 +110,7 @@ export function keyboardCell(options: {
   }
 
   if (isAllowedFirstChar(event.key)) {
-    pixiAppEvents.changeInput(true, { type: 'text', value: event.key });
+    pixiAppEvents.changeInput(true, event.key);
     event.preventDefault();
   }
 

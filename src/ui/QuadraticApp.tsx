@@ -1,34 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSetRecoilState } from 'recoil';
+import { isMobile } from 'react-device-detect';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { isEditorOrAbove } from '../actions';
+import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { loadedStateAtom } from '../atoms/loadedStateAtom';
-import { InitialFile } from '../dashboard/FileRoute';
 import { loadAssets } from '../gridGL/loadAssets';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { webWorkers } from '../web-workers/webWorkers';
 import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
-export default function QuadraticApp({ initialFile }: { initialFile: InitialFile }) {
+export default function QuadraticApp() {
   const [loading, setLoading] = useState(true);
+  const { permission } = useRecoilValue(editorInteractionStateAtom);
   const setLoadedState = useSetRecoilState(loadedStateAtom);
   const didMount = useRef<boolean>(false);
 
   // recoil tracks whether python is loaded
   useEffect(() => {
     const loaded = () =>
-      setLoadedState((loaded) => {
-        return {
-          ...loaded,
-          pythonLoaded: true,
-        };
-      });
+      setLoadedState((prevState) => ({
+        ...prevState,
+        pythonLoadState: 'loaded',
+      }));
     const error = () =>
-      setLoadedState((loaded) => {
-        return {
-          ...loaded,
-          pythonLoaded: 'error',
-        };
-      });
+      setLoadedState((prevState) => ({
+        ...prevState,
+        pythonLoadState: 'error',
+      }));
     window.addEventListener('python-loaded', loaded);
     window.addEventListener('python-error', error);
     return () => {
@@ -43,18 +42,21 @@ export default function QuadraticApp({ initialFile }: { initialFile: InitialFile
     if (didMount.current) return;
     didMount.current = true;
 
-    // populate web workers
-    webWorkers.init();
+    // Load python and populate web workers (if supported)
+    if (!isMobile && isEditorOrAbove(permission)) {
+      setLoadedState((prevState) => ({ ...prevState, pythonLoadState: 'loading' }));
+      webWorkers.init();
+    }
 
     loadAssets().then(() => {
       setLoading(false);
       pixiApp.init();
     });
-  }, []);
+  }, [permission, setLoadedState]);
 
   if (loading) {
     return <QuadraticLoading />;
   }
 
-  return <QuadraticUIContext initialFile={initialFile} />;
+  return <QuadraticUIContext />;
 }

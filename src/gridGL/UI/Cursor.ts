@@ -1,4 +1,5 @@
 import { Graphics, Rectangle } from 'pixi.js';
+import { isEditorOrAbove } from '../../actions';
 import { sheetController } from '../../grid/controller/SheetController';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
@@ -49,7 +50,9 @@ export class Cursor extends Graphics {
     const editor_selected_cell = editorInteractionState.selectedCell;
 
     // draw cursor but leave room for cursor indicator if needed
-    const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
+    const indicatorSize = isEditorOrAbove(pixiApp.settings.editorInteractionState.permission)
+      ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
+      : 0;
     this.indicator.width = this.indicator.height = indicatorSize;
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
     const cursorPosition = cursor.cursorPosition;

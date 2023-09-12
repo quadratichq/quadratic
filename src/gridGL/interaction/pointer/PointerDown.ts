@@ -1,5 +1,5 @@
 import { Point } from 'pixi.js';
-import { IS_READONLY_MODE } from '../../../constants/appConstants';
+import { isMobile } from 'react-device-detect';
 import { sheetController } from '../../../grid/controller/SheetController';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { PanMode } from '../../pixiApp/PixiAppSettings';
@@ -21,9 +21,7 @@ export class PointerDown {
   private afterShowInput?: boolean;
 
   pointerDown(world: Point, event: PointerEvent): void {
-    if (IS_READONLY_MODE) return;
-    if (pixiApp.settings.panMode !== PanMode.Disabled) return;
-
+    if (isMobile || pixiApp.settings.panMode !== PanMode.Disabled) return;
     const cursor = sheetController.sheet.cursor;
 
     // note: directly call pixiApp.settings instead of locally defining it here; otherwise it dereferences this

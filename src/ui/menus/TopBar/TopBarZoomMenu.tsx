@@ -1,16 +1,15 @@
-import { Button } from '@mui/material';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { colors } from '../../../theme/colors';
-import { focusGrid } from '../../../helpers/focusGrid';
+import { Typography } from '@mui/material';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-import { MenuLineItem } from './MenuLineItem';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { useCallback, useState } from 'react';
-import useEventListener from '../../../hooks/useEventListener';
 import mixpanel from 'mixpanel-browser';
-import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
+import { useCallback, useState } from 'react';
+import { zoomInOut, zoomToFit, zoomToSelection } from '../../../gridGL/helpers/zoom';
+import { focusGrid } from '../../../helpers/focusGrid';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+import useEventListener from '../../../hooks/useEventListener';
+import { MenuLineItem } from './MenuLineItem';
+import { TopBarMenuItem } from './TopBarMenuItem';
 
-export const ZoomDropdown = () => {
+export const TopBarZoomMenu = () => {
   const [zoom, setZoom] = useState(1);
   const handleZoom = useCallback(
     (event: CustomEvent<number>) => {
@@ -21,17 +20,19 @@ export const ZoomDropdown = () => {
   useEventListener('zoom-event', handleZoom);
 
   const setZoomState = useCallback((value: number) => {
-    pixiAppEvents.setZoomState(value);
+    zoomInOut(value);
     focusGrid();
   }, []);
 
   return (
     <Menu
-      menuButton={
-        <Button style={{ color: colors.darkGray, width: '4rem' }}>
-          {zoom === Infinity ? 100 : Math.round(zoom * 100)}%<KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
-        </Button>
-      }
+      menuButton={({ open }) => (
+        <TopBarMenuItem title="Zoom options" style={{ width: '4.5rem' }} open={open}>
+          <Typography variant="subtitle2" color="inherit">
+            {zoom === Infinity ? 100 : Math.round(zoom * 100)}%
+          </Typography>
+        </TopBarMenuItem>
+      )}
     >
       <MenuItem
         onClick={() => {
@@ -53,7 +54,7 @@ export const ZoomDropdown = () => {
       <MenuItem
         onClick={() => {
           mixpanel.track('[ZoomDropdown].zoomToSelection');
-          pixiAppEvents.setZoomTo('selection');
+          zoomToSelection();
         }}
       >
         <MenuLineItem primary="Zoom to selection" secondary={KeyboardSymbols.Command + '8'} />
@@ -61,7 +62,7 @@ export const ZoomDropdown = () => {
       <MenuItem
         onClick={() => {
           mixpanel.track('[ZoomDropdown].zoomToFit');
-          pixiAppEvents.setZoomTo('fit');
+          zoomToFit();
         }}
       >
         <MenuLineItem primary="Zoom to fit" secondary={KeyboardSymbols.Command + '9'} />
@@ -72,7 +73,7 @@ export const ZoomDropdown = () => {
           setZoomState(0.5);
         }}
       >
-        Zoom to 50%
+        <MenuLineItem primary="Zoom to 50%" />
       </MenuItem>
       <MenuItem
         onClick={() => {
@@ -88,7 +89,7 @@ export const ZoomDropdown = () => {
           setZoomState(2);
         }}
       >
-        Zoom to 200%
+        <MenuLineItem primary="Zoom to 200%" />
       </MenuItem>
     </Menu>
   );

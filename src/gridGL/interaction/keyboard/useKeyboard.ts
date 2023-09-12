@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { useGridSettings } from '../../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { Size } from '../../types/size';
@@ -51,6 +51,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     if (
       keyboardClipboard({
         event,
+        editorInteractionState,
         addGlobalSnackbar,
       }) ||
       keyboardUndoRedo(event) ||

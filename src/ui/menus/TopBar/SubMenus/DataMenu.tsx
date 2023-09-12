@@ -5,14 +5,12 @@ import {
   StorageOutlined,
   UploadFile,
 } from '@mui/icons-material';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import { Tooltip } from '@mui/material';
-import Button from '@mui/material/Button';
 import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
-import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
 import { MenuLineItem } from '../MenuLineItem';
+import { TopBarMenuItem } from '../TopBarMenuItem';
 
 export const DataMenu = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -20,14 +18,11 @@ export const DataMenu = () => {
   return (
     <>
       <Menu
-        menuButton={
-          <Tooltip title="Data import" arrow disableInteractive enterDelay={500} enterNextDelay={500}>
-            <Button style={{ color: 'inherit' }}>
-              <DataObjectOutlined fontSize="small"></DataObjectOutlined>
-              <KeyboardArrowDown fontSize="small"></KeyboardArrowDown>
-            </Button>
-          </Tooltip>
-        }
+        menuButton={({ open }) => (
+          <TopBarMenuItem title="Data import" open={open}>
+            <DataObjectOutlined fontSize="small" />
+          </TopBarMenuItem>
+        )}
       >
         <MenuHeader>Import</MenuHeader>
         <MenuItem

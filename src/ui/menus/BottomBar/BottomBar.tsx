@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { ChatBubbleOutline, Commit } from '@mui/icons-material';
-import { Stack, useTheme } from '@mui/material';
+import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { isMobileOnly } from 'react-device-detect';
 import { useRecoilState } from 'recoil';
+import { provideFeedback } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
 import { sheetController } from '../../../grid/controller/SheetController';
@@ -16,12 +16,14 @@ import SyncState from './SyncState';
 export const BottomBar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const theme = useTheme();
+  const { permission } = editorInteractionState;
 
   const [cursorPositionString, setCursorPositionString] = useState('');
   const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
+  const cursor = sheetController.sheet.cursor;
+
   useEffect(() => {
     const updateCursor = () => {
-      const cursor = sheetController.sheet.cursor;
       setCursorPositionString(`(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`);
       if (cursor.multiCursor) {
         setMultiCursorPositionString(
@@ -46,7 +48,7 @@ export const BottomBar = () => {
     focusGrid();
   };
 
-  const showOnDesktop = !isMobileOnly;
+  const showOnDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
   return (
     <div
@@ -63,25 +65,20 @@ export const BottomBar = () => {
         backdropFilter: 'blur(1px)',
         display: 'flex',
         justifyContent: 'space-between',
-        paddingLeft: theme.spacing(1),
-        paddingRight: theme.spacing(1),
         userSelect: 'none',
       }}
     >
       <Stack direction="row">
-        {showOnDesktop && (
-          <>
-            <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>
-            {multiCursorPositionString && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
+        {showOnDesktop && <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>}
+        {showOnDesktop && cursor.multiCursor && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
 
-            {/* {selectedCell?.last_modified && (
-              <BottomBarItem>
-                You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}
-              </BottomBarItem>
-            )} */}
-          </>
-        )}
-        {(debugShowFPS || true) && (
+        {/* {showOnDesktop && selectedCell?.last_modified && (
+          <BottomBarItem>
+            You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}
+          </BottomBarItem>
+        )} */}
+
+        {debugShowFPS && (
           <BottomBarItem>
             <div
               className="debug-show-renderer"
@@ -120,14 +117,16 @@ export const BottomBar = () => {
         <SyncState />
 
         {showOnDesktop && <PythonState />}
-        <BottomBarItem
-          icon={<ChatBubbleOutline fontSize="inherit" />}
-          onClick={() => {
-            setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
-          }}
-        >
-          Feedback
-        </BottomBarItem>
+        {provideFeedback.isAvailable(permission) && (
+          <BottomBarItem
+            icon={<ChatBubbleOutline fontSize="inherit" />}
+            onClick={() => {
+              setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
+            }}
+          >
+            {provideFeedback.label}
+          </BottomBarItem>
+        )}
         <BottomBarItem icon={<Commit fontSize="inherit" />}>
           Quadratic {process.env.REACT_APP_VERSION?.slice(0, 7)} (BETA)
         </BottomBarItem>

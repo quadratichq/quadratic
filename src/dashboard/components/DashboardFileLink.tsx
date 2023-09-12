@@ -2,6 +2,7 @@ import { InsertDriveFileOutlined } from '@mui/icons-material';
 import { Box, Divider, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { ShareFileOutlined } from '../../ui/icons';
 
 export function DashboardFileLink({
   name,
@@ -9,10 +10,12 @@ export function DashboardFileLink({
   actions,
   status,
   to,
+  isShared,
 }: {
   name: string;
   description: string;
   to: string;
+  isShared?: boolean;
   actions?: ReactNode;
   status?: ReactNode;
 }) {
@@ -46,9 +49,7 @@ export function DashboardFileLink({
             },
           }}
         >
-          <div className="FileListItem-icon">
-            <InsertDriveFileOutlined />
-          </div>
+          <div className="FileListItem-icon">{isShared ? <ShareFileOutlined /> : <InsertDriveFileOutlined />}</div>
           <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto' }}>
             <div style={{ display: 'flex', gap: theme.spacing() }}>
               <Typography variant="body1" color="text.primary">
