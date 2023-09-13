@@ -60,13 +60,22 @@ export function DashboardFileLink({ disabled, name, description, descriptionErro
             <Typography variant="body1" color="text.primary" noWrap>
               {name}
             </Typography>
-            <Stack direction="row" gap={theme.spacing(1)}>
+            <Stack
+              direction="row"
+              gap={theme.spacing(0.5)}
+              sx={{ '& > *:not(:last-child):after': { content: '"·"', marginLeft: theme.spacing(0.5) } }}
+            >
+              {isShared && (
+                <Typography variant="caption" color="text.secondary">
+                  Public
+                </Typography>
+              )}
               <Typography variant="caption" color="text.secondary">
-                {isShared && 'Public · '} {description}
+                {description}
               </Typography>
               {descriptionError && (
                 <Typography variant="caption" color="error">
-                  {descriptionError}
+                  Test {descriptionError}
                 </Typography>
               )}
             </Stack>
