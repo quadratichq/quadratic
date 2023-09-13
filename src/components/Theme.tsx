@@ -66,7 +66,6 @@ export function Theme(props: any) {
             styleOverrides: {
               container: {
                 alignItems: 'flex-start',
-                // paddingTop: '48px',
               },
             },
           },
