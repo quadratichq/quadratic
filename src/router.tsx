@@ -133,8 +133,12 @@ export const router = createBrowserRouter(
           const redirectTo = url.searchParams.get('from') || '/';
           const isSignupFlow = url.searchParams.get('signup') !== null;
           await authClient.login(redirectTo, isSignupFlow);
+
           // auth0 will re-route us (above) but telling react-router where we
           // are re-routing to makes sure that this doesn't end up in the history stack
+          // but we have to add an artifical delay that's long enough for
+          // the auth0 navigation to take place
+          await new Promise((resolve) => setTimeout(resolve, 10000));
           return redirect(redirectTo);
         }}
       />
