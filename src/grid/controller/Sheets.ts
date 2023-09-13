@@ -239,7 +239,7 @@ class Sheets {
     this.sort();
   }
 
-  cursorSave(): string {
+  getCursorPosition(): string {
     return JSON.stringify(this.sheet.cursor.save());
   }
 }

@@ -112,37 +112,37 @@ export class Grid {
   }
 
   addSheet(): void {
-    const summary = this.gridController.addSheet(sheets.cursorSave());
+    const summary = this.gridController.addSheet(sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
 
   deleteSheet(sheetId: string): void {
-    const summary = this.gridController.deleteSheet(sheetId, sheets.cursorSave());
+    const summary = this.gridController.deleteSheet(sheetId, sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
 
   setSheetName(sheetId: string, name: string): void {
-    const summary = this.gridController.setSheetName(sheetId, name, sheets.cursorSave());
+    const summary = this.gridController.setSheetName(sheetId, name, sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
 
   setSheetColor(sheetId: string, color: string | undefined): void {
-    const summary = this.gridController.setSheetColor(sheetId, color, sheets.cursorSave());
+    const summary = this.gridController.setSheetColor(sheetId, color, sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
 
   duplicateSheet(sheetId: string): void {
-    const summary = this.gridController.duplicateSheet(sheetId, sheets.cursorSave());
+    const summary = this.gridController.duplicateSheet(sheetId, sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
 
   moveSheet(sheetId: string, leftSheetId: string | undefined): void {
-    const summary = this.gridController.moveSheet(sheetId, leftSheetId, sheets.cursorSave());
+    const summary = this.gridController.moveSheet(sheetId, leftSheetId, sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
@@ -157,7 +157,7 @@ export class Grid {
       options.sheetId,
       new Pos(options.x, options.y),
       options.value,
-      sheets.cursorSave()
+      sheets.getCursorPosition()
     );
     transactionResponse(summary);
     this.dirty = true;
@@ -172,19 +172,33 @@ export class Grid {
   }
 
   deleteCellValues(sheetId: string, rectangle: Rectangle): void {
-    const summary = this.gridController.deleteCellValues(sheetId, rectangleToRect(rectangle), sheets.cursorSave());
+    const summary = this.gridController.deleteCellValues(
+      sheetId,
+      rectangleToRect(rectangle),
+      sheets.getCursorPosition()
+    );
     transactionResponse(summary);
     this.dirty = true;
   }
 
   setCellAlign(sheetId: string, rectangle: Rectangle, align: CellAlign | undefined): void {
-    const summary = this.gridController.setCellAlign(sheetId, rectangleToRect(rectangle), align, sheets.cursorSave());
+    const summary = this.gridController.setCellAlign(
+      sheetId,
+      rectangleToRect(rectangle),
+      align,
+      sheets.getCursorPosition()
+    );
     transactionResponse(summary);
     this.dirty = true;
   }
 
   setCellWrap(sheetId: string, rectangle: Rectangle, wrap: CellWrap): void {
-    const summary = this.gridController.setCellWrap(sheetId, rectangleToRect(rectangle), wrap, sheets.cursorSave());
+    const summary = this.gridController.setCellWrap(
+      sheetId,
+      rectangleToRect(rectangle),
+      wrap,
+      sheets.getCursorPosition()
+    );
     transactionResponse(summary);
     this.dirty = true;
   }
@@ -194,14 +208,18 @@ export class Grid {
       sheetId,
       rectangleToRect(rectangle),
       symbol,
-      sheets.cursorSave()
+      sheets.getCursorPosition()
     );
     transactionResponse(summary);
     this.dirty = true;
   }
 
   setCellPercentage(sheetId: string, rectangle: Rectangle): void {
-    const summary = this.gridController.setCellPercentage(sheetId, rectangleToRect(rectangle), sheets.cursorSave());
+    const summary = this.gridController.setCellPercentage(
+      sheetId,
+      rectangleToRect(rectangle),
+      sheets.getCursorPosition()
+    );
     transactionResponse(summary);
     this.dirty = true;
   }
@@ -210,20 +228,30 @@ export class Grid {
     const summary = this.gridController.removeCellNumericFormat(
       sheetId,
       rectangleToRect(rectangle),
-      sheets.cursorSave()
+      sheets.getCursorPosition()
     );
     transactionResponse(summary);
     this.dirty = true;
   }
 
   setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean): void {
-    const summary = this.gridController.setCellBold(sheetId, rectangleToRect(rectangle), bold, sheets.cursorSave());
+    const summary = this.gridController.setCellBold(
+      sheetId,
+      rectangleToRect(rectangle),
+      bold,
+      sheets.getCursorPosition()
+    );
     transactionResponse(summary);
     this.dirty = true;
   }
 
   setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean): void {
-    const summary = this.gridController.setCellItalic(sheetId, rectangleToRect(rectangle), italic, sheets.cursorSave());
+    const summary = this.gridController.setCellItalic(
+      sheetId,
+      rectangleToRect(rectangle),
+      italic,
+      sheets.getCursorPosition()
+    );
     transactionResponse(summary);
     this.dirty = true;
   }
@@ -233,7 +261,7 @@ export class Grid {
       sheetId,
       rectangleToRect(rectangle),
       textColor,
-      sheets.cursorSave()
+      sheets.getCursorPosition()
     );
     transactionResponse(summary);
     this.dirty = true;
@@ -244,7 +272,7 @@ export class Grid {
       sheetId,
       rectangleToRect(rectangle),
       fillColor,
-      sheets.cursorSave()
+      sheets.getCursorPosition()
     );
     transactionResponse(summary);
     this.dirty = true;
@@ -257,7 +285,7 @@ export class Grid {
       source,
       rectangleToRect(rectangle),
       delta,
-      sheets.cursorSave()
+      sheets.getCursorPosition()
     );
     transactionResponse(summary);
     this.dirty = true;
@@ -327,13 +355,13 @@ export class Grid {
   }
 
   undo(): void {
-    const summary = this.gridController.undo(sheets.cursorSave());
+    const summary = this.gridController.undo(sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
 
   redo(): void {
-    const summary = this.gridController.redo(sheets.cursorSave());
+    const summary = this.gridController.redo(sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
