@@ -37,18 +37,6 @@ impl GridController {
         None
     }
 
-    fn unpack_percentage(s: &String) -> Option<BigDecimal> {
-        if s.is_empty() {
-            return None;
-        }
-        if let Some(number) = s.strip_suffix('%') {
-            if let Ok(bd) = BigDecimal::from_str(number) {
-                return Some(bd / 100.0);
-            }
-        }
-        None
-    }
-
     /// sets the value based on a user's input and converts input to proper NumericFormat
     pub fn set_cell_value(
         &mut self,
@@ -88,7 +76,7 @@ impl GridController {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(bd)),
             });
-        } else if let Some(percent) = Self::unpack_percentage(&value) {
+        } else if let Some(percent) = CellValue::unpack_percentage(&value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(percent)),
@@ -246,14 +234,5 @@ mod test {
 
         let value = String::from("$123.123abc");
         assert_eq!(GridController::unpack_currency(&value), None);
-    }
-
-    #[test]
-    fn test_unpack_percentage() {
-        let value = String::from("1238.12232%");
-        assert_eq!(
-            GridController::unpack_percentage(&value),
-            Some(BigDecimal::from_str(&"12.3812232").unwrap()),
-        );
     }
 }

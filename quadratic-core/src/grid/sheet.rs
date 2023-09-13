@@ -654,40 +654,27 @@ impl Sheet {
 
     /// get or calculate decimal places for a cell
     pub fn decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
-        // first check if numeric_format already exists for this cell
-        let decimals = if let Some(numeric_decimals) = if let Some(column) = self.get_column(pos.x)
-        {
-            column.numeric_decimals.get(pos.y)
-        } else {
-            None
-        } {
-            Some(numeric_decimals)
-        } else {
-            None
-        };
-        if decimals.is_some() {
-            return decimals;
+        // first check if numeric_decimals already exists for this cell
+        if let Some(decimals) = self.get_column(pos.x)?.numeric_decimals.get(pos.y) {
+            return Some(decimals);
         }
 
         // otherwise check value to see if it has a decimal and use that length
-        let value = self.get_cell_value(pos);
-        if value.is_some() {
-            match value.unwrap() {
+        if let Some(value) = self.get_cell_value(pos) {
+            match value {
                 CellValue::Number(n) => {
-                    let s = n.to_string();
-                    let split: Vec<&str> = s.split('.').collect();
-                    if split.len() == 2 {
-                        if is_percentage {
-                            return Some((split[1].len() - 2).max(0) as i16);
-                        } else {
-                            return Some(split[1].len() as i16);
-                        }
+                    let (_, exponent) = n.as_bigint_and_exponent();
+                    if is_percentage {
+                        Some(exponent as i16 - 2)
+                    } else {
+                        Some(exponent as i16)
                     }
                 }
-                _ => (),
+                _ => None,
             }
-        };
-        None
+        } else {
+            None
+        }
     }
 }
 

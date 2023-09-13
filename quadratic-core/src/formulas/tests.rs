@@ -1,5 +1,4 @@
 use std::fmt;
-use std::str::FromStr;
 
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
@@ -215,7 +214,7 @@ fn test_formula_array_op() {
 
 #[test]
 fn test_array_parsing() {
-    let f = |x: i32| CellValue::Number(BigDecimal::from_str(&x.to_string()).unwrap());
+    let f = |x: i32| CellValue::Number(BigDecimal::from(&x));
     assert_eq!(
         Value::from(array![
             f(11), f(12);

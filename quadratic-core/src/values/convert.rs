@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use bigdecimal::{BigDecimal, ToPrimitive};
+use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 
 use super::{CellValue, IsBlank, Value};
 use crate::{CodeResult, CodeResultExt, ErrorMsg, Span, Spanned, Unspan};
@@ -151,7 +151,7 @@ impl<'a> TryFrom<&'a CellValue> for bool {
             CellValue::Blank => Ok(false),
             CellValue::Text(s) if s.eq_ignore_ascii_case("TRUE") => Ok(true),
             CellValue::Text(s) if s.eq_ignore_ascii_case("FALSE") => Ok(false),
-            CellValue::Number(n) => Ok(n.ne(&BigDecimal::from_str(&"0.0").unwrap())),
+            CellValue::Number(n) => Ok(!n.is_zero()),
             CellValue::Logical(b) => Ok(*b),
             _ => Err(ErrorMsg::Expected {
                 expected: "boolean".into(),

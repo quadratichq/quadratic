@@ -26,7 +26,7 @@ fn main() {
         grid::CellBorderStyle,
         grid::CellBorder,
         grid::GridBounds,
-        // grid::CodeCellLanguage,
+        grid::CodeCellLanguage,
         // grid::CodeCellValue,
         // grid::CodeCellRunOutput,
         // grid::CodeCellRunResult,

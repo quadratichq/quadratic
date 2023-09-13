@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 use bigdecimal::{BigDecimal, Zero};
 use serde::{Deserialize, Serialize};
@@ -93,7 +93,7 @@ impl CellValue {
             CellValue::Text(s) => s.to_string(),
             CellValue::Number(n) => {
                 let result: BigDecimal;
-                let is_percentage = numeric_format.clone().is_some_and(|numeric_format| {
+                let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
                     numeric_format.kind == NumericFormatKind::Percentage
                 });
                 if is_percentage {
@@ -158,6 +158,18 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => format!("[error]"),
         }
+    }
+
+    pub fn unpack_percentage(s: &String) -> Option<BigDecimal> {
+        if s.is_empty() {
+            return None;
+        }
+        if let Some(number) = s.strip_suffix('%') {
+            if let Ok(bd) = BigDecimal::from_str(number) {
+                return Some(bd / 100.0);
+            }
+        }
+        None
     }
 
     pub fn is_blank_or_empty_string(&self) -> bool {
@@ -271,16 +283,6 @@ impl CellValue {
             std::cmp::Ordering::Greater | std::cmp::Ordering::Equal,
         ))
     }
-
-    // / Replaces NaN and Inf with an error; otherwise returns the value
-    // / unchanged.
-    // pub fn purify_float(self, span: Span) -> CodeResult<Self> {
-    //     match self {
-    //         CellValue::Number(n) if n.is_nan() => Err(ErrorMsg::NotANumber.with_span(span)),
-    //         CellValue::Number(n) if n.is_infinite() => Err(ErrorMsg::Infinity.with_span(span)),
-    //         other_single_value => Ok(other_single_value),
-    //     }
-    // }
 }
 
 #[cfg(test)]
@@ -363,6 +365,15 @@ mod test {
                 Some(4),
             ),
             String::from("99.1224%")
+        );
+    }
+
+    #[test]
+    fn test_unpack_percentage() {
+        let value = String::from("1238.12232%");
+        assert_eq!(
+            CellValue::unpack_percentage(&value),
+            Some(BigDecimal::from_str(&"12.3812232").unwrap()),
         );
     }
 }

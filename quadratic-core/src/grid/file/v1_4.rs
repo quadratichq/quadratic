@@ -162,20 +162,14 @@ pub enum Any {
 impl Into<CellValue> for Any {
     fn into(self) -> CellValue {
         match self {
-            Any::Number(n) => {
-                if let Some(number) = BigDecimal::from_f64(n) {
-                    CellValue::Number(number)
-                } else {
-                    CellValue::Text(n.to_string())
-                }
-            }
-            Any::String(s) => {
-                if let Ok(number) = BigDecimal::from_str(&s) {
-                    CellValue::Number(number)
-                } else {
-                    CellValue::Text(s)
-                }
-            }
+            Any::Number(n) => match BigDecimal::from_f64(n) {
+                Some(n) => CellValue::Number(n),
+                None => CellValue::Text(n.to_string()),
+            },
+            Any::String(s) => match BigDecimal::from_str(&s) {
+                Ok(n) => CellValue::Number(n),
+                Err(_) => CellValue::Text(s),
+            },
             Any::Boolean(b) => CellValue::Logical(b),
         }
     }

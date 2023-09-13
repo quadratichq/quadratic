@@ -24,7 +24,6 @@ macro_rules! array {
 /// 2D array of values in the formula language. The array may be a single value
 /// (1x1) but must not be degenerate (zero width or zero height).
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Array {
     /// Width and height.
     size: ArraySize,
@@ -84,10 +83,9 @@ impl Array {
     pub fn from_random_floats(size: ArraySize) -> Self {
         let mut rng = rand::thread_rng();
         let values = std::iter::from_fn(|| {
-            Some(CellValue::Number(
-                BigDecimal::parse_bytes(&rng.gen_range(-100..=100).to_string().into_bytes(), 10)
-                    .unwrap(),
-            ))
+            Some(CellValue::Number(BigDecimal::from(
+                &rng.gen_range(-100..=100),
+            )))
         })
         .take(size.len())
         .collect();
@@ -208,16 +206,6 @@ impl Array {
             None => "array",
         }
     }
-
-    // / Replaces NaN and Inf with errors; otherwise returns the value
-    // / unchanged.
-    // pub fn purify_floats(mut self, span: Span) -> CodeResult<Self> {
-    //     for v in &mut self.values {
-    //         *v = std::mem::take(v).purify_float(span)?;
-    //     }
-    //     Ok(self)
-    // }
-
     /// Returns the unique length that fits all `values` along `axis`. See
     /// `common_array_size()` for more.
     pub fn common_len<'a>(

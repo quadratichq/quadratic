@@ -4,7 +4,6 @@ use super::CellRef;
 use crate::{ArraySize, CellValue, Error, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CodeCellValue {
     pub language: CodeCellLanguage,
     pub code_string: String,
