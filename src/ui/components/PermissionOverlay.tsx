@@ -36,17 +36,17 @@ export function PermissionOverlay() {
           sx={{ width: '100%' }}
           action={
             <Stack direction="row" gap={theme.spacing(1)}>
-              <Button component={Link} to={ROUTES.SIGNUP_WITH_REDIRECT()} variant="outlined" size="small">
-                Sign up
+              <Button component={Link} to={ROUTES.LOGIN_WITH_REDIRECT()} variant="outlined" size="small">
+                Log in
               </Button>
               <Button
                 component={Link}
-                to={ROUTES.LOGIN_WITH_REDIRECT()}
+                to={ROUTES.SIGNUP_WITH_REDIRECT()}
                 variant="contained"
                 size="small"
                 disableElevation
               >
-                Log in
+                Sign up
               </Button>
             </Stack>
           }
