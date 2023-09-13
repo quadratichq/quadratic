@@ -2,6 +2,25 @@ import { Close } from '@mui/icons-material';
 import { Box, Dialog, DialogActions, DialogContent, IconButton, Paper, Typography, useTheme } from '@mui/material';
 import * as React from 'react';
 
+/**
+ * This is a component for use everywhere in the app where you need a dialog
+ * with content. It helps give us a consistent UI/X for dialogs, rather than
+ * each place using it's own implementation of MUI's <Dialog>.
+ *
+ * Usage:
+ *
+ * <QDialog {...props}>
+ *   <QDialog.Title>Title here</Dialog.Title>
+ *   <QDialog.Content>
+ *     <div>Your content here</div>
+ *   </Dialog.Content>
+ *   <QDialog.Actions>
+ *     <Button>Save</Button>
+ *     <Button>Cancel</Button>
+ *   </Dialog.Actions>
+ * </QDialog>
+ */
+
 interface DialogProps {
   children: React.ReactNode;
   onClose: () => void;
