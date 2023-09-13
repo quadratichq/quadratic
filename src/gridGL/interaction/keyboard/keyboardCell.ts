@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
 import { isAllowedFirstChar } from './keyboardCellChars';
 
@@ -12,7 +12,8 @@ export function keyboardCell(options: {
 }): boolean {
   const { event, editorInteractionState, setEditorInteractionState } = options;
 
-  const cursor = sheetController.sheet.cursor;
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
   const cursorPosition = cursor.cursorPosition;
 
   if (event.key === 'Tab') {
@@ -38,7 +39,7 @@ export function keyboardCell(options: {
 
   if (event.key === 'Backspace' || event.key === 'Delete') {
     // delete a range or a single cell, depending on if MultiCursor is active
-    sheetController.sheet.deleteCells(
+    sheet.deleteCells(
       new Rectangle(
         cursor.originPosition.x,
         cursor.originPosition.y,
@@ -52,7 +53,7 @@ export function keyboardCell(options: {
   if (event.key === 'Enter') {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
-    const cell = sheetController.sheet.getRenderCell(x, y);
+    const cell = sheet.getRenderCell(x, y);
     if (cell) {
       if (cell.language) {
         const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
@@ -67,7 +68,7 @@ export function keyboardCell(options: {
         });
       } else {
         // open single line
-        const edit = sheetController.sheet.getEditCell(x, y);
+        const edit = sheet.getEditCell(x, y);
         pixiAppEvents.changeInput(true, edit);
       }
     } else {
@@ -79,7 +80,7 @@ export function keyboardCell(options: {
   if (event.key === '/' || event.key === '=') {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
-    const cell = sheetController.sheet.getRenderCell(x, y);
+    const cell = sheet.getRenderCell(x, y);
     if (cell) {
       if (cell.language) {
         const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;

@@ -9,11 +9,8 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
-  TransactionSummary,
 } from '../../quadratic-core/types';
-import { Grid } from '../controller/Grid';
-import { sheetController } from '../controller/SheetController';
-import { transactionResponse } from '../controller/transactionResponse';
+import { grid } from '../controller/Grid';
 import { GridBorders } from './GridBorders';
 import { GridOffsets } from './GridOffsets';
 import { GridSparse } from './GridSparse';
@@ -35,7 +32,7 @@ export class Sheet {
     // deprecated
     this.grid = new GridSparse(this);
 
-    const sheetId = this.gridNew.sheetIndexToId(index);
+    const sheetId = grid.sheetIndexToId(index);
     if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
     this.id = sheetId;
 
@@ -43,11 +40,6 @@ export class Sheet {
     this.borders = new GridBorders(this.gridOffsets);
 
     this.cursor = new SheetCursor(this);
-  }
-
-  // todo: rename to grid after migration away from gridSparse
-  get gridNew(): Grid {
-    return sheetController.grid;
   }
 
   // for testing
@@ -65,32 +57,20 @@ export class Sheet {
   //#region set sheet actions
   // -----------------------------------
 
-  private save(): void {
-    sheetController.save();
-  }
-
   setCellValue(x: number, y: number, value: string): void {
-    const summary = this.gridNew.setCellValue({ sheetId: this.id, x, y, value, cursor: this.cursor.save() });
-    transactionResponse(summary);
-    this.save();
+    grid.setCellValue({ sheetId: this.id, x, y, value, cursor: this.cursor.save() });
   }
 
   deleteCells(rectangle: Rectangle): void {
-    const summary = this.gridNew.deleteCellValues(this.id, rectangle, this.cursor.save());
-    transactionResponse(summary);
-    this.save();
+    grid.deleteCellValues(this.id, rectangle, this.cursor.save());
   }
 
   set name(name: string) {
-    const summary = this.gridNew.setSheetName(this.id, name, this.cursor.save());
-    transactionResponse(summary);
-    this.save();
+    grid.setSheetName(this.id, name, this.cursor.save());
   }
 
   set color(color: string | undefined) {
-    const summary = this.gridNew.setSheetColor(this.id, color, this.cursor.save());
-    transactionResponse(summary);
-    this.save();
+    grid.setSheetColor(this.id, color, this.cursor.save());
   }
 
   //#endregion
@@ -98,59 +78,59 @@ export class Sheet {
   //#region get grid information
 
   get name(): string {
-    const name = this.gridNew.getSheetName(this.id);
+    const name = grid.getSheetName(this.id);
     if (name === undefined) throw new Error('Expected name to be defined in Sheet');
     return name;
   }
 
   get color(): string | undefined {
-    return this.gridNew.getSheetColor(this.id);
+    return grid.getSheetColor(this.id);
   }
 
   get order(): string {
-    return this.gridNew.getSheetOrder(this.id);
+    return grid.getSheetOrder(this.id);
   }
 
   getRenderCells(rectangle: Rectangle): JsRenderCell[] {
-    return this.gridNew.getRenderCells(this.id, rectangle);
+    return grid.getRenderCells(this.id, rectangle);
   }
 
   getRenderCell(x: number, y: number): JsRenderCell | undefined {
-    return this.gridNew.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
+    return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
   }
 
   getEditCell(x: number, y: number): string {
-    return this.gridNew.getEditCell(this.id, new Pos(x, y));
+    return grid.getEditCell(this.id, new Pos(x, y));
   }
 
   getRenderFills(rectangle: Rectangle): JsRenderFill[] {
-    return this.gridNew.getRenderFills(this.id, rectangle);
+    return grid.getRenderFills(this.id, rectangle);
   }
 
   getAllRenderFills(): JsRenderFill[] {
-    return this.gridNew.getAllRenderFills(this.id);
+    return grid.getAllRenderFills(this.id);
   }
 
   getRenderCodeCells(): JsRenderCodeCell[] {
-    return this.gridNew.getRenderCodeCells(this.id);
+    return grid.getRenderCodeCells(this.id);
   }
 
   // todo: fix types
 
   getCodeValue(x: number, y: number): any /*CodeCellValue*/ | undefined {
-    return this.gridNew.getCodeValue(this.id, x, y);
+    return grid.getCodeValue(this.id, x, y);
   }
 
   getFormattingSummary(rectangle: Rectangle): FormattingSummary {
-    return this.gridNew.getFormattingSummary(this.id, rectangle);
+    return grid.getFormattingSummary(this.id, rectangle);
   }
 
   getCellFormatSummary(x: number, y: number): CellFormatSummary {
-    return this.gridNew.getCellFormatSummary(this.id, x, y);
+    return grid.getCellFormatSummary(this.id, x, y);
   }
 
   getGridBounds(onlyData: boolean): Rectangle | undefined {
-    return this.gridNew.getGridBounds(this.id, onlyData);
+    return grid.getGridBounds(this.id, onlyData);
   }
 
   getMinMax(onlyData: boolean): Coordinate[] | undefined {
@@ -224,40 +204,40 @@ export class Sheet {
 
   //#region set grid information
 
-  setCellFillColor(rectangle: Rectangle, fillColor?: string): TransactionSummary {
-    return this.gridNew.setCellFillColor(this.id, rectangle, fillColor, this.cursor.save());
+  setCellFillColor(rectangle: Rectangle, fillColor?: string): void {
+    return grid.setCellFillColor(this.id, rectangle, fillColor, this.cursor.save());
   }
 
-  setCellBold(rectangle: Rectangle, bold: boolean): TransactionSummary {
-    return this.gridNew.setCellBold(this.id, rectangle, bold, this.cursor.save());
+  setCellBold(rectangle: Rectangle, bold: boolean): void {
+    grid.setCellBold(this.id, rectangle, bold, this.cursor.save());
   }
 
-  setCellItalic(rectangle: Rectangle, italic: boolean): TransactionSummary {
-    return this.gridNew.setCellItalic(this.id, rectangle, italic, this.cursor.save());
+  setCellItalic(rectangle: Rectangle, italic: boolean): void {
+    grid.setCellItalic(this.id, rectangle, italic, this.cursor.save());
   }
 
-  setCellTextColor(rectangle: Rectangle, color?: string): TransactionSummary {
-    return this.gridNew.setCellTextColor(this.id, rectangle, color, this.cursor.save());
+  setCellTextColor(rectangle: Rectangle, color?: string): void {
+    grid.setCellTextColor(this.id, rectangle, color, this.cursor.save());
   }
 
-  setCellAlign(rectangle: Rectangle, align?: CellAlign): TransactionSummary {
-    return this.gridNew.setCellAlign(this.id, rectangle, align, this.cursor.save());
+  setCellAlign(rectangle: Rectangle, align?: CellAlign): void {
+    grid.setCellAlign(this.id, rectangle, align, this.cursor.save());
   }
 
   setCurrency(rectangle: Rectangle, symbol: string = '$') {
-    return this.gridNew.setCellCurrency(this.id, rectangle, symbol, this.cursor.save());
+    grid.setCellCurrency(this.id, rectangle, symbol, this.cursor.save());
   }
 
   setPercentage(rectangle: Rectangle) {
-    return this.gridNew.setCellPercentage(this.id, rectangle, this.cursor.save());
+    grid.setCellPercentage(this.id, rectangle, this.cursor.save());
   }
 
   removeCellNumericFormat(rectangle: Rectangle) {
-    return this.gridNew.removeCellNumericFormat(this.id, rectangle, this.cursor.save());
+    grid.removeCellNumericFormat(this.id, rectangle, this.cursor.save());
   }
 
-  changeDecimals(delta: number): TransactionSummary {
-    return this.gridNew.changeDecimalPlaces(
+  changeDecimals(delta: number): void {
+    grid.changeDecimalPlaces(
       this.id,
       new Pos(this.cursor.originPosition.x, this.cursor.originPosition.y),
       this.cursor.getRectangle(),
@@ -266,12 +246,12 @@ export class Sheet {
     );
   }
 
-  clearFormatting(rectangle: Rectangle): TransactionSummary {
+  clearFormatting(rectangle: Rectangle): void {
     throw new Error('Not implemented yet');
   }
 
   getFormatPrimaryCell(): CellFormatSummary {
-    return this.gridNew.getCellFormatSummary(this.id, this.cursor.originPosition.x, this.cursor.originPosition.y);
+    return grid.getCellFormatSummary(this.id, this.cursor.originPosition.x, this.cursor.originPosition.y);
   }
 
   //#endregion

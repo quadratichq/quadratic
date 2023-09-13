@@ -1,6 +1,6 @@
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { PanMode } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
@@ -22,7 +22,8 @@ export class PointerDown {
 
   pointerDown(world: Point, event: PointerEvent): void {
     if (isMobile || pixiApp.settings.panMode !== PanMode.Disabled) return;
-    const cursor = sheetController.sheet.cursor;
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
 
     // note: directly call pixiApp.settings instead of locally defining it here; otherwise it dereferences this
 
@@ -36,7 +37,7 @@ export class PointerDown {
       return;
     }
 
-    const { gridOffsets } = sheetController.sheet;
+    const { gridOffsets } = sheet;
 
     this.positionRaw = world;
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
@@ -68,8 +69,8 @@ export class PointerDown {
         if (rightClick) {
           return;
         }
-        const code = sheetController.sheet.getCodeValue(column, row);
-        const cell = sheetController.sheet.getEditCell(column, row);
+        const code = sheet.getCodeValue(column, row);
+        const cell = sheet.getEditCell(column, row);
         doubleClickCell({ column, row, code, cell });
         this.active = false;
         event.preventDefault();
@@ -125,7 +126,8 @@ export class PointerDown {
     if (!this.active) return;
 
     const { viewport } = pixiApp;
-    const { gridOffsets } = sheetController.sheet;
+    const sheet = sheets.sheet;
+    const { gridOffsets } = sheet;
 
     // for determining if double click
     if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
@@ -149,7 +151,7 @@ export class PointerDown {
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {
       // hide multi cursor when only selecting one cell
-      sheetController.sheet.cursor.changePosition({
+      sheet.cursor.changePosition({
         keyboardMovePosition: { x: this.position.x, y: this.position.y },
         cursorPosition: { x: this.position.x, y: this.position.y },
       });
@@ -175,7 +177,7 @@ export class PointerDown {
       // this reduces the number of hooks fired
       if (hasMoved) {
         // update multiCursor
-        sheetController.sheet.cursor.changePosition({
+        sheet.cursor.changePosition({
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
           multiCursor: {

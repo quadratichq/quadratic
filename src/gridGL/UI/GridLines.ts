@@ -1,5 +1,5 @@
 import { Graphics, Rectangle } from 'pixi.js';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { calculateAlphaForGridLines } from './gridUtils';
@@ -43,7 +43,7 @@ export class GridLines extends Graphics {
   }
 
   private drawVerticalLines(bounds: Rectangle): void {
-    const { gridOffsets } = sheetController.sheet;
+    const { gridOffsets } = sheets.sheet;
     const { index, position } = gridOffsets.getColumnIndex(bounds.left);
     let column = index;
     const offset = bounds.left - position;
@@ -60,7 +60,7 @@ export class GridLines extends Graphics {
   }
 
   private drawHorizontalLines(bounds: Rectangle): void {
-    const { gridOffsets } = sheetController.sheet;
+    const { gridOffsets } = sheets.sheet;
     const { index, position } = gridOffsets.getRowIndex(bounds.top);
     let row = index;
     const offset = bounds.top - position;

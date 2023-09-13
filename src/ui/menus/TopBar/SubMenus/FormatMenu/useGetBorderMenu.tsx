@@ -16,7 +16,7 @@ import { Tooltip } from '@mui/material';
 import { ClickEvent, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useCallback, useEffect, useState } from 'react';
 import { ColorResult } from 'react-color';
-import { sheetController } from '../../../../../grid/controller/SheetController';
+import { sheets } from '../../../../../grid/controller/Sheets';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
 import { BorderType, BorderTypeEnum } from '../../../../../schemas';
 import { colors } from '../../../../../theme/colors';
@@ -39,7 +39,7 @@ enum BorderSelection {
 }
 
 export function useGetBorderMenu(): JSX.Element {
-  const sheet = sheetController.sheet;
+  const sheet = sheets.sheet;
   const cursor = sheet.cursor;
 
   const [lineStyle, setLineStyle] = useState<BorderType | undefined>();

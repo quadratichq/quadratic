@@ -1,5 +1,5 @@
 import { Matrix, Renderer } from 'pixi.js';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from './PixiApp';
 
 const resolution = 4;
@@ -19,7 +19,8 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   }
 
   let column, width, row, height;
-  const cursor = sheetController.sheet.cursor;
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
   if (cursor.multiCursor) {
     const { originPosition, terminalPosition } = cursor.multiCursor;
     column = originPosition.x;
@@ -31,7 +32,7 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
     row = cursor.cursorPosition.y;
     width = height = 1;
   }
-  const rectangle = sheetController.sheet.gridOffsets.getScreenRectangle(column, row, width, height);
+  const rectangle = sheet.gridOffsets.getScreenRectangle(column, row, width, height);
 
   // captures bottom-right border size
   rectangle.width += borderSize * 2;

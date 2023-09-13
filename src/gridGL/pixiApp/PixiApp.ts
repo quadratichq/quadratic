@@ -4,7 +4,7 @@ import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
@@ -166,7 +166,7 @@ export class PixiApp {
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
-    sheetController.sheet.cursor.viewport = this.viewport.lastViewport!;
+    sheets.sheet.cursor.viewport = this.viewport.lastViewport!;
 
     // if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
     //   this.showCache();

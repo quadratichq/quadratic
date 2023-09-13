@@ -3,7 +3,7 @@ import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemTex
 import React, { SyntheticEvent } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { Coordinate } from '../../../gridGL/types/size';
 import { focusGrid } from '../../../helpers/focusGrid';
 import focusInput from '../../../utils/focusInput';
@@ -47,7 +47,7 @@ export const GoTo = () => {
         terminalPosition,
       };
     }
-    sheetController.sheet.cursor.changePosition({
+    sheets.sheet.cursor.changePosition({
       keyboardMovePosition,
       cursorPosition,
       multiCursor,

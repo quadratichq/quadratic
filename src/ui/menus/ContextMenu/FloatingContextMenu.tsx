@@ -23,7 +23,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../constants/appConstants';
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
@@ -59,7 +59,8 @@ export const FloatingContextMenu = (props: Props) => {
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
   const borders = useGetBorderMenu();
-  const cursor = sheetController.sheet.cursor;
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
 
@@ -75,7 +76,7 @@ export const FloatingContextMenu = (props: Props) => {
     const { viewport } = pixiApp;
 
     // Calculate position of input based on cell
-    const cell_offsets = sheetController.sheet.gridOffsets.getCell(
+    const cell_offsets = sheet.gridOffsets.getCell(
       cursor.multiCursor
         ? Math.min(cursor.cursorPosition.x, cursor.multiCursor.originPosition.x, cursor.multiCursor.terminalPosition.x)
         : cursor.cursorPosition.x,
@@ -118,7 +119,7 @@ export const FloatingContextMenu = (props: Props) => {
     if (!isEditorOrAbove(editorInteractionState.permission)) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
-    const terminal_pos = sheetController.sheet.gridOffsets.getCell(
+    const terminal_pos = sheet.gridOffsets.getCell(
       cursor.multiCursor ? cursor.multiCursor.terminalPosition.x : cursor.cursorPosition.x,
       cursor.multiCursor ? cursor.multiCursor.terminalPosition.y : cursor.cursorPosition.y
     );
@@ -158,6 +159,7 @@ export const FloatingContextMenu = (props: Props) => {
     return transform;
   }, [
     container,
+    sheet.gridOffsets,
     cursor.multiCursor,
     cursor.cursorPosition.x,
     cursor.cursorPosition.y,
@@ -192,7 +194,7 @@ export const FloatingContextMenu = (props: Props) => {
 
   const iconSize = 'small';
 
-  const formatPrimaryCell = sheetController.sheet.getFormatPrimaryCell();
+  const formatPrimaryCell = sheet.getFormatPrimaryCell();
 
   return (
     <Paper

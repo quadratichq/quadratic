@@ -5,7 +5,8 @@ import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionS
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../../constants/appConstants';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { sheetController } from '../../../../grid/controller/SheetController';
+import { grid } from '../../../../grid/controller/Grid';
+import { sheets } from '../../../../grid/controller/Sheets';
 import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';
@@ -21,9 +22,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           icon={<Undo />}
-          action={() => {
-            sheetController.undo();
-          }}
+          action={grid.undo}
           shortcut="Z"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
@@ -38,9 +37,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           icon={<Redo />}
-          action={() => {
-            sheetController.redo();
-          }}
+          action={grid.redo}
           shortcut={isMac ? 'Z' : 'Y'}
           shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
         />
@@ -55,7 +52,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            const cursor = sheetController.sheet.cursor;
+            const cursor = sheets.sheet.cursor;
             cutToClipboard(cursor.originPosition, cursor.terminalPosition);
           }}
           icon={<ContentCut />}
@@ -72,7 +69,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            const cursor = sheetController.sheet.cursor;
+            const cursor = sheets.sheet.cursor;
             copyToClipboard(cursor.originPosition, cursor.terminalPosition);
           }}
           icon={<ContentCopy />}
@@ -90,7 +87,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            pasteFromClipboard(sheetController.sheet.cursor.cursorPosition);
+            pasteFromClipboard(sheets.sheet.cursor.cursorPosition);
           }}
           icon={<ContentPaste />}
           shortcut="V"

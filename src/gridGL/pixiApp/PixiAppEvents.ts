@@ -1,8 +1,7 @@
-import { BitmapFont, Rectangle } from 'pixi.js';
+import { BitmapFont } from 'pixi.js';
 import { HEADING_SIZE } from '../../constants/gridConstants';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { SheetId } from '../../quadratic-core/types';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { QuadrantChanged } from '../quadrants/Quadrants';
 import { pixiApp } from './PixiApp';
@@ -60,7 +59,7 @@ class PixiAppEvents {
     // pixiApp.quadrants.changeSheet();
     pixiApp.boxCells.reset();
     pixiApp.settings.changeInput(false);
-    pixiApp.cellsSheets.show(sheetController.sheet.id);
+    pixiApp.cellsSheets.show(sheets.sheet.id);
   }
 
   addSheet(sheet: Sheet): void {
@@ -99,7 +98,7 @@ class PixiAppEvents {
   }
 
   loadViewport(): void {
-    const lastViewport = sheetController.sheet.cursor.viewport;
+    const lastViewport = sheets.sheet.cursor.viewport;
     if (lastViewport) {
       pixiApp.viewport.position.set(lastViewport.x, lastViewport.y);
       pixiApp.viewport.scale.set(lastViewport.scaleX, lastViewport.scaleY);
@@ -107,21 +106,8 @@ class PixiAppEvents {
     }
   }
 
-  setViewportDirty(): void {
-    pixiApp.setViewportDirty();
-  }
-
   createBorders(): void {
     pixiApp.cellsSheets.createBorders();
-  }
-
-  cellsChanged(sheetId: string, rectangle: Rectangle): void {
-    pixiApp.cellsSheets.changed({ sheetId, rectangle, labels: true, background: false });
-    pixiApp.setViewportDirty();
-  }
-
-  fillsChanged(sheetIds: SheetId[]): void {
-    pixiApp.cellsSheets.updateFills(sheetIds);
   }
 }
 

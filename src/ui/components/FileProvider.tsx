@@ -7,7 +7,7 @@ import { apiClient } from '../../api/apiClient';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { FileData, useFileRouteLoaderData } from '../../dashboard/FileRoute';
 import { debugShowFileIO } from '../../debugFlags';
-import { sheetController } from '../../grid/controller/SheetController';
+import { grid } from '../../grid/controller/Grid';
 import { useInterval } from '../../hooks/useInterval';
 
 const syncInterval = 500;
@@ -39,7 +39,6 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const { uuid } = useParams() as { uuid: string };
   const initialFileData = useFileRouteLoaderData();
   const [name, setName] = useState<FileContextType['name']>(initialFileData.name);
-  const [dirtyFile, setDirtyFile] = useState<boolean>(false);
   const [publicLinkAccess, setPublicLinkAccess] = useState<FileContextType['publicLinkAccess']>(
     initialFileData.sharing.public_link_access
   );
@@ -59,9 +58,6 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   );
 
   // Create and save the fn used by the sheetController to save the file
-  useEffect(() => {
-    sheetController.save = () => setDirtyFile(true);
-  }, []);
 
   const syncChanges = useCallback(
     async (apiClientFn: Function) => {
@@ -100,18 +96,16 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
         syncChanges(() =>
           apiClient.updateFile(uuid, {
             name,
-            contents: sheetController.export(),
-            version: sheetController.getVersion(),
+            contents: grid.export(),
+            version: grid.getVersion(),
           })
         );
         apiClient.updateFileSharing(uuid, { public_link_access: publicLinkAccess });
-        setDirtyFile(false);
-      } else if (dirtyFile) {
+        grid.dirty = false;
+      } else if (grid.dirty) {
         if (debugShowFileIO) console.log('[FileProvider] saving file...');
-        syncChanges(() =>
-          apiClient.updateFile(uuid, { contents: sheetController.export(), version: sheetController.getVersion() })
-        );
-        setDirtyFile(false);
+        syncChanges(() => apiClient.updateFile(uuid, { contents: grid.export(), version: grid.getVersion() }));
+        grid.dirty = false;
       }
     },
     syncState === 'error' ? syncErrorInterval : syncInterval

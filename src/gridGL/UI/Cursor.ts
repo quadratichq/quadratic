@@ -1,6 +1,6 @@
 import { Graphics, Rectangle } from 'pixi.js';
 import { isEditorOrAbove } from '../../actions';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
 import { colors } from '../../theme/colors';
@@ -38,9 +38,10 @@ export class Cursor extends Graphics {
   }
 
   private drawCursor(): void {
-    const cursor = sheetController.sheet.cursor;
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
     const { viewport } = pixiApp;
-    const { gridOffsets } = sheetController.sheet;
+    const { gridOffsets } = sheet;
     const { editorInteractionState } = pixiApp.settings;
     const cell = cursor.cursorPosition;
     const showInput = pixiApp.settings.input.show;
@@ -103,7 +104,7 @@ export class Cursor extends Graphics {
   }
 
   private drawMultiCursor(): void {
-    const { gridOffsets, cursor } = sheetController.sheet;
+    const { gridOffsets, cursor } = sheets.sheet;
 
     if (cursor.multiCursor) {
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
@@ -124,7 +125,7 @@ export class Cursor extends Graphics {
 
   private drawCursorIndicator(): void {
     const { viewport } = pixiApp;
-    const cursor = sheetController.sheet.cursor;
+    const cursor = sheets.sheet.cursor;
 
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
       const { editorInteractionState } = pixiApp.settings;
@@ -161,7 +162,7 @@ export class Cursor extends Graphics {
     const { editorInteractionState } = pixiApp.settings;
     if (!editorInteractionState.showCodeEditor) return;
     const cell = editorInteractionState.selectedCell;
-    const { x, y, width, height } = sheetController.sheet.gridOffsets.getCell(cell.x, cell.y);
+    const { x, y, width, height } = sheets.sheet.gridOffsets.getCell(cell.x, cell.y);
     const color =
       editorInteractionState.mode === 'PYTHON'
         ? colors.cellColorUserPython
@@ -186,11 +187,7 @@ export class Cursor extends Graphics {
 
     let colorIndex = 0;
     for (const [cellRefId] of highlightedCells.entries()) {
-      const cell = getCellFromFormulaNotation(
-        cellRefId,
-        sheetController.sheet.gridOffsets,
-        editorInteractionState.selectedCell
-      );
+      const cell = getCellFromFormulaNotation(cellRefId, sheets.sheet.gridOffsets, editorInteractionState.selectedCell);
 
       if (!cell) continue;
       const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % NUM_OF_CELL_REF_COLORS]);

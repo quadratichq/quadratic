@@ -1,6 +1,6 @@
 import { FormatAlignCenter, FormatAlignLeft, FormatAlignRight, FormatBold, FormatItalic } from '@mui/icons-material';
 import { isEditorOrAbove } from '../../../../actions';
-import { sheetController } from '../../../../grid/controller/SheetController';
+import { sheets } from '../../../../grid/controller/Sheets';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { setAlignment, setBold, setItalic } from '../../TopBar/SubMenus/formatCells';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
@@ -15,7 +15,7 @@ const ListItems = [
           {...props}
           icon={<FormatBold />}
           action={() => {
-            setBold(!sheetController.sheet.getFormatPrimaryCell()?.bold);
+            setBold(!sheets.sheet.getFormatPrimaryCell()?.bold);
           }}
           shortcut="B"
           shortcutModifiers={KeyboardSymbols.Command}
@@ -32,7 +32,7 @@ const ListItems = [
           {...props}
           icon={<FormatItalic />}
           action={() => {
-            setItalic(!sheetController.sheet.getFormatPrimaryCell()?.italic);
+            setItalic(!sheets.sheet.getFormatPrimaryCell()?.italic);
           }}
           shortcut="I"
           shortcutModifiers={KeyboardSymbols.Command}

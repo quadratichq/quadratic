@@ -1,22 +1,20 @@
 import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
-import { TransactionSummary } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
 import { Sheet } from '../sheet/Sheet';
-import { Grid } from './Grid';
-import { sheetController } from './SheetController';
-import { transactionResponse } from './transactionResponse';
+import { SheetCursorSave } from '../sheet/SheetCursor';
+import { grid } from './Grid';
 
 // default size for URL: &mock-large-data=
 const randomFloatSize = { x: 10, y: 3000 };
 
-export class Sheets {
-  private sheets: Sheet[];
-  private _current: string;
+class Sheets {
+  private sheets!: Sheet[];
+  private _current!: string;
 
   // set up sheet information
   // ------------------------
 
-  constructor() {
+  init() {
     this.sheets = [];
     this.repopulate();
     this._current = this.sheets[0].id;
@@ -24,7 +22,7 @@ export class Sheets {
 
   // ensures there's a Sheet.ts for every Sheet.rs
   repopulate() {
-    const sheetIds = this.grid.getSheetIds();
+    const sheetIds = grid.getSheetIds();
     // ensure the sheets exist
     sheetIds.forEach((sheetId, index) => {
       if (!this.sheets.find((search) => search.id === sheetId)) {
@@ -44,9 +42,9 @@ export class Sheets {
     this.sort();
   }
 
-  loadFile(grid: GridFile): boolean {
+  loadFile(file: GridFile): boolean {
     try {
-      this.grid.newFromFile(grid);
+      grid.newFromFile(file);
       this.sheets = [];
       this.repopulate();
       this._current = this.sheets[0].id;
@@ -66,7 +64,7 @@ export class Sheets {
       x = parseInt(n[0]);
       y = parseInt(n[1]);
     }
-    this.grid.populateWithRandomFloats(this._current, x, y);
+    grid.populateWithRandomFloats(this._current, x, y);
     this.sheets = [];
     this.repopulate();
     this._current = this.sheets[0].id;
@@ -81,14 +79,6 @@ export class Sheets {
 
   private sort(): void {
     this.sheets.sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0));
-  }
-
-  private get grid(): Grid {
-    return sheetController.grid;
-  }
-
-  private save() {
-    sheetController.save();
   }
 
   // Get Sheet information
@@ -190,18 +180,15 @@ export class Sheets {
   // ----------------
 
   createNew(): void {
-    const summary = this.grid.addSheet(this.sheet.cursor.save());
-    transactionResponse(summary);
+    grid.addSheet(this.sheet.cursor.save());
 
     // sets the current sheet to the new sheet
     this.current = this.sheets[this.sheets.length - 1].id;
-    this.save();
   }
 
   duplicate(): void {
     const oldSheetId = this.current;
-    const summary = this.grid.duplicateSheet(this.current, this.sheet.cursor.save());
-    transactionResponse(summary);
+    grid.duplicateSheet(this.current, this.sheet.cursor.save());
 
     // sets the current sheet to the duplicated sheet
     const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
@@ -209,15 +196,12 @@ export class Sheets {
     const duplicate = this.sheets[currentIndex + 1];
     if (!duplicate) throw new Error('Expected to find duplicate sheet in duplicateSheet');
     this.current = duplicate.id;
-    this.save();
     this.sort();
   }
 
   deleteSheet(id: string): void {
     const order = this.sheet.order;
-    const summary = this.grid.deleteSheet(id, this.sheet.cursor.save());
-    transactionResponse(summary);
-    this.save();
+    grid.deleteSheet(id, this.sheet.cursor.save());
 
     // set current to next sheet (before this.sheets is updated)
     if (this.sheets.length) {
@@ -237,7 +221,6 @@ export class Sheets {
     const { id, toBefore, delta } = options;
     const sheet = this.sheets.find((sheet) => sheet.id === options.id);
     if (!sheet) throw new Error('Expected sheet to be defined in reorderSheet');
-    let response: TransactionSummary;
     if (delta !== undefined) {
       if (delta === 1) {
         const next = this.getNext(sheet.order);
@@ -247,7 +230,7 @@ export class Sheets {
 
         const nextNext = next ? this.getNext(next.order) : undefined;
 
-        response = this.grid.moveSheet(id, nextNext?.id, sheet.cursor.save());
+        grid.moveSheet(id, nextNext?.id, sheet.cursor.save());
       } else if (delta === -1) {
         const previous = this.getPrevious(sheet.order);
 
@@ -255,15 +238,19 @@ export class Sheets {
         if (!previous) return;
 
         // if not defined, then this is id will become first sheet
-        response = this.grid.moveSheet(id, previous?.id, sheet.cursor.save());
+        grid.moveSheet(id, previous?.id, sheet.cursor.save());
       } else {
         throw new Error(`Unhandled delta ${delta} in sheets.changeOrder`);
       }
     } else {
-      response = this.grid.moveSheet(id, toBefore, sheet.cursor.save());
+      grid.moveSheet(id, toBefore, sheet.cursor.save());
     }
-    transactionResponse(response);
-    this.save();
     this.sort();
   }
+
+  cursorSave(): SheetCursorSave {
+    return this.sheet.cursor.save();
+  }
 }
+
+export const sheets = new Sheets();

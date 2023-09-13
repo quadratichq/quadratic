@@ -25,7 +25,8 @@ import { authClient } from '../../../../auth';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../../../constants/routes';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { sheetController } from '../../../../grid/controller/SheetController';
+import { grid } from '../../../../grid/controller/Grid';
+import { sheets } from '../../../../grid/controller/Sheets';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRootRouteLoaderData } from '../../../../router';
@@ -38,7 +39,7 @@ import { useGridSettings } from './useGridSettings';
 export const QuadraticMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
-  const cursor = sheetController.sheet.cursor;
+  const cursor = sheets.sheet.cursor;
 
   const navigate = useNavigate();
   const submit = useSubmit();
@@ -122,21 +123,13 @@ export const QuadraticMenu = () => {
         )}
         <SubMenu label={<MenuLineItem primary="Edit" />}>
           {undo.isAvailable(permission) && (
-            <MenuItem
-              onClick={() => {
-                sheetController.undo();
-              }}
-            >
+            <MenuItem onClick={grid.undo}>
               <MenuLineItem primary={undo.label} secondary={KeyboardSymbols.Command + 'Z'} />
             </MenuItem>
           )}
           {redo.isAvailable(permission) && (
             <>
-              <MenuItem
-                onClick={() => {
-                  sheetController.redo();
-                }}
-              >
+              <MenuItem onClick={grid.redo}>
                 <MenuLineItem
                   primary={redo.label}
                   secondary={
@@ -151,10 +144,7 @@ export const QuadraticMenu = () => {
           {cut.isAvailable(permission) && (
             <MenuItem
               onClick={() => {
-                cutToClipboard(
-                  sheetController.sheet.cursor.originPosition,
-                  sheetController.sheet.cursor.terminalPosition
-                );
+                cutToClipboard(sheets.sheet.cursor.originPosition, sheets.sheet.cursor.terminalPosition);
               }}
             >
               <MenuLineItem primary={cut.label} secondary={KeyboardSymbols.Command + 'X'} />
