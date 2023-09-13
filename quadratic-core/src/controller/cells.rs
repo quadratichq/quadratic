@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use bigdecimal::{BigDecimal, FromPrimitive};
+use bigdecimal::BigDecimal;
 
 use crate::{
     grid::{NumericFormat, NumericFormatKind, RegionRef, SheetId},
@@ -43,7 +43,7 @@ impl GridController {
         }
         if let Some(number) = s.strip_suffix('%') {
             if let Ok(bd) = BigDecimal::from_str(number) {
-                return Some(bd / BigDecimal::from_i8(100).unwrap());
+                return Some(bd / 100.0);
             }
         }
         None
