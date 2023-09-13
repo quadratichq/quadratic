@@ -1,10 +1,9 @@
+import { debugMockLargeData } from '../../debugFlags';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
 import { Sheet } from '../sheet/Sheet';
 import { grid } from './Grid';
-
-// default size for URL: &mock-large-data=
-// const randomFloatSize = { x: 10, y: 3000 };
+import { mockLargeData } from './mockLargeData';
 
 class Sheets {
   private sheets: Sheet[];
@@ -19,6 +18,9 @@ class Sheets {
   }
 
   create() {
+    if (debugMockLargeData) {
+      mockLargeData();
+    }
     this.sheets = [];
     const sheetIds = grid.getSheetIds();
     sheetIds.forEach((_, index) => {
@@ -51,35 +53,6 @@ class Sheets {
     });
     this.sort();
   }
-
-  // loadFile(file: GridFile): boolean {
-  //   try {
-  //     grid.newFromFile(file);
-  //     this.sheets = [];
-  //     this.repopulate();
-  //     this._current = this.sheets[0].id;
-  //     return true;
-  //   } catch (_) {
-  //     return false;
-  //   }
-  // }
-
-  // mockLargeData(): void {
-  //   console.time('random');
-  //   const url = new URLSearchParams(window.location.search);
-  //   let { x, y } = randomFloatSize;
-  //   const params = url.get('mock-large-data');
-  //   if (params?.includes(',')) {
-  //     const n = params.split(',');
-  //     x = parseInt(n[0]);
-  //     y = parseInt(n[1]);
-  //   }
-  //   grid.populateWithRandomFloats(this._current, x, y);
-  //   this.sheets = [];
-  //   this.repopulate();
-  //   this._current = this.sheets[0].id;
-  //   console.timeEnd('random');
-  // }
 
   // updates the SheetBar UI
   private updateSheetBar(): void {

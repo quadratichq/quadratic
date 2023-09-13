@@ -42,18 +42,6 @@ export class Sheet {
     this.cursor = new SheetCursor(this);
   }
 
-  // for testing
-  clear() {
-    // todo
-    // this.gridOffsets = new GridOffsets();
-    // this.grid = new GridSparse(this);
-    // this.borders = new GridBorders(this.gridOffsets);
-    // this.render_dependency = new GridRenderDependency();
-    // this.array_dependency = new GridRenderDependency();
-    // this.cell_dependency = new CellDependencyManager();
-    // this.cursor = new SheetCursor(this);
-  }
-
   //#region set sheet actions
   // -----------------------------------
 

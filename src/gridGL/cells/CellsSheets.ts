@@ -20,6 +20,10 @@ export class CellsSheets extends Container<CellsSheet> {
     });
   }
 
+  isReady(): boolean {
+    return !!this.current;
+  }
+
   async addSheet(id: string): Promise<void> {
     const sheet = sheets.getById(id);
     if (!sheet) {

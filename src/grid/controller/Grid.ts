@@ -1,4 +1,5 @@
 import { Point, Rectangle } from 'pixi.js';
+import { debugMockLargeData } from '../../debugFlags';
 import { GridController, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
@@ -42,17 +43,35 @@ export const rectToPoint = (rect: Rect): Point => {
 // TS wrapper around Grid.rs
 export class Grid {
   private gridController!: GridController;
-  dirty = false;
+  private _dirty = false;
 
-  // import/export
+  get dirty(): boolean {
+    // the sheet is never dirty when mocking large data (to stop it from saving over an actual file)
+    return debugMockLargeData ? false : this._dirty;
+  }
+  set dirty(value: boolean) {
+    this._dirty = value;
+  }
 
+  // this cannot be called in the constructor as Rust is not yet loaded
   init() {
     this.gridController = new GridController();
   }
 
+  // import/export
+
   newFromFile(grid: GridFile): boolean {
-    this.gridController = GridController.newFromFile(JSON.stringify(grid));
-    return true;
+    try {
+      this.gridController = GridController.newFromFile(JSON.stringify(grid));
+      return true;
+    } catch (e) {
+      console.warn(e);
+      return false;
+    }
+  }
+
+  populateWithRandomFloats(sheetId: string, width: number, height: number): void {
+    this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height));
   }
 
   export(): string {
@@ -86,11 +105,6 @@ export class Grid {
 
   //#region set sheet operations
   //------------------------
-
-  populateWithRandomFloats(sheetId: string, width: number, height: number): void {
-    const summary = this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height));
-    transactionResponse(summary);
-  }
 
   getSheetIds(): string[] {
     const data = this.gridController.getSheetIds();
