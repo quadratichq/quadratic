@@ -8,15 +8,13 @@ const ListItems = [
   {
     label: 'Sheet: Create',
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} icon={<PostAddOutlinedIcon />} action={grid.addSheet()} />;
+      return <CommandPaletteListItem {...props} icon={<PostAddOutlinedIcon />} action={grid.addSheet} />;
     },
   },
   {
     label: 'Sheet: Delete',
     Component: (props: any) => {
-      return (
-        <CommandPaletteListItem {...props} icon={<DeleteOutlineOutlinedIcon />} action={() => props.confirmDelete()} />
-      );
+      return <CommandPaletteListItem {...props} icon={<DeleteOutlineOutlinedIcon />} action={props.confirmDelete} />;
     },
   },
   {
