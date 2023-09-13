@@ -81,6 +81,8 @@ export const Component = () => {
     .map((fetcher) => (fetcher.json as Action['request.duplicate'])?.file);
   const filesToRender = filesBeingDuplicated.concat(files);
 
+  const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
+
   return (
     <>
       <DashboardHeader
@@ -163,6 +165,7 @@ export const Component = () => {
           }}
           permission={'OWNER'}
           uuid={activeShareMenuFileId}
+          fileName={activeShareMenuFileName}
         />
       )}
     </>

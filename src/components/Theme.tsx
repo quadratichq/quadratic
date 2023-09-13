@@ -66,7 +66,14 @@ export function Theme(props: any) {
             styleOverrides: {
               container: {
                 alignItems: 'flex-start',
-                paddingTop: '48px',
+                // paddingTop: '48px',
+              },
+            },
+          },
+          MuiBackdrop: {
+            styleOverrides: {
+              root: {
+                backgroundColor: 'rgba(255,255,255,0.5)',
               },
             },
           },

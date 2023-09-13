@@ -1,17 +1,5 @@
 import { Public } from '@mui/icons-material';
-import {
-  Alert,
-  Avatar,
-  Button,
-  Dialog,
-  Divider,
-  Paper,
-  Skeleton,
-  SkeletonProps,
-  Stack,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import { Alert, Avatar, Button, Skeleton, SkeletonProps, Stack, Typography, useTheme } from '@mui/material';
 import { useEffect } from 'react';
 import { ActionFunctionArgs, LoaderFunctionArgs, useFetcher } from 'react-router-dom';
 import { isOwner as isOwnerTest } from '../actions';
@@ -19,6 +7,7 @@ import { apiClient } from '../api/apiClient';
 import { ApiTypes, Permission, PublicLinkAccess } from '../api/types';
 import ConditionalWrapper from '../ui/components/ConditionalWrapper';
 import { useGlobalSnackbar } from './GlobalSnackbarProvider';
+import { QDialog } from './QDialog';
 import { ShareFileMenuPopover } from './ShareFileMenuPopover';
 
 type LoaderData = {
@@ -68,10 +57,12 @@ export function ShareFileMenu({
   onClose,
   uuid,
   permission,
+  fileName,
 }: {
   onClose: () => void;
   permission: Permission;
   uuid: string;
+  fileName?: string;
 }) {
   const theme = useTheme();
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -101,9 +92,10 @@ export function ShareFileMenu({
   };
 
   return (
-    <Dialog open={true} onClose={onClose} fullWidth maxWidth={'sm'} BackdropProps={{ invisible: true }}>
-      <Paper elevation={12} sx={{ px: theme.spacing(3), py: theme.spacing(2) }}>
-        <Stack gap={theme.spacing(1)}>
+    <QDialog onClose={onClose}>
+      <QDialog.Title>Share{fileName && `: “${fileName}”`}</QDialog.Title>
+      <QDialog.Content>
+        <Stack gap={theme.spacing(1)} direction="column">
           {showLoadingError && (
             <Alert
               severity="error"
@@ -156,24 +148,24 @@ export function ShareFileMenu({
               />
             </ConditionalWrapper>
           </Row>
-          <Divider />
-          <Row sx={{ mt: theme.spacing(1) }}>
-            <Typography variant="caption" color="text.secondary">
-              View access also allows sharing & duplicating.
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleCopyShareLink}
-              sx={{ mt: theme.spacing(0), flexShrink: '0' }}
-              disabled={isDisabledCopyShareLink}
-            >
-              Copy share link
-            </Button>
-          </Row>
         </Stack>
-      </Paper>
-    </Dialog>
+      </QDialog.Content>
+
+      <QDialog.Actions>
+        <Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>
+          View access also allows sharing & duplicating.
+        </Typography>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={handleCopyShareLink}
+          sx={{ mt: theme.spacing(0), flexShrink: '0' }}
+          disabled={isDisabledCopyShareLink}
+        >
+          Copy share link
+        </Button>
+      </QDialog.Actions>
+    </QDialog>
   );
 }
 

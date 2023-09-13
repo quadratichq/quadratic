@@ -91,7 +91,7 @@ export const GoTo = (props: Props) => {
   };
 
   return (
-    <Dialog open={showGoToMenu} onClose={closeMenu} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
+    <Dialog open={showGoToMenu} onClose={closeMenu} fullWidth maxWidth={'xs'}>
       <Paper component="form" elevation={12} onSubmit={onSelect}>
         <InputBase
           sx={{ width: '100%', padding: '8px 16px' }}

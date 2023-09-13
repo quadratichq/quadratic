@@ -61,7 +61,7 @@ export const CommandPalette = (props: Props) => {
   const searchlabel = 'Search menus and commands…';
 
   return (
-    <Dialog open={true} onClose={closeCommandPalette} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
+    <Dialog open={true} onClose={closeCommandPalette} fullWidth maxWidth={'xs'}>
       <Paper
         component="form"
         elevation={12}
