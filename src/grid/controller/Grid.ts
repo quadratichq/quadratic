@@ -12,7 +12,6 @@ import {
   Rect,
 } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
-import { SheetCursorSave } from '../sheet/SheetCursor';
 import { sheets } from './Sheets';
 import { transactionResponse } from './transactionResponse';
 
@@ -98,38 +97,38 @@ export class Grid {
     return JSON.parse(data);
   }
 
-  addSheet(cursor: SheetCursorSave): void {
-    const summary = this.gridController.addSheet(JSON.stringify(cursor));
+  addSheet(): void {
+    const summary = this.gridController.addSheet(sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  deleteSheet(sheetId: string, cursor: SheetCursorSave): void {
-    const summary = this.gridController.deleteSheet(sheetId, JSON.stringify(cursor));
+  deleteSheet(sheetId: string): void {
+    const summary = this.gridController.deleteSheet(sheetId, sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  setSheetName(sheetId: string, name: string, cursor: SheetCursorSave): void {
-    const summary = this.gridController.setSheetName(sheetId, name, JSON.stringify(cursor));
+  setSheetName(sheetId: string, name: string): void {
+    const summary = this.gridController.setSheetName(sheetId, name, sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  setSheetColor(sheetId: string, color: string | undefined, cursor: SheetCursorSave): void {
-    const summary = this.gridController.setSheetColor(sheetId, color, JSON.stringify(cursor));
+  setSheetColor(sheetId: string, color: string | undefined): void {
+    const summary = this.gridController.setSheetColor(sheetId, color, sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  duplicateSheet(sheetId: string, cursor: SheetCursorSave): void {
-    const summary = this.gridController.duplicateSheet(sheetId, JSON.stringify(cursor));
+  duplicateSheet(sheetId: string): void {
+    const summary = this.gridController.duplicateSheet(sheetId, sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  moveSheet(sheetId: string, leftSheetId: string | undefined, cursor: SheetCursorSave): void {
-    const summary = this.gridController.moveSheet(sheetId, leftSheetId, JSON.stringify(cursor));
+  moveSheet(sheetId: string, leftSheetId: string | undefined): void {
+    const summary = this.gridController.moveSheet(sheetId, leftSheetId, sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
@@ -139,12 +138,12 @@ export class Grid {
   //#region set grid operations
   //-----------------------------
 
-  setCellValue(options: { sheetId: string; x: number; y: number; value: string; cursor: SheetCursorSave }): void {
+  setCellValue(options: { sheetId: string; x: number; y: number; value: string }): void {
     const summary = this.gridController.setCellValue(
       options.sheetId,
       new Pos(options.x, options.y),
       options.value,
-      JSON.stringify(options.cursor)
+      sheets.cursorSave()
     );
     transactionResponse(summary);
     this.dirty = true;
@@ -158,119 +157,93 @@ export class Grid {
     // this.dirty = true;
   }
 
-  deleteCellValues(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): void {
-    const summary = this.gridController.deleteCellValues(sheetId, rectangleToRect(rectangle), JSON.stringify(cursor));
+  deleteCellValues(sheetId: string, rectangle: Rectangle): void {
+    const summary = this.gridController.deleteCellValues(sheetId, rectangleToRect(rectangle), sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  setCellAlign(sheetId: string, rectangle: Rectangle, align: CellAlign | undefined, cursor: SheetCursorSave): void {
-    const summary = this.gridController.setCellAlign(
-      sheetId,
-      rectangleToRect(rectangle),
-      align,
-      JSON.stringify(cursor)
-    );
+  setCellAlign(sheetId: string, rectangle: Rectangle, align: CellAlign | undefined): void {
+    const summary = this.gridController.setCellAlign(sheetId, rectangleToRect(rectangle), align, sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  setCellWrap(sheetId: string, rectangle: Rectangle, wrap: CellWrap, cursor: SheetCursorSave): void {
-    const summary = this.gridController.setCellWrap(sheetId, rectangleToRect(rectangle), wrap, JSON.stringify(cursor));
+  setCellWrap(sheetId: string, rectangle: Rectangle, wrap: CellWrap): void {
+    const summary = this.gridController.setCellWrap(sheetId, rectangleToRect(rectangle), wrap, sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  setCellCurrency(sheetId: string, rectangle: Rectangle, symbol: string, cursor: SheetCursorSave): void {
+  setCellCurrency(sheetId: string, rectangle: Rectangle, symbol: string): void {
     const summary = this.gridController.setCellCurrency(
       sheetId,
       rectangleToRect(rectangle),
       symbol,
-      JSON.stringify(cursor)
+      sheets.cursorSave()
     );
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  setCellPercentage(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): void {
-    const summary = this.gridController.setCellPercentage(sheetId, rectangleToRect(rectangle), JSON.stringify(cursor));
+  setCellPercentage(sheetId: string, rectangle: Rectangle): void {
+    const summary = this.gridController.setCellPercentage(sheetId, rectangleToRect(rectangle), sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  removeCellNumericFormat(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): void {
+  removeCellNumericFormat(sheetId: string, rectangle: Rectangle): void {
     const summary = this.gridController.removeCellNumericFormat(
       sheetId,
       rectangleToRect(rectangle),
-      JSON.stringify(cursor)
+      sheets.cursorSave()
     );
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean, cursor: SheetCursorSave): void {
-    const summary = this.gridController.setCellBold(sheetId, rectangleToRect(rectangle), bold, JSON.stringify(cursor));
+  setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean): void {
+    const summary = this.gridController.setCellBold(sheetId, rectangleToRect(rectangle), bold, sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean, cursor: SheetCursorSave): void {
-    const summary = this.gridController.setCellItalic(
-      sheetId,
-      rectangleToRect(rectangle),
-      italic,
-      JSON.stringify(cursor)
-    );
+  setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean): void {
+    const summary = this.gridController.setCellItalic(sheetId, rectangleToRect(rectangle), italic, sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  setCellTextColor(
-    sheetId: string,
-    rectangle: Rectangle,
-    textColor: string | undefined,
-    cursor: SheetCursorSave
-  ): void {
+  setCellTextColor(sheetId: string, rectangle: Rectangle, textColor: string | undefined): void {
     const summary = this.gridController.setCellTextColor(
       sheetId,
       rectangleToRect(rectangle),
       textColor,
-      JSON.stringify(cursor)
+      sheets.cursorSave()
     );
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  setCellFillColor(
-    sheetId: string,
-    rectangle: Rectangle,
-    fillColor: string | undefined,
-    cursor: SheetCursorSave
-  ): void {
+  setCellFillColor(sheetId: string, rectangle: Rectangle, fillColor: string | undefined): void {
     const summary = this.gridController.setCellFillColor(
       sheetId,
       rectangleToRect(rectangle),
       fillColor,
-      JSON.stringify(cursor)
+      sheets.cursorSave()
     );
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  changeDecimalPlaces(
-    sheetId: string,
-    source: Pos,
-    rectangle: Rectangle,
-    delta: number,
-    cursor: SheetCursorSave
-  ): void {
+  changeDecimalPlaces(sheetId: string, source: Pos, rectangle: Rectangle, delta: number): void {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     const summary = this.gridController.changeDecimalPlaces(
       sheetId,
       source,
       rectangleToRect(rectangle),
       delta,
-      JSON.stringify(cursor)
+      sheets.cursorSave()
     );
     transactionResponse(summary);
     this.dirty = true;
@@ -340,15 +313,13 @@ export class Grid {
   }
 
   undo(): void {
-    const cursor = sheets.sheet.cursor.save();
-    const summary = this.gridController.undo(JSON.stringify(cursor));
+    const summary = this.gridController.undo(sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }
 
   redo(): void {
-    const cursor = sheets.sheet.cursor.save();
-    const summary = this.gridController.redo(JSON.stringify(cursor));
+    const summary = this.gridController.redo(sheets.cursorSave());
     transactionResponse(summary);
     this.dirty = true;
   }

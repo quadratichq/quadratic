@@ -3,7 +3,7 @@ import { sheets } from '../../../grid/controller/Sheets';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { PanMode } from '../../pixiApp/PixiAppSettings';
+import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
@@ -125,7 +125,7 @@ export class PointerHeading {
     this.clicked = false;
 
     // Only style the heading resize cursor if panning mode is disabled
-    if (pixiApp.settings.panMode === PanMode.Disabled) {
+    if (pixiAppSettings.panMode === PanMode.Disabled) {
       const headingResize = headings.intersectsHeadingGridLine(world);
       if (headingResize) {
         this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
@@ -226,7 +226,7 @@ export class PointerHeading {
       //   gridOffsets.headingResizing = undefined;
       //   pixiApp.viewport.plugins.get('decelerate')?.reset();
       // }
-      return true;
+      // return true;
     }
     return false;
   }

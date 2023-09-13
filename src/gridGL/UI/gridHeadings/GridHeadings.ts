@@ -4,6 +4,7 @@ import { sheets } from '../../../grid/controller/Sheets';
 import { colors } from '../../../theme/colors';
 import { intersects } from '../../helpers/intersects';
 import { pixiApp } from '../../pixiApp/PixiApp';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { Size } from '../../types/size';
 import { calculateAlphaForGridLines } from '../gridUtils';
 import { GridHeadingsLabels } from './GridHeadingsLabels';
@@ -96,7 +97,7 @@ export class GridHeadings extends Container {
     if (!this.characterSize) return;
     const { viewport } = pixiApp;
     const { gridOffsets } = sheets.sheet;
-    const showA1Notation = pixiApp.settings.showA1Notation;
+    const showA1Notation = pixiAppSettings.showA1Notation;
     const cellWidth = CELL_WIDTH / viewport.scale.x;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
@@ -206,7 +207,7 @@ export class GridHeadings extends Container {
     if (!this.characterSize) return;
     const { viewport } = pixiApp;
     const { gridOffsets } = sheets.sheet;
-    const showA1Notation = pixiApp.settings.showA1Notation;
+    const showA1Notation = pixiAppSettings.showA1Notation;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
     const bounds = viewport.getVisibleBounds();
@@ -353,7 +354,7 @@ export class GridHeadings extends Container {
 
     this.headingsGraphics.clear();
 
-    if (!pixiApp.settings.showHeadings) {
+    if (!pixiAppSettings.showHeadings) {
       this.visible = false;
       this.rowRect = undefined;
       this.columnRect = undefined;

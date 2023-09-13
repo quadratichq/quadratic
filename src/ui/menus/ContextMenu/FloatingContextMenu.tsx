@@ -25,6 +25,7 @@ import { PNG_MESSAGE } from '../../../constants/appConstants';
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -113,7 +114,7 @@ export const FloatingContextMenu = (props: Props) => {
     if (pixiApp.pointer?.pointerDown?.active) visibility = 'hidden';
 
     // Hide if in presentation mode
-    if (pixiApp.settings.presentationMode) visibility = 'hidden';
+    if (pixiAppSettings.presentationMode) visibility = 'hidden';
 
     // Hide if you don't have edit access
     if (!isEditorOrAbove(editorInteractionState.permission)) visibility = 'hidden';

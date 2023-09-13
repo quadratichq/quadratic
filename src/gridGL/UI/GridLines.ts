@@ -2,6 +2,7 @@ import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { calculateAlphaForGridLines } from './gridUtils';
 
 export class GridLines extends Graphics {
@@ -19,7 +20,7 @@ export class GridLines extends Graphics {
       this.dirty = false;
       this.clear();
 
-      if (!pixiApp.settings.showGridLines) {
+      if (!pixiAppSettings.showGridLines) {
         this.visible = false;
         pixiApp.setViewportDirty();
         return;

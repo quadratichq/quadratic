@@ -1,5 +1,6 @@
 import { Graphics } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 
 export class AxesLines extends Graphics {
   dirty = true;
@@ -9,7 +10,7 @@ export class AxesLines extends Graphics {
       this.dirty = false;
       this.clear();
 
-      if (!pixiApp.settings.showGridAxes) {
+      if (!pixiAppSettings.showGridAxes) {
         this.visible = false;
         pixiApp.setViewportDirty();
         return;

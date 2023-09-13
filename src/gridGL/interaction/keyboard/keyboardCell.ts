@@ -2,7 +2,7 @@ import { Rectangle } from 'pixi.js';
 import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
-import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { isAllowedFirstChar } from './keyboardCellChars';
 
 export function keyboardCell(options: {
@@ -69,10 +69,10 @@ export function keyboardCell(options: {
       } else {
         // open single line
         const edit = sheet.getEditCell(x, y);
-        pixiAppEvents.changeInput(true, edit);
+        pixiAppSettings.changeInput(true, edit);
       }
     } else {
-      pixiAppEvents.changeInput(true);
+      pixiAppSettings.changeInput(true);
     }
     event.preventDefault();
   }
@@ -96,7 +96,7 @@ export function keyboardCell(options: {
         });
       } else {
         // Open cell input for editing text
-        pixiAppEvents.changeInput(true, cell.value);
+        pixiAppSettings.changeInput(true, cell.value);
       }
     } else {
       // Open cell type menu, close editor.
@@ -112,7 +112,7 @@ export function keyboardCell(options: {
   }
 
   if (isAllowedFirstChar(event.key)) {
-    pixiAppEvents.changeInput(true, event.key);
+    pixiAppSettings.changeInput(true, event.key);
     event.preventDefault();
   }
 

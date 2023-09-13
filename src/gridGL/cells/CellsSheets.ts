@@ -2,7 +2,6 @@ import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { SheetId } from '../../quadratic-core/types';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppEvents } from '../pixiApp/PixiAppEvents';
 import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
 
@@ -19,7 +18,6 @@ export class CellsSheets extends Container<CellsSheet> {
         this.current = child;
       }
     });
-    this.show(sheets.sheet.id);
   }
 
   async addSheet(id: string): Promise<void> {
@@ -47,7 +45,7 @@ export class CellsSheets extends Container<CellsSheet> {
         if (this.current?.sheet.id !== child?.sheet.id) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
-          pixiAppEvents.loadViewport();
+          pixiApp.loadViewport();
         }
       } else {
         child.hide();

@@ -7,6 +7,7 @@ import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
 
 interface CellInputProps {
@@ -75,7 +76,7 @@ export const CellInput = (props: CellInputProps) => {
       node.focus();
       setTextInput(node);
       const value = cell;
-      text.current = pixiApp.settings.input.initialValue ?? (value || '');
+      text.current = pixiAppSettings.input.initialValue ?? (value || '');
       if (document.hasFocus() && node.contains(document.activeElement)) {
         handleFocus({ target: node });
       }
@@ -155,7 +156,7 @@ export const CellInput = (props: CellInputProps) => {
       },
     });
 
-    pixiApp.settings.changeInput(false);
+    pixiAppSettings.changeInput(false);
 
     // Set focus back to Grid
     focusGrid();

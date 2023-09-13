@@ -1,23 +1,33 @@
-import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
-import { GridFile } from '../../schemas';
+import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
 import { Sheet } from '../sheet/Sheet';
-import { SheetCursorSave } from '../sheet/SheetCursor';
 import { grid } from './Grid';
 
 // default size for URL: &mock-large-data=
-const randomFloatSize = { x: 10, y: 3000 };
+// const randomFloatSize = { x: 10, y: 3000 };
 
 class Sheets {
-  private sheets!: Sheet[];
-  private _current!: string;
+  private sheets: Sheet[];
+  private _current: string;
 
   // set up sheet information
   // ------------------------
 
-  init() {
+  constructor() {
     this.sheets = [];
-    this.repopulate();
-    this._current = this.sheets[0].id;
+    this._current = '';
+  }
+
+  create() {
+    this.sheets = [];
+    const sheetIds = grid.getSheetIds();
+    sheetIds.forEach((_, index) => {
+      const sheet = new Sheet(index);
+      this.sheets.push(sheet);
+    });
+    this.sort();
+    this.current = this.sheets[0].id;
+    pixiApp.create();
   }
 
   // ensures there's a Sheet.ts for every Sheet.rs
@@ -28,7 +38,7 @@ class Sheets {
       if (!this.sheets.find((search) => search.id === sheetId)) {
         const sheet = new Sheet(index);
         this.sheets.push(sheet);
-        pixiAppEvents.addSheet(sheet);
+        pixiApp.cellsSheets.addSheet(sheet.id);
       }
     });
 
@@ -36,40 +46,40 @@ class Sheets {
     this.sheets.forEach((sheet, index) => {
       if (!sheetIds.includes(sheet.id)) {
         this.sheets.splice(index, 1);
-        pixiAppEvents.deleteSheet(sheet.id);
+        sheets.deleteSheet(sheet.id);
       }
     });
     this.sort();
   }
 
-  loadFile(file: GridFile): boolean {
-    try {
-      grid.newFromFile(file);
-      this.sheets = [];
-      this.repopulate();
-      this._current = this.sheets[0].id;
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
+  // loadFile(file: GridFile): boolean {
+  //   try {
+  //     grid.newFromFile(file);
+  //     this.sheets = [];
+  //     this.repopulate();
+  //     this._current = this.sheets[0].id;
+  //     return true;
+  //   } catch (_) {
+  //     return false;
+  //   }
+  // }
 
-  mockLargeData(): void {
-    console.time('random');
-    const url = new URLSearchParams(window.location.search);
-    let { x, y } = randomFloatSize;
-    const params = url.get('mock-large-data');
-    if (params?.includes(',')) {
-      const n = params.split(',');
-      x = parseInt(n[0]);
-      y = parseInt(n[1]);
-    }
-    grid.populateWithRandomFloats(this._current, x, y);
-    this.sheets = [];
-    this.repopulate();
-    this._current = this.sheets[0].id;
-    console.timeEnd('random');
-  }
+  // mockLargeData(): void {
+  //   console.time('random');
+  //   const url = new URLSearchParams(window.location.search);
+  //   let { x, y } = randomFloatSize;
+  //   const params = url.get('mock-large-data');
+  //   if (params?.includes(',')) {
+  //     const n = params.split(',');
+  //     x = parseInt(n[0]);
+  //     y = parseInt(n[1]);
+  //   }
+  //   grid.populateWithRandomFloats(this._current, x, y);
+  //   this.sheets = [];
+  //   this.repopulate();
+  //   this._current = this.sheets[0].id;
+  //   console.timeEnd('random');
+  // }
 
   // updates the SheetBar UI
   private updateSheetBar(): void {
@@ -98,7 +108,15 @@ class Sheets {
   set current(value: string) {
     if (value !== this._current) {
       this._current = value;
-      pixiAppEvents.changeSheet();
+      pixiApp.viewport.dirty = true;
+      pixiApp.gridLines.dirty = true;
+      pixiApp.axesLines.dirty = true;
+      pixiApp.headings.dirty = true;
+      pixiApp.cursor.dirty = true;
+      // pixiApp.quadrants.changeSheet();
+      pixiApp.boxCells.reset();
+      pixiAppSettings.changeInput(false);
+      pixiApp.cellsSheets.show(sheets.sheet.id);
       this.updateSheetBar();
     }
   }
@@ -180,7 +198,7 @@ class Sheets {
   // ----------------
 
   createNew(): void {
-    grid.addSheet(this.sheet.cursor.save());
+    grid.addSheet();
 
     // sets the current sheet to the new sheet
     this.current = this.sheets[this.sheets.length - 1].id;
@@ -188,7 +206,7 @@ class Sheets {
 
   duplicate(): void {
     const oldSheetId = this.current;
-    grid.duplicateSheet(this.current, this.sheet.cursor.save());
+    grid.duplicateSheet(this.current);
 
     // sets the current sheet to the duplicated sheet
     const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
@@ -201,7 +219,7 @@ class Sheets {
 
   deleteSheet(id: string): void {
     const order = this.sheet.order;
-    grid.deleteSheet(id, this.sheet.cursor.save());
+    grid.deleteSheet(id);
 
     // set current to next sheet (before this.sheets is updated)
     if (this.sheets.length) {
@@ -230,7 +248,7 @@ class Sheets {
 
         const nextNext = next ? this.getNext(next.order) : undefined;
 
-        grid.moveSheet(id, nextNext?.id, sheet.cursor.save());
+        grid.moveSheet(id, nextNext?.id);
       } else if (delta === -1) {
         const previous = this.getPrevious(sheet.order);
 
@@ -238,18 +256,18 @@ class Sheets {
         if (!previous) return;
 
         // if not defined, then this is id will become first sheet
-        grid.moveSheet(id, previous?.id, sheet.cursor.save());
+        grid.moveSheet(id, previous?.id);
       } else {
         throw new Error(`Unhandled delta ${delta} in sheets.changeOrder`);
       }
     } else {
-      grid.moveSheet(id, toBefore, sheet.cursor.save());
+      grid.moveSheet(id, toBefore);
     }
     this.sort();
   }
 
-  cursorSave(): SheetCursorSave {
-    return this.sheet.cursor.save();
+  cursorSave(): string {
+    return JSON.stringify(this.sheet.cursor.save());
   }
 }
 

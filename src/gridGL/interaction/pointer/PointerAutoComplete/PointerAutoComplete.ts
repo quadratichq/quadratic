@@ -3,7 +3,7 @@ import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { intersects } from '../../../helpers/intersects';
 import { pixiApp } from '../../../pixiApp/PixiApp';
-import { PanMode } from '../../../pixiApp/PixiAppSettings';
+import { PanMode, pixiAppSettings } from '../../../pixiApp/PixiAppSettings';
 import { Coordinate } from '../../../types/size';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
@@ -26,7 +26,7 @@ export class PointerAutoComplete {
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
 
-    if (pixiApp.settings.panMode !== PanMode.Disabled) return false;
+    if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
 
     // handle dragging from the corner
     if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
@@ -71,7 +71,7 @@ export class PointerAutoComplete {
 
   pointerMove(world: Point): boolean {
     if (isMobile) return false;
-    if (pixiApp.settings.panMode !== PanMode.Disabled) return false;
+    if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
     if (!this.active) {
       if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
         this.cursor = 'crosshair';

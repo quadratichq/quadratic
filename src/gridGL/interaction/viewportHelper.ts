@@ -1,6 +1,7 @@
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
 
 export function isVisible() {
@@ -59,7 +60,7 @@ export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinat
   }
 
   if (topLeft) {
-    const adjust = pixiApp.settings.showHeadings ? HEADING_SIZE : 0;
+    const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE : 0;
     const cell = sheet.gridOffsets.getCell(topLeft.x + adjust, topLeft.y + adjust);
     pixiApp.viewport.moveCorner(cell.x, cell.y);
   }

@@ -8,9 +8,7 @@ const ListItems = [
   {
     label: 'Sheet: Create',
     Component: (props: any) => {
-      return (
-        <CommandPaletteListItem {...props} icon={<PostAddOutlinedIcon />} action={grid.addSheet(sheets.cursorSave())} />
-      );
+      return <CommandPaletteListItem {...props} icon={<PostAddOutlinedIcon />} action={grid.addSheet()} />;
     },
   },
   {
@@ -28,7 +26,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           icon={<PostAddOutlinedIcon />}
-          action={() => grid.duplicateSheet(sheets.sheet.id, sheets.cursorSave())}
+          action={() => grid.duplicateSheet(sheets.sheet.id)}
         />
       );
     },

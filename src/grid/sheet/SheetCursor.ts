@@ -1,6 +1,6 @@
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
-import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
+import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { Sheet } from './Sheet';
 
@@ -40,7 +40,7 @@ export class SheetCursor {
   }
   get viewport(): IViewportTransformState {
     if (!this._viewport) {
-      const { x, y } = pixiAppEvents.getStartingViewport();
+      const { x, y } = pixiApp.getStartingViewport();
       return { x, y, scaleX: 1, scaleY: 1 };
     }
     return this._viewport;
@@ -59,7 +59,7 @@ export class SheetCursor {
     this.keyboardMovePosition = value.keyboardMovePosition;
     this.cursorPosition = value.cursorPosition;
     this.multiCursor = value.multiCursor;
-    pixiAppEvents.cursorPosition();
+    pixiApp.updateCursorPosition();
   }
 
   changePosition(options: {
@@ -74,7 +74,7 @@ export class SheetCursor {
     } else if (options.keyboardMovePosition) {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
-    pixiAppEvents.cursorPosition();
+    pixiApp.updateCursorPosition();
   }
 
   changeBoxCells(boxCells: boolean) {

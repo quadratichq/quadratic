@@ -2,7 +2,7 @@ import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { PanMode } from '../../pixiApp/PixiAppSettings';
+import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
@@ -21,14 +21,14 @@ export class PointerDown {
   private afterShowInput?: boolean;
 
   pointerDown(world: Point, event: PointerEvent): void {
-    if (isMobile || pixiApp.settings.panMode !== PanMode.Disabled) return;
+    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled) return;
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
 
-    // note: directly call pixiApp.settings instead of locally defining it here; otherwise it dereferences this
+    // note: directly call pixiAppSettings instead of locally defining it here; otherwise it dereferences this
 
     // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
-    if (pixiApp.settings.input.show) {
+    if (pixiAppSettings.input.show) {
       this.afterShowInput = true;
       setTimeout(() => {
         this.pointerDown(world, event);
@@ -121,7 +121,7 @@ export class PointerDown {
   }
 
   pointerMove(world: Point): void {
-    if (pixiApp.settings.panMode !== PanMode.Disabled) return;
+    if (pixiAppSettings.panMode !== PanMode.Disabled) return;
 
     if (!this.active) return;
 
@@ -155,7 +155,7 @@ export class PointerDown {
         keyboardMovePosition: { x: this.position.x, y: this.position.y },
         cursorPosition: { x: this.position.x, y: this.position.y },
       });
-      pixiApp.settings.changeInput(false);
+      pixiAppSettings.changeInput(false);
     } else {
       // cursor origin and terminal are not in the same cell
 
@@ -185,7 +185,7 @@ export class PointerDown {
             terminalPosition: { x: termX, y: termY },
           },
         });
-        pixiApp.settings.changeInput(false);
+        pixiAppSettings.changeInput(false);
 
         // update previousPosition
         this.previousPosition = {

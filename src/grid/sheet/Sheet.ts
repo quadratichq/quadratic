@@ -58,19 +58,19 @@ export class Sheet {
   // -----------------------------------
 
   setCellValue(x: number, y: number, value: string): void {
-    grid.setCellValue({ sheetId: this.id, x, y, value, cursor: this.cursor.save() });
+    grid.setCellValue({ sheetId: this.id, x, y, value });
   }
 
   deleteCells(rectangle: Rectangle): void {
-    grid.deleteCellValues(this.id, rectangle, this.cursor.save());
+    grid.deleteCellValues(this.id, rectangle);
   }
 
   set name(name: string) {
-    grid.setSheetName(this.id, name, this.cursor.save());
+    grid.setSheetName(this.id, name);
   }
 
   set color(color: string | undefined) {
-    grid.setSheetColor(this.id, color, this.cursor.save());
+    grid.setSheetColor(this.id, color);
   }
 
   //#endregion
@@ -205,35 +205,35 @@ export class Sheet {
   //#region set grid information
 
   setCellFillColor(rectangle: Rectangle, fillColor?: string): void {
-    return grid.setCellFillColor(this.id, rectangle, fillColor, this.cursor.save());
+    return grid.setCellFillColor(this.id, rectangle, fillColor);
   }
 
   setCellBold(rectangle: Rectangle, bold: boolean): void {
-    grid.setCellBold(this.id, rectangle, bold, this.cursor.save());
+    grid.setCellBold(this.id, rectangle, bold);
   }
 
   setCellItalic(rectangle: Rectangle, italic: boolean): void {
-    grid.setCellItalic(this.id, rectangle, italic, this.cursor.save());
+    grid.setCellItalic(this.id, rectangle, italic);
   }
 
   setCellTextColor(rectangle: Rectangle, color?: string): void {
-    grid.setCellTextColor(this.id, rectangle, color, this.cursor.save());
+    grid.setCellTextColor(this.id, rectangle, color);
   }
 
   setCellAlign(rectangle: Rectangle, align?: CellAlign): void {
-    grid.setCellAlign(this.id, rectangle, align, this.cursor.save());
+    grid.setCellAlign(this.id, rectangle, align);
   }
 
   setCurrency(rectangle: Rectangle, symbol: string = '$') {
-    grid.setCellCurrency(this.id, rectangle, symbol, this.cursor.save());
+    grid.setCellCurrency(this.id, rectangle, symbol);
   }
 
   setPercentage(rectangle: Rectangle) {
-    grid.setCellPercentage(this.id, rectangle, this.cursor.save());
+    grid.setCellPercentage(this.id, rectangle);
   }
 
   removeCellNumericFormat(rectangle: Rectangle) {
-    grid.removeCellNumericFormat(this.id, rectangle, this.cursor.save());
+    grid.removeCellNumericFormat(this.id, rectangle);
   }
 
   changeDecimals(delta: number): void {
@@ -241,8 +241,7 @@ export class Sheet {
       this.id,
       new Pos(this.cursor.originPosition.x, this.cursor.originPosition.y),
       this.cursor.getRectangle(),
-      delta,
-      this.cursor.save()
+      delta
     );
   }
 

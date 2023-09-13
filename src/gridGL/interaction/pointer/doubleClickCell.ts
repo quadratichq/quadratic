@@ -1,11 +1,11 @@
 // import { CodeCellValue } from '../../../quadratic-core/types';
-import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
 // todo: fix types
 
 export function doubleClickCell(options: { column: number; row: number; code?: any; cell?: string }): void {
   const { code, cell, column, row } = options;
-  const settings = pixiAppEvents.getSettings();
+  const settings = pixiAppSettings;
 
   if (!settings.setEditorInteractionState) return;
   if (code) {
