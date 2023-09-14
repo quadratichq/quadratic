@@ -333,9 +333,6 @@ impl Sheet {
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get(&index)
     }
-    pub(crate) fn get_mut_column(&mut self, index: i64) -> Option<&mut Column> {
-        self.columns.get_mut(&index)
-    }
     /// Returns a column of a sheet from its index, or creates a new column at
     /// that index.
     pub(crate) fn get_or_create_column(
@@ -699,44 +696,6 @@ impl Sheet {
 
     pub fn id_to_string(&self) -> String {
         self.id.to_string()
-    }
-
-    pub fn remove_formats_from_columns(&mut self, rect: Rect) -> Vec<Column> {
-        let mut columns = vec![];
-        let range: Range<i64> = Range {
-            start: rect.min.y,
-            end: rect.max.y + 1,
-        };
-        for x in rect.x_range() {
-            let column = self.get_mut_column(x);
-            match column {
-                Some(column) => columns.push(column.remove_formats_to_column(range.clone())),
-                None => columns.push(Column::new()),
-            }
-        }
-        columns
-    }
-    pub fn merge_formats_from_columns(
-        &mut self,
-        start_pos: Pos,
-        columns: Vec<Column>,
-        use_column_ids: bool,
-    ) {
-        let mut x = start_pos.x;
-        columns.iter().for_each(|column| {
-            let index = if use_column_ids {
-                self.get_column_index(column.id)
-            } else {
-                Some(x)
-            };
-
-            // this handles the case where a column was deleted when attempting to undo
-            if index.is_some() {
-                let (_, to_copy) = self.get_or_create_column(index.unwrap());
-                to_copy.merge_formats_from_column(start_pos.y, column);
-            }
-            x += 1;
-        });
     }
 
     /// get or calculate decimal places for a cell

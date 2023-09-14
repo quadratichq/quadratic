@@ -82,59 +82,6 @@ impl Column {
             || self.text_color.get(y).is_some()
             || self.fill_color.get(y).is_some()
     }
-
-    /// copies formats column into a new column with y starting at 0
-    pub fn copy_formats_to_column(&self, range: Range<i64>) -> Column {
-        // the copied column has the same id as the original to assist with undo
-        let mut column = Column::with_id(self.id);
-        self.align
-            .copy_range_to_column_data(&range, &mut column.align);
-        self.wrap
-            .copy_range_to_column_data(&range, &mut column.wrap);
-        self.numeric_format
-            .copy_range_to_column_data(&range, &mut column.numeric_format);
-        self.bold
-            .copy_range_to_column_data(&range, &mut column.bold);
-        self.italic
-            .copy_range_to_column_data(&range, &mut column.italic);
-        self.text_color
-            .copy_range_to_column_data(&range, &mut column.text_color);
-        self.fill_color
-            .copy_range_to_column_data(&range, &mut column.fill_color);
-        column
-    }
-    /// removes formats column into a new column with y starting at 0
-    pub fn remove_formats_to_column(&mut self, range: Range<i64>) -> Column {
-        // the copied column has the same id as the original to assist with undo
-        let mut column = Column::with_id(self.id);
-        self.align
-            .remove_range_to_column_data(&range, &mut column.align);
-        self.wrap
-            .remove_range_to_column_data(&range, &mut column.wrap);
-        self.numeric_format
-            .remove_range_to_column_data(&range, &mut column.numeric_format);
-        self.bold
-            .remove_range_to_column_data(&range, &mut column.bold);
-        self.italic
-            .remove_range_to_column_data(&range, &mut column.italic);
-        self.text_color
-            .remove_range_to_column_data(&range, &mut column.text_color);
-        self.fill_color
-            .remove_range_to_column_data(&range, &mut column.fill_color);
-        column
-    }
-    pub fn merge_formats_from_column(&mut self, y: i64, source: &Column) {
-        self.align.merge_from_column_data(y, &source.align);
-        self.wrap.merge_from_column_data(y, &source.wrap);
-        self.numeric_format
-            .merge_from_column_data(y, &source.numeric_format);
-        self.bold.merge_from_column_data(y, &source.bold);
-        self.italic.merge_from_column_data(y, &source.italic);
-        self.text_color
-            .merge_from_column_data(y, &source.text_color);
-        self.fill_color
-            .merge_from_column_data(y, &source.fill_color);
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
