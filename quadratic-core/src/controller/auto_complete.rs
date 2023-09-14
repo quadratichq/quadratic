@@ -3,7 +3,7 @@ use smallvec::SmallVec;
 use super::{transactions::TransactionSummary, GridController};
 use crate::{
     grid::{Sheet, SheetId},
-    Array, ArraySize, CellValue, Pos, Rect,
+    Array, CellValue, Pos, Rect,
 };
 
 impl GridController {
@@ -18,17 +18,39 @@ impl GridController {
     ) -> TransactionSummary {
         // crate::wasm_bindings::js::log(&format!("expand_down rect: {:?}", rect));
         let sheet = self.sheet(sheet_id);
-        let value = sheet.get_cell_value(rect.min).unwrap();
+        let selection_values = cell_values_in_rect(rect, &sheet);
 
-        let width = 1;
-        let height = to - rect.min.y + 1;
-        let size: ArraySize = (width as u32, height as u32).try_into().unwrap();
-        let values: Vec<CellValue> = (rect.min.y..=to)
-            .map(|_y| value.clone())
-            .collect::<Vec<CellValue>>();
-        let array = Array::new_row_major(size, values.into()).unwrap();
+        crate::util::dbgjs(rect);
+        crate::util::dbgjs(selection_values.clone());
 
-        self.set_cells(sheet_id, rect.min, array, cursor)
+        let range = Rect {
+            min: Pos {
+                x: rect.min.x,
+                y: rect.max.y + 1,
+            },
+            max: Pos {
+                x: rect.max.x,
+                y: to,
+            },
+        };
+
+        let values = set_cell_projections(&selection_values, &range);
+        let array = Array::new_row_major(range.size(), values).unwrap();
+
+        self.set_cells(sheet_id, range.min, array, cursor)
+
+        // let sheet = self.sheet(sheet_id);
+        // let value = sheet.get_cell_value(rect.min).unwrap();
+
+        // let width = 1;
+        // let height = to - rect.min.y + 1;
+        // let size: ArraySize = (width as u32, height as u32).try_into().unwrap();
+        // let values: Vec<CellValue> = (rect.min.y..=to)
+        //     .map(|_y| value.clone())
+        //     .collect::<Vec<CellValue>>();
+        // let array = Array::new_row_major(size, values.into()).unwrap();
+
+        // self.set_cells(sheet_id, rect.min, array, cursor)
     }
 
     pub fn expand_right(
@@ -53,7 +75,7 @@ impl GridController {
             },
         };
 
-        let values = set_cell_projections(&&selection_values, &range);
+        let values = set_cell_projections(&selection_values, &range);
         let array = Array::new_row_major(range.size(), values).unwrap();
 
         self.set_cells(sheet_id, range.min, array, cursor)
@@ -75,6 +97,9 @@ pub fn cell_values_in_rect(rect: Rect, sheet: &Sheet) -> Array {
         .flatten()
         .collect();
 
+    crate::util::dbgjs(&values);
+    crate::util::dbgjs(rect);
+    crate::util::dbgjs(rect.size());
     Array::new_row_major(rect.size(), values).unwrap()
 }
 
@@ -84,11 +109,11 @@ pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) ->
     selection.get(x, y).unwrap_or_else(|_| &CellValue::Blank)
 }
 
-pub fn set_cell_projections(selection: &Array, rect: &Rect) -> SmallVec<[CellValue; 1]> {
+pub fn set_cell_projections(projection: &Array, rect: &Rect) -> SmallVec<[CellValue; 1]> {
     rect.y_range()
         .map(|y| {
             rect.x_range()
-                .map(|x| project_cell_value(&selection, Pos { x, y }, &rect).to_owned())
+                .map(|x| project_cell_value(&projection, Pos { x, y }, &rect).to_owned())
                 .collect::<Vec<CellValue>>()
         })
         .flatten()
@@ -196,6 +221,21 @@ mod tests {
         let expected = Rect {
             min: Pos { x: 5, y: 2 },
             max: Pos { x: 12, y: 3 },
+        };
+        assert_eq!(result.cell_regions_modified[0].1, expected);
+    }
+
+    #[test]
+    fn test_expand_down() {
+        let (mut grid_controller, sheet, _) = test_setup();
+        let selection = Rect {
+            min: Pos { x: 0, y: 1 },
+            max: Pos { x: 1, y: 10 },
+        };
+        let result = grid_controller.expand_down(sheet.id, selection, 10, None, None);
+        let expected = Rect {
+            min: Pos { x: 3, y: 0 },
+            max: Pos { x: 10, y: 1 },
         };
         assert_eq!(result.cell_regions_modified[0].1, expected);
     }

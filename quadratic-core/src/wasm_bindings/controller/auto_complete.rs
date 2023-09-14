@@ -18,6 +18,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        crate::wasm_bindings::js::log(&format!("expand_down *rect: {:?}", *rect));
         let output = self.expand_down(sheet_id, *rect, to, shrink_horizontal, cursor);
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
