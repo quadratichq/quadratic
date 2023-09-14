@@ -292,9 +292,9 @@ export class Grid {
     this.dirty = true;
   }
 
-  clearFormatting(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): TransactionSummary {
+  clearFormatting(sheetId: string, rectangle: Rectangle): void {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.js_clear_formatting(sheetId, rectangleToRect(rectangle), JSON.stringify(cursor));
+    return this.gridController.clearFormatting(sheetId, rectangleToRect(rectangle), sheets.getCursorPosition());
   }
 
   //#endregion
@@ -375,14 +375,15 @@ export class Grid {
   //#endregion
 
   //#region Clipboard
+
   copyToClipboard(sheetId: string, rectangle: Rectangle): JsClipboard {
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     return this.gridController.copyToClipboard(sheetId, rectangleToRect(rectangle));
   }
 
-  cutToClipboard(sheetId: string, rectangle: Rectangle, cursor: SheetCursorSave): JsClipboard {
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.cutToClipboard(sheetId, rectangleToRect(rectangle), JSON.stringify(cursor));
+  cutToClipboard(sheetId: string, rectangle: Rectangle): JsClipboard {
+    const summary = this.gridController.cutToClipboard(sheetId, rectangleToRect(rectangle), sheets.getCursorPosition());
+    transactionResponse(summary);
+    this.dirty = true;
   }
 
   pasteFromClipboard(options: {
@@ -391,11 +392,17 @@ export class Grid {
     y: number;
     plainText: string | undefined;
     html: string | undefined;
-    cursor: SheetCursorSave;
-  }): TransactionSummary {
-    const { sheetId, x, y, plainText, html, cursor } = options;
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.pasteFromClipboard(sheetId, new Pos(x, y), plainText, html, JSON.stringify(cursor));
+  }): void {
+    const { sheetId, x, y, plainText, html } = options;
+    const summary = this.gridController.pasteFromClipboard(
+      sheetId,
+      new Pos(x, y),
+      plainText,
+      html,
+      sheets.getCursorPosition()
+    );
+    transactionResponse(summary);
+    this.dirty = true;
   }
 
   //#endregion

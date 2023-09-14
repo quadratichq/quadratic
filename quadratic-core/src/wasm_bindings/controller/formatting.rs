@@ -204,4 +204,18 @@ impl GridController {
             sheet_id, source, *rect, delta, cursor,
         ))?)
     }
+
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "clearFormatting")]
+    pub fn js_clear_formatting(
+        &mut self,
+        sheet_id: String,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(
+            &self.clear_formatting(sheet_id, rect, cursor),
+        )?)
+    }
 }

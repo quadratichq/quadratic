@@ -3,10 +3,7 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use crate::{
-    grid::{
-        Bold, CellAlign, CellFmtAttr, CellWrap, Column, FillColor, Grid, Italic, NumericFormat,
-        RegionRef, SheetId, TextColor,
-    },
+    grid::{Column, NumericFormat, NumericFormatKind, RegionRef, SheetId},
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
 
@@ -164,23 +161,6 @@ impl GridController {
             None => vec![],
         };
         self.transact_forward(Transaction { ops, cursor })
-    }
-
-    pub fn set_cell_formats_for_type<A: CellFmtAttr>(
-        &mut self,
-        region: &RegionRef,
-        values: RunLengthEncoding<Option<A::Value>>,
-    ) -> RunLengthEncoding<Option<A::Value>> {
-        let sheet = self.grid.sheet_mut_from_id(region.sheet);
-        // TODO: optimize this for contiguous runs of the same value
-        let mut old_values = RunLengthEncoding::new();
-        for (cell_ref, value) in region.iter().zip(values.iter_values()) {
-            let old_value = sheet
-                .cell_ref_to_pos(cell_ref)
-                .and_then(|pos| sheet.set_formatting_value::<A>(pos, value.clone()));
-            old_values.push(old_value);
-        }
-        old_values
     }
 
     /// Returns a region of the spreadsheet, assigning IDs to columns and rows

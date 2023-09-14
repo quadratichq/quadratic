@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{ops::Range, str::FromStr};
 
 use super::{
     transactions::{Operation, Transaction, TransactionSummary},
@@ -8,6 +8,7 @@ use crate::{
     grid::{CodeCellValue, Column, Sheet, SheetId},
     Array, ArraySize, CellValue, Pos, Rect,
 };
+use bigdecimal::BigDecimal;
 use htmlescape;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -93,13 +94,20 @@ impl GridController {
                     code: code.clone(),
                 });
 
-                let format = sheet.get_existing_cell_format(pos);
-                if format.is_some() {
+                let (bold, italic) = if let Some(format) = sheet.get_existing_cell_format(pos) {
+                    (
+                        format.bold.is_some_and(|bold| bold == true),
+                        format.italic.is_some_and(|italic| italic == true),
+                    )
+                } else {
+                    (false, false)
+                };
+                if bold || italic {
                     html.push_str("<span style={");
-                    if format.unwrap().bold.is_some_and(|bold| bold == true) {
+                    if bold {
                         html.push_str("font-weight:bold;");
                     }
-                    if format.unwrap().italic.is_some_and(|italic| italic == true) {
+                    if italic {
                         html.push_str("font-style:italic;")
                     }
                     html.push_str("}>");
@@ -116,7 +124,7 @@ impl GridController {
                     plain_text.push_str(&spill_value.as_ref().unwrap().to_string());
                     html.push_str(&spill_value.as_ref().unwrap().to_string());
                 }
-                if format.is_some() {
+                if bold || italic {
                     html.push_str("</span>");
                 }
             }
@@ -202,12 +210,11 @@ impl GridController {
         rows.iter().for_each(|row| {
             row.iter().for_each(|s| {
                 if s.len() != 0 {
-                    let number_test = s.parse::<f64>();
-                    if number_test.is_ok() {
-                        let _ = array.set(x, y, CellValue::Number(number_test.unwrap()));
+                    if let Ok(n) = BigDecimal::from_str(s) {
+                        let _ = array.set(x, y, CellValue::Number(n));
                     } else {
                         let _ = array.set(x, y, CellValue::Text(String::from(*s)));
-                    }
+                    };
                 }
                 x += 1;
             });
@@ -293,7 +300,9 @@ impl GridController {
     ) -> Result<TransactionSummary, ()> {
         // use regex to find data-quadratic
         let re = Regex::new(r#"data-quadratic="(.*)"><tbody"#).unwrap();
-        let Some(data) = re.captures(&html) else { return Err(()); };
+        let Some(data) = re.captures(&html) else {
+            return Err(());
+        };
         let result = &data.get(1).map_or("", |m| m.as_str());
 
         // decode html in attribute
@@ -345,12 +354,7 @@ fn test_copy_to_clipboard() {
     let mut gc = GridController::default();
     let sheet_id = gc.sheet_ids()[0];
 
-    gc.set_cell_value(
-        sheet_id,
-        Pos { x: 1, y: 1 },
-        CellValue::Text(String::from("1, 1")),
-        None,
-    );
+    gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, String::from("1, 1"), None);
     gc.set_cell_bold(
         sheet_id,
         Rect {
@@ -360,7 +364,7 @@ fn test_copy_to_clipboard() {
         Some(true),
         None,
     );
-    gc.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, CellValue::Number(12.0), None);
+    gc.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, String::from("12.0"), None);
     gc.set_cell_italic(
         sheet_id,
         Rect {
@@ -399,5 +403,5 @@ fn test_paste_from_quadratic_clipboard() {
     let cell11 = sheet.get_cell_value(Pos { x: 0, y: 0 });
     assert_eq!(cell11.unwrap(), CellValue::Text(String::from("1, 1")));
     let cell21 = sheet.get_cell_value(Pos { x: 2, y: 1 });
-    assert_eq!(cell21.unwrap(), CellValue::Number(12.0));
+    assert_eq!(cell21.unwrap(), CellValue::Number(BigDecimal::from(12)));
 }

@@ -269,14 +269,26 @@ impl Sheet {
         }
     }
 
+    // returns CellFormatSummary only if a formatting exists
     pub fn get_existing_cell_format(&self, pos: Pos) -> Option<CellFormatSummary> {
         match self.columns.get(&pos.x) {
             Some(column) => {
                 let bold = column.bold.get(pos.y);
                 let italic = column.italic.get(pos.y);
+                let fill_color = column.fill_color.get(pos.y);
+                let text_color = column.text_color.get(pos.y);
 
-                if bold.is_some() || italic.is_some() {
-                    Some(CellFormatSummary { bold, italic })
+                if bold.is_some()
+                    || italic.is_some()
+                    || fill_color.is_some()
+                    || text_color.is_some()
+                {
+                    Some(CellFormatSummary {
+                        bold,
+                        italic,
+                        fill_color,
+                        text_color,
+                    })
                 } else {
                     None
                 }
@@ -725,6 +737,7 @@ impl Sheet {
             }
             x += 1;
         });
+    }
 
     /// get or calculate decimal places for a cell
     pub fn decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {

@@ -2,6 +2,7 @@ use super::*;
 use crate::{controller::transactions::TransactionSummary, grid::js_types::*};
 use std::str::FromStr;
 
+pub mod clipboard;
 pub mod formatting;
 pub mod render;
 pub mod sheets;
