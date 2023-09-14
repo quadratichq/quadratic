@@ -1,6 +1,5 @@
 import { Rectangle } from 'pixi.js';
 import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPerformance';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 import { Coordinate } from '../../../gridGL/types/size';
 import { grid } from '../../controller/Grid';
@@ -49,8 +48,8 @@ export const cutToClipboard = async (cell0: Coordinate, cell1: Coordinate) => {
   toClipboard(plainText, html);
 };
 
-export const copySelectionToPNG = async (app: PixiApp) => {
-  const blob = await copyAsPNG(app);
+export const copySelectionToPNG = async () => {
+  const blob = await copyAsPNG();
   if (!blob) {
     throw new Error('Unable to copy as PNG');
   }

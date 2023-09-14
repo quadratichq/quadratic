@@ -64,12 +64,9 @@ export const textFormatClear = (): void => {
 };
 
 export const clearFormatting = () => {
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.clearFormatting(rectangle);
+  sheets.sheet.clearFormatting();
 };
 
 export const clearFormattingAndBorders = () => {
-  // const rectangle = sheets.sheet.cursor.getRectangle();
-  // sheets.sheet.clearAllFormatting(rectangle);
-  throw new Error('not implemented yet!');
+  clearFormatting();
 };

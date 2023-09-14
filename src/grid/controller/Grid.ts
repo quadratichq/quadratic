@@ -293,8 +293,13 @@ export class Grid {
   }
 
   clearFormatting(sheetId: string, rectangle: Rectangle): void {
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    return this.gridController.clearFormatting(sheetId, rectangleToRect(rectangle), sheets.getCursorPosition());
+    const summary = this.gridController.clearFormatting(
+      sheetId,
+      rectangleToRect(rectangle),
+      sheets.getCursorPosition()
+    );
+    transactionResponse(summary);
+    this.dirty = true;
   }
 
   //#endregion
@@ -380,10 +385,15 @@ export class Grid {
     return this.gridController.copyToClipboard(sheetId, rectangleToRect(rectangle));
   }
 
-  cutToClipboard(sheetId: string, rectangle: Rectangle): JsClipboard {
-    const summary = this.gridController.cutToClipboard(sheetId, rectangleToRect(rectangle), sheets.getCursorPosition());
+  cutToClipboard(sheetId: string, rectangle: Rectangle): { html: string; plainText: string } {
+    const { summary, html, plainText } = this.gridController.cutToClipboard(
+      sheetId,
+      rectangleToRect(rectangle),
+      sheets.getCursorPosition()
+    );
     transactionResponse(summary);
     this.dirty = true;
+    return { html, plainText };
   }
 
   pasteFromClipboard(options: {

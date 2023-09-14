@@ -145,18 +145,41 @@ impl GridController {
         let region = self.existing_region(sheet_id, rect);
         let ops = match region.size() {
             Some(_) => {
-                // need an empty list of columns to clear the range
-                let mut formats = vec![];
-                for _ in rect.x_range() {
-                    formats.push(Column::new());
-                }
-                vec![Operation::ReplaceCellFormats {
-                    sheet_id,
-                    pos: rect.min,
-                    formats,
-                    height: rect.height(),
-                    use_column_ids: false,
-                }]
+                let len = region.size().unwrap().len();
+                vec![
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::Align(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::Wrap(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::Bold(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::Italic(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::TextColor(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::FillColor(RunLengthEncoding::repeat(None, len)),
+                    },
+                ]
             }
             None => vec![],
         };

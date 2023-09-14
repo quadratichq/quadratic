@@ -322,10 +322,8 @@ impl<B: BlockContent> ColumnData<B> {
         column_data: &mut ColumnData<B>,
     ) {
         let mut blocks = self.remove_range(y_range.clone());
-        if blocks.len() != 0 {
-            blocks.iter_mut().for_each(|block| block.y -= y_range.start);
-            column_data.add_blocks(blocks);
-        }
+        blocks.iter_mut().for_each(|block| block.y -= y_range.start);
+        column_data.add_blocks(blocks);
     }
 
     // copy from the y_start through the length of the from (which always starts at y = 0)

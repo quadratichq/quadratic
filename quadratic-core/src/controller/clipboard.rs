@@ -251,13 +251,13 @@ impl GridController {
             });
         }
 
-        ops.push(Operation::ReplaceCellFormats {
-            sheet_id,
-            pos: start_pos,
-            height,
-            formats,
-            use_column_ids: false,
-        });
+        // ops.push(Operation::ReplaceCellFormats {
+        //     sheet_id,
+        //     pos: start_pos,
+        //     height,
+        //     formats,
+        //     use_column_ids: false,
+        // });
 
         self.transact_forward(Transaction { ops, cursor })
     }
@@ -345,63 +345,69 @@ impl GridController {
 }
 
 #[cfg(test)]
-fn test_pasted_output() -> String {
-    String::from("<table data-quadratic=\"&#x7B;&quot;w&quot;&#x3A;3&#x2C;&quot;h&quot;&#x3A;2&#x2C;&quot;cells&quot;&#x3A;&#x5B;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;12&#x2E;0&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x5D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;id&quot;&#x3A;&#x7B;&quot;id&quot;&#x3A;&quot;68e7dd34&#x2D;6528&#x2D;4783&#x2D;9ec6&#x2D;08d1e4d101a7&quot;&#x7D;&#x2C;&quot;values&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;spills&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;align&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;wrap&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;numeric&#x5F;format&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;bold&quot;&#x3A;&#x7B;&quot;0&quot;&#x3A;&#x7B;&quot;y&quot;&#x3A;0&#x2C;&quot;content&quot;&#x3A;&#x7B;&quot;value&quot;&#x3A;true&#x2C;&quot;len&quot;&#x3A;1&#x7D;&#x7D;&#x7D;&#x2C;&quot;italic&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;text&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;fill&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x7D;&#x2C;&#x7B;&quot;id&quot;&#x3A;&#x7B;&quot;id&quot;&#x3A;&quot;32ccb46d&#x2D;625d&#x2D;4173&#x2D;a2fe&#x2D;be038b70605f&quot;&#x7D;&#x2C;&quot;values&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;spills&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;align&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;wrap&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;numeric&#x5F;format&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;bold&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;italic&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;text&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;fill&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x7D;&#x2C;&#x7B;&quot;id&quot;&#x3A;&#x7B;&quot;id&quot;&#x3A;&quot;fbdc69ce&#x2D;b964&#x2D;49af&#x2D;8a34&#x2D;f5bdcb8cb750&quot;&#x7D;&#x2C;&quot;values&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;spills&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;align&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;wrap&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;numeric&#x5F;format&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;bold&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;italic&quot;&#x3A;&#x7B;&quot;1&quot;&#x3A;&#x7B;&quot;y&quot;&#x3A;1&#x2C;&quot;content&quot;&#x3A;&#x7B;&quot;value&quot;&#x3A;true&#x2C;&quot;len&quot;&#x3A;1&#x7D;&#x7D;&#x7D;&#x2C;&quot;text&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;fill&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x7D;&#x5D;&#x7D;\"><tbody><tr><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td><span style={font-style:italic;}>12</span></tr></tbody></table>")
-}
+mod test {
+    use bigdecimal::BigDecimal;
 
-#[test]
-fn test_copy_to_clipboard() {
-    let mut gc = GridController::default();
-    let sheet_id = gc.sheet_ids()[0];
+    use crate::{controller::GridController, CellValue, Pos, Rect};
 
-    gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, String::from("1, 1"), None);
-    gc.set_cell_bold(
-        sheet_id,
-        Rect {
+    fn test_pasted_output() -> String {
+        String::from("<table data-quadratic=\"&#x7B;&quot;w&quot;&#x3A;3&#x2C;&quot;h&quot;&#x3A;2&#x2C;&quot;cells&quot;&#x3A;&#x5B;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;12&#x2E;0&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x5D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;id&quot;&#x3A;&#x7B;&quot;id&quot;&#x3A;&quot;68e7dd34&#x2D;6528&#x2D;4783&#x2D;9ec6&#x2D;08d1e4d101a7&quot;&#x7D;&#x2C;&quot;values&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;spills&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;align&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;wrap&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;numeric&#x5F;format&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;bold&quot;&#x3A;&#x7B;&quot;0&quot;&#x3A;&#x7B;&quot;y&quot;&#x3A;0&#x2C;&quot;content&quot;&#x3A;&#x7B;&quot;value&quot;&#x3A;true&#x2C;&quot;len&quot;&#x3A;1&#x7D;&#x7D;&#x7D;&#x2C;&quot;italic&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;text&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;fill&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x7D;&#x2C;&#x7B;&quot;id&quot;&#x3A;&#x7B;&quot;id&quot;&#x3A;&quot;32ccb46d&#x2D;625d&#x2D;4173&#x2D;a2fe&#x2D;be038b70605f&quot;&#x7D;&#x2C;&quot;values&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;spills&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;align&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;wrap&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;numeric&#x5F;format&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;bold&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;italic&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;text&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;fill&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x7D;&#x2C;&#x7B;&quot;id&quot;&#x3A;&#x7B;&quot;id&quot;&#x3A;&quot;fbdc69ce&#x2D;b964&#x2D;49af&#x2D;8a34&#x2D;f5bdcb8cb750&quot;&#x7D;&#x2C;&quot;values&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;spills&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;align&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;wrap&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;numeric&#x5F;format&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;bold&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;italic&quot;&#x3A;&#x7B;&quot;1&quot;&#x3A;&#x7B;&quot;y&quot;&#x3A;1&#x2C;&quot;content&quot;&#x3A;&#x7B;&quot;value&quot;&#x3A;true&#x2C;&quot;len&quot;&#x3A;1&#x7D;&#x7D;&#x7D;&#x2C;&quot;text&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;fill&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x7D;&#x5D;&#x7D;\"><tbody><tr><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td><span style={font-style:italic;}>12</span></tr></tbody></table>")
+    }
+
+    #[test]
+    fn test_copy_to_clipboard() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, String::from("1, 1"), None);
+        gc.set_cell_bold(
+            sheet_id,
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 1, y: 1 },
+            },
+            Some(true),
+            None,
+        );
+        gc.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, String::from("12"), None);
+        gc.set_cell_italic(
+            sheet_id,
+            Rect {
+                min: Pos { x: 3, y: 2 },
+                max: Pos { x: 3, y: 2 },
+            },
+            Some(true),
+            None,
+        );
+
+        let rect = Rect {
             min: Pos { x: 1, y: 1 },
-            max: Pos { x: 1, y: 1 },
-        },
-        Some(true),
-        None,
-    );
-    gc.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, String::from("12.0"), None);
-    gc.set_cell_italic(
-        sheet_id,
-        Rect {
-            min: Pos { x: 3, y: 2 },
             max: Pos { x: 3, y: 2 },
-        },
-        Some(true),
-        None,
-    );
+        };
 
-    let rect = Rect {
-        min: Pos { x: 1, y: 1 },
-        max: Pos { x: 3, y: 2 },
-    };
+        let (plain_text, _) = gc.copy_to_clipboard(sheet_id, rect);
+        assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
 
-    let (plain_text, _) = gc.copy_to_clipboard(sheet_id, rect);
-    assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
+        // this won't work b/c column_id changes on each run :(
+        // assert_eq!(html, test_pasted_output());
+    }
 
-    // this won't work b/c column_id changes on each run :(
-    // assert_eq!(html, test_pasted_output());
-}
+    #[test]
+    fn test_paste_from_quadratic_clipboard() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.paste_from_clipboard(
+            sheet_id,
+            Pos { x: 0, y: 0 },
+            None,
+            Some(test_pasted_output()),
+            None,
+        );
 
-#[test]
-fn test_paste_from_quadratic_clipboard() {
-    let mut gc = GridController::default();
-    let sheet_id = gc.sheet_ids()[0];
-    gc.paste_from_clipboard(
-        sheet_id,
-        Pos { x: 0, y: 0 },
-        None,
-        Some(test_pasted_output()),
-        None,
-    );
-
-    let sheet = gc.sheet(sheet_id);
-    let cell11 = sheet.get_cell_value(Pos { x: 0, y: 0 });
-    assert_eq!(cell11.unwrap(), CellValue::Text(String::from("1, 1")));
-    let cell21 = sheet.get_cell_value(Pos { x: 2, y: 1 });
-    assert_eq!(cell21.unwrap(), CellValue::Number(BigDecimal::from(12)));
+        let sheet = gc.sheet(sheet_id);
+        let cell11 = sheet.get_cell_value(Pos { x: 0, y: 0 });
+        assert_eq!(cell11.unwrap(), CellValue::Text(String::from("1, 1")));
+        let cell21 = sheet.get_cell_value(Pos { x: 2, y: 1 });
+        assert_eq!(cell21.unwrap(), CellValue::Number(BigDecimal::from(12)));
+    }
 }

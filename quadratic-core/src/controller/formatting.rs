@@ -30,6 +30,22 @@ impl GridController {
         old_values
     }
 
+    pub fn get_cell_formats_for_type<A: CellFmtAttr>(
+        &self,
+        region: &RegionRef,
+    ) -> RunLengthEncoding<Option<A::Value>> {
+        let sheet = self.grid.sheet_from_id(region.sheet);
+        // TODO: optimize this for contiguous runs of the same value
+        let mut old_values = RunLengthEncoding::new();
+        for cell_ref in region.iter() {
+            let old_value = sheet
+                .cell_ref_to_pos(cell_ref)
+                .and_then(|pos| sheet.get_formatting_value::<A>(pos));
+            old_values.push(old_value);
+        }
+        old_values
+    }
+
     // todo: should also check the results of spills
     pub fn change_decimal_places(
         &mut self,

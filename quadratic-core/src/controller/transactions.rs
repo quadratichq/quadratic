@@ -120,38 +120,6 @@ impl GridController {
                     })
                 }
 
-                Operation::ReplaceCellFormats {
-                    sheet_id,
-                    pos,
-                    formats,
-                    height,
-                    use_column_ids,
-                } => {
-                    let rect = Rect::new_span(
-                        pos,
-                        Pos {
-                            x: pos.x + (formats.len() as i64),
-                            y: pos.y + (height as i64),
-                        },
-                    );
-                    summary.cell_regions_modified.push((sheet_id, rect));
-
-                    // todo: maybe do work below to see if this should be updated?
-                    // might not be worth it....
-                    summary.fill_sheets_modified.push(sheet_id);
-
-                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    let old_formats = sheet.remove_formats_from_columns(rect);
-                    sheet.merge_formats_from_columns(pos, formats, use_column_ids);
-                    rev_ops.push(Operation::ReplaceCellFormats {
-                        sheet_id,
-                        pos,
-                        formats: old_formats,
-                        height,
-                        use_column_ids: true,
-                    });
-                }
-
                 Operation::AddSheet { sheet } => {
                     // todo: need to handle the case where sheet.order overlaps another sheet order
                     // this may happen after (1) delete a sheet; (2) MP update w/an added sheet; and (3) undo the deleted sheet
@@ -236,15 +204,6 @@ pub enum Operation {
         region: RegionRef,
         attr: CellFmtArray,
     },
-    ReplaceCellFormats {
-        sheet_id: SheetId,
-        pos: Pos,
-        formats: Vec<Column>,
-        height: u32,
-
-        // true for an undo; false for a paste
-        use_column_ids: bool,
-    },
 
     AddSheet {
         sheet: Sheet,
@@ -273,7 +232,6 @@ impl Operation {
         match self {
             Operation::SetCellValues { region, .. } => Some(region.sheet),
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
-            Operation::ReplaceCellFormats { sheet_id, .. } => Some(*sheet_id),
 
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,
@@ -304,17 +262,4 @@ pub struct TransactionSummary {
 
     /// Cursor location for undo/redo operation
     pub cursor: Option<String>,
-}
-
-impl TransactionSummary {
-    pub fn default() -> Self {
-        TransactionSummary {
-            cell_regions_modified: vec![],
-            fill_sheets_modified: vec![],
-            code_cells_modified: vec![],
-            border_sheets_modified: vec![],
-            cursor: None,
-            sheet_list_modified: false,
-        }
-    }
 }
