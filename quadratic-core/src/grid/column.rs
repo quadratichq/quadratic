@@ -263,49 +263,6 @@ impl<B: BlockContent> ColumnData<B> {
         to_return
     }
 
-    pub fn remove_range_to_column_data(
-        &mut self,
-        y_range: &Range<i64>,
-        column_data: &mut ColumnData<B>,
-    ) {
-        let mut blocks = self.remove_range(y_range.clone());
-        blocks.iter_mut().for_each(|block| block.y -= y_range.start);
-        column_data.add_blocks(blocks);
-    }
-
-    // copy from the y_start through the length of the from (which always starts at y = 0)
-    pub fn copy_range_to_column_data(&self, y_range: &Range<i64>, column_data: &mut ColumnData<B>) {
-        let mut to_copy = vec![];
-        for it in self.blocks_covering_range(y_range.clone()).with_position() {
-            match it {
-                itertools::Position::First(block) => {
-                    let [_, below] = block.clone().split(y_range.start);
-                    to_copy.extend(below)
-                }
-                itertools::Position::Middle(block) => to_copy.push(block.clone()),
-                itertools::Position::Last(block) => {
-                    let [above, _] = block.clone().split(y_range.end);
-                    to_copy.extend(above);
-                }
-                itertools::Position::Only(block) => {
-                    let [_, rest] = block.clone().split(y_range.start);
-                    if let Some(rest) = rest {
-                        let [inside, _] = rest.split(y_range.end);
-                        to_copy.extend(inside);
-                    }
-                }
-            }
-        }
-
-        if to_copy.len() != 0 {
-            // normalize the y-values where the range.start = 0
-            to_copy
-                .iter_mut()
-                .for_each(|block| block.y -= y_range.start);
-            column_data.add_blocks(to_copy);
-        }
-    }
-
     pub fn merge_from_column_data(&mut self, y_start: i64, clipboard: &ColumnData<B>) {
         clipboard.blocks().for_each(|block| {
             let mut to_add = block.clone();
