@@ -1,6 +1,5 @@
 import { Coordinate } from '../../gridGL/types/size';
 import { CellFormat } from '../../schemas';
-import { sheetController } from '../controller/SheetController';
 
 export const clearFormattingAction = (args: {
   start: Coordinate;
@@ -13,7 +12,7 @@ export const clearFormattingAction = (args: {
   const formats: CellFormat[] = [];
   for (let y = start.y; y <= end.y; y++) {
     for (let x = start.x; x <= end.x; x++) {
-      const format = sheetController.sheet.grid.getFormat(x, y);
+      const format = sheetController.grid.getFormat(x, y);
       if (format) formats.push({ x, y });
     }
   }

@@ -8,7 +8,7 @@ import {
   editorHighlightedCellsStateDefault,
 } from '../../../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
@@ -40,7 +40,7 @@ export const CodeEditor = () => {
   const [editorContent, setEditorContent] = useState<string | undefined>();
   const cell = useMemo(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
-    const cellCodeValue = sheetController.sheet.getCodeValue(
+    const cellCodeValue = sheets.sheet.getCodeValue(
       editorInteractionState.selectedCell.x,
       editorInteractionState.selectedCell.y
     );

@@ -2,9 +2,9 @@ import './SheetBarTab.css';
 
 import { Box, Fade, Popper } from '@mui/material';
 import { MouseEvent, PointerEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { sheets } from '../../../grid/controller/Sheets';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { sheetController } from '../../../grid/controller/SheetController';
 
 interface Props {
   sheet: Sheet;
@@ -60,15 +60,14 @@ export const SheetBarTab = (props: Props): JSX.Element => {
             if (event.code === 'Enter') {
               const input = event.currentTarget as HTMLInputElement;
               if (input.value !== sheet.name) {
-                if (sheetController.sheets.nameExists(input.value)) {
+                if (sheets.nameExists(input.value)) {
                   setNameExists(true);
                   input.focus();
                   return;
                 } else {
                   setNameExists(false);
                   setIsRenaming(false);
-                  sheetController.sheet.name = input.value;
-                  // localFiles.save();
+                  sheets.sheet.name = input.value;
                 }
               }
               focusGrid();
@@ -86,9 +85,8 @@ export const SheetBarTab = (props: Props): JSX.Element => {
             setIsRenaming((isRenaming) => {
               if (!isRenaming) return false;
               if (input.value !== sheet.name) {
-                if (!sheetController.sheets.nameExists(input.value)) {
-                  sheetController.sheet.name = input.value;
-                  // localFiles.save();
+                if (!sheets.nameExists(input.value)) {
+                  sheets.sheet.name = input.value;
                 } else {
                   setNameExists(true);
                   setTimeout(() => setNameExists(false), 1500);

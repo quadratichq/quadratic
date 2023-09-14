@@ -2,7 +2,7 @@ import { Container, Rectangle } from 'pixi.js';
 import { debugShowCellsSheetCulling } from '../../debugFlags';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
-import { pixiAppEvents } from '../pixiApp/PixiAppEvents';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
@@ -51,6 +51,7 @@ export class CellsSheet extends Container {
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
+    this.visible = false;
   }
 
   static getHash(x: number, y: number): { x: number; y: number } {
@@ -111,7 +112,7 @@ export class CellsSheet extends Container {
         cellsHash.hide();
       }
     });
-    if (pixiAppEvents.getSettings().showCellTypeOutlines) {
+    if (pixiAppSettings.showCellTypeOutlines) {
       this.cellsArray.visible = true;
       this.cellsArray.cheapCull(bounds);
     } else {
@@ -129,7 +130,7 @@ export class CellsSheet extends Container {
   }
 
   toggleOutlines() {
-    this.cellsArray.visible = pixiAppEvents.getSettings().showCellTypeOutlines;
+    this.cellsArray.visible = pixiAppSettings.showCellTypeOutlines;
   }
 
   createBorders() {

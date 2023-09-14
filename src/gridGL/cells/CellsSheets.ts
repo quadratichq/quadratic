@@ -1,8 +1,7 @@
 import { Container, Rectangle } from 'pixi.js';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { SheetId } from '../../quadratic-core/types';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppEvents } from '../pixiApp/PixiAppEvents';
 import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
 
@@ -11,19 +10,22 @@ export class CellsSheets extends Container<CellsSheet> {
 
   async create(): Promise<void> {
     this.removeChildren();
-    if (!sheetController.sheets.size) return;
-    sheetController.sheets.forEach(async (sheet) => {
+    if (!sheets.size) return;
+    sheets.forEach(async (sheet) => {
       const child = this.addChild(new CellsSheet(sheet));
       await child.preload();
-      if (sheet.id === sheetController.sheet.id) {
+      if (sheet.id === sheets.sheet.id) {
         this.current = child;
       }
     });
-    this.show(sheetController.sheet.id);
+  }
+
+  isReady(): boolean {
+    return !!this.current;
   }
 
   async addSheet(id: string): Promise<void> {
-    const sheet = sheetController.sheets.getById(id);
+    const sheet = sheets.getById(id);
     if (!sheet) {
       throw new Error('Expected to find new sheet in cellSheet');
     }
@@ -47,7 +49,7 @@ export class CellsSheets extends Container<CellsSheet> {
         if (this.current?.sheet.id !== child?.sheet.id) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
-          pixiAppEvents.loadViewport();
+          pixiApp.loadViewport();
         }
       } else {
         child.hide();

@@ -8,7 +8,7 @@ import {
   cutToClipboard,
   pasteFromClipboard,
 } from '../../../grid/actions/clipboard/clipboard';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 
 export function keyboardClipboard(props: {
   event: React.KeyboardEvent<HTMLElement>;
@@ -30,7 +30,7 @@ export function keyboardClipboard(props: {
     return true;
   }
 
-  const cursor = sheetController.sheet.cursor;
+  const cursor = sheets.sheet.cursor;
 
   const start = cursor.originPosition;
   const end = cursor.terminalPosition;

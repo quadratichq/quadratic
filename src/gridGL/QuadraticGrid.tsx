@@ -7,7 +7,7 @@ import { CellInput } from './interaction/CellInput';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/viewportHelper';
 import { pixiApp } from './pixiApp/PixiApp';
-import { PanMode } from './pixiApp/PixiAppSettings';
+import { PanMode, pixiAppSettings } from './pixiApp/PixiAppSettings';
 
 // Keep track of state of mouse/space for panning mode
 let mouseIsDown = false;
@@ -34,12 +34,12 @@ export default function QuadraticGrid() {
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   useEffect(() => {
-    pixiApp.settings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
+    pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
   }, [editorInteractionState, setEditorInteractionState]);
 
   const [editorHighlightedCellsState, setEditorHighlightedCellsState] = useRecoilState(editorHighlightedCellsStateAtom);
   useEffect(() => {
-    pixiApp.settings.updateEditorHighlightedCellsState(editorHighlightedCellsState, setEditorHighlightedCellsState);
+    pixiAppSettings.updateEditorHighlightedCellsState(editorHighlightedCellsState, setEditorHighlightedCellsState);
   }, [editorHighlightedCellsState, setEditorHighlightedCellsState]);
 
   // Right click menu
@@ -49,14 +49,14 @@ export default function QuadraticGrid() {
   const onMouseUp = () => {
     mouseIsDown = false;
     if (panMode !== PanMode.Disabled) {
-      pixiApp.settings.changePanMode(spaceIsDown ? PanMode.Enabled : PanMode.Disabled);
+      pixiAppSettings.changePanMode(spaceIsDown ? PanMode.Enabled : PanMode.Disabled);
     }
     window.removeEventListener('mouseup', onMouseUp);
   };
   const onMouseDown = () => {
     mouseIsDown = true;
     if (panMode === PanMode.Enabled) {
-      pixiApp.settings.changePanMode(PanMode.Dragging);
+      pixiAppSettings.changePanMode(PanMode.Dragging);
     }
     window.addEventListener('mouseup', onMouseUp);
   };
@@ -64,7 +64,7 @@ export default function QuadraticGrid() {
     if (e.key === ' ') {
       spaceIsDown = true;
       if (panMode === PanMode.Disabled) {
-        pixiApp.settings.changePanMode(PanMode.Enabled);
+        pixiAppSettings.changePanMode(PanMode.Enabled);
       }
     }
   };
@@ -72,7 +72,7 @@ export default function QuadraticGrid() {
     if (e.key === ' ') {
       spaceIsDown = false;
       if (panMode !== PanMode.Disabled && !mouseIsDown) {
-        pixiApp.settings.changePanMode(PanMode.Disabled);
+        pixiAppSettings.changePanMode(PanMode.Disabled);
       }
     }
   };

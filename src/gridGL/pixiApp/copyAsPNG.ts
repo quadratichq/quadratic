@@ -1,6 +1,7 @@
 import { Matrix, Renderer } from 'pixi.js';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from './PixiApp';
+import { pixiAppSettings } from './PixiAppSettings';
 
 const resolution = 4;
 const borderSize = 1;
@@ -19,7 +20,8 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   }
 
   let column, width, row, height;
-  const cursor = sheetController.sheet.cursor;
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
   if (cursor.multiCursor) {
     const { originPosition, terminalPosition } = cursor.multiCursor;
     column = originPosition.x;
@@ -31,7 +33,7 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
     row = cursor.cursorPosition.y;
     width = height = 1;
   }
-  const rectangle = sheetController.sheet.gridOffsets.getScreenRectangle(column, row, width, height);
+  const rectangle = sheet.gridOffsets.getScreenRectangle(column, row, width, height);
 
   // captures bottom-right border size
   rectangle.width += borderSize * 2;
@@ -52,7 +54,7 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.view.width = imageWidth;
   renderer.view.height = imageHeight;
   pixiApp.prepareForCopying();
-  pixiApp.settings.temporarilyHideCellTypeOutlines = true;
+  pixiAppSettings.temporarilyHideCellTypeOutlines = true;
 
   // todo
   // app.cells.drawCells(app.sheet, rectangle, false);
@@ -62,7 +64,7 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   transform.scale(scale, scale);
   renderer.render(pixiApp.viewportContents, { transform });
   pixiApp.cleanUpAfterCopying();
-  pixiApp.settings.temporarilyHideCellTypeOutlines = false;
+  pixiAppSettings.temporarilyHideCellTypeOutlines = false;
   return new Promise((resolve) => {
     renderer!.view.toBlob((blob) => resolve(blob));
   });

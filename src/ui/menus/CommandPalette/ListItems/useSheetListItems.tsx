@@ -1,6 +1,6 @@
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import { useEffect, useState } from 'react';
-import { sheetController } from '../../../../grid/controller/SheetController';
+import { sheets } from '../../../../grid/controller/Sheets';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { Commands } from '../getCommandPaletteListItems';
 
@@ -9,14 +9,10 @@ export const useSheetListItems = (): Commands[] => {
 
   const updateCommands = () => {
     setCommands(
-      sheetController.sheets.getSheetListItems().map((item) => ({
+      sheets.getSheetListItems().map((item) => ({
         label: `Sheet: ${item.name}`,
         Component: (props: any) => (
-          <CommandPaletteListItem
-            {...props}
-            icon={<ArticleOutlinedIcon />}
-            action={() => (sheetController.sheets.current = item.id)}
-          />
+          <CommandPaletteListItem {...props} icon={<ArticleOutlinedIcon />} action={() => (sheets.current = item.id)} />
         ),
       }))
     );

@@ -1,11 +1,12 @@
 import { Graphics, Rectangle } from 'pixi.js';
 import { isEditorOrAbove } from '../../actions';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 
 export const CURSOR_THICKNESS = 2;
 const FILL_ALPHA = 0.1;
@@ -38,19 +39,20 @@ export class Cursor extends Graphics {
   }
 
   private drawCursor(): void {
-    const cursor = sheetController.sheet.cursor;
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
     const { viewport } = pixiApp;
-    const { gridOffsets } = sheetController.sheet;
-    const { editorInteractionState } = pixiApp.settings;
+    const { gridOffsets } = sheet;
+    const { editorInteractionState } = pixiAppSettings;
     const cell = cursor.cursorPosition;
-    const showInput = pixiApp.settings.input.show;
+    const showInput = pixiAppSettings.input.show;
 
     let { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
     const color = colors.cursorCell;
     const editor_selected_cell = editorInteractionState.selectedCell;
 
     // draw cursor but leave room for cursor indicator if needed
-    const indicatorSize = isEditorOrAbove(pixiApp.settings.editorInteractionState.permission)
+    const indicatorSize = isEditorOrAbove(pixiAppSettings.editorInteractionState.permission)
       ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
       : 0;
     this.indicator.width = this.indicator.height = indicatorSize;
@@ -103,7 +105,7 @@ export class Cursor extends Graphics {
   }
 
   private drawMultiCursor(): void {
-    const { gridOffsets, cursor } = sheetController.sheet;
+    const { gridOffsets, cursor } = sheets.sheet;
 
     if (cursor.multiCursor) {
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
@@ -124,10 +126,10 @@ export class Cursor extends Graphics {
 
   private drawCursorIndicator(): void {
     const { viewport } = pixiApp;
-    const cursor = sheetController.sheet.cursor;
+    const cursor = sheets.sheet.cursor;
 
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
-      const { editorInteractionState } = pixiApp.settings;
+      const { editorInteractionState } = pixiAppSettings;
       const editor_selected_cell = editorInteractionState.selectedCell;
       const cell = cursor.cursorPosition;
 
@@ -158,10 +160,10 @@ export class Cursor extends Graphics {
   }
 
   private drawCodeCursor(): void {
-    const { editorInteractionState } = pixiApp.settings;
+    const { editorInteractionState } = pixiAppSettings;
     if (!editorInteractionState.showCodeEditor) return;
     const cell = editorInteractionState.selectedCell;
-    const { x, y, width, height } = sheetController.sheet.gridOffsets.getCell(cell.x, cell.y);
+    const { x, y, width, height } = sheets.sheet.gridOffsets.getCell(cell.x, cell.y);
     const color =
       editorInteractionState.mode === 'PYTHON'
         ? colors.cellColorUserPython
@@ -180,17 +182,13 @@ export class Cursor extends Graphics {
   }
 
   private drawEditorHighlightedCells(): void {
-    const { editorHighlightedCellsState, editorInteractionState } = pixiApp.settings;
+    const { editorHighlightedCellsState, editorInteractionState } = pixiAppSettings;
     const { highlightedCells, selectedCell } = editorHighlightedCellsState;
     if (!highlightedCells || highlightedCells.size === 0) return;
 
     let colorIndex = 0;
     for (const [cellRefId] of highlightedCells.entries()) {
-      const cell = getCellFromFormulaNotation(
-        cellRefId,
-        sheetController.sheet.gridOffsets,
-        editorInteractionState.selectedCell
-      );
+      const cell = getCellFromFormulaNotation(cellRefId, sheets.sheet.gridOffsets, editorInteractionState.selectedCell);
 
       if (!cell) continue;
       const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % NUM_OF_CELL_REF_COLORS]);
@@ -247,7 +245,7 @@ export class Cursor extends Graphics {
       this.clear();
       this.drawCursor();
 
-      if (!pixiApp.settings.input.show) {
+      if (!pixiAppSettings.input.show) {
         this.drawMultiCursor();
         this.drawCodeCursor();
         this.drawCursorIndicator();

@@ -61,7 +61,7 @@
   },
   "main": "public/electron.js",
   "scripts": {
-    "start": "npm run build:wasm:javascript && npm run watch:javascript",
+    "start": "npm run watch:front-end",
     "build": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-scripts build",
     "build:wasm": "npm run build:wasm:javascript && npm run build:wasm:nodejs && npm run build:wasm:types",
     "build:wasm:types": "cd quadratic-core && cargo run --bin export_types",
@@ -73,7 +73,7 @@
     "watch:wasm:types": "cd quadratic-core && cargo watch -s 'cargo run --bin export_types'",
     "watch:front-end": "concurrently --hide=3 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
     "watch:front-end-back-end": "concurrently -n=react,rust,rust-types,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
-    "watch:fast:front-end": "concurrently \"npm:watch:javascript\" \"npm:watch:wasm:fast:javascript\" \"npm:watch:wasm:types\"",
+    "watch:fast:front-end": "concurrently --hide=3 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:fast:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
     "start:production": "npm run build && serve build",
     "build:ci": "./scripts/run-ci-build.sh",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\" \"npm run test:python\"",

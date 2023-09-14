@@ -6,7 +6,7 @@ import { EditorInteractionState } from './atoms/editorInteractionStateAtom';
 import { GlobalSnackbar } from './components/GlobalSnackbarProvider';
 import { ROUTES } from './constants/routes';
 import { DOCUMENTATION_URL } from './constants/urls';
-import { sheetController } from './grid/controller/SheetController';
+import { grid } from './grid/controller/Grid';
 import { downloadFileInBrowser } from './helpers/downloadFileInBrowser';
 import { FileContextType } from './ui/components/FileProvider';
 const { OWNER, EDITOR, VIEWER } = PermissionSchema.enum;
@@ -69,8 +69,8 @@ export const duplicateFile = {
   run({ name, submit }: { name: string; submit: SubmitFunction }) {
     let formData = new FormData();
     formData.append('name', name + ' (Copy)');
-    formData.append('contents', JSON.stringify(sheetController.export()));
-    formData.append('version', sheetController.getVersion());
+    formData.append('contents', JSON.stringify(grid.export()));
+    formData.append('version', grid.getVersion());
     submit(formData, { method: 'POST', action: ROUTES.CREATE_FILE });
   },
 };
@@ -79,7 +79,7 @@ export const downloadFile = {
   label: 'Download local copy',
   isAvailable: isViewerOrAbove,
   run({ name }: { name: FileContextType['name'] }) {
-    downloadFileInBrowser(name, JSON.stringify(sheetController.export()));
+    downloadFileInBrowser(name, JSON.stringify(grid.export()));
   },
 };
 

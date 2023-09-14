@@ -5,7 +5,6 @@ import {
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { pixiApp } from './PixiApp';
-import { pixiAppEvents } from './PixiAppEvents';
 
 export enum PanMode {
   Disabled = 'DISABLED',
@@ -13,7 +12,7 @@ export enum PanMode {
   Dragging = 'DRAGGING',
 }
 
-export class PixiAppSettings {
+class PixiAppSettings {
   private settings: GridSettings;
   private lastSettings: GridSettings;
   private _panMode: PanMode;
@@ -110,10 +109,22 @@ export class PixiAppSettings {
     return this.settings.showA1Notation;
   }
 
+  setDirty(dirty: { cursor?: boolean; headings?: boolean; gridLines?: boolean }): void {
+    if (dirty.cursor) {
+      pixiApp.cursor.dirty = true;
+    }
+    if (dirty.headings) {
+      pixiApp.headings.dirty = true;
+    }
+    if (dirty.gridLines) {
+      pixiApp.gridLines.dirty = true;
+    }
+  }
+
   changeInput(input: boolean, initialValue?: string) {
     // todo: this does not handle types other than text
     this._input = { show: input, initialValue };
-    pixiAppEvents.setDirty({ cursor: true });
+    this.setDirty({ cursor: true });
 
     // this is used by CellInput to control visibility
     window.dispatchEvent(new CustomEvent('change-input', { detail: { showInput: input } }));
@@ -136,3 +147,5 @@ export class PixiAppSettings {
     return this._panMode;
   }
 }
+
+export const pixiAppSettings = new PixiAppSettings();

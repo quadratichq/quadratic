@@ -5,7 +5,7 @@ import { useRecoilState } from 'recoil';
 import { provideFeedback } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
@@ -19,7 +19,7 @@ export const BottomBar = () => {
 
   const [cursorPositionString, setCursorPositionString] = useState('');
   const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
-  const cursor = sheetController.sheet.cursor;
+  const cursor = sheets.sheet.cursor;
 
   useEffect(() => {
     const updateCursor = () => {

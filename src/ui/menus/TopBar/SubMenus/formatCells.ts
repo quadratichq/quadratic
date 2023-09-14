@@ -1,64 +1,54 @@
 import { ColorResult } from 'react-color';
-import { sheetController } from '../../../../grid/controller/SheetController';
-import { transactionResponse } from '../../../../grid/controller/transactionResponse';
+import { sheets } from '../../../../grid/controller/Sheets';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
-import { TransactionSummary } from '../../../../quadratic-core/types';
 import { CellAlignment } from '../../../../schemas';
 
-export const FORMAT_SELECTION_EVENT = 'format-selection-event';
-
-const format = (summary: TransactionSummary) => {
-  transactionResponse(summary);
-  window.dispatchEvent(new Event(FORMAT_SELECTION_EVENT));
-  sheetController.save();
-};
-
 export const setFillColor = (color?: ColorResult): void => {
-  const rectangle = sheetController.sheet.cursor.getRectangle();
-  format(sheetController.sheet.setCellFillColor(rectangle, color ? convertReactColorToString(color) : undefined));
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  sheets.sheet.setCellFillColor(rectangle, color ? convertReactColorToString(color) : undefined);
 };
 
 export const setBold = (bold: boolean): void => {
-  const rectangle = sheetController.sheet.cursor.getRectangle();
-  format(sheetController.sheet.setCellBold(rectangle, bold));
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  sheets.sheet.setCellBold(rectangle, bold);
 };
 
 export const setItalic = (italic: boolean): void => {
-  const rectangle = sheetController.sheet.cursor.getRectangle();
-  format(sheetController.sheet.setCellItalic(rectangle, italic));
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  sheets.sheet.setCellItalic(rectangle, italic);
 };
 
 export const setTextColor = (rgb?: ColorResult): void => {
-  const rectangle = sheetController.sheet.cursor.getRectangle();
-  format(sheetController.sheet.setCellTextColor(rectangle, rgb ? convertReactColorToString(rgb) : undefined));
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  sheets.sheet.setCellTextColor(rectangle, rgb ? convertReactColorToString(rgb) : undefined);
 };
 
 export const setAlignment = (alignment: CellAlignment): void => {
-  const rectangle = sheetController.sheet.cursor.getRectangle();
-  format(sheetController.sheet.setCellAlign(rectangle, alignment));
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  sheets.sheet.setCellAlign(rectangle, alignment);
 };
 
 export const textFormatIncreaseDecimalPlaces = (): void => {
-  format(sheetController.sheet.changeDecimals(1));
+  sheets.sheet.changeDecimals(1);
 };
 
 export const textFormatDecreaseDecimalPlaces = (): void => {
-  format(sheetController.sheet.changeDecimals(-1));
+  sheets.sheet.changeDecimals(-1);
 };
 
 export const textFormatSetCurrency = (): void => {
-  const rectangle = sheetController.sheet.cursor.getRectangle();
-  format(sheetController.sheet.setCurrency(rectangle));
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  sheets.sheet.setCurrency(rectangle);
 };
 
 export const textFormatSetPercentage = (): void => {
-  const rectangle = sheetController.sheet.cursor.getRectangle();
-  format(sheetController.sheet.setPercentage(rectangle));
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  sheets.sheet.setPercentage(rectangle);
 };
 
 export const removeCellNumericFormat = (): void => {
-  const rectangle = sheetController.sheet.cursor.getRectangle();
-  format(sheetController.sheet.removeCellNumericFormat(rectangle));
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  sheets.sheet.removeCellNumericFormat(rectangle);
 };
 
 export const textFormatSetNumber = (): void => {
@@ -74,12 +64,12 @@ export const textFormatClear = (): void => {
 };
 
 export const clearFormatting = () => {
-  const rectangle = sheetController.sheet.cursor.getRectangle();
-  format(sheetController.sheet.clearFormatting(rectangle));
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  sheets.sheet.clearFormatting(rectangle);
 };
 
 export const clearFormattingAndBorders = () => {
-  // const rectangle = sheetController.sheet.cursor.getRectangle();
-  // format(sheetController.sheet.clearAllFormatting(rectangle));
+  // const rectangle = sheets.sheet.cursor.getRectangle();
+  // sheets.sheet.clearAllFormatting(rectangle);
   throw new Error('not implemented yet!');
 };

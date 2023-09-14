@@ -1,9 +1,9 @@
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { cellHasContent } from '../../helpers/selectCells';
-import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
 export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boolean {
-  const sheet = sheetController.sheet;
+  const sheet = sheets.sheet;
   const cursor = sheet.cursor;
 
   const setCursorPosition = (x: number, y: number): void => {
@@ -220,7 +220,7 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
           },
           keyboardMovePosition: newMovePosition,
         });
-        pixiAppEvents.changeInput(false);
+        pixiAppSettings.changeInput(false);
       }
 
       // we are creating a new multiCursor
@@ -238,7 +238,7 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
           },
           keyboardMovePosition: newMovePosition,
         });
-        pixiAppEvents.changeInput(false);
+        pixiAppSettings.changeInput(false);
       }
     }
 

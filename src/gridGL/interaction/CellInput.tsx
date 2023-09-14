@@ -3,10 +3,11 @@ import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
 
 interface CellInputProps {
@@ -19,7 +20,8 @@ export const CellInput = (props: CellInputProps) => {
 
   const viewport = pixiApp.viewport;
 
-  const cellLocation = sheetController.sheet.cursor.cursorPosition;
+  const sheet = sheets.sheet;
+  const cellLocation = sheet.cursor.cursorPosition;
 
   const text = useRef('');
 
@@ -30,9 +32,9 @@ export const CellInput = (props: CellInputProps) => {
     return () => window.removeEventListener('change-input', changeInput);
   }, []);
 
-  const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
-  const cell = sheetController.sheet.getEditCell(cellLocation.x, cellLocation.y);
-  const formatting = sheetController.sheet.getCellFormatSummary(cellLocation.x, cellLocation.y);
+  const cell_offsets = sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
+  const cell = sheet.getEditCell(cellLocation.x, cellLocation.y);
+  const formatting = sheet.getCellFormatSummary(cellLocation.x, cellLocation.y);
 
   // handle temporary changes to bold and italic (via keyboard)
   const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
@@ -74,7 +76,7 @@ export const CellInput = (props: CellInputProps) => {
       node.focus();
       setTextInput(node);
       const value = cell;
-      text.current = pixiApp.settings.input.initialValue ?? (value || '');
+      text.current = pixiAppSettings.input.initialValue ?? (value || '');
       if (document.hasFocus() && node.contains(document.activeElement)) {
         handleFocus({ target: node });
       }
@@ -139,22 +141,22 @@ export const CellInput = (props: CellInputProps) => {
     const value = textInput.innerText;
 
     if (!cancel && (value.trim() || cell)) {
-      sheetController.sheet.setCellValue(cellLocation.x, cellLocation.y, value);
+      sheet.setCellValue(cellLocation.x, cellLocation.y, value);
       setTemporaryBold(undefined);
       setTemporaryItalic(undefined);
       textInput.innerText = '';
     }
 
     // Update Grid Interaction state, reset input value state
-    const position = sheetController.sheet.cursor.cursorPosition;
-    sheetController.sheet.cursor.changePosition({
+    const position = sheet.cursor.cursorPosition;
+    sheet.cursor.changePosition({
       cursorPosition: {
         x: position.x + transpose.x,
         y: position.y + transpose.y,
       },
     });
 
-    pixiApp.settings.changeInput(false);
+    pixiAppSettings.changeInput(false);
 
     // Set focus back to Grid
     focusGrid();
@@ -258,13 +260,13 @@ export const CellInput = (props: CellInputProps) => {
         } else if (event.key === 'i' && (event.ctrlKey || event.metaKey)) {
           const italic = temporaryItalic === undefined ? !formatting?.italic : !temporaryItalic;
           setTemporaryItalic(italic);
-          sheetController.sheet.setCellItalic(new Rectangle(cellLocation.x, cellLocation.y, 0, 0), italic);
+          sheet.setCellItalic(new Rectangle(cellLocation.x, cellLocation.y, 0, 0), italic);
           event.stopPropagation();
           event.preventDefault();
         } else if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
           const bold = temporaryBold === undefined ? !formatting?.italic : !temporaryBold;
           setTemporaryBold(bold);
-          sheetController.sheet.setCellBold(new Rectangle(cellLocation.x, cellLocation.y, 0, 0), bold);
+          sheet.setCellBold(new Rectangle(cellLocation.x, cellLocation.y, 0, 0), bold);
           event.stopPropagation();
           event.preventDefault();
         }

@@ -1,11 +1,11 @@
 import { Point, Rectangle } from 'pixi.js';
 import { ZOOM_ANIMATION_TIME_MS, ZOOM_BUFFER } from '../../constants/gridConstants';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../pixiApp/PixiApp';
 
 export function zoomToFit(): void {
   const viewport = pixiApp.viewport;
-  const sheet = sheetController.sheet;
+  const sheet = sheets.sheet;
   const gridBounds = sheet.getGridBounds(false);
   if (gridBounds) {
     const screenRectangle = sheet.gridOffsets.getScreenRectangle(
@@ -59,7 +59,7 @@ export function zoomTo100() {
 
 export function zoomToSelection(): void {
   let screenRectangle: Rectangle;
-  const sheet = sheetController.sheet;
+  const sheet = sheets.sheet;
   if (sheet.cursor.multiCursor) {
     const cursor = sheet.cursor.multiCursor;
     screenRectangle = sheet.gridOffsets.getScreenRectangle(

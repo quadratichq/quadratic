@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 
 interface Props {
   // holds the last sheet's name so when it's deleted the name dialog doesn't change as it's closing
@@ -22,7 +22,7 @@ export const ConfirmDeleteSheet = (props: Props): JSX.Element => {
           color="warning"
           onClick={() => {
             if (confirmDelete) {
-              sheetController.sheets.deleteSheet(sheetController.sheet.id);
+              sheets.deleteSheet(sheets.sheet.id);
             }
             handleClose();
           }}
