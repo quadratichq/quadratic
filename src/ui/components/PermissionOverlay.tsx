@@ -1,4 +1,4 @@
-import { Alert, Button, Paper, useTheme } from '@mui/material';
+import { Alert, Button, Paper, Stack, useTheme } from '@mui/material';
 import React, { useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useSubmit } from 'react-router-dom';
@@ -14,6 +14,7 @@ export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const { permission } = useRecoilValue(editorInteractionStateAtom);
   const { name } = useFileContext();
+  const theme = useTheme();
   const submit = useSubmit();
 
   if ((permission === OWNER || permission === EDITOR) && isMobile && isOpen) {
@@ -34,15 +35,20 @@ export function PermissionOverlay() {
           severity="info"
           sx={{ width: '100%' }}
           action={
-            <Button
-              component={Link}
-              to={ROUTES.LOGIN_WITH_REDIRECT()}
-              variant="contained"
-              size="small"
-              disableElevation
-            >
-              Log in
-            </Button>
+            <Stack direction="row" gap={theme.spacing(1)}>
+              <Button component={Link} to={ROUTES.LOGIN_WITH_REDIRECT()} variant="outlined" size="small">
+                Log in
+              </Button>
+              <Button
+                component={Link}
+                to={ROUTES.SIGNUP_WITH_REDIRECT()}
+                variant="contained"
+                size="small"
+                disableElevation
+              >
+                Sign up
+              </Button>
+            </Stack>
           }
         >
           <strong>Welcome to Quadratic.</strong> You must log in to edit this file.
