@@ -86,9 +86,11 @@ export class SheetCursor {
   get originPosition(): Coordinate {
     return this.multiCursor ? this.multiCursor.originPosition : this.cursorPosition;
   }
+
   get terminalPosition(): Coordinate {
     return this.multiCursor ? this.multiCursor.terminalPosition : this.cursorPosition;
   }
+
   getRectangle(): Rectangle {
     const origin = this.originPosition;
     const terminal = this.terminalPosition;

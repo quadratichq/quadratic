@@ -119,12 +119,12 @@ impl GridController {
         let ops = vec![Operation::SetCellValues { region, values }];
         self.transact_forward(Transaction { ops, cursor })
     }
-    pub fn delete_cell_values(
+
+    pub fn delete_cell_values_operations(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
-        cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
         let ops = match region.size() {
             Some(size) => {
@@ -133,6 +133,82 @@ impl GridController {
             }
             None => vec![], // region is empty; do nothing
         };
+        ops
+    }
+
+    pub fn delete_cell_values(
+        &mut self,
+        sheet_id: SheetId,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let ops = self.delete_cell_values_operations(sheet_id, rect);
+        self.transact_forward(Transaction { ops, cursor })
+    }
+
+    pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
+        let region = self.existing_region(sheet_id, rect);
+        let ops = match region.size() {
+            Some(_) => {
+                let len = region.size().unwrap().len();
+                vec![
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::Align(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::Wrap(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::Bold(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::Italic(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::TextColor(RunLengthEncoding::repeat(None, len)),
+                    },
+                    Operation::SetCellFormats {
+                        region: region.clone(),
+                        attr: CellFmtArray::FillColor(RunLengthEncoding::repeat(None, len)),
+                    },
+                ]
+            }
+            None => vec![],
+        };
+        ops
+    }
+
+    pub fn clear_formatting(
+        &mut self,
+        sheet_id: SheetId,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let ops = self.clear_formatting_operations(sheet_id, rect);
+        self.transact_forward(Transaction { ops, cursor })
+    }
+
+    pub fn delete_values_and_formatting(
+        &mut self,
+        sheet_id: SheetId,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let mut ops = self.delete_cell_values_operations(sheet_id, rect);
+        ops.extend(self.clear_formatting_operations(sheet_id, rect));
         self.transact_forward(Transaction { ops, cursor })
     }
 

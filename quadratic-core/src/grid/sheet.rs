@@ -213,6 +213,17 @@ impl Sheet {
         }
     }
 
+    pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
+        let column = self.get_column(pos.x)?;
+        let block = column.spills.get(pos.y)?;
+        let code_cell_pos = self.cell_ref_to_pos(block)?;
+        let code_cell = self.code_cells.get(&block)?;
+        code_cell.get_output_value(
+            (pos.x - code_cell_pos.x) as u32,
+            (pos.y - code_cell_pos.y) as u32,
+        )
+    }
+
     /// Returns a summary of formatting in a region.
     pub fn get_formatting_summary(&self, region: Rect) -> FormattingSummary {
         let mut bold = BoolSummary::default();
@@ -249,6 +260,34 @@ impl Sheet {
                 text_color: column.text_color.get(pos.y),
                 fill_color: column.fill_color.get(pos.y),
             },
+        }
+    }
+
+    // returns CellFormatSummary only if a formatting exists
+    pub fn get_existing_cell_format(&self, pos: Pos) -> Option<CellFormatSummary> {
+        match self.columns.get(&pos.x) {
+            Some(column) => {
+                let bold = column.bold.get(pos.y);
+                let italic = column.italic.get(pos.y);
+                let fill_color = column.fill_color.get(pos.y);
+                let text_color = column.text_color.get(pos.y);
+
+                if bold.is_some()
+                    || italic.is_some()
+                    || fill_color.is_some()
+                    || text_color.is_some()
+                {
+                    Some(CellFormatSummary {
+                        bold,
+                        italic,
+                        fill_color,
+                        text_color,
+                    })
+                } else {
+                    None
+                }
+            }
+            None => None,
         }
     }
 
@@ -525,6 +564,7 @@ impl Sheet {
             })
             .collect()
     }
+
     /// Returns all data for rendering cell fill color.
     pub fn get_all_render_fills(&self) -> Vec<JsRenderFill> {
         let mut ret = vec![];

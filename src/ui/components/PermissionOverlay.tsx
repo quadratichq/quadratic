@@ -15,6 +15,7 @@ export function PermissionOverlay() {
   const { permission } = useRecoilValue(editorInteractionStateAtom);
   const theme = useTheme();
   const { name } = useFileContext();
+  const theme = useTheme();
   const submit = useSubmit();
 
   if ((permission === OWNER || permission === EDITOR) && isMobile && isOpen) {

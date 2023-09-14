@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::borders::CellBorder;
 use super::formatting::{BoolSummary, CellAlign, CellWrap};
 use super::CodeCellLanguage;
+use crate::controller::transactions::TransactionSummary;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -107,4 +108,13 @@ pub enum JsRenderCodeCellState {
     RunError,
     SpillError,
     Success,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct JsClipboard {
+    pub summary: Option<TransactionSummary>,
+    pub plain_text: String,
+    pub html: String,
 }
