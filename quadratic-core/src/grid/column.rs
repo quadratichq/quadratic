@@ -263,16 +263,6 @@ impl<B: BlockContent> ColumnData<B> {
         to_return
     }
 
-    pub fn merge_from_column_data(&mut self, y_start: i64, clipboard: &ColumnData<B>) {
-        clipboard.blocks().for_each(|block| {
-            let mut to_add = block.clone();
-            to_add.y += y_start;
-            self.add_block(to_add);
-            self.try_merge_at(block.y);
-            self.try_merge_at(block.y + (block.len() as i64) + 1);
-        });
-    }
-
     pub fn range(&self) -> Option<Range<i64>> {
         let min = *self.0.first_key_value()?.0;
         let max = self.0.last_key_value()?.1.end();
