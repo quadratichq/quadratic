@@ -31,7 +31,7 @@ async function getClient() {
 interface AuthClient {
   isAuthenticated(): Promise<boolean>;
   user(): Promise<undefined | User>;
-  login(redirectTo: string): Promise<void>;
+  login(redirectTo: string, isSignupFlow?: boolean): Promise<void>;
   handleSigninRedirect(): Promise<void>;
   logout(): Promise<void>;
   getToken(): Promise<string | void>;
@@ -48,10 +48,11 @@ export const authClient: AuthClient = {
     const user = await client.getUser();
     return user;
   },
-  async login(redirectTo: string) {
+  async login(redirectTo: string, isSignupFlow: boolean = false) {
     const client = await getClient();
     await client.loginWithRedirect({
       authorizationParams: {
+        screen_hint: isSignupFlow ? 'signup' : 'login',
         redirect_uri:
           window.location.origin +
           ROUTES.LOGIN_RESULT +
