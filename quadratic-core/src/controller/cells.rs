@@ -3,7 +3,7 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use crate::{
-    grid::{Column, NumericFormat, NumericFormatKind, RegionRef, SheetId},
+    grid::{NumericFormat, NumericFormatKind, RegionRef, SheetId},
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
 
@@ -119,12 +119,12 @@ impl GridController {
         let ops = vec![Operation::SetCellValues { region, values }];
         self.transact_forward(Transaction { ops, cursor })
     }
-    pub fn delete_cell_values(
+
+    pub fn delete_cell_values_operations(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
-        cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
         let ops = match region.size() {
             Some(size) => {
@@ -133,15 +133,20 @@ impl GridController {
             }
             None => vec![], // region is empty; do nothing
         };
-        self.transact_forward(Transaction { ops, cursor })
+        ops
     }
 
-    pub fn clear_formatting(
+    pub fn delete_cell_values(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
+        let ops = self.delete_cell_values_operations(sheet_id, rect);
+        self.transact_forward(Transaction { ops, cursor })
+    }
+
+    pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
         let ops = match region.size() {
             Some(_) => {
@@ -183,6 +188,27 @@ impl GridController {
             }
             None => vec![],
         };
+        ops
+    }
+
+    pub fn clear_formatting(
+        &mut self,
+        sheet_id: SheetId,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let ops = self.clear_formatting_operations(sheet_id, rect);
+        self.transact_forward(Transaction { ops, cursor })
+    }
+
+    pub fn delete_values_and_formatting(
+        &mut self,
+        sheet_id: SheetId,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let mut ops = self.delete_cell_values_operations(sheet_id, rect);
+        ops.append(&mut self.clear_formatting_operations(sheet_id, rect));
         self.transact_forward(Transaction { ops, cursor })
     }
 

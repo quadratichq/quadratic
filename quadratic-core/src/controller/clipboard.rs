@@ -1,11 +1,12 @@
-use std::{ops::Range, str::FromStr};
+use std::str::FromStr;
 
 use super::{
+    formatting::CellFmtArray,
     transactions::{Operation, Transaction, TransactionSummary},
     GridController,
 };
 use crate::{
-    grid::{CodeCellValue, Column, Sheet, SheetId},
+    grid::{CodeCellValue, SheetId},
     Array, ArraySize, CellValue, Pos, Rect,
 };
 use bigdecimal::BigDecimal;
@@ -24,28 +25,10 @@ pub struct Clipboard {
     w: u32,
     h: u32,
     cells: Vec<ClipboardCell>,
-    formats: Vec<Column>,
+    formats: Vec<CellFmtArray>,
 }
 
 impl GridController {
-    fn copy_formats_to_clipboard(&self, sheet: &Sheet, rect: Rect) -> Vec<Column> {
-        let mut columns = vec![];
-        let range = Range {
-            start: rect.min.y,
-            end: rect.max.y + 1,
-        };
-        for x in rect.x_range() {
-            let column = sheet.get_column(x);
-            match column {
-                Some(column) => columns.push(column.copy_formats_to_column(range.clone())),
-
-                // push an empty column so we properly track the number of columns
-                None => columns.push(Column::new()),
-            }
-        }
-        columns
-    }
-
     pub fn copy_to_clipboard(&self, sheet_id: SheetId, rect: Rect) -> (String, String) {
         let mut cells = vec![];
         let mut plain_text = String::new();
@@ -130,7 +113,7 @@ impl GridController {
             }
         }
 
-        let formats = self.copy_formats_to_clipboard(sheet, rect);
+        let formats = self.get_all_cell_formats(sheet_id, rect);
         let clipboard = Clipboard {
             cells,
             formats,
@@ -155,7 +138,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> (TransactionSummary, String, String) {
         let copy = self.copy_to_clipboard(sheet_id, rect);
-        let summary = self.delete_cell_values(sheet_id, rect, cursor);
+        let summary = self.delete_values_and_formatting(sheet_id, rect, cursor);
         (summary, copy.0, copy.1)
     }
 
@@ -238,7 +221,6 @@ impl GridController {
                 y: start_pos.y + (clipboard.h as i64) - 1,
             },
         };
-        let height = clipboard.h;
         let formats = clipboard.formats.clone();
 
         let mut ops = vec![];
@@ -246,18 +228,17 @@ impl GridController {
         let values = GridController::array_from_clipboard_cells(clipboard);
         if values.is_some() {
             ops.push(Operation::SetCellValues {
-                region,
+                region: region.clone(),
                 values: values.unwrap(),
             });
         }
 
-        // ops.push(Operation::ReplaceCellFormats {
-        //     sheet_id,
-        //     pos: start_pos,
-        //     height,
-        //     formats,
-        //     use_column_ids: false,
-        // });
+        formats.iter().for_each(|format| {
+            ops.push(Operation::SetCellFormats {
+                region: region.clone(),
+                attr: format.clone(),
+            })
+        });
 
         self.transact_forward(Transaction { ops, cursor })
     }

@@ -73,6 +73,52 @@ impl GridController {
         }];
         self.transact_forward(Transaction { ops, cursor })
     }
+
+    pub fn get_all_cell_formats(&self, sheet_id: SheetId, rect: Rect) -> Vec<CellFmtArray> {
+        let sheet = self.sheet(sheet_id);
+        let mut cell_formats = vec![
+            CellFmtArray::Align(RunLengthEncoding::new()),
+            CellFmtArray::Wrap(RunLengthEncoding::new()),
+            CellFmtArray::NumericFormat(RunLengthEncoding::new()),
+            CellFmtArray::NumericDecimals(RunLengthEncoding::new()),
+            CellFmtArray::Bold(RunLengthEncoding::new()),
+            CellFmtArray::Italic(RunLengthEncoding::new()),
+            CellFmtArray::TextColor(RunLengthEncoding::new()),
+            CellFmtArray::FillColor(RunLengthEncoding::new()),
+        ];
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let pos = Pos { x, y };
+                cell_formats.iter_mut().for_each(|array| match array {
+                    CellFmtArray::Align(array) => {
+                        array.push(sheet.get_formatting_value::<CellAlign>(pos))
+                    }
+                    CellFmtArray::Wrap(array) => {
+                        array.push(sheet.get_formatting_value::<CellWrap>(pos))
+                    }
+                    CellFmtArray::NumericFormat(array) => {
+                        array.push(sheet.get_formatting_value::<NumericFormat>(pos))
+                    }
+                    CellFmtArray::NumericDecimals(array) => {
+                        array.push(sheet.get_formatting_value::<NumericDecimals>(pos))
+                    }
+                    CellFmtArray::Bold(array) => {
+                        array.push(sheet.get_formatting_value::<Bold>(pos))
+                    }
+                    CellFmtArray::Italic(array) => {
+                        array.push(sheet.get_formatting_value::<Italic>(pos))
+                    }
+                    CellFmtArray::TextColor(array) => {
+                        array.push(sheet.get_formatting_value::<TextColor>(pos))
+                    }
+                    CellFmtArray::FillColor(array) => {
+                        array.push(sheet.get_formatting_value::<FillColor>(pos))
+                    }
+                });
+            }
+        }
+        cell_formats
+    }
 }
 
 macro_rules! impl_set_cell_fmt_method {
