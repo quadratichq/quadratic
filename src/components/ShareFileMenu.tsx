@@ -1,10 +1,12 @@
 import { Public } from '@mui/icons-material';
 import { Alert, Avatar, Button, Skeleton, SkeletonProps, Stack, Typography, useTheme } from '@mui/material';
+import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import { ActionFunctionArgs, LoaderFunctionArgs, useFetcher } from 'react-router-dom';
 import { isOwner as isOwnerTest } from '../actions';
 import { apiClient } from '../api/apiClient';
 import { ApiTypes, Permission, PublicLinkAccess } from '../api/types';
+import { ROUTES } from '../constants/routes';
 import ConditionalWrapper from '../ui/components/ConditionalWrapper';
 import { useGlobalSnackbar } from './GlobalSnackbarProvider';
 import { QDialog } from './QDialog';
@@ -85,10 +87,19 @@ export function ShareFileMenu({
   const showLoadingError = fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok;
 
   const handleCopyShareLink = () => {
-    const shareLink = window.location.href;
-    navigator.clipboard.writeText(shareLink).then(() => {
-      addGlobalSnackbar('Link copied to clipboard.');
-    });
+    const shareLink = window.location.origin + ROUTES.FILE(uuid);
+    navigator.clipboard
+      .writeText(shareLink)
+      .then(() => {
+        addGlobalSnackbar('Link copied to clipboard.');
+      })
+      .catch((e) => {
+        Sentry.captureEvent({
+          message: 'Failed to copy share link to user’s clipboard.',
+          level: Sentry.Severity.Info,
+        });
+        addGlobalSnackbar('Failed to copy link.', { severity: 'error' });
+      });
   };
 
   return (

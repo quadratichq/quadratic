@@ -121,7 +121,7 @@ export function FileListItem({ file, activeShareMenuFileId, setActiveShareMenuFi
   };
 
   return (
-    <Box sx={{ position: 'relative' }}>
+    <Box sx={{ position: 'relative', '&:hover .additional-icons': { display: isDesktop ? 'block' : 'none' } }}>
       <DashboardFileLink
         key={uuid}
         to={ROUTES.FILE(uuid)}
@@ -132,30 +132,29 @@ export function FileListItem({ file, activeShareMenuFileId, setActiveShareMenuFi
         isShared={public_link_access !== 'NOT_SHARED'}
         actions={
           <Stack gap={theme.spacing(1)} alignItems="center" direction="row">
-            {isDesktop && (
-              <>
-                <TooltipHint title="Share">
-                  <IconButton
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.preventDefault();
-                      handleShare();
-                    }}
-                  >
-                    <IosShare />
-                  </IconButton>
-                </TooltipHint>
-                <TooltipHint title="Delete">
-                  <IconButton
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.preventDefault();
-                      handleDelete();
-                    }}
-                  >
-                    <DeleteOutline />
-                  </IconButton>
-                </TooltipHint>
-              </>
-            )}
+            <Box className="additional-icons" sx={{ display: 'none' }}>
+              <TooltipHint title="Share">
+                <IconButton
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    handleShare();
+                  }}
+                >
+                  <IosShare />
+                </IconButton>
+              </TooltipHint>
+              <TooltipHint title="Delete">
+                <IconButton
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    handleDelete();
+                  }}
+                >
+                  <DeleteOutline />
+                </IconButton>
+              </TooltipHint>
+            </Box>
+
             <TooltipHint title="More…">
               <IconButton
                 id="file-actions-button"
@@ -176,11 +175,9 @@ export function FileListItem({ file, activeShareMenuFileId, setActiveShareMenuFi
                 'aria-labelledby': 'file-actions-button',
               }}
             >
-              {!isDesktop && (
-                <MenuItem dense onClick={handleShare}>
-                  Share
-                </MenuItem>
-              )}
+              <MenuItem dense onClick={handleShare}>
+                Share
+              </MenuItem>
 
               <MenuItem dense onClick={handleDuplicate}>
                 {duplicateFile.label}
@@ -194,14 +191,10 @@ export function FileListItem({ file, activeShareMenuFileId, setActiveShareMenuFi
                 {downloadFile.label}
               </MenuItem>
 
-              {!isDesktop && (
-                <>
-                  <Divider />
-                  <MenuItem dense onClick={handleDelete}>
-                    {deleteFile.label}
-                  </MenuItem>
-                </>
-              )}
+              <Divider />
+              <MenuItem dense onClick={handleDelete}>
+                {deleteFile.label}
+              </MenuItem>
             </Menu>
           </Stack>
         }
