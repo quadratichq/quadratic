@@ -43,6 +43,11 @@ impl Pos {
         crate::util::column_name(self.x) + &self.y.to_string()
     }
 }
+impl From<(i64, i64)> for Pos {
+    fn from(pos: (i64, i64)) -> Self {
+        Pos { x: pos.0, y: pos.1 }
+    }
+}
 impl fmt::Display for Pos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
