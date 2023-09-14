@@ -33,7 +33,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn AVERAGEIF(
                 span: Span,
                 eval_range: (Spanned<Array>),
-                [criteria]: (Spanned<BasicValue>),
+                [criteria]: (Spanned<CellValue>),
                 numbers_range: (Option<Spanned<Array>>),
             ) {
                 let criteria = Criterion::try_from(*criteria)?;
@@ -48,10 +48,10 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// - Blank cells are not counted.
             /// - Cells containing an error are not counted.
             #[examples("COUNT(A1:C42, E17)", "SUM(A1:A10) / COUNT(A1:A10)")]
-            fn COUNT(numbers: (Iter<BasicValue>)) {
+            fn COUNT(numbers: (Iter<CellValue>)) {
                 // Ignore error values.
                 numbers
-                    .filter(|x| matches!(x, Ok(BasicValue::Number(_))))
+                    .filter(|x| matches!(x, Ok(CellValue::Number(_))))
                     .count() as f64
             }
         ),
@@ -63,7 +63,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// - Cells containing zero are counted.
             /// - Cells with an error are counted.
             #[examples("COUNTA(A1:A10)")]
-            fn COUNTA(range: (Iter<BasicValue>)) {
+            fn COUNTA(range: (Iter<CellValue>)) {
                 // Count error values.
                 range.filter_ok(|v| !v.is_blank()).count() as f64
             }
@@ -78,7 +78,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "COUNTIF(A1:A10, \"<>INVALID\")"
             )]
             #[pure_zip_map]
-            fn COUNTIF(range: (Spanned<Array>), [criteria]: (Spanned<BasicValue>)) {
+            fn COUNTIF(range: (Spanned<Array>), [criteria]: (Spanned<CellValue>)) {
                 let criteria = Criterion::try_from(*criteria)?;
                 // Ignore error values.
                 let count = criteria.iter_matching(range, None)?.count();
@@ -93,7 +93,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// - Cells containing zero are not counted.
             /// - Cells with an error are not counted.
             #[examples("COUNTBLANK(A1:A10)")]
-            fn COUNTBLANK(range: (Iter<BasicValue>)) {
+            fn COUNTBLANK(range: (Iter<CellValue>)) {
                 // Ignore error values.
                 range
                     .filter_map(|v| v.ok())
@@ -155,10 +155,7 @@ mod tests {
         assert_eq!("0", eval_to_string(g, "AVERAGE(,)"));
 
         // Test with no arguments
-        assert_eq!(
-            FormulaErrorMsg::DivideByZero,
-            eval_to_err(g, "AVERAGE()").msg,
-        );
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "AVERAGE()").msg,);
     }
 
     #[test]
@@ -180,24 +177,24 @@ mod tests {
 
         // Error on range size mismatch.
         assert_eq!(
-            FormulaErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize { w: 1, h: 11 },
-                got: ArraySize { w: 2, h: 1 },
+            ErrorMsg::ExactArraySizeMismatch {
+                expected: ArraySize::new(1, 11).unwrap(),
+                got: ArraySize::new(2, 1).unwrap(),
             },
             eval_to_err(g, "AVERAGEIF(0..10, \"<=5\", {A1, A2})").msg,
         );
         // ... even if one of the arguments is just a single value.
         assert_eq!(
-            FormulaErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize { w: 1, h: 11 },
-                got: ArraySize { w: 1, h: 1 },
+            ErrorMsg::ExactArraySizeMismatch {
+                expected: ArraySize::new(1, 11).unwrap(),
+                got: ArraySize::new(1, 1).unwrap(),
             },
             eval_to_err(g, "AVERAGEIF(0..10, \"<=5\", 3)").msg,
         );
         assert_eq!(
-            FormulaErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize { w: 1, h: 1 },
-                got: ArraySize { w: 1, h: 11 },
+            ErrorMsg::ExactArraySizeMismatch {
+                expected: ArraySize::new(1, 1).unwrap(),
+                got: ArraySize::new(1, 11).unwrap(),
             },
             eval_to_err(g, "AVERAGEIF(3, \"<=5\", 0..10)").msg,
         );

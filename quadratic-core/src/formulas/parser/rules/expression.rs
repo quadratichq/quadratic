@@ -96,7 +96,7 @@ impl SyntaxRule for Expression {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         ExpressionWithPrecedence::default().prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         p.parse(ExpressionWithPrecedence::default())
     }
 }
@@ -152,7 +152,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
             false
         }
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         // Consume an expression at the given precedence level, which may
         // consist of expressions with higher precedence.
         match self.0 {
@@ -182,10 +182,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
 
 /// Parses an expression with any number of binary operators at a specific
 /// precedence level.
-fn parse_binary_ops_expr(
-    p: &mut Parser<'_>,
-    precedence: OpPrecedence,
-) -> FormulaResult<ast::AstNode> {
+fn parse_binary_ops_expr(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<ast::AstNode> {
     let recursive_expression = ExpressionWithPrecedence(precedence.next());
 
     let allowed_ops = precedence.binary_ops();
@@ -245,7 +242,7 @@ fn parse_binary_ops_expr(
 }
 
 /// Parses an expression with any number of prefix operators.
-fn parse_prefix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> FormulaResult<ast::AstNode> {
+fn parse_prefix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<ast::AstNode> {
     let allowed_ops = precedence.prefix_ops();
 
     // Build a list of operators in the order that they appear in the source
@@ -278,7 +275,7 @@ fn parse_prefix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> FormulaResu
 }
 
 /// Parses an expression with any number of suffix operators.
-fn parse_suffix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> FormulaResult<ast::AstNode> {
+fn parse_suffix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<ast::AstNode> {
     let allowed_ops = precedence.suffix_ops();
 
     // Parse the initial expression.
@@ -316,7 +313,7 @@ impl SyntaxRule for FunctionCall {
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::FunctionCall)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         p.parse(Token::FunctionCall)?;
         let Some(func_str) = p.token_str().strip_suffix('(') else {
             internal_error!("function call missing left paren");
@@ -354,7 +351,7 @@ impl SyntaxRule for ParenExpression {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         Surround::paren(Expression).prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         p.parse(Surround::paren(
             Expression.map(|expr| ast::AstNodeContents::Paren(Box::new(expr))),
         ))
@@ -372,7 +369,7 @@ impl SyntaxRule for ArrayLiteral {
         p.next() == Some(Token::LBrace)
     }
 
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let start_span = p.peek_next_span();
 
         let mut rows = vec![vec![]];
@@ -402,7 +399,7 @@ impl SyntaxRule for ArrayLiteral {
         let end_span = p.span();
 
         if !rows.iter().map(|row| row.len()).all_equal() {
-            return Err(FormulaErrorMsg::NonRectangularArray.with_span(end_span));
+            return Err(ErrorMsg::NonRectangularArray.with_span(end_span));
         }
 
         Ok(Spanned {
@@ -429,7 +426,7 @@ impl SyntaxRule for EmptyExpression {
         }
     }
 
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         Ok(Spanned {
             span: Span::empty(p.cursor.unwrap_or(0) as u32),
             inner: ast::AstNodeContents::Empty,

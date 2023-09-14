@@ -3,14 +3,19 @@ import { GridFileSchemaV1_0 } from './GridFileV1_0';
 import { GridFileSchemaV1_1, upgradeV1_0toV1_1 } from './GridFileV1_1';
 import { GridFileSchemaV1_2, upgradeV1_1toV1_2 } from './GridFileV1_2';
 import { GridFileSchemaV1_3, upgradeV1_2toV1_3 } from './GridFileV1_3';
+import { GridFileSchemaV1_4, upgradeV1_3toV1_4 } from './GridFileV1_4';
 
 // Ordered by newest first
 const FILES = [
-  { schema: GridFileSchemaV1_3 },
+  { schema: GridFileSchemaV1_4 },
+  { schema: GridFileSchemaV1_3, updateFn: upgradeV1_3toV1_4 },
   { schema: GridFileSchemaV1_2, updateFn: upgradeV1_2toV1_3 },
   { schema: GridFileSchemaV1_1, updateFn: upgradeV1_1toV1_2 },
   { schema: GridFileSchemaV1_0, updateFn: upgradeV1_0toV1_1 },
 ];
+
+// all versions validated by Rust
+const rustFileVersions = ['1.5'];
 
 /**
  * Given arbitrary JSON, validate whether it's a valid file format and return
@@ -38,6 +43,10 @@ export function validateAndUpgradeGridFile(input: any, logOutput: boolean = true
         e
       );
     return null;
+  }
+
+  if (rustFileVersions.includes(json.version)) {
+    return json;
   }
 
   // Try to validate the file against the newest version, then step back through

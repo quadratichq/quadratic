@@ -1,32 +1,21 @@
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { Sheet } from '../../../grid/sheet/Sheet';
+import { sheets } from '../../../grid/controller/Sheets';
 import { cellHasContent } from '../../helpers/selectCells';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
-export function keyboardPosition(options: {
-  event: React.KeyboardEvent<HTMLElement>;
-  interactionState: GridInteractionState;
-  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
-  sheet: Sheet;
-}): boolean {
-  const { event, interactionState, setInteractionState, sheet } = options;
+export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boolean {
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
 
   const setCursorPosition = (x: number, y: number): void => {
     const newPos = { x, y };
-    setInteractionState({
-      ...interactionState,
-      showMultiCursor: false,
-      keyboardMovePosition: newPos,
+    cursor.changePosition({
       cursorPosition: newPos,
-      multiCursorPosition: {
-        originPosition: newPos,
-        terminalPosition: newPos,
-      },
     });
   };
   const moveCursor = (deltaX: number, deltaY: number) => {
     // movePosition is either originPosition or terminalPosition (whichever !== cursorPosition)
-    const downPosition = interactionState.cursorPosition;
-    const movePosition = interactionState.keyboardMovePosition;
+    const downPosition = cursor.cursorPosition;
+    const movePosition = cursor.keyboardMovePosition;
 
     // handle cases for meta/ctrl keys with algorithm:
     // - if on an empty cell then select to the first cell with a value
@@ -36,32 +25,24 @@ export function keyboardPosition(options: {
     //   the above checks are always made relative to the original cursor position (the highlighted cell)
 
     if (event.metaKey || event.ctrlKey) {
-      const bounds = sheet.grid.getGridBounds(true);
+      const bounds = sheet.grid.getSheetBounds(true);
       if (!bounds) {
         event.preventDefault();
         return;
       }
 
       if (deltaX === 1) {
-        const originX = interactionState.showMultiCursor
-          ? interactionState.multiCursorPosition.originPosition.x
-          : interactionState.cursorPosition.x;
-        const termX = interactionState.showMultiCursor
-          ? interactionState.multiCursorPosition.terminalPosition.x
-          : interactionState.cursorPosition.x;
-        const originY = interactionState.showMultiCursor
-          ? interactionState.multiCursorPosition.originPosition.y
-          : interactionState.cursorPosition.y;
-        const termY = interactionState.showMultiCursor
-          ? interactionState.multiCursorPosition.terminalPosition.y
-          : interactionState.cursorPosition.y;
-        const keyboardX = interactionState.keyboardMovePosition.x;
+        const originX = cursor.originPosition.x;
+        const termX = cursor.terminalPosition.x;
+        const originY = cursor.originPosition.y;
+        const termY = cursor.terminalPosition.y;
+        const keyboardX = cursor.keyboardMovePosition.x;
         let x = keyboardX;
-        const leftOfCursor = keyboardX < interactionState.cursorPosition.x;
-        const y = interactionState.keyboardMovePosition.y;
+        const leftOfCursor = keyboardX < cursor.cursorPosition.x;
+        const y = cursor.keyboardMovePosition.y;
 
         // always use the original cursor position to search
-        const yCheck = interactionState.cursorPosition.y;
+        const yCheck = cursor.cursorPosition.y;
 
         // handle case of cell with content
         if (cellHasContent(sheet.grid.get(x, yCheck)?.cell)) {
@@ -83,32 +64,26 @@ export function keyboardPosition(options: {
         }
 
         if (event.shiftKey) {
-          setInteractionState({
-            ...interactionState,
-            multiCursorPosition: {
+          cursor.changePosition({
+            multiCursor: {
               originPosition: { x: leftOfCursor ? Math.min(x, termX) : originX, y: originY },
               terminalPosition: { x: leftOfCursor ? Math.max(x, termX) : x, y: termY },
             },
             keyboardMovePosition: { x, y },
-            showMultiCursor: true,
           });
         } else {
           setCursorPosition(x, y);
         }
       } else if (deltaX === -1) {
-        const originX = interactionState.showMultiCursor
-          ? interactionState.multiCursorPosition.originPosition.x
-          : interactionState.cursorPosition.x;
-        const termX = interactionState.showMultiCursor
-          ? interactionState.multiCursorPosition.terminalPosition.x
-          : interactionState.cursorPosition.x;
-        const keyboardX = interactionState.keyboardMovePosition.x;
+        const originX = cursor.originPosition.x;
+        const termX = cursor.terminalPosition.x;
+        const keyboardX = cursor.keyboardMovePosition.x;
         let x = keyboardX;
-        const rightOfCursor = keyboardX > interactionState.cursorPosition.x;
-        const y = interactionState.keyboardMovePosition.y;
+        const rightOfCursor = keyboardX > cursor.cursorPosition.x;
+        const y = cursor.keyboardMovePosition.y;
 
         // always use the original cursor position to search
-        const yCheck = interactionState.cursorPosition.y;
+        const yCheck = cursor.cursorPosition.y;
 
         // handle case of cell with content
         if (cellHasContent(sheet.grid.get(x, yCheck)?.cell)) {
@@ -129,38 +104,28 @@ export function keyboardPosition(options: {
         }
 
         if (event.shiftKey) {
-          const originY = interactionState.showMultiCursor
-            ? interactionState.multiCursorPosition.originPosition.y
-            : interactionState.cursorPosition.y;
-          const termY = interactionState.showMultiCursor
-            ? interactionState.multiCursorPosition.terminalPosition.y
-            : interactionState.cursorPosition.y;
-          setInteractionState({
-            ...interactionState,
-            multiCursorPosition: {
+          const originY = cursor.originPosition.y;
+          const termY = cursor.terminalPosition.y;
+          cursor.changePosition({
+            multiCursor: {
               originPosition: { x: rightOfCursor ? Math.min(x, originX) : x, y: originY },
               terminalPosition: { x: rightOfCursor ? Math.max(x, originX) : termX, y: termY },
             },
             keyboardMovePosition: { x, y },
-            showMultiCursor: true,
           });
         } else {
           setCursorPosition(x, y);
         }
       } else if (deltaY === 1) {
-        const originY = interactionState.showMultiCursor
-          ? interactionState.multiCursorPosition.originPosition.y
-          : interactionState.cursorPosition.y;
-        const termY = interactionState.showMultiCursor
-          ? interactionState.multiCursorPosition.terminalPosition.y
-          : interactionState.cursorPosition.y;
-        const keyboardY = interactionState.keyboardMovePosition.y;
+        const originY = cursor.originPosition.y;
+        const termY = cursor.terminalPosition.y;
+        const keyboardY = cursor.keyboardMovePosition.y;
         let y = keyboardY;
-        const topOfCursor = keyboardY < interactionState.cursorPosition.y;
-        const x = interactionState.keyboardMovePosition.x;
+        const topOfCursor = keyboardY < cursor.cursorPosition.y;
+        const x = cursor.keyboardMovePosition.x;
 
         // always use the original cursor position to search
-        const xCheck = interactionState.cursorPosition.x;
+        const xCheck = cursor.cursorPosition.x;
 
         // handle case of cell with content
         if (cellHasContent(sheet.grid.get(xCheck, y)?.cell)) {
@@ -182,38 +147,28 @@ export function keyboardPosition(options: {
         }
 
         if (event.shiftKey) {
-          const originX = interactionState.showMultiCursor
-            ? interactionState.multiCursorPosition.originPosition.x
-            : interactionState.cursorPosition.x;
-          const termX = interactionState.showMultiCursor
-            ? interactionState.multiCursorPosition.terminalPosition.x
-            : interactionState.cursorPosition.x;
-          setInteractionState({
-            ...interactionState,
-            multiCursorPosition: {
+          const originX = cursor.originPosition.x;
+          const termX = cursor.terminalPosition.x;
+          cursor.changePosition({
+            multiCursor: {
               originPosition: { x: originX, y: topOfCursor ? Math.min(y, termY) : originY },
               terminalPosition: { x: termX, y: topOfCursor ? Math.max(y, termY) : y },
             },
             keyboardMovePosition: { x, y },
-            showMultiCursor: true,
           });
         } else {
           setCursorPosition(x, y);
         }
       } else if (deltaY === -1) {
-        const originY = interactionState.showMultiCursor
-          ? interactionState.multiCursorPosition.originPosition.y
-          : interactionState.cursorPosition.y;
-        const termY = interactionState.showMultiCursor
-          ? interactionState.multiCursorPosition.terminalPosition.y
-          : interactionState.cursorPosition.y;
-        const keyboardY = interactionState.keyboardMovePosition.y;
+        const originY = cursor.originPosition.y;
+        const termY = cursor.terminalPosition.y;
+        const keyboardY = cursor.keyboardMovePosition.y;
         let y = keyboardY;
-        const bottomOfCursor = keyboardY > interactionState.cursorPosition.y;
-        const x = interactionState.keyboardMovePosition.x;
+        const bottomOfCursor = keyboardY > cursor.cursorPosition.y;
+        const x = cursor.keyboardMovePosition.x;
 
         // always use the original cursor position to search
-        const xCheck = interactionState.cursorPosition.x;
+        const xCheck = cursor.cursorPosition.x;
 
         // handle case of cell with content
         if (cellHasContent(sheet.grid.get(xCheck, y)?.cell)) {
@@ -234,20 +189,14 @@ export function keyboardPosition(options: {
         }
 
         if (event.shiftKey) {
-          const originX = interactionState.showMultiCursor
-            ? interactionState.multiCursorPosition.originPosition.x
-            : interactionState.cursorPosition.x;
-          const termX = interactionState.showMultiCursor
-            ? interactionState.multiCursorPosition.terminalPosition.x
-            : interactionState.cursorPosition.x;
-          setInteractionState({
-            ...interactionState,
-            multiCursorPosition: {
+          const originX = cursor.multiCursor ? cursor.multiCursor.originPosition.x : cursor.cursorPosition.x;
+          const termX = cursor.multiCursor ? cursor.multiCursor.terminalPosition.x : cursor.cursorPosition.x;
+          cursor.changePosition({
+            multiCursor: {
               originPosition: { x: originX, y: bottomOfCursor ? Math.min(y, originY) : y },
               terminalPosition: { x: termX, y: bottomOfCursor ? Math.max(y, originY) : termY },
             },
             keyboardMovePosition: { x, y },
-            showMultiCursor: true,
           });
         } else {
           setCursorPosition(x, y);
@@ -258,59 +207,47 @@ export function keyboardPosition(options: {
     // use arrow to select when shift key is pressed
     else if (event.shiftKey) {
       // we are moving an existing multiCursor
-      if (interactionState.showMultiCursor && downPosition && movePosition) {
+      if (cursor.multiCursor && downPosition && movePosition) {
         const newMovePosition = { x: movePosition.x + deltaX, y: movePosition.y + deltaY };
         const originX = downPosition.x < newMovePosition.x ? downPosition.x : newMovePosition.x;
         const originY = downPosition.y < newMovePosition.y ? downPosition.y : newMovePosition.y;
         const termX = downPosition.x > newMovePosition.x ? downPosition.x : newMovePosition.x;
         const termY = downPosition.y > newMovePosition.y ? downPosition.y : newMovePosition.y;
-        setInteractionState({
-          ...interactionState,
-          multiCursorPosition: {
+        cursor.changePosition({
+          multiCursor: {
             originPosition: { x: originX, y: originY },
             terminalPosition: { x: termX, y: termY },
           },
           keyboardMovePosition: newMovePosition,
-          showMultiCursor: true,
-          showInput: false,
-          inputInitialValue: '',
         });
+        pixiAppSettings.changeInput(false);
       }
 
       // we are creating a new multiCursor
       else {
-        const downPosition = { ...interactionState.cursorPosition };
+        const downPosition = cursor.cursorPosition;
         const newMovePosition = { x: downPosition.x + deltaX, y: downPosition.y + deltaY };
         const originX = downPosition.x < newMovePosition.x ? downPosition.x : newMovePosition.x;
         const originY = downPosition.y < newMovePosition.y ? downPosition.y : newMovePosition.y;
         const termX = downPosition.x > newMovePosition.x ? downPosition.x : newMovePosition.x;
         const termY = downPosition.y > newMovePosition.y ? downPosition.y : newMovePosition.y;
-        setInteractionState({
-          ...interactionState,
-          multiCursorPosition: {
+        cursor.changePosition({
+          multiCursor: {
             originPosition: { x: originX, y: originY },
             terminalPosition: { x: termX, y: termY },
           },
           keyboardMovePosition: newMovePosition,
-          showMultiCursor: true,
-          showInput: false,
-          inputInitialValue: '',
         });
+        pixiAppSettings.changeInput(false);
       }
     }
 
     // move arrow normally
     else {
-      const newPos = { x: interactionState.cursorPosition.x + deltaX, y: interactionState.cursorPosition.y + deltaY };
-      setInteractionState({
-        ...interactionState,
+      const newPos = { x: cursor.cursorPosition.x + deltaX, y: cursor.cursorPosition.y + deltaY };
+      cursor.changePosition({
         keyboardMovePosition: newPos,
-        showMultiCursor: false,
         cursorPosition: newPos,
-        multiCursorPosition: {
-          originPosition: newPos,
-          terminalPosition: newPos,
-        },
       });
     }
     event.preventDefault();

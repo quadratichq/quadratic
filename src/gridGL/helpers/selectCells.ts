@@ -1,53 +1,34 @@
-import { Viewport } from 'pixi-viewport';
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { Coordinate } from '../types/size';
+import { sheets } from '../../grid/controller/Sheets';
 import { Cell } from '../../schemas';
+import { pixiApp } from '../pixiApp/PixiApp';
+import { Coordinate } from '../types/size';
 
-export function selectAllCells(options: {
-  sheet: Sheet;
-  setInteractionState: (value: GridInteractionState) => void;
-  interactionState: GridInteractionState;
-  viewport?: Viewport;
-  column?: number;
-  row?: number;
-}): void {
-  const { sheet } = options;
+export function selectAllCells(column?: number, row?: number): void {
+  const sheet = sheets.sheet;
   let bounds: Coordinate[] | undefined;
-  if (options.row !== undefined) {
-    bounds = sheet.getGridRowMinMax(options.row, true);
-  } else if (options.column !== undefined) {
-    bounds = sheet.getGridColumnMinMax(options.column, true);
+  if (row !== undefined) {
+    bounds = sheet.getGridRowMinMax(row, true);
+  } else if (column !== undefined) {
+    bounds = sheet.getGridColumnMinMax(column, true);
   } else {
     bounds = sheet.getMinMax(true);
   }
   if (!bounds) return;
   const cursorPosition = { x: bounds[0].x, y: bounds[0].y };
   if (bounds !== undefined) {
-    options.setInteractionState({
-      ...options.interactionState,
-      ...{
-        multiCursorPosition: {
-          originPosition: bounds[0],
-          terminalPosition: bounds[1],
-        },
-        showMultiCursor: true,
+    sheet.cursor.changePosition({
+      multiCursor: {
+        originPosition: bounds[0],
+        terminalPosition: bounds[1],
       },
       cursorPosition,
     });
-    if (options.viewport) options.viewport.dirty = true;
+    pixiApp.viewport.dirty = true;
   }
 }
 
-export function selectColumns(options: {
-  sheet: Sheet;
-  setInteractionState: (value: GridInteractionState) => void;
-  interactionState: GridInteractionState;
-  viewport?: Viewport;
-  start: number;
-  end: number;
-}): void {
-  const { sheet } = options;
+export function selectColumns(options: { start: number; end: number }): void {
+  const { sheet } = sheets;
   let minX = Infinity,
     minY = Infinity,
     maxX = -Infinity,
@@ -62,29 +43,18 @@ export function selectColumns(options: {
     }
   }
   if (minX !== Infinity && minY !== Infinity) {
-    options.setInteractionState({
-      ...options.interactionState,
-      ...{
-        multiCursorPosition: {
-          originPosition: { x: minX, y: minY },
-          terminalPosition: { x: maxX, y: maxY },
-        },
-        showMultiCursor: true,
+    sheet.cursor.changePosition({
+      multiCursor: {
+        originPosition: { x: minX, y: minY },
+        terminalPosition: { x: maxX, y: maxY },
       },
     });
-    if (options.viewport) options.viewport.dirty = true;
+    pixiApp.viewport.dirty = true;
   }
 }
 
-export async function selectRows(options: {
-  sheet: Sheet;
-  setInteractionState: (value: GridInteractionState) => void;
-  interactionState: GridInteractionState;
-  viewport?: Viewport;
-  start: number;
-  end: number;
-}): Promise<void> {
-  const { sheet } = options;
+export async function selectRows(options: { start: number; end: number }): Promise<void> {
+  const { sheet } = sheets;
   let minX = Infinity,
     minY = Infinity,
     maxX = -Infinity,
@@ -99,17 +69,13 @@ export async function selectRows(options: {
     }
   }
   if (minX !== Infinity && minY !== Infinity) {
-    options.setInteractionState({
-      ...options.interactionState,
-      ...{
-        multiCursorPosition: {
-          originPosition: { x: minX, y: minY },
-          terminalPosition: { x: maxX, y: maxY },
-        },
-        showMultiCursor: true,
+    sheet.cursor.changePosition({
+      multiCursor: {
+        originPosition: { x: minX, y: minY },
+        terminalPosition: { x: maxX, y: maxY },
       },
     });
-    if (options.viewport) options.viewport.dirty = true;
+    pixiApp.viewport.dirty = true;
   }
 }
 

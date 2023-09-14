@@ -1,11 +1,5 @@
 import * as PIXI from 'pixi.js';
-import {
-  debugShowCachedSpriteCounts,
-  debugShowCountRenderedObjects,
-  debugShowRenderer,
-  debugShowTime,
-} from '../../debugFlags';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { debugShowCountRenderedObjects, debugShowFPS, debugShowTime } from '../../debugFlags';
 
 const MINIMUM_MS_TO_DISPLAY = 10;
 
@@ -25,7 +19,7 @@ export function debugTimeCheck(name: string, minimum = MINIMUM_MS_TO_DISPLAY): v
 }
 
 export function debugRendererLight(on: boolean): void {
-  if (!debugShowRenderer) return;
+  if (!debugShowFPS) return;
   const span = document.querySelector('.debug-show-renderer') as HTMLSpanElement;
   if (span) {
     span.style.backgroundColor = on ? '#aa0000' : '#00aa00';
@@ -54,7 +48,7 @@ export function debugShowChildren(parent: PIXI.Container, name?: string): void {
   console.log(`[Rendered] ${name ? `[${name}] ` : ''}${count} objects | ${visibleCount} visible`);
 }
 
-export function debugShowCachedCounts(app: PixiApp): void {
-  if (!debugShowCachedSpriteCounts) return;
-  app.cells.debugShowCachedCounts();
+export function debugShowCachedCounts(): void {
+  // if (!debugShowCachedSpriteCounts) return;
+  // app.cells.debugShowCachedCounts();
 }

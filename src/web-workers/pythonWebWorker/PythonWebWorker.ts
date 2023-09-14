@@ -1,18 +1,15 @@
+import { GetCellsDB } from '../../grid/sheet/Cells/GetCellsDB';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
-import { WebWorkers } from '../webWorkers';
 
 export class PythonWebWorker {
-  private webWorkers: WebWorkers;
   private worker: Worker;
   private callback?: (results: PythonReturnType) => void;
   private loaded = false;
 
-  constructor(webWorkers: WebWorkers) {
-    this.webWorkers = webWorkers;
-
+  constructor() {
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
 
-    this.worker.onmessage = (e: MessageEvent<PythonMessage>) => {
+    this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
       if (event.type === 'results') {
         if (this.callback && event.results) {
@@ -20,14 +17,11 @@ export class PythonWebWorker {
           this.callback = undefined;
         }
       } else if (event.type === 'get-cells') {
-        if (!this.webWorkers.app) {
-          throw new Error('Expected app to be defined in WebWorkers');
-        }
         const range = event.range;
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        const cells = this.webWorkers.app.sheet.grid.getNakedCells(range.x0, range.y0, range.x1, range.y1);
+        const cells = await GetCellsDB(range.x0, range.y0, range.x1, range.y1);
         this.worker.postMessage({ type: 'get-cells', cells } as PythonMessage);
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
@@ -59,7 +53,5 @@ export class PythonWebWorker {
     });
   }
 
-  async load() {
-    // this is used by the mock
-  }
+  changeOutput(_: Record<string, PythonReturnType>): void {}
 }

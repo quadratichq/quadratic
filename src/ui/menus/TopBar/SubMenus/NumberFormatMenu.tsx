@@ -2,29 +2,22 @@ import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 
 import { AbcOutlined, AttachMoney, Functions, Percent } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
-import { SheetController } from '../../../../grid/controller/sheetController';
-import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import { MenuLineItem } from '../MenuLineItem';
+import {
+  textFormatClear,
+  textFormatDecreaseDecimalPlaces,
+  textFormatIncreaseDecimalPlaces,
+  textFormatSetCurrency,
+  textFormatSetExponential,
+  textFormatSetNumber,
+  textFormatSetPercentage,
+} from './formatCells';
+
+import '@szhsin/react-menu/dist/index.css';
 import { TopBarMenuItem } from '../TopBarMenuItem';
-import { useFormatCells } from './useFormatCells';
 
-interface IProps {
-  app: PixiApp;
-  sheet_controller: SheetController;
-}
-
-export const NumberFormatMenu = (props: IProps) => {
-  const {
-    textFormatIncreaseDecimalPlaces,
-    textFormatDecreaseDecimalPlaces,
-    textFormatClear,
-    textFormatSetCurrency,
-    textFormatSetPercentage,
-    textFormatSetNumber,
-    textFormatSetExponential,
-  } = useFormatCells(props.sheet_controller, props.app);
-
+export const NumberFormatMenu = () => {
   return (
     <Menu
       menuButton={({ open }) => (

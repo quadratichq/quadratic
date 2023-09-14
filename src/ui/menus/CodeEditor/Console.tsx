@@ -6,19 +6,20 @@ import { useRecoilValue } from 'recoil';
 import { isViewerOrAbove } from '../../../actions';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
-import { CellEvaluationResult } from '../../../grid/computations/types';
-import { Cell } from '../../../schemas';
+// import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
 import { colors } from '../../../theme/colors';
 import { CodeSnippet } from '../../components/CodeSnippet';
 import { LinkNewTab } from '../../components/LinkNewTab';
 import { AITab } from './AITab';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
+// todo: fix types
+
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
-  evalResult: CellEvaluationResult | undefined;
+  evalResult: any; //CodeCellRunOutput | undefined;
   editorContent: string | undefined;
-  selectedCell: Cell;
+  selectedCell: any; //CodeCellValue;
 }
 
 export function Console({ evalResult, editorMode, editorContent, selectedCell }: ConsoleProps) {

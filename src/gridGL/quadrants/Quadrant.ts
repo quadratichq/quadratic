@@ -1,9 +1,9 @@
-import { Container, Graphics, Matrix, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
-import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowSubCacheInfo, debugShowTime } from '../../debugFlags';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { Container, Graphics, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } from 'pixi.js';
+import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowTime } from '../../debugFlags';
+import { Sheet } from '../../grid/sheet/Sheet';
+import { intersects } from '../helpers/intersects';
 import { Coordinate } from '../types/size';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS, QUADRANT_SCALE, QUADRANT_TEXTURE_SIZE } from './quadrantConstants';
-import { intersects } from '../helpers/intersects';
 
 // subquadrants are sprites that live within a quadrant mapped to a rendered texture size
 interface SubQuadrant extends Sprite {
@@ -15,7 +15,7 @@ interface SubQuadrant extends Sprite {
 // A quadrant is a cached portion of the sheet mapped to column, row size (which can change based on heading size)
 // at the default heading size, one subquadrant is needed per quadrant
 export class Quadrant extends Container {
-  private app: PixiApp;
+  private sheet: Sheet;
   private subquadrants: SubQuadrant[];
   private _dirty = true;
   private overflowLeft = false;
@@ -25,9 +25,9 @@ export class Quadrant extends Container {
 
   private testGraphics: Graphics;
 
-  constructor(app: PixiApp, quadrantX: number, quadrantY: number) {
+  constructor(sheet: Sheet, quadrantX: number, quadrantY: number) {
     super();
-    this.app = app;
+    this.sheet = sheet;
     this.location = { x: quadrantX, y: quadrantY };
     this.subquadrants = [];
     this.testGraphics = this.addChild(new Graphics());
@@ -38,7 +38,7 @@ export class Quadrant extends Container {
     const oldRectangle = this.visibleRectangle;
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
-    this.visibleRectangle = this.app.sheet.gridOffsets.getScreenRectangle(
+    this.visibleRectangle = this.sheet.gridOffsets.getScreenRectangle(
       columnStart,
       rowStart,
       QUADRANT_COLUMNS,
@@ -112,10 +112,9 @@ export class Quadrant extends Container {
   update(timeStart?: number, debug?: string): void {
     if (!this.dirty) return;
     this.clear();
-    const app = this.app;
     const columnStart = this.location.x * QUADRANT_COLUMNS;
     const rowStart = this.location.y * QUADRANT_ROWS;
-    const screenRectangle = app.sheet.gridOffsets.getScreenRectangle(
+    const screenRectangle = this.sheet.gridOffsets.getScreenRectangle(
       columnStart,
       rowStart,
       QUADRANT_COLUMNS,
@@ -133,67 +132,58 @@ export class Quadrant extends Container {
     const xCount = Math.ceil(screenRectangle.width / QUADRANT_TEXTURE_SIZE);
     const yCount = Math.ceil(screenRectangle.height / QUADRANT_TEXTURE_SIZE);
 
-    const subQuadrantWidth = screenRectangle.width / xCount;
-    const subQuadrantHeight = screenRectangle.height / yCount;
+    // const subQuadrantWidth = screenRectangle.width / xCount;
+    // const subQuadrantHeight = screenRectangle.height / yCount;
 
     for (let subQuadrantY = 0; subQuadrantY < yCount; subQuadrantY++) {
       for (let subQuadrantX = 0; subQuadrantX < xCount; subQuadrantX++) {
-        const cellBounds = new Rectangle(
-          screenRectangle.x + subQuadrantX * subQuadrantWidth,
-          screenRectangle.y + subQuadrantY * subQuadrantHeight,
-          subQuadrantWidth + 1,
-          subQuadrantHeight + 1
-        );
-
+        // const cellBounds = new Rectangle(
+        //   screenRectangle.x + subQuadrantX * subQuadrantWidth,
+        //   screenRectangle.y + subQuadrantY * subQuadrantHeight,
+        //   subQuadrantWidth + 1,
+        //   subQuadrantHeight + 1
+        // );
         // draw quadrant and return the reduced subQuadrant rectangle (ie, shrinks the texture based on what was actually drawn)
-        const reducedDrawingRectangle = this.app.quadrants.cells.drawCells(cellBounds, true);
-        if (reducedDrawingRectangle) {
-          // adjust the texture placement so we only render boundary cells for subquadrants once (the second time will be outside the texture)
-          const trimLeft =
-            reducedDrawingRectangle.left < cellBounds.left ? cellBounds.left - reducedDrawingRectangle.left : 0;
-          const trimRight =
-            reducedDrawingRectangle.right > cellBounds.right ? reducedDrawingRectangle.right - cellBounds.right : 0;
-          const trimTop =
-            reducedDrawingRectangle.top < cellBounds.top ? cellBounds.top - reducedDrawingRectangle.top : 0;
-          const trimBottom =
-            reducedDrawingRectangle.bottom > cellBounds.bottom ? reducedDrawingRectangle.bottom - cellBounds.bottom : 0;
-
-          const textureWidth = (reducedDrawingRectangle.width - trimLeft - trimRight) * QUADRANT_SCALE;
-          const textureHeight = (reducedDrawingRectangle.height - trimTop - trimBottom) * QUADRANT_SCALE;
-
-          // skip quadrants that have no size
-          if (textureWidth <= 0 || textureHeight <= 0) continue;
-
-          const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, textureWidth, textureHeight);
-
-          this.overflowLeft = !!trimLeft;
-
-          // prepare a transform to translate the world to the start of the content for this subQuadrant, and properly scale it
-          const transform = new Matrix();
-          transform.translate(-reducedDrawingRectangle.left - trimLeft, -reducedDrawingRectangle.top - trimTop);
-          transform.scale(QUADRANT_SCALE, QUADRANT_SCALE);
-
-          if (debugShowSubCacheInfo) {
-            console.log(
-              `[Quadrant] ${this.debugName()}.[${subQuadrantX},${subQuadrantY}] [${cellBounds.toString()} texture size: (${textureWidth}, ${textureHeight})`
-            );
-          }
-
-          // render the sprite's texture
-          app.renderer.render(app.quadrants.container, { renderTexture: subQuadrant.texture, transform, clear: true });
-          subQuadrant.position.set(reducedDrawingRectangle.left + trimLeft, reducedDrawingRectangle.top + trimTop);
-
-          if (debugShowQuadrantBoxes) {
-            this.testGraphics
-              .lineStyle({ color: 0, width: 5 })
-              .drawRect(
-                reducedDrawingRectangle.x + trimLeft,
-                reducedDrawingRectangle.y + trimTop,
-                textureWidth / QUADRANT_SCALE,
-                textureHeight / QUADRANT_SCALE
-              );
-          }
-        }
+        //   const reducedDrawingRectangle = app.quadrants.cells.drawCells(this.sheet, cellBounds, true);
+        //   if (reducedDrawingRectangle) {
+        //     // adjust the texture placement so we only render boundary cells for subquadrants once (the second time will be outside the texture)
+        //     const trimLeft =
+        //       reducedDrawingRectangle.left < cellBounds.left ? cellBounds.left - reducedDrawingRectangle.left : 0;
+        //     const trimRight =
+        //       reducedDrawingRectangle.right > cellBounds.right ? reducedDrawingRectangle.right - cellBounds.right : 0;
+        //     const trimTop =
+        //       reducedDrawingRectangle.top < cellBounds.top ? cellBounds.top - reducedDrawingRectangle.top : 0;
+        //     const trimBottom =
+        //       reducedDrawingRectangle.bottom > cellBounds.bottom ? reducedDrawingRectangle.bottom - cellBounds.bottom : 0;
+        //     const textureWidth = (reducedDrawingRectangle.width - trimLeft - trimRight) * QUADRANT_SCALE;
+        //     const textureHeight = (reducedDrawingRectangle.height - trimTop - trimBottom) * QUADRANT_SCALE;
+        //     // skip quadrants that have no size
+        //     if (textureWidth <= 0 || textureHeight <= 0) continue;
+        //     const subQuadrant = this.getSubQuadrant(subQuadrantX, subQuadrantY, textureWidth, textureHeight);
+        //     this.overflowLeft = !!trimLeft;
+        //     // prepare a transform to translate the world to the start of the content for this subQuadrant, and properly scale it
+        //     const transform = new Matrix();
+        //     transform.translate(-reducedDrawingRectangle.left - trimLeft, -reducedDrawingRectangle.top - trimTop);
+        //     transform.scale(QUADRANT_SCALE, QUADRANT_SCALE);
+        //     if (debugShowSubCacheInfo) {
+        //       console.log(
+        //         `[Quadrant] ${this.debugName()}.[${subQuadrantX},${subQuadrantY}] [${cellBounds.toString()} texture size: (${textureWidth}, ${textureHeight})`
+        //       );
+        //     }
+        //     // render the sprite's texture
+        //     app.renderer.render(app.quadrants.container, { renderTexture: subQuadrant.texture, transform, clear: true });
+        //     subQuadrant.position.set(reducedDrawingRectangle.left + trimLeft, reducedDrawingRectangle.top + trimTop);
+        //     if (debugShowQuadrantBoxes) {
+        //       this.testGraphics
+        //         .lineStyle({ color: 0, width: 5 })
+        //         .drawRect(
+        //           reducedDrawingRectangle.x + trimLeft,
+        //           reducedDrawingRectangle.y + trimTop,
+        //           textureWidth / QUADRANT_SCALE,
+        //           textureHeight / QUADRANT_SCALE
+        //         );
+        //     }
+        //   }
       }
     }
     this.visibleRectangle = screenRectangle;
@@ -205,7 +195,7 @@ export class Quadrant extends Container {
   }
 
   debugName(): string {
-    return `Q[${this.location.x},${this.location.y}]`;
+    return `Sheet[${this.sheet.name}]Q[${this.location.x},${this.location.y}]`;
   }
 
   debugTextureCount(): number {

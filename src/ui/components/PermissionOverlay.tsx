@@ -13,8 +13,8 @@ const { ANONYMOUS, VIEWER, OWNER, EDITOR } = PermissionSchema.enum;
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const { permission } = useRecoilValue(editorInteractionStateAtom);
-  const { name, contents } = useFileContext();
   const theme = useTheme();
+  const { name } = useFileContext();
   const submit = useSubmit();
 
   if ((permission === OWNER || permission === EDITOR) && isMobile && isOpen) {
@@ -69,7 +69,7 @@ export function PermissionOverlay() {
               variant="outlined"
               size="small"
               disableElevation
-              onClick={() => duplicateFile.run({ name, contents, submit })}
+              onClick={() => duplicateFile.run({ name, submit })}
             >
               {duplicateFile.label}
             </Button>

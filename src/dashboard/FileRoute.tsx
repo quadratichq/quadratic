@@ -15,7 +15,9 @@ import { ApiSchemas, ApiTypes } from '../api/types';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { Empty } from '../components/Empty';
 import { ROUTE_LOADER_IDS } from '../constants/routes';
-import { GridFile, GridFileSchema } from '../schemas';
+import { grid } from '../grid/controller/Grid';
+import init, { hello } from '../quadratic-core/quadratic_core';
+import { GridFile } from '../schemas';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
 
@@ -40,10 +42,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     return undefined;
   });
   if (!data) {
-    throw new Response('Failed to retrive file from server');
+    throw new Response('Failed to retrieve file from server');
   }
 
-  // Validate and upgrade file to the latest version
+  // Validate and upgrade file to the latest version in TS (up to 1.4)
   const contents = validateAndUpgradeGridFile(data.file.contents);
   if (!contents) {
     Sentry.captureEvent({
@@ -53,15 +55,31 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     throw new Response('Invalid file that could not be upgraded.');
   }
 
+  // load WASM
+  await init();
+  hello();
+  grid.init();
+
   // If the file version is newer than what is supported by the current version
   // of the app, do a (hard) reload.
-  if (contents.version > GridFileSchema.shape.version.value) {
+  if (contents.version > grid.getVersion()) {
     Sentry.captureEvent({
-      message: `User opened a file at version ${contents.version} but the app is at version ${GridFileSchema.shape.version.value}. The app will automatically reload.`,
+      message: `User opened a file at version ${
+        contents.version
+      } but the app is at version ${grid.getVersion()}. The app will automatically reload.`,
       level: Sentry.Severity.Log,
     });
     // @ts-expect-error hard reload via `true` only works in some browsers
     window.location.reload(true);
+  }
+
+  // attempt to load the sheet
+  if (!grid.newFromFile(contents)) {
+    Sentry.captureEvent({
+      message: `Failed to validate and upgrade user file from database (to Rust). It will likely have to be fixed manually. File UUID: ${uuid}`,
+      level: Sentry.Severity.Critical,
+    });
+    throw new Response('Invalid file that could not be upgraded by Rust.', { status: 400 });
   }
 
   // Fetch the file's sharing info

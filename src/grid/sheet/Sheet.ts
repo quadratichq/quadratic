@@ -1,110 +1,124 @@
 import { Rectangle } from 'pixi.js';
-import { GridFileData, GridFile } from '../../schemas';
-import { intersects } from '../../gridGL/helpers/intersects';
-import { GridBorders } from './GridBorders';
-import { GridRenderDependency } from './GridRenderDependency';
-import { GridOffsets } from './GridOffsets';
-import { CellAndFormat, GridSparse } from './GridSparse';
-import { Cell, CellFormat } from '../../schemas';
-import { CellDependencyManager } from './CellDependencyManager';
 import { Coordinate } from '../../gridGL/types/size';
+import { Pos } from '../../quadratic-core/quadratic_core';
+import {
+  CellAlign,
+  CellFormatSummary,
+  // CodeCellValue,
+  FormattingSummary,
+  JsRenderCell,
+  JsRenderCodeCell,
+  JsRenderFill,
+} from '../../quadratic-core/types';
+import { grid } from '../controller/Grid';
+import { GridBorders } from './GridBorders';
+import { GridOffsets } from './GridOffsets';
+import { GridSparse } from './GridSparse';
+import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
+  id: string;
+
+  // @deprecated (soon)
   gridOffsets: GridOffsets;
+
+  // @deprecated
   grid: GridSparse;
+
   borders: GridBorders;
+  cursor: SheetCursor;
 
-  // visual dependency for overflowing cells
-  render_dependency: GridRenderDependency;
+  constructor(index: number) {
+    // deprecated
+    this.grid = new GridSparse(this);
 
-  // visual dependency for drawing array lines
-  array_dependency: GridRenderDependency;
+    const sheetId = grid.sheetIndexToId(index);
+    if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
+    this.id = sheetId;
 
-  // cell calculation dependency
-  cell_dependency: CellDependencyManager;
-
-  onRebuild?: () => void;
-
-  constructor() {
     this.gridOffsets = new GridOffsets();
-    this.grid = new GridSparse(this.gridOffsets);
     this.borders = new GridBorders(this.gridOffsets);
-    this.render_dependency = new GridRenderDependency();
-    this.array_dependency = new GridRenderDependency();
-    this.cell_dependency = new CellDependencyManager();
+
+    this.cursor = new SheetCursor(this);
   }
 
-  newFile(): void {
-    this.gridOffsets = new GridOffsets();
-    this.grid = new GridSparse(this.gridOffsets);
-    this.borders = new GridBorders(this.gridOffsets);
-    this.render_dependency = new GridRenderDependency();
-    this.cell_dependency = new CellDependencyManager();
-    this.onRebuild?.();
+  //#region set sheet actions
+  // -----------------------------------
+
+  setCellValue(x: number, y: number, value: string): void {
+    grid.setCellValue({ sheetId: this.id, x, y, value });
   }
 
-  load_file(sheet: GridFile): void {
-    this.gridOffsets.populate(sheet.columns, sheet.rows);
-    this.grid.populate(sheet.cells, sheet.formats);
-    this.borders.populate(sheet.borders);
-    this.cell_dependency.loadFromString(sheet.cell_dependency);
-    this.onRebuild?.();
+  deleteCells(rectangle: Rectangle): void {
+    grid.deleteCellValues(this.id, rectangle);
   }
 
-  export_file(): GridFileData {
-    const { cells, formats } = this.grid.getArrays();
-    return {
-      columns: this.gridOffsets.getColumnsArray(),
-      rows: this.gridOffsets.getRowsArray(),
-      cells,
-      formats,
-      borders: this.borders.getArray(),
-      cell_dependency: this.cell_dependency.exportToString(),
-    };
+  set name(name: string) {
+    grid.setSheetName(this.id, name);
   }
 
-  private copyCell(cell: Cell | undefined): Cell | undefined {
-    if (!cell) return undefined;
-    return {
-      ...cell,
-      evaluation_result: cell.evaluation_result ? { ...cell.evaluation_result } : undefined,
-    };
+  set color(color: string | undefined) {
+    grid.setSheetColor(this.id, color);
   }
 
-  private copyFormat(format: CellFormat | undefined): CellFormat | undefined {
-    if (!format) return undefined;
-    return {
-      ...format,
-      textFormat: format.textFormat ? { ...format.textFormat } : undefined,
-    };
+  //#endregion
+
+  //#region get grid information
+
+  get name(): string {
+    const name = grid.getSheetName(this.id);
+    if (name === undefined) throw new Error('Expected name to be defined in Sheet');
+    return name;
   }
 
-  getCellCopy(x: number, y: number): Cell | undefined {
-    // proper deep copy of a cell
-    const cell = this.grid.get(x, y);
-    if (!cell || !cell.cell) return;
-    return this.copyCell(cell.cell);
+  get color(): string | undefined {
+    return grid.getSheetColor(this.id);
   }
 
-  getCellAndFormatCopy(x: number, y: number): CellAndFormat | undefined {
-    const cell = this.grid.get(x, y);
-    if (!cell) return;
-    return {
-      cell: this.copyCell(cell.cell),
-      format: this.copyFormat(cell.format),
-    };
+  get order(): string {
+    return grid.getSheetOrder(this.id);
   }
 
-  /** finds grid bounds based on GridSparse, GridBounds, and GridRenderDependency */
+  getRenderCells(rectangle: Rectangle): JsRenderCell[] {
+    return grid.getRenderCells(this.id, rectangle);
+  }
+
+  getRenderCell(x: number, y: number): JsRenderCell | undefined {
+    return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
+  }
+
+  getEditCell(x: number, y: number): string {
+    return grid.getEditCell(this.id, new Pos(x, y));
+  }
+
+  getRenderFills(rectangle: Rectangle): JsRenderFill[] {
+    return grid.getRenderFills(this.id, rectangle);
+  }
+
+  getAllRenderFills(): JsRenderFill[] {
+    return grid.getAllRenderFills(this.id);
+  }
+
+  getRenderCodeCells(): JsRenderCodeCell[] {
+    return grid.getRenderCodeCells(this.id);
+  }
+
+  // todo: fix types
+
+  getCodeValue(x: number, y: number): any /*CodeCellValue*/ | undefined {
+    return grid.getCodeValue(this.id, x, y);
+  }
+
+  getFormattingSummary(rectangle: Rectangle): FormattingSummary {
+    return grid.getFormattingSummary(this.id, rectangle);
+  }
+
+  getCellFormatSummary(x: number, y: number): CellFormatSummary {
+    return grid.getCellFormatSummary(this.id, x, y);
+  }
+
   getGridBounds(onlyData: boolean): Rectangle | undefined {
-    if (onlyData) {
-      return this.grid.getGridBounds(true);
-    }
-    return intersects.rectangleUnion(
-      this.grid.getGridBounds(false),
-      this.borders.getGridBounds(),
-      this.render_dependency.getGridBounds()
-    );
+    return grid.getGridBounds(this.id, onlyData);
   }
 
   getMinMax(onlyData: boolean): Coordinate[] | undefined {
@@ -174,16 +188,58 @@ export class Sheet {
     ];
   }
 
-  hasQuadrant(x: number, y: number): boolean {
-    return (
-      this.grid.hasQuadrant(x, y) ||
-      this.borders.hasQuadrant(x, y) ||
-      this.render_dependency.hasQuadrant(x, y) ||
-      this.array_dependency.hasQuadrant(x, y)
+  //#endregion
+
+  //#region set grid information
+
+  setCellFillColor(rectangle: Rectangle, fillColor?: string): void {
+    return grid.setCellFillColor(this.id, rectangle, fillColor);
+  }
+
+  setCellBold(rectangle: Rectangle, bold: boolean): void {
+    grid.setCellBold(this.id, rectangle, bold);
+  }
+
+  setCellItalic(rectangle: Rectangle, italic: boolean): void {
+    grid.setCellItalic(this.id, rectangle, italic);
+  }
+
+  setCellTextColor(rectangle: Rectangle, color?: string): void {
+    grid.setCellTextColor(this.id, rectangle, color);
+  }
+
+  setCellAlign(rectangle: Rectangle, align?: CellAlign): void {
+    grid.setCellAlign(this.id, rectangle, align);
+  }
+
+  setCurrency(rectangle: Rectangle, symbol: string = '$') {
+    grid.setCellCurrency(this.id, rectangle, symbol);
+  }
+
+  setPercentage(rectangle: Rectangle) {
+    grid.setCellPercentage(this.id, rectangle);
+  }
+
+  removeCellNumericFormat(rectangle: Rectangle) {
+    grid.removeCellNumericFormat(this.id, rectangle);
+  }
+
+  changeDecimals(delta: number): void {
+    grid.changeDecimalPlaces(
+      this.id,
+      new Pos(this.cursor.originPosition.x, this.cursor.originPosition.y),
+      this.cursor.getRectangle(),
+      delta
     );
   }
 
-  debugGetCells(): Cell[] {
-    return this.grid.getAllCells();
+  clearFormatting(rectangle: Rectangle): void {
+    throw new Error('Not implemented yet');
   }
+
+  getFormatPrimaryCell(): CellFormatSummary {
+    return grid.getCellFormatSummary(this.id, this.cursor.originPosition.x, this.cursor.originPosition.y);
+  }
+
+  //#endregion
 }

@@ -1,6 +1,8 @@
 use regex::Regex;
 use smallvec::smallvec;
 
+use crate::ArraySize;
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -19,7 +21,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[async_zip_map]
             fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
                 let pos = CellRef::parse_a1(&cellref_string.inner, ctx.pos)
-                    .ok_or(FormulaErrorMsg::BadCellReference.with_span(cellref_string.span))?;
+                    .ok_or(ErrorMsg::BadCellReference.with_span(cellref_string.span))?;
                 ctx.get_cell(pos, cellref_string.span).await?.inner
             }
         ),
@@ -42,7 +44,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[pure_zip_map]
             fn VLOOKUP(
                 span: Span,
-                [search_key]: BasicValue,
+                [search_key]: CellValue,
                 search_range: Array,
                 [output_col]: u32,
                 [is_sorted]: (Option<bool>),
@@ -56,9 +58,9 @@ fn get_functions() -> Vec<FormulaFunction> {
 
                 let x = output_col
                     .checked_sub(1)
-                    .ok_or_else(|| FormulaErrorMsg::IndexOutOfBounds)?;
+                    .ok_or_else(|| ErrorMsg::IndexOutOfBounds)?;
                 let y = lookup(needle, haystack, match_mode, search_mode)?
-                    .ok_or_else(|| FormulaErrorMsg::NoMatch.with_span(span))?;
+                    .ok_or_else(|| ErrorMsg::NoMatch.with_span(span))?;
 
                 search_range.get(x, y as u32)?.clone()
             }
@@ -83,7 +85,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[pure_zip_map]
             fn HLOOKUP(
                 span: Span,
-                [search_key]: BasicValue,
+                [search_key]: CellValue,
                 search_range: Array,
                 [output_row]: u32,
                 [is_sorted]: (Option<bool>),
@@ -97,10 +99,10 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let search_mode = LookupSearchMode::from_is_sorted(is_sorted);
 
                 let x = lookup(needle, haystack, match_mode, search_mode)?
-                    .ok_or_else(|| FormulaErrorMsg::NoMatch.with_span(span))?;
+                    .ok_or_else(|| ErrorMsg::NoMatch.with_span(span))?;
                 let y = output_row
                     .checked_sub(1)
-                    .ok_or_else(|| FormulaErrorMsg::IndexOutOfBounds)?;
+                    .ok_or_else(|| ErrorMsg::IndexOutOfBounds)?;
 
                 search_range.get(x as u32, y)?.clone()
             }
@@ -181,8 +183,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             ) {
                 let fallback = fallback.unwrap_or(Spanned {
                     span,
-                    inner: Array::from(BasicValue::Err(Box::new(
-                        FormulaErrorMsg::NoMatch.with_span(span),
+                    inner: Array::from(CellValue::Error(Box::new(
+                        ErrorMsg::NoMatch.with_span(span),
                     ))),
                 });
                 let search_mode_span = search_mode.map_or(span, |arg| arg.span);
@@ -195,9 +197,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                         LookupSearchMode::LinearForward | LookupSearchMode::LinearReverse => (), //ok
                         LookupSearchMode::BinaryAscending | LookupSearchMode::BinaryDescending => {
                             // not ok -- can't do binary search with wildcard
-                            return Err(
-                                FormulaErrorMsg::InvalidArgument.with_span(search_mode_span)
-                            );
+                            return Err(ErrorMsg::InvalidArgument.with_span(search_mode_span));
                         }
                     }
                 }
@@ -234,7 +234,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 // Find the values for N, Q, and R, and error if there's an
                 // array mismatch.
                 let n = Array::common_len(search_axis, [&haystack, &returns].map(|v| v.as_ref()))?;
-                returns.check_array_size_on(search_axis, n)?;
+                returns.check_array_size_on(search_axis, n.get())?;
                 let q = Array::common_len(search_axis, [&needle, &fallback].map(|v| v.as_ref()))?;
                 let r = Array::common_len(
                     non_search_axis,
@@ -242,46 +242,48 @@ fn get_functions() -> Vec<FormulaFunction> {
                 )?;
 
                 // Perform the lookup for each needle.
-                let haystack_values = haystack.inner.basic_values_slice().iter().collect_vec();
-                let lookup_indices = (needle.inner.basic_values_slice().iter())
+                let haystack_values = haystack.inner.cell_values_slice().iter().collect_vec();
+                let lookup_indices = (needle.inner.cell_values_slice().iter())
                     .map(|needle_value| {
                         lookup(needle_value, &haystack_values, match_mode, search_mode)
                     })
-                    .collect::<FormulaResult<Vec<Option<usize>>>>()?;
+                    .collect::<CodeResult<Vec<Option<usize>>>>()?;
 
                 // Construct the final output array.
-                let needle_size = needle.inner.array_size();
+                let needle_size = needle.inner.size();
                 let (result_w, result_h) = match search_axis {
                     Axis::X => (q, r),
                     Axis::Y => (r, q),
                 };
                 let mut final_output_array = smallvec![];
-                for y in 0..result_h {
-                    for x in 0..result_w {
-                        let needle_index = needle_size.flatten_index(x, y)?;
-                        match lookup_indices[needle_index] {
-                            Some(i) => final_output_array.push({
-                                let x = if search_axis == Axis::X { i as u32 } else { x };
-                                let y = if search_axis == Axis::Y { i as u32 } else { y };
-                                returns.inner.get(x, y)?.clone()
-                            }),
-                            None => final_output_array.push(fallback.inner.get(x, y)?.clone()),
-                        }
+                let result_size = ArraySize {
+                    w: result_w,
+                    h: result_h,
+                };
+                for (x, y) in result_size.iter() {
+                    let needle_index = needle_size.flatten_index(x, y)?;
+                    match lookup_indices[needle_index] {
+                        Some(i) => final_output_array.push({
+                            let x = if search_axis == Axis::X { i as u32 } else { x };
+                            let y = if search_axis == Axis::Y { i as u32 } else { y };
+                            returns.inner.get(x, y)?.clone()
+                        }),
+                        None => final_output_array.push(fallback.inner.get(x, y)?.clone()),
                     }
                 }
-                Array::new_row_major(result_w, result_h, final_output_array)?
+                Array::new_row_major(result_size, final_output_array)?
             }
         ),
     ]
 }
 
 /// Performs a `LOOKUP` and returns the index of the best match.
-fn lookup<V: ToString + AsRef<BasicValue>>(
-    needle: &BasicValue,
+fn lookup<V: ToString + AsRef<CellValue>>(
+    needle: &CellValue,
     haystack: &[V],
     match_mode: LookupMatchMode,
     search_mode: LookupSearchMode,
-) -> FormulaResult<Option<usize>> {
+) -> CodeResult<Option<usize>> {
     let fix_rev_index = |i: usize| haystack.len() - 1 - i;
 
     let preference = match match_mode {
@@ -340,19 +342,21 @@ fn lookup_regex<'a, V: 'a + ToString>(
         .map(|(index, _value)| index)
 }
 
-fn lookup_linear_search<'a, V: 'a + AsRef<BasicValue>>(
-    needle: &BasicValue,
+fn lookup_linear_search<'a, V: 'a + AsRef<CellValue>>(
+    needle: &CellValue,
     haystack: impl IntoIterator<Item = &'a V>,
     preference: std::cmp::Ordering,
 ) -> Option<usize> {
     let haystack = haystack.into_iter().map(|v| v.as_ref());
 
-    let mut best_match: Option<(usize, &'a BasicValue)> = None;
+    let mut best_match: Option<(usize, &'a CellValue)> = None;
 
     for candidate @ (index, value) in haystack.enumerate() {
         // Compare the old value to the new one.
         let cmp_result = value.partial_cmp(needle).ok().flatten();
-        let Some(cmp_result) = cmp_result else { continue };
+        let Some(cmp_result) = cmp_result else {
+            continue;
+        };
 
         if cmp_result == std::cmp::Ordering::Equal {
             return Some(index);
@@ -372,11 +376,11 @@ fn lookup_linear_search<'a, V: 'a + AsRef<BasicValue>>(
     best_match.map(|(index, _value)| index)
 }
 
-fn lookup_binary_search<'a, V: AsRef<BasicValue>>(
-    needle: &BasicValue,
+fn lookup_binary_search<'a, V: AsRef<CellValue>>(
+    needle: &CellValue,
     haystack: &[V],
     preference: std::cmp::Ordering,
-    cmp_fn: fn(&BasicValue, &BasicValue) -> FormulaResult<std::cmp::Ordering>,
+    cmp_fn: fn(&CellValue, &CellValue) -> CodeResult<std::cmp::Ordering>,
 ) -> Option<usize> {
     // Error behavior doesn't matter too much, since the result is undefined if
     // values aren't sorted. I think Excel assumes errors are greater that the
@@ -403,7 +407,7 @@ enum LookupMatchMode {
     Wildcard = 2,
 }
 impl TryFrom<Option<Spanned<i64>>> for LookupMatchMode {
-    type Error = FormulaError;
+    type Error = Error;
 
     fn try_from(value: Option<Spanned<i64>>) -> Result<Self, Self::Error> {
         match value {
@@ -413,7 +417,7 @@ impl TryFrom<Option<Spanned<i64>>> for LookupMatchMode {
                 -1 => Ok(LookupMatchMode::NextSmaller),
                 1 => Ok(LookupMatchMode::NextLarger),
                 2 => Ok(LookupMatchMode::Wildcard),
-                _ => Err(FormulaErrorMsg::InvalidArgument.with_span(v.span)),
+                _ => Err(ErrorMsg::InvalidArgument.with_span(v.span)),
             },
         }
     }
@@ -436,7 +440,7 @@ impl LookupSearchMode {
     }
 }
 impl TryFrom<Option<Spanned<i64>>> for LookupSearchMode {
-    type Error = FormulaError;
+    type Error = Error;
 
     fn try_from(value: Option<Spanned<i64>>) -> Result<Self, Self::Error> {
         match value {
@@ -446,7 +450,7 @@ impl TryFrom<Option<Spanned<i64>>> for LookupSearchMode {
                 -1 => Ok(LookupSearchMode::LinearReverse),
                 2 => Ok(LookupSearchMode::BinaryAscending),
                 -2 => Ok(LookupSearchMode::BinaryDescending),
-                _ => Err(FormulaErrorMsg::InvalidArgument.with_span(v.span)),
+                _ => Err(ErrorMsg::InvalidArgument.with_span(v.span)),
             },
         }
     }
@@ -454,9 +458,10 @@ impl TryFrom<Option<Spanned<i64>>> for LookupSearchMode {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use lazy_static::lazy_static;
     use smallvec::smallvec;
-    use std::borrow::Cow;
 
     use crate::formulas::tests::*;
 
@@ -484,7 +489,7 @@ mod tests {
             1, "one", "wan";
 
         ];
-        static ref VALUES_THAT_SHOULD_NEVER_MATCH: Vec<BasicValue> =
+        static ref VALUES_THAT_SHOULD_NEVER_MATCH: Vec<CellValue> =
             vec![(-987.0).into(), "this shouldn't match anything".into()];
     }
 
@@ -495,7 +500,7 @@ mod tests {
         let g = &mut FnGrid(|pos| Some((pos.x * 10 + pos.y).to_string()));
 
         assert_eq!(
-            FormulaErrorMsg::CircularReference,
+            ErrorMsg::CircularReference,
             form.eval_blocking(g, pos![D5]).unwrap_err().msg,
         );
 
@@ -683,7 +688,7 @@ mod tests {
         let array = &*NUMBERS_LOOKUP_ARRAY;
         let g = &mut ArrayGrid(pos![A1], array.clone());
 
-        const EXPECTED_NUMBER_ERR: FormulaErrorMsg = FormulaErrorMsg::Expected {
+        const EXPECTED_NUMBER_ERR: ErrorMsg = ErrorMsg::Expected {
             expected: Cow::Borrowed("number"),
             got: Some(Cow::Borrowed("text")),
         };
@@ -691,7 +696,7 @@ mod tests {
         // Good value for `match_mode`
         eval_to_string(g, "XLOOKUP(50, A1:A4, B1:B4, 1)");
         // Bad values for `match_mode`
-        let e = &FormulaErrorMsg::InvalidArgument;
+        let e = &ErrorMsg::InvalidArgument;
         expect_err(e, g, "XLOOKUP(50, A1:A4, B1:B4,, -2)");
         let e = &EXPECTED_NUMBER_ERR;
         expect_err(e, g, "XLOOKUP(50, A1:A4, B1:B4,, 'word')");
@@ -699,7 +704,7 @@ mod tests {
         // Good value for `search_mode`
         eval_to_string(g, "XLOOKUP(50, A1:A4, B1:B4,,, 1)");
         // Bad values for `search_mode`
-        let e = &FormulaErrorMsg::InvalidArgument;
+        let e = &ErrorMsg::InvalidArgument;
         expect_err(e, g, "XLOOKUP(50, A1:A4, B1:B4,,, 0)");
         expect_err(e, g, "XLOOKUP(50, A1:A4, B1:B4,,, -3)");
         let e = &EXPECTED_NUMBER_ERR;
@@ -716,7 +721,7 @@ mod tests {
         eval_to_string(g, "XLOOKUP(50, A3, B3)");
 
         // NxM is not ok
-        let e = &FormulaErrorMsg::NonLinearArray;
+        let e = &ErrorMsg::NonLinearArray;
         expect_err(e, g, "XLOOKUP(50, A1:B4, A5:B8)");
 
         // Mismatch is not ok (vertical)
@@ -737,12 +742,14 @@ mod tests {
 
         // Multiple needle values is ok if it matches the return values
         fn make_test_formula(needle_size: (u32, u32), returns_size: (u32, u32)) -> String {
-            let (w, h) = needle_size;
-            let needle = Array::new_row_major(w, h, smallvec![1.into(); (w * h) as usize]).unwrap();
+            let needle_size = ArraySize::try_from(needle_size).unwrap();
+            let needle =
+                Array::new_row_major(needle_size, smallvec![1.into(); needle_size.len()]).unwrap();
 
-            let (w, h) = returns_size;
+            let returns_size = ArraySize::try_from(returns_size).unwrap();
             let returns =
-                Array::new_row_major(w, h, smallvec!["ret".into(); (w * h) as usize]).unwrap();
+                Array::new_row_major(returns_size, smallvec!["ret".into(); returns_size.len()])
+                    .unwrap();
 
             format!("XLOOKUP({}, A1:A4, {})", needle.repr(), returns.repr())
         }
@@ -768,7 +775,7 @@ mod tests {
             let mut grid_vlookup = ArrayGrid(pos![A1], array.clone());
             let mut grid_hlookup = ArrayGrid(pos![A1], array.transpose());
             for &col in columns_to_search {
-                for if_not_found in [BasicValue::Blank, "default-value".into()] {
+                for if_not_found in [CellValue::Blank, "default-value".into()] {
                     let if_not_found_repr = if_not_found.repr();
 
                     // Prepare vertical XLOOKUP call
@@ -795,8 +802,9 @@ mod tests {
 
                     for row in array.rows() {
                         let needle = row[col as usize].repr();
+                        let array_size = ArraySize::new(w as u32, 1).unwrap();
                         let expected =
-                            Array::new_row_major(w as u32, 1, row.iter().cloned().collect())
+                            Array::new_row_major(array_size, row.iter().cloned().collect())
                                 .unwrap();
 
                         // Test vertical lookup
@@ -818,11 +826,11 @@ mod tests {
                         let h_result = dbg!(eval(&mut grid_hlookup, &h_formula));
                         let results = [&v_result, &h_result]
                             .into_iter()
-                            .flat_map(|a| a.basic_values_slice());
+                            .flat_map(|a| a.cell_values_slice());
 
                         if if_not_found.is_blank() {
                             for v in results {
-                                assert_eq!(FormulaErrorMsg::NoMatch, dbg!(v).error().unwrap().msg);
+                                assert_eq!(ErrorMsg::NoMatch, dbg!(v).error().unwrap().msg);
                             }
                         } else {
                             for v in results {
@@ -875,12 +883,12 @@ mod tests {
             ],
         );
         expect_val(
-            Array::from(BasicValue::from("a")),
+            Array::from(CellValue::from("a")),
             g,
             "XLOOKUP(1, A1:A3, B1:B3,,, 1)", // forward
         );
         expect_val(
-            Array::from(BasicValue::from("c")),
+            Array::from(CellValue::from("c")),
             g,
             "XLOOKUP(1, A1:A4, B1:B4,,, -1)", // reverse
         );
@@ -957,12 +965,12 @@ mod tests {
             eval_to_string(&mut g, "XLOOKUP('b*', A1:A20, A1:A20,, 2, -1)"),
         ); // linear reverse
         expect_err(
-            &FormulaErrorMsg::InvalidArgument,
+            &ErrorMsg::InvalidArgument,
             &mut g,
             "XLOOKUP('b*', A1:A20, A1:A20,, 2, 2)", // binary ascending (invalid!)
         );
         expect_err(
-            &FormulaErrorMsg::InvalidArgument,
+            &ErrorMsg::InvalidArgument,
             &mut g,
             "XLOOKUP('b*', A1:A20, A1:A20,, 2, -2)", // binary descending (invalid!)
         );
@@ -999,7 +1007,7 @@ mod tests {
 
     #[test]
     fn test_xlookup() {
-        let g = &mut FnGrid(|pos| -> BasicValue {
+        let g = &mut FnGrid(|pos| -> CellValue {
             match pos.x {
                 0 => pos.y.into(),
                 1 => format!("{pos}").into(),

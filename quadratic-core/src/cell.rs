@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 /// Contents of a single spreadsheet cell.
@@ -42,7 +43,7 @@ pub struct JsCell {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq)]
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub enum CellTypes {
     #[default]
     Text,

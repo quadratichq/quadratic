@@ -6,8 +6,8 @@ import { intersects } from '../../gridGL/helpers/intersects';
 
 interface Dependency {
   location: Coordinate;
-  needToRender: Coordinate[];
-  renderThisCell: Coordinate[];
+  needToRender: Coordinate[]; // these are cells that must be rendered when drawing this cell
+  renderThisCell: Coordinate[]; // these are cells that render this cell when drawing
 }
 
 export class GridRenderDependency {

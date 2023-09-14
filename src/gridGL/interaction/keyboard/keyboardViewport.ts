@@ -1,46 +1,21 @@
-import { Viewport } from 'pixi-viewport';
 import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { MultipleFormat } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';
+import { sheets } from '../../../grid/controller/Sheets';
+import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
-import { PixiApp } from '../../pixiApp/PixiApp';
-import { Pointer } from '../pointer/Pointer';
+import { pixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardViewport(options: {
-  app: PixiApp;
   event: KeyboardEvent;
-  sheet: Sheet;
-  viewport?: Viewport;
-  interactionState: GridInteractionState;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  clearAllFormatting: Function;
-  changeBold: Function;
-  changeItalic: Function;
-  format: MultipleFormat;
-  pointer: Pointer;
   presentationMode: boolean;
   setPresentationMode: Function;
 }): boolean {
-  const {
-    changeBold,
-    changeItalic,
-    clearAllFormatting,
-    event,
-    format,
-    sheet,
-    viewport,
-    interactionState,
-    editorInteractionState,
-    setEditorInteractionState,
-    presentationMode,
-    setPresentationMode,
-    app,
-  } = options;
+  const { event, editorInteractionState, setEditorInteractionState, presentationMode, setPresentationMode } = options;
+  const { pointer } = pixiApp;
 
-  if (!viewport || event.altKey) return false;
+  if (event.altKey) return false;
 
   if ((event.metaKey || event.ctrlKey) && (event.key === 'p' || event.key === 'k' || event.key === '/')) {
     setEditorInteractionState({
@@ -64,7 +39,7 @@ export function keyboardViewport(options: {
       setPresentationMode(false);
       return true;
     }
-    return app.pointer.handleEscape();
+    return pointer.handleEscape();
   }
 
   if ((event.metaKey || event.ctrlKey) && (event.key === 'g' || event.key === 'j')) {
@@ -79,27 +54,27 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '=') {
-    zoomIn(viewport);
+    zoomIn();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '-') {
-    zoomOut(viewport);
+    zoomOut();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '8') {
-    zoomToSelection(interactionState, sheet, viewport);
+    zoomToSelection();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '9') {
-    zoomToFit(sheet, viewport);
+    zoomToFit();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '0') {
-    zoomTo100(viewport);
+    zoomTo100();
     return true;
   }
 
@@ -114,17 +89,19 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
-    clearAllFormatting();
+    clearFormattingAndBorders();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    changeBold(!(format.bold === true));
+    const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+    setBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    changeItalic(!(format.italic === true));
+    const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+    setItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
     return true;
   }
 

@@ -1,3 +1,5 @@
+use crate::ArraySize;
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -11,14 +13,14 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
         // Comparison operators
-        formula_fn!(#[operator] #[pure_zip_map] fn "="([a]: BasicValue, [b]: BasicValue) { a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "=="([a]: BasicValue, [b]: BasicValue) { a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "<>"([a]: BasicValue, [b]: BasicValue) { !a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "!="([a]: BasicValue, [b]: BasicValue) { !a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "<"([a]: BasicValue, [b]: BasicValue) { a.lt(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn ">"([a]: BasicValue, [b]: BasicValue) { a.gt(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "<="([a]: BasicValue, [b]: BasicValue) { a.lte(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn ">="([a]: BasicValue, [b]: BasicValue) { a.gte(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "="([a]: CellValue, [b]: CellValue) { a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "=="([a]: CellValue, [b]: CellValue) { a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "<>"([a]: CellValue, [b]: CellValue) { !a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "!="([a]: CellValue, [b]: CellValue) { !a.eq(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "<"([a]: CellValue, [b]: CellValue) { a.lt(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn ">"([a]: CellValue, [b]: CellValue) { a.gt(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn "<="([a]: CellValue, [b]: CellValue) { a.lte(b)? }),
+        formula_fn!(#[operator] #[pure_zip_map] fn ">="([a]: CellValue, [b]: CellValue) { a.gte(b)? }),
         // Mathematical operators
         formula_fn!(
             #[operator]
@@ -73,12 +75,13 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let b = end.inner;
                 let len = (a-b).abs() as u32 + 1;
                 if len as f64 > crate::limits::INTEGER_RANGE_LIMIT {
-                    return Err(FormulaErrorMsg::ArrayTooBig.with_span(span));
+                    return Err(ErrorMsg::ArrayTooBig.with_span(span));
                 }
                 let range = if a < b { a..=b } else { b..=a };
                 let width = 1;
                 let height = len;
-                Array::new_row_major(width, height, range.map(BasicValue::from).collect())?
+                let array_size = ArraySize::new_or_err(width, height)?;
+                Array::new_row_major(array_size, range.map(CellValue::from).collect())?
             }
         ),
         // String operators
@@ -105,8 +108,8 @@ mod tests {
             eval_to_string(g, "1 * -6 + -2 - 1 * -3 ^ 2 ^ 3"),
         );
         assert_eq!((1.0 / 2.0).to_string(), eval_to_string(g, "1/2"));
-        assert_eq!(FormulaErrorMsg::DivideByZero, eval_to_err(g, "1 / 0").msg);
-        assert_eq!(FormulaErrorMsg::DivideByZero, eval_to_err(g, "0/ 0").msg);
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "1 / 0").msg);
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "0/ 0").msg);
     }
 
     #[test]

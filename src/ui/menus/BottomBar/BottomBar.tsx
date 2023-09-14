@@ -1,65 +1,42 @@
 import { ChatBubbleOutline, Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
-import { formatDistance } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { provideFeedback } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
 import { REACT_APP_VERSION } from '../../../constants/env';
-import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS, debugShowRenderer } from '../../../debugFlags';
-import { Sheet } from '../../../grid/sheet/Sheet';
+import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
+import { sheets } from '../../../grid/controller/Sheets';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { Cell } from '../../../schemas';
 import { colors } from '../../../theme/colors';
-import { ActiveSelectionStats } from './ActiveSelectionStats';
 import BottomBarItem from './BottomBarItem';
 import PythonState from './PythonState';
 import SyncState from './SyncState';
 
-interface Props {
-  sheet: Sheet;
-}
-
-export const BottomBar = (props: Props) => {
-  const [interactionState] = useRecoilState(gridInteractionStateAtom);
+export const BottomBar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const theme = useTheme();
-  const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
   const { permission } = editorInteractionState;
 
-  const {
-    showMultiCursor,
-    cursorPosition,
-    multiCursorPosition: { originPosition, terminalPosition },
-  } = interactionState;
-
-  // Generate string describing cursor location
-  const cursorPositionString = `(${cursorPosition.x}, ${cursorPosition.y})`;
-  const multiCursorPositionString = `(${originPosition.x}, ${originPosition.y}), (${terminalPosition.x}, ${terminalPosition.y})`;
+  const [cursorPositionString, setCursorPositionString] = useState('');
+  const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
+  const cursor = sheets.sheet.cursor;
 
   useEffect(() => {
-    const updateCellData = async () => {
-      // Don't update if we have not moved cursor position
-      if (
-        selectedCell?.x === interactionState.cursorPosition.x &&
-        selectedCell?.y === interactionState.cursorPosition.y
-      )
-        return;
-
-      // Get cell at position
-      const cell = props.sheet.getCellCopy(interactionState.cursorPosition.x, interactionState.cursorPosition.y);
-
-      // If cell exists set selectedCell
-      // Otherwise set to undefined
-      if (cell) {
-        setSelectedCell(cell);
+    const updateCursor = () => {
+      setCursorPositionString(`(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`);
+      if (cursor.multiCursor) {
+        setMultiCursorPositionString(
+          `(${cursor.multiCursor.originPosition.x}, ${cursor.multiCursor.originPosition.y}), (${cursor.multiCursor.terminalPosition.x}, ${cursor.multiCursor.terminalPosition.y})`
+        );
       } else {
-        setSelectedCell(undefined);
+        setMultiCursorPositionString('');
       }
     };
-    updateCellData();
-  }, [interactionState, selectedCell, props.sheet]);
+    updateCursor();
+    window.addEventListener('cursor-position', updateCursor);
+    return () => window.removeEventListener('cursor-position', updateCursor);
+  }, [cursor.cursorPosition.x, cursor.cursorPosition.y, cursor.multiCursor]);
 
   const handleShowGoToMenu = () => {
     setEditorInteractionState({
@@ -93,13 +70,15 @@ export const BottomBar = (props: Props) => {
     >
       <Stack direction="row">
         {showOnDesktop && <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>}
-        {showOnDesktop && showMultiCursor && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
-        {showOnDesktop && selectedCell?.last_modified && (
+        {showOnDesktop && cursor.multiCursor && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
+
+        {/* {showOnDesktop && selectedCell?.last_modified && (
           <BottomBarItem>
             You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}
           </BottomBarItem>
-        )}
-        {debugShowRenderer && (
+        )} */}
+
+        {debugShowFPS && (
           <BottomBarItem>
             <div
               className="debug-show-renderer"
@@ -130,7 +109,11 @@ export const BottomBar = (props: Props) => {
         )}
       </Stack>
       <Stack direction="row">
-        <ActiveSelectionStats interactionState={interactionState}></ActiveSelectionStats>
+        {/*
+
+          todo: when runFormula works again...
+
+        <ActiveSelectionStats sheetController={props.sheetController}></ActiveSelectionStats> */}
         <SyncState />
 
         {showOnDesktop && <PythonState />}

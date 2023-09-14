@@ -1,16 +1,12 @@
 import { Graphics, Rectangle } from 'pixi.js';
-import { calculateAlphaForGridLines } from './gridUtils';
+import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
+import { calculateAlphaForGridLines } from './gridUtils';
 
 export class GridLines extends Graphics {
-  private app: PixiApp;
   dirty = true;
-
-  constructor(app: PixiApp) {
-    super();
-    this.app = app;
-  }
 
   draw(bounds: Rectangle): void {
     this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
@@ -24,13 +20,13 @@ export class GridLines extends Graphics {
       this.dirty = false;
       this.clear();
 
-      if (!this.app.settings.showGridLines) {
+      if (!pixiAppSettings.showGridLines) {
         this.visible = false;
-        this.app.setViewportDirty();
+        pixiApp.setViewportDirty();
         return;
       }
 
-      const gridAlpha = calculateAlphaForGridLines(this.app.viewport);
+      const gridAlpha = calculateAlphaForGridLines(pixiApp.viewport);
       if (gridAlpha === 0) {
         this.alpha = 0;
         this.visible = false;
@@ -41,14 +37,14 @@ export class GridLines extends Graphics {
       this.visible = true;
 
       this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
-      const bounds = this.app.viewport.getVisibleBounds();
+      const bounds = pixiApp.viewport.getVisibleBounds();
       this.drawVerticalLines(bounds);
       this.drawHorizontalLines(bounds);
     }
   }
 
   private drawVerticalLines(bounds: Rectangle): void {
-    const { gridOffsets } = this.app.sheet;
+    const { gridOffsets } = sheets.sheet;
     const { index, position } = gridOffsets.getColumnIndex(bounds.left);
     let column = index;
     const offset = bounds.left - position;
@@ -65,7 +61,7 @@ export class GridLines extends Graphics {
   }
 
   private drawHorizontalLines(bounds: Rectangle): void {
-    const { gridOffsets } = this.app.sheet;
+    const { gridOffsets } = sheets.sheet;
     const { index, position } = gridOffsets.getRowIndex(bounds.top);
     let row = index;
     const offset = bounds.top - position;

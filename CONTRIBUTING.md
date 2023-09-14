@@ -21,23 +21,31 @@ In order to run the front-end and/or the server locally, you must have all the e
 
 ### Run front-end locally
 
-1. `npm run build:wasm` to compile the Rust code
-2. `npm install` to install dependencies (run again when updating Rust)
-3. Configure `.env.local` values.
-4. `npm start` to run in browser or `npm run dev` to run with Electron
+1. `npm install` to install dependencies
+2. Configure `.env.local` values
+3. (a) `npm start` to run in browser or `npm run dev` to run with Electron; or (b) `npm run watch:front-end` to run in browser with automatic wasm rebuilding
 
 ### Run server locally
 
 1. `cd quadratic-api`
 2. `npm i`
-3. Install [postgress.app](https://postgresapp.com/) (follow instructions on website)
+3. Install and configure PostgreSQL:
+   1. macOS users: Install [postgress.app](https://postgresapp.com/) (follow instructions on website)
+   2. Linux users:
+      1. Install [postgres](https://www.prisma.io/dataguide/postgresql/setting-up-a-local-postgresql-database#setting-up-postgresql-on-linux)
+      2. Configure your user permissions and create the database in the `psql` prompt:
+          - `# CREATE ROLE username WITH LOGIN PASSWORD 'some_password';`
+          - `# CREATE DATABASE "quadratic-api" WITH OWNER = username;`
+          - `# GRANT ALL PRIVILEGES ON DATABASE "quadratic-api" TO username;`
+          - `# ALTER ROLE username CREATEDB;`
 4. Create two environment files `.env.local` & `quadratic-api/.env.local`.
+    - Note: Linux users may need to call it `quadratic-api/.env` instead.
 
-- For the `.env.local` react app ENV variables you will need to set the following variables:
-  `REACT_APP_AUTH0_DOMAIN` `REACT_APP_AUTH0_CLIENT_ID` `REACT_APP_AUTH0_AUDIENCE` `REACT_APP_AUTH0_ISSUER` `REACT_APP_QUADRATIC_API_URL`
-  You will need to ask your team for the appropriate values.
+    - For the `.env.local` react app ENV variables you will need to set the following variables:
+      `REACT_APP_AUTH0_DOMAIN` `REACT_APP_AUTH0_CLIENT_ID` `REACT_APP_AUTH0_AUDIENCE` `REACT_APP_AUTH0_ISSUER` `REACT_APP_QUADRATIC_API_URL`
+      You will need to ask your team for the appropriate values.
 
-- For `quadratic-api/.env.local` you will need to set the `DATABASE_ENV` to point at your local postgres db. You will also need to copy `AUTH0_JWKS_URI` and `AUTH0_ISSUER` from `quadratic-api/.env_example` into your local `quadratic-api/.env.local` api env variables.
+    - For `quadratic-api/.env.local` you will need to set the `DATABASE_ENV` to point at your local postgres db. You will also need to copy `AUTH0_JWKS_URI` and `AUTH0_ISSUER` from `quadratic-api/.env_example` into your local `quadratic-api/.env.local` api env variables.
 
 5. `npm run prisma:migrate`
 6. Start both `npm run api:start` and `npm start`

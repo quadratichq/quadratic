@@ -10,7 +10,7 @@ impl SyntaxRule for StringLiteral {
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::StringLiteral)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         if p.next() != Some(Token::StringLiteral) {
             return p.expected(self);
         }
@@ -53,11 +53,11 @@ impl SyntaxRule for NumericLiteral {
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::NumericLiteral)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         match p.next() {
             Some(Token::NumericLiteral) => {
                 let Ok(n) = p.token_str().parse::<f64>() else {
-                    return Err(FormulaErrorMsg::BadNumber.with_span(p.span()));
+                    return Err(ErrorMsg::BadNumber.with_span(p.span()));
                 };
                 Ok(AstNode {
                     span: p.span(),
@@ -79,10 +79,10 @@ impl SyntaxRule for CellReference {
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::CellRef)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         p.next();
         let Some(cell_ref) = CellRef::parse_a1(p.token_str(), p.pos) else {
-            return Err(FormulaErrorMsg::BadCellReference.with_span(p.span()));
+            return Err(ErrorMsg::BadCellReference.with_span(p.span()));
         };
         Ok(AstNode {
             span: p.span(),
@@ -101,20 +101,21 @@ impl SyntaxRule for CellRangeReference {
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::CellRef)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         p.next();
-        let Some(cell_ref) = CellRef::parse_a1(p.token_str(), p.pos) else {
-            return Err(FormulaErrorMsg::BadCellReference.with_span(p.span()));
+        let Some(pos) = CellRef::parse_a1(p.token_str(), p.pos) else {
+            return Err(ErrorMsg::BadCellReference.with_span(p.span()));
         };
         let span = p.span();
 
         // Check for a range reference.
         if p.try_parse(Token::CellRangeOp).is_some() {
+            let start = pos;
             p.next();
-            if let Some(cell_ref2) = CellRef::parse_a1(p.token_str(), p.pos) {
+            if let Some(end) = CellRef::parse_a1(p.token_str(), p.pos) {
                 return Ok(Spanned {
                     span: Span::merge(span, p.span()),
-                    inner: RangeRef::CellRange(cell_ref, cell_ref2),
+                    inner: RangeRef::CellRange { start, end },
                 });
             }
             p.prev();
@@ -123,7 +124,7 @@ impl SyntaxRule for CellRangeReference {
 
         Ok(Spanned {
             span,
-            inner: RangeRef::Cell(cell_ref),
+            inner: RangeRef::Cell { pos },
         })
     }
 }
@@ -138,7 +139,7 @@ impl SyntaxRule for BoolExpression {
         matches!(p.next(), Some(Token::False | Token::True))
     }
 
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let b = match p.next() {
             Some(Token::False) => false,
             Some(Token::True) => true,

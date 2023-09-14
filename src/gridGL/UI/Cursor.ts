@@ -1,11 +1,12 @@
 import { Graphics, Rectangle } from 'pixi.js';
-import { isMobile } from 'react-device-detect';
 import { isEditorOrAbove } from '../../actions';
+import { sheets } from '../../grid/controller/Sheets';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 
 export const CURSOR_THICKNESS = 2;
 const FILL_ALPHA = 0.1;
@@ -23,16 +24,14 @@ const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
 const INPUT_ALPHA = 0.333;
 
 export class Cursor extends Graphics {
-  private app: PixiApp;
   indicator: Rectangle;
   dirty = true;
 
   startCell: CursorCell;
   endCell: CursorCell;
 
-  constructor(app: PixiApp) {
+  constructor() {
     super();
-    this.app = app;
     this.indicator = new Rectangle();
 
     this.startCell = CURSOR_CELL_DEFAULT_VALUE;
@@ -40,26 +39,25 @@ export class Cursor extends Graphics {
   }
 
   private drawCursor(): void {
-    if (isMobile) return;
-    const { settings, viewport } = this.app;
-    const { gridOffsets } = this.app.sheet;
-    const { editorInteractionState } = this.app.settings;
-    const cell = settings.interactionState.cursorPosition;
-    const multiCursor = settings.interactionState.showMultiCursor;
-    const showInput = settings.interactionState.showInput;
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
+    const { viewport } = pixiApp;
+    const { gridOffsets } = sheet;
+    const { editorInteractionState } = pixiAppSettings;
+    const cell = cursor.cursorPosition;
+    const showInput = pixiAppSettings.input.show;
 
     let { x, y, width, height } = gridOffsets.getCell(cell.x, cell.y);
     const color = colors.cursorCell;
     const editor_selected_cell = editorInteractionState.selectedCell;
 
     // draw cursor but leave room for cursor indicator if needed
-    const indicatorSize = isEditorOrAbove(this.app.settings.editorInteractionState.permission)
+    const indicatorSize = isEditorOrAbove(pixiAppSettings.editorInteractionState.permission)
       ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
       : 0;
     this.indicator.width = this.indicator.height = indicatorSize;
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
-    const terminalPosition = settings.interactionState.multiCursorPosition.terminalPosition;
-    const cursorPosition = settings.interactionState.cursorPosition;
+    const cursorPosition = cursor.cursorPosition;
     let indicatorOffset = 0;
 
     // showInput changes after cellEdit is removed from DOM
@@ -69,7 +67,11 @@ export class Cursor extends Graphics {
         width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
       }
     } else {
-      if (!multiCursor || (terminalPosition.x === cursorPosition.x && terminalPosition.y === cursorPosition.y)) {
+      if (
+        !cursor.multiCursor ||
+        (cursor.multiCursor.terminalPosition.x === cursorPosition.x &&
+          cursor.multiCursor.terminalPosition.y === cursorPosition.y)
+      ) {
         indicatorOffset = indicatorSize / 2 + indicatorPadding;
       }
     }
@@ -103,15 +105,13 @@ export class Cursor extends Graphics {
   }
 
   private drawMultiCursor(): void {
-    const { settings } = this.app;
-    const { gridOffsets } = this.app.sheet;
+    const { gridOffsets, cursor } = sheets.sheet;
 
-    if (settings.interactionState.showMultiCursor) {
-      const multiCursor = settings.interactionState.multiCursorPosition;
+    if (cursor.multiCursor) {
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
       this.beginFill(colors.cursorCell, FILL_ALPHA);
-      this.startCell = gridOffsets.getCell(multiCursor.originPosition.x, multiCursor.originPosition.y);
-      this.endCell = gridOffsets.getCell(multiCursor.terminalPosition.x, multiCursor.terminalPosition.y);
+      this.startCell = gridOffsets.getCell(cursor.originPosition.x, cursor.originPosition.y);
+      this.endCell = gridOffsets.getCell(cursor.terminalPosition.x, cursor.terminalPosition.y);
       this.drawRect(
         this.startCell.x,
         this.startCell.y,
@@ -119,24 +119,19 @@ export class Cursor extends Graphics {
         this.endCell.y + this.endCell.height - this.startCell.y
       );
     } else {
-      this.startCell = gridOffsets.getCell(
-        settings.interactionState.cursorPosition.x,
-        settings.interactionState.cursorPosition.y
-      );
-      this.endCell = gridOffsets.getCell(
-        settings.interactionState.cursorPosition.x,
-        settings.interactionState.cursorPosition.y
-      );
+      this.startCell = gridOffsets.getCell(cursor.cursorPosition.x, cursor.cursorPosition.y);
+      this.endCell = gridOffsets.getCell(cursor.cursorPosition.x, cursor.cursorPosition.y);
     }
   }
 
   private drawCursorIndicator(): void {
-    const { viewport } = this.app;
+    const { viewport } = pixiApp;
+    const cursor = sheets.sheet.cursor;
 
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
-      const { editorInteractionState } = this.app.settings;
+      const { editorInteractionState } = pixiAppSettings;
       const editor_selected_cell = editorInteractionState.selectedCell;
-      const cell = this.app.settings.interactionState.cursorPosition;
+      const cell = cursor.cursorPosition;
 
       // draw cursor indicator
       const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
@@ -165,10 +160,10 @@ export class Cursor extends Graphics {
   }
 
   private drawCodeCursor(): void {
-    const { editorInteractionState } = this.app.settings;
+    const { editorInteractionState } = pixiAppSettings;
     if (!editorInteractionState.showCodeEditor) return;
     const cell = editorInteractionState.selectedCell;
-    const { x, y, width, height } = this.app.sheet.gridOffsets.getCell(cell.x, cell.y);
+    const { x, y, width, height } = sheets.sheet.gridOffsets.getCell(cell.x, cell.y);
     const color =
       editorInteractionState.mode === 'PYTHON'
         ? colors.cellColorUserPython
@@ -187,17 +182,13 @@ export class Cursor extends Graphics {
   }
 
   private drawEditorHighlightedCells(): void {
-    const { editorHighlightedCellsState, editorInteractionState } = this.app.settings;
+    const { editorHighlightedCellsState, editorInteractionState } = pixiAppSettings;
     const { highlightedCells, selectedCell } = editorHighlightedCellsState;
     if (!highlightedCells || highlightedCells.size === 0) return;
 
     let colorIndex = 0;
     for (const [cellRefId] of highlightedCells.entries()) {
-      const cell = getCellFromFormulaNotation(
-        cellRefId,
-        this.app.sheet.gridOffsets,
-        editorInteractionState.selectedCell
-      );
+      const cell = getCellFromFormulaNotation(cellRefId, sheets.sheet.gridOffsets, editorInteractionState.selectedCell);
 
       if (!cell) continue;
       const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % NUM_OF_CELL_REF_COLORS]);
@@ -253,11 +244,13 @@ export class Cursor extends Graphics {
       this.dirty = false;
       this.clear();
       this.drawCursor();
-      if (this.app.settings.interactionState.showInput) return;
-      this.drawMultiCursor();
-      this.drawCodeCursor();
-      this.drawCursorIndicator();
-      this.drawEditorHighlightedCells();
+
+      if (!pixiAppSettings.input.show) {
+        this.drawMultiCursor();
+        this.drawCodeCursor();
+        this.drawCursorIndicator();
+        this.drawEditorHighlightedCells();
+      }
     }
   }
 }

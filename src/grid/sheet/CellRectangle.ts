@@ -19,6 +19,40 @@ export class CellRectangle {
     this.cells = cells;
   }
 
+  static fromRust(size: Rectangle, json: any, grid: GridSparse): CellRectangle {
+    const r = new CellRectangle(size, grid);
+    r.cells = [];
+    const data = JSON.parse(json);
+    for (let y = size.top; y <= size.bottom; y++) {
+      for (let x = size.left; x <= size.right; x++) {
+        const search = data.find((e: any) => e.x === x && e.y === y);
+        if (search) {
+          const cell: CellAndFormat = {
+            cell: {
+              x,
+              y,
+              type: 'TEXT',
+              value: search.value.toString(),
+            },
+            format: {
+              x,
+              y,
+              bold: search.bold,
+              italic: search.italic,
+              alignment: search.align,
+              fillColor: search.fillColor,
+              textColor: search.textColor,
+              textFormat: search.textFormat,
+              wrapping: search.wrapping,
+            },
+          };
+          r.cells[y * (size.width + 1) + x] = cell;
+        }
+      }
+    }
+    return r;
+  }
+
   /**
    * adds a simple list of borders in the CellRectangle's cells (does not create a full array like cells for now)
    * @param gridBorders

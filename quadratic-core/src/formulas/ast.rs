@@ -1,10 +1,12 @@
+use std::fmt;
+
 use futures::future::{FutureExt, LocalBoxFuture};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
-use std::fmt;
 
 use super::*;
+use crate::{Array, ArraySize, CellValue, CodeResult, CoerceInto, ErrorMsg, Pos, Spanned, Value};
 
 /// Abstract syntax tree of a formula expression.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -81,11 +83,11 @@ impl AstNodeContents {
     }
 }
 impl Spanned<AstNodeContents> {
-    pub fn to_cell_ref(&self) -> FormulaResult<CellRef> {
+    pub fn to_cell_ref(&self) -> CodeResult<CellRef> {
         match &self.inner {
             AstNodeContents::CellRef(cellref) => Ok(*cellref),
             AstNodeContents::Paren(contents) => contents.to_cell_ref(),
-            _ => Err(FormulaErrorMsg::Expected {
+            _ => Err(ErrorMsg::Expected {
                 expected: "cell reference".into(),
                 got: Some(self.inner.type_string().into()),
             }
@@ -98,12 +100,12 @@ impl Formula {
     /// Evaluates a formula, blocking on async calls.
     ///
     /// Use this when the grid proxy isn't actually doing anything async.
-    pub fn eval_blocking(&self, grid: &mut dyn GridProxy, pos: Pos) -> FormulaResult<Value> {
+    pub fn eval_blocking(&self, grid: &mut dyn GridProxy, pos: Pos) -> CodeResult<Value> {
         pollster::block_on(self.eval(grid, pos))
     }
 
     /// Evaluates a formula.
-    pub async fn eval(&self, grid: &mut dyn GridProxy, pos: Pos) -> FormulaResult<Value> {
+    pub async fn eval(&self, grid: &mut dyn GridProxy, pos: Pos) -> CodeResult<Value> {
         self.ast
             .eval(&mut Ctx { grid, pos })
             .await?
@@ -112,15 +114,15 @@ impl Formula {
 }
 
 impl AstNode {
-    fn eval<'ctx: 'a, 'a>(&'a self, ctx: &'a mut Ctx<'ctx>) -> LocalBoxFuture<'a, FormulaResult> {
+    fn eval<'ctx: 'a, 'a>(&'a self, ctx: &'a mut Ctx<'ctx>) -> LocalBoxFuture<'a, CodeResult> {
         // See this link for why we need to box here:
         // https://rust-lang.github.io/async-book/07_workarounds/04_recursion.html
         async move { self.eval_inner(ctx).await }.boxed_local()
     }
 
-    async fn eval_inner<'ctx: 'a, 'a>(&'a self, ctx: &'a mut Ctx<'ctx>) -> FormulaResult {
+    async fn eval_inner<'ctx: 'a, 'a>(&'a self, ctx: &'a mut Ctx<'ctx>) -> CodeResult {
         let value = match &self.inner {
-            AstNodeContents::Empty => BasicValue::Blank.into(),
+            AstNodeContents::Empty => CellValue::Blank.into(),
 
             // Cell range
             AstNodeContents::FunctionCall { func, args } if func.inner == ":" => {
@@ -147,7 +149,7 @@ impl AstNode {
                     .try_into()
                     .unwrap_or(u32::MAX);
                 if std::cmp::max(width, height) > crate::limits::CELL_RANGE_LIMIT {
-                    return Err(FormulaErrorMsg::ArrayTooBig.with_span(self.span));
+                    return Err(ErrorMsg::ArrayTooBig.with_span(self.span));
                 }
 
                 let mut flat_array = smallvec![];
@@ -158,7 +160,8 @@ impl AstNode {
                     }
                 }
 
-                Array::new_row_major(width, height, flat_array)?.into()
+                let size = ArraySize::new_or_err(width, height)?;
+                Array::new_row_major(size, flat_array)?.into()
             }
 
             // Other operator/function
@@ -172,10 +175,9 @@ impl AstNode {
                 match functions::lookup_function(&func_name) {
                     Some(f) => {
                         let args = FormulaFnArgs::new(arg_values, self.span, f.name);
-                        let result = (f.eval)(&mut *ctx, args).await?;
-                        result.purify_floats(self.span)?
+                        (f.eval)(&mut *ctx, args).await?
                     }
-                    None => return Err(FormulaErrorMsg::BadFunctionName.with_span(func.span)),
+                    None => return Err(ErrorMsg::BadFunctionName.with_span(func.span)),
                 }
             }
 
@@ -184,7 +186,7 @@ impl AstNode {
             AstNodeContents::Array(a) => {
                 let is_empty = a.iter().flatten().next().is_none();
                 if is_empty {
-                    return Err(FormulaErrorMsg::EmptyArray.with_span(self.span));
+                    return Err(ErrorMsg::EmptyArray.with_span(self.span));
                 }
                 let width = a[0].len();
                 let height = a.len();
@@ -192,14 +194,15 @@ impl AstNode {
                 let mut flat_array = smallvec![];
                 for row in a {
                     if row.len() != width {
-                        return Err(FormulaErrorMsg::NonRectangularArray.with_span(self.span));
+                        return Err(ErrorMsg::NonRectangularArray.with_span(self.span));
                     }
                     for elem_expr in row {
-                        flat_array.push(elem_expr.eval(ctx).await?.into_basic_value()?.inner);
+                        flat_array.push(elem_expr.eval(ctx).await?.into_cell_value()?.inner);
                     }
                 }
 
-                Array::new_row_major(width as u32, height as u32, flat_array)?.into()
+                let size = ArraySize::new_or_err(width as u32, height as u32)?;
+                Array::new_row_major(size, flat_array)?.into()
             }
 
             // Single cell references return 1x1 arrays for Excel compatibility.

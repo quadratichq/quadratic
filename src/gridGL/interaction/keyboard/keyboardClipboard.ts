@@ -1,6 +1,5 @@
 import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../constants/appConstants';
 import {
@@ -9,48 +8,36 @@ import {
   cutToClipboard,
   pasteFromClipboard,
 } from '../../../grid/actions/clipboard/clipboard';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { sheets } from '../../../grid/controller/Sheets';
 
 export function keyboardClipboard(props: {
   event: React.KeyboardEvent<HTMLElement>;
   editorInteractionState: EditorInteractionState;
-  interactionState: GridInteractionState;
-  sheet_controller: SheetController;
-  app: PixiApp;
   addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
 }): boolean {
   const {
     addGlobalSnackbar,
     event,
-    interactionState,
-    sheet_controller,
-    app,
     editorInteractionState: { permission },
   } = props;
 
   // Command + Shift + C
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'c') {
-    copySelectionToPNG(app);
+    copySelectionToPNG();
     addGlobalSnackbar(PNG_MESSAGE);
     event.preventDefault();
     event.stopPropagation();
     return true;
   }
 
+  const cursor = sheets.sheet.cursor;
+
+  const start = cursor.originPosition;
+  const end = cursor.terminalPosition;
+
   // Command + C
   if ((event.metaKey || event.ctrlKey) && event.key === 'c') {
-    copyToClipboard(
-      sheet_controller,
-      {
-        x: interactionState.multiCursorPosition.originPosition.x,
-        y: interactionState.multiCursorPosition.originPosition.y,
-      },
-      {
-        x: interactionState.multiCursorPosition.terminalPosition.x,
-        y: interactionState.multiCursorPosition.terminalPosition.y,
-      }
-    );
+    copyToClipboard(start, end);
     return true;
   }
 
@@ -61,26 +48,13 @@ export function keyboardClipboard(props: {
 
   // Command + X
   if ((event.metaKey || event.ctrlKey) && event.key === 'x') {
-    cutToClipboard(
-      sheet_controller,
-      {
-        x: interactionState.multiCursorPosition.originPosition.x,
-        y: interactionState.multiCursorPosition.originPosition.y,
-      },
-      {
-        x: interactionState.multiCursorPosition.terminalPosition.x,
-        y: interactionState.multiCursorPosition.terminalPosition.y,
-      }
-    );
+    cutToClipboard(start, end);
     return true;
   }
 
   // Command + V
   if ((event.metaKey || event.ctrlKey) && event.key === 'v') {
-    pasteFromClipboard(sheet_controller, {
-      x: interactionState.cursorPosition.x,
-      y: interactionState.cursorPosition.y,
-    });
+    pasteFromClipboard(cursor.originPosition);
     return true;
   }
 

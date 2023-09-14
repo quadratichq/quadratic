@@ -29,13 +29,9 @@ const ListItems = [
     label: 'File: ' + downloadFile.label,
     isAvailable: downloadFile.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { name, contents } = useFileContext();
+      const { name } = useFileContext();
       return (
-        <CommandPaletteListItem
-          {...props}
-          icon={<FileDownloadOutlined />}
-          action={() => downloadFile.run({ name, contents })}
-        />
+        <CommandPaletteListItem {...props} icon={<FileDownloadOutlined />} action={() => downloadFile.run({ name })} />
       );
     },
   },

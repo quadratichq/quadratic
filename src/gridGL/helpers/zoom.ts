@@ -1,10 +1,11 @@
-import { Rectangle, Point } from 'pixi.js';
-import { Viewport } from 'pixi-viewport';
-import { Sheet } from '../../grid/sheet/Sheet';
+import { Point, Rectangle } from 'pixi.js';
 import { ZOOM_ANIMATION_TIME_MS, ZOOM_BUFFER } from '../../constants/gridConstants';
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
+import { sheets } from '../../grid/controller/Sheets';
+import { pixiApp } from '../pixiApp/PixiApp';
 
-export function zoomToFit(sheet: Sheet, viewport: Viewport): void {
+export function zoomToFit(): void {
+  const viewport = pixiApp.viewport;
+  const sheet = sheets.sheet;
   const gridBounds = sheet.getGridBounds(false);
   if (gridBounds) {
     const screenRectangle = sheet.gridOffsets.getScreenRectangle(
@@ -37,29 +38,30 @@ export function zoomToFit(sheet: Sheet, viewport: Viewport): void {
   }
 }
 
-export function zoomInOut(viewport: Viewport, scale: number): void {
-  viewport.animate({
+export function zoomInOut(scale: number): void {
+  pixiApp.viewport.animate({
     time: ZOOM_ANIMATION_TIME_MS,
     scale,
   });
 }
 
-export function zoomIn(viewport: Viewport) {
-  zoomInOut(viewport, viewport.scale.x * 2);
+export function zoomIn() {
+  zoomInOut(pixiApp.viewport.scale.x * 2);
 }
 
-export function zoomOut(viewport: Viewport) {
-  zoomInOut(viewport, viewport.scale.x * 0.5);
+export function zoomOut() {
+  zoomInOut(pixiApp.viewport.scale.x * 0.5);
 }
 
-export function zoomTo100(viewport: Viewport) {
-  zoomInOut(viewport, 1);
+export function zoomTo100() {
+  zoomInOut(1);
 }
 
-export function zoomToSelection(interactionState: GridInteractionState, sheet: Sheet, viewport: Viewport): void {
+export function zoomToSelection(): void {
   let screenRectangle: Rectangle;
-  if (interactionState.showMultiCursor) {
-    const cursor = interactionState.multiCursorPosition;
+  const sheet = sheets.sheet;
+  if (sheet.cursor.multiCursor) {
+    const cursor = sheet.cursor.multiCursor;
     screenRectangle = sheet.gridOffsets.getScreenRectangle(
       cursor.originPosition.x,
       cursor.originPosition.y,
@@ -67,16 +69,16 @@ export function zoomToSelection(interactionState: GridInteractionState, sheet: S
       cursor.terminalPosition.y - cursor.originPosition.y
     );
   } else {
-    const cursor = interactionState.cursorPosition;
+    const cursor = sheet.cursor.cursorPosition;
     screenRectangle = sheet.gridOffsets.getScreenRectangle(cursor.x, cursor.y, 1, 1);
   }
   // calc scale, and leave a little room on the top and sides
-  let scale = viewport.findFit(screenRectangle.width * ZOOM_BUFFER, screenRectangle.height * ZOOM_BUFFER);
+  let scale = pixiApp.viewport.findFit(screenRectangle.width * ZOOM_BUFFER, screenRectangle.height * ZOOM_BUFFER);
 
   // Don't zoom in more than a factor of 2
   if (scale > 2) scale = 2;
 
-  viewport.animate({
+  pixiApp.viewport.animate({
     time: ZOOM_ANIMATION_TIME_MS,
     position: new Point(screenRectangle.x + screenRectangle.width / 2, screenRectangle.y + screenRectangle.height / 2),
     scale,

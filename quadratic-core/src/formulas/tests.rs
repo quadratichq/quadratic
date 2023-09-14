@@ -1,23 +1,13 @@
-use async_trait::async_trait;
 use std::fmt;
 
+use async_trait::async_trait;
+use bigdecimal::BigDecimal;
+
 pub(crate) use super::*;
+pub(crate) use crate::values::*;
+pub(crate) use crate::{array, CodeResult, Error, ErrorMsg, Pos};
 
-macro_rules! array {
-    ($( $( $value:expr ),+ );+ $(;)?) => {{
-        let values = [$( [$( BasicValue::from($value) ),+] ),+];
-        let height = values.len();
-        let width = values[0].len(); // This will generate a compile-time error if there are no values.
-        Array::new_row_major(
-            width as u32,
-            height as u32,
-            values.into_iter().flatten().collect(),
-        )
-        .unwrap()
-    }};
-}
-
-pub(crate) fn try_eval(grid: &mut dyn GridProxy, s: &str) -> FormulaResult<Value> {
+pub(crate) fn try_eval(grid: &mut dyn GridProxy, s: &str) -> CodeResult<Value> {
     println!("Evaluating formula {s:?}");
     parse_formula(s, Pos::ORIGIN)?.eval_blocking(grid, Pos::ORIGIN)
 }
@@ -30,7 +20,7 @@ pub(crate) fn eval_to_string(grid: &mut dyn GridProxy, s: &str) -> String {
     eval(grid, s).to_string()
 }
 #[track_caller]
-pub(crate) fn eval_to_err(grid: &mut dyn GridProxy, s: &str) -> FormulaError {
+pub(crate) fn eval_to_err(grid: &mut dyn GridProxy, s: &str) -> Error {
     try_eval(grid, s).expect_err("expected error")
 }
 
@@ -39,7 +29,7 @@ pub(crate) fn expect_val(value: impl Into<Value>, grid: &mut dyn GridProxy, s: &
     assert_eq!(value.into(), eval(grid, s));
 }
 #[track_caller]
-pub(crate) fn expect_err(error_msg: &FormulaErrorMsg, grid: &mut dyn GridProxy, s: &str) {
+pub(crate) fn expect_err(error_msg: &ErrorMsg, grid: &mut dyn GridProxy, s: &str) {
     assert_eq!(*error_msg, eval_to_err(grid, s).msg);
 }
 
@@ -48,7 +38,7 @@ pub(crate) fn expect_err(error_msg: &FormulaErrorMsg, grid: &mut dyn GridProxy, 
 pub(crate) struct NoGrid;
 #[async_trait(?Send)]
 impl GridProxy for NoGrid {
-    async fn get(&mut self, _pos: Pos) -> BasicValue {
+    async fn get(&mut self, _pos: Pos) -> CellValue {
         panic!("no cell should be accessed")
     }
 }
@@ -58,8 +48,8 @@ impl GridProxy for NoGrid {
 pub(crate) struct BlankGrid;
 #[async_trait(?Send)]
 impl GridProxy for BlankGrid {
-    async fn get(&mut self, _pos: Pos) -> BasicValue {
-        BasicValue::Blank
+    async fn get(&mut self, _pos: Pos) -> CellValue {
+        CellValue::Blank
     }
 }
 
@@ -81,9 +71,9 @@ where
 impl<F, T> GridProxy for FnGrid<F, T>
 where
     F: FnMut(Pos) -> T,
-    T: Into<BasicValue>,
+    T: Into<CellValue>,
 {
-    async fn get(&mut self, pos: Pos) -> BasicValue {
+    async fn get(&mut self, pos: Pos) -> CellValue {
         self.0(pos).into()
     }
 }
@@ -94,17 +84,17 @@ where
 pub(crate) struct ArrayGrid(pub Pos, pub Array);
 #[async_trait(?Send)]
 impl GridProxy for ArrayGrid {
-    async fn get(&mut self, pos: Pos) -> BasicValue {
+    async fn get(&mut self, pos: Pos) -> CellValue {
         let x = pos.x - self.0.x;
         let y = pos.y - self.0.y;
 
         if x < 0 || y < 0 {
-            return BasicValue::Blank;
+            return CellValue::Blank;
         }
         self.1
             .get(x as u32, y as u32)
             .cloned()
-            .unwrap_or(BasicValue::Blank)
+            .unwrap_or(CellValue::Blank)
     }
 }
 
@@ -127,7 +117,7 @@ fn test_formula_cell_ref() {
 
     // Evaluate at D4, causing a circular reference.
     assert_eq!(
-        FormulaErrorMsg::CircularReference,
+        ErrorMsg::CircularReference,
         form.eval_blocking(&mut g, pos![D4]).unwrap_err().msg,
     );
 
@@ -151,7 +141,7 @@ fn test_formula_circular_array_ref() {
     });
 
     assert_eq!(
-        FormulaErrorMsg::CircularReference,
+        ErrorMsg::CircularReference,
         form.eval_blocking(&mut g, pos![B2]).unwrap_err().msg,
     )
 }
@@ -168,7 +158,7 @@ fn test_formula_range_operator() {
     }
 
     assert_eq!(
-        FormulaErrorMsg::Unexpected("ellipsis".into()),
+        ErrorMsg::Unexpected("ellipsis".into()),
         parse_formula("1...5", Pos::ORIGIN).unwrap_err().msg,
     );
 }
@@ -176,15 +166,12 @@ fn test_formula_range_operator() {
 #[test]
 fn test_formula_blank_array_parsing() {
     let g = &mut BlankGrid;
-    const B: BasicValue = BasicValue::Blank;
+    const B: CellValue = CellValue::Blank;
     assert_eq!(Value::from(array![B]), eval(g, "{}"));
     assert_eq!(Value::from(array![B; B]), eval(g, "{;}"));
     assert_eq!(Value::from(array![B, B]), eval(g, "{,}"));
     assert_eq!(Value::from(array![B, B; B, B]), eval(g, "{,;,}"));
-    assert_eq!(
-        FormulaErrorMsg::NonRectangularArray,
-        eval_to_err(g, "{;,;}").msg,
-    );
+    assert_eq!(ErrorMsg::NonRectangularArray, eval_to_err(g, "{;,;}").msg,);
 }
 
 #[test]
@@ -227,7 +214,7 @@ fn test_formula_array_op() {
 
 #[test]
 fn test_array_parsing() {
-    let f = |x| BasicValue::Number(x as f64);
+    let f = |x: i32| CellValue::Number(BigDecimal::from(&x));
     assert_eq!(
         Value::from(array![
             f(11), f(12);
@@ -251,7 +238,7 @@ fn test_array_parsing() {
 
     // Mismatched rows
     assert_eq!(
-        FormulaErrorMsg::NonRectangularArray,
+        ErrorMsg::NonRectangularArray,
         eval_to_err(&mut NoGrid, "{1; 3, 4}").msg,
     );
 
@@ -292,21 +279,18 @@ fn test_formula_omit_required_argument() {
     let g = &mut NoGrid;
     assert!(eval_to_string(g, "ATAN2(,1)").starts_with("1.57"));
     assert_eq!("0", eval_to_string(g, "ATAN2(1,)"));
+    assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "ATAN2(,)").msg,);
     assert_eq!(
-        FormulaErrorMsg::DivideByZero,
-        eval_to_err(g, "ATAN2(,)").msg,
-    );
-    assert_eq!(
-        FormulaErrorMsg::MissingRequiredArgument {
-            func_name: "ATAN2",
-            arg_name: "x"
+        ErrorMsg::MissingRequiredArgument {
+            func_name: "ATAN2".into(),
+            arg_name: "x".into(),
         },
         eval_to_err(g, "ATAN2()").msg,
     );
     assert_eq!(
-        FormulaErrorMsg::MissingRequiredArgument {
-            func_name: "ATAN2",
-            arg_name: "y"
+        ErrorMsg::MissingRequiredArgument {
+            func_name: "ATAN2".into(),
+            arg_name: "y".into(),
         },
         eval_to_err(g, "ATAN2(1)").msg,
     );
@@ -330,28 +314,28 @@ fn test_find_cell_references() {
     // $C$4
     assert_eq!(
         iter.next(),
-        Some(RangeRef::Cell(CellRef::absolute(pos![C4]))),
+        Some(RangeRef::from(CellRef::absolute(pos![C4]))),
     );
 
     // $A0:nQ7
     assert_eq!(
         iter.next(),
-        Some(RangeRef::CellRange(
-            CellRef {
+        Some(RangeRef::CellRange {
+            start: CellRef {
                 x: Absolute(col![A]),
                 y: Relative(0 - base.y),
             },
-            CellRef {
+            end: CellRef {
                 x: Relative(col![nQ] - base.x),
                 y: Relative(7 - base.y),
             },
-        )),
+        }),
     );
 
     // D$n6
     assert_eq!(
         iter.next(),
-        Some(RangeRef::Cell(CellRef {
+        Some(RangeRef::from(CellRef {
             x: Relative(col![D] - base.x),
             y: Absolute(-6),
         })),
@@ -360,7 +344,7 @@ fn test_find_cell_references() {
     // A0
     assert_eq!(
         iter.next(),
-        Some(RangeRef::Cell(CellRef {
+        Some(RangeRef::from(CellRef {
             x: Relative(col![A] - base.x),
             y: Relative(0 - base.y),
         })),
@@ -369,7 +353,7 @@ fn test_find_cell_references() {
     // ZB2
     assert_eq!(
         iter.next(),
-        Some(RangeRef::Cell(CellRef {
+        Some(RangeRef::from(CellRef {
             x: Relative(col![ZB] - base.x),
             y: Relative(2 - base.y),
         })),

@@ -1,25 +1,27 @@
 use futures::future::LocalBoxFuture;
+use smallvec::SmallVec;
 
 use super::*;
+use crate::{Array, CellValue, CodeResult, ErrorMsg, Pos, Span, Spanned, Value};
 
 macro_rules! zip_map_impl {
     ($arrays:ident.zip_map(|$args_buffer:ident| $eval_f:expr)) => {{
-        let ArraySize { w, h } = Value::common_array_size($arrays)?;
+        let size = Value::common_array_size($arrays)?;
 
         let mut $args_buffer = Vec::with_capacity($arrays.into_iter().len());
 
         // If the result is a single value, return that value instead of a 1x1
         // array. This isn't just an optimization; it's important for Excel
         // compatibility.
-        if w == 1 && h == 1 {
+        if size.len() == 1 {
             for array in $arrays {
-                $args_buffer.push(array.basic_value()?);
+                $args_buffer.push(array.cell_value()?);
             }
             return Ok(Value::Single($eval_f));
         }
 
-        let mut values = smallvec::SmallVec::with_capacity(w as usize * h as usize);
-        for (x, y) in Array::indices(w, h) {
+        let mut values = SmallVec::with_capacity(size.len());
+        for (x, y) in size.iter() {
             $args_buffer.clear();
             for array in $arrays {
                 $args_buffer.push(array.get(x, y)?);
@@ -28,7 +30,7 @@ macro_rules! zip_map_impl {
             values.push($eval_f);
         }
 
-        let result = Array::new_row_major(w, h, values)?;
+        let result = Array::new_row_major(size, values)?;
         Ok(Value::Array(result))
     }};
 }
@@ -45,10 +47,10 @@ impl Ctx<'_> {
         &mut self,
         ref_pos: CellRef,
         span: Span,
-    ) -> FormulaResult<Spanned<BasicValue>> {
+    ) -> CodeResult<Spanned<CellValue>> {
         let ref_pos = ref_pos.resolve_from(self.pos);
         if ref_pos == self.pos {
-            return Err(FormulaErrorMsg::CircularReference.with_span(span));
+            return Err(ErrorMsg::CircularReference.with_span(span));
         }
         let value = self.grid.get(ref_pos).await;
         Ok(Spanned { inner: value, span })
@@ -61,9 +63,9 @@ impl Ctx<'_> {
         arrays: &[Spanned<Value>],
         f: impl for<'a> Fn(
             &'a mut Ctx<'_>,
-            &'a [Spanned<&'a BasicValue>],
-        ) -> LocalBoxFuture<'a, FormulaResult<BasicValue>>,
-    ) -> FormulaResult<Value> {
+            &'a [Spanned<&'a CellValue>],
+        ) -> LocalBoxFuture<'a, CodeResult<CellValue>>,
+    ) -> CodeResult<Value> {
         zip_map_impl!(arrays.zip_map(|args_buffer| f(self, &args_buffer).await?))
     }
 
@@ -81,8 +83,8 @@ impl Ctx<'_> {
     pub fn zip_map<'a, I: Copy + IntoIterator<Item = &'a Spanned<Value>>>(
         &mut self,
         arrays: I,
-        f: impl for<'b> Fn(&'b mut Ctx<'_>, &[Spanned<&BasicValue>]) -> FormulaResult<BasicValue>,
-    ) -> FormulaResult<Value>
+        f: impl for<'b> Fn(&'b mut Ctx<'_>, &[Spanned<&CellValue>]) -> CodeResult<CellValue>,
+    ) -> CodeResult<Value>
     where
         I::IntoIter: ExactSizeIterator,
     {

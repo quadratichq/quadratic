@@ -9,3 +9,31 @@ Documentation for formula functions can be found in next to the Rust implementat
 ### Rebuilding formula function documentation
 
 Run `cargo run --bin docgen`, then copy/paste from `formula_docs_output.md` into Notion. Copying from VSCode will include formatting, so you may have to first paste it into a plaintext editor like Notepad, then copy/paste from there into Notion.
+
+## Running benchmarks
+
+### Pure Rust benchmark
+
+To run benchmarks in pure compiled Rust, run `cargo bench`
+
+### WASM benchmarks
+
+1. `rustup target add wasm32-wasi`
+2. `cargo install cargo-wasi`
+3. `cargo wasi build --bench=grid_benchmark --release --no-default-features`
+4. ``cp target/wasm32-wasi/release/deps/grid_benchmark-*.wasm .``
+5. `ls`
+6. There should be three WASM files (perhaps more if you have done prior builds). Ignore the ones with `.rustc.wasm` and `.wasi.wasm`. Rename the remaining `.wasm` file to `benchmark.wasm`.
+
+We include `--no-default-features` specifically to disable the `js` feature of `quadratic-core`, because the benchmark suite uses only WASI APIs and cannot depend on JS.
+
+To run in NodeJS:
+
+1. `npm install -g @wasmer/cli`
+2. `wasmer-js run --dir=. benchmark.wasm -- --bench`
+
+To run in browser:
+
+1. Go to <https://webassembly.sh/>
+2. Drag `benchmark.wasm` into the browser window
+3. In the browser, `benchmark --bench | download`

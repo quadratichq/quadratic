@@ -1,5 +1,5 @@
 import { atom } from 'recoil';
-import { CellMatch } from '../hooks/useEditorCellHighlights';
+import { CellMatch } from '../ui/menus/CodeEditor/useEditorCellHighlights';
 
 export interface EditorHighlightedCellsState {
   highlightedCells: CellMatch;

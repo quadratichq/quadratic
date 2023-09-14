@@ -1,42 +1,40 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigation } from 'react-router';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { SheetController } from '../grid/controller/sheetController';
-import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
-import CodeEditor from '../ui/menus/CodeEditor';
+import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import TopBar from '../ui/menus/TopBar';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { PermissionOverlay } from './components/PermissionOverlay';
 import PresentationModeHint from './components/PresentationModeHint';
 import BottomBar from './menus/BottomBar';
 import CellTypeMenu from './menus/CellTypeMenu';
+import CodeEditor from './menus/CodeEditor';
 import CommandPalette from './menus/CommandPalette';
 import FeedbackMenu from './menus/FeedbackMenu';
 import GoTo from './menus/GoTo';
 import ShareFileMenu from './menus/ShareFileMenu';
+import SheetBar from './menus/SheetBar';
+import { ConfirmDeleteSheet } from './menus/SheetBar/ConfirmDeleteSheet';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 
-export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
+export default function QuadraticUI() {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
   const navigation = useNavigation();
 
-  useEffect(() => {
-    sheetController.setApp(app);
-  }, [sheetController, app]);
-
-  // Temporary way to attach sheet to global for use in GetCellsDB function
-  useEffect(() => {
-    GetCellsDBSetSheet(sheetController.sheet);
-  }, [sheetController.sheet]);
-
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {
-    app.resize();
-  }, [presentationMode, app]);
+    pixiApp.resize();
+  }, [presentationMode]);
+
+  // used for delete sheet
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | undefined>();
+
+  // todo...
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [lastName, setLastName] = useState<string | undefined>();
 
   return (
     <div
@@ -51,9 +49,9 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
-      {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
-      {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
-      {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
+      {!presentationMode && <TopBar />}
+      {editorInteractionState.showCommandPalette && <CommandPalette confirmSheetDelete={() => 0} />}
+      {editorInteractionState.showGoToMenu && <GoTo />}
 
       <div
         style={{
@@ -64,16 +62,23 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
           position: 'relative',
         }}
       >
-        <FileUploadWrapper sheetController={sheetController} app={app}>
-          <QuadraticGrid sheetController={sheetController} app={app} />
+        <FileUploadWrapper>
+          <QuadraticGrid />
         </FileUploadWrapper>
-        <CodeEditor sheet_controller={sheetController} />
+        {editorInteractionState.showCodeEditor && <CodeEditor />}
       </div>
 
-      {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
+      {!presentationMode && <SheetBar />}
+      {!presentationMode && <BottomBar />}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && <ShareFileMenu />}
       {presentationMode && <PresentationModeHint />}
+
+      <ConfirmDeleteSheet
+        lastName={lastName}
+        confirmDelete={confirmDelete}
+        handleClose={() => setConfirmDelete(undefined)}
+      />
 
       <PermissionOverlay />
     </div>

@@ -1,3 +1,4 @@
+import { debugShowRunComputation } from '../../debugFlags';
 import { Cell } from '../../schemas';
 import { webWorkers } from '../../web-workers/webWorkers';
 import { runAI } from './ai/runAI';
@@ -19,6 +20,12 @@ export const runCellComputation = async (cell: Cell): Promise<CellEvaluationResu
     };
   } else if (cell.type === 'PYTHON') {
     let result = await webWorkers.runPython(cell.python_code || '');
+
+    // prints result of computation to console to create tests
+    if (debugShowRunComputation) {
+      console.log(`'${cell.python_code}': \`${JSON.stringify(result).replaceAll('\\', '\\\\')}\`,`);
+    }
+
     return {
       success: result.success,
       std_out: result.input_python_std_out,

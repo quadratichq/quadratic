@@ -65,7 +65,7 @@ const ListItems = [
     label: 'Borders: Clear all',
     isAvailable: isEditorOrAbove,
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { clearBorders } = useBorders(props.sheetController.sheet, props.app);
+      const { clearBorders } = useBorders();
       return (
         <CommandPaletteListItem
           {...props}
@@ -101,7 +101,7 @@ function generateListItem({
     label,
     isAvailable: isEditorOrAbove,
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const { changeBorders } = useBorders(props.sheetController.sheet, props.app);
+      const { changeBorders } = useBorders();
       return (
         <CommandPaletteListItem
           {...props}

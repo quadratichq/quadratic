@@ -2,8 +2,6 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
@@ -17,17 +15,11 @@ import { TopBarShareButton } from './TopBarShareButton';
 import { TopBarUsers } from './TopBarUsers';
 import { TopBarZoomMenu } from './TopBarZoomMenu';
 
-interface IProps {
-  app: PixiApp;
-  sheetController: SheetController;
-}
-
-export const TopBar = (props: IProps) => {
+export const TopBar = () => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { permission } = editorInteractionState;
-  const { app, sheetController } = props;
 
   return (
     <Box
@@ -69,12 +61,12 @@ export const TopBar = (props: IProps) => {
           ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
       >
-        <QuadraticMenu sheetController={sheetController} />
+        <QuadraticMenu />
         {isEditorOrAbove(permission) && isDesktop && (
           <>
             <DataMenu />
-            <FormatMenu app={app} sheet_controller={sheetController} />
-            <NumberFormatMenu app={app} sheet_controller={sheetController} />
+            <FormatMenu />
+            <NumberFormatMenu />
           </>
         )}
       </div>
@@ -100,7 +92,7 @@ export const TopBar = (props: IProps) => {
             <TopBarShareButton />
           </>
         )}
-        <TopBarZoomMenu app={app} />
+        <TopBarZoomMenu />
       </div>
     </Box>
   );

@@ -7,7 +7,7 @@
     "strict": true,
     "skipLibCheck": true,
     "lib": ["dom", "dom.iterable", "esnext", "WebWorker"],
-    "allowJs": false,
+    "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
@@ -18,5 +18,5 @@
     "downlevelIteration": true
   },
   "include": ["src"],
-  "exclude": ["node_modules/*", "quadratic-core/*", "quadratic-api/*"]
+  "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"]
 }

@@ -1,8 +1,75 @@
-use itertools::Itertools;
+use std::collections::HashSet;
 use std::fmt;
+use std::ops::Range;
+
+use itertools::Itertools;
+
+pub(crate) mod btreemap_serde {
+    use std::collections::{BTreeMap, HashMap};
+
+    use serde::ser::SerializeMap;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
+        map: &BTreeMap<K, V>,
+        s: S,
+    ) -> Result<S::Ok, S::Error> {
+        let mut m = s.serialize_map(Some(map.len()))?;
+        for (k, v) in map {
+            m.serialize_entry(&serde_json::to_string(k).unwrap(), v)?;
+        }
+        m.end()
+    }
+    pub fn deserialize<
+        'de,
+        D: Deserializer<'de>,
+        K: for<'k> Deserialize<'k> + Ord,
+        V: Deserialize<'de>,
+    >(
+        d: D,
+    ) -> Result<BTreeMap<K, V>, D::Error> {
+        Ok(HashMap::<String, V>::deserialize(d)?
+            .into_iter()
+            .map(|(k, v)| ((serde_json::from_str(&k).unwrap(), v)))
+            .collect())
+    }
+}
+
+pub(crate) mod hashmap_serde {
+    use std::collections::HashMap;
+    use std::hash::Hash;
+
+    use serde::ser::SerializeMap;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
+        map: &HashMap<K, V>,
+        s: S,
+    ) -> Result<S::Ok, S::Error> {
+        let mut m = s.serialize_map(Some(map.len()))?;
+        for (k, v) in map {
+            m.serialize_entry(&serde_json::to_string(k).unwrap(), v)?;
+        }
+        m.end()
+    }
+    pub fn deserialize<
+        'de,
+        D: Deserializer<'de>,
+        K: for<'k> Deserialize<'k> + Eq + Hash,
+        V: Deserialize<'de>,
+    >(
+        d: D,
+    ) -> Result<HashMap<K, V>, D::Error> {
+        Ok(HashMap::<String, V>::deserialize(d)?
+            .into_iter()
+            .map(|(k, v)| ((serde_json::from_str(&k).unwrap(), v)))
+            .collect())
+    }
+}
 
 /// Recursively evaluates an expression, mimicking JavaScript syntax. Assumes
 /// that `?` can throw an error of type `JsValue`.
+#[cfg(feature = "js")]
 macro_rules! jsexpr {
     // Recursive base cases
     ($value:ident) => { $value };
@@ -162,6 +229,24 @@ macro_rules! impl_display {
             }
         }
     };
+}
+
+pub fn union_ranges(ranges: impl IntoIterator<Item = Option<Range<i64>>>) -> Option<Range<i64>> {
+    ranges
+        .into_iter()
+        .filter_map(|x| x)
+        .reduce(|a, b| std::cmp::min(a.start, b.start)..std::cmp::max(a.end, b.end))
+}
+
+pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
+    let already_used_numbers: HashSet<usize> = already_used
+        .iter()
+        .filter_map(|s| s.strip_prefix(prefix)?.trim().parse().ok())
+        .collect();
+
+    // Find the first number that's not already used.
+    let i = (1..).find(|i| !already_used_numbers.contains(&i)).unwrap();
+    format!("{prefix} {i}")
 }
 
 #[cfg(test)]

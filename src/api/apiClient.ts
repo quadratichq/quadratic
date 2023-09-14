@@ -1,16 +1,25 @@
 import mixpanel from 'mixpanel-browser';
+import { v4 as uuid } from 'uuid';
 import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
 import { GridFile, GridFileSchema } from '../schemas';
+import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
 import { ApiSchemas, ApiTypes } from './types';
 
 const DEFAULT_FILE: GridFile = {
-  cells: [],
-  formats: [],
-  columns: [],
-  rows: [],
-  borders: [],
-  cell_dependency: '',
+  sheets: [
+    {
+      name: 'Sheet 1',
+      id: uuid(),
+      order: generateKeyBetween(null, null),
+      cells: [],
+      formats: [],
+      columns: [],
+      rows: [],
+      borders: [],
+      cell_dependency: '',
+    },
+  ],
   version: GridFileSchema.shape.version.value,
 };
 

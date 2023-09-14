@@ -1,37 +1,44 @@
-import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { GridInteractionState, gridInteractionStateDefault } from '../../atoms/gridInteractionStateAtom';
 import {
   EditorHighlightedCellsState,
   editorHighlightedCellsStateDefault,
 } from '../../atoms/editorHighlightedCellsStateAtom';
-import { defaultGridSettings, GridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
-import { PixiApp } from './PixiApp';
+import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
+import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
+import { pixiApp } from './PixiApp';
 
-export class PixiAppSettings {
-  private app: PixiApp;
-  private settings!: GridSettings;
-  private lastSettings?: GridSettings;
+export enum PanMode {
+  Disabled = 'DISABLED',
+  Enabled = 'ENABLED',
+  Dragging = 'DRAGGING',
+}
 
-  // throttle for setting recoil state
-  private interactionStateDirty = false;
-  private setInteractionStateRecoil?: (value: GridInteractionState) => void;
-  private lastShowInput = false;
+class PixiAppSettings {
+  private settings: GridSettings;
+  private lastSettings: GridSettings;
+  private _panMode: PanMode;
+  private _input: { show: boolean; initialValue?: string };
 
   temporarilyHideCellTypeOutlines = false;
-  interactionState = gridInteractionStateDefault;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: (value: EditorInteractionState) => void;
   editorHighlightedCellsState = editorHighlightedCellsStateDefault;
   setEditorHighlightedCellsState?: (value: EditorHighlightedCellsState) => void;
 
-  constructor(app: PixiApp) {
-    this.app = app;
-    this.getSettings();
-    window.addEventListener('grid-settings', this.getSettings);
+  constructor() {
+    const settings = localStorage.getItem('viewSettings');
+    if (settings) {
+      this.settings = JSON.parse(settings) as GridSettings;
+    } else {
+      this.settings = defaultGridSettings;
+    }
+    this.lastSettings = this.settings;
+    window.addEventListener('grid-settings', this.getSettings.bind(this));
+    this._input = { show: false };
+    this._panMode = PanMode.Disabled;
   }
 
   destroy() {
-    window.removeEventListener('grid-settings', this.getSettings);
+    window.removeEventListener('grid-settings', this.getSettings.bind(this));
   }
 
   private getSettings = (): void => {
@@ -41,48 +48,21 @@ export class PixiAppSettings {
     } else {
       this.settings = defaultGridSettings;
     }
-    this.app.gridLines.dirty = true;
-    this.app.axesLines.dirty = true;
-    this.app.headings.dirty = true;
-    this.app.cells.dirty = true;
+    pixiApp.gridLines.dirty = true;
+    pixiApp.axesLines.dirty = true;
+    pixiApp.headings.dirty = true;
 
     // only rebuild quadrants if showCellTypeOutlines change
     if (
       (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
       (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
     ) {
-      this.app.quadrants.build();
+      pixiApp.cellsSheets.toggleOutlines();
+      pixiApp.viewport.dirty = true;
+      // pixiApp.quadrants.build();
     }
     this.lastSettings = this.settings;
   };
-
-  setInteractionState = (value: GridInteractionState): void => {
-    this.interactionState = value;
-    this.interactionStateDirty = true;
-  };
-
-  updateInteractionState(
-    interactionState: GridInteractionState,
-    setInteractionState: (value: GridInteractionState) => void
-  ): void {
-    this.interactionState = interactionState;
-    this.setInteractionStateRecoil = setInteractionState;
-    this.interactionStateDirty = false;
-    this.app.cursor.dirty = true;
-    this.app.headings.dirty = true;
-    if (interactionState.showInput !== this.lastShowInput) {
-      this.app.cells.dirty = true;
-      this.lastShowInput = interactionState.showInput;
-    }
-  }
-
-  update() {
-    // update recoil state only once per frame
-    if (this.interactionStateDirty) {
-      this.interactionStateDirty = false;
-      this.setInteractionStateRecoil?.(this.interactionState);
-    }
-  }
 
   updateEditorInteractionState(
     editorInteractionState: EditorInteractionState,
@@ -90,9 +70,9 @@ export class PixiAppSettings {
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
-    this.app.headings.dirty = true;
-    this.app.cursor.dirty = true;
-    this.app.cells.dirty = true;
+    pixiApp.headings.dirty = true;
+    pixiApp.cursor.dirty = true;
+    // pixiApp.cells.dirty = true;
   }
 
   updateEditorHighlightedCellsState(
@@ -101,7 +81,7 @@ export class PixiAppSettings {
   ): void {
     this.editorHighlightedCellsState = editorHighlightedCellsState;
     this.setEditorHighlightedCellsState = setEditorHighlightedCellsState;
-    this.app.cursor.dirty = true;
+    pixiApp.cursor.dirty = true;
   }
 
   get showGridLines(): boolean {
@@ -128,4 +108,44 @@ export class PixiAppSettings {
     }
     return this.settings.showA1Notation;
   }
+
+  setDirty(dirty: { cursor?: boolean; headings?: boolean; gridLines?: boolean }): void {
+    if (dirty.cursor) {
+      pixiApp.cursor.dirty = true;
+    }
+    if (dirty.headings) {
+      pixiApp.headings.dirty = true;
+    }
+    if (dirty.gridLines) {
+      pixiApp.gridLines.dirty = true;
+    }
+  }
+
+  changeInput(input: boolean, initialValue?: string) {
+    // todo: this does not handle types other than text
+    this._input = { show: input, initialValue };
+    this.setDirty({ cursor: true });
+
+    // this is used by CellInput to control visibility
+    window.dispatchEvent(new CustomEvent('change-input', { detail: { showInput: input } }));
+  }
+
+  changePanMode(mode: PanMode): void {
+    if (this._panMode !== mode) {
+      this._panMode = mode;
+
+      // this is used by QuadraticGrid to trigger changes in pan mode
+      window.dispatchEvent(new CustomEvent('pan-mode', { detail: mode }));
+    }
+  }
+
+  get input() {
+    return this._input;
+  }
+
+  get panMode() {
+    return this._panMode;
+  }
 }
+
+export const pixiAppSettings = new PixiAppSettings();

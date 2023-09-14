@@ -3,13 +3,14 @@
 //! This entire file feels really janky and awful but this is my best attempt at
 //! mimicking the behavior Excel has.
 
+use std::str::FromStr;
+
+use bigdecimal::{BigDecimal, Zero};
 use itertools::Itertools;
 use regex::Regex;
 
-use super::{
-    wildcard_pattern_to_regex, Array, BasicValue, CoerceInto, FormulaError, FormulaErrorMsg,
-    FormulaResult, SpannableIterExt, Spanned,
-};
+use super::wildcard_pattern_to_regex;
+use crate::{Array, CellValue, CodeResult, CoerceInto, Error, ErrorMsg, SpannableIterExt, Spanned};
 
 #[derive(Debug, Clone)]
 pub enum Criterion {
@@ -17,29 +18,31 @@ pub enum Criterion {
     NotRegex(Regex),
     Compare {
         compare_fn: CompareFn,
-        rhs: BasicValue,
+        rhs: CellValue,
     },
 }
-impl TryFrom<Spanned<&BasicValue>> for Criterion {
-    type Error = FormulaError;
+impl TryFrom<Spanned<&CellValue>> for Criterion {
+    type Error = Error;
 
-    fn try_from(value: Spanned<&BasicValue>) -> Result<Self, Self::Error> {
+    fn try_from(value: Spanned<&CellValue>) -> Result<Self, Self::Error> {
         match &value.inner {
-            BasicValue::Blank | BasicValue::Number(_) | BasicValue::Bool(_) => {
-                Ok(Criterion::Compare {
-                    compare_fn: CompareFn::Eql,
-                    rhs: value.inner.clone(),
-                })
-            }
-            BasicValue::String(s) => {
+            CellValue::Blank
+            | CellValue::Number(_)
+            | CellValue::Logical(_)
+            | CellValue::Instant(_)
+            | CellValue::Duration(_) => Ok(Criterion::Compare {
+                compare_fn: CompareFn::Eql,
+                rhs: value.inner.clone(),
+            }),
+            CellValue::Text(s) => {
                 let (compare_fn, rhs_string) =
                     strip_compare_fn_prefix(s).unwrap_or((CompareFn::Eql, s));
                 let rhs = if rhs_string.eq_ignore_ascii_case("TRUE") {
-                    BasicValue::Bool(true)
+                    CellValue::Logical(true)
                 } else if rhs_string.eq_ignore_ascii_case("FALSE") {
-                    BasicValue::Bool(false)
-                } else if let Ok(n) = rhs_string.parse::<f64>() {
-                    BasicValue::Number(n)
+                    CellValue::Logical(false)
+                } else if let Ok(n) = BigDecimal::from_str(&rhs_string) {
+                    CellValue::Number(n)
                 } else if compare_fn == CompareFn::Eql && rhs_string.contains(['?', '*']) {
                     // If the string doesn't contain any `?` or `*`, then Excel
                     // treats all `~` as literal.
@@ -47,18 +50,18 @@ impl TryFrom<Spanned<&BasicValue>> for Criterion {
                 } else if compare_fn == CompareFn::Neq && rhs_string.contains(['?', '*']) {
                     return Ok(Self::NotRegex(wildcard_pattern_to_regex(rhs_string)?));
                 } else {
-                    BasicValue::String(rhs_string.to_string().to_ascii_lowercase())
+                    CellValue::Text(rhs_string.to_string().to_ascii_lowercase())
                 };
 
                 Ok(Criterion::Compare { compare_fn, rhs })
             }
-            BasicValue::Err(e) => Err((**e).clone()),
+            CellValue::Error(e) => Err((**e).clone()),
         }
     }
 }
 impl Criterion {
     /// Evaluates the criterion on a value and returns whether it matches.
-    pub fn matches(&self, value: &BasicValue) -> bool {
+    pub fn matches(&self, value: &CellValue) -> bool {
         match self {
             Criterion::Regex(r) => r.is_match(&value.to_string()),
             Criterion::NotRegex(r) => !r.is_match(&value.to_string()),
@@ -72,24 +75,30 @@ impl Criterion {
         }
     }
 
-    fn compare(compare_fn: CompareFn, lhs: &BasicValue, rhs: &BasicValue) -> bool {
+    fn compare(compare_fn: CompareFn, lhs: &CellValue, rhs: &CellValue) -> bool {
         match rhs {
-            BasicValue::Blank => match lhs {
-                BasicValue::Number(lhs) => compare_fn.compare(lhs, &0.0),
+            CellValue::Blank => match lhs {
+                CellValue::Number(lhs) => compare_fn.compare(lhs, &BigDecimal::zero()),
                 _ => false,
             },
-            BasicValue::String(rhs) => {
-                compare_fn.compare(&lhs.to_string().to_ascii_lowercase(), rhs)
-            }
-            BasicValue::Number(rhs) => match lhs {
-                BasicValue::Number(lhs) => compare_fn.compare(lhs, rhs),
+            CellValue::Text(rhs) => compare_fn.compare(&lhs.to_string().to_ascii_lowercase(), rhs),
+            CellValue::Number(rhs) => match lhs {
+                CellValue::Number(lhs) => compare_fn.compare(lhs, rhs),
                 _ => false,
             },
-            BasicValue::Bool(rhs) => match lhs {
-                BasicValue::Bool(lhs) => compare_fn.compare(lhs, rhs),
+            CellValue::Logical(rhs) => match lhs {
+                CellValue::Logical(lhs) => compare_fn.compare(lhs, rhs),
                 _ => false,
             },
-            BasicValue::Err(_) => false,
+            CellValue::Instant(rhs) => match lhs {
+                CellValue::Instant(lhs) => compare_fn.compare(lhs, rhs),
+                _ => false,
+            },
+            CellValue::Duration(rhs) => match lhs {
+                CellValue::Duration(lhs) => compare_fn.compare(lhs, rhs),
+                _ => false,
+            },
+            CellValue::Error(_) => false,
         }
     }
 
@@ -98,12 +107,12 @@ impl Criterion {
         &'a self,
         eval_range: &'a Spanned<Array>,
         output_values_range: Option<&'a Spanned<Array>>,
-    ) -> FormulaResult<impl 'a + Iterator<Item = Spanned<&'a BasicValue>>> {
+    ) -> CodeResult<impl 'a + Iterator<Item = Spanned<&'a CellValue>>> {
         if let Some(range) = output_values_range {
-            if range.inner.array_size() != eval_range.inner.array_size() {
-                return Err(FormulaErrorMsg::ExactArraySizeMismatch {
-                    expected: eval_range.inner.array_size(),
-                    got: range.inner.array_size(),
+            if range.inner.size() != eval_range.inner.size() {
+                return Err(ErrorMsg::ExactArraySizeMismatch {
+                    expected: eval_range.inner.size(),
+                    got: range.inner.size(),
                 }
                 .with_span(range.span));
             }
@@ -111,8 +120,8 @@ impl Criterion {
         let output_values_range = output_values_range.unwrap_or(eval_range);
 
         Ok(std::iter::zip(
-            eval_range.inner.basic_values_slice(),
-            output_values_range.inner.basic_values_slice(),
+            eval_range.inner.cell_values_slice(),
+            output_values_range.inner.cell_values_slice(),
         )
         .filter(|(eval_value, _output_value)| self.matches(eval_value))
         .map(|(_eval_value, output_value)| output_value)
@@ -124,9 +133,9 @@ impl Criterion {
         &'a self,
         eval_range: &'a Spanned<Array>,
         output_values_range: Option<&'a Spanned<Array>>,
-    ) -> FormulaResult<impl 'a + Iterator<Item = FormulaResult<T>>>
+    ) -> CodeResult<impl 'a + Iterator<Item = CodeResult<T>>>
     where
-        &'a BasicValue: TryInto<T>,
+        &'a CellValue: TryInto<T>,
     {
         Ok(self
             .iter_matching(eval_range, output_values_range)?
@@ -178,11 +187,11 @@ impl CompareFn {
 mod tests {
     use super::*;
 
-    fn make_criterion(v: impl Into<BasicValue>) -> Criterion {
+    fn make_criterion(v: impl Into<CellValue>) -> Criterion {
         Criterion::try_from(Spanned::new(0, 0, &v.into())).unwrap()
     }
 
-    fn matches(c: &Criterion, v: impl Into<BasicValue>) -> bool {
+    fn matches(c: &Criterion, v: impl Into<CellValue>) -> bool {
         c.matches(&v.into())
     }
 

@@ -1,10 +1,12 @@
-import { Container, BitmapText, Rectangle, Graphics, Point } from 'pixi.js';
-import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
+import { BitmapText, Container, Graphics, Point, Rectangle } from 'pixi.js';
+import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
+import { sheets } from '../../../grid/controller/Sheets';
 import { colors } from '../../../theme/colors';
-import { calculateAlphaForGridLines } from '../gridUtils';
-import { Size } from '../../types/size';
 import { intersects } from '../../helpers/intersects';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { pixiApp } from '../../pixiApp/PixiApp';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
+import { Size } from '../../types/size';
+import { calculateAlphaForGridLines } from '../gridUtils';
 import { GridHeadingsLabels } from './GridHeadingsLabels';
 import { getColumnA1Notation, getRowA1Notation } from './getA1Notation';
 
@@ -20,7 +22,6 @@ const GRID_HEADING_RESIZE_TOLERANCE = 3;
 export const LABEL_DIGITS_TO_CALCULATE_SKIP = 4;
 
 export class GridHeadings extends Container {
-  private app: PixiApp;
   private characterSize?: Size;
   private headingsGraphics: Graphics;
   private labels: GridHeadingsLabels;
@@ -40,11 +41,10 @@ export class GridHeadings extends Container {
 
   dirty = true;
 
-  constructor(app: PixiApp) {
+  constructor() {
     super();
-    this.app = app;
     this.headingsGraphics = this.addChild(new Graphics());
-    this.labels = this.addChild(new GridHeadingsLabels(app));
+    this.labels = this.addChild(new GridHeadingsLabels());
     this.corner = this.addChild(new Graphics());
   }
 
@@ -76,36 +76,28 @@ export class GridHeadings extends Container {
 
   // creates arrays of selected columns and rows
   private createSelectedArrays(): { selectedColumns: number[]; selectedRows: number[] } {
-    const interactionState = this.app.settings.interactionState;
+    const cursor = sheets.sheet.cursor;
     const selectedColumns: number[] = [];
     const selectedRows: number[] = [];
-    if (interactionState.showMultiCursor) {
-      for (
-        let x = interactionState.multiCursorPosition.originPosition.x;
-        x <= interactionState.multiCursorPosition.terminalPosition.x;
-        x++
-      ) {
+    if (cursor.multiCursor) {
+      for (let x = cursor.multiCursor.originPosition.x; x <= cursor.multiCursor.terminalPosition.x; x++) {
         selectedColumns.push(x);
       }
-      for (
-        let y = interactionState.multiCursorPosition.originPosition.y;
-        y <= interactionState.multiCursorPosition.terminalPosition.y;
-        y++
-      ) {
+      for (let y = cursor.multiCursor.originPosition.y; y <= cursor.multiCursor.terminalPosition.y; y++) {
         selectedRows.push(y);
       }
     } else {
-      selectedColumns.push(interactionState.cursorPosition.x);
-      selectedRows.push(interactionState.cursorPosition.y);
+      selectedColumns.push(cursor.cursorPosition.x);
+      selectedRows.push(cursor.cursorPosition.y);
     }
     return { selectedColumns, selectedRows };
   }
 
   private drawHorizontal() {
     if (!this.characterSize) return;
-    const { viewport } = this.app;
-    const { gridOffsets } = this.app.sheet;
-    const showA1Notation = this.app.settings.showA1Notation;
+    const { viewport } = pixiApp;
+    const { gridOffsets } = sheets.sheet;
+    const showA1Notation = pixiAppSettings.showA1Notation;
     const cellWidth = CELL_WIDTH / viewport.scale.x;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
@@ -213,9 +205,9 @@ export class GridHeadings extends Container {
 
   private drawVertical() {
     if (!this.characterSize) return;
-    const { viewport } = this.app;
-    const { gridOffsets } = this.app.sheet;
-    const showA1Notation = this.app.settings.showA1Notation;
+    const { viewport } = pixiApp;
+    const { gridOffsets } = sheets.sheet;
+    const showA1Notation = pixiAppSettings.showA1Notation;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
     const bounds = viewport.getVisibleBounds();
@@ -331,7 +323,7 @@ export class GridHeadings extends Container {
   }
 
   private drawCorner(): void {
-    const { viewport } = this.app;
+    const { viewport } = pixiApp;
     const bounds = viewport.getVisibleBounds();
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     this.corner.clear();
@@ -342,7 +334,7 @@ export class GridHeadings extends Container {
   }
 
   private drawHeadingLines(): void {
-    const { viewport } = this.app;
+    const { viewport } = pixiApp;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
     this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 1, 0.5, true);
@@ -362,12 +354,12 @@ export class GridHeadings extends Container {
 
     this.headingsGraphics.clear();
 
-    if (!this.app.settings.showHeadings) {
+    if (!pixiAppSettings.showHeadings) {
       this.visible = false;
       this.rowRect = undefined;
       this.columnRect = undefined;
       this.headingSize = { width: 0, height: 0 };
-      this.app.setViewportDirty();
+      pixiApp.setViewportDirty();
       return;
     }
     this.visible = true;
@@ -381,7 +373,7 @@ export class GridHeadings extends Container {
     this.labels.update();
     this.drawCorner();
 
-    this.headingSize = { width: this.rowWidth * this.app.viewport.scale.x, height: CELL_HEIGHT };
+    this.headingSize = { width: this.rowWidth * pixiApp.viewport.scale.x, height: CELL_HEIGHT };
   }
 
   // whether the point is in the heading
@@ -390,7 +382,7 @@ export class GridHeadings extends Container {
     if (intersects.rectanglePoint(this.cornerRect, world)) {
       return { corner: true };
     }
-    const { gridOffsets } = this.app.sheet;
+    const { gridOffsets } = sheets.sheet;
     if (intersects.rectanglePoint(this.columnRect, world)) {
       return { column: gridOffsets.getColumnIndex(world.x).index };
     }
@@ -403,9 +395,9 @@ export class GridHeadings extends Container {
   intersectsHeadingGridLine(
     world: Point
   ): { start: number; column?: number; row?: number; width?: number; height?: number } | undefined {
-    const tolerance = GRID_HEADING_RESIZE_TOLERANCE / this.app.viewport.scale.x;
+    const tolerance = GRID_HEADING_RESIZE_TOLERANCE / pixiApp.viewport.scale.x;
     if (!this.columnRect || !this.rowRect) return;
-    const { gridOffsets } = this.app.sheet;
+    const { gridOffsets } = sheets.sheet;
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
