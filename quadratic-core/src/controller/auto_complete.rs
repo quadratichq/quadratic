@@ -14,7 +14,7 @@ impl GridController {
         _shrink_horizontal: Option<i64>,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        // wasm_bindings::js::log(&format!("expand_down rect: {:?}", rect));
+        // crate::wasm_bindings::js::log(&format!("expand_down rect: {:?}", rect));
         let sheet = self.sheet(sheet_id);
         let value = sheet.get_cell_value(rect.min).unwrap();
 
@@ -37,13 +37,12 @@ impl GridController {
         to_vertical: Option<i64>,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        // js::log(&format!("expand_right rect: {:?}", rect));
         let sheet = self.sheet(sheet_id);
         let selection_values = rect_cell_values(rect, &sheet);
         let to_vertical = to_vertical.unwrap_or(rect.max.y);
         let range = Rect {
             min: Pos {
-                x: rect.max.x,
+                x: rect.max.x + 1,
                 y: rect.min.y,
             },
             max: Pos {
@@ -51,12 +50,13 @@ impl GridController {
                 y: to_vertical,
             },
         };
-        dbg!(range);
 
-        let values = (range.min.y..=range.max.y)
+        let values = range
+            .y_range()
             .map(|y| {
-                (range.min.x..=range.max.x)
-                    .map(|x| project_cell_value(&selection_values, Pos { x, y }).to_owned())
+                range
+                    .x_range()
+                    .map(|x| project_cell_value(&selection_values, Pos { x, y }, &rect).to_owned())
                     .collect::<Vec<CellValue>>()
             })
             .flatten()
@@ -69,11 +69,10 @@ impl GridController {
 }
 
 pub fn rect_cell_values(rect: Rect, sheet: &Sheet) -> Array {
-    let size = ArraySize::new_or_err(rect.width(), rect.height()).unwrap();
-
-    let values = (rect.min.y..=rect.max.y)
+    let values = rect
+        .y_range()
         .map(|y| {
-            (rect.min.x..=rect.max.x)
+            rect.x_range()
                 .map(|x| {
                     sheet
                         .get_cell_value(Pos { x, y })
@@ -84,13 +83,13 @@ pub fn rect_cell_values(rect: Rect, sheet: &Sheet) -> Array {
         .flatten()
         .collect();
 
-    Array::new_row_major(size, values).unwrap()
+    Array::new_row_major(rect.size(), values).unwrap()
 }
 
-pub fn project_cell_value(selection: &Array, pos: Pos) -> &CellValue {
-    let x = pos.x as u32 % selection.width();
-    let y = pos.y as u32 % selection.height();
-    selection.get(x, y).unwrap()
+pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) -> &'a CellValue {
+    let x = (pos.x - rect.min.x) as u32 % selection.width();
+    let y = (pos.y - rect.min.y) as u32 % selection.height();
+    selection.get(x, y).unwrap_or_else(|_| &CellValue::Blank)
 }
 
 #[cfg(test)]
@@ -152,9 +151,7 @@ mod tests {
     fn test_project_cell_value() {
         let (_, sheet, rect) = test_setup();
         let selection = rect_cell_values(rect, &sheet);
-        let func = |pos| project_cell_value(&selection, pos);
-
-        dbg!(selection.clone());
+        let func = |pos| project_cell_value(&selection, pos, &rect);
 
         assert_eq!(func(Pos { x: 3, y: 0 }), &CellValue::Number(1.0));
         assert_eq!(func(Pos { x: 4, y: 0 }), &CellValue::Number(2.0));
@@ -165,11 +162,25 @@ mod tests {
     }
 
     #[test]
+    fn test_project_cell_value_not_anchored() {
+        let (_, sheet, rect) = test_setup_not_anchored();
+        let selection = rect_cell_values(rect, &sheet);
+        let func = |pos| project_cell_value(&selection, pos, &rect);
+
+        assert_eq!(func(Pos { x: 5, y: 2 }), &CellValue::Number(1.0));
+        assert_eq!(func(Pos { x: 6, y: 2 }), &CellValue::Number(2.0));
+        assert_eq!(func(Pos { x: 7, y: 2 }), &CellValue::Number(3.0));
+        assert_eq!(func(Pos { x: 5, y: 3 }), &CellValue::Number(4.0));
+        assert_eq!(func(Pos { x: 6, y: 3 }), &CellValue::Number(5.0));
+        assert_eq!(func(Pos { x: 7, y: 3 }), &CellValue::Number(6.0));
+    }
+
+    #[test]
     fn test_expand_right() {
         let (mut grid_controller, sheet, rect) = test_setup();
         let result = grid_controller.expand_right(sheet.id, rect, 10, None, None);
         let expected = Rect {
-            min: Pos { x: 2, y: 0 },
+            min: Pos { x: 3, y: 0 },
             max: Pos { x: 10, y: 1 },
         };
         assert_eq!(result.cell_regions_modified[0].1, expected);
@@ -180,7 +191,7 @@ mod tests {
         let (mut grid_controller, sheet, rect) = test_setup_not_anchored();
         let result = grid_controller.expand_right(sheet.id, rect, 12, None, None);
         let expected = Rect {
-            min: Pos { x: 4, y: 2 },
+            min: Pos { x: 5, y: 2 },
             max: Pos { x: 12, y: 3 },
         };
         assert_eq!(result.cell_regions_modified[0].1, expected);
