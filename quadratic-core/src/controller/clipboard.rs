@@ -334,7 +334,7 @@ mod test {
     };
 
     fn test_pasted_output() -> String {
-        String::from("<table data-quadratic=\"&#x7B;&quot;w&quot;&#x3A;3&#x2C;&quot;h&quot;&#x3A;2&#x2C;&quot;cells&quot;&#x3A;&#x5B;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;12&#x2E;0&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x5D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;id&quot;&#x3A;&#x7B;&quot;id&quot;&#x3A;&quot;68e7dd34&#x2D;6528&#x2D;4783&#x2D;9ec6&#x2D;08d1e4d101a7&quot;&#x7D;&#x2C;&quot;values&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;spills&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;align&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;wrap&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;numeric&#x5F;format&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;bold&quot;&#x3A;&#x7B;&quot;0&quot;&#x3A;&#x7B;&quot;y&quot;&#x3A;0&#x2C;&quot;content&quot;&#x3A;&#x7B;&quot;value&quot;&#x3A;true&#x2C;&quot;len&quot;&#x3A;1&#x7D;&#x7D;&#x7D;&#x2C;&quot;italic&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;text&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;fill&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x7D;&#x2C;&#x7B;&quot;id&quot;&#x3A;&#x7B;&quot;id&quot;&#x3A;&quot;32ccb46d&#x2D;625d&#x2D;4173&#x2D;a2fe&#x2D;be038b70605f&quot;&#x7D;&#x2C;&quot;values&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;spills&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;align&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;wrap&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;numeric&#x5F;format&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;bold&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;italic&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;text&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;fill&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x7D;&#x2C;&#x7B;&quot;id&quot;&#x3A;&#x7B;&quot;id&quot;&#x3A;&quot;fbdc69ce&#x2D;b964&#x2D;49af&#x2D;8a34&#x2D;f5bdcb8cb750&quot;&#x7D;&#x2C;&quot;values&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;spills&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;align&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;wrap&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;numeric&#x5F;format&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;bold&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;italic&quot;&#x3A;&#x7B;&quot;1&quot;&#x3A;&#x7B;&quot;y&quot;&#x3A;1&#x2C;&quot;content&quot;&#x3A;&#x7B;&quot;value&quot;&#x3A;true&#x2C;&quot;len&quot;&#x3A;1&#x7D;&#x7D;&#x7D;&#x2C;&quot;text&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x2C;&quot;fill&#x5F;color&quot;&#x3A;&#x7B;&#x7D;&#x7D;&#x5D;&#x7D;\"><tbody><tr><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td><span style={font-style:italic;}>12</span></tr></tbody></table>")
+        String::from("<table data-quadratic=\"&#x7B;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x2C;&quot;cells&quot;&#x3A;&#x5B;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x5D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;Align&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Wrap&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericFormat&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericDecimals&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Bold&quot;&#x3A;&#x5B;&#x5B;null&#x2C;5&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;10&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Italic&quot;&#x3A;&#x5B;&#x5B;null&#x2C;11&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;4&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;TextColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;FillColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x5D;&#x7D;\"><tbody><tr><td></td><td></td><td></td><td></tr><tr><td></td><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td></td><td><span style={font-style:italic;}>12</span></tr><tr><td></td><td></td><td></td><td></tr></tbody></table>")
     }
 
     #[test]
@@ -373,7 +373,7 @@ mod test {
 
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 });
         let clipboard = gc.copy_to_clipboard(sheet_id, rect);
-
+        print!("{}", clipboard.1);
         // paste using plain_text
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -433,16 +433,16 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         gc.paste_from_clipboard(
             sheet_id,
-            Pos { x: 0, y: 0 },
+            Pos { x: 1, y: 2 },
             None,
             Some(test_pasted_output()),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
-        let cell11 = sheet.get_cell_value(Pos { x: 0, y: 0 });
+        let cell11 = sheet.get_cell_value(Pos { x: 2, y: 3 });
         assert_eq!(cell11.unwrap(), CellValue::Text(String::from("1, 1")));
-        let cell21 = sheet.get_cell_value(Pos { x: 2, y: 1 });
+        let cell21 = sheet.get_cell_value(Pos { x: 4, y: 4 });
         assert_eq!(cell21.unwrap(), CellValue::Number(BigDecimal::from(12)));
     }
 }
