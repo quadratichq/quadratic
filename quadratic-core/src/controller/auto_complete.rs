@@ -16,8 +16,6 @@ impl GridController {
         _shrink_horizontal: Option<i64>,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
-        let sheet = self.sheet(sheet_id);
-        let selection_values = cell_values_in_rect(rect, &sheet)?;
         let range = Rect {
             min: Pos {
                 x: rect.min.x,
@@ -29,9 +27,7 @@ impl GridController {
             },
         };
 
-        let array = expand(&selection_values, &range)?;
-
-        Ok(self.set_cells(sheet_id, range.min, array, cursor))
+        self.expand(sheet_id, &rect, &range, cursor)
     }
 
     pub fn expand_right(
@@ -42,8 +38,6 @@ impl GridController {
         to_vertical: Option<i64>,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
-        let sheet = self.sheet(sheet_id);
-        let selection_values = cell_values_in_rect(rect, &sheet)?;
         let to_vertical = to_vertical.unwrap_or(rect.max.y);
         let range = Rect {
             min: Pos {
@@ -56,25 +50,33 @@ impl GridController {
             },
         };
 
-        let array = expand(&selection_values, &range)?;
+        self.expand(sheet_id, &rect, &range, cursor)
+    }
+
+    pub fn expand(
+        &mut self,
+        sheet_id: SheetId,
+        rect: &Rect,
+        range: &Rect,
+        cursor: Option<String>,
+    ) -> Result<TransactionSummary> {
+        let sheet = self.sheet(sheet_id);
+        let selection_values = cell_values_in_rect(&rect, &sheet)?;
+        let values: SmallVec<[CellValue; 1]> = set_cell_projections(&selection_values, &range);
+
+        let array = Array::new_row_major(range.size(), values).map_err(|e| {
+            anyhow!(
+                "Could not create array of size {:?}: {:?}",
+                range.size(),
+                e.to_string()
+            )
+        })?;
 
         Ok(self.set_cells(sheet_id, range.min, array, cursor))
     }
 }
 
-pub fn expand(selection: &Array, range: &Rect) -> Result<Array> {
-    let values = set_cell_projections(&selection, &range);
-    Array::new_row_major(range.size(), values).map_err(|e| {
-        anyhow!(
-            "Could not create array of size {:?} with values {:?}: {:?}",
-            range.size(),
-            values,
-            e.to_string()
-        )
-    })
-}
-
-pub fn cell_values_in_rect(rect: Rect, sheet: &Sheet) -> Result<Array> {
+pub fn cell_values_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
     let values = rect
         .y_range()
         .map(|y| {
@@ -91,9 +93,8 @@ pub fn cell_values_in_rect(rect: Rect, sheet: &Sheet) -> Result<Array> {
 
     Array::new_row_major(rect.size(), values).map_err(|e| {
         anyhow!(
-            "Could not create array of size {:?} with values {:?}: {:?}",
+            "Could not create array of size {:?}: {:?}",
             rect.size(),
-            values,
             e.to_string()
         )
     })
@@ -162,7 +163,7 @@ mod tests {
     #[test]
     fn test_cell_values_in_rect() {
         let (_, sheet, rect) = test_setup();
-        let result = cell_values_in_rect(rect, &sheet).unwrap();
+        let result = cell_values_in_rect(&rect, &sheet).unwrap();
         let expected = array![
             1, 2, 3;
             4, 5, 6;
@@ -174,7 +175,7 @@ mod tests {
     #[test]
     fn test_project_cell_value() {
         let (_, sheet, rect) = test_setup();
-        let selection = cell_values_in_rect(rect, &sheet).unwrap();
+        let selection = cell_values_in_rect(&rect, &sheet).unwrap();
         let func = |pos| project_cell_value(&selection, pos, &rect);
 
         assert_eq!(func(Pos { x: 3, y: 0 }), &CellValue::Number(1.0));
@@ -188,7 +189,7 @@ mod tests {
     #[test]
     fn test_project_cell_value_not_anchored() {
         let (_, sheet, rect) = test_setup_not_anchored();
-        let selection = cell_values_in_rect(rect, &sheet).unwrap();
+        let selection = cell_values_in_rect(&rect, &sheet).unwrap();
         let func = |pos| project_cell_value(&selection, pos, &rect);
 
         assert_eq!(func(Pos { x: 5, y: 2 }), &CellValue::Number(1.0));
@@ -227,17 +228,13 @@ mod tests {
 
     #[test]
     fn test_expand_down() {
-        let (mut grid_controller, sheet, _) = test_setup();
-        let selection = Rect {
-            min: Pos { x: 0, y: 0 },
-            max: Pos { x: 1, y: 1 },
-        };
+        let (mut grid_controller, sheet, rect) = test_setup();
         let result = grid_controller
-            .expand_down(sheet.id, selection, 10, None, None)
+            .expand_down(sheet.id, rect, 10, None, None)
             .unwrap();
         let expected = Rect {
-            min: Pos { x: 3, y: 0 },
-            max: Pos { x: 10, y: 1 },
+            min: Pos { x: 0, y: 2 },
+            max: Pos { x: 2, y: 10 },
         };
         assert_eq!(result.cell_regions_modified[0].1, expected);
     }
