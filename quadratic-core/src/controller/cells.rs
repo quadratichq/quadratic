@@ -208,7 +208,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let mut ops = self.delete_cell_values_operations(sheet_id, rect);
-        ops.append(&mut self.clear_formatting_operations(sheet_id, rect));
+        ops.extend(self.clear_formatting_operations(sheet_id, rect));
         self.transact_forward(Transaction { ops, cursor })
     }
 

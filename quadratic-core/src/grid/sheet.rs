@@ -214,16 +214,10 @@ impl Sheet {
     }
 
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        let column = self.get_column(pos.x);
-        if column.is_none() {
-            return None;
-        }
-        let block = column.unwrap().spills.get(pos.y);
-        if block.is_none() {
-            return None;
-        }
-        let code_cell_pos = self.cell_ref_to_pos(block.unwrap())?;
-        let code_cell = self.code_cells.get(&block.unwrap())?;
+        let column = self.get_column(pos.x)?;
+        let block = column.spills.get(pos.y)?;
+        let code_cell_pos = self.cell_ref_to_pos(block)?;
+        let code_cell = self.code_cells.get(&block)?;
         code_cell.get_output_value(
             (pos.x - code_cell_pos.x) as u32,
             (pos.y - code_cell_pos.y) as u32,
