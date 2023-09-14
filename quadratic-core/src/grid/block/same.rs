@@ -10,7 +10,9 @@ pub struct SameValue<T> {
     pub value: T,
     pub len: usize,
 }
-impl<T: fmt::Debug + Clone + PartialEq> BlockContent for SameValue<T> {
+impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq> BlockContent
+    for SameValue<T>
+{
     type Item = T;
 
     fn new(value: Self::Item) -> Self {

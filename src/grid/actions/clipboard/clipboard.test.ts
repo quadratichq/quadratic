@@ -1,7 +1,6 @@
-import { pixiAppEvents } from '../../../gridGL/pixiApp/PixiAppEvents';
-import { mockPixiApp } from '../../../setupPixiTests';
-
 jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
+
+export {};
 
 // const createCell = (pos: [number, number], value: string): Cell => {
 //   return {
@@ -13,7 +12,7 @@ jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
 // };
 
 beforeAll(() => {
-  pixiAppEvents.app = mockPixiApp();
+  // pixiAppEvents.app = mockPixiApp();
 });
 
 test('Clipboard - copy data', () => {

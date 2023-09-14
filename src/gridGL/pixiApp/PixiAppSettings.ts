@@ -3,10 +3,8 @@ import {
   editorHighlightedCellsStateDefault,
 } from '../../atoms/editorHighlightedCellsStateAtom';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { CellValue } from '../../quadratic-core/types';
 import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
-import { PixiApp } from './PixiApp';
-import { pixiAppEvents } from './PixiAppEvents';
+import { pixiApp } from './PixiApp';
 
 export enum PanMode {
   Disabled = 'DISABLED',
@@ -14,10 +12,9 @@ export enum PanMode {
   Dragging = 'DRAGGING',
 }
 
-export class PixiAppSettings {
-  private app: PixiApp;
-  private settings!: GridSettings;
-  private lastSettings?: GridSettings;
+class PixiAppSettings {
+  private settings: GridSettings;
+  private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: { show: boolean; initialValue?: string };
 
@@ -27,9 +24,14 @@ export class PixiAppSettings {
   editorHighlightedCellsState = editorHighlightedCellsStateDefault;
   setEditorHighlightedCellsState?: (value: EditorHighlightedCellsState) => void;
 
-  constructor(app: PixiApp) {
-    this.app = app;
-    this.getSettings();
+  constructor() {
+    const settings = localStorage.getItem('viewSettings');
+    if (settings) {
+      this.settings = JSON.parse(settings) as GridSettings;
+    } else {
+      this.settings = defaultGridSettings;
+    }
+    this.lastSettings = this.settings;
     window.addEventListener('grid-settings', this.getSettings.bind(this));
     this._input = { show: false };
     this._panMode = PanMode.Disabled;
@@ -46,19 +48,18 @@ export class PixiAppSettings {
     } else {
       this.settings = defaultGridSettings;
     }
-    this.app.gridLines.dirty = true;
-    this.app.axesLines.dirty = true;
-    this.app.headings.dirty = true;
-    // this.app.cells.dirty = true;
+    pixiApp.gridLines.dirty = true;
+    pixiApp.axesLines.dirty = true;
+    pixiApp.headings.dirty = true;
 
     // only rebuild quadrants if showCellTypeOutlines change
     if (
       (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
       (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
     ) {
-      this.app.cellsSheets.toggleOutlines();
-      this.app.viewport.dirty = true;
-      // this.app.quadrants.build();
+      pixiApp.cellsSheets.toggleOutlines();
+      pixiApp.viewport.dirty = true;
+      // pixiApp.quadrants.build();
     }
     this.lastSettings = this.settings;
   };
@@ -69,9 +70,9 @@ export class PixiAppSettings {
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
-    this.app.headings.dirty = true;
-    this.app.cursor.dirty = true;
-    // this.app.cells.dirty = true;
+    pixiApp.headings.dirty = true;
+    pixiApp.cursor.dirty = true;
+    // pixiApp.cells.dirty = true;
   }
 
   updateEditorHighlightedCellsState(
@@ -80,7 +81,7 @@ export class PixiAppSettings {
   ): void {
     this.editorHighlightedCellsState = editorHighlightedCellsState;
     this.setEditorHighlightedCellsState = setEditorHighlightedCellsState;
-    this.app.cursor.dirty = true;
+    pixiApp.cursor.dirty = true;
   }
 
   get showGridLines(): boolean {
@@ -108,10 +109,22 @@ export class PixiAppSettings {
     return this.settings.showA1Notation;
   }
 
-  changeInput(input: boolean, initialValue: CellValue | undefined = undefined) {
+  setDirty(dirty: { cursor?: boolean; headings?: boolean; gridLines?: boolean }): void {
+    if (dirty.cursor) {
+      pixiApp.cursor.dirty = true;
+    }
+    if (dirty.headings) {
+      pixiApp.headings.dirty = true;
+    }
+    if (dirty.gridLines) {
+      pixiApp.gridLines.dirty = true;
+    }
+  }
+
+  changeInput(input: boolean, initialValue?: string) {
     // todo: this does not handle types other than text
-    this._input = { show: input, initialValue: initialValue ? (initialValue as any).value?.toString() : undefined };
-    pixiAppEvents.setDirty({ cursor: true });
+    this._input = { show: input, initialValue };
+    this.setDirty({ cursor: true });
 
     // this is used by CellInput to control visibility
     window.dispatchEvent(new CustomEvent('change-input', { detail: { showInput: input } }));
@@ -134,3 +147,5 @@ export class PixiAppSettings {
     return this._panMode;
   }
 }
+
+export const pixiAppSettings = new PixiAppSettings();

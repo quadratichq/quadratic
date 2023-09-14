@@ -1,25 +1,25 @@
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
 import { ChatBubbleOutline, OpenInNew } from '@mui/icons-material';
-import { DOCUMENTATION_URL } from '../../../../constants/urls';
-import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useSetRecoilState } from 'recoil';
+import { provideFeedback, viewDocs } from '../../../../actions';
+import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
-    label: 'Help: View the docs',
+    label: 'Help: ' + viewDocs.label,
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
         icon={<OpenInNew />}
         action={() => {
-          window.open(DOCUMENTATION_URL, '_blank')?.focus();
+          viewDocs.run();
         }}
       />
     ),
   },
   {
-    label: 'Help: Provide feedback',
+    label: 'Help: ' + provideFeedback.label,
+    isAvailable: provideFeedback.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
       return (
@@ -27,7 +27,7 @@ const ListItems = [
           {...props}
           icon={<ChatBubbleOutline />}
           action={() => {
-            setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
+            provideFeedback.run({ setEditorInteractionState });
           }}
         />
       );

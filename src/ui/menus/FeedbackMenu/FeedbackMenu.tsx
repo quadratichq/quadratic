@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { apiClient } from '../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { BUG_REPORT_URL, DISCORD, TWITTER } from '../../../constants/urls';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { useRootRouteLoaderData } from '../../../router';

@@ -51,6 +51,16 @@ export function Theme(props: any) {
               },
             },
           },
+          MuiAlert: {
+            styleOverrides: {
+              action: {
+                // These properly align a small button action in the alert
+                marginRight: '0',
+                padding: '0',
+                alignItems: 'center',
+              },
+            },
+          },
         },
       }),
     [mode]

@@ -1,12 +1,8 @@
 import React, { useEffect } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
-import { SheetController } from '../../../grid/controller/SheetController';
-import { useClearAllFormatting } from '../../../ui/menus/TopBar/SubMenus/useClearAllFormatting';
-import { useFormatCells } from '../../../ui/menus/TopBar/SubMenus/useFormatCells';
-import { useGetSelection } from '../../../ui/menus/TopBar/SubMenus/useGetSelection';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { useGridSettings } from '../../../ui/menus/TopBar/SubMenus/useGridSettings';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { Size } from '../../types/size';
 import { keyboardCell } from './keyboardCell';
 import { keyboardClipboard } from './keyboardClipboard';
@@ -18,38 +14,26 @@ import { keyboardViewport } from './keyboardViewport';
 export interface IProps {
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  app: PixiApp;
-  sheetController: SheetController;
 }
 
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
 
 export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void } => {
-  const { editorInteractionState, setEditorInteractionState, app, sheetController } = props;
-  const { formatPrimaryCell } = useGetSelection(sheetController.sheet);
-  const { setBold: changeBold, setItalic: changeItalic } = useFormatCells(sheetController);
-  const { clearAllFormatting } = useClearAllFormatting(sheetController);
+  const { editorInteractionState, setEditorInteractionState } = props;
   const { presentationMode, setPresentationMode } = useGridSettings();
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   useEffect(() => {
     const keyDownWindow = (event: KeyboardEvent): void => {
-      if (app.settings.input.show) return;
+      if (pixiAppSettings.input.show) return;
 
       if (
         keyboardViewport({
           event,
           editorInteractionState,
           setEditorInteractionState,
-          sheet: sheetController.sheet,
-          clearAllFormatting,
-          changeBold,
-          changeItalic,
-          formatPrimaryCell,
-          pointer: app.pointer,
           presentationMode,
           setPresentationMode,
-          app,
         })
       ) {
         event.stopPropagation();
@@ -59,39 +43,23 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
 
     window.addEventListener('keydown', keyDownWindow);
     return () => window.removeEventListener('keydown', keyDownWindow);
-  }, [
-    app,
-    changeBold,
-    changeItalic,
-    clearAllFormatting,
-    editorInteractionState,
-    formatPrimaryCell,
-    presentationMode,
-    setEditorInteractionState,
-    setPresentationMode,
-    sheetController.sheet,
-  ]);
+  }, [editorInteractionState, presentationMode, setEditorInteractionState, setPresentationMode]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (app.settings.input.show) return;
+    if (pixiAppSettings.input.show) return;
 
     if (
       keyboardClipboard({
         event,
-        sheet_controller: props.sheetController,
-        app: props.app,
+        editorInteractionState,
         addGlobalSnackbar,
       }) ||
-      keyboardUndoRedo(event, props.sheetController) ||
-      keyboardSelect({
-        event,
-        viewport: app?.viewport,
-        sheet: props.sheetController.sheet,
-      })
+      keyboardUndoRedo(event) ||
+      keyboardSelect(event)
     )
       return;
 
-    if (keyboardPosition({ event, sheet: sheetController.sheet })) return;
+    if (keyboardPosition(event)) return;
 
     // Prevent these commands if "command" key is being pressed
     if (event.metaKey || event.ctrlKey) {
@@ -100,7 +68,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
 
     if (
       keyboardCell({
-        sheet_controller: props.sheetController,
         event,
         editorInteractionState,
         setEditorInteractionState,

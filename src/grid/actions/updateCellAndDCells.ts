@@ -1,12 +1,8 @@
-import { PixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { StringId } from '../../helpers/getKey';
 import { Cell } from '../../schemas';
-import { SheetController } from '../controller/SheetController';
 
 interface ArgsType {
   starting_cells: Cell[];
-  sheetController: SheetController;
-  app?: PixiApp;
   delete_starting_cells?: boolean;
   create_transaction?: boolean;
 }

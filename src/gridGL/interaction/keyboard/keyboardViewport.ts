@@ -1,39 +1,19 @@
+import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { CellFormatSummary } from '../../../quadratic-core/types';
+import { sheets } from '../../../grid/controller/Sheets';
+import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
-import { PixiApp } from '../../pixiApp/PixiApp';
-import { Pointer } from '../pointer/Pointer';
+import { pixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardViewport(options: {
-  app: PixiApp;
   event: KeyboardEvent;
-  sheet: Sheet;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  clearAllFormatting: Function;
-  changeBold: Function;
-  changeItalic: Function;
-  formatPrimaryCell?: CellFormatSummary;
-  pointer: Pointer;
   presentationMode: boolean;
   setPresentationMode: Function;
 }): boolean {
-  const {
-    changeBold,
-    changeItalic,
-    clearAllFormatting,
-    event,
-    formatPrimaryCell,
-    sheet,
-    editorInteractionState,
-    setEditorInteractionState,
-    presentationMode,
-    setPresentationMode,
-    app,
-  } = options;
-
-  const { viewport } = app;
+  const { event, editorInteractionState, setEditorInteractionState, presentationMode, setPresentationMode } = options;
+  const { pointer } = pixiApp;
 
   if (event.altKey) return false;
 
@@ -43,13 +23,9 @@ export function keyboardViewport(options: {
       showFeedbackMenu: false,
       showCellTypeMenu: false,
       showGoToMenu: false,
+      showShareFileMenu: false,
       showCommandPalette: !editorInteractionState.showCommandPalette,
     });
-    return true;
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
-    clearAllFormatting();
     return true;
   }
 
@@ -63,17 +39,7 @@ export function keyboardViewport(options: {
       setPresentationMode(false);
       return true;
     }
-    return app.pointer.handleEscape();
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    changeBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
-    return true;
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    changeItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
-    return true;
+    return pointer.handleEscape();
   }
 
   if ((event.metaKey || event.ctrlKey) && (event.key === 'g' || event.key === 'j')) {
@@ -88,32 +54,54 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '=') {
-    zoomIn(viewport);
+    zoomIn();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '-') {
-    zoomOut(viewport);
+    zoomOut();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '8') {
-    zoomToSelection(sheet, viewport);
+    zoomToSelection();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '9') {
-    zoomToFit(sheet, viewport);
+    zoomToFit();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === '0') {
-    zoomTo100(viewport);
+    zoomTo100();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 's') {
     // don't do anything on Command+S
+    return true;
+  }
+
+  // All formatting options past here are only available for people with rights
+  if (!isEditorOrAbove(editorInteractionState.permission)) {
+    return false;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
+    clearFormattingAndBorders();
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
+    const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+    setBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
+    const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+    setItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
     return true;
   }
 

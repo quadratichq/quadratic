@@ -59,6 +59,7 @@ wasm-bindgen = { version = "0.2.83", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
 lexicon_fractional_index = "0.0.3"
 htmlescape = "0.3.1"
+bigdecimal = { version = "0.4.1", features = ["serde"] }
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }

@@ -7,7 +7,7 @@ use super::{block::SameValue, Column, ColumnData};
 
 /// Cell formatting attribute.
 pub trait CellFmtAttr {
-    type Value: fmt::Debug + Clone + Eq;
+    type Value: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + Eq;
     fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>>;
     fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>>;
 }
@@ -39,6 +39,17 @@ impl CellFmtAttr for NumericFormat {
         &mut column.numeric_format
     }
 }
+pub struct NumericDecimals;
+impl CellFmtAttr for NumericDecimals {
+    type Value = i16;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.numeric_decimals
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.numeric_decimals
+    }
+}
+
 pub struct Bold;
 impl CellFmtAttr for Bold {
     type Value = bool;
@@ -103,11 +114,10 @@ pub enum CellWrap {
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct NumericFormat {
     #[serde(rename = "type")]
-    kind: NumericFormatKind,
-    #[serde(rename = "decimalPlaces")]
-    decimals: Option<u32>,
-    symbol: Option<String>,
+    pub kind: NumericFormatKind,
+    pub symbol: Option<String>,
 }
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]

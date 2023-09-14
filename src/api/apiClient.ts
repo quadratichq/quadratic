@@ -2,28 +2,11 @@ import { v4 as uuid } from 'uuid';
 
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { downloadFile as downloadFileOnClient } from '../helpers/downloadFile';
+import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
 import { GridFile, GridFileSchema } from '../schemas';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
-import {
-  DeleteFileRes,
-  DeleteFileResSchema,
-  GetFileRes,
-  GetFileResSchema,
-  GetFilesRes,
-  GetFilesResSchema,
-  PostFeedbackReq,
-  PostFeedbackRes,
-  PostFeedbackResSchema,
-  PostFileContentsReq,
-  PostFileNameReq,
-  PostFileRes,
-  PostFileResSchema,
-  PostFilesReq,
-  PostFilesRes,
-  PostFilesResSchema,
-} from './types';
+import { ApiSchemas, ApiTypes } from './types';
 
 const DEFAULT_FILE: GridFile = {
   sheets: [
@@ -44,60 +27,85 @@ const DEFAULT_FILE: GridFile = {
 
 export const apiClient = {
   async getFiles() {
-    return fetchFromApi<GetFilesRes>(`/v0/files`, { method: 'GET' }, GetFilesResSchema);
+    return fetchFromApi<ApiTypes['/v0/files.GET.response']>(
+      `/v0/files`,
+      { method: 'GET' },
+      ApiSchemas['/v0/files.GET.response']
+    );
   },
 
   async getFile(uuid: string) {
-    return fetchFromApi<GetFileRes>(`/v0/files/${uuid}`, { method: 'GET' }, GetFileResSchema);
+    return fetchFromApi<ApiTypes['/v0/files/:uuid.GET.response']>(
+      `/v0/files/${uuid}`,
+      { method: 'GET' },
+      ApiSchemas['/v0/files/:uuid.GET.response']
+    );
   },
 
   async createFile(
-    body: PostFilesReq = {
+    body: ApiTypes['/v0/files.POST.request'] = {
       name: 'Untitled',
       contents: JSON.stringify(DEFAULT_FILE),
       version: DEFAULT_FILE.version,
     }
   ) {
-    return fetchFromApi<PostFilesRes>(`/v0/files/`, { method: 'POST', body: JSON.stringify(body) }, PostFilesResSchema);
+    return fetchFromApi<ApiTypes['/v0/files.POST.response']>(
+      `/v0/files/`,
+      { method: 'POST', body: JSON.stringify(body) },
+      ApiSchemas['/v0/files.POST.response']
+    );
   },
 
   async downloadFile(uuid: string) {
     mixpanel.track('[Files].downloadFile', { id: uuid });
-    return this.getFile(uuid).then((json) => downloadFileOnClient(json.file.name, json.file.contents));
+    return this.getFile(uuid).then((json) => downloadFileInBrowser(json.file.name, json.file.contents));
   },
 
   async deleteFile(uuid: string) {
     mixpanel.track('[Files].deleteFile', { id: uuid });
-    return fetchFromApi<DeleteFileRes>(`/v0/files/${uuid}`, { method: 'DELETE' }, DeleteFileResSchema);
+    return fetchFromApi<ApiTypes['/v0/files/:uuid.DELETE.response']>(
+      `/v0/files/${uuid}`,
+      { method: 'DELETE' },
+      ApiSchemas['/v0/files/:uuid.DELETE.response']
+    );
   },
 
-  async renameFile(uuid: string, body: PostFileNameReq) {
-    return fetchFromApi<PostFileRes>(
+  async updateFile(uuid: string, body: ApiTypes['/v0/files/:uuid.POST.request']) {
+    return fetchFromApi<ApiTypes['/v0/files/:uuid.POST.response']>(
       `/v0/files/${uuid}`,
       {
         method: 'POST',
         body: JSON.stringify(body),
       },
-      PostFileResSchema
+      ApiSchemas['/v0/files/:uuid.POST.response']
     );
   },
 
-  async updateFile(uuid: string, body: PostFileContentsReq) {
-    return fetchFromApi<PostFileRes>(
-      `/v0/files/${uuid}`,
+  async getFileSharing(uuid: string) {
+    return fetchFromApi<ApiTypes['/v0/files/:uuid/sharing.GET.response']>(
+      `/v0/files/${uuid}/sharing`,
+      {
+        method: 'GET',
+      },
+      ApiSchemas['/v0/files/:uuid/sharing.GET.response']
+    );
+  },
+  async updateFileSharing(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.POST.request']) {
+    return fetchFromApi<ApiTypes['/v0/files/:uuid/sharing.POST.response']>(
+      `/v0/files/${uuid}/sharing`,
       {
         method: 'POST',
         body: JSON.stringify(body),
       },
-      PostFileResSchema
+      ApiSchemas['/v0/files/:uuid/sharing.POST.response']
     );
   },
 
-  async postFeedback(body: PostFeedbackReq) {
-    return fetchFromApi<PostFeedbackRes>(
+  async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {
+    return fetchFromApi<ApiTypes['/v0/feedback.POST.response']>(
       `/v0/feedback`,
       { method: 'POST', body: JSON.stringify(body) },
-      PostFeedbackResSchema
+      ApiSchemas['/v0/feedback.POST.response']
     );
   },
 

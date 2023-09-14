@@ -7,13 +7,12 @@ use crate::IsBlank;
 
 pub mod order;
 
+const AIRPORTS_FILE: &str = include_str!("../../../examples/airports.json");
+const STARTUP_PORTFOLIO_FILE: &str = include_str!("../../../examples/startup_portfolio.json");
+
 #[test]
 fn test_airports() {
-    let grid = Grid::from_legacy(
-        &serde_json::from_str(include_str!("../../../examples/airports.json")).unwrap(),
-    )
-    .unwrap();
-
+    let grid = file::import(AIRPORTS_FILE).unwrap();
     let sheet = &grid.sheets()[0];
 
     // This region grabs some of the first table and some of the "filter by
@@ -45,10 +44,7 @@ fn test_airports() {
 
 #[test]
 fn test_startup_portfolio() {
-    let grid = Grid::from_legacy(
-        &serde_json::from_str(include_str!("../../../examples/startup_portfolio.json")).unwrap(),
-    )
-    .unwrap();
+    let grid = file::import(STARTUP_PORTFOLIO_FILE).unwrap();
 
     let sheet = &grid.sheets()[0];
 
@@ -70,6 +66,24 @@ fn test_startup_portfolio() {
         "Portfolio Valuation analysis by revenue multiple",
         render_cells[0].value.to_string()
     );
+}
+
+#[test]
+fn test_import_export() {
+    let airports = file::import(AIRPORTS_FILE).unwrap();
+    let airports_exported = file::export(&airports).unwrap();
+    std::fs::write("tmp.txt", &airports_exported).unwrap();
+    let airports_reimported = file::import(&airports_exported).unwrap();
+    assert_eq!(airports, airports_reimported);
+
+    let portfolio = file::import(STARTUP_PORTFOLIO_FILE).unwrap();
+    let portfolio_exported = file::export(&portfolio).unwrap();
+    std::fs::write("tmp.txt", &portfolio_exported).unwrap();
+    let portfolio_reimported = file::import(&portfolio_exported).unwrap();
+    assert_eq!(portfolio, portfolio_reimported);
+
+    // Sanity check
+    assert_ne!(airports, portfolio);
 }
 
 #[test]

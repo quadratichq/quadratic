@@ -1,18 +1,14 @@
 import { useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { runFormula } from '../../../grid/computations/formulas/runFormula';
-import { SheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
 import BottomBarItem from './BottomBarItem';
 
-interface Props {
-  sheetController: SheetController;
-}
-
 const SELECTION_SIZE_LIMIT = 250;
 
-export const ActiveSelectionStats = (props: Props) => {
-  const cursor = props.sheetController.sheet.cursor;
+export const ActiveSelectionStats = () => {
+  const cursor = sheets.sheet.cursor;
 
   const isBigEnoughForActiveSelectionStats = useMediaQuery('(min-width:1000px)');
   const [countA, setCountA] = useState<string>('');

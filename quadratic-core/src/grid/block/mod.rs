@@ -10,7 +10,7 @@ mod value;
 pub use same::SameValue;
 pub use value::CellValueBlockContent;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Block<B> {
     pub y: i64,
     pub content: B,
@@ -132,7 +132,7 @@ impl<B: BlockContent> Block<B> {
 
 /// Total content of a contiguous block in a column. Indexes start from zero at
 /// the top of the block.
-pub trait BlockContent: Sized + fmt::Debug + Clone {
+pub trait BlockContent: Sized + Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone {
     type Item: fmt::Debug + Clone;
 
     /// Constructs a block containing a single value.

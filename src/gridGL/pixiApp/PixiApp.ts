@@ -1,59 +1,50 @@
 import { Viewport } from 'pixi-viewport';
 import { Container, Graphics, Renderer } from 'pixi.js';
+import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { IS_READONLY_MODE } from '../../constants/appConstants';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
-import { SheetController } from '../../grid/controller/SheetController';
-import { Sheet } from '../../grid/sheet/Sheet';
+import { sheets } from '../../grid/controller/Sheets';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
-import { zoomInOut, zoomToFit, zoomToSelection } from '../helpers/zoom';
 import { Pointer } from '../interaction/pointer/Pointer';
+import { ensureVisible } from '../interaction/viewportHelper';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { Quadrants } from '../quadrants/Quadrants';
-import { pixiAppEvents } from './PixiAppEvents';
-import { PixiAppSettings } from './PixiAppSettings';
+import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
 import './pixiApp.css';
 
 export class PixiApp {
   private parent?: HTMLDivElement;
-  private update: Update;
+  private update!: Update;
   private cacheIsVisible = false;
 
-  sheetController: SheetController;
-
-  canvas: HTMLCanvasElement;
-  viewport: Viewport;
-  gridLines: GridLines;
-  axesLines: AxesLines;
-  cursor: Cursor;
-  headings: GridHeadings;
-  boxCells: BoxCells;
-  // cells: Cells;
-  cellsSheets: CellsSheets;
-
-  quadrants: Quadrants;
-
-  pointer: Pointer;
-  viewportContents: Container;
-  settings: PixiAppSettings;
-  renderer: Renderer;
+  canvas!: HTMLCanvasElement;
+  viewport!: Viewport;
+  gridLines!: GridLines;
+  axesLines!: AxesLines;
+  cursor!: Cursor;
+  headings!: GridHeadings;
+  boxCells!: BoxCells;
+  cellsSheets!: CellsSheets;
+  quadrants!: Quadrants;
+  pointer!: Pointer;
+  viewportContents!: Container;
+  renderer!: Renderer;
   stage = new Container();
   loading = true;
   destroyed = false;
   paused = true;
 
   // for testing purposes
-  debug: Graphics;
+  debug!: Graphics;
 
-  constructor(sheetController: SheetController) {
-    this.sheetController = sheetController;
+  init() {
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
@@ -78,7 +69,7 @@ export class PixiApp {
       .drag({
         pressDrag: true,
         wheel: false, // handled by Wheel plugin below
-        ...(IS_READONLY_MODE ? {} : { keyToPress: ['Space'] }),
+        ...(isMobile ? {} : { keyToPress: ['Space'] }),
       })
       .decelerate()
       .pinch()
@@ -106,45 +97,41 @@ export class PixiApp {
     this.debug = this.viewportContents.addChild(new Graphics());
 
     // todo...
-    this.quadrants = new Quadrants(this); //this.viewportContents.addChild(new Quadrants(this));
+    this.quadrants = new Quadrants(); //this.viewportContents.addChild(new Quadrants(this));
     this.quadrants.visible = false;
 
-    this.gridLines = this.viewportContents.addChild(new GridLines(this));
-    this.axesLines = this.viewportContents.addChild(new AxesLines(this));
-    this.cellsSheets = this.viewportContents.addChild(new CellsSheets(this));
+    this.gridLines = this.viewportContents.addChild(new GridLines());
+    this.axesLines = this.viewportContents.addChild(new AxesLines());
+    this.cellsSheets = this.viewportContents.addChild(new CellsSheets());
 
-    this.boxCells = this.viewportContents.addChild(new BoxCells(this));
-    this.cursor = this.viewportContents.addChild(new Cursor(this));
-    this.headings = this.viewportContents.addChild(new GridHeadings(this));
-
-    this.settings = new PixiAppSettings(this);
+    this.boxCells = this.viewportContents.addChild(new BoxCells());
+    this.cursor = this.viewportContents.addChild(new Cursor());
+    this.headings = this.viewportContents.addChild(new GridHeadings());
 
     this.reset();
 
-    this.pointer = new Pointer(this);
-    this.update = new Update(this);
+    this.pointer = new Pointer(this.viewport);
+    this.update = new Update();
 
     if (debugAlwaysShowCache) this.showCache();
 
     this.setupListeners();
-    pixiAppEvents.rebuild();
+    this.rebuild();
 
     console.log('[QuadraticGL] environment ready');
   }
 
+  create() {
+    this.cellsSheets.create();
+  }
+
   private setupListeners() {
     window.addEventListener('resize', this.resize);
-    pixiAppEvents.app = this;
   }
 
   private removeListeners() {
     window.removeEventListener('resize', this.resize);
   }
-
-  get sheet(): Sheet {
-    return this.sheetController.sheet;
-  }
-
   private showCache(): void {
     if (debugShowCacheFlag && !this.quadrants.visible) {
       const cacheOn = document.querySelector('.debug-show-cache-on');
@@ -181,7 +168,7 @@ export class PixiApp {
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
-    this.sheet.cursor.viewport = this.viewport.lastViewport!;
+    sheets.sheet.cursor.viewport = this.viewport.lastViewport!;
 
     // if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
     //   this.showCache();
@@ -219,20 +206,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
-    // this.cells.dirty = true;
   };
-
-  setZoomState(value: number): void {
-    zoomInOut(this.viewport, value);
-  }
-
-  setZoomToFit(): void {
-    zoomToFit(this.sheet, this.viewport);
-  }
-
-  setZoomToSelection(): void {
-    zoomToSelection(this.sheet, this.viewport);
-  }
 
   // called before and after a quadrant render
   prepareForCopying(options?: { gridLines: boolean }): Container {
@@ -242,8 +216,6 @@ export class PixiApp {
     this.headings.visible = false;
     this.quadrants.visible = false;
     this.boxCells.visible = false;
-    // this.cells.changeVisibility(true);
-    // this.cells.dirty = true;
     return this.viewportContents;
   }
 
@@ -254,8 +226,6 @@ export class PixiApp {
     this.headings.visible = true;
     this.boxCells.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
-    // this.cells.changeVisibility(!this.cacheIsVisible);
-    // if (!this.cacheIsVisible) this.cells.dirty = true;
   }
 
   // helper for playwright
@@ -269,12 +239,12 @@ export class PixiApp {
 
   reset(): void {
     this.viewport.scale.set(1);
-    if (this.settings.showHeadings) {
+    if (pixiAppSettings.showHeadings) {
       this.viewport.position.set(HEADING_SIZE, HEADING_SIZE);
     } else {
       this.viewport.position.set(0, 0);
     }
-    this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
+    pixiAppSettings.setEditorInteractionState?.(editorInteractionStateDefault);
   }
 
   // Pre-renders quadrants by cycling through one quadrant per frame
@@ -296,4 +266,53 @@ export class PixiApp {
   clear(): void {
     this.renderer.render(new Container());
   }
+
+  private async loadSheets() {
+    await this.cellsSheets.create();
+    this.viewport.dirty = true;
+  }
+
+  async rebuild() {
+    this.clear();
+    this.paused = true;
+    this.viewport.dirty = true;
+    this.gridLines.dirty = true;
+    this.axesLines.dirty = true;
+    this.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.boxCells.reset();
+
+    await this.loadSheets();
+    this.paused = false;
+    this.reset();
+  }
+
+  loadViewport(): void {
+    const lastViewport = sheets.sheet.cursor.viewport;
+    if (lastViewport) {
+      this.viewport.position.set(lastViewport.x, lastViewport.y);
+      this.viewport.scale.set(lastViewport.scaleX, lastViewport.scaleY);
+      this.viewport.dirty = true;
+    }
+  }
+
+  getStartingViewport(): { x: number; y: number } {
+    if (pixiAppSettings.showHeadings) {
+      return { x: HEADING_SIZE, y: HEADING_SIZE };
+    } else {
+      return { x: 0, y: 0 };
+    }
+  }
+
+  updateCursorPosition(): void {
+    pixiApp.cursor.dirty = true;
+    pixiApp.headings.dirty = true;
+
+    ensureVisible();
+
+    // triggers useGetBorderMenu clearSelection()
+    window.dispatchEvent(new CustomEvent('cursor-position'));
+  }
 }
+
+export const pixiApp = new PixiApp();

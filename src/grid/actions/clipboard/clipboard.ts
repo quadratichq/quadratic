@@ -3,8 +3,8 @@ import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPer
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 import { Coordinate } from '../../../gridGL/types/size';
-import { SheetController } from '../../controller/SheetController';
-import { transactionResponse } from '../../controller/transactionResponse';
+import { grid } from '../../controller/Grid';
+import { sheets } from '../../controller/Sheets';
 
 // copies plainText and html to the clipboard
 const toClipboard = (plainText: string, html: string) => {
@@ -31,25 +31,22 @@ const toClipboard = (plainText: string, html: string) => {
   }
 };
 
-export const copyToClipboard = (sheetController: SheetController, cell0: Coordinate, cell1: Coordinate) => {
+export const copyToClipboard = (cell0: Coordinate, cell1: Coordinate) => {
   debugTimeReset();
-  const { plainText, html } = sheetController.grid.copyToClipboard(
-    sheetController.sheet.id,
+  const { plainText, html } = grid.copyToClipboard(
+    sheets.sheet.id,
     new Rectangle(cell0.x, cell0.y, cell1.x - cell0.x, cell1.y - cell0.y)
   );
   toClipboard(plainText, html);
   debugTimeCheck('copy to clipboard');
 };
 
-export const cutToClipboard = async (sheetController: SheetController, cell0: Coordinate, cell1: Coordinate) => {
-  const { summary, plainText, html } = sheetController.grid.cutToClipboard(
-    sheetController.sheet.id,
-    new Rectangle(cell0.x, cell0.y, cell1.x - cell0.x, cell1.y - cell0.y),
-    sheetController.sheet.cursor.save()
+export const cutToClipboard = async (cell0: Coordinate, cell1: Coordinate) => {
+  const { plainText, html } = grid.cutToClipboard(
+    sheets.sheet.id,
+    new Rectangle(cell0.x, cell0.y, cell1.x - cell0.x, cell1.y - cell0.y)
   );
   toClipboard(plainText, html);
-  if (!summary) throw new Error('Expected summary to be defined in cutToClipboard');
-  transactionResponse(sheetController, summary);
 };
 
 export const copySelectionToPNG = async (app: PixiApp) => {
@@ -67,7 +64,7 @@ export const copySelectionToPNG = async (app: PixiApp) => {
   }
 };
 
-export const pasteFromClipboard = async (sheetController: SheetController, target: Coordinate) => {
+export const pasteFromClipboard = async (target: Coordinate) => {
   if (navigator.clipboard && window.ClipboardItem) {
     try {
       const clipboardData = await navigator.clipboard.read();
@@ -84,16 +81,14 @@ export const pasteFromClipboard = async (sheetController: SheetController, targe
         html = await item.text();
       }
       debugTimeReset();
-      const summary = sheetController.grid.pasteFromClipboard({
-        sheetId: sheetController.sheet.id,
+      grid.pasteFromClipboard({
+        sheetId: sheets.sheet.id,
         x: target.x,
         y: target.y,
         plainText,
         html,
-        cursor: sheetController.sheet.cursor.save(),
       });
       debugTimeCheck('paste from clipboard');
-      transactionResponse(sheetController, summary);
     } catch (e) {
       console.warn(e);
     }

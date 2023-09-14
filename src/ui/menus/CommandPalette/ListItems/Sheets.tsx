@@ -1,31 +1,20 @@
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined';
-import { SheetController } from '../../../../grid/controller/SheetController';
+import { grid } from '../../../../grid/controller/Grid';
+import { sheets } from '../../../../grid/controller/Sheets';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
     label: 'Sheet: Create',
     Component: (props: any) => {
-      return (
-        <CommandPaletteListItem
-          {...props}
-          icon={<PostAddOutlinedIcon />}
-          action={() => {
-            const sheetController = props.sheetController as SheetController;
-            sheetController.sheets.createNew();
-            // createSheet({ sheetController, sheet, create_transaction: true });
-          }}
-        />
-      );
+      return <CommandPaletteListItem {...props} icon={<PostAddOutlinedIcon />} action={grid.addSheet} />;
     },
   },
   {
     label: 'Sheet: Delete',
     Component: (props: any) => {
-      return (
-        <CommandPaletteListItem {...props} icon={<DeleteOutlineOutlinedIcon />} action={() => props.confirmDelete()} />
-      );
+      return <CommandPaletteListItem {...props} icon={<DeleteOutlineOutlinedIcon />} action={props.confirmDelete} />;
     },
   },
   {
@@ -35,9 +24,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           icon={<PostAddOutlinedIcon />}
-          action={() => {
-            // (props.sheetController as SheetController).duplicateSheet();
-          }}
+          action={() => grid.duplicateSheet(sheets.sheet.id)}
         />
       );
     },
