@@ -7,6 +7,7 @@ import {
   CellWrap,
   // CodeCellValue,
   FormattingSummary,
+  JsClipboard,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -291,6 +292,16 @@ export class Grid {
     this.dirty = true;
   }
 
+  clearFormatting(sheetId: string, rectangle: Rectangle): void {
+    const summary = this.gridController.clearFormatting(
+      sheetId,
+      rectangleToRect(rectangle),
+      sheets.getCursorPosition()
+    );
+    transactionResponse(summary);
+    this.dirty = true;
+  }
+
   //#endregion
 
   //#region get grid information
@@ -362,6 +373,44 @@ export class Grid {
 
   redo(): void {
     const summary = this.gridController.redo(sheets.getCursorPosition());
+    transactionResponse(summary);
+    this.dirty = true;
+  }
+
+  //#endregion
+
+  //#region Clipboard
+
+  copyToClipboard(sheetId: string, rectangle: Rectangle): JsClipboard {
+    return this.gridController.copyToClipboard(sheetId, rectangleToRect(rectangle));
+  }
+
+  cutToClipboard(sheetId: string, rectangle: Rectangle): { html: string; plainText: string } {
+    const { summary, html, plainText } = this.gridController.cutToClipboard(
+      sheetId,
+      rectangleToRect(rectangle),
+      sheets.getCursorPosition()
+    );
+    transactionResponse(summary);
+    this.dirty = true;
+    return { html, plainText };
+  }
+
+  pasteFromClipboard(options: {
+    sheetId: string;
+    x: number;
+    y: number;
+    plainText: string | undefined;
+    html: string | undefined;
+  }): void {
+    const { sheetId, x, y, plainText, html } = options;
+    const summary = this.gridController.pasteFromClipboard(
+      sheetId,
+      new Pos(x, y),
+      plainText,
+      html,
+      sheets.getCursorPosition()
+    );
     transactionResponse(summary);
     this.dirty = true;
   }

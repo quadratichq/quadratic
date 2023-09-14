@@ -233,8 +233,8 @@ export class Sheet {
     );
   }
 
-  clearFormatting(rectangle: Rectangle): void {
-    throw new Error('Not implemented yet');
+  clearFormatting(): void {
+    grid.clearFormatting(this.id, this.cursor.getRectangle());
   }
 
   getFormatPrimaryCell(): CellFormatSummary {
