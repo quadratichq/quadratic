@@ -1,3 +1,5 @@
+use smallvec::SmallVec;
+
 use super::{transactions::TransactionSummary, GridController};
 use crate::{
     grid::{Sheet, SheetId},
@@ -38,7 +40,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let sheet = self.sheet(sheet_id);
-        let selection_values = rect_cell_values(rect, &sheet);
+        let selection_values = cell_values_in_rect(rect, &sheet);
         let to_vertical = to_vertical.unwrap_or(rect.max.y);
         let range = Rect {
             min: Pos {
@@ -51,24 +53,14 @@ impl GridController {
             },
         };
 
-        let values = range
-            .y_range()
-            .map(|y| {
-                range
-                    .x_range()
-                    .map(|x| project_cell_value(&selection_values, Pos { x, y }, &rect).to_owned())
-                    .collect::<Vec<CellValue>>()
-            })
-            .flatten()
-            .collect();
-
+        let values = set_cell_projections(&&selection_values, &range);
         let array = Array::new_row_major(range.size(), values).unwrap();
 
         self.set_cells(sheet_id, range.min, array, cursor)
     }
 }
 
-pub fn rect_cell_values(rect: Rect, sheet: &Sheet) -> Array {
+pub fn cell_values_in_rect(rect: Rect, sheet: &Sheet) -> Array {
     let values = rect
         .y_range()
         .map(|y| {
@@ -90,6 +82,17 @@ pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) ->
     let x = (pos.x - rect.min.x) as u32 % selection.width();
     let y = (pos.y - rect.min.y) as u32 % selection.height();
     selection.get(x, y).unwrap_or_else(|_| &CellValue::Blank)
+}
+
+pub fn set_cell_projections(selection: &Array, rect: &Rect) -> SmallVec<[CellValue; 1]> {
+    rect.y_range()
+        .map(|y| {
+            rect.x_range()
+                .map(|x| project_cell_value(&selection, Pos { x, y }, &rect).to_owned())
+                .collect::<Vec<CellValue>>()
+        })
+        .flatten()
+        .collect()
 }
 
 #[cfg(test)]
@@ -136,9 +139,9 @@ mod tests {
     }
 
     #[test]
-    fn test_rect_cell_values() {
+    fn test_cell_values_in_rect() {
         let (_, sheet, rect) = test_setup();
-        let result = rect_cell_values(rect, &sheet);
+        let result = cell_values_in_rect(rect, &sheet);
         let expected = array![
             1, 2, 3;
             4, 5, 6;
@@ -150,7 +153,7 @@ mod tests {
     #[test]
     fn test_project_cell_value() {
         let (_, sheet, rect) = test_setup();
-        let selection = rect_cell_values(rect, &sheet);
+        let selection = cell_values_in_rect(rect, &sheet);
         let func = |pos| project_cell_value(&selection, pos, &rect);
 
         assert_eq!(func(Pos { x: 3, y: 0 }), &CellValue::Number(1.0));
@@ -164,7 +167,7 @@ mod tests {
     #[test]
     fn test_project_cell_value_not_anchored() {
         let (_, sheet, rect) = test_setup_not_anchored();
-        let selection = rect_cell_values(rect, &sheet);
+        let selection = cell_values_in_rect(rect, &sheet);
         let func = |pos| project_cell_value(&selection, pos, &rect);
 
         assert_eq!(func(Pos { x: 5, y: 2 }), &CellValue::Number(1.0));
