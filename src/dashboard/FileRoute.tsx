@@ -17,15 +17,13 @@ import { Empty } from '../components/Empty';
 import { ROUTE_LOADER_IDS } from '../constants/routes';
 import { grid } from '../grid/controller/Grid';
 import init, { hello } from '../quadratic-core/quadratic_core';
-import { GridFile } from '../schemas';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
 
 export type FileData = {
   name: string;
-  contents: GridFile;
-  permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
   sharing: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
+  permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData> => {
@@ -92,7 +90,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   }
 
   return {
-    contents,
     name: data.file.name,
     permission: data.permission,
     sharing,

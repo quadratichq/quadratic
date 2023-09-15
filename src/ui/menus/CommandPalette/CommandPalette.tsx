@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
+import focusInput from '../../../utils/focusInput';
 import '../../styles/floating-dialog.css';
 import { useSheetListItems } from './ListItems/useSheetListItems';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
@@ -59,58 +60,57 @@ export const CommandPalette = (props: Props) => {
   const searchLabel = 'Search menus and commands…';
 
   return (
-    <>
-      <Dialog open={true} onClose={closeCommandPalette} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
-        <Paper
-          component="form"
-          elevation={12}
-          onKeyUp={(e: React.KeyboardEvent) => {
-            if (e.key === 'ArrowDown') {
-              e.preventDefault();
-              e.stopPropagation();
-              setSelectedListItemIndex(selectedListItemIndex === ListItems.length - 1 ? 0 : selectedListItemIndex + 1);
-            } else if (e.key === 'ArrowUp') {
-              e.preventDefault();
-              e.stopPropagation();
-              setSelectedListItemIndex(selectedListItemIndex === 0 ? ListItems.length - 1 : selectedListItemIndex - 1);
-            }
-          }}
-          onSubmit={(e: React.FormEvent) => {
+    <Dialog open={true} onClose={closeCommandPalette} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
+      <Paper
+        component="form"
+        elevation={12}
+        onKeyUp={(e: React.KeyboardEvent) => {
+          if (e.key === 'ArrowDown') {
             e.preventDefault();
-            const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
-            if (el !== undefined) {
-              (el as HTMLElement).click();
-            }
+            e.stopPropagation();
+            setSelectedListItemIndex(selectedListItemIndex === ListItems.length - 1 ? 0 : selectedListItemIndex + 1);
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            e.stopPropagation();
+            setSelectedListItemIndex(selectedListItemIndex === 0 ? ListItems.length - 1 : selectedListItemIndex - 1);
+          }
+        }}
+        onSubmit={(e: React.FormEvent) => {
+          e.preventDefault();
+          const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
+          if (el !== undefined) {
+            (el as HTMLElement).click();
+          }
+        }}
+      >
+        <InputBase
+          sx={{ width: '100%', padding: '8px 16px' }}
+          placeholder={searchLabel}
+          inputProps={{ 'aria-label': searchLabel }}
+          inputRef={focusInput}
+          autoFocus
+          value={activeSearchValue}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setSelectedListItemIndex(0);
+            setActiveSearchValue(event.target.value);
           }}
-        >
-          <InputBase
-            sx={{ width: '100%', padding: '8px 16px' }}
-            placeholder={searchLabel}
-            inputProps={{ 'aria-label': searchLabel }}
-            autoFocus
-            value={activeSearchValue}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setSelectedListItemIndex(0);
-              setActiveSearchValue(event.target.value);
-            }}
-          />
+        />
 
-          <Divider />
-          <div style={{ maxHeight: '330px', overflowY: 'scroll', paddingBottom: '5px' }}>
-            <List dense={true} disablePadding>
-              {ListItems.length ? (
-                ListItems
-              ) : (
-                <ListItem disablePadding>
-                  <ListItemButton disabled>
-                    <ListItemText primary="No matches" />
-                  </ListItemButton>
-                </ListItem>
-              )}
-            </List>
-          </div>
-        </Paper>
-      </Dialog>
-    </>
+        <Divider />
+        <div style={{ maxHeight: '330px', overflowY: 'scroll', paddingBottom: '5px' }}>
+          <List dense={true} disablePadding>
+            {ListItems.length ? (
+              ListItems
+            ) : (
+              <ListItem disablePadding>
+                <ListItemButton disabled>
+                  <ListItemText primary="No matches" />
+                </ListItemButton>
+              </ListItem>
+            )}
+          </List>
+        </div>
+      </Paper>
+    </Dialog>
   );
 };
