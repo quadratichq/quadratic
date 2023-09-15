@@ -1,53 +1,70 @@
-import {
-  AddOutlined,
-  DeleteOutline,
-  ErrorOutline,
-  FileDownloadOutlined,
-  InsertDriveFileOutlined,
-} from '@mui/icons-material';
-import { Box, Button, Chip, CircularProgress, IconButton, useTheme } from '@mui/material';
-import { useEffect } from 'react';
+import { AddOutlined, ErrorOutline, InsertDriveFileOutlined } from '@mui/icons-material';
+import { Box, Button, useTheme } from '@mui/material';
+import { useEffect, useState } from 'react';
 import {
   ActionFunctionArgs,
-  Fetcher,
   Form,
   Link,
   LoaderFunctionArgs,
   useActionData,
-  useFetcher,
   useFetchers,
   useLoaderData,
   useNavigation,
+  useRouteError,
   useSubmit,
 } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
+import { ShareFileMenu } from '../../components/ShareFileMenu';
 import { ROUTES } from '../../constants/routes';
+import { debugShowUILogs } from '../../debugFlags';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
-import { TooltipHint } from '../../ui/components/TooltipHint';
-import { DashboardFileLink } from '../components/DashboardFileLink';
 import { DashboardHeader } from '../components/DashboardHeader';
+import { FileListItem } from './MineRouteFileListItem';
 
-type LoaderData = Awaited<ReturnType<typeof apiClient.getFiles>> | null;
-type ActionData = {
-  ok: boolean;
-} | null;
+export type ListFile = Awaited<ReturnType<typeof apiClient.getFiles>>[0];
+type LoaderResponse = ListFile[];
+export type Action = {
+  response: { ok: boolean } | null;
+  'request.delete': {
+    action: 'delete';
+    uuid: string;
+  };
+  'request.download': {
+    action: 'download';
+    uuid: string;
+  };
+  'request.duplicate': {
+    action: 'duplicate';
+    uuid: string;
+    file: ListFile;
+  };
+  'request.rename': {
+    action: 'rename';
+    uuid: string;
+    name: string;
+  };
+  request:
+    | Action['request.delete']
+    | Action['request.download']
+    | Action['request.duplicate']
+    | Action['request.rename'];
+};
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  return apiClient.getFiles().catch((e) => {
-    console.error(e);
-    return null;
-  });
+  let data: LoaderResponse = await apiClient.getFiles();
+  return data;
 };
 
 export const Component = () => {
-  const files = useLoaderData() as LoaderData;
-  const actionData = useActionData() as ActionData;
+  const files = useLoaderData() as LoaderResponse;
+  const actionData = useActionData() as Action['response'];
   const theme = useTheme();
   const fetchers = useFetchers();
   const submit = useSubmit();
   const navigation = useNavigation();
+  const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
   const isDisabled = navigation.state !== 'idle';
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
@@ -57,48 +74,14 @@ export const Component = () => {
     }
   }, [actionData, addGlobalSnackbar]);
 
-  let filesUI;
-  if (!files) {
-    filesUI = (
-      <Box sx={{ maxWidth: '60ch', mx: 'auto', py: theme.spacing(2) }}>
-        <Empty
-          title="Unexpected error"
-          description="An unexpected error occurred while retrieving your files. Try reloading the page. If the issue continues, contact us."
-          Icon={ErrorOutline}
-          severity="error"
-        />
-      </Box>
-    );
-  } else {
-    const renderEmptyList =
-      files.length === 0 ||
-      // Optimistic UI
-      // If the number of fetchers that are in the process of being deleted match
-      // the number of files there are, render the empty state.
-      fetchers.filter(
-        (fetcher) => fetcher.formData?.get('action') === 'delete' && optimisticallyHideFileBeingDeleted(fetcher)
-      ).length === files.length;
+  // Optimistcally render UI
+  const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as Action['request'])?.action === 'delete');
+  const filesBeingDuplicated = fetchers
+    .filter((fetcher) => (fetcher.json as Action['request'])?.action === 'duplicate')
+    .map((fetcher) => (fetcher.json as Action['request.duplicate'])?.file);
+  const filesToRender = filesBeingDuplicated.concat(files);
 
-    filesUI = (
-      <>
-        {files.map((file) => (
-          <FileWithActions key={file.uuid} file={file} />
-        ))}
-        {renderEmptyList && (
-          <Empty
-            title="No files"
-            description={
-              <>
-                You don’t have any files. Using the buttons on this page, create a new one or import a{' '}
-                <code>.grid</code> file from your computer.
-              </>
-            }
-            Icon={InsertDriveFileOutlined}
-          />
-        )}
-      </>
-    );
-  }
+  const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
 
   return (
     <>
@@ -153,17 +136,47 @@ export const Component = () => {
         }
       />
 
-      {filesUI}
+      {filesToRender.map((file, i) => (
+        <FileListItem
+          key={file.uuid}
+          file={file}
+          activeShareMenuFileId={activeShareMenuFileId}
+          setActiveShareMenuFileId={setActiveShareMenuFileId}
+        />
+      ))}
+
+      {filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && (
+        <Empty
+          title="No files"
+          description={
+            <>
+              You don’t have any files. Using the buttons on this page, create a new one or import a <code>.grid</code>{' '}
+              file from your computer.
+            </>
+          }
+          Icon={InsertDriveFileOutlined}
+        />
+      )}
+
+      {activeShareMenuFileId && (
+        <ShareFileMenu
+          onClose={() => {
+            setActiveShareMenuFileId('');
+          }}
+          permission={'OWNER'}
+          uuid={activeShareMenuFileId}
+          fileName={activeShareMenuFileName}
+        />
+      )}
     </>
   );
 };
 
-export const action = async ({ params, request }: ActionFunctionArgs): Promise<ActionData> => {
-  const formData = await request.formData();
-  const action = formData.get('action');
+export const action = async ({ params, request }: ActionFunctionArgs): Promise<Action['response']> => {
+  const json: Action['request'] = await request.json();
+  const { action, uuid } = json;
 
   if (action === 'delete') {
-    const uuid = formData.get('uuid') as string;
     try {
       await apiClient.deleteFile(uuid);
       return { ok: true };
@@ -173,9 +186,33 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   }
 
   if (action === 'download') {
-    const uuid = formData.get('uuid') as string;
     try {
       await apiClient.downloadFile(uuid);
+      return { ok: true };
+    } catch (error) {
+      return { ok: false };
+    }
+  }
+
+  if (action === 'duplicate') {
+    try {
+      const {
+        file: { name },
+      } = json as Action['request.duplicate'];
+      const {
+        file: { contents, version },
+      } = await apiClient.getFile(uuid);
+      await apiClient.createFile({ name, version, contents });
+      return { ok: true };
+    } catch (error) {
+      return { ok: false };
+    }
+  }
+
+  if (action === 'rename') {
+    try {
+      const { name } = json as Action['request.rename'];
+      await apiClient.updateFile(uuid, { name });
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -185,107 +222,20 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   return null;
 };
 
-function FileWithActions({ file }: { file: NonNullable<LoaderData>[0] }) {
-  const { uuid, name, updated_date, public_link_access } = file;
+export const ErrorBoundary = () => {
+  const error = useRouteError();
   const theme = useTheme();
-  const fetcherDelete = useFetcher();
-  const fetcherDownload = useFetcher();
-  const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  useEffect(() => {
-    if (fetcherDownload.data && !fetcherDownload.data.ok) {
-      addGlobalSnackbar('Failed to download file. Try again.', { severity: 'error' });
-    }
-  }, [addGlobalSnackbar, fetcherDownload.data]);
-
-  if (optimisticallyHideFileBeingDeleted(fetcherDelete)) {
-    return null;
-  }
-
-  const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
+  if (debugShowUILogs) console.error('[<MineRoute>.<ErrorBoundary>]', error);
 
   return (
-    <DashboardFileLink
-      to={ROUTES.FILE(uuid)}
-      key={uuid}
-      name={name}
-      status={failedToDelete && <Chip label="Failed to delete" size="small" color="error" variant="outlined" />}
-      description={`Updated ${timeAgo(updated_date)}`}
-      isShared={public_link_access !== 'NOT_SHARED'}
-      actions={
-        <div style={{ display: 'flex', gap: theme.spacing(1) }}>
-          <fetcherDelete.Form method="post">
-            <input type="hidden" name="uuid" value={uuid} />
-            <TooltipHint title="Delete" enterDelay={1000}>
-              <span>
-                <IconButton
-                  name="action"
-                  value="delete"
-                  type="submit"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!window.confirm(`Confirm you want to delete the file: “${name}”`)) {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  <DeleteOutline />
-                </IconButton>
-              </span>
-            </TooltipHint>
-          </fetcherDelete.Form>
-          <fetcherDownload.Form method="post">
-            <input type="hidden" name="uuid" value={uuid} />
-            <TooltipHint title="Download local copy" enterDelay={1000}>
-              <span>
-                <IconButton
-                  name="action"
-                  value="download"
-                  type="submit"
-                  disabled={false}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  {fetcherDownload.state !== 'idle' ? <CircularProgress size={24} /> : <FileDownloadOutlined />}
-                </IconButton>
-              </span>
-            </TooltipHint>
-          </fetcherDownload.Form>
-        </div>
-      }
-    />
+    <Box sx={{ maxWidth: '60ch', mx: 'auto', py: theme.spacing(2) }}>
+      <Empty
+        title="Unexpected error"
+        description="An unexpected error occurred while retrieving your files. Try reloading the page. If the issue continues, contact us."
+        Icon={ErrorOutline}
+        severity="error"
+      />
+    </Box>
   );
-}
-
-function optimisticallyHideFileBeingDeleted(fetcher: Fetcher) {
-  return fetcher.state === 'submitting' || fetcher.state === 'loading' || (fetcher.data && fetcher.data.success);
-}
-
-// Vanilla js time formatter. Adapted from:
-// https://blog.webdevsimplified.com/2020-07/relative-time-format/
-const formatter = new Intl.RelativeTimeFormat(undefined, {
-  numeric: 'auto',
-});
-const DIVISIONS: { amount: number; name: Intl.RelativeTimeFormatUnit }[] = [
-  { amount: 60, name: 'seconds' },
-  { amount: 60, name: 'minutes' },
-  { amount: 24, name: 'hours' },
-  { amount: 7, name: 'days' },
-  { amount: 4.34524, name: 'weeks' },
-  { amount: 12, name: 'months' },
-  { amount: Number.POSITIVE_INFINITY, name: 'years' },
-];
-export function timeAgo(dateString: string) {
-  const date: Date = new Date(dateString);
-
-  let duration = (date.getTime() - new Date().getTime()) / 1000;
-
-  for (let i = 0; i < DIVISIONS.length; i++) {
-    const division = DIVISIONS[i];
-    if (Math.abs(duration) < division.amount) {
-      return formatter.format(Math.round(duration), division.name);
-    }
-    duration /= division.amount;
-  }
-}
+};

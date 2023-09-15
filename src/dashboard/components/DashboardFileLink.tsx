@@ -1,28 +1,37 @@
 import { InsertDriveFileOutlined } from '@mui/icons-material';
-import { Box, Divider, Typography, useTheme } from '@mui/material';
+import { Box, Stack, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ShareFileOutlined } from '../../ui/icons';
 
-export function DashboardFileLink({
-  name,
-  description,
-  actions,
-  status,
-  to,
-  isShared,
-}: {
+type Props = {
   name: string;
   description: string;
   to: string;
-  isShared?: boolean;
+  disabled: boolean;
+  isShared: boolean;
   actions?: ReactNode;
-  status?: ReactNode;
-}) {
+  descriptionError?: string;
+};
+
+DashboardFileLink.defaultProps = {
+  disabled: false,
+  isShared: false,
+};
+
+export function DashboardFileLink({ disabled, name, description, descriptionError, actions, to, isShared }: Props) {
   const theme = useTheme();
 
   return (
-    <Link to={to} reloadDocument style={{ textDecoration: 'none', color: 'inherit' }}>
+    <Link
+      to={to}
+      reloadDocument
+      style={{
+        textDecoration: 'none',
+        color: 'inherit',
+        ...(disabled ? { pointerEvents: 'none', opacity: 0.5 } : {}),
+      }}
+    >
       <Box
         sx={{
           '&:hover': { background: theme.palette.action.hover, cursor: 'pointer' },
@@ -39,31 +48,40 @@ export function DashboardFileLink({
             display: 'flex',
             alignItems: 'center',
             gap: theme.spacing(2),
+            p: theme.spacing(1.5),
 
             [theme.breakpoints.down('md')]: {
-              p: theme.spacing(1),
-            },
-
-            [theme.breakpoints.up('md')]: {
-              p: theme.spacing(1.5),
+              px: 0,
             },
           }}
         >
           <div className="FileListItem-icon">{isShared ? <ShareFileOutlined /> : <InsertDriveFileOutlined />}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto' }}>
-            <div style={{ display: 'flex', gap: theme.spacing() }}>
-              <Typography variant="body1" color="text.primary">
-                {name}
-              </Typography>
-              {status && status}
-            </div>
-            <Typography variant="caption" color="text.secondary">
-              {description}
+          <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto', minWidth: '0' }}>
+            <Typography variant="body1" color="text.primary" noWrap>
+              {name}
             </Typography>
+            <Stack
+              direction="row"
+              gap={theme.spacing(0.5)}
+              sx={{ '& > *:not(:last-child):after': { content: '"·"', marginLeft: theme.spacing(0.5) } }}
+            >
+              {isShared && (
+                <Typography variant="caption" color="text.secondary">
+                  Public
+                </Typography>
+              )}
+              <Typography variant="caption" color="text.secondary">
+                {description}
+              </Typography>
+              {descriptionError && (
+                <Typography variant="caption" color="error">
+                  Test {descriptionError}
+                </Typography>
+              )}
+            </Stack>
           </div>
           {actions}
         </Box>
-        <Divider />
       </Box>
     </Link>
   );
