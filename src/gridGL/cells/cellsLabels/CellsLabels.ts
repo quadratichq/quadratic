@@ -85,9 +85,10 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
   /** clips overflows for CellLabels */
   overflowClip(): void {
     const bounds = this.cellsHash.sheet.getGridBounds(true);
-    if (!bounds) {
-      throw new Error('Expected bounds to exist in overflowClip for CellsLabels');
-    }
+
+    // empty when there are no cells
+    if (!bounds) return;
+
     this.cellLabels.forEach((cellLabel) => this.checkClip(bounds, cellLabel));
   }
 
