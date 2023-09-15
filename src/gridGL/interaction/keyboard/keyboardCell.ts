@@ -25,6 +25,8 @@ export function keyboardCell(options: {
     sheet_controller,
   } = options;
 
+  const hasPermission = isEditorOrAbove(editorInteractionState.permission);
+
   if (event.key === 'Tab') {
     // move single cursor one right
     const delta = event.shiftKey ? -1 : 1;
@@ -43,8 +45,45 @@ export function keyboardCell(options: {
     event.preventDefault();
   }
 
+  if (event.key === 'Enter') {
+    const x = interactionState.cursorPosition.x;
+    const y = interactionState.cursorPosition.y;
+    const cell = sheet_controller.sheet.getCellCopy(x, y);
+
+    if (cell) {
+      if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
+        // open single line
+        if (hasPermission) {
+          setInteractionState({
+            ...interactionState,
+
+            showInput: true,
+            inputInitialValue: cell.value,
+          });
+        }
+      } else {
+        // Open code editor, or move code editor if already open.
+        setEditorInteractionState({
+          ...editorInteractionState,
+          showCellTypeMenu: false,
+          showCodeEditor: true,
+          selectedCell: { x: x, y: y },
+          mode: cell.type,
+        });
+      }
+    } else if (hasPermission) {
+      setInteractionState({
+        ...interactionState,
+        showInput: true,
+        inputInitialValue: '',
+      });
+    }
+
+    event.preventDefault();
+  }
+
   // Don't allow actions beyond here for certain users
-  if (!isEditorOrAbove(editorInteractionState.permission)) {
+  if (!hasPermission) {
     return false;
   }
 
@@ -71,42 +110,6 @@ export function keyboardCell(options: {
       });
     }
 
-    event.preventDefault();
-  }
-
-  if (event.key === 'Enter') {
-    const x = interactionState.cursorPosition.x;
-    const y = interactionState.cursorPosition.y;
-    const cell = sheet_controller.sheet.getCellCopy(x, y);
-    if (cell) {
-      if (cell.type === 'TEXT' || cell.type === 'COMPUTED') {
-        // open single line
-        setInteractionState({
-          ...interactionState,
-          ...{
-            showInput: true,
-            inputInitialValue: cell.value,
-          },
-        });
-      } else {
-        // Open code editor, or move code editor if already open.
-        setEditorInteractionState({
-          ...editorInteractionState,
-          showCellTypeMenu: false,
-          showCodeEditor: true,
-          selectedCell: { x: x, y: y },
-          mode: cell.type,
-        });
-      }
-    } else {
-      setInteractionState({
-        ...interactionState,
-        ...{
-          showInput: true,
-          inputInitialValue: '',
-        },
-      });
-    }
     event.preventDefault();
   }
 
