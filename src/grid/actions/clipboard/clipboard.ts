@@ -1,9 +1,12 @@
+import localforage from 'localforage';
 import { isEditorOrAbove } from '../../../actions';
 import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPerformance';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 import { grid } from '../../controller/Grid';
 import { sheets } from '../../controller/Sheets';
+
+const clipboardLocalStorageKey = 'quadratic-clipboard';
 
 //#region document event handler for copy, paste, and cut
 
@@ -65,7 +68,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
   }
 
   // enables Firefox menu pasting after a ctrl+v paste
-  lastCopy = html;
+  localforage.setItem(clipboardLocalStorageKey, html);
 
   e.preventDefault();
 };
@@ -73,9 +76,6 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
 //#regionend
 
 //#region triggered via menu (limited support on Firefox)
-
-// workaround so Firefox can copy/paste within same app
-let lastCopy: string | undefined = undefined;
 
 // copies plainText and html to the clipboard
 const toClipboard = (plainText: string, html: string) => {
@@ -93,7 +93,7 @@ const toClipboard = (plainText: string, html: string) => {
 
     // fallback support for firefox
     else {
-      lastCopy = html;
+      localforage.setItem(clipboardLocalStorageKey, html);
       navigator.clipboard.writeText(plainText);
     }
   }
@@ -151,20 +151,26 @@ export const pasteFromClipboard = async () => {
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   const target = sheets.sheet.cursor.originPosition;
 
+  // handles non-Firefox browsers
   if (navigator.clipboard?.read) {
     const clipboardData = await navigator.clipboard.read();
+
+    // get text/plain if available
     const plainTextItem = clipboardData.find((item) => item.types.includes('text/plain'));
     let plainText: string | undefined;
     if (plainTextItem) {
       const item = await plainTextItem.getType('text/plain');
       plainText = await item.text();
     }
+
+    // gets text/html if available
     let html: string | undefined;
     const htmlItem = clipboardData.find((item) => item.types.includes('text/html'));
     if (htmlItem) {
       const item = await htmlItem.getType('text/html');
       html = await item.text();
     }
+
     debugTimeReset();
     grid.pasteFromClipboard({
       sheetId: sheets.sheet.id,
@@ -175,17 +181,21 @@ export const pasteFromClipboard = async () => {
     });
     debugTimeCheck('paste from clipboard');
   }
-  // handle firefox :(
-  else if (lastCopy) {
-    debugTimeReset();
-    grid.pasteFromClipboard({
-      sheetId: sheets.sheet.id,
-      x: target.x,
-      y: target.y,
-      plainText: undefined,
-      html: lastCopy,
-    });
-    debugTimeCheck('paste from clipboard (firefox)');
+
+  // handles firefox using localStorage :(
+  else {
+    const html = (await localforage.getItem(clipboardLocalStorageKey)) as string;
+    if (html) {
+      debugTimeReset();
+      grid.pasteFromClipboard({
+        sheetId: sheets.sheet.id,
+        x: target.x,
+        y: target.y,
+        plainText: undefined,
+        html,
+      });
+      debugTimeCheck('paste from clipboard (firefox)');
+    }
   }
 };
 
