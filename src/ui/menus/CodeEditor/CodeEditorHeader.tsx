@@ -5,6 +5,8 @@ import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 // import { CodeCellValue } from '../../../quadratic-core/types';
+import { isEditorOrAbove } from '../../../actions';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Formula, Python } from '../../icons';
@@ -24,7 +26,9 @@ interface Props {
 export const CodeEditorHeader = (props: Props) => {
   const { cell, cellLocation, unsaved, isRunningComputation, saveAndRunCell, closeEditor } = props;
   const { pythonLoadState } = useRecoilValue(loadedStateAtom);
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const theme = useTheme();
+  const hasPermission = isEditorOrAbove(editorInteractionState.permission);
 
   if (!cell || !cellLocation) return null;
   const isLoadingPython = !['loaded', 'initial'].includes(pythonLoadState) && cell.language === 'Python';
@@ -81,19 +85,21 @@ export const CodeEditorHeader = (props: Props) => {
             <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
           </div>
         )}
-        <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
-          <span>
-            <IconButton
-              id="QuadraticCodeEditorRunButtonID"
-              size="small"
-              color="primary"
-              onClick={saveAndRunCell}
-              disabled={isRunningComputation || isLoadingPython}
-            >
-              <PlayArrow />
-            </IconButton>
-          </span>
-        </TooltipHint>
+        {hasPermission && (
+          <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
+            <span>
+              <IconButton
+                id="QuadraticCodeEditorRunButtonID"
+                size="small"
+                color="primary"
+                onClick={saveAndRunCell}
+                disabled={isRunningComputation || isLoadingPython}
+              >
+                <PlayArrow />
+              </IconButton>
+            </span>
+          </TooltipHint>
+        )}
         <TooltipHint title="Close" shortcut="ESC">
           <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
             <Close />
