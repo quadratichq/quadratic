@@ -1,19 +1,12 @@
-import { isEditorOrAbove } from '../../../actions';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../constants/appConstants';
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
 
 export function keyboardClipboard(props: {
   event: React.KeyboardEvent<HTMLElement>;
-  editorInteractionState: EditorInteractionState;
   addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
 }): boolean {
-  const {
-    addGlobalSnackbar,
-    event,
-    editorInteractionState: { permission },
-  } = props;
+  const { addGlobalSnackbar, event } = props;
 
   // Command + Shift + C
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'c') {
@@ -23,34 +16,5 @@ export function keyboardClipboard(props: {
     event.stopPropagation();
     return true;
   }
-
-  // const cursor = sheets.sheet.cursor;
-
-  // const start = cursor.originPosition;
-  // const end = cursor.terminalPosition;
-
-  // // Command + C
-  // if ((event.metaKey || event.ctrlKey) && event.key === 'c') {
-  //   copyToClipboard(start, end);
-  //   return true;
-  // }
-
-  // Don't allow commands past here without permission
-  if (!isEditorOrAbove(permission)) {
-    return false;
-  }
-
-  // // Command + X
-  // if ((event.metaKey || event.ctrlKey) && event.key === 'x') {
-  //   cutToClipboard(start, end);
-  //   return true;
-  // }
-
-  // // Command + V
-  // if ((event.metaKey || event.ctrlKey) && event.key === 'v') {
-  //   pasteFromClipboard(cursor.originPosition);
-  //   return true;
-  // }
-
   return false;
 }

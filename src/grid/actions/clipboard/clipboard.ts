@@ -21,14 +21,6 @@ export const copyToClipboardEvent = (e: ClipboardEvent) => {
   debugTimeCheck('copy to clipboard');
 };
 
-// only used on menu copy (using fallback with FireFox)
-export const copyToClipboard = () => {
-  debugTimeReset();
-  const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
-  toClipboard(plainText, html);
-  debugTimeCheck('copy to clipboard');
-};
-
 export const cutToClipboardEvent = (e: ClipboardEvent) => {
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   debugTimeReset();
@@ -129,6 +121,13 @@ export const cutToClipboard = async () => {
   debugTimeCheck('cut to clipboard (fallback)');
 };
 
+export const copyToClipboard = () => {
+  debugTimeReset();
+  const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
+  toClipboard(plainText, html);
+  debugTimeCheck('copy to clipboard');
+};
+
 export const copySelectionToPNG = async () => {
   const blob = await copyAsPNG();
   if (!blob) {
@@ -190,4 +189,4 @@ export const pasteFromClipboard = async () => {
   }
 };
 
-//#regionend
+//#endregion
