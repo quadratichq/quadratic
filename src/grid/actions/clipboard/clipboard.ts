@@ -1,9 +1,86 @@
-import { Rectangle } from 'pixi.js';
+import { isEditorOrAbove } from '../../../actions';
 import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPerformance';
+import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
-import { Coordinate } from '../../../gridGL/types/size';
 import { grid } from '../../controller/Grid';
 import { sheets } from '../../controller/Sheets';
+
+//#region document event handler for copy, paste, and cut
+
+export const copyToClipboardEvent = (e: ClipboardEvent) => {
+  debugTimeReset();
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, rectangle);
+  if (!e.clipboardData) {
+    console.warn('clipboardData is not defined');
+    return;
+  }
+  e.clipboardData.setData('text/html', html);
+  e.clipboardData.setData('text', plainText);
+  e.preventDefault();
+  debugTimeCheck('copy to clipboard');
+};
+
+// only used on menu copy (using fallback with FireFox)
+export const copyToClipboard = () => {
+  debugTimeReset();
+  const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
+  toClipboard(plainText, html);
+  debugTimeCheck('copy to clipboard');
+};
+
+export const cutToClipboardEvent = (e: ClipboardEvent) => {
+  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
+  debugTimeReset();
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  const { plainText, html } = grid.cutToClipboard(sheets.sheet.id, rectangle);
+  if (!e.clipboardData) {
+    console.warn('clipboardData is not defined');
+    return;
+  }
+  e.clipboardData.setData('text/html', html);
+  e.clipboardData.setData('text', plainText);
+  e.preventDefault();
+  debugTimeCheck('cut to clipboard');
+};
+
+export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
+  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
+
+  if (!e.clipboardData) {
+    console.warn('clipboardData is not defined');
+    return;
+  }
+  const cursor = sheets.sheet.cursor.originPosition;
+  let html: string | undefined;
+  let plainText: string | undefined;
+
+  if (e.clipboardData.types.includes('text/html')) {
+    html = e.clipboardData.getData('text/html');
+  }
+  if (e.clipboardData.types.includes('text/plain')) {
+    plainText = e.clipboardData.getData('text/plain');
+  }
+  if (plainText || html) {
+    debugTimeReset();
+    grid.pasteFromClipboard({
+      sheetId: sheets.sheet.id,
+      x: cursor.x,
+      y: cursor.y,
+      plainText,
+      html,
+    });
+  }
+
+  // enables Firefox menu pasting after a ctrl+v paste
+  lastCopy = html;
+
+  e.preventDefault();
+};
+
+//#regionend
+
+//#region triggered via menu (limited support on Firefox)
 
 // workaround so Firefox can copy/paste within same app
 let lastCopy: string | undefined = undefined;
@@ -22,7 +99,7 @@ const toClipboard = (plainText: string, html: string) => {
       ]);
     }
 
-    // support firefox
+    // fallback support for firefox
     else {
       lastCopy = html;
       navigator.clipboard.writeText(plainText);
@@ -44,22 +121,12 @@ const toClipboard = (plainText: string, html: string) => {
   }
 };
 
-export const copyToClipboard = (cell0: Coordinate, cell1: Coordinate) => {
+export const cutToClipboard = async () => {
+  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   debugTimeReset();
-  const { plainText, html } = grid.copyToClipboard(
-    sheets.sheet.id,
-    new Rectangle(cell0.x, cell0.y, cell1.x - cell0.x, cell1.y - cell0.y)
-  );
+  const { plainText, html } = grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
   toClipboard(plainText, html);
-  debugTimeCheck('copy to clipboard');
-};
-
-export const cutToClipboard = async (cell0: Coordinate, cell1: Coordinate) => {
-  const { plainText, html } = grid.cutToClipboard(
-    sheets.sheet.id,
-    new Rectangle(cell0.x, cell0.y, cell1.x - cell0.x, cell1.y - cell0.y)
-  );
-  toClipboard(plainText, html);
+  debugTimeCheck('cut to clipboard (fallback)');
 };
 
 export const copySelectionToPNG = async () => {
@@ -81,7 +148,10 @@ export const copySelectionToPNG = async () => {
   }
 };
 
-export const pasteFromClipboard = async (target: Coordinate) => {
+export const pasteFromClipboard = async () => {
+  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
+  const target = sheets.sheet.cursor.originPosition;
+
   if (navigator.clipboard?.read) {
     const clipboardData = await navigator.clipboard.read();
     const plainTextItem = clipboardData.find((item) => item.types.includes('text/plain'));
@@ -106,7 +176,6 @@ export const pasteFromClipboard = async (target: Coordinate) => {
     });
     debugTimeCheck('paste from clipboard');
   }
-
   // handle firefox :(
   else if (lastCopy) {
     debugTimeReset();
@@ -120,3 +189,5 @@ export const pasteFromClipboard = async (target: Coordinate) => {
     debugTimeCheck('paste from clipboard (firefox)');
   }
 };
+
+//#regionend

@@ -4,6 +4,7 @@ import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
+import { copyToClipboardEvent, pasteFromClipboardEvent } from '../../grid/actions/clipboard/clipboard';
 import { sheets } from '../../grid/controller/Sheets';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
@@ -127,10 +128,14 @@ export class PixiApp {
 
   private setupListeners() {
     window.addEventListener('resize', this.resize);
+    document.addEventListener('copy', copyToClipboardEvent);
+    document.addEventListener('paste', pasteFromClipboardEvent);
   }
 
   private removeListeners() {
     window.removeEventListener('resize', this.resize);
+    document.removeEventListener('copy', copyToClipboardEvent);
+    document.removeEventListener('paste', pasteFromClipboardEvent);
   }
   private showCache(): void {
     if (debugShowCacheFlag && !this.quadrants.visible) {
