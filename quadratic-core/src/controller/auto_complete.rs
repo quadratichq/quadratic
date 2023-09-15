@@ -53,6 +53,29 @@ impl GridController {
         self.expand(sheet_id, &rect, &range, cursor)
     }
 
+    pub fn expand_left(
+        &mut self,
+        sheet_id: SheetId,
+        rect: Rect,
+        to: i64,
+        to_vertical: Option<i64>,
+        cursor: Option<String>,
+    ) -> Result<TransactionSummary> {
+        let to_vertical = to_vertical.unwrap_or(rect.max.y);
+        let range = Rect {
+            min: Pos {
+                x: to,
+                y: rect.min.y,
+            },
+            max: Pos {
+                x: rect.min.x - 1,
+                y: to_vertical,
+            },
+        };
+
+        self.expand(sheet_id, &rect, &range, cursor)
+    }
+
     pub fn expand(
         &mut self,
         sheet_id: SheetId,
@@ -235,6 +258,19 @@ mod tests {
         let expected = Rect {
             min: Pos { x: 0, y: 2 },
             max: Pos { x: 2, y: 10 },
+        };
+        assert_eq!(result.cell_regions_modified[0].1, expected);
+    }
+
+    #[test]
+    fn test_expand_left() {
+        let (mut grid_controller, sheet, rect) = test_setup();
+        let result = grid_controller
+            .expand_left(sheet.id, rect, -10, None, None)
+            .unwrap();
+        let expected = Rect {
+            min: Pos { x: -10, y: 0 },
+            max: Pos { x: -1, y: 1 },
         };
         assert_eq!(result.cell_regions_modified[0].1, expected);
     }

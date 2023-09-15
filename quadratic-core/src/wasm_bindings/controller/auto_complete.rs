@@ -43,4 +43,23 @@ impl GridController {
             .map_err(|e| e.to_string())?;
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
+
+    /// Expand the contents of the selected rectangle to the left to the specified row.
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "expandLeft")]
+    pub fn js_expand_left(
+        &mut self,
+        sheet_id: String,
+        rect: &Rect,
+        to: i64,
+        to_vertical: Option<i64>,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let output = self
+            .expand_left(sheet_id, *rect, to, to_vertical, cursor)
+            .map_err(|e| e.to_string())?;
+        Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
+    }
 }
