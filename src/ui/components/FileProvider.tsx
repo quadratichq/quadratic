@@ -1,11 +1,11 @@
 import mixpanel from 'mixpanel-browser';
-import { Dispatch, SetStateAction, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useSetRecoilState } from 'recoil';
 import { isOwner as isOwnerTest } from '../../actions';
 import { apiClient } from '../../api/apiClient';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
-import { FileData, useFileRouteLoaderData } from '../../dashboard/FileRoute';
+import { useFileRouteLoaderData } from '../../dashboard/FileRoute';
 import { debugShowFileIO } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { useInterval } from '../../hooks/useInterval';
@@ -22,8 +22,6 @@ export type FileContextType = {
   name: string;
   renameFile: (newName: string) => void;
   syncState: Sync['state'];
-  publicLinkAccess: FileData['sharing']['public_link_access'];
-  setPublicLinkAccess: Dispatch<SetStateAction<FileData['sharing']['public_link_access']>>;
 };
 
 /**
@@ -39,9 +37,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const { uuid } = useParams() as { uuid: string };
   const initialFileData = useFileRouteLoaderData();
   const [name, setName] = useState<FileContextType['name']>(initialFileData.name);
-  const [publicLinkAccess, setPublicLinkAccess] = useState<FileContextType['publicLinkAccess']>(
-    initialFileData.sharing.public_link_access
-  );
+  const [publicLinkAccess] = useState(initialFileData.sharing.public_link_access);
   let isFirstUpdate = useRef(true);
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
@@ -111,11 +107,6 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
     syncState === 'error' ? syncErrorInterval : syncInterval
   );
 
-  // Update the public link access when it changes
-  useEffect(() => {
-    syncChanges(() => apiClient.updateFileSharing(uuid, { public_link_access: publicLinkAccess }));
-  }, [publicLinkAccess, syncChanges, uuid]);
-
   // Set the permission in recoil based on the initial state
   // TODO figure out a way to set this in RecoilRoot (if possible)
   //      or let it flow if we go with react-router's loaders for this
@@ -141,8 +132,6 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
         name,
         renameFile,
         syncState,
-        publicLinkAccess,
-        setPublicLinkAccess,
       }}
     >
       {children}

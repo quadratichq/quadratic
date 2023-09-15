@@ -129,10 +129,6 @@ files_router.post(
         },
         data: {
           name: req.body.name,
-          updated_date: new Date(),
-          times_updated: {
-            increment: 1,
-          },
         },
       });
     }

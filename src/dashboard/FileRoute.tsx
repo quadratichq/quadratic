@@ -25,7 +25,6 @@ export type FileData = {
   name: string;
   contents: GridFile;
   permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
-  sharing: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData> => {
@@ -95,7 +94,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     contents,
     name: data.file.name,
     permission: data.permission,
-    sharing,
   };
 };
 
