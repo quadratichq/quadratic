@@ -16,6 +16,8 @@ export function keyboardCell(options: {
   const cursor = sheet.cursor;
   const cursorPosition = cursor.cursorPosition;
 
+  const hasPermission = isEditorOrAbove(editorInteractionState.permission);
+
   if (event.key === 'Tab') {
     // move single cursor one right
     const delta = event.shiftKey ? -1 : 1;
@@ -29,24 +31,6 @@ export function keyboardCell(options: {
         y: cursorPosition.y,
       },
     });
-    event.preventDefault();
-  }
-
-  // Don't allow actions beyond here for certain users
-  if (!isEditorOrAbove(editorInteractionState.permission)) {
-    return false;
-  }
-
-  if (event.key === 'Backspace' || event.key === 'Delete') {
-    // delete a range or a single cell, depending on if MultiCursor is active
-    sheet.deleteCells(
-      new Rectangle(
-        cursor.originPosition.x,
-        cursor.originPosition.y,
-        cursor.terminalPosition.x - cursor.originPosition.x,
-        cursor.terminalPosition.y - cursor.originPosition.y
-      )
-    );
     event.preventDefault();
   }
 
@@ -67,13 +51,35 @@ export function keyboardCell(options: {
           mode,
         });
       } else {
-        // open single line
-        const edit = sheet.getEditCell(x, y);
-        pixiAppSettings.changeInput(true, edit);
+        if (hasPermission) {
+          // open single line
+          const edit = sheet.getEditCell(x, y);
+          pixiAppSettings.changeInput(true, edit);
+        }
       }
     } else {
-      pixiAppSettings.changeInput(true);
+      if (hasPermission) {
+        pixiAppSettings.changeInput(true);
+      }
     }
+    event.preventDefault();
+  }
+
+  // Don't allow actions beyond here for certain users
+  if (!hasPermission) {
+    return false;
+  }
+
+  if (event.key === 'Backspace' || event.key === 'Delete') {
+    // delete a range or a single cell, depending on if MultiCursor is active
+    sheet.deleteCells(
+      new Rectangle(
+        cursor.originPosition.x,
+        cursor.originPosition.y,
+        cursor.terminalPosition.x - cursor.originPosition.x,
+        cursor.terminalPosition.y - cursor.originPosition.y
+      )
+    );
     event.preventDefault();
   }
 
