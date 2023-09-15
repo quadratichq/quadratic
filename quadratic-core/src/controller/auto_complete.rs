@@ -76,6 +76,12 @@ impl GridController {
         self.expand(sheet_id, &rect, &range, cursor)
     }
 
+    /// Expand the source `rect` to the expanded `range`.
+    ///
+    /// TODO(ddimaria): `self.set_cells` records a transaction, so this isn't a
+    /// great user experience for combination expansions (e.g. expand right and down).
+    /// In this or subsequent PRs, we should consider a way to batch these transactions
+    /// (e.g. transaction queues).
     pub fn expand(
         &mut self,
         sheet_id: SheetId,
@@ -94,6 +100,10 @@ impl GridController {
     }
 }
 
+/// Add the cell values to an Array for the given Rect.
+///
+/// TODO(ddimaria): determine if this should go in the cell.rs file or equiv
+/// TODO(ddimaria): is this necessary as it's more performant to just pluck the data from the sheet direclty
 pub fn cell_values_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
     let values = rect
         .y_range()
@@ -113,6 +123,7 @@ pub fn cell_values_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
         .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", rect.size(), e))
 }
 
+/// For a given selection (source data), project the cell value at the given Pos.
 pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) -> &'a CellValue {
     let x = (pos.x - rect.min.x) as u32 % selection.width();
     let y = (pos.y - rect.min.y) as u32 % selection.height();
@@ -120,6 +131,10 @@ pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) ->
     selection.get(x, y).unwrap_or_else(|_| &CellValue::Blank)
 }
 
+/// Set the cell values in the given Rect to the given Array.
+///
+/// TODO(ddimaria): instead of injecting this into an array, would it be better
+/// to just set the values directly in the sheet?
 pub fn set_cell_projections(projection: &Array, rect: &Rect) -> SmallVec<[CellValue; 1]> {
     rect.y_range()
         .map(|y| {
@@ -135,6 +150,8 @@ pub fn set_cell_projections(projection: &Array, rect: &Rect) -> SmallVec<[CellVa
 mod tests {
     use super::*;
     use crate::array;
+    use bigdecimal::BigDecimal;
+    use std::str::FromStr;
 
     fn test_setup() -> (GridController, Sheet, Rect) {
         let mut grid_controller = GridController::new();
@@ -144,12 +161,12 @@ mod tests {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 2, y: 1 },
         };
-        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 0 }, CellValue::Number(1.0), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 0 }, CellValue::Number(2.0), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 0 }, CellValue::Number(3.0), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, CellValue::Number(4.0), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, CellValue::Number(5.0), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 1 }, CellValue::Number(6.0), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 0 }, "1.0".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 0 }, "2.0".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 0 }, "3.0".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, "4.0".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, "5.0".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 1 }, "6.0".into(), None);
 
         let sheet = grid_controller.sheet(sheet_id);
         (grid_controller.clone(), sheet.clone(), rect)
@@ -163,15 +180,19 @@ mod tests {
             min: Pos { x: 2, y: 2 },
             max: Pos { x: 4, y: 3 },
         };
-        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 2 }, CellValue::Number(1.0), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, CellValue::Number(2.0), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 4, y: 2 }, CellValue::Number(3.0), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 3 }, CellValue::Number(4.0), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 3, y: 3 }, CellValue::Number(5.0), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 4, y: 3 }, CellValue::Number(6.0), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 2 }, "1.0".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, "2.0".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 4, y: 2 }, "3.0".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 3 }, "4.0".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 3, y: 3 }, "5.0".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 4, y: 3 }, "6.0".into(), None);
 
         let sheet = grid_controller.sheet(sheet_id);
         (grid_controller.clone(), sheet.clone(), rect)
+    }
+
+    fn to_cell_value(value: &str) -> CellValue {
+        CellValue::Number(BigDecimal::from_str(value).unwrap())
     }
 
     #[test]
@@ -192,12 +213,12 @@ mod tests {
         let selection = cell_values_in_rect(&rect, &sheet).unwrap();
         let func = |pos| project_cell_value(&selection, pos, &rect);
 
-        assert_eq!(func(Pos { x: 3, y: 0 }), &CellValue::Number(1.0));
-        assert_eq!(func(Pos { x: 4, y: 0 }), &CellValue::Number(2.0));
-        assert_eq!(func(Pos { x: 5, y: 0 }), &CellValue::Number(3.0));
-        assert_eq!(func(Pos { x: 3, y: 1 }), &CellValue::Number(4.0));
-        assert_eq!(func(Pos { x: 4, y: 1 }), &CellValue::Number(5.0));
-        assert_eq!(func(Pos { x: 5, y: 1 }), &CellValue::Number(6.0));
+        assert_eq!(func(Pos { x: 3, y: 0 }), &to_cell_value("1.0"));
+        assert_eq!(func(Pos { x: 4, y: 0 }), &to_cell_value("2.0"));
+        assert_eq!(func(Pos { x: 5, y: 0 }), &to_cell_value("3.0"));
+        assert_eq!(func(Pos { x: 3, y: 1 }), &to_cell_value("4.0"));
+        assert_eq!(func(Pos { x: 4, y: 1 }), &to_cell_value("5.0"));
+        assert_eq!(func(Pos { x: 5, y: 1 }), &to_cell_value("6.0"));
     }
 
     #[test]
@@ -206,12 +227,12 @@ mod tests {
         let selection = cell_values_in_rect(&rect, &sheet).unwrap();
         let func = |pos| project_cell_value(&selection, pos, &rect);
 
-        assert_eq!(func(Pos { x: 5, y: 2 }), &CellValue::Number(1.0));
-        assert_eq!(func(Pos { x: 6, y: 2 }), &CellValue::Number(2.0));
-        assert_eq!(func(Pos { x: 7, y: 2 }), &CellValue::Number(3.0));
-        assert_eq!(func(Pos { x: 5, y: 3 }), &CellValue::Number(4.0));
-        assert_eq!(func(Pos { x: 6, y: 3 }), &CellValue::Number(5.0));
-        assert_eq!(func(Pos { x: 7, y: 3 }), &CellValue::Number(6.0));
+        assert_eq!(func(Pos { x: 5, y: 2 }), &to_cell_value("1.0"));
+        assert_eq!(func(Pos { x: 6, y: 2 }), &to_cell_value("2.0"));
+        assert_eq!(func(Pos { x: 7, y: 2 }), &to_cell_value("3.0"));
+        assert_eq!(func(Pos { x: 5, y: 3 }), &to_cell_value("4.0"));
+        assert_eq!(func(Pos { x: 6, y: 3 }), &to_cell_value("5.0"));
+        assert_eq!(func(Pos { x: 7, y: 3 }), &to_cell_value("6.0"));
     }
 
     #[test]
