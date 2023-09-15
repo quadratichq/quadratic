@@ -6,10 +6,11 @@ use std;
 use std::fmt;
 
 use crate::Pos;
+use crate::Rect;
 
 #[derive(Debug, PartialEq)]
 pub struct DependencyCycleError {
-    pub source: Pos,
+    pub source: DGraphNode,
 }
 
 impl fmt::Display for DependencyCycleError {
@@ -18,12 +19,28 @@ impl fmt::Display for DependencyCycleError {
     }
 }
 
+// Unified node type
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
+pub enum DGraphNode {
+    Position(Pos),
+    Range(Rect),
+}
+
+impl fmt::Display for DGraphNode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DGraphNode::Position(pos) => pos.fmt(f),
+            DGraphNode::Range(rect) => rect.fmt(f),
+        }
+    }
+}
+
 #[derive(Default, Clone, Debug)]
 pub struct DGraphController {
     // The Quadratic Dependency Graph stores the cells that depend on other cells.
     // The children of a cell are the cells that depend on it.
     // All edges have a weight of 1 (weights don't matter for this implementation)
-    graph: DiGraphMap<Pos, usize>,
+    graph: DiGraphMap<DGraphNode, usize>,
 }
 
 impl fmt::Display for DGraphController {
@@ -41,7 +58,7 @@ impl DGraphController {
     }
 
     /// Returns a immutable reference to the underlying graph.
-    pub fn graph(&self) -> &DiGraphMap<Pos, usize> {
+    pub fn graph(&self) -> &DiGraphMap<DGraphNode, usize> {
         &self.graph
     }
 
@@ -49,8 +66,8 @@ impl DGraphController {
     /// Checks for cycles and returns an error if one is found.
     pub fn add_dependencies(
         &mut self,
-        cell: Pos,
-        dependencies: &[Pos],
+        cell: DGraphNode,
+        dependencies: &[DGraphNode],
     ) -> Result<(), DependencyCycleError> {
         // add new dependencies
         for &dcell in dependencies {
@@ -68,7 +85,7 @@ impl DGraphController {
 
     /// Given `cell` removes `dependencies` to the graph.
     /// Checks for isolated nodes and removes them from the graph.
-    pub fn remove_dependencies(&mut self, cell: Pos, dependencies: &[Pos]) {
+    pub fn remove_dependencies(&mut self, cell: DGraphNode, dependencies: &[DGraphNode]) {
         // remove old dependencies
         for &dependency in dependencies.iter() {
             self.graph.remove_edge(dependency, cell);
@@ -87,8 +104,8 @@ impl DGraphController {
 
     /// Returns a vector of cells that depend on `cell`.
     /// Does not return input `cell` as a dependent.
-    pub fn get_dependent_cells(&self, cell: Pos) -> Vec<Pos> {
-        let mut result = Vec::<Pos>::new();
+    pub fn get_dependent_cells(&self, cell: DGraphNode) -> Vec<DGraphNode> {
+        let mut result = Vec::<DGraphNode>::new();
         let mut bfs = Bfs::new(&self.graph, cell);
         while let Some(visited) = bfs.next(&self.graph) {
             result.push(visited);

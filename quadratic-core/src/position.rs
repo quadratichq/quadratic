@@ -129,3 +129,8 @@ impl Rect {
         (self.max.y - self.min.y + 1) as u32
     }
 }
+impl fmt::Display for Rect {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Min: ({}), Max: ({})", self.min, self.max)
+    }
+}
