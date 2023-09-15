@@ -1,10 +1,12 @@
 import './SheetBarTab.css';
 
-import { Box, Fade, Popper } from '@mui/material';
+import { Box, Fade, Popper, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { sheets } from '../../../grid/controller/Sheets';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
+
+const SHEET_NAME_MAX_LENGTH = 50;
 
 interface Props {
   sheet: Sheet;
@@ -21,6 +23,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
   // const localFiles = useFileContext();
   const [nameExists, setNameExists] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  const theme = useTheme();
 
   useEffect(() => {
     if (forceRename) {
@@ -40,10 +43,25 @@ export const SheetBarTab = (props: Props): JSX.Element => {
   );
 
   return (
-    <div
+    <Box
       ref={divRef}
-      style={{
+      sx={{
         order,
+        '&:hover': {
+          backgroundColor: theme.palette.action.hover,
+        },
+        position: 'relative',
+        ...(active
+          ? {
+              backgroundColor: theme.palette.background.default + ' !important', // blue['50'] + ' !important',
+              position: 'sticky',
+              left: '0',
+              right: '0',
+              // TODO figure out why MUI isn't applying this...
+              zIndex: 10,
+              boxShadow: `inset 1px 0 0 ${theme.palette.divider}, inset -1px 0 0 ${theme.palette.divider}`,
+            }
+          : {}),
       }}
       data-id={sheet.id}
       data-order={sheet.order}
@@ -57,8 +75,8 @@ export const SheetBarTab = (props: Props): JSX.Element => {
           className="sheet-tab-input"
           autoFocus={true}
           onKeyDown={(event) => {
+            const input = event.currentTarget as HTMLInputElement;
             if (event.code === 'Enter') {
-              const input = event.currentTarget as HTMLInputElement;
               if (input.value !== sheet.name) {
                 if (sheets.nameExists(input.value)) {
                   setNameExists(true);
@@ -75,6 +93,19 @@ export const SheetBarTab = (props: Props): JSX.Element => {
               setIsRenaming(false);
               setNameExists(false);
               focusGrid();
+            } else if (
+              event.key === 'Delete' ||
+              event.key === 'ArrowLeft' ||
+              event.key === 'ArrowRight' ||
+              event.key === 'ArrowUp' ||
+              event.key === 'ArrowDown' ||
+              event.key === 'Backspace' ||
+              event.metaKey
+            ) {
+              // Allow these, otherwise we cap
+            } else if (input.value.length > SHEET_NAME_MAX_LENGTH) {
+              console.log('length', event.currentTarget.value);
+              event.preventDefault();
             }
           }}
           onInput={() => setNameExists(false)}
@@ -102,14 +133,47 @@ export const SheetBarTab = (props: Props): JSX.Element => {
       )}
 
       {!isRenaming && (
-        <div
-          className={active ? 'sheet-tab-active' : 'sheet-tab'}
-          style={{
-            borderBottomColor: sheet.color,
+        <Box
+          data-title={sheet.name}
+          sx={{
+            textAlign: 'center',
+            pt: theme.spacing(1),
+            px: theme.spacing(2),
+            cursor: 'pointer',
+            transition: 'box-shadow 200ms ease 250ms, background-color 200ms ease',
+            whiteSpace: 'nowrap',
+            height: '100%',
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              bottom: '0',
+              left: '0',
+              height: '3px',
+              width: '100%',
+              backgroundColor: sheet.color ? sheet.color : 'transparent',
+            },
+            ...(active
+              ? {
+                  color: theme.palette.primary.main,
+                  // Little trick to bold the text without making the content of
+                  // the tab change in width
+                  fontWeight: '600',
+                  '&::after': {
+                    content: 'attr(data-title)',
+                    display: 'block',
+                    fontWeight: 'bold',
+                    height: '1px',
+                    color: 'transparent',
+                    overflow: 'hidden',
+                    visibility: 'hidden',
+                  },
+                }
+              : {}),
           }}
         >
           {sheet.name}
-        </div>
+        </Box>
       )}
 
       <Popper open={nameExists} anchorEl={divRef.current} transition>
@@ -121,6 +185,6 @@ export const SheetBarTab = (props: Props): JSX.Element => {
           </Fade>
         )}
       </Popper>
-    </div>
+    </Box>
   );
 };

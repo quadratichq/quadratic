@@ -3,7 +3,6 @@ import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { colors } from '../../../theme/colors';
 import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
@@ -34,7 +33,7 @@ export const TopBar = () => {
         display: 'flex',
         justifyContent: 'space-between',
         gap: theme.spacing(1),
-        border: colors.mediumGray,
+        border: theme.palette.divider,
         borderWidth: '0 0 1px 0',
         borderStyle: 'solid',
         height: theme.spacing(6),
