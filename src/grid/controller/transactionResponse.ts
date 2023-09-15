@@ -24,4 +24,5 @@ export const transactionResponse = (summary: TransactionSummary): void => {
     sheetController.sheet.cursor.load(cursor);
   }
   pixiAppEvents.setViewportDirty();
+  sheetController.save();
 };

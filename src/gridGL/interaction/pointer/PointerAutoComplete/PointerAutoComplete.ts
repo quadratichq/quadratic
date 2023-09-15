@@ -5,7 +5,7 @@ import { intersects } from '../../../helpers/intersects';
 import { pixiApp } from '../../../pixiApp/PixiApp';
 import { PanMode } from '../../../pixiApp/PixiAppSettings';
 import { Coordinate } from '../../../types/size';
-import { expandDown, expandLeft, expandRight, expandUp, shrinkHorizontal, shrinkVertical } from './autoComplete';
+import { expandDown, expandLeft, expandRight, expandUp } from './autoComplete';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
 export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefined;
@@ -38,7 +38,7 @@ export class PointerAutoComplete {
           cursor.multiCursor.terminalPosition.y - cursor.multiCursor.originPosition.y
         );
       } else {
-        this.selection = new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
+        this.selection = new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 0, 0);
       }
       this.screenSelection = sheetController.sheet.gridOffsets.getScreenRectangle(
         this.selection.left,
@@ -209,11 +209,11 @@ export class PointerAutoComplete {
 
     if (this.stateVertical === 'shrink') {
       if (this.endCell) {
-        await shrinkVertical({
-          app: pixiApp,
-          selection: this.selection,
-          endCell: this.endCell,
-        });
+        // await shrinkVertical({
+        //   app: pixiApp,
+        //   selection: this.selection,
+        //   endCell: this.endCell,
+        // });
       }
     } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
       await expandDown({
@@ -231,11 +231,11 @@ export class PointerAutoComplete {
 
     if (this.stateHorizontal === 'shrink') {
       if (this.endCell) {
-        await shrinkHorizontal({
-          app: pixiApp,
-          selection: this.selection,
-          endCell: this.endCell,
-        });
+        // await shrinkHorizontal({
+        //   app: pixiApp,
+        //   selection: this.selection,
+        //   endCell: this.endCell,
+        // });
       }
     } else if (this.stateHorizontal === 'expandLeft' && this.toHorizontal !== undefined) {
       await expandLeft({
@@ -250,6 +250,9 @@ export class PointerAutoComplete {
         toVertical: this.toVertical,
       });
     }
+
+    sheetController.save();
+
     // sheetController.end_transaction();
 
     this.setSelection();

@@ -316,19 +316,41 @@ export class Grid {
   //#region AutoComplete
   //-----------------
 
-  expandDown(
-    sheetId: string,
-    rectangle: Rectangle,
-    to: number,
-    shrinkHorizontal: number | undefined = undefined,
-    cursor: SheetCursorSave
-  ) {
+  expandDown(sheetId: string, rectangle: Rectangle, to: number, shrinkHorizontal?: number, cursor?: SheetCursorSave) {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    console.log('rectangle', rectangle);
+    const rect = rectangleToRect(rectangle);
+    console.log('rect.min', rect.min.x, rect.min.y);
+    console.log('rect.max', rect.max.x, rect.max.y);
     const summary = this.gridController.expandDown(
       sheetId,
       rectangleToRect(rectangle),
-      to,
-      shrinkHorizontal,
+      BigInt(to),
+      shrinkHorizontal ? BigInt(shrinkHorizontal) : undefined,
+      JSON.stringify(cursor)
+    );
+    transactionResponse(summary);
+  }
+
+  expandRight(sheetId: string, rectangle: Rectangle, to: number, toVertical?: number, cursor?: SheetCursorSave) {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    const summary = this.gridController.expandRight(
+      sheetId,
+      rectangleToRect(rectangle),
+      BigInt(to),
+      toVertical ? BigInt(toVertical) : undefined,
+      JSON.stringify(cursor)
+    );
+    transactionResponse(summary);
+  }
+
+  expandLeft(sheetId: string, rectangle: Rectangle, to: number, toVertical?: number, cursor?: SheetCursorSave) {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    const summary = this.gridController.expandLeft(
+      sheetId,
+      rectangleToRect(rectangle),
+      BigInt(to),
+      toVertical ? BigInt(toVertical) : undefined,
       JSON.stringify(cursor)
     );
     transactionResponse(summary);

@@ -85,15 +85,10 @@ impl GridController {
     ) -> Result<TransactionSummary> {
         let sheet = self.sheet(sheet_id);
         let selection_values = cell_values_in_rect(&rect, &sheet)?;
-        let values: SmallVec<[CellValue; 1]> = set_cell_projections(&selection_values, &range);
+        let values = set_cell_projections(&selection_values, &range);
 
-        let array = Array::new_row_major(range.size(), values).map_err(|e| {
-            anyhow!(
-                "Could not create array of size {:?}: {:?}",
-                range.size(),
-                e.to_string()
-            )
-        })?;
+        let array = Array::new_row_major(range.size(), values)
+            .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
 
         Ok(self.set_cells(sheet_id, range.min, array, cursor))
     }
@@ -114,18 +109,14 @@ pub fn cell_values_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
         .flatten()
         .collect();
 
-    Array::new_row_major(rect.size(), values).map_err(|e| {
-        anyhow!(
-            "Could not create array of size {:?}: {:?}",
-            rect.size(),
-            e.to_string()
-        )
-    })
+    Array::new_row_major(rect.size(), values)
+        .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", rect.size(), e))
 }
 
 pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) -> &'a CellValue {
     let x = (pos.x - rect.min.x) as u32 % selection.width();
     let y = (pos.y - rect.min.y) as u32 % selection.height();
+
     selection.get(x, y).unwrap_or_else(|_| &CellValue::Blank)
 }
 
