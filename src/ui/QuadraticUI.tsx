@@ -81,9 +81,9 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
               ...prevState,
               showShareFileMenu: false,
             }));
-            // TODO the button that triggers the share menu is getting focus, not the
-            // grid, even when you run this
-            focusGrid();
+            setTimeout(() => {
+              focusGrid();
+            }, 200);
           }}
           permission={editorInteractionState.permission}
           uuid={uuid}
