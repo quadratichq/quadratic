@@ -9,6 +9,7 @@ import {
 } from '../../../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
+import { webWorkers } from '../../../web-workers/webWorkers';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
@@ -63,9 +64,13 @@ export const CodeEditor = () => {
     [cell?.code_string, editorContent, setEditorHighlightedCells, setEditorInteractionState]
   );
 
-  const saveAndRunCell = useCallback(() => {
+  const saveAndRunCell = useCallback(async () => {
+    if (editorContent) {
+      const results = await webWorkers.runPython(editorContent);
+      console.log(results);
+    }
     // sheetController.sheet.set;
-  }, []);
+  }, [editorContent]);
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Esc
